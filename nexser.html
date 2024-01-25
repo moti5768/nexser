@@ -30,1120 +30,1141 @@
                 <code>
 
 
+
                     &lt;!DOCTYPE html&gt;
-&lt;html lang=&quot;ja&quot;&gt;
-
-&lt;head&gt;
-    &lt;meta charset=&quot;UTF-8&quot;&gt;
-    &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
-    &lt;title&gt;nexser version 0.0.1&lt;/title&gt;
-&lt;/head&gt;
-
-&lt;body id=&quot;background&quot;&gt;
-    &lt;div class=&quot;nexser_group&quot;&gt;
-
-        &lt;div id=&quot;prompt&quot; style=&quot;display: none;&quot;&gt;
-            &lt;div class=&quot;prompt_text&quot;&gt;[nexser v0.0.1 command prompt&lt;span class=&quot;test_name&quot;&gt;&lt;/span&gt;]&lt;/div&gt;
-            &lt;form autocomplete=&quot;off&quot; method=&quot;get&quot; name=&quot;prompt_text_form&quot; onsubmit=&quot;return false;&quot;&gt;
-                &lt;input type=&quot;text&quot; class=&quot;name&quot; name=&quot;prompt_text&quot; id=&quot;focus&quot; placeholder=&quot;command&quot;&gt;
-            &lt;/form&gt;
-            &lt;p class=&quot;prompt_error_text&quot;&gt;&lt;/p&gt;
-            &lt;p class=&quot;user&quot; class=&quot;user&quot;&gt;&lt;/p&gt;
-            &lt;div style=&quot;color: lime;&quot;&gt;
-                &lt;p class=&quot;memory&quot;&gt;&lt;/p&gt;
-                &lt;p&gt;Batterylevel:&amp;emsp;&lt;span class=&quot;level&quot;&gt;&lt;/span&gt;&lt;/p&gt;
-                &lt;p&gt;Charging:&amp;emsp;&lt;span class=&quot;charging&quot;&gt;&lt;/span&gt;&lt;/p&gt;
-                &lt;p&gt;ChargingTime:&amp;emsp;&lt;span class=&quot;chargingTime&quot;&gt;&lt;/span&gt;&lt;/p&gt;
-                &lt;p&gt;DischargingTime:&amp;emsp;&lt;span class=&quot;dischargingTime&quot;&gt;&lt;/span&gt;&lt;/p&gt;
-            &lt;/div&gt;
-            &lt;p class=&quot;help&quot; style=&quot;color: deepskyblue;&quot;&gt;&lt;/p&gt;
-        &lt;/div&gt;
-
-        &lt;div id=&quot;nexser&quot;&gt;
-            &lt;span class=&quot;z_index&quot; style=&quot;color: white; position: absolute; bottom: 40px;&quot;&gt;&lt;/span&gt;
-
-            &lt;div id=&quot;desktop&quot;&gt;
-
-                &lt;div id=&quot;files&quot;&gt;
-                    &lt;a style=&quot;position: absolute; top: 0px;&quot;&gt;File none&lt;/a&gt;
-                &lt;/div&gt;
-
-                &lt;div id=&quot;soft_windows&quot;&gt;
-
-                    &lt;div class=&quot;child_windows program_manager shape active&quot;&gt;
-                        &lt;div class=&quot;title&quot;&gt;
-                            &lt;span&gt;program manager&lt;/span&gt;
+                    &lt;html lang=&quot;ja&quot;&gt;
+                    
+                    &lt;head&gt;
+                        &lt;meta charset=&quot;UTF-8&quot;&gt;
+                        &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot;&gt;
+                        &lt;title&gt;nexser version 0.0.1&lt;/title&gt;
+                    &lt;/head&gt;
+                    
+                    &lt;body id=&quot;background&quot;&gt;
+                        &lt;div class=&quot;nexser_group&quot;&gt;
+                    
+                            &lt;div id=&quot;prompt&quot; style=&quot;display: none;&quot;&gt;
+                                &lt;div class=&quot;prompt_text&quot;&gt;[nexser v0.0.1 command prompt&lt;span class=&quot;test_name&quot;&gt;&lt;/span&gt;]&lt;/div&gt;
+                                &lt;form autocomplete=&quot;off&quot; method=&quot;get&quot; name=&quot;prompt_text_form&quot; onsubmit=&quot;return false;&quot;&gt;
+                                    &lt;input type=&quot;text&quot; class=&quot;name&quot; name=&quot;prompt_text&quot; id=&quot;focus&quot; placeholder=&quot;command&quot;&gt;
+                                &lt;/form&gt;
+                                &lt;p class=&quot;prompt_error_text&quot;&gt;&lt;/p&gt;
+                                &lt;p class=&quot;user&quot; class=&quot;user&quot;&gt;&lt;/p&gt;
+                                &lt;div style=&quot;color: lime;&quot;&gt;
+                                    &lt;p class=&quot;memory&quot;&gt;&lt;/p&gt;
+                                    &lt;p&gt;Batterylevel:&amp;emsp;&lt;span class=&quot;level&quot;&gt;&lt;/span&gt;&lt;/p&gt;
+                                    &lt;p&gt;Charging:&amp;emsp;&lt;span class=&quot;charging&quot;&gt;&lt;/span&gt;&lt;/p&gt;
+                                    &lt;p&gt;ChargingTime:&amp;emsp;&lt;span class=&quot;chargingTime&quot;&gt;&lt;/span&gt;&lt;/p&gt;
+                                    &lt;p&gt;DischargingTime:&amp;emsp;&lt;span class=&quot;dischargingTime&quot;&gt;&lt;/span&gt;&lt;/p&gt;
+                                &lt;/div&gt;
+                                &lt;p class=&quot;help&quot; style=&quot;color: deepskyblue;&quot;&gt;&lt;/p&gt;
+                    
+                                &lt;pre class=&quot;codes&quot; style=&quot;display: none;&quot;&gt;
+                                    &lt;code&gt;
+                    
+                    
+                    
+                    
+                                    &lt;/code&gt;
+                                &lt;/pre&gt;
+                            &lt;/div&gt;
+                    
+                            &lt;div id=&quot;nexser&quot;&gt;
+                                &lt;span class=&quot;z_index&quot; style=&quot;color: white; position: absolute; bottom: 40px;&quot;&gt;&lt;/span&gt;
+                    
+                                &lt;div id=&quot;desktop&quot;&gt;
+                    
+                                    &lt;div id=&quot;files&quot;&gt;
+                                        &lt;a style=&quot;position: absolute; top: 0px;&quot;&gt;File none&lt;/a&gt;
+                                    &lt;/div&gt;
+                    
+                                    &lt;div id=&quot;soft_windows&quot;&gt;
+                    
+                                        &lt;div class=&quot;child_windows program_manager shape active&quot;&gt;
+                                            &lt;div class=&quot;title&quot;&gt;
+                                                &lt;span&gt;program manager&lt;/span&gt;
+                                            &lt;/div&gt;
+                                            &lt;a class=&quot;close_button hover_red&quot;&gt;&amp;nbsp;✕&amp;nbsp;&lt;/a&gt;
+                                            &lt;a class=&quot;drag_button hover_red&quot;&gt;&amp;nbsp;&darr;&amp;nbsp;&lt;/a&gt;
+                                            &lt;a class=&quot;bigscreen_button hover_red&quot;&gt;&amp;nbsp;□&amp;nbsp;&lt;/a&gt;
+                                            &lt;a class=&quot;minscreen_button hover_red&quot;&gt;&amp;nbsp;❒&amp;nbsp;&lt;/a&gt;
+                                            &lt;a class=&quot;minimization_button hover_red&quot;&gt;&amp;nbsp;―&amp;nbsp;&lt;/a&gt;&lt;br&gt;
+                    
+                                            &lt;div class=&quot;title2&quot;&gt;
+                                                &lt;ul class=&quot;black_text&quot;&gt;
+                                                    &lt;li onclick=&quot;li_menus_close(),li_menu_icon_open()&quot;&gt;icon&lt;/li&gt;
+                                                    &lt;li onclick=&quot;li_menus_close(),li_menu_option_open()&quot;&gt;option&lt;/li&gt;
+                                                    &lt;li onclick=&quot;li_menus_close(),li_menu_window_open()&quot;&gt;window&lt;/li&gt;
+                                                    &lt;li onclick=&quot;li_menus_close(),li_menu_help_open()&quot;&gt;help&lt;/li&gt;
+                                                    &lt;li style=&quot;width: 100%;&quot; onclick=&quot;li_menus_close()&quot;&gt;&lt;/li&gt;
+                                                &lt;/ul&gt;
+                                            &lt;/div&gt;
+                                            &lt;div class=&quot;li_menu_icon&quot;&gt;
+                                                &lt;ul class=&quot;black_text&quot;&gt;
+                                                    &lt;li onclick=&quot;prompt_data_clear()&quot;&gt;nexser finish&lt;/li&gt;
+                                                    &lt;li&gt;test&lt;/li&gt;
+                                                    &lt;li&gt;test&lt;/li&gt;
+                                                &lt;/ul&gt;
+                                            &lt;/div&gt;
+                                            &lt;div class=&quot;li_menu_option&quot;&gt;
+                                                &lt;ul class=&quot;black_text&quot;&gt;
+                                                    &lt;li&gt;test&lt;/li&gt;
+                                                &lt;/ul&gt;
+                                            &lt;/div&gt;
+                                            &lt;div class=&quot;li_menu_window&quot;&gt;
+                                                &lt;ul class=&quot;black_text&quot;&gt;
+                                                    &lt;li&gt;test&lt;/li&gt;
+                                                &lt;/ul&gt;
+                                            &lt;/div&gt;
+                                            &lt;div class=&quot;li_menu_help&quot;&gt;
+                                                &lt;ul class=&quot;black_text&quot;&gt;
+                                                    &lt;li&gt;test&lt;/li&gt;
+                                                &lt;/ul&gt;
+                                            &lt;/div&gt;&lt;br&gt;
+                                            &lt;ul class=&quot;black_text program_list&quot;&gt;
+                                                &lt;li&gt;test&lt;/li&gt;
+                                                &lt;li&gt;test&lt;/li&gt;
+                                                &lt;li&gt;test&lt;/li&gt;
+                                                &lt;li&gt;test&lt;/li&gt;
+                                                &lt;li&gt;test&lt;/li&gt;
+                                                &lt;li&gt;test&lt;/li&gt;
+                                                &lt;li&gt;test&lt;/li&gt;
+                                                &lt;li&gt;test&lt;/li&gt;
+                                                &lt;li&gt;test&lt;/li&gt;
+                                                &lt;li&gt;test&lt;/li&gt;
+                                                &lt;li&gt;test&lt;/li&gt;
+                                            &lt;/ul&gt;&lt;br&gt;
+                                        &lt;/div&gt;
+                    
+                                        &lt;div class=&quot;child_windows main shape active&quot;&gt;
+                                            &lt;div class=&quot;title&quot;&gt;
+                                                &lt;span&gt;main&lt;/span&gt;
+                                            &lt;/div&gt;
+                                            &lt;a class=&quot;close_button hover_red&quot;&gt;&amp;nbsp;✕&amp;nbsp;&lt;/a&gt;
+                                            &lt;a class=&quot;drag_button hover_red&quot;&gt;&amp;nbsp;&darr;&amp;nbsp;&lt;/a&gt;
+                                            &lt;a class=&quot;bigscreen_button hover_red&quot;&gt;&amp;nbsp;□&amp;nbsp;&lt;/a&gt;
+                                            &lt;a class=&quot;minscreen_button hover_red&quot;&gt;&amp;nbsp;❒&amp;nbsp;&lt;/a&gt;
+                                            &lt;a class=&quot;minimization_button hover_red&quot;&gt;&amp;nbsp;―&amp;nbsp;&lt;/a&gt;&lt;br&gt;
+                                            &lt;div class=&quot;li_menu_option&quot;&gt;
+                                                &lt;ul class=&quot;black_text&quot;&gt;
+                                                    &lt;li&gt;test&lt;/li&gt;
+                                                &lt;/ul&gt;
+                                            &lt;/div&gt;
+                                            &lt;div class=&quot;li_menu_window&quot;&gt;
+                                                &lt;ul class=&quot;black_text&quot;&gt;
+                                                    &lt;li&gt;test&lt;/li&gt;
+                                                &lt;/ul&gt;
+                                            &lt;/div&gt;
+                                            &lt;div class=&quot;li_menu_help&quot;&gt;
+                                                &lt;ul class=&quot;black_text&quot;&gt;
+                                                    &lt;li&gt;test&lt;/li&gt;
+                                                &lt;/ul&gt;
+                                            &lt;/div&gt;&lt;br&gt;
+                                            &lt;ul class=&quot;black_text window_main_list&quot;&gt;
+                                                &lt;li&gt;test&lt;/li&gt;
+                                                &lt;li&gt;test&lt;/li&gt;
+                                                &lt;li&gt;test&lt;/li&gt;
+                                                &lt;li&gt;test&lt;/li&gt;
+                                                &lt;li&gt;test&lt;/li&gt;
+                                                &lt;li&gt;test&lt;/li&gt;
+                                                &lt;li&gt;test&lt;/li&gt;
+                                                &lt;li&gt;test&lt;/li&gt;
+                                                &lt;li&gt;test&lt;/li&gt;
+                                                &lt;li&gt;test&lt;/li&gt;
+                                                &lt;li&gt;test&lt;/li&gt;
+                                            &lt;/ul&gt;&lt;br&gt;
+                                        &lt;/div&gt;
+                    
+                                        &lt;div class=&quot;child_windows control_panel shape active&quot;&gt;
+                                            &lt;div class=&quot;title&quot;&gt;
+                                                &lt;span&gt;control panel&lt;/span&gt;
+                                            &lt;/div&gt;
+                                            &lt;a class=&quot;close_button hover_red&quot;&gt;&amp;nbsp;✕&amp;nbsp;&lt;/a&gt;
+                                            &lt;a class=&quot;drag_button hover_red&quot;&gt;&amp;nbsp;&darr;&amp;nbsp;&lt;/a&gt;
+                                            &lt;a class=&quot;bigscreen_button hover_red&quot;&gt;&amp;nbsp;□&amp;nbsp;&lt;/a&gt;
+                                            &lt;a class=&quot;minscreen_button hover_red&quot;&gt;&amp;nbsp;❒&amp;nbsp;&lt;/a&gt;
+                                            &lt;a class=&quot;minimization_button hover_red&quot;&gt;&amp;nbsp;―&amp;nbsp;&lt;/a&gt;&lt;br&gt;
+                                            &lt;div class=&quot;li_menu_option&quot;&gt;
+                                                &lt;ul class=&quot;black_text&quot;&gt;
+                                                    &lt;li&gt;test&lt;/li&gt;
+                                                &lt;/ul&gt;
+                                            &lt;/div&gt;
+                                            &lt;div class=&quot;li_menu_window&quot;&gt;
+                                                &lt;ul class=&quot;black_text&quot;&gt;
+                                                    &lt;li&gt;test&lt;/li&gt;
+                                                &lt;/ul&gt;
+                                            &lt;/div&gt;
+                                            &lt;div class=&quot;li_menu_help&quot;&gt;
+                                                &lt;ul class=&quot;black_text&quot;&gt;
+                                                    &lt;li&gt;test&lt;/li&gt;
+                                                &lt;/ul&gt;
+                                            &lt;/div&gt;&lt;br&gt;
+                                            &lt;ul class=&quot;black_text window_control_list&quot;&gt;
+                                                &lt;li&gt;test&lt;/li&gt;
+                                                &lt;li&gt;test&lt;/li&gt;
+                                                &lt;li&gt;test&lt;/li&gt;
+                                                &lt;li&gt;test&lt;/li&gt;
+                                                &lt;li&gt;test&lt;/li&gt;
+                                                &lt;li&gt;test&lt;/li&gt;
+                                                &lt;li&gt;test&lt;/li&gt;
+                                                &lt;li&gt;test&lt;/li&gt;
+                                                &lt;li&gt;test&lt;/li&gt;
+                                                &lt;li&gt;test&lt;/li&gt;
+                                                &lt;li&gt;test&lt;/li&gt;
+                                            &lt;/ul&gt;&lt;br&gt;
+                                        &lt;/div&gt;
+                    
+                                        &lt;div class=&quot;child_windows version shape active&quot;&gt;
+                                            &lt;div class=&quot;title&quot;&gt;
+                                                &lt;span&gt;version&lt;/span&gt;
+                                            &lt;/div&gt;
+                    
+                                            &lt;a class=&quot;close_button hover_red&quot;&gt;&amp;nbsp;✕&amp;nbsp;&lt;/a&gt;
+                                            &lt;a class=&quot;drag_button hover_red&quot;&gt;&amp;nbsp;&darr;&amp;nbsp;&lt;/a&gt;
+                                            &lt;a class=&quot;bigscreen_button hover_red&quot;&gt;&amp;nbsp;□&amp;nbsp;&lt;/a&gt;
+                                            &lt;a class=&quot;minscreen_button hover_red&quot;&gt;&amp;nbsp;❒&amp;nbsp;&lt;/a&gt;
+                                            &lt;a class=&quot;minimization_button hover_red&quot;&gt;&amp;nbsp;―&amp;nbsp;&lt;/a&gt;&lt;br&gt;
+                                            &lt;div class=&quot;title2&quot;&gt;
+                                                &lt;ul class=&quot;black_text&quot;&gt;
+                                                    &lt;li&gt;test&lt;/li&gt;
+                                                    &lt;li&gt;test&lt;/li&gt;
+                                                    &lt;li&gt;test&lt;/li&gt;
+                                                    &lt;li&gt;test&lt;/li&gt;
+                                                    &lt;li style=&quot;width: 100%;&quot; onclick=&quot;li_menus_close()&quot;&gt;&lt;/li&gt;
+                                                &lt;/ul&gt;
+                                            &lt;/div&gt;
+                                            &lt;div class=&quot;li_menu_option&quot;&gt;
+                                                &lt;ul class=&quot;black_text&quot;&gt;
+                                                    &lt;li&gt;test&lt;/li&gt;
+                                                &lt;/ul&gt;
+                                            &lt;/div&gt;
+                                            &lt;div class=&quot;li_menu_window&quot;&gt;
+                                                &lt;ul class=&quot;black_text&quot;&gt;
+                                                    &lt;li&gt;test&lt;/li&gt;
+                                                &lt;/ul&gt;
+                                            &lt;/div&gt;
+                                            &lt;div class=&quot;li_menu_help&quot;&gt;
+                                                &lt;ul class=&quot;black_text&quot;&gt;
+                                                    &lt;li&gt;test&lt;/li&gt;
+                                                &lt;/ul&gt;
+                                            &lt;/div&gt;&lt;br&gt;
+                                            &lt;p&gt;version 0.0.1&lt;/p&gt;&lt;br&gt;
+                                        &lt;/div&gt;
+                    
+                                        &lt;div class=&quot;child_windows color shape active&quot;&gt;
+                                            &lt;div class=&quot;title&quot;&gt;
+                                                &lt;span&gt;color&lt;/span&gt;
+                                            &lt;/div&gt;
+                                            &lt;a class=&quot;close_button hover_red&quot;&gt;&amp;nbsp;✕&amp;nbsp;&lt;/a&gt;
+                                            &lt;a class=&quot;drag_button hover_red&quot;&gt;&amp;nbsp;&darr;&amp;nbsp;&lt;/a&gt;
+                                            &lt;a class=&quot;bigscreen_button hover_red&quot;&gt;&amp;nbsp;□&amp;nbsp;&lt;/a&gt;
+                                            &lt;a class=&quot;minscreen_button hover_red&quot;&gt;&amp;nbsp;❒&amp;nbsp;&lt;/a&gt;
+                                            &lt;a class=&quot;minimization_button hover_red&quot;&gt;&amp;nbsp;―&amp;nbsp;&lt;/a&gt;&lt;br&gt;
+                                            &lt;p&gt;&lt;input type=&quot;text&quot; id=&quot;bkcolor&quot; size=&quot;40&quot; placeholder=&quot;backcolor red, skyblue, #ffcc00 ...&quot;&gt;
+                                            &lt;/p&gt;
+                                            &lt;p&gt;&lt;input type=&quot;text&quot; id=&quot;color&quot; size=&quot;40&quot; placeholder=&quot;text_color red, skyblue, #ffcc00 ...&quot;&gt;
+                                            &lt;/p&gt;
+                                            &lt;p&gt;&lt;button class=&quot;button hover_blue&quot; type=&quot;button&quot; id=&quot;changeBtn&quot;&gt;color set&lt;/button&gt;&lt;/p&gt;
+                                            &lt;button class=&quot;button hover_blue&quot; onclick=&quot;colordata_clear()&quot;&gt;colors data clear&lt;/button&gt;
+                                        &lt;/div&gt;
+                    
+                                    &lt;/div&gt;
+                    
+                                    &lt;div id=&quot;taskbar_group&quot;&gt;
+                                        &lt;div id=&quot;taskbar&quot;&gt;
+                                            &lt;a id=&quot;startbtn&quot; class=&quot;start_button border hover_blue&quot;&gt;&amp;nbsp;start&amp;nbsp;&lt;/a&gt;
+                                            &lt;div class=&quot;taskbar_buttons&quot;&gt;
+                                                &lt;ul&gt;
+                                                    &lt;li class=&quot;button hover_blue test_button&quot;&gt;main&lt;/li&gt;
+                                                    &lt;li class=&quot;button hover_blue test_button2&quot;&gt;program_manager&lt;/li&gt;
+                                                    &lt;li class=&quot;button hover_blue test_button3&quot;&gt;control_panel&lt;/li&gt;
+                                                    &lt;li class=&quot;button hover_blue test_button4&quot;&gt;color&lt;/li&gt;
+                                                    &lt;li class=&quot;button hover_blue test_button5&quot;&gt;version&lt;/li&gt;
+                                                &lt;/ul&gt;
+                                            &lt;/div&gt;
+                                        &lt;/div&gt;
+                                        &lt;div id=&quot;start_menu&quot; class=&quot;parent_start_menu&quot;&gt;
+                                            &lt;div class=&quot;child_start_menu border&quot;&gt;
+                                                &lt;ul&gt;
+                                                    &lt;li class=&quot;title&quot;&gt;nexser&lt;/li&gt;&lt;br&gt;
+                                                    &lt;li class=&quot;test_button&quot;&gt;main&lt;/li&gt;
+                                                    &lt;li class=&quot;test_button2&quot;&gt;program_manager&lt;/li&gt;
+                                                    &lt;li class=&quot;test_button3&quot;&gt;control_panel&lt;/li&gt;
+                                                    &lt;li class=&quot;test_button4&quot;&gt;color&lt;/li&gt;
+                                                    &lt;li class=&quot;test_button5&quot;&gt;version&lt;/li&gt;
+                                                    &lt;li onclick=&quot;prompt_data_clear()&quot;&gt;nexser finish&lt;/li&gt;
+                                                &lt;/ul&gt;
+                                            &lt;/div&gt;
+                                        &lt;/div&gt;
+                                    &lt;/div&gt;
+                    
+                                &lt;/div&gt;
+                    
+                            &lt;/div&gt;
+                    
                         &lt;/div&gt;
-                        &lt;a class=&quot;close_button hover_red&quot;&gt;&amp;nbsp;✕&amp;nbsp;&lt;/a&gt;
-                        &lt;a class=&quot;drag_button hover_red&quot;&gt;&amp;nbsp;&darr;&amp;nbsp;&lt;/a&gt;
-                        &lt;a class=&quot;bigscreen_button hover_red&quot;&gt;&amp;nbsp;□&amp;nbsp;&lt;/a&gt;
-                        &lt;a class=&quot;minscreen_button hover_red&quot;&gt;&amp;nbsp;❒&amp;nbsp;&lt;/a&gt;
-                        &lt;a class=&quot;minimization_button hover_red&quot;&gt;&amp;nbsp;―&amp;nbsp;&lt;/a&gt;&lt;br&gt;
-
-                        &lt;div class=&quot;title2&quot;&gt;
-                            &lt;ul class=&quot;black_text&quot;&gt;
-                                &lt;li onclick=&quot;li_menus_close(),li_menu_icon_open()&quot;&gt;icon&lt;/li&gt;
-                                &lt;li onclick=&quot;li_menus_close(),li_menu_option_open()&quot;&gt;option&lt;/li&gt;
-                                &lt;li onclick=&quot;li_menus_close(),li_menu_window_open()&quot;&gt;window&lt;/li&gt;
-                                &lt;li onclick=&quot;li_menus_close(),li_menu_help_open()&quot;&gt;help&lt;/li&gt;
-                                &lt;li style=&quot;width: 100%;&quot; onclick=&quot;li_menus_close()&quot;&gt;&lt;/li&gt;
-                            &lt;/ul&gt;
-                        &lt;/div&gt;
-                        &lt;div class=&quot;li_menu_icon&quot;&gt;
-                            &lt;ul class=&quot;black_text&quot;&gt;
-                                &lt;li onclick=&quot;prompt_data_clear()&quot;&gt;nexser finish&lt;/li&gt;
-                                &lt;li&gt;test&lt;/li&gt;
-                                &lt;li&gt;test&lt;/li&gt;
-                            &lt;/ul&gt;
-                        &lt;/div&gt;
-                        &lt;div class=&quot;li_menu_option&quot;&gt;
-                            &lt;ul class=&quot;black_text&quot;&gt;
-                                &lt;li&gt;test&lt;/li&gt;
-                            &lt;/ul&gt;
-                        &lt;/div&gt;
-                        &lt;div class=&quot;li_menu_window&quot;&gt;
-                            &lt;ul class=&quot;black_text&quot;&gt;
-                                &lt;li&gt;test&lt;/li&gt;
-                            &lt;/ul&gt;
-                        &lt;/div&gt;
-                        &lt;div class=&quot;li_menu_help&quot;&gt;
-                            &lt;ul class=&quot;black_text&quot;&gt;
-                                &lt;li&gt;test&lt;/li&gt;
-                            &lt;/ul&gt;
-                        &lt;/div&gt;&lt;br&gt;
-                        &lt;ul class=&quot;black_text program_list&quot;&gt;
-                            &lt;li&gt;test&lt;/li&gt;
-                            &lt;li&gt;test&lt;/li&gt;
-                            &lt;li&gt;test&lt;/li&gt;
-                            &lt;li&gt;test&lt;/li&gt;
-                            &lt;li&gt;test&lt;/li&gt;
-                            &lt;li&gt;test&lt;/li&gt;
-                            &lt;li&gt;test&lt;/li&gt;
-                            &lt;li&gt;test&lt;/li&gt;
-                            &lt;li&gt;test&lt;/li&gt;
-                            &lt;li&gt;test&lt;/li&gt;
-                            &lt;li&gt;test&lt;/li&gt;
-                        &lt;/ul&gt;&lt;br&gt;
-                    &lt;/div&gt;
-
-                    &lt;div class=&quot;child_windows main shape active&quot;&gt;
-                        &lt;div class=&quot;title&quot;&gt;
-                            &lt;span&gt;main&lt;/span&gt;
-                        &lt;/div&gt;
-                        &lt;a class=&quot;close_button hover_red&quot;&gt;&amp;nbsp;✕&amp;nbsp;&lt;/a&gt;
-                        &lt;a class=&quot;drag_button hover_red&quot;&gt;&amp;nbsp;&darr;&amp;nbsp;&lt;/a&gt;
-                        &lt;a class=&quot;bigscreen_button hover_red&quot;&gt;&amp;nbsp;□&amp;nbsp;&lt;/a&gt;
-                        &lt;a class=&quot;minscreen_button hover_red&quot;&gt;&amp;nbsp;❒&amp;nbsp;&lt;/a&gt;
-                        &lt;a class=&quot;minimization_button hover_red&quot;&gt;&amp;nbsp;―&amp;nbsp;&lt;/a&gt;&lt;br&gt;
-                        &lt;div class=&quot;li_menu_option&quot;&gt;
-                            &lt;ul class=&quot;black_text&quot;&gt;
-                                &lt;li&gt;test&lt;/li&gt;
-                            &lt;/ul&gt;
-                        &lt;/div&gt;
-                        &lt;div class=&quot;li_menu_window&quot;&gt;
-                            &lt;ul class=&quot;black_text&quot;&gt;
-                                &lt;li&gt;test&lt;/li&gt;
-                            &lt;/ul&gt;
-                        &lt;/div&gt;
-                        &lt;div class=&quot;li_menu_help&quot;&gt;
-                            &lt;ul class=&quot;black_text&quot;&gt;
-                                &lt;li&gt;test&lt;/li&gt;
-                            &lt;/ul&gt;
-                        &lt;/div&gt;&lt;br&gt;
-                        &lt;ul class=&quot;black_text window_main_list&quot;&gt;
-                            &lt;li&gt;test&lt;/li&gt;
-                            &lt;li&gt;test&lt;/li&gt;
-                            &lt;li&gt;test&lt;/li&gt;
-                            &lt;li&gt;test&lt;/li&gt;
-                            &lt;li&gt;test&lt;/li&gt;
-                            &lt;li&gt;test&lt;/li&gt;
-                            &lt;li&gt;test&lt;/li&gt;
-                            &lt;li&gt;test&lt;/li&gt;
-                            &lt;li&gt;test&lt;/li&gt;
-                            &lt;li&gt;test&lt;/li&gt;
-                            &lt;li&gt;test&lt;/li&gt;
-                        &lt;/ul&gt;&lt;br&gt;
-                    &lt;/div&gt;
-
-                    &lt;div class=&quot;child_windows control_panel shape active&quot;&gt;
-                        &lt;div class=&quot;title&quot;&gt;
-                            &lt;span&gt;control panel&lt;/span&gt;
-                        &lt;/div&gt;
-                        &lt;a class=&quot;close_button hover_red&quot;&gt;&amp;nbsp;✕&amp;nbsp;&lt;/a&gt;
-                        &lt;a class=&quot;drag_button hover_red&quot;&gt;&amp;nbsp;&darr;&amp;nbsp;&lt;/a&gt;
-                        &lt;a class=&quot;bigscreen_button hover_red&quot;&gt;&amp;nbsp;□&amp;nbsp;&lt;/a&gt;
-                        &lt;a class=&quot;minscreen_button hover_red&quot;&gt;&amp;nbsp;❒&amp;nbsp;&lt;/a&gt;
-                        &lt;a class=&quot;minimization_button hover_red&quot;&gt;&amp;nbsp;―&amp;nbsp;&lt;/a&gt;&lt;br&gt;
-                        &lt;div class=&quot;li_menu_option&quot;&gt;
-                            &lt;ul class=&quot;black_text&quot;&gt;
-                                &lt;li&gt;test&lt;/li&gt;
-                            &lt;/ul&gt;
-                        &lt;/div&gt;
-                        &lt;div class=&quot;li_menu_window&quot;&gt;
-                            &lt;ul class=&quot;black_text&quot;&gt;
-                                &lt;li&gt;test&lt;/li&gt;
-                            &lt;/ul&gt;
-                        &lt;/div&gt;
-                        &lt;div class=&quot;li_menu_help&quot;&gt;
-                            &lt;ul class=&quot;black_text&quot;&gt;
-                                &lt;li&gt;test&lt;/li&gt;
-                            &lt;/ul&gt;
-                        &lt;/div&gt;&lt;br&gt;
-                        &lt;ul class=&quot;black_text window_control_list&quot;&gt;
-                            &lt;li&gt;test&lt;/li&gt;
-                            &lt;li&gt;test&lt;/li&gt;
-                            &lt;li&gt;test&lt;/li&gt;
-                            &lt;li&gt;test&lt;/li&gt;
-                            &lt;li&gt;test&lt;/li&gt;
-                            &lt;li&gt;test&lt;/li&gt;
-                            &lt;li&gt;test&lt;/li&gt;
-                            &lt;li&gt;test&lt;/li&gt;
-                            &lt;li&gt;test&lt;/li&gt;
-                            &lt;li&gt;test&lt;/li&gt;
-                            &lt;li&gt;test&lt;/li&gt;
-                        &lt;/ul&gt;&lt;br&gt;
-                    &lt;/div&gt;
-
-                    &lt;div class=&quot;child_windows version shape active&quot;&gt;
-                        &lt;div class=&quot;title&quot;&gt;
-                            &lt;span&gt;version&lt;/span&gt;
-                        &lt;/div&gt;
-
-                        &lt;a class=&quot;close_button hover_red&quot;&gt;&amp;nbsp;✕&amp;nbsp;&lt;/a&gt;
-                        &lt;a class=&quot;drag_button hover_red&quot;&gt;&amp;nbsp;&darr;&amp;nbsp;&lt;/a&gt;
-                        &lt;a class=&quot;bigscreen_button hover_red&quot;&gt;&amp;nbsp;□&amp;nbsp;&lt;/a&gt;
-                        &lt;a class=&quot;minscreen_button hover_red&quot;&gt;&amp;nbsp;❒&amp;nbsp;&lt;/a&gt;
-                        &lt;a class=&quot;minimization_button hover_red&quot;&gt;&amp;nbsp;―&amp;nbsp;&lt;/a&gt;&lt;br&gt;
-                        &lt;div class=&quot;title2&quot;&gt;
-                            &lt;ul class=&quot;black_text&quot;&gt;
-                                &lt;li&gt;test&lt;/li&gt;
-                                &lt;li&gt;test&lt;/li&gt;
-                                &lt;li&gt;test&lt;/li&gt;
-                                &lt;li&gt;test&lt;/li&gt;
-                                &lt;li style=&quot;width: 100%;&quot; onclick=&quot;li_menus_close()&quot;&gt;&lt;/li&gt;
-                            &lt;/ul&gt;
-                        &lt;/div&gt;
-                        &lt;div class=&quot;li_menu_option&quot;&gt;
-                            &lt;ul class=&quot;black_text&quot;&gt;
-                                &lt;li&gt;test&lt;/li&gt;
-                            &lt;/ul&gt;
-                        &lt;/div&gt;
-                        &lt;div class=&quot;li_menu_window&quot;&gt;
-                            &lt;ul class=&quot;black_text&quot;&gt;
-                                &lt;li&gt;test&lt;/li&gt;
-                            &lt;/ul&gt;
-                        &lt;/div&gt;
-                        &lt;div class=&quot;li_menu_help&quot;&gt;
-                            &lt;ul class=&quot;black_text&quot;&gt;
-                                &lt;li&gt;test&lt;/li&gt;
-                            &lt;/ul&gt;
-                        &lt;/div&gt;&lt;br&gt;
-                        &lt;p&gt;version 0.0.1&lt;/p&gt;&lt;br&gt;
-                    &lt;/div&gt;
-
-                    &lt;div class=&quot;child_windows color shape active&quot;&gt;
-                        &lt;div class=&quot;title&quot;&gt;
-                            &lt;span&gt;color&lt;/span&gt;
-                        &lt;/div&gt;
-                        &lt;a class=&quot;close_button hover_red&quot;&gt;&amp;nbsp;✕&amp;nbsp;&lt;/a&gt;
-                        &lt;a class=&quot;drag_button hover_red&quot;&gt;&amp;nbsp;&darr;&amp;nbsp;&lt;/a&gt;
-                        &lt;a class=&quot;bigscreen_button hover_red&quot;&gt;&amp;nbsp;□&amp;nbsp;&lt;/a&gt;
-                        &lt;a class=&quot;minscreen_button hover_red&quot;&gt;&amp;nbsp;❒&amp;nbsp;&lt;/a&gt;
-                        &lt;a class=&quot;minimization_button hover_red&quot;&gt;&amp;nbsp;―&amp;nbsp;&lt;/a&gt;&lt;br&gt;
-                        &lt;p&gt;&lt;input type=&quot;text&quot; id=&quot;bkcolor&quot; size=&quot;40&quot; placeholder=&quot;backcolor red, skyblue, #ffcc00 ...&quot;&gt;
-                        &lt;/p&gt;
-                        &lt;p&gt;&lt;input type=&quot;text&quot; id=&quot;color&quot; size=&quot;40&quot; placeholder=&quot;text_color red, skyblue, #ffcc00 ...&quot;&gt;
-                        &lt;/p&gt;
-                        &lt;p&gt;&lt;button class=&quot;button hover_blue&quot; type=&quot;button&quot; id=&quot;changeBtn&quot;&gt;color set&lt;/button&gt;&lt;/p&gt;
-                        &lt;button class=&quot;button hover_blue&quot; onclick=&quot;colordata_clear()&quot;&gt;colors data clear&lt;/button&gt;
-                    &lt;/div&gt;
-
-                &lt;/div&gt;
-
-                &lt;div id=&quot;taskbar_group&quot;&gt;
-                    &lt;div id=&quot;taskbar&quot;&gt;
-                        &lt;a id=&quot;startbtn&quot; class=&quot;start_button border hover_blue&quot;&gt;&amp;nbsp;start&amp;nbsp;&lt;/a&gt;
-                        &lt;div class=&quot;taskbar_buttons&quot;&gt;
-                            &lt;ul&gt;
-                                &lt;li class=&quot;button hover_blue test_button&quot;&gt;main&lt;/li&gt;
-                                &lt;li class=&quot;button hover_blue test_button2&quot;&gt;program_manager&lt;/li&gt;
-                                &lt;li class=&quot;button hover_blue test_button3&quot;&gt;control_panel&lt;/li&gt;
-                                &lt;li class=&quot;button hover_blue test_button4&quot;&gt;color&lt;/li&gt;
-                                &lt;li class=&quot;button hover_blue test_button5&quot;&gt;version&lt;/li&gt;
-                            &lt;/ul&gt;
-                        &lt;/div&gt;
-                    &lt;/div&gt;
-                    &lt;div id=&quot;start_menu&quot; class=&quot;parent_start_menu&quot;&gt;
-                        &lt;div class=&quot;child_start_menu border&quot;&gt;
-                            &lt;ul&gt;
-                                &lt;li class=&quot;title&quot;&gt;nexser&lt;/li&gt;&lt;br&gt;
-                                &lt;li class=&quot;test_button&quot;&gt;main&lt;/li&gt;
-                                &lt;li class=&quot;test_button2&quot;&gt;program_manager&lt;/li&gt;
-                                &lt;li class=&quot;test_button3&quot;&gt;control_panel&lt;/li&gt;
-                                &lt;li class=&quot;test_button4&quot;&gt;color&lt;/li&gt;
-                                &lt;li class=&quot;test_button5&quot;&gt;version&lt;/li&gt;
-                                &lt;li onclick=&quot;prompt_data_clear()&quot;&gt;nexser finish&lt;/li&gt;
-                            &lt;/ul&gt;
-                        &lt;/div&gt;
-                    &lt;/div&gt;
-                &lt;/div&gt;
-
-            &lt;/div&gt;
-
-        &lt;/div&gt;
-
-    &lt;/div&gt;
-
-&lt;/body&gt;
-&lt;style&gt;
-    * {
-        padding: 0px;
-        margin: 0px;
-    }
-
-    html {
-        touch-action: manipulation;
-        -webkit-user-select: none;
-        -moz-user-select: none;
-        -ms-user-select: none;
-        user-select: none;
-    }
-
-    body {
-        width: 100%;
-        height: 100vh;
-        font-family: serif;
-        background-color: black;
-    }
-
-    /* li */
-    li {
-        list-style: none;
-    }
-
-    li:hover {
-        background: darkblue;
-        color: white;
-    }
-
-    /* hover */
-
-    .hover_blue:hover {
-        background: darkblue;
-        color: white;
-    }
-
-    .hover_red:hover {
-        background: red;
-        color: white;
-    }
-
-    /* text_color */
-    .black_text {
-        color: black;
-    }
-
-    /* text_design */
-
-    .bold {
-        font-weight: bold;
-    }
-
-    /* border */
-
-    .border {
-        border-top: solid 1.5px white;
-        border-right: solid 1.5px black;
-        border-left: solid 1.5px white;
-        border-bottom: solid 1.5px black;
-    }
-
-    /* desktop */
-
-    #prompt {
-        font-family: system-ui;
-        color: white;
-    }
-
-    .nexser_group {
-        display: block;
-    }
-
-    #prompt .name {
-        width: 100%;
-        background: black;
-        border: none;
-        outline: none;
-        color: white;
-    }
-
-    /* nexser */
-
-    #nexser {
-        width: 100%;
-        height: 100vh;
-        display: none;
-        background-color: darkgray;
-    }
-
-    /* desktop */
-
-    #desktop {
-        display: none;
-    }
-
-    /* buttons */
-
-    .button {
-        display: inline-block;
-        border-top: solid 1.5px white;
-        border-right: solid 1.5px black;
-        border-left: solid 1.5px white;
-        border-bottom: solid 1.5px black;
-        color: black;
-        background: darkgray;
-    }
-
-    /* files */
-
-
-
-
-    /* taskbar */
-    #taskbar {
-        width: 100%;
-        height: 40px;
-        background-color: #999999;
-        border-top: solid 2px black;
-        position: absolute;
-        bottom: 0;
-        z-index: 999999;
-    }
-
-    #taskbar .start_button {
-        position: absolute;
-        bottom: 5px;
-        left: 10px;
-    }
-
-    #taskbar .taskbar_buttons {
-        display: inline-block;
-        position: absolute;
-        bottom: 5px;
-        left: 100px;
-    }
-
-    #taskbar .button {
-        margin-left: 5px;
-    }
-
-    /* start_menu */
-    .parent_start_menu {
-        display: none;
-    }
-
-    .child_start_menu {
-        display: block;
-        background: #999999;
-        position: absolute;
-        bottom: 40px;
-        z-index: 999998;
-    }
-
-    .child_start_menu .title {
-        background-color: #333333;
-        position: absolute;
-        color: white;
-        text-align: center;
-        pointer-events: none;
-    }
-
-    /* window */
-    #soft_windows {
-        width: 100%;
-        height: 100vh;
-    }
-
-    .child_windows {
-        display: block;
-        width: auto;
-        height: auto;
-        border: solid 2px black;
-        background: white;
-        position: absolute;
-        top: 25%;
-        left: 25%;
-    }
-
-    .child_windows.active {
-        display: none;
-    }
-
-    .child_windows.big {
-        height: 99.45%;
-        width: 99.7%;
-        border: solid 2px black;
-        background: white;
-        position: static;
-    }
-
-    .child_windows .title {
-        width: 100%;
-        background-color: darkblue;
-        position: absolute;
-        top: 0;
-        color: white;
-        text-align: center;
-        pointer-events: none;
-    }
-
-    .child_windows.big .title {
-        width: 99.85%;
-        background-color: darkblue;
-        position: absolute;
-        top: 0;
-        color: white;
-        text-align: center;
-        pointer-events: none;
-    }
-
-    .child_windows.drag .title {
-        background: lime;
-    }
-
-    .child_windows.big .minscreen_button {
-        display: block;
-    }
-
-    .child_windows.big .bigscreen_button {
-        display: none;
-    }
-
-    /* icon */
-
-    /* title */
-    .title {
-        width: 100%;
-        background-color: darkblue;
-        position: absolute;
-        top: 0;
-        color: white;
-        text-align: center;
-        pointer-events: none;
-    }
-
-    .title2 ul {
-        background: whitesmoke;
-        display: flex;
-        border-bottom: solid 1px black;
-    }
-
-    .title2 li {
-        padding-left: 20px;
-        padding-right: 20px;
-        text-align: center;
-    }
-
-    /* title_buttons */
-    .close_button {
-        background: darkgray;
-        position: absolute;
-        top: 3.5px;
-        right: 3.5px;
-        text-align: center;
-        font-size: 10px;
-        border-top: solid 1.5px white;
-        border-right: solid 1.5px black;
-        border-left: solid 1.5px white;
-        border-bottom: solid 1.5px black;
-    }
-
-    .drag_button {
-        background: darkgray;
-        position: absolute;
-        top: 3.5px;
-        right: 20.5px;
-        text-align: center;
-        font-size: 10px;
-        border-top: solid 1.5px white;
-        border-right: solid 1.5px black;
-        border-left: solid 1.5px white;
-        border-bottom: solid 1.5px black;
-    }
-
-    .bigscreen_button {
-        background: darkgray;
-        position: absolute;
-        top: 3.5px;
-        left: 3.5px;
-        text-align: center;
-        font-size: 10px;
-        border-top: solid 1.5px white;
-        border-right: solid 1.5px black;
-        border-left: solid 1.5px white;
-        border-bottom: solid 1.5px black;
-    }
-
-    .minscreen_button {
-        display: none;
-        background: darkgray;
-        position: absolute;
-        top: 3.5px;
-        left: 3.5px;
-        text-align: center;
-        font-size: 10px;
-        border-top: solid 1.5px white;
-        border-right: solid 1.5px black;
-        border-left: solid 1.5px white;
-        border-bottom: solid 1.5px black;
-    }
-
-    .minimization_button {
-        background: darkgray;
-        position: absolute;
-        top: 3.5px;
-        left: 22px;
-        text-align: center;
-        font-size: 10px;
-        border-top: solid 1.5px white;
-        border-right: solid 1.5px black;
-        border-left: solid 1.5px white;
-        border-bottom: solid 1.5px black;
-    }
-
-    /* li_menus */
-    .li_menu_icon {
-        display: none;
-        width: 30%;
-        background: white;
-        border: solid 1px black;
-        position: absolute;
-    }
-
-    .li_menu_option {
-        display: none;
-        width: 30%;
-        background: white;
-        border: solid 1px black;
-        position: absolute;
-        left: 70px;
-    }
-
-    .li_menu_window {
-        display: none;
-        width: 30%;
-        background: white;
-        border: solid 1px black;
-        position: absolute;
-        left: 155px;
-    }
-
-    .li_menu_help {
-        display: none;
-        width: 30%;
-        background: white;
-        border: solid 1px black;
-        position: absolute;
-        left: 250px;
-    }
-
-    /*list */
-    .program_list {
-        column-count: 4;
-    }
-
-    .window_main_list {
-        column-count: 4;
-    }
-
-    .window_control_list {
-        column-count: 6;
-    }
-&lt;/style&gt;
-&lt;script text=&quot;javascript&quot;&gt;
-    var ua = navigator.userAgent;
-    if (!(ua.indexOf(&#039;iPhone&#039;) &gt; 0 || ua.indexOf(&#039;iPad&#039;) &gt; 0 || ua.indexOf(&#039;Android&#039;) &gt; 0 || ua.indexOf(&#039;Mobile&#039;) &gt; 0)) {
-
-        const start = document.querySelector(&#039;#startbtn&#039;)
-        const parent_start_menu = document.querySelector(&#039;#start_menu&#039;)
-        const taskbar = document.querySelector(&#039;#taskbar&#039;);
-
-        const nameText = document.querySelector(&#039;.name&#039;);
-        const msg = document.querySelector(&#039;.test_name&#039;);
-        const prompt = document.getElementById(&#039;prompt&#039;);
-        const prompt_text = document.querySelector(&#039;.prompt_text&#039;);
-        const memory = document.querySelector(&#039;.memory&#039;);
-        const userelement = document.querySelector(&#039;.user&#039;);
-        const nexser = document.getElementById(&#039;nexser&#039;);
-        const desktop = document.getElementById(&#039;desktop&#039;);
-        const soft_windows = document.getElementById(&#039;soft_windows&#039;);
-        const title = document.querySelector(&#039;.title&#039;);
-        const z_index = document.querySelector(&#039;.z_index&#039;);
-
-        const li_menu_icon = document.querySelector(&#039;.li_menu_icon&#039;);
-        const li_menu_option = document.querySelector(&#039;.li_menu_option&#039;);
-        const li_menu_window = document.querySelector(&#039;.li_menu_window&#039;);
-        const li_menu_help = document.querySelector(&#039;.li_menu_help&#039;);
-
-        // soft_windows
-        const child_windows = document.querySelector(&#039;.child_windows&#039;);
-
-        const main = document.querySelector(&#039;.main&#039;);
-        const program = document.querySelector(&#039;.program_manager&#039;);
-        const control = document.querySelector(&#039;.control_panel&#039;);
-        const color_menu = document.querySelector(&#039;.color&#039;);
-        const version = document.querySelector(&#039;.version&#039;);
-
-        // start.addEventListener(&#039;mouseover&#039;, function () {
-        //     // マウスが要素に乗った際の処理
-        //     start_menu.style.display = &quot;block&quot;
-        //     start.addEventListener(&#039;mouseleave&#039;, function () {
-        //         // マウスが要素に乗った際の処理
-        //         start_menu.style.display = &quot;none&quot;
-        //     });
-        // });
-        start.addEventListener(&#039;click&#039;, function () {
-            if (start_menu.style.display == &quot;block&quot;) {
-                // noneで非表示
-                start_menu.style.display = &quot;none&quot;;
-            } else {
-                // blockで表示
-                start_menu.style.display = &quot;block&quot;;
-            }
-        })
-        soft_windows.addEventListener(&#039;mousedown&#039;, function () {
-            console.log(&quot;test&quot;);
-            start_menu.style.display = &quot;none&quot;;
-        });
-
-        // setInterval(() =&gt; {
-        //     console.log(largestZIndex);
-        // }, 1000);
-
-        window.addEventListener(&#039;load&#039;, load_nexser);
-        function load_nexser() {
-            if (localStorage.getItem(&#039;prompt_data&#039;)) {
-                prompt.style.display = &quot;none&quot;;
-                nexser.style.display = &quot;block&quot;;
-                desktop.style.display = &quot;block&quot;
-            } else {
-                prompt.style.display = &quot;block&quot;;
-                nexser.style.display = &quot;none&quot;;
-                desktop.style.display = &quot;none&quot;;
-                document.getElementById(&#039;focus&#039;).focus();
-            }
-            taskbar_none()
-        }
-
-        function taskbar_none() {
-            if (localStorage.getItem(&#039;data_taskbar_none&#039;)) {
-                taskbar.style.display = &quot;none&quot;;
-                program.classList.remove(&#039;active&#039;);
-            }
-        }
-
-        function prompt_data_clear() {
-            localStorage.removeItem(&#039;prompt_data&#039;);
-            localStorage.removeItem(&#039;data_taskbar_none&#039;);
-            window.location = &#039;&#039;
-        }
-
-        function colordata_clear() {
-            localStorage.removeItem(KEY_COLOR, color);
-            localStorage.removeItem(KEY_BKCOLOR, bkcolor);
-        }
-
-        document.addEventListener(&#039;DOMContentLoaded&#039;, pageLoad)
-        function pageLoad() {
-            let textbox = document.querySelector(&#039;.name&#039;);
-            textbox.addEventListener(&#039;keydown&#039;, enterKeyPress);
-            function enterKeyPress(event) {
-                if (event.key === &#039;Enter&#039;) {
-                    butotnClick()
-                }
-            }
-        }
-        function butotnClick() {
-            msg.innerText = &#039;\b&#039; + nameText.value + &#039;&#039;;
-            prompt_text_check();
-        }
-
-        function prompt_text_check() {
-            const prompt_text2 = document.getElementById(&#039;focus&#039;);
-            const prompt_text3 = prompt_text2.value;
-            switch (prompt_text3) {
-                case &#039;&#039;:
-                    userelement.textContent = &quot;&quot;;
-                    document.querySelector(&#039;.prompt_error_text&#039;).textContent = &quot;&quot;;
-                    document.querySelector(&#039;.help&#039;).textContent = &quot;&quot;;
-                    msg.innerText = &quot;&quot;;
-                    prompt_text.style.color = &quot;&quot;;
-                    break;
-                case &#039;nexser/open&#039;:
-                    const prompt_data = document.prompt_text_form.prompt_text.value;
-                    localStorage.setItem(&#039;prompt_data&#039;, prompt_data);
-                    prompt_text.style.color = &quot;yellow&quot;;
-                    document.getElementsByClassName(&#039;name&#039;)[0].value = &quot;nexserを起動しています&quot;;
-                    document.querySelector(&#039;.prompt_error_text&#039;).textContent = &quot;success&quot;;
-                    setTimeout(nexser_start, 1000);
-                    break;
-                case &#039;debug&#039;:
-                    document.querySelector(&#039;.prompt_error_text&#039;).textContent = &quot;&quot;;
-                    debug();
-                    document.querySelector(&#039;.help&#039;).textContent = &quot;&quot;;
-                    msg.innerText = &quot;&quot;;
-                    prompt_text.style.color = &quot;&quot;;
-                    break;
-                case &#039;help&#039;:
-                    document.querySelector(&#039;.prompt_error_text&#039;).textContent = &quot;&quot;;
-                    document.querySelector(&#039;.help&#039;).textContent = &quot;nexser/open&quot;;
-                    msg.innerText = &quot;&quot;;
-                    prompt_text.style.color = &quot;&quot;;
-                    break;
-                case &#039;windows95/sound/play&#039;:
-                    document.querySelector(&#039;.prompt_error_text&#039;).textContent = &quot;&quot;;
-                    sound();
-                    prompt_text.style.color = &quot;&quot;;
-                    document.querySelector(&#039;.prompt_error_text&#039;).textContent = &quot;&quot;;
-                    break;
-                case &#039;screen/full&#039;:
-                    document.querySelector(&#039;.prompt_error_text&#039;).textContent = &quot;&quot;;
-                    full();
-                    prompt_text.style.color = &quot;&quot;;
-                    break;
-                case &#039;screen/min&#039;:
-                    document.querySelector(&#039;.prompt_error_text&#039;).textContent = &quot;&quot;;
-                    min();
-                    prompt_text.style.color = &quot;&quot;;
-                    break;
-                case &#039;taskbar/none&#039;:
-                    const data_taskbar_none = document.prompt_text_form.prompt_text.value;
-                    localStorage.setItem(&#039;data_taskbar_none&#039;, data_taskbar_none);
-                    prompt_text.style.color = &quot;&quot;;
-                    break;
-                default:
-                    document.querySelector(&#039;.prompt_error_text&#039;).textContent = &quot;コマンドが違います!&quot;;
-                    document.querySelector(&#039;.help&#039;).textContent = &quot;&quot;;
-                    msg.innerText = &quot;&quot;;
-                    prompt_text.style.color = &quot;red&quot;;
-                    break;
-            }
-            // console.log(abc.value)
-
-
-        }
-        function debug() {
-            userelement.insertAdjacentHTML(&#039;afterend&#039;, &#039;&lt;p class=&quot;white user&quot;&gt;BROWSER: &#039; + navigator.appName + &#039;&lt;br&gt;&#039;
-                + &#039;VERSION: &#039; + navigator.appVersion + &#039;&lt;br&gt;&#039; + &#039;USER: &#039; + navigator.userAgent + &#039;&lt;br&gt;&#039; + &#039;WIDTH: &#039; + screen.width + &#039;&lt;br&gt;&#039;
-                + &#039;HEIGHT: &#039; + screen.height + &#039;&lt;br&gt;&#039; + &#039;BIT: &#039; + screen.colorDepth + &#039;&lt;/p&gt;&#039;);
-        }
-        setInterval(() =&gt; {
-            navigator.getBattery().then(function (battery) {
-                document.querySelector(&#039;.level&#039;).innerHTML = battery.level;
-                document.querySelector(&#039;.charging&#039;).innerHTML = battery.charging;
-                document.querySelector(&#039;.chargingTime&#039;).innerHTML = battery.chargingTime;
-                document.querySelector(&#039;.dischargingTime&#039;).innerHTML = battery.dischargingTime;
-            });
-            memory.textContent = (`Memory:   ${(performance.memory.usedJSHeapSize / 1024).toFixed(2)}KB`);
-        }, 100);
-
-        function nexser_start() {
-            prompt.style.display = &quot;none&quot;;
-            setTimeout(function () {
-                nexser.style.display = &quot;block&quot;;
-                sound()
-                setTimeout(function () {
-                    taskbar_none()
-                    desktop.style.display = &quot;block&quot;;
-                }, 1000);
-            }, 1000);
-        }
-
-
-
-        function li_menu_icon_open() {
-            li_menu_icon.style.display = &quot;block&quot;;
-        }
-        function li_menu_option_open() {
-            li_menu_option.style.display = &quot;block&quot;;
-        }
-        function li_menu_window_open() {
-            li_menu_window.style.display = &quot;block&quot;;
-        }
-        function li_menu_help_open() {
-            li_menu_help.style.display = &quot;block&quot;;
-        }
-        function li_menus_close() {
-            li_menu_icon.style.display = &quot;none&quot;;
-            li_menu_option.style.display = &quot;none&quot;;
-            li_menu_window.style.display = &quot;none&quot;;
-            li_menu_help.style.display = &quot;none&quot;;
-        }
-
-        document.querySelectorAll(&#039;.close_button&#039;).forEach(function (close_button) {
-            close_button.addEventListener(&#039;click&#039;, function () {
-                const closebutton = close_button.closest(&#039;.child_windows&#039;);
-                closebutton.classList.add(&#039;active&#039;);
-            });
-        })
-        document.querySelectorAll(&#039;.minimization_button&#039;).forEach(function (minimizationbutton) {
-            minimizationbutton.addEventListener(&#039;click&#039;, function () {
-                const minimization_button = minimizationbutton.closest(&#039;.child_windows&#039;);
-                minimization_button.classList.add(&#039;active&#039;);
-            });
-        })
-        document.querySelectorAll(&#039;.bigscreen_button&#039;).forEach(function (bigscreen_button) {
-            bigscreen_button.addEventListener(&#039;click&#039;, function () {
-                const bigscreenbutton = bigscreen_button.closest(&#039;.child_windows&#039;);
-                bigscreenbutton.classList.add(&#039;big&#039;);
-            });
-        })
-        document.querySelectorAll(&#039;.minscreen_button&#039;).forEach(function (minscreen_button) {
-            minscreen_button.addEventListener(&#039;click&#039;, function () {
-                const minscreenbutton = minscreen_button.closest(&#039;.child_windows&#039;);
-                minscreenbutton.classList.remove(&#039;big&#039;);
-            });
-        })
-
-        document.querySelectorAll(&#039;.test_button&#039;).forEach(function (test_button) {
-            test_button.addEventListener(&#039;click&#039;, function () {
-                main.classList.toggle(&#039;active&#039;);
-                main.closest(&#039;.child_windows&#039;);
-                z = largestZIndex + 1;
-                unko = main.style.zIndex = z;
-
-            });
-        });
-        document.querySelectorAll(&#039;.test_button2&#039;).forEach(function (test_button2) {
-            test_button2.addEventListener(&#039;click&#039;, function () {
-                program.classList.toggle(&#039;active&#039;);
-                program.closest(&#039;.child_windows&#039;);
-                z = largestZIndex + 1;
-                unkoo = program.style.zIndex = z;
-
-            });
-        });
-        document.querySelectorAll(&#039;.test_button3&#039;).forEach(function (test_button3) {
-            test_button3.addEventListener(&#039;click&#039;, function () {
-                control.classList.toggle(&#039;active&#039;);
-
-                control.closest(&#039;.child_windows&#039;);
-                z = largestZIndex + 1;
-                unkooo = control.style.zIndex = z;
-
-            });
-        });
-        document.querySelectorAll(&#039;.test_button4&#039;).forEach(function (test_button4) {
-            test_button4.addEventListener(&#039;click&#039;, function () {
-                color_menu.classList.toggle(&#039;active&#039;);
-
-                color_menu.closest(&#039;.child_windows&#039;);
-
-                z = largestZIndex + 1;
-                unkoooo = color_menu.style.zIndex = z;
-            });
-        });
-        document.querySelectorAll(&#039;.test_button5&#039;).forEach(function (test_button5) {
-            test_button5.addEventListener(&#039;click&#039;, function () {
-                version.classList.toggle(&#039;active&#039;);
-
-                version.closest(&#039;.child_windows&#039;);
-
-                z = largestZIndex + 1;
-                unkooooo = version.style.zIndex = z;
-            });
-        });
-
-        document.querySelectorAll(&#039;.minscreen_button&#039;).forEach(function (minscreen_button) {
-            minscreen_button.addEventListener(&#039;click&#039;, function () {
-                const minscreenbutton = minscreen_button.closest(&#039;.child_windows&#039;);
-                minscreenbutton.classList.remove(&#039;big&#039;);
-            });
-        })
-
-        document.querySelectorAll(&#039;.drag_button&#039;).forEach(function (drag) {
-            drag.addEventListener(&#039;mousedown&#039;, function () {
-
-                let drag2 = drag.closest(&#039;.child_windows&#039;);
-                drag2.classList.add(&#039;drag&#039;);
-
-                z = largestZIndex + 1;
-                window_z_index = drag2.style.zIndex = z;
-
-                draggable(document.querySelector(&#039;.drag&#039;));
-                function draggable(drag) {
-                    drag2.onmousedown = function (event) {
-                        let shiftX = event.clientX - drag.getBoundingClientRect().left;
-                        let shiftY = event.clientY - drag.getBoundingClientRect().top;
-                        let top = document.querySelector(&#039;.top&#039;);
-                        moveAt(event.pageX, event.pageY);
-                        // ボールを（pageX、pageY）座標の中心に置く
-                        function moveAt(pageX, pageY) {
-                            drag.style.left = pageX - shiftX + &#039;px&#039;;
-                            drag.style.top = pageY - shiftY + &#039;px&#039;;
+                    
+                    &lt;/body&gt;
+                    &lt;style&gt;
+                        * {
+                            padding: 0px;
+                            margin: 0px;
                         }
-                        function onMouseMove(event) {
-                            moveAt(event.pageX, event.pageY);
+                    
+                        html {
+                            touch-action: manipulation;
+                            /* -webkit-user-select: none;
+                            -moz-user-select: none;
+                            -ms-user-select: none;
+                            user-select: none; */
                         }
-                        // (3) mousemove でボールを移動する
-                        document.addEventListener(&#039;mousemove&#039;, onMouseMove);
-                        // (4) ボールをドロップする。不要なハンドラを削除する
-                        drag.onmouseup = function () {
-                            document.removeEventListener(&#039;mousemove&#039;, onMouseMove);
-                            drag.onmouseup = null;
-                            drag2.classList.remove(&#039;drag&#039;);
-                            draggable()
-                        };
-                    };
-                };
-            });
-        })
+                    
+                        body {
+                            width: 100%;
+                            height: 100vh;
+                            font-family: serif;
+                            background-color: black;
+                        }
+                    
+                        /* li */
+                        li {
+                            list-style: none;
+                        }
+                    
+                        li:hover {
+                            background: darkblue;
+                            color: white;
+                        }
+                    
+                        /* hover */
+                    
+                        .hover_blue:hover {
+                            background: darkblue;
+                            color: white;
+                        }
+                    
+                        .hover_red:hover {
+                            background: red;
+                            color: white;
+                        }
+                    
+                        /* text_color */
+                        .black_text {
+                            color: black;
+                        }
+                    
+                        /* text_design */
+                    
+                        .bold {
+                            font-weight: bold;
+                        }
+                    
+                        /* border */
+                    
+                        .border {
+                            border-top: solid 1.5px white;
+                            border-right: solid 1.5px black;
+                            border-left: solid 1.5px white;
+                            border-bottom: solid 1.5px black;
+                        }
+                    
+                        /* desktop */
+                    
+                        #prompt {
+                            font-family: system-ui;
+                            color: white;
+                        }
+                    
+                        .nexser_group {
+                            display: block;
+                        }
+                    
+                        #prompt .name {
+                            width: 100%;
+                            background: black;
+                            border: none;
+                            outline: none;
+                            color: white;
+                        }
+                    
+                        /* nexser */
+                    
+                        #nexser {
+                            width: 100%;
+                            height: 100vh;
+                            display: none;
+                            background-color: darkgray;
+                        }
+                    
+                        /* desktop */
+                    
+                        #desktop {
+                            display: none;
+                        }
+                    
+                        /* buttons */
+                    
+                        .button {
+                            display: inline-block;
+                            border-top: solid 1.5px white;
+                            border-right: solid 1.5px black;
+                            border-left: solid 1.5px white;
+                            border-bottom: solid 1.5px black;
+                            color: black;
+                            background: darkgray;
+                        }
+                    
+                        /* files */
+                    
+                    
+                    
+                    
+                        /* taskbar */
+                        #taskbar {
+                            width: 100%;
+                            height: 40px;
+                            background-color: #999999;
+                            border-top: solid 2px black;
+                            position: absolute;
+                            bottom: 0;
+                            z-index: 999999;
+                        }
+                    
+                        #taskbar .start_button {
+                            position: absolute;
+                            bottom: 5px;
+                            left: 10px;
+                        }
+                    
+                        #taskbar .taskbar_buttons {
+                            display: inline-block;
+                            position: absolute;
+                            bottom: 5px;
+                            left: 100px;
+                        }
+                    
+                        #taskbar .button {
+                            margin-left: 5px;
+                        }
+                    
+                        /* start_menu */
+                        .parent_start_menu {
+                            display: none;
+                        }
+                    
+                        .child_start_menu {
+                            display: block;
+                            background: #999999;
+                            position: absolute;
+                            bottom: 40px;
+                            z-index: 999998;
+                        }
+                    
+                        .child_start_menu .title {
+                            background-color: #333333;
+                            position: absolute;
+                            color: white;
+                            text-align: center;
+                            pointer-events: none;
+                        }
+                    
+                        /* window */
+                        #soft_windows {
+                            width: 100%;
+                            height: 100vh;
+                        }
+                    
+                        .child_windows {
+                            display: block;
+                            width: auto;
+                            height: auto;
+                            border: solid 2px black;
+                            background: white;
+                            position: absolute;
+                            top: 25%;
+                            left: 25%;
+                        }
+                    
+                        .child_windows.active {
+                            display: none;
+                        }
+                    
+                        .child_windows.big {
+                            height: 99.45%;
+                            width: 99.7%;
+                            border: solid 2px black;
+                            background: white;
+                            position: static;
+                        }
+                    
+                        .child_windows .title {
+                            width: 100%;
+                            background-color: darkblue;
+                            position: absolute;
+                            top: 0;
+                            color: white;
+                            text-align: center;
+                            pointer-events: none;
+                        }
+                    
+                        .child_windows.big .title {
+                            width: 99.85%;
+                            background-color: darkblue;
+                            position: absolute;
+                            top: 0;
+                            color: white;
+                            text-align: center;
+                            pointer-events: none;
+                        }
+                    
+                        .child_windows.drag .title {
+                            background: lime;
+                        }
+                    
+                        .child_windows.big .minscreen_button {
+                            display: block;
+                        }
+                    
+                        .child_windows.big .bigscreen_button {
+                            display: none;
+                        }
+                    
+                        /* icon */
+                    
+                        /* title */
+                        .title {
+                            width: 100%;
+                            background-color: darkblue;
+                            position: absolute;
+                            top: 0;
+                            color: white;
+                            text-align: center;
+                            pointer-events: none;
+                        }
+                    
+                        .title2 ul {
+                            background: whitesmoke;
+                            display: flex;
+                            border-bottom: solid 1px black;
+                        }
+                    
+                        .title2 li {
+                            padding-left: 20px;
+                            padding-right: 20px;
+                            text-align: center;
+                        }
+                    
+                        /* title_buttons */
+                        .close_button {
+                            background: darkgray;
+                            position: absolute;
+                            top: 3.5px;
+                            right: 3.5px;
+                            text-align: center;
+                            font-size: 10px;
+                            border-top: solid 1.5px white;
+                            border-right: solid 1.5px black;
+                            border-left: solid 1.5px white;
+                            border-bottom: solid 1.5px black;
+                        }
+                    
+                        .drag_button {
+                            background: darkgray;
+                            position: absolute;
+                            top: 3.5px;
+                            right: 20.5px;
+                            text-align: center;
+                            font-size: 10px;
+                            border-top: solid 1.5px white;
+                            border-right: solid 1.5px black;
+                            border-left: solid 1.5px white;
+                            border-bottom: solid 1.5px black;
+                        }
+                    
+                        .bigscreen_button {
+                            background: darkgray;
+                            position: absolute;
+                            top: 3.5px;
+                            left: 3.5px;
+                            text-align: center;
+                            font-size: 10px;
+                            border-top: solid 1.5px white;
+                            border-right: solid 1.5px black;
+                            border-left: solid 1.5px white;
+                            border-bottom: solid 1.5px black;
+                        }
+                    
+                        .minscreen_button {
+                            display: none;
+                            background: darkgray;
+                            position: absolute;
+                            top: 3.5px;
+                            left: 3.5px;
+                            text-align: center;
+                            font-size: 10px;
+                            border-top: solid 1.5px white;
+                            border-right: solid 1.5px black;
+                            border-left: solid 1.5px white;
+                            border-bottom: solid 1.5px black;
+                        }
+                    
+                        .minimization_button {
+                            background: darkgray;
+                            position: absolute;
+                            top: 3.5px;
+                            left: 22px;
+                            text-align: center;
+                            font-size: 10px;
+                            border-top: solid 1.5px white;
+                            border-right: solid 1.5px black;
+                            border-left: solid 1.5px white;
+                            border-bottom: solid 1.5px black;
+                        }
+                    
+                        /* li_menus */
+                        .li_menu_icon {
+                            display: none;
+                            width: 30%;
+                            background: white;
+                            border: solid 1px black;
+                            position: absolute;
+                        }
+                    
+                        .li_menu_option {
+                            display: none;
+                            width: 30%;
+                            background: white;
+                            border: solid 1px black;
+                            position: absolute;
+                            left: 70px;
+                        }
+                    
+                        .li_menu_window {
+                            display: none;
+                            width: 30%;
+                            background: white;
+                            border: solid 1px black;
+                            position: absolute;
+                            left: 155px;
+                        }
+                    
+                        .li_menu_help {
+                            display: none;
+                            width: 30%;
+                            background: white;
+                            border: solid 1px black;
+                            position: absolute;
+                            left: 250px;
+                        }
+                    
+                        /*list */
+                        .program_list {
+                            column-count: 4;
+                        }
+                    
+                        .window_main_list {
+                            column-count: 4;
+                        }
+                    
+                        .window_control_list {
+                            column-count: 6;
+                        }
+                    &lt;/style&gt;
+                    &lt;script text=&quot;javascript&quot;&gt;
+                        var ua = navigator.userAgent;
+                        if (!(ua.indexOf(&#039;iPhone&#039;) &gt; 0 || ua.indexOf(&#039;iPad&#039;) &gt; 0 || ua.indexOf(&#039;Android&#039;) &gt; 0 || ua.indexOf(&#039;Mobile&#039;) &gt; 0)) {
+                    
+                            const start = document.querySelector(&#039;#startbtn&#039;)
+                            const parent_start_menu = document.querySelector(&#039;#start_menu&#039;)
+                            const taskbar = document.querySelector(&#039;#taskbar&#039;);
+                    
+                            const nameText = document.querySelector(&#039;.name&#039;);
+                            const msg = document.querySelector(&#039;.test_name&#039;);
+                            const prompt = document.getElementById(&#039;prompt&#039;);
+                            const prompt_text = document.querySelector(&#039;.prompt_text&#039;);
+                            const memory = document.querySelector(&#039;.memory&#039;);
+                            const userelement = document.querySelector(&#039;.user&#039;);
+                            const nexser = document.getElementById(&#039;nexser&#039;);
+                            const desktop = document.getElementById(&#039;desktop&#039;);
+                            const soft_windows = document.getElementById(&#039;soft_windows&#039;);
+                            const title = document.querySelector(&#039;.title&#039;);
+                            const z_index = document.querySelector(&#039;.z_index&#039;);
+                    
+                            const li_menu_icon = document.querySelector(&#039;.li_menu_icon&#039;);
+                            const li_menu_option = document.querySelector(&#039;.li_menu_option&#039;);
+                            const li_menu_window = document.querySelector(&#039;.li_menu_window&#039;);
+                            const li_menu_help = document.querySelector(&#039;.li_menu_help&#039;);
+                    
+                            // soft_windows
+                            const child_windows = document.querySelector(&#039;.child_windows&#039;);
+                    
+                            const main = document.querySelector(&#039;.main&#039;);
+                            const program = document.querySelector(&#039;.program_manager&#039;);
+                            const control = document.querySelector(&#039;.control_panel&#039;);
+                            const color_menu = document.querySelector(&#039;.color&#039;);
+                            const version = document.querySelector(&#039;.version&#039;);
+                    
+                            // start.addEventListener(&#039;mouseover&#039;, function () {
+                            //     // マウスが要素に乗った際の処理
+                            //     start_menu.style.display = &quot;block&quot;
+                            //     start.addEventListener(&#039;mouseleave&#039;, function () {
+                            //         // マウスが要素に乗った際の処理
+                            //         start_menu.style.display = &quot;none&quot;
+                            //     });
+                            // });
+                            start.addEventListener(&#039;click&#039;, function () {
+                                if (start_menu.style.display == &quot;block&quot;) {
+                                    // noneで非表示
+                                    start_menu.style.display = &quot;none&quot;;
+                                } else {
+                                    // blockで表示
+                                    start_menu.style.display = &quot;block&quot;;
+                                }
+                            })
+                            soft_windows.addEventListener(&#039;mousedown&#039;, function () {
+                                console.log(&quot;test&quot;);
+                                start_menu.style.display = &quot;none&quot;;
+                            });
+                    
+                            // setInterval(() =&gt; {
+                            //     console.log(largestZIndex);
+                            // }, 1000);
+                    
+                            window.addEventListener(&#039;load&#039;, load_nexser);
+                            function load_nexser() {
+                                if (localStorage.getItem(&#039;prompt_data&#039;)) {
+                                    prompt.style.display = &quot;none&quot;;
+                                    nexser.style.display = &quot;block&quot;;
+                                    desktop.style.display = &quot;block&quot;
+                                } else {
+                                    prompt.style.display = &quot;block&quot;;
+                                    nexser.style.display = &quot;none&quot;;
+                                    desktop.style.display = &quot;none&quot;;
+                                    document.getElementById(&#039;focus&#039;).focus();
+                                }
+                                taskbar_none()
+                            }
+                    
+                            function taskbar_none() {
+                                if (localStorage.getItem(&#039;data_taskbar_none&#039;)) {
+                                    taskbar.style.display = &quot;none&quot;;
+                                    program.classList.remove(&#039;active&#039;);
+                                }
+                            }
+                    
+                            function prompt_data_clear() {
+                                localStorage.removeItem(&#039;prompt_data&#039;);
+                                localStorage.removeItem(&#039;data_taskbar_none&#039;);
+                                window.location = &#039;&#039;
+                            }
+                    
+                            function colordata_clear() {
+                                localStorage.removeItem(KEY_COLOR, color);
+                                localStorage.removeItem(KEY_BKCOLOR, bkcolor);
+                            }
+                    
+                            document.addEventListener(&#039;DOMContentLoaded&#039;, pageLoad)
+                            function pageLoad() {
+                                let textbox = document.querySelector(&#039;.name&#039;);
+                                textbox.addEventListener(&#039;keydown&#039;, enterKeyPress);
+                                function enterKeyPress(event) {
+                                    if (event.key === &#039;Enter&#039;) {
+                                        butotnClick()
+                                    }
+                                }
+                            }
+                            function butotnClick() {
+                                msg.innerText = &#039;\b&#039; + nameText.value + &#039;&#039;;
+                                prompt_text_check();
+                            }
+                    
+                            function prompt_text_check() {
+                                const prompt_text2 = document.getElementById(&#039;focus&#039;);
+                                const prompt_text3 = prompt_text2.value;
+                                switch (prompt_text3) {
+                                    case &#039;&#039;:
+                                        userelement.textContent = &quot;&quot;;
+                                        document.querySelector(&#039;.prompt_error_text&#039;).textContent = &quot;&quot;;
+                                        document.querySelector(&#039;.help&#039;).textContent = &quot;&quot;;
+                                        msg.innerText = &quot;&quot;;
+                                        prompt_text.style.color = &quot;&quot;;
+                                        break;
+                                    case &#039;nexser/open&#039;:
+                                        const prompt_data = document.prompt_text_form.prompt_text.value;
+                                        localStorage.setItem(&#039;prompt_data&#039;, prompt_data);
+                                        prompt_text.style.color = &quot;yellow&quot;;
+                                        document.getElementsByClassName(&#039;name&#039;)[0].value = &quot;nexserを起動しています&quot;;
+                                        document.querySelector(&#039;.prompt_error_text&#039;).textContent = &quot;success&quot;;
+                                        setTimeout(nexser_start, 1000);
+                                        break;
+                                    case &#039;debug&#039;:
+                                        document.querySelector(&#039;.prompt_error_text&#039;).textContent = &quot;&quot;;
+                                        debug();
+                                        document.querySelector(&#039;.help&#039;).textContent = &quot;&quot;;
+                                        msg.innerText = &quot;&quot;;
+                                        prompt_text.style.color = &quot;&quot;;
+                                        break;
+                                    case &#039;help&#039;:
+                                        document.querySelector(&#039;.prompt_error_text&#039;).textContent = &quot;&quot;;
+                                        document.querySelector(&#039;.help&#039;).textContent = &quot;nexser/open&quot;;
+                                        msg.innerText = &quot;&quot;;
+                                        prompt_text.style.color = &quot;&quot;;
+                                        break;
+                                    case &#039;windows95/sound/play&#039;:
+                                        document.querySelector(&#039;.prompt_error_text&#039;).textContent = &quot;&quot;;
+                                        sound();
+                                        prompt_text.style.color = &quot;&quot;;
+                                        document.querySelector(&#039;.prompt_error_text&#039;).textContent = &quot;&quot;;
+                                        break;
+                                    case &#039;screen/full&#039;:
+                                        document.querySelector(&#039;.prompt_error_text&#039;).textContent = &quot;&quot;;
+                                        full();
+                                        prompt_text.style.color = &quot;&quot;;
+                                        break;
+                                    case &#039;screen/min&#039;:
+                                        document.querySelector(&#039;.prompt_error_text&#039;).textContent = &quot;&quot;;
+                                        min();
+                                        prompt_text.style.color = &quot;&quot;;
+                                        break;
+                                    case &#039;taskbar/none&#039;:
+                                        const data_taskbar_none = document.prompt_text_form.prompt_text.value;
+                                        localStorage.setItem(&#039;data_taskbar_none&#039;, data_taskbar_none);
+                                        prompt_text.style.color = &quot;&quot;;
+                                        break;
+                                    case &#039;code&#039;:
+                                        document.querySelector(&#039;.codes&#039;).style.display = &quot;block&quot;;
+                                        prompt_text.style.color = &quot;&quot;;
+                                        break;
+                                    default:
+                                        document.querySelector(&#039;.prompt_error_text&#039;).textContent = &quot;コマンドが違います!&quot;;
+                                        document.querySelector(&#039;.help&#039;).textContent = &quot;&quot;;
+                                        msg.innerText = &quot;&quot;;
+                                        prompt_text.style.color = &quot;red&quot;;
+                                        break;
+                                }
+                                // console.log(abc.value)
+                    
+                    
+                            }
+                            function debug() {
+                                userelement.insertAdjacentHTML(&#039;afterend&#039;, &#039;&lt;p class=&quot;white user&quot;&gt;BROWSER: &#039; + navigator.appName + &#039;&lt;br&gt;&#039;
+                                    + &#039;VERSION: &#039; + navigator.appVersion + &#039;&lt;br&gt;&#039; + &#039;USER: &#039; + navigator.userAgent + &#039;&lt;br&gt;&#039; + &#039;WIDTH: &#039; + screen.width + &#039;&lt;br&gt;&#039;
+                                    + &#039;HEIGHT: &#039; + screen.height + &#039;&lt;br&gt;&#039; + &#039;BIT: &#039; + screen.colorDepth + &#039;&lt;/p&gt;&#039;);
+                            }
+                            setInterval(() =&gt; {
+                                navigator.getBattery().then(function (battery) {
+                                    document.querySelector(&#039;.level&#039;).innerHTML = battery.level;
+                                    document.querySelector(&#039;.charging&#039;).innerHTML = battery.charging;
+                                    document.querySelector(&#039;.chargingTime&#039;).innerHTML = battery.chargingTime;
+                                    document.querySelector(&#039;.dischargingTime&#039;).innerHTML = battery.dischargingTime;
+                                });
+                                memory.textContent = (`Memory:   ${(performance.memory.usedJSHeapSize / 1024).toFixed(2)}KB`);
+                            }, 100);
+                    
+                            function nexser_start() {
+                                prompt.style.display = &quot;none&quot;;
+                                setTimeout(function () {
+                                    nexser.style.display = &quot;block&quot;;
+                                    sound()
+                                    setTimeout(function () {
+                                        taskbar_none()
+                                        desktop.style.display = &quot;block&quot;;
+                                    }, 1000);
+                                }, 1000);
+                            }
+                    
+                    
+                    
+                            function li_menu_icon_open() {
+                                li_menu_icon.style.display = &quot;block&quot;;
+                            }
+                            function li_menu_option_open() {
+                                li_menu_option.style.display = &quot;block&quot;;
+                            }
+                            function li_menu_window_open() {
+                                li_menu_window.style.display = &quot;block&quot;;
+                            }
+                            function li_menu_help_open() {
+                                li_menu_help.style.display = &quot;block&quot;;
+                            }
+                            function li_menus_close() {
+                                li_menu_icon.style.display = &quot;none&quot;;
+                                li_menu_option.style.display = &quot;none&quot;;
+                                li_menu_window.style.display = &quot;none&quot;;
+                                li_menu_help.style.display = &quot;none&quot;;
+                            }
+                    
+                            document.querySelectorAll(&#039;.close_button&#039;).forEach(function (close_button) {
+                                close_button.addEventListener(&#039;click&#039;, function () {
+                                    const closebutton = close_button.closest(&#039;.child_windows&#039;);
+                                    closebutton.classList.add(&#039;active&#039;);
+                                });
+                            })
+                            document.querySelectorAll(&#039;.minimization_button&#039;).forEach(function (minimizationbutton) {
+                                minimizationbutton.addEventListener(&#039;click&#039;, function () {
+                                    const minimization_button = minimizationbutton.closest(&#039;.child_windows&#039;);
+                                    minimization_button.classList.add(&#039;active&#039;);
+                                });
+                            })
+                            document.querySelectorAll(&#039;.bigscreen_button&#039;).forEach(function (bigscreen_button) {
+                                bigscreen_button.addEventListener(&#039;click&#039;, function () {
+                                    const bigscreenbutton = bigscreen_button.closest(&#039;.child_windows&#039;);
+                                    bigscreenbutton.classList.add(&#039;big&#039;);
+                                    z = largestZIndex + 1;
+                                    window_z_index = bigscreenbutton.style.zIndex = z;
+                                });
+                            })
+                            document.querySelectorAll(&#039;.minscreen_button&#039;).forEach(function (minscreen_button) {
+                                minscreen_button.addEventListener(&#039;click&#039;, function () {
+                                    const minscreenbutton = minscreen_button.closest(&#039;.child_windows&#039;);
+                                    minscreenbutton.classList.remove(&#039;big&#039;);
+                                    z = largestZIndex + 1;
+                                    window_z_index = minscreenbutton.style.zIndex = z;
+                                });
+                            })
+                    
+                            document.querySelectorAll(&#039;.test_button&#039;).forEach(function (test_button) {
+                                test_button.addEventListener(&#039;click&#039;, function () {
+                                    main.classList.toggle(&#039;active&#039;);
+                                    main.closest(&#039;.child_windows&#039;);
+                                    z = largestZIndex + 1;
+                                    unko = main.style.zIndex = z;
+                    
+                                });
+                            });
+                            document.querySelectorAll(&#039;.test_button2&#039;).forEach(function (test_button2) {
+                                test_button2.addEventListener(&#039;click&#039;, function () {
+                                    program.classList.toggle(&#039;active&#039;);
+                                    program.closest(&#039;.child_windows&#039;);
+                                    z = largestZIndex + 1;
+                                    unkoo = program.style.zIndex = z;
+                    
+                                });
+                            });
+                            document.querySelectorAll(&#039;.test_button3&#039;).forEach(function (test_button3) {
+                                test_button3.addEventListener(&#039;click&#039;, function () {
+                                    control.classList.toggle(&#039;active&#039;);
+                    
+                                    control.closest(&#039;.child_windows&#039;);
+                                    z = largestZIndex + 1;
+                                    unkooo = control.style.zIndex = z;
+                    
+                                });
+                            });
+                            document.querySelectorAll(&#039;.test_button4&#039;).forEach(function (test_button4) {
+                                test_button4.addEventListener(&#039;click&#039;, function () {
+                                    color_menu.classList.toggle(&#039;active&#039;);
+                    
+                                    color_menu.closest(&#039;.child_windows&#039;);
+                    
+                                    z = largestZIndex + 1;
+                                    unkoooo = color_menu.style.zIndex = z;
+                                });
+                            });
+                            document.querySelectorAll(&#039;.test_button5&#039;).forEach(function (test_button5) {
+                                test_button5.addEventListener(&#039;click&#039;, function () {
+                                    version.classList.toggle(&#039;active&#039;);
+                    
+                                    version.closest(&#039;.child_windows&#039;);
+                    
+                                    z = largestZIndex + 1;
+                                    unkooooo = version.style.zIndex = z;
+                                });
+                            });
+                    
+                            document.querySelectorAll(&#039;.minscreen_button&#039;).forEach(function (minscreen_button) {
+                                minscreen_button.addEventListener(&#039;click&#039;, function () {
+                                    const minscreenbutton = minscreen_button.closest(&#039;.child_windows&#039;);
+                                    minscreenbutton.classList.remove(&#039;big&#039;);
+                                });
+                            })
+                    
+                            document.querySelectorAll(&#039;.drag_button&#039;).forEach(function (drag) {
+                                drag.addEventListener(&#039;mousedown&#039;, function () {
+                    
+                                    let drag2 = drag.closest(&#039;.child_windows&#039;);
+                                    drag2.classList.add(&#039;drag&#039;);
+                    
+                                    z = largestZIndex + 1;
+                                    window_z_index = drag2.style.zIndex = z;
+                    
+                                    draggable(document.querySelector(&#039;.drag&#039;));
+                                    function draggable(drag) {
+                                        drag2.onmousedown = function (event) {
+                                            let shiftX = event.clientX - drag.getBoundingClientRect().left;
+                                            let shiftY = event.clientY - drag.getBoundingClientRect().top;
+                                            let top = document.querySelector(&#039;.top&#039;);
+                                            moveAt(event.pageX, event.pageY);
+                                            // ボールを（pageX、pageY）座標の中心に置く
+                                            function moveAt(pageX, pageY) {
+                                                drag.style.left = pageX - shiftX + &#039;px&#039;;
+                                                drag.style.top = pageY - shiftY + &#039;px&#039;;
+                                            }
+                                            function onMouseMove(event) {
+                                                moveAt(event.pageX, event.pageY);
+                                            }
+                                            // (3) mousemove でボールを移動する
+                                            document.addEventListener(&#039;mousemove&#039;, onMouseMove);
+                                            // (4) ボールをドロップする。不要なハンドラを削除する
+                                            drag.onmouseup = function () {
+                                                document.removeEventListener(&#039;mousemove&#039;, onMouseMove);
+                                                drag.onmouseup = null;
+                                                drag2.classList.remove(&#039;drag&#039;);
+                                                draggable()
+                                            };
+                                        };
+                                    };
+                                });
+                            })
+                    
+                    
+                            const KEY_COLOR = &quot;COLOR&quot;;				// 文字色用キー
+                            const KEY_BKCOLOR = &quot;BKCOLOR&quot;;			// 背景色用キー
+                    
+                            let color = null;						// 文字色
+                            let bkcolor = null;						// 背景色
+                    
+                            /*
+                             * ローカルストレージのデータチェック
+                             */
+                            function getStorage() {
+                                // ローカルストレージに保存された内容を取得
+                                color = localStorage.getItem(KEY_COLOR);
+                                bkcolor = localStorage.getItem(KEY_BKCOLOR);
+                    
+                                // ローカルストレージに文字色と背景色データが保存されていれば色変更
+                                if (color !== null &amp;&amp; bkcolor != null) {
+                                    setColor();
+                                }
+                            }
+                    
+                            /*
+                             * ローカルストレージに色名（文字色・背景色）を保存する
+                             */
+                            function setStorage() {
+                                localStorage.setItem(KEY_COLOR, color);
+                                localStorage.setItem(KEY_BKCOLOR, bkcolor);
+                            }
+                    
+                            /*
+                             * 文字色と背景色を変更する
+                             */
+                            function setColor() {
+                                document.querySelector(&quot;body&quot;).style.color = color;
+                                document.querySelector(&quot;#nexser&quot;).style.backgroundColor = bkcolor;
+                            }
+                    
+                            /*
+                             * 起動時にローカルストレージの内容をチェックして色を設定
+                             */
+                            window.addEventListener(&quot;load&quot;, () =&gt; {
+                                // ボタンイベント設定
+                                document.getElementById(&quot;changeBtn&quot;).addEventListener(&quot;click&quot;, () =&gt; {
+                                    // テキストボックスに入力された文字色と背景色を取得
+                                    color = document.getElementById(&quot;color&quot;).value;
+                                    bkcolor = document.getElementById(&quot;bkcolor&quot;).value;
+                    
+                                    // 双方のテキストボックスのどちらかが何も入っていないとき
+                                    if (color === &quot;&quot; || bkcolor === &quot;&quot;) {
+                                        alert(&quot;文字色と背景色を指定してください&quot;);
+                                        return;
+                                    }
+                    
+                                    // 文字色・背景色変更
+                                    setColor();
+                    
+                                    // 変更した色名をストレージに保存
+                                    setStorage();
+                                });
+                    
+                                // ローカルストレージの内容をチェック
+                                getStorage();
+                    
+                            });
+                    
+                    
+                            var largestZIndex = 0;
+                            var defaultView = document.defaultView;
+                            var getLargestZIndex = function () {
+                                var func = function (queryselectorname) {
+                                    var elems = document.querySelectorAll(queryselectorname), len = elems.length;
+                                    for (var i = 0; i &lt; len; i++) {
+                                        var elem = elems[i];
+                                        var zIndex = elem.style.zIndex;
+                                        if (!zIndex) {
+                                            var css = elem.currentStyle || defaultView.getComputedStyle(elem, null);
+                                            zIndex = css ? css.zIndex : 0;
+                                        }
+                                        zIndex++;
+                                        if (largestZIndex &lt; zIndex) largestZIndex = zIndex;
+                                    }
+                                };
+                                if (arguments.length == 0) func(&#039;*&#039;);
+                                else for (var i = 0; i &lt; arguments.length; i++) func(arguments[i]);
+                                return largestZIndex;
+                            };
+                            setInterval(() =&gt; {
+                                z_index.textContent = (getLargestZIndex(&#039;.child_windows&#039;));
+                            }, 100);
+                    
+                            // &uarr;setinterval　大事な役割
+                    
+                            // 図形にクリックイベント登録＆z-indexを表示
+                            var eleShape = document.getElementsByClassName(&quot;child_windows&quot;);
+                            for (var i = 0; i &lt; eleShape.length; i++) {
+                                // クリックイベント登録
+                                eleShape[i].addEventListener(&quot;mousedown&quot;, moveFront, event);
+                                // 図形にz-indexを表示
+                            }
+                            // クリックされた要素のz-indexに、クリックされた回数を設定する
+                            function moveFront(e) {
+                                // 図形のクリック数をカウントアップ
+                                largestZIndex++;
+                                // z-indexに図形のクリック数を設定（最前面に表示される）
+                                e.target.style.zIndex = largestZIndex;
+                                // 図形にz-indexを表示
+                            }
+                    
+                            function sound() {
+                                const sound = new Audio(&quot;https://github.com/moti5768/moti.world/raw/main//IMG_6305.mp3&quot;);
+                                sound.play();
+                            }
+                    
+                            let ele = document.documentElement;
+                            function full() {
+                                // 全画面表示      
+                                if (ele.webkitRequestFullscreen) {
+                                    ele.webkitRequestFullscreen() // Chrome, Safari
+                                } else if (ele.mozRequestFullScreen) {
+                                    ele.mozRequestFullScreen() // firefox
+                                } else if (ele.requestFullscreen) {
+                                    ele.requestFullscreen() // HTML5 Fullscreen API
+                                } else {
+                                    alert(&#039;未対応&#039;)
+                                    return
+                                }
+                            }
+                            function min() {
+                                // 全画面表示　終了
+                                if (ele.webkitRequestFullscreen) {
+                                    document.webkitCancelFullScreen() // Chrome, Safari
+                                } else if (ele.mozRequestFullScreen) {
+                                    document.mozCancelFullScreen() // firefox
+                                } else if (ele.requestFullscreen) {
+                                    document.exitFullscreen() // HTML5 Fullscreen API
+                                }
+                            }
+                    
+                        } else {
+                            document.querySelector(&quot;.prompt_error_text&quot;).textContent = &#039;この端末は対応していません!&#039;;
+                        }
+                    
+                    &lt;/script&gt;
+                    
+                    &lt;/html&gt;
 
 
-        const KEY_COLOR = &quot;COLOR&quot;;				// 文字色用キー
-        const KEY_BKCOLOR = &quot;BKCOLOR&quot;;			// 背景色用キー
 
-        let color = null;						// 文字色
-        let bkcolor = null;						// 背景色
-
-        /*
-         * ローカルストレージのデータチェック
-         */
-        function getStorage() {
-            // ローカルストレージに保存された内容を取得
-            color = localStorage.getItem(KEY_COLOR);
-            bkcolor = localStorage.getItem(KEY_BKCOLOR);
-
-            // ローカルストレージに文字色と背景色データが保存されていれば色変更
-            if (color !== null &amp;&amp; bkcolor != null) {
-                setColor();
-            }
-        }
-
-        /*
-         * ローカルストレージに色名（文字色・背景色）を保存する
-         */
-        function setStorage() {
-            localStorage.setItem(KEY_COLOR, color);
-            localStorage.setItem(KEY_BKCOLOR, bkcolor);
-        }
-
-        /*
-         * 文字色と背景色を変更する
-         */
-        function setColor() {
-            document.querySelector(&quot;body&quot;).style.color = color;
-            document.querySelector(&quot;#nexser&quot;).style.backgroundColor = bkcolor;
-        }
-
-        /*
-         * 起動時にローカルストレージの内容をチェックして色を設定
-         */
-        window.addEventListener(&quot;load&quot;, () =&gt; {
-            // ボタンイベント設定
-            document.getElementById(&quot;changeBtn&quot;).addEventListener(&quot;click&quot;, () =&gt; {
-                // テキストボックスに入力された文字色と背景色を取得
-                color = document.getElementById(&quot;color&quot;).value;
-                bkcolor = document.getElementById(&quot;bkcolor&quot;).value;
-
-                // 双方のテキストボックスのどちらかが何も入っていないとき
-                if (color === &quot;&quot; || bkcolor === &quot;&quot;) {
-                    alert(&quot;文字色と背景色を指定してください&quot;);
-                    return;
-                }
-
-                // 文字色・背景色変更
-                setColor();
-
-                // 変更した色名をストレージに保存
-                setStorage();
-            });
-
-            // ローカルストレージの内容をチェック
-            getStorage();
-
-        });
-
-
-        var largestZIndex = 0;
-        var defaultView = document.defaultView;
-        var getLargestZIndex = function () {
-            var func = function (queryselectorname) {
-                var elems = document.querySelectorAll(queryselectorname), len = elems.length;
-                for (var i = 0; i &lt; len; i++) {
-                    var elem = elems[i];
-                    var zIndex = elem.style.zIndex;
-                    if (!zIndex) {
-                        var css = elem.currentStyle || defaultView.getComputedStyle(elem, null);
-                        zIndex = css ? css.zIndex : 0;
-                    }
-                    zIndex++;
-                    if (largestZIndex &lt; zIndex) largestZIndex = zIndex;
-                }
-            };
-            if (arguments.length == 0) func(&#039;*&#039;);
-            else for (var i = 0; i &lt; arguments.length; i++) func(arguments[i]);
-            return largestZIndex;
-        };
-        setInterval(() =&gt; {
-            z_index.textContent = (getLargestZIndex(&#039;.child_windows&#039;));
-        }, 100);
-
-        // &uarr;setinterval　大事な役割
-
-        // 図形にクリックイベント登録＆z-indexを表示
-        var eleShape = document.getElementsByClassName(&quot;child_windows&quot;);
-        for (var i = 0; i &lt; eleShape.length; i++) {
-            // クリックイベント登録
-            eleShape[i].addEventListener(&quot;mousedown&quot;, moveFront, event);
-            // 図形にz-indexを表示
-        }
-        // クリックされた要素のz-indexに、クリックされた回数を設定する
-        function moveFront(e) {
-            // 図形のクリック数をカウントアップ
-            largestZIndex++;
-            // z-indexに図形のクリック数を設定（最前面に表示される）
-            e.target.style.zIndex = largestZIndex;
-            // 図形にz-indexを表示
-        }
-
-        function sound() {
-            const sound = new Audio(&quot;https://github.com/moti5768/moti.world/raw/main//IMG_6305.mp3&quot;);
-            sound.play();
-        }
-
-        let ele = document.documentElement;
-        function full() {
-            // 全画面表示      
-            if (ele.webkitRequestFullscreen) {
-                ele.webkitRequestFullscreen() // Chrome, Safari
-            } else if (ele.mozRequestFullScreen) {
-                ele.mozRequestFullScreen() // firefox
-            } else if (ele.requestFullscreen) {
-                ele.requestFullscreen() // HTML5 Fullscreen API
-            } else {
-                alert(&#039;未対応&#039;)
-                return
-            }
-        }
-        function min() {
-            // 全画面表示　終了
-            if (ele.webkitRequestFullscreen) {
-                document.webkitCancelFullScreen() // Chrome, Safari
-            } else if (ele.mozRequestFullScreen) {
-                document.mozCancelFullScreen() // firefox
-            } else if (ele.requestFullscreen) {
-                document.exitFullscreen() // HTML5 Fullscreen API
-            }
-        }
-
-    } else {
-        document.querySelector(&quot;.prompt_error_text&quot;).textContent = &#039;この端末は対応していません!&#039;;
-    }
-
-&lt;/script&gt;
-
-&lt;/html&gt;
 
                 </code>
             </pre>
@@ -1751,8 +1772,8 @@
     }
 </style>
 <script text="javascript">
-    // var ua = navigator.userAgent;
-    // if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android') > 0 || ua.indexOf('Mobile') > 0)) {
+    var ua = navigator.userAgent;
+    if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android') > 0 || ua.indexOf('Mobile') > 0)) {
 
         const start = document.querySelector('#startbtn')
         const parent_start_menu = document.querySelector('#start_menu')
@@ -1990,12 +2011,16 @@
             bigscreen_button.addEventListener('click', function () {
                 const bigscreenbutton = bigscreen_button.closest('.child_windows');
                 bigscreenbutton.classList.add('big');
+                z = largestZIndex + 1;
+                window_z_index = bigscreenbutton.style.zIndex = z;
             });
         })
         document.querySelectorAll('.minscreen_button').forEach(function (minscreen_button) {
             minscreen_button.addEventListener('click', function () {
                 const minscreenbutton = minscreen_button.closest('.child_windows');
                 minscreenbutton.classList.remove('big');
+                z = largestZIndex + 1;
+                window_z_index = minscreenbutton.style.zIndex = z;
             });
         })
 
@@ -2231,9 +2256,9 @@
             }
         }
 
-    // } else {
-    //     document.querySelector(".prompt_error_text").textContent = 'この端末は対応していません!';
-    // }
+    } else {
+        document.querySelector(".prompt_error_text").textContent = 'この端末は対応していません!';
+    }
 
 </script>
 
