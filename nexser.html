@@ -837,9 +837,14 @@
                 let main = document.querySelector('.main');
                 main.classList.toggle('active');
 
+                if(main.style.display == "block";){
+
                 main.closest('.child_windows');
                 z = largestZIndex + 1;
                 unko = main.style.zIndex = z;
+                } else {
+                    alert("window none");
+                }
 
             });
         });
