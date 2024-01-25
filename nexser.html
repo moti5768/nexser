@@ -176,11 +176,21 @@
                         <div class="title">
                             <span>version</span>
                         </div>
+
                         <a class="close_button hover_red">&nbsp;✕&nbsp;</a>
                         <a class="drag_button hover_red">&nbsp;↓&nbsp;</a>
                         <a class="bigscreen_button hover_red">&nbsp;□&nbsp;</a>
                         <a class="minscreen_button hover_red">&nbsp;❒&nbsp;</a>
                         <a class="minimization_button hover_red">&nbsp;―&nbsp;</a><br>
+                        <div class="title2">
+                            <ul class="black_text">
+                                <li>test</li>
+                                <li>test</li>
+                                <li>test</li>
+                                <li>test</li>
+                                <li style="width: 100%;" onclick="li_menus_close()"></li>
+                            </ul>
+                        </div>
                         <div class="li_menu_option">
                             <ul class="black_text">
                                 <li>test</li>
@@ -227,6 +237,7 @@
                                 <li class="button hover_blue test_button2">program_manager</li>
                                 <li class="button hover_blue test_button3">control_panel</li>
                                 <li class="button hover_blue test_button4">color</li>
+                                <li class="button hover_blue test_button5">version</li>
                             </ul>
                         </div>
                     </div>
@@ -238,6 +249,7 @@
                                 <li class="test_button2">program_manager</li>
                                 <li class="test_button3">control_panel</li>
                                 <li class="test_button4">color</li>
+                                <li class="test_button5">version</li>
                                 <li onclick="prompt_data_clear()">nexser finish</li>
                             </ul>
                         </div>
@@ -351,6 +363,7 @@
     /* buttons */
 
     .button {
+        display: inline-block;
         border-top: solid 1.5px white;
         border-right: solid 1.5px black;
         border-left: solid 1.5px white;
@@ -382,10 +395,14 @@
     }
 
     #taskbar .taskbar_buttons {
+        display: inline-block;
         position: absolute;
         bottom: 5px;
-        left: 130px;
-        column-count: 6;
+        left: 100px;
+    }
+
+    #taskbar .button {
+        margin-left: 5px;
     }
 
     /* start_menu */
@@ -431,7 +448,7 @@
     }
 
     .child_windows.big {
-        height: 99vh;
+        height: auto;
         width: 99.7%;
         border: solid 2px black;
         background: white;
@@ -612,20 +629,22 @@
     }
 </style>
 <script text="javascript">
-   // var ua = navigator.userAgent;
-    //if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android') > 0 || ua.indexOf('Mobile') > 0)) {
+    var ua = navigator.userAgent;
+    if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android') > 0 || ua.indexOf('Mobile') > 0)) {
 
-        const start = document.querySelector('#startbtn');
-    const taskbar = document.querySelector('#taskbar');
-        const parent_start_menu = document.querySelector('#start_menu');
+        const start = document.querySelector('#startbtn')
+        const parent_start_menu = document.querySelector('#start_menu')
+        const taskbar = document.querySelector('#taskbar');
 
         const nameText = document.querySelector('.name');
         const msg = document.querySelector('.test_name');
         const prompt = document.getElementById('prompt');
         const prompt_text = document.querySelector('.prompt_text');
+        const memory = document.querySelector('.memory');
         const userelement = document.querySelector('.user');
         const nexser = document.getElementById('nexser');
         const desktop = document.getElementById('desktop');
+        const soft_windows = document.getElementById('soft_windows');
         const title = document.querySelector('.title');
         const z_index = document.querySelector('.z_index');
 
@@ -634,8 +653,14 @@
         const li_menu_window = document.querySelector('.li_menu_window');
         const li_menu_help = document.querySelector('.li_menu_help');
 
-        let child_windows = document.querySelector('.child_windows');
-        let program = document.querySelector('.program_manager');
+        // soft_windows
+        const child_windows = document.querySelector('.child_windows');
+
+        const main = document.querySelector('.main');
+        const program = document.querySelector('.program_manager');
+        const control = document.querySelector('.control_panel');
+        const color_menu = document.querySelector('.color');
+        const version = document.querySelector('.version');
 
         // start.addEventListener('mouseover', function () {
         //     // マウスが要素に乗った際の処理
@@ -654,14 +679,14 @@
                 start_menu.style.display = "block";
             }
         })
+        soft_windows.addEventListener('mousedown', function () {
+            console.log("test");
+            start_menu.style.display = "none";
+        });
 
-        setInterval(() => {
-            console.log(largestZIndex);
-        }, 1000);
-
-
-        // soft_windows
-        const main = document.querySelector('.main');
+        // setInterval(() => {
+        //     console.log(largestZIndex);
+        // }, 1000);
 
         window.addEventListener('load', load_nexser);
         function load_nexser() {
@@ -675,10 +700,19 @@
                 desktop.style.display = "none";
                 document.getElementById('focus').focus();
             }
+            taskbar_none()
+        }
+
+        function taskbar_none() {
+            if (localStorage.getItem('data_taskbar_none')) {
+                taskbar.style.display = "none";
+                program.classList.remove('active');
+            }
         }
 
         function prompt_data_clear() {
             localStorage.removeItem('prompt_data');
+            localStorage.removeItem('data_taskbar_none');
             window.location = ''
         }
 
@@ -750,10 +784,10 @@
                     min();
                     prompt_text.style.color = "";
                     break;
-                case 'taskbar/none';
-                    taskbar.style.display = "none";
-                    msg.innerText = "タスクバーの表示がオフになりました。";
-                    program.classList.remove('active');
+                case 'taskbar/none':
+                    const data_taskbar_none = document.prompt_text_form.prompt_text.value;
+                    localStorage.setItem('data_taskbar_none', data_taskbar_none);
+                    prompt_text.style.color = "";
                     break;
                 default:
                     document.querySelector('.prompt_error_text').textContent = "コマンドが違います!";
@@ -778,7 +812,6 @@
                 document.querySelector('.chargingTime').innerHTML = battery.chargingTime;
                 document.querySelector('.dischargingTime').innerHTML = battery.dischargingTime;
             });
-            const memory = document.querySelector('.memory');
             memory.textContent = (`Memory:   ${(performance.memory.usedJSHeapSize / 1024).toFixed(2)}KB`);
         }, 100);
 
@@ -788,6 +821,7 @@
                 nexser.style.display = "block";
                 sound()
                 setTimeout(function () {
+                    taskbar_none()
                     desktop.style.display = "block";
                 }, 1000);
             }, 1000);
@@ -841,25 +875,16 @@
 
         document.querySelectorAll('.test_button').forEach(function (test_button) {
             test_button.addEventListener('click', function () {
-                let main = document.querySelector('.main');
                 main.classList.toggle('active');
-
-                if(main.style.display == "block";){
-
                 main.closest('.child_windows');
                 z = largestZIndex + 1;
                 unko = main.style.zIndex = z;
-                } else {
-                    alert("window none");
-                    console.log("test);
-                }
 
             });
         });
         document.querySelectorAll('.test_button2').forEach(function (test_button2) {
             test_button2.addEventListener('click', function () {
                 program.classList.toggle('active');
-
                 program.closest('.child_windows');
                 z = largestZIndex + 1;
                 unkoo = program.style.zIndex = z;
@@ -868,7 +893,6 @@
         });
         document.querySelectorAll('.test_button3').forEach(function (test_button3) {
             test_button3.addEventListener('click', function () {
-                let control = document.querySelector('.control_panel');
                 control.classList.toggle('active');
 
                 control.closest('.child_windows');
@@ -879,13 +903,22 @@
         });
         document.querySelectorAll('.test_button4').forEach(function (test_button4) {
             test_button4.addEventListener('click', function () {
-                let color = document.querySelector('.color');
-                color.classList.toggle('active');
+                color_menu.classList.toggle('active');
 
-                color.closest('.child_windows');
+                color_menu.closest('.child_windows');
 
                 z = largestZIndex + 1;
-                unkoooo = color.style.zIndex = z;
+                unkoooo = color_menu.style.zIndex = z;
+            });
+        });
+        document.querySelectorAll('.test_button5').forEach(function (test_button5) {
+            test_button5.addEventListener('click', function () {
+                version.classList.toggle('active');
+
+                version.closest('.child_windows');
+
+                z = largestZIndex + 1;
+                unkooooo = version.style.zIndex = z;
             });
         });
 
@@ -897,10 +930,13 @@
         })
 
         document.querySelectorAll('.drag_button').forEach(function (drag) {
-            drag.addEventListener('click', function () {
+            drag.addEventListener('mousedown', function () {
 
-                let drag2 = drag.parentElement;
-                drag2.classList.toggle('drag');
+                let drag2 = drag.closest('.child_windows');
+                drag2.classList.add('drag');
+
+                z = largestZIndex + 1;
+                window_z_index = drag2.style.zIndex = z;
 
                 draggable(document.querySelector('.drag'));
                 function draggable(drag) {
@@ -923,6 +959,8 @@
                         drag.onmouseup = function () {
                             document.removeEventListener('mousemove', onMouseMove);
                             drag.onmouseup = null;
+                            drag2.classList.remove('drag');
+                            draggable()
                         };
                     };
                 };
@@ -1067,9 +1105,9 @@
             }
         }
 
-    //} else {
-      //  document.querySelector(".prompt_error_text").textContent = 'この端末は対応していません!';
-    //}
+    } else {
+        document.querySelector(".prompt_error_text").textContent = 'この端末は対応していません!';
+    }
 
 </script>
 
