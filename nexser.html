@@ -615,8 +615,9 @@
    // var ua = navigator.userAgent;
     //if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android') > 0 || ua.indexOf('Mobile') > 0)) {
 
-        const start = document.querySelector('#startbtn')
-        const parent_start_menu = document.querySelector('#start_menu')
+        const start = document.querySelector('#startbtn');
+    const taskbar = document.querySelector('#taskbar');
+        const parent_start_menu = document.querySelector('#start_menu');
 
         const nameText = document.querySelector('.name');
         const msg = document.querySelector('.test_name');
@@ -634,6 +635,7 @@
         const li_menu_help = document.querySelector('.li_menu_help');
 
         let child_windows = document.querySelector('.child_windows');
+        let program = document.querySelector('.program_manager');
 
         // start.addEventListener('mouseover', function () {
         //     // マウスが要素に乗った際の処理
@@ -748,6 +750,10 @@
                     min();
                     prompt_text.style.color = "";
                     break;
+                case 'taskbar/none';
+                    taskbar.style.display = "none";
+                    msg.innerText = "タスクバーの表示がオフになりました。";
+                    program.classList.remove('active');
                 default:
                     document.querySelector('.prompt_error_text').textContent = "コマンドが違います!";
                     document.querySelector('.help').textContent = "";
@@ -851,7 +857,6 @@
         });
         document.querySelectorAll('.test_button2').forEach(function (test_button2) {
             test_button2.addEventListener('click', function () {
-                let program = document.querySelector('.program_manager');
                 program.classList.toggle('active');
 
                 program.closest('.child_windows');
