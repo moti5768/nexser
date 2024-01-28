@@ -100,7 +100,7 @@
                         </ul><br>
                     </div>
 
-                    <div class=" child_windows main shape active">
+                    <div class="child_windows main shape active">
                         <div class="title">
                             <span>main</span>
                         </div>
@@ -122,7 +122,7 @@
                         </ul><br>
                     </div>
 
-                    <div class=" child_windows sound_menu shape active">
+                    <div class="child_windows sound_menu shape active">
                         <div class=" title">
                             <span>sound</span>
                         </div>
@@ -132,11 +132,11 @@
                         <a class="minscreen_button hover_red">&nbsp;❒&nbsp;</a>
                         <a class="minimization_button hover_red">&nbsp;―&nbsp;</a><br>
                         <ul class="black_text window_main_list">
-                            <li onclick="sound()">start</li>
-                            <li onclick="sound2()">shutdown</li>
+                            <li onclick="sound()">The Microsoft Sound</li>
+                            <li onclick="sound2()">tada</li>
                             <li onclick="sound3()">chord</li>
-                            <li>test</li>
-                            <li>test</li>
+                            <li onclick="sound4()">chimes</li>
+                            <li onclick="sound5()">ding</li>
                             <li>test</li>
                             <li>test</li>
                             <li>test</li>
@@ -144,7 +144,7 @@
                         </ul><br>
                     </div>
 
-                    <div class=" child_windows control_panel shape active">
+                    <div class="child_windows control_panel shape active">
                         <div class="title">
                             <span>control panel</span>
                         </div>
@@ -164,8 +164,8 @@
                             <li class="test_button7">clock</li>
                             <li class="test_button8">sound</li>
                             <li class="test_button4">color</li>
-                            <li>test</li>
-                            <li>test</li>
+                            <li class="test_button9">driver</li>
+                            <li class="test_button10">mouse</li>
                             <li>test</li>
                             <li>test</li>
                             <li>test</li>
@@ -183,9 +183,6 @@
 
                         <a class="close_button hover_red">&nbsp;✕&nbsp;</a>
                         <a class="drag_button hover_red">&nbsp;↓&nbsp;</a>
-                        <a class="bigscreen_button hover_red">&nbsp;□&nbsp;</a>
-                        <a class="minscreen_button hover_red">&nbsp;❒&nbsp;</a>
-                        <a class="minimization_button hover_red">&nbsp;―&nbsp;</a>
                         <div class="title2">
                             <ul class="black_text">
                                 <li>test</li>
@@ -209,12 +206,13 @@
                             <ul class="black_text">
                                 <li>test</li>
                             </ul>
-                        </div><br>
-                        <p>version 0.0.1</p><br>
+                        </div>
+                        <p style="text-align: center;">nexser&copy;</p><br>
+                        <p style="text-align: center;">version 0.0.1</p>
                     </div>
 
                     <div class="child_windows clock_menu shape active">
-                        <div class=" title">
+                        <div class="title">
                             <span>clock</span>
                         </div>
 
@@ -260,14 +258,49 @@
                         <a class="bigscreen_button hover_red">&nbsp;□&nbsp;</a>
                         <a class="minscreen_button hover_red">&nbsp;❒&nbsp;</a>
                         <a class="minimization_button hover_red">&nbsp;―&nbsp;</a><br>
-                        <p><input type="text" id="bkcolor" size="40" class="border"
+                        <p><input type="text" id="bkcolor" size="40" class="border" autocomplete="off"
                                 placeholder="backcolor red, skyblue, #ffcc00 ...">
                         </p>
-                        <p><input type="text" id="color" size="40" class="border"
+                        <p><input type="text" id="color" size="40" class="border" autocomplete="off"
                                 placeholder="text_color red, skyblue, #ffcc00 ...">
                         </p>
-                        <p><button class="button hover_blue" type="button" id="changeBtn">color set</button></p>
+                        <p><button class="button hover_blue" id="changeBtn">color set</button></p>
                         <button class="button hover_blue" onclick="colordata_clear()">colors data clear</button>
+                        <div class="mini_window">
+                            <p>Background color</p>
+                            <select id="select_backcolor" class="button hover_blue">
+                                <option value="">default</option>
+                                <option value=" black">black</option>
+                                <option value="white">white</option>
+                                <option value="blue">blue</option>
+                                <option value="red">red</option>
+                                <option value="yellow">yellow</option>
+                                <option value="green">green</option>
+                                <option value="purple">purple</option>
+                                <option value="lime">lime</option>
+                                <option value="skyblue">skyblue</option>
+                                <option value="pink">pink</option>
+                                <option value="orange">orange</option>
+                            </select>
+
+                            <p>Text color</p>
+                            <select id="select_textcolor" class="button hover_blue">
+                                <option value="">default</option>
+                                <option value=" black">black</option>
+                                <option value="white">white</option>
+                                <option value="blue">blue</option>
+                                <option value="red">red</option>
+                                <option value="yellow">yellow</option>
+                                <option value="green">green</option>
+                                <option value="purple">purple</option>
+                                <option value="lime">lime</option>
+                                <option value="skyblue">skyblue</option>
+                                <option value="pink">pink</option>
+                                <option value="orange">orange</option>
+                            </select>
+                            <p><button class="button hover_blue" onclick="setStorage2()">color set</button></p>
+                            <button class="button hover_blue" onclick="colordata_clear()">colors data clear</button>
+                        </div>
                     </div>
 
                     <div class="child_windows window_prompt shape active" style=" background-color: rgb(51, 51, 184);">
@@ -290,16 +323,89 @@
                         </div>
                     </div>
 
+                    <div class="child_windows driver_menu shape active">
+
+                        <div class="title">
+                            <span>driver menu</span>
+                        </div>
+
+                        <a class="close_button hover_red">&nbsp;✕&nbsp;</a>
+                        <a class="drag_button hover_red">&nbsp;↓&nbsp;</a>
+                        <a class="bigscreen_button hover_red">&nbsp;□&nbsp;</a>
+                        <a class="minscreen_button hover_red">&nbsp;❒&nbsp;</a>
+                        <a class="minimization_button hover_red">&nbsp;―&nbsp;</a>
+                        <br>
+                        <p>nexser default driver</p>
+                        <br>
+                        <div class="mini_window">
+                            <p>sound&emsp;<button class="installbutton_1 border hover_blue"
+                                    id="sound_driver">install</button>
+                            </p>
+                            <p>(There is a sound when installing the driver)</p>
+                            <p>color&emsp;<button class="installbutton_2 border hover_blue"
+                                    id="color_driver">install</button>
+                            </p>
+                            <p>(You can change the color when installing the driver)</p>
+                        </div>
+                    </div>
+
+                    <div class="child_windows mouse_menu shape active">
+                        <div class="title">
+                            <span>mouse</span>
+                        </div>
+
+                        <a class="close_button hover_red">&nbsp;✕&nbsp;</a>
+                        <a class="drag_button hover_red">&nbsp;↓&nbsp;</a>
+                        <div class="title2">
+                            <ul class="black_text">
+                                <li>test</li>
+                                <li>test</li>
+                                <li>test</li>
+                                <li>test</li>
+                                <li style="width: 100%;"></li>
+                            </ul>
+                        </div>
+                        <div class="li_menu_option">
+                            <ul class="black_text">
+                                <li>test</li>
+                            </ul>
+                        </div>
+                        <div class="li_menu_window">
+                            <ul class="black_text">
+                                <li>test</li>
+                            </ul>
+                        </div>
+                        <div class="li_menu_help">
+                            <ul class="black_text">
+                                <li>test</li>
+                            </ul>
+                        </div>
+                        <p>mouse test</p>
+                        <button id="button1" class="border hover_blue">mouse</button><br>
+                        <div class="mini_window">
+                            <span class="mouse_left button" style="text-align: center;">left</span><br>
+                            <span class="mouse_right button" style="text-align: center;">right</span>
+                        </div>
+                    </div>
 
 
-                    <div class="error_windows error_window active" style="z-index: 999999;">
+
+                    <div class="error_windows active" style="z-index: 999999;">
                         <div class="title" style="background: darkred;">
                             <span>error</span>
                         </div>
-
                         <a class="close_button close_button2 hover_red">&nbsp;✕&nbsp;</a><br>
+                        <p>error!! <br> <span class="window_error_text"></span></p><br>
+                    </div>
 
-                        <p>error!! <br> All Window closed!!</p><br>
+                    <div class="warning_windows active" style="z-index: 999999;">
+                        <div class="title" style="background: darkred;">
+                            <span>warning</span>
+                        </div>
+                        <a class="close_button close_button3 hover_red">&nbsp;✕&nbsp;</a><br>
+                        <br>
+                        <p>task window open! shutdown?</p>
+                        <button class="button hover_blue" onclick="window_none(),shutdown()">shutdown</button>
                     </div>
 
 
@@ -319,6 +425,8 @@
                                 <li class="button hover_blue test_button6">nexser prompt</li>
                                 <li class="button hover_blue test_button7">clock</li>
                                 <li class="button hover_blue test_button8">sound</li>
+                                <li class="button hover_blue test_button9">driver</li>
+                                <li class="button hover_blue test_button10">mouse</li>
                             </ul>
                         </div>
                     </div>
@@ -333,8 +441,12 @@
                                 <li class="test_button5">version</li>
                                 <li class="test_button6">nexser prompt</li>
                                 <li class="test_button7">clock</li>
-                                <li class="test_button8">sound</li><br>
-                                <li onclick="shutdown()">shutdown</li>
+                                <li class="test_button8">sound</li>
+                                <li class="test_button9">driver</li>
+                                <li class="test_button10">mouse</li><br>
+                                <div class="mini_window">
+                                    <li onclick="shutdown()">shutdown</li>
+                                </div>
                             </ul>
                         </div>
                     </div>
@@ -451,7 +563,7 @@
         width: 100%;
         height: 100vh;
         display: block;
-        background-color: darkgray;
+        background: darkgrey;
     }
 
     /* desktop */
@@ -484,7 +596,7 @@
         width: 100%;
         height: 40px;
         background-color: #999999;
-        border-top: solid 2px black;
+        border-top: solid 1px black;
         position: absolute;
         bottom: 0;
         z-index: 999999;
@@ -546,6 +658,13 @@
         left: 25%;
     }
 
+    .mini_window {
+        display: block;
+        width: auto;
+        height: auto;
+        border-top: solid 1px black;
+    }
+
     .error_windows {
         display: block;
         font-size: 15px;
@@ -554,11 +673,29 @@
         border: solid 2px #c0c0c0;
         background: white;
         position: absolute;
-        top: 25%;
-        left: 25%;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+    .warning_windows {
+        display: block;
+        font-size: 15px;
+        width: auto;
+        height: auto;
+        border: solid 2px #c0c0c0;
+        background: white;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
     }
 
     .error_windows.active {
+        display: none;
+    }
+
+    .warning_windows.active {
         display: none;
     }
 
@@ -751,10 +888,21 @@
     .window_control_list {
         column-count: 5;
     }
+
+    /* mouse */
+    .mouse_left.active {
+        background: blue;
+        color: white;
+    }
+
+    .mouse_right.active {
+        background: blue;
+        color: white;
+    }
 </style>
 <script text="javascript">
-    //var ua = navigator.userAgent;
-    //if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android') > 0 || ua.indexOf('Mobile') > 0)) {
+    var ua = navigator.userAgent;
+    if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android') > 0 || ua.indexOf('Mobile') > 0)) {
 
         const start = document.querySelector('#startbtn')
         const parent_start_menu = document.querySelector('#start_menu')
@@ -791,8 +939,11 @@
         const window_prompt = document.querySelector('.window_prompt');
         const clock_menu = document.querySelector('.clock_menu');
         const sound_menu = document.querySelector('.sound_menu');
+        const driver_menu = document.querySelector('.driver_menu');
+        const mouse_menu = document.querySelector('.mouse_menu');
 
-        const error_window = document.querySelector('.error_window');
+        const error_windows = document.querySelector('.error_windows');
+        const warning_windows = document.querySelector('.warning_windows');
 
         // start.addEventListener('mouseover', function () {
         //     // マウスが要素に乗った際の処理
@@ -839,6 +990,8 @@
             }
             taskbar_none()
             title_none()
+            setColor()
+            all_driver()
         }
 
         function nexser_start() {
@@ -855,15 +1008,17 @@
 
         function shutdown() {
             let result = document.getElementsByClassName('child_windows active').length;
-            result2 = 8;
+            result2 = 10;
             let result3 = result - result2;
             console.log(result3)
-            if (result3 == 0 && error_window.classList.contains('active')) {
+            if (result3 == 0) {
                 sound2();
                 desktop.style.display = "none";
                 localStorage.removeItem('prompt_data');
                 window_reset();
                 document.querySelector('#codes').style.display = "none";
+                window_none();
+
                 setTimeout(() => {
                     document.getElementsByClassName('name')[0].value = "";
                     document.querySelector('.prompt_error_text').textContent = "";
@@ -874,13 +1029,41 @@
                     prompt.style.display = "block";
                     start_menu.style.display = "none";
                     document.querySelector('.focus').focus();
-                    document.querySelectorAll('.child_windows').forEach(function (allwindow) {
-                        allwindow.classList.add('active');
-                    })
                 }, 1500);
             } else {
-                error_window.classList.remove('active')
-                sound3()
+                warning_windows.classList.remove('active')
+                sound5()
+            }
+        }
+
+        document.getElementById('sound_driver').addEventListener('click', function () {
+            if (localStorage.getItem('driver_sound')) {
+                localStorage.removeItem('driver_sound')
+                document.querySelector('.installbutton_1').textContent = "install"
+            } else {
+                const sound_driver = document.querySelector('#sound_driver');
+                localStorage.setItem('driver_sound', sound_driver);
+                document.querySelector('.installbutton_1').textContent = "uninstall"
+            }
+        })
+        document.getElementById('color_driver').addEventListener('click', function () {
+            if (localStorage.getItem('driver_color')) {
+                localStorage.removeItem('driver_color')
+                document.querySelector('.installbutton_2').textContent = "install"
+                colordata_clear();
+            } else {
+                const color_driver = document.querySelector('#color_driver');
+                localStorage.setItem('driver_color', color_driver);
+                document.querySelector('.installbutton_2').textContent = "uninstall"
+            }
+        })
+
+        function all_driver() {
+            if (localStorage.getItem('driver_sound')) {
+                document.querySelector('.installbutton_1').textContent = "uninstall"
+            }
+            if (localStorage.getItem('driver_color')) {
+                document.querySelector('.installbutton_2').textContent = "uninstall"
             }
         }
 
@@ -892,8 +1075,11 @@
         }
         function window_none() {
             document.querySelectorAll('.child_windows').forEach(function (allwindow_none) {
-                allwindow_none.classList.add('active')
+                allwindow_none.classList.add('active');
+                allwindow_none.classList.remove('big');
             });
+            warning_windows.classList.add('active');
+            error_windows.classList.add('active');
         }
         function window_active() {
             document.querySelectorAll('.child_windows').forEach(function (allwindow_active) {
@@ -1136,9 +1322,15 @@
                     window_reset()
                     break;
                 case 'allwindow/close':
-                    document.querySelector('.prompt_error_text2').textContent = "";
-                    prompt_text2.style.color = "";
-                    window_none()
+                    if (localStorage.getItem('data_taskbar_none')) {
+                        document.querySelector('.window_error_text').textContent = "taskbar none window close no!"
+                        error_windows.classList.remove('active')
+                        sound3()
+                    } else {
+                        document.querySelector('.prompt_error_text2').textContent = "";
+                        prompt_text2.style.color = "";
+                        window_none()
+                    }
                     break;
                 case 'allwindow/open':
                     document.querySelector('.prompt_error_text2').textContent = "";
@@ -1178,7 +1370,7 @@
                 case 'nexser/shutdown':
                     document.querySelector('.prompt_error_text2').textContent = "";
                     prompt_text2.style.color = "";
-                    shutdown()
+                    shutdown();
                     break;
                 default:
                     document.querySelector('.prompt_error_text2').textContent = "コマンドが違います!";
@@ -1237,6 +1429,13 @@
                 closebutton2.classList.add('active');
             });
         })
+        document.querySelectorAll('.close_button3').forEach(function (close_button3) {
+            close_button3.addEventListener('click', function () {
+                const closebutton3 = close_button3.closest('.warning_windows');
+                closebutton3.classList.add('active');
+            });
+        })
+
         document.querySelectorAll('.minimization_button').forEach(function (minimizationbutton) {
             minimizationbutton.addEventListener('click', function () {
                 const minimization_button = minimizationbutton.closest('.child_windows');
@@ -1265,7 +1464,7 @@
                 main.classList.toggle('active');
                 main.closest('.child_windows');
                 z = largestZIndex + 1;
-                unko = main.style.zIndex = z;
+                unko1 = main.style.zIndex = z;
 
             });
         });
@@ -1274,7 +1473,7 @@
                 program.classList.toggle('active');
                 program.closest('.child_windows');
                 z = largestZIndex + 1;
-                unkoo = program.style.zIndex = z;
+                unko2 = program.style.zIndex = z;
 
             });
         });
@@ -1284,7 +1483,7 @@
 
                 control.closest('.child_windows');
                 z = largestZIndex + 1;
-                unkooo = control.style.zIndex = z;
+                unko3 = control.style.zIndex = z;
 
             });
         });
@@ -1295,7 +1494,7 @@
                 color_menu.closest('.child_windows');
 
                 z = largestZIndex + 1;
-                unkoooo = color_menu.style.zIndex = z;
+                unko4 = color_menu.style.zIndex = z;
             });
         });
         document.querySelectorAll('.test_button5').forEach(function (test_button5) {
@@ -1305,7 +1504,7 @@
                 version.closest('.child_windows');
 
                 z = largestZIndex + 1;
-                unkooooo = version.style.zIndex = z;
+                unko5 = version.style.zIndex = z;
             });
         });
         document.querySelectorAll('.test_button6').forEach(function (test_button6) {
@@ -1315,7 +1514,7 @@
                 window_prompt.closest('.child_windows');
 
                 z = largestZIndex + 1;
-                unkooooo = window_prompt.style.zIndex = z;
+                unko6 = window_prompt.style.zIndex = z;
             });
         });
         document.querySelectorAll('.test_button7').forEach(function (test_button7) {
@@ -1325,7 +1524,7 @@
                 clock_menu.closest('.child_windows');
 
                 z = largestZIndex + 1;
-                unkooooo = clock_menu.style.zIndex = z;
+                unko7 = clock_menu.style.zIndex = z;
             });
         });
         document.querySelectorAll('.test_button8').forEach(function (test_button8) {
@@ -1335,7 +1534,27 @@
                 sound_menu.closest('.child_windows');
 
                 z = largestZIndex + 1;
-                unkooooo = sound_menu.style.zIndex = z;
+                unko8 = sound_menu.style.zIndex = z;
+            });
+        });
+        document.querySelectorAll('.test_button9').forEach(function (test_button9) {
+            test_button9.addEventListener('click', function () {
+                driver_menu.classList.toggle('active');
+
+                driver_menu.closest('.child_windows');
+
+                z = largestZIndex + 1;
+                unko9 = driver_menu.style.zIndex = z;
+            });
+        });
+        document.querySelectorAll('.test_button10').forEach(function (test_button10) {
+            test_button10.addEventListener('click', function () {
+                mouse_menu.classList.toggle('active');
+
+                mouse_menu.closest('.child_windows');
+
+                z = largestZIndex + 1;
+                unko9 = mouse_menu.style.zIndex = z;
             });
         });
 
@@ -1345,6 +1564,7 @@
                 minscreenbutton.classList.remove('big');
             });
         })
+
 
         document.querySelectorAll('.drag_button').forEach(function (drag) {
             drag.addEventListener('mousedown', function () {
@@ -1412,12 +1632,29 @@
             localStorage.setItem(KEY_BKCOLOR, bkcolor);
         }
 
+        function setStorage2() {
+            var select = document.getElementById("select_backcolor");
+            const select2 = (select.value);
+            console.log(select2)
+
+            var select3 = document.getElementById("select_textcolor");
+            const select4 = (select3.value);
+            console.log(select4)
+
+            localStorage.setItem(KEY_BKCOLOR, select2);
+            localStorage.setItem(KEY_COLOR, select4);
+            getStorage()
+            setColor()
+        }
+
         /*
          * 文字色と背景色を変更する
          */
         function setColor() {
-            document.querySelector("body").style.color = color;
-            document.querySelector("#nexser").style.backgroundColor = bkcolor;
+            if (localStorage.getItem('driver_color')) {
+                document.querySelector("body").style.color = color;
+                document.querySelector("#nexser").style.backgroundColor = bkcolor;
+            }
         }
 
         /*
@@ -1482,16 +1719,34 @@
         }
 
         function sound() {
-            const sound = new Audio("https://github.com/moti5768/moti.world/raw/main//IMG_6305.mp3");
-            sound.play();
+            if (localStorage.getItem('driver_sound')) {
+                const sound = new Audio("https://github.com/moti5768/nexser/raw/main//The-Microsoft-Sound.mp3");
+                sound.play();
+            }
         }
         function sound2() {
-            const sound2 = new Audio("https://github.com/moti5768/moti.world/raw/main//IMG_6307.mp3");
-            sound2.play();
+            if (localStorage.getItem('driver_sound')) {
+                const sound2 = new Audio("https://github.com/moti5768/nexser/raw/main//tada.mp3");
+                sound2.play();
+            }
         }
         function sound3() {
-            const sound3 = new Audio("https://github.com/moti5768/nexser/raw/main//chord.mp3");
-            sound3.play();
+            if (localStorage.getItem('driver_sound')) {
+                const sound3 = new Audio("https://github.com/moti5768/nexser/raw/main//chord.mp3");
+                sound3.play();
+            }
+        }
+        function sound4() {
+            if (localStorage.getItem('driver_sound')) {
+                const sound4 = new Audio("https://github.com/moti5768/nexser/raw/main//chimes.mp3");
+                sound4.play();
+            }
+        }
+        function sound5() {
+            if (localStorage.getItem('driver_sound')) {
+                const sound5 = new Audio("https://github.com/moti5768/nexser/raw/main//ding.mp3");
+                sound5.play();
+            }
         }
         let ele = document.documentElement;
         function full() {
@@ -1525,16 +1780,38 @@
             var day = date.getDate();
             document.querySelector('.date_day').textContent = (year + "/" + month + "/" + day + "");
             var date = new Date();
-            var hours = date.getHours()
-            var minutes = date.getMinutes();
-            var seconds = date.getSeconds();
+            var hours = date.getHours().toString().padStart(2, '0');
+            var minutes = date.getMinutes().toString().padStart(2, '0');
+            var seconds = date.getSeconds().toString().padStart(2, '0');
             document.querySelector('.date_clock').textContent = (hours + ":" + minutes + ":" + seconds + "");
         }, 100);
 
+        // 右クリックイベントの登録
+        document.getElementById("button1").addEventListener("contextmenu", function (event) {
+            event.preventDefault();
+            // デフォルトの右クリックメニューを無効化
+            setTimeout(() => {
+                document.querySelector('.mouse_right').classList.add('active');
+            }, 0);
+            setTimeout(() => {
+                document.querySelector('.mouse_right').classList.remove('active');
+            }, 500);
+        });
 
-    //} else {
-        //document.querySelector(".prompt_error_text").textContent = 'この端末は対応していません!';
-   // }
+        // 左クリックイベントの登録
+        document.getElementById("button1").addEventListener("click", function () {
+            setTimeout(() => {
+                document.querySelector('.mouse_left').classList.add('active');
+            }, 0);
+            setTimeout(() => {
+                document.querySelector('.mouse_left').classList.remove('active');
+            }, 500);
+        });
+
+
+    } else {
+        document.querySelector(".prompt_error_text").textContent = 'この端末は対応していません!';
+    }
 
 </script>
 
