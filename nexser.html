@@ -5100,12 +5100,11 @@
             if (localStorage.getItem('textdropData')) {
                 const memo_save2 = document.getElementById('drop_save_text');
                 memo_save2.textContent = "save keep";
-                let textdropData = "";
+                textdropData = localStorage.getItem('textdropData');
             } else {
                 const memo_save2 = document.getElementById('drop_save_text');
                 memo_save2.textContent = "no save";
             }
-            textdropData = localStorage.getItem('textdropData');
         }
 
         // 保存
