@@ -1,4 +1,43 @@
-&lt;!DOCTYPE html&gt;
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>nexser version 1.0</title>
+</head>
+
+<body id="background">
+
+    <div id="nex" class="nexser_group">
+
+        <div id="prompt" style="display: none;">
+            <div class="prompt_text">[nexser prompt version v1.0<span class="test_name"></span>]</div>
+            <form autocomplete="off" method="get" name="prompt_text_form" onsubmit="return false;">
+                <span>nexser\></span><input type="text" class="name focus" name="prompt_text" placeholder="command">
+            </form>
+            <p class="prompt_error_text"></p>
+            <p class="user" class="user"></p>
+            <div style="color: lime;">
+                <p class="memory"></p>
+                <p>Batterylevel:&emsp;<span class="level"></span></p>
+                <p>Charging:&emsp;<span class="charging"></span></p>
+                <p>ChargingTime:&emsp;<span class="chargingTime"></span></p>
+                <p>DischargingTime:&emsp;<span class="dischargingTime"></span></p>
+            </div>
+            <p class="help" style="color: deepskyblue;"></p>
+
+            <pre>
+                <code>
+                    <textarea id="codes" style="display: none; width: 99%; height: 65vh; background-color: black; color: white; resize: none; outline: none;">
+
+                        
+
+
+
+
+
+                        &lt;!DOCTYPE html&gt;
 &lt;html lang=&quot;ja&quot;&gt;
 
 &lt;head&gt;
@@ -3883,3 +3922,3854 @@
 &lt;/script&gt;
 
 &lt;/html&gt;
+
+
+
+                </textarea>
+                </code>
+            </pre>
+        </div>
+
+        <div id="nexser_program" style="font-size: x-large;">
+            <div>
+                <span>NEXSER PROGRAM</span>
+                <div style="border: double 5px white; height: 90vh;">
+                    <p>nexser program startup list</p>
+                    <div class="mini_window" style="border-color: white;">
+                        <ul>
+                            <li>program manager&emsp;<span class="startup_program">OFF</span></li>
+                            <li>note pad&emsp;<span class="startup_note">OFF</span></li>
+                            <li>color&emsp;<span class="startup_color">OFF</span></li>
+                            <li>screen&emsp;<span class="startup_screen">OFF</span></li>
+                        </ul>
+                    </div>
+                    <div class="mini_window" style="border-color: white;">
+                        <div style="width: 100%; border-bottom: solid 1px white;">STARTUP MODE</div>
+                        <ul>
+                            <li>SPEED&emsp;<span class="startup_speed">LOW</span></li>
+                        </ul>
+                    </div>
+                    <a class="hover_red" style="display: block;" onclick="nexser_program_close()">EXIT PROGRAM</a>
+                </div>
+            </div>
+        </div>
+
+
+
+        <div id="nexser">
+            <span class="z_index" style="color: white; position: absolute; bottom: 40px;"></span>
+
+            <div id="desktop">
+                <span id="background_text">none</span>
+
+                <div id="files">
+                    <a style="color: white; position: absolute; top: 0px;">File none</a>
+                </div>
+
+                <div id="soft_windows">
+
+                    <div class="child_windows program_manager active">
+                        <div class="title">
+                            <span>program manager</span>
+                        </div>
+
+                        <div class="title_buttons">
+                            <a class="drag_button">&nbsp;</a>
+                            <a class="close_button hover_button">&nbsp;✕&nbsp;</a>
+                            <a class="bigscreen_button hover_button">&nbsp;□&nbsp;</a>
+                            <a class="minscreen_button hover_button">&nbsp;❒&nbsp;</a>
+                            <a class="minimization_button hover_button">&nbsp;―&nbsp;</a><br>
+                        </div>
+
+                        <div class="title2">
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;window(<ins>W</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue window_top">window top</li>
+                                        <li class="hover_blue window_left">window left</li>
+                                        <li class="hover_blue window_top_and_left">window top & left
+                                        </li>
+                                        <li class="hover_blue window_half_big">window half big</li>
+                                        <li class="hover_blue windowsize_reset">window size reset</li>
+                                        <li class="hover_blue">test</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <ul class="black_text window_inline_list">
+                            <li class="test_button">main</li>
+                            <li class="test_button5">version</li>
+                            <li class="test_button14">window mode</li>
+                            <li class="test_button15">accessory</li>
+                            <li>test</li>
+                            <li>test</li>
+                            <li>test</li>
+                            <li>test</li>
+                        </ul><br>
+                    </div>
+
+                    <div class="child_windows windowmode_menu active">
+                        <div class="title">
+                            <span>window mode</span>
+                        </div>
+
+                        <div class="title_buttons">
+                            <a class="drag_button">&nbsp;</a>
+                            <a class="close_button hover_button">&nbsp;✕&nbsp;</a>
+                            <a class="bigscreen_button hover_button">&nbsp;□&nbsp;</a>
+                            <a class="minscreen_button hover_button">&nbsp;❒&nbsp;</a>
+                            <a class="minimization_button hover_button">&nbsp;―&nbsp;</a><br>
+                        </div>
+
+                        <div class="title2">
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;window(<ins>W</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue window_top">window top</li>
+                                        <li class="hover_blue window_left">window left</li>
+                                        <li class="hover_blue window_top_and_left">window top & left
+                                        </li>
+                                        <li class="hover_blue window_half_big">window half big</li>
+                                        <li class="hover_blue windowsize_reset">window size reset</li>
+                                        <li class="hover_blue">test</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <ul class="black_text window_inline_list">
+                            <li id="window_invisible">invisible</li>
+                            <li id="window_borderblack">border black</li>
+                            <li id="window_titlebackcolor">title backgroundcolor</li>
+                            <li onclick="windowmode_reset()">default</li>
+                        </ul><br>
+                    </div>
+
+
+                    <div class="child_windows accessory_menu active">
+                        <div class="title">
+                            <span>accessory</span>
+                        </div>
+
+                        <div class="title_buttons">
+                            <a class="drag_button">&nbsp;</a>
+                            <a class="close_button hover_button">&nbsp;✕&nbsp;</a>
+                            <a class="bigscreen_button hover_button">&nbsp;□&nbsp;</a>
+                            <a class="minscreen_button hover_button">&nbsp;❒&nbsp;</a>
+                            <a class="minimization_button hover_button">&nbsp;―&nbsp;</a><br>
+                        </div>
+
+                        <div class="title2">
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;window(<ins>W</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue window_top">window top</li>
+                                        <li class="hover_blue window_left">window left</li>
+                                        <li class="hover_blue window_top_and_left">window top & left
+                                        </li>
+                                        <li class="hover_blue window_half_big">window half big</li>
+                                        <li class="hover_blue windowsize_reset">window size reset</li>
+                                        <li class="hover_blue">test</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <ul class="black_text window_inline_list">
+                            <li class="test_button7">clock</li>
+                            <li class="test_button16">calc</li>
+                            <li class="test_button12">notepad</li>
+                            <li class="test_button13">text drop</li>
+                            <li>test</li>
+                            <li>test</li>
+                            <li>test</li>
+                            <li>test</li>
+                            <li>test</li>
+                        </ul><br>
+                    </div>
+
+
+                    <div class="child_windows main active">
+                        <div class="title">
+                            <span>main</span>
+                        </div>
+
+                        <div class="title_buttons">
+                            <a class="drag_button">&nbsp;</a>
+                            <a class="close_button hover_button">&nbsp;✕&nbsp;</a>
+                            <a class="bigscreen_button hover_button">&nbsp;□&nbsp;</a>
+                            <a class="minscreen_button hover_button">&nbsp;❒&nbsp;</a>
+                            <a class="minimization_button hover_button">&nbsp;―&nbsp;</a><br>
+                        </div>
+
+                        <ul class="black_text window_inline_list">
+                            <li class="test_button3">control_panel</li>
+                            <li class="test_button6">nexser prompt</li>
+                            <li class="test_button2">program_manager</li>
+                            <li>test</li>
+                            <li>test</li>
+                            <li>test</li>
+                            <li>test</li>
+                            <li>test</li>
+                            <li>test</li>
+                            <li>test</li>
+                            <li>test</li>
+                            <li>test</li>
+                        </ul><br>
+                    </div>
+
+                    <div class="child_windows control_panel active">
+                        <div class="title">
+                            <span>control panel</span>
+                        </div>
+
+                        <div class="title_buttons">
+                            <a class="drag_button">&nbsp;</a>
+                            <a class="close_button hover_button">&nbsp;✕&nbsp;</a>
+                            <a class="bigscreen_button hover_button">&nbsp;□&nbsp;</a>
+                            <a class="minscreen_button hover_button">&nbsp;❒&nbsp;</a>
+                            <a class="minimization_button hover_button">&nbsp;―&nbsp;</a><br>
+                        </div>
+
+                        <div class="title2">
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;window(<ins>W</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue window_top">window top</li>
+                                        <li class="hover_blue window_left">window left</li>
+                                        <li class="hover_blue window_top_and_left">window top & left
+                                        </li>
+                                        <li class="hover_blue window_half_big">window half big</li>
+                                        <li class="hover_blue windowsize_reset">window size reset</li>
+                                        <li class="hover_blue">test</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <ul class="black_text window_inline_list">
+                            <li class="test_button8">sound</li>
+                            <li class="test_button4">color</li>
+                            <li class="test_button9">driver</li>
+                            <li class="test_button10">mouse</li>
+                            <li class="test_button11">screen</li>
+                            <li class="test_button17">nexser sound</li>
+                            <li>test</li>
+                            <li>test</li>
+                            <li>test</li>
+                            <li>test</li>
+                            <li>test</li>
+                            <li>test</li>
+                        </ul><br>
+                    </div>
+
+                    <div class="child_windows sound_menu active">
+                        <div class="title">
+                            <span>sound</span>
+                        </div>
+
+                        <div class="title_buttons">
+                            <a class="drag_button">&nbsp;</a>
+                            <a class="close_button hover_button">&nbsp;✕&nbsp;</a>
+                            <a class="bigscreen_button hover_button">&nbsp;□&nbsp;</a>
+                            <a class="minscreen_button hover_button">&nbsp;❒&nbsp;</a>
+                            <a class="minimization_button hover_button">&nbsp;―&nbsp;</a><br>
+                        </div>
+
+                        <ul class="black_text window_inline_list">
+                            <li onclick="sound()">The Microsoft Sound</li>
+                            <li onclick="sound2()">tada</li>
+                            <li onclick="sound3()">chord</li>
+                            <li onclick="sound4()">chimes</li>
+                            <li onclick="sound5()">ding</li>
+                            <li onclick="sound6()">statrtup_2</li>
+                            <li>test</li>
+                            <li>test</li>
+                            <li>test</li>
+                            <li>test</li>
+                            <li>test</li>
+                            <li>test</li>
+                        </ul><br>
+                    </div>
+
+                    <div class="child_windows nexser_sound_menu active">
+                        <div class="title">
+                            <span>nexser sound</span>
+                        </div>
+
+                        <div class="title_buttons">
+                            <a class="drag_button">&nbsp;</a>
+                            <a class="close_button hover_button">&nbsp;✕&nbsp;</a>
+                            <a class="bigscreen_button hover_button">&nbsp;□&nbsp;</a>
+                            <a class="minscreen_button hover_button">&nbsp;❒&nbsp;</a>
+                            <a class="minimization_button hover_button">&nbsp;―&nbsp;</a><br>
+                        </div>
+
+                        <div class="title2">
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;window(<ins>W</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue window_top">window top</li>
+                                        <li class="hover_blue window_left">window left</li>
+                                        <li class="hover_blue window_top_and_left">window top & left
+                                        </li>
+                                        <li class="hover_blue window_half_big">window half big</li>
+                                        <li class="hover_blue windowsize_reset">window size reset</li>
+                                        <li class="hover_blue">test</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <div class="mini_window">
+                            <span style="display: block; width: 100%; border-bottom: solid 1px black;">startup
+                                sound</span>
+                            <ul class="black_text">
+                                <li class="hover_blue" onclick="sound()">The Microsoft Sound</li>
+                                <span class="button2 startup_1"></span>
+                                <li class="hover_blue" onclick="sound6()">statrtup_2</li>
+                                <span class="button2 startup_2"></span><br><br>
+                                <span class="button2" onclick="startupsound_reset()">startup sound reset</span>
+                            </ul><br>
+                        </div>
+                        <div class="mini_window">
+                            <span style="display: block; width: 100%; border-bottom: solid 1px black;">shutdown
+                                sound</span>
+                            <ul class="black_text">
+                                <li class="hover_blue" onclick="sound2()">tada</li>
+                                <span class="button2 shutdown_1"></span>
+                                <li class="hover_blue" onclick="sound4()">chimes</li>
+                                <span class="button2 shutdown_2"></span><br><br>
+                                <span class="button2" onclick="shutdownsound_reset()">shutdown sound reset</span>
+                            </ul><br>
+                        </div>
+                    </div>
+
+                    <div class="child_windows version active">
+                        <div class="title">
+                            <span>version</span>
+                        </div>
+
+                        <div class="title_buttons">
+                            <a class="drag_button">&nbsp;</a>
+                            <a class="close_button hover_button">&nbsp;✕&nbsp;</a><br>
+                        </div>
+
+                        <div class="title2">
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;window(<ins>W</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue window_top">window top</li>
+                                        <li class="hover_blue window_left">window left</li>
+                                        <li class="hover_blue window_top_and_left">window top & left
+                                        </li>
+                                        <li class="hover_blue">test</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                        </div>
+                        <p style="text-align: center;">nexser&copy;</p><br>
+                        <p style="text-align: center;">version 1.0</p>
+                        <p style="text-align: center;">2023-2024</p>
+                    </div>
+
+                    <div class="child_windows clock_menu active">
+                        <div class="title">
+                            <span>clock</span>
+                        </div>
+
+                        <div class="title_buttons">
+                            <a class="drag_button">&nbsp;</a>
+                            <a class="close_button hover_button">&nbsp;✕&nbsp;</a>
+                            <a class="bigscreen_button hover_button">&nbsp;□&nbsp;</a>
+                            <a class="minscreen_button hover_button">&nbsp;❒&nbsp;</a>
+                            <a class="minimization_button hover_button">&nbsp;―&nbsp;</a><br>
+                        </div>
+
+                        <div class="title2">
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;window(<ins>W</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue window_top">window top</li>
+                                        <li class="hover_blue window_left">window left</li>
+                                        <li class="hover_blue window_top_and_left">window top & left
+                                        </li>
+                                        <li class="hover_blue window_half_big">window half big</li>
+                                        <li class="hover_blue windowsize_reset">window size reset</li>
+                                        <li class="hover_blue">test</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <p>test date <span class="date_day">DATE</span></p>
+                        <p>test clock <span class="date_clock">CLOCK</span></p><br>
+                    </div>
+
+                    <div class="child_windows color active">
+                        <div class="title">
+                            <span>color</span>
+                        </div>
+
+                        <div class="title_buttons">
+                            <a class="drag_button">&nbsp;</a>
+                            <a class="close_button hover_button">&nbsp;✕&nbsp;</a>
+                            <a class="bigscreen_button hover_button">&nbsp;□&nbsp;</a>
+                            <a class="minscreen_button hover_button">&nbsp;❒&nbsp;</a>
+                            <a class="minimization_button hover_button">&nbsp;―&nbsp;</a><br>
+                        </div>
+
+                        <p><input type="text" id="bkcolor" size="40" class="border" autocomplete="off"
+                                placeholder="backcolor red, skyblue, #ffcc00 ...">
+                        </p>
+                        <p><input type="text" id="color" size="40" class="border" autocomplete="off"
+                                placeholder="text_color red, skyblue, #ffcc00 ...">
+                        </p>
+                        <p><button class="button2" id="changeBtn">color set</button></p>
+                        <button class="button2" onclick="colordata_clear()">colors data
+                            clear</button>
+                        <div class="mini_window">
+                            <p>Background color</p>
+                            <select id="select_backcolor" class="button2">
+                                <option value="">default</option>
+                                <option value=" black">black</option>
+                                <option value="white">white</option>
+                                <option value="blue">blue</option>
+                                <option value="red">red</option>
+                                <option value="yellow">yellow</option>
+                                <option value="green">green</option>
+                                <option value="purple">purple</option>
+                                <option value="lime">lime</option>
+                                <option value="skyblue">skyblue</option>
+                                <option value="pink">pink</option>
+                                <option value="orange">orange</option>
+                            </select>
+
+                            <p>Text color</p>
+                            <select id="select_textcolor" class="button2">
+                                <option value="">default</option>
+                                <option value=" black">black</option>
+                                <option value="white">white</option>
+                                <option value="blue">blue</option>
+                                <option value="red">red</option>
+                                <option value="yellow">yellow</option>
+                                <option value="green">green</option>
+                                <option value="purple">purple</option>
+                                <option value="lime">lime</option>
+                                <option value="skyblue">skyblue</option>
+                                <option value="pink">pink</option>
+                                <option value="orange">orange</option>
+                            </select>
+                            <p><button class="button2" onclick="setStorage2()">color
+                                    set</button></p>
+                            <button class="button2" onclick="colordata_clear()">colors data
+                                clear</button>
+                        </div>
+                    </div>
+
+                    <div class="child_windows window_prompt active" style=" background-color: rgb(51, 51, 184);">
+                        <div class="title">
+                            <span>nexser prompt</span>
+                        </div>
+
+                        <div class="title_buttons">
+                            <a class="drag_button">&nbsp;</a>
+                            <a class="close_button hover_button">&nbsp;✕&nbsp;</a>
+                            <a class="bigscreen_button hover_button">&nbsp;□&nbsp;</a>
+                            <a class="minscreen_button hover_button">&nbsp;❒&nbsp;</a>
+                            <a class="minimization_button hover_button">&nbsp;―&nbsp;</a><br>
+                        </div>
+
+                        <div id="prompt2">
+                            <div class="prompt_text2" style="color: white;">[nexser prompt version 1.0<span
+                                    class="test_name2"></span>]&emsp;&emsp;&emsp;</div>
+                            <form autocomplete="off" method="get" name="prompt_text_form2" onsubmit="return false;">
+                                <input type="text" class="name2 focus2" name="prompt_text2" placeholder="command">
+                            </form>
+                            <p class="prompt_error_text2"></p>
+                            <p class="help2" style="color: skyblue;"></p>
+                        </div>
+                    </div>
+
+                    <div class="child_windows driver_menu active">
+
+                        <div class="title">
+                            <span>driver menu</span>
+                        </div>
+
+                        <div class="title_buttons">
+                            <a class="drag_button">&nbsp;</a>
+                            <a class="close_button hover_button">&nbsp;✕&nbsp;</a>
+                            <a class="bigscreen_button hover_button">&nbsp;□&nbsp;</a>
+                            <a class="minscreen_button hover_button">&nbsp;❒&nbsp;</a>
+                            <a class="minimization_button hover_button">&nbsp;―&nbsp;</a><br>
+                        </div>
+
+                        <p>nexser default driver</p>
+                        <br>
+                        <div class="mini_window">
+                            <p>sound&emsp;<button class="installbutton_1 button2" id="sound_driver">install</button>
+                            </p>
+                            <p>(There is a sound when installing the driver)</p>
+                            <p>color&emsp;<button class="installbutton_2 button2" id="color_driver">install</button>
+                            </p>
+                            <p>(You can change the color when installing the driver)</p>
+                        </div>
+                    </div>
+
+                    <div class="child_windows mouse_menu active">
+                        <div class="title">
+                            <span>mouse</span>
+                        </div>
+
+                        <div class="title_buttons">
+                            <a class="drag_button">&nbsp;</a>
+                            <a class="close_button hover_button">&nbsp;✕&nbsp;</a><br>
+                        </div>
+
+                        <div class="title2">
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;window(<ins>W</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue window_top">window top</li>
+                                        <li class="hover_blue window_left">window left</li>
+                                        <li class="hover_blue window_top_and_left">window top & left
+                                        </li>
+                                        <li class="hover_blue">test</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <p>mouse test</p>
+                        <button id="button1" class="button2">mouse</button><br>
+                        <div class="mini_window">
+                            <span class="mouse_left border" style="text-align: center;">left</span><br>
+                            <span class="mouse_right border" style="text-align: center;">right</span>
+                        </div>
+                        <div class="mini_window">
+                            <div class="mini_screen hover_red"
+                                style="text-align: center; justify-content: center; color: white; height: 80px;">
+                                hover_red</div>
+                            <div class="mini_screen hover_blue"
+                                style="text-align: center; justify-content: center; color: white; height: 80px;">
+                                hover_blue</div>
+                            <div class="mouse_miniwindow border">
+                                <div class="mouse_testbutton">
+                                    <p class="bold">click button test</p>
+                                    <button class="button" style="font-size: 30px;">button 1</button>
+                                    <button class="button2" style="font-size: 30px;">button 2</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="child_windows screen_menu active">
+                        <div class="title">
+                            <span>screen</span>
+                        </div>
+
+                        <div class="title_buttons">
+                            <a class="drag_button">&nbsp;</a>
+                            <a class="close_button hover_button">&nbsp;✕&nbsp;</a>
+                            <a class="bigscreen_button hover_button">&nbsp;□&nbsp;</a>
+                            <a class="minscreen_button hover_button">&nbsp;❒&nbsp;</a>
+                            <a class="minimization_button hover_button">&nbsp;―&nbsp;</a><br>
+                        </div>
+
+                        <p>background text</p>
+                        <form autocomplete="off" method="get" name="back_text_form" class="border"
+                            onsubmit="return false; length">
+                            <textarea type="text" name="back_text" class="back_text" id="back_text_input" maxlength="20"
+                                style="border: none; outline: none; background: whitesmoke; resize: none; height: 16px; font-size: large;"></textarea>
+                        </form>
+                        <input type="submit" class="button2" value="submit" onclick="backtext_check()"><br>
+                        <button class="button2" id="backtext_on">backtext on</button><br>
+                        <button class="button2" id="backtext_off">backtext off</button>
+                        <div class="mini_window">
+                            preview
+                            <div class="mini_screen border">
+                                <div class="mini_desktop border">
+                                    <span id="background_text2"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="child_windows note_pad active">
+                        <span class="note"></span>
+                        <div class="title note_title">
+                            <span>notepad</span>
+                        </div>
+
+                        <div class="title_buttons">
+                            <a class="drag_button">&nbsp;</a>
+                            <a class="close_button4 hover_button note_close">&nbsp;✕&nbsp;</a>
+                            <a class="bigscreen_button hover_button">&nbsp;□&nbsp;</a>
+                            <a class="minscreen_button hover_button">&nbsp;❒&nbsp;</a>
+                            <a class="minimization_button hover_button">&nbsp;―&nbsp;</a><br>
+                        </div>
+
+                        <div class="title2">
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;window(<ins>W</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue window_top">window top</li>
+                                        <li class="hover_blue window_left">window left</li>
+                                        <li class="hover_blue window_top_and_left">window top & left
+                                        </li>
+                                        <li class="hover_blue window_half_big">window half big</li>
+                                        <li class="hover_blue windowsize_reset">window size reset</li>
+                                        <li class="hover_blue">test</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;alltext(<ins>T</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue notetext_bold" onclick="notetext_all_bold()">alltext
+                                            bold</li>
+                                        <li class="hover_blue notetext_oblique" onclick="notetext_all_oblique()">alltext
+                                            oblique</li>
+                                        <li class="hover_blue notetext_underline" onclick="notetext_all_underline()">
+                                            alltext
+                                            underline</li>
+                                        <div class="note_text_color">
+                                            <li class="hover_blue" onclick="notecolor_remove()">text
+                                                black</li>
+                                            <li class="hover_blue notetext_blue" onclick="notecolor_change_blue()">text
+                                                blue</li>
+                                            <li class="hover_blue notetext_green" onclick="notecolor_change_green()">
+                                                text green</li>
+                                            <li class="hover_blue notetext_red" onclick="notecolor_change_red()">text
+                                                red</li>
+                                        </div>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;setting(<ins>S</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue" onclick="notedata_clear()">Notedata clear
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <div>
+                            <input type="button" class="button2" value="&emsp;save&emsp;" onclick="save()">
+                            <input type="button" class="button2" value="&emsp;load&emsp;" onclick="load()">
+                            <input type="button" id="cleartextbtn" class="button2" value="&emsp;clear&emsp;">
+                        </div>
+                        <form name="note_form" action="">
+                            <textarea name="note_area" class="note_area" cols="50" rows="10"
+                                onkeyup="ShowLength()"></textarea>
+                        </form>
+                        <p>Textcount<span id="inputlength"></span></p>
+                        <p id="memo_save_text"></p>
+                        <p style="position: absolute; right: 10px; bottom: 0px;">text mode&emsp;<span
+                                class="test_notetext">test</span>&emsp;</p>
+                    </div>
+
+
+                    <div class="child_windows text_drop_menu active">
+                        <div class="title note_title">
+                            <span>text drop</span>
+                        </div>
+
+                        <div class="title_buttons">
+                            <a class="drag_button">&nbsp;</a>
+                            <a class="close_button hover_button">&nbsp;✕&nbsp;</a><br>
+                        </div>
+
+                        <div>
+                            <input type="button" class="button2" value="&emsp;save&emsp;" onclick="save2()">
+                            <input type="button" class="button2" value="&emsp;load&emsp;" onclick="load2()">
+                            <input type="button" id="cleartextbtn2" class="button2" value="&emsp;clear&emsp;">
+                        </div>
+                        <div class="mini_window">
+                            <form name="drop_form" action="">
+                                <textarea name="drop_area" class="drop_area" id="drop" cols="50" rows="10" maxlength="0"
+                                    style="border: none; resize: none; outline: none; background: whitesmoke; color: black;"></textarea>
+                            </form>
+                            <span id="drop_save_text">no save</span>
+                        </div>
+                    </div>
+
+                    <div class="child_windows calc_menu active">
+                        <div class="parent_graph border">
+                            <span class="child_graph"></span>
+                        </div>
+                        <div class="title">
+                            <span>calc</span>
+                        </div>
+
+                        <div class="title_buttons">
+                            <a class="drag_button">&nbsp;</a>
+                            <a class="close_button hover_button">&nbsp;✕&nbsp;</a><br>
+                        </div>
+
+                        <div class="title2">
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;calc(<ins>C</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue" onclick="calc_clear()">clear</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;window(<ins>W</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue window_top">window top</li>
+                                        <li class="hover_blue window_left">window left</li>
+                                        <li class="hover_blue window_top_and_left">window top & left
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <div class="black_text" style="width: 150px; height: 150px; padding: 5px;">
+                            <input type="text" class="border" id="result"
+                                style="width: 150px; height: 25px; pointer-events: none;">
+                            <div>
+                                <input type="button" class="button2 calc_button" value="1" onclick="edit(this)">
+                                <input type="button" class="button2 calc_button" value="2" onclick="edit(this)">
+                                <input type="button" class="button2 calc_button" value="3" onclick="edit(this)">
+                                <input type="button" class="button2 calc_button" value="+" onclick="edit(this)">
+                            </div>
+                            <div>
+                                <input type="button" class="button2 calc_button" value="4" onclick="edit(this)">
+                                <input type="button" class="button2 calc_button" value="5" onclick="edit(this)">
+                                <input type="button" class="button2 calc_button" value="6" onclick="edit(this)">
+                                <input type="button" class="button2 calc_button" value="-" onclick="edit(this)">
+                            </div>
+                            <div>
+                                <input type="button" class="button2 calc_button" value="7" onclick="edit(this)">
+                                <input type="button" class="button2 calc_button" value="8" onclick="edit(this)">
+                                <input type="button" class="button2 calc_button" value="9" onclick="edit(this)">
+                                <input type="button" class="button2 calc_button" value="/" onclick="edit(this)">
+                            </div>
+                            <div>
+                                <input type="button" class="button2 calc_button" value="0" onclick="edit(this)">
+                                <input type="button" class="button2 calc_button" value="." onclick="edit(this)">
+                                <input type="button" class="button2 calc_button" value="*" onclick="edit(this)">
+                                <input type="button" class="button2 calc_button" value="=" onclick="calc()">
+                            </div>
+                        </div><br>
+                    </div>
+
+
+                    <div class="test_allwindow"></div>
+
+                    <div class="error_windows active" style="z-index: 999999;">
+                        <div class="title" style="background: darkblue;">
+                            <span class="error_icon">!</span><span>error</span>
+                        </div>
+                        <a class="close_button2 hover_button">&nbsp;✕&nbsp;</a><br>
+                        <p><br><span class="window_error_text">test window error</span></p><br>
+                    </div>
+
+                    <div class="warning_windows active" style="z-index: 999999;">
+                        <div class="title" style="background: darkblue;">
+                            <span class="error_icon">!</span><span>warning</span>
+                        </div>
+                        <a class="close_button3 hover_button">&nbsp;✕&nbsp;</a><br>
+                        <br>
+                        <p class="window_warning_text"></p>
+                        <button class="shutdown_button button2" onclick="window_none(),shutdown()">shutdown</button>
+                        <button class="warningclose_button button2" style="display: none;"
+                            onclick="warning_windows_close()">yes</button>
+                    </div>
+
+                </div>
+
+                <div id="taskbar_group">
+                    <div id="taskbar">
+                        <a id="startbtn" class="start_button border">&nbsp;start&nbsp;</a>
+                        <div class="taskbar_buttons">
+                            <ul>
+                                <li class="button test_button">main</li>
+                                <li class="button test_button2">program_manager</li>
+                                <li class="button test_button3">control_panel</li>
+                                <li class="button test_button4">color</li>
+                                <li class="button test_button5">version</li>
+                                <li class="button test_button6">nexser prompt</li>
+                                <li class="button test_button7">clock</li>
+                                <li class="button test_button8">sound</li>
+                                <li class="button test_button9">driver</li>
+                                <li class="button test_button10">mouse</li>
+                                <li class="button test_button11">screen</li>
+                                <li class="button test_button12">notepad</li>
+                                <li class="button test_button13">text drop</li>
+                            </ul>
+                        </div>
+                        <div class="time border">
+                            <ul>
+                                <li class="test_button7">TIME:<span class="date_clock2">CLOCK</span></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div id="start_menu" class="parent_start_menu">
+                        <div class="child_start_menu border">
+                            <ul>
+                                <li style="background-color:#555555;color:white;text-align:center;">
+                                    nexser</li>
+                                <li class="test_button">main</li>
+                                <li class="test_button2">program_manager</li>
+                                <li class="test_button3">control_panel</li>
+                                <li class="test_button15">accessory</li>
+                                <li class="test_button4">color</li>
+                                <li class="test_button5">version</li>
+                                <li class="test_button6">nexser prompt</li>
+                                <li class="test_button7">clock</li>
+                                <li class="test_button8">sound</li>
+                                <li class="test_button9">driver</li>
+                                <li class="test_button10">mouse</li>
+                                <li class="test_button11">screen</li>
+                                <li class="test_button12">notepad</li>
+                                <li class="test_button13">text drop</li>
+                                <li class="test_button16">calc</li><br>
+                                <div class="mini_window">
+                                    <li onclick="shutdown()">shutdown</li>
+                                </div>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</body>
+<style>
+    * {
+        padding: 0px;
+        margin: 0px;
+    }
+
+    html {
+        touch-action: manipulation;
+    }
+
+    body {
+        font-family: serif;
+        background-color: black;
+    }
+
+    #nexser_program {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        display: none;
+        height: 100vh;
+        width: 100%;
+        color: white;
+    }
+
+    .parent_graph {
+        background-color: gray;
+        width: 30px;
+        position: absolute;
+        right: 10px;
+        height: 75%;
+        bottom: 0px;
+    }
+
+    .child_graph {
+        position: absolute;
+        width: 100%;
+        bottom: 0px;
+    }
+
+    /* li */
+    li {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        list-style: none;
+    }
+
+    /* hover */
+
+    .hover_blue:hover {
+        background: darkblue;
+        color: white;
+    }
+
+    .hover_red:hover {
+        color: white;
+        background: red;
+    }
+
+    .hover_button:hover {
+        border-bottom: 1px #eee solid;
+        border-right: 1px #eee solid;
+        border-top: 1px #333 solid;
+        border-left: 1px #333 solid;
+    }
+
+    /* text */
+
+    .bold {
+        font-weight: bold;
+    }
+
+    .black_text {
+        color: black;
+    }
+
+    /* text_design */
+
+    .bold {
+        font-weight: bold;
+    }
+
+    /* border */
+
+    .border {
+        border-top: 1.5px #eee solid;
+        border-left: 1.5px #eee solid;
+        border-bottom: 1.5px #333 solid;
+        border-right: 1.5px #333 solid;
+        outline: none;
+    }
+
+    /* desktop */
+
+    #desktop {
+        display: none;
+    }
+
+    .mini_screen {
+        width: 200px;
+        height: 200px;
+        background: #555555;
+        position: relative;
+    }
+
+    .mini_desktop {
+        width: 180px;
+        height: 180px;
+        background: #006670;
+        position: absolute;
+        top: 10px;
+        left: 10px;
+    }
+
+    #background_text2 {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        width: 100%;
+        text-align: center;
+        display: inline-block;
+        font-size: 12.5px;
+        font-style: italic;
+        color: white;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+    #background_text {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        display: none;
+        font-size: 50px;
+        font-style: italic;
+        color: white;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+    #background_text.active {
+        display: block;
+    }
+
+    #prompt {
+        font-family: system-ui;
+        color: white;
+    }
+
+    #prompt2 {
+        font-family: system-ui;
+        color: white;
+        background: rgb(51, 51, 184);
+    }
+
+    .nexser_group {
+        display: block;
+    }
+
+    #prompt .name {
+        font-size: small;
+        width: 50%;
+        background: black;
+        border: none;
+        outline: none;
+        color: white;
+    }
+
+    #prompt2 .name2 {
+        font-size: small;
+        width: 50%;
+        border: none;
+        outline: none;
+        color: white;
+        background: rgb(51, 51, 184);
+    }
+
+    /* nexser */
+
+    #nexser {
+        width: 100%;
+        height: 100vh;
+        display: block;
+        background: #006670;
+    }
+
+    /* buttons */
+
+    .button {
+        display: inline-block;
+        border-top: 1.5px #eee solid;
+        border-left: 1.5px #eee solid;
+        border-bottom: 1.5px #333 solid;
+        border-right: 1.5px #333 solid;
+        color: black;
+        background: silver;
+        outline: none;
+    }
+
+    .button.pressed {
+        background: darkgray;
+        border-bottom: 1.5px #eee solid;
+        border-right: 1.5px #eee solid;
+        border-top: 1.5px #333 solid;
+        border-left: 1.5px #333 solid;
+    }
+
+    .button2 {
+        display: inline-block;
+        border-top: 1.5px #eee solid;
+        border-left: 1.5px #eee solid;
+        border-bottom: 1.5px #333 solid;
+        border-right: 1.5px #333 solid;
+        color: black;
+        background: silver;
+        outline: none;
+    }
+
+    .button2.pressed {
+        background: darkgray;
+        border-bottom: 1.5px #eee solid;
+        border-right: 1.5px #eee solid;
+        border-top: 1.5px #333 solid;
+        border-left: 1.5px #333 solid;
+    }
+
+    /* files */
+
+    #files {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+    }
+
+    /* taskbar */
+    #taskbar {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        font-size: 15px;
+        width: 100%;
+        height: 40px;
+        background-color: silver;
+        border-top: solid 1.5px whitesmoke;
+        position: absolute;
+        bottom: 0;
+        z-index: 999997;
+    }
+
+    .start_button {
+        background: silver;
+        position: absolute;
+        bottom: 6px;
+        left: 10px;
+    }
+
+    .start_button.pressed {
+        background: darkgray;
+        border-bottom: 1.5px #eee solid;
+        border-right: 1.5px #eee solid;
+        border-top: 1.5px #333 solid;
+        border-left: 1.5px #333 solid;
+    }
+
+    #taskbar .taskbar_buttons {
+        display: inline-block;
+        position: absolute;
+        bottom: 6px;
+        left: 60px;
+        border-left: solid 2px white;
+        border-right: solid 2px white;
+    }
+
+    #taskbar .button {
+        margin-left: 3px;
+        margin-right: 3px;
+    }
+
+    .time {
+        background: silver;
+        position: absolute;
+        right: 25px;
+        bottom: 6px;
+        text-align: center;
+    }
+
+    /* start_menu */
+    .parent_start_menu {
+        display: none;
+    }
+
+    .child_start_menu {
+        background: silver;
+        position: absolute;
+        bottom: 40px;
+        z-index: 999998;
+    }
+
+    /* window */
+    #soft_windows {
+        width: 100%;
+        height: 100vh;
+    }
+
+    .child_windows {
+        display: block;
+        font-size: 15px;
+        width: auto;
+        height: auto;
+        border: solid 2px #c0c0c0;
+        background: whitesmoke;
+        position: absolute;
+        top: 30%;
+        left: 30%;
+    }
+
+    .mini_window {
+        display: block;
+        width: auto;
+        height: auto;
+        border-top: solid 1px black;
+    }
+
+    .error_windows {
+        display: block;
+        font-size: 15px;
+        width: auto;
+        height: auto;
+        border: solid 2px #c0c0c0;
+        background: white;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+    .test_allwindow {
+        display: none;
+        height: 100%;
+        width: 100%;
+        background: black;
+        opacity: 0.25;
+        position: relative;
+        z-index: 999998;
+    }
+
+    .error_icon {
+        display: block;
+        font-size: 12.5px;
+        font-weight: bold;
+        height: 15px;
+        width: 15px;
+        border: solid 0.25px black;
+        background: yellow;
+        color: black;
+        position: absolute;
+        bottom: 3px;
+        left: 5px;
+        text-align: center;
+        justify-content: center;
+    }
+
+    .warning_windows {
+        display: block;
+        font-size: 15px;
+        width: auto;
+        height: auto;
+        border: solid 2px #c0c0c0;
+        background: white;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+
+    .error_windows.active {
+        display: none;
+    }
+
+    .warning_windows.active {
+        display: none;
+    }
+
+    .child_windows.active {
+        display: none;
+    }
+
+    .child_windows.big {
+        height: 99.45%;
+        width: 99.7%;
+        border: solid 2px #c0c0c0;
+        background: whitesmoke;
+        position: static;
+    }
+
+    .child_windows .title {
+        width: 100%;
+        background-color: darkblue;
+        position: absolute;
+        top: 0;
+        color: white;
+        text-align: center;
+        pointer-events: none;
+    }
+
+    .child_windows.big .title {
+        width: 99.85%;
+        background-color: darkblue;
+        position: absolute;
+        top: 0;
+        color: white;
+        text-align: center;
+        pointer-events: none;
+    }
+
+    .child_windows.big .minscreen_button {
+        display: block;
+        right: 21px;
+    }
+
+    .child_windows.big .bigscreen_button {
+        display: none;
+    }
+
+    .child_windows.big .drag_button {
+        display: none;
+    }
+
+    /* icon */
+
+    /* title */
+    .title {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        width: 100%;
+        background-color: darkblue;
+        position: absolute;
+        top: 0;
+        color: white;
+        text-align: center;
+        pointer-events: none;
+    }
+
+    .title_buttons {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+    }
+
+    .title2 {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        display: flex;
+        background: #c0c0c0;
+        height: 21px;
+        position: relative;
+        top: -2px;
+    }
+
+    .title2 li:hover {
+        background: darkblue;
+        color: white;
+    }
+
+    #nexser_program li:hover {
+        background: darkblue;
+        color: white;
+    }
+
+    .title_buttons {
+        position: relative;
+    }
+
+    /* title_buttons */
+    .close_button {
+        background: #c0c0c0;
+        position: absolute;
+        top: 3.5px;
+        right: 3.5px;
+        text-align: center;
+        font-size: 10px;
+        border-top: solid 1px white;
+        border-right: solid 1px black;
+        border-left: solid 1px white;
+        border-bottom: solid 1px black;
+    }
+
+    .close_button2 {
+        background: #c0c0c0;
+        position: absolute;
+        top: 3.5px;
+        right: 3.5px;
+        text-align: center;
+        font-size: 10px;
+        border-top: solid 1px white;
+        border-right: solid 1px black;
+        border-left: solid 1px white;
+        border-bottom: solid 1px black;
+    }
+
+    .close_button3 {
+        background: #c0c0c0;
+        position: absolute;
+        top: 3.5px;
+        right: 3.5px;
+        text-align: center;
+        font-size: 10px;
+        border-top: solid 1px white;
+        border-right: solid 1px black;
+        border-left: solid 1px white;
+        border-bottom: solid 1px black;
+    }
+
+    /* 飾り */
+    .close_button4 {
+        background: #c0c0c0;
+        position: absolute;
+        top: 3.5px;
+        right: 3.5px;
+        text-align: center;
+        font-size: 10px;
+        border-top: solid 1px white;
+        border-right: solid 1px black;
+        border-left: solid 1px white;
+        border-bottom: solid 1px black;
+    }
+
+    /* 飾り */
+
+    .drag_button {
+        position: absolute;
+        width: 100%;
+        right: 0px;
+    }
+
+    .bigscreen_button {
+        background: #c0c0c0;
+        position: absolute;
+        top: 3.5px;
+        right: 20px;
+        text-align: center;
+        font-size: 10px;
+        border-top: solid 1px white;
+        border-right: solid 1px black;
+        border-left: solid 1px white;
+        border-bottom: solid 1px black;
+    }
+
+    .minscreen_button {
+        display: none;
+        background: #c0c0c0;
+        position: absolute;
+        top: 3.5px;
+        right: 18px;
+        text-align: center;
+        font-size: 10px;
+        border-top: solid 1px white;
+        border-right: solid 1px black;
+        border-left: solid 1px white;
+        border-bottom: solid 1px black;
+    }
+
+    .minimization_button {
+        background: #c0c0c0;
+        position: absolute;
+        top: 3.5px;
+        right: 39px;
+        text-align: center;
+        font-size: 10px;
+        border-top: solid 1px white;
+        border-right: solid 1px black;
+        border-left: solid 1px white;
+        border-bottom: solid 1px black;
+    }
+
+    /* li_menus */
+    .li_menu_icon {
+        display: none;
+        width: 30%;
+        background: white;
+        border: solid 1px black;
+        position: absolute;
+    }
+
+    .li_menu_option {
+        display: none;
+        width: 30%;
+        background: white;
+        border: solid 1px black;
+        position: absolute;
+        left: 70px;
+    }
+
+    .li_menu_window {
+        display: none;
+        width: 30%;
+        background: white;
+        border: solid 1px black;
+        position: absolute;
+        left: 155px;
+    }
+
+    .li_menu_help {
+        display: none;
+        width: 30%;
+        background: white;
+        border: solid 1px black;
+        position: absolute;
+        left: 250px;
+    }
+
+    /*list */
+
+    .parent_list {
+        font-size: small;
+        display: block;
+        text-align: center;
+        justify-content: center;
+    }
+
+    .child_list {
+        display: none;
+        position: relative;
+    }
+
+    .child_list ul {
+        background-color: #c0c0c0;
+        width: 100%;
+        border-top: solid 1px white;
+        border-right: solid 1px black;
+        border-left: solid 1px white;
+        border-bottom: solid 1px black;
+    }
+
+    .child_list.active {
+        display: flex;
+    }
+
+    .window_inline_list {
+        column-count: 4;
+    }
+
+    .window_inline_list li:hover {
+        color: white;
+        background: darkblue;
+    }
+
+    .child_start_menu li:hover {
+        color: white;
+        background: darkblue;
+    }
+
+    /* mouse */
+    .mouse_left.active {
+        background: blue;
+        color: white;
+    }
+
+    .mouse_right.active {
+        background: blue;
+        color: white;
+    }
+
+    .mouse_miniwindow {
+        width: 185px;
+        height: 150px;
+        background: gray;
+        position: absolute;
+        bottom: 5px;
+        right: 5px;
+    }
+
+    .mouse_testbutton {
+        position: absolute;
+        left: 10px;
+    }
+
+    .mouse_testbutton button {
+        margin-top: 15px;
+    }
+
+    /* scrollbar */
+    body::-webkit-scrollbar {
+        width: 12.5px;
+    }
+
+    body::-webkit-scrollbar-track {
+        background-color: #555555;
+        border: solid 1.5px #888888;
+    }
+
+    body::-webkit-scrollbar-thumb {
+        background: darkgray;
+        border-top: solid 1.5px dimgray;
+        border-right: solid 1.5px black;
+        border-left: solid 1.5px dimgray;
+        border-bottom: solid 1.5px black;
+    }
+
+    /* note */
+    .note_area {
+        display: block;
+        font-size: large;
+        outline: none;
+        width: 100%;
+        height: 30vh;
+        resize: none;
+    }
+
+    .child_windows.big .note_area {
+        width: 100%;
+        height: 75vh;
+    }
+
+    /* calc */
+
+    .calc_button {
+        margin-top: 5px;
+        font-size: large;
+        width: 34px;
+        height: 31px;
+        border-top: 1.5px #eee solid;
+        border-left: 1.5px #eee solid;
+        border-bottom: 1.5px #333 solid;
+        border-right: 1.5px #333 solid;
+        color: black;
+        background: silver;
+        outline: none;
+    }
+</style>
+<script text="javascript">
+    var ua = navigator.userAgent;
+    if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android') > 0 || ua.indexOf('Mobile') > 0)) {
+
+        const start = document.querySelector('#startbtn')
+        const parent_start_menu = document.querySelector('#start_menu')
+        const taskbar = document.querySelector('#taskbar');
+        const background_text = document.querySelector('#background_text')
+
+        const nameText = document.querySelector('.name');
+        const msg = document.querySelector('.test_name');
+        const nameText2 = document.querySelector('.name2');
+        const msg2 = document.querySelector('.test_name2');
+        const prompt = document.getElementById('prompt');
+        const prompt_text = document.querySelector('.prompt_text');
+        const prompt_text2 = document.querySelector('.prompt_text2');
+        const memory = document.querySelector('.memory');
+        const userelement = document.querySelector('.user');
+        const nexser = document.getElementById('nexser');
+        const nexser_program = document.getElementById('nexser_program');
+        const desktop = document.getElementById('desktop');
+        const soft_windows = document.getElementById('soft_windows');
+        const title = document.querySelector('.title');
+        const z_index = document.querySelector('.z_index');
+
+        const li_menu_icon = document.querySelector('.li_menu_icon');
+        const li_menu_option = document.querySelector('.li_menu_option');
+        const li_menu_window = document.querySelector('.li_menu_window');
+        const li_menu_help = document.querySelector('.li_menu_help');
+
+        // soft_windows
+        const child_windows = document.querySelector('.child_windows');
+
+        const main = document.querySelector('.main');
+        const program = document.querySelector('.program_manager');
+        const control = document.querySelector('.control_panel');
+        const color_menu = document.querySelector('.color');
+        const version = document.querySelector('.version');
+        const window_prompt = document.querySelector('.window_prompt');
+        const clock_menu = document.querySelector('.clock_menu');
+        const sound_menu = document.querySelector('.sound_menu');
+        const driver_menu = document.querySelector('.driver_menu');
+        const mouse_menu = document.querySelector('.mouse_menu');
+        const screen_menu = document.querySelector('.screen_menu');
+        const note_pad = document.querySelector('.note_pad');
+        const text_drop_menu = document.querySelector('.text_drop_menu');
+        const windowmode_menu = document.querySelector('.windowmode_menu');
+        const accessory_menu = document.querySelector('.accessory_menu');
+        const calc_menu = document.querySelector('.calc_menu');
+        const nexser_sound_menu = document.querySelector('.nexser_sound_menu');
+
+        const error_windows = document.querySelector('.error_windows');
+        const warning_windows = document.querySelector('.warning_windows');
+
+        // start.addEventListener('mouseover', function () {
+        //     // マウスが要素に乗った際の処理
+        //     start_menu.style.display = "block"
+        //     start.addEventListener('mouseleave', function () {
+        //         // マウスが要素に乗った際の処理
+        //         start_menu.style.display = "none"
+        //     });
+        // });
+        start.addEventListener('click', function () {
+            if (start_menu.style.display == "block") {
+                // noneで非表示
+                start_menu.style.display = "none";
+                document.querySelector('.start_button').classList.remove('pressed')
+            } else {
+                // blockで表示
+                start_menu.style.display = "block";
+                document.querySelector('.start_button').classList.add('pressed')
+            }
+        })
+        soft_windows.addEventListener('mousedown', function () {
+            start_menu.style.display = "none";
+            document.querySelector('.start_button').classList.remove('pressed')
+        });
+        parent_start_menu.addEventListener('click', function () {
+            start_menu.style.display = "none";
+            taskbtn_load()
+            document.querySelector('.start_button').classList.remove('pressed')
+        });
+        document.querySelector('.taskbar_buttons').addEventListener('mousedown', function () {
+            start_menu.style.display = "none";
+            document.querySelector('.start_button').classList.remove('pressed')
+            taskbtn_load()
+        });
+
+        document.querySelectorAll('.button').forEach(function (button) {
+            button.addEventListener('click', function () {
+                let tscbtn = button.firstChild;
+                tscbtn = button.classList.toggle('pressed');
+                console.log(tscbtn)
+            });
+        });
+        document.querySelectorAll('.button2').forEach(function (button2) {
+            button2.addEventListener('click', function () {
+                button2.classList.add('pressed');
+                setTimeout(() => {
+                    button2.classList.remove('pressed');
+                }, 200);
+            });
+        });
+
+        window.addEventListener('load', load_nexser);
+        function load_nexser() {
+            if (localStorage.getItem('prompt_data')) {
+                prompt.style.display = "none";
+                nexser_program.style.display = "none";
+                nexser.style.display = "block";
+                desktop.style.display = "block"
+                taskbtn_load()
+            } else if (localStorage.getItem('prompt_data3')) {
+                prompt.style.display = "none";
+                nexser_program.style.display = "block";
+                nexser.style.display = "none";
+                desktop.style.display = "none";
+                document.body.style.cursor = 'crosshair';
+            } else {
+                prompt.style.display = "block";
+                nexser_program.style.display = "none";
+                nexser.style.display = "none";
+                desktop.style.display = "none";
+                document.querySelector('.focus').focus();
+            }
+            taskbar_none()
+            title_none()
+            setColor()
+            screen_backtextload()
+            all_load()
+            notecolor_change()
+        }
+
+
+
+        function nexser_program_open() {
+            document.querySelector('.prompt_error_text').textContent = "";
+            document.body.style.cursor = 'crosshair';
+            document.querySelector('.test_allwindow').style.display = "none";
+            setTimeout(function () {
+                prompt.style.display = "none";
+                setTimeout(function () {
+                    taskbar_none();
+                    nexser_program.style.display = "block";
+                }, 100);
+            }, 100);
+        }
+
+        function nexser_program_close() {
+            document.body.style.cursor = '';
+            document.querySelector('.test_allwindow').style.display = "none";
+            setTimeout(function () {
+                localStorage.removeItem('prompt_data3')
+                prompt.style.display = "block";
+                setTimeout(function () {
+                    taskbar_none();
+                    nexser_program.style.display = "none";
+                    document.querySelector('.focus').focus();
+                }, 500);
+            }, 500);
+        }
+
+        document.querySelector('.startup_note').addEventListener('click', function () {
+            if (localStorage.getItem('startup_note')) {
+                localStorage.removeItem('startup_note')
+                document.querySelector('.startup_note').textContent = "OFF"
+            } else {
+                const startup_note = document.querySelector('.startup_note');
+                localStorage.setItem('startup_note', startup_note);
+                document.querySelector('.startup_note').textContent = "ON"
+            }
+        })
+        document.querySelector('.startup_program').addEventListener('click', function () {
+            if (localStorage.getItem('startup_program')) {
+                localStorage.removeItem('startup_program')
+                document.querySelector('.startup_program').textContent = "OFF"
+            } else {
+                const startup_program = document.querySelector('.startup_program');
+                localStorage.setItem('startup_program', startup_program);
+                document.querySelector('.startup_program').textContent = "ON"
+            }
+        })
+        document.querySelector('.startup_color').addEventListener('click', function () {
+            if (localStorage.getItem('startup_color')) {
+                localStorage.removeItem('startup_color')
+                document.querySelector('.startup_color').textContent = "OFF"
+            } else {
+                const startup_color = document.querySelector('.startup_color');
+                localStorage.setItem('startup_color', startup_color);
+                document.querySelector('.startup_color').textContent = "ON"
+            }
+        })
+        document.querySelector('.startup_screen').addEventListener('click', function () {
+            if (localStorage.getItem('startup_screen')) {
+                localStorage.removeItem('startup_screen')
+                document.querySelector('.startup_screen').textContent = "OFF"
+            } else {
+                const startup_screen = document.querySelector('.startup_screen');
+                localStorage.setItem('startup_screen', startup_screen);
+                document.querySelector('.startup_screen').textContent = "ON"
+            }
+        })
+        document.querySelector('.startup_speed').addEventListener('click', function () {
+            if (localStorage.getItem('prompt_data2')) {
+                localStorage.removeItem('prompt_data2')
+                document.querySelector('.startup_speed').textContent = "LOW"
+            } else {
+                const prompt_data2 = document.querySelector('.startup_speed');
+                localStorage.setItem('prompt_data2', prompt_data2);
+                document.querySelector('.startup_speed').textContent = "HIGH"
+            }
+        })
+
+
+
+
+
+        function nexser_start() {
+            document.querySelector('.test_allwindow').style.display = "none";
+            window_none();
+            if (localStorage.getItem('prompt_data2')) {
+                setTimeout(function () {
+                    console.log(largestZIndex)
+                    prompt.style.display = "none";
+                    setTimeout(function () {
+                        setColor()
+                        startup_sound();
+                        nexser.style.display = "block";
+                        setTimeout(function () {
+                            taskbar_none();
+                            desktop.style.display = "block";
+                            setTimeout(() => {
+                                startup_window_open()
+                                taskbtn_load()
+                            }, 500);
+                        }, 100);
+                    }, 100);
+                }, 100)
+            } else {
+                setTimeout(function () {
+                    console.log(largestZIndex)
+                    prompt.style.display = "none";
+                    setTimeout(function () {
+                        setColor()
+                        startup_sound();
+                        nexser.style.display = "block";
+                        setTimeout(function () {
+                            taskbar_none();
+                            desktop.style.display = "block";
+                            setTimeout(() => {
+                                startup_window_open()
+                                taskbtn_load()
+                            }, 1000);
+                        }, 1500);
+                    }, 1500)
+                }, 1500);
+            }
+        }
+
+        startup_window_open()
+        function startup_window_open() {
+            if (localStorage.getItem('startup_note')) {
+                const element = document.querySelector('.note_pad');
+                element.closest('.child_windows');
+                element.classList.remove('active')
+            }
+            if (localStorage.getItem('startup_program')) {
+                const element = document.querySelector('.program_manager');
+                element.closest('.child_windows');
+                element.classList.remove('active')
+            }
+            if (localStorage.getItem('startup_color')) {
+                const element = document.querySelector('.color');
+                element.closest('.child_windows');
+                element.classList.remove('active')
+            }
+            if (localStorage.getItem('startup_screen')) {
+                const element = document.querySelector('.screen_menu');
+                element.closest('.child_windows');
+                element.classList.remove('active')
+            }
+        }
+
+        function shutdown() {
+            document.querySelector('.test_allwindow').style.display = "block";
+            let result = document.getElementsByClassName('child_windows active').length;
+            result2 = 17;
+            console.log(result)
+            let result3 = result - result2;
+            console.log(result3)
+            if (result3 == 0) {
+                shutdown_sound();
+                setTimeout(() => {
+                    desktop.style.display = "none";
+                    localStorage.removeItem('prompt_data');
+                    window_reset();
+                    document.querySelector('#codes').style.display = "none";
+                    window_none();
+
+                    setTimeout(() => {
+                        document.querySelectorAll('.button').forEach(function (button) {
+                            let tscbtn = button.firstChild;
+                            tscbtn = button.classList.remove('pressed');
+                        });
+                        document.getElementsByClassName('name')[0].value = "";
+                        document.querySelector('.prompt_error_text').textContent = "";
+                        document.querySelector('.help').textContent = "";
+                        msg.innerText = "";
+                        prompt_text.style.color = "";
+                        nexser.style.display = "none";
+                        prompt.style.display = "block";
+                        start_menu.style.display = "none";
+                        document.querySelector('.focus').focus();
+                    }, 500);
+                }, 1500);
+            } else {
+                warning_windows.classList.remove('active');
+                document.querySelector('.shutdown_button').style.display = "block";
+                document.querySelector('.warningclose_button').style.display = "none";
+                document.querySelector('.window_warning_text').textContent = "task window open! shutdown?"
+                sound5()
+            }
+        }
+
+        document.getElementById('sound_driver').addEventListener('click', function () {
+            if (localStorage.getItem('driver_sound')) {
+                localStorage.removeItem('driver_sound')
+                document.querySelector('.installbutton_1').textContent = "install"
+            } else {
+                const sound_driver = document.querySelector('#sound_driver');
+                localStorage.setItem('driver_sound', sound_driver);
+                document.querySelector('.installbutton_1').textContent = "uninstall"
+            }
+        })
+        document.getElementById('color_driver').addEventListener('click', function () {
+            if (localStorage.getItem('driver_color')) {
+                localStorage.removeItem('driver_color')
+                document.querySelector('.installbutton_2').textContent = "install"
+                colordata_clear();
+            } else {
+                const color_driver = document.querySelector('#color_driver');
+                localStorage.setItem('driver_color', color_driver);
+                document.querySelector('.installbutton_2').textContent = "uninstall"
+            }
+        })
+
+        document.querySelector('.startup_1').addEventListener('click', function () {
+            startupsound_reset()
+            if (localStorage.getItem('startup_1')) {
+                localStorage.removeItem('startup_1')
+                document.querySelector('.startup_1').textContent = "no set"
+            } else {
+                const startup_1 = document.querySelector('.startup_1');
+                localStorage.setItem('startup_1', startup_1);
+                document.querySelector('.startup_1').textContent = "set!"
+                localStorage.removeItem('startup_2')
+            }
+        })
+        document.querySelector('.startup_2').addEventListener('click', function () {
+            startupsound_reset()
+            if (localStorage.getItem('startup_2')) {
+                localStorage.removeItem('startup_2')
+                document.querySelector('.startup_2').textContent = "no set"
+            } else {
+                const startup_2 = document.querySelector('.startup_2');
+                localStorage.setItem('startup_2', startup_2);
+                document.querySelector('.startup_2').textContent = "set!"
+                localStorage.removeItem('startup_1')
+            }
+        })
+        function startupsound_reset() {
+            if (localStorage.getItem('startup_1')) {
+                localStorage.removeItem('startup_1')
+                document.querySelector('.startup_1').textContent = "no set"
+            }
+            if (localStorage.getItem('startup_2')) {
+                localStorage.removeItem('startup_2')
+                document.querySelector('.startup_2').textContent = "no set"
+            }
+        }
+
+        document.querySelector('.shutdown_1').addEventListener('click', function () {
+            shutdownsound_reset()
+            if (localStorage.getItem('shutdown_1')) {
+                localStorage.removeItem('shutdown_1')
+                document.querySelector('.shutdown_1').textContent = "no set"
+            } else {
+                const shutdown_1 = document.querySelector('.shutdown_2');
+                localStorage.setItem('shutdown_1', shutdown_1);
+                document.querySelector('.shutdown_1').textContent = "set!"
+                localStorage.removeItem('shutdown_2')
+            }
+        })
+        document.querySelector('.shutdown_2').addEventListener('click', function () {
+            shutdownsound_reset()
+            if (localStorage.getItem('shutdown_2')) {
+                localStorage.removeItem('shutdown_2')
+                document.querySelector('.shutdown_2').textContent = "no set"
+            } else {
+                const shutdown_2 = document.querySelector('.shutdown_2');
+                localStorage.setItem('shutdown_2', shutdown_2);
+                document.querySelector('.shutdown_2').textContent = "set!"
+                localStorage.removeItem('shutdown_1')
+            }
+        })
+        function shutdownsound_reset() {
+            if (localStorage.getItem('shutdown_1')) {
+                localStorage.removeItem('shutdown_1')
+                document.querySelector('.shutdown_1').textContent = "no set"
+            }
+            if (localStorage.getItem('shutdown_2')) {
+                localStorage.removeItem('shutdown_2')
+                document.querySelector('.shutdown_2').textContent = "no set"
+            }
+        }
+
+
+        function windowmode_reset() {
+            localStorage.removeItem('window_invisible')
+            localStorage.removeItem('window_borderblack')
+            localStorage.removeItem('window_titlebackcolor')
+        }
+
+        document.getElementById('window_invisible').addEventListener('click', function () {
+            if (localStorage.getItem('window_invisible')) {
+                localStorage.removeItem('window_invisible')
+            } else {
+                windowmode_reset()
+                const window_invisible = document.querySelector('#window_invisible');
+                localStorage.setItem('window_invisible', window_invisible);
+            }
+        })
+        document.getElementById('window_borderblack').addEventListener('click', function () {
+            if (localStorage.getItem('window_borderblack')) {
+                localStorage.removeItem('window_borderblack')
+            } else {
+                windowmode_reset()
+                const window_borderblack = document.querySelector('#window_borderblack');
+                localStorage.setItem('window_borderblack', window_borderblack);
+            }
+        })
+        document.getElementById('window_titlebackcolor').addEventListener('click', function () {
+            if (localStorage.getItem('window_titlebackcolor')) {
+                localStorage.removeItem('window_titlebackcolor')
+            } else {
+                windowmode_reset()
+                const window_titlebackcolor = document.querySelector('#window_titlebackcolor');
+                localStorage.setItem('window_titlebackcolor', window_titlebackcolor);
+            }
+        })
+
+        document.getElementById('backtext_on').addEventListener('click', function () {
+            const backtext = document.querySelector('#backtext_on');
+            localStorage.setItem('backtext', backtext);
+            const backtext_data2 = localStorage.getItem('backtext_data');
+            document.querySelector('#background_text').textContent = (backtext_data2)
+            document.querySelector('#background_text').classList.add('active')
+        })
+        document.getElementById('backtext_off').addEventListener('click', function () {
+            localStorage.removeItem('backtext');
+            document.querySelector('#background_text').classList.remove('active')
+            document.querySelector('#background_text2').classList.remove('active')
+        })
+
+        setInterval(() => {
+            const backtext_data2 = localStorage.getItem('backtext_data');
+            document.querySelector('#background_text2').textContent = (backtext_data2)
+
+            if (localStorage.getItem(KEY_BKCOLOR, bkcolor)) {
+                document.querySelector(".mini_desktop").style.backgroundColor = bkcolor;
+            }
+        }, 100);
+
+        function all_load() {
+            if (localStorage.getItem('driver_sound')) {
+                document.querySelector('.installbutton_1').textContent = "uninstall"
+            }
+            if (localStorage.getItem('driver_color')) {
+                document.querySelector('.installbutton_2').textContent = "uninstall"
+            }
+            if (localStorage.getItem('backtext')) {
+                const backtext_data2 = localStorage.getItem('backtext_data');
+                document.querySelector('#background_text').textContent = (backtext_data2)
+                background_text.classList.add('active')
+            }
+            if (!localStorage.getItem('backtext')) {
+                background_text.classList.remove('active')
+            }
+            if (localStorage.getItem('noteData')) {
+                load()
+                document.querySelector('.note_title').textContent = "notepad(save keep)"
+            }
+            if (localStorage.getItem('textdropdata')) {
+                load2()
+            }
+            if (localStorage.getItem('startup_note')) {
+                document.querySelector('.startup_note').textContent = "ON"
+            }
+            if (localStorage.getItem('startup_program')) {
+                document.querySelector('.startup_program').textContent = "ON"
+            }
+            if (localStorage.getItem('startup_color')) {
+                document.querySelector('.startup_color').textContent = "ON"
+            }
+            if (localStorage.getItem('startup_screen')) {
+                document.querySelector('.startup_screen').textContent = "ON"
+            }
+            if (localStorage.getItem('prompt_data2')) {
+                document.querySelector('.startup_speed').textContent = "HIGH"
+            }
+            if (localStorage.getItem('startup_1')) {
+                document.querySelector('.startup_1').textContent = "set!"
+            } else {
+                document.querySelector('.startup_1').textContent = "no set"
+            }
+            if (localStorage.getItem('startup_2')) {
+                document.querySelector('.startup_2').textContent = "set!"
+            } else {
+                document.querySelector('.startup_2').textContent = "no set"
+            }
+            if (localStorage.getItem('shutdown_1')) {
+                document.querySelector('.shutdown_1').textContent = "set!"
+            } else {
+                document.querySelector('.shutdown_1').textContent = "no set"
+            }
+            if (localStorage.getItem('shutdown_2')) {
+                document.querySelector('.shutdown_2').textContent = "set!"
+            } else {
+                document.querySelector('.shutdown_2').textContent = "no set"
+            }
+            if (localStorage.getItem('note_text_bold')) {
+                document.querySelector('.note_area').style.fontWeight = "bold";
+                document.querySelector('.test_notetext').style.fontWeight = "bold";
+            }
+            if (localStorage.getItem('note_text_oblique')) {
+                document.querySelector('.note_area').style.fontStyle = "oblique";
+                document.querySelector('.test_notetext').style.fontStyle = "oblique";
+            }
+            if (localStorage.getItem('note_text_underline')) {
+                document.querySelector('.note_area').style.textDecoration = "underline";
+                document.querySelector('.test_notetext').style.textDecoration = "underline";
+            }
+        }
+
+        function taskbtn_load() {
+
+            document.querySelectorAll(".taskbar_buttons .test_button").forEach(function (taskbtn) {
+                if (main.classList.contains('active')) {
+                    taskbtn.classList.remove('pressed')
+                } else {
+                    taskbtn.classList.add('pressed')
+                }
+            })
+            document.querySelectorAll(".taskbar_buttons .test_button2").forEach(function (taskbtn) {
+                if (program.classList.contains('active')) {
+                    taskbtn.classList.remove('pressed')
+                } else {
+                    taskbtn.classList.add('pressed')
+                }
+            })
+            document.querySelectorAll(".taskbar_buttons .test_button3").forEach(function (taskbtn) {
+                if (control.classList.contains('active')) {
+                    taskbtn.classList.remove('pressed')
+                } else {
+                    taskbtn.classList.add('pressed')
+                }
+            })
+            document.querySelectorAll(".taskbar_buttons .test_button4").forEach(function (taskbtn) {
+                if (color_menu.classList.contains('active')) {
+                    taskbtn.classList.remove('pressed')
+                } else {
+                    taskbtn.classList.add('pressed')
+                }
+            })
+            document.querySelectorAll(".taskbar_buttons .test_button5").forEach(function (taskbtn) {
+                if (version.classList.contains('active')) {
+                    taskbtn.classList.remove('pressed')
+                } else {
+                    taskbtn.classList.add('pressed')
+                }
+            })
+            document.querySelectorAll(".taskbar_buttons .test_button6").forEach(function (taskbtn) {
+                if (window_prompt.classList.contains('active')) {
+                    taskbtn.classList.remove('pressed')
+                } else {
+                    taskbtn.classList.add('pressed')
+                }
+            })
+            document.querySelectorAll(".taskbar_buttons .test_button7").forEach(function (taskbtn) {
+                if (clock_menu.classList.contains('active')) {
+                    taskbtn.classList.remove('pressed')
+                } else {
+                    taskbtn.classList.add('pressed')
+                }
+            })
+            document.querySelectorAll(".taskbar_buttons .test_button8").forEach(function (taskbtn) {
+                if (sound_menu.classList.contains('active')) {
+                    taskbtn.classList.remove('pressed')
+                } else {
+                    taskbtn.classList.add('pressed')
+                }
+            })
+            document.querySelectorAll(".taskbar_buttons .test_button9").forEach(function (taskbtn) {
+                if (driver_menu.classList.contains('active')) {
+                    taskbtn.classList.remove('pressed')
+                } else {
+                    taskbtn.classList.add('pressed')
+                }
+            })
+            document.querySelectorAll(".taskbar_buttons .test_button10").forEach(function (taskbtn) {
+                if (mouse_menu.classList.contains('active')) {
+                    taskbtn.classList.remove('pressed')
+                } else {
+                    taskbtn.classList.add('pressed')
+                }
+            })
+            document.querySelectorAll(".taskbar_buttons .test_button11").forEach(function (taskbtn) {
+                if (screen_menu.classList.contains('active')) {
+                    taskbtn.classList.remove('pressed')
+                } else {
+                    taskbtn.classList.add('pressed')
+                }
+            })
+            document.querySelectorAll(".taskbar_buttons .test_button12").forEach(function (taskbtn) {
+                if (note_pad.classList.contains('active')) {
+                    taskbtn.classList.remove('pressed')
+                } else {
+                    taskbtn.classList.add('pressed')
+                }
+            })
+            document.querySelectorAll(".taskbar_buttons .test_button13").forEach(function (taskbtn) {
+                if (text_drop_menu.classList.contains('active')) {
+                    taskbtn.classList.remove('pressed')
+                } else {
+                    taskbtn.classList.add('pressed')
+                }
+            })
+
+        }
+
+        function window_reset() {
+            document.querySelectorAll('.child_windows').forEach(function (allwindow) {
+                allwindow.style.left = "";
+                allwindow.style.top = "";
+                allwindow.style.height = "";
+                allwindow.style.width = "";
+
+                document.querySelector('.bigscreen_button').style.visibility = "visible";
+                document.querySelector('.minscreen_button').style.visibility = "visible";
+                document.querySelector('.minimization_button').style.visibility = "visible";
+            });
+        }
+        function window_none() {
+            document.querySelectorAll('.child_windows').forEach(function (allwindow_none) {
+                allwindow_none.classList.add('active');
+                allwindow_none.classList.remove('big');
+            });
+            warning_windows.classList.add('active');
+            error_windows.classList.add('active');
+        }
+        function window_active() {
+            document.querySelectorAll('.child_windows').forEach(function (allwindow_active) {
+                allwindow_active.classList.remove('active')
+            });
+        }
+
+        function title_none() {
+            if (localStorage.getItem('data_title_none')) {
+                document.querySelectorAll('.title').forEach(function (title) {
+                    title.style.display = "none"
+                })
+            }
+        }
+        function title_active() {
+            document.querySelectorAll('.title').forEach(function (title) {
+                title.style.display = "block"
+            });
+        }
+
+        function alldata_clear() {
+            localStorage.removeItem('data_taskbar_none');
+            colordata_clear()
+            prompt_data_clear()
+        }
+
+        function colordata_clear() {
+            document.querySelector("body").style.color = "";
+            document.querySelector("#nexser").style.backgroundColor = "";
+            document.querySelector(".mini_desktop").style.backgroundColor = "";
+            localStorage.removeItem(KEY_COLOR, color);
+            localStorage.removeItem(KEY_BKCOLOR, bkcolor);
+        }
+
+        function taskbar_none() {
+            if (localStorage.getItem('data_taskbar_none')) {
+                taskbar.style.display = "none";
+                program.classList.remove('active');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', pageLoad)
+        function pageLoad() {
+            let textbox = document.querySelector('.name');
+            textbox.addEventListener('keydown', enterKeyPress);
+
+            function enterKeyPress(event) {
+                if (event.key === 'Enter') {
+                    butotnClick()
+                }
+            }
+
+            let textbox2 = document.querySelector('.name2');
+            textbox2.addEventListener('keydown', enterKeyPress2);
+
+            function enterKeyPress2(event) {
+                if (event.key === 'Enter') {
+                    butotnClick2()
+                }
+            }
+
+        }
+
+        function butotnClick() {
+            msg.innerText = '\b' + nameText.value + '';
+            prompt_text_check();
+        }
+
+        function butotnClick2() {
+            msg2.innerText = '\b' + nameText2.value + '';
+            prompt_text_check2();
+        }
+
+        function prompt_text_check() {
+            const prompt_text2 = document.querySelector('.focus');
+            const prompt_text3 = prompt_text2.value;
+            switch (prompt_text3) {
+                case '':
+                    userelement.textContent = "";
+                    document.querySelector('.prompt_error_text').textContent = "";
+                    document.querySelector('.help').textContent = "";
+                    msg.innerText = "";
+                    prompt_text.style.color = "";
+                    break;
+                case 'nexser/open':
+                    const prompt_data = document.prompt_text_form.prompt_text.value;
+                    localStorage.setItem('prompt_data', prompt_data);
+                    prompt_text.style.color = "yellow";
+                    document.getElementsByClassName('name')[0].value = "nexserを起動しています";
+                    document.querySelector('.prompt_error_text').textContent = "success";
+                    nexser_start();
+                    break;
+                case 'install/fast_start':
+                    const prompt_data2 = document.prompt_text_form.prompt_text.value;
+                    localStorage.setItem('prompt_data2', prompt_data2);
+                    prompt_text.style.color = "";
+                    document.querySelector('.prompt_error_text').textContent = "高速起動システムをインストールしました";
+                    break;
+                case 'uninstall/fast_start':
+                    localStorage.removeItem('prompt_data2');
+                    prompt_text.style.color = "";
+                    document.querySelector('.prompt_error_text').textContent = "高速起動システムをアンインストールしました";
+                    break;
+                case 'nexser/program':
+                    const prompt_data3 = document.prompt_text_form.prompt_text.value;
+                    localStorage.setItem('prompt_data3', prompt_data3);
+                    prompt_text.style.color = "";
+                    document.querySelector('.prompt_error_text').textContent = "success";
+                    nexser_program_open()
+                    break;
+                case 'debug':
+                    document.querySelector('.prompt_error_text').textContent = "";
+                    debug();
+                    document.querySelector('.help').textContent = "";
+                    msg.innerText = "";
+                    prompt_text.style.color = "";
+                    break;
+                case 'help':
+                    document.querySelector('.prompt_error_text').textContent = "";
+                    document.querySelector('.help').textContent = "nexser/open\ntaskbar/none\ntaskbar/active";
+                    msg.innerText = "";
+                    prompt_text.style.color = "";
+                    break;
+                case 'windows95/sound/start/play':
+                    document.querySelector('.prompt_error_text').textContent = "";
+                    sound();
+                    prompt_text.style.color = "";
+                    document.querySelector('.prompt_error_text').textContent = "";
+                    break;
+                case 'windows95/sound/shutdown/play':
+                    document.querySelector('.prompt_error_text').textContent = "";
+                    sound2();
+                    prompt_text.style.color = "";
+                    document.querySelector('.prompt_error_text').textContent = "";
+                    break;
+                case 'screen/full':
+                    document.querySelector('.prompt_error_text').textContent = "";
+                    full();
+                    prompt_text.style.color = "";
+                    break;
+                case 'screen/min':
+                    document.querySelector('.prompt_error_text').textContent = "";
+                    min();
+                    prompt_text.style.color = "";
+                    break;
+                case 'taskbar/none':
+                    taskbar.style.display = "none";
+                    document.querySelector('.prompt_error_text').textContent = "タスクバーの表示がオフになりました。";
+                    const data_taskbar_none = document.prompt_text_form.prompt_text.value;
+                    localStorage.setItem('data_taskbar_none', data_taskbar_none);
+                    prompt_text.style.color = "";
+                    taskbar_none()
+                    break;
+                case 'taskbar/active':
+                    taskbar.style.display = "block";
+                    document.querySelector('.prompt_error_text').textContent = "タスクバーの表示がオンになりました。";
+                    localStorage.removeItem('data_taskbar_none');
+                    prompt_text.style.color = "";
+                    break;
+                case 'nexser/code':
+                    document.querySelector('.prompt_error_text').textContent = "connect";
+                    prompt_text.style.color = "";
+                    document.querySelector('#codes').style.display = "block";
+                    break;
+                case 'nexser/code/copy':
+                    // 文字をすべて選択
+                    // コピー対象をJavaScript上で変数として定義する
+                    var copyTarget = document.getElementById('codes');
+                    // コピー対象のテキストを選択する
+                    copyTarget.select();
+                    // 選択しているテキストをクリップボードにコピーする
+                    document.execCommand("Copy");
+                    document.querySelector('.prompt_error_text').textContent = "";
+                    document.querySelector('#codes').style.display = "none";
+                    document.querySelector('.focus').focus();
+                    break;
+
+                case 'windows95/open':
+                    document.querySelector('.prompt_error_text').textContent = "";
+                    window.open("https://moti5768.github.io/moti.world/windows95.html");
+                    prompt_text.style.color = "";
+                    break;
+                case 'windows2000/open':
+                    document.querySelector('.prompt_error_text').textContent = "";
+                    window.open("https://moti5768.github.io/moti.world/windows%202000/windows2000_beta.html");
+                    prompt_text.style.color = "";
+                    break;
+                case 'windowsystem/open':
+                    document.querySelector('.prompt_error_text').textContent = "";
+                    window.open("https://moti5768.github.io/moti.world/new%20OS/WindowSystem.html");
+                    prompt_text.style.color = "";
+                    break;
+
+                default:
+                    document.querySelector('.prompt_error_text').textContent = "コマンドが違います!";
+                    document.querySelector('.help').textContent = "";
+                    msg.innerText = "";
+                    prompt_text.style.color = "red";
+                    break;
+            }
+        }
+
+
+        function prompt_text_check2() {
+            const prompt_text4 = document.querySelector('.focus2');
+            const prompt_text5 = prompt_text4.value;
+            switch (prompt_text5) {
+                case '':
+                    document.querySelector('.prompt_error_text2').textContent = "";
+                    document.querySelector('.help2').textContent = "";
+                    msg2.innerText = "";
+                    prompt_text2.style.color = "";
+                    break;
+                case 'help':
+                    document.querySelector('.prompt_error_text2').textContent = "";
+                    document.querySelector('.help2').textContent = "taskbar/none\ntaskbar/active\ntitle/none\ntitle/active";
+                    msg2.innerText = "";
+                    prompt_text2.style.color = "";
+                    break;
+                case 'windows95/sound/start/play':
+                    document.querySelector('.prompt_error_text2').textContent = "";
+                    sound();
+                    prompt_text2.style.color = "";
+                    document.querySelector('.prompt_error_text2').textContent = "";
+                    break;
+                case 'windows95/sound/shutdown/play':
+                    document.querySelector('.prompt_error_text2').textContent = "";
+                    sound2();
+                    prompt_text2.style.color = "";
+                    document.querySelector('.prompt_error_text2').textContent = "";
+                    break;
+                case 'screen/full':
+                    document.querySelector('.prompt_error_text2').textContent = "";
+                    full();
+                    prompt_text2.style.color = "";
+                    break;
+                case 'screen/min':
+                    document.querySelector('.prompt_error_text2').textContent = "";
+                    min();
+                    prompt_text2.style.color = "";
+                    break;
+                case 'taskbar/none':
+                    taskbar.style.display = "none";
+                    document.querySelector('.prompt_error_text2').textContent = "タスクバーの表示がオフになりました。";
+                    const data_taskbar_none = document.prompt_text_form2.prompt_text2.value;
+                    localStorage.setItem('data_taskbar_none', data_taskbar_none);
+                    prompt_text2.style.color = "";
+                    taskbar_none()
+                    break;
+                case 'taskbar/active':
+                    taskbar.style.display = "block";
+                    document.querySelector('.prompt_error_text2').textContent = "タスクバーの表示がオンになりました。";
+                    localStorage.removeItem('data_taskbar_none');
+                    prompt_text2.style.color = "";
+                    break;
+                case 'allwindow/reset':
+                    document.querySelector('.prompt_error_text2').textContent = "";
+                    prompt_text2.style.color = "";
+                    window_reset()
+                    break;
+                case 'allwindow/close':
+                    if (localStorage.getItem('data_taskbar_none')) {
+                        document.querySelector('.window_error_text').textContent = "taskbar none window close no!"
+                        error_windows.classList.remove('active')
+                        prompt_text2.style.color = "";
+                        sound3()
+                        document.querySelector('.test_allwindow').style.display = "block";
+                    } else {
+                        document.querySelector('.prompt_error_text2').textContent = "";
+                        prompt_text2.style.color = "";
+                        window_none()
+                        window_reset()
+                        taskbtn_load()
+                    }
+                    break;
+                case 'allwindow/open':
+                    document.querySelector('.prompt_error_text2').textContent = "";
+                    prompt_text2.style.color = "";
+                    window_active()
+                    taskbtn_load()
+                    break;
+                case 'title/none':
+                    document.querySelector('.prompt_error_text2').textContent = "";
+                    const data_title_none = document.prompt_text_form2.prompt_text2.value;
+                    localStorage.setItem('data_title_none', data_title_none);
+                    prompt_text2.style.color = "";
+                    title_none()
+                    break;
+                case 'title/active':
+                    document.querySelector('.prompt_error_text2').textContent = "";
+                    localStorage.removeItem('data_title_none');
+                    prompt_text2.style.color = "";
+                    title_active()
+                    break;
+
+                case 'windows95/open':
+                    document.querySelector('.prompt_error_text2').textContent = "";
+                    window.open("https://moti5768.github.io/moti.world/windows95.html");
+                    prompt_text2.style.color = "";
+                    break;
+                case 'windows2000/open':
+                    document.querySelector('.prompt_error_text2').textContent = "";
+                    window.open("https://moti5768.github.io/moti.world/windows%202000/windows2000_beta.html");
+                    prompt_text2.style.color = "";
+                    break;
+                case 'windowsystem/open':
+                    document.querySelector('.prompt_error_text2').textContent = "";
+                    window.open("https://moti5768.github.io/moti.world/new%20OS/WindowSystem.html");
+                    prompt_text2.style.color = "";
+                    break;
+
+                case 'nexser/shutdown':
+                    document.querySelector('.prompt_error_text2').textContent = "";
+                    prompt_text2.style.color = "";
+                    shutdown();
+                    break;
+                default:
+                    document.querySelector('.prompt_error_text2').textContent = "コマンドが違います!";
+                    document.querySelector('.help2').textContent = "";
+                    msg2.innerText = "";
+                    prompt_text2.style.color = "red";
+                    break;
+            }
+        }
+
+        function screen_backtextload() {
+            const backtext_data2 = localStorage.getItem('backtext_data');
+            document.getElementById('back_text_input').textContent = backtext_data2
+        }
+
+        function backtext_check() {
+            let backtext_data = document.back_text_form.back_text.value;
+            localStorage.setItem('backtext_data', backtext_data);
+            let backtext_data2 = localStorage.getItem('backtext_data');
+            document.querySelector('#background_text').textContent = (backtext_data2)
+        }
+
+
+        function debug() {
+            userelement.insertAdjacentHTML('afterend', '<p class="white user">BROWSER: ' + navigator.appName + '<br>'
+                + 'VERSION: ' + navigator.appVersion + '<br>' + 'USER: ' + navigator.userAgent + '<br>' + 'WIDTH: ' + screen.width + '<br>'
+                + 'HEIGHT: ' + screen.height + '<br>' + 'BIT: ' + screen.colorDepth + '</p>');
+        }
+        setInterval(() => {
+            navigator.getBattery().then(function (battery) {
+                document.querySelector('.level').innerHTML = battery.level;
+                document.querySelector('.charging').innerHTML = battery.charging;
+                document.querySelector('.chargingTime').innerHTML = battery.chargingTime;
+                document.querySelector('.dischargingTime').innerHTML = battery.dischargingTime;
+            });
+            memory.textContent = (`Memory:   ${(performance.memory.usedJSHeapSize / 1024).toFixed(2)}KB`);
+        }, 100);
+
+        document.querySelectorAll('.window_inline_list').forEach(function (window_inline_list) {
+            window_inline_list.addEventListener('click', function () {
+                taskbtn_load()
+            });
+        })
+        document.querySelectorAll('.close_button').forEach(function (close_button) {
+            close_button.addEventListener('click', function () {
+                const closebutton = close_button.closest('.child_windows');
+                closebutton.classList.add('active');
+                taskbtn_load()
+                closebutton.style.left = "";
+                closebutton.style.top = "";
+            });
+        })
+        document.querySelectorAll('.close_button2').forEach(function (close_button2) {
+            close_button2.addEventListener('click', function () {
+                const closebutton2 = close_button2.closest('.error_windows');
+                closebutton2.classList.add('active');
+                document.querySelector('.test_allwindow').style.display = "none";
+            });
+        })
+        document.querySelectorAll('.close_button3').forEach(function (close_button3) {
+            close_button3.addEventListener('click', function () {
+                const closebutton3 = close_button3.closest('.warning_windows');
+                closebutton3.classList.add('active');
+                document.querySelector('.test_allwindow').style.display = "none";
+            });
+        })
+
+        document.querySelectorAll('.minimization_button').forEach(function (minimizationbutton) {
+            minimizationbutton.addEventListener('click', function () {
+                const minimization_button = minimizationbutton.closest('.child_windows');
+                minimization_button.classList.add('active');
+                taskbtn_load()
+            });
+        })
+        document.querySelectorAll('.bigscreen_button').forEach(function (bigscreen_button) {
+            bigscreen_button.addEventListener('click', function () {
+                const bigscreenbutton = bigscreen_button.closest('.child_windows');
+                bigscreenbutton.style.height = "";
+                bigscreenbutton.style.width = "";
+                bigscreenbutton.classList.add('big');
+            });
+        })
+
+        document.querySelectorAll('.minscreen_button').forEach(function (minscreen_button) {
+            minscreen_button.addEventListener('click', function () {
+                const minscreenbutton = minscreen_button.closest('.child_windows');
+                minscreenbutton.classList.remove('big');
+            });
+        })
+
+        document.querySelectorAll('.window_left').forEach(function (window_left) {
+            window_left.addEventListener('click', function () {
+                const windowleft = window_left.closest('.child_windows');
+                windowleft.style.left = "auto"
+            });
+        })
+        document.querySelectorAll('.window_top').forEach(function (window_top) {
+            window_top.addEventListener('click', function () {
+                const windowtop = window_top.closest('.child_windows');
+                windowtop.style.top = "auto"
+            });
+        })
+
+        document.querySelectorAll('.window_left').forEach(function (window_left) {
+            window_left.addEventListener('click', function () {
+                const windowleft = window_left.closest('.child_windows');
+                windowleft.style.left = "auto"
+            });
+        })
+        document.querySelectorAll('.window_top_and_left').forEach(function (window_top_and_left) {
+            window_top_and_left.addEventListener('click', function () {
+                const windowtopleft = window_top_and_left.closest('.child_windows');
+                windowtopleft.style.top = "auto"
+                windowtopleft.style.left = "auto"
+            });
+        })
+
+        document.querySelectorAll('.window_half_big').forEach(function (window_half_big) {
+            window_half_big.addEventListener('click', function () {
+                let windowhalfbig = window_half_big.closest('.child_windows');
+                windowhalfbig.classList.remove('big')
+                windowhalfbig.style.height = "50%"
+                windowhalfbig.style.width = "50%"
+            })
+        })
+
+        document.querySelectorAll('.windowsize_reset').forEach(function (windowsize_reset) {
+            windowsize_reset.addEventListener('click', function () {
+                let windowsizereset = windowsize_reset.closest('.child_windows');
+                let shiftX = event.clientX - windowsize_reset.getBoundingClientRect().left;
+                let shiftY = event.clientY - windowsize_reset.getBoundingClientRect().top;
+                let top = document.querySelector('.top');
+                moveAt(event.pageX, event.pageY);
+                // ボールを（pageX、pageY）座標の中心に置く
+                function moveAt(pageX, pageY) {
+                    windowsize_reset.style.left = pageX - shiftX + 'px';
+                    windowsize_reset.style.top = pageY - shiftY + 'px';
+                }
+                function onMouseMove(event) {
+                    moveAt(event.pageX, event.pageY);
+                }
+                windowsizereset.style.left = shiftX
+                windowsizereset.style.top = shiftY
+                windowsizereset.style.height = ""
+                windowsizereset.style.width = ""
+            });
+        })
+
+        document.querySelectorAll('.parent_list').forEach(function (parent_list) {
+            parent_list.addEventListener('mouseover', function () {
+                let parentlist = parent_list.lastElementChild;
+                parentlist.classList.add('active')
+
+                parentlist = parent_list.closest('.child_windows');
+                z = largestZIndex + 1;
+                parent_list2 = parentlist.style.zIndex = z;
+
+                document.querySelectorAll('.parent_list').forEach(function (c_list) {
+                    c_list.addEventListener('mouseleave', function () {
+                        document.querySelectorAll('.child_list', '.active').forEach(function (cb_list) {
+                            cb_list.classList.remove('active')
+                        })
+                    })
+                })
+            })
+        })
+
+        document.querySelectorAll('.child_windows, .child').forEach(function (z_index_child_windows) {
+            z_index_child_windows.addEventListener('mousedown', function () {
+                const zindexchildwindows = z_index_child_windows.closest('.child_windows');
+                z = largestZIndex + 1;
+                window_z_index = zindexchildwindows.style.zIndex = z;
+            });
+        })
+
+
+        document.querySelectorAll('.test_button').forEach(function (test_button) {
+            test_button.addEventListener('click', function () {
+                main.classList.toggle('active');
+                main.closest('.child_windows');
+                z = largestZIndex + 1;
+                unko = main.style.zIndex = z;
+            });
+        });
+        document.querySelectorAll('.test_button2').forEach(function (test_button2) {
+            test_button2.addEventListener('click', function () {
+                program.classList.toggle('active');
+                program.closest('.child_windows');
+                z = largestZIndex + 1;
+                unko2 = program.style.zIndex = z;
+
+            });
+        });
+        document.querySelectorAll('.test_button3').forEach(function (test_button3) {
+            test_button3.addEventListener('click', function () {
+                control.classList.toggle('active');
+                control.closest('.child_windows');
+                z = largestZIndex + 1;
+                unko3 = control.style.zIndex = z;
+
+            });
+        });
+        document.querySelectorAll('.test_button4').forEach(function (test_button4) {
+            test_button4.addEventListener('click', function () {
+                color_menu.classList.toggle('active');
+                color_menu.closest('.child_windows');
+                z = largestZIndex + 1;
+                unko4 = color_menu.style.zIndex = z;
+            });
+        });
+        document.querySelectorAll('.test_button5').forEach(function (test_button5) {
+            test_button5.addEventListener('click', function () {
+                version.classList.toggle('active');
+                version.closest('.child_windows');
+                z = largestZIndex + 1;
+                unko5 = version.style.zIndex = z;
+            });
+        });
+        document.querySelectorAll('.test_button6').forEach(function (test_button6) {
+            test_button6.addEventListener('click', function () {
+                window_prompt.classList.toggle('active');
+                window_prompt.closest('.child_windows');
+                z = largestZIndex + 1;
+                unko6 = window_prompt.style.zIndex = z;
+            });
+        });
+        document.querySelectorAll('.test_button7').forEach(function (test_button7) {
+            test_button7.addEventListener('click', function () {
+                clock_menu.classList.toggle('active');
+                clock_menu.closest('.child_windows');
+                z = largestZIndex + 1;
+                unko7 = clock_menu.style.zIndex = z;
+            });
+        });
+        document.querySelectorAll('.test_button8').forEach(function (test_button8) {
+            test_button8.addEventListener('click', function () {
+                sound_menu.classList.toggle('active');
+                sound_menu.closest('.child_windows');
+                z = largestZIndex + 1;
+                unko8 = sound_menu.style.zIndex = z;
+            });
+        });
+        document.querySelectorAll('.test_button9').forEach(function (test_button9) {
+            test_button9.addEventListener('click', function () {
+                driver_menu.classList.toggle('active');
+                driver_menu.closest('.child_windows');
+                z = largestZIndex + 1;
+                unko9 = driver_menu.style.zIndex = z;
+            });
+        });
+        document.querySelectorAll('.test_button10').forEach(function (test_button10) {
+            test_button10.addEventListener('click', function () {
+                mouse_menu.classList.toggle('active');
+                mouse_menu.closest('.child_windows');
+                z = largestZIndex + 1;
+                unko10 = mouse_menu.style.zIndex = z;
+            });
+        });
+        document.querySelectorAll('.test_button11').forEach(function (test_button11) {
+            test_button11.addEventListener('click', function () {
+                screen_menu.classList.toggle('active');
+                screen_menu.closest('.child_windows');
+                z = largestZIndex + 1;
+                unko11 = screen_menu.style.zIndex = z;
+            });
+        });
+        document.querySelectorAll('.test_button12').forEach(function (test_button12) {
+            test_button12.addEventListener('click', function () {
+                note_pad.classList.toggle('active');
+                note_pad.closest('.child_windows');
+                z = largestZIndex + 1;
+                unko12 = note_pad.style.zIndex = z;
+            });
+        });
+        document.querySelectorAll('.test_button13').forEach(function (test_button13) {
+            test_button13.addEventListener('click', function () {
+                text_drop_menu.classList.toggle('active');
+                text_drop_menu.closest('.child_windows');
+                z = largestZIndex + 1;
+                unko13 = text_drop_menu.style.zIndex = z;
+            });
+        });
+        document.querySelectorAll('.test_button14').forEach(function (test_button14) {
+            test_button14.addEventListener('click', function () {
+                windowmode_menu.classList.toggle('active');
+                windowmode_menu.closest('.child_windows');
+                z = largestZIndex + 1;
+                unko14 = windowmode_menu.style.zIndex = z;
+            });
+        });
+        document.querySelectorAll('.test_button15').forEach(function (test_button15) {
+            test_button15.addEventListener('click', function () {
+                accessory_menu.classList.toggle('active');
+                accessory_menu.closest('.child_windows');
+                z = largestZIndex + 1;
+                unko15 = accessory_menu.style.zIndex = z;
+            });
+        });
+        document.querySelectorAll('.test_button16').forEach(function (test_button16) {
+            test_button16.addEventListener('click', function () {
+                calc_menu.classList.toggle('active');
+                calc_menu.closest('.child_windows');
+                z = largestZIndex + 1;
+                unko16 = calc_menu.style.zIndex = z;
+            });
+        });
+        document.querySelectorAll('.test_button17').forEach(function (test_button17) {
+            test_button17.addEventListener('click', function () {
+                nexser_sound_menu.classList.toggle('active');
+                nexser_sound_menu.closest('.child_windows');
+                z = largestZIndex + 1;
+                unko17 = nexser_sound_menu.style.zIndex = z;
+            });
+        });
+
+
+        document.querySelectorAll('.drag_button').forEach(function (drag) {
+            drag.addEventListener('mousedown', function () {
+
+                let drag2 = drag.closest('.child_windows');
+                drag2.classList.add('drag');
+
+                draggable(document.querySelector('.drag'));
+                function draggable(drag) {
+                    drag2.onmousedown = function (event) {
+                        let shiftX = event.clientX - drag.getBoundingClientRect().left;
+                        let shiftY = event.clientY - drag.getBoundingClientRect().top;
+                        let top = document.querySelector('.top');
+                        moveAt(event.pageX, event.pageY);
+                        // ボールを（pageX、pageY）座標の中心に置く
+                        function moveAt(pageX, pageY) {
+                            drag.style.left = pageX - shiftX + 'px';
+                            drag.style.top = pageY - shiftY + 'px';
+                        }
+                        function onMouseMove(event) {
+                            moveAt(event.pageX, event.pageY);
+                        }
+
+                        if (localStorage.getItem('window_titlebackcolor')) {
+                            document.querySelectorAll('.title').forEach(function (title) {
+                                const titlebar = title.style.backgroundColor = bkcolor;
+                            })
+                        }
+
+                        // 半透明
+                        if (localStorage.getItem('window_invisible')) {
+                            document.querySelectorAll('.child_windows,.child').forEach(function (title) {
+                                title.style.opacity = "0.5";
+                            })
+                        }
+
+                        // 移動してる時だけ黒枠のみ
+                        if (localStorage.getItem('window_borderblack')) {
+                            document.querySelectorAll('.child_windows').forEach(function (title) {
+                                title.style.background = bkcolor;
+                                title.style.border = "solid 2px black";
+                            })
+                            document.querySelectorAll('.title,.title2,.title_buttons,.window_inline_list,.mini_window,button,input,textarea,p,#prompt2').forEach(function (title) {
+                                title.style.opacity = "0"
+                            })
+                        }
+
+                        // (3) mousemove でボールを移動する
+                        document.addEventListener('mousemove', onMouseMove);
+                        // (4) ボールをドロップする。不要なハンドラを削除する
+                        drag.onmouseup = function () {
+                            document.removeEventListener('mousemove', onMouseMove);
+                            drag.onmouseup = null;
+                            drag2.classList.remove('drag');
+                            draggable()
+
+                            document.querySelectorAll('.title').forEach(function (title) {
+                                const titlebar = title.style.backgroundColor = "darkblue";
+                            })
+
+                            // 半透明
+                            document.querySelectorAll('.child_windows').forEach(function (title) {
+                                title.style.opacity = "";
+                            })
+
+
+                            // 移動してる時だけ黒枠のみ
+                            document.querySelectorAll('.child_windows').forEach(function (title) {
+                                title.style.background = "";
+                                title.style.border = "";
+                            })
+                            document.querySelectorAll('.title,.title2,.title_buttons,.window_inline_list,.mini_window,button,input,textarea,p,#prompt2').forEach(function (title) {
+                                title.style.opacity = ""
+                            })
+
+
+                        };
+                    };
+                };
+            });
+        })
+
+        const KEY_COLOR = "COLOR";				// 文字色用キー
+        const KEY_BKCOLOR = "BKCOLOR";			// 背景色用キー
+
+        let color = null;						// 文字色
+        let bkcolor = null;						// 背景色
+
+        /*
+         * ローカルストレージのデータチェック
+         */
+        function getStorage() {
+            // ローカルストレージに保存された内容を取得
+            color = localStorage.getItem(KEY_COLOR);
+            bkcolor = localStorage.getItem(KEY_BKCOLOR);
+
+            // ローカルストレージに文字色と背景色データが保存されていれば色変更
+            if (color !== null && bkcolor != null) {
+                setColor();
+            }
+        }
+
+        /*
+         * ローカルストレージに色名（文字色・背景色）を保存する
+         */
+        function setStorage() {
+            localStorage.setItem(KEY_COLOR, color);
+            localStorage.setItem(KEY_BKCOLOR, bkcolor);
+        }
+
+        function setStorage2() {
+            if (localStorage.getItem('driver_color')) {
+                var select = document.getElementById("select_backcolor");
+                const select2 = (select.value);
+                var select3 = document.getElementById("select_textcolor");
+                const select4 = (select3.value);
+                localStorage.setItem(KEY_BKCOLOR, select2);
+                localStorage.setItem(KEY_COLOR, select4);
+                getStorage()
+                setColor()
+            }
+        }
+
+        /*
+         * 文字色と背景色を変更する
+         */
+        function setColor() {
+            if (localStorage.getItem('driver_color')) {
+                document.querySelector("body").style.color = color;
+                document.querySelector("#nexser").style.backgroundColor = bkcolor;
+                document.querySelector(".mini_desktop").style.backgroundColor = bkcolor;
+            }
+        }
+        /*
+         * 起動時にローカルストレージの内容をチェックして色を設定
+         */
+        window.addEventListener("load", () => {
+            // ボタンイベント設定
+            document.getElementById("changeBtn").addEventListener("click", () => {
+                if (localStorage.getItem('driver_color')) {
+                    // テキストボックスに入力された文字色と背景色を取得
+                    color = document.getElementById("color").value;
+                    bkcolor = document.getElementById("bkcolor").value;
+                    // 文字色・背景色変更
+                    setColor();
+                    // 変更した色名をストレージに保存
+                    setStorage();
+                }
+            });
+            // ローカルストレージの内容をチェック
+            getStorage();
+        });
+
+        var largestZIndex = 0;
+        var defaultView = document.defaultView;
+        var getLargestZIndex = function () {
+            var func = function (queryselectorname) {
+                var elems = document.querySelectorAll(queryselectorname), len = elems.length;
+                for (var i = 0; i < len; i++) {
+                    var elem = elems[i];
+                    var zIndex = elem.style.zIndex;
+                    if (!zIndex) {
+                        var css = elem.currentStyle || defaultView.getComputedStyle(elem, null);
+                        zIndex = css ? css.zIndex : 0;
+                    }
+                    zIndex++;
+                    if (largestZIndex < zIndex) largestZIndex = zIndex;
+                }
+            };
+            if (arguments.length == 0) func('*');
+            else for (var i = 0; i < arguments.length; i++) func(arguments[i]);
+            return largestZIndex;
+        };
+        setInterval(() => {
+            z_index.textContent = (getLargestZIndex('.child_windows'));
+            z_index.style.display = "none";
+        }, 10);
+
+        // ↑setinterval　大事な役割
+
+        function startup_sound() {
+            if (localStorage.getItem('driver_sound')) {
+                if (localStorage.getItem('startup_1')) {
+                    sound()
+                }
+                if (localStorage.getItem('startup_2')) {
+                    sound6()
+                }
+            }
+        }
+
+        function shutdown_sound() {
+            if (localStorage.getItem('driver_sound')) {
+                if (localStorage.getItem('shutdown_1')) {
+                    sound2()
+                }
+                if (localStorage.getItem('shutdown_2')) {
+                    sound4()
+                }
+            }
+        }
+
+        function sound() {
+            if (localStorage.getItem('driver_sound')) {
+                const sound = new Audio("https://github.com/moti5768/nexser/raw/main//The-Microsoft-Sound.mp3");
+                sound.play();
+            }
+        }
+        function sound2() {
+            if (localStorage.getItem('driver_sound')) {
+                const sound2 = new Audio("https://github.com/moti5768/nexser/raw/main//tada.mp3");
+                sound2.play();
+            }
+        }
+        function sound3() {
+            if (localStorage.getItem('driver_sound')) {
+                const sound3 = new Audio("https://github.com/moti5768/nexser/raw/main//chord.mp3");
+                sound3.play();
+            }
+        }
+        function sound4() {
+            if (localStorage.getItem('driver_sound')) {
+                const sound4 = new Audio("https://github.com/moti5768/nexser/raw/main//chimes.mp3");
+                sound4.play();
+            }
+        }
+        function sound5() {
+            if (localStorage.getItem('driver_sound')) {
+                const sound5 = new Audio("https://github.com/moti5768/nexser/raw/main//ding.mp3");
+                sound5.play();
+            }
+        }
+        function sound6() {
+            if (localStorage.getItem('driver_sound')) {
+                const sound6 = new Audio("https://github.com/moti5768/nexser/raw/main//startup_sound.mp3");
+                sound6.play();
+            }
+        }
+        let ele = document.documentElement;
+        function full() {
+            // 全画面表示      
+            if (ele.webkitRequestFullscreen) {
+                ele.webkitRequestFullscreen() // Chrome, Safari
+            } else if (ele.mozRequestFullScreen) {
+                ele.mozRequestFullScreen() // firefox
+            } else if (ele.requestFullscreen) {
+                ele.requestFullscreen() // HTML5 Fullscreen API
+            } else {
+                alert('未対応')
+                return
+            }
+        }
+        function min() {
+            // 全画面表示　終了
+            if (ele.webkitRequestFullscreen) {
+                document.webkitCancelFullScreen() // Chrome, Safari
+            } else if (ele.mozRequestFullScreen) {
+                document.mozCancelFullScreen() // firefox
+            } else if (ele.requestFullscreen) {
+                document.exitFullscreen() // HTML5 Fullscreen API
+            }
+        }
+
+        setInterval(() => {
+            var date = new Date();
+            var year = date.getFullYear();
+            var month = date.getMonth() + 1;
+            var day = date.getDate();
+            document.querySelector('.date_day').textContent = (year + "/" + month + "/" + day + "");
+            var date = new Date();
+            var hours = date.getHours().toString().padStart(2, '0');
+            var minutes = date.getMinutes().toString().padStart(2, '0');
+            var seconds = date.getSeconds().toString().padStart(2, '0');
+            var clock = document.querySelector('.date_clock');
+            clock.textContent = (hours + ":" + minutes + ":" + seconds + "");
+            var clock2 = document.querySelector('.date_clock2');
+            clock2.textContent = (hours + ":" + minutes + ":" + seconds + "");
+        }, 100);
+
+        const el = document.querySelector("#p1, #p3, .p");
+
+        // 右クリックイベントの登録
+        document.getElementById("button1").addEventListener("contextmenu", function (event) {
+            event.preventDefault();
+            // デフォルトの右クリックメニューを無効化
+            setTimeout(() => {
+                document.querySelector('.mouse_right').classList.add('active');
+            }, 0);
+            setTimeout(() => {
+                document.querySelector('.mouse_right').classList.remove('active');
+            }, 500);
+        });
+
+        // 左クリックイベントの登録
+        document.getElementById("button1").addEventListener("click", function () {
+            setTimeout(() => {
+                document.querySelector('.mouse_left').classList.add('active');
+            }, 0);
+            setTimeout(() => {
+                document.querySelector('.mouse_left').classList.remove('active');
+            }, 500);
+        });
+
+        function load() {
+            let noteData = "";
+            if (!localStorage.getItem('noteData')) {
+                noteData = "メモは登録されていません。";
+                document.getElementById("inputlength").innerHTML = noteData.length + "";
+            }
+            else {
+                noteData = localStorage.getItem('noteData');
+                document.getElementById("inputlength").innerHTML = noteData.length + "";
+            }
+            document.note_form.note_area.value = noteData;
+            const memo_save = document.getElementById('memo_save_text');
+            memo_save.textContent = "";
+        }
+
+        function load2() {
+            let textdropdata = "";
+            if (!localStorage.getItem('textdropdata')) {
+                textdropdata = "メモは登録されていません。";
+                const memo_save2 = document.getElementById('drop_save_text');
+                memo_save2.textContent = "";
+            } else {
+                textdropdata = localStorage.getItem('textdropdata');
+                const memo_save2 = document.getElementById('drop_save_text');
+                memo_save2.textContent = "text data save keep";
+            }
+            document.drop_form.drop_area.value = textdropdata;
+        }
+
+
+        function notecolor_change_blue() {
+            notecolor_remove()
+            const note_textcolor_blue = document.querySelector('.notetext_blue');
+            localStorage.setItem('note_textcolor_blue', note_textcolor_blue);
+            notecolor_change()
+        }
+        function notecolor_change_green() {
+            notecolor_remove()
+            const note_textcolor_green = document.querySelector('.notetext_green');
+            localStorage.setItem('note_textcolor_green', note_textcolor_green);
+            notecolor_change()
+        }
+        function notecolor_change_red() {
+            notecolor_remove()
+            const note_textcolor_red = document.querySelector('.notetext_red');
+            localStorage.setItem('note_textcolor_red', note_textcolor_red);
+            notecolor_change()
+        }
+
+        function notecolor_change() {
+            if (localStorage.getItem('note_textcolor_blue')) {
+                document.querySelector('.note_area').style.color = "blue";
+                document.querySelector('.test_notetext').style.color = "blue";
+            }
+            if (localStorage.getItem('note_textcolor_green')) {
+                document.querySelector('.note_area').style.color = "green";
+                document.querySelector('.test_notetext').style.color = "green";
+            }
+            if (localStorage.getItem('note_textcolor_red')) {
+                document.querySelector('.note_area').style.color = "red";
+                document.querySelector('.test_notetext').style.color = "red";
+            }
+        }
+
+        function notecolor_remove() {
+            localStorage.removeItem('note_textcolor_blue')
+            localStorage.removeItem('note_textcolor_green')
+            localStorage.removeItem('note_textcolor_red')
+            document.querySelector('.note_area').style.color = "";
+            document.querySelector('.test_notetext').style.color = "";
+        }
+
+        function notetext_all_bold() {
+            var Note = document.querySelector('.note_area');
+            const note_text_bold = document.querySelector('.notetext_bold');
+            localStorage.setItem('note_text_bold', note_text_bold);
+            if (localStorage.getItem('note_text_bold') && Note.style.fontWeight == "normal") {
+                Note.style.fontWeight = "bold";
+                document.querySelector('.test_notetext').style.fontWeight = "bold";
+            } else if (localStorage.getItem('note_text_bold') && Note.style.fontWeight == "bold") {
+                Note.style.fontWeight = "normal";
+                document.querySelector('.test_notetext').style.fontWeight = "normal";
+                localStorage.removeItem('note_text_bold')
+            } else {
+                Note.style.fontWeight = "bold";
+                document.querySelector('.test_notetext').style.fontWeight = "bold";
+            }
+        }
+
+        function notetext_all_oblique() {
+            var Note = document.querySelector('.note_area');
+            const note_text_oblique = document.querySelector('.notetext_oblique');
+            localStorage.setItem('note_text_oblique', note_text_oblique);
+            if (localStorage.getItem('note_text_oblique') && Note.style.fontStyle == "normal") {
+                Note.style.fontStyle = "oblique";
+                document.querySelector('.test_notetext').style.fontStyle = "oblique";
+            } else if (localStorage.getItem('note_text_oblique') && Note.style.fontStyle == "oblique") {
+                Note.style.fontStyle = "normal";
+                document.querySelector('.test_notetext').style.fontStyle = "normal";
+                localStorage.removeItem('note_text_oblique')
+            } else {
+                Note.style.fontStyle = "oblique";
+                document.querySelector('.test_notetext').style.fontStyle = "oblique";
+            }
+        }
+
+        function notetext_all_underline() {
+            var Note = document.querySelector('.note_area');
+            const note_text_underline = document.querySelector('.notetext_underline');
+            localStorage.setItem('note_text_underline', note_text_underline);
+
+            if (Note.style.textDecoration == "none" && localStorage.getItem('note_text_underline')) {
+                Note.style.textDecoration = "underline";
+                document.querySelector('.test_notetext').style.textDecoration = "underline";
+            } else if (Note.style.textDecoration == "underline" && localStorage.getItem('note_text_underline')) {
+                Note.style.textDecoration = "none";
+                document.querySelector('.test_notetext').style.textDecoration = "none";
+                localStorage.removeItem('note_text_underline')
+            } else {
+                Note.style.textDecoration = "underline";
+                document.querySelector('.test_notetext').style.textDecoration = "underline";
+            }
+        }
+
+        // 保存
+        function save() {
+            if (note_form.note_area.value === "") {
+                document.querySelector('.window_error_text').textContent = "text none not save!"
+                error_windows.classList.remove('active')
+                sound3()
+                document.querySelector('.test_allwindow').style.display = "block";
+            } else {
+                let noteData = document.note_form.note_area.value;
+                localStorage.setItem('noteData', noteData);
+                const memo_save = document.getElementById('memo_save_text');
+                memo_save.textContent = "save!";
+                document.querySelector('.note_title').textContent = "notepad(save)"
+            }
+        }
+        function save2() {
+            let textdropdata = document.drop_form.drop_area.value;
+            localStorage.setItem('textdropdata', textdropdata);
+            const memo_save2 = document.getElementById('drop_save_text');
+            memo_save2.textContent = "drop text data save!";
+        }
+
+        document.querySelector('.note_close').addEventListener('click', function () {
+            if (!note_pad.classList.contains('active') && localStorage.getItem('noteData')) {
+                note_pad.classList.add('active')
+                taskbtn_load()
+            } else {
+                document.querySelector('.window_warning_text').textContent = "notepad no save window close?(text allremove)"
+                warning_windows.classList.remove('active')
+                sound5()
+                document.querySelector('.test_allwindow').style.display = "block";
+                document.querySelector('.shutdown_button').style.display = "none";
+                document.querySelector('.warningclose_button').style.display = "block";
+            }
+        })
+        function warning_windows_close() {
+            warning_windows.classList.add('active');
+            document.querySelector('.test_allwindow').style.display = "none";
+            document.querySelector('.shutdown_button').style.display = "block";
+            document.querySelector('.warningclose_button').style.display = "none";
+            document.note_form.note_area.value = "";
+            resetShowLength()
+            note_pad.classList.add('active')
+            taskbtn_load()
+        }
+
+
+        function notedata_clear() {
+            localStorage.removeItem('noteData');
+            const memo_save = document.getElementById('memo_save_text');
+            memo_save.textContent = "";
+            document.querySelector('.note_title').textContent = "notepad"
+        }
+        document.getElementById('cleartextbtn').addEventListener('click', function () {
+            document.getElementsByClassName("note_area")[0].value = '';
+            const memo_save = document.getElementById('memo_save_text');
+            memo_save.textContent = "";
+            resetShowLength();
+        });
+        document.getElementById('cleartextbtn2').addEventListener('click', function () {
+            localStorage.removeItem('textdropdata');
+            document.querySelector(".drop_area").value = '';
+            const memo_save2 = document.getElementById('drop_save_text');
+            memo_save2.textContent = "";
+        });
+        function resetShowLength() {
+            document.getElementById("inputlength").innerHTML = "0";
+        }
+        function ShowLength() {
+            let noteData = document.note_form.note_area.value;
+            document.note_form.note_area.length = noteData;
+            const memo_save = document.getElementById('memo_save_text');
+            memo_save.textContent = "";
+            document.getElementById("inputlength").innerHTML = noteData.length + "";
+            notedata_clear()
+        }
+
+        let dr = document.querySelector('#drop');
+        // 要素の移動イベント
+        dr.addEventListener('dragover', function (evt) {
+            //ブラウザのデフォルト動作を無効化する
+            evt.preventDefault();
+        });
+        //ドロップ枠(DropZone)のdropイベント
+        dr.addEventListener('drop', function (evt) {
+            if (!localStorage.getItem('textdropdata')) {
+                //ブラウザのデフォルト動作を無効化する
+                evt.preventDefault();
+                evt.target.textContent = evt.dataTransfer.getData('text');
+            } else {
+                document.querySelector('.window_error_text').textContent = "textdata save & text drag no!"
+                error_windows.classList.remove('active')
+                sound3();
+                document.querySelector('.test_allwindow').style.display = "block";
+            }
+        });
+
+
+        var calc_result = document.getElementById("result");
+        function edit(calc_elem) {
+            calc_result.value = calc_result.value + calc_elem.value;
+        }
+        function calc() {
+            calc_result.value = new Function("return " + calc_result.value)();
+
+            const child_graph = document.querySelector(".child_graph");
+            child_graph.style.height = new Function("return " + calc_result.value)() + '%';
+            child_graph.style.background = "lime"
+            if (calc_result.value > 100) {
+                child_graph.style.height = "100%"
+                child_graph.style.background = "red";
+            }
+            if (calc_result.value == 100) {
+                child_graph.style.background = "blue";
+            }
+            if (calc_result.value < 0) {
+                child_graph.style.height = "100%"
+                child_graph.style.background = "black";
+            }
+        }
+        function calc_clear() {
+            calc_result.value = "";
+        }
+
+    } else {
+        document.querySelector(".prompt_error_text").textContent = 'この端末は対応していません!';
+    }
+
+</script>
+
+</html>
