@@ -20,6 +20,9 @@
             <p class="user" class="user"></p>
             <div style="color: lime;">
                 <p class="memory"></p>
+                <p class="memory2"></p>
+                <p class="memory3"></p>
+                <p class="memory4"></p>
                 <p>Batterylevel:&emsp;<span class="level"></span></p>
                 <p>Charging:&emsp;<span class="charging"></span></p>
                 <p>ChargingTime:&emsp;<span class="chargingTime"></span></p>
@@ -32,6 +35,7 @@
                     <textarea id="codes" style="display: none; width: 99%; height: 65vh; background-color: black; color: white; resize: none; outline: none;">
 
                         
+
 
 
 
@@ -59,6 +63,9 @@
             &lt;p class=&quot;user&quot; class=&quot;user&quot;&gt;&lt;/p&gt;
             &lt;div style=&quot;color: lime;&quot;&gt;
                 &lt;p class=&quot;memory&quot;&gt;&lt;/p&gt;
+                &lt;p class=&quot;memory2&quot;&gt;&lt;/p&gt;
+                &lt;p class=&quot;memory3&quot;&gt;&lt;/p&gt;
+                &lt;p class=&quot;memory4&quot;&gt;&lt;/p&gt;
                 &lt;p&gt;Batterylevel:&amp;emsp;&lt;span class=&quot;level&quot;&gt;&lt;/span&gt;&lt;/p&gt;
                 &lt;p&gt;Charging:&amp;emsp;&lt;span class=&quot;charging&quot;&gt;&lt;/span&gt;&lt;/p&gt;
                 &lt;p&gt;ChargingTime:&amp;emsp;&lt;span class=&quot;chargingTime&quot;&gt;&lt;/span&gt;&lt;/p&gt;
@@ -90,7 +97,8 @@
                             &lt;li&gt;note pad&amp;emsp;&lt;span class=&quot;startup_note&quot;&gt;OFF&lt;/span&gt;&lt;/li&gt;
                             &lt;li&gt;color&amp;emsp;&lt;span class=&quot;startup_color&quot;&gt;OFF&lt;/span&gt;&lt;/li&gt;
                             &lt;li&gt;screen&amp;emsp;&lt;span class=&quot;startup_screen&quot;&gt;OFF&lt;/span&gt;&lt;/li&gt;
-                        &lt;/ul&gt;
+                            &lt;li&gt;htmlviewer edit&amp;emsp;&lt;span class=&quot;startup_htmlviewer_edit&quot;&gt;OFF&lt;/span&gt;&lt;/li&gt;
+                        &lt;/ul&gt;&lt;br&gt;
                     &lt;/div&gt;
                     &lt;div class=&quot;mini_window&quot; style=&quot;border-color: white;&quot;&gt;
                         &lt;div style=&quot;width: 100%; border-bottom: solid 1px white;&quot;&gt;STARTUP MODE&lt;/div&gt;
@@ -102,8 +110,6 @@
                 &lt;/div&gt;
             &lt;/div&gt;
         &lt;/div&gt;
-
-
 
         &lt;div id=&quot;nexser&quot;&gt;
             &lt;span class=&quot;z_index&quot; style=&quot;color: white; position: absolute; bottom: 40px;&quot;&gt;&lt;/span&gt;
@@ -117,7 +123,7 @@
 
                 &lt;div id=&quot;soft_windows&quot;&gt;
 
-                    &lt;div class=&quot;child_windows program_manager active&quot;&gt;
+                    &lt;div class=&quot;child_windows program_manager resize active&quot;&gt;
                         &lt;div class=&quot;title&quot;&gt;
                             &lt;span&gt;program manager&lt;/span&gt;
                         &lt;/div&gt;
@@ -138,9 +144,7 @@
                                 &lt;/ul&gt;
                                 &lt;div class=&quot;child_list&quot;&gt;
                                     &lt;ul&gt;
-                                        &lt;li class=&quot;hover_blue&quot; onclick=&quot;shutdown()&quot;&gt;shutdown&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
+                                        &lt;li class=&quot;hover_blue shutdown&quot;&gt;shutdown&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                     &lt;/ul&gt;
@@ -159,6 +163,18 @@
                                         &lt;/li&gt;
                                         &lt;li class=&quot;hover_blue window_half_big&quot;&gt;window half big&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue windowsize_reset&quot;&gt;window size reset&lt;/li&gt;
+                                    &lt;/ul&gt;
+                                &lt;/div&gt;
+                            &lt;/div&gt;
+
+                            &lt;div class=&quot;parent_list&quot;&gt;
+                                &lt;ul&gt;
+                                    &lt;li&gt;&amp;emsp;&amp;emsp;icon(&lt;ins&gt;I&lt;/ins&gt;)&amp;emsp;&amp;emsp;&lt;/li&gt;
+                                &lt;/ul&gt;
+                                &lt;div class=&quot;child_list&quot;&gt;
+                                    &lt;ul&gt;
+                                        &lt;li class=&quot;hover_blue shutdown&quot;&gt;shutdown&lt;/li&gt;
+                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                     &lt;/ul&gt;
                                 &lt;/div&gt;
@@ -170,24 +186,7 @@
                                 &lt;/ul&gt;
                                 &lt;div class=&quot;child_list&quot;&gt;
                                     &lt;ul&gt;
-                                        &lt;li class=&quot;hover_blue&quot; onclick=&quot;shutdown()&quot;&gt;shutdown&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
-                                    &lt;/ul&gt;
-                                &lt;/div&gt;
-                            &lt;/div&gt;
-
-                            &lt;div class=&quot;parent_list&quot;&gt;
-                                &lt;ul&gt;
-                                    &lt;li&gt;&amp;emsp;&amp;emsp;icon(&lt;ins&gt;I&lt;/ins&gt;)&amp;emsp;&amp;emsp;&lt;/li&gt;
-                                &lt;/ul&gt;
-                                &lt;div class=&quot;child_list&quot;&gt;
-                                    &lt;ul&gt;
-                                        &lt;li class=&quot;hover_blue&quot; onclick=&quot;shutdown()&quot;&gt;shutdown&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
+                                        &lt;li class=&quot;hover_blue shutdown&quot;&gt;shutdown&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                     &lt;/ul&gt;
@@ -208,7 +207,7 @@
                         &lt;/ul&gt;&lt;br&gt;
                     &lt;/div&gt;
 
-                    &lt;div class=&quot;child_windows windowmode_menu active&quot;&gt;
+                    &lt;div class=&quot;child_windows windowmode_menu resize active&quot;&gt;
                         &lt;div class=&quot;title&quot;&gt;
                             &lt;span&gt;window mode&lt;/span&gt;
                         &lt;/div&gt;
@@ -229,9 +228,7 @@
                                 &lt;/ul&gt;
                                 &lt;div class=&quot;child_list&quot;&gt;
                                     &lt;ul&gt;
-                                        &lt;li class=&quot;hover_blue&quot; onclick=&quot;shutdown()&quot;&gt;shutdown&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
+                                        &lt;li class=&quot;hover_blue shutdown&quot;&gt;shutdown&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                     &lt;/ul&gt;
@@ -250,6 +247,18 @@
                                         &lt;/li&gt;
                                         &lt;li class=&quot;hover_blue window_half_big&quot;&gt;window half big&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue windowsize_reset&quot;&gt;window size reset&lt;/li&gt;
+                                    &lt;/ul&gt;
+                                &lt;/div&gt;
+                            &lt;/div&gt;
+
+                            &lt;div class=&quot;parent_list&quot;&gt;
+                                &lt;ul&gt;
+                                    &lt;li&gt;&amp;emsp;&amp;emsp;icon(&lt;ins&gt;I&lt;/ins&gt;)&amp;emsp;&amp;emsp;&lt;/li&gt;
+                                &lt;/ul&gt;
+                                &lt;div class=&quot;child_list&quot;&gt;
+                                    &lt;ul&gt;
+                                        &lt;li class=&quot;hover_blue shutdown&quot;&gt;shutdown&lt;/li&gt;
+                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                     &lt;/ul&gt;
                                 &lt;/div&gt;
@@ -261,24 +270,7 @@
                                 &lt;/ul&gt;
                                 &lt;div class=&quot;child_list&quot;&gt;
                                     &lt;ul&gt;
-                                        &lt;li class=&quot;hover_blue&quot; onclick=&quot;shutdown()&quot;&gt;shutdown&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
-                                    &lt;/ul&gt;
-                                &lt;/div&gt;
-                            &lt;/div&gt;
-
-                            &lt;div class=&quot;parent_list&quot;&gt;
-                                &lt;ul&gt;
-                                    &lt;li&gt;&amp;emsp;&amp;emsp;icon(&lt;ins&gt;I&lt;/ins&gt;)&amp;emsp;&amp;emsp;&lt;/li&gt;
-                                &lt;/ul&gt;
-                                &lt;div class=&quot;child_list&quot;&gt;
-                                    &lt;ul&gt;
-                                        &lt;li class=&quot;hover_blue&quot; onclick=&quot;shutdown()&quot;&gt;shutdown&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
+                                        &lt;li class=&quot;hover_blue shutdown&quot;&gt;shutdown&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                     &lt;/ul&gt;
@@ -295,8 +287,7 @@
                         &lt;/ul&gt;&lt;br&gt;
                     &lt;/div&gt;
 
-
-                    &lt;div class=&quot;child_windows accessory_menu active&quot;&gt;
+                    &lt;div class=&quot;child_windows accessory_menu resize active&quot;&gt;
                         &lt;div class=&quot;title&quot;&gt;
                             &lt;span&gt;accessory&lt;/span&gt;
                         &lt;/div&gt;
@@ -317,9 +308,7 @@
                                 &lt;/ul&gt;
                                 &lt;div class=&quot;child_list&quot;&gt;
                                     &lt;ul&gt;
-                                        &lt;li class=&quot;hover_blue&quot; onclick=&quot;shutdown()&quot;&gt;shutdown&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
+                                        &lt;li class=&quot;hover_blue shutdown&quot;&gt;shutdown&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                     &lt;/ul&gt;
@@ -338,6 +327,18 @@
                                         &lt;/li&gt;
                                         &lt;li class=&quot;hover_blue window_half_big&quot;&gt;window half big&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue windowsize_reset&quot;&gt;window size reset&lt;/li&gt;
+                                    &lt;/ul&gt;
+                                &lt;/div&gt;
+                            &lt;/div&gt;
+
+                            &lt;div class=&quot;parent_list&quot;&gt;
+                                &lt;ul&gt;
+                                    &lt;li&gt;&amp;emsp;&amp;emsp;icon(&lt;ins&gt;I&lt;/ins&gt;)&amp;emsp;&amp;emsp;&lt;/li&gt;
+                                &lt;/ul&gt;
+                                &lt;div class=&quot;child_list&quot;&gt;
+                                    &lt;ul&gt;
+                                        &lt;li class=&quot;hover_blue shutdown&quot;&gt;shutdown&lt;/li&gt;
+                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                     &lt;/ul&gt;
                                 &lt;/div&gt;
@@ -349,24 +350,7 @@
                                 &lt;/ul&gt;
                                 &lt;div class=&quot;child_list&quot;&gt;
                                     &lt;ul&gt;
-                                        &lt;li class=&quot;hover_blue&quot; onclick=&quot;shutdown()&quot;&gt;shutdown&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
-                                    &lt;/ul&gt;
-                                &lt;/div&gt;
-                            &lt;/div&gt;
-
-                            &lt;div class=&quot;parent_list&quot;&gt;
-                                &lt;ul&gt;
-                                    &lt;li&gt;&amp;emsp;&amp;emsp;icon(&lt;ins&gt;I&lt;/ins&gt;)&amp;emsp;&amp;emsp;&lt;/li&gt;
-                                &lt;/ul&gt;
-                                &lt;div class=&quot;child_list&quot;&gt;
-                                    &lt;ul&gt;
-                                        &lt;li class=&quot;hover_blue&quot; onclick=&quot;shutdown()&quot;&gt;shutdown&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
+                                        &lt;li class=&quot;hover_blue shutdown&quot;&gt;shutdown&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                     &lt;/ul&gt;
@@ -388,8 +372,7 @@
                         &lt;/ul&gt;&lt;br&gt;
                     &lt;/div&gt;
 
-
-                    &lt;div class=&quot;child_windows main active&quot;&gt;
+                    &lt;div class=&quot;child_windows main resize active&quot;&gt;
                         &lt;div class=&quot;title&quot;&gt;
                             &lt;span&gt;main&lt;/span&gt;
                         &lt;/div&gt;
@@ -418,7 +401,7 @@
                         &lt;/ul&gt;&lt;br&gt;
                     &lt;/div&gt;
 
-                    &lt;div class=&quot;child_windows control_panel active&quot;&gt;
+                    &lt;div class=&quot;child_windows control_panel resize active&quot;&gt;
                         &lt;div class=&quot;title&quot;&gt;
                             &lt;span&gt;control panel&lt;/span&gt;
                         &lt;/div&gt;
@@ -439,9 +422,7 @@
                                 &lt;/ul&gt;
                                 &lt;div class=&quot;child_list&quot;&gt;
                                     &lt;ul&gt;
-                                        &lt;li class=&quot;hover_blue&quot; onclick=&quot;shutdown()&quot;&gt;shutdown&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
+                                        &lt;li class=&quot;hover_blue shutdown&quot;&gt;shutdown&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                     &lt;/ul&gt;
@@ -460,6 +441,18 @@
                                         &lt;/li&gt;
                                         &lt;li class=&quot;hover_blue window_half_big&quot;&gt;window half big&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue windowsize_reset&quot;&gt;window size reset&lt;/li&gt;
+                                    &lt;/ul&gt;
+                                &lt;/div&gt;
+                            &lt;/div&gt;
+
+                            &lt;div class=&quot;parent_list&quot;&gt;
+                                &lt;ul&gt;
+                                    &lt;li&gt;&amp;emsp;&amp;emsp;icon(&lt;ins&gt;I&lt;/ins&gt;)&amp;emsp;&amp;emsp;&lt;/li&gt;
+                                &lt;/ul&gt;
+                                &lt;div class=&quot;child_list&quot;&gt;
+                                    &lt;ul&gt;
+                                        &lt;li class=&quot;hover_blue shutdown&quot;&gt;shutdown&lt;/li&gt;
+                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                     &lt;/ul&gt;
                                 &lt;/div&gt;
@@ -471,24 +464,7 @@
                                 &lt;/ul&gt;
                                 &lt;div class=&quot;child_list&quot;&gt;
                                     &lt;ul&gt;
-                                        &lt;li class=&quot;hover_blue&quot; onclick=&quot;shutdown()&quot;&gt;shutdown&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
-                                    &lt;/ul&gt;
-                                &lt;/div&gt;
-                            &lt;/div&gt;
-
-                            &lt;div class=&quot;parent_list&quot;&gt;
-                                &lt;ul&gt;
-                                    &lt;li&gt;&amp;emsp;&amp;emsp;icon(&lt;ins&gt;I&lt;/ins&gt;)&amp;emsp;&amp;emsp;&lt;/li&gt;
-                                &lt;/ul&gt;
-                                &lt;div class=&quot;child_list&quot;&gt;
-                                    &lt;ul&gt;
-                                        &lt;li class=&quot;hover_blue&quot; onclick=&quot;shutdown()&quot;&gt;shutdown&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
+                                        &lt;li class=&quot;hover_blue shutdown&quot;&gt;shutdown&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                     &lt;/ul&gt;
@@ -513,7 +489,7 @@
                         &lt;/ul&gt;&lt;br&gt;
                     &lt;/div&gt;
 
-                    &lt;div class=&quot;child_windows sound_menu active&quot;&gt;
+                    &lt;div class=&quot;child_windows sound_menu resize active&quot;&gt;
                         &lt;div class=&quot;title&quot;&gt;
                             &lt;span&gt;sound&lt;/span&gt;
                         &lt;/div&gt;
@@ -542,7 +518,7 @@
                         &lt;/ul&gt;&lt;br&gt;
                     &lt;/div&gt;
 
-                    &lt;div class=&quot;child_windows nexser_sound_menu active&quot;&gt;
+                    &lt;div class=&quot;child_windows nexser_sound_menu resize active&quot;&gt;
                         &lt;div class=&quot;title&quot;&gt;
                             &lt;span&gt;nexser sound&lt;/span&gt;
                         &lt;/div&gt;
@@ -563,9 +539,7 @@
                                 &lt;/ul&gt;
                                 &lt;div class=&quot;child_list&quot;&gt;
                                     &lt;ul&gt;
-                                        &lt;li class=&quot;hover_blue&quot; onclick=&quot;shutdown()&quot;&gt;shutdown&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
+                                        &lt;li class=&quot;hover_blue shutdown&quot;&gt;shutdown&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                     &lt;/ul&gt;
@@ -584,6 +558,18 @@
                                         &lt;/li&gt;
                                         &lt;li class=&quot;hover_blue window_half_big&quot;&gt;window half big&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue windowsize_reset&quot;&gt;window size reset&lt;/li&gt;
+                                    &lt;/ul&gt;
+                                &lt;/div&gt;
+                            &lt;/div&gt;
+
+                            &lt;div class=&quot;parent_list&quot;&gt;
+                                &lt;ul&gt;
+                                    &lt;li&gt;&amp;emsp;&amp;emsp;icon(&lt;ins&gt;I&lt;/ins&gt;)&amp;emsp;&amp;emsp;&lt;/li&gt;
+                                &lt;/ul&gt;
+                                &lt;div class=&quot;child_list&quot;&gt;
+                                    &lt;ul&gt;
+                                        &lt;li class=&quot;hover_blue shutdown&quot;&gt;shutdown&lt;/li&gt;
+                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                     &lt;/ul&gt;
                                 &lt;/div&gt;
@@ -595,24 +581,7 @@
                                 &lt;/ul&gt;
                                 &lt;div class=&quot;child_list&quot;&gt;
                                     &lt;ul&gt;
-                                        &lt;li class=&quot;hover_blue&quot; onclick=&quot;shutdown()&quot;&gt;shutdown&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
-                                    &lt;/ul&gt;
-                                &lt;/div&gt;
-                            &lt;/div&gt;
-
-                            &lt;div class=&quot;parent_list&quot;&gt;
-                                &lt;ul&gt;
-                                    &lt;li&gt;&amp;emsp;&amp;emsp;icon(&lt;ins&gt;I&lt;/ins&gt;)&amp;emsp;&amp;emsp;&lt;/li&gt;
-                                &lt;/ul&gt;
-                                &lt;div class=&quot;child_list&quot;&gt;
-                                    &lt;ul&gt;
-                                        &lt;li class=&quot;hover_blue&quot; onclick=&quot;shutdown()&quot;&gt;shutdown&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
+                                        &lt;li class=&quot;hover_blue shutdown&quot;&gt;shutdown&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                     &lt;/ul&gt;
@@ -663,9 +632,7 @@
                                 &lt;/ul&gt;
                                 &lt;div class=&quot;child_list&quot;&gt;
                                     &lt;ul&gt;
-                                        &lt;li class=&quot;hover_blue&quot; onclick=&quot;shutdown()&quot;&gt;shutdown&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
+                                        &lt;li class=&quot;hover_blue shutdown&quot;&gt;shutdown&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                     &lt;/ul&gt;
@@ -693,9 +660,7 @@
                                 &lt;/ul&gt;
                                 &lt;div class=&quot;child_list&quot;&gt;
                                     &lt;ul&gt;
-                                        &lt;li class=&quot;hover_blue&quot; onclick=&quot;shutdown()&quot;&gt;shutdown&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
+                                        &lt;li class=&quot;hover_blue shutdown&quot;&gt;shutdown&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                     &lt;/ul&gt;
@@ -708,9 +673,7 @@
                                 &lt;/ul&gt;
                                 &lt;div class=&quot;child_list&quot;&gt;
                                     &lt;ul&gt;
-                                        &lt;li class=&quot;hover_blue&quot; onclick=&quot;shutdown()&quot;&gt;shutdown&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
+                                        &lt;li class=&quot;hover_blue shutdown&quot;&gt;shutdown&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                     &lt;/ul&gt;
@@ -723,7 +686,7 @@
                         &lt;p style=&quot;text-align: center;&quot;&gt;2023-2024&lt;/p&gt;
                     &lt;/div&gt;
 
-                    &lt;div class=&quot;child_windows clock_menu active&quot;&gt;
+                    &lt;div class=&quot;child_windows clock_menu resize active&quot;&gt;
                         &lt;div class=&quot;title&quot;&gt;
                             &lt;span&gt;clock&lt;/span&gt;
                         &lt;/div&gt;
@@ -744,9 +707,7 @@
                                 &lt;/ul&gt;
                                 &lt;div class=&quot;child_list&quot;&gt;
                                     &lt;ul&gt;
-                                        &lt;li class=&quot;hover_blue&quot; onclick=&quot;shutdown()&quot;&gt;shutdown&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
+                                        &lt;li class=&quot;hover_blue shutdown&quot;&gt;shutdown&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                     &lt;/ul&gt;
@@ -765,6 +726,18 @@
                                         &lt;/li&gt;
                                         &lt;li class=&quot;hover_blue window_half_big&quot;&gt;window half big&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue windowsize_reset&quot;&gt;window size reset&lt;/li&gt;
+                                    &lt;/ul&gt;
+                                &lt;/div&gt;
+                            &lt;/div&gt;
+
+                            &lt;div class=&quot;parent_list&quot;&gt;
+                                &lt;ul&gt;
+                                    &lt;li&gt;&amp;emsp;&amp;emsp;icon(&lt;ins&gt;I&lt;/ins&gt;)&amp;emsp;&amp;emsp;&lt;/li&gt;
+                                &lt;/ul&gt;
+                                &lt;div class=&quot;child_list&quot;&gt;
+                                    &lt;ul&gt;
+                                        &lt;li class=&quot;hover_blue shutdown&quot;&gt;shutdown&lt;/li&gt;
+                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                     &lt;/ul&gt;
                                 &lt;/div&gt;
@@ -776,24 +749,7 @@
                                 &lt;/ul&gt;
                                 &lt;div class=&quot;child_list&quot;&gt;
                                     &lt;ul&gt;
-                                        &lt;li class=&quot;hover_blue&quot; onclick=&quot;shutdown()&quot;&gt;shutdown&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
-                                    &lt;/ul&gt;
-                                &lt;/div&gt;
-                            &lt;/div&gt;
-
-                            &lt;div class=&quot;parent_list&quot;&gt;
-                                &lt;ul&gt;
-                                    &lt;li&gt;&amp;emsp;&amp;emsp;icon(&lt;ins&gt;I&lt;/ins&gt;)&amp;emsp;&amp;emsp;&lt;/li&gt;
-                                &lt;/ul&gt;
-                                &lt;div class=&quot;child_list&quot;&gt;
-                                    &lt;ul&gt;
-                                        &lt;li class=&quot;hover_blue&quot; onclick=&quot;shutdown()&quot;&gt;shutdown&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
+                                        &lt;li class=&quot;hover_blue shutdown&quot;&gt;shutdown&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                     &lt;/ul&gt;
@@ -802,11 +758,11 @@
 
                         &lt;/div&gt;
 
-                        &lt;p&gt;test date &lt;span class=&quot;date_day&quot;&gt;DATE&lt;/span&gt;&lt;/p&gt;
-                        &lt;p&gt;test clock &lt;span class=&quot;date_clock&quot;&gt;CLOCK&lt;/span&gt;&lt;/p&gt;&lt;br&gt;
+                        &lt;p style=&quot;text-align: center;&quot;&gt;test date &lt;span class=&quot;date_day&quot;&gt;DATE&lt;/span&gt;&lt;/p&gt;
+                        &lt;p style=&quot;text-align: center;&quot;&gt;test clock &lt;span class=&quot;date_clock&quot;&gt;CLOCK&lt;/span&gt;&lt;/p&gt;&lt;br&gt;
                     &lt;/div&gt;
 
-                    &lt;div class=&quot;child_windows color active&quot;&gt;
+                    &lt;div class=&quot;child_windows color resize active&quot;&gt;
                         &lt;div class=&quot;title&quot;&gt;
                             &lt;span&gt;color&lt;/span&gt;
                         &lt;/div&gt;
@@ -867,7 +823,7 @@
                         &lt;/div&gt;
                     &lt;/div&gt;
 
-                    &lt;div class=&quot;child_windows window_prompt active&quot; style=&quot; background-color: rgb(51, 51, 184);&quot;&gt;
+                    &lt;div class=&quot;child_windows window_prompt resize active&quot; style=&quot; background-color: rgb(51, 51, 184);&quot;&gt;
                         &lt;div class=&quot;title&quot;&gt;
                             &lt;span&gt;nexser prompt&lt;/span&gt;
                         &lt;/div&gt;
@@ -891,7 +847,7 @@
                         &lt;/div&gt;
                     &lt;/div&gt;
 
-                    &lt;div class=&quot;child_windows driver_menu active&quot;&gt;
+                    &lt;div class=&quot;child_windows driver_menu resize active&quot;&gt;
 
                         &lt;div class=&quot;title&quot;&gt;
                             &lt;span&gt;driver menu&lt;/span&gt;
@@ -935,9 +891,7 @@
                                 &lt;/ul&gt;
                                 &lt;div class=&quot;child_list&quot;&gt;
                                     &lt;ul&gt;
-                                        &lt;li class=&quot;hover_blue&quot; onclick=&quot;shutdown()&quot;&gt;shutdown&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
+                                        &lt;li class=&quot;hover_blue shutdown&quot;&gt;shutdown&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                     &lt;/ul&gt;
@@ -965,9 +919,7 @@
                                 &lt;/ul&gt;
                                 &lt;div class=&quot;child_list&quot;&gt;
                                     &lt;ul&gt;
-                                        &lt;li class=&quot;hover_blue&quot; onclick=&quot;shutdown()&quot;&gt;shutdown&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
+                                        &lt;li class=&quot;hover_blue shutdown&quot;&gt;shutdown&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                     &lt;/ul&gt;
@@ -980,9 +932,7 @@
                                 &lt;/ul&gt;
                                 &lt;div class=&quot;child_list&quot;&gt;
                                     &lt;ul&gt;
-                                        &lt;li class=&quot;hover_blue&quot; onclick=&quot;shutdown()&quot;&gt;shutdown&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
+                                        &lt;li class=&quot;hover_blue shutdown&quot;&gt;shutdown&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                     &lt;/ul&gt;
@@ -1014,7 +964,7 @@
                         &lt;/div&gt;
                     &lt;/div&gt;
 
-                    &lt;div class=&quot;child_windows screen_menu active&quot;&gt;
+                    &lt;div class=&quot;child_windows screen_menu resize active&quot;&gt;
                         &lt;div class=&quot;title&quot;&gt;
                             &lt;span&gt;screen&lt;/span&gt;
                         &lt;/div&gt;
@@ -1068,7 +1018,7 @@
                                 &lt;/ul&gt;
                                 &lt;div class=&quot;child_list&quot;&gt;
                                     &lt;ul&gt;
-                                        &lt;li class=&quot;hover_blue&quot; onclick=&quot;shutdown()&quot;&gt;shutdown&lt;/li&gt;
+                                        &lt;li class=&quot;hover_blue shutdown&quot;&gt;shutdown&lt;/li&gt;
                                     &lt;/ul&gt;
                                 &lt;/div&gt;
                             &lt;/div&gt;
@@ -1085,7 +1035,6 @@
                                         &lt;/li&gt;
                                         &lt;li class=&quot;hover_blue window_half_big&quot;&gt;window half big&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue windowsize_reset&quot;&gt;window size reset&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
                                     &lt;/ul&gt;
                                 &lt;/div&gt;
                             &lt;/div&gt;
@@ -1112,6 +1061,12 @@
                                                 text green&lt;/li&gt;
                                             &lt;li class=&quot;hover_blue notetext_red&quot; onclick=&quot;notecolor_change_red()&quot;&gt;text
                                                 red&lt;/li&gt;
+                                            &lt;li class=&quot;hover_blue notetext_orange&quot; onclick=&quot;notecolor_change_orange()&quot;&gt;
+                                                text
+                                                orange&lt;/li&gt;
+                                            &lt;li class=&quot;hover_blue notetext_yellow&quot; onclick=&quot;notecolor_change_yellow()&quot;&gt;
+                                                text
+                                                yellow&lt;/li&gt;
                                         &lt;/div&gt;
                                     &lt;/ul&gt;
                                 &lt;/div&gt;
@@ -1137,18 +1092,16 @@
                             &lt;input type=&quot;button&quot; id=&quot;cleartextbtn&quot; class=&quot;button2&quot; value=&quot;&amp;emsp;clear&amp;emsp;&quot;&gt;
                         &lt;/div&gt;
                         &lt;form name=&quot;note_form&quot; action=&quot;&quot;&gt;
-                            &lt;textarea name=&quot;note_area&quot; class=&quot;note_area&quot; cols=&quot;50&quot; rows=&quot;10&quot;
+                            &lt;textarea id=&quot;note_text&quot; name=&quot;note_area&quot; class=&quot;note_area&quot; cols=&quot;50&quot; rows=&quot;15&quot;
                                 onkeyup=&quot;ShowLength()&quot;&gt;&lt;/textarea&gt;
                         &lt;/form&gt;
                         &lt;p&gt;Textcount&lt;span id=&quot;inputlength&quot;&gt;&lt;/span&gt;&lt;/p&gt;
                         &lt;p id=&quot;memo_save_text&quot;&gt;&lt;/p&gt;
-                        &lt;p style=&quot;position: absolute; right: 10px; bottom: 0px;&quot;&gt;text mode&amp;emsp;&lt;span
-                                class=&quot;test_notetext&quot;&gt;test&lt;/span&gt;&amp;emsp;&lt;/p&gt;
+                        &lt;p&gt;text mode&amp;emsp;&lt;span class=&quot;test_notetext&quot;&gt;test&lt;/span&gt;&amp;emsp;&lt;/p&gt;
                     &lt;/div&gt;
 
-
                     &lt;div class=&quot;child_windows text_drop_menu active&quot;&gt;
-                        &lt;div class=&quot;title note_title&quot;&gt;
+                        &lt;div class=&quot;title&quot;&gt;
                             &lt;span&gt;text drop&lt;/span&gt;
                         &lt;/div&gt;
 
@@ -1243,6 +1196,131 @@
                         &lt;/div&gt;&lt;br&gt;
                     &lt;/div&gt;
 
+                    &lt;div class=&quot;child_windows camera_menu active&quot;&gt;
+                        &lt;div class=&quot;title&quot;&gt;
+                            &lt;span&gt;test camera&lt;/span&gt;
+                        &lt;/div&gt;
+
+                        &lt;div class=&quot;title_buttons&quot;&gt;
+                            &lt;a class=&quot;drag_button&quot;&gt;&amp;nbsp;&lt;/a&gt;
+                            &lt;a class=&quot;close_button4 hover_button camera_close&quot;&gt;&amp;nbsp;✕&amp;nbsp;&lt;/a&gt;&lt;br&gt;
+                        &lt;/div&gt;
+
+                        &lt;div class=&quot;title2&quot;&gt;
+
+                            &lt;div class=&quot;parent_list&quot;&gt;
+                                &lt;ul&gt;
+                                    &lt;li&gt;&amp;emsp;&amp;emsp;icon(&lt;ins&gt;I&lt;/ins&gt;)&amp;emsp;&amp;emsp;&lt;/li&gt;
+                                &lt;/ul&gt;
+                                &lt;div class=&quot;child_list&quot;&gt;
+                                    &lt;ul&gt;
+                                        &lt;li class=&quot;hover_blue shutdown&quot;&gt;shutdown&lt;/li&gt;
+                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
+                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
+                                    &lt;/ul&gt;
+                                &lt;/div&gt;
+                            &lt;/div&gt;
+
+                            &lt;div class=&quot;parent_list&quot;&gt;
+                                &lt;ul&gt;
+                                    &lt;li&gt;&amp;emsp;&amp;emsp;window(&lt;ins&gt;W&lt;/ins&gt;)&amp;emsp;&amp;emsp;&lt;/li&gt;
+                                &lt;/ul&gt;
+                                &lt;div class=&quot;child_list&quot;&gt;
+                                    &lt;ul&gt;
+                                        &lt;li class=&quot;hover_blue window_top&quot;&gt;window top&lt;/li&gt;
+                                        &lt;li class=&quot;hover_blue window_left&quot;&gt;window left&lt;/li&gt;
+                                        &lt;li class=&quot;hover_blue window_top_and_left&quot;&gt;window top &amp; left
+                                        &lt;/li&gt;
+                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
+                                    &lt;/ul&gt;
+                                &lt;/div&gt;
+                            &lt;/div&gt;
+
+                            &lt;div class=&quot;parent_list&quot;&gt;
+                                &lt;ul&gt;
+                                    &lt;li&gt;&amp;emsp;&amp;emsp;icon(&lt;ins&gt;I&lt;/ins&gt;)&amp;emsp;&amp;emsp;&lt;/li&gt;
+                                &lt;/ul&gt;
+                                &lt;div class=&quot;child_list&quot;&gt;
+                                    &lt;ul&gt;
+                                        &lt;li class=&quot;hover_blue shutdown&quot;&gt;shutdown&lt;/li&gt;
+                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
+                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
+                                    &lt;/ul&gt;
+                                &lt;/div&gt;
+                            &lt;/div&gt;
+
+                            &lt;div class=&quot;parent_list&quot;&gt;
+                                &lt;ul&gt;
+                                    &lt;li&gt;&amp;emsp;&amp;emsp;icon(&lt;ins&gt;I&lt;/ins&gt;)&amp;emsp;&amp;emsp;&lt;/li&gt;
+                                &lt;/ul&gt;
+                                &lt;div class=&quot;child_list&quot;&gt;
+                                    &lt;ul&gt;
+                                        &lt;li class=&quot;hover_blue shutdown&quot;&gt;shutdown&lt;/li&gt;
+                                    &lt;/ul&gt;
+                                &lt;/div&gt;
+                            &lt;/div&gt;
+
+                        &lt;/div&gt;
+
+                        &lt;div class=&quot;mini_window&quot;&gt;
+                            &lt;div style=&quot;pointer-events: none;&quot;&gt;
+                                &lt;video id=&quot;v&quot; class=&quot;border&quot; style=&quot;background-color: black&quot; height=&quot;400&quot; ;
+                                    width=&quot;640px&quot;&gt;&lt;/video&gt;
+                            &lt;/div&gt;
+                            &lt;button id=&quot;start_camera&quot; class=&quot;button2&quot; onclick=&quot;startCamera2()&quot;&gt;start&lt;/button&gt;
+                            &lt;button class=&quot;button2&quot; onclick=&quot;stopCamera()&quot;&gt;finish&lt;/button&gt;
+                        &lt;/div&gt;
+                    &lt;/div&gt;
+
+                    &lt;div class=&quot;child_windows htmlviewer_edit_menu active&quot;&gt;
+                        &lt;div class=&quot;title&quot;&gt;
+                            &lt;span&gt;html viewer edit&lt;/span&gt;
+                        &lt;/div&gt;
+
+                        &lt;div class=&quot;title_buttons&quot;&gt;
+                            &lt;a class=&quot;drag_button&quot;&gt;&amp;nbsp;&lt;/a&gt;
+                            &lt;a class=&quot;close_button hover_button&quot;&gt;&amp;nbsp;✕&amp;nbsp;&lt;/a&gt;&lt;br&gt;
+                        &lt;/div&gt;
+
+                        &lt;div class=&quot;mini_window&quot;&gt;
+                            &lt;textarea id=&quot;editor&quot; class=&quot;border&quot;&gt;&lt;/textarea&gt;&lt;br&gt;
+                        &lt;/div&gt;
+                        &lt;button class=&quot;button2&quot; onclick=&quot;run()&quot;&gt;run&lt;/button&gt;
+                        &lt;button class=&quot;button2&quot; onclick=&quot;testcode_save()&quot;&gt;save&lt;/button&gt;
+                        &lt;button class=&quot;button2&quot; onclick=&quot;testcode_html()&quot;&gt;html&lt;/button&gt;
+                    &lt;/div&gt;
+
+                    &lt;div class=&quot;child_windows htmlviewer_run_menu active&quot;&gt;
+                        &lt;div class=&quot;title&quot;&gt;
+                            &lt;span&gt;html viewer run&lt;/span&gt;
+                        &lt;/div&gt;
+
+                        &lt;div class=&quot;title_buttons&quot;&gt;
+                            &lt;a class=&quot;drag_button&quot;&gt;&amp;nbsp;&lt;/a&gt;
+                            &lt;a class=&quot;close_button hover_button&quot;&gt;&amp;nbsp;✕&amp;nbsp;&lt;/a&gt;
+                            &lt;a class=&quot;bigscreen_button hover_button&quot;&gt;&amp;nbsp;□&amp;nbsp;&lt;/a&gt;
+                            &lt;a class=&quot;minscreen_button hover_button&quot;&gt;&amp;nbsp;❒&amp;nbsp;&lt;/a&gt;
+                            &lt;a class=&quot;minimization_button hover_button&quot;&gt;&amp;nbsp;―&amp;nbsp;&lt;/a&gt;&lt;br&gt;
+                        &lt;/div&gt;
+                        &lt;iframe id=&quot;preview&quot; class=&quot;border&quot;&gt;&lt;/iframe&gt;
+                    &lt;/div&gt;
+
+                    &lt;div class=&quot;child_windows border uploadvideo_menu active&quot;&gt;
+                        &lt;div class=&quot;title&quot;&gt;
+                            &lt;span&gt;video upload&lt;/span&gt;
+                        &lt;/div&gt;
+                        &lt;div class=&quot;title_buttons&quot;&gt;
+                            &lt;a class=&quot;drag_button&quot;&gt;&amp;nbsp;&lt;/a&gt;
+                            &lt;a class=&quot;close_button hover_button&quot;&gt;&amp;nbsp;✕&amp;nbsp;&lt;/a&gt;&lt;br&gt;
+                        &lt;/div&gt;
+                        &lt;div class=&quot;videos&quot;&gt;
+                            &lt;video class=&quot;preview2&quot; id=&quot;previewVideo2&quot; controls=&quot;controls&quot; width=&quot;560px&quot;&gt;&lt;/video&gt;&lt;br&gt;
+                            &lt;label class=&quot;button2&quot;&gt;
+                                &lt;input type=&quot;file&quot; accept=&#039;video/*&#039; onchange=&quot;preview2(this, &#039;previewVideo2&#039;)&quot;
+                                    placeholder=&quot;&quot;&gt;movie upload
+                            &lt;/label&gt;
+                        &lt;/div&gt;
+                    &lt;/div&gt;
 
                     &lt;div class=&quot;test_allwindow&quot;&gt;&lt;/div&gt;
 
@@ -1261,7 +1339,7 @@
                         &lt;a class=&quot;close_button3 hover_button&quot;&gt;&amp;nbsp;✕&amp;nbsp;&lt;/a&gt;&lt;br&gt;
                         &lt;br&gt;
                         &lt;p class=&quot;window_warning_text&quot;&gt;&lt;/p&gt;
-                        &lt;button class=&quot;shutdown_button button2&quot; onclick=&quot;window_none(),shutdown()&quot;&gt;shutdown&lt;/button&gt;
+                        &lt;button class=&quot;shutdown_button button2 shutdown&quot; onclick=&quot;window_none()&quot;&gt;shutdown&lt;/button&gt;
                         &lt;button class=&quot;warningclose_button button2&quot; style=&quot;display: none;&quot;
                             onclick=&quot;warning_windows_close()&quot;&gt;yes&lt;/button&gt;
                     &lt;/div&gt;
@@ -1293,6 +1371,13 @@
                                 &lt;li class=&quot;test_button7&quot;&gt;TIME:&lt;span class=&quot;date_clock2&quot;&gt;CLOCK&lt;/span&gt;&lt;/li&gt;
                             &lt;/ul&gt;
                         &lt;/div&gt;
+                        &lt;ul&gt;
+                            &lt;li class=&quot;border&quot;
+                                style=&quot;background: silver; font-size: medium; position: absolute; bottom: 5px; right: 140px;&quot;&gt;
+                                BATTERY:
+                                &lt;span class=&quot;taskbattery&quot;&gt;&lt;/span&gt;%
+                            &lt;/li&gt;
+                        &lt;/ul&gt;
                     &lt;/div&gt;
                     &lt;div id=&quot;start_menu&quot; class=&quot;parent_start_menu&quot;&gt;
                         &lt;div class=&quot;child_start_menu border&quot;&gt;
@@ -1313,9 +1398,13 @@
                                 &lt;li class=&quot;test_button11&quot;&gt;screen&lt;/li&gt;
                                 &lt;li class=&quot;test_button12&quot;&gt;notepad&lt;/li&gt;
                                 &lt;li class=&quot;test_button13&quot;&gt;text drop&lt;/li&gt;
-                                &lt;li class=&quot;test_button16&quot;&gt;calc&lt;/li&gt;&lt;br&gt;
+                                &lt;li class=&quot;test_button16&quot;&gt;calc&lt;/li&gt;
+                                &lt;li class=&quot;test_button17&quot;&gt;nexser sound&lt;/li&gt;
+                                &lt;li class=&quot;test_button18&quot;&gt;camera&lt;/li&gt;
+                                &lt;li class=&quot;test_button19&quot;&gt;htmlviewer edit&lt;/li&gt;
+                                &lt;li class=&quot;test_button21&quot;&gt;video upload&lt;/li&gt;&lt;br&gt;
                                 &lt;div class=&quot;mini_window&quot;&gt;
-                                    &lt;li onclick=&quot;shutdown()&quot;&gt;shutdown&lt;/li&gt;
+                                    &lt;li class=&quot;shutdown&quot;&gt;shutdown&lt;/li&gt;
                                 &lt;/div&gt;
                             &lt;/ul&gt;
                         &lt;/div&gt;
@@ -1521,7 +1610,7 @@
         width: 100%;
         height: 100vh;
         display: block;
-        background: #006670;
+        background: #006670
     }
 
     /* buttons */
@@ -1571,6 +1660,14 @@
         -moz-user-select: none;
         -ms-user-select: none;
         user-select: none;
+    }
+
+    /* label {
+        cursor: pointer;
+    } */
+
+    input[type=&quot;file&quot;] {
+        display: none;
     }
 
     /* taskbar */
@@ -1654,6 +1751,13 @@
         position: absolute;
         top: 30%;
         left: 30%;
+        scrollbar-color: dimgray silver;
+        scrollbar-width: thin;
+    }
+
+    .resize {
+        resize: both;
+        overflow: auto;
     }
 
     .mini_window {
@@ -1664,6 +1768,11 @@
     }
 
     .error_windows {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        list-style: none;
         display: block;
         font-size: 15px;
         width: auto;
@@ -1682,7 +1791,8 @@
         width: 100%;
         background: black;
         opacity: 0.25;
-        position: relative;
+        position: absolute;
+        top: 0;
         z-index: 999998;
     }
 
@@ -1703,6 +1813,11 @@
     }
 
     .warning_windows {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        list-style: none;
         display: block;
         font-size: 15px;
         width: auto;
@@ -1732,7 +1847,8 @@
         width: 99.7%;
         border: solid 2px #c0c0c0;
         background: whitesmoke;
-        position: static;
+        position: relative;
+        resize: none;
     }
 
     .child_windows .title {
@@ -1786,6 +1902,9 @@
     }
 
     .title_buttons {
+        background-color: rgba();
+        position: relative;
+        top: -1px;
         -webkit-user-select: none;
         -moz-user-select: none;
         -ms-user-select: none;
@@ -1799,7 +1918,7 @@
         user-select: none;
         display: flex;
         background: #c0c0c0;
-        height: 21px;
+        height: 20.5px;
         position: relative;
         top: -2px;
     }
@@ -1814,12 +1933,10 @@
         color: white;
     }
 
-    .title_buttons {
-        position: relative;
-    }
-
     /* title_buttons */
     .close_button {
+        width: 15px;
+        font-size: 100px;
         background: #c0c0c0;
         position: absolute;
         top: 3.5px;
@@ -1833,6 +1950,7 @@
     }
 
     .close_button2 {
+        width: 15px;
         background: #c0c0c0;
         position: absolute;
         top: 3.5px;
@@ -1846,6 +1964,7 @@
     }
 
     .close_button3 {
+        width: 15px;
         background: #c0c0c0;
         position: absolute;
         top: 3.5px;
@@ -1860,6 +1979,7 @@
 
     /* 飾り */
     .close_button4 {
+        width: 15px;
         background: #c0c0c0;
         position: absolute;
         top: 3.5px;
@@ -1881,6 +2001,22 @@
     }
 
     .bigscreen_button {
+        width: 15px;
+        background: #c0c0c0;
+        position: absolute;
+        top: 3.5px;
+        right: 21px;
+        text-align: center;
+        font-size: 10px;
+        border-top: solid 1px white;
+        border-right: solid 1px black;
+        border-left: solid 1px white;
+        border-bottom: solid 1px black;
+    }
+
+    .minscreen_button {
+        width: 15px;
+        display: none;
         background: #c0c0c0;
         position: absolute;
         top: 3.5px;
@@ -1893,21 +2029,8 @@
         border-bottom: solid 1px black;
     }
 
-    .minscreen_button {
-        display: none;
-        background: #c0c0c0;
-        position: absolute;
-        top: 3.5px;
-        right: 18px;
-        text-align: center;
-        font-size: 10px;
-        border-top: solid 1px white;
-        border-right: solid 1px black;
-        border-left: solid 1px white;
-        border-bottom: solid 1px black;
-    }
-
     .minimization_button {
+        width: 15px;
         background: #c0c0c0;
         position: absolute;
         top: 3.5px;
@@ -1968,15 +2091,15 @@
     .child_list {
         display: none;
         position: relative;
+        top: 0;
     }
 
     .child_list ul {
         background-color: #c0c0c0;
         width: 100%;
-        border-top: solid 1px white;
-        border-right: solid 1px black;
-        border-left: solid 1px white;
-        border-bottom: solid 1px black;
+        border-right: solid 1.5px black;
+        border-left: solid 1.5px whitesmoke;
+        border-bottom: solid 1.5px black;
     }
 
     .child_list.active {
@@ -2049,14 +2172,14 @@
         display: block;
         font-size: large;
         outline: none;
-        width: 100%;
-        height: 30vh;
+        width: 99.5%;
+        height: 100%;
         resize: none;
     }
 
     .child_windows.big .note_area {
         width: 100%;
-        height: 75vh;
+        height: 72.5vh;
     }
 
     /* calc */
@@ -2074,15 +2197,39 @@
         background: silver;
         outline: none;
     }
+
+    /* htmlviewer */
+
+    #editor {
+        width: 800px;
+        height: 50vh;
+    }
+
+    .child_windows.big #editor {
+        height: 85vh;
+        width: 99.8%;
+        resize: none;
+    }
+
+    #preview {
+        width: 600px;
+        height: 50vh;
+    }
+
+    .child_windows.big #preview {
+        height: 90vh;
+        width: 99.8%;
+    }
 &lt;/style&gt;
 &lt;script text=&quot;javascript&quot;&gt;
     var ua = navigator.userAgent;
     if (!(ua.indexOf(&#039;iPhone&#039;) &gt; 0 || ua.indexOf(&#039;iPad&#039;) &gt; 0 || ua.indexOf(&#039;Android&#039;) &gt; 0 || ua.indexOf(&#039;Mobile&#039;) &gt; 0)) {
 
-        const start = document.querySelector(&#039;#startbtn&#039;)
-        const parent_start_menu = document.querySelector(&#039;#start_menu&#039;)
-        const taskbar = document.querySelector(&#039;#taskbar&#039;);
-        const background_text = document.querySelector(&#039;#background_text&#039;)
+        const shutdown = document.getElementsByClassName(&#039;shutdown&#039;);
+
+        const parent_start_menu = document.getElementById(&#039;start_menu&#039;)
+        const taskbar = document.getElementById(&#039;taskbar&#039;);
+        const background_text = document.getElementById(&#039;background_text&#039;)
 
         const nameText = document.querySelector(&#039;.name&#039;);
         const msg = document.querySelector(&#039;.test_name&#039;);
@@ -2091,7 +2238,6 @@
         const prompt = document.getElementById(&#039;prompt&#039;);
         const prompt_text = document.querySelector(&#039;.prompt_text&#039;);
         const prompt_text2 = document.querySelector(&#039;.prompt_text2&#039;);
-        const memory = document.querySelector(&#039;.memory&#039;);
         const userelement = document.querySelector(&#039;.user&#039;);
         const nexser = document.getElementById(&#039;nexser&#039;);
         const nexser_program = document.getElementById(&#039;nexser_program&#039;);
@@ -2125,19 +2271,15 @@
         const accessory_menu = document.querySelector(&#039;.accessory_menu&#039;);
         const calc_menu = document.querySelector(&#039;.calc_menu&#039;);
         const nexser_sound_menu = document.querySelector(&#039;.nexser_sound_menu&#039;);
+        const camera_menu = document.querySelector(&#039;.camera_menu&#039;);
+        const htmlviewer_edit_menu = document.querySelector(&#039;.htmlviewer_edit_menu&#039;);
+        const htmlviewer_run_menu = document.querySelector(&#039;.htmlviewer_run_menu&#039;);
+        const uploadvideo_menu = document.querySelector(&#039;.uploadvideo_menu&#039;);
 
         const error_windows = document.querySelector(&#039;.error_windows&#039;);
         const warning_windows = document.querySelector(&#039;.warning_windows&#039;);
 
-        // start.addEventListener(&#039;mouseover&#039;, function () {
-        //     // マウスが要素に乗った際の処理
-        //     start_menu.style.display = &quot;block&quot;
-        //     start.addEventListener(&#039;mouseleave&#039;, function () {
-        //         // マウスが要素に乗った際の処理
-        //         start_menu.style.display = &quot;none&quot;
-        //     });
-        // });
-        start.addEventListener(&#039;click&#039;, function () {
+        document.getElementById(&#039;startbtn&#039;).addEventListener(&#039;click&#039;, function () {
             if (start_menu.style.display == &quot;block&quot;) {
                 // noneで非表示
                 start_menu.style.display = &quot;none&quot;;
@@ -2208,8 +2350,6 @@
             notecolor_change()
         }
 
-
-
         function nexser_program_open() {
             document.querySelector(&#039;.prompt_error_text&#039;).textContent = &quot;&quot;;
             document.body.style.cursor = &#039;crosshair&#039;;
@@ -2277,6 +2417,18 @@
                 document.querySelector(&#039;.startup_screen&#039;).textContent = &quot;ON&quot;
             }
         })
+
+        document.querySelector(&#039;.startup_htmlviewer_edit&#039;).addEventListener(&#039;click&#039;, function () {
+            if (localStorage.getItem(&#039;startup_htmlviewer_edit&#039;)) {
+                localStorage.removeItem(&#039;startup_htmlviewer_edit&#039;)
+                document.querySelector(&#039;.startup_htmlviewer_edit&#039;).textContent = &quot;OFF&quot;
+            } else {
+                const startup_htmlviewer_edit = document.querySelector(&#039;.startup_htmlviewer_edit&#039;);
+                localStorage.setItem(&#039;startup_htmlviewer_edit&#039;, startup_htmlviewer_edit);
+                document.querySelector(&#039;.startup_htmlviewer_edit&#039;).textContent = &quot;ON&quot;
+            }
+        })
+
         document.querySelector(&#039;.startup_speed&#039;).addEventListener(&#039;click&#039;, function () {
             if (localStorage.getItem(&#039;prompt_data2&#039;)) {
                 localStorage.removeItem(&#039;prompt_data2&#039;)
@@ -2288,11 +2440,8 @@
             }
         })
 
-
-
-
-
         function nexser_start() {
+            document.querySelector(&quot;#nexser&quot;).style.backgroundColor = &quot;&quot;;
             document.querySelector(&#039;.test_allwindow&#039;).style.display = &quot;none&quot;;
             window_none();
             if (localStorage.getItem(&#039;prompt_data2&#039;)) {
@@ -2300,13 +2449,13 @@
                     console.log(largestZIndex)
                     prompt.style.display = &quot;none&quot;;
                     setTimeout(function () {
-                        setColor()
                         startup_sound();
                         nexser.style.display = &quot;block&quot;;
                         setTimeout(function () {
                             taskbar_none();
                             desktop.style.display = &quot;block&quot;;
                             setTimeout(() =&gt; {
+                                setColor()
                                 startup_window_open()
                                 taskbtn_load()
                             }, 500);
@@ -2315,16 +2464,15 @@
                 }, 100)
             } else {
                 setTimeout(function () {
-                    console.log(largestZIndex)
                     prompt.style.display = &quot;none&quot;;
                     setTimeout(function () {
-                        setColor()
                         startup_sound();
                         nexser.style.display = &quot;block&quot;;
                         setTimeout(function () {
                             taskbar_none();
                             desktop.style.display = &quot;block&quot;;
                             setTimeout(() =&gt; {
+                                setColor()
                                 startup_window_open()
                                 taskbtn_load()
                             }, 1000);
@@ -2356,48 +2504,60 @@
                 element.closest(&#039;.child_windows&#039;);
                 element.classList.remove(&#039;active&#039;)
             }
-        }
-
-        function shutdown() {
-            document.querySelector(&#039;.test_allwindow&#039;).style.display = &quot;block&quot;;
-            let result = document.getElementsByClassName(&#039;child_windows active&#039;).length;
-            result2 = 17;
-            console.log(result)
-            let result3 = result - result2;
-            console.log(result3)
-            if (result3 == 0) {
-                shutdown_sound();
-                setTimeout(() =&gt; {
-                    desktop.style.display = &quot;none&quot;;
-                    localStorage.removeItem(&#039;prompt_data&#039;);
-                    window_reset();
-                    document.querySelector(&#039;#codes&#039;).style.display = &quot;none&quot;;
-                    window_none();
-
-                    setTimeout(() =&gt; {
-                        document.querySelectorAll(&#039;.button&#039;).forEach(function (button) {
-                            let tscbtn = button.firstChild;
-                            tscbtn = button.classList.remove(&#039;pressed&#039;);
-                        });
-                        document.getElementsByClassName(&#039;name&#039;)[0].value = &quot;&quot;;
-                        document.querySelector(&#039;.prompt_error_text&#039;).textContent = &quot;&quot;;
-                        document.querySelector(&#039;.help&#039;).textContent = &quot;&quot;;
-                        msg.innerText = &quot;&quot;;
-                        prompt_text.style.color = &quot;&quot;;
-                        nexser.style.display = &quot;none&quot;;
-                        prompt.style.display = &quot;block&quot;;
-                        start_menu.style.display = &quot;none&quot;;
-                        document.querySelector(&#039;.focus&#039;).focus();
-                    }, 500);
-                }, 1500);
-            } else {
-                warning_windows.classList.remove(&#039;active&#039;);
-                document.querySelector(&#039;.shutdown_button&#039;).style.display = &quot;block&quot;;
-                document.querySelector(&#039;.warningclose_button&#039;).style.display = &quot;none&quot;;
-                document.querySelector(&#039;.window_warning_text&#039;).textContent = &quot;task window open! shutdown?&quot;
-                sound5()
+            if (localStorage.getItem(&#039;startup_htmlviewer_edit&#039;)) {
+                const element = document.querySelector(&#039;.htmlviewer_edit_menu&#039;);
+                element.closest(&#039;.child_windows&#039;);
+                element.classList.remove(&#039;active&#039;)
             }
         }
+
+        Array.from(shutdown).forEach(element =&gt; {
+            element.addEventListener(&#039;click&#039;, event =&gt; {
+                document.querySelector(&#039;.test_allwindow&#039;).style.display = &quot;block&quot;;
+                let result = document.getElementsByClassName(&#039;child_windows active&#039;).length;
+                result2 = 21;
+                console.log(result)
+                let result3 = result - result2;
+                console.log(result3)
+                if (sessionStorage.getItem(&#039;start_camera&#039;)) {
+                    document.querySelector(&#039;.window_error_text&#039;).textContent = &quot;camera no finish no shutdown!&quot;
+                    error_windows.classList.remove(&#039;active&#039;)
+                    sound3()
+                    document.querySelector(&#039;.test_allwindow&#039;).style.display = &quot;block&quot;;
+                } else if (result3 == 0) {
+                    shutdown_sound();
+                    setTimeout(() =&gt; {
+                        desktop.style.display = &quot;none&quot;;
+                        localStorage.removeItem(&#039;prompt_data&#039;);
+                        window_reset();
+                        document.querySelector(&#039;#codes&#039;).style.display = &quot;none&quot;;
+                        window_none();
+
+                        setTimeout(() =&gt; {
+                            document.querySelectorAll(&#039;.button&#039;).forEach(function (button) {
+                                let tscbtn = button.firstChild;
+                                tscbtn = button.classList.remove(&#039;pressed&#039;);
+                            });
+                            document.getElementsByClassName(&#039;name&#039;)[0].value = &quot;&quot;;
+                            document.querySelector(&#039;.prompt_error_text&#039;).textContent = &quot;&quot;;
+                            document.querySelector(&#039;.help&#039;).textContent = &quot;&quot;;
+                            msg.innerText = &quot;&quot;;
+                            prompt_text.style.color = &quot;&quot;;
+                            nexser.style.display = &quot;none&quot;;
+                            prompt.style.display = &quot;block&quot;;
+                            start_menu.style.display = &quot;none&quot;;
+                            document.querySelector(&#039;.focus&#039;).focus();
+                        }, 500);
+                    }, 1500);
+                } else {
+                    warning_windows.classList.remove(&#039;active&#039;);
+                    document.querySelector(&#039;.shutdown_button&#039;).style.display = &quot;block&quot;;
+                    document.querySelector(&#039;.warningclose_button&#039;).style.display = &quot;none&quot;;
+                    document.querySelector(&#039;.window_warning_text&#039;).textContent = &quot;task window open! shutdown?&quot;
+                    sound5()
+                }
+            })
+        })
 
         document.getElementById(&#039;sound_driver&#039;).addEventListener(&#039;click&#039;, function () {
             if (localStorage.getItem(&#039;driver_sound&#039;)) {
@@ -2491,7 +2651,6 @@
             }
         }
 
-
         function windowmode_reset() {
             localStorage.removeItem(&#039;window_invisible&#039;)
             localStorage.removeItem(&#039;window_borderblack&#039;)
@@ -2539,15 +2698,6 @@
             document.querySelector(&#039;#background_text2&#039;).classList.remove(&#039;active&#039;)
         })
 
-        setInterval(() =&gt; {
-            const backtext_data2 = localStorage.getItem(&#039;backtext_data&#039;);
-            document.querySelector(&#039;#background_text2&#039;).textContent = (backtext_data2)
-
-            if (localStorage.getItem(KEY_BKCOLOR, bkcolor)) {
-                document.querySelector(&quot;.mini_desktop&quot;).style.backgroundColor = bkcolor;
-            }
-        }, 100);
-
         function all_load() {
             if (localStorage.getItem(&#039;driver_sound&#039;)) {
                 document.querySelector(&#039;.installbutton_1&#039;).textContent = &quot;uninstall&quot;
@@ -2581,6 +2731,9 @@
             }
             if (localStorage.getItem(&#039;startup_screen&#039;)) {
                 document.querySelector(&#039;.startup_screen&#039;).textContent = &quot;ON&quot;
+            }
+            if (localStorage.getItem(&#039;startup_htmlviewer_edit&#039;)) {
+                document.querySelector(&#039;.startup_htmlviewer_edit&#039;).textContent = &quot;ON&quot;
             }
             if (localStorage.getItem(&#039;prompt_data2&#039;)) {
                 document.querySelector(&#039;.startup_speed&#039;).textContent = &quot;HIGH&quot;
@@ -2617,6 +2770,7 @@
                 document.querySelector(&#039;.note_area&#039;).style.textDecoration = &quot;underline&quot;;
                 document.querySelector(&#039;.test_notetext&#039;).style.textDecoration = &quot;underline&quot;;
             }
+            sessionStorage.removeItem(&#039;start_camera&#039;)
         }
 
         function taskbtn_load() {
@@ -2712,7 +2866,6 @@
                     taskbtn.classList.add(&#039;pressed&#039;)
                 }
             })
-
         }
 
         function window_reset() {
@@ -2766,6 +2919,8 @@
             document.querySelector(&quot;.mini_desktop&quot;).style.backgroundColor = &quot;&quot;;
             localStorage.removeItem(KEY_COLOR, color);
             localStorage.removeItem(KEY_BKCOLOR, bkcolor);
+            background_text.style.color = &quot;&quot;
+            document.getElementById(&#039;background_text2&#039;).style.color = &quot;&quot;
         }
 
         function taskbar_none() {
@@ -2794,7 +2949,6 @@
                     butotnClick2()
                 }
             }
-
         }
 
         function butotnClick() {
@@ -2910,7 +3064,6 @@
                     document.querySelector(&#039;#codes&#039;).style.display = &quot;none&quot;;
                     document.querySelector(&#039;.focus&#039;).focus();
                     break;
-
                 case &#039;windows95/open&#039;:
                     document.querySelector(&#039;.prompt_error_text&#039;).textContent = &quot;&quot;;
                     window.open(&quot;https://moti5768.github.io/moti.world/windows95.html&quot;);
@@ -2926,7 +3079,6 @@
                     window.open(&quot;https://moti5768.github.io/moti.world/new%20OS/WindowSystem.html&quot;);
                     prompt_text.style.color = &quot;&quot;;
                     break;
-
                 default:
                     document.querySelector(&#039;.prompt_error_text&#039;).textContent = &quot;コマンドが違います!&quot;;
                     document.querySelector(&#039;.help&#039;).textContent = &quot;&quot;;
@@ -2935,7 +3087,6 @@
                     break;
             }
         }
-
 
         function prompt_text_check2() {
             const prompt_text4 = document.querySelector(&#039;.focus2&#039;);
@@ -3028,7 +3179,22 @@
                     prompt_text2.style.color = &quot;&quot;;
                     title_active()
                     break;
-
+                case &#039;window/font/large&#039;:
+                    document.querySelector(&#039;.prompt_error_text2&#039;).textContent = &quot;&quot;;
+                    prompt_text2.style.color = &quot;&quot;;
+                    let test_window = document.getElementsByClassName(&#039;child_windows&#039;)
+                    Array.from(test_window).forEach(element =&gt; {
+                        element.style.fontSize = &quot;20px&quot;;
+                    })
+                    break;
+                case &#039;window/font/reset&#039;:
+                    document.querySelector(&#039;.prompt_error_text2&#039;).textContent = &quot;&quot;;
+                    prompt_text2.style.color = &quot;&quot;;
+                    let test_window2 = document.getElementsByClassName(&#039;child_windows&#039;)
+                    Array.from(test_window2).forEach(element =&gt; {
+                        element.style.fontSize = &quot;&quot;;
+                    })
+                    break;
                 case &#039;windows95/open&#039;:
                     document.querySelector(&#039;.prompt_error_text2&#039;).textContent = &quot;&quot;;
                     window.open(&quot;https://moti5768.github.io/moti.world/windows95.html&quot;);
@@ -3043,12 +3209,6 @@
                     document.querySelector(&#039;.prompt_error_text2&#039;).textContent = &quot;&quot;;
                     window.open(&quot;https://moti5768.github.io/moti.world/new%20OS/WindowSystem.html&quot;);
                     prompt_text2.style.color = &quot;&quot;;
-                    break;
-
-                case &#039;nexser/shutdown&#039;:
-                    document.querySelector(&#039;.prompt_error_text2&#039;).textContent = &quot;&quot;;
-                    prompt_text2.style.color = &quot;&quot;;
-                    shutdown();
                     break;
                 default:
                     document.querySelector(&#039;.prompt_error_text2&#039;).textContent = &quot;コマンドが違います!&quot;;
@@ -3071,21 +3231,33 @@
             document.querySelector(&#039;#background_text&#039;).textContent = (backtext_data2)
         }
 
-
         function debug() {
             userelement.insertAdjacentHTML(&#039;afterend&#039;, &#039;&lt;p class=&quot;white user&quot;&gt;BROWSER: &#039; + navigator.appName + &#039;&lt;br&gt;&#039;
                 + &#039;VERSION: &#039; + navigator.appVersion + &#039;&lt;br&gt;&#039; + &#039;USER: &#039; + navigator.userAgent + &#039;&lt;br&gt;&#039; + &#039;WIDTH: &#039; + screen.width + &#039;&lt;br&gt;&#039;
                 + &#039;HEIGHT: &#039; + screen.height + &#039;&lt;br&gt;&#039; + &#039;BIT: &#039; + screen.colorDepth + &#039;&lt;/p&gt;&#039;);
         }
         setInterval(() =&gt; {
-            navigator.getBattery().then(function (battery) {
-                document.querySelector(&#039;.level&#039;).innerHTML = battery.level;
-                document.querySelector(&#039;.charging&#039;).innerHTML = battery.charging;
-                document.querySelector(&#039;.chargingTime&#039;).innerHTML = battery.chargingTime;
-                document.querySelector(&#039;.dischargingTime&#039;).innerHTML = battery.dischargingTime;
-            });
-            memory.textContent = (`Memory:   ${(performance.memory.usedJSHeapSize / 1024).toFixed(2)}KB`);
-        }, 100);
+            if (prompt.style.display == &quot;block&quot;) {
+                navigator.getBattery().then(function (battery) {
+                    document.querySelector(&#039;.level&#039;).innerHTML = battery.level;
+                    document.querySelector(&#039;.charging&#039;).innerHTML = battery.charging;
+                    document.querySelector(&#039;.chargingTime&#039;).innerHTML = battery.chargingTime;
+                    document.querySelector(&#039;.dischargingTime&#039;).innerHTML = battery.dischargingTime;
+                });
+                console.log(&quot;memory&quot;)
+                document.querySelector(&#039;.memory&#039;).textContent = (`Memory:   ${(performance.memory.usedJSHeapSize / 1024).toFixed(2)}KB`);
+                document.querySelector(&#039;.memory2&#039;).textContent = (`使用可能なメモリ    ${(performance.memory.jsHeapSizeLimit / 1048576).toFixed(2)}MB`);
+                document.querySelector(&#039;.memory3&#039;).textContent = (`割り当てられたメモリ  ${(performance.memory.totalJSHeapSize / 1024).toFixed(2)}KB`);
+                document.querySelector(&#039;.memory4&#039;).textContent = (`現在使用中のメモリ   ${(performance.memory.usedJSHeapSize / 1024).toFixed(2)}KB`);
+            } else {
+                const backtext_data2 = localStorage.getItem(&#039;backtext_data&#039;);
+                document.querySelector(&#039;#background_text2&#039;).textContent = (backtext_data2)
+
+                if (localStorage.getItem(KEY_BKCOLOR, bkcolor)) {
+                    document.querySelector(&quot;.mini_desktop&quot;).style.backgroundColor = bkcolor;
+                }
+            }
+        }, 500);
 
         document.querySelectorAll(&#039;.window_inline_list&#039;).forEach(function (window_inline_list) {
             window_inline_list.addEventListener(&#039;click&#039;, function () {
@@ -3095,10 +3267,11 @@
         document.querySelectorAll(&#039;.close_button&#039;).forEach(function (close_button) {
             close_button.addEventListener(&#039;click&#039;, function () {
                 const closebutton = close_button.closest(&#039;.child_windows&#039;);
-                closebutton.classList.add(&#039;active&#039;);
-                taskbtn_load()
                 closebutton.style.left = &quot;&quot;;
                 closebutton.style.top = &quot;&quot;;
+                closebutton.classList.remove(&#039;big&#039;);
+                closebutton.classList.add(&#039;active&#039;);
+                taskbtn_load()
             });
         })
         document.querySelectorAll(&#039;.close_button2&#039;).forEach(function (close_button2) {
@@ -3126,6 +3299,8 @@
         document.querySelectorAll(&#039;.bigscreen_button&#039;).forEach(function (bigscreen_button) {
             bigscreen_button.addEventListener(&#039;click&#039;, function () {
                 const bigscreenbutton = bigscreen_button.closest(&#039;.child_windows&#039;);
+                bigscreenbutton.style.top = &quot;0&quot;
+                bigscreenbutton.style.left = &quot;0&quot;
                 bigscreenbutton.style.height = &quot;&quot;;
                 bigscreenbutton.style.width = &quot;&quot;;
                 bigscreenbutton.classList.add(&#039;big&#039;);
@@ -3135,6 +3310,8 @@
         document.querySelectorAll(&#039;.minscreen_button&#039;).forEach(function (minscreen_button) {
             minscreen_button.addEventListener(&#039;click&#039;, function () {
                 const minscreenbutton = minscreen_button.closest(&#039;.child_windows&#039;);
+                minscreenbutton.style.top = &quot;&quot;
+                minscreenbutton.style.left = &quot;&quot;
                 minscreenbutton.classList.remove(&#039;big&#039;);
             });
         })
@@ -3170,8 +3347,8 @@
             window_half_big.addEventListener(&#039;click&#039;, function () {
                 let windowhalfbig = window_half_big.closest(&#039;.child_windows&#039;);
                 windowhalfbig.classList.remove(&#039;big&#039;)
-                windowhalfbig.style.height = &quot;50%&quot;
-                windowhalfbig.style.width = &quot;50%&quot;
+                windowhalfbig.style.height = &quot;55%&quot;
+                windowhalfbig.style.width = &quot;55%&quot;
             })
         })
 
@@ -3224,7 +3401,6 @@
             });
         })
 
-
         document.querySelectorAll(&#039;.test_button&#039;).forEach(function (test_button) {
             test_button.addEventListener(&#039;click&#039;, function () {
                 main.classList.toggle(&#039;active&#039;);
@@ -3239,7 +3415,6 @@
                 program.closest(&#039;.child_windows&#039;);
                 z = largestZIndex + 1;
                 unko2 = program.style.zIndex = z;
-
             });
         });
         document.querySelectorAll(&#039;.test_button3&#039;).forEach(function (test_button3) {
@@ -3248,7 +3423,6 @@
                 control.closest(&#039;.child_windows&#039;);
                 z = largestZIndex + 1;
                 unko3 = control.style.zIndex = z;
-
             });
         });
         document.querySelectorAll(&#039;.test_button4&#039;).forEach(function (test_button4) {
@@ -3363,7 +3537,38 @@
                 unko17 = nexser_sound_menu.style.zIndex = z;
             });
         });
-
+        document.querySelectorAll(&#039;.test_button18&#039;).forEach(function (test_button18) {
+            test_button18.addEventListener(&#039;click&#039;, function () {
+                camera_menu.classList.toggle(&#039;active&#039;);
+                camera_menu.closest(&#039;.child_windows&#039;);
+                z = largestZIndex + 1;
+                unko18 = camera_menu.style.zIndex = z;
+            });
+        });
+        document.querySelectorAll(&#039;.test_button19&#039;).forEach(function (test_button19) {
+            test_button19.addEventListener(&#039;click&#039;, function () {
+                htmlviewer_edit_menu.classList.toggle(&#039;active&#039;);
+                htmlviewer_edit_menu.closest(&#039;.child_windows&#039;);
+                z = largestZIndex + 1;
+                unko19 = htmlviewer_edit_menu.style.zIndex = z;
+            });
+        });
+        document.querySelectorAll(&#039;.test_button20&#039;).forEach(function (test_button20) {
+            test_button20.addEventListener(&#039;click&#039;, function () {
+                htmlviewer_run_menu.classList.toggle(&#039;active&#039;);
+                htmlviewer_run_menu.closest(&#039;.child_windows&#039;);
+                z = largestZIndex + 1;
+                unko20 = htmlviewer_run_menu.style.zIndex = z;
+            });
+        });
+        document.querySelectorAll(&#039;.test_button21&#039;).forEach(function (test_button21) {
+            test_button21.addEventListener(&#039;click&#039;, function () {
+                uploadvideo_menu.classList.toggle(&#039;active&#039;);
+                uploadvideo_menu.closest(&#039;.child_windows&#039;);
+                z = largestZIndex + 1;
+                unko21 = uploadvideo_menu.style.zIndex = z;
+            });
+        });
 
         document.querySelectorAll(&#039;.drag_button&#039;).forEach(function (drag) {
             drag.addEventListener(&#039;mousedown&#039;, function () {
@@ -3403,6 +3608,7 @@
                         // 移動してる時だけ黒枠のみ
                         if (localStorage.getItem(&#039;window_borderblack&#039;)) {
                             document.querySelectorAll(&#039;.child_windows&#039;).forEach(function (title) {
+                                document.querySelector(&#039;iframe&#039;).style.opacity = &quot;0&quot;;
                                 title.style.background = bkcolor;
                                 title.style.border = &quot;solid 2px black&quot;;
                             })
@@ -3422,23 +3628,25 @@
 
                             document.querySelectorAll(&#039;.title&#039;).forEach(function (title) {
                                 const titlebar = title.style.backgroundColor = &quot;darkblue&quot;;
+                                window_prompt.style.background = &quot;rgb(51, 51, 184)&quot;
                             })
 
                             // 半透明
                             document.querySelectorAll(&#039;.child_windows&#039;).forEach(function (title) {
                                 title.style.opacity = &quot;&quot;;
+                                window_prompt.style.background = &quot;rgb(51, 51, 184)&quot;
                             })
-
 
                             // 移動してる時だけ黒枠のみ
                             document.querySelectorAll(&#039;.child_windows&#039;).forEach(function (title) {
                                 title.style.background = &quot;&quot;;
                                 title.style.border = &quot;&quot;;
+                                document.querySelector(&#039;iframe&#039;).style.opacity = &quot;&quot;;
+                                window_prompt.style.background = &quot;rgb(51, 51, 184)&quot;
                             })
                             document.querySelectorAll(&#039;.title,.title2,.title_buttons,.window_inline_list,.mini_window,button,input,textarea,p,#prompt2&#039;).forEach(function (title) {
                                 title.style.opacity = &quot;&quot;
                             })
-
 
                         };
                     };
@@ -3495,6 +3703,13 @@
                 document.querySelector(&quot;body&quot;).style.color = color;
                 document.querySelector(&quot;#nexser&quot;).style.backgroundColor = bkcolor;
                 document.querySelector(&quot;.mini_desktop&quot;).style.backgroundColor = bkcolor;
+                if (bkcolor == &quot;white&quot; || bkcolor == &quot;whitesmoke&quot;) {
+                    background_text.style.color = &quot;black&quot;
+                    document.getElementById(&#039;background_text2&#039;).style.color = &quot;black&quot;
+                } else {
+                    background_text.style.color = &quot;&quot;
+                    document.getElementById(&#039;background_text2&#039;).style.color = &quot;&quot;
+                }
             }
         }
         /*
@@ -3540,7 +3755,7 @@
         setInterval(() =&gt; {
             z_index.textContent = (getLargestZIndex(&#039;.child_windows&#039;));
             z_index.style.display = &quot;none&quot;;
-        }, 10);
+        }, 100);
 
         // &uarr;setinterval　大事な役割
 
@@ -3643,8 +3858,6 @@
             clock2.textContent = (hours + &quot;:&quot; + minutes + &quot;:&quot; + seconds + &quot;&quot;);
         }, 100);
 
-        const el = document.querySelector(&quot;#p1, #p3, .p&quot;);
-
         // 右クリックイベントの登録
         document.getElementById(&quot;button1&quot;).addEventListener(&quot;contextmenu&quot;, function (event) {
             event.preventDefault();
@@ -3715,6 +3928,18 @@
             localStorage.setItem(&#039;note_textcolor_red&#039;, note_textcolor_red);
             notecolor_change()
         }
+        function notecolor_change_orange() {
+            notecolor_remove()
+            const note_textcolor_orange = document.querySelector(&#039;.notetext_orange&#039;);
+            localStorage.setItem(&#039;note_textcolor_orange&#039;, note_textcolor_orange);
+            notecolor_change()
+        }
+        function notecolor_change_yellow() {
+            notecolor_remove()
+            const note_textcolor_yellow = document.querySelector(&#039;.notetext_yellow&#039;);
+            localStorage.setItem(&#039;note_textcolor_yellow&#039;, note_textcolor_yellow);
+            notecolor_change()
+        }
 
         function notecolor_change() {
             if (localStorage.getItem(&#039;note_textcolor_blue&#039;)) {
@@ -3729,12 +3954,22 @@
                 document.querySelector(&#039;.note_area&#039;).style.color = &quot;red&quot;;
                 document.querySelector(&#039;.test_notetext&#039;).style.color = &quot;red&quot;;
             }
+            if (localStorage.getItem(&#039;note_textcolor_orange&#039;)) {
+                document.querySelector(&#039;.note_area&#039;).style.color = &quot;orange&quot;;
+                document.querySelector(&#039;.test_notetext&#039;).style.color = &quot;orange&quot;;
+            }
+            if (localStorage.getItem(&#039;note_textcolor_yellow&#039;)) {
+                document.querySelector(&#039;.note_area&#039;).style.color = &quot;yellow&quot;;
+                document.querySelector(&#039;.test_notetext&#039;).style.color = &quot;yellow&quot;;
+            }
         }
 
         function notecolor_remove() {
             localStorage.removeItem(&#039;note_textcolor_blue&#039;)
             localStorage.removeItem(&#039;note_textcolor_green&#039;)
             localStorage.removeItem(&#039;note_textcolor_red&#039;)
+            localStorage.removeItem(&#039;note_textcolor_orange&#039;)
+            localStorage.removeItem(&#039;note_textcolor_yellow&#039;)
             document.querySelector(&#039;.note_area&#039;).style.color = &quot;&quot;;
             document.querySelector(&#039;.test_notetext&#039;).style.color = &quot;&quot;;
         }
@@ -3777,7 +4012,6 @@
             var Note = document.querySelector(&#039;.note_area&#039;);
             const note_text_underline = document.querySelector(&#039;.notetext_underline&#039;);
             localStorage.setItem(&#039;note_text_underline&#039;, note_text_underline);
-
             if (Note.style.textDecoration == &quot;none&quot; &amp;&amp; localStorage.getItem(&#039;note_text_underline&#039;)) {
                 Note.style.textDecoration = &quot;underline&quot;;
                 document.querySelector(&#039;.test_notetext&#039;).style.textDecoration = &quot;underline&quot;;
@@ -3826,6 +4060,19 @@
                 document.querySelector(&#039;.warningclose_button&#039;).style.display = &quot;block&quot;;
             }
         })
+
+        document.querySelector(&#039;.camera_close&#039;).addEventListener(&#039;click&#039;, function () {
+            if (!sessionStorage.getItem(&#039;start_camera&#039;)) {
+                camera_menu.classList.add(&#039;active&#039;)
+                taskbtn_load()
+            } else if (sessionStorage.getItem(&#039;start_camera&#039;)) {
+                document.querySelector(&#039;.window_error_text&#039;).textContent = &quot;camera no finish no close!&quot;
+                error_windows.classList.remove(&#039;active&#039;)
+                sound3()
+                document.querySelector(&#039;.test_allwindow&#039;).style.display = &quot;block&quot;;
+            }
+        })
+
         function warning_windows_close() {
             warning_windows.classList.add(&#039;active&#039;);
             document.querySelector(&#039;.test_allwindow&#039;).style.display = &quot;none&quot;;
@@ -3836,7 +4083,6 @@
             note_pad.classList.add(&#039;active&#039;)
             taskbtn_load()
         }
-
 
         function notedata_clear() {
             localStorage.removeItem(&#039;noteData&#039;);
@@ -3888,22 +4134,20 @@
             }
         });
 
-
         var calc_result = document.getElementById(&quot;result&quot;);
         function edit(calc_elem) {
             calc_result.value = calc_result.value + calc_elem.value;
         }
         function calc() {
             calc_result.value = new Function(&quot;return &quot; + calc_result.value)();
-
             const child_graph = document.querySelector(&quot;.child_graph&quot;);
-            child_graph.style.height = new Function(&quot;return &quot; + calc_result.value)() + &#039;%&#039;;
+            child_graph.style.height = new Function(&quot;return &quot; + calc_result.value)() / 100 + &#039;%&#039;;
             child_graph.style.background = &quot;lime&quot;
-            if (calc_result.value &gt; 100) {
+            if (calc_result.value &gt; 10000) {
                 child_graph.style.height = &quot;100%&quot;
                 child_graph.style.background = &quot;red&quot;;
             }
-            if (calc_result.value == 100) {
+            if (calc_result.value == 10000) {
                 child_graph.style.background = &quot;blue&quot;;
             }
             if (calc_result.value &lt; 0) {
@@ -3912,8 +4156,97 @@
             }
         }
         function calc_clear() {
+            const child_graph = document.querySelector(&quot;.child_graph&quot;);
+            child_graph.style.height = &quot;0%&quot;
+            child_graph.style.background = &quot;&quot;;
             calc_result.value = &quot;&quot;;
         }
+
+        setInterval(() =&gt; {
+            navigator.getBattery().then(function (battery) {
+                let bu = document.querySelector(&#039;.taskbattery&#039;);
+                bu2 = bu.innerHTML = Math.floor(battery.level * 100);
+            });
+        }, 1000);
+
+        async function startCamera() {
+            const start_camera = document.querySelector(&#039;#start_camera&#039;);
+            sessionStorage.setItem(&#039;start_camera&#039;, start_camera);
+            const cameraStream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: &#039;environment&#039;,
+
+                    aspectRatio: {
+                        exact: 1.6,
+                    },
+                },
+                audio: true,
+            });
+            videoElement.autoplay = true;
+            videoElement.srcObject = cameraStream;
+            videoElement.addEventListener(&quot;resize&quot;, () =&gt; {
+                videoElement.videowidth = videoElement.videoWidth;
+                videoElement.videoheight = videoElement.videoHeight;
+            });
+        }
+
+        const videoElement = document.getElementById(&quot;v&quot;)
+        function startCamera2() {
+            startCamera()
+        }
+
+        function stopCamera() {
+            sessionStorage.removeItem(&#039;start_camera&#039;);
+            const tracks = document.getElementById(&#039;v&#039;).srcObject.getTracks();
+            tracks.forEach(track =&gt; {
+                track.stop();
+            });
+            document.getElementById(&#039;v&#039;).srcObject = null;
+        }
+
+        const editor = document.getElementById(&quot;editor&quot;);
+        const preview = document.getElementById(&quot;preview&quot;);
+
+        function run() {
+            document.querySelectorAll(&#039;.htmlviewer_run_menu&#039;).forEach(function (htmlviewer_run_menu) {
+                htmlviewer_run_menu.closest(&#039;.child_windows&#039;);
+                htmlviewer_run_menu.classList.remove(&#039;active&#039;);
+                console.log(htmlviewer_run_menu)
+                z = largestZIndex + 1;
+                unko20 = htmlviewer_run_menu.style.zIndex = z;
+            });
+            preview.srcdoc = editor.value;
+        }
+
+        function testcode_save() {
+            localStorage.setItem(&#039;editor&#039;, editor.value);
+        }
+        const editor2 = localStorage.getItem(&#039;editor&#039;);
+        editor.textContent = (editor2)
+
+        function testcode_html() {
+            localStorage.removeItem(&#039;editor&#039;);
+            editor.value = &#039;&lt;!DOCTYPE html&gt;\n&lt;html&gt;\n&lt;head&gt;\n&lt;title&gt;document&lt;/title&gt;\n&lt;/head&gt;\n&lt;body&gt;\n&lt;button onclick=&quot;test()&quot;&gt;a&lt;/button&gt;\n&lt;script&gt;\nfunction test(){\nalert()\n}\n&lt; (この()は消してね　消さないと動作しません) /script&gt;\n&lt; (この()は消してね　消さないと動作しません) /body&gt;\n&lt;/html&gt;&#039;
+        }
+
+        function preview2(obj, previewId) {
+            let fileReader = new FileReader();
+            fileReader.onload = (function () {
+                document.getElementById(previewId).src = fileReader.result;
+            });
+            fileReader.readAsDataURL(obj.files[0]);
+        }
+        // let beforeMethod = performance.now();
+        // let sampleFunc = function () {
+        //     let intTest = 0;
+        //     for (let i = 0; i &lt; 1000000; i++) {  // 例として1,000,000回10を足してみましょう
+        //         intTest += 10;
+        //     }
+        //     console.log(&#039;intTest : &#039; + intTest);
+        // }();
+        // let afterMethod = performance.now();
+
+        // console.log(&quot;1,000,000回10を足す処理時間は、&quot; + (afterMethod - beforeMethod) + &quot;ミリ秒です&quot;);
 
     } else {
         document.querySelector(&quot;.prompt_error_text&quot;).textContent = &#039;この端末は対応していません!&#039;;
@@ -3922,6 +4255,7 @@
 &lt;/script&gt;
 
 &lt;/html&gt;
+
 
 
 
@@ -3941,7 +4275,8 @@
                             <li>note pad&emsp;<span class="startup_note">OFF</span></li>
                             <li>color&emsp;<span class="startup_color">OFF</span></li>
                             <li>screen&emsp;<span class="startup_screen">OFF</span></li>
-                        </ul>
+                            <li>htmlviewer edit&emsp;<span class="startup_htmlviewer_edit">OFF</span></li>
+                        </ul><br>
                     </div>
                     <div class="mini_window" style="border-color: white;">
                         <div style="width: 100%; border-bottom: solid 1px white;">STARTUP MODE</div>
@@ -3953,8 +4288,6 @@
                 </div>
             </div>
         </div>
-
-
 
         <div id="nexser">
             <span class="z_index" style="color: white; position: absolute; bottom: 40px;"></span>
@@ -3968,7 +4301,7 @@
 
                 <div id="soft_windows">
 
-                    <div class="child_windows program_manager active">
+                    <div class="child_windows program_manager resize active">
                         <div class="title">
                             <span>program manager</span>
                         </div>
@@ -3989,9 +4322,7 @@
                                 </ul>
                                 <div class="child_list">
                                     <ul>
-                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
-                                        <li class="hover_blue">test</li>
-                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue shutdown">shutdown</li>
                                         <li class="hover_blue">test</li>
                                         <li class="hover_blue">test</li>
                                     </ul>
@@ -4010,6 +4341,18 @@
                                         </li>
                                         <li class="hover_blue window_half_big">window half big</li>
                                         <li class="hover_blue windowsize_reset">window size reset</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue shutdown">shutdown</li>
+                                        <li class="hover_blue">test</li>
                                         <li class="hover_blue">test</li>
                                     </ul>
                                 </div>
@@ -4021,24 +4364,7 @@
                                 </ul>
                                 <div class="child_list">
                                     <ul>
-                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
-                                        <li class="hover_blue">test</li>
-                                        <li class="hover_blue">test</li>
-                                        <li class="hover_blue">test</li>
-                                        <li class="hover_blue">test</li>
-                                    </ul>
-                                </div>
-                            </div>
-
-                            <div class="parent_list">
-                                <ul>
-                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
-                                </ul>
-                                <div class="child_list">
-                                    <ul>
-                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
-                                        <li class="hover_blue">test</li>
-                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue shutdown">shutdown</li>
                                         <li class="hover_blue">test</li>
                                         <li class="hover_blue">test</li>
                                     </ul>
@@ -4059,7 +4385,7 @@
                         </ul><br>
                     </div>
 
-                    <div class="child_windows windowmode_menu active">
+                    <div class="child_windows windowmode_menu resize active">
                         <div class="title">
                             <span>window mode</span>
                         </div>
@@ -4080,9 +4406,7 @@
                                 </ul>
                                 <div class="child_list">
                                     <ul>
-                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
-                                        <li class="hover_blue">test</li>
-                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue shutdown">shutdown</li>
                                         <li class="hover_blue">test</li>
                                         <li class="hover_blue">test</li>
                                     </ul>
@@ -4101,6 +4425,18 @@
                                         </li>
                                         <li class="hover_blue window_half_big">window half big</li>
                                         <li class="hover_blue windowsize_reset">window size reset</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue shutdown">shutdown</li>
+                                        <li class="hover_blue">test</li>
                                         <li class="hover_blue">test</li>
                                     </ul>
                                 </div>
@@ -4112,24 +4448,7 @@
                                 </ul>
                                 <div class="child_list">
                                     <ul>
-                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
-                                        <li class="hover_blue">test</li>
-                                        <li class="hover_blue">test</li>
-                                        <li class="hover_blue">test</li>
-                                        <li class="hover_blue">test</li>
-                                    </ul>
-                                </div>
-                            </div>
-
-                            <div class="parent_list">
-                                <ul>
-                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
-                                </ul>
-                                <div class="child_list">
-                                    <ul>
-                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
-                                        <li class="hover_blue">test</li>
-                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue shutdown">shutdown</li>
                                         <li class="hover_blue">test</li>
                                         <li class="hover_blue">test</li>
                                     </ul>
@@ -4146,8 +4465,7 @@
                         </ul><br>
                     </div>
 
-
-                    <div class="child_windows accessory_menu active">
+                    <div class="child_windows accessory_menu resize active">
                         <div class="title">
                             <span>accessory</span>
                         </div>
@@ -4168,9 +4486,7 @@
                                 </ul>
                                 <div class="child_list">
                                     <ul>
-                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
-                                        <li class="hover_blue">test</li>
-                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue shutdown">shutdown</li>
                                         <li class="hover_blue">test</li>
                                         <li class="hover_blue">test</li>
                                     </ul>
@@ -4189,6 +4505,18 @@
                                         </li>
                                         <li class="hover_blue window_half_big">window half big</li>
                                         <li class="hover_blue windowsize_reset">window size reset</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue shutdown">shutdown</li>
+                                        <li class="hover_blue">test</li>
                                         <li class="hover_blue">test</li>
                                     </ul>
                                 </div>
@@ -4200,24 +4528,7 @@
                                 </ul>
                                 <div class="child_list">
                                     <ul>
-                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
-                                        <li class="hover_blue">test</li>
-                                        <li class="hover_blue">test</li>
-                                        <li class="hover_blue">test</li>
-                                        <li class="hover_blue">test</li>
-                                    </ul>
-                                </div>
-                            </div>
-
-                            <div class="parent_list">
-                                <ul>
-                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
-                                </ul>
-                                <div class="child_list">
-                                    <ul>
-                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
-                                        <li class="hover_blue">test</li>
-                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue shutdown">shutdown</li>
                                         <li class="hover_blue">test</li>
                                         <li class="hover_blue">test</li>
                                     </ul>
@@ -4239,8 +4550,7 @@
                         </ul><br>
                     </div>
 
-
-                    <div class="child_windows main active">
+                    <div class="child_windows main resize active">
                         <div class="title">
                             <span>main</span>
                         </div>
@@ -4269,7 +4579,7 @@
                         </ul><br>
                     </div>
 
-                    <div class="child_windows control_panel active">
+                    <div class="child_windows control_panel resize active">
                         <div class="title">
                             <span>control panel</span>
                         </div>
@@ -4290,9 +4600,7 @@
                                 </ul>
                                 <div class="child_list">
                                     <ul>
-                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
-                                        <li class="hover_blue">test</li>
-                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue shutdown">shutdown</li>
                                         <li class="hover_blue">test</li>
                                         <li class="hover_blue">test</li>
                                     </ul>
@@ -4311,6 +4619,18 @@
                                         </li>
                                         <li class="hover_blue window_half_big">window half big</li>
                                         <li class="hover_blue windowsize_reset">window size reset</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue shutdown">shutdown</li>
+                                        <li class="hover_blue">test</li>
                                         <li class="hover_blue">test</li>
                                     </ul>
                                 </div>
@@ -4322,24 +4642,7 @@
                                 </ul>
                                 <div class="child_list">
                                     <ul>
-                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
-                                        <li class="hover_blue">test</li>
-                                        <li class="hover_blue">test</li>
-                                        <li class="hover_blue">test</li>
-                                        <li class="hover_blue">test</li>
-                                    </ul>
-                                </div>
-                            </div>
-
-                            <div class="parent_list">
-                                <ul>
-                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
-                                </ul>
-                                <div class="child_list">
-                                    <ul>
-                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
-                                        <li class="hover_blue">test</li>
-                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue shutdown">shutdown</li>
                                         <li class="hover_blue">test</li>
                                         <li class="hover_blue">test</li>
                                     </ul>
@@ -4364,7 +4667,7 @@
                         </ul><br>
                     </div>
 
-                    <div class="child_windows sound_menu active">
+                    <div class="child_windows sound_menu resize active">
                         <div class="title">
                             <span>sound</span>
                         </div>
@@ -4393,7 +4696,7 @@
                         </ul><br>
                     </div>
 
-                    <div class="child_windows nexser_sound_menu active">
+                    <div class="child_windows nexser_sound_menu resize active">
                         <div class="title">
                             <span>nexser sound</span>
                         </div>
@@ -4414,9 +4717,7 @@
                                 </ul>
                                 <div class="child_list">
                                     <ul>
-                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
-                                        <li class="hover_blue">test</li>
-                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue shutdown">shutdown</li>
                                         <li class="hover_blue">test</li>
                                         <li class="hover_blue">test</li>
                                     </ul>
@@ -4435,6 +4736,18 @@
                                         </li>
                                         <li class="hover_blue window_half_big">window half big</li>
                                         <li class="hover_blue windowsize_reset">window size reset</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue shutdown">shutdown</li>
+                                        <li class="hover_blue">test</li>
                                         <li class="hover_blue">test</li>
                                     </ul>
                                 </div>
@@ -4446,24 +4759,7 @@
                                 </ul>
                                 <div class="child_list">
                                     <ul>
-                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
-                                        <li class="hover_blue">test</li>
-                                        <li class="hover_blue">test</li>
-                                        <li class="hover_blue">test</li>
-                                        <li class="hover_blue">test</li>
-                                    </ul>
-                                </div>
-                            </div>
-
-                            <div class="parent_list">
-                                <ul>
-                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
-                                </ul>
-                                <div class="child_list">
-                                    <ul>
-                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
-                                        <li class="hover_blue">test</li>
-                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue shutdown">shutdown</li>
                                         <li class="hover_blue">test</li>
                                         <li class="hover_blue">test</li>
                                     </ul>
@@ -4514,9 +4810,7 @@
                                 </ul>
                                 <div class="child_list">
                                     <ul>
-                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
-                                        <li class="hover_blue">test</li>
-                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue shutdown">shutdown</li>
                                         <li class="hover_blue">test</li>
                                         <li class="hover_blue">test</li>
                                     </ul>
@@ -4544,9 +4838,7 @@
                                 </ul>
                                 <div class="child_list">
                                     <ul>
-                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
-                                        <li class="hover_blue">test</li>
-                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue shutdown">shutdown</li>
                                         <li class="hover_blue">test</li>
                                         <li class="hover_blue">test</li>
                                     </ul>
@@ -4559,9 +4851,7 @@
                                 </ul>
                                 <div class="child_list">
                                     <ul>
-                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
-                                        <li class="hover_blue">test</li>
-                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue shutdown">shutdown</li>
                                         <li class="hover_blue">test</li>
                                         <li class="hover_blue">test</li>
                                     </ul>
@@ -4574,7 +4864,7 @@
                         <p style="text-align: center;">2023-2024</p>
                     </div>
 
-                    <div class="child_windows clock_menu active">
+                    <div class="child_windows clock_menu resize active">
                         <div class="title">
                             <span>clock</span>
                         </div>
@@ -4595,9 +4885,7 @@
                                 </ul>
                                 <div class="child_list">
                                     <ul>
-                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
-                                        <li class="hover_blue">test</li>
-                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue shutdown">shutdown</li>
                                         <li class="hover_blue">test</li>
                                         <li class="hover_blue">test</li>
                                     </ul>
@@ -4616,6 +4904,18 @@
                                         </li>
                                         <li class="hover_blue window_half_big">window half big</li>
                                         <li class="hover_blue windowsize_reset">window size reset</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue shutdown">shutdown</li>
+                                        <li class="hover_blue">test</li>
                                         <li class="hover_blue">test</li>
                                     </ul>
                                 </div>
@@ -4627,24 +4927,7 @@
                                 </ul>
                                 <div class="child_list">
                                     <ul>
-                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
-                                        <li class="hover_blue">test</li>
-                                        <li class="hover_blue">test</li>
-                                        <li class="hover_blue">test</li>
-                                        <li class="hover_blue">test</li>
-                                    </ul>
-                                </div>
-                            </div>
-
-                            <div class="parent_list">
-                                <ul>
-                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
-                                </ul>
-                                <div class="child_list">
-                                    <ul>
-                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
-                                        <li class="hover_blue">test</li>
-                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue shutdown">shutdown</li>
                                         <li class="hover_blue">test</li>
                                         <li class="hover_blue">test</li>
                                     </ul>
@@ -4653,11 +4936,11 @@
 
                         </div>
 
-                        <p>test date <span class="date_day">DATE</span></p>
-                        <p>test clock <span class="date_clock">CLOCK</span></p><br>
+                        <p style="text-align: center;">test date <span class="date_day">DATE</span></p>
+                        <p style="text-align: center;">test clock <span class="date_clock">CLOCK</span></p><br>
                     </div>
 
-                    <div class="child_windows color active">
+                    <div class="child_windows color resize active">
                         <div class="title">
                             <span>color</span>
                         </div>
@@ -4718,7 +5001,7 @@
                         </div>
                     </div>
 
-                    <div class="child_windows window_prompt active" style=" background-color: rgb(51, 51, 184);">
+                    <div class="child_windows window_prompt resize active" style=" background-color: rgb(51, 51, 184);">
                         <div class="title">
                             <span>nexser prompt</span>
                         </div>
@@ -4742,7 +5025,7 @@
                         </div>
                     </div>
 
-                    <div class="child_windows driver_menu active">
+                    <div class="child_windows driver_menu resize active">
 
                         <div class="title">
                             <span>driver menu</span>
@@ -4786,9 +5069,7 @@
                                 </ul>
                                 <div class="child_list">
                                     <ul>
-                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
-                                        <li class="hover_blue">test</li>
-                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue shutdown">shutdown</li>
                                         <li class="hover_blue">test</li>
                                         <li class="hover_blue">test</li>
                                     </ul>
@@ -4816,9 +5097,7 @@
                                 </ul>
                                 <div class="child_list">
                                     <ul>
-                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
-                                        <li class="hover_blue">test</li>
-                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue shutdown">shutdown</li>
                                         <li class="hover_blue">test</li>
                                         <li class="hover_blue">test</li>
                                     </ul>
@@ -4831,9 +5110,7 @@
                                 </ul>
                                 <div class="child_list">
                                     <ul>
-                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
-                                        <li class="hover_blue">test</li>
-                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue shutdown">shutdown</li>
                                         <li class="hover_blue">test</li>
                                         <li class="hover_blue">test</li>
                                     </ul>
@@ -4865,7 +5142,7 @@
                         </div>
                     </div>
 
-                    <div class="child_windows screen_menu active">
+                    <div class="child_windows screen_menu resize active">
                         <div class="title">
                             <span>screen</span>
                         </div>
@@ -4919,7 +5196,7 @@
                                 </ul>
                                 <div class="child_list">
                                     <ul>
-                                        <li class="hover_blue" onclick="shutdown()">shutdown</li>
+                                        <li class="hover_blue shutdown">shutdown</li>
                                     </ul>
                                 </div>
                             </div>
@@ -4936,7 +5213,6 @@
                                         </li>
                                         <li class="hover_blue window_half_big">window half big</li>
                                         <li class="hover_blue windowsize_reset">window size reset</li>
-                                        <li class="hover_blue">test</li>
                                     </ul>
                                 </div>
                             </div>
@@ -4963,6 +5239,12 @@
                                                 text green</li>
                                             <li class="hover_blue notetext_red" onclick="notecolor_change_red()">text
                                                 red</li>
+                                            <li class="hover_blue notetext_orange" onclick="notecolor_change_orange()">
+                                                text
+                                                orange</li>
+                                            <li class="hover_blue notetext_yellow" onclick="notecolor_change_yellow()">
+                                                text
+                                                yellow</li>
                                         </div>
                                     </ul>
                                 </div>
@@ -4988,18 +5270,16 @@
                             <input type="button" id="cleartextbtn" class="button2" value="&emsp;clear&emsp;">
                         </div>
                         <form name="note_form" action="">
-                            <textarea name="note_area" class="note_area" cols="50" rows="10"
+                            <textarea id="note_text" name="note_area" class="note_area" cols="50" rows="15"
                                 onkeyup="ShowLength()"></textarea>
                         </form>
                         <p>Textcount<span id="inputlength"></span></p>
                         <p id="memo_save_text"></p>
-                        <p style="position: absolute; right: 10px; bottom: 0px;">text mode&emsp;<span
-                                class="test_notetext">test</span>&emsp;</p>
+                        <p>text mode&emsp;<span class="test_notetext">test</span>&emsp;</p>
                     </div>
 
-
                     <div class="child_windows text_drop_menu active">
-                        <div class="title note_title">
+                        <div class="title">
                             <span>text drop</span>
                         </div>
 
@@ -5094,6 +5374,131 @@
                         </div><br>
                     </div>
 
+                    <div class="child_windows camera_menu active">
+                        <div class="title">
+                            <span>test camera</span>
+                        </div>
+
+                        <div class="title_buttons">
+                            <a class="drag_button">&nbsp;</a>
+                            <a class="close_button4 hover_button camera_close">&nbsp;✕&nbsp;</a><br>
+                        </div>
+
+                        <div class="title2">
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue shutdown">shutdown</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;window(<ins>W</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue window_top">window top</li>
+                                        <li class="hover_blue window_left">window left</li>
+                                        <li class="hover_blue window_top_and_left">window top & left
+                                        </li>
+                                        <li class="hover_blue">test</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue shutdown">shutdown</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue shutdown">shutdown</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <div class="mini_window">
+                            <div style="pointer-events: none;">
+                                <video id="v" class="border" style="background-color: black" height="400" ;
+                                    width="640px"></video>
+                            </div>
+                            <button id="start_camera" class="button2" onclick="startCamera2()">start</button>
+                            <button class="button2" onclick="stopCamera()">finish</button>
+                        </div>
+                    </div>
+
+                    <div class="child_windows htmlviewer_edit_menu active">
+                        <div class="title">
+                            <span>html viewer edit</span>
+                        </div>
+
+                        <div class="title_buttons">
+                            <a class="drag_button">&nbsp;</a>
+                            <a class="close_button hover_button">&nbsp;✕&nbsp;</a><br>
+                        </div>
+
+                        <div class="mini_window">
+                            <textarea id="editor" class="border"></textarea><br>
+                        </div>
+                        <button class="button2" onclick="run()">run</button>
+                        <button class="button2" onclick="testcode_save()">save</button>
+                        <button class="button2" onclick="testcode_html()">html</button>
+                    </div>
+
+                    <div class="child_windows htmlviewer_run_menu active">
+                        <div class="title">
+                            <span>html viewer run</span>
+                        </div>
+
+                        <div class="title_buttons">
+                            <a class="drag_button">&nbsp;</a>
+                            <a class="close_button hover_button">&nbsp;✕&nbsp;</a>
+                            <a class="bigscreen_button hover_button">&nbsp;□&nbsp;</a>
+                            <a class="minscreen_button hover_button">&nbsp;❒&nbsp;</a>
+                            <a class="minimization_button hover_button">&nbsp;―&nbsp;</a><br>
+                        </div>
+                        <iframe id="preview" class="border"></iframe>
+                    </div>
+
+                    <div class="child_windows border uploadvideo_menu active">
+                        <div class="title">
+                            <span>video upload</span>
+                        </div>
+                        <div class="title_buttons">
+                            <a class="drag_button">&nbsp;</a>
+                            <a class="close_button hover_button">&nbsp;✕&nbsp;</a><br>
+                        </div>
+                        <div class="videos">
+                            <video class="preview2" id="previewVideo2" controls="controls" width="560px"></video><br>
+                            <label class="button2">
+                                <input type="file" accept='video/*' onchange="preview2(this, 'previewVideo2')"
+                                    placeholder="">movie upload
+                            </label>
+                        </div>
+                    </div>
 
                     <div class="test_allwindow"></div>
 
@@ -5112,7 +5517,7 @@
                         <a class="close_button3 hover_button">&nbsp;✕&nbsp;</a><br>
                         <br>
                         <p class="window_warning_text"></p>
-                        <button class="shutdown_button button2" onclick="window_none(),shutdown()">shutdown</button>
+                        <button class="shutdown_button button2 shutdown" onclick="window_none()">shutdown</button>
                         <button class="warningclose_button button2" style="display: none;"
                             onclick="warning_windows_close()">yes</button>
                     </div>
@@ -5144,6 +5549,13 @@
                                 <li class="test_button7">TIME:<span class="date_clock2">CLOCK</span></li>
                             </ul>
                         </div>
+                        <ul>
+                            <li class="border"
+                                style="background: silver; font-size: medium; position: absolute; bottom: 5px; right: 140px;">
+                                BATTERY:
+                                <span class="taskbattery"></span>%
+                            </li>
+                        </ul>
                     </div>
                     <div id="start_menu" class="parent_start_menu">
                         <div class="child_start_menu border">
@@ -5164,9 +5576,13 @@
                                 <li class="test_button11">screen</li>
                                 <li class="test_button12">notepad</li>
                                 <li class="test_button13">text drop</li>
-                                <li class="test_button16">calc</li><br>
+                                <li class="test_button16">calc</li>
+                                <li class="test_button17">nexser sound</li>
+                                <li class="test_button18">camera</li>
+                                <li class="test_button19">htmlviewer edit</li>
+                                <li class="test_button21">video upload</li><br>
                                 <div class="mini_window">
-                                    <li onclick="shutdown()">shutdown</li>
+                                    <li class="shutdown">shutdown</li>
                                 </div>
                             </ul>
                         </div>
@@ -5372,7 +5788,7 @@
         width: 100%;
         height: 100vh;
         display: block;
-        background: #006670;
+        background: #006670
     }
 
     /* buttons */
@@ -5422,6 +5838,14 @@
         -moz-user-select: none;
         -ms-user-select: none;
         user-select: none;
+    }
+
+    /* label {
+        cursor: pointer;
+    } */
+
+    input[type="file"] {
+        display: none;
     }
 
     /* taskbar */
@@ -5505,6 +5929,13 @@
         position: absolute;
         top: 30%;
         left: 30%;
+        scrollbar-color: dimgray silver;
+        scrollbar-width: thin;
+    }
+
+    .resize {
+        resize: both;
+        overflow: auto;
     }
 
     .mini_window {
@@ -5515,6 +5946,11 @@
     }
 
     .error_windows {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        list-style: none;
         display: block;
         font-size: 15px;
         width: auto;
@@ -5533,7 +5969,8 @@
         width: 100%;
         background: black;
         opacity: 0.25;
-        position: relative;
+        position: absolute;
+        top: 0;
         z-index: 999998;
     }
 
@@ -5554,6 +5991,11 @@
     }
 
     .warning_windows {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        list-style: none;
         display: block;
         font-size: 15px;
         width: auto;
@@ -5583,7 +6025,8 @@
         width: 99.7%;
         border: solid 2px #c0c0c0;
         background: whitesmoke;
-        position: static;
+        position: relative;
+        resize: none;
     }
 
     .child_windows .title {
@@ -5637,6 +6080,9 @@
     }
 
     .title_buttons {
+        background-color: rgba();
+        position: relative;
+        top: -1px;
         -webkit-user-select: none;
         -moz-user-select: none;
         -ms-user-select: none;
@@ -5650,7 +6096,7 @@
         user-select: none;
         display: flex;
         background: #c0c0c0;
-        height: 21px;
+        height: 20.5px;
         position: relative;
         top: -2px;
     }
@@ -5665,12 +6111,10 @@
         color: white;
     }
 
-    .title_buttons {
-        position: relative;
-    }
-
     /* title_buttons */
     .close_button {
+        width: 15px;
+        font-size: 100px;
         background: #c0c0c0;
         position: absolute;
         top: 3.5px;
@@ -5684,6 +6128,7 @@
     }
 
     .close_button2 {
+        width: 15px;
         background: #c0c0c0;
         position: absolute;
         top: 3.5px;
@@ -5697,6 +6142,7 @@
     }
 
     .close_button3 {
+        width: 15px;
         background: #c0c0c0;
         position: absolute;
         top: 3.5px;
@@ -5711,6 +6157,7 @@
 
     /* 飾り */
     .close_button4 {
+        width: 15px;
         background: #c0c0c0;
         position: absolute;
         top: 3.5px;
@@ -5732,6 +6179,22 @@
     }
 
     .bigscreen_button {
+        width: 15px;
+        background: #c0c0c0;
+        position: absolute;
+        top: 3.5px;
+        right: 21px;
+        text-align: center;
+        font-size: 10px;
+        border-top: solid 1px white;
+        border-right: solid 1px black;
+        border-left: solid 1px white;
+        border-bottom: solid 1px black;
+    }
+
+    .minscreen_button {
+        width: 15px;
+        display: none;
         background: #c0c0c0;
         position: absolute;
         top: 3.5px;
@@ -5744,21 +6207,8 @@
         border-bottom: solid 1px black;
     }
 
-    .minscreen_button {
-        display: none;
-        background: #c0c0c0;
-        position: absolute;
-        top: 3.5px;
-        right: 18px;
-        text-align: center;
-        font-size: 10px;
-        border-top: solid 1px white;
-        border-right: solid 1px black;
-        border-left: solid 1px white;
-        border-bottom: solid 1px black;
-    }
-
     .minimization_button {
+        width: 15px;
         background: #c0c0c0;
         position: absolute;
         top: 3.5px;
@@ -5819,15 +6269,15 @@
     .child_list {
         display: none;
         position: relative;
+        top: 0;
     }
 
     .child_list ul {
         background-color: #c0c0c0;
         width: 100%;
-        border-top: solid 1px white;
-        border-right: solid 1px black;
-        border-left: solid 1px white;
-        border-bottom: solid 1px black;
+        border-right: solid 1.5px black;
+        border-left: solid 1.5px whitesmoke;
+        border-bottom: solid 1.5px black;
     }
 
     .child_list.active {
@@ -5900,14 +6350,14 @@
         display: block;
         font-size: large;
         outline: none;
-        width: 100%;
-        height: 30vh;
+        width: 99.5%;
+        height: 100%;
         resize: none;
     }
 
     .child_windows.big .note_area {
         width: 100%;
-        height: 75vh;
+        height: 72.5vh;
     }
 
     /* calc */
@@ -5925,15 +6375,39 @@
         background: silver;
         outline: none;
     }
+
+    /* htmlviewer */
+
+    #editor {
+        width: 800px;
+        height: 50vh;
+    }
+
+    .child_windows.big #editor {
+        height: 85vh;
+        width: 99.8%;
+        resize: none;
+    }
+
+    #preview {
+        width: 600px;
+        height: 50vh;
+    }
+
+    .child_windows.big #preview {
+        height: 90vh;
+        width: 99.8%;
+    }
 </style>
 <script text="javascript">
-    //var ua = navigator.userAgent;
-    //if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android') > 0 || ua.indexOf('Mobile') > 0)) {
+    var ua = navigator.userAgent;
+    if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android') > 0 || ua.indexOf('Mobile') > 0)) {
 
-        const start = document.querySelector('#startbtn')
-        const parent_start_menu = document.querySelector('#start_menu')
-        const taskbar = document.querySelector('#taskbar');
-        const background_text = document.querySelector('#background_text')
+        const shutdown = document.getElementsByClassName('shutdown');
+
+        const parent_start_menu = document.getElementById('start_menu')
+        const taskbar = document.getElementById('taskbar');
+        const background_text = document.getElementById('background_text')
 
         const nameText = document.querySelector('.name');
         const msg = document.querySelector('.test_name');
@@ -5942,7 +6416,6 @@
         const prompt = document.getElementById('prompt');
         const prompt_text = document.querySelector('.prompt_text');
         const prompt_text2 = document.querySelector('.prompt_text2');
-        const memory = document.querySelector('.memory');
         const userelement = document.querySelector('.user');
         const nexser = document.getElementById('nexser');
         const nexser_program = document.getElementById('nexser_program');
@@ -5976,19 +6449,15 @@
         const accessory_menu = document.querySelector('.accessory_menu');
         const calc_menu = document.querySelector('.calc_menu');
         const nexser_sound_menu = document.querySelector('.nexser_sound_menu');
+        const camera_menu = document.querySelector('.camera_menu');
+        const htmlviewer_edit_menu = document.querySelector('.htmlviewer_edit_menu');
+        const htmlviewer_run_menu = document.querySelector('.htmlviewer_run_menu');
+        const uploadvideo_menu = document.querySelector('.uploadvideo_menu');
 
         const error_windows = document.querySelector('.error_windows');
         const warning_windows = document.querySelector('.warning_windows');
 
-        // start.addEventListener('mouseover', function () {
-        //     // マウスが要素に乗った際の処理
-        //     start_menu.style.display = "block"
-        //     start.addEventListener('mouseleave', function () {
-        //         // マウスが要素に乗った際の処理
-        //         start_menu.style.display = "none"
-        //     });
-        // });
-        start.addEventListener('click', function () {
+        document.getElementById('startbtn').addEventListener('click', function () {
             if (start_menu.style.display == "block") {
                 // noneで非表示
                 start_menu.style.display = "none";
@@ -6059,8 +6528,6 @@
             notecolor_change()
         }
 
-
-
         function nexser_program_open() {
             document.querySelector('.prompt_error_text').textContent = "";
             document.body.style.cursor = 'crosshair';
@@ -6128,6 +6595,18 @@
                 document.querySelector('.startup_screen').textContent = "ON"
             }
         })
+
+        document.querySelector('.startup_htmlviewer_edit').addEventListener('click', function () {
+            if (localStorage.getItem('startup_htmlviewer_edit')) {
+                localStorage.removeItem('startup_htmlviewer_edit')
+                document.querySelector('.startup_htmlviewer_edit').textContent = "OFF"
+            } else {
+                const startup_htmlviewer_edit = document.querySelector('.startup_htmlviewer_edit');
+                localStorage.setItem('startup_htmlviewer_edit', startup_htmlviewer_edit);
+                document.querySelector('.startup_htmlviewer_edit').textContent = "ON"
+            }
+        })
+
         document.querySelector('.startup_speed').addEventListener('click', function () {
             if (localStorage.getItem('prompt_data2')) {
                 localStorage.removeItem('prompt_data2')
@@ -6139,11 +6618,8 @@
             }
         })
 
-
-
-
-
         function nexser_start() {
+            document.querySelector("#nexser").style.backgroundColor = "";
             document.querySelector('.test_allwindow').style.display = "none";
             window_none();
             if (localStorage.getItem('prompt_data2')) {
@@ -6151,13 +6627,13 @@
                     console.log(largestZIndex)
                     prompt.style.display = "none";
                     setTimeout(function () {
-                        setColor()
                         startup_sound();
                         nexser.style.display = "block";
                         setTimeout(function () {
                             taskbar_none();
                             desktop.style.display = "block";
                             setTimeout(() => {
+                                setColor()
                                 startup_window_open()
                                 taskbtn_load()
                             }, 500);
@@ -6166,16 +6642,15 @@
                 }, 100)
             } else {
                 setTimeout(function () {
-                    console.log(largestZIndex)
                     prompt.style.display = "none";
                     setTimeout(function () {
-                        setColor()
                         startup_sound();
                         nexser.style.display = "block";
                         setTimeout(function () {
                             taskbar_none();
                             desktop.style.display = "block";
                             setTimeout(() => {
+                                setColor()
                                 startup_window_open()
                                 taskbtn_load()
                             }, 1000);
@@ -6207,48 +6682,60 @@
                 element.closest('.child_windows');
                 element.classList.remove('active')
             }
-        }
-
-        function shutdown() {
-            document.querySelector('.test_allwindow').style.display = "block";
-            let result = document.getElementsByClassName('child_windows active').length;
-            result2 = 17;
-            console.log(result)
-            let result3 = result - result2;
-            console.log(result3)
-            if (result3 == 0) {
-                shutdown_sound();
-                setTimeout(() => {
-                    desktop.style.display = "none";
-                    localStorage.removeItem('prompt_data');
-                    window_reset();
-                    document.querySelector('#codes').style.display = "none";
-                    window_none();
-
-                    setTimeout(() => {
-                        document.querySelectorAll('.button').forEach(function (button) {
-                            let tscbtn = button.firstChild;
-                            tscbtn = button.classList.remove('pressed');
-                        });
-                        document.getElementsByClassName('name')[0].value = "";
-                        document.querySelector('.prompt_error_text').textContent = "";
-                        document.querySelector('.help').textContent = "";
-                        msg.innerText = "";
-                        prompt_text.style.color = "";
-                        nexser.style.display = "none";
-                        prompt.style.display = "block";
-                        start_menu.style.display = "none";
-                        document.querySelector('.focus').focus();
-                    }, 500);
-                }, 1500);
-            } else {
-                warning_windows.classList.remove('active');
-                document.querySelector('.shutdown_button').style.display = "block";
-                document.querySelector('.warningclose_button').style.display = "none";
-                document.querySelector('.window_warning_text').textContent = "task window open! shutdown?"
-                sound5()
+            if (localStorage.getItem('startup_htmlviewer_edit')) {
+                const element = document.querySelector('.htmlviewer_edit_menu');
+                element.closest('.child_windows');
+                element.classList.remove('active')
             }
         }
+
+        Array.from(shutdown).forEach(element => {
+            element.addEventListener('click', event => {
+                document.querySelector('.test_allwindow').style.display = "block";
+                let result = document.getElementsByClassName('child_windows active').length;
+                result2 = 21;
+                console.log(result)
+                let result3 = result - result2;
+                console.log(result3)
+                if (sessionStorage.getItem('start_camera')) {
+                    document.querySelector('.window_error_text').textContent = "camera no finish no shutdown!"
+                    error_windows.classList.remove('active')
+                    sound3()
+                    document.querySelector('.test_allwindow').style.display = "block";
+                } else if (result3 == 0) {
+                    shutdown_sound();
+                    setTimeout(() => {
+                        desktop.style.display = "none";
+                        localStorage.removeItem('prompt_data');
+                        window_reset();
+                        document.querySelector('#codes').style.display = "none";
+                        window_none();
+
+                        setTimeout(() => {
+                            document.querySelectorAll('.button').forEach(function (button) {
+                                let tscbtn = button.firstChild;
+                                tscbtn = button.classList.remove('pressed');
+                            });
+                            document.getElementsByClassName('name')[0].value = "";
+                            document.querySelector('.prompt_error_text').textContent = "";
+                            document.querySelector('.help').textContent = "";
+                            msg.innerText = "";
+                            prompt_text.style.color = "";
+                            nexser.style.display = "none";
+                            prompt.style.display = "block";
+                            start_menu.style.display = "none";
+                            document.querySelector('.focus').focus();
+                        }, 500);
+                    }, 1500);
+                } else {
+                    warning_windows.classList.remove('active');
+                    document.querySelector('.shutdown_button').style.display = "block";
+                    document.querySelector('.warningclose_button').style.display = "none";
+                    document.querySelector('.window_warning_text').textContent = "task window open! shutdown?"
+                    sound5()
+                }
+            })
+        })
 
         document.getElementById('sound_driver').addEventListener('click', function () {
             if (localStorage.getItem('driver_sound')) {
@@ -6342,7 +6829,6 @@
             }
         }
 
-
         function windowmode_reset() {
             localStorage.removeItem('window_invisible')
             localStorage.removeItem('window_borderblack')
@@ -6390,15 +6876,6 @@
             document.querySelector('#background_text2').classList.remove('active')
         })
 
-        setInterval(() => {
-            const backtext_data2 = localStorage.getItem('backtext_data');
-            document.querySelector('#background_text2').textContent = (backtext_data2)
-
-            if (localStorage.getItem(KEY_BKCOLOR, bkcolor)) {
-                document.querySelector(".mini_desktop").style.backgroundColor = bkcolor;
-            }
-        }, 100);
-
         function all_load() {
             if (localStorage.getItem('driver_sound')) {
                 document.querySelector('.installbutton_1').textContent = "uninstall"
@@ -6432,6 +6909,9 @@
             }
             if (localStorage.getItem('startup_screen')) {
                 document.querySelector('.startup_screen').textContent = "ON"
+            }
+            if (localStorage.getItem('startup_htmlviewer_edit')) {
+                document.querySelector('.startup_htmlviewer_edit').textContent = "ON"
             }
             if (localStorage.getItem('prompt_data2')) {
                 document.querySelector('.startup_speed').textContent = "HIGH"
@@ -6468,6 +6948,7 @@
                 document.querySelector('.note_area').style.textDecoration = "underline";
                 document.querySelector('.test_notetext').style.textDecoration = "underline";
             }
+            sessionStorage.removeItem('start_camera')
         }
 
         function taskbtn_load() {
@@ -6563,7 +7044,6 @@
                     taskbtn.classList.add('pressed')
                 }
             })
-
         }
 
         function window_reset() {
@@ -6617,6 +7097,8 @@
             document.querySelector(".mini_desktop").style.backgroundColor = "";
             localStorage.removeItem(KEY_COLOR, color);
             localStorage.removeItem(KEY_BKCOLOR, bkcolor);
+            background_text.style.color = ""
+            document.getElementById('background_text2').style.color = ""
         }
 
         function taskbar_none() {
@@ -6645,7 +7127,6 @@
                     butotnClick2()
                 }
             }
-
         }
 
         function butotnClick() {
@@ -6761,7 +7242,6 @@
                     document.querySelector('#codes').style.display = "none";
                     document.querySelector('.focus').focus();
                     break;
-
                 case 'windows95/open':
                     document.querySelector('.prompt_error_text').textContent = "";
                     window.open("https://moti5768.github.io/moti.world/windows95.html");
@@ -6777,7 +7257,6 @@
                     window.open("https://moti5768.github.io/moti.world/new%20OS/WindowSystem.html");
                     prompt_text.style.color = "";
                     break;
-
                 default:
                     document.querySelector('.prompt_error_text').textContent = "コマンドが違います!";
                     document.querySelector('.help').textContent = "";
@@ -6786,7 +7265,6 @@
                     break;
             }
         }
-
 
         function prompt_text_check2() {
             const prompt_text4 = document.querySelector('.focus2');
@@ -6879,7 +7357,22 @@
                     prompt_text2.style.color = "";
                     title_active()
                     break;
-
+                case 'window/font/large':
+                    document.querySelector('.prompt_error_text2').textContent = "";
+                    prompt_text2.style.color = "";
+                    let test_window = document.getElementsByClassName('child_windows')
+                    Array.from(test_window).forEach(element => {
+                        element.style.fontSize = "20px";
+                    })
+                    break;
+                case 'window/font/reset':
+                    document.querySelector('.prompt_error_text2').textContent = "";
+                    prompt_text2.style.color = "";
+                    let test_window2 = document.getElementsByClassName('child_windows')
+                    Array.from(test_window2).forEach(element => {
+                        element.style.fontSize = "";
+                    })
+                    break;
                 case 'windows95/open':
                     document.querySelector('.prompt_error_text2').textContent = "";
                     window.open("https://moti5768.github.io/moti.world/windows95.html");
@@ -6894,12 +7387,6 @@
                     document.querySelector('.prompt_error_text2').textContent = "";
                     window.open("https://moti5768.github.io/moti.world/new%20OS/WindowSystem.html");
                     prompt_text2.style.color = "";
-                    break;
-
-                case 'nexser/shutdown':
-                    document.querySelector('.prompt_error_text2').textContent = "";
-                    prompt_text2.style.color = "";
-                    shutdown();
                     break;
                 default:
                     document.querySelector('.prompt_error_text2').textContent = "コマンドが違います!";
@@ -6922,21 +7409,33 @@
             document.querySelector('#background_text').textContent = (backtext_data2)
         }
 
-
         function debug() {
             userelement.insertAdjacentHTML('afterend', '<p class="white user">BROWSER: ' + navigator.appName + '<br>'
                 + 'VERSION: ' + navigator.appVersion + '<br>' + 'USER: ' + navigator.userAgent + '<br>' + 'WIDTH: ' + screen.width + '<br>'
                 + 'HEIGHT: ' + screen.height + '<br>' + 'BIT: ' + screen.colorDepth + '</p>');
         }
         setInterval(() => {
-            navigator.getBattery().then(function (battery) {
-                document.querySelector('.level').innerHTML = battery.level;
-                document.querySelector('.charging').innerHTML = battery.charging;
-                document.querySelector('.chargingTime').innerHTML = battery.chargingTime;
-                document.querySelector('.dischargingTime').innerHTML = battery.dischargingTime;
-            });
-            memory.textContent = (`Memory:   ${(performance.memory.usedJSHeapSize / 1024).toFixed(2)}KB`);
-        }, 100);
+            if (prompt.style.display == "block") {
+                navigator.getBattery().then(function (battery) {
+                    document.querySelector('.level').innerHTML = battery.level;
+                    document.querySelector('.charging').innerHTML = battery.charging;
+                    document.querySelector('.chargingTime').innerHTML = battery.chargingTime;
+                    document.querySelector('.dischargingTime').innerHTML = battery.dischargingTime;
+                });
+                console.log("memory")
+                document.querySelector('.memory').textContent = (`Memory:   ${(performance.memory.usedJSHeapSize / 1024).toFixed(2)}KB`);
+                document.querySelector('.memory2').textContent = (`使用可能なメモリ    ${(performance.memory.jsHeapSizeLimit / 1048576).toFixed(2)}MB`);
+                document.querySelector('.memory3').textContent = (`割り当てられたメモリ  ${(performance.memory.totalJSHeapSize / 1024).toFixed(2)}KB`);
+                document.querySelector('.memory4').textContent = (`現在使用中のメモリ   ${(performance.memory.usedJSHeapSize / 1024).toFixed(2)}KB`);
+            } else {
+                const backtext_data2 = localStorage.getItem('backtext_data');
+                document.querySelector('#background_text2').textContent = (backtext_data2)
+
+                if (localStorage.getItem(KEY_BKCOLOR, bkcolor)) {
+                    document.querySelector(".mini_desktop").style.backgroundColor = bkcolor;
+                }
+            }
+        }, 500);
 
         document.querySelectorAll('.window_inline_list').forEach(function (window_inline_list) {
             window_inline_list.addEventListener('click', function () {
@@ -6946,10 +7445,11 @@
         document.querySelectorAll('.close_button').forEach(function (close_button) {
             close_button.addEventListener('click', function () {
                 const closebutton = close_button.closest('.child_windows');
-                closebutton.classList.add('active');
-                taskbtn_load()
                 closebutton.style.left = "";
                 closebutton.style.top = "";
+                closebutton.classList.remove('big');
+                closebutton.classList.add('active');
+                taskbtn_load()
             });
         })
         document.querySelectorAll('.close_button2').forEach(function (close_button2) {
@@ -6977,6 +7477,8 @@
         document.querySelectorAll('.bigscreen_button').forEach(function (bigscreen_button) {
             bigscreen_button.addEventListener('click', function () {
                 const bigscreenbutton = bigscreen_button.closest('.child_windows');
+                bigscreenbutton.style.top = "0"
+                bigscreenbutton.style.left = "0"
                 bigscreenbutton.style.height = "";
                 bigscreenbutton.style.width = "";
                 bigscreenbutton.classList.add('big');
@@ -6986,6 +7488,8 @@
         document.querySelectorAll('.minscreen_button').forEach(function (minscreen_button) {
             minscreen_button.addEventListener('click', function () {
                 const minscreenbutton = minscreen_button.closest('.child_windows');
+                minscreenbutton.style.top = ""
+                minscreenbutton.style.left = ""
                 minscreenbutton.classList.remove('big');
             });
         })
@@ -7021,8 +7525,8 @@
             window_half_big.addEventListener('click', function () {
                 let windowhalfbig = window_half_big.closest('.child_windows');
                 windowhalfbig.classList.remove('big')
-                windowhalfbig.style.height = "50%"
-                windowhalfbig.style.width = "50%"
+                windowhalfbig.style.height = "55%"
+                windowhalfbig.style.width = "55%"
             })
         })
 
@@ -7075,7 +7579,6 @@
             });
         })
 
-
         document.querySelectorAll('.test_button').forEach(function (test_button) {
             test_button.addEventListener('click', function () {
                 main.classList.toggle('active');
@@ -7090,7 +7593,6 @@
                 program.closest('.child_windows');
                 z = largestZIndex + 1;
                 unko2 = program.style.zIndex = z;
-
             });
         });
         document.querySelectorAll('.test_button3').forEach(function (test_button3) {
@@ -7099,7 +7601,6 @@
                 control.closest('.child_windows');
                 z = largestZIndex + 1;
                 unko3 = control.style.zIndex = z;
-
             });
         });
         document.querySelectorAll('.test_button4').forEach(function (test_button4) {
@@ -7214,7 +7715,38 @@
                 unko17 = nexser_sound_menu.style.zIndex = z;
             });
         });
-
+        document.querySelectorAll('.test_button18').forEach(function (test_button18) {
+            test_button18.addEventListener('click', function () {
+                camera_menu.classList.toggle('active');
+                camera_menu.closest('.child_windows');
+                z = largestZIndex + 1;
+                unko18 = camera_menu.style.zIndex = z;
+            });
+        });
+        document.querySelectorAll('.test_button19').forEach(function (test_button19) {
+            test_button19.addEventListener('click', function () {
+                htmlviewer_edit_menu.classList.toggle('active');
+                htmlviewer_edit_menu.closest('.child_windows');
+                z = largestZIndex + 1;
+                unko19 = htmlviewer_edit_menu.style.zIndex = z;
+            });
+        });
+        document.querySelectorAll('.test_button20').forEach(function (test_button20) {
+            test_button20.addEventListener('click', function () {
+                htmlviewer_run_menu.classList.toggle('active');
+                htmlviewer_run_menu.closest('.child_windows');
+                z = largestZIndex + 1;
+                unko20 = htmlviewer_run_menu.style.zIndex = z;
+            });
+        });
+        document.querySelectorAll('.test_button21').forEach(function (test_button21) {
+            test_button21.addEventListener('click', function () {
+                uploadvideo_menu.classList.toggle('active');
+                uploadvideo_menu.closest('.child_windows');
+                z = largestZIndex + 1;
+                unko21 = uploadvideo_menu.style.zIndex = z;
+            });
+        });
 
         document.querySelectorAll('.drag_button').forEach(function (drag) {
             drag.addEventListener('mousedown', function () {
@@ -7254,6 +7786,7 @@
                         // 移動してる時だけ黒枠のみ
                         if (localStorage.getItem('window_borderblack')) {
                             document.querySelectorAll('.child_windows').forEach(function (title) {
+                                document.querySelector('iframe').style.opacity = "0";
                                 title.style.background = bkcolor;
                                 title.style.border = "solid 2px black";
                             })
@@ -7273,23 +7806,25 @@
 
                             document.querySelectorAll('.title').forEach(function (title) {
                                 const titlebar = title.style.backgroundColor = "darkblue";
+                                window_prompt.style.background = "rgb(51, 51, 184)"
                             })
 
                             // 半透明
                             document.querySelectorAll('.child_windows').forEach(function (title) {
                                 title.style.opacity = "";
+                                window_prompt.style.background = "rgb(51, 51, 184)"
                             })
-
 
                             // 移動してる時だけ黒枠のみ
                             document.querySelectorAll('.child_windows').forEach(function (title) {
                                 title.style.background = "";
                                 title.style.border = "";
+                                document.querySelector('iframe').style.opacity = "";
+                                window_prompt.style.background = "rgb(51, 51, 184)"
                             })
                             document.querySelectorAll('.title,.title2,.title_buttons,.window_inline_list,.mini_window,button,input,textarea,p,#prompt2').forEach(function (title) {
                                 title.style.opacity = ""
                             })
-
 
                         };
                     };
@@ -7346,6 +7881,13 @@
                 document.querySelector("body").style.color = color;
                 document.querySelector("#nexser").style.backgroundColor = bkcolor;
                 document.querySelector(".mini_desktop").style.backgroundColor = bkcolor;
+                if (bkcolor == "white" || bkcolor == "whitesmoke") {
+                    background_text.style.color = "black"
+                    document.getElementById('background_text2').style.color = "black"
+                } else {
+                    background_text.style.color = ""
+                    document.getElementById('background_text2').style.color = ""
+                }
             }
         }
         /*
@@ -7391,7 +7933,7 @@
         setInterval(() => {
             z_index.textContent = (getLargestZIndex('.child_windows'));
             z_index.style.display = "none";
-        }, 10);
+        }, 100);
 
         // ↑setinterval　大事な役割
 
@@ -7494,8 +8036,6 @@
             clock2.textContent = (hours + ":" + minutes + ":" + seconds + "");
         }, 100);
 
-        const el = document.querySelector("#p1, #p3, .p");
-
         // 右クリックイベントの登録
         document.getElementById("button1").addEventListener("contextmenu", function (event) {
             event.preventDefault();
@@ -7566,6 +8106,18 @@
             localStorage.setItem('note_textcolor_red', note_textcolor_red);
             notecolor_change()
         }
+        function notecolor_change_orange() {
+            notecolor_remove()
+            const note_textcolor_orange = document.querySelector('.notetext_orange');
+            localStorage.setItem('note_textcolor_orange', note_textcolor_orange);
+            notecolor_change()
+        }
+        function notecolor_change_yellow() {
+            notecolor_remove()
+            const note_textcolor_yellow = document.querySelector('.notetext_yellow');
+            localStorage.setItem('note_textcolor_yellow', note_textcolor_yellow);
+            notecolor_change()
+        }
 
         function notecolor_change() {
             if (localStorage.getItem('note_textcolor_blue')) {
@@ -7580,12 +8132,22 @@
                 document.querySelector('.note_area').style.color = "red";
                 document.querySelector('.test_notetext').style.color = "red";
             }
+            if (localStorage.getItem('note_textcolor_orange')) {
+                document.querySelector('.note_area').style.color = "orange";
+                document.querySelector('.test_notetext').style.color = "orange";
+            }
+            if (localStorage.getItem('note_textcolor_yellow')) {
+                document.querySelector('.note_area').style.color = "yellow";
+                document.querySelector('.test_notetext').style.color = "yellow";
+            }
         }
 
         function notecolor_remove() {
             localStorage.removeItem('note_textcolor_blue')
             localStorage.removeItem('note_textcolor_green')
             localStorage.removeItem('note_textcolor_red')
+            localStorage.removeItem('note_textcolor_orange')
+            localStorage.removeItem('note_textcolor_yellow')
             document.querySelector('.note_area').style.color = "";
             document.querySelector('.test_notetext').style.color = "";
         }
@@ -7628,7 +8190,6 @@
             var Note = document.querySelector('.note_area');
             const note_text_underline = document.querySelector('.notetext_underline');
             localStorage.setItem('note_text_underline', note_text_underline);
-
             if (Note.style.textDecoration == "none" && localStorage.getItem('note_text_underline')) {
                 Note.style.textDecoration = "underline";
                 document.querySelector('.test_notetext').style.textDecoration = "underline";
@@ -7677,6 +8238,19 @@
                 document.querySelector('.warningclose_button').style.display = "block";
             }
         })
+
+        document.querySelector('.camera_close').addEventListener('click', function () {
+            if (!sessionStorage.getItem('start_camera')) {
+                camera_menu.classList.add('active')
+                taskbtn_load()
+            } else if (sessionStorage.getItem('start_camera')) {
+                document.querySelector('.window_error_text').textContent = "camera no finish no close!"
+                error_windows.classList.remove('active')
+                sound3()
+                document.querySelector('.test_allwindow').style.display = "block";
+            }
+        })
+
         function warning_windows_close() {
             warning_windows.classList.add('active');
             document.querySelector('.test_allwindow').style.display = "none";
@@ -7687,7 +8261,6 @@
             note_pad.classList.add('active')
             taskbtn_load()
         }
-
 
         function notedata_clear() {
             localStorage.removeItem('noteData');
@@ -7739,22 +8312,20 @@
             }
         });
 
-
         var calc_result = document.getElementById("result");
         function edit(calc_elem) {
             calc_result.value = calc_result.value + calc_elem.value;
         }
         function calc() {
             calc_result.value = new Function("return " + calc_result.value)();
-
             const child_graph = document.querySelector(".child_graph");
-            child_graph.style.height = new Function("return " + calc_result.value)() + '%';
+            child_graph.style.height = new Function("return " + calc_result.value)() / 100 + '%';
             child_graph.style.background = "lime"
-            if (calc_result.value > 100) {
+            if (calc_result.value > 10000) {
                 child_graph.style.height = "100%"
                 child_graph.style.background = "red";
             }
-            if (calc_result.value == 100) {
+            if (calc_result.value == 10000) {
                 child_graph.style.background = "blue";
             }
             if (calc_result.value < 0) {
@@ -7763,12 +8334,101 @@
             }
         }
         function calc_clear() {
+            const child_graph = document.querySelector(".child_graph");
+            child_graph.style.height = "0%"
+            child_graph.style.background = "";
             calc_result.value = "";
         }
 
-    //} else {
-    //    document.querySelector(".prompt_error_text").textContent = 'この端末は対応していません!';
-    //}
+        setInterval(() => {
+            navigator.getBattery().then(function (battery) {
+                let bu = document.querySelector('.taskbattery');
+                bu2 = bu.innerHTML = Math.floor(battery.level * 100);
+            });
+        }, 1000);
+
+        async function startCamera() {
+            const start_camera = document.querySelector('#start_camera');
+            sessionStorage.setItem('start_camera', start_camera);
+            const cameraStream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: 'environment',
+
+                    aspectRatio: {
+                        exact: 1.6,
+                    },
+                },
+                audio: true,
+            });
+            videoElement.autoplay = true;
+            videoElement.srcObject = cameraStream;
+            videoElement.addEventListener("resize", () => {
+                videoElement.videowidth = videoElement.videoWidth;
+                videoElement.videoheight = videoElement.videoHeight;
+            });
+        }
+
+        const videoElement = document.getElementById("v")
+        function startCamera2() {
+            startCamera()
+        }
+
+        function stopCamera() {
+            sessionStorage.removeItem('start_camera');
+            const tracks = document.getElementById('v').srcObject.getTracks();
+            tracks.forEach(track => {
+                track.stop();
+            });
+            document.getElementById('v').srcObject = null;
+        }
+
+        const editor = document.getElementById("editor");
+        const preview = document.getElementById("preview");
+
+        function run() {
+            document.querySelectorAll('.htmlviewer_run_menu').forEach(function (htmlviewer_run_menu) {
+                htmlviewer_run_menu.closest('.child_windows');
+                htmlviewer_run_menu.classList.remove('active');
+                console.log(htmlviewer_run_menu)
+                z = largestZIndex + 1;
+                unko20 = htmlviewer_run_menu.style.zIndex = z;
+            });
+            preview.srcdoc = editor.value;
+        }
+
+        function testcode_save() {
+            localStorage.setItem('editor', editor.value);
+        }
+        const editor2 = localStorage.getItem('editor');
+        editor.textContent = (editor2)
+
+        function testcode_html() {
+            localStorage.removeItem('editor');
+            editor.value = '<!DOCTYPE html>\n<html>\n<head>\n<title>document</title>\n</head>\n<body>\n<button onclick="test()">a</button>\n<script>\nfunction test(){\nalert()\n}\n< (この()は消してね　消さないと動作しません) /script>\n< (この()は消してね　消さないと動作しません) /body>\n</html>'
+        }
+
+        function preview2(obj, previewId) {
+            let fileReader = new FileReader();
+            fileReader.onload = (function () {
+                document.getElementById(previewId).src = fileReader.result;
+            });
+            fileReader.readAsDataURL(obj.files[0]);
+        }
+        // let beforeMethod = performance.now();
+        // let sampleFunc = function () {
+        //     let intTest = 0;
+        //     for (let i = 0; i < 1000000; i++) {  // 例として1,000,000回10を足してみましょう
+        //         intTest += 10;
+        //     }
+        //     console.log('intTest : ' + intTest);
+        // }();
+        // let afterMethod = performance.now();
+
+        // console.log("1,000,000回10を足す処理時間は、" + (afterMethod - beforeMethod) + "ミリ秒です");
+
+    } else {
+        document.querySelector(".prompt_error_text").textContent = 'この端末は対応していません!';
+    }
 
 </script>
 
