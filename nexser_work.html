@@ -27,6 +27,7 @@
                 <p>Charging:&emsp;<span class="charging"></span></p>
                 <p>ChargingTime:&emsp;<span class="chargingTime"></span></p>
                 <p>DischargingTime:&emsp;<span class="dischargingTime"></span></p>
+                <p>Install local storage key:&emsp;<span class="length_localStorage">0</span></p>
             </div>
             <p class="help" style="color: deepskyblue;"></p>
 
@@ -35,7 +36,6 @@
                     <textarea id="codes" style="display: none; width: 99%; height: 65vh; background-color: black; color: white; resize: none; outline: none;">
 
                         
-
 
 
 
@@ -70,6 +70,7 @@
                 &lt;p&gt;Charging:&amp;emsp;&lt;span class=&quot;charging&quot;&gt;&lt;/span&gt;&lt;/p&gt;
                 &lt;p&gt;ChargingTime:&amp;emsp;&lt;span class=&quot;chargingTime&quot;&gt;&lt;/span&gt;&lt;/p&gt;
                 &lt;p&gt;DischargingTime:&amp;emsp;&lt;span class=&quot;dischargingTime&quot;&gt;&lt;/span&gt;&lt;/p&gt;
+                &lt;p&gt;Install local storage key:&amp;emsp;&lt;span class=&quot;length_localStorage&quot;&gt;0&lt;/span&gt;&lt;/p&gt;
             &lt;/div&gt;
             &lt;p class=&quot;help&quot; style=&quot;color: deepskyblue;&quot;&gt;&lt;/p&gt;
 
@@ -78,6 +79,9 @@
                     &lt;textarea id=&quot;codes&quot; style=&quot;display: none; width: 99%; height: 65vh; background-color: black; color: white; resize: none; outline: none;&quot;&gt;
 
                         
+
+
+
 
 
 
@@ -114,18 +118,53 @@
         &lt;div id=&quot;nexser&quot;&gt;
             &lt;span class=&quot;z_index&quot; style=&quot;color: white; position: absolute; bottom: 40px;&quot;&gt;&lt;/span&gt;
 
+            &lt;div class=&quot;welcome_windows&quot;&gt;
+                &lt;div class=&quot;title&quot;&gt;
+                    &lt;span class=&quot;title_icon&quot;&gt;&lt;/span&gt;&lt;span&gt;&amp;emsp;&amp;emsp;welcome nexser&lt;/span&gt;
+                &lt;/div&gt;&lt;br&gt;
+
+                &lt;div class=&quot;welcome_window_inline&quot;
+                    style=&quot;display: block; background-color: silver; height: 377px; width: auto;&quot;&gt;
+
+                    &lt;div class=&quot;welcome_icon&quot;&gt;
+                        &lt;span
+                            style=&quot;width: 150px; height: 150px; background: whitesmoke; position: absolute; bottom: 50px; right: 100px; border: solid 4.5px #0099FF; opacity: 0.65; box-shadow: 10px 10px black;&quot;&gt;&lt;/span&gt;
+                        &lt;span
+                            style=&quot;width: 150px; height: 150px; background: #99CCFF; position: absolute; bottom: 150px; right: 200px; border: solid 4.5px blue; opacity: 0.8; box-shadow: 10px 10px black;&quot;&gt;&lt;/span&gt;
+                    &lt;/div&gt;
+
+                    &lt;div class=&quot;mini_window&quot;&gt;
+                        &lt;span class=&quot;welcome_text1&quot;&gt;Welcome Nexser&lt;/span&gt;
+                        &lt;span class=&quot;welcome_underline&quot;
+                            style=&quot;display: block; width: 100%; height: 1px; position: absolute; top: 75px; border-top: solid 2px black;&quot;&gt;&lt;/span&gt;&lt;br&gt;&lt;br&gt;&lt;br&gt;
+
+                        &lt;span class=&quot;welcome_text2&quot;
+                            style=&quot;font-size: small; font-weight: bold; position: absolute;&quot;&gt;nexser
+                            へようこそ!&lt;br&gt;このnexserはもとから搭載されている　windows10　に近い操作が可能です。(一部異なります。)&lt;br&gt;バグ・不具合が発生した場合には再ロードすることを推奨します。&lt;br&gt;では、楽しいnexserライフを!
+                        &lt;/span&gt;
+                        &lt;button class=&quot;button2 start_nexser&quot; onclick=&quot;nexser_on()&quot;
+                            style=&quot;font-size: x-large; position: absolute; bottom: 5px; left: 5px;&quot;&gt;start
+                            nexser&lt;/button&gt;
+                    &lt;/div&gt;
+
+                &lt;/div&gt;
+            &lt;/div&gt;
+
             &lt;div id=&quot;desktop&quot;&gt;
                 &lt;span id=&quot;background_text&quot;&gt;none&lt;/span&gt;
 
                 &lt;div id=&quot;files&quot;&gt;
                     &lt;a style=&quot;color: white; position: absolute; top: 0px;&quot;&gt;File none&lt;/a&gt;
+                    &lt;a class=&quot;hyoukou&quot; style=&quot;color: white; position: absolute; top: 20px;&quot;&gt;none&lt;/a&gt;
+                    &lt;a class=&quot;hyoukou2&quot; style=&quot;color: white; position: absolute; top: 40px;&quot;&gt;none&lt;/a&gt;
+                    &lt;a class=&quot;tests&quot; style=&quot;color: white; position: absolute; top: 60px;&quot;&gt;0&lt;/a&gt;
                 &lt;/div&gt;
 
                 &lt;div id=&quot;soft_windows&quot;&gt;
 
                     &lt;div class=&quot;child_windows program_manager resize active&quot;&gt;
                         &lt;div class=&quot;title&quot;&gt;
-                            &lt;span&gt;program manager&lt;/span&gt;
+                            &lt;span class=&quot;title_icon&quot;&gt;&lt;/span&gt;&lt;span&gt;&amp;emsp;&amp;emsp;program manager&lt;/span&gt;
                         &lt;/div&gt;
 
                         &lt;div class=&quot;title_buttons&quot;&gt;
@@ -197,7 +236,7 @@
 
                         &lt;ul class=&quot;black_text window_inline_list&quot;&gt;
                             &lt;li class=&quot;test_button&quot;&gt;main&lt;/li&gt;
-                            &lt;li class=&quot;test_button5&quot;&gt;version&lt;/li&gt;
+                            &lt;li class=&quot;test_button5&quot;&gt;system&lt;/li&gt;
                             &lt;li class=&quot;test_button14&quot;&gt;window mode&lt;/li&gt;
                             &lt;li class=&quot;test_button15&quot;&gt;accessory&lt;/li&gt;
                             &lt;li&gt;test&lt;/li&gt;
@@ -209,7 +248,7 @@
 
                     &lt;div class=&quot;child_windows windowmode_menu resize active&quot;&gt;
                         &lt;div class=&quot;title&quot;&gt;
-                            &lt;span&gt;window mode&lt;/span&gt;
+                            &lt;span class=&quot;title_icon&quot;&gt;&lt;/span&gt;&lt;span&gt;&amp;emsp;&amp;emsp;window mode&lt;/span&gt;
                         &lt;/div&gt;
 
                         &lt;div class=&quot;title_buttons&quot;&gt;
@@ -289,7 +328,7 @@
 
                     &lt;div class=&quot;child_windows accessory_menu resize active&quot;&gt;
                         &lt;div class=&quot;title&quot;&gt;
-                            &lt;span&gt;accessory&lt;/span&gt;
+                            &lt;span class=&quot;title_icon&quot;&gt;&lt;/span&gt;&lt;span&gt;&amp;emsp;&amp;emsp;accessory&lt;/span&gt;
                         &lt;/div&gt;
 
                         &lt;div class=&quot;title_buttons&quot;&gt;
@@ -374,7 +413,7 @@
 
                     &lt;div class=&quot;child_windows main resize active&quot;&gt;
                         &lt;div class=&quot;title&quot;&gt;
-                            &lt;span&gt;main&lt;/span&gt;
+                            &lt;span class=&quot;title_icon&quot;&gt;&lt;/span&gt;&lt;span&gt;&amp;emsp;&amp;emsp;main&lt;/span&gt;
                         &lt;/div&gt;
 
                         &lt;div class=&quot;title_buttons&quot;&gt;
@@ -403,7 +442,7 @@
 
                     &lt;div class=&quot;child_windows control_panel resize active&quot;&gt;
                         &lt;div class=&quot;title&quot;&gt;
-                            &lt;span&gt;control panel&lt;/span&gt;
+                            &lt;span class=&quot;title_icon&quot;&gt;&lt;/span&gt;&lt;span&gt;&amp;emsp;&amp;emsp;control panel&lt;/span&gt;
                         &lt;/div&gt;
 
                         &lt;div class=&quot;title_buttons&quot;&gt;
@@ -480,7 +519,7 @@
                             &lt;li class=&quot;test_button10&quot;&gt;mouse&lt;/li&gt;
                             &lt;li class=&quot;test_button11&quot;&gt;screen&lt;/li&gt;
                             &lt;li class=&quot;test_button17&quot;&gt;nexser sound&lt;/li&gt;
-                            &lt;li&gt;test&lt;/li&gt;
+                            &lt;li class=&quot;test_button22&quot;&gt;font&lt;/li&gt;
                             &lt;li&gt;test&lt;/li&gt;
                             &lt;li&gt;test&lt;/li&gt;
                             &lt;li&gt;test&lt;/li&gt;
@@ -491,7 +530,7 @@
 
                     &lt;div class=&quot;child_windows sound_menu resize active&quot;&gt;
                         &lt;div class=&quot;title&quot;&gt;
-                            &lt;span&gt;sound&lt;/span&gt;
+                            &lt;span class=&quot;title_icon&quot;&gt;&lt;/span&gt;&lt;span&gt;&amp;emsp;&amp;emsp;sound&lt;/span&gt;
                         &lt;/div&gt;
 
                         &lt;div class=&quot;title_buttons&quot;&gt;
@@ -520,7 +559,7 @@
 
                     &lt;div class=&quot;child_windows nexser_sound_menu resize active&quot;&gt;
                         &lt;div class=&quot;title&quot;&gt;
-                            &lt;span&gt;nexser sound&lt;/span&gt;
+                            &lt;span class=&quot;title_icon&quot;&gt;&lt;/span&gt;&lt;span&gt;&amp;emsp;&amp;emsp;nexser sound&lt;/span&gt;
                         &lt;/div&gt;
 
                         &lt;div class=&quot;title_buttons&quot;&gt;
@@ -614,9 +653,10 @@
                         &lt;/div&gt;
                     &lt;/div&gt;
 
-                    &lt;div class=&quot;child_windows version active&quot;&gt;
+                    &lt;div class=&quot;child_windows system_menu back_silver active&quot;
+                        style=&quot;width: 600px; height: 250px; background-color: silver;&quot;&gt;
                         &lt;div class=&quot;title&quot;&gt;
-                            &lt;span&gt;version&lt;/span&gt;
+                            &lt;span class=&quot;title_icon&quot;&gt;&lt;/span&gt;&lt;span&gt;&amp;emsp;&amp;emsp;system&lt;/span&gt;
                         &lt;/div&gt;
 
                         &lt;div class=&quot;title_buttons&quot;&gt;
@@ -624,71 +664,56 @@
                             &lt;a class=&quot;close_button hover_button&quot;&gt;&amp;nbsp;✕&amp;nbsp;&lt;/a&gt;&lt;br&gt;
                         &lt;/div&gt;
 
-                        &lt;div class=&quot;title2&quot;&gt;
+                        &lt;div class=&quot;mini_window&quot;&gt;
+                            &lt;div class=&quot;window_inline_menus border&quot;&gt;
 
-                            &lt;div class=&quot;parent_list&quot;&gt;
-                                &lt;ul&gt;
-                                    &lt;li&gt;&amp;emsp;&amp;emsp;icon(&lt;ins&gt;I&lt;/ins&gt;)&amp;emsp;&amp;emsp;&lt;/li&gt;
-                                &lt;/ul&gt;
-                                &lt;div class=&quot;child_list&quot;&gt;
+                                &lt;div class=&quot;window_inline_menus_parent&quot;&gt;
                                     &lt;ul&gt;
-                                        &lt;li class=&quot;hover_blue shutdown&quot;&gt;shutdown&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
+                                        &lt;li&gt;&amp;emsp;&amp;emsp;version&amp;emsp;&amp;emsp;&lt;/li&gt;
                                     &lt;/ul&gt;
+                                    &lt;div class=&quot;window_inline_menus_child&quot;&gt;
+                                        &lt;ul&gt;&lt;br&gt;
+                                            &lt;li&gt;nexser&amp;copy;&lt;/li&gt;&lt;br&gt;
+                                            &lt;li&gt;version 1.0&lt;/li&gt;
+                                            &lt;li&gt;2023-2024&lt;/li&gt;
+                                        &lt;/ul&gt;
+                                    &lt;/div&gt;
                                 &lt;/div&gt;
-                            &lt;/div&gt;
 
-                            &lt;div class=&quot;parent_list&quot;&gt;
-                                &lt;ul&gt;
-                                    &lt;li&gt;&amp;emsp;&amp;emsp;window(&lt;ins&gt;W&lt;/ins&gt;)&amp;emsp;&amp;emsp;&lt;/li&gt;
-                                &lt;/ul&gt;
-                                &lt;div class=&quot;child_list&quot;&gt;
+                                &lt;div class=&quot;window_inline_menus_parent&quot;&gt;
                                     &lt;ul&gt;
-                                        &lt;li class=&quot;hover_blue window_top&quot;&gt;window top&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue window_left&quot;&gt;window left&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue window_top_and_left&quot;&gt;window top &amp; left
-                                        &lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
+                                        &lt;li&gt;&amp;emsp;&amp;emsp;test&amp;emsp;&amp;emsp;&lt;/li&gt;
                                     &lt;/ul&gt;
+                                    &lt;div class=&quot;window_inline_menus_child&quot;&gt;
+                                        &lt;span&gt;test&lt;/span&gt;
+                                    &lt;/div&gt;
                                 &lt;/div&gt;
-                            &lt;/div&gt;
 
-                            &lt;div class=&quot;parent_list&quot;&gt;
-                                &lt;ul&gt;
-                                    &lt;li&gt;&amp;emsp;&amp;emsp;icon(&lt;ins&gt;I&lt;/ins&gt;)&amp;emsp;&amp;emsp;&lt;/li&gt;
-                                &lt;/ul&gt;
-                                &lt;div class=&quot;child_list&quot;&gt;
+                                &lt;div class=&quot;window_inline_menus_parent&quot;&gt;
                                     &lt;ul&gt;
-                                        &lt;li class=&quot;hover_blue shutdown&quot;&gt;shutdown&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
+                                        &lt;li&gt;&amp;emsp;&amp;emsp;test&amp;emsp;&amp;emsp;&lt;/li&gt;
                                     &lt;/ul&gt;
+                                    &lt;div class=&quot;window_inline_menus_child&quot;&gt;
+                                        &lt;span&gt;test&lt;/span&gt;
+                                    &lt;/div&gt;
                                 &lt;/div&gt;
-                            &lt;/div&gt;
 
-                            &lt;div class=&quot;parent_list&quot;&gt;
-                                &lt;ul&gt;
-                                    &lt;li&gt;&amp;emsp;&amp;emsp;icon(&lt;ins&gt;I&lt;/ins&gt;)&amp;emsp;&amp;emsp;&lt;/li&gt;
-                                &lt;/ul&gt;
-                                &lt;div class=&quot;child_list&quot;&gt;
+                                &lt;div class=&quot;window_inline_menus_parent&quot;&gt;
                                     &lt;ul&gt;
-                                        &lt;li class=&quot;hover_blue shutdown&quot;&gt;shutdown&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
+                                        &lt;li&gt;&amp;emsp;&amp;emsp;test&amp;emsp;&amp;emsp;&lt;/li&gt;
                                     &lt;/ul&gt;
+                                    &lt;div class=&quot;window_inline_menus_child&quot;&gt;
+                                        &lt;span&gt;test&lt;/span&gt;
+                                    &lt;/div&gt;
                                 &lt;/div&gt;
-                            &lt;/div&gt;
 
+                            &lt;/div&gt;
                         &lt;/div&gt;
-                        &lt;p style=&quot;text-align: center;&quot;&gt;nexser&amp;copy;&lt;/p&gt;&lt;br&gt;
-                        &lt;p style=&quot;text-align: center;&quot;&gt;version 1.0&lt;/p&gt;
-                        &lt;p style=&quot;text-align: center;&quot;&gt;2023-2024&lt;/p&gt;
                     &lt;/div&gt;
 
                     &lt;div class=&quot;child_windows clock_menu resize active&quot;&gt;
                         &lt;div class=&quot;title&quot;&gt;
-                            &lt;span&gt;clock&lt;/span&gt;
+                            &lt;span class=&quot;title_icon&quot;&gt;&lt;/span&gt;&lt;span&gt;&amp;emsp;&amp;emsp;clock&lt;/span&gt;
                         &lt;/div&gt;
 
                         &lt;div class=&quot;title_buttons&quot;&gt;
@@ -764,7 +789,7 @@
 
                     &lt;div class=&quot;child_windows color resize active&quot;&gt;
                         &lt;div class=&quot;title&quot;&gt;
-                            &lt;span&gt;color&lt;/span&gt;
+                            &lt;span class=&quot;title_icon&quot;&gt;&lt;/span&gt;&lt;span&gt;&amp;emsp;&amp;emsp;color&lt;/span&gt;
                         &lt;/div&gt;
 
                         &lt;div class=&quot;title_buttons&quot;&gt;
@@ -825,7 +850,7 @@
 
                     &lt;div class=&quot;child_windows window_prompt resize active&quot; style=&quot; background-color: rgb(51, 51, 184);&quot;&gt;
                         &lt;div class=&quot;title&quot;&gt;
-                            &lt;span&gt;nexser prompt&lt;/span&gt;
+                            &lt;span class=&quot;title_icon&quot;&gt;&lt;/span&gt;&lt;span&gt;&amp;emsp;&amp;emsp;nexser prompt&lt;/span&gt;
                         &lt;/div&gt;
 
                         &lt;div class=&quot;title_buttons&quot;&gt;
@@ -850,7 +875,7 @@
                     &lt;div class=&quot;child_windows driver_menu resize active&quot;&gt;
 
                         &lt;div class=&quot;title&quot;&gt;
-                            &lt;span&gt;driver menu&lt;/span&gt;
+                            &lt;span class=&quot;title_icon&quot;&gt;&lt;/span&gt;&lt;span&gt;&amp;emsp;&amp;emsp;driver menu&lt;/span&gt;
                         &lt;/div&gt;
 
                         &lt;div class=&quot;title_buttons&quot;&gt;
@@ -875,7 +900,7 @@
 
                     &lt;div class=&quot;child_windows mouse_menu active&quot;&gt;
                         &lt;div class=&quot;title&quot;&gt;
-                            &lt;span&gt;mouse&lt;/span&gt;
+                            &lt;span class=&quot;title_icon&quot;&gt;&lt;/span&gt;&lt;span&gt;&amp;emsp;&amp;emsp;mouse&lt;/span&gt;
                         &lt;/div&gt;
 
                         &lt;div class=&quot;title_buttons&quot;&gt;
@@ -966,7 +991,7 @@
 
                     &lt;div class=&quot;child_windows screen_menu resize active&quot;&gt;
                         &lt;div class=&quot;title&quot;&gt;
-                            &lt;span&gt;screen&lt;/span&gt;
+                            &lt;span class=&quot;title_icon&quot;&gt;&lt;/span&gt;&lt;span&gt;&amp;emsp;&amp;emsp;screen&lt;/span&gt;
                         &lt;/div&gt;
 
                         &lt;div class=&quot;title_buttons&quot;&gt;
@@ -998,8 +1023,8 @@
 
                     &lt;div class=&quot;child_windows note_pad active&quot;&gt;
                         &lt;span class=&quot;note&quot;&gt;&lt;/span&gt;
-                        &lt;div class=&quot;title note_title&quot;&gt;
-                            &lt;span&gt;notepad&lt;/span&gt;
+                        &lt;div class=&quot;title&quot;&gt;
+                            &lt;span class=&quot;title_icon&quot;&gt;&lt;/span&gt;&lt;span class=&quot;note_title&quot;&gt;&amp;emsp;&amp;emsp;notepad&lt;/span&gt;
                         &lt;/div&gt;
 
                         &lt;div class=&quot;title_buttons&quot;&gt;
@@ -1047,7 +1072,8 @@
                                     &lt;ul&gt;
                                         &lt;li class=&quot;hover_blue notetext_bold&quot; onclick=&quot;notetext_all_bold()&quot;&gt;alltext
                                             bold&lt;/li&gt;
-                                        &lt;li class=&quot;hover_blue notetext_oblique&quot; onclick=&quot;notetext_all_oblique()&quot;&gt;alltext
+                                        &lt;li class=&quot;hover_blue notetext_oblique&quot; onclick=&quot;notetext_all_oblique()&quot;&gt;
+                                            alltext
                                             oblique&lt;/li&gt;
                                         &lt;li class=&quot;hover_blue notetext_underline&quot; onclick=&quot;notetext_all_underline()&quot;&gt;
                                             alltext
@@ -1055,11 +1081,13 @@
                                         &lt;div class=&quot;note_text_color&quot;&gt;
                                             &lt;li class=&quot;hover_blue&quot; onclick=&quot;notecolor_remove()&quot;&gt;text
                                                 black&lt;/li&gt;
-                                            &lt;li class=&quot;hover_blue notetext_blue&quot; onclick=&quot;notecolor_change_blue()&quot;&gt;text
+                                            &lt;li class=&quot;hover_blue notetext_blue&quot; onclick=&quot;notecolor_change_blue()&quot;&gt;
+                                                text
                                                 blue&lt;/li&gt;
                                             &lt;li class=&quot;hover_blue notetext_green&quot; onclick=&quot;notecolor_change_green()&quot;&gt;
                                                 text green&lt;/li&gt;
-                                            &lt;li class=&quot;hover_blue notetext_red&quot; onclick=&quot;notecolor_change_red()&quot;&gt;text
+                                            &lt;li class=&quot;hover_blue notetext_red&quot; onclick=&quot;notecolor_change_red()&quot;&gt;
+                                                text
                                                 red&lt;/li&gt;
                                             &lt;li class=&quot;hover_blue notetext_orange&quot; onclick=&quot;notecolor_change_orange()&quot;&gt;
                                                 text
@@ -1102,7 +1130,7 @@
 
                     &lt;div class=&quot;child_windows text_drop_menu active&quot;&gt;
                         &lt;div class=&quot;title&quot;&gt;
-                            &lt;span&gt;text drop&lt;/span&gt;
+                            &lt;span class=&quot;title_icon&quot;&gt;&lt;/span&gt;&lt;span&gt;&amp;emsp;&amp;emsp;text drop&lt;/span&gt;
                         &lt;/div&gt;
 
                         &lt;div class=&quot;title_buttons&quot;&gt;
@@ -1129,7 +1157,7 @@
                             &lt;span class=&quot;child_graph&quot;&gt;&lt;/span&gt;
                         &lt;/div&gt;
                         &lt;div class=&quot;title&quot;&gt;
-                            &lt;span&gt;calc&lt;/span&gt;
+                            &lt;span class=&quot;title_icon&quot;&gt;&lt;/span&gt;&lt;span&gt;&amp;emsp;&amp;emsp;calc&lt;/span&gt;
                         &lt;/div&gt;
 
                         &lt;div class=&quot;title_buttons&quot;&gt;
@@ -1198,7 +1226,7 @@
 
                     &lt;div class=&quot;child_windows camera_menu active&quot;&gt;
                         &lt;div class=&quot;title&quot;&gt;
-                            &lt;span&gt;test camera&lt;/span&gt;
+                            &lt;span class=&quot;title_icon&quot;&gt;&lt;/span&gt;&lt;span&gt;&amp;emsp;&amp;emsp;camera&lt;/span&gt;
                         &lt;/div&gt;
 
                         &lt;div class=&quot;title_buttons&quot;&gt;
@@ -1274,7 +1302,7 @@
 
                     &lt;div class=&quot;child_windows htmlviewer_edit_menu active&quot;&gt;
                         &lt;div class=&quot;title&quot;&gt;
-                            &lt;span&gt;html viewer edit&lt;/span&gt;
+                            &lt;span class=&quot;title_icon&quot;&gt;&lt;/span&gt;&lt;span&gt;&amp;emsp;&amp;emsp;html viewer edit&lt;/span&gt;
                         &lt;/div&gt;
 
                         &lt;div class=&quot;title_buttons&quot;&gt;
@@ -1292,7 +1320,7 @@
 
                     &lt;div class=&quot;child_windows htmlviewer_run_menu active&quot;&gt;
                         &lt;div class=&quot;title&quot;&gt;
-                            &lt;span&gt;html viewer run&lt;/span&gt;
+                            &lt;span class=&quot;title_icon&quot;&gt;&lt;/span&gt;&lt;span&gt;&amp;emsp;&amp;emsp;html viewer run&lt;/span&gt;
                         &lt;/div&gt;
 
                         &lt;div class=&quot;title_buttons&quot;&gt;
@@ -1307,7 +1335,7 @@
 
                     &lt;div class=&quot;child_windows border uploadvideo_menu active&quot;&gt;
                         &lt;div class=&quot;title&quot;&gt;
-                            &lt;span&gt;video upload&lt;/span&gt;
+                            &lt;span class=&quot;title_icon&quot;&gt;&lt;/span&gt;&lt;span&gt;&amp;emsp;&amp;emsp;video upload&lt;/span&gt;
                         &lt;/div&gt;
                         &lt;div class=&quot;title_buttons&quot;&gt;
                             &lt;a class=&quot;drag_button&quot;&gt;&amp;nbsp;&lt;/a&gt;
@@ -1322,19 +1350,99 @@
                         &lt;/div&gt;
                     &lt;/div&gt;
 
+                    &lt;div class=&quot;child_windows border font_menu resize active&quot;&gt;
+                        &lt;div class=&quot;title&quot;&gt;
+                            &lt;span class=&quot;title_icon&quot;&gt;&lt;/span&gt;&lt;span&gt;&amp;emsp;&amp;emsp;font&lt;/span&gt;
+                        &lt;/div&gt;
+                        &lt;div class=&quot;title_buttons&quot;&gt;
+                            &lt;a class=&quot;drag_button&quot;&gt;&amp;nbsp;&lt;/a&gt;
+                            &lt;a class=&quot;close_button hover_button&quot;&gt;&amp;nbsp;✕&amp;nbsp;&lt;/a&gt;
+                            &lt;a class=&quot;bigscreen_button hover_button&quot;&gt;&amp;nbsp;□&amp;nbsp;&lt;/a&gt;
+                            &lt;a class=&quot;minscreen_button hover_button&quot;&gt;&amp;nbsp;❒&amp;nbsp;&lt;/a&gt;
+                            &lt;a class=&quot;minimization_button hover_button&quot;&gt;&amp;nbsp;―&amp;nbsp;&lt;/a&gt;&lt;br&gt;
+                        &lt;/div&gt;
+
+                        &lt;div class=&quot;title2&quot;&gt;
+
+                            &lt;div class=&quot;parent_list&quot;&gt;
+                                &lt;ul&gt;
+                                    &lt;li&gt;&amp;emsp;&amp;emsp;icon(&lt;ins&gt;I&lt;/ins&gt;)&amp;emsp;&amp;emsp;&lt;/li&gt;
+                                &lt;/ul&gt;
+                                &lt;div class=&quot;child_list&quot;&gt;
+                                    &lt;ul&gt;
+                                        &lt;li class=&quot;hover_blue shutdown&quot;&gt;shutdown&lt;/li&gt;
+                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
+                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
+                                    &lt;/ul&gt;
+                                &lt;/div&gt;
+                            &lt;/div&gt;
+
+                            &lt;div class=&quot;parent_list&quot;&gt;
+                                &lt;ul&gt;
+                                    &lt;li&gt;&amp;emsp;&amp;emsp;window(&lt;ins&gt;W&lt;/ins&gt;)&amp;emsp;&amp;emsp;&lt;/li&gt;
+                                &lt;/ul&gt;
+                                &lt;div class=&quot;child_list&quot;&gt;
+                                    &lt;ul&gt;
+                                        &lt;li class=&quot;hover_blue window_top&quot;&gt;window top&lt;/li&gt;
+                                        &lt;li class=&quot;hover_blue window_left&quot;&gt;window left&lt;/li&gt;
+                                        &lt;li class=&quot;hover_blue window_top_and_left&quot;&gt;window top &amp; left
+                                        &lt;/li&gt;
+                                        &lt;li class=&quot;hover_blue window_half_big&quot;&gt;window half big&lt;/li&gt;
+                                        &lt;li class=&quot;hover_blue windowsize_reset&quot;&gt;window size reset&lt;/li&gt;
+                                    &lt;/ul&gt;
+                                &lt;/div&gt;
+                            &lt;/div&gt;
+
+                            &lt;div class=&quot;parent_list&quot;&gt;
+                                &lt;ul&gt;
+                                    &lt;li&gt;&amp;emsp;&amp;emsp;icon(&lt;ins&gt;I&lt;/ins&gt;)&amp;emsp;&amp;emsp;&lt;/li&gt;
+                                &lt;/ul&gt;
+                                &lt;div class=&quot;child_list&quot;&gt;
+                                    &lt;ul&gt;
+                                        &lt;li class=&quot;hover_blue shutdown&quot;&gt;shutdown&lt;/li&gt;
+                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
+                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
+                                    &lt;/ul&gt;
+                                &lt;/div&gt;
+                            &lt;/div&gt;
+
+                            &lt;div class=&quot;parent_list&quot;&gt;
+                                &lt;ul&gt;
+                                    &lt;li&gt;&amp;emsp;&amp;emsp;icon(&lt;ins&gt;I&lt;/ins&gt;)&amp;emsp;&amp;emsp;&lt;/li&gt;
+                                &lt;/ul&gt;
+                                &lt;div class=&quot;child_list&quot;&gt;
+                                    &lt;ul&gt;
+                                        &lt;li class=&quot;hover_blue shutdown&quot;&gt;shutdown&lt;/li&gt;
+                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
+                                        &lt;li class=&quot;hover_blue&quot;&gt;test&lt;/li&gt;
+                                    &lt;/ul&gt;
+                                &lt;/div&gt;
+                            &lt;/div&gt;
+
+                        &lt;/div&gt;
+                        &lt;ul class=&quot;window_inline_list&quot;&gt;
+                            &lt;li&gt;test&lt;/li&gt;
+                            &lt;li&gt;test&lt;/li&gt;
+                            &lt;li&gt;test&lt;/li&gt;
+                            &lt;li&gt;test&lt;/li&gt;
+                            &lt;li&gt;test&lt;/li&gt;
+                            &lt;li&gt;test&lt;/li&gt;
+                        &lt;/ul&gt;
+                    &lt;/div&gt;
+
                     &lt;div class=&quot;test_allwindow&quot;&gt;&lt;/div&gt;
 
                     &lt;div class=&quot;error_windows active&quot; style=&quot;z-index: 999999;&quot;&gt;
                         &lt;div class=&quot;title&quot; style=&quot;background: darkblue;&quot;&gt;
-                            &lt;span class=&quot;error_icon&quot;&gt;!&lt;/span&gt;&lt;span&gt;error&lt;/span&gt;
+                            &lt;span class=&quot;error_icon&quot;&gt;!&lt;/span&gt;&lt;span&gt;&amp;emsp;&amp;emsp;error&lt;/span&gt;
                         &lt;/div&gt;
                         &lt;a class=&quot;close_button2 hover_button&quot;&gt;&amp;nbsp;✕&amp;nbsp;&lt;/a&gt;&lt;br&gt;
                         &lt;p&gt;&lt;br&gt;&lt;span class=&quot;window_error_text&quot;&gt;test window error&lt;/span&gt;&lt;/p&gt;&lt;br&gt;
                     &lt;/div&gt;
 
-                    &lt;div class=&quot;warning_windows active&quot; style=&quot;z-index: 999999;&quot;&gt;
+                    &lt;div class=&quot;warning_windows&quot; style=&quot;z-index: 999999;&quot;&gt;
                         &lt;div class=&quot;title&quot; style=&quot;background: darkblue;&quot;&gt;
-                            &lt;span class=&quot;error_icon&quot;&gt;!&lt;/span&gt;&lt;span&gt;warning&lt;/span&gt;
+                            &lt;span class=&quot;error_icon&quot;&gt;!&lt;/span&gt;&lt;span&gt;&amp;emsp;&amp;emsp;warning&lt;/span&gt;
                         &lt;/div&gt;
                         &lt;a class=&quot;close_button3 hover_button&quot;&gt;&amp;nbsp;✕&amp;nbsp;&lt;/a&gt;&lt;br&gt;
                         &lt;br&gt;
@@ -1355,7 +1463,7 @@
                                 &lt;li class=&quot;button test_button2&quot;&gt;program_manager&lt;/li&gt;
                                 &lt;li class=&quot;button test_button3&quot;&gt;control_panel&lt;/li&gt;
                                 &lt;li class=&quot;button test_button4&quot;&gt;color&lt;/li&gt;
-                                &lt;li class=&quot;button test_button5&quot;&gt;version&lt;/li&gt;
+                                &lt;li class=&quot;button test_button5&quot;&gt;system&lt;/li&gt;
                                 &lt;li class=&quot;button test_button6&quot;&gt;nexser prompt&lt;/li&gt;
                                 &lt;li class=&quot;button test_button7&quot;&gt;clock&lt;/li&gt;
                                 &lt;li class=&quot;button test_button8&quot;&gt;sound&lt;/li&gt;
@@ -1366,13 +1474,13 @@
                                 &lt;li class=&quot;button test_button13&quot;&gt;text drop&lt;/li&gt;
                             &lt;/ul&gt;
                         &lt;/div&gt;
-                        &lt;div class=&quot;time border&quot;&gt;
+                        &lt;div class=&quot;time&quot;&gt;
                             &lt;ul&gt;
-                                &lt;li class=&quot;test_button7&quot;&gt;TIME:&lt;span class=&quot;date_clock2&quot;&gt;CLOCK&lt;/span&gt;&lt;/li&gt;
+                                &lt;li class=&quot;test_button7 button2&quot;&gt;TIME:&lt;span class=&quot;date_clock2&quot;&gt;CLOCK&lt;/span&gt;&lt;/li&gt;
                             &lt;/ul&gt;
                         &lt;/div&gt;
                         &lt;ul&gt;
-                            &lt;li class=&quot;border&quot;
+                            &lt;li class=&quot;border task_battery&quot;
                                 style=&quot;background: silver; font-size: medium; position: absolute; bottom: 5px; right: 140px;&quot;&gt;
                                 BATTERY:
                                 &lt;span class=&quot;taskbattery&quot;&gt;&lt;/span&gt;%
@@ -1384,12 +1492,13 @@
                             &lt;ul&gt;
                                 &lt;li style=&quot;background-color:#555555;color:white;text-align:center;&quot;&gt;
                                     nexser&lt;/li&gt;
+                                &lt;li onclick=&quot;welcome()&quot;&gt;welcome&lt;/li&gt;
                                 &lt;li class=&quot;test_button&quot;&gt;main&lt;/li&gt;
                                 &lt;li class=&quot;test_button2&quot;&gt;program_manager&lt;/li&gt;
                                 &lt;li class=&quot;test_button3&quot;&gt;control_panel&lt;/li&gt;
                                 &lt;li class=&quot;test_button15&quot;&gt;accessory&lt;/li&gt;
                                 &lt;li class=&quot;test_button4&quot;&gt;color&lt;/li&gt;
-                                &lt;li class=&quot;test_button5&quot;&gt;version&lt;/li&gt;
+                                &lt;li class=&quot;test_button5&quot;&gt;system&lt;/li&gt;
                                 &lt;li class=&quot;test_button6&quot;&gt;nexser prompt&lt;/li&gt;
                                 &lt;li class=&quot;test_button7&quot;&gt;clock&lt;/li&gt;
                                 &lt;li class=&quot;test_button8&quot;&gt;sound&lt;/li&gt;
@@ -1627,6 +1736,7 @@
     }
 
     .button.pressed {
+        vertical-align: 1px;
         background: darkgray;
         border-bottom: 1.5px #eee solid;
         border-right: 1.5px #eee solid;
@@ -1755,6 +1865,23 @@
         scrollbar-width: thin;
     }
 
+    .welcome_windows {
+        display: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        list-style: none;
+        font-size: 15px;
+        width: 700px;
+        height: 400px;
+        border: solid 2px #c0c0c0;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+
     .resize {
         resize: both;
         overflow: auto;
@@ -1790,7 +1917,7 @@
         height: 100%;
         width: 100%;
         background: black;
-        opacity: 0.25;
+        opacity: 0.5;
         position: absolute;
         top: 0;
         z-index: 999998;
@@ -1813,12 +1940,12 @@
     }
 
     .warning_windows {
+        display: none;
         -webkit-user-select: none;
         -moz-user-select: none;
         -ms-user-select: none;
         user-select: none;
         list-style: none;
-        display: block;
         font-size: 15px;
         width: auto;
         height: auto;
@@ -1831,10 +1958,6 @@
     }
 
     .error_windows.active {
-        display: none;
-    }
-
-    .warning_windows.active {
         display: none;
     }
 
@@ -1857,8 +1980,19 @@
         position: absolute;
         top: 0;
         color: white;
-        text-align: center;
         pointer-events: none;
+    }
+
+    .title_icon {
+        position: absolute;
+        top: 3px;
+        left: 3.5px;
+        display: inline;
+        height: 15px;
+        width: 15px;
+        background: khaki;
+        pointer-events: none;
+        border: solid 1px black;
     }
 
     .child_windows.big .title {
@@ -1867,7 +2001,6 @@
         position: absolute;
         top: 0;
         color: white;
-        text-align: center;
         pointer-events: none;
     }
 
@@ -1895,9 +2028,7 @@
         width: 100%;
         background-color: darkblue;
         position: absolute;
-        top: 0;
         color: white;
-        text-align: center;
         pointer-events: none;
     }
 
@@ -1931,6 +2062,42 @@
     #nexser_program li:hover {
         background: darkblue;
         color: white;
+    }
+
+    /* window_inline_menus */
+    .window_inline_menus {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        display: flex;
+        width: 580px;
+        background: #c0c0c0;
+        height: 20.5px;
+        position: relative;
+        top: 20px;
+        left: 10px;
+    }
+
+    .window_inline_menus_parent {
+        font-size: small;
+        display: block;
+        text-align: center;
+        justify-content: center;
+    }
+
+    .window_inline_menus_child {
+        width: 280px;
+        height: 180px;
+        display: none;
+        background-color: #c0c0c0;
+        border-right: solid 1.5px black;
+        border-left: solid 1.5px whitesmoke;
+        border-bottom: solid 1.5px black;
+        position: relative;
+        top: 0;
+        text-align: center;
+        justify-content: center;
     }
 
     /* title_buttons */
@@ -2043,42 +2210,6 @@
         border-bottom: solid 1px black;
     }
 
-    /* li_menus */
-    .li_menu_icon {
-        display: none;
-        width: 30%;
-        background: white;
-        border: solid 1px black;
-        position: absolute;
-    }
-
-    .li_menu_option {
-        display: none;
-        width: 30%;
-        background: white;
-        border: solid 1px black;
-        position: absolute;
-        left: 70px;
-    }
-
-    .li_menu_window {
-        display: none;
-        width: 30%;
-        background: white;
-        border: solid 1px black;
-        position: absolute;
-        left: 155px;
-    }
-
-    .li_menu_help {
-        display: none;
-        width: 30%;
-        background: white;
-        border: solid 1px black;
-        position: absolute;
-        left: 250px;
-    }
-
     /*list */
 
     .parent_list {
@@ -2100,10 +2231,6 @@
         border-right: solid 1.5px black;
         border-left: solid 1.5px whitesmoke;
         border-bottom: solid 1.5px black;
-    }
-
-    .child_list.active {
-        display: flex;
     }
 
     .window_inline_list {
@@ -2151,6 +2278,7 @@
 
     /* scrollbar */
     body::-webkit-scrollbar {
+        display: none;
         width: 12.5px;
     }
 
@@ -2246,11 +2374,6 @@
         const title = document.querySelector(&#039;.title&#039;);
         const z_index = document.querySelector(&#039;.z_index&#039;);
 
-        const li_menu_icon = document.querySelector(&#039;.li_menu_icon&#039;);
-        const li_menu_option = document.querySelector(&#039;.li_menu_option&#039;);
-        const li_menu_window = document.querySelector(&#039;.li_menu_window&#039;);
-        const li_menu_help = document.querySelector(&#039;.li_menu_help&#039;);
-
         // soft_windows
         const child_windows = document.querySelector(&#039;.child_windows&#039;);
 
@@ -2258,7 +2381,7 @@
         const program = document.querySelector(&#039;.program_manager&#039;);
         const control = document.querySelector(&#039;.control_panel&#039;);
         const color_menu = document.querySelector(&#039;.color&#039;);
-        const version = document.querySelector(&#039;.version&#039;);
+        const system_menu = document.querySelector(&#039;.system_menu&#039;);
         const window_prompt = document.querySelector(&#039;.window_prompt&#039;);
         const clock_menu = document.querySelector(&#039;.clock_menu&#039;);
         const sound_menu = document.querySelector(&#039;.sound_menu&#039;);
@@ -2275,6 +2398,7 @@
         const htmlviewer_edit_menu = document.querySelector(&#039;.htmlviewer_edit_menu&#039;);
         const htmlviewer_run_menu = document.querySelector(&#039;.htmlviewer_run_menu&#039;);
         const uploadvideo_menu = document.querySelector(&#039;.uploadvideo_menu&#039;);
+        const font_menu = document.querySelector(&#039;.font_menu&#039;);
 
         const error_windows = document.querySelector(&#039;.error_windows&#039;);
         const warning_windows = document.querySelector(&#039;.warning_windows&#039;);
@@ -2323,12 +2447,15 @@
 
         window.addEventListener(&#039;load&#039;, load_nexser);
         function load_nexser() {
-            if (localStorage.getItem(&#039;prompt_data&#039;)) {
+            if (!localStorage.getItem(&#039;start_nexser&#039;) &amp;&amp; localStorage.getItem(&#039;prompt_data&#039;)) {
+                start_check()
+            } else if (localStorage.getItem(&#039;prompt_data&#039;) &amp;&amp; localStorage.getItem(&#039;start_nexser&#039;)) {
                 prompt.style.display = &quot;none&quot;;
                 nexser_program.style.display = &quot;none&quot;;
                 nexser.style.display = &quot;block&quot;;
                 desktop.style.display = &quot;block&quot;
                 taskbtn_load()
+                document.querySelector(&#039;.welcome_windows&#039;).style.display = &quot;none&quot;;
             } else if (localStorage.getItem(&#039;prompt_data3&#039;)) {
                 prompt.style.display = &quot;none&quot;;
                 nexser_program.style.display = &quot;block&quot;;
@@ -2443,17 +2570,17 @@
         function nexser_start() {
             document.querySelector(&quot;#nexser&quot;).style.backgroundColor = &quot;&quot;;
             document.querySelector(&#039;.test_allwindow&#039;).style.display = &quot;none&quot;;
+            document.querySelector(&#039;.welcome_windows&#039;).style.display = &quot;none&quot;;
             window_none();
             if (localStorage.getItem(&#039;prompt_data2&#039;)) {
                 setTimeout(function () {
                     console.log(largestZIndex)
                     prompt.style.display = &quot;none&quot;;
                     setTimeout(function () {
-                        startup_sound();
                         nexser.style.display = &quot;block&quot;;
                         setTimeout(function () {
+                            start_check()
                             taskbar_none();
-                            desktop.style.display = &quot;block&quot;;
                             setTimeout(() =&gt; {
                                 setColor()
                                 startup_window_open()
@@ -2466,11 +2593,10 @@
                 setTimeout(function () {
                     prompt.style.display = &quot;none&quot;;
                     setTimeout(function () {
-                        startup_sound();
                         nexser.style.display = &quot;block&quot;;
                         setTimeout(function () {
+                            start_check()
                             taskbar_none();
-                            desktop.style.display = &quot;block&quot;;
                             setTimeout(() =&gt; {
                                 setColor()
                                 startup_window_open()
@@ -2480,6 +2606,139 @@
                     }, 1500)
                 }, 1500);
             }
+        }
+
+        function start_check() {
+            if (!localStorage.getItem(&#039;start_nexser&#039;) || desktop.style.display == &quot;block&quot;) {
+                prompt.style.display = &quot;none&quot;;
+                nexser_program.style.display = &quot;none&quot;;
+                nexser.style.display = &quot;block&quot;;
+                desktop.style.display = &quot;none&quot;
+                document.querySelector(&#039;.welcome_windows&#039;).style.display = &quot;block&quot;;
+                welcome_animation()
+            } else {
+                startup_sound();
+                prompt.style.display = &quot;none&quot;;
+                nexser_program.style.display = &quot;none&quot;;
+                nexser.style.display = &quot;block&quot;;
+                document.querySelector(&#039;.welcome_windows&#039;).style.display = &quot;none&quot;;
+                setTimeout(() =&gt; {
+                    desktop.style.display = &quot;block&quot;
+                }, 1000);
+                taskbtn_load()
+            }
+        }
+
+        function nexser_on() {
+            const start_nexser = document.querySelector(&#039;.start_nexser&#039;);
+            localStorage.setItem(&#039;start_nexser&#039;, start_nexser);
+            document.querySelector(&#039;.welcome_windows&#039;).style.display = &quot;none&quot;
+            setTimeout(() =&gt; {
+                desktop.style.display = &quot;block&quot;
+            }, 1000);
+        }
+
+        function welcome_animation() {
+            sound7()
+            document.querySelector(&#039;.start_nexser&#039;).style.display = &quot;none&quot;;
+            document.querySelector(&#039;.welcome_window_inline&#039;).style.display = &quot;none&quot;;
+            document.querySelector(&#039;.welcome_text1&#039;).style.position = &quot;absolute&quot;;
+            document.querySelector(&#039;.welcome_text1&#039;).style.fontSize = &quot;80px&quot;;
+            document.querySelector(&#039;.welcome_text1&#039;).style.marginTop = &quot;125px&quot;;
+            document.querySelector(&#039;.welcome_text1&#039;).style.marginLeft = &quot;50px&quot;;
+            document.querySelector(&#039;.welcome_underline&#039;).style.right = &quot;0&quot;;
+            const welunder = document.querySelector(&#039;.welcome_underline&#039;);
+            welunder.style.width = &quot;0%&quot;
+            document.querySelector(&#039;.welcome_text2&#039;).style.display = &quot;none&quot;;
+            document.querySelector(&#039;.welcome_icon&#039;).style.display = &quot;none&quot;;
+
+
+            setTimeout(() =&gt; {
+
+                setTimeout(() =&gt; {
+                    document.querySelector(&#039;.welcome_window_inline&#039;).style.display = &quot;block&quot;
+                    setTimeout(() =&gt; {
+                        document.querySelector(&#039;.welcome_text1&#039;).style.fontSize = &quot;70px&quot;
+                        document.querySelector(&#039;.welcome_text1&#039;).style.marginTop = &quot;80px&quot;
+                        document.querySelector(&#039;.welcome_text1&#039;).style.marginLeft = &quot;25px&quot;
+                    }, 1000);
+                    setTimeout(() =&gt; {
+                        document.querySelector(&#039;.welcome_text1&#039;).style.fontSize = &quot;60px&quot;
+                        document.querySelector(&#039;.welcome_text1&#039;).style.marginTop = &quot;40px&quot;
+                        document.querySelector(&#039;.welcome_text1&#039;).style.marginLeft = &quot;15px&quot;
+                    }, 1200);
+                    setTimeout(() =&gt; {
+                        document.querySelector(&#039;.welcome_text1&#039;).style.fontSize = &quot;50px&quot;
+                        document.querySelector(&#039;.welcome_text1&#039;).style.marginTop = &quot;20px&quot;
+                        document.querySelector(&#039;.welcome_text1&#039;).style.marginLeft = &quot;10px&quot;
+                    }, 1400);
+                    setTimeout(() =&gt; {
+                        document.querySelector(&#039;.welcome_text1&#039;).style.fontSize = &quot;45px&quot;
+                        document.querySelector(&#039;.welcome_text1&#039;).style.marginTop = &quot;10px&quot;
+                        document.querySelector(&#039;.welcome_text1&#039;).style.marginLeft = &quot;5px&quot;
+                    }, 1600);
+                    setTimeout(() =&gt; {
+                        document.querySelector(&#039;.welcome_text1&#039;).style.fontSize = &quot;40px&quot;
+                        document.querySelector(&#039;.welcome_text1&#039;).style.marginTop = &quot;0px&quot;
+                        document.querySelector(&#039;.welcome_text1&#039;).style.marginLeft = &quot;0px&quot;
+                    }, 1800);
+
+                    setTimeout(() =&gt; {
+                        welunder.style.width = &quot;5%&quot;
+                    }, 2500);
+                    setTimeout(() =&gt; {
+                        welunder.style.width = &quot;15%&quot;
+                    }, 2550);
+                    setTimeout(() =&gt; {
+                        welunder.style.width = &quot;25%&quot;
+                    }, 2600);
+                    setTimeout(() =&gt; {
+                        welunder.style.width = &quot;35%&quot;
+                    }, 2650);
+                    setTimeout(() =&gt; {
+                        welunder.style.width = &quot;45%&quot;
+                    }, 2700);
+                    setTimeout(() =&gt; {
+                        welunder.style.width = &quot;55%&quot;
+                    }, 2750);
+                    setTimeout(() =&gt; {
+                        welunder.style.width = &quot;65%&quot;
+                    }, 2800);
+                    setTimeout(() =&gt; {
+                        welunder.style.width = &quot;75%&quot;
+                    }, 2850);
+                    setTimeout(() =&gt; {
+                        welunder.style.width = &quot;80%&quot;
+                    }, 2900);
+                    setTimeout(() =&gt; {
+                        welunder.style.width = &quot;85%&quot;
+                    }, 2950);
+                    setTimeout(() =&gt; {
+                        welunder.style.width = &quot;100%&quot;
+                    }, 3000);
+
+                    setTimeout(() =&gt; {
+                        document.querySelector(&#039;.welcome_text2&#039;).style.display = &quot;block&quot;;
+                    }, 3500);
+                    setTimeout(() =&gt; {
+                        document.querySelector(&#039;.welcome_icon&#039;).style.display = &quot;block&quot;;
+                    }, 4000);
+
+
+
+                    setTimeout(() =&gt; {
+                        document.querySelector(&#039;.start_nexser&#039;).style.display = &quot;block&quot;;
+                    }, 10000);
+                }, 500);
+
+            }, 1000);
+
+        }
+
+        function welcome() {
+            document.querySelector(&#039;.welcome_windows&#039;).style.display = &quot;block&quot;
+            desktop.style.display = &quot;none&quot;;
+            welcome_animation()
         }
 
         startup_window_open()
@@ -2513,49 +2772,47 @@
 
         Array.from(shutdown).forEach(element =&gt; {
             element.addEventListener(&#039;click&#039;, event =&gt; {
-                document.querySelector(&#039;.test_allwindow&#039;).style.display = &quot;block&quot;;
-                let result = document.getElementsByClassName(&#039;child_windows active&#039;).length;
-                result2 = 21;
-                console.log(result)
-                let result3 = result - result2;
-                console.log(result3)
-                if (sessionStorage.getItem(&#039;start_camera&#039;)) {
-                    document.querySelector(&#039;.window_error_text&#039;).textContent = &quot;camera no finish no shutdown!&quot;
-                    error_windows.classList.remove(&#039;active&#039;)
-                    sound3()
+                setTimeout(() =&gt; {
                     document.querySelector(&#039;.test_allwindow&#039;).style.display = &quot;block&quot;;
-                } else if (result3 == 0) {
-                    shutdown_sound();
-                    setTimeout(() =&gt; {
-                        desktop.style.display = &quot;none&quot;;
-                        localStorage.removeItem(&#039;prompt_data&#039;);
-                        window_reset();
-                        document.querySelector(&#039;#codes&#039;).style.display = &quot;none&quot;;
-                        window_none();
-
+                    if (sessionStorage.getItem(&#039;start_camera&#039;)) {
+                        document.querySelector(&#039;.window_error_text&#039;).textContent = &quot;camera no finish no shutdown!&quot;
+                        error_windows.classList.remove(&#039;active&#039;)
+                        sound3()
+                        document.querySelector(&#039;.test_allwindow&#039;).style.display = &quot;block&quot;;
+                    } else if (gets == gets2) {
+                        shutdown_sound();
                         setTimeout(() =&gt; {
-                            document.querySelectorAll(&#039;.button&#039;).forEach(function (button) {
-                                let tscbtn = button.firstChild;
-                                tscbtn = button.classList.remove(&#039;pressed&#039;);
-                            });
-                            document.getElementsByClassName(&#039;name&#039;)[0].value = &quot;&quot;;
-                            document.querySelector(&#039;.prompt_error_text&#039;).textContent = &quot;&quot;;
-                            document.querySelector(&#039;.help&#039;).textContent = &quot;&quot;;
-                            msg.innerText = &quot;&quot;;
-                            prompt_text.style.color = &quot;&quot;;
-                            nexser.style.display = &quot;none&quot;;
-                            prompt.style.display = &quot;block&quot;;
-                            start_menu.style.display = &quot;none&quot;;
-                            document.querySelector(&#039;.focus&#039;).focus();
-                        }, 500);
-                    }, 1500);
-                } else {
-                    warning_windows.classList.remove(&#039;active&#039;);
-                    document.querySelector(&#039;.shutdown_button&#039;).style.display = &quot;block&quot;;
-                    document.querySelector(&#039;.warningclose_button&#039;).style.display = &quot;none&quot;;
-                    document.querySelector(&#039;.window_warning_text&#039;).textContent = &quot;task window open! shutdown?&quot;
-                    sound5()
-                }
+                            desktop.style.display = &quot;none&quot;;
+                            localStorage.removeItem(&#039;prompt_data&#039;);
+                            window_reset();
+                            document.querySelector(&#039;#codes&#039;).style.display = &quot;none&quot;;
+                            window_none();
+
+                            setTimeout(() =&gt; {
+                                document.querySelectorAll(&#039;.button&#039;).forEach(function (button) {
+                                    let tscbtn = button.firstChild;
+                                    tscbtn = button.classList.remove(&#039;pressed&#039;);
+                                });
+                                document.getElementsByClassName(&#039;name&#039;)[0].value = &quot;&quot;;
+                                document.querySelector(&#039;.prompt_error_text&#039;).textContent = &quot;&quot;;
+                                document.querySelector(&#039;.help&#039;).textContent = &quot;&quot;;
+                                msg.innerText = &quot;&quot;;
+                                prompt_text.style.color = &quot;&quot;;
+                                nexser.style.display = &quot;none&quot;;
+                                prompt.style.display = &quot;block&quot;;
+                                start_menu.style.display = &quot;none&quot;;
+                                document.querySelector(&#039;.focus&#039;).focus();
+                            }, 500);
+                        }, 1500);
+                    } else {
+                        warning_windows.style.display = &quot;block&quot;;
+                        document.querySelector(&#039;.close_button3&#039;).style.display = &quot;block&quot;
+                        document.querySelector(&#039;.shutdown_button&#039;).style.display = &quot;block&quot;;
+                        document.querySelector(&#039;.warningclose_button&#039;).style.display = &quot;none&quot;;
+                        document.querySelector(&#039;.window_warning_text&#039;).textContent = &quot;task window open! shutdown?&quot;
+                        sound5()
+                    }
+                }, 500);
             })
         })
 
@@ -2715,7 +2972,7 @@
             }
             if (localStorage.getItem(&#039;noteData&#039;)) {
                 load()
-                document.querySelector(&#039;.note_title&#039;).textContent = &quot;notepad(save keep)&quot;
+                document.querySelector(&#039;.note_title&#039;).textContent = &quot;　　notepad(save keep)&quot;
             }
             if (localStorage.getItem(&#039;textdropdata&#039;)) {
                 load2()
@@ -2804,7 +3061,7 @@
                 }
             })
             document.querySelectorAll(&quot;.taskbar_buttons .test_button5&quot;).forEach(function (taskbtn) {
-                if (version.classList.contains(&#039;active&#039;)) {
+                if (system_menu.classList.contains(&#039;active&#039;)) {
                     taskbtn.classList.remove(&#039;pressed&#039;)
                 } else {
                     taskbtn.classList.add(&#039;pressed&#039;)
@@ -2885,7 +3142,7 @@
                 allwindow_none.classList.add(&#039;active&#039;);
                 allwindow_none.classList.remove(&#039;big&#039;);
             });
-            warning_windows.classList.add(&#039;active&#039;);
+            warning_windows.style.display = &quot;none&quot;;
             error_windows.classList.add(&#039;active&#039;);
         }
         function window_active() {
@@ -2911,6 +3168,24 @@
             localStorage.removeItem(&#039;data_taskbar_none&#039;);
             colordata_clear()
             prompt_data_clear()
+        }
+
+        function localStorage_clear() {
+            const locallength = localStorage.length;
+            if (locallength &gt; 0) {
+                localStorage.clear();
+
+                document.querySelector(&#039;.tests&#039;).textContent = (locallength);
+
+                document.querySelector(&#039;.test_allwindow&#039;).style.display = &quot;block&quot;;
+                warning_windows.style.display = &quot;block&quot;;
+                document.querySelector(&#039;.shutdown_button&#039;).style.display = &quot;block&quot;;
+                document.querySelector(&#039;.warningclose_button&#039;).style.display = &quot;none&quot;;
+                document.querySelector(&#039;.window_warning_text&#039;).textContent = &quot;localstorage allremove!!&quot;
+                sound5()
+
+                document.querySelector(&#039;.close_button3&#039;).style.display = &quot;none&quot;
+            }
         }
 
         function colordata_clear() {
@@ -3064,6 +3339,11 @@
                     document.querySelector(&#039;#codes&#039;).style.display = &quot;none&quot;;
                     document.querySelector(&#039;.focus&#039;).focus();
                     break;
+                case &#039;cpu/bench&#039;:
+                    document.querySelector(&#039;.prompt_error_text&#039;).textContent = &quot;bench connect&quot;;
+                    prompt_text.style.color = &quot;&quot;;
+                    cpubench()
+                    break;
                 case &#039;windows95/open&#039;:
                     document.querySelector(&#039;.prompt_error_text&#039;).textContent = &quot;&quot;;
                     window.open(&quot;https://moti5768.github.io/moti.world/windows95.html&quot;);
@@ -3195,6 +3475,17 @@
                         element.style.fontSize = &quot;&quot;;
                     })
                     break;
+                case &#039;cpu/bench&#039;:
+                    document.querySelector(&#039;.prompt_error_text2&#039;).textContent = &quot;bench connect&quot;;
+                    prompt_text2.style.color = &quot;&quot;;
+                    cpubench()
+                    break;
+                case &#039;localstorage/clear&#039;:
+                    document.querySelector(&#039;.prompt_error_text2&#039;).textContent = &quot;&quot;;
+                    localStorage_clear()
+                    prompt_text2.style.color = &quot;&quot;;
+                    break;
+
                 case &#039;windows95/open&#039;:
                     document.querySelector(&#039;.prompt_error_text2&#039;).textContent = &quot;&quot;;
                     window.open(&quot;https://moti5768.github.io/moti.world/windows95.html&quot;);
@@ -3244,18 +3535,41 @@
                     document.querySelector(&#039;.chargingTime&#039;).innerHTML = battery.chargingTime;
                     document.querySelector(&#039;.dischargingTime&#039;).innerHTML = battery.dischargingTime;
                 });
-                console.log(&quot;memory&quot;)
                 document.querySelector(&#039;.memory&#039;).textContent = (`Memory:   ${(performance.memory.usedJSHeapSize / 1024).toFixed(2)}KB`);
                 document.querySelector(&#039;.memory2&#039;).textContent = (`使用可能なメモリ    ${(performance.memory.jsHeapSizeLimit / 1048576).toFixed(2)}MB`);
                 document.querySelector(&#039;.memory3&#039;).textContent = (`割り当てられたメモリ  ${(performance.memory.totalJSHeapSize / 1024).toFixed(2)}KB`);
                 document.querySelector(&#039;.memory4&#039;).textContent = (`現在使用中のメモリ   ${(performance.memory.usedJSHeapSize / 1024).toFixed(2)}KB`);
+
+                const locallength = localStorage.length;
+                document.querySelector(&#039;.length_localStorage&#039;).textContent = (locallength);
+
             } else {
+                const locallength = localStorage.length;
+                document.querySelector(&#039;.tests&#039;).textContent = (locallength);
+
                 const backtext_data2 = localStorage.getItem(&#039;backtext_data&#039;);
                 document.querySelector(&#039;#background_text2&#039;).textContent = (backtext_data2)
+
+                const get = document.getElementsByClassName(&#039;child_windows&#039;);
+                const get2 = document.getElementsByClassName(&#039;active&#039;);
+                gets = get.length;
+                console.log(gets, &quot;childwin&quot;)
+                gets2 = get2.length - 1;
+                console.log(gets2, &quot;active&quot;)
+                // console.log(get2)
+                // &uarr;シャットダウンする前にウィンドウが開かれていたら、警告を出す
 
                 if (localStorage.getItem(KEY_BKCOLOR, bkcolor)) {
                     document.querySelector(&quot;.mini_desktop&quot;).style.backgroundColor = bkcolor;
                 }
+
+                navigator.getBattery().then(function (battery) {
+                    if (battery.charging == false) {
+                        document.querySelector(&#039;.task_battery&#039;).style.color = &quot;black&quot;
+                    } else {
+                        document.querySelector(&#039;.task_battery&#039;).style.color = &quot;lime&quot;
+                    }
+                })
             }
         }, 500);
 
@@ -3267,9 +3581,6 @@
         document.querySelectorAll(&#039;.close_button&#039;).forEach(function (close_button) {
             close_button.addEventListener(&#039;click&#039;, function () {
                 const closebutton = close_button.closest(&#039;.child_windows&#039;);
-                closebutton.style.left = &quot;&quot;;
-                closebutton.style.top = &quot;&quot;;
-                closebutton.classList.remove(&#039;big&#039;);
                 closebutton.classList.add(&#039;active&#039;);
                 taskbtn_load()
             });
@@ -3284,7 +3595,7 @@
         document.querySelectorAll(&#039;.close_button3&#039;).forEach(function (close_button3) {
             close_button3.addEventListener(&#039;click&#039;, function () {
                 const closebutton3 = close_button3.closest(&#039;.warning_windows&#039;);
-                closebutton3.classList.add(&#039;active&#039;);
+                closebutton3.style.display = &quot;none&quot;
                 document.querySelector(&#039;.test_allwindow&#039;).style.display = &quot;none&quot;;
             });
         })
@@ -3301,8 +3612,8 @@
                 const bigscreenbutton = bigscreen_button.closest(&#039;.child_windows&#039;);
                 bigscreenbutton.style.top = &quot;0&quot;
                 bigscreenbutton.style.left = &quot;0&quot;
-                bigscreenbutton.style.height = &quot;&quot;;
-                bigscreenbutton.style.width = &quot;&quot;;
+                bigscreenbutton.style.height = &quot;&quot;
+                bigscreenbutton.style.width = &quot;&quot;
                 bigscreenbutton.classList.add(&#039;big&#039;);
             });
         })
@@ -3310,8 +3621,8 @@
         document.querySelectorAll(&#039;.minscreen_button&#039;).forEach(function (minscreen_button) {
             minscreen_button.addEventListener(&#039;click&#039;, function () {
                 const minscreenbutton = minscreen_button.closest(&#039;.child_windows&#039;);
-                minscreenbutton.style.top = &quot;&quot;
-                minscreenbutton.style.left = &quot;&quot;
+                minscreenbutton.style.top = &quot;&quot;;
+                minscreenbutton.style.left = &quot;&quot;;
                 minscreenbutton.classList.remove(&#039;big&#039;);
             });
         })
@@ -3377,16 +3688,26 @@
         document.querySelectorAll(&#039;.parent_list&#039;).forEach(function (parent_list) {
             parent_list.addEventListener(&#039;mouseover&#039;, function () {
                 let parentlist = parent_list.lastElementChild;
-                parentlist.classList.add(&#039;active&#039;)
-
-                parentlist = parent_list.closest(&#039;.child_windows&#039;);
-                z = largestZIndex + 1;
-                parent_list2 = parentlist.style.zIndex = z;
+                parentlist.style.display = &quot;flex&quot;
 
                 document.querySelectorAll(&#039;.parent_list&#039;).forEach(function (c_list) {
                     c_list.addEventListener(&#039;mouseleave&#039;, function () {
                         document.querySelectorAll(&#039;.child_list&#039;, &#039;.active&#039;).forEach(function (cb_list) {
-                            cb_list.classList.remove(&#039;active&#039;)
+                            cb_list.style.display = &quot;none&quot;;
+                        })
+                    })
+                })
+            })
+        })
+        document.querySelectorAll(&#039;.window_inline_menus_parent&#039;).forEach(function (parent_list) {
+            parent_list.addEventListener(&#039;click&#039;, function () {
+                let parentlist = parent_list.lastElementChild;
+                parentlist.style.display = &quot;flex&quot;
+
+                document.querySelectorAll(&#039;.window_inline_menus_parent&#039;).forEach(function (c_list) {
+                    c_list.addEventListener(&#039;mouseup&#039;, function () {
+                        document.querySelectorAll(&#039;.window_inline_menus_child&#039;, &#039;.active&#039;).forEach(function (cb_list) {
+                            cb_list.style.display = &quot;none&quot;;
                         })
                     })
                 })
@@ -3435,10 +3756,10 @@
         });
         document.querySelectorAll(&#039;.test_button5&#039;).forEach(function (test_button5) {
             test_button5.addEventListener(&#039;click&#039;, function () {
-                version.classList.toggle(&#039;active&#039;);
-                version.closest(&#039;.child_windows&#039;);
+                system_menu.classList.toggle(&#039;active&#039;);
+                system_menu.closest(&#039;.child_windows&#039;);
                 z = largestZIndex + 1;
-                unko5 = version.style.zIndex = z;
+                unko5 = system_menu.style.zIndex = z;
             });
         });
         document.querySelectorAll(&#039;.test_button6&#039;).forEach(function (test_button6) {
@@ -3569,6 +3890,14 @@
                 unko21 = uploadvideo_menu.style.zIndex = z;
             });
         });
+        document.querySelectorAll(&#039;.test_button22&#039;).forEach(function (test_button22) {
+            test_button22.addEventListener(&#039;click&#039;, function () {
+                font_menu.classList.toggle(&#039;active&#039;);
+                font_menu.closest(&#039;.child_windows&#039;);
+                z = largestZIndex + 1;
+                unko22 = font_menu.style.zIndex = z;
+            });
+        });
 
         document.querySelectorAll(&#039;.drag_button&#039;).forEach(function (drag) {
             drag.addEventListener(&#039;mousedown&#039;, function () {
@@ -3629,12 +3958,16 @@
                             document.querySelectorAll(&#039;.title&#039;).forEach(function (title) {
                                 const titlebar = title.style.backgroundColor = &quot;darkblue&quot;;
                                 window_prompt.style.background = &quot;rgb(51, 51, 184)&quot;
+                                const bsilver = document.querySelector(&#039;.back_silver&#039;);
+                                bsilver.style.background = &quot;silver&quot;
                             })
 
                             // 半透明
                             document.querySelectorAll(&#039;.child_windows&#039;).forEach(function (title) {
                                 title.style.opacity = &quot;&quot;;
                                 window_prompt.style.background = &quot;rgb(51, 51, 184)&quot;
+                                const bsilver = document.querySelector(&#039;.back_silver&#039;);
+                                bsilver.style.background = &quot;silver&quot;
                             })
 
                             // 移動してる時だけ黒枠のみ
@@ -3643,9 +3976,13 @@
                                 title.style.border = &quot;&quot;;
                                 document.querySelector(&#039;iframe&#039;).style.opacity = &quot;&quot;;
                                 window_prompt.style.background = &quot;rgb(51, 51, 184)&quot;
+                                const bsilver = document.querySelector(&#039;.back_silver&#039;);
+                                bsilver.style.background = &quot;silver&quot;
                             })
                             document.querySelectorAll(&#039;.title,.title2,.title_buttons,.window_inline_list,.mini_window,button,input,textarea,p,#prompt2&#039;).forEach(function (title) {
                                 title.style.opacity = &quot;&quot;
+                                const bsilver = document.querySelector(&#039;.back_silver&#039;);
+                                bsilver.style.background = &quot;silver&quot;
                             })
 
                         };
@@ -3817,6 +4154,13 @@
                 sound6.play();
             }
         }
+        function sound7() {
+            if (localStorage.getItem(&#039;driver_sound&#039;)) {
+                const sound7 = new Audio(&quot;https://github.com/moti5768/nexser/raw/main//welcome.mp3&quot;);
+                sound7.play();
+            }
+        }
+
         let ele = document.documentElement;
         function full() {
             // 全画面表示      
@@ -4037,7 +4381,7 @@
                 localStorage.setItem(&#039;noteData&#039;, noteData);
                 const memo_save = document.getElementById(&#039;memo_save_text&#039;);
                 memo_save.textContent = &quot;save!&quot;;
-                document.querySelector(&#039;.note_title&#039;).textContent = &quot;notepad(save)&quot;
+                document.querySelector(&#039;.note_title&#039;).textContent = &quot;　　notepad(save)&quot;
             }
         }
         function save2() {
@@ -4053,7 +4397,8 @@
                 taskbtn_load()
             } else {
                 document.querySelector(&#039;.window_warning_text&#039;).textContent = &quot;notepad no save window close?(text allremove)&quot;
-                warning_windows.classList.remove(&#039;active&#039;)
+                warning_windows.style.display = &quot;block&quot;
+                document.querySelector(&#039;.close_button3&#039;).style.display = &quot;block&quot;
                 sound5()
                 document.querySelector(&#039;.test_allwindow&#039;).style.display = &quot;block&quot;;
                 document.querySelector(&#039;.shutdown_button&#039;).style.display = &quot;none&quot;;
@@ -4074,10 +4419,11 @@
         })
 
         function warning_windows_close() {
-            warning_windows.classList.add(&#039;active&#039;);
+            warning_windows.style.display = &quot;none&quot;;
             document.querySelector(&#039;.test_allwindow&#039;).style.display = &quot;none&quot;;
             document.querySelector(&#039;.shutdown_button&#039;).style.display = &quot;block&quot;;
             document.querySelector(&#039;.warningclose_button&#039;).style.display = &quot;none&quot;;
+            document.querySelector(&#039;.close_button3&#039;).style.display = &quot;block&quot;
             document.note_form.note_area.value = &quot;&quot;;
             resetShowLength()
             note_pad.classList.add(&#039;active&#039;)
@@ -4088,7 +4434,7 @@
             localStorage.removeItem(&#039;noteData&#039;);
             const memo_save = document.getElementById(&#039;memo_save_text&#039;);
             memo_save.textContent = &quot;&quot;;
-            document.querySelector(&#039;.note_title&#039;).textContent = &quot;notepad&quot;
+            document.querySelector(&#039;.note_title&#039;).textContent = &quot;　　notepad&quot;
         }
         document.getElementById(&#039;cleartextbtn&#039;).addEventListener(&#039;click&#039;, function () {
             document.getElementsByClassName(&quot;note_area&quot;)[0].value = &#039;&#039;;
@@ -4211,7 +4557,6 @@
             document.querySelectorAll(&#039;.htmlviewer_run_menu&#039;).forEach(function (htmlviewer_run_menu) {
                 htmlviewer_run_menu.closest(&#039;.child_windows&#039;);
                 htmlviewer_run_menu.classList.remove(&#039;active&#039;);
-                console.log(htmlviewer_run_menu)
                 z = largestZIndex + 1;
                 unko20 = htmlviewer_run_menu.style.zIndex = z;
             });
@@ -4236,17 +4581,56 @@
             });
             fileReader.readAsDataURL(obj.files[0]);
         }
-        // let beforeMethod = performance.now();
-        // let sampleFunc = function () {
-        //     let intTest = 0;
-        //     for (let i = 0; i &lt; 1000000; i++) {  // 例として1,000,000回10を足してみましょう
-        //         intTest += 10;
-        //     }
-        //     console.log(&#039;intTest : &#039; + intTest);
-        // }();
-        // let afterMethod = performance.now();
 
-        // console.log(&quot;1,000,000回10を足す処理時間は、&quot; + (afterMethod - beforeMethod) + &quot;ミリ秒です&quot;);
+        function cpubench() {
+            start = (new Date()).getTime();
+            n = 0;
+            for (i = 0; i &lt; 25000; i++) {
+                for (j = 0; j &lt; 25000; j++) {
+                    n = (n + i) / j;
+                }
+            }
+            end = (new Date()).getTime();
+            time = (end - start) / 1000;
+            alert(&#039;計算時間は&#039; + time + &#039;秒でした&#039;);
+        }
+
+        //GeolocationAPが利用できるか確認
+        if (navigator.geolocation) {
+            test()
+        } else {
+            alert(&quot;現在地を取得できませんでした。&quot;)
+        }
+
+        function test() {
+            navigator.geolocation.getCurrentPosition(test2);
+        }
+
+        function test2(position) {
+            //まず現在地の緯度経度を取得する
+            var lat = position.coords.latitude;
+            var lon = position.coords.longitude;
+
+            //国土地理院API用に有効桁数を合わせる。
+            var adjustiveLat = lat + &quot;00&quot;;
+            var adjustiveLon = lon + &quot;0&quot;;
+
+            //文字列に変換
+            var stringLat = String(adjustiveLat);
+            var stringLon = String(adjustiveLon);
+            //国土地理院APIに現在地の緯度経度を渡して、標高を取得する
+            const url = &#039;http://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php?lon=&#039; + stringLon + &#039;&amp;lat=&#039; + stringLat + &#039;&amp;outtype=JSON&#039;;
+
+            fetch(url).then(function (response) {
+                return response.text();
+            }).then(function (text) {
+                //取得したjsonをパース
+                var jsonAltitude = JSON.parse(text);
+                document.querySelector(&#039;.hyoukou&#039;).textContent = (&quot;標高：&quot; + jsonAltitude.elevation + &quot;m&quot;);
+                // document.querySelector(&#039;.hyoukou2&#039;).textContent = (&quot;現在地の標高は&quot; + jsonAltitude.elevation + &quot;mです。&quot; + &quot;(&quot; + &quot;緯度：&quot; + stringLat + &quot;、経度：&quot; + stringLon + &quot;)&quot;)
+                document.querySelector(&#039;.hyoukou2&#039;).textContent = (&quot;&quot; + &quot;緯度：&quot; + stringLat + &quot;、経度：&quot; + stringLon + &quot;&quot;)
+            });
+        }
 
     } else {
         document.querySelector(&quot;.prompt_error_text&quot;).textContent = &#039;この端末は対応していません!&#039;;
@@ -4292,18 +4676,53 @@
         <div id="nexser">
             <span class="z_index" style="color: white; position: absolute; bottom: 40px;"></span>
 
+            <div class="welcome_windows">
+                <div class="title">
+                    <span class="title_icon"></span><span>&emsp;&emsp;welcome nexser</span>
+                </div><br>
+
+                <div class="welcome_window_inline"
+                    style="display: block; background-color: silver; height: 377px; width: auto;">
+
+                    <div class="welcome_icon">
+                        <span
+                            style="width: 150px; height: 150px; background: whitesmoke; position: absolute; bottom: 50px; right: 100px; border: solid 4.5px #0099FF; opacity: 0.65; box-shadow: 10px 10px black;"></span>
+                        <span
+                            style="width: 150px; height: 150px; background: #99CCFF; position: absolute; bottom: 150px; right: 200px; border: solid 4.5px blue; opacity: 0.8; box-shadow: 10px 10px black;"></span>
+                    </div>
+
+                    <div class="mini_window">
+                        <span class="welcome_text1">Welcome Nexser</span>
+                        <span class="welcome_underline"
+                            style="display: block; width: 100%; height: 1px; position: absolute; top: 75px; border-top: solid 2px black;"></span><br><br><br>
+
+                        <span class="welcome_text2"
+                            style="font-size: small; font-weight: bold; position: absolute;">nexser
+                            へようこそ!<br>このnexserはもとから搭載されている　windows10　に近い操作が可能です。(一部異なります。)<br>バグ・不具合が発生した場合には再ロードすることを推奨します。<br>では、楽しいnexserライフを!
+                        </span>
+                        <button class="button2 start_nexser" onclick="nexser_on()"
+                            style="font-size: x-large; position: absolute; bottom: 5px; left: 5px;">start
+                            nexser</button>
+                    </div>
+
+                </div>
+            </div>
+
             <div id="desktop">
                 <span id="background_text">none</span>
 
                 <div id="files">
                     <a style="color: white; position: absolute; top: 0px;">File none</a>
+                    <a class="hyoukou" style="color: white; position: absolute; top: 20px;">none</a>
+                    <a class="hyoukou2" style="color: white; position: absolute; top: 40px;">none</a>
+                    <a class="tests" style="color: white; position: absolute; top: 60px;">0</a>
                 </div>
 
                 <div id="soft_windows">
 
                     <div class="child_windows program_manager resize active">
                         <div class="title">
-                            <span>program manager</span>
+                            <span class="title_icon"></span><span>&emsp;&emsp;program manager</span>
                         </div>
 
                         <div class="title_buttons">
@@ -4375,7 +4794,7 @@
 
                         <ul class="black_text window_inline_list">
                             <li class="test_button">main</li>
-                            <li class="test_button5">version</li>
+                            <li class="test_button5">system</li>
                             <li class="test_button14">window mode</li>
                             <li class="test_button15">accessory</li>
                             <li>test</li>
@@ -4387,7 +4806,7 @@
 
                     <div class="child_windows windowmode_menu resize active">
                         <div class="title">
-                            <span>window mode</span>
+                            <span class="title_icon"></span><span>&emsp;&emsp;window mode</span>
                         </div>
 
                         <div class="title_buttons">
@@ -4467,7 +4886,7 @@
 
                     <div class="child_windows accessory_menu resize active">
                         <div class="title">
-                            <span>accessory</span>
+                            <span class="title_icon"></span><span>&emsp;&emsp;accessory</span>
                         </div>
 
                         <div class="title_buttons">
@@ -4552,7 +4971,7 @@
 
                     <div class="child_windows main resize active">
                         <div class="title">
-                            <span>main</span>
+                            <span class="title_icon"></span><span>&emsp;&emsp;main</span>
                         </div>
 
                         <div class="title_buttons">
@@ -4581,7 +5000,7 @@
 
                     <div class="child_windows control_panel resize active">
                         <div class="title">
-                            <span>control panel</span>
+                            <span class="title_icon"></span><span>&emsp;&emsp;control panel</span>
                         </div>
 
                         <div class="title_buttons">
@@ -4658,7 +5077,7 @@
                             <li class="test_button10">mouse</li>
                             <li class="test_button11">screen</li>
                             <li class="test_button17">nexser sound</li>
-                            <li>test</li>
+                            <li class="test_button22">font</li>
                             <li>test</li>
                             <li>test</li>
                             <li>test</li>
@@ -4669,7 +5088,7 @@
 
                     <div class="child_windows sound_menu resize active">
                         <div class="title">
-                            <span>sound</span>
+                            <span class="title_icon"></span><span>&emsp;&emsp;sound</span>
                         </div>
 
                         <div class="title_buttons">
@@ -4698,7 +5117,7 @@
 
                     <div class="child_windows nexser_sound_menu resize active">
                         <div class="title">
-                            <span>nexser sound</span>
+                            <span class="title_icon"></span><span>&emsp;&emsp;nexser sound</span>
                         </div>
 
                         <div class="title_buttons">
@@ -4792,9 +5211,10 @@
                         </div>
                     </div>
 
-                    <div class="child_windows version active">
+                    <div class="child_windows system_menu back_silver active"
+                        style="width: 600px; height: 250px; background-color: silver;">
                         <div class="title">
-                            <span>version</span>
+                            <span class="title_icon"></span><span>&emsp;&emsp;system</span>
                         </div>
 
                         <div class="title_buttons">
@@ -4802,71 +5222,56 @@
                             <a class="close_button hover_button">&nbsp;✕&nbsp;</a><br>
                         </div>
 
-                        <div class="title2">
+                        <div class="mini_window">
+                            <div class="window_inline_menus border">
 
-                            <div class="parent_list">
-                                <ul>
-                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
-                                </ul>
-                                <div class="child_list">
+                                <div class="window_inline_menus_parent">
                                     <ul>
-                                        <li class="hover_blue shutdown">shutdown</li>
-                                        <li class="hover_blue">test</li>
-                                        <li class="hover_blue">test</li>
+                                        <li>&emsp;&emsp;version&emsp;&emsp;</li>
                                     </ul>
+                                    <div class="window_inline_menus_child">
+                                        <ul><br>
+                                            <li>nexser&copy;</li><br>
+                                            <li>version 1.0</li>
+                                            <li>2023-2024</li>
+                                        </ul>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div class="parent_list">
-                                <ul>
-                                    <li>&emsp;&emsp;window(<ins>W</ins>)&emsp;&emsp;</li>
-                                </ul>
-                                <div class="child_list">
+                                <div class="window_inline_menus_parent">
                                     <ul>
-                                        <li class="hover_blue window_top">window top</li>
-                                        <li class="hover_blue window_left">window left</li>
-                                        <li class="hover_blue window_top_and_left">window top & left
-                                        </li>
-                                        <li class="hover_blue">test</li>
+                                        <li>&emsp;&emsp;test&emsp;&emsp;</li>
                                     </ul>
+                                    <div class="window_inline_menus_child">
+                                        <span>test</span>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div class="parent_list">
-                                <ul>
-                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
-                                </ul>
-                                <div class="child_list">
+                                <div class="window_inline_menus_parent">
                                     <ul>
-                                        <li class="hover_blue shutdown">shutdown</li>
-                                        <li class="hover_blue">test</li>
-                                        <li class="hover_blue">test</li>
+                                        <li>&emsp;&emsp;test&emsp;&emsp;</li>
                                     </ul>
+                                    <div class="window_inline_menus_child">
+                                        <span>test</span>
+                                    </div>
                                 </div>
-                            </div>
 
-                            <div class="parent_list">
-                                <ul>
-                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
-                                </ul>
-                                <div class="child_list">
+                                <div class="window_inline_menus_parent">
                                     <ul>
-                                        <li class="hover_blue shutdown">shutdown</li>
-                                        <li class="hover_blue">test</li>
-                                        <li class="hover_blue">test</li>
+                                        <li>&emsp;&emsp;test&emsp;&emsp;</li>
                                     </ul>
+                                    <div class="window_inline_menus_child">
+                                        <span>test</span>
+                                    </div>
                                 </div>
-                            </div>
 
+                            </div>
                         </div>
-                        <p style="text-align: center;">nexser&copy;</p><br>
-                        <p style="text-align: center;">version 1.0</p>
-                        <p style="text-align: center;">2023-2024</p>
                     </div>
 
                     <div class="child_windows clock_menu resize active">
                         <div class="title">
-                            <span>clock</span>
+                            <span class="title_icon"></span><span>&emsp;&emsp;clock</span>
                         </div>
 
                         <div class="title_buttons">
@@ -4942,7 +5347,7 @@
 
                     <div class="child_windows color resize active">
                         <div class="title">
-                            <span>color</span>
+                            <span class="title_icon"></span><span>&emsp;&emsp;color</span>
                         </div>
 
                         <div class="title_buttons">
@@ -5003,7 +5408,7 @@
 
                     <div class="child_windows window_prompt resize active" style=" background-color: rgb(51, 51, 184);">
                         <div class="title">
-                            <span>nexser prompt</span>
+                            <span class="title_icon"></span><span>&emsp;&emsp;nexser prompt</span>
                         </div>
 
                         <div class="title_buttons">
@@ -5028,7 +5433,7 @@
                     <div class="child_windows driver_menu resize active">
 
                         <div class="title">
-                            <span>driver menu</span>
+                            <span class="title_icon"></span><span>&emsp;&emsp;driver menu</span>
                         </div>
 
                         <div class="title_buttons">
@@ -5053,7 +5458,7 @@
 
                     <div class="child_windows mouse_menu active">
                         <div class="title">
-                            <span>mouse</span>
+                            <span class="title_icon"></span><span>&emsp;&emsp;mouse</span>
                         </div>
 
                         <div class="title_buttons">
@@ -5144,7 +5549,7 @@
 
                     <div class="child_windows screen_menu resize active">
                         <div class="title">
-                            <span>screen</span>
+                            <span class="title_icon"></span><span>&emsp;&emsp;screen</span>
                         </div>
 
                         <div class="title_buttons">
@@ -5176,8 +5581,8 @@
 
                     <div class="child_windows note_pad active">
                         <span class="note"></span>
-                        <div class="title note_title">
-                            <span>notepad</span>
+                        <div class="title">
+                            <span class="title_icon"></span><span class="note_title">&emsp;&emsp;notepad</span>
                         </div>
 
                         <div class="title_buttons">
@@ -5225,7 +5630,8 @@
                                     <ul>
                                         <li class="hover_blue notetext_bold" onclick="notetext_all_bold()">alltext
                                             bold</li>
-                                        <li class="hover_blue notetext_oblique" onclick="notetext_all_oblique()">alltext
+                                        <li class="hover_blue notetext_oblique" onclick="notetext_all_oblique()">
+                                            alltext
                                             oblique</li>
                                         <li class="hover_blue notetext_underline" onclick="notetext_all_underline()">
                                             alltext
@@ -5233,11 +5639,13 @@
                                         <div class="note_text_color">
                                             <li class="hover_blue" onclick="notecolor_remove()">text
                                                 black</li>
-                                            <li class="hover_blue notetext_blue" onclick="notecolor_change_blue()">text
+                                            <li class="hover_blue notetext_blue" onclick="notecolor_change_blue()">
+                                                text
                                                 blue</li>
                                             <li class="hover_blue notetext_green" onclick="notecolor_change_green()">
                                                 text green</li>
-                                            <li class="hover_blue notetext_red" onclick="notecolor_change_red()">text
+                                            <li class="hover_blue notetext_red" onclick="notecolor_change_red()">
+                                                text
                                                 red</li>
                                             <li class="hover_blue notetext_orange" onclick="notecolor_change_orange()">
                                                 text
@@ -5280,7 +5688,7 @@
 
                     <div class="child_windows text_drop_menu active">
                         <div class="title">
-                            <span>text drop</span>
+                            <span class="title_icon"></span><span>&emsp;&emsp;text drop</span>
                         </div>
 
                         <div class="title_buttons">
@@ -5307,7 +5715,7 @@
                             <span class="child_graph"></span>
                         </div>
                         <div class="title">
-                            <span>calc</span>
+                            <span class="title_icon"></span><span>&emsp;&emsp;calc</span>
                         </div>
 
                         <div class="title_buttons">
@@ -5376,7 +5784,7 @@
 
                     <div class="child_windows camera_menu active">
                         <div class="title">
-                            <span>test camera</span>
+                            <span class="title_icon"></span><span>&emsp;&emsp;camera</span>
                         </div>
 
                         <div class="title_buttons">
@@ -5452,7 +5860,7 @@
 
                     <div class="child_windows htmlviewer_edit_menu active">
                         <div class="title">
-                            <span>html viewer edit</span>
+                            <span class="title_icon"></span><span>&emsp;&emsp;html viewer edit</span>
                         </div>
 
                         <div class="title_buttons">
@@ -5470,7 +5878,7 @@
 
                     <div class="child_windows htmlviewer_run_menu active">
                         <div class="title">
-                            <span>html viewer run</span>
+                            <span class="title_icon"></span><span>&emsp;&emsp;html viewer run</span>
                         </div>
 
                         <div class="title_buttons">
@@ -5485,7 +5893,7 @@
 
                     <div class="child_windows border uploadvideo_menu active">
                         <div class="title">
-                            <span>video upload</span>
+                            <span class="title_icon"></span><span>&emsp;&emsp;video upload</span>
                         </div>
                         <div class="title_buttons">
                             <a class="drag_button">&nbsp;</a>
@@ -5500,19 +5908,99 @@
                         </div>
                     </div>
 
+                    <div class="child_windows border font_menu resize active">
+                        <div class="title">
+                            <span class="title_icon"></span><span>&emsp;&emsp;font</span>
+                        </div>
+                        <div class="title_buttons">
+                            <a class="drag_button">&nbsp;</a>
+                            <a class="close_button hover_button">&nbsp;✕&nbsp;</a>
+                            <a class="bigscreen_button hover_button">&nbsp;□&nbsp;</a>
+                            <a class="minscreen_button hover_button">&nbsp;❒&nbsp;</a>
+                            <a class="minimization_button hover_button">&nbsp;―&nbsp;</a><br>
+                        </div>
+
+                        <div class="title2">
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue shutdown">shutdown</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;window(<ins>W</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue window_top">window top</li>
+                                        <li class="hover_blue window_left">window left</li>
+                                        <li class="hover_blue window_top_and_left">window top & left
+                                        </li>
+                                        <li class="hover_blue window_half_big">window half big</li>
+                                        <li class="hover_blue windowsize_reset">window size reset</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue shutdown">shutdown</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;icon(<ins>I</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue shutdown">shutdown</li>
+                                        <li class="hover_blue">test</li>
+                                        <li class="hover_blue">test</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                        </div>
+                        <ul class="window_inline_list">
+                            <li>test</li>
+                            <li>test</li>
+                            <li>test</li>
+                            <li>test</li>
+                            <li>test</li>
+                            <li>test</li>
+                        </ul>
+                    </div>
+
                     <div class="test_allwindow"></div>
 
                     <div class="error_windows active" style="z-index: 999999;">
                         <div class="title" style="background: darkblue;">
-                            <span class="error_icon">!</span><span>error</span>
+                            <span class="error_icon">!</span><span>&emsp;&emsp;error</span>
                         </div>
                         <a class="close_button2 hover_button">&nbsp;✕&nbsp;</a><br>
                         <p><br><span class="window_error_text">test window error</span></p><br>
                     </div>
 
-                    <div class="warning_windows active" style="z-index: 999999;">
+                    <div class="warning_windows" style="z-index: 999999;">
                         <div class="title" style="background: darkblue;">
-                            <span class="error_icon">!</span><span>warning</span>
+                            <span class="error_icon">!</span><span>&emsp;&emsp;warning</span>
                         </div>
                         <a class="close_button3 hover_button">&nbsp;✕&nbsp;</a><br>
                         <br>
@@ -5533,7 +6021,7 @@
                                 <li class="button test_button2">program_manager</li>
                                 <li class="button test_button3">control_panel</li>
                                 <li class="button test_button4">color</li>
-                                <li class="button test_button5">version</li>
+                                <li class="button test_button5">system</li>
                                 <li class="button test_button6">nexser prompt</li>
                                 <li class="button test_button7">clock</li>
                                 <li class="button test_button8">sound</li>
@@ -5544,13 +6032,13 @@
                                 <li class="button test_button13">text drop</li>
                             </ul>
                         </div>
-                        <div class="time border">
+                        <div class="time">
                             <ul>
-                                <li class="test_button7">TIME:<span class="date_clock2">CLOCK</span></li>
+                                <li class="test_button7 button2">TIME:<span class="date_clock2">CLOCK</span></li>
                             </ul>
                         </div>
                         <ul>
-                            <li class="border"
+                            <li class="border task_battery"
                                 style="background: silver; font-size: medium; position: absolute; bottom: 5px; right: 140px;">
                                 BATTERY:
                                 <span class="taskbattery"></span>%
@@ -5562,12 +6050,13 @@
                             <ul>
                                 <li style="background-color:#555555;color:white;text-align:center;">
                                     nexser</li>
+                                <li onclick="welcome()">welcome</li>
                                 <li class="test_button">main</li>
                                 <li class="test_button2">program_manager</li>
                                 <li class="test_button3">control_panel</li>
                                 <li class="test_button15">accessory</li>
                                 <li class="test_button4">color</li>
-                                <li class="test_button5">version</li>
+                                <li class="test_button5">system</li>
                                 <li class="test_button6">nexser prompt</li>
                                 <li class="test_button7">clock</li>
                                 <li class="test_button8">sound</li>
@@ -5805,6 +6294,7 @@
     }
 
     .button.pressed {
+        vertical-align: 1px;
         background: darkgray;
         border-bottom: 1.5px #eee solid;
         border-right: 1.5px #eee solid;
@@ -5933,6 +6423,23 @@
         scrollbar-width: thin;
     }
 
+    .welcome_windows {
+        display: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        list-style: none;
+        font-size: 15px;
+        width: 700px;
+        height: 400px;
+        border: solid 2px #c0c0c0;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+
     .resize {
         resize: both;
         overflow: auto;
@@ -5968,7 +6475,7 @@
         height: 100%;
         width: 100%;
         background: black;
-        opacity: 0.25;
+        opacity: 0.5;
         position: absolute;
         top: 0;
         z-index: 999998;
@@ -5991,12 +6498,12 @@
     }
 
     .warning_windows {
+        display: none;
         -webkit-user-select: none;
         -moz-user-select: none;
         -ms-user-select: none;
         user-select: none;
         list-style: none;
-        display: block;
         font-size: 15px;
         width: auto;
         height: auto;
@@ -6009,10 +6516,6 @@
     }
 
     .error_windows.active {
-        display: none;
-    }
-
-    .warning_windows.active {
         display: none;
     }
 
@@ -6035,8 +6538,19 @@
         position: absolute;
         top: 0;
         color: white;
-        text-align: center;
         pointer-events: none;
+    }
+
+    .title_icon {
+        position: absolute;
+        top: 3px;
+        left: 3.5px;
+        display: inline;
+        height: 15px;
+        width: 15px;
+        background: khaki;
+        pointer-events: none;
+        border: solid 1px black;
     }
 
     .child_windows.big .title {
@@ -6045,7 +6559,6 @@
         position: absolute;
         top: 0;
         color: white;
-        text-align: center;
         pointer-events: none;
     }
 
@@ -6073,9 +6586,7 @@
         width: 100%;
         background-color: darkblue;
         position: absolute;
-        top: 0;
         color: white;
-        text-align: center;
         pointer-events: none;
     }
 
@@ -6109,6 +6620,42 @@
     #nexser_program li:hover {
         background: darkblue;
         color: white;
+    }
+
+    /* window_inline_menus */
+    .window_inline_menus {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        display: flex;
+        width: 580px;
+        background: #c0c0c0;
+        height: 20.5px;
+        position: relative;
+        top: 20px;
+        left: 10px;
+    }
+
+    .window_inline_menus_parent {
+        font-size: small;
+        display: block;
+        text-align: center;
+        justify-content: center;
+    }
+
+    .window_inline_menus_child {
+        width: 280px;
+        height: 180px;
+        display: none;
+        background-color: #c0c0c0;
+        border-right: solid 1.5px black;
+        border-left: solid 1.5px whitesmoke;
+        border-bottom: solid 1.5px black;
+        position: relative;
+        top: 0;
+        text-align: center;
+        justify-content: center;
     }
 
     /* title_buttons */
@@ -6221,42 +6768,6 @@
         border-bottom: solid 1px black;
     }
 
-    /* li_menus */
-    .li_menu_icon {
-        display: none;
-        width: 30%;
-        background: white;
-        border: solid 1px black;
-        position: absolute;
-    }
-
-    .li_menu_option {
-        display: none;
-        width: 30%;
-        background: white;
-        border: solid 1px black;
-        position: absolute;
-        left: 70px;
-    }
-
-    .li_menu_window {
-        display: none;
-        width: 30%;
-        background: white;
-        border: solid 1px black;
-        position: absolute;
-        left: 155px;
-    }
-
-    .li_menu_help {
-        display: none;
-        width: 30%;
-        background: white;
-        border: solid 1px black;
-        position: absolute;
-        left: 250px;
-    }
-
     /*list */
 
     .parent_list {
@@ -6278,10 +6789,6 @@
         border-right: solid 1.5px black;
         border-left: solid 1.5px whitesmoke;
         border-bottom: solid 1.5px black;
-    }
-
-    .child_list.active {
-        display: flex;
     }
 
     .window_inline_list {
@@ -6329,6 +6836,7 @@
 
     /* scrollbar */
     body::-webkit-scrollbar {
+        display: none;
         width: 12.5px;
     }
 
@@ -6400,8 +6908,8 @@
     }
 </style>
 <script text="javascript">
-    //var ua = navigator.userAgent;
-    //if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android') > 0 || ua.indexOf('Mobile') > 0)) {
+    var ua = navigator.userAgent;
+    if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android') > 0 || ua.indexOf('Mobile') > 0)) {
 
         const shutdown = document.getElementsByClassName('shutdown');
 
@@ -6424,11 +6932,6 @@
         const title = document.querySelector('.title');
         const z_index = document.querySelector('.z_index');
 
-        const li_menu_icon = document.querySelector('.li_menu_icon');
-        const li_menu_option = document.querySelector('.li_menu_option');
-        const li_menu_window = document.querySelector('.li_menu_window');
-        const li_menu_help = document.querySelector('.li_menu_help');
-
         // soft_windows
         const child_windows = document.querySelector('.child_windows');
 
@@ -6436,7 +6939,7 @@
         const program = document.querySelector('.program_manager');
         const control = document.querySelector('.control_panel');
         const color_menu = document.querySelector('.color');
-        const version = document.querySelector('.version');
+        const system_menu = document.querySelector('.system_menu');
         const window_prompt = document.querySelector('.window_prompt');
         const clock_menu = document.querySelector('.clock_menu');
         const sound_menu = document.querySelector('.sound_menu');
@@ -6453,6 +6956,7 @@
         const htmlviewer_edit_menu = document.querySelector('.htmlviewer_edit_menu');
         const htmlviewer_run_menu = document.querySelector('.htmlviewer_run_menu');
         const uploadvideo_menu = document.querySelector('.uploadvideo_menu');
+        const font_menu = document.querySelector('.font_menu');
 
         const error_windows = document.querySelector('.error_windows');
         const warning_windows = document.querySelector('.warning_windows');
@@ -6501,12 +7005,15 @@
 
         window.addEventListener('load', load_nexser);
         function load_nexser() {
-            if (localStorage.getItem('prompt_data')) {
+            if (!localStorage.getItem('start_nexser') && localStorage.getItem('prompt_data')) {
+                start_check()
+            } else if (localStorage.getItem('prompt_data') && localStorage.getItem('start_nexser')) {
                 prompt.style.display = "none";
                 nexser_program.style.display = "none";
                 nexser.style.display = "block";
                 desktop.style.display = "block"
                 taskbtn_load()
+                document.querySelector('.welcome_windows').style.display = "none";
             } else if (localStorage.getItem('prompt_data3')) {
                 prompt.style.display = "none";
                 nexser_program.style.display = "block";
@@ -6621,17 +7128,17 @@
         function nexser_start() {
             document.querySelector("#nexser").style.backgroundColor = "";
             document.querySelector('.test_allwindow').style.display = "none";
+            document.querySelector('.welcome_windows').style.display = "none";
             window_none();
             if (localStorage.getItem('prompt_data2')) {
                 setTimeout(function () {
                     console.log(largestZIndex)
                     prompt.style.display = "none";
                     setTimeout(function () {
-                        startup_sound();
                         nexser.style.display = "block";
                         setTimeout(function () {
+                            start_check()
                             taskbar_none();
-                            desktop.style.display = "block";
                             setTimeout(() => {
                                 setColor()
                                 startup_window_open()
@@ -6644,11 +7151,10 @@
                 setTimeout(function () {
                     prompt.style.display = "none";
                     setTimeout(function () {
-                        startup_sound();
                         nexser.style.display = "block";
                         setTimeout(function () {
+                            start_check()
                             taskbar_none();
-                            desktop.style.display = "block";
                             setTimeout(() => {
                                 setColor()
                                 startup_window_open()
@@ -6658,6 +7164,139 @@
                     }, 1500)
                 }, 1500);
             }
+        }
+
+        function start_check() {
+            if (!localStorage.getItem('start_nexser') || desktop.style.display == "block") {
+                prompt.style.display = "none";
+                nexser_program.style.display = "none";
+                nexser.style.display = "block";
+                desktop.style.display = "none"
+                document.querySelector('.welcome_windows').style.display = "block";
+                welcome_animation()
+            } else {
+                startup_sound();
+                prompt.style.display = "none";
+                nexser_program.style.display = "none";
+                nexser.style.display = "block";
+                document.querySelector('.welcome_windows').style.display = "none";
+                setTimeout(() => {
+                    desktop.style.display = "block"
+                }, 1000);
+                taskbtn_load()
+            }
+        }
+
+        function nexser_on() {
+            const start_nexser = document.querySelector('.start_nexser');
+            localStorage.setItem('start_nexser', start_nexser);
+            document.querySelector('.welcome_windows').style.display = "none"
+            setTimeout(() => {
+                desktop.style.display = "block"
+            }, 1000);
+        }
+
+        function welcome_animation() {
+            sound7()
+            document.querySelector('.start_nexser').style.display = "none";
+            document.querySelector('.welcome_window_inline').style.display = "none";
+            document.querySelector('.welcome_text1').style.position = "absolute";
+            document.querySelector('.welcome_text1').style.fontSize = "80px";
+            document.querySelector('.welcome_text1').style.marginTop = "125px";
+            document.querySelector('.welcome_text1').style.marginLeft = "50px";
+            document.querySelector('.welcome_underline').style.right = "0";
+            const welunder = document.querySelector('.welcome_underline');
+            welunder.style.width = "0%"
+            document.querySelector('.welcome_text2').style.display = "none";
+            document.querySelector('.welcome_icon').style.display = "none";
+
+
+            setTimeout(() => {
+
+                setTimeout(() => {
+                    document.querySelector('.welcome_window_inline').style.display = "block"
+                    setTimeout(() => {
+                        document.querySelector('.welcome_text1').style.fontSize = "70px"
+                        document.querySelector('.welcome_text1').style.marginTop = "80px"
+                        document.querySelector('.welcome_text1').style.marginLeft = "25px"
+                    }, 1000);
+                    setTimeout(() => {
+                        document.querySelector('.welcome_text1').style.fontSize = "60px"
+                        document.querySelector('.welcome_text1').style.marginTop = "40px"
+                        document.querySelector('.welcome_text1').style.marginLeft = "15px"
+                    }, 1200);
+                    setTimeout(() => {
+                        document.querySelector('.welcome_text1').style.fontSize = "50px"
+                        document.querySelector('.welcome_text1').style.marginTop = "20px"
+                        document.querySelector('.welcome_text1').style.marginLeft = "10px"
+                    }, 1400);
+                    setTimeout(() => {
+                        document.querySelector('.welcome_text1').style.fontSize = "45px"
+                        document.querySelector('.welcome_text1').style.marginTop = "10px"
+                        document.querySelector('.welcome_text1').style.marginLeft = "5px"
+                    }, 1600);
+                    setTimeout(() => {
+                        document.querySelector('.welcome_text1').style.fontSize = "40px"
+                        document.querySelector('.welcome_text1').style.marginTop = "0px"
+                        document.querySelector('.welcome_text1').style.marginLeft = "0px"
+                    }, 1800);
+
+                    setTimeout(() => {
+                        welunder.style.width = "5%"
+                    }, 2500);
+                    setTimeout(() => {
+                        welunder.style.width = "15%"
+                    }, 2550);
+                    setTimeout(() => {
+                        welunder.style.width = "25%"
+                    }, 2600);
+                    setTimeout(() => {
+                        welunder.style.width = "35%"
+                    }, 2650);
+                    setTimeout(() => {
+                        welunder.style.width = "45%"
+                    }, 2700);
+                    setTimeout(() => {
+                        welunder.style.width = "55%"
+                    }, 2750);
+                    setTimeout(() => {
+                        welunder.style.width = "65%"
+                    }, 2800);
+                    setTimeout(() => {
+                        welunder.style.width = "75%"
+                    }, 2850);
+                    setTimeout(() => {
+                        welunder.style.width = "80%"
+                    }, 2900);
+                    setTimeout(() => {
+                        welunder.style.width = "85%"
+                    }, 2950);
+                    setTimeout(() => {
+                        welunder.style.width = "100%"
+                    }, 3000);
+
+                    setTimeout(() => {
+                        document.querySelector('.welcome_text2').style.display = "block";
+                    }, 3500);
+                    setTimeout(() => {
+                        document.querySelector('.welcome_icon').style.display = "block";
+                    }, 4000);
+
+
+
+                    setTimeout(() => {
+                        document.querySelector('.start_nexser').style.display = "block";
+                    }, 10000);
+                }, 500);
+
+            }, 1000);
+
+        }
+
+        function welcome() {
+            document.querySelector('.welcome_windows').style.display = "block"
+            desktop.style.display = "none";
+            welcome_animation()
         }
 
         startup_window_open()
@@ -6691,49 +7330,47 @@
 
         Array.from(shutdown).forEach(element => {
             element.addEventListener('click', event => {
-                document.querySelector('.test_allwindow').style.display = "block";
-                let result = document.getElementsByClassName('child_windows active').length;
-                result2 = 21;
-                console.log(result)
-                let result3 = result - result2;
-                console.log(result3)
-                if (sessionStorage.getItem('start_camera')) {
-                    document.querySelector('.window_error_text').textContent = "camera no finish no shutdown!"
-                    error_windows.classList.remove('active')
-                    sound3()
+                setTimeout(() => {
                     document.querySelector('.test_allwindow').style.display = "block";
-                } else if (result3 == 0) {
-                    shutdown_sound();
-                    setTimeout(() => {
-                        desktop.style.display = "none";
-                        localStorage.removeItem('prompt_data');
-                        window_reset();
-                        document.querySelector('#codes').style.display = "none";
-                        window_none();
-
+                    if (sessionStorage.getItem('start_camera')) {
+                        document.querySelector('.window_error_text').textContent = "camera no finish no shutdown!"
+                        error_windows.classList.remove('active')
+                        sound3()
+                        document.querySelector('.test_allwindow').style.display = "block";
+                    } else if (gets == gets2) {
+                        shutdown_sound();
                         setTimeout(() => {
-                            document.querySelectorAll('.button').forEach(function (button) {
-                                let tscbtn = button.firstChild;
-                                tscbtn = button.classList.remove('pressed');
-                            });
-                            document.getElementsByClassName('name')[0].value = "";
-                            document.querySelector('.prompt_error_text').textContent = "";
-                            document.querySelector('.help').textContent = "";
-                            msg.innerText = "";
-                            prompt_text.style.color = "";
-                            nexser.style.display = "none";
-                            prompt.style.display = "block";
-                            start_menu.style.display = "none";
-                            document.querySelector('.focus').focus();
-                        }, 500);
-                    }, 1500);
-                } else {
-                    warning_windows.classList.remove('active');
-                    document.querySelector('.shutdown_button').style.display = "block";
-                    document.querySelector('.warningclose_button').style.display = "none";
-                    document.querySelector('.window_warning_text').textContent = "task window open! shutdown?"
-                    sound5()
-                }
+                            desktop.style.display = "none";
+                            localStorage.removeItem('prompt_data');
+                            window_reset();
+                            document.querySelector('#codes').style.display = "none";
+                            window_none();
+
+                            setTimeout(() => {
+                                document.querySelectorAll('.button').forEach(function (button) {
+                                    let tscbtn = button.firstChild;
+                                    tscbtn = button.classList.remove('pressed');
+                                });
+                                document.getElementsByClassName('name')[0].value = "";
+                                document.querySelector('.prompt_error_text').textContent = "";
+                                document.querySelector('.help').textContent = "";
+                                msg.innerText = "";
+                                prompt_text.style.color = "";
+                                nexser.style.display = "none";
+                                prompt.style.display = "block";
+                                start_menu.style.display = "none";
+                                document.querySelector('.focus').focus();
+                            }, 500);
+                        }, 1500);
+                    } else {
+                        warning_windows.style.display = "block";
+                        document.querySelector('.close_button3').style.display = "block"
+                        document.querySelector('.shutdown_button').style.display = "block";
+                        document.querySelector('.warningclose_button').style.display = "none";
+                        document.querySelector('.window_warning_text').textContent = "task window open! shutdown?"
+                        sound5()
+                    }
+                }, 500);
             })
         })
 
@@ -6893,7 +7530,7 @@
             }
             if (localStorage.getItem('noteData')) {
                 load()
-                document.querySelector('.note_title').textContent = "notepad(save keep)"
+                document.querySelector('.note_title').textContent = "　　notepad(save keep)"
             }
             if (localStorage.getItem('textdropdata')) {
                 load2()
@@ -6982,7 +7619,7 @@
                 }
             })
             document.querySelectorAll(".taskbar_buttons .test_button5").forEach(function (taskbtn) {
-                if (version.classList.contains('active')) {
+                if (system_menu.classList.contains('active')) {
                     taskbtn.classList.remove('pressed')
                 } else {
                     taskbtn.classList.add('pressed')
@@ -7063,7 +7700,7 @@
                 allwindow_none.classList.add('active');
                 allwindow_none.classList.remove('big');
             });
-            warning_windows.classList.add('active');
+            warning_windows.style.display = "none";
             error_windows.classList.add('active');
         }
         function window_active() {
@@ -7089,6 +7726,24 @@
             localStorage.removeItem('data_taskbar_none');
             colordata_clear()
             prompt_data_clear()
+        }
+
+        function localStorage_clear() {
+            const locallength = localStorage.length;
+            if (locallength > 0) {
+                localStorage.clear();
+
+                document.querySelector('.tests').textContent = (locallength);
+
+                document.querySelector('.test_allwindow').style.display = "block";
+                warning_windows.style.display = "block";
+                document.querySelector('.shutdown_button').style.display = "block";
+                document.querySelector('.warningclose_button').style.display = "none";
+                document.querySelector('.window_warning_text').textContent = "localstorage allremove!!"
+                sound5()
+
+                document.querySelector('.close_button3').style.display = "none"
+            }
         }
 
         function colordata_clear() {
@@ -7242,6 +7897,11 @@
                     document.querySelector('#codes').style.display = "none";
                     document.querySelector('.focus').focus();
                     break;
+                case 'cpu/bench':
+                    document.querySelector('.prompt_error_text').textContent = "bench connect";
+                    prompt_text.style.color = "";
+                    cpubench()
+                    break;
                 case 'windows95/open':
                     document.querySelector('.prompt_error_text').textContent = "";
                     window.open("https://moti5768.github.io/moti.world/windows95.html");
@@ -7373,6 +8033,17 @@
                         element.style.fontSize = "";
                     })
                     break;
+                case 'cpu/bench':
+                    document.querySelector('.prompt_error_text2').textContent = "bench connect";
+                    prompt_text2.style.color = "";
+                    cpubench()
+                    break;
+                case 'localstorage/clear':
+                    document.querySelector('.prompt_error_text2').textContent = "";
+                    localStorage_clear()
+                    prompt_text2.style.color = "";
+                    break;
+
                 case 'windows95/open':
                     document.querySelector('.prompt_error_text2').textContent = "";
                     window.open("https://moti5768.github.io/moti.world/windows95.html");
@@ -7422,18 +8093,41 @@
                     document.querySelector('.chargingTime').innerHTML = battery.chargingTime;
                     document.querySelector('.dischargingTime').innerHTML = battery.dischargingTime;
                 });
-                console.log("memory")
                 document.querySelector('.memory').textContent = (`Memory:   ${(performance.memory.usedJSHeapSize / 1024).toFixed(2)}KB`);
                 document.querySelector('.memory2').textContent = (`使用可能なメモリ    ${(performance.memory.jsHeapSizeLimit / 1048576).toFixed(2)}MB`);
                 document.querySelector('.memory3').textContent = (`割り当てられたメモリ  ${(performance.memory.totalJSHeapSize / 1024).toFixed(2)}KB`);
                 document.querySelector('.memory4').textContent = (`現在使用中のメモリ   ${(performance.memory.usedJSHeapSize / 1024).toFixed(2)}KB`);
+
+                const locallength = localStorage.length;
+                document.querySelector('.length_localStorage').textContent = (locallength);
+
             } else {
+                const locallength = localStorage.length;
+                document.querySelector('.tests').textContent = (locallength);
+
                 const backtext_data2 = localStorage.getItem('backtext_data');
                 document.querySelector('#background_text2').textContent = (backtext_data2)
+
+                const get = document.getElementsByClassName('child_windows');
+                const get2 = document.getElementsByClassName('active');
+                gets = get.length;
+                console.log(gets, "childwin")
+                gets2 = get2.length - 1;
+                console.log(gets2, "active")
+                // console.log(get2)
+                // ↑シャットダウンする前にウィンドウが開かれていたら、警告を出す
 
                 if (localStorage.getItem(KEY_BKCOLOR, bkcolor)) {
                     document.querySelector(".mini_desktop").style.backgroundColor = bkcolor;
                 }
+
+                navigator.getBattery().then(function (battery) {
+                    if (battery.charging == false) {
+                        document.querySelector('.task_battery').style.color = "black"
+                    } else {
+                        document.querySelector('.task_battery').style.color = "lime"
+                    }
+                })
             }
         }, 500);
 
@@ -7445,9 +8139,6 @@
         document.querySelectorAll('.close_button').forEach(function (close_button) {
             close_button.addEventListener('click', function () {
                 const closebutton = close_button.closest('.child_windows');
-                closebutton.style.left = "";
-                closebutton.style.top = "";
-                closebutton.classList.remove('big');
                 closebutton.classList.add('active');
                 taskbtn_load()
             });
@@ -7462,7 +8153,7 @@
         document.querySelectorAll('.close_button3').forEach(function (close_button3) {
             close_button3.addEventListener('click', function () {
                 const closebutton3 = close_button3.closest('.warning_windows');
-                closebutton3.classList.add('active');
+                closebutton3.style.display = "none"
                 document.querySelector('.test_allwindow').style.display = "none";
             });
         })
@@ -7479,8 +8170,8 @@
                 const bigscreenbutton = bigscreen_button.closest('.child_windows');
                 bigscreenbutton.style.top = "0"
                 bigscreenbutton.style.left = "0"
-                bigscreenbutton.style.height = "";
-                bigscreenbutton.style.width = "";
+                bigscreenbutton.style.height = ""
+                bigscreenbutton.style.width = ""
                 bigscreenbutton.classList.add('big');
             });
         })
@@ -7488,8 +8179,8 @@
         document.querySelectorAll('.minscreen_button').forEach(function (minscreen_button) {
             minscreen_button.addEventListener('click', function () {
                 const minscreenbutton = minscreen_button.closest('.child_windows');
-                minscreenbutton.style.top = ""
-                minscreenbutton.style.left = ""
+                minscreenbutton.style.top = "";
+                minscreenbutton.style.left = "";
                 minscreenbutton.classList.remove('big');
             });
         })
@@ -7555,16 +8246,26 @@
         document.querySelectorAll('.parent_list').forEach(function (parent_list) {
             parent_list.addEventListener('mouseover', function () {
                 let parentlist = parent_list.lastElementChild;
-                parentlist.classList.add('active')
-
-                parentlist = parent_list.closest('.child_windows');
-                z = largestZIndex + 1;
-                parent_list2 = parentlist.style.zIndex = z;
+                parentlist.style.display = "flex"
 
                 document.querySelectorAll('.parent_list').forEach(function (c_list) {
                     c_list.addEventListener('mouseleave', function () {
                         document.querySelectorAll('.child_list', '.active').forEach(function (cb_list) {
-                            cb_list.classList.remove('active')
+                            cb_list.style.display = "none";
+                        })
+                    })
+                })
+            })
+        })
+        document.querySelectorAll('.window_inline_menus_parent').forEach(function (parent_list) {
+            parent_list.addEventListener('click', function () {
+                let parentlist = parent_list.lastElementChild;
+                parentlist.style.display = "flex"
+
+                document.querySelectorAll('.window_inline_menus_parent').forEach(function (c_list) {
+                    c_list.addEventListener('mouseup', function () {
+                        document.querySelectorAll('.window_inline_menus_child', '.active').forEach(function (cb_list) {
+                            cb_list.style.display = "none";
                         })
                     })
                 })
@@ -7613,10 +8314,10 @@
         });
         document.querySelectorAll('.test_button5').forEach(function (test_button5) {
             test_button5.addEventListener('click', function () {
-                version.classList.toggle('active');
-                version.closest('.child_windows');
+                system_menu.classList.toggle('active');
+                system_menu.closest('.child_windows');
                 z = largestZIndex + 1;
-                unko5 = version.style.zIndex = z;
+                unko5 = system_menu.style.zIndex = z;
             });
         });
         document.querySelectorAll('.test_button6').forEach(function (test_button6) {
@@ -7747,6 +8448,14 @@
                 unko21 = uploadvideo_menu.style.zIndex = z;
             });
         });
+        document.querySelectorAll('.test_button22').forEach(function (test_button22) {
+            test_button22.addEventListener('click', function () {
+                font_menu.classList.toggle('active');
+                font_menu.closest('.child_windows');
+                z = largestZIndex + 1;
+                unko22 = font_menu.style.zIndex = z;
+            });
+        });
 
         document.querySelectorAll('.drag_button').forEach(function (drag) {
             drag.addEventListener('mousedown', function () {
@@ -7807,12 +8516,16 @@
                             document.querySelectorAll('.title').forEach(function (title) {
                                 const titlebar = title.style.backgroundColor = "darkblue";
                                 window_prompt.style.background = "rgb(51, 51, 184)"
+                                const bsilver = document.querySelector('.back_silver');
+                                bsilver.style.background = "silver"
                             })
 
                             // 半透明
                             document.querySelectorAll('.child_windows').forEach(function (title) {
                                 title.style.opacity = "";
                                 window_prompt.style.background = "rgb(51, 51, 184)"
+                                const bsilver = document.querySelector('.back_silver');
+                                bsilver.style.background = "silver"
                             })
 
                             // 移動してる時だけ黒枠のみ
@@ -7821,9 +8534,13 @@
                                 title.style.border = "";
                                 document.querySelector('iframe').style.opacity = "";
                                 window_prompt.style.background = "rgb(51, 51, 184)"
+                                const bsilver = document.querySelector('.back_silver');
+                                bsilver.style.background = "silver"
                             })
                             document.querySelectorAll('.title,.title2,.title_buttons,.window_inline_list,.mini_window,button,input,textarea,p,#prompt2').forEach(function (title) {
                                 title.style.opacity = ""
+                                const bsilver = document.querySelector('.back_silver');
+                                bsilver.style.background = "silver"
                             })
 
                         };
@@ -7995,6 +8712,13 @@
                 sound6.play();
             }
         }
+        function sound7() {
+            if (localStorage.getItem('driver_sound')) {
+                const sound7 = new Audio("https://github.com/moti5768/nexser/raw/main//welcome.mp3");
+                sound7.play();
+            }
+        }
+
         let ele = document.documentElement;
         function full() {
             // 全画面表示      
@@ -8215,7 +8939,7 @@
                 localStorage.setItem('noteData', noteData);
                 const memo_save = document.getElementById('memo_save_text');
                 memo_save.textContent = "save!";
-                document.querySelector('.note_title').textContent = "notepad(save)"
+                document.querySelector('.note_title').textContent = "　　notepad(save)"
             }
         }
         function save2() {
@@ -8231,7 +8955,8 @@
                 taskbtn_load()
             } else {
                 document.querySelector('.window_warning_text').textContent = "notepad no save window close?(text allremove)"
-                warning_windows.classList.remove('active')
+                warning_windows.style.display = "block"
+                document.querySelector('.close_button3').style.display = "block"
                 sound5()
                 document.querySelector('.test_allwindow').style.display = "block";
                 document.querySelector('.shutdown_button').style.display = "none";
@@ -8252,10 +8977,11 @@
         })
 
         function warning_windows_close() {
-            warning_windows.classList.add('active');
+            warning_windows.style.display = "none";
             document.querySelector('.test_allwindow').style.display = "none";
             document.querySelector('.shutdown_button').style.display = "block";
             document.querySelector('.warningclose_button').style.display = "none";
+            document.querySelector('.close_button3').style.display = "block"
             document.note_form.note_area.value = "";
             resetShowLength()
             note_pad.classList.add('active')
@@ -8266,7 +8992,7 @@
             localStorage.removeItem('noteData');
             const memo_save = document.getElementById('memo_save_text');
             memo_save.textContent = "";
-            document.querySelector('.note_title').textContent = "notepad"
+            document.querySelector('.note_title').textContent = "　　notepad"
         }
         document.getElementById('cleartextbtn').addEventListener('click', function () {
             document.getElementsByClassName("note_area")[0].value = '';
@@ -8389,7 +9115,6 @@
             document.querySelectorAll('.htmlviewer_run_menu').forEach(function (htmlviewer_run_menu) {
                 htmlviewer_run_menu.closest('.child_windows');
                 htmlviewer_run_menu.classList.remove('active');
-                console.log(htmlviewer_run_menu)
                 z = largestZIndex + 1;
                 unko20 = htmlviewer_run_menu.style.zIndex = z;
             });
@@ -8414,21 +9139,60 @@
             });
             fileReader.readAsDataURL(obj.files[0]);
         }
-        // let beforeMethod = performance.now();
-        // let sampleFunc = function () {
-        //     let intTest = 0;
-        //     for (let i = 0; i < 1000000; i++) {  // 例として1,000,000回10を足してみましょう
-        //         intTest += 10;
-        //     }
-        //     console.log('intTest : ' + intTest);
-        // }();
-        // let afterMethod = performance.now();
 
-        // console.log("1,000,000回10を足す処理時間は、" + (afterMethod - beforeMethod) + "ミリ秒です");
+        function cpubench() {
+            start = (new Date()).getTime();
+            n = 0;
+            for (i = 0; i < 25000; i++) {
+                for (j = 0; j < 25000; j++) {
+                    n = (n + i) / j;
+                }
+            }
+            end = (new Date()).getTime();
+            time = (end - start) / 1000;
+            alert('計算時間は' + time + '秒でした');
+        }
 
-   // } else {
-    //    document.querySelector(".prompt_error_text").textContent = 'この端末は対応していません!';
-   // }
+        //GeolocationAPが利用できるか確認
+        if (navigator.geolocation) {
+            test()
+        } else {
+            alert("現在地を取得できませんでした。")
+        }
+
+        function test() {
+            navigator.geolocation.getCurrentPosition(test2);
+        }
+
+        function test2(position) {
+            //まず現在地の緯度経度を取得する
+            var lat = position.coords.latitude;
+            var lon = position.coords.longitude;
+
+            //国土地理院API用に有効桁数を合わせる。
+            var adjustiveLat = lat + "00";
+            var adjustiveLon = lon + "0";
+
+            //文字列に変換
+            var stringLat = String(adjustiveLat);
+            var stringLon = String(adjustiveLon);
+            //国土地理院APIに現在地の緯度経度を渡して、標高を取得する
+            const url = 'http://cyberjapandata2.gsi.go.jp/general/dem/scripts/getelevation.php?lon=' + stringLon + '&lat=' + stringLat + '&outtype=JSON';
+
+            fetch(url).then(function (response) {
+                return response.text();
+            }).then(function (text) {
+                //取得したjsonをパース
+                var jsonAltitude = JSON.parse(text);
+                document.querySelector('.hyoukou').textContent = ("標高：" + jsonAltitude.elevation + "m");
+                // document.querySelector('.hyoukou2').textContent = ("現在地の標高は" + jsonAltitude.elevation + "mです。" + "(" + "緯度：" + stringLat + "、経度：" + stringLon + ")")
+                document.querySelector('.hyoukou2').textContent = ("" + "緯度：" + stringLat + "、経度：" + stringLon + "")
+            });
+        }
+
+    } else {
+        document.querySelector(".prompt_error_text").textContent = 'この端末は対応していません!';
+    }
 
 </script>
 
