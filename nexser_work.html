@@ -122,6 +122,15 @@
             <div id="desktop">
                 <span id="background_text">none</span>
 
+                <div class="help_menu bold" style="display: none;">
+                    <span class="help_border" style="position: absolute; bottom: 45px;">↓スタートボタン</span>
+                    <span class="help_border" style="position: absolute; bottom: 45px; left: 150px;">↓ウィンドウを呼び出す</span>
+                    <span class="help_border"
+                        style="position: absolute; bottom: 45px; right: 270px;">エクスポートされたテキストの受信↓<br>(受信すると色が白黒になります)</span>
+                    <span class="help_border" style="position: absolute; bottom: 45px; right: 135px;">↓バッテリー残量</span>
+                    <span class="help_border" style="position: absolute; bottom: 45px; right: 25px;">↓時間表示</span>
+                </div>
+
                 <div id="files">
                 </div>
 
@@ -1703,6 +1712,9 @@
                             </ul>
                         </div>
                         <div class="taskbar_rightgroup">
+                            <ul class="inport_icon border">
+                                <span>&nbsp;N&nbsp;</span>
+                            </ul>
                             <ul>
                                 <li class="border task_battery">
                                     BATTERY:
@@ -1727,6 +1739,9 @@
                                 <li class="test_button6">nexser prompt</li>
                                 <li class="test_button9">driver</li>
                                 <li class="test_button23">setting</li><br>
+                                <div class="mini_window">
+                                    <li onclick="helpmenu_open()">help</li>
+                                </div>
                                 <div class="mini_window">
                                     <li class="shutdown">shutdown</li>
                                 </div>
@@ -2043,16 +2058,22 @@
         width: 260px;
         font-size: medium;
         position: absolute;
-        right: 0px;
-        column-count: 2;
-        margin: 0px;
+        right: 5px;
+        column-count: 3;
         margin-top: 6px;
+    }
+
+    .inport_icon {
+        position: absolute;
+        left: -30px;
+        text-align: center;
     }
 
     .time {
         background: silver;
         position: relative;
         text-align: center;
+        margin-left: 50px;
     }
 
     .task_battery {
@@ -2089,8 +2110,43 @@
         position: absolute;
         top: 30%;
         left: 30%;
-        scrollbar-color: dimgray silver;
-        scrollbar-width: thin;
+    }
+
+    /* scrollbar */
+
+    .child_windows::-webkit-scrollbar {
+        display: block;
+        width: 12.5px;
+    }
+
+    .child_windows::-webkit-scrollbar-track {
+        background-color: #555555;
+        border: solid 1.5px #888888;
+    }
+
+    .child_windows::-webkit-scrollbar-thumb {
+        background: darkgray;
+        border-top: solid 1.5px dimgray;
+        border-right: solid 1.5px black;
+        border-left: solid 1.5px dimgray;
+        border-bottom: solid 1.5px black;
+    }
+
+    .child_windows::-webkit-scrollbar-button {
+        background: silver;
+        border-top: solid 1px dimgray;
+        border-right: solid 1px black;
+        border-left: solid 1px dimgray;
+        border-bottom: solid 1px black;
+        content: 'a';
+    }
+
+    .child_windows::-webkit-scrollbar-corner {
+        background: silver;
+    }
+
+    body::-webkit-scrollbar {
+        display: none;
     }
 
     .welcome_windows {
@@ -2484,7 +2540,6 @@
 
     .parent_list {
         font-size: small;
-        display: block;
         text-align: center;
         justify-content: center;
     }
@@ -2562,25 +2617,6 @@
         margin-top: 15px;
     }
 
-    /* scrollbar */
-    body::-webkit-scrollbar {
-        display: none;
-        width: 12.5px;
-    }
-
-    body::-webkit-scrollbar-track {
-        background-color: #555555;
-        border: solid 1.5px #888888;
-    }
-
-    body::-webkit-scrollbar-thumb {
-        background: darkgray;
-        border-top: solid 1.5px dimgray;
-        border-right: solid 1.5px black;
-        border-left: solid 1.5px dimgray;
-        border-bottom: solid 1.5px black;
-    }
-
     /* note */
     .note_area {
         display: block;
@@ -2633,6 +2669,23 @@
     .child_windows.big #preview {
         height: 90vh;
         width: 99.8%;
+    }
+
+    /* help */
+
+    .help_menu {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        font-size: medium;
+    }
+
+    .help_border {
+        background: #FFFF55;
+        border: solid 1px black;
+        text-align: center;
+        box-shadow: 5px 5px black;
     }
 </style>
 <script text="javascript">
@@ -2707,17 +2760,19 @@
     soft_windows.addEventListener('mousedown', function () {
         start_menu.style.display = "none";
         document.querySelector('.start_button').classList.remove('pressed')
+        helpmenu_close()
     });
     parent_start_menu.addEventListener('click', function () {
         start_menu.style.display = "none";
         taskbtn_load()
         document.querySelector('.start_button').classList.remove('pressed')
     });
-    document.querySelector('.taskbar_buttons').addEventListener('mousedown', function () {
+    document.querySelector('.taskbar_buttons, .child').addEventListener('mousedown', function () {
         start_menu.style.display = "none";
         document.querySelector('.start_button').classList.remove('pressed')
         taskbtn_load()
         getLargestZIndex('.child_windows');
+        z_index.textContent = getLargestZIndex('.child_windows');
     });
 
     document.querySelectorAll('.button').forEach(function (button) {
@@ -3004,6 +3059,7 @@
         setTimeout(() => {
             startup_window_open()
             taskbtn_load()
+            helpmenu_open()
         }, 3000);
     }
 
@@ -3123,6 +3179,13 @@
         welcome_animation()
     }
 
+    function helpmenu_open() {
+        document.querySelector('.help_menu').style.display = "block"
+    }
+    function helpmenu_close() {
+        document.querySelector('.help_menu').style.display = "none"
+    }
+
     startup_window_open()
     function startup_window_open() {
         if (localStorage.getItem('startup_note')) {
@@ -3163,6 +3226,7 @@
                     document.querySelector('.test_allwindow').style.display = "block";
                 } else if (gets == gets2) {
                     shutdown_sound();
+                    helpmenu_close()
                     setTimeout(() => {
                         desktop.style.display = "none";
                         localStorage.removeItem('prompt_data');
@@ -4004,6 +4068,14 @@
                 document.querySelector(".mini_desktop").style.backgroundColor = bkcolor;
             }
 
+            if (localStorage.getItem('MemoData_export')) {
+                document.querySelector('.inport_icon').style.color = "white"
+                document.querySelector('.inport_icon').style.background = "black"
+            } else {
+                document.querySelector('.inport_icon').style.color = ""
+                document.querySelector('.inport_icon').style.background = ""
+            }
+
             navigator.getBattery().then(function (battery) {
                 if (battery.level == 1 && battery.charging == true) {
                     document.querySelector('.task_battery').style.color = "lime"
@@ -4549,7 +4621,7 @@
         getStorage();
     });
 
-    var largestZIndex = 0;
+    var largestZIndex = 1;
     var defaultView = document.defaultView;
     var getLargestZIndex = function () {
         var func = function (queryselectorname) {
