@@ -88,7 +88,7 @@
 
                 <div class="title_buttons">
                     <span class="drag_button">&nbsp;</span>
-                    <span class="close_button hover_button startnexser_close"
+                    <span class="close_button4 hover_button startnexser_close"
                         style="display: none;">&nbsp;✕&nbsp;</span><br>
                 </div>
 
@@ -3020,6 +3020,7 @@
     function welcome_animation() {
         sound7()
         document.querySelector('.start_nexser').style.display = "none";
+        document.querySelector('.startnexser_close').style.display = "none";
         document.querySelector('.welcome_window_inline').style.display = "none";
         document.querySelector('.welcome_text1').style.position = "absolute";
         document.querySelector('.welcome_text1').style.fontSize = "80px";
@@ -4004,7 +4005,7 @@
             }
 
             navigator.getBattery().then(function (battery) {
-                if (battery.level == 1) {
+                if (battery.level == 1 && battery.charging == true) {
                     document.querySelector('.task_battery').style.color = "lime"
                     document.querySelector('.task_battery').style.background = "black"
                 } else if (battery.charging == false) {
@@ -4561,7 +4562,6 @@
                     zIndex = css ? css.zIndex : 0;
                 }
                 zIndex++;
-                console.log(zIndex)
                 if (largestZIndex < zIndex) largestZIndex = zIndex;
             }
         };
