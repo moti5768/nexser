@@ -7,7 +7,7 @@
     <title>nexser version 1.0</title>
 </head>
 
-<body id="background">
+<body>
 
     <div id="nex" class="nexser_group">
 
@@ -3996,10 +3996,6 @@
                 gets2 = get2.length - 1;
                 document.querySelector('.child_windows_length').textContent = (gets);
                 document.querySelector('.active_length').textContent = (gets2);
-                // console.log(gets, "childwin")
-                // console.log(gets2, "active")
-                // console.log(get2)
-                // ↑シャットダウンする前にウィンドウが開かれていたら、警告を出す
 
                 if (localStorage.getItem(KEY_BKCOLOR, bkcolor)) {
                     document.querySelector(".mini_desktop").style.backgroundColor = bkcolor;
