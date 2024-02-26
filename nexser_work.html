@@ -1733,7 +1733,7 @@
                         
                                                 &lt;/div&gt;
                                                 &lt;p&gt;export&lt;/p&gt;
-                                                &lt;span id=&quot;download&quot; class=&quot;button2&quot;&gt;data dawonload&lt;/span&gt;&lt;br&gt;
+                                                &lt;span id=&quot;download&quot; class=&quot;button2&quot;&gt;data download&lt;/span&gt;&lt;br&gt;
                                                 &lt;div class=&quot;mini_window&quot;&gt;
                                                     &lt;p&gt;inport&lt;/p&gt;
                                                     &lt;label&gt;
@@ -5474,6 +5474,9 @@
                                         console.log(reader.result);
                                         localStorage.setItem(&quot;noteData&quot;, reader.result)// JavaScriptオブジェクトとして表示
                                     };
+                                    setTimeout(() =&gt; {
+                                        load()
+                                    }, 1000);
                                 }
                             }
                             function fileChanged2(input) {
@@ -5484,6 +5487,11 @@
                                     reader2.onload = () =&gt; {
                                         console.log(reader2.result);
                                         localStorage.setItem(&quot;BKCOLOR&quot;, reader2.result) // JavaScriptオブジェクトとして表示
+                                        setTimeout(() =&gt; {
+                                            getStorage();
+                                            setStorage()
+                                            setColor()
+                                        }, 1000);
                                     };
                                 }
                             }
@@ -5495,6 +5503,11 @@
                                     reader3.onload = () =&gt; {
                                         console.log(reader3.result);
                                         localStorage.setItem(&quot;COLOR&quot;, reader3.result) // JavaScriptオブジェクトとして表示
+                                        setTimeout(() =&gt; {
+                                            getStorage();
+                                            setStorage()
+                                            setColor()
+                                        }, 1000);
                                     };
                                 }
                             }
@@ -5506,6 +5519,12 @@
                                     reader4.onload = () =&gt; {
                                         console.log(reader4.result);
                                         localStorage.setItem(&quot;driver_color&quot;, reader4.result) // JavaScriptオブジェクトとして表示
+                                        document.querySelector(&#039;.installbutton_2&#039;).textContent = &quot;uninstall&quot;
+                                        setTimeout(() =&gt; {
+                                            getStorage();
+                                            setStorage()
+                                            setColor()
+                                        }, 1000);
                                     };
                                 }
                             }
@@ -5517,6 +5536,7 @@
                                     reader5.onload = () =&gt; {
                                         console.log(reader5.result);
                                         localStorage.setItem(&quot;driver_sound&quot;, reader5.result) // JavaScriptオブジェクトとして表示
+                                        document.querySelector(&#039;.installbutton_1&#039;).textContent = &quot;uninstall&quot;
                                     };
                                 }
                             }
@@ -5531,7 +5551,6 @@
                         &lt;/script&gt;
                         
                         &lt;/html&gt;
-
 
 
 
@@ -7182,7 +7201,7 @@
 
                         </div>
                         <p>export</p>
-                        <span id="download" class="button2">data dawonload</span><br>
+                        <span id="download" class="button2">data download</span><br>
                         <div class="mini_window">
                             <p>inport</p>
                             <label>
@@ -10923,6 +10942,9 @@
                 console.log(reader.result);
                 localStorage.setItem("noteData", reader.result)// JavaScriptオブジェクトとして表示
             };
+            setTimeout(() => {
+                load()
+            }, 1000);
         }
     }
     function fileChanged2(input) {
@@ -10933,6 +10955,11 @@
             reader2.onload = () => {
                 console.log(reader2.result);
                 localStorage.setItem("BKCOLOR", reader2.result) // JavaScriptオブジェクトとして表示
+                setTimeout(() => {
+                    getStorage();
+                    setStorage()
+                    setColor()
+                }, 1000);
             };
         }
     }
@@ -10944,6 +10971,11 @@
             reader3.onload = () => {
                 console.log(reader3.result);
                 localStorage.setItem("COLOR", reader3.result) // JavaScriptオブジェクトとして表示
+                setTimeout(() => {
+                    getStorage();
+                    setStorage()
+                    setColor()
+                }, 1000);
             };
         }
     }
@@ -10955,6 +10987,12 @@
             reader4.onload = () => {
                 console.log(reader4.result);
                 localStorage.setItem("driver_color", reader4.result) // JavaScriptオブジェクトとして表示
+                document.querySelector('.installbutton_2').textContent = "uninstall"
+                setTimeout(() => {
+                    getStorage();
+                    setStorage()
+                    setColor()
+                }, 1000);
             };
         }
     }
@@ -10966,6 +11004,7 @@
             reader5.onload = () => {
                 console.log(reader5.result);
                 localStorage.setItem("driver_sound", reader5.result) // JavaScriptオブジェクトとして表示
+                document.querySelector('.installbutton_1').textContent = "uninstall"
             };
         }
     }
