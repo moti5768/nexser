@@ -251,6 +251,28 @@ input[type="file"] {
     display: none;
 }
 
+/* toolbar */
+#toolbar {
+    display: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    font-size: 15px;
+    width: 155px;
+    height: 30px;
+    background-color: #DDDDDD;
+    position: absolute;
+    right: 0px;
+    bottom: 40px;
+    z-index: 999996;
+}
+
+.drag_button2 {
+    background: gray;
+    border: solid 1.5px dimgray;
+}
+
 /* taskbar */
 #taskbar {
     -webkit-user-select: none;
@@ -262,8 +284,9 @@ input[type="file"] {
     height: 40px;
     background-color: silver;
     border-top: solid 1.5px whitesmoke;
+    border-bottom: 1.5px #333 solid;
     position: absolute;
-    bottom: 0;
+    bottom: -1px;
     z-index: 999996;
 }
 
@@ -327,6 +350,12 @@ input[type="file"] {
     width: 130px;
     background: silver;
     position: relative;
+}
+
+.battery_menu {
+    display: none;
+    position: absolute;
+    bottom: 35px;
 }
 
 /* start_menu */
@@ -418,7 +447,23 @@ input[type="file"] {
     background: whitesmoke;
     position: absolute;
     top: 25%;
-    left: 30%;
+    left: 25%;
+    z-index: 1;
+}
+
+.window_bottom {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    display: block;
+    background: darkgray;
+    border: solid 1px gray;
+    outline: 1px solid #c0c0c0;
+    outline-offset: 2px;
+    position: absolute;
+    bottom: 0px;
+    width: 99.7%;
 }
 
 /* scrollbar */
@@ -584,8 +629,22 @@ body::-webkit-scrollbar {
     width: 99.7%;
     border: solid 2px #c0c0c0;
     background: whitesmoke;
-    position: absolute;
     resize: none;
+}
+
+.child_windows.big .window_bottom {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    display: block;
+    background: darkgray;
+    border: solid 1px gray;
+    outline: 1px solid #c0c0c0;
+    outline-offset: 2px;
+    position: absolute;
+    bottom: 40px;
+    width: 99.7%;
 }
 
 .child_windows .title {
@@ -842,7 +901,6 @@ body::-webkit-scrollbar {
 .parent_list {
     font-size: small;
     text-align: center;
-    justify-content: center;
 }
 
 .child_list {
