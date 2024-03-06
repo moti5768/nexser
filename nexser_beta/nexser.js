@@ -6,6 +6,7 @@ const restart = document.getElementsByClassName('restart');
 
 const parent_start_menu = document.getElementById('start_menu');
 const taskbar = document.getElementById('taskbar');
+const toolbar = document.getElementById('toolbar');
 const background_text = document.getElementById('background_text');
 
 const screen_saver_group = document.getElementById('screen_saver_group');
@@ -55,6 +56,7 @@ const debug_menu = document.querySelector('.debug_menu');
 const file_download_menu = document.querySelector('.file_download_menu');
 const display_menu = document.querySelector('.display_menu');
 const stopwatch_menu = document.querySelector('.stopwatch_menu');
+const comment_menu = document.querySelector('.comment_menu');
 
 const notice_menu = document.querySelector('.notice_menu');
 
@@ -121,15 +123,6 @@ function sound9() {
 
 document.querySelectorAll('.sound_play_button').forEach(function (sound_play_button) {
     sound_play_button.addEventListener('mousedown', function () {
-        sound_1.currentTime = 0;
-        sound_2.currentTime = 0;
-        sound_3.currentTime = 0;
-        sound_4.currentTime = 0;
-        sound_5.currentTime = 0;
-        sound_6.currentTime = 0;
-        sound_7.currentTime = 0;
-        sound_8.currentTime = 0;
-        sound_9.currentTime = 0;
         sound_stop()
     })
 })
@@ -150,13 +143,22 @@ function sound_stop() {
     sound_7.pause();
     sound_8.pause();
     sound_9.pause();
+    sound_1.currentTime = 0;
+    sound_2.currentTime = 0;
+    sound_3.currentTime = 0;
+    sound_4.currentTime = 0;
+    sound_5.currentTime = 0;
+    sound_6.currentTime = 0;
+    sound_7.currentTime = 0;
+    sound_8.currentTime = 0;
+    sound_9.currentTime = 0;
 }
 
 document.querySelector('#prompt').addEventListener('click', function () {
     document.querySelector('.focus').focus();
 })
 
-document.getElementById('startbtn').addEventListener('click', function () {
+document.getElementById('startbtn').addEventListener('mousedown', function () {
     if (start_menu.style.display == "block") {
         // noneで非表示
         start_menu.style.display = "none";
@@ -164,12 +166,25 @@ document.getElementById('startbtn').addEventListener('click', function () {
     } else {
         // blockで表示
         start_menu.style.display = "block";
-        document.querySelector('.start_button').classList.add('pressed')
+        document.querySelector('.start_button').classList.add('pressed');
+        document.querySelector('.battery_menu').style.display = "none";
+        document.querySelector('.task_battery').classList.remove('pressed');
+    }
+})
+document.querySelector('.task_battery').addEventListener('click', function () {
+    if (document.querySelector('.battery_menu').style.display == "block") {
+        // noneで非表示
+        document.querySelector('.battery_menu').style.display = "none";
+    } else {
+        // blockで表示
+        document.querySelector('.battery_menu').style.display = "block";
     }
 })
 soft_windows.addEventListener('mousedown', function () {
     start_menu.style.display = "none";
-    document.querySelector('.start_button').classList.remove('pressed')
+    document.querySelector('.start_button').classList.remove('pressed');
+    document.querySelector('.task_battery').classList.remove('pressed');
+    document.querySelector('.battery_menu').style.display = "none";
     helpmenu_close()
 });
 parent_start_menu.addEventListener('click', function () {
@@ -445,9 +460,15 @@ Array.from(shutdown).forEach(element => {
                 sound3()
                 document.querySelector('.test_allwindow').style.display = "block";
             } else if (gets == gets2) {
+                sound_stop();
                 shutdown_sound();
                 helpmenu_close();
                 document.querySelector('html').style.cursor = 'none';
+                if (!localStorage.getItem('noteData')) {
+                    document.note_form.note_area.value = "";
+                    resetShowLength();
+                    document.querySelector('.note_title').textContent = "notepad"
+                }
                 setTimeout(() => {
                     helpmenu_close()
                     desktop.style.display = "none";
@@ -497,9 +518,15 @@ Array.from(restart).forEach(element => {
                 sound3()
                 document.querySelector('.test_allwindow').style.display = "block";
             } else if (gets == gets2) {
+                sound_stop();
                 shutdown_sound();
                 helpmenu_close();
                 document.querySelector('html').style.cursor = 'none';
+                if (!localStorage.getItem('noteData')) {
+                    document.note_form.note_area.value = "";
+                    resetShowLength();
+                    document.querySelector('.note_title').textContent = "notepad"
+                }
                 setTimeout(() => {
                     helpmenu_close()
                     desktop.style.display = "none";
@@ -729,6 +756,9 @@ function startup_window_open() {
         const element = document.querySelector('.note_pad');
         element.closest('.child_windows');
         element.classList.remove('active')
+    }
+    if (!note_pad.classList.contains('active')) {
+        document.querySelector('.note_area').focus()
     }
     if (localStorage.getItem('startup_program')) {
         const element = document.querySelector('.program_manager');
@@ -1039,18 +1069,21 @@ function all_load() {
     if (localStorage.getItem('windowfile_2')) {
         window_file_list_reset()
     }
-
     if (localStorage.getItem('clock_button')) {
         document.querySelector('.clock_button').textContent = "on"
         document.querySelector('.time').style.display = "none";
         document.querySelector('.taskbar_rightgroup').style.width = "140px"
     }
-
     if (localStorage.getItem('taskbar_position_button')) {
         document.querySelector('.taskbar_position_button').textContent = "bottom"
         document.getElementById('taskbar').style.top = "0px"
         document.querySelector('.child_start_menu').style.top = "40px"
         document.querySelector('.child_start_menu').style.bottom = "auto"
+        document.querySelector('.battery_menu').style.top = "35px"
+        document.querySelector('.battery_menu').style.bottom = "auto"
+    }
+    if (localStorage.getItem('toolbar_on')) {
+        toolbar.style.display = "block"
     }
 
     sessionStorage.removeItem('start_camera')
@@ -1241,6 +1274,7 @@ function taskbar_none() {
     if (localStorage.getItem('data_taskbar_none')) {
         taskbar.style.display = "none";
         program.classList.remove('active');
+    } else {
     }
 }
 
@@ -1484,6 +1518,11 @@ function prompt_text_check2() {
             window_active()
             taskbtn_load()
             break;
+        case 'allwindow/min':
+            document.querySelector('.prompt_error_text2').textContent = "";
+            prompt_text2.style.color = "";
+            allwindow_min()
+            break;
         case 'title/none':
             document.querySelector('.prompt_error_text2').textContent = "";
             const data_title_none = document.prompt_text_form2.prompt_text2.value;
@@ -1690,6 +1729,9 @@ document.querySelectorAll('.bigscreen_button').forEach(function (bigscreen_butto
             bigscreenbutton.style.transition = ""
         }, 100);
         bigscreenbutton.classList.add('big');
+        if (!note_pad.classList.contains('active')) {
+            document.querySelector('.note_area').focus()
+        }
     });
 })
 
@@ -1700,11 +1742,25 @@ document.querySelectorAll('.minscreen_button').forEach(function (minscreen_butto
         minscreenbutton.style.left = "";
         minscreenbutton.style.transition = "0.025s cubic-bezier(0, 0, 1, 1)"
         setTimeout(() => {
+            if (!note_pad.classList.contains('active')) {
+                document.querySelector('.note_area').focus()
+            }
             minscreenbutton.classList.remove('big');
             minscreenbutton.style.transition = ""
         }, 30);
     });
 })
+function allwindow_min() {
+    document.querySelectorAll('.child_windows').forEach(function (alliwindow_min) {
+        alliwindow_min.style.top = "";
+        alliwindow_min.style.left = "";
+        alliwindow_min.style.transition = "0.025s cubic-bezier(0, 0, 1, 1)"
+        setTimeout(() => {
+            alliwindow_min.classList.remove('big');
+            alliwindow_min.style.transition = ""
+        }, 30);
+    });
+}
 
 document.querySelectorAll('.window_left').forEach(function (window_left) {
     window_left.addEventListener('click', function () {
@@ -1887,6 +1943,14 @@ document.querySelectorAll('.child_windows, .child').forEach(function (z_index_ch
     });
 })
 
+document.querySelectorAll('.note_pad, .child').forEach(function (notepad_foccus) {
+    notepad_foccus.addEventListener('mouseup', function () {
+        if (!note_pad.classList.contains('active')) {
+            document.querySelector('.note_area').focus()
+        }
+    });
+})
+
 document.querySelectorAll('.test_button').forEach(function (test_button) {
     test_button.addEventListener('click', function () {
         main.classList.toggle('active');
@@ -1981,6 +2045,9 @@ document.querySelectorAll('.test_button12').forEach(function (test_button12) {
         note_pad.closest('.child_windows');
         z = largestZIndex++;
         unko12 = note_pad.style.zIndex = z;
+        if (!note_pad.classList.contains('active')) {
+            document.querySelector('.note_area').focus()
+        }
     });
 });
 document.querySelectorAll('.test_button13').forEach(function (test_button13) {
@@ -2103,6 +2170,14 @@ document.querySelectorAll('.test_button27').forEach(function (test_button27) {
         unko27 = stopwatch_menu.style.zIndex = z;
     });
 });
+document.querySelectorAll('.test_button28').forEach(function (test_button28) {
+    test_button28.addEventListener('click', function () {
+        comment_menu.classList.toggle('active');
+        comment_menu.closest('.child_windows');
+        z = largestZIndex++;
+        unko28 = comment_menu.style.zIndex = z;
+    });
+});
 
 document.querySelector('.time').addEventListener('click', function () {
     taskbtn_load()
@@ -2204,6 +2279,51 @@ document.querySelectorAll('.drag_button').forEach(function (drag) {
             };
         };
     });
+})
+
+document.querySelectorAll('.drag_button2').forEach(function (drag) {
+    drag.addEventListener('mousedown', function () {
+
+        let drag2 = drag.closest('#toolbar');
+        drag2.classList.add('drag');
+
+        draggable(document.querySelector('.drag'));
+        function draggable(drag) {
+            drag2.onmousedown = function (event) {
+                let shiftX = event.clientX - drag.getBoundingClientRect().left;
+                let shiftY = event.clientY - drag.getBoundingClientRect().top;
+                let top = document.querySelector('.top');
+                moveAt(event.pageX, event.pageY);
+                // ボールを（pageX、pageY）座標の中心に置く
+                function moveAt(pageX, pageY) {
+                    drag.style.left = pageX - shiftX + 'px';
+                    drag.style.top = pageY - shiftY + 'px';
+                }
+                function onMouseMove(event) {
+                    moveAt(event.pageX, event.pageY);
+                }
+                // (3) mousemove でボールを移動する
+                document.addEventListener('mousemove', onMouseMove);
+                // (4) ボールをドロップする。不要なハンドラを削除する
+                drag.onmouseup = function () {
+                    document.removeEventListener('mousemove', onMouseMove);
+                    drag.onmouseup = null;
+                    drag2.classList.remove('drag');
+                    draggable()
+                };
+            };
+        };
+    });
+})
+
+document.querySelector('.toolbar_on').addEventListener('click', function () {
+    const toolbar_on = document.querySelector('.toolbar_on');
+    localStorage.setItem('toolbar_on', toolbar_on);
+    toolbar.style.display = "block"
+})
+document.querySelector('.toolbar_off').addEventListener('click', function () {
+    localStorage.removeItem('toolbar_on');
+    toolbar.style.display = "none"
 })
 
 const KEY_COLOR = "COLOR";				// 文字色用キー
@@ -2617,7 +2737,8 @@ note_area.addEventListener("paste", () => {
 });
 
 function notetitle() {
-    document.querySelector('.note_title').textContent = "*notepad"
+    notedata_clear()
+    document.querySelector('.note_title').textContent = "*notepad";
 }
 
 function onChange() {
@@ -2824,6 +2945,9 @@ document.querySelector('.taskbar_position_button').addEventListener('click', fun
         document.querySelector('.child_start_menu').style.top = "auto"
         document.querySelector('.child_start_menu').style.bottom = ""
 
+        document.querySelector('.battery_menu').style.top = "auto"
+        document.querySelector('.battery_menu').style.bottom = ""
+
         document.querySelectorAll('.big').forEach(function (child_win_posi) {
             child_win_posi.style.top = "auto"
         })
@@ -2836,6 +2960,9 @@ document.querySelector('.taskbar_position_button').addEventListener('click', fun
         document.getElementById('taskbar').style.top = "0px"
         document.querySelector('.child_start_menu').style.top = "40px"
         document.querySelector('.child_start_menu').style.bottom = "auto"
+
+        document.querySelector('.battery_menu').style.top = "35px"
+        document.querySelector('.battery_menu').style.bottom = "auto"
 
         document.querySelectorAll('.big').forEach(function (child_win_posi) {
             child_win_posi.style.top = "40px"
@@ -2868,7 +2995,11 @@ setInterval(() => {
         let bu = document.querySelector('.taskbattery');
         bu2 = bu.innerHTML = Math.floor(battery.level * 100);
     });
+    navigator.getBattery().then((battery) => {
+        document.querySelector('.battery_time').textContent = (`${battery.dischargingTime}`);
+    })
 }, 1000);
+
 
 async function startCamera() {
     const start_camera = document.querySelector('#start_camera');
