@@ -2134,19 +2134,6 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
         });
     })
 
-
-
-    window.onload = function () {
-        // スクロールを禁止にする関数
-        function disableScroll(event) {
-            event.preventDefault();
-        }
-
-        // イベントと関数を紐付け
-        document.addEventListener('touchmove', disableScroll, { passive: false });
-        document.addEventListener('mousewheel', disableScroll, { passive: false });
-    }
-
     document.querySelectorAll('.drag_button').forEach(function (drag) {
 
         let drag2 = drag.closest('.child_windows');
