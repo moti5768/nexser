@@ -1849,7 +1849,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             let parentlist = parent_list.lastElementChild;
             parentlist.style.display = "flex"
             document.querySelectorAll('.parent_list').forEach(function (c_list) {
-                c_list.addEventListener('click', function () {
+                c_list.addEventListener('mouseup', function () {
                     document.querySelectorAll('.child_list', '.active').forEach(function (cb_list) {
                         cb_list.style.display = "none";
                     })
