@@ -1728,9 +1728,6 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
                 bigscreenbutton.style.transition = ""
             }, 100);
             bigscreenbutton.classList.add('big');
-            if (!note_pad.classList.contains('active')) {
-                document.querySelector('.note_area').focus()
-            }
         });
     })
 
@@ -1741,9 +1738,6 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             minscreenbutton.style.left = "";
             minscreenbutton.style.transition = "0.05s cubic-bezier(0, 0, 1, 1)"
             setTimeout(() => {
-                if (!note_pad.classList.contains('active')) {
-                    document.querySelector('.note_area').focus()
-                }
                 minscreenbutton.classList.remove('big');
                 minscreenbutton.style.transition = ""
             }, 50);
@@ -1851,11 +1845,11 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
     })
 
     document.querySelectorAll('.parent_list').forEach(function (parent_list) {
-        parent_list.addEventListener('mouseover', function () {
+        parent_list.addEventListener("touchstart", function () {
             let parentlist = parent_list.lastElementChild;
             parentlist.style.display = "flex"
             document.querySelectorAll('.parent_list').forEach(function (c_list) {
-                c_list.addEventListener('mouseleave', function () {
+                c_list.addEventListener('touchend', function () {
                     document.querySelectorAll('.child_list', '.active').forEach(function (cb_list) {
                         cb_list.style.display = "none";
                     })
@@ -1885,14 +1879,6 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             window_z_index = zindexchildwindows.style.zIndex = z;
             getLargestZIndex('.child_windows');
             z_index.textContent = getLargestZIndex('.child_windows');
-        });
-    })
-
-    document.querySelectorAll('.note_pad, .child').forEach(function (notepad_foccus) {
-        notepad_foccus.addEventListener('mouseup', function () {
-            if (!note_pad.classList.contains('active')) {
-                document.querySelector('.note_area').focus()
-            }
         });
     })
 
