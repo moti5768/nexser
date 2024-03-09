@@ -721,7 +721,7 @@ body::-webkit-scrollbar {
 .title_buttons {
     background-color: rgba();
     position: relative;
-    bottom: 1px;
+    top: -4px;
     right: 0px;
     -webkit-user-select: none;
     -moz-user-select: none;
@@ -789,47 +789,54 @@ body::-webkit-scrollbar {
 
 /* title_buttons */
 .close_button {
-    width: 15px;
-    font-size: 100px;
+    display: block;
+    width: 20px;
+    height: 20px;
     background: #c0c0c0;
     position: absolute;
     top: 3.5px;
-    right: 3.5px;
+    right: 0px;
     text-align: center;
-    font-size: 10px;
+    font-size: 12px;
 }
 
 .close_button2 {
-    width: 15px;
+    display: block;
+    width: 20px;
+    height: 20px;
     background: #c0c0c0;
     position: absolute;
-    top: 3.5px;
-    right: 3.5px;
+    top: 0px;
+    right: 0px;
     text-align: center;
-    font-size: 10px;
+    font-size: 12px;
     z-index: 1;
 }
 
 .close_button3 {
-    width: 15px;
+    display: block;
+    width: 20px;
+    height: 20px;
     background: #c0c0c0;
     position: absolute;
-    top: 3.5px;
-    right: 3.5px;
+    top: 0px;
+    right: 0px;
     text-align: center;
-    font-size: 10px;
+    font-size: 12px;
     z-index: 1;
 }
 
 /* 飾り */
 .close_button4 {
-    width: 15px;
+    display: block;
+    width: 20px;
+    height: 20px;
     background: #c0c0c0;
     position: absolute;
     top: 3.5px;
-    right: 3.5px;
+    right: 0px;
     text-align: center;
-    font-size: 10px;
+    font-size: 12px;
 }
 
 /* 飾り */
@@ -841,34 +848,39 @@ body::-webkit-scrollbar {
 }
 
 .bigscreen_button {
-    width: 15px;
+    display: block;
+    width: 20px;
+    height: 20px;
     background: #c0c0c0;
     position: absolute;
     top: 3.5px;
-    right: 21px;
+    right: 23px;
     text-align: center;
-    font-size: 10px;
+    font-size: 12px;
 }
 
 .minscreen_button {
-    width: 15px;
     display: none;
+    width: 20px;
+    height: 20px;
     background: #c0c0c0;
     position: absolute;
     top: 3.5px;
-    right: 20px;
+    right: 23px;
     text-align: center;
-    font-size: 10px;
+    font-size: 12px;
 }
 
 .minimization_button {
-    width: 15px;
+    display: block;
+    width: 20px;
+    height: 20px;
     background: #c0c0c0;
     position: absolute;
     top: 3.5px;
-    right: 39px;
+    right: 45.5px;
     text-align: center;
-    font-size: 10px;
+    font-size: 12px;
 }
 
 /*list */
