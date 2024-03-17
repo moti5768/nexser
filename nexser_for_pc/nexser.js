@@ -64,15 +64,15 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
     const warning_windows = document.querySelector('.warning_windows');
 
     // sounds
-    const sound_1 = new Audio("https://github.com/moti5768/nexser/raw/main//The-Microsoft-Sound.mp3");
-    const sound_2 = new Audio("https://github.com/moti5768/nexser/raw/main//tada.mp3");
-    const sound_3 = new Audio("https://github.com/moti5768/nexser/raw/main//chord.mp3");
-    const sound_4 = new Audio("https://github.com/moti5768/nexser/raw/main//chimes.mp3");
-    const sound_5 = new Audio("https://github.com/moti5768/nexser/raw/main//ding.mp3");
-    const sound_6 = new Audio("https://github.com/moti5768/nexser/raw/main//startup_sound.mp3");
-    const sound_7 = new Audio("https://github.com/moti5768/nexser/raw/main//welcome.mp3");
-    const sound_8 = new Audio("https://github.com/moti5768/nexser/raw/main//windows98.start.mp3");
-    const sound_9 = new Audio("https://github.com/moti5768/nexser/raw/main//windows98.logoff.mp3");
+    const sound_1 = new Audio("https://github.com/moti5768/nexser/raw/main/nexser_sounds/The-Microsoft-Sound.mp3");
+    const sound_2 = new Audio("https://github.com/moti5768/nexser/raw/main/nexser_sounds/tada.mp3");
+    const sound_3 = new Audio("https://github.com/moti5768/nexser/raw/main/nexser_sounds/chord.mp3");
+    const sound_4 = new Audio("https://github.com/moti5768/nexser/raw/main/nexser_sounds/chimes.mp3");
+    const sound_5 = new Audio("https://github.com/moti5768/nexser/raw/main/nexser_sounds/ding.mp3");
+    const sound_6 = new Audio("https://github.com/moti5768/nexser/raw/main/nexser_sounds/utopia.mp3");
+    const sound_7 = new Audio("https://github.com/moti5768/nexser/raw/main/nexser_sounds/welcome.mp3");
+    const sound_8 = new Audio("https://github.com/moti5768/nexser/raw/main/nexser_sounds/windows98.start.mp3");
+    const sound_9 = new Audio("https://github.com/moti5768/nexser/raw/main/nexser_sounds/windows98.logoff.mp3");
 
     // *sounds*
     function sound() {
