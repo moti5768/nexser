@@ -443,8 +443,8 @@ input[type="file"] {
 .startmenu_file_icon {
     width: 18px;
     height: 12.5px;
-    background-image: radial-gradient(rgb(115, 115, 27) 0.65px, khaki 0px);
-    background-size: 2px 2px;
+    background-image: radial-gradient(#FFFF66 1px, #CCCC99 1px);
+    background-size: 3px 3px;
     position: absolute;
     margin-top: 3px;
     left: 5px;
@@ -500,8 +500,8 @@ input[type="file"] {
 }
 
 ::-webkit-scrollbar-track {
-    background-image: radial-gradient(#CCCCCC 0.5px, #ffffff 0px);
-    background-size: 1.5px 1.5px;
+    background-image: radial-gradient(#CCCCCC 1.5px, #ffffff 1.5px);
+    background-size: 4px 4px;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -684,8 +684,8 @@ body::-webkit-scrollbar {
 .title_icon {
     width: 18px;
     height: 12.5px;
-    background-image: radial-gradient(rgb(115, 115, 27) 0.65px, khaki 0px);
-    background-size: 2px 2px;
+    background-image: radial-gradient(#FFFF66 1px, #CCCC99 1px);
+    background-size: 3px 3px;
     position: absolute;
     margin-top: 4px;
     left: 5px;
@@ -729,8 +729,8 @@ body::-webkit-scrollbar {
 .window_file_icon {
     width: 60px;
     height: 45px;
-    background-image: radial-gradient(rgb(115, 115, 27) 0.65px, khaki 0px);
-    background-size: 2px 2px;
+    background-image: radial-gradient(#FFFF66 1px, #CCCC99 1px);
+    background-size: 3px 3px;
     position: absolute;
     left: 5px;
     bottom: 26px;
@@ -779,8 +779,8 @@ body::-webkit-scrollbar {
     border-right: 0.1em solid black;
     border-bottom: 0.1em solid black;
     border-radius: 0 0.1em 0.1em 0.1em;
-    background-image: radial-gradient(rgb(115, 115, 27) 0.65px, khaki 0px);
-    background-size: 2px 2px;
+    background-image: radial-gradient(#FFFF66 1px, #CCCC99 1px);
+    background-size: 3px 3px;
     box-sizing: content-box;
     box-shadow: 5px 5px dimgray;
 }
@@ -796,8 +796,8 @@ body::-webkit-scrollbar {
     border-right: 0;
     border-bottom: 0;
     border-radius: 0.1em 0.1em 0 0;
-    background-image: radial-gradient(rgb(115, 115, 27) 0.65px, khaki 0px);
-    background-size: 2px 2px;
+    background-image: radial-gradient(#FFFF66 1px, #CCCC99 1px);
+    background-size: 3px 3px;
     box-sizing: content-box;
 }
 
@@ -855,8 +855,8 @@ body::-webkit-scrollbar {
 }
 
 .title2 li:hover {
-    background: darkblue;
     color: white;
+    background: darkblue;
 }
 
 #nexser_program li:hover {
@@ -894,8 +894,9 @@ body::-webkit-scrollbar {
     border-right: solid 1.5px black;
     border-left: solid 1.5px whitesmoke;
     border-bottom: solid 1.5px black;
-    position: relative;
-    top: 0;
+    border-top: solid 1.5px whitesmoke;
+    position: absolute;
+    top: 20px;
     text-align: center;
     justify-content: center;
 }
@@ -993,17 +994,20 @@ body::-webkit-scrollbar {
 
 .child_list {
     display: none;
-    position: relative;
-    top: -0.1px;
     z-index: 99999;
 }
 
 .child_list ul {
+    padding-left: 20px;
+    padding-right: 20px;
+    position: absolute;
+    top: 20px;
+    width: auto;
     background-color: #c0c0c0;
-    width: 100%;
     border-right: solid 1.5px black;
     border-left: solid 1.5px whitesmoke;
     border-bottom: solid 1.5px black;
+    border-top: solid 1.5px whitesmoke;
 }
 
 .window_inline_list {

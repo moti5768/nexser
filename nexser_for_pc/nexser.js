@@ -1681,6 +1681,8 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
     })
     document.querySelectorAll('.desktop_files').forEach(function (desktop_files) {
         desktop_files.addEventListener('click', function () {
+            start_menu.style.display = "none";
+            document.querySelector('.start_button').classList.remove('pressed');
             setTimeout(() => {
                 taskbtn_load()
             });
