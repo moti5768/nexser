@@ -71,6 +71,28 @@ li {
     color: black;
 }
 
+/* text_size */
+
+.x-small {
+    font-size: x-small;
+}
+
+.small {
+    font-size: small;
+}
+
+.medium {
+    font-size: medium;
+}
+
+.large {
+    font-size: large;
+}
+
+.x-large {
+    font-size: x-large;
+}
+
 /* text_design */
 
 .bold {
@@ -103,7 +125,7 @@ li {
 .mini_desktop {
     width: 180px;
     height: 180px;
-    background: #95faf5;
+    background: #52adad;
     position: absolute;
     top: 10px;
     left: 10px;
