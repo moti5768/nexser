@@ -1107,6 +1107,7 @@ textarea {
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
+    width: 210px;
 }
 
 .calc_button {
