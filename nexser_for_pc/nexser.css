@@ -492,6 +492,48 @@ input[type="file"] {
     width: 99.7%;
 }
 
+/* soft_windows */
+
+.main {
+    width: 550px;
+}
+
+.my_computer {
+    width: 500px;
+}
+
+.accessory_menu {
+    width: 600px;
+}
+
+.control_panel {
+    width: 500px;
+}
+
+.sound_menu {
+    width: 400px;
+}
+
+.clock_menu {
+    width: 400px;
+}
+
+.mouse_menu {
+    width: 400px;
+}
+
+.nexser_sound_menu {
+    width: 300px;
+}
+
+.file_download_menu {
+    width: 300px;
+}
+
+.display_menu {
+    width: 450px;
+}
+
 /* scrollbar */
 
 ::-webkit-scrollbar {
@@ -527,6 +569,7 @@ input[type="file"] {
 body::-webkit-scrollbar {
     display: none;
 }
+
 
 .welcome_windows {
     display: none;
@@ -759,7 +802,7 @@ body::-webkit-scrollbar {
     display: block;
     position: relative;
     padding-top: 35px;
-    width: 90px;
+    width: 100px;
     color: white;
     left: 5px;
     top: 5px;

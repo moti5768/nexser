@@ -31,9 +31,23 @@
                 <p>Install local storage key:&emsp;<span class="length_localStorage">0</span></p>
             </div>
             <p class="help" style="color: deepskyblue;"></p>
+            <div style="position: relative; top: 10px;">
+                <h3>help command(click)</h3>
+                <span class="hover_blue"
+                    style="display: inline-block; color: white; border: solid 1px white; box-shadow: 5px 5px #888888;"
+                    onclick="help_command()">nexser open</span>
+
+                <span class="hover_blue"
+                    style="margin-top: 50px; position: absolute; left: 0px; display: inline-block; color: white; border: solid 1px white; box-shadow: 5px 5px #888888;"
+                    onclick="help_command2()">nexser program</span>
+
+                <span class="hover_red"
+                    style="margin-top: 100px; position: absolute; left: 0px; display: inline-block; color: white; border: solid 1px white; box-shadow: 5px 5px #888888;"
+                    onclick="help_command_clear()">command clear</span>
+            </div>
 
             <pre>
-                <code>
+                <code> 
                     <textarea id="codes" style="display: none; width: 99%; height: 65vh; background-color: black; color: white; resize: none; outline: none;">
 
                         
@@ -55,7 +69,7 @@
                     <p>nexser program startup list</p>
                     <div class="mini_window" style="border-color: white;">
                         <ul>
-                            <li>program manager&emsp;<span class="startup_program">OFF</span></li>
+                            <li>my computer&emsp;<span class="startup_computer">OFF</span></li>
                             <li>note pad&emsp;<span class="startup_note">OFF</span></li>
                             <li>color&emsp;<span class="startup_color">OFF</span></li>
                             <li>screen&emsp;<span class="startup_screen">OFF</span></li>
@@ -139,12 +153,16 @@
 
                 <div id="files">
                     <ul class="files_inline" style="display: flex; flex-direction: column; position: absolute;">
-                        <div class="desktop_files test_button2 hover_blue">
-                            <li style="position: absolute; bottom: 0;">program</li><span
-                                class="dli-folder"><span></span></span>
-                        </div>
                         <div class="desktop_files test_button hover_blue">
                             <li style="position: absolute; bottom: 0;">main</li><span
+                                class="dli-folder"><span></span></span>
+                        </div>
+                        <div class="desktop_files test_button2 hover_blue">
+                            <li style="position: absolute; bottom: 0;">my_computer</li><span
+                                class="dli-folder"><span></span></span>
+                        </div>
+                        <div class="desktop_files test_button3 hover_blue">
+                            <li style="position: absolute; bottom: 0;">control_panel</li><span
                                 class="dli-folder"><span></span></span>
                         </div>
                         <div class="desktop_files test_button15 hover_blue">
@@ -160,9 +178,9 @@
 
                 <div id="soft_windows">
 
-                    <div class="child_windows program_manager resize active">
+                    <div class="child_windows my_computer resize active">
                         <div class="title">
-                            <span class="title_icon"></span><span>&emsp;&emsp;program manager</span>
+                            <span class="title_icon"></span><span>&emsp;&emsp;my computer</span>
                         </div>
 
                         <div class="title_buttons">
@@ -474,7 +492,7 @@
                                 <li>nexser prompt</li><span class="window_file_icon"></span>
                             </div>
                             <div class="window_files test_button2">
-                                <li>program_manager</li><span class="window_file_icon"></span>
+                                <li>my_computer</li><span class="window_file_icon"></span>
                             </div>
                             <div class="window_files">
                                 <li>test</li><span class="window_file_icon2"></span>
@@ -621,7 +639,7 @@
                         </div>
                     </div>
 
-                    <div class="child_windows sound_menu resize active" style="width: 400px;">
+                    <div class="child_windows sound_menu resize active">
                         <div class="title">
                             <span class="title_icon"></span><span>&emsp;&emsp;sound</span>
                         </div>
@@ -734,7 +752,7 @@
 
                     </div>
 
-                    <div class="child_windows nexser_sound_menu resize active" style="width: 300px;">
+                    <div class="child_windows nexser_sound_menu resize active">
                         <div class="title">
                             <span class="title_icon"></span><span>&emsp;&emsp;nexser sound</span>
                         </div>
@@ -2035,7 +2053,7 @@
                         <div class="taskbar_buttons" style="resize: horizontal;">
                             <ul class="task_icons">
                                 <li class="button test_button">main</li>
-                                <li class="button test_button2">program_manager</li>
+                                <li class="button test_button2">my_computer</li>
                                 <li class="button test_button6">nexser prompt</li>
                                 <li class="button test_button7">clock</li>
                                 <li class="button test_button9">driver</li>
@@ -2069,7 +2087,7 @@
                                     &nbsp;nexser <span style="color: white;">1.1</span></li>
                                 <div class="parent_start_menu_lists">
                                     <ul>
-                                        <li>program<span class="list_right_text">➡</span></li>
+                                        <li>my computer<span class="list_right_text">➡</span></li>
                                     </ul>
                                     <div class="child_start_menu_lists border">
                                         <ul>

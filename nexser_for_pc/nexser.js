@@ -30,7 +30,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
     const child_windows = document.querySelector('.child_windows');
 
     const main = document.querySelector('.main');
-    const program = document.querySelector('.program_manager');
+    const my_computer = document.querySelector('.my_computer');
     const control = document.querySelector('.control_panel');
     const color_menu = document.querySelector('.color');
     const system_menu = document.querySelector('.system_menu');
@@ -287,14 +287,14 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             document.querySelector('.startup_note').textContent = "ON"
         }
     })
-    document.querySelector('.startup_program').addEventListener('click', function () {
-        if (localStorage.getItem('startup_program')) {
-            localStorage.removeItem('startup_program')
-            document.querySelector('.startup_program').textContent = "OFF"
+    document.querySelector('.startup_computer').addEventListener('click', function () {
+        if (localStorage.getItem('startup_computer')) {
+            localStorage.removeItem('startup_computer')
+            document.querySelector('.startup_computer').textContent = "OFF"
         } else {
-            const startup_program = document.querySelector('.startup_program');
-            localStorage.setItem('startup_program', startup_program);
-            document.querySelector('.startup_program').textContent = "ON"
+            const startup_computer = document.querySelector('.startup_computer');
+            localStorage.setItem('startup_computer', startup_computer);
+            document.querySelector('.startup_computer').textContent = "ON"
         }
     })
     document.querySelector('.startup_color').addEventListener('click', function () {
@@ -590,16 +590,15 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             document.querySelector('.welcome_windows').style.display = "none";
             setTimeout(() => {
                 desktop.style.display = "block"
-            }, 1000);
+            }, 500);
             setTimeout(() => {
                 setColor()
                 document.querySelector('html').style.cursor = '';
-            }, 2000);
+            }, 1000);
             setTimeout(() => {
                 startup_window_open()
                 taskbtn_load()
-            }, 3000);
-            taskbtn_load()
+            }, 1500);
         }
     }
 
@@ -766,8 +765,8 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
         if (!note_pad.classList.contains('active')) {
             document.querySelector('.note_area').focus()
         }
-        if (localStorage.getItem('startup_program')) {
-            const element = document.querySelector('.program_manager');
+        if (localStorage.getItem('startup_computer')) {
+            const element = document.querySelector('.my_computer');
             element.closest('.child_windows');
             element.classList.remove('active')
         }
@@ -979,8 +978,8 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
         if (localStorage.getItem('startup_note')) {
             document.querySelector('.startup_note').textContent = "ON"
         }
-        if (localStorage.getItem('startup_program')) {
-            document.querySelector('.startup_program').textContent = "ON"
+        if (localStorage.getItem('startup_computer')) {
+            document.querySelector('.startup_computer').textContent = "ON"
         }
         if (localStorage.getItem('startup_color')) {
             document.querySelector('.startup_color').textContent = "ON"
@@ -1107,7 +1106,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             }
         })
         document.querySelectorAll(".taskbar_buttons .test_button2").forEach(function (taskbtn) {
-            if (program.classList.contains('active')) {
+            if (my_computer.classList.contains('active')) {
                 taskbtn.classList.remove('pressed')
             } else {
                 taskbtn.classList.add('pressed')
@@ -1281,9 +1280,21 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
     function taskbar_none() {
         if (localStorage.getItem('data_taskbar_none')) {
             taskbar.style.display = "none";
-            program.classList.remove('active');
+            my_computer.classList.remove('active');
         } else {
         }
+    }
+
+    function help_command() {
+        document.querySelector('.focus').value = "nexser/open"
+    }
+
+    function help_command2() {
+        document.querySelector('.focus').value = "nexser/program"
+    }
+
+    function help_command_clear() {
+        document.querySelector('.focus').value = ""
     }
 
     document.addEventListener('DOMContentLoaded', pageLoad)
@@ -1978,10 +1989,10 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
     });
     document.querySelectorAll('.test_button2').forEach(function (test_button2) {
         test_button2.addEventListener('click', function () {
-            program.classList.toggle('active');
-            program.closest('.child_windows');
+            my_computer.classList.toggle('active');
+            my_computer.closest('.child_windows');
             z = largestZIndex++;
-            unko2 = program.style.zIndex = z;
+            unko2 = my_computer.style.zIndex = z;
         });
     });
     document.querySelectorAll('.test_button3').forEach(function (test_button3) {
