@@ -1,7 +1,7 @@
-var ua = navigator.userAgent;
-if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android') > 0 || ua.indexOf('Mobile') > 0)) {
-    alert("スマホ版です!デスクトップ表示からモバイル表示に切り替えてください")
-} else {
+// var ua = navigator.userAgent;
+// if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android') > 0 || ua.indexOf('Mobile') > 0)) {
+//     alert("スマホ版です!デスクトップ表示からモバイル表示に切り替えてください")
+// } else {
     const shutdown = document.getElementsByClassName('shutdown');
     const restart = document.getElementsByClassName('restart');
 
@@ -3303,4 +3303,4 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
         stopTime = 0;
     }
 
-}
+// }
