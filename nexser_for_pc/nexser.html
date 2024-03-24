@@ -100,14 +100,14 @@
         <div id="nexser">
 
             <div class="welcome_windows">
-                <div class="title">
+                <div class="welcome_title" style="background: navy; color: white;">
                     <span class="title_icon"></span><span>&emsp;&emsp;welcome nexser</span>
                 </div>
 
                 <div class="title_buttons">
                     <span class="drag_button">&nbsp;</span>
-                    <span class="close_button4 button2 startnexser_close" style="display: none;">&nbsp;✕&nbsp;</span>
-                </div><br>
+                </div>
+                <span class="close_button4 button2 startnexser_close" style="display: none;">&nbsp;✕&nbsp;</span>
 
                 <div class="welcome_window_inline"
                     style="display: block; background-color: silver; height: 377px; width: auto;">
@@ -639,7 +639,7 @@
                         </div>
                     </div>
 
-                    <div class="child_windows sound_menu resize active">
+                    <div class="child_windows sound_menu active resize">
                         <div class="title">
                             <span class="title_icon"></span><span>&emsp;&emsp;sound</span>
                         </div>
@@ -707,6 +707,10 @@
                                 <li class="hover_blue">Welcome</li>
                                 <li class="hover_blue">Windows98 start</li>
                                 <li class="hover_blue">Windows98 logoff</li>
+                                <li class="hover_blue">Windows2000 start</li>
+                                <li class="hover_blue">Windows2000 logoff</li>
+                                <li class="hover_blue">WindowsXP start</li>
+                                <li class="hover_blue">WindowsXP logoff</li>
                             </ul>
                         </div>
                         <div class="window_inline_side" style="font-size: 13.7px;">
@@ -747,12 +751,26 @@
                                 <li class="button2 sound_play_button" style="width: 60px;" onclick="sound9()">play
                                 </li>
                                 <li class="button2 sound_stop_button" style="width: 30px;">stop</li>
+
+                                <li class="button2 sound_play_button" style="width: 60px;" onclick="sound10()">play
+                                </li>
+                                <li class="button2 sound_stop_button" style="width: 30px;">stop</li>
+                                <li class="button2 sound_play_button" style="width: 60px;" onclick="sound11()">play
+                                </li>
+                                <li class="button2 sound_stop_button" style="width: 30px;">stop</li>
+
+                                <li class="button2 sound_play_button" style="width: 60px;" onclick="sound12()">play
+                                </li>
+                                <li class="button2 sound_stop_button" style="width: 30px;">stop</li>
+                                <li class="button2 sound_play_button" style="width: 60px;" onclick="sound13()">play
+                                </li>
+                                <li class="button2 sound_stop_button" style="width: 30px;">stop</li>
                             </ul>
                         </div>
 
                     </div>
 
-                    <div class="child_windows nexser_sound_menu resize active">
+                    <div class="child_windows nexser_sound_menu active resize">
                         <div class="title">
                             <span class="title_icon"></span><span>&emsp;&emsp;nexser sound</span>
                         </div>
@@ -827,6 +845,17 @@
                                     Start
                                     <span class="button2 startup_3" style="position: absolute; right: 80px;"></span>
                                 </li>
+
+                                <li class="hover_blue" style="margin-top: 5px; width: 75%;">Windows2000
+                                    Start
+                                    <span class="button2 startup_4" style="position: absolute; right: 80px;"></span>
+                                </li>
+
+                                <li class="hover_blue" style="margin-top: 5px; width: 75%;">WindowsXP
+                                    Start
+                                    <span class="button2 startup_5" style="position: absolute; right: 80px;"></span>
+                                </li>
+
                                 <li class="button2" style="margin-top: 5px; position: absolute; right: 80px;"
                                     onclick="startupsound_reset()">startup sound reset</li><br>
                             </ul><br>
@@ -848,6 +877,17 @@
                                     logoff
                                     <span class="button2 shutdown_3" style="position: absolute; right: 80px;"></span>
                                 </li>
+
+                                <li class="hover_blue" style="margin-top: 5px; width: 75%;">Windows2000
+                                    logoff
+                                    <span class="button2 shutdown_4" style="position: absolute; right: 80px;"></span>
+                                </li>
+
+                                <li class="hover_blue" style="margin-top: 5px; width: 75%;">WindowsXP
+                                    logoff
+                                    <span class="button2 shutdown_5" style="position: absolute; right: 80px;"></span>
+                                </li>
+
                                 <li class="button2" style="margin-top: 5px; position: absolute; right: 80px;"
                                     onclick="shutdownsound_reset()">shutdown sound reset</li><br><br>
                             </ul>
@@ -858,21 +898,26 @@
                                 style="text-align: center; margin-left: 5px; position: absolute; top: 76px; width: 60px;">
                                 <li class="button2 sound_play_button" style="width: 60px;" onclick="sound()">play
                                 </li>
-                                <br>
                                 <li class="button2 sound_play_button" style="width: 60px; margin-top: 5px;"
                                     onclick="sound6()">play</li>
-                                <br>
                                 <li class="button2 sound_play_button" style="width: 60px; margin-top: 5px;"
                                     onclick="sound8()">play</li>
-                                <br>
-                                <li class="button2 sound_play_button" style="width: 60px; margin-top: 77px;"
+                                <li class="button2 sound_play_button" style="width: 60px; margin-top: 5px;"
+                                    onclick="sound10()">play</li>
+                                <li class="button2 sound_play_button" style="width: 60px; margin-top: 5px;"
+                                    onclick="sound12()">play</li>
+
+
+                                <li class="button2 sound_play_button" style="width: 60px; margin-top: 79px;"
                                     onclick="sound2()">play</li>
-                                <br>
                                 <li class="button2 sound_play_button" style="width: 60px; margin-top: 5px;"
                                     onclick="sound4()">play</li>
-                                <br>
                                 <li class="button2 sound_play_button" style="width: 60px; margin-top: 5px;"
                                     onclick="sound9()">play</li>
+                                <li class="button2 sound_play_button" style="width: 60px; margin-top: 5px;"
+                                    onclick="sound11()">play</li>
+                                <li class="button2 sound_play_button" style="width: 60px; margin-top: 5px;"
+                                    onclick="sound13()">play</li>
                             </ul>
                         </div>
 
@@ -1342,7 +1387,6 @@
                     </div>
 
                     <div class="child_windows note_pad active">
-                        <span class="note"></span>
                         <div class="title">
                             <span class="title_icon"></span>&emsp;&emsp;<span class="note_title">notepad</span>
                         </div>
@@ -1959,6 +2003,9 @@
                                 <li>
                                     <span>window z_index:&emsp;</span><span class="z_index"></span>
                                 </li>
+                                <li>
+                                    <span>title_navy:&emsp;</span><span class="title_navy"></span>
+                                </li>
                             </ul>
                         </div>
                     </div>
@@ -2017,18 +2064,19 @@
                     <div class="test_allwindow"></div>
 
                     <div class="error_windows active" style="z-index: 999999;">
-                        <div class="title" style="background: darkblue;">
-                            <span class="error_icon">!</span><span>&emsp;&emsp;error</span>
+                        <div class="error_title" style="background: navy; color: white;">
+                            <span class="error_icon">✕</span><span>&emsp;&emsp;error</span>
                         </div>
-                        <span class="close_button2 button2">&nbsp;✕&nbsp;</span><br><br>
+                        <span class="close_button2 button2">&nbsp;✕&nbsp;</span><br>
                         <p><span class="window_error_text">test window error</span></p><br>
                     </div>
 
                     <div class="warning_windows" style="z-index: 999999;">
-                        <div class="title" style="background: darkblue;">
-                            <span class="error_icon">!</span>&emsp;&emsp;<span class="warning_title_text">warning</span>
+                        <div class="warning_title" style="background: navy; color: white;">
+                            <span class="warning_icon">!</span>&emsp;&emsp;<span
+                                class="warning_title_text">warning</span>
                         </div>
-                        <span class="close_button3 button2">&nbsp;✕&nbsp;</span><br><br>
+                        <span class="close_button3 button2">&nbsp;✕&nbsp;</span><br>
                         <p class="window_warning_text"></p>
                         <button class="shutdown_button button2 shutdown" onclick="window_none()">shutdown</button>
                         <button class="warningclose_button button2" style="display: none;"

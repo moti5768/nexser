@@ -651,7 +651,7 @@ body::-webkit-scrollbar {
     z-index: 999999;
 }
 
-.error_icon {
+.warning_icon {
     display: block;
     font-size: 12.5px;
     font-weight: bold;
@@ -660,6 +660,23 @@ body::-webkit-scrollbar {
     border: solid 0.25px black;
     background: yellow;
     color: black;
+    position: absolute;
+    top: 3.5px;
+    left: 5px;
+    text-align: center;
+    justify-content: center;
+}
+
+.error_icon {
+    display: block;
+    font-size: 12.5px;
+    font-weight: bold;
+    height: 15px;
+    width: 15px;
+    border: solid 0.25px orangered;
+    background: red;
+    border-radius: 10px;
+    color: white;
     position: absolute;
     top: 3.5px;
     left: 5px;
@@ -865,11 +882,16 @@ body::-webkit-scrollbar {
     -ms-user-select: none;
     user-select: none;
     width: 100%;
-    background-color: navy;
+    /* background-color: navy; */
+    background: gray;
     color: white;
     pointer-events: none;
     font-weight: bold;
     z-index: 1;
+}
+
+.title.navy {
+    background: navy;
 }
 
 .title_buttons {

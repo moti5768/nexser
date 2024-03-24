@@ -73,6 +73,10 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
     const sound_7 = new Audio("https://github.com/moti5768/nexser/raw/main/nexser_sounds/welcome.mp3");
     const sound_8 = new Audio("https://github.com/moti5768/nexser/raw/main/nexser_sounds/windows98.start.mp3");
     const sound_9 = new Audio("https://github.com/moti5768/nexser/raw/main/nexser_sounds/windows98.logoff.mp3");
+    const sound_10 = new Audio("https://github.com/moti5768/nexser/raw/main/nexser_sounds/windows2000_startup.mp3");
+    const sound_11 = new Audio("https://github.com/moti5768/nexser/raw/main/nexser_sounds/windows2000_shutdown.mp3");
+    const sound_12 = new Audio("https://github.com/moti5768/nexser/raw/main/nexser_sounds/windowsxp_startup.mp3");
+    const sound_13 = new Audio("https://github.com/moti5768/nexser/raw/main/nexser_sounds/windowsxp_shutdown.mp3");
 
     // *sounds*
     function sound() {
@@ -120,6 +124,26 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             sound_9.play();
         }
     }
+    function sound10() {
+        if (localStorage.getItem('driver_sound')) {
+            sound_10.play();
+        }
+    }
+    function sound11() {
+        if (localStorage.getItem('driver_sound')) {
+            sound_11.play();
+        }
+    }
+    function sound12() {
+        if (localStorage.getItem('driver_sound')) {
+            sound_12.play();
+        }
+    }
+    function sound13() {
+        if (localStorage.getItem('driver_sound')) {
+            sound_13.play();
+        }
+    }
 
     document.querySelectorAll('.sound_play_button').forEach(function (sound_play_button) {
         sound_play_button.addEventListener('mousedown', function () {
@@ -143,6 +167,10 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
         sound_7.pause();
         sound_8.pause();
         sound_9.pause();
+        sound_10.pause();
+        sound_11.pause();
+        sound_12.pause();
+        sound_13.pause();
         sound_1.currentTime = 0;
         sound_2.currentTime = 0;
         sound_3.currentTime = 0;
@@ -152,6 +180,10 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
         sound_7.currentTime = 0;
         sound_8.currentTime = 0;
         sound_9.currentTime = 0;
+        sound_10.currentTime = 0;
+        sound_11.currentTime = 0;
+        sound_12.currentTime = 0;
+        sound_13.currentTime = 0;
     }
 
     document.querySelector('#prompt').addEventListener('click', function () {
@@ -841,6 +873,26 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             document.querySelector('.startup_3').textContent = "set!"
         }
     })
+    document.querySelector('.startup_4').addEventListener('click', function () {
+        startupsound_reset()
+        if (localStorage.getItem('startup_4')) {
+            document.querySelector('.startup_4').textContent = "no set"
+        } else {
+            const startup_4 = document.querySelector('.startup_4');
+            localStorage.setItem('startup_4', startup_4);
+            document.querySelector('.startup_4').textContent = "set!"
+        }
+    })
+    document.querySelector('.startup_5').addEventListener('click', function () {
+        startupsound_reset()
+        if (localStorage.getItem('startup_5')) {
+            document.querySelector('.startup_5').textContent = "no set"
+        } else {
+            const startup_5 = document.querySelector('.startup_5');
+            localStorage.setItem('startup_5', startup_5);
+            document.querySelector('.startup_5').textContent = "set!"
+        }
+    })
 
     function startupsound_reset() {
         if (localStorage.getItem('startup_1')) {
@@ -854,6 +906,14 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
         if (localStorage.getItem('startup_3')) {
             localStorage.removeItem('startup_3')
             document.querySelector('.startup_3').textContent = "no set"
+        }
+        if (localStorage.getItem('startup_4')) {
+            localStorage.removeItem('startup_4')
+            document.querySelector('.startup_4').textContent = "no set"
+        }
+        if (localStorage.getItem('startup_5')) {
+            localStorage.removeItem('startup_5')
+            document.querySelector('.startup_5').textContent = "no set"
         }
     }
 
@@ -887,6 +947,26 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             document.querySelector('.shutdown_3').textContent = "set!"
         }
     })
+    document.querySelector('.shutdown_4').addEventListener('click', function () {
+        shutdownsound_reset()
+        if (localStorage.getItem('shutdown_4')) {
+            document.querySelector('.shutdown_4').textContent = "no set"
+        } else {
+            const shutdown_4 = document.querySelector('.shutdown_4');
+            localStorage.setItem('shutdown_4', shutdown_4);
+            document.querySelector('.shutdown_4').textContent = "set!"
+        }
+    })
+    document.querySelector('.shutdown_5').addEventListener('click', function () {
+        shutdownsound_reset()
+        if (localStorage.getItem('shutdown_5')) {
+            document.querySelector('.shutdown_5').textContent = "no set"
+        } else {
+            const shutdown_5 = document.querySelector('.shutdown_5');
+            localStorage.setItem('shutdown_5', shutdown_5);
+            document.querySelector('.shutdown_5').textContent = "set!"
+        }
+    })
 
     function shutdownsound_reset() {
         if (localStorage.getItem('shutdown_1')) {
@@ -900,6 +980,14 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
         if (localStorage.getItem('shutdown_3')) {
             localStorage.removeItem('shutdown_3')
             document.querySelector('.shutdown_3').textContent = "no set"
+        }
+        if (localStorage.getItem('shutdown_4')) {
+            localStorage.removeItem('shutdown_4')
+            document.querySelector('.shutdown_4').textContent = "no set"
+        }
+        if (localStorage.getItem('shutdown_5')) {
+            localStorage.removeItem('shutdown_5')
+            document.querySelector('.shutdown_5').textContent = "no set"
         }
     }
 
@@ -1011,6 +1099,16 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
         } else {
             document.querySelector('.startup_3').textContent = "no set"
         }
+        if (localStorage.getItem('startup_4')) {
+            document.querySelector('.startup_4').textContent = "set!"
+        } else {
+            document.querySelector('.startup_4').textContent = "no set"
+        }
+        if (localStorage.getItem('startup_5')) {
+            document.querySelector('.startup_5').textContent = "set!"
+        } else {
+            document.querySelector('.startup_5').textContent = "no set"
+        }
 
 
         if (localStorage.getItem('shutdown_1')) {
@@ -1027,6 +1125,16 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             document.querySelector('.shutdown_3').textContent = "set!"
         } else {
             document.querySelector('.shutdown_3').textContent = "no set"
+        }
+        if (localStorage.getItem('shutdown_4')) {
+            document.querySelector('.shutdown_4').textContent = "set!"
+        } else {
+            document.querySelector('.shutdown_4').textContent = "no set"
+        }
+        if (localStorage.getItem('shutdown_5')) {
+            document.querySelector('.shutdown_5').textContent = "set!"
+        } else {
+            document.querySelector('.shutdown_5').textContent = "no set"
         }
 
         if (localStorage.getItem('note_text_bold')) {
@@ -1964,6 +2072,12 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
     document.querySelectorAll('.child_windows, .child').forEach(function (z_index_child_windows) {
         z_index_child_windows.addEventListener('mousedown', function () {
             const zindexchildwindows = z_index_child_windows.closest('.child_windows');
+            document.querySelectorAll('.title').forEach(function (wt1) {
+                wt1.classList.remove('navy')
+            })
+            const t_childwindows = zindexchildwindows.firstElementChild;
+            t_childwindows.classList.add('navy');
+
             z = largestZIndex++;
             window_z_index = zindexchildwindows.style.zIndex = z;
             getLargestZIndex('.child_windows');
@@ -1985,6 +2099,12 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             main.closest('.child_windows');
             z = largestZIndex++;
             unko = main.style.zIndex = z;
+
+            document.querySelectorAll('.title').forEach(function (wt) {
+                wt.classList.remove('navy')
+            })
+            wt = main.firstElementChild;
+            wt.classList.add('navy');
         });
     });
     document.querySelectorAll('.test_button2').forEach(function (test_button2) {
@@ -1993,6 +2113,12 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             my_computer.closest('.child_windows');
             z = largestZIndex++;
             unko2 = my_computer.style.zIndex = z;
+
+            document.querySelectorAll('.title').forEach(function (wt) {
+                wt.classList.remove('navy')
+            })
+            wt = my_computer.firstElementChild;
+            wt.classList.add('navy');
         });
     });
     document.querySelectorAll('.test_button3').forEach(function (test_button3) {
@@ -2001,6 +2127,12 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             control.closest('.child_windows');
             z = largestZIndex++;
             unko3 = control.style.zIndex = z;
+
+            document.querySelectorAll('.title').forEach(function (wt) {
+                wt.classList.remove('navy')
+            })
+            wt = control.firstElementChild;
+            wt.classList.add('navy');
         });
     });
     document.querySelectorAll('.test_button4').forEach(function (test_button4) {
@@ -2009,6 +2141,12 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             color_menu.closest('.child_windows');
             z = largestZIndex++;
             unko4 = color_menu.style.zIndex = z;
+
+            document.querySelectorAll('.title').forEach(function (wt) {
+                wt.classList.remove('navy')
+            })
+            wt = color_menu.firstElementChild;
+            wt.classList.add('navy');
         });
     });
     document.querySelectorAll('.test_button5').forEach(function (test_button5) {
@@ -2017,6 +2155,12 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             system_menu.closest('.child_windows');
             z = largestZIndex++;
             unko5 = system_menu.style.zIndex = z;
+
+            document.querySelectorAll('.title').forEach(function (wt) {
+                wt.classList.remove('navy')
+            })
+            wt = system_menu.firstElementChild;
+            wt.classList.add('navy');
         });
     });
     document.querySelectorAll('.test_button6').forEach(function (test_button6) {
@@ -2025,6 +2169,12 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             window_prompt.closest('.child_windows');
             z = largestZIndex++;
             unko6 = window_prompt.style.zIndex = z;
+
+            document.querySelectorAll('.title').forEach(function (wt) {
+                wt.classList.remove('navy')
+            })
+            wt = window_prompt.firstElementChild;
+            wt.classList.add('navy');
         });
     });
     document.querySelectorAll('.test_button7').forEach(function (test_button7) {
@@ -2033,6 +2183,12 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             clock_menu.closest('.child_windows');
             z = largestZIndex++;
             unko7 = clock_menu.style.zIndex = z;
+
+            document.querySelectorAll('.title').forEach(function (wt) {
+                wt.classList.remove('navy')
+            })
+            wt = clock_menu.firstElementChild;
+            wt.classList.add('navy');
         });
     });
     document.querySelectorAll('.test_button8').forEach(function (test_button8) {
@@ -2041,6 +2197,12 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             sound_menu.closest('.child_windows');
             z = largestZIndex++;
             unko8 = sound_menu.style.zIndex = z;
+
+            document.querySelectorAll('.title').forEach(function (wt) {
+                wt.classList.remove('navy')
+            })
+            wt = sound_menu.firstElementChild;
+            wt.classList.add('navy');
         });
     });
     document.querySelectorAll('.test_button9').forEach(function (test_button9) {
@@ -2049,6 +2211,12 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             driver_menu.closest('.child_windows');
             z = largestZIndex++;
             unko9 = driver_menu.style.zIndex = z;
+
+            document.querySelectorAll('.title').forEach(function (wt) {
+                wt.classList.remove('navy')
+            })
+            wt = driver_menu.firstElementChild;
+            wt.classList.add('navy');
         });
     });
     document.querySelectorAll('.test_button10').forEach(function (test_button10) {
@@ -2057,6 +2225,12 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             mouse_menu.closest('.child_windows');
             z = largestZIndex++;
             unko10 = mouse_menu.style.zIndex = z;
+
+            document.querySelectorAll('.title').forEach(function (wt) {
+                wt.classList.remove('navy')
+            })
+            wt = mouse_menu.firstElementChild;
+            wt.classList.add('navy');
         });
     });
     document.querySelectorAll('.test_button11').forEach(function (test_button11) {
@@ -2065,6 +2239,12 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             screen_menu.closest('.child_windows');
             z = largestZIndex++;
             unko11 = screen_menu.style.zIndex = z;
+
+            document.querySelectorAll('.title').forEach(function (wt) {
+                wt.classList.remove('navy')
+            })
+            wt = screen_menu.firstElementChild;
+            wt.classList.add('navy');
         });
     });
     document.querySelectorAll('.test_button12').forEach(function (test_button12) {
@@ -2075,6 +2255,12 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             unko12 = note_pad.style.zIndex = z;
             if (!note_pad.classList.contains('active')) {
                 document.querySelector('.note_area').focus()
+                document.querySelectorAll('.title').forEach(function (wt1) {
+                    wt1.classList.remove('navy')
+                })
+                const note2 = note_pad.firstElementChild;
+                note2.classList.add('navy');
+
             }
         });
     });
@@ -2084,6 +2270,12 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             text_drop_menu.closest('.child_windows');
             z = largestZIndex++;
             unko13 = text_drop_menu.style.zIndex = z;
+
+            document.querySelectorAll('.title').forEach(function (wt) {
+                wt.classList.remove('navy')
+            })
+            wt = text_drop_menu.firstElementChild;
+            wt.classList.add('navy');
         });
     });
     document.querySelectorAll('.test_button14').forEach(function (test_button14) {
@@ -2092,6 +2284,12 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             windowmode_menu.closest('.child_windows');
             z = largestZIndex++;
             unko14 = windowmode_menu.style.zIndex = z;
+
+            document.querySelectorAll('.title').forEach(function (wt) {
+                wt.classList.remove('navy')
+            })
+            wt = windowmode_menu.firstElementChild;
+            wt.classList.add('navy');
         });
     });
     document.querySelectorAll('.test_button15').forEach(function (test_button15) {
@@ -2100,6 +2298,12 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             accessory_menu.closest('.child_windows');
             z = largestZIndex++;
             unko15 = accessory_menu.style.zIndex = z;
+
+            document.querySelectorAll('.title').forEach(function (wt) {
+                wt.classList.remove('navy')
+            })
+            wt = accessory_menu.firstElementChild;
+            wt.classList.add('navy');
         });
     });
     document.querySelectorAll('.test_button16').forEach(function (test_button16) {
@@ -2108,6 +2312,12 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             calc_menu.closest('.child_windows');
             z = largestZIndex++;
             unko16 = calc_menu.style.zIndex = z;
+
+            document.querySelectorAll('.title').forEach(function (wt) {
+                wt.classList.remove('navy')
+            })
+            wt = calc_menu.firstElementChild;
+            wt.classList.add('navy');
         });
     });
     document.querySelectorAll('.test_button17').forEach(function (test_button17) {
@@ -2116,6 +2326,12 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             nexser_sound_menu.closest('.child_windows');
             z = largestZIndex++;
             unko17 = nexser_sound_menu.style.zIndex = z;
+
+            document.querySelectorAll('.title').forEach(function (wt) {
+                wt.classList.remove('navy')
+            })
+            wt = nexser_sound_menu.firstElementChild;
+            wt.classList.add('navy');
         });
     });
     document.querySelectorAll('.test_button18').forEach(function (test_button18) {
@@ -2124,6 +2340,12 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             camera_menu.closest('.child_windows');
             z = largestZIndex++;
             unko18 = camera_menu.style.zIndex = z;
+
+            document.querySelectorAll('.title').forEach(function (wt) {
+                wt.classList.remove('navy')
+            })
+            wt = camera_menu.firstElementChild;
+            wt.classList.add('navy');
         });
     });
     document.querySelectorAll('.test_button19').forEach(function (test_button19) {
@@ -2132,6 +2354,12 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             htmlviewer_edit_menu.closest('.child_windows');
             z = largestZIndex++;
             unko19 = htmlviewer_edit_menu.style.zIndex = z;
+
+            document.querySelectorAll('.title').forEach(function (wt) {
+                wt.classList.remove('navy')
+            })
+            wt = htmlviewer_edit_menu.firstElementChild;
+            wt.classList.add('navy');
         });
     });
     document.querySelectorAll('.test_button20').forEach(function (test_button20) {
@@ -2140,6 +2368,12 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             htmlviewer_run_menu.closest('.child_windows');
             z = largestZIndex++;
             unko20 = htmlviewer_run_menu.style.zIndex = z;
+
+            document.querySelectorAll('.title').forEach(function (wt) {
+                wt.classList.remove('navy')
+            })
+            wt = htmlviewer_run_menu.firstElementChild;
+            wt.classList.add('navy');
         });
     });
     document.querySelectorAll('.test_button21').forEach(function (test_button21) {
@@ -2148,6 +2382,12 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             uploadvideo_menu.closest('.child_windows');
             z = largestZIndex++;
             unko21 = uploadvideo_menu.style.zIndex = z;
+
+            document.querySelectorAll('.title').forEach(function (wt) {
+                wt.classList.remove('navy')
+            })
+            wt = uploadvideo_menu.firstElementChild;
+            wt.classList.add('navy');
         });
     });
     document.querySelectorAll('.test_button22').forEach(function (test_button22) {
@@ -2156,6 +2396,12 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             font_menu.closest('.child_windows');
             z = largestZIndex++;
             unko22 = font_menu.style.zIndex = z;
+
+            document.querySelectorAll('.title').forEach(function (wt) {
+                wt.classList.remove('navy')
+            })
+            wt = font_menu.firstElementChild;
+            wt.classList.add('navy');
         });
     });
     document.querySelectorAll('.test_button23').forEach(function (test_button23) {
@@ -2164,6 +2410,12 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             setting_menu.closest('.child_windows');
             z = largestZIndex++;
             unko23 = setting_menu.style.zIndex = z;
+
+            document.querySelectorAll('.title').forEach(function (wt) {
+                wt.classList.remove('navy')
+            })
+            wt = setting_menu.firstElementChild;
+            wt.classList.add('navy');
         });
     });
     document.querySelectorAll('.test_button24').forEach(function (test_button24) {
@@ -2172,6 +2424,12 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             debug_menu.closest('.child_windows');
             z = largestZIndex++;
             unko24 = debug_menu.style.zIndex = z;
+
+            document.querySelectorAll('.title').forEach(function (wt) {
+                wt.classList.remove('navy')
+            })
+            wt = debug_menu.firstElementChild;
+            wt.classList.add('navy');
         });
     });
     document.querySelectorAll('.test_button25').forEach(function (test_button25) {
@@ -2180,6 +2438,12 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             file_download_menu.closest('.child_windows');
             z = largestZIndex++;
             unko25 = file_download_menu.style.zIndex = z;
+
+            document.querySelectorAll('.title').forEach(function (wt) {
+                wt.classList.remove('navy')
+            })
+            wt = file_download_menu.firstElementChild;
+            wt.classList.add('navy');
         });
     });
     document.querySelectorAll('.test_button26').forEach(function (test_button26) {
@@ -2188,6 +2452,12 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             display_menu.closest('.child_windows');
             z = largestZIndex++;
             unko26 = display_menu.style.zIndex = z;
+
+            document.querySelectorAll('.title').forEach(function (wt) {
+                wt.classList.remove('navy')
+            })
+            wt = display_menu.firstElementChild;
+            wt.classList.add('navy');
         });
     });
     document.querySelectorAll('.test_button27').forEach(function (test_button27) {
@@ -2196,6 +2466,12 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             stopwatch_menu.closest('.child_windows');
             z = largestZIndex++;
             unko27 = stopwatch_menu.style.zIndex = z;
+
+            document.querySelectorAll('.title').forEach(function (wt) {
+                wt.classList.remove('navy')
+            })
+            wt = stopwatch_menu.firstElementChild;
+            wt.classList.add('navy');
         });
     });
     document.querySelectorAll('.test_button28').forEach(function (test_button28) {
@@ -2204,6 +2480,12 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             comment_menu.closest('.child_windows');
             z = largestZIndex++;
             unko28 = comment_menu.style.zIndex = z;
+
+            document.querySelectorAll('.title').forEach(function (wt) {
+                wt.classList.remove('navy')
+            })
+            wt = comment_menu.firstElementChild;
+            wt.classList.add('navy');
         });
     });
 
@@ -2311,7 +2593,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             //クラス名 .drag も消す
             drag.classList.remove("drag");
             document.querySelectorAll('.title').forEach(function (title) {
-                const titlebar = title.style.backgroundColor = "darkblue";
+                document.querySelector('.navy').style.background = ""
                 window_prompt.style.background = "rgb(51, 51, 184)"
                 const bsilver = document.querySelector('.back_silver');
                 bsilver.style.background = "silver"
@@ -2533,6 +2815,12 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             if (localStorage.getItem('startup_3')) {
                 sound8()
             }
+            if (localStorage.getItem('startup_4')) {
+                sound10()
+            }
+            if (localStorage.getItem('startup_5')) {
+                sound12()
+            }
         }
     }
 
@@ -2546,6 +2834,12 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             }
             if (localStorage.getItem('shutdown_3')) {
                 sound9()
+            }
+            if (localStorage.getItem('shutdown_4')) {
+                sound11()
+            }
+            if (localStorage.getItem('shutdown_5')) {
+                sound13()
             }
         }
     }
@@ -3145,6 +3439,12 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             htmlviewer_run_menu.classList.remove('active');
             z = largestZIndex + 1;
             unko20 = htmlviewer_run_menu.style.zIndex = z;
+
+            document.querySelectorAll('.title').forEach(function (wt) {
+                wt.classList.remove('navy')
+            })
+            wt = htmlviewer_run_menu.firstElementChild;
+            wt.classList.add('navy');
         });
         preview.srcdoc = editor.value;
     }
@@ -3428,6 +3728,11 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
         time.textContent = '00:00:00.000';
         stopTime = 0;
     }
+
+    setInterval(() => {
+        const un = document.getElementsByClassName('navy').length;
+        document.querySelector('.title_navy').textContent = un;
+    }, 1000);
 
 } else {
     alert('この端末は対応していません! スマホ版Nexserをご利用ください。');
