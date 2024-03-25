@@ -121,6 +121,26 @@ function sound9() {
         sound_9.play();
     }
 }
+function sound10() {
+    if (localStorage.getItem('driver_sound')) {
+        sound_10.play();
+    }
+}
+function sound11() {
+    if (localStorage.getItem('driver_sound')) {
+        sound_11.play();
+    }
+}
+function sound12() {
+    if (localStorage.getItem('driver_sound')) {
+        sound_12.play();
+    }
+}
+function sound13() {
+    if (localStorage.getItem('driver_sound')) {
+        sound_13.play();
+    }
+}
 
 document.querySelectorAll('.sound_play_button').forEach(function (sound_play_button) {
     sound_play_button.addEventListener('mousedown', function () {
@@ -144,6 +164,10 @@ function sound_stop() {
     sound_7.pause();
     sound_8.pause();
     sound_9.pause();
+    sound_10.pause();
+    sound_11.pause();
+    sound_12.pause();
+    sound_13.pause();
     sound_1.currentTime = 0;
     sound_2.currentTime = 0;
     sound_3.currentTime = 0;
@@ -153,6 +177,10 @@ function sound_stop() {
     sound_7.currentTime = 0;
     sound_8.currentTime = 0;
     sound_9.currentTime = 0;
+    sound_10.currentTime = 0;
+    sound_11.currentTime = 0;
+    sound_12.currentTime = 0;
+    sound_13.currentTime = 0;
 }
 
 document.querySelector('#prompt').addEventListener('click', function () {
@@ -841,6 +869,26 @@ document.querySelector('.startup_3').addEventListener('click', function () {
         document.querySelector('.startup_3').textContent = "set!"
     }
 })
+document.querySelector('.startup_4').addEventListener('click', function () {
+    startupsound_reset()
+    if (localStorage.getItem('startup_4')) {
+        document.querySelector('.startup_4').textContent = "no set"
+    } else {
+        const startup_4 = document.querySelector('.startup_4');
+        localStorage.setItem('startup_4', startup_4);
+        document.querySelector('.startup_4').textContent = "set!"
+    }
+})
+document.querySelector('.startup_5').addEventListener('click', function () {
+    startupsound_reset()
+    if (localStorage.getItem('startup_5')) {
+        document.querySelector('.startup_5').textContent = "no set"
+    } else {
+        const startup_5 = document.querySelector('.startup_5');
+        localStorage.setItem('startup_5', startup_5);
+        document.querySelector('.startup_5').textContent = "set!"
+    }
+})
 
 function startupsound_reset() {
     if (localStorage.getItem('startup_1')) {
@@ -854,6 +902,14 @@ function startupsound_reset() {
     if (localStorage.getItem('startup_3')) {
         localStorage.removeItem('startup_3')
         document.querySelector('.startup_3').textContent = "no set"
+    }
+    if (localStorage.getItem('startup_4')) {
+        localStorage.removeItem('startup_4')
+        document.querySelector('.startup_4').textContent = "no set"
+    }
+    if (localStorage.getItem('startup_5')) {
+        localStorage.removeItem('startup_5')
+        document.querySelector('.startup_5').textContent = "no set"
     }
 }
 
@@ -887,6 +943,26 @@ document.querySelector('.shutdown_3').addEventListener('click', function () {
         document.querySelector('.shutdown_3').textContent = "set!"
     }
 })
+document.querySelector('.shutdown_4').addEventListener('click', function () {
+    shutdownsound_reset()
+    if (localStorage.getItem('shutdown_4')) {
+        document.querySelector('.shutdown_4').textContent = "no set"
+    } else {
+        const shutdown_4 = document.querySelector('.shutdown_4');
+        localStorage.setItem('shutdown_4', shutdown_4);
+        document.querySelector('.shutdown_4').textContent = "set!"
+    }
+})
+document.querySelector('.shutdown_5').addEventListener('click', function () {
+    shutdownsound_reset()
+    if (localStorage.getItem('shutdown_5')) {
+        document.querySelector('.shutdown_5').textContent = "no set"
+    } else {
+        const shutdown_5 = document.querySelector('.shutdown_5');
+        localStorage.setItem('shutdown_5', shutdown_5);
+        document.querySelector('.shutdown_5').textContent = "set!"
+    }
+})
 
 function shutdownsound_reset() {
     if (localStorage.getItem('shutdown_1')) {
@@ -900,6 +976,14 @@ function shutdownsound_reset() {
     if (localStorage.getItem('shutdown_3')) {
         localStorage.removeItem('shutdown_3')
         document.querySelector('.shutdown_3').textContent = "no set"
+    }
+    if (localStorage.getItem('shutdown_4')) {
+        localStorage.removeItem('shutdown_4')
+        document.querySelector('.shutdown_4').textContent = "no set"
+    }
+    if (localStorage.getItem('shutdown_5')) {
+        localStorage.removeItem('shutdown_5')
+        document.querySelector('.shutdown_5').textContent = "no set"
     }
 }
 
@@ -1011,6 +1095,16 @@ function all_load() {
     } else {
         document.querySelector('.startup_3').textContent = "no set"
     }
+    if (localStorage.getItem('startup_4')) {
+        document.querySelector('.startup_4').textContent = "set!"
+    } else {
+        document.querySelector('.startup_4').textContent = "no set"
+    }
+    if (localStorage.getItem('startup_5')) {
+        document.querySelector('.startup_5').textContent = "set!"
+    } else {
+        document.querySelector('.startup_5').textContent = "no set"
+    }
 
 
     if (localStorage.getItem('shutdown_1')) {
@@ -1027,6 +1121,16 @@ function all_load() {
         document.querySelector('.shutdown_3').textContent = "set!"
     } else {
         document.querySelector('.shutdown_3').textContent = "no set"
+    }
+    if (localStorage.getItem('shutdown_4')) {
+        document.querySelector('.shutdown_4').textContent = "set!"
+    } else {
+        document.querySelector('.shutdown_4').textContent = "no set"
+    }
+    if (localStorage.getItem('shutdown_5')) {
+        document.querySelector('.shutdown_5').textContent = "set!"
+    } else {
+        document.querySelector('.shutdown_5').textContent = "no set"
     }
 
     if (localStorage.getItem('note_text_bold')) {
@@ -2465,6 +2569,12 @@ function startup_sound() {
         if (localStorage.getItem('startup_3')) {
             sound8()
         }
+        if (localStorage.getItem('startup_4')) {
+            sound10()
+        }
+        if (localStorage.getItem('startup_5')) {
+            sound12()
+        }
     }
 }
 
@@ -2478,6 +2588,12 @@ function shutdown_sound() {
         }
         if (localStorage.getItem('shutdown_3')) {
             sound9()
+        }
+        if (localStorage.getItem('shutdown_4')) {
+            sound11()
+        }
+        if (localStorage.getItem('shutdown_5')) {
+            sound13()
         }
     }
 }
