@@ -230,6 +230,110 @@
                         </ul>
                     </div>
 
+
+                    <div class="child_windows note_pad active">
+                        <span class="note"></span>
+                        <div class="title">
+                            <span class="title_icon"></span>&emsp;&emsp;<span class="note_title">notepad</span>
+                        </div>
+
+                        <div class="title_buttons">
+                            <span class="drag_button">&nbsp;</span>
+                            <span class="close_button4 button2 note_close">&nbsp;✕&nbsp;</span>
+                            <span class="bigscreen_button button2 notearea_big">&nbsp;□&nbsp;</span>
+                            <span class="minscreen_button button2 notearea_min">&nbsp;❒&nbsp;</span>
+                            <span class="minimization_button button2">&nbsp;―&nbsp;</span><br>
+                        </div>
+
+                        <div class="title2">
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;window(<ins>W</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue window_top">window top</li>
+                                        <li class="hover_blue window_left">window left</li>
+                                        <li class="hover_blue window_top_and_left">window top & left
+                                        </li>
+                                        <li class="hover_blue window_half_big note_halfbig">window half big</li>
+                                        <li class="hover_blue windowsize_reset note_sizereset">window size reset
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;alltext(<ins>T</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue notetext_bold" onclick="notetext_all_bold()">alltext
+                                            bold</li>
+                                        <li class="hover_blue notetext_oblique" onclick="notetext_all_oblique()">
+                                            alltext
+                                            oblique</li>
+                                        <li class="hover_blue notetext_underline" onclick="notetext_all_underline()">
+                                            alltext
+                                            underline</li>
+                                        <div class="note_text_color">
+                                            <li class="hover_blue" onclick="notecolor_remove()">text
+                                                black</li>
+                                            <li class="hover_blue notetext_blue" onclick="notecolor_change_blue()">
+                                                text
+                                                blue</li>
+                                            <li class="hover_blue notetext_green" onclick="notecolor_change_green()">
+                                                text green</li>
+                                            <li class="hover_blue notetext_red" onclick="notecolor_change_red()">
+                                                text
+                                                red</li>
+                                            <li class="hover_blue notetext_orange" onclick="notecolor_change_orange()">
+                                                text
+                                                orange</li>
+                                            <li class="hover_blue notetext_yellow" onclick="notecolor_change_yellow()">
+                                                text
+                                                yellow</li>
+                                        </div>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;&emsp;setting(<ins>S</ins>)&emsp;&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue" onclick="notedata_clear()">Notedata clear
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <div>
+                            <input type="button" class="button2" value="&emsp;save&emsp;" onclick="save()">
+                            <input type="button" class="button2" value="&emsp;load&emsp;" onclick="load()">
+                            <input type="button" id="cleartextbtn" class="button2" value="&emsp;clear&emsp;"><br>
+
+                            <input type="button" class="button2" value="&emsp;windows2000 text load&emsp;"
+                                onclick="win2000_load()">
+                        </div>
+                        <form name="note_form">
+                            <textarea id="note_text" name="note_area" class="note_area" style="overflow: scroll;"
+                                cols="50" rows="15"></textarea>
+                        </form>
+                        <ul style="column-count: 3;">
+                            <li>Textcount:&emsp;<span id="inputlength">0</span></li>
+                            <li>Mode:&emsp;<span class="test_notetext">Text</span></li>
+                            <li id="memo_save_text"></li>
+                        </ul>
+                    </div>
+
+
                     <div class="child_windows windowmode_menu resize active">
                         <div class="title">
                             <span class="title_icon"></span><span>&emsp;&emsp;window mode</span>
@@ -1212,108 +1316,6 @@
                             <button class="button2 toolbar_on">ON</button><br>
                             <button class="button2 toolbar_off">OFF</button>
                         </div>
-                    </div>
-
-                    <div class="child_windows note_pad active">
-                        <span class="note"></span>
-                        <div class="title">
-                            <span class="title_icon"></span>&emsp;&emsp;<span class="note_title">notepad</span>
-                        </div>
-
-                        <div class="title_buttons">
-                            <span class="drag_button">&nbsp;</span>
-                            <span class="close_button4 button2 note_close">&nbsp;✕&nbsp;</span>
-                            <span class="bigscreen_button button2 notearea_big">&nbsp;□&nbsp;</span>
-                            <span class="minscreen_button button2 notearea_min">&nbsp;❒&nbsp;</span>
-                            <span class="minimization_button button2">&nbsp;―&nbsp;</span><br>
-                        </div>
-
-                        <div class="title2">
-
-                            <div class="parent_list">
-                                <ul>
-                                    <li>&emsp;&emsp;window(<ins>W</ins>)&emsp;&emsp;</li>
-                                </ul>
-                                <div class="child_list">
-                                    <ul>
-                                        <li class="hover_blue window_top">window top</li>
-                                        <li class="hover_blue window_left">window left</li>
-                                        <li class="hover_blue window_top_and_left">window top & left
-                                        </li>
-                                        <li class="hover_blue window_half_big note_halfbig">window half big</li>
-                                        <li class="hover_blue windowsize_reset note_sizereset">window size reset
-                                        </li>
-                                    </ul>
-                                </div>
-                            </div>
-
-                            <div class="parent_list">
-                                <ul>
-                                    <li>&emsp;&emsp;alltext(<ins>T</ins>)&emsp;&emsp;</li>
-                                </ul>
-                                <div class="child_list">
-                                    <ul>
-                                        <li class="hover_blue notetext_bold" onclick="notetext_all_bold()">alltext
-                                            bold</li>
-                                        <li class="hover_blue notetext_oblique" onclick="notetext_all_oblique()">
-                                            alltext
-                                            oblique</li>
-                                        <li class="hover_blue notetext_underline" onclick="notetext_all_underline()">
-                                            alltext
-                                            underline</li>
-                                        <div class="note_text_color">
-                                            <li class="hover_blue" onclick="notecolor_remove()">text
-                                                black</li>
-                                            <li class="hover_blue notetext_blue" onclick="notecolor_change_blue()">
-                                                text
-                                                blue</li>
-                                            <li class="hover_blue notetext_green" onclick="notecolor_change_green()">
-                                                text green</li>
-                                            <li class="hover_blue notetext_red" onclick="notecolor_change_red()">
-                                                text
-                                                red</li>
-                                            <li class="hover_blue notetext_orange" onclick="notecolor_change_orange()">
-                                                text
-                                                orange</li>
-                                            <li class="hover_blue notetext_yellow" onclick="notecolor_change_yellow()">
-                                                text
-                                                yellow</li>
-                                        </div>
-                                    </ul>
-                                </div>
-                            </div>
-
-                            <div class="parent_list">
-                                <ul>
-                                    <li>&emsp;&emsp;setting(<ins>S</ins>)&emsp;&emsp;</li>
-                                </ul>
-                                <div class="child_list">
-                                    <ul>
-                                        <li class="hover_blue" onclick="notedata_clear()">Notedata clear
-                                        </li>
-                                    </ul>
-                                </div>
-                            </div>
-
-                        </div>
-
-                        <div>
-                            <input type="button" class="button2" value="&emsp;save&emsp;" onclick="save()">
-                            <input type="button" class="button2" value="&emsp;load&emsp;" onclick="load()">
-                            <input type="button" id="cleartextbtn" class="button2" value="&emsp;clear&emsp;"><br>
-
-                            <input type="button" class="button2" value="&emsp;windows2000 text load&emsp;"
-                                onclick="win2000_load()">
-                        </div>
-                        <form name="note_form">
-                            <textarea id="note_text" name="note_area" class="note_area" style="overflow: scroll;"
-                                cols="50" rows="15"></textarea>
-                        </form>
-                        <ul style="column-count: 3;">
-                            <li>Textcount:&emsp;<span id="inputlength">0</span></li>
-                            <li>Mode:&emsp;<span class="test_notetext">Text</span></li>
-                            <li id="memo_save_text"></li>
-                        </ul>
                     </div>
 
                     <div class="child_windows text_drop_menu active">
