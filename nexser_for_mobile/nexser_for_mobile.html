@@ -31,6 +31,20 @@
                 <p>Install local storage key:&emsp;<span class="length_localStorage">0</span></p>
             </div>
             <p class="help" style="color: deepskyblue;"></p>
+            <div style="position: relative; top: 10px;">
+                <h3>help command(click)</h3>
+                <span class="hover_blue"
+                    style="display: inline-block; color: white; border: solid 1px white; box-shadow: 5px 5px #888888;"
+                    onclick="help_command()">nexser open</span>
+
+                <span class="hover_blue"
+                    style="margin-top: 50px; position: absolute; left: 0px; display: inline-block; color: white; border: solid 1px white; box-shadow: 5px 5px #888888;"
+                    onclick="help_command2()">nexser program</span>
+
+                <span class="hover_red"
+                    style="margin-top: 100px; position: absolute; left: 0px; display: inline-block; color: white; border: solid 1px white; box-shadow: 5px 5px #888888;"
+                    onclick="help_command_clear()">command clear</span>
+            </div>
 
             <pre>
                 <code>
@@ -79,8 +93,10 @@
             </div>
         </div>
 
-        <div class="restart" style="background: blue; height: 100vh; display: none;">
-            <p style="color: white; font-size: 30px; position: absolute; top: 0px; left: 0px;">nexser restart...</p>
+        <div class="restart" style="background: black; height: 100vh; display: none;">
+            <p
+                style="color: white; font-size: 20px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+                nexser restart...</p>
         </div>
 
         <div id="nexser">
@@ -231,7 +247,7 @@
                     </div>
 
 
-                    <div class="child_windows note_pad active">
+                    <div class="child_windows note_pad active" style="width: 90%; height: auto;">
                         <span class="note"></span>
                         <div class="title">
                             <span class="title_icon"></span>&emsp;&emsp;<span class="note_title">notepad</span>
@@ -1825,16 +1841,17 @@
                     <div class="test_allwindow"></div>
 
                     <div class="error_windows active" style="z-index: 999999;">
-                        <div class="title" style="background: darkblue;">
-                            <span class="error_icon">!</span><span>&emsp;&emsp;error</span>
+                        <div class="title" style="background: navy;">
+                            <span class="error_icon">✕</span><span>&emsp;&emsp;error</span>
                         </div>
                         <span class="close_button2 button2">&nbsp;✕&nbsp;</span><br><br>
                         <p><span class="window_error_text">test window error</span></p><br>
                     </div>
 
                     <div class="warning_windows" style="z-index: 999999;">
-                        <div class="title" style="background: darkblue;">
-                            <span class="error_icon">!</span>&emsp;&emsp;<span class="warning_title_text">warning</span>
+                        <div class="title" style="background: navy;">
+                            <span class="warning_icon">!</span>&emsp;&emsp;<span
+                                class="warning_title_text">warning</span>
                         </div>
                         <span class="close_button3 button2">&nbsp;✕&nbsp;</span><br><br>
                         <p class="window_warning_text"></p>

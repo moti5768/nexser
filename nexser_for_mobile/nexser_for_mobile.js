@@ -1273,6 +1273,18 @@ function taskbar_none() {
     }
 }
 
+function help_command() {
+    document.querySelector('.focus').value = "nexser/open"
+}
+
+function help_command2() {
+    document.querySelector('.focus').value = "nexser/program"
+}
+
+function help_command_clear() {
+    document.querySelector('.focus').value = ""
+}
+
 document.addEventListener('DOMContentLoaded', pageLoad)
 function pageLoad() {
     let textbox = document.querySelector('.name');
