@@ -789,33 +789,63 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
 
     startup_window_open()
     function startup_window_open() {
-        if (localStorage.getItem('startup_note')) {
-            const element = document.querySelector('.note_pad');
-            element.closest('.child_windows');
-            element.classList.remove('active')
-        }
-        if (!note_pad.classList.contains('active')) {
-            document.querySelector('.note_area').focus()
-        }
         if (localStorage.getItem('startup_computer')) {
             const element = document.querySelector('.my_computer');
             element.closest('.child_windows');
-            element.classList.remove('active')
+            element.classList.remove('active');
+
+            document.querySelectorAll('.title').forEach(function (wt) {
+                wt.classList.remove('navy')
+            })
+            wt = element.firstElementChild;
+            wt.classList.add('navy');
+        }
+        if (localStorage.getItem('startup_note')) {
+            const element = document.querySelector('.note_pad');
+            element.closest('.child_windows');
+            element.classList.remove('active');
+
+            document.querySelectorAll('.title').forEach(function (wt) {
+                wt.classList.remove('navy')
+            })
+            wt = element.firstElementChild;
+            wt.classList.add('navy');
+        }
+        if (!note_pad.classList.contains('active')) {
+            document.querySelector('.note_area').focus();
         }
         if (localStorage.getItem('startup_color')) {
             const element = document.querySelector('.color');
             element.closest('.child_windows');
-            element.classList.remove('active')
+            element.classList.remove('active');
+
+            document.querySelectorAll('.title').forEach(function (wt) {
+                wt.classList.remove('navy')
+            })
+            wt = element.firstElementChild;
+            wt.classList.add('navy');
         }
         if (localStorage.getItem('startup_screen')) {
             const element = document.querySelector('.screen_menu');
             element.closest('.child_windows');
-            element.classList.remove('active')
+            element.classList.remove('active');
+
+            document.querySelectorAll('.title').forEach(function (wt) {
+                wt.classList.remove('navy')
+            })
+            wt = element.firstElementChild;
+            wt.classList.add('navy');
         }
         if (localStorage.getItem('startup_htmlviewer_edit')) {
             const element = document.querySelector('.htmlviewer_edit_menu');
             element.closest('.child_windows');
-            element.classList.remove('active')
+            element.classList.remove('active');
+
+            document.querySelectorAll('.title').forEach(function (wt) {
+                wt.classList.remove('navy')
+            })
+            wt = element.firstElementChild;
+            wt.classList.add('navy');
         }
     }
 
