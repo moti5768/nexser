@@ -394,7 +394,8 @@ input[type="file"] {
 .startmenu_file_icon {
     width: 18px;
     height: 12.5px;
-    background: khaki;
+    background-image: radial-gradient(#FFFF66 1px, #CCCC99 1px);
+    background-size: 3px 3px;
     position: absolute;
     margin-top: 3px;
     left: 5px;
@@ -651,7 +652,8 @@ body::-webkit-scrollbar {
 .title_icon {
     width: 18px;
     height: 12.5px;
-    background: khaki;
+    background-image: radial-gradient(#FFFF66 1px, #CCCC99 1px);
+    background-size: 3px 3px;
     position: absolute;
     margin-top: 4px;
     left: 5px;
@@ -695,7 +697,8 @@ body::-webkit-scrollbar {
 .window_file_icon {
     width: 60px;
     height: 45px;
-    background: khaki;
+    background-image: radial-gradient(#FFFF66 1px, #CCCC99 1px);
+    background-size: 3px 3px;
     position: absolute;
     left: 5px;
     bottom: 26px;
@@ -719,6 +722,66 @@ body::-webkit-scrollbar {
 }
 
 /* desktop_icon */
+
+
+.desktop_files {
+    display: block;
+    position: relative;
+    padding-top: 35px;
+    width: 100px;
+    color: white;
+    left: 5px;
+    top: 5px;
+}
+
+.dli-folder {
+    display: inline-block;
+    vertical-align: middle;
+    line-height: 1;
+    position: relative;
+    top: -25px;
+    left: 5px;
+    width: 4.20em;
+    height: 2.90em;
+    border-left: 0.1em solid whitesmoke;
+    border-top: 0.1em solid whitesmoke;
+    border-right: 0.1em solid black;
+    border-bottom: 0.1em solid black;
+    border-radius: 0 0.1em 0.1em 0.1em;
+    background-image: radial-gradient(#FFFF66 1px, #CCCC99 1px);
+    background-size: 3px 3px;
+    box-sizing: content-box;
+    box-shadow: 5px 5px dimgray;
+}
+
+.dli-folder>span {
+    position: absolute;
+    left: -0.1em;
+    bottom: 100%;
+    width: 1.5em;
+    height: 0.25em;
+    background: khaki;
+    border: 0.1em solid whitesmoke;
+    border-right: 0;
+    border-bottom: 0;
+    border-radius: 0.1em 0.1em 0 0;
+    background-image: radial-gradient(#FFFF66 1px, #CCCC99 1px);
+    background-size: 3px 3px;
+    box-sizing: content-box;
+}
+
+.dli-folder>span::before {
+    content: '';
+    position: absolute;
+    top: -0.1em;
+    left: calc(100% - 0.1em);
+    width: 0.175em;
+    height: 0;
+    border-top: 0.05em solid currentColor;
+    transform: rotate(55deg);
+    transform-origin: left bottom;
+    box-sizing: content-box;
+}
 
 /* title */
 .title {
