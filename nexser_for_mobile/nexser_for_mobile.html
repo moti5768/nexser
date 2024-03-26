@@ -247,7 +247,7 @@
                     </div>
 
 
-                    <div class="child_windows note_pad active" style="width: 90%; height: auto;">
+                    <div class="child_windows note_pad active">
                         <span class="note"></span>
                         <div class="title">
                             <span class="title_icon"></span>&emsp;&emsp;<span class="note_title">notepad</span>
@@ -1282,7 +1282,7 @@
                         <form autocomplete="off" method="get" name="back_text_form" class="border"
                             onsubmit="return false; length">
                             <textarea type="text" name="back_text" class="back_text" id="back_text_input" maxlength="20"
-                                style="border: none; outline: none; background: whitesmoke; resize: none; height: 16px; font-size: large;"></textarea>
+                                style="border: none; outline: none; background: whitesmoke; resize: none; height: 16px; font-size: medium;"></textarea>
                         </form>
                         <input type="submit" class="button2" value="submit" onclick="backtext_check()"><br>
                         <button class="button2" id="backtext_on">backtext on</button><br>
@@ -1533,8 +1533,8 @@
 
                         <div class="mini_window">
                             <div style="pointer-events: none;">
-                                <video id="v" class="border" style="background-color: black" height="400" ;
-                                    width="640px"></video>
+                                <video id="v" class="border" style="background-color: black" height="300px" ;
+                                    width="350px"></video>
                             </div>
                             <button id="start_camera" class="button2" onclick="startCamera2()">start</button>
                             <button class="button2" onclick="stopCamera()">finish</button>
@@ -1571,9 +1571,7 @@
                             <span class="minscreen_button button2">&nbsp;❒&nbsp;</span>
                             <span class="minimization_button button2">&nbsp;―&nbsp;</span><br>
                         </div>
-                        <div>
-                            <iframe id="preview" class="border"></iframe>
-                        </div>
+                        <iframe id="preview" class="border"></iframe>
                     </div>
 
                     <div class="child_windows border uploadvideo_menu active">
@@ -1585,7 +1583,8 @@
                             <span class="close_button button2">&nbsp;✕&nbsp;</span><br>
                         </div>
                         <div class="videos">
-                            <video class="preview2" id="previewVideo2" controls="controls" width="560px"></video><br>
+                            <video class="preview2" id="previewVideo2" controls="controls" width="350px" autoplay muted
+                                playsinline controls></video><br>
                             <label class="button2">
                                 <input type="file" accept='video/*' onchange="preview2(this, 'previewVideo2')"
                                     placeholder="">movie upload

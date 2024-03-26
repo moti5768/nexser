@@ -992,6 +992,12 @@ body::-webkit-scrollbar {
 }
 
 /* note */
+
+.note_pad {
+    width: 90%;
+    height: auto;
+}
+
 .note_area {
     display: block;
     font-size: large;
@@ -1038,24 +1044,18 @@ textarea {
 /* htmlviewer */
 
 #editor {
-    width: 800px;
+    width: 300px;
     height: 50vh;
 }
 
-.child_windows.big #editor {
-    height: 85vh;
-    width: 99.8%;
-    resize: none;
-}
-
 #preview {
-    width: 600px;
+    width: 350px;
     height: 50vh;
 }
 
 .child_windows.big #preview {
     width: 99.9%;
-    height: 95.0vh;
+    height: 90.0vh;
 }
 
 /* help */

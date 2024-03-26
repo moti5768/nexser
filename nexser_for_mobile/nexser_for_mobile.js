@@ -790,9 +790,6 @@ function startup_window_open() {
         element.closest('.child_windows');
         element.classList.remove('active')
     }
-    if (!note_pad.classList.contains('active')) {
-        document.querySelector('.note_area').focus()
-    }
     if (localStorage.getItem('startup_program')) {
         const element = document.querySelector('.program_manager');
         element.closest('.child_windows');
@@ -2092,9 +2089,6 @@ document.querySelectorAll('.test_button12').forEach(function (test_button12) {
         note_pad.closest('.child_windows');
         z = largestZIndex++;
         unko12 = note_pad.style.zIndex = z;
-        if (!note_pad.classList.contains('active')) {
-            document.querySelector('.note_area').focus()
-        }
     });
 });
 document.querySelectorAll('.test_button13').forEach(function (test_button13) {
