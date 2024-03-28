@@ -145,15 +145,26 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
         }
     }
 
+    document.querySelectorAll('.sound_play_button').forEach(function (sound_play_button2) {
+        sound_play_button2.textContent = "▶"
+    })
     document.querySelectorAll('.sound_play_button').forEach(function (sound_play_button) {
         sound_play_button.addEventListener('mousedown', function () {
             sound_stop()
+            document.querySelectorAll('.sound_play_button').forEach(function (sound_play_button2) {
+                sound_play_button2.textContent = "▶"
+            })
+        })
+        sound_play_button.addEventListener('mouseup', function () {
+            sound_play_button.textContent = "||"
         })
     })
-
     document.querySelectorAll('.sound_stop_button').forEach(function (sound_stop_button) {
         sound_stop_button.addEventListener('mousedown', function () {
             sound_stop()
+            document.querySelectorAll('.sound_play_button').forEach(function (sound_play_button2) {
+                sound_play_button2.textContent = "▶"
+            })
         })
     })
 
