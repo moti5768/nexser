@@ -939,23 +939,39 @@ body::-webkit-scrollbar {
     -ms-user-select: none;
     user-select: none;
     display: flex;
-    width: 580px;
     background: #c0c0c0;
-    height: 20.5px;
+    width: 350px;
+    height: 20px;
     position: relative;
     top: 20px;
     left: 10px;
 }
 
 .window_inline_menus_parent {
+    display: block;
     font-size: small;
+    height: 20px;
+    text-align: center;
+    justify-content: center;
+
+    background-color: #c0c0c0;
+    border-right: solid 1.5px black;
+    border-left: solid 1.5px whitesmoke;
+    border-bottom: solid 1.5px black;
+    border-top: solid 1.5px whitesmoke;
+    z-index: 0;
+}
+
+.window_inline_menus_parent.select {
     display: block;
     text-align: center;
     justify-content: center;
+
+    border-bottom: solid 1.5px silver;
 }
 
 .window_inline_menus_child {
-    width: 280px;
+    width: 580px;
     height: 180px;
     display: none;
     background-color: #c0c0c0;
@@ -964,9 +980,12 @@ body::-webkit-scrollbar {
     border-bottom: solid 1.5px black;
     border-top: solid 1.5px whitesmoke;
     position: absolute;
-    top: 20px;
+    top: 21px;
+    left: 0px;
+    font-size: medium;
     text-align: center;
     justify-content: center;
+    z-index: 1;
 }
 
 /* title_buttons */
@@ -1315,27 +1334,11 @@ textarea {
 
 /* tetris */
 
-.tetris_menu1 {
-    display: block;
-    height: 100%;
-    background-color: dimgray;
-}
-
-.tetris_menu2 {
-    display: none;
-    height: 100%;
-    background-color: dimgray;
-}
-
-.tetlines {
-    display: block;
-    z-index: 0;
-    pointer-events: none;
-}
-
-.tetline {
-    display: block;
-    position: relative;
+.tetris_menu {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
 }
 
 #next {

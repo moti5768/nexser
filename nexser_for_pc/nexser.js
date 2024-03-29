@@ -63,6 +63,10 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
     const error_windows = document.querySelector('.error_windows');
     const warning_windows = document.querySelector('.warning_windows');
 
+    // game
+
+    const tetris_mneu = document.querySelector('.tetris_menu');
+
     // sounds
     const sound_1 = new Audio("https://github.com/moti5768/nexser/raw/main/nexser_sounds/The-Microsoft-Sound.mp3");
     const sound_2 = new Audio("https://github.com/moti5768/nexser/raw/main/nexser_sounds/tada.mp3");
@@ -2098,16 +2102,22 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
 
     document.querySelectorAll('.window_inline_menus_parent').forEach(function (parent_list) {
         parent_list.addEventListener('click', function () {
+            parent_list.classList.add('select')
             let parentlist = parent_list.lastElementChild;
             parentlist.style.display = "flex"
             document.querySelectorAll('.window_inline_menus_parent').forEach(function (c_list) {
                 c_list.addEventListener('mouseup', function () {
                     document.querySelectorAll('.window_inline_menus_child', '.active').forEach(function (cb_list) {
                         cb_list.style.display = "none";
+                        parent_list.classList.remove('select')
                     })
                 })
             })
         })
+    })
+
+    document.querySelectorAll('.menuchild1').forEach(function (menuchild1) {
+        menuchild1.style.display = "flex"
     })
 
     document.querySelectorAll('.child_windows, .child').forEach(function (z_index_child_windows) {
@@ -2526,6 +2536,23 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
                 wt.classList.remove('navy')
             })
             wt = comment_menu.firstElementChild;
+            wt.classList.add('navy');
+        });
+    });
+
+    // games
+
+    document.querySelectorAll('.test_button29').forEach(function (test_button29) {
+        test_button29.addEventListener('click', function () {
+            tetris_mneu.classList.toggle('active');
+            tetris_mneu.closest('.child_windows');
+            z = largestZIndex++;
+            unko29 = tetris_mneu.style.zIndex = z;
+
+            document.querySelectorAll('.title').forEach(function (wt) {
+                wt.classList.remove('navy')
+            })
+            wt = tetris_mneu.firstElementChild;
             wt.classList.add('navy');
         });
     });
