@@ -539,6 +539,7 @@ input[type="file"] {
 ::-webkit-scrollbar {
     display: block;
     width: 15px;
+    cursor: default;
 }
 
 ::-webkit-scrollbar-track {
@@ -957,17 +958,17 @@ body::-webkit-scrollbar {
     background-color: #c0c0c0;
     border-right: solid 1.5px black;
     border-left: solid 1.5px whitesmoke;
-    border-bottom: solid 1.5px black;
     border-top: solid 1.5px whitesmoke;
-    z-index: 0;
+    border-bottom: solid 1.5px black;
+    z-index: 2;
 }
 
 .window_inline_menus_parent.select {
-    display: block;
+    margin-top: -1.5px;
     text-align: center;
     justify-content: center;
-
-    border-bottom: solid 1.5px silver;
+    border-bottom: silver;
+    z-index: 1;
 }
 
 .window_inline_menus_child {
@@ -980,12 +981,12 @@ body::-webkit-scrollbar {
     border-bottom: solid 1.5px black;
     border-top: solid 1.5px whitesmoke;
     position: absolute;
-    top: 21px;
+    top: 20px;
     left: 0px;
     font-size: medium;
     text-align: center;
     justify-content: center;
-    z-index: 1;
+    z-index: 0;
 }
 
 /* title_buttons */

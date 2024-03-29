@@ -160,7 +160,16 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             })
         })
         sound_play_button.addEventListener('mouseup', function () {
-            sound_play_button.textContent = "||"
+            if (!localStorage.getItem('driver_sound')) {
+                document.querySelector('.window_error_text').textContent = "driver sound no install!"
+                error_windows.classList.remove('active')
+                prompt_text2.style.color = "";
+                sound3()
+                document.querySelector('.test_allwindow').style.display = "block";
+                sound_play_button2.textContent = "▶"
+            } else {
+                sound_play_button.textContent = "||"
+            }
         })
     })
     document.querySelectorAll('.sound_stop_button').forEach(function (sound_stop_button) {
@@ -262,6 +271,9 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
                     button2.classList.remove('pressed');
                 })
             });
+        });
+        button2.addEventListener('mouseleave', function () {
+            button2.classList.remove('pressed');
         });
     });
 
@@ -1391,19 +1403,21 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
         prompt_data_clear()
     }
 
-    function localStorage_clear() {
-        const locallength = localStorage.length;
-        if (locallength > 0) {
+    function allStorage_clear() {
+        const alllength = localStorage.length;
+        if (alllength > 0) {
             localStorage.clear();
+            sessionStorage.clear();
+            stopCamera()
 
-            document.querySelector('.tests').textContent = (locallength);
+            document.querySelector('.tests').textContent = (alllength);
 
             document.querySelector('.test_allwindow').style.display = "block";
             warning_windows.style.display = "block";
             document.querySelector('.shutdown_button').style.display = "block";
             document.querySelector('.warningclose_button').style.display = "none";
-            document.querySelector('.warning_title_text').textContent = "localstorage"
-            document.querySelector('.window_warning_text').textContent = "localstorage allremove!!"
+            document.querySelector('.warning_title_text').textContent = "nexser"
+            document.querySelector('.window_warning_text').textContent = "nexser alldata remove!!"
             document.querySelector('.installbutton_1').textContent = "install"
             document.querySelector('.startup_sound').textContent = "INSTALL"
             document.querySelector('.installbutton_2').textContent = "install"
@@ -1729,9 +1743,9 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
                 prompt_text2.style.color = "";
                 cpubench()
                 break;
-            case 'localstorage/clear':
+            case 'nexser/data/clear':
                 document.querySelector('.prompt_error_text2').textContent = "";
-                localStorage_clear()
+                allStorage_clear()
                 prompt_text2.style.color = "";
                 break;
             case 'welcome':
@@ -1853,7 +1867,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
         });
     })
     document.querySelectorAll('.close_button').forEach(function (close_button) {
-        close_button.addEventListener('mouseup', function () {
+        close_button.addEventListener('click', function () {
             setTimeout(() => {
                 const closebutton = close_button.closest('.child_windows');
                 closebutton.classList.add('active');
@@ -1862,7 +1876,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
         });
     })
     document.querySelectorAll('.close_button2').forEach(function (close_button2) {
-        close_button2.addEventListener('mouseup', function () {
+        close_button2.addEventListener('click', function () {
             setTimeout(() => {
                 const closebutton2 = close_button2.closest('.error_windows');
                 closebutton2.classList.add('active');
@@ -1871,7 +1885,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
         });
     })
     document.querySelectorAll('.close_button3').forEach(function (close_button3) {
-        close_button3.addEventListener('mouseup', function () {
+        close_button3.addEventListener('click', function () {
             setTimeout(() => {
                 const closebutton3 = close_button3.closest('.warning_windows');
                 closebutton3.style.display = "none"
@@ -1881,7 +1895,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
     })
 
     document.querySelectorAll('.minimization_button').forEach(function (minimizationbutton) {
-        minimizationbutton.addEventListener('mouseup', function () {
+        minimizationbutton.addEventListener('click', function () {
             setTimeout(() => {
                 const minimization_button = minimizationbutton.closest('.child_windows');
                 minimization_button.classList.add('active');
@@ -2102,9 +2116,17 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
 
     document.querySelectorAll('.window_inline_menus_parent').forEach(function (parent_list) {
         parent_list.addEventListener('click', function () {
+            document.querySelectorAll('.menuparent1').forEach(function (menuparent1) {
+                menuparent1.style.marginTop = ""
+            })
+            document.querySelectorAll('.menuchild1').forEach(function (menuchild1) {
+                menuchild1.style.display = "none"
+            })
+        })
+        parent_list.addEventListener('click', function () {
             parent_list.classList.add('select')
             let parentlist = parent_list.lastElementChild;
-            parentlist.style.display = "flex"
+            parentlist.style.display = "block"
             document.querySelectorAll('.window_inline_menus_parent').forEach(function (c_list) {
                 c_list.addEventListener('mouseup', function () {
                     document.querySelectorAll('.window_inline_menus_child', '.active').forEach(function (cb_list) {
@@ -2117,7 +2139,10 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
     })
 
     document.querySelectorAll('.menuchild1').forEach(function (menuchild1) {
-        menuchild1.style.display = "flex"
+        menuchild1.style.display = "block"
+    })
+    document.querySelectorAll('.menuparent1').forEach(function (menuparent1) {
+        menuparent1.style.marginTop = "-1.5px"
     })
 
     document.querySelectorAll('.child_windows, .child').forEach(function (z_index_child_windows) {
@@ -2561,12 +2586,6 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
         taskbtn_load()
     })
 
-    document.querySelectorAll('.drag_button').forEach(function (title_click) {
-        title_click.addEventListener("contextmenu", function (event) {
-            event.preventDefault();
-        });
-    })
-
     window.onload = function () {
         document.addEventListener('touchmove', disableScroll, { passive: false });
         document.addEventListener('mousewheel', disableScroll, { passive: false });
@@ -2575,12 +2594,6 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             event.preventDefault();
         }
     }
-
-    document.querySelectorAll('.drag_button').forEach(function (title_click) {
-        title_click.addEventListener("contextmenu", function (event) {
-            event.preventDefault();
-        });
-    })
 
     document.querySelectorAll('.drag_button').forEach(function (drag) {
         let drag2 = drag.closest('.child_windows');
@@ -2688,12 +2701,6 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
                 bsilver.style.background = "silver"
             })
         }
-    })
-
-    document.querySelectorAll('.drag_button').forEach(function (title_click) {
-        title_click.addEventListener("contextmenu", function (event) {
-            event.preventDefault();
-        });
     })
 
     document.querySelectorAll('.drag_button2').forEach(function (drag) {
@@ -3113,7 +3120,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
         memo_save2.textContent = "drop text data save!";
     }
 
-    document.querySelector('.note_close').addEventListener('mouseup', function () {
+    document.querySelector('.note_close').addEventListener('click', function () {
         setTimeout(() => {
             if (!note_pad.classList.contains('active') && localStorage.getItem('noteData')) {
                 note_pad.classList.add('active')
