@@ -1406,9 +1406,13 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
     function allStorage_clear() {
         const alllength = localStorage.length;
         if (alllength > 0) {
+
+            if (sessionStorage.getItem('start_camera')) {
+                stopCamera()
+            }
+
             localStorage.clear();
             sessionStorage.clear();
-            stopCamera()
 
             document.querySelector('.tests').textContent = (alllength);
 
