@@ -2154,7 +2154,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
     document.querySelectorAll('.window_inline_menus_parent').forEach(function (parent_list) {
         parent_list.addEventListener('click', function () {
             document.querySelectorAll('.menuparent1').forEach(function (menuparent1) {
-                menuparent1.style.marginTop = ""
+                menuparent1.classList.remove('menuparent1')
             })
             document.querySelectorAll('.menuchild1').forEach(function (menuchild1) {
                 menuchild1.style.display = "none"
@@ -2162,7 +2162,6 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
         })
         parent_list.addEventListener('click', function () {
             parent_list.classList.add('select');
-            document.querySelector('.menuparent1').style.borderBottom = ""
             let parentlist = parent_list.lastElementChild;
             parentlist.style.display = "block"
             document.querySelectorAll('.window_inline_menus_parent').forEach(function (c_list) {
@@ -2178,10 +2177,6 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
 
     document.querySelectorAll('.menuchild1').forEach(function (menuchild1) {
         menuchild1.style.display = "block"
-    })
-    document.querySelectorAll('.menuparent1').forEach(function (menuparent1) {
-        menuparent1.style.marginTop = "-2.5px";
-        menuparent1.style.borderBottom = "solid 2px silver"
     })
 
     document.querySelectorAll('.child_windows, .child').forEach(function (z_index_child_windows) {

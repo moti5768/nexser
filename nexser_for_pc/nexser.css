@@ -960,10 +960,18 @@ body::-webkit-scrollbar {
 
 .window_inline_menus_parent.select {
     margin-top: -2.5px;
-    text-align: center;
-    justify-content: center;
     border-bottom: solid 2px silver;
     z-index: 1;
+
+    outline: 1.5px dotted black;
+    outline-offset: -5px;
+}
+
+.menuparent1 {
+    margin-top: -2.5px;
+    border-bottom: solid 2px silver;
+    outline: 1.5px dotted black;
+    outline-offset: -5px;
 }
 
 .window_inline_menus_child {
