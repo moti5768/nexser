@@ -3,6 +3,7 @@
 * {
     padding: 0px;
     margin: 0px;
+    border-radius: 0px;
 }
 
 html {
@@ -815,6 +816,7 @@ body::-webkit-scrollbar {
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
+    white-space: nowrap;
     display: flex;
     background: #c0c0c0;
     height: 20.5px;
