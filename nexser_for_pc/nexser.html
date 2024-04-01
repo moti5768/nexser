@@ -1053,7 +1053,7 @@
 
                             <div class="window_inline_menus_parent menuparent1">
                                 <ul>
-                                    <li>&emsp;&emsp;version&emsp;&emsp;</li>
+                                    <li>&nbsp;General&nbsp;</li>
                                 </ul>
                                 <div class="window_inline_menus_child menuchild1">
                                     <ul><br>
@@ -1213,7 +1213,7 @@
                             <p>Text color</p>
                             <select id="select_textcolor" class="button2">
                                 <option value="">default</option>
-                                <option value=" black">black</option>
+                                <option value="black">black</option>
                                 <option value="white">white</option>
                                 <option value="blue">blue</option>
                                 <option value="red">red</option>
@@ -1225,10 +1225,8 @@
                                 <option value="pink">pink</option>
                                 <option value="orange">orange</option>
                             </select>
-                            <p><button class="button2" onclick="setStorage2()">color
-                                    set</button></p>
-                            <button class="button2" onclick="colordata_clear()">colors data
-                                clear</button>
+                            <p><button class="button2" onclick="setStorage2()">color set</button></p>
+                            <button class="button2" onclick="colordata_clear()">colors data clear</button>
                         </div>
                     </div>
 
@@ -1525,9 +1523,6 @@
                     </div>
 
                     <div class="child_windows calc_menu active">
-                        <div class="parent_graph border">
-                            <span class="child_graph"></span>
-                        </div>
                         <div class="title">
                             <span class="title_icon"></span><span>&emsp;&emsp;calc</span>
                         </div>
@@ -1565,6 +1560,10 @@
                                 </div>
                             </div>
 
+                        </div>
+
+                        <div class="parent_graph border">
+                            <span class="child_graph"></span>
                         </div>
 
                         <div class="black_text" style="width: 150px; height: 150px; padding: 5px;">
@@ -1983,7 +1982,6 @@
                         </div>
                     </div>
 
-
                     <div class="child_windows debug_menu active">
                         <div class="title">
                             <span class="title_icon"></span><span>&emsp;&emsp;debug</span>
@@ -2120,19 +2118,21 @@
 
                     <div class="error_windows active" style="z-index: 999999;">
                         <div class="error_title" style="background: navy; color: white;">
-                            <span class="error_icon">✕</span><span>&emsp;&emsp;error</span>
+                            <span class="bold">&nbsp;error</span>
                         </div>
                         <span class="close_button2 button2">&nbsp;✕&nbsp;</span><br>
-                        <p><span class="window_error_text">test window error</span></p><br>
+                        <p><span class="error_icon">✕</span><span>&emsp;&emsp;</span><span
+                                class="window_error_text">test
+                                window error</span>&emsp;</p>
+                        <br>
                     </div>
 
                     <div class="warning_windows" style="z-index: 999999;">
                         <div class="warning_title" style="background: navy; color: white;">
-                            <span class="warning_icon">!</span>&emsp;&emsp;<span
-                                class="warning_title_text">warning</span>
+                            <span>&nbsp;</span><span class="warning_title_text bold">warning</span>
                         </div>
                         <span class="close_button3 button2">&nbsp;✕&nbsp;</span><br>
-                        <p class="window_warning_text"></p>
+                        <p><span class="warning_icon">!</span>&emsp;&emsp;<span class="window_warning_text"></span></p>
                         <button class="shutdown_button button2 shutdown" onclick="window_none()">shutdown</button>
                         <button class="warningclose_button button2" style="display: none;"
                             onclick="warning_windows_close()">yes</button>

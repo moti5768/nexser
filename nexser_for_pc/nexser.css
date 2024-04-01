@@ -266,6 +266,8 @@ li {
     -ms-user-select: none;
     user-select: none;
     position: absolute;
+    width: 100%;
+    height: 100%;
 }
 
 /* label {
@@ -328,6 +330,9 @@ input[type="file"] {
     border-right: 1.5px #eee solid;
     border-top: 1.5px #333 solid;
     border-left: 1.5px #333 solid;
+
+    outline: 1.5px dotted black;
+    outline-offset: -5px;
 }
 
 #taskbar .taskbar_buttons {
@@ -459,7 +464,7 @@ input[type="file"] {
 /* window */
 #soft_windows {
     width: 100%;
-    height: 100vh;
+    height: 100%;
 }
 
 .child_windows {
@@ -654,16 +659,15 @@ body::-webkit-scrollbar {
 
 .warning_icon {
     display: block;
-    font-size: 12.5px;
+    font-size: 13px;
     font-weight: bold;
-    height: 15px;
-    width: 15px;
-    line-height: 18px;
+    height: 20px;
+    width: 20px;
+    line-height: 22.5px;
     border: solid 0.25px black;
     background: yellow;
     color: black;
     position: absolute;
-    top: 3.5px;
     left: 5px;
     text-align: center;
     justify-content: center;
@@ -671,18 +675,17 @@ body::-webkit-scrollbar {
 
 .error_icon {
     display: block;
-    font-size: 12.5px;
+    font-size: 13px;
     font-weight: bold;
-    height: 15px;
-    width: 15px;
-    line-height: 18px;
+    height: 20px;
+    width: 20px;
+    line-height: 22.5px;
     border: solid 1.5px orangered;
     background: #FF0033;
-    border-radius: 10px;
+    border-radius: 20px;
     color: white;
     position: absolute;
-    top: 3.5px;
-    left: 5px;
+    left: 2.5px;
     text-align: center;
     justify-content: center;
 }
@@ -739,7 +742,6 @@ body::-webkit-scrollbar {
 .child_windows .title {
     width: 100%;
     position: absolute;
-    top: 0;
     color: white;
     pointer-events: none;
 }
@@ -760,12 +762,7 @@ body::-webkit-scrollbar {
 }
 
 .child_windows.big .title {
-    width: 100%;
-    position: absolute;
-    top: 0;
-    color: white;
     pointer-events: none;
-
 }
 
 .child_windows.big .minscreen_button {
@@ -924,8 +921,8 @@ body::-webkit-scrollbar {
 }
 
 .title2 li:hover {
-    color: white;
-    background: darkblue;
+    outline: 1.5px dotted black;
+    outline-offset: -3px;
 }
 
 #nexser_program li:hover {
@@ -940,34 +937,32 @@ body::-webkit-scrollbar {
     -ms-user-select: none;
     user-select: none;
     display: flex;
-    background: #c0c0c0;
-    width: 350px;
+    background: rgba();
     height: 20px;
+    width: 500px;
     position: relative;
     top: 20px;
     left: 10px;
 }
 
 .window_inline_menus_parent {
-    display: block;
-    font-size: small;
+    display: inline-block;
     height: 20px;
-    text-align: center;
-    justify-content: center;
-
+    font-size: 12.5px;
     background-color: #c0c0c0;
     border-right: solid 1.5px black;
     border-left: solid 1.5px whitesmoke;
     border-top: solid 1.5px whitesmoke;
     border-bottom: solid 1.5px black;
+    border-radius: 3px;
     z-index: 2;
 }
 
 .window_inline_menus_parent.select {
-    margin-top: -1.5px;
+    margin-top: -2.5px;
     text-align: center;
     justify-content: center;
-    border-bottom: silver;
+    border-bottom: solid 2px silver;
     z-index: 1;
 }
 
@@ -986,7 +981,6 @@ body::-webkit-scrollbar {
     font-size: medium;
     text-align: center;
     justify-content: center;
-    z-index: 0;
 }
 
 /* title_buttons */
@@ -1086,8 +1080,7 @@ body::-webkit-scrollbar {
 }
 
 .child_list ul {
-    padding-left: 20px;
-    padding-right: 20px;
+    display: block;
     position: absolute;
     top: 20px;
     width: auto;
@@ -1096,6 +1089,15 @@ body::-webkit-scrollbar {
     border-left: solid 1.5px whitesmoke;
     border-bottom: solid 1.5px black;
     border-top: solid 1.5px whitesmoke;
+}
+
+.child_list li {
+    padding-left: 15px;
+    padding-right: 15px;
+}
+
+.child_list li:hover {
+    outline: none;
 }
 
 .window_inline_list {
@@ -1120,7 +1122,7 @@ body::-webkit-scrollbar {
 
 .window_files {
     position: relative;
-    padding-top: 50px;
+    padding-top: 52.5px;
 }
 
 .window_files.file_border {

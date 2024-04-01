@@ -1,6 +1,5 @@
 var ua = navigator.userAgent;
 if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android') > 0 || ua.indexOf('Mobile') > 0)) {
-
     const shutdown = document.getElementsByClassName('shutdown');
     const restart = document.getElementsByClassName('restart');
 
@@ -236,17 +235,25 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             document.querySelector('.battery_menu').style.display = "block";
         }
     })
-    soft_windows.addEventListener('mousedown', function () {
+    document.getElementById('files').addEventListener('mousedown', function () {
         start_menu.style.display = "none";
         document.querySelector('.start_button').classList.remove('pressed');
         document.querySelector('.task_battery').classList.remove('pressed');
         document.querySelector('.battery_menu').style.display = "none";
         helpmenu_close()
+        document.querySelectorAll('.title').forEach(function (wt) {
+            wt.classList.remove('navy')
+        })
+    });
+    document.getElementById('taskbar').addEventListener('mousedown', function () {
+        document.querySelectorAll('.title').forEach(function (wt) {
+            wt.classList.remove('navy')
+        })
     });
     parent_start_menu.addEventListener('click', function () {
         start_menu.style.display = "none";
+        document.querySelector('.start_button').classList.remove('pressed');
         taskbtn_load()
-        document.querySelector('.start_button').classList.remove('pressed')
     });
     document.querySelector('.taskbar_buttons, .child').addEventListener('mousedown', function () {
         start_menu.style.display = "none";
@@ -881,6 +888,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             localStorage.removeItem('driver_sound')
             document.querySelector('.installbutton_1').textContent = "install"
             document.querySelector('.startup_sound').textContent = "INSTALL"
+            sound_stop()
         } else {
             const sound_driver = document.querySelector('#sound_driver');
             localStorage.setItem('driver_sound', sound_driver);
@@ -1446,6 +1454,10 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
         localStorage.removeItem(KEY_BKCOLOR, bkcolor);
         background_text.style.color = ""
         document.getElementById('background_text2').style.color = ""
+        document.querySelectorAll('.desktop_files').forEach(function (desktop_files) {
+            const deskfile_text = desktop_files.firstElementChild;
+            deskfile_text.style.color = ""
+        })
     }
 
     function taskbar_none() {
@@ -1876,7 +1888,18 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
                 const closebutton = close_button.closest('.child_windows');
                 closebutton.classList.add('active');
                 taskbtn_load()
+
+                const cb = close_button.closest('.child_windows');
+                const cb2 = cb.firstElementChild;
+                cb2.classList.remove('navy')
             }, 100);
+            setTimeout(() => {
+                document.querySelectorAll('.select_window').forEach(function (select_window) {
+                    const select_window2 = select_window.closest('.child_windows');
+                    const select_window3 = select_window2.firstElementChild;
+                    select_window3.classList.add('navy')
+                })
+            }, 150);
         });
     })
     document.querySelectorAll('.close_button2').forEach(function (close_button2) {
@@ -1894,6 +1917,16 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
                 const closebutton3 = close_button3.closest('.warning_windows');
                 closebutton3.style.display = "none"
                 document.querySelector('.test_allwindow').style.display = "none";
+            }, 100);
+        });
+    })
+
+    document.querySelectorAll('.close_button4').forEach(function (close_button4) {
+        close_button4.addEventListener('click', function () {
+            setTimeout(() => {
+                const cb = close_button4.closest('.child_windows');
+                const cb2 = cb.firstElementChild;
+                cb2.classList.remove('navy')
             }, 100);
         });
     })
@@ -2128,14 +2161,15 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             })
         })
         parent_list.addEventListener('click', function () {
-            parent_list.classList.add('select')
+            parent_list.classList.add('select');
+            document.querySelector('.menuparent1').style.borderBottom = ""
             let parentlist = parent_list.lastElementChild;
             parentlist.style.display = "block"
             document.querySelectorAll('.window_inline_menus_parent').forEach(function (c_list) {
                 c_list.addEventListener('mouseup', function () {
                     document.querySelectorAll('.window_inline_menus_child', '.active').forEach(function (cb_list) {
                         cb_list.style.display = "none";
-                        parent_list.classList.remove('select')
+                        parent_list.classList.remove('select');
                     })
                 })
             })
@@ -2146,16 +2180,22 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
         menuchild1.style.display = "block"
     })
     document.querySelectorAll('.menuparent1').forEach(function (menuparent1) {
-        menuparent1.style.marginTop = "-1.5px"
+        menuparent1.style.marginTop = "-2.5px";
+        menuparent1.style.borderBottom = "solid 2px silver"
     })
 
     document.querySelectorAll('.child_windows, .child').forEach(function (z_index_child_windows) {
+
+        const zindexchildwindows = z_index_child_windows.closest('.child_windows');
+        const t_childwindows = zindexchildwindows.firstElementChild;
+
         z_index_child_windows.addEventListener('mousedown', function () {
-            const zindexchildwindows = z_index_child_windows.closest('.child_windows');
+            start_menu.style.display = "none";
+            document.querySelector('.start_button').classList.remove('pressed');
+            taskbtn_load()
             document.querySelectorAll('.title').forEach(function (wt1) {
                 wt1.classList.remove('navy')
             })
-            const t_childwindows = zindexchildwindows.firstElementChild;
             t_childwindows.classList.add('navy');
 
             z = largestZIndex++;
@@ -2822,6 +2862,12 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             localStorage.setItem(KEY_COLOR, select4);
             getStorage()
             setColor()
+        } else {
+            document.querySelector('.window_error_text').textContent = "driver color no install!"
+            error_windows.classList.remove('active')
+            prompt_text2.style.color = "";
+            sound3()
+            document.querySelector('.test_allwindow').style.display = "block";
         }
     }
 
@@ -2836,9 +2882,17 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             if (bkcolor == "white" || bkcolor == "whitesmoke") {
                 background_text.style.color = "black"
                 document.getElementById('background_text2').style.color = "black"
+                document.querySelectorAll('.desktop_files').forEach(function (desktop_files) {
+                    const deskfile_text = desktop_files.firstElementChild;
+                    deskfile_text.style.color = "black"
+                })
             } else {
                 background_text.style.color = ""
                 document.getElementById('background_text2').style.color = ""
+                document.querySelectorAll('.desktop_files').forEach(function (desktop_files) {
+                    const deskfile_text = desktop_files.firstElementChild;
+                    deskfile_text.style.color = ""
+                })
             }
         }
     }
@@ -2856,6 +2910,12 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
                 setColor();
                 // 変更した色名をストレージに保存
                 setStorage();
+            } else {
+                document.querySelector('.window_error_text').textContent = "driver color no install!"
+                error_windows.classList.remove('active')
+                prompt_text2.style.color = "";
+                sound3()
+                document.querySelector('.test_allwindow').style.display = "block";
             }
         });
         // ローカルストレージの内容をチェック
@@ -3124,7 +3184,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
         memo_save2.textContent = "drop text data save!";
     }
 
-    document.querySelector('.note_close').addEventListener('click', function () {
+    document.querySelector('.note_close').addEventListener('click', function (a) {
         setTimeout(() => {
             if (!note_pad.classList.contains('active') && localStorage.getItem('noteData')) {
                 note_pad.classList.add('active')
@@ -3516,7 +3576,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
         document.querySelectorAll('.htmlviewer_run_menu').forEach(function (htmlviewer_run_menu) {
             htmlviewer_run_menu.closest('.child_windows');
             htmlviewer_run_menu.classList.remove('active');
-            z = largestZIndex + 1;
+            z = largestZIndex++;
             unko20 = htmlviewer_run_menu.style.zIndex = z;
 
             document.querySelectorAll('.title').forEach(function (wt) {
@@ -3811,7 +3871,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
     setInterval(() => {
         const un = document.getElementsByClassName('navy').length;
         document.querySelector('.title_navy').textContent = un;
-    }, 1000);
+    }, 100);
 
 } else {
     alert('この端末は対応していません! スマホ版Nexserをご利用ください。');
