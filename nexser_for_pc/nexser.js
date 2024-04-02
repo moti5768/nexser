@@ -486,6 +486,8 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
         document.querySelector("#nexser").style.backgroundColor = "";
         document.querySelector('.test_allwindow').style.display = "none";
         document.querySelector('.welcome_windows').style.display = "none";
+        document.querySelector('#code_html').style.display = "none";
+        document.querySelector('#code_script').style.display = "none";
 
         document.querySelector('.focus').blur();
         document.querySelector('html').style.cursor = 'none';
@@ -543,7 +545,8 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
                         preview2_stop();
                         timerstop();
                         timerreset();
-                        document.querySelector('#codes').style.display = "none";
+                        document.querySelector('#code_html').style.display = "none";
+                        document.querySelector('#code_script').style.display = "none";
                         window_none();
                         fileborder_reset();
 
@@ -603,7 +606,8 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
                         preview2_stop();
                         timerstop();
                         timerreset();
-                        document.querySelector('#codes').style.display = "none";
+                        document.querySelector('#code_html').style.display = "none";
+                        document.querySelector('#code_script').style.display = "none";
                         window_none();
                         fileborder_reset();
 
@@ -1107,6 +1111,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
     })
 
     function all_load() {
+        window_back_silver()
         if (localStorage.getItem('driver_sound')) {
             document.querySelector('.installbutton_1').textContent = "uninstall"
         }
@@ -1464,7 +1469,6 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
         if (localStorage.getItem('data_taskbar_none')) {
             taskbar.style.display = "none";
             my_computer.classList.remove('active');
-        } else {
         }
     }
 
@@ -1597,21 +1601,26 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
                 localStorage.removeItem('data_taskbar_none');
                 prompt_text.style.color = "";
                 break;
-            case 'nexser/code':
+            case 'nexser/code/html':
                 document.querySelector('.prompt_error_text').textContent = "connect";
                 prompt_text.style.color = "";
-                document.querySelector('#codes').style.display = "block";
+                document.querySelector('#code_html').style.display = "block";
+                break;
+            case 'nexser/code/script':
+                document.querySelector('.prompt_error_text').textContent = "connect";
+                prompt_text.style.color = "";
+                document.querySelector('#code_script').style.display = "block";
                 break;
             case 'nexser/code/copy':
                 // 文字をすべて選択
                 // コピー対象をJavaScript上で変数として定義する
-                var copyTarget = document.getElementById('codes');
+                var copyTarget = document.getElementById('code_html');
                 // コピー対象のテキストを選択する
                 copyTarget.select();
                 // 選択しているテキストをクリップボードにコピーする
                 document.execCommand("Copy");
                 document.querySelector('.prompt_error_text').textContent = "";
-                document.querySelector('#codes').style.display = "none";
+                document.querySelector('#code_html').style.display = "none";
                 document.querySelector('.focus').focus();
                 break;
             case 'cpu/bench':
@@ -2097,6 +2106,19 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
         })
     })
 
+    document.querySelectorAll('.desktop_files').forEach(function (desktop_files) {
+        desktop_files.addEventListener('mousedown', function () {
+            document.querySelectorAll('.desktop_files').forEach(function (df1) {
+                const file10 = df1.firstElementChild;
+                file10.classList.remove('file_select');
+            })
+        })
+        desktop_files.addEventListener('mouseup', function () {
+            const file10 = desktop_files.firstElementChild;
+            file10.classList.add('file_select');
+        })
+    })
+
     document.querySelectorAll('.parent_start_menu_lists').forEach(function (parent_startmenu_lists) {
         parent_startmenu_lists.addEventListener('mouseover', function () {
             let parentstartmenulists = parent_startmenu_lists.lastElementChild;
@@ -2152,32 +2174,34 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
     })
 
     document.querySelectorAll('.window_inline_menus_parent').forEach(function (parent_list) {
-        parent_list.addEventListener('click', function () {
+        parent_list.addEventListener('mousedown', function () {
             document.querySelectorAll('.menuparent1').forEach(function (menuparent1) {
                 menuparent1.classList.remove('menuparent1')
             })
             document.querySelectorAll('.menuchild1').forEach(function (menuchild1) {
-                menuchild1.style.display = "none"
+                menuchild1.classList.remove('menuchild1')
             })
-        })
-        parent_list.addEventListener('click', function () {
+
+            document.querySelectorAll('.window_inline_menus_parent').forEach(function (parent_list2) {
+                parent_list2.classList.remove('select');
+                const menus_child = parent_list2.lastElementChild;
+                menus_child.style.display = "none"
+            })
             parent_list.classList.add('select');
-            let parentlist = parent_list.lastElementChild;
-            parentlist.style.display = "block"
-            document.querySelectorAll('.window_inline_menus_parent').forEach(function (c_list) {
-                c_list.addEventListener('mouseup', function () {
-                    document.querySelectorAll('.window_inline_menus_child', '.active').forEach(function (cb_list) {
-                        cb_list.style.display = "none";
-                        parent_list.classList.remove('select');
-                    })
-                })
-            })
+            const menus_child2 = parent_list.lastElementChild;
+            menus_child2.style.display = "block"
         })
     })
 
     document.querySelectorAll('.menuchild1').forEach(function (menuchild1) {
         menuchild1.style.display = "block"
     })
+
+    function window_back_silver() {
+        document.querySelectorAll('.back_silver').forEach(function (back_silver) {
+            back_silver.style.background = "silver"
+        })
+    }
 
     document.querySelectorAll('.child_windows, .child').forEach(function (z_index_child_windows) {
 
@@ -2715,15 +2739,13 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             document.querySelectorAll('.title').forEach(function (title) {
                 document.querySelector('.navy').style.background = ""
                 window_prompt.style.background = "rgb(51, 51, 184)"
-                const bsilver = document.querySelector('.back_silver');
-                bsilver.style.background = "silver"
+                window_back_silver()
             })
             // 半透明
             document.querySelectorAll('.child_windows').forEach(function (title) {
                 title.style.opacity = "";
                 window_prompt.style.background = "rgb(51, 51, 184)"
-                const bsilver = document.querySelector('.back_silver');
-                bsilver.style.background = "silver"
+                window_back_silver()
             })
             // 移動してる時だけ黒枠のみ
             document.querySelectorAll('.child_windows').forEach(function (title) {
@@ -2731,13 +2753,11 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
                 title.style.border = "";
                 document.querySelector('iframe').style.opacity = "";
                 window_prompt.style.background = "rgb(51, 51, 184)"
-                const bsilver = document.querySelector('.back_silver');
-                bsilver.style.background = "silver"
+                window_back_silver()
             })
             document.querySelectorAll('.title,.title2,.title_buttons,.window_inline_list,.mini_window,button,input,textarea,p,#prompt2,.window_inline_list2').forEach(function (title) {
                 title.style.opacity = ""
-                const bsilver = document.querySelector('.back_silver');
-                bsilver.style.background = "silver"
+                window_back_silver()
             })
         }
     })
@@ -2809,6 +2829,16 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
     document.querySelector('.toolbar_off').addEventListener('click', function () {
         localStorage.removeItem('toolbar_on');
         toolbar.style.display = "none"
+    })
+
+    document.querySelector('.filettext_backcolor_off').addEventListener('click', function () {
+        const filettext_backcolor_off = document.querySelector('.filettext_backcolor_off');
+        localStorage.setItem('filettext_backcolor_off', filettext_backcolor_off);
+        filettext_backcolor()
+    })
+    document.querySelector('.filettext_backcolor_on').addEventListener('click', function () {
+        localStorage.removeItem('filettext_backcolor_off');
+        filettext_backcolor()
     })
 
     document.querySelector('.saver_on').addEventListener('click', function () {
@@ -3428,6 +3458,21 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
         });
     }
 
+    filettext_backcolor()
+
+    function filettext_backcolor() {
+        if (localStorage.getItem('filettext_backcolor_off')) {
+            var desktop_files_text = document.getElementsByClassName('desktop_files_text');
+            for (var i = 0, len = desktop_files_text.length; i < len; i++) {
+                desktop_files_text[i].style.background = "rgba(0, 0, 0, 0)";
+            }
+        } else {
+            var desktop_files_text = document.getElementsByClassName('desktop_files_text');
+            for (var i = 0, len = desktop_files_text.length; i < len; i++) {
+                desktop_files_text[i].style.background = ""
+            }
+        }
+    }
 
     document.querySelector('.windowfile1').addEventListener('click', function () {
         const windowfile_1 = document.querySelector('.windowfile1');
@@ -3515,6 +3560,10 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
     function fileborder_reset() {
         document.querySelectorAll('.window_files').forEach(function (window_files) {
             window_files.classList.remove('file_border');
+        })
+        document.querySelectorAll('.desktop_files').forEach(function (df1) {
+            const file10 = df1.firstElementChild;
+            file10.classList.remove('file_select');
         })
     }
 

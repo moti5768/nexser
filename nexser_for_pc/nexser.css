@@ -536,7 +536,8 @@ input[type="file"] {
 }
 
 .display_menu {
-    width: 450px;
+    width: 600px;
+    height: 325px;
 }
 
 /* scrollbar */
@@ -781,7 +782,7 @@ body::-webkit-scrollbar {
 /* system_menu */
 .system_menu {
     width: 600px;
-    height: 250px;
+    height: 325px;
 }
 
 /* window_icon */
@@ -818,11 +819,25 @@ body::-webkit-scrollbar {
 .desktop_files {
     display: block;
     position: relative;
-    padding-top: 35px;
+    padding-top: 40px;
     width: 100px;
     color: white;
     left: 5px;
     top: 5px;
+}
+
+.desktop_files_text {
+    padding-left: 5px;
+    padding-right: 5px;
+    background: #52adad;
+    pointer-events: none;
+}
+
+.desktop_files_text.file_select {
+    background: darkblue;
+    outline: 1.5px dotted white;
+    outline-offset: 0px;
+    pointer-events: none;
 }
 
 .dli-folder {
@@ -830,7 +845,7 @@ body::-webkit-scrollbar {
     vertical-align: middle;
     line-height: 1;
     position: relative;
-    top: -25px;
+    top: -30px;
     left: 5px;
     width: 4.20em;
     height: 2.90em;
@@ -842,7 +857,8 @@ body::-webkit-scrollbar {
     background-image: radial-gradient(#FFFF66 1px, #CCCC99 1px);
     background-size: 3px 3px;
     box-sizing: content-box;
-    box-shadow: 5px 5px dimgray;
+    box-shadow: 3px 3px dimgray;
+    pointer-events: none;
 }
 
 .dli-folder>span {
@@ -961,10 +977,9 @@ body::-webkit-scrollbar {
 .window_inline_menus_parent.select {
     margin-top: -2.5px;
     border-bottom: solid 2px silver;
-    z-index: 1;
-
     outline: 1.5px dotted black;
     outline-offset: -5px;
+    z-index: 1;
 }
 
 .menuparent1 {
@@ -976,7 +991,7 @@ body::-webkit-scrollbar {
 
 .window_inline_menus_child {
     width: 580px;
-    height: 180px;
+    height: 250px;
     display: none;
     background-color: #c0c0c0;
     border-right: solid 1.5px black;
