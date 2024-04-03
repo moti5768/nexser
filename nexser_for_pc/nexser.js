@@ -488,6 +488,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
         document.querySelector('.welcome_windows').style.display = "none";
         document.querySelector('#code_html').style.display = "none";
         document.querySelector('#code_script').style.display = "none";
+        document.querySelector('.start_button').classList.remove('pressed');
 
         document.querySelector('.focus').blur();
         document.querySelector('html').style.cursor = 'none';
@@ -1605,13 +1606,15 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
                 document.querySelector('.prompt_error_text').textContent = "connect";
                 prompt_text.style.color = "";
                 document.querySelector('#code_html').style.display = "block";
+                document.querySelector('#code_script').style.display = "none";
                 break;
             case 'nexser/code/script':
                 document.querySelector('.prompt_error_text').textContent = "connect";
                 prompt_text.style.color = "";
                 document.querySelector('#code_script').style.display = "block";
+                document.querySelector('#code_html').style.display = "none";
                 break;
-            case 'nexser/code/copy':
+            case 'nexser/code/html/copy':
                 // 文字をすべて選択
                 // コピー対象をJavaScript上で変数として定義する
                 var copyTarget = document.getElementById('code_html');
@@ -1621,6 +1624,20 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
                 document.execCommand("Copy");
                 document.querySelector('.prompt_error_text').textContent = "";
                 document.querySelector('#code_html').style.display = "none";
+                document.querySelector('#code_script').style.display = "none";
+                document.querySelector('.focus').focus();
+                break;
+            case 'nexser/code/script/copy':
+                // 文字をすべて選択
+                // コピー対象をJavaScript上で変数として定義する
+                var copyTarget = document.getElementById('code_script');
+                // コピー対象のテキストを選択する
+                copyTarget.select();
+                // 選択しているテキストをクリップボードにコピーする
+                document.execCommand("Copy");
+                document.querySelector('.prompt_error_text').textContent = "";
+                document.querySelector('#code_html').style.display = "none";
+                document.querySelector('#code_script').style.display = "none";
                 document.querySelector('.focus').focus();
                 break;
             case 'cpu/bench':
@@ -2237,13 +2254,13 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             main.classList.toggle('active');
             main.closest('.child_windows');
             z = largestZIndex++;
-            unko = main.style.zIndex = z;
+            main.style.zIndex = z;
 
             document.querySelectorAll('.title').forEach(function (wt) {
                 wt.classList.remove('navy')
             })
-            wt = main.firstElementChild;
-            wt.classList.add('navy');
+            test = main.firstElementChild;
+            test.classList.add('navy');
         });
     });
     document.querySelectorAll('.test_button2').forEach(function (test_button2) {
@@ -2251,7 +2268,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             my_computer.classList.toggle('active');
             my_computer.closest('.child_windows');
             z = largestZIndex++;
-            unko2 = my_computer.style.zIndex = z;
+            my_computer.style.zIndex = z;
 
             document.querySelectorAll('.title').forEach(function (wt) {
                 wt.classList.remove('navy')
@@ -2265,7 +2282,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             control.classList.toggle('active');
             control.closest('.child_windows');
             z = largestZIndex++;
-            unko3 = control.style.zIndex = z;
+            control.style.zIndex = z;
 
             document.querySelectorAll('.title').forEach(function (wt) {
                 wt.classList.remove('navy')
@@ -2279,7 +2296,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             color_menu.classList.toggle('active');
             color_menu.closest('.child_windows');
             z = largestZIndex++;
-            unko4 = color_menu.style.zIndex = z;
+            color_menu.style.zIndex = z;
 
             document.querySelectorAll('.title').forEach(function (wt) {
                 wt.classList.remove('navy')
@@ -2293,7 +2310,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             system_menu.classList.toggle('active');
             system_menu.closest('.child_windows');
             z = largestZIndex++;
-            unko5 = system_menu.style.zIndex = z;
+            system_menu.style.zIndex = z;
 
             document.querySelectorAll('.title').forEach(function (wt) {
                 wt.classList.remove('navy')
@@ -2307,7 +2324,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             window_prompt.classList.toggle('active');
             window_prompt.closest('.child_windows');
             z = largestZIndex++;
-            unko6 = window_prompt.style.zIndex = z;
+            window_prompt.style.zIndex = z;
 
             document.querySelectorAll('.title').forEach(function (wt) {
                 wt.classList.remove('navy')
@@ -2321,7 +2338,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             clock_menu.classList.toggle('active');
             clock_menu.closest('.child_windows');
             z = largestZIndex++;
-            unko7 = clock_menu.style.zIndex = z;
+            clock_menu.style.zIndex = z;
 
             document.querySelectorAll('.title').forEach(function (wt) {
                 wt.classList.remove('navy')
@@ -2335,7 +2352,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             sound_menu.classList.toggle('active');
             sound_menu.closest('.child_windows');
             z = largestZIndex++;
-            unko8 = sound_menu.style.zIndex = z;
+            sound_menu.style.zIndex = z;
 
             document.querySelectorAll('.title').forEach(function (wt) {
                 wt.classList.remove('navy')
@@ -2349,7 +2366,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             driver_menu.classList.toggle('active');
             driver_menu.closest('.child_windows');
             z = largestZIndex++;
-            unko9 = driver_menu.style.zIndex = z;
+            driver_menu.style.zIndex = z;
 
             document.querySelectorAll('.title').forEach(function (wt) {
                 wt.classList.remove('navy')
@@ -2363,7 +2380,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             mouse_menu.classList.toggle('active');
             mouse_menu.closest('.child_windows');
             z = largestZIndex++;
-            unko10 = mouse_menu.style.zIndex = z;
+            mouse_menu.style.zIndex = z;
 
             document.querySelectorAll('.title').forEach(function (wt) {
                 wt.classList.remove('navy')
@@ -2377,7 +2394,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             screen_menu.classList.toggle('active');
             screen_menu.closest('.child_windows');
             z = largestZIndex++;
-            unko11 = screen_menu.style.zIndex = z;
+            screen_menu.style.zIndex = z;
 
             document.querySelectorAll('.title').forEach(function (wt) {
                 wt.classList.remove('navy')
@@ -2391,7 +2408,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             note_pad.classList.toggle('active');
             note_pad.closest('.child_windows');
             z = largestZIndex++;
-            unko12 = note_pad.style.zIndex = z;
+            note_pad.style.zIndex = z;
             if (!note_pad.classList.contains('active')) {
                 document.querySelector('.note_area').focus()
                 document.querySelectorAll('.title').forEach(function (wt1) {
@@ -2408,7 +2425,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             text_drop_menu.classList.toggle('active');
             text_drop_menu.closest('.child_windows');
             z = largestZIndex++;
-            unko13 = text_drop_menu.style.zIndex = z;
+            text_drop_menu.style.zIndex = z;
 
             document.querySelectorAll('.title').forEach(function (wt) {
                 wt.classList.remove('navy')
@@ -2422,7 +2439,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             windowmode_menu.classList.toggle('active');
             windowmode_menu.closest('.child_windows');
             z = largestZIndex++;
-            unko14 = windowmode_menu.style.zIndex = z;
+            windowmode_menu.style.zIndex = z;
 
             document.querySelectorAll('.title').forEach(function (wt) {
                 wt.classList.remove('navy')
@@ -2436,7 +2453,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             accessory_menu.classList.toggle('active');
             accessory_menu.closest('.child_windows');
             z = largestZIndex++;
-            unko15 = accessory_menu.style.zIndex = z;
+            accessory_menu.style.zIndex = z;
 
             document.querySelectorAll('.title').forEach(function (wt) {
                 wt.classList.remove('navy')
@@ -2450,7 +2467,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             calc_menu.classList.toggle('active');
             calc_menu.closest('.child_windows');
             z = largestZIndex++;
-            unko16 = calc_menu.style.zIndex = z;
+            calc_menu.style.zIndex = z;
 
             document.querySelectorAll('.title').forEach(function (wt) {
                 wt.classList.remove('navy')
@@ -2464,7 +2481,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             nexser_sound_menu.classList.toggle('active');
             nexser_sound_menu.closest('.child_windows');
             z = largestZIndex++;
-            unko17 = nexser_sound_menu.style.zIndex = z;
+            nexser_sound_menu.style.zIndex = z;
 
             document.querySelectorAll('.title').forEach(function (wt) {
                 wt.classList.remove('navy')
@@ -2478,7 +2495,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             camera_menu.classList.toggle('active');
             camera_menu.closest('.child_windows');
             z = largestZIndex++;
-            unko18 = camera_menu.style.zIndex = z;
+            camera_menu.style.zIndex = z;
 
             document.querySelectorAll('.title').forEach(function (wt) {
                 wt.classList.remove('navy')
@@ -2492,7 +2509,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             htmlviewer_edit_menu.classList.toggle('active');
             htmlviewer_edit_menu.closest('.child_windows');
             z = largestZIndex++;
-            unko19 = htmlviewer_edit_menu.style.zIndex = z;
+            htmlviewer_edit_menu.style.zIndex = z;
 
             document.querySelectorAll('.title').forEach(function (wt) {
                 wt.classList.remove('navy')
@@ -2506,7 +2523,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             htmlviewer_run_menu.classList.toggle('active');
             htmlviewer_run_menu.closest('.child_windows');
             z = largestZIndex++;
-            unko20 = htmlviewer_run_menu.style.zIndex = z;
+            htmlviewer_run_menu.style.zIndex = z;
 
             document.querySelectorAll('.title').forEach(function (wt) {
                 wt.classList.remove('navy')
@@ -2520,7 +2537,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             uploadvideo_menu.classList.toggle('active');
             uploadvideo_menu.closest('.child_windows');
             z = largestZIndex++;
-            unko21 = uploadvideo_menu.style.zIndex = z;
+            uploadvideo_menu.style.zIndex = z;
 
             document.querySelectorAll('.title').forEach(function (wt) {
                 wt.classList.remove('navy')
@@ -2534,7 +2551,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             font_menu.classList.toggle('active');
             font_menu.closest('.child_windows');
             z = largestZIndex++;
-            unko22 = font_menu.style.zIndex = z;
+            font_menu.style.zIndex = z;
 
             document.querySelectorAll('.title').forEach(function (wt) {
                 wt.classList.remove('navy')
@@ -2548,7 +2565,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             setting_menu.classList.toggle('active');
             setting_menu.closest('.child_windows');
             z = largestZIndex++;
-            unko23 = setting_menu.style.zIndex = z;
+            setting_menu.style.zIndex = z;
 
             document.querySelectorAll('.title').forEach(function (wt) {
                 wt.classList.remove('navy')
@@ -2562,7 +2579,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             debug_menu.classList.toggle('active');
             debug_menu.closest('.child_windows');
             z = largestZIndex++;
-            unko24 = debug_menu.style.zIndex = z;
+            debug_menu.style.zIndex = z;
 
             document.querySelectorAll('.title').forEach(function (wt) {
                 wt.classList.remove('navy')
@@ -2576,7 +2593,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             file_download_menu.classList.toggle('active');
             file_download_menu.closest('.child_windows');
             z = largestZIndex++;
-            unko25 = file_download_menu.style.zIndex = z;
+            file_download_menu.style.zIndex = z;
 
             document.querySelectorAll('.title').forEach(function (wt) {
                 wt.classList.remove('navy')
@@ -2590,7 +2607,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             display_menu.classList.toggle('active');
             display_menu.closest('.child_windows');
             z = largestZIndex++;
-            unko26 = display_menu.style.zIndex = z;
+            display_menu.style.zIndex = z;
 
             document.querySelectorAll('.title').forEach(function (wt) {
                 wt.classList.remove('navy')
@@ -2604,7 +2621,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             stopwatch_menu.classList.toggle('active');
             stopwatch_menu.closest('.child_windows');
             z = largestZIndex++;
-            unko27 = stopwatch_menu.style.zIndex = z;
+            stopwatch_menu.style.zIndex = z;
 
             document.querySelectorAll('.title').forEach(function (wt) {
                 wt.classList.remove('navy')
@@ -2618,7 +2635,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             comment_menu.classList.toggle('active');
             comment_menu.closest('.child_windows');
             z = largestZIndex++;
-            unko28 = comment_menu.style.zIndex = z;
+            comment_menu.style.zIndex = z;
 
             document.querySelectorAll('.title').forEach(function (wt) {
                 wt.classList.remove('navy')
@@ -2635,7 +2652,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             tetris_mneu.classList.toggle('active');
             tetris_mneu.closest('.child_windows');
             z = largestZIndex++;
-            unko29 = tetris_mneu.style.zIndex = z;
+            tetris_mneu.style.zIndex = z;
 
             document.querySelectorAll('.title').forEach(function (wt) {
                 wt.classList.remove('navy')
@@ -3621,7 +3638,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             htmlviewer_run_menu.closest('.child_windows');
             htmlviewer_run_menu.classList.remove('active');
             z = largestZIndex++;
-            unko20 = htmlviewer_run_menu.style.zIndex = z;
+            htmlviewer_run_menu.style.zIndex = z;
 
             document.querySelectorAll('.title').forEach(function (wt) {
                 wt.classList.remove('navy')
