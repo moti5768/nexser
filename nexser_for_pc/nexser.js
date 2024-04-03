@@ -1430,6 +1430,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
 
             document.querySelector('.tests').textContent = (alllength);
 
+            toolbar.style.display = "none";
             document.querySelector('.test_allwindow').style.display = "block";
             warning_windows.style.display = "block";
             document.querySelector('.shutdown_button').style.display = "block";
