@@ -3,6 +3,13 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
     const shutdown = document.getElementsByClassName('shutdown');
     const restart = document.getElementsByClassName('restart');
 
+    const video_windows95_menu = document.querySelector('.video_windows95_menu');
+
+    const nexser_guidebook_menu = document.querySelector('.nexser_guidebook_menu');
+    const guidebook_window_menu = document.querySelector('.guidebook_window_menu');
+    const guidebook_file_menu = document.querySelector('.guidebook_file_menu');
+    const guidebook_taskbar_menu = document.querySelector('.guidebook_taskbar_menu');
+
     const parent_start_menu = document.getElementById('start_menu');
     const taskbar = document.getElementById('taskbar');
     const toolbar = document.getElementById('toolbar');
@@ -21,13 +28,9 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
     const nexser = document.getElementById('nexser');
     const nexser_program = document.getElementById('nexser_program');
     const desktop = document.getElementById('desktop');
-    const soft_windows = document.getElementById('soft_windows');
-    const title = document.querySelector('.title');
     const z_index = document.querySelector('.z_index');
 
     // soft_windows
-    const child_windows = document.querySelector('.child_windows');
-
     const main = document.querySelector('.main');
     const my_computer = document.querySelector('.my_computer');
     const control = document.querySelector('.control_panel');
@@ -56,6 +59,8 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
     const display_menu = document.querySelector('.display_menu');
     const stopwatch_menu = document.querySelector('.stopwatch_menu');
     const comment_menu = document.querySelector('.comment_menu');
+
+    const command_help_menu = document.querySelector('.command_help_menu')
 
     const notice_menu = document.querySelector('.notice_menu');
 
@@ -158,7 +163,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
                 sound_play_button2.textContent = "▶"
             })
         })
-        sound_play_button.addEventListener('mouseup', function () {
+        sound_play_button.addEventListener('click', function () {
             if (!localStorage.getItem('driver_sound')) {
                 document.querySelector('.window_error_text').textContent = "driver sound no install!"
                 error_windows.classList.remove('active')
@@ -214,6 +219,10 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
     })
 
     document.getElementById('startbtn').addEventListener('mousedown', function () {
+        document.querySelectorAll('.desktop_files').forEach(function (df1) {
+            const file10 = df1.firstElementChild;
+            file10.classList.remove('file_select');
+        })
         if (start_menu.style.display == "block") {
             // noneで非表示
             start_menu.style.display = "none";
@@ -482,7 +491,36 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
         }
     })
 
+    function nexser_boot_check() {
+        if (localStorage.getItem('driver_sound')) {
+            nexser_start()
+        } else if (!localStorage.getItem('driver_sound') && !localStorage.getItem('start_nexser')) {
+            prompt.style.display = "none";
+            document.querySelector('.nexser_boot_menu').style.display = "block";
+            document.querySelector('.nexser_bootmenu_text').textContent = "サウンドドライバー がインストールされていません!";
+            document.querySelector('.nexser_bootmenu_text2').textContent = "インストールして nexser を起動しますか?";
+        } else {
+            nexser_start()
+        }
+    }
+
+    document.querySelector('.boot_sound').addEventListener('click', function () {
+        if (localStorage.getItem('driver_sound')) {
+            localStorage.removeItem('driver_sound')
+            document.querySelector('.startup_sound').textContent = "INSTALL"
+            document.querySelector('.installbutton_1').textContent = "install"
+        } else {
+            const startup_sound = document.querySelector('.startup_sound');
+            localStorage.setItem('driver_sound', startup_sound);
+            document.querySelector('.startup_sound').textContent = "UN INSTALL"
+            document.querySelector('.installbutton_1').textContent = "uninstall"
+        }
+    })
+
     function nexser_start() {
+        document.querySelector('.nexser_boot_menu').style.display = "none";
+        const prompt_data = "nexser_boot_test";
+        localStorage.setItem('prompt_data', prompt_data);
         document.querySelector("#nexser").style.backgroundColor = "";
         document.querySelector('.test_allwindow').style.display = "none";
         document.querySelector('.welcome_windows').style.display = "none";
@@ -539,7 +577,8 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
                         document.querySelector('.note_title').textContent = "notepad"
                     }
                     setTimeout(() => {
-                        helpmenu_close()
+                        helpmenu_close();
+                        window_none();
                         desktop.style.display = "none";
                         localStorage.removeItem('prompt_data');
                         window_reset();
@@ -548,7 +587,6 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
                         timerreset();
                         document.querySelector('#code_html').style.display = "none";
                         document.querySelector('#code_script').style.display = "none";
-                        window_none();
                         fileborder_reset();
 
                         setTimeout(() => {
@@ -577,7 +615,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
                     document.querySelector('.window_warning_text').textContent = "task window open! shutdown?"
                     sound5()
                 }
-            }, 500);
+            }, 450);
         })
     })
 
@@ -706,8 +744,9 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
     })
 
     function welcome_animation() {
+        sound_stop();
         document.querySelector('html').style.cursor = 'none';
-        sound7()
+        sound7();
         document.querySelector('.start_nexser').style.display = "none";
         document.querySelector('.startnexser_close').style.display = "none";
         document.querySelector('.welcome_window_inline').style.display = "none";
@@ -1271,6 +1310,9 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
         if (localStorage.getItem('toolbar_on')) {
             toolbar.style.display = "block"
         }
+        if (localStorage.getItem('saver_on')) {
+            document.querySelector('.saver_mode').textContent = "ON"
+        }
 
         sessionStorage.removeItem('start_camera')
     }
@@ -1378,6 +1420,13 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             allwindow.style.top = "";
             allwindow.style.height = "";
             allwindow.style.width = "";
+            const notearea = document.querySelector('.note_area');
+            notearea.style.height = "";
+            notearea.style.width = "";
+            allwindow.classList.add('default');
+            allwindow.classList.remove('leftwindow');
+            allwindow.classList.remove('rightwindow');
+            allwindow.style.transition = "";
             document.querySelector('.bigscreen_button').style.visibility = "visible";
             document.querySelector('.minscreen_button').style.visibility = "visible";
             document.querySelector('.minimization_button').style.visibility = "visible";
@@ -1387,7 +1436,16 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
         document.querySelectorAll('.child_windows').forEach(function (allwindow_none) {
             allwindow_none.classList.add('active');
             allwindow_none.classList.remove('big');
+
+            allwindow_none.classList.remove('rightwindow');
+            allwindow_none.classList.remove('leftwindow');
+            allwindow_none.style.right = "";
+            allwindow_none.classList.add('default');
+            allwindow_none.style.transition = "";
         });
+        const notearea = document.querySelector('.note_area');
+        notearea.style.height = "";
+        notearea.style.width = "";
         warning_windows.style.display = "none";
         error_windows.classList.add('active');
     }
@@ -1446,6 +1504,15 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             document.getElementById('taskbar').style.top = ""
             document.querySelector('.child_start_menu').style.top = "auto"
             document.querySelector('.child_start_menu').style.bottom = ""
+
+            document.querySelector('.startup_computer').textContent = "OFF"
+            document.querySelector('.startup_note').textContent = "OFF"
+            document.querySelector('.startup_color').textContent = "OFF"
+            document.querySelector('.startup_screen').textContent = "OFF"
+            document.querySelector('.startup_htmlviewer_edit').textContent = "OFF"
+
+            document.querySelector('.startup_htmlviewer_edit').textContent = "OFF"
+            document.querySelector('.startup_speed').textContent = "OFF"
 
             document.querySelectorAll('.big').forEach(function (child_win_posi) {
                 child_win_posi.style.top = "auto"
@@ -1529,12 +1596,10 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
                 prompt_text.style.color = "";
                 break;
             case 'nexser/open':
-                const prompt_data = document.prompt_text_form.prompt_text.value;
-                localStorage.setItem('prompt_data', prompt_data);
                 prompt_text.style.color = "yellow";
-                document.getElementsByClassName('name')[0].value = "nexserを起動しています";
+                document.getElementsByClassName('name')[0].value = "nexser boot...";
                 document.querySelector('.prompt_error_text').textContent = "success";
-                nexser_start();
+                nexser_boot_check();
                 break;
             case 'install/fast_start':
                 const prompt_data2 = document.prompt_text_form.prompt_text.value;
@@ -1682,9 +1747,18 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
                 break;
             case 'help':
                 document.querySelector('.prompt_error_text2').textContent = "";
-                document.querySelector('.help2').textContent = "taskbar/none\ntaskbar/active\ntitle/none\ntitle/active";
                 msg2.innerText = "";
                 prompt_text2.style.color = "";
+
+                command_help_menu.classList.remove('active');
+                z = largestZIndex++;
+                command_help_menu.style.zIndex = z;
+
+                document.querySelectorAll('.title').forEach(function (wt) {
+                    wt.classList.remove('navy')
+                })
+                wt = command_help_menu.firstElementChild;
+                wt.classList.add('navy');
                 break;
             case 'windows95/sound/start/play':
                 document.querySelector('.prompt_error_text2').textContent = "";
@@ -1958,6 +2032,11 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
         });
     })
 
+
+    document.querySelectorAll('.child_windows').forEach(function (child_windows) {
+        child_windows.classList.add('default')
+    })
+
     document.querySelectorAll('.minimization_button').forEach(function (minimizationbutton) {
         minimizationbutton.addEventListener('click', function () {
             setTimeout(() => {
@@ -1970,19 +2049,24 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
     document.querySelectorAll('.bigscreen_button').forEach(function (bigscreen_button) {
         bigscreen_button.addEventListener('click', function () {
             const bigscreenbutton = bigscreen_button.closest('.child_windows');
+            const bigscreenbutton2 = bigscreenbutton.lastElementChild;
+            bigscreenbutton2.style.bottom = "40px";
+
+            bigscreenbutton.classList.remove('rightwindow');
+            bigscreenbutton.classList.remove('leftwindow');
 
             if (localStorage.getItem('taskbar_position_button')) {
                 bigscreenbutton.style.height = ""
                 bigscreenbutton.style.width = ""
                 bigscreenbutton.style.top = "40px"
                 bigscreenbutton.style.left = "0"
-                bigscreenbutton.style.transition = "0.05s cubic-bezier(0, 0, 1, 1)"
+                bigscreenbutton.style.transition = "0.08s cubic-bezier(0, 0, 1, 1)"
             } else {
                 bigscreenbutton.style.height = ""
                 bigscreenbutton.style.width = ""
                 bigscreenbutton.style.top = "0"
                 bigscreenbutton.style.left = "0"
-                bigscreenbutton.style.transition = "0.05s cubic-bezier(0, 0, 1, 1)"
+                bigscreenbutton.style.transition = "0.08s cubic-bezier(0, 0, 1, 1)"
             }
             setTimeout(() => {
                 bigscreenbutton.style.transition = ""
@@ -1997,22 +2081,42 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
     document.querySelectorAll('.minscreen_button').forEach(function (minscreen_button) {
         minscreen_button.addEventListener('click', function () {
             const minscreenbutton = minscreen_button.closest('.child_windows');
+            const minscreenbutton2 = minscreenbutton.lastElementChild;
+            minscreenbutton2.style.bottom = "0px"
+
+            const minscreenbutton3 = minscreenbutton.getComputedStyle;
+            console.log(minscreenbutton3);
+
+            minscreenbutton.classList.remove('rightwindow');
+            minscreenbutton.classList.remove('leftwindow');
+
+            minscreenbutton.classList.add('default');
             minscreenbutton.style.top = "";
             minscreenbutton.style.left = "";
-            minscreenbutton.style.transition = "0.05s cubic-bezier(0, 0, 1, 1)"
+            minscreenbutton.style.right = "";
+            minscreenbutton.style.transition = "0.08s cubic-bezier(0, 0, 1, 1)"
             setTimeout(() => {
                 if (!note_pad.classList.contains('active')) {
                     document.querySelector('.note_area').focus()
                 }
                 minscreenbutton.classList.remove('big');
                 minscreenbutton.style.transition = ""
-            }, 50);
+            }, 100);
         });
     })
     function allwindow_min() {
         document.querySelectorAll('.child_windows').forEach(function (alliwindow_min) {
             alliwindow_min.style.top = "";
             alliwindow_min.style.left = "";
+            alliwindow_min.style.height = "";
+            alliwindow_min.style.width = "0";
+            system_menu.style.width = "600px";
+            display_menu.style.width = "600px";
+            const notearea = document.querySelector('.note_area');
+            notearea.style.height = "";
+            notearea.style.width = "";
+            alliwindow_min.classList.remove('leftwindow');
+            alliwindow_min.classList.remove('rightwindow');
             alliwindow_min.style.transition = "0.025s cubic-bezier(0, 0, 1, 1)"
             setTimeout(() => {
                 alliwindow_min.classList.remove('big');
@@ -2021,45 +2125,121 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
         });
     }
 
-    document.querySelectorAll('.window_left').forEach(function (window_left) {
+    document.querySelectorAll('.window_fullleft').forEach(function (window_left) {
         window_left.addEventListener('click', function () {
             const windowleft = window_left.closest('.child_windows');
-            windowleft.style.left = "auto"
-        });
-    })
-    document.querySelectorAll('.window_top').forEach(function (window_top) {
-        window_top.addEventListener('click', function () {
-            const windowtop = window_top.closest('.child_windows');
-            windowtop.style.top = "auto"
-        });
-    })
+            const windowleft2 = windowleft.lastElementChild;
+            windowleft2.style.bottom = "40px";
 
-    document.querySelectorAll('.window_left').forEach(function (window_left) {
-        window_left.addEventListener('click', function () {
-            const windowleft = window_left.closest('.child_windows');
-            windowleft.style.left = "auto"
+            windowleft.classList.remove('rightwindow');
+            windowleft.classList.add('leftwindow');
+
+            if (localStorage.getItem('taskbar_position_button')) {
+                windowleft.style.right = "auto";
+                windowleft.style.top = "40px";
+                windowleft.style.left = "0";
+                windowleft.style.height = "100%";
+                windowleft.style.width = "49.9%";
+                windowleft.style.transition = "0.08s cubic-bezier(0, 0, 1, 1)";
+            } else {
+                windowleft.style.right = "auto";
+                windowleft.style.top = "0";
+                windowleft.style.left = "0";
+                windowleft.style.height = "100%";
+                windowleft.style.width = "49.9%";
+                windowleft.style.transition = "0.08s cubic-bezier(0, 0, 1, 1)";
+            }
+
+            windowleft.classList.remove('big');
+            windowleft.classList.remove('default');
         });
     })
-    document.querySelectorAll('.window_top_and_left').forEach(function (window_top_and_left) {
-        window_top_and_left.addEventListener('click', function () {
-            const windowtopleft = window_top_and_left.closest('.child_windows');
-            windowtopleft.style.top = "auto"
-            windowtopleft.style.left = "auto"
+    document.querySelectorAll('.window_fullright').forEach(function (window_right) {
+        window_right.addEventListener('click', function () {
+            const windowright = window_right.closest('.child_windows');
+            const windowright2 = windowright.lastElementChild;
+            windowright2.style.bottom = "40px";
+
+            windowright.classList.remove('leftwindow');
+            windowright.classList.add('rightwindow');
+
+            if (localStorage.getItem('taskbar_position_button')) {
+                windowright.style.left = "auto";
+                windowright.style.top = "40px";
+                windowright.style.right = "0";
+                windowright.style.height = "100%";
+                windowright.style.width = "49.9%";
+                windowright.style.transition = "0.08s cubic-bezier(0, 0, 1, 1)";
+            } else {
+                windowright.style.left = "auto";
+                windowright.style.top = "0";
+                windowright.style.right = "0";
+                windowright.style.height = "100%";
+                windowright.style.width = "49.9%";
+                windowright.style.transition = "0.08s cubic-bezier(0, 0, 1, 1)";
+            }
+
+            windowright.classList.remove('big');
+            windowright.classList.remove('default');
         });
     })
 
     document.querySelectorAll('.window_half_big').forEach(function (window_half_big) {
         window_half_big.addEventListener('click', function () {
             const windowhalfbig = window_half_big.closest('.child_windows');
-            windowhalfbig.classList.remove('big')
+            const windowhalfbig2 = windowhalfbig.lastElementChild;
+            windowhalfbig2.style.bottom = "0"
+
+            windowhalfbig.classList.remove('rightwindow');
+            windowhalfbig.classList.remove('leftwindow');
+
+            let shiftX = event.clientX - window_half_big.getBoundingClientRect().left;
+            let shiftY = event.clientY - window_half_big.getBoundingClientRect().top;
+            let top = document.querySelector('.top');
+            moveAt(event.pageX, event.pageY);
+            // ボールを（pageX、pageY）座標の中心に置く
+            function moveAt(pageX, pageY) {
+                window_half_big.style.left = pageX - shiftX + 'px';
+                window_half_big.style.top = pageY - shiftY + 'px';
+            }
+            function onMouseMove(event) {
+                moveAt(event.pageX, event.pageY);
+            }
+
             windowhalfbig.style.height = "55%"
             windowhalfbig.style.width = "55%"
+            windowhalfbig.style.transition = "0.08s cubic-bezier(0, 0, 1, 1)"
+            setTimeout(() => {
+                windowhalfbig.style.transition = ""
+            }, 100);
+            windowhalfbig.classList.remove('big')
         })
     })
 
     document.querySelectorAll('.windowsize_reset').forEach(function (windowsize_reset) {
         windowsize_reset.addEventListener('click', function () {
-            let windowsizereset = windowsize_reset.closest('.child_windows');
+            const windowsizereset = windowsize_reset.closest('.child_windows');
+            const windowsizereset2 = windowsizereset.lastElementChild;
+            windowsizereset2.style.bottom = "0"
+
+            if (windowsizereset.classList.contains('rightwindow')) {
+                windowsizereset.style.height = "";
+                windowsizereset.style.width = "0";
+            } else {
+                windowsizereset.style.height = "";
+                windowsizereset.style.width = "";
+            }
+
+            windowsizereset.classList.remove('big');
+
+            windowsizereset.style.transition = "0.08s cubic-bezier(0, 0, 1, 1)"
+            setTimeout(() => {
+                windowsizereset.style.transition = ""
+            }, 100);
+
+            windowsizereset.classList.remove('rightwindow');
+            windowsizereset.classList.remove('leftwindow');
+
             let shiftX = event.clientX - windowsize_reset.getBoundingClientRect().left;
             let shiftY = event.clientY - windowsize_reset.getBoundingClientRect().top;
             let top = document.querySelector('.top');
@@ -2074,9 +2254,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             }
             windowsizereset.style.left = shiftX;
             windowsizereset.style.top = shiftY;
-            windowsizereset.style.height = "";
-            windowsizereset.style.width = "";
-            windowsizereset.classList.remove('big');
+
         });
     })
 
@@ -2095,10 +2273,28 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             notearea.style.resize = ""
         });
     })
+
+    document.querySelectorAll('.note_fullleft').forEach(function (note_fullleft) {
+        note_fullleft.addEventListener('click', function () {
+            const notearea = document.querySelector('.note_area');
+            notearea.style.height = "80vh"
+            notearea.style.width = ""
+            notearea.style.resize = "none"
+        })
+    })
+    document.querySelectorAll('.note_fullright').forEach(function (note_fullright) {
+        note_fullright.addEventListener('click', function () {
+            const notearea = document.querySelector('.note_area');
+            notearea.style.height = "80vh"
+            notearea.style.width = ""
+            notearea.style.resize = "none"
+        })
+    })
+
     document.querySelectorAll('.note_halfbig').forEach(function (note_halfbig) {
         note_halfbig.addEventListener('click', function () {
             const notearea = document.querySelector('.note_area');
-            notearea.style.height = ""
+            notearea.style.height = "41.5vh"
             notearea.style.width = ""
             notearea.style.resize = "none"
         })
@@ -2106,7 +2302,12 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
     document.querySelectorAll('.note_sizereset').forEach(function (note_sizereset) {
         note_sizereset.addEventListener('click', function () {
             const notearea = document.querySelector('.note_area');
+            notearea.style.height = ""
+            notearea.style.width = ""
             notearea.style.resize = ""
+
+            const notearea2 = notearea.closest('.child_windows');
+            notearea2.style.width = "0"
         })
     })
 
@@ -2131,7 +2332,7 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
                 file10.classList.remove('file_select');
             })
         })
-        desktop_files.addEventListener('mouseup', function () {
+        desktop_files.addEventListener('click', function () {
             const file10 = desktop_files.firstElementChild;
             file10.classList.add('file_select');
         })
@@ -2249,6 +2450,79 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             }
         });
     })
+
+
+    document.querySelectorAll('.windows95_button').forEach(function (windows95_button) {
+        windows95_button.addEventListener('click', function () {
+            video_windows95_menu.classList.toggle('active');
+            video_windows95_menu.closest('.child_windows');
+            z = largestZIndex++;
+            video_windows95_menu.style.zIndex = z;
+
+            document.querySelectorAll('.title').forEach(function (wt) {
+                wt.classList.remove('navy')
+            })
+            test = video_windows95_menu.firstElementChild;
+            test.classList.add('navy');
+        });
+    });
+
+    document.querySelectorAll('.nexser_guidebook').forEach(function (nexser_guidebook) {
+        nexser_guidebook.addEventListener('click', function () {
+            nexser_guidebook_menu.classList.toggle('active');
+            nexser_guidebook_menu.closest('.child_windows');
+            z = largestZIndex++;
+            nexser_guidebook_menu.style.zIndex = z;
+
+            document.querySelectorAll('.title').forEach(function (wt) {
+                wt.classList.remove('navy')
+            })
+            test = nexser_guidebook_menu.firstElementChild;
+            test.classList.add('navy');
+        });
+    });
+    document.querySelectorAll('.guidebook_window').forEach(function (guidebook_window) {
+        guidebook_window.addEventListener('click', function () {
+            guidebook_window_menu.classList.toggle('active');
+            guidebook_window_menu.closest('.child_windows');
+            z = largestZIndex++;
+            guidebook_window_menu.style.zIndex = z;
+
+            document.querySelectorAll('.title').forEach(function (wt) {
+                wt.classList.remove('navy')
+            })
+            test = guidebook_window_menu.firstElementChild;
+            test.classList.add('navy');
+        });
+    });
+    document.querySelectorAll('.guidebook_file').forEach(function (guidebook_file) {
+        guidebook_file.addEventListener('click', function () {
+            guidebook_file_menu.classList.toggle('active');
+            guidebook_file_menu.closest('.child_windows');
+            z = largestZIndex++;
+            guidebook_file_menu.style.zIndex = z;
+
+            document.querySelectorAll('.title').forEach(function (wt) {
+                wt.classList.remove('navy')
+            })
+            test = guidebook_file_menu.firstElementChild;
+            test.classList.add('navy');
+        });
+    });
+    document.querySelectorAll('.guidebook_taskbar').forEach(function (guidebook_taskbar) {
+        guidebook_taskbar.addEventListener('click', function () {
+            guidebook_taskbar_menu.classList.toggle('active');
+            guidebook_taskbar_menu.closest('.child_windows');
+            z = largestZIndex++;
+            guidebook_taskbar_menu.style.zIndex = z;
+
+            document.querySelectorAll('.title').forEach(function (wt) {
+                wt.classList.remove('navy')
+            })
+            test = guidebook_taskbar_menu.firstElementChild;
+            test.classList.add('navy');
+        });
+    });
 
     document.querySelectorAll('.test_button').forEach(function (test_button) {
         test_button.addEventListener('click', function () {
@@ -2676,7 +2950,51 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
         }
     }
 
+    document.querySelectorAll('.note_drag').forEach(function (note_drag) {
+        note_drag.addEventListener('mousedown', function () {
+            const notedrag = note_drag.closest('.child_windows');
+            if (notedrag.classList.contains('leftwindow')) {
+                const notearea = document.querySelector('.note_area');
+                notearea.style.height = "41.5vh";
+                notearea.style.width = "";
+                notearea.style.resize = "none";
+            }
+            if (notedrag.classList.contains('rightwindow')) {
+                const notearea = document.querySelector('.note_area');
+                notearea.style.height = "41.5vh";
+                notearea.style.width = "";
+                notearea.style.resize = "none";
+            }
+        })
+    })
+
     document.querySelectorAll('.drag_button').forEach(function (drag) {
+        drag.addEventListener('mousedown', function () {
+            const dragwindow = drag.closest('.child_windows');
+            const dragwindow2 = dragwindow.lastElementChild;
+            if (dragwindow.classList.contains('leftwindow')) {
+                dragwindow.style.height = "55%";
+                dragwindow.style.width = "55%";
+                dragwindow2.style.bottom = "0";
+                dragwindow.classList.remove('leftwindow');
+
+                dragwindow.style.transition = "0.08s cubic-bezier(0, 0, 1, 1)";
+                setTimeout(() => {
+                    dragwindow.style.transition = ""
+                }, 100);
+            }
+            if (dragwindow.classList.contains('rightwindow')) {
+                dragwindow.style.height = "55%";
+                dragwindow.style.width = "55%";
+                dragwindow2.style.bottom = "0";
+                dragwindow.classList.remove('rightwindow');
+
+                dragwindow.style.transition = "0.08s cubic-bezier(0, 0, 1, 1)";
+                setTimeout(() => {
+                    dragwindow.style.transition = ""
+                }, 100);
+            }
+        })
         let drag2 = drag.closest('.child_windows');
         //要素内のクリックされた位置を取得するグローバル（のような）変数
         var x;
@@ -2862,9 +3180,11 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
     document.querySelector('.saver_on').addEventListener('click', function () {
         const saver_on = document.querySelector('.saver_on');
         localStorage.setItem('saver_on', saver_on);
+        document.querySelector('.saver_mode').textContent = "ON"
     })
     document.querySelector('.saver_off').addEventListener('click', function () {
         localStorage.removeItem('saver_on');
+        document.querySelector('.saver_mode').textContent = "OFF"
     })
 
     const KEY_COLOR = "COLOR";				// 文字色用キー
@@ -3227,11 +3547,14 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
         memo_save2.textContent = "drop text data save!";
     }
 
-    document.querySelector('.note_close').addEventListener('click', function (a) {
+    document.querySelector('.note_close').addEventListener('click', function () {
         setTimeout(() => {
+            if (!localStorage.getItem('noteData')) {
+                document.querySelector('.note_title').textContent = "notepad";
+            }
             if (!note_pad.classList.contains('active') && localStorage.getItem('noteData')) {
-                note_pad.classList.add('active')
-                taskbtn_load()
+                note_pad.classList.add('active');
+                taskbtn_load();
             } else {
                 document.querySelector('.warning_title_text').textContent = "notepad"
                 document.querySelector('.window_warning_text').textContent = "notepad no save window close?(text allremove)"
@@ -3542,6 +3865,12 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             document.querySelectorAll('.big').forEach(function (child_win_posi) {
                 child_win_posi.style.top = "auto"
             })
+            document.querySelectorAll('.leftwindow').forEach(function (child_win_posi2) {
+                child_win_posi2.style.top = "auto"
+            })
+            document.querySelectorAll('.rightwindow').forEach(function (child_win_posi3) {
+                child_win_posi3.style.top = "auto"
+            })
 
         } else {
             const taskbar_position_button = document.querySelector('.taskbar_position_button');
@@ -3559,7 +3888,16 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
             document.querySelector('.files_inline').style.bottom = "auto"
 
             document.querySelectorAll('.big').forEach(function (child_win_posi) {
-                child_win_posi.style.top = "40px"
+                child_win_posi.style.transition = "";
+                child_win_posi.style.top = "40px";
+            })
+            document.querySelectorAll('.leftwindow').forEach(function (child_win_posi2) {
+                child_win_posi2.style.transition = "";
+                child_win_posi2.style.top = "40px";
+            })
+            document.querySelectorAll('.rightwindow').forEach(function (child_win_posi3) {
+                child_win_posi3.style.transition = "";
+                child_win_posi3.style.top = "40px";
             })
 
         }
@@ -3676,6 +4014,11 @@ if (!(ua.indexOf('iPhone') > 0 || ua.indexOf('iPad') > 0 || ua.indexOf('Android'
     function preview2_stop() {
         const videoElement = document.querySelector('.preview2');
         videoElement.pause();
+    }
+
+    function video_stop() {
+        const playerWindow = document.querySelector('.video3').contentWindow;
+        playerWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
     }
 
     function cpubench() {

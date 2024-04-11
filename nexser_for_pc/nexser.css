@@ -25,6 +25,17 @@ body {
     color: white;
 }
 
+.nexser_boot_menu {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    display: none;
+    height: 100vh;
+    width: 100%;
+    color: white;
+}
+
 .parent_graph {
     background-color: gray;
     width: 30px;
@@ -99,7 +110,18 @@ li {
     font-weight: bold;
 }
 
+/* text_decoration */
+
+.underline {
+    text-decoration: underline;
+}
+
 /* border */
+
+.program_border {
+    border: solid 1.5px white;
+    outline: none;
+}
 
 .border {
     border-top: 1.5px #eee solid;
@@ -407,7 +429,7 @@ input[type="file"] {
 
 .parent_start_menu_lists {
     position: relative;
-    margin-left: 30px;
+    margin-left: 25px;
 }
 
 .child_start_menu_lists {
@@ -415,7 +437,7 @@ input[type="file"] {
     position: absolute;
     width: 170px;
     background-color: silver;
-    left: 120px;
+    left: 125px;
     top: 0px;
 }
 
@@ -477,6 +499,12 @@ input[type="file"] {
     outline-offset: 0.5px;
     background: whitesmoke;
     position: absolute;
+    z-index: 1;
+    min-width: max-content;
+    min-height: 22.5px;
+}
+
+.child_windows.default {
     top: 20%;
     left: 25%;
     z-index: 1;
@@ -577,6 +605,19 @@ body::-webkit-scrollbar {
     display: none;
 }
 
+/* drag color */
+
+/*Firefox用のベンダープレフィックス付き*/
+::-moz-selection {
+    background-color: gray;
+    color: white;
+}
+
+::selection {
+    background-color: gray;
+    color: white;
+}
+
 
 .welcome_windows {
     display: none;
@@ -602,11 +643,75 @@ body::-webkit-scrollbar {
     overflow: auto;
 }
 
+/* miniwindow */
+
 .mini_window {
     display: block;
     width: auto;
     height: auto;
     border-top: solid 1px black;
+}
+
+.mini_window_left_screen {
+    background: #52adad;
+    width: 200px;
+    height: 100%;
+    position: absolute;
+    top: 0px;
+}
+
+.mini_window_left_content {
+    position: absolute;
+    top: 40px;
+    left: 205px;
+}
+
+.mini_window_taskbar {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    font-size: 15px;
+    width: 100%;
+    height: 30px;
+    background-color: silver;
+    border-top: solid 1.5px whitesmoke;
+    border-bottom: 1.5px #333 solid;
+    position: absolute;
+    bottom: -1px;
+    z-index: 999996;
+}
+
+.mini_window_startmenu {
+    width: 150px;
+    height: 215px;
+    background: silver;
+    position: absolute;
+    bottom: 30px;
+}
+
+.mini_windows {
+    display: block;
+    font-size: 15px;
+    width: auto;
+    height: 300px;
+    border: solid 2px #c0c0c0;
+    outline: 1px solid gray;
+    outline-offset: 0.5px;
+    background: whitesmoke;
+    position: absolute;
+    top: 100px;
+    left: 20px;
+    z-index: 1;
+    min-width: max-content;
+    min-height: 22.5px;
+}
+
+/* guidebook */
+
+.guide_window {
+    width: 550px;
+    height: 450px;
 }
 
 .error_windows {
@@ -666,6 +771,7 @@ body::-webkit-scrollbar {
     width: 20px;
     line-height: 22.5px;
     border: solid 0.25px black;
+    box-shadow: 1.5px 1.5px dimgray;
     background: yellow;
     color: black;
     position: absolute;
@@ -681,7 +787,8 @@ body::-webkit-scrollbar {
     height: 20px;
     width: 20px;
     line-height: 22.5px;
-    border: solid 1.5px orangered;
+    border: solid 1px darkred;
+    box-shadow: 1.5px 1.5px dimgray;
     background: #FF0033;
     border-radius: 20px;
     color: white;
@@ -718,26 +825,23 @@ body::-webkit-scrollbar {
 }
 
 .child_windows.big {
-    height: 99.45%;
-    width: 99.7%;
-    border: solid 2px #c0c0c0;
+    height: 100%;
+    width: 100%;
+    border: none;
     background: whitesmoke;
     resize: none;
 }
 
-.child_windows.big .window_bottom {
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-    display: block;
-    background: darkgray;
-    border: solid 1px gray;
-    outline: 1px solid #c0c0c0;
-    outline-offset: 2px;
-    position: absolute;
-    bottom: 40px;
-    width: 99.7%;
+.child_windows.leftwindow {
+    border-top: none;
+    border-bottom: none;
+    border-left: none;
+}
+
+.child_windows.rightwindow {
+    border-top: none;
+    border-bottom: none;
+    border-right: none;
 }
 
 .child_windows .title {
@@ -759,10 +863,6 @@ body::-webkit-scrollbar {
     border-left: 1.5px #eee solid;
     border-bottom: 1.5px #333 solid;
     border-right: 1.5px #333 solid;
-    pointer-events: none;
-}
-
-.child_windows.big .title {
     pointer-events: none;
 }
 
