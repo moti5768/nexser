@@ -2378,7 +2378,7 @@ window.onload = function () {
 
 window.onload = function () {
     // スクロールを禁止にする関数
-    function disableScroll(event) {
+    function disableScroll2(event) {
         event.preventDefault();
     }
 
@@ -2399,7 +2399,11 @@ window.onload = function () {
         //マウスが押された際の関数
         function mdown(e) {
             //クラス名に .drag を追加
+            document.addEventListener('touchmove', disableScroll, { passive: false });
+            document.addEventListener('mousewheel', disableScroll, { passive: false });
+
             drag2.classList.add("drag");
+
             //タッチデイベントとマウスのイベントの差異を吸収
             if (e.type === "mousedown") {
                 var event = e;
@@ -2443,6 +2447,8 @@ window.onload = function () {
             document.body.removeEventListener("touchmove", mmove, false);
             drag.removeEventListener("touchend", mup, false);
             //クラス名 .drag も消す
+            document.removeEventListener('touchmove', disableScroll2, { passive: false });
+            document.removeEventListener('mousewheel', disableScroll2, { passive: false });
             drag.classList.remove("drag");
         }
     })
