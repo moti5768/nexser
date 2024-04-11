@@ -197,10 +197,6 @@ li {
     background: #52adad;
 }
 
-.desktop_files_text {
-    background: #52adad;
-}
-
 /* buttons */
 
 .button {
@@ -732,11 +728,25 @@ body::-webkit-scrollbar {
 .desktop_files {
     display: block;
     position: relative;
-    padding-top: 35px;
+    padding-top: 40px;
     width: 100px;
     color: white;
     left: 5px;
     top: 5px;
+}
+
+.desktop_files_text {
+    padding-left: 5px;
+    padding-right: 5px;
+    background: #52adad;
+    pointer-events: none;
+}
+
+.desktop_files_text.file_select {
+    background: darkblue;
+    outline: 1.5px dotted white;
+    outline-offset: 0px;
+    pointer-events: none;
 }
 
 .dli-folder {
