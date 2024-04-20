@@ -414,8 +414,8 @@
                             <input type="button" id="cleartextbtn" class="button2" value="&emsp;clear&emsp;">
                         </div>
                         <form name="note_form">
-                            <textarea id="note_text" name="note_area" class="note_area border2"
-                                style="overflow: scroll;" cols="50" rows="15"></textarea>
+                            <textarea id="note_text" name="note_area" class="note_area border2" cols="50"
+                                rows="15"></textarea>
                         </form>
                         <ul style="column-count: 3;">
                             <li class="border2">Textcount:&emsp;<span id="inputlength">0</span>
@@ -458,11 +458,11 @@
                                 onclick="objectiveData_clear()">
                         </div>
                         <p style="display: inline;" class="border2">タイトルを入力:</p>
-                        <form name="objective_title_form">
+                        <form name="objective_title_form" onkeydown="if(event.keyCode == 13){return false;}">
                             <textarea id="objective_title_text" name="objective_title_area"
                                 class="objective_title_area border2"
                                 style="outline: none; resize: none; width: 700px; height: 20px; font-size: large;"
-                                cols="50" rows="15"></textarea>
+                                cols="1" rows="1"></textarea>
                         </form>
                         <p style="display: inline;" class="border2">目標を記入:</p>
                         <form name="objective_form">

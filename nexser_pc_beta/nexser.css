@@ -1,8 +1,8 @@
 @charset "UTF-8";
 
 * {
-    padding: 0px;
     margin: 0px;
+    padding: 0px;
 }
 
 html {
@@ -620,7 +620,6 @@ input[type="file"] {
 ::-webkit-scrollbar {
     display: block;
     width: 15px;
-    cursor: default;
 }
 
 ::-webkit-scrollbar-track {
@@ -650,6 +649,7 @@ input[type="file"] {
 
 body::-webkit-scrollbar {
     display: none;
+    z-index: 1;
 }
 
 ::-webkit-resizer {
@@ -1361,14 +1361,14 @@ body::-webkit-scrollbar {
 /* note */
 
 .note_area {
-    display: block;
     font-size: large;
     outline: none;
-    width: 100%;
     height: 100%;
-    resize: both;
+    width: 100%;
     min-width: max-content;
     background: white;
+    overflow: scroll;
+    white-space: nowrap;
 }
 
 .child_windows.big .note_area {
@@ -1389,10 +1389,13 @@ textarea {
 
 .objective_title_area {
     background: white;
+    white-space: nowrap;
+    height: 100%;
 }
 
 .objective_area {
     background: white;
+    white-space: nowrap;
 }
 
 /* calc */
