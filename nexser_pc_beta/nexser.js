@@ -395,7 +395,6 @@ if (ua.includes("mobile")) {
             document.querySelector('.startup_screen').textContent = "ON"
         }
     })
-
     document.querySelector('.startup_htmlviewer_edit').addEventListener('click', function () {
         if (localStorage.getItem('startup_htmlviewer_edit')) {
             localStorage.removeItem('startup_htmlviewer_edit')
@@ -404,6 +403,16 @@ if (ua.includes("mobile")) {
             const startup_htmlviewer_edit = document.querySelector('.startup_htmlviewer_edit');
             localStorage.setItem('startup_htmlviewer_edit', startup_htmlviewer_edit);
             document.querySelector('.startup_htmlviewer_edit').textContent = "ON"
+        }
+    })
+    document.querySelector('.startup_guidebook').addEventListener('click', function () {
+        if (localStorage.getItem('startup_guidebook')) {
+            localStorage.removeItem('startup_guidebook')
+            document.querySelector('.startup_guidebook').textContent = "OFF"
+        } else {
+            const startup_guidebook = document.querySelector('.startup_guidebook');
+            localStorage.setItem('startup_guidebook', startup_guidebook);
+            document.querySelector('.startup_guidebook').textContent = "ON"
         }
     })
 
@@ -715,6 +724,8 @@ if (ua.includes("mobile")) {
             setTimeout(() => {
                 desktop.style.display = "block";
                 toolbar.style.display = "block";
+                toolbar.style.top = "";
+                toolbar.style.left = "";
                 toolbar.style.bottom = "0px";
             }, 500);
             setTimeout(() => {
@@ -728,7 +739,15 @@ if (ua.includes("mobile")) {
                 if (localStorage.getItem('toolbar_on')) {
                     toolbar.style.display = "block";
                 }
-                toolbar.style.bottom = "40px";
+                if (localStorage.getItem('taskbar_position_button')) {
+                    toolbar.style.bottom = "";
+                    toolbar.style.left = "";
+                    toolbar.style.top = "40px";
+                } else {
+                    toolbar.style.top = "";
+                    toolbar.style.left = "";
+                    toolbar.style.bottom = "40px";
+                }
             }, 1500);
         }
     }
@@ -938,6 +957,17 @@ if (ua.includes("mobile")) {
         }
         if (localStorage.getItem('startup_htmlviewer_edit')) {
             const element = document.querySelector('.htmlviewer_edit_menu');
+            element.closest('.child_windows');
+            element.classList.remove('active');
+
+            document.querySelectorAll('.title').forEach(function (wt) {
+                wt.classList.remove('navy')
+            })
+            wt = element.firstElementChild;
+            wt.classList.add('navy');
+        }
+        if (localStorage.getItem('startup_guidebook')) {
+            const element = document.querySelector('.nexser_guidebook_menu');
             element.closest('.child_windows');
             element.classList.remove('active');
 
@@ -1206,6 +1236,9 @@ if (ua.includes("mobile")) {
         }
         if (localStorage.getItem('startup_htmlviewer_edit')) {
             document.querySelector('.startup_htmlviewer_edit').textContent = "ON"
+        }
+        if (localStorage.getItem('startup_guidebook')) {
+            document.querySelector('.startup_guidebook').textContent = "ON"
         }
         if (localStorage.getItem('prompt_data2')) {
             document.querySelector('.startup_speed').textContent = "HIGH"
@@ -1530,6 +1563,7 @@ if (ua.includes("mobile")) {
             document.querySelector('.startup_color').textContent = "OFF"
             document.querySelector('.startup_screen').textContent = "OFF"
             document.querySelector('.startup_htmlviewer_edit').textContent = "OFF"
+            document.querySelector('.startup_guidebook').textContent = "OFF"
 
             document.querySelector('.startup_htmlviewer_edit').textContent = "OFF"
             document.querySelector('.startup_speed').textContent = "OFF"
@@ -3414,7 +3448,7 @@ if (ua.includes("mobile")) {
     }, 100);
 
     // 右クリックイベントの登録
-    document.getElementById("button1").addEventListener("contextmenu", supportsPassive ? { passive: true } : false, function (event) {
+    document.getElementById("button1").addEventListener("contextmenu", function (event) {
         event.preventDefault();
         setTimeout(() => {
             document.querySelector('.mouse_right').classList.add('active');

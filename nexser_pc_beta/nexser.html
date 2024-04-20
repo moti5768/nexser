@@ -93,33 +93,37 @@
             </div>
         </div>
 
-        <div id="nexser_program" style="font-size: x-large;">
+        <div id="nexser_program">
             <div>
-                <span>NEXSER PROGRAM</span>
-                <div style="border: double 5px white; height: 90vh;">
-                    <p>nexser program startup list</p>
-                    <div class="mini_window" style="border-color: white;">
-                        <ul>
+                <span style="display: block; text-align: center; color: white;" class="bold">NEXSER
+                    PROGRAM</span>
+                <div style="border: double 5px white; border-color: darkblue; height: 90vh; background-color: #DCDCDC;">
+                    <p class="bold">nexser program startup list</p>
+                    <div class="mini_window" style="border-color: darkblue;">
+                        <ul style="column-count: 2;">
                             <li>my computer&emsp;<span class="startup_computer">OFF</span></li>
                             <li>note pad&emsp;<span class="startup_note">OFF</span></li>
                             <li>color&emsp;<span class="startup_color">OFF</span></li>
                             <li>screen&emsp;<span class="startup_screen">OFF</span></li>
                             <li>htmlviewer edit&emsp;<span class="startup_htmlviewer_edit">OFF</span></li>
+                            <li>guide book&emsp;<span class="startup_guidebook">OFF</span></li>
                         </ul><br>
                     </div>
-                    <div class="mini_window" style="border-color: white;">
-                        <div style="width: 100%; border-bottom: solid 1px white;">STARTUP MODE</div>
+                    <div class="mini_window" style="border-color: darkblue;">
+                        <div style="width: 100%; border-bottom: solid 1px darkblue;" class="bold">STARTUP MODE</div>
                         <ul>
                             <li>SPEED&emsp;<span class="startup_speed">LOW</span></li>
                         </ul><br>
                     </div>
-                    <div class="mini_window" style="border-color: white;">
-                        <div style="width: 100%; border-bottom: solid 1px white;">DRIVER</div>
+                    <div class="mini_window" style="border-color: darkblue;">
+                        <div style="width: 100%; border-bottom: solid 1px darkblue;" class="bold">DRIVER</div>
                         <ul>
                             <li>SOUND&emsp;<span class="startup_sound">INSTALL</span></li>
                         </ul>
                     </div>
-                    <span class="hover_red" style="display: block;" onclick="nexser_program_close()">EXIT PROGRAM</span>
+                    <span class="hover_red"
+                        style="margin: 2.5px; display: block; position: relative; top: 20px; border: solid 1.5px darkblue;"
+                        onclick="nexser_program_close()">EXIT PROGRAM</span>
                 </div>
             </div>
         </div>
@@ -1419,8 +1423,8 @@
 
                         </div>
 
-                        <p>mouse test</p>
-                        <button id="button1" class="button2">mouse</button><br>
+                        <p>mouse click</p>
+                        <span id="button1" class="button2">CLICK!</span><br>
                         <div class="mini_window" style="display: flex;">
                             <span class="mouse_left border"
                                 style="margin-top: 5px; margin-bottom: 5px; text-align: center; display: block; width: 50px; height: 50px;">left</span>
@@ -1440,14 +1444,14 @@
                             <div class="mouse_miniwindow border">
                                 <div class="mouse_testbutton">
                                     <p class="bold">click button test</p>
-                                    <button class="button" style="font-size: 30px;">button 1</button>
-                                    <button class="button2" style="font-size: 30px;">button 2</button>
+                                    <span class="button" style="font-size: 30px;">Button 1</span>
+                                    <span class="button2" style="font-size: 30px;">Button 2</span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="child_windows screen_text_menu active">
+                    <div class="child_windows screen_text_menu active back_silver">
                         <div class="title">
                             <span class="title_icon"></span><span>&emsp;&emsp;screen text</span>
                         </div>
@@ -1458,10 +1462,10 @@
                         </div>
 
                         <p>background text</p>
-                        <form autocomplete="off" method="get" name="back_text_form" class="border"
+                        <form autocomplete="off" method="get" name="back_text_form" class="border2"
                             onsubmit="return false; length">
                             <textarea type="text" name="back_text" class="back_text" id="back_text_input" maxlength="20"
-                                style="border: none; outline: none; background: whitesmoke; resize: none; height: 16px; font-size: large;"></textarea>
+                                style="border: none; outline: none; background: whitesmoke; resize: none; height: 16px; width: 100%; font-size: large;"></textarea>
                         </form>
                         <input type="submit" class="button2" value="submit" onclick="backtext_check()">
                         <input type="submit" class="button2" value="clear" onclick="backtext_clear()"><br>
@@ -1693,8 +1697,9 @@
                                 <video id="v" class="border"
                                     style="background-color: black; height: 400px; width: 640px" playsinline></video>
                             </div>
-                            <button id="start_camera" class="button2" onclick="startCamera2()">start</button>
-                            <button class="button2" onclick="stopCamera()">finish</button>
+                            <span id="start_camera" class="button2" onclick="startCamera2()">start</span>
+                            <span class="button2" onclick="stopCamera()"
+                                style="position: absolute; left: 40px;">finish</span>
                         </div>
                     </div>
 
@@ -1822,7 +1827,7 @@
                             </div>
 
                         </div>
-                        <ul class="window_inline_list2 border2">
+                        <ul class="window_inline_list2 border2" style="background-color: whitesmoke;">
                             <li class="hover_blue font_default">Font default</li>
                             <li class="hover_blue font_sans_serif">Font sans serif</li>
                             <li class="hover_blue font_cursive">Font cursive</li>
@@ -1831,7 +1836,7 @@
                         </ul>
                     </div>
 
-                    <div class="child_windows setting_menu resize active">
+                    <div class="child_windows setting_menu active back_silver">
 
                         <div class="title">
                             <span class="title_icon"></span><span>&emsp;&emsp;setting</span>
@@ -1839,13 +1844,10 @@
 
                         <div class="title_buttons">
                             <span class="drag_button">&nbsp;</span>
-                            <span class="close_button button2">&nbsp;✕&nbsp;</span>
-                            <span class="bigscreen_button button2">&nbsp;□&nbsp;</span>
-                            <span class="minscreen_button button2">&nbsp;❒&nbsp;</span>
-                            <span class="minimization_button button2">&nbsp;―&nbsp;</span><br>
+                            <span class="close_button button2">&nbsp;✕&nbsp;</span><br>
                         </div>
 
-                        <div class="title2">
+                        <div class="title2" style="border-bottom: solid 1px black;">
 
                             <div class="parent_list">
                                 <ul>
@@ -1856,21 +1858,6 @@
                                         <li class="hover_blue shutdown">shutdown</li>
                                         <li class="hover_blue">test</li>
                                         <li class="hover_blue">test</li>
-                                    </ul>
-                                </div>
-                            </div>
-
-                            <div class="parent_list">
-                                <ul>
-                                    <li>&emsp;window(<ins>W</ins>)&emsp;</li>
-                                </ul>
-                                <div class="child_list">
-                                    <ul>
-                                        <li class="hover_blue window_fullleft">window full left</li>
-                                        <li class="hover_blue window_fullright">
-                                            window full right</li>
-                                        <li class="hover_blue window_half_big">window half big</li>
-                                        <li class="hover_blue windowsize_reset">window size reset</li>
                                     </ul>
                                 </div>
                             </div>
@@ -1904,12 +1891,12 @@
                         </div>
 
                         <p class="bold large">taskbar</p>
-                        <div class="mini_window">
+                        <div class="mini_window border2" style="background: whitesmoke;">
                             <p>clock&emsp;<button class="clock_button button2">off</button>
                             </p>
                             <p>taskbar position&emsp;<button class="taskbar_position_button button2">top</button>
                             </p>
-                        </div><br>
+                        </div>
                         <p class="bold large">files</p>
                         <div class="mini_window">
                             <button class="button2 windowfile1">window file change</button><br>
@@ -2158,7 +2145,7 @@
                             <span class="close_button button2">&nbsp;✕&nbsp;</span><br>
                         </div>
 
-                        <div class="title2">
+                        <div class="title2" style="border-bottom: solid 1px black;">
 
                             <div class="parent_list">
                                 <ul>
@@ -2175,9 +2162,9 @@
 
                         </div>
 
-                        <div class="mini_window_left_screen" style="pointer-events: none;">
+                        <div class="mini_window_left_screen border2" style="pointer-events: none;">
 
-                            <div class="mini_windows">
+                            <div class="mini_windows_sample">
 
                                 <div class="title" style="background-color: navy;">
                                     <span class="title_icon"></span><span>&emsp;&emsp;test</span>
@@ -2254,7 +2241,7 @@
                             <span class="close_button button2">&nbsp;✕&nbsp;</span><br>
                         </div>
 
-                        <div class="title2">
+                        <div class="title2" style="border-bottom: solid 1px black;">
 
                             <div class="parent_list">
                                 <ul>
@@ -2271,7 +2258,7 @@
 
                         </div>
 
-                        <div class="mini_window_left_screen">
+                        <div class="mini_window_left_screen border2">
                             <ul
                                 style="display: flex; flex-direction: column; position: absolute; top: 40px; left: 0px; pointer-events: none;">
                                 <div class="desktop_files">
@@ -2311,7 +2298,7 @@
                             <span class="close_button button2">&nbsp;✕&nbsp;</span><br>
                         </div>
 
-                        <div class="title2">
+                        <div class="title2" style="border-bottom: solid 1px black;">
 
                             <div class="parent_list">
                                 <ul>
@@ -2328,7 +2315,7 @@
 
                         </div>
 
-                        <div class="mini_window_left_screen">
+                        <div class="mini_window_left_screen border2">
                             <div class="mini_window_taskbar">
                                 <span class="button border bold"
                                     style="position: absolute; bottom: 2px; left: 2px; pointer-events: none;">&nbsp;start&nbsp;</span>
@@ -2624,7 +2611,8 @@
                     <div style="margin-top: 1.5px; margin-left: 3px;">
                         <ul>
                             <span class="drag_button2 border2" style="cursor: all-scroll;">&emsp;&nbsp;</span>
-                            <li style="width: 22.5px;" class="button2">&nbsp;<span class="magnifying_glass"></span></li>
+                            <li style="width: 22.5px;" class="button2">&nbsp;<span class="magnifying_glass"></span>
+                            </li>
                             <li style="width: 22.5px;" class="button2">&nbsp;T&nbsp;</li>
                             <li style="width: 22.5px;" class="button2">&nbsp;T&nbsp;</li>
                             <li style="width: 22.5px;" class="button2">&nbsp;T&nbsp;</li>
