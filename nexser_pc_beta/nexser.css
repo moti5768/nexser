@@ -1564,7 +1564,7 @@ textarea {
 #next {
     position: relative;
     left: 5px;
-    border: solid 0.5px dimgray;
+    background: dimgray;
 }
 
 .stage {
@@ -1607,7 +1607,7 @@ textarea {
     display: flex;
     flex-direction: row;
     margin: 0px;
-    background-color: #333333;
+    background-color: gray;
     height: 100%;
 }
 
@@ -1617,7 +1617,7 @@ textarea {
     padding-right: 10px;
     flex-direction: column;
     color: white;
-    background-color: #333333;
+    background-color: gray;
 }
 
 .tetris-panel-container-padding {
@@ -1631,32 +1631,25 @@ textarea {
 
 .tetris-button-panel.tetbtn {
     border-style: none;
-    width: 140%;
     position: relative;
     left: -10px;
 }
 
 .tetris-button-panel.tetbtn.active {
-    border-style: none;
-    width: 115%;
     position: relative;
     left: -10px;
 }
 
 .tetris-button.tetbtn {
-    height: 70px;
+    height: 60px;
     text-align: center;
-    background: linear-gradient(0deg, #222222, #555555);
-    border: solid 1px dimgray;
 }
 
 .tetris-button.tetbtn2 {
-    height: 70px;
+    height: 60px;
     text-align: center;
-    background: linear-gradient(0deg, #222222, #555555);
-    border: solid 1px dimgray;
     position: relative;
-    left: 60px;
+    left: 62.5px;
     bottom: 5px;
 }
 
@@ -1668,4 +1661,39 @@ textarea {
     width: 1px;
     height: 100%;
     background: green;
+}
+
+/* calendar */
+
+
+.calendar_content {
+    width: auto;
+    background: gray;
+    position: relative;
+    font-size: large;
+}
+
+td.today {
+    background-color: red;
+    color: #fff;
+}
+
+td {
+    padding: 5px;
+    font-size: large;
+    text-align: center;
+}
+
+.wrapper {
+    color: black;
+    background: whitesmoke;
+}
+
+#header {
+    text-align: center;
+    font-size: x-large;
+    width: 100%;
+    margin: 0px;
+    color: black;
+    pointer-events: none;
 }

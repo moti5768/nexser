@@ -64,6 +64,7 @@ if (ua.includes("mobile")) {
     const stopwatch_menu = document.querySelector('.stopwatch_menu');
     const comment_menu = document.querySelector('.comment_menu');
     const objective_menu = document.querySelector('.objective_menu');
+    const calendar_menu = document.querySelector('.calendar_menu');
 
     const command_help_menu = document.querySelector('.command_help_menu')
 
@@ -1208,7 +1209,7 @@ if (ua.includes("mobile")) {
 
     function all_load() {
         window_back_silver();
-        checkFullScreen()
+        caload();
         if (localStorage.getItem('driver_sound')) {
             document.querySelector('.installbutton_1').textContent = "uninstall"
         }
@@ -2985,6 +2986,20 @@ if (ua.includes("mobile")) {
             test.classList.add('navy');
         });
     });
+    document.querySelectorAll('.test_button31').forEach(function (test_button31) {
+        test_button31.addEventListener('click', function () {
+            calendar_menu.classList.toggle('active');
+            calendar_menu.closest('.child_windows');
+            z = largestZIndex++;
+            calendar_menu.style.zIndex = z;
+
+            document.querySelectorAll('.title').forEach(function (wt) {
+                wt.classList.remove('navy')
+            })
+            test = calendar_menu.firstElementChild;
+            test.classList.add('navy');
+        });
+    });
 
     // games
 
@@ -3450,21 +3465,6 @@ if (ua.includes("mobile")) {
         } else if (ele.requestFullscreen) {
             document.exitFullscreen() // HTML5 Fullscreen API
         }
-    }
-
-    // フルスクリーン表示しているか確認
-    function checkFullScreen() {
-
-        let fullscreen_flag = false;
-
-        if (document.fullscreenElement || document.mozFullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement) {
-            fullscreen_flag = true;
-            console.log("1")
-        } else {
-            console.log("2")
-        }
-
-        return fullscreen_flag;
     }
 
     setInterval(() => {
@@ -4457,5 +4457,85 @@ if (ua.includes("mobile")) {
         const un = document.getElementsByClassName('navy').length;
         document.querySelector('.title_navy').textContent = un;
     }, 100);
+
+
+
+    // calendar
+
+
+    const week = ["日", "月", "火", "水", "木", "金", "土"];
+    const today = new Date();
+    // 月末だとずれる可能性があるため、1日固定で取得
+    var showDate = new Date(today.getFullYear(), today.getMonth(), 1);
+
+    // 初期表示
+    function caload() {
+        showProcess(today, calendar);
+    };
+    // 前の月表示
+    function c_prev() {
+        showDate.setMonth(showDate.getMonth() - 1);
+        showProcess(showDate);
+    }
+
+    // 次の月表示
+    function c_next() {
+        showDate.setMonth(showDate.getMonth() + 1);
+        showProcess(showDate);
+    }
+
+    // カレンダー表示
+    function showProcess(date) {
+        var year = date.getFullYear();
+        var month = date.getMonth();
+        document.querySelector('#header').innerHTML = year + "年 " + (month + 1) + "月";
+
+        var calendar = createProcess(year, month);
+        document.querySelector('#calendar').innerHTML = calendar;
+    }
+
+    // カレンダー作成
+    function createProcess(year, month) {
+        // 曜日
+        var calendar = "<table><tr class='dayOfWeek'>";
+        for (var i = 0; i < week.length; i++) {
+            calendar += "<th>" + week[i] + "</th>";
+        }
+        calendar += "</tr>";
+
+        var count = 0;
+        var startDayOfWeek = new Date(year, month, 1).getDay();
+        var endDate = new Date(year, month + 1, 0).getDate();
+        var lastMonthEndDate = new Date(year, month, 0).getDate();
+        var row = Math.ceil((startDayOfWeek + endDate) / week.length);
+
+        // 1行ずつ設定
+        for (var i = 0; i < row; i++) {
+            calendar += "<tr>";
+            // 1colum単位で設定
+            for (var j = 0; j < week.length; j++) {
+                if (i == 0 && j < startDayOfWeek) {
+                    // 1行目で1日まで先月の日付を設定
+                    calendar += "<td class='disabled'>" + (lastMonthEndDate - startDayOfWeek + j + 1) + "</td>";
+                } else if (count >= endDate) {
+                    // 最終行で最終日以降、翌月の日付を設定
+                    count++;
+                    calendar += "<td class='disabled'>" + (count - endDate) + "</td>";
+                } else {
+                    // 当月の日付を曜日に照らし合わせて設定
+                    count++;
+                    if (year == today.getFullYear()
+                        && month == (today.getMonth())
+                        && count == today.getDate()) {
+                        calendar += "<td class='today'>" + count + "</td>";
+                    } else {
+                        calendar += "<td>" + count + "</td>";
+                    }
+                }
+            }
+            calendar += "</tr>";
+        }
+        return calendar;
+    }
 
 }

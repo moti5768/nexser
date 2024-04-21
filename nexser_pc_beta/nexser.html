@@ -424,11 +424,13 @@
                             <textarea id="note_text" name="note_area" class="note_area border2" cols="50"
                                 rows="15"></textarea>
                         </form>
-                        <ul style="column-count: 3;">
+                        <ul style="display:flex; font-size: 12.5px;">
                             <li class="border2">Textcount:&emsp;<span id="inputlength">0</span>
                             </li>
-                            <li class="border2">Mode:&emsp;<span class="test_notetext">Text</span></li>
-                            <li class="border2" id="memo_save_text"></li>
+                            <li class="border2" style="margin-left: 20px;">Mode:&emsp;<span
+                                    class="test_notetext">Text</span></li>
+                            <li class="border2" style="margin-left: 20px;" id="memo_save_text">
+                            </li>
                         </ul>
                     </div>
 
@@ -645,8 +647,8 @@
                             <div class="window_files test_button29">
                                 <li>tetris</li><span class="window_file_icon"></span>
                             </div>
-                            <div class="window_files">
-                                <li>test</li><span class="window_file_icon2"></span>
+                            <div class="window_files test_button31">
+                                <li>calendar</li><span class="window_file_icon"></span>
                             </div>
                         </ul>
                     </div>
@@ -2056,6 +2058,52 @@
                         </div>
                     </div>
 
+
+
+
+
+                    <!-- カレンダー -->
+                    <div class="child_windows calendar_menu active">
+
+                        <div class="title">
+                            <span class="title_icon"></span><span>&emsp;&emsp;calendar</span>
+                        </div>
+
+                        <div class="title_buttons">
+                            <span class="drag_button">&nbsp;</span>
+                            <span class="close_button button2">&nbsp;✕&nbsp;</span><br>
+                        </div>
+
+                        <div class="title2">
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;icon(<ins>I</ins>)&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="hover_blue shutdown">shutdown</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="calendar_content">
+                            <div class="wrapper">
+                                <!-- xxxx年xx月を表示 -->
+                                <h1 id="header"></h1>
+                                <!-- ボタンクリックで月移動 -->
+                                <div id="next-prev-button">
+                                    <button class="button2" id="c_prev" onclick="c_prev()">old</button>
+                                    <button class="button2" id="c_next" onclick="c_next()">next</button>
+                                </div>
+                                <div id="calendar"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- !カレンダー -->
+
+
                     <div class="child_windows nexser_guidebook_menu resize active">
                         <div class="title">
                             <span class="title_icon"></span><span>&emsp;&emsp;nexser guidebook</span>
@@ -2360,8 +2408,7 @@
                         </div>
                     </div>
 
-
-                    <div class="child_windows tetris_menu active resize">
+                    <div class="child_windows tetris_menu active resize back_silver">
 
                         <div class="title">
                             <span class="title_icon"></span><span>&emsp;&emsp;tetris</span>
@@ -2378,30 +2425,33 @@
                         <div class="tetris_game">
                             <div class="wrapper-container">
                                 <span class="tetris-container">
-                                    <canvas class="stage" id="stage" width="250px" height="500px"
-                                        style="background-color:black;">
+                                    <canvas class="stage border2" id="stage" width="250px" height="500px"
+                                        style="background-color:#333333;">
                                     </canvas>
                                     <span class="tetris-panel-container">
                                         <p>Next&emsp;&nbsp;ver 0.0.1</p>
-                                        <canvas id="next" class="line" width="130px" height="150px"
-                                            style="background-color:black;">
+                                        <canvas id="next" class="line border2" width="130px" height="150px">
                                         </canvas>
                                         <p class="small">スコア:<span id="lines">0</span></p>
                                         <p class="small">最高スコア(試験的):<span id="lines2">0</span></p>
-                                        <p><span id="message"></span></p>
+                                        <p><span id="message"></span><br></p>
                                         <div class="tetris-panel-container-padding"></div>
-                                        <table class="tetris-button-panel tetbtn">
+                                        <table class="tetris-button-panel tetbtn" style="margin-left: 25px;">
                                             <tr class="tetbutton">
-                                                <td id="tetris-rotate-button" class="tetris-button tetbtn2 large">↻
+                                                <td id="tetris-rotate-button"
+                                                    class="tetris-button tetbtn2 button2 large" style="width: 50px;">↻
                                                 </td>
                                             </tr>
                                             <tr class="tetbutton">
-                                                <td id="tetris-move-left-button" class="tetris-button tetbtn large">
+                                                <td id="tetris-move-left-button"
+                                                    class="tetris-button tetbtn button2 large" style="width: 50px;">
                                                     ←
                                                 </td>
-                                                <td id="tetris-fall-button" class="tetris-button tetbtn large">↓
+                                                <td id="tetris-fall-button" class="tetris-button tetbtn button2 large"
+                                                    style="width: 50px;">↓
                                                 </td>
-                                                <td id="tetris-move-right-button" class="tetris-button tetbtn large">→
+                                                <td id="tetris-move-right-button"
+                                                    class="tetris-button tetbtn button2 large" style="width: 50px;">→
                                                 </td>
                                             </tr>
                                         </table>
@@ -2410,7 +2460,6 @@
                             </div><br>
                             <button class="button2" onclick="tetris.startGame()">TETRIS START</button>
                         </div>
-
                     </div>
 
                 </div>
