@@ -85,6 +85,10 @@ li {
     font-weight: bold;
 }
 
+.white_text {
+    color: white;
+}
+
 .black_text {
     color: black;
 }
@@ -283,6 +287,10 @@ li {
     border-left: 1.5px #333 solid;
 }
 
+button.pressed {
+    padding-left: 1px;
+}
+
 .button2 {
     display: inline-block;
     border-top: 1.5px #eee solid;
@@ -412,7 +420,7 @@ input[type="file"] {
 }
 
 .taskbar_rightgroup {
-    width: 260px;
+    width: 250px;
     font-size: medium;
     position: absolute;
     right: 5px;
@@ -435,7 +443,7 @@ input[type="file"] {
 }
 
 .task_battery {
-    width: 130px;
+    width: 135px;
     background: silver;
     position: relative;
 }

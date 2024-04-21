@@ -235,10 +235,10 @@ if (ua.includes("mobile")) {
             start_menu.style.display = "block";
             document.querySelector('.start_button').classList.add('pressed');
             document.querySelector('.battery_menu').style.display = "none";
-            document.querySelector('.task_battery').classList.remove('pressed');
+            document.querySelector('.battery_child').classList.remove('pressed');
         }
     })
-    document.querySelector('.task_battery').addEventListener('click', function () {
+    document.querySelector('.battery_child').addEventListener('click', function () {
         if (document.querySelector('.battery_menu').style.display == "block") {
             // noneで非表示
             document.querySelector('.battery_menu').style.display = "none";
@@ -250,7 +250,7 @@ if (ua.includes("mobile")) {
     document.getElementById('files').addEventListener('mousedown', function () {
         start_menu.style.display = "none";
         document.querySelector('.start_button').classList.remove('pressed');
-        document.querySelector('.task_battery').classList.remove('pressed');
+        document.querySelector('.battery_child').classList.remove('pressed');
         document.querySelector('.battery_menu').style.display = "none";
         helpmenu_close()
         document.querySelectorAll('.title').forEach(function (wt) {
@@ -437,6 +437,19 @@ if (ua.includes("mobile")) {
             localStorage.setItem('driver_sound', startup_sound);
             document.querySelector('.startup_sound').textContent = "UN INSTALL"
             document.querySelector('.installbutton_1').textContent = "uninstall"
+        }
+    })
+
+    document.querySelector('.startup_versiontext').addEventListener('click', function () {
+        if (localStorage.getItem('startup_versiontext')) {
+            localStorage.removeItem('startup_versiontext')
+            document.querySelector('.startup_versiontext').textContent = "OFF"
+            document.querySelector('.desktop_version_text').style.display = "none";
+        } else {
+            const startup_versiontext = document.querySelector('.startup_versiontext');
+            localStorage.setItem('startup_versiontext', startup_versiontext);
+            document.querySelector('.startup_versiontext').textContent = "ON";
+            document.querySelector('.desktop_version_text').style.display = "block";
         }
     })
 
@@ -1194,7 +1207,8 @@ if (ua.includes("mobile")) {
     })
 
     function all_load() {
-        window_back_silver()
+        window_back_silver();
+        checkFullScreen()
         if (localStorage.getItem('driver_sound')) {
             document.querySelector('.installbutton_1').textContent = "uninstall"
         }
@@ -1245,6 +1259,12 @@ if (ua.includes("mobile")) {
         }
         if (localStorage.getItem('driver_sound')) {
             document.querySelector('.startup_sound').textContent = "UN INSTALL"
+        }
+        if (localStorage.getItem('startup_versiontext')) {
+            document.querySelector('.startup_versiontext').textContent = "ON"
+            document.querySelector('.desktop_version_text').style.display = "block";
+        } else {
+            document.querySelector('.desktop_version_text').style.display = "none";
         }
         if (localStorage.getItem('startup_1')) {
             document.querySelector('.startup_1').textContent = "set!"
@@ -1550,6 +1570,7 @@ if (ua.includes("mobile")) {
             document.querySelector('.window_warning_text').textContent = "nexser alldata remove!!"
             document.querySelector('.installbutton_1').textContent = "install"
             document.querySelector('.startup_sound').textContent = "INSTALL"
+            document.querySelector('.startup_versiontext').textContent = "OFF"
             document.querySelector('.installbutton_2').textContent = "install"
 
             document.querySelector('.close_button3').style.display = "none"
@@ -2003,14 +2024,14 @@ if (ua.includes("mobile")) {
 
             navigator.getBattery().then(function (battery) {
                 if (battery.level == 1 && battery.charging == true) {
-                    document.querySelector('.task_battery').style.color = "lime"
-                    document.querySelector('.task_battery').style.background = "black"
+                    document.querySelector('.battery_child').style.color = "lime"
+                    document.querySelector('.battery_child').style.background = "black"
                 } else if (battery.charging == false) {
-                    document.querySelector('.task_battery').style.color = "black"
-                    document.querySelector('.task_battery').style.background = ""
+                    document.querySelector('.battery_child').style.color = "black"
+                    document.querySelector('.battery_child').style.background = ""
                 } else {
-                    document.querySelector('.task_battery').style.color = "#FF9900"
-                    document.querySelector('.task_battery').style.background = "black"
+                    document.querySelector('.battery_child').style.color = "#FF9900"
+                    document.querySelector('.battery_child').style.background = "black"
                 }
             })
         }
@@ -3429,6 +3450,21 @@ if (ua.includes("mobile")) {
         } else if (ele.requestFullscreen) {
             document.exitFullscreen() // HTML5 Fullscreen API
         }
+    }
+
+    // フルスクリーン表示しているか確認
+    function checkFullScreen() {
+
+        let fullscreen_flag = false;
+
+        if (document.fullscreenElement || document.mozFullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement) {
+            fullscreen_flag = true;
+            console.log("1")
+        } else {
+            console.log("2")
+        }
+
+        return fullscreen_flag;
     }
 
     setInterval(() => {
