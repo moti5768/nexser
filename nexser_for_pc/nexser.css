@@ -1,8 +1,8 @@
 @charset "UTF-8";
 
 * {
-    padding: 0px;
     margin: 0px;
+    padding: 0px;
 }
 
 html {
@@ -22,7 +22,9 @@ body {
     display: none;
     height: 100vh;
     width: 100%;
-    color: white;
+    color: darkblue;
+    font-size: 20px;
+    background: darkblue;
 }
 
 .nexser_boot_menu {
@@ -62,20 +64,29 @@ li {
 
 /* hover */
 
+.hover_red:hover {
+    color: white;
+    background: red;
+}
+
 .hover_blue:hover {
     background: darkblue;
     color: white;
 }
 
-.hover_red:hover {
+.hover_green:hover {
     color: white;
-    background: red;
+    background: green;
 }
 
 /* text */
 
 .bold {
     font-weight: bold;
+}
+
+.white_text {
+    color: white;
 }
 
 .black_text {
@@ -128,6 +139,15 @@ li {
     border-left: 1.5px #eee solid;
     border-bottom: 1.5px #333 solid;
     border-right: 1.5px #333 solid;
+    outline: none;
+}
+
+.border2 {
+    background: darkgray;
+    border-top: 1.5px #333 solid;
+    border-left: 1.5px #333 solid;
+    border-bottom: 1.5px whitesmoke solid;
+    border-right: 1.5px whitesmoke solid;
     outline: none;
 }
 
@@ -248,9 +268,15 @@ li {
     border-left: 1.5px #eee solid;
     border-bottom: 1.5px #333 solid;
     border-right: 1.5px #333 solid;
+    box-shadow: 0 0 0 0.5px dimgray;
     color: black;
     background: silver;
     outline: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    list-style: none;
 }
 
 .button.pressed {
@@ -261,15 +287,25 @@ li {
     border-left: 1.5px #333 solid;
 }
 
+button.pressed {
+    padding-left: 1px;
+}
+
 .button2 {
     display: inline-block;
     border-top: 1.5px #eee solid;
     border-left: 1.5px #eee solid;
     border-bottom: 1.5px #333 solid;
     border-right: 1.5px #333 solid;
+    box-shadow: 0 0 0 0.5px dimgray;
     color: black;
     background: silver;
     outline: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    list-style: none;
 }
 
 .button2.pressed {
@@ -278,6 +314,11 @@ li {
     border-right: 1.5px #eee solid;
     border-top: 1.5px #333 solid;
     border-left: 1.5px #333 solid;
+}
+
+span.pressed {
+    padding-left: 1px;
+    width: auto;
 }
 
 /* files */
@@ -308,9 +349,12 @@ input[type="file"] {
     -ms-user-select: none;
     user-select: none;
     font-size: 15px;
-    width: 160px;
+    width: 175px;
     height: 30px;
     background-color: #DDDDDD;
+    outline: 1px solid gray;
+    outline-offset: 0.4px;
+    box-shadow: 0 0 0 0.5px whitesmoke, 0 0 0 1.5px dimgray;
     position: absolute;
     right: 0px;
     bottom: 40px;
@@ -319,7 +363,6 @@ input[type="file"] {
 
 .drag_button2 {
     background: gray;
-    border: solid 1.5px dimgray;
 }
 
 /* taskbar */
@@ -344,6 +387,7 @@ input[type="file"] {
     position: absolute;
     bottom: 6px;
     left: 10px;
+    box-shadow: 0 0 0 0.5px dimgray;
 }
 
 .start_button.pressed {
@@ -376,7 +420,7 @@ input[type="file"] {
 }
 
 .taskbar_rightgroup {
-    width: 260px;
+    width: 250px;
     font-size: medium;
     position: absolute;
     right: 5px;
@@ -399,7 +443,7 @@ input[type="file"] {
 }
 
 .task_battery {
-    width: 130px;
+    width: 135px;
     background: silver;
     position: relative;
 }
@@ -417,6 +461,7 @@ input[type="file"] {
     -ms-user-select: none;
     user-select: none;
     display: none;
+    box-shadow: 0 0 0 0.5px dimgray;
 }
 
 .child_start_menu {
@@ -425,6 +470,7 @@ input[type="file"] {
     position: absolute;
     bottom: 40px;
     z-index: 999998;
+    box-shadow: 0 0 0 0.5px dimgray;
 }
 
 .parent_start_menu_lists {
@@ -439,6 +485,7 @@ input[type="file"] {
     background-color: silver;
     left: 125px;
     top: 0px;
+    box-shadow: 0 0 0 0.5px dimgray;
 }
 
 .child_start_menu_lists2 {
@@ -448,6 +495,7 @@ input[type="file"] {
     background-color: silver;
     left: 170px;
     top: -1.5px;
+    box-shadow: 0 0 0 0.5px dimgray;
 }
 
 .child_start_menu_lists3 {
@@ -457,6 +505,7 @@ input[type="file"] {
     background-color: silver;
     left: 170px;
     top: -1px;
+    box-shadow: 0 0 0 0.5px dimgray;
 }
 
 .list_right_text {
@@ -470,7 +519,7 @@ input[type="file"] {
 .startmenu_file_icon {
     width: 18px;
     height: 12.5px;
-    background-image: radial-gradient(#FFFF66 1px, #CCCC99 1px);
+    background-image: radial-gradient(#FFFFBB 1px, #CCCC66 1px);
     background-size: 3px 3px;
     position: absolute;
     margin-top: 3px;
@@ -494,14 +543,22 @@ input[type="file"] {
     font-size: 15px;
     width: auto;
     height: auto;
-    border: solid 2px #c0c0c0;
+    border: solid 2.5px #c0c0c0;
     outline: 1px solid gray;
-    outline-offset: 0.5px;
+    outline-offset: 0.4px;
+    box-shadow: 0 0 0 1.5px whitesmoke,
+        0 0 0 2px dimgray,
+        0 0 0 2.5px #000000;
     background: whitesmoke;
     position: absolute;
     z-index: 1;
     min-width: max-content;
     min-height: 22.5px;
+}
+
+.child_windows::-webkit-scrollbar {
+    opacity: 0.5;
+    background: yellow;
 }
 
 .child_windows.default {
@@ -515,14 +572,12 @@ input[type="file"] {
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
-    display: block;
     background: darkgray;
-    border: solid 1px gray;
-    outline: 1px solid #c0c0c0;
-    outline-offset: 2px;
+    box-shadow: 0 0 0 1.5px whitesmoke,
+        0 0 0 2px dimgray;
     position: absolute;
     bottom: 0px;
-    width: 99.7%;
+    width: 99.5%;
 }
 
 /* soft_windows */
@@ -548,7 +603,7 @@ input[type="file"] {
 }
 
 .clock_menu {
-    width: 400px;
+    width: 200px;
 }
 
 .mouse_menu {
@@ -573,7 +628,6 @@ input[type="file"] {
 ::-webkit-scrollbar {
     display: block;
     width: 15px;
-    cursor: default;
 }
 
 ::-webkit-scrollbar-track {
@@ -603,7 +657,13 @@ input[type="file"] {
 
 body::-webkit-scrollbar {
     display: none;
+    z-index: 1;
 }
+
+::-webkit-resizer {
+    background: rgba();
+}
+
 
 /* drag color */
 
@@ -636,6 +696,9 @@ body::-webkit-scrollbar {
     transform: translate(-50%, -50%);
     outline: 1px solid gray;
     outline-offset: 0.5px;
+    box-shadow: 0 0 0 1.5px whitesmoke,
+        0 0 0 2px dimgray,
+        0 0 0 2.5px black;
 }
 
 .resize {
@@ -690,7 +753,7 @@ body::-webkit-scrollbar {
     bottom: 30px;
 }
 
-.mini_windows {
+.mini_windows_sample {
     display: block;
     font-size: 15px;
     width: auto;
@@ -702,7 +765,7 @@ body::-webkit-scrollbar {
     position: absolute;
     top: 100px;
     left: 20px;
-    z-index: 1;
+    z-index: 0;
     min-width: max-content;
     min-height: 22.5px;
 }
@@ -725,6 +788,11 @@ body::-webkit-scrollbar {
     width: auto;
     height: auto;
     border: solid 2px #c0c0c0;
+    outline: 1px solid gray;
+    outline-offset: 0.4px;
+    box-shadow: 0 0 0 1.5px whitesmoke,
+        0 0 0 2px dimgray,
+        0 0 0 2.5px black;
     background: white;
     position: absolute;
     top: 50%;
@@ -809,6 +877,11 @@ body::-webkit-scrollbar {
     width: auto;
     height: auto;
     border: solid 2px #c0c0c0;
+    outline: 1px solid gray;
+    outline-offset: 0.4px;
+    box-shadow: 0 0 0 1.5px whitesmoke,
+        0 0 0 2px dimgray,
+        0 0 0 2.5px black;
     background: white;
     position: absolute;
     top: 50%;
@@ -854,10 +927,10 @@ body::-webkit-scrollbar {
 .title_icon {
     width: 18px;
     height: 12.5px;
-    background-image: radial-gradient(#FFFF66 1px, #CCCC99 1px);
+    background-image: radial-gradient(#FFFFBB 1px, #CCCC66 1px);
     background-size: 3px 3px;
     position: absolute;
-    margin-top: 4px;
+    margin-top: 5px;
     left: 5px;
     border-top: 1.5px #eee solid;
     border-left: 1.5px #eee solid;
@@ -890,7 +963,7 @@ body::-webkit-scrollbar {
 .window_file_icon {
     width: 60px;
     height: 45px;
-    background-image: radial-gradient(#FFFF66 1px, #CCCC99 1px);
+    background-image: radial-gradient(#FFFFBB 1px, #CCCC66 1px);
     background-size: 3px 3px;
     position: absolute;
     left: 5px;
@@ -899,7 +972,7 @@ body::-webkit-scrollbar {
     border-left: 1.5px #eee solid;
     border-bottom: 1.5px #333 solid;
     border-right: 1.5px #333 solid;
-    box-shadow: 5px 5px dimgray;
+    box-shadow: 2.5px 2.5px dimgray;
     pointer-events: none;
 }
 
@@ -920,7 +993,7 @@ body::-webkit-scrollbar {
     display: block;
     position: relative;
     padding-top: 40px;
-    width: 100px;
+    width: 110px;
     color: white;
     left: 5px;
     top: 5px;
@@ -954,7 +1027,7 @@ body::-webkit-scrollbar {
     border-right: 0.1em solid black;
     border-bottom: 0.1em solid black;
     border-radius: 0 0.1em 0.1em 0.1em;
-    background-image: radial-gradient(#FFFF66 1px, #CCCC99 1px);
+    background-image: radial-gradient(#FFFFBB 1px, #CCCC66 1px);
     background-size: 3px 3px;
     box-sizing: content-box;
     box-shadow: 3px 3px dimgray;
@@ -972,7 +1045,7 @@ body::-webkit-scrollbar {
     border-right: 0;
     border-bottom: 0;
     border-radius: 0.1em 0.1em 0 0;
-    background-image: radial-gradient(#FFFF66 1px, #CCCC99 1px);
+    background-image: radial-gradient(#FFFFBB 1px, #CCCC66 1px);
     background-size: 3px 3px;
     box-sizing: content-box;
 }
@@ -1013,7 +1086,7 @@ body::-webkit-scrollbar {
 .title_buttons {
     background-color: rgba();
     position: relative;
-    bottom: 1px;
+    bottom: 0px;
     right: 0px;
     -webkit-user-select: none;
     -moz-user-select: none;
@@ -1032,7 +1105,7 @@ body::-webkit-scrollbar {
     background: #c0c0c0;
     height: 20.5px;
     position: relative;
-    top: -2px;
+    top: 0px;
     z-index: 1;
 }
 
@@ -1109,7 +1182,6 @@ body::-webkit-scrollbar {
 /* title_buttons */
 .close_button {
     width: 15px;
-    font-size: 100px;
     background: #c0c0c0;
     position: absolute;
     top: 3.5px;
@@ -1212,6 +1284,7 @@ body::-webkit-scrollbar {
     border-left: solid 1.5px whitesmoke;
     border-bottom: solid 1.5px black;
     border-top: solid 1.5px whitesmoke;
+    box-shadow: 0 0 0 0.5px dimgray;
 }
 
 .child_list li {
@@ -1224,8 +1297,9 @@ body::-webkit-scrollbar {
 }
 
 .window_inline_list {
-    margin-top: 2.5px;
+    margin-top: 0px;
     column-count: 4;
+    background: whitesmoke;
 }
 
 .window_inline_list2 {
@@ -1288,18 +1362,21 @@ body::-webkit-scrollbar {
     left: 10px;
 }
 
-.mouse_testbutton button {
-    margin-top: 15px;
+.mouse_testbutton span {
+    margin-top: 5px;
 }
 
 /* note */
+
 .note_area {
-    display: block;
     font-size: large;
     outline: none;
-    width: 100%;
     height: 100%;
-    resize: both;
+    width: 100%;
+    min-width: max-content;
+    background: white;
+    overflow: scroll;
+    white-space: nowrap;
 }
 
 .child_windows.big .note_area {
@@ -1309,8 +1386,24 @@ body::-webkit-scrollbar {
 }
 
 /* textarea */
+
 textarea {
+    display: block;
     border-radius: 0;
+    outline: none;
+}
+
+/* objective */
+
+.objective_title_area {
+    background: white;
+    white-space: nowrap;
+    height: 100%;
+}
+
+.objective_area {
+    background: white;
+    white-space: nowrap;
 }
 
 /* calc */
@@ -1351,6 +1444,7 @@ textarea {
 }
 
 #preview {
+    display: block;
     width: 600px;
     height: 50vh;
 }
@@ -1432,7 +1526,7 @@ textarea {
 
 .magnifying_glass::before {
     position: absolute;
-    top: 5px;
+    top: 3px;
     left: 0px;
     width: 0.7em;
     height: 0.7em;
@@ -1446,7 +1540,7 @@ textarea {
 
 .magnifying_glass::after {
     position: absolute;
-    top: 5px;
+    top: 3px;
     left: 50%;
     z-index: -1;
     transform: rotate(-45deg);
@@ -1470,7 +1564,7 @@ textarea {
 #next {
     position: relative;
     left: 5px;
-    border: solid 0.5px dimgray;
+    background: dimgray;
 }
 
 .stage {
@@ -1513,7 +1607,7 @@ textarea {
     display: flex;
     flex-direction: row;
     margin: 0px;
-    background-color: #333333;
+    background-color: gray;
     height: 100%;
 }
 
@@ -1523,7 +1617,7 @@ textarea {
     padding-right: 10px;
     flex-direction: column;
     color: white;
-    background-color: #333333;
+    background-color: gray;
 }
 
 .tetris-panel-container-padding {
@@ -1537,32 +1631,25 @@ textarea {
 
 .tetris-button-panel.tetbtn {
     border-style: none;
-    width: 140%;
     position: relative;
     left: -10px;
 }
 
 .tetris-button-panel.tetbtn.active {
-    border-style: none;
-    width: 115%;
     position: relative;
     left: -10px;
 }
 
 .tetris-button.tetbtn {
-    height: 70px;
+    height: 60px;
     text-align: center;
-    background: linear-gradient(0deg, #222222, #555555);
-    border: solid 1px dimgray;
 }
 
 .tetris-button.tetbtn2 {
-    height: 70px;
+    height: 60px;
     text-align: center;
-    background: linear-gradient(0deg, #222222, #555555);
-    border: solid 1px dimgray;
     position: relative;
-    left: 60px;
+    left: 62.5px;
     bottom: 5px;
 }
 
@@ -1574,4 +1661,39 @@ textarea {
     width: 1px;
     height: 100%;
     background: green;
+}
+
+/* calendar */
+
+
+.calendar_content {
+    width: auto;
+    background: gray;
+    position: relative;
+    font-size: large;
+}
+
+td.today {
+    background-color: red;
+    color: #fff;
+}
+
+td {
+    padding: 5px;
+    font-size: large;
+    text-align: center;
+}
+
+.wrapper {
+    color: black;
+    background: whitesmoke;
+}
+
+#header {
+    text-align: center;
+    font-size: x-large;
+    width: 100%;
+    margin: 0px;
+    color: black;
+    pointer-events: none;
 }
