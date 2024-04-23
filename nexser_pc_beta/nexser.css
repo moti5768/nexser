@@ -509,11 +509,8 @@ input[type="file"] {
 }
 
 .list_right_text {
-    display: block;
-    width: 100%;
     position: absolute;
-    text-align: right;
-    top: 0px;
+    right: 0;
 }
 
 .startmenu_file_icon {
@@ -614,6 +611,10 @@ input[type="file"] {
     width: 300px;
 }
 
+.sound_play_button {
+    height: 21.5px;
+}
+
 .file_download_menu {
     width: 300px;
 }
@@ -621,6 +622,15 @@ input[type="file"] {
 .display_menu {
     width: 600px;
     height: 325px;
+}
+
+/* color_btn */
+
+.color_btn {
+    display: block;
+    width: 30px;
+    height: 30px;
+    margin-right: 5px;
 }
 
 /* scrollbar */
@@ -1665,7 +1675,6 @@ textarea {
 
 /* calendar */
 
-
 .calendar_content {
     width: auto;
     background: gray;
@@ -1696,4 +1705,74 @@ td {
     margin: 0px;
     color: black;
     pointer-events: none;
+}
+
+
+
+/* background_pattern */
+
+.backgrounds1 {
+    display: none;
+    height: 100vh;
+    width: 100%;
+    z-index: 0;
+    position: absolute;
+    top: 0px;
+    background-image: radial-gradient(black 1.5px, rgba(0, 0, 0, 0) 1.5px);
+    background-size: 4px 4px;
+}
+
+.backgrounds2 {
+    display: none;
+    height: 100vh;
+    width: 100%;
+    z-index: 0;
+    position: absolute;
+    top: 0px;
+    background-image: radial-gradient(black 2px, rgba(0, 0, 0, 0) 2px);
+    background-size: 10px 10px;
+}
+
+.backgrounds3 {
+    display: none;
+    height: 100vh;
+    width: 100%;
+    z-index: 0;
+    position: absolute;
+    top: 0px;
+    font: 120% bold;
+    padding: 0.6em;
+    background:
+        conic-gradient(at 5% 45%, #caa0a0 90deg, transparent 90deg) 0px 0px/20px 20px, conic-gradient(at 5% 45%, #caa0a0 90deg, transparent 90deg) 10px 10px/20px 20px, #eeeeee;
+}
+
+.backgrounds4 {
+    display: none;
+    height: 100vh;
+    width: 100%;
+    z-index: 0;
+    position: absolute;
+    top: 0px;
+    font: 120% bold;
+    padding: 0.6em;
+    background:
+        conic-gradient(at 5% 45%, #EDFFBE 90deg, transparent 90deg) 0px 0px/20px 20px, conic-gradient(at 5% 45%, #FFFFBB 90deg, transparent 90deg) 10px 10px/20px 20px, gray;
+}
+
+.backgrounds5 {
+    display: none;
+    height: 100vh;
+    width: 100%;
+    z-index: 0;
+    position: absolute;
+    top: 0px;
+    background-image: linear-gradient(black 4px, transparent 4px), linear-gradient(90deg, black 4px, transparent 4px), linear-gradient(black 2px, transparent 2px), linear-gradient(90deg, black 2px, rgba(0, 0, 0, 0) 2px);
+    background-size: 50px 50px, 50px 50px, 10px 10px, 10px 10px;
+    background-position: -4px -4px, -4px -4px, -2px -2px, -2px -2px;
+}
+
+.pattern_btn {
+    width: 30px;
+    height: 30px;
+    margin-right: 5px;
 }

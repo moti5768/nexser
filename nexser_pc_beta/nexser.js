@@ -255,12 +255,20 @@ if (ua.includes("mobile")) {
         document.querySelector('.battery_menu').style.display = "none";
         helpmenu_close()
         document.querySelectorAll('.title').forEach(function (wt) {
-            wt.classList.remove('navy')
+            wt.classList.remove('navy');
         })
+        titlecolor_set();
+    });
+    document.getElementById('files').addEventListener('click', function () {
+        titlecolor_set();
+    });
+    document.getElementById('taskbar').addEventListener('click', function () {
+        titlecolor_set();
     });
     document.getElementById('taskbar').addEventListener('mousedown', function () {
         document.querySelectorAll('.title').forEach(function (wt) {
-            wt.classList.remove('navy')
+            wt.classList.remove('navy');
+            titlecolor_set();
         })
     });
     parent_start_menu.addEventListener('click', function () {
@@ -414,6 +422,26 @@ if (ua.includes("mobile")) {
             const startup_guidebook = document.querySelector('.startup_guidebook');
             localStorage.setItem('startup_guidebook', startup_guidebook);
             document.querySelector('.startup_guidebook').textContent = "ON"
+        }
+    })
+    document.querySelector('.startup_objective').addEventListener('click', function () {
+        if (localStorage.getItem('startup_objective')) {
+            localStorage.removeItem('startup_objective')
+            document.querySelector('.startup_objective').textContent = "OFF"
+        } else {
+            const startup_objective = document.querySelector('.startup_objective');
+            localStorage.setItem('startup_objective', startup_objective);
+            document.querySelector('.startup_objective').textContent = "ON"
+        }
+    })
+    document.querySelector('.startup_calendar').addEventListener('click', function () {
+        if (localStorage.getItem('startup_calendar')) {
+            localStorage.removeItem('startup_calendar')
+            document.querySelector('.startup_calendar').textContent = "OFF"
+        } else {
+            const startup_calendar = document.querySelector('.startup_calendar');
+            localStorage.setItem('startup_calendar', startup_calendar);
+            document.querySelector('.startup_calendar').textContent = "ON"
         }
     })
 
@@ -991,6 +1019,29 @@ if (ua.includes("mobile")) {
             wt = element.firstElementChild;
             wt.classList.add('navy');
         }
+        if (localStorage.getItem('startup_objective')) {
+            const element = document.querySelector('.objective_menu');
+            element.closest('.child_windows');
+            element.classList.remove('active');
+
+            document.querySelectorAll('.title').forEach(function (wt) {
+                wt.classList.remove('navy')
+            })
+            wt = element.firstElementChild;
+            wt.classList.add('navy');
+        }
+        if (localStorage.getItem('startup_calendar')) {
+            const element = document.querySelector('.calendar_menu');
+            element.closest('.child_windows');
+            element.classList.remove('active');
+
+            document.querySelectorAll('.title').forEach(function (wt) {
+                wt.classList.remove('navy')
+            })
+            wt = element.firstElementChild;
+            wt.classList.add('navy');
+        }
+        titlecolor_set()
     }
 
     document.getElementById('sound_driver').addEventListener('click', function () {
@@ -1210,6 +1261,8 @@ if (ua.includes("mobile")) {
     function all_load() {
         window_back_silver();
         caload();
+        titlecolor_set();
+        back_pattern_set();
         if (localStorage.getItem('driver_sound')) {
             document.querySelector('.installbutton_1').textContent = "uninstall"
         }
@@ -1254,6 +1307,12 @@ if (ua.includes("mobile")) {
         }
         if (localStorage.getItem('startup_guidebook')) {
             document.querySelector('.startup_guidebook').textContent = "ON"
+        }
+        if (localStorage.getItem('startup_objective')) {
+            document.querySelector('.startup_objective').textContent = "ON"
+        }
+        if (localStorage.getItem('startup_calendar')) {
+            document.querySelector('.startup_calendar').textContent = "ON"
         }
         if (localStorage.getItem('prompt_data2')) {
             document.querySelector('.startup_speed').textContent = "HIGH"
@@ -1386,6 +1445,9 @@ if (ua.includes("mobile")) {
         }
         if (localStorage.getItem('saver_on')) {
             document.querySelector('.saver_mode').textContent = "ON"
+        }
+        if (localStorage.getItem('file_none')) {
+            document.querySelector('.files_inline').style.display = "none"
         }
 
         sessionStorage.removeItem('start_camera')
@@ -1938,6 +2000,19 @@ if (ua.includes("mobile")) {
                 document.querySelector('.prompt_error_text2').textContent = "";
                 prompt_text2.style.color = "";
                 welcome()
+                break;
+            case 'file/none':
+                document.querySelector('.prompt_error_text2').textContent = "";
+                const file_none = document.prompt_text_form2.prompt_text2.value;
+                localStorage.setItem('file_none', file_none);
+                prompt_text2.style.color = "";
+                document.querySelector('.files_inline').style.display = "none";
+                break;
+            case 'file/active':
+                document.querySelector('.prompt_error_text2').textContent = "";
+                localStorage.removeItem('file_none');
+                prompt_text2.style.color = "";
+                document.querySelector('.files_inline').style.display = "flex";
                 break;
 
             case 'windows95/open':
@@ -2509,7 +2584,12 @@ if (ua.includes("mobile")) {
             window_z_index = zindexchildwindows.style.zIndex = z;
             getLargestZIndex('.child_windows');
             z_index.textContent = getLargestZIndex('.child_windows');
+
+            titlecolor_set()
         });
+        z_index_child_windows.addEventListener('click', function () {
+            titlecolor_set()
+        })
     })
 
     document.querySelectorAll('.note_pad, .child').forEach(function (notepad_foccus) {
@@ -3380,6 +3460,199 @@ if (ua.includes("mobile")) {
         // ローカルストレージの内容をチェック
         getStorage();
     });
+
+
+
+    document.querySelectorAll('.color_btn').forEach(function (color_btn) {
+        color_btn.addEventListener('click', function () {
+            titlecolor_remove();
+            titlecolor_set();
+            document.querySelectorAll('.title').forEach(function (title) {
+                title.style.background = "";
+            });
+            document.querySelectorAll('.navy').forEach(function (navy) {
+                navy.style.background = "";
+            });
+        })
+    });
+
+    function titlecolor_remove() {
+        localStorage.removeItem('titlebar_red');
+        localStorage.removeItem('titlebar_blue');
+        localStorage.removeItem('titlebar_green');
+        localStorage.removeItem('titlebar_yellow');
+        localStorage.removeItem('titlebar_orange');
+        localStorage.removeItem('titlebar_pink');
+        localStorage.removeItem('titlebar_purple');
+        localStorage.removeItem('titlebar_black');
+    }
+
+    document.querySelector('.titlebar_red').addEventListener('click', function () {
+        const titlebar_red = document.querySelector('.titlebar_red');
+        localStorage.setItem('titlebar_red', titlebar_red);
+    })
+    document.querySelector('.titlebar_blue').addEventListener('click', function () {
+        const titlebar_blue = document.querySelector('.titlebar_blue');
+        localStorage.setItem('titlebar_blue', titlebar_blue);
+    })
+    document.querySelector('.titlebar_green').addEventListener('click', function () {
+        const titlebar_green = document.querySelector('.titlebar_green');
+        localStorage.setItem('titlebar_green', titlebar_green);
+    })
+    document.querySelector('.titlebar_yellow').addEventListener('click', function () {
+        const titlebar_yellow = document.querySelector('.titlebar_yellow');
+        localStorage.setItem('titlebar_yellow', titlebar_yellow);
+    })
+    document.querySelector('.titlebar_orange').addEventListener('click', function () {
+        const titlebar_orange = document.querySelector('.titlebar_orange');
+        localStorage.setItem('titlebar_orange', titlebar_orange);
+    })
+    document.querySelector('.titlebar_pink').addEventListener('click', function () {
+        const titlebar_pink = document.querySelector('.titlebar_pink');
+        localStorage.setItem('titlebar_pink', titlebar_pink);
+    })
+    document.querySelector('.titlebar_purple').addEventListener('click', function () {
+        const titlebar_purple = document.querySelector('.titlebar_purple');
+        localStorage.setItem('titlebar_purple', titlebar_purple);
+    })
+    document.querySelector('.titlebar_black').addEventListener('click', function () {
+        const titlebar_black = document.querySelector('.titlebar_black');
+        localStorage.setItem('titlebar_black', titlebar_black);
+    })
+
+    function titlecolor_set() {
+        if (localStorage.getItem('titlebar_red')) {
+            document.querySelectorAll('.title').forEach(function (title) {
+                title.style.background = "#440000";
+            });
+            document.querySelectorAll('.navy').forEach(function (navy) {
+                navy.style.background = "red";
+            });
+        }
+        if (localStorage.getItem('titlebar_blue')) {
+            document.querySelectorAll('.title').forEach(function (title) {
+                title.style.background = "#000044";
+            });
+            document.querySelectorAll('.navy').forEach(function (navy) {
+                navy.style.background = "blue";
+            });
+        }
+        if (localStorage.getItem('titlebar_green')) {
+            document.querySelectorAll('.title').forEach(function (title) {
+                title.style.background = "#004400";
+            });
+            document.querySelectorAll('.navy').forEach(function (navy) {
+                navy.style.background = "green";
+            });
+        }
+        if (localStorage.getItem('titlebar_yellow')) {
+            document.querySelectorAll('.title').forEach(function (title) {
+                title.style.background = "#FFFFAA";
+            });
+            document.querySelectorAll('.navy').forEach(function (navy) {
+                navy.style.background = "yellow";
+            });
+        }
+        if (localStorage.getItem('titlebar_orange')) {
+            document.querySelectorAll('.title').forEach(function (title) {
+                title.style.background = "#FFAD90";
+            });
+            document.querySelectorAll('.navy').forEach(function (navy) {
+                navy.style.background = "orange";
+            });
+        }
+        if (localStorage.getItem('titlebar_pink')) {
+            document.querySelectorAll('.title').forEach(function (title) {
+                title.style.background = "#FF00FF";
+            });
+            document.querySelectorAll('.navy').forEach(function (navy) {
+                navy.style.background = "pink";
+            });
+        }
+        if (localStorage.getItem('titlebar_purple')) {
+            document.querySelectorAll('.title').forEach(function (title) {
+                title.style.background = "#5507FF";
+            });
+            document.querySelectorAll('.navy').forEach(function (navy) {
+                navy.style.background = "purple";
+            });
+        }
+        if (localStorage.getItem('titlebar_black')) {
+            document.querySelectorAll('.title').forEach(function (title) {
+                title.style.background = "#555555";
+            });
+            document.querySelectorAll('.navy').forEach(function (navy) {
+                navy.style.background = "black";
+            });
+        }
+    }
+
+
+
+    document.querySelectorAll('.pattern_btn').forEach(function (color_btn) {
+        color_btn.addEventListener('click', function () {
+            back_pattern_remove();
+        });
+    })
+
+    function back_pattern_remove() {
+        document.querySelector('.backgrounds1').style.display = "none";
+        document.querySelector('.backgrounds2').style.display = "none";
+        document.querySelector('.backgrounds3').style.display = "none";
+        document.querySelector('.backgrounds4').style.display = "none";
+        document.querySelector('.backgrounds5').style.display = "none";
+        localStorage.removeItem('back_pattern_1');
+        localStorage.removeItem('back_pattern_2');
+        localStorage.removeItem('back_pattern_3');
+        localStorage.removeItem('back_pattern_4');
+        localStorage.removeItem('back_pattern_5');
+    }
+
+    document.querySelector('.back_pattern_1').addEventListener('click', function () {
+        const back_pattern_1 = document.querySelector('.back_pattern_1');
+        localStorage.setItem('back_pattern_1', back_pattern_1);
+        back_pattern_set()
+    })
+    document.querySelector('.back_pattern_2').addEventListener('click', function () {
+        const back_pattern_2 = document.querySelector('.back_pattern_2');
+        localStorage.setItem('back_pattern_2', back_pattern_2);
+        back_pattern_set()
+    })
+    document.querySelector('.back_pattern_3').addEventListener('click', function () {
+        const back_pattern_3 = document.querySelector('.back_pattern_3');
+        localStorage.setItem('back_pattern_3', back_pattern_3);
+        back_pattern_set()
+    })
+    document.querySelector('.back_pattern_4').addEventListener('click', function () {
+        const back_pattern_4 = document.querySelector('.back_pattern_4');
+        localStorage.setItem('back_pattern_4', back_pattern_4);
+        back_pattern_set()
+    })
+    document.querySelector('.back_pattern_5').addEventListener('click', function () {
+        const back_pattern_5 = document.querySelector('.back_pattern_5');
+        localStorage.setItem('back_pattern_5', back_pattern_5);
+        back_pattern_set()
+    })
+
+    function back_pattern_set() {
+        if (localStorage.getItem('back_pattern_1')) {
+            document.querySelector('.backgrounds1').style.display = "block";
+        }
+        if (localStorage.getItem('back_pattern_2')) {
+            document.querySelector('.backgrounds2').style.display = "block";
+        }
+        if (localStorage.getItem('back_pattern_3')) {
+            document.querySelector('.backgrounds3').style.display = "block";
+        }
+        if (localStorage.getItem('back_pattern_4')) {
+            document.querySelector('.backgrounds4').style.display = "block";
+        }
+        if (localStorage.getItem('back_pattern_5')) {
+            document.querySelector('.backgrounds5').style.display = "block";
+        }
+    }
+
+
 
     var largestZIndex = 1;
     var defaultView = document.defaultView;
