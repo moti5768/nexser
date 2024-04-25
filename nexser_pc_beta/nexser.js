@@ -1,13 +1,6 @@
 var supportsPassive = false; try { var opts = Object.defineProperty({}, 'passive', { get: function () { supportsPassive = true; } }); window.addEventListener("testPassive", null, opts); window.removeEventListener("testPassive", null, opts); } catch (e) { }
 
-const ua2 = navigator.userAgent.toLowerCase();
-console.log(ua2)
-const ua = navigator.userAgent.toLowerCase();
-if (ua.includes("mobile")) {
-    // Mobile (iPhone、iPad「Chrome、Edge」、Android)
-} else if (ua.indexOf("ipad") > -1 || (ua.indexOf("macintosh") > -1 && "ontouchend" in document)) {
-    // Mobile (iPad「Safari」)
-} else {
+
     const shutdown = document.getElementsByClassName('shutdown');
     const restart = document.getElementsByClassName('restart');
 
@@ -5089,5 +5082,3 @@ if (ua.includes("mobile")) {
             }, 1000);
         }
     }
-
-}
