@@ -1,6 +1,13 @@
-//var supportsPassive = false; try { var opts = Object.defineProperty({}, 'passive', { get: function () { supportsPassive = true; } }); window.addEventListener("testPassive", null, opts); window.removeEventListener("testPassive", null, opts); } catch (e) { }
+var supportsPassive = false; try { var opts = Object.defineProperty({}, 'passive', { get: function () { supportsPassive = true; } }); window.addEventListener("testPassive", null, opts); window.removeEventListener("testPassive", null, opts); } catch (e) { }
 
-
+const ua2 = navigator.userAgent.toLowerCase();
+document.querySelector('.user_text').textContent = (ua2)
+const ua = navigator.userAgent.toLowerCase();
+if (ua.includes("mobile")) {
+    // Mobile (iPhone、iPad「Chrome、Edge」、Android)
+} else if (ua.indexOf("ipad") > -1 || (ua.indexOf("macintosh") > -1 && "ontouchend" in document)) {
+    // Mobile (iPad「Safari」)
+} else {
     const shutdown = document.getElementsByClassName('shutdown');
     const restart = document.getElementsByClassName('restart');
 
@@ -331,9 +338,30 @@
         screen_backtextload()
         all_load()
         notecolor_change()
+
+        if (localStorage.getItem('deskprompt')) {
+            nexser_program.style.display = "block";
+            desktop.style.display = "none";
+            document.querySelector('.pattern_backgrounds').style.display = "none";
+        } else {
+            document.querySelector('.pattern_backgrounds').style.display = "block";
+        }
     }
 
+
+
+    document.querySelector('.deskprompt').addEventListener('click', function () {
+        const deskprompt = document.querySelector('.deskprompt');
+        localStorage.setItem('deskprompt', deskprompt);
+    })
+
+
     function nexser_program_open() {
+        func2();
+        desktop.style.display = "none";
+        document.querySelector('.pattern_backgrounds').style.display = "none";
+        document.querySelector('.welcome_windows').style.display = "none";
+        sound_stop();
         document.querySelector('.prompt_error_text').textContent = "";
         document.querySelector('html').style.cursor = 'crosshair';
         document.querySelector('.test_allwindow').style.display = "none";
@@ -349,15 +377,24 @@
     function nexser_program_close() {
         document.querySelector('html').style.cursor = '';
         document.querySelector('.test_allwindow').style.display = "none";
-        setTimeout(function () {
-            localStorage.removeItem('prompt_data3')
-            prompt.style.display = "block";
+        if (!localStorage.getItem('deskprompt')) {
             setTimeout(function () {
-                taskbar_none();
-                nexser_program.style.display = "none";
-                document.querySelector('.focus').focus();
+                localStorage.removeItem('prompt_data3')
+                prompt.style.display = "block";
+                setTimeout(function () {
+                    taskbar_none();
+                    nexser_program.style.display = "none";
+                    document.querySelector('.focus').focus();
+                }, 500);
             }, 500);
-        }, 500);
+        } else {
+            nexser_program.style.display = "none";
+            localStorage.removeItem('deskprompt');
+            setTimeout(() => {
+                desktop.style.display = "block";
+                document.querySelector('.pattern_backgrounds').style.display = "block";
+            }, 1000);
+        }
     }
 
     document.querySelector('.startup_note').addEventListener('click', function () {
@@ -591,6 +628,9 @@
                     setTimeout(function () {
                         start_check()
                         taskbar_none();
+                        if (localStorage.getItem('login_welcome')) {
+                            welcome()
+                        };
                     }, 100);
                 }, 100);
             }, 100)
@@ -606,11 +646,15 @@
                     setTimeout(function () {
                         start_check()
                         taskbar_none();
+                        if (localStorage.getItem('login_welcome')) {
+                            welcome()
+                        };
                     }, 1500);
                 }, 1500)
             }, 1500);
             setTimeout(() => {
                 document.querySelector('html').style.cursor = 'progress';
+                document.querySelector('.pattern_backgrounds').style.display = "block";
             }, 2000);
         }
     }
@@ -630,6 +674,7 @@
                     sound_stop();
                     shutdown_sound();
                     helpmenu_close();
+                    document.querySelector('.welcome_windows').style.display = "none";
                     document.querySelector('html').style.cursor = 'none';
                     if (!localStorage.getItem('noteData')) {
                         document.note_form.note_area.value = "";
@@ -637,8 +682,8 @@
                         document.querySelector('.note_title').textContent = "notepad"
                     }
                     setTimeout(() => {
-                        helpmenu_close();
                         window_none();
+                        helpmenu_close();
                         desktop.style.display = "none";
                         localStorage.removeItem('prompt_data');
                         window_reset();
@@ -650,6 +695,7 @@
                         fileborder_reset();
                         cpubench_clear();
                         cpucalc_reset();
+                        document.querySelector('.focus2').textContent = "";
 
                         setTimeout(() => {
                             document.querySelectorAll('.button').forEach(function (button) {
@@ -667,7 +713,7 @@
                             document.querySelector('.focus').focus();
                             document.querySelector('html').style.cursor = '';
                         }, 500);
-                    }, 1500);
+                    }, 1000);
                 } else {
                     warning_windows.style.display = "block";
                     document.querySelector('.close_button3').style.display = "block"
@@ -678,7 +724,7 @@
                     sound5()
                     document.querySelector('html').style.cursor = '';
                 }
-            }, 500);
+            }, 100);
         })
     })
 
@@ -697,6 +743,7 @@
                     sound_stop();
                     shutdown_sound();
                     helpmenu_close();
+                    document.querySelector('.welcome_windows').style.display = "none";
                     document.querySelector('html').style.cursor = 'none';
                     if (!localStorage.getItem('noteData')) {
                         document.note_form.note_area.value = "";
@@ -716,6 +763,7 @@
                         fileborder_reset();
                         cpubench_clear();
                         cpucalc_reset();
+                        document.querySelector('.focus2').textContent = "";
 
                         setTimeout(() => {
                             document.querySelectorAll('.button').forEach(function (button) {
@@ -746,7 +794,7 @@
                     sound3()
                     document.querySelector('.test_allwindow').style.display = "block";
                 }
-            }, 500);
+            }, 100);
         })
     })
 
@@ -827,6 +875,18 @@
             }, 2000);
         }, 100);
     })
+
+
+
+
+    document.querySelector('.login_welcome').addEventListener('click', function () {
+        const login_welcome = document.querySelector('.login_welcome');
+        localStorage.setItem('login_welcome', login_welcome);
+    })
+    document.querySelector('.nologin_welcome').addEventListener('click', function () {
+        localStorage.removeItem('login_welcome');
+    })
+
 
     function welcome_animation() {
         sound_stop();
@@ -934,7 +994,7 @@
     function welcome() {
         document.querySelector('.welcome_windows').style.display = "block"
         desktop.style.display = "none";
-        welcome_animation()
+        welcome_animation();
     }
 
     function helpmenu_open() {
@@ -1299,6 +1359,8 @@
     }
 
     function all_load() {
+        taskgroup_load();
+        batterylevel();
         window_back_silver();
         caload();
         titlecolor_set();
@@ -2010,6 +2072,11 @@
                 prompt_text2.style.color = "";
                 allwindow_min()
                 break;
+            case 'allwindow/big':
+                document.querySelector('.prompt_error_text2').textContent = "";
+                prompt_text2.style.color = "";
+                allwindow_big()
+                break;
             case 'title/none':
                 document.querySelector('.prompt_error_text2').textContent = "";
                 const data_title_none = document.prompt_text_form2.prompt_text2.value;
@@ -2092,6 +2159,10 @@
         }
     }
 
+    function p_clear() {
+        document.querySelector('.p_text').value = "";
+    }
+
     function screen_backtextload() {
         const backtext_data2 = localStorage.getItem('backtext_data');
         document.getElementById('back_text_input').textContent = backtext_data2
@@ -2150,21 +2221,10 @@
                 document.querySelector('.inport_icon').style.color = ""
                 document.querySelector('.inport_icon').style.background = ""
             }
-
-            navigator.getBattery().then(function (battery) {
-                if (battery.level == 1 && battery.charging == true) {
-                    document.querySelector('.battery_child').style.color = "lime"
-                    document.querySelector('.battery_child').style.background = "black"
-                } else if (battery.charging == false) {
-                    document.querySelector('.battery_child').style.color = "black"
-                    document.querySelector('.battery_child').style.background = ""
-                } else {
-                    document.querySelector('.battery_child').style.color = "#FF9900"
-                    document.querySelector('.battery_child').style.background = "black"
-                }
-            })
+            const un = document.getElementsByClassName('navy').length;
+            document.querySelector('.title_navy').textContent = un;
         }
-    }, 500);
+    }, 100);
 
     document.querySelectorAll('.window_inline_list').forEach(function (window_inline_list) {
         window_inline_list.addEventListener('click', function () {
@@ -2319,6 +2379,38 @@
                 alliwindow_min.classList.remove('big');
                 alliwindow_min.style.transition = ""
             }, 30);
+        });
+    }
+
+    function allwindow_big() {
+        document.querySelectorAll('.child_windows').forEach(function (alliwindow_big) {
+            const bigscreenbutton = alliwindow_big.closest('.child_windows');
+            const bigscreenbutton2 = bigscreenbutton.lastElementChild;
+            bigscreenbutton2.style.bottom = "40px";
+
+            bigscreenbutton.classList.remove('rightwindow');
+            bigscreenbutton.classList.remove('leftwindow');
+
+            if (localStorage.getItem('taskbar_position_button')) {
+                bigscreenbutton.style.height = ""
+                bigscreenbutton.style.width = ""
+                bigscreenbutton.style.top = "40px"
+                bigscreenbutton.style.left = "0"
+                bigscreenbutton.style.transition = "0.08s cubic-bezier(0, 0, 1, 1)"
+            } else {
+                bigscreenbutton.style.height = ""
+                bigscreenbutton.style.width = ""
+                bigscreenbutton.style.top = "0"
+                bigscreenbutton.style.left = "0"
+                bigscreenbutton.style.transition = "0.08s cubic-bezier(0, 0, 1, 1)"
+            }
+            setTimeout(() => {
+                bigscreenbutton.style.transition = ""
+            }, 100);
+            bigscreenbutton.classList.add('big');
+            if (!note_pad.classList.contains('active')) {
+                document.querySelector('.note_area').focus()
+            }
         });
     }
 
@@ -3895,21 +3987,51 @@
         }
     }
 
-    setInterval(() => {
-        var date = new Date();
-        var year = date.getFullYear();
-        var month = date.getMonth() + 1;
-        var day = date.getDate();
-        document.querySelector('.date_day').textContent = (year + "/" + month + "/" + day + "");
-        var date = new Date();
-        var hours = date.getHours().toString().padStart(2, '0');
-        var minutes = date.getMinutes().toString().padStart(2, '0');
-        var seconds = date.getSeconds().toString().padStart(2, '0');
-        var clock = document.querySelector('.date_clock');
-        clock.textContent = (hours + ":" + minutes + ":" + seconds + "");
-        var clock2 = document.querySelector('.date_clock2');
-        clock2.textContent = (hours + ":" + minutes + ":" + seconds + "");
-    }, 100);
+    function taskgroup_load() {
+        setTimeout(() => {
+            var date = new Date();
+            var year = date.getFullYear();
+            var month = date.getMonth() + 1;
+            var day = date.getDate();
+            document.querySelector('.date_day').textContent = (year + "/" + month + "/" + day + "");
+            var hours = date.getHours().toString().padStart(2, '0');
+            var minutes = date.getMinutes().toString().padStart(2, '0');
+            var seconds = date.getSeconds().toString().padStart(2, '0');
+            var clock = document.querySelectorAll('.date_clock, .date_clock2');
+            clock.forEach(function (clock_text) {
+                clock_text.textContent = (hours + ":" + minutes + ":" + seconds + "");
+            });
+            navigator.getBattery().then(function (battery) {
+                if (battery.level == 1 && battery.charging == true) {
+                    document.querySelector('.battery_child').style.color = "lime"
+                    document.querySelector('.battery_child').style.background = "black"
+                } else if (battery.charging == false) {
+                    document.querySelector('.battery_child').style.color = "black"
+                    document.querySelector('.battery_child').style.background = ""
+                } else {
+                    document.querySelector('.battery_child').style.color = "#FF9900"
+                    document.querySelector('.battery_child').style.background = "black"
+                }
+            })
+            taskgroup_load();
+        }, 500)
+    }
+
+    const nowdate = new Date();
+    const yeardate = nowdate.getFullYear();
+    const monthdate = nowdate.getMonth();
+    const dates = nowdate.getDate();
+    const hourdate = nowdate.getHours();
+    const mindate = nowdate.getMinutes();
+    let ampm = '';
+    if (hourdate < 12) {
+        ampm = 'AM';
+    } else {
+        ampm = 'PM';
+    }
+
+    const outputdate = `${yeardate}/${monthdate + 1}/${dates}/${hourdate % 12}:${mindate}${ampm}`;
+    document.getElementById('lastaccess_day').textContent = outputdate;
 
     // 右クリックイベントの登録
     document.getElementById("button1").addEventListener("contextmenu", function (event) {
@@ -4281,14 +4403,14 @@
         if (localStorage.getItem('MemoData_export')) {
             const old_windows_data = localStorage.getItem('MemoData_export');
             const a = document.querySelector('.note_area');
-            a.textContent = (old_windows_data)
-            localStorage.removeItem('MemoData_export')
+            a.textContent = (old_windows_data);
+            localStorage.removeItem('MemoData_export');
 
-            notice_menu.style.left = "0px"
-            notice_menu.classList.remove('active')
+            notice_menu.style.left = "0px";
+            notice_menu.classList.remove('active');
 
             setTimeout(() => {
-                notice_menu.classList.add('active')
+                notice_menu.classList.add('active');
             }, 5000);
         } else {
             document.querySelector('.window_error_text').textContent = "windows2000 textdata no!"
@@ -4354,7 +4476,7 @@
         calc_result.value = new Function("return " + calc_result.value)();
         const child_graph = document.querySelector(".child_graph");
         calc_result.value = Math.round(calc_result.value);
-        calc()
+        calc();
     }
 
     function calc_clear() {
@@ -4380,7 +4502,7 @@
             window_files.style.width = "100%";
             let sss = window_files.firstElementChild;
             sss2 = sss.style.paddingLeft = "50px";
-            sss2 = sss.style.width = "100%";
+            sss2 = sss.style.width = "";
         });
     }
     function window_file_list_reset() {
@@ -4532,15 +4654,18 @@
         })
     }
 
-    setInterval(() => {
-        navigator.getBattery().then(function (battery) {
-            let bu = document.querySelector('.taskbattery');
-            bu2 = bu.innerHTML = Math.floor(battery.level * 100);
-        });
-        navigator.getBattery().then((battery) => {
-            document.querySelector('.battery_time').textContent = (`${battery.dischargingTime}`);
-        })
-    }, 1000);
+    function batterylevel() {
+        setTimeout(() => {
+            navigator.getBattery().then(function (battery) {
+                let bu = document.querySelector('.taskbattery');
+                bu2 = bu.innerHTML = Math.floor(battery.level * 100);
+            });
+            navigator.getBattery().then((battery) => {
+                document.querySelector('.battery_time').textContent = (`${battery.dischargingTime}` + "seconnds");
+            })
+            batterylevel();
+        }, 500);
+    }
 
 
     async function startCamera() {
@@ -4937,13 +5062,6 @@
         stopTime = 0;
     }
 
-    setInterval(() => {
-        const un = document.getElementsByClassName('navy').length;
-        document.querySelector('.title_navy').textContent = un;
-    }, 100);
-
-
-
     // calendar
 
 
@@ -5022,8 +5140,6 @@
         return calendar;
     }
 
-
-
     // progress
     // プログレスバーの進捗値
     var val;
@@ -5045,7 +5161,7 @@
         val += 1;
         document.getElementById("myProgress").value = val;
         document.getElementById("myProgress").innerText = val + "%";
-        console.log("progress:", val, "%");
+        // console.log("progress:", val, "%");
 
         // 最大値まで達したら終了
         if (val == 100) {
@@ -5071,7 +5187,7 @@
         val += 20;
         document.getElementById("myProgress").value = val;
         document.getElementById("myProgress").innerText = val + "%";
-        console.log("progress:", val, "%");
+        // console.log("progress:", val, "%");
 
         // 最大値まで達したら終了
         if (val == 100) {
@@ -5082,3 +5198,5 @@
             }, 1000);
         }
     }
+
+}

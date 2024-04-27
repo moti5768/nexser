@@ -706,6 +706,7 @@ body::-webkit-scrollbar {
     box-shadow: 0 0 0 1.5px whitesmoke,
         0 0 0 2px dimgray,
         0 0 0 2.5px black;
+    z-index: 99999;
 }
 
 .resize {
