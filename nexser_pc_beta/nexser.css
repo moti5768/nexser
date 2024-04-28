@@ -35,6 +35,7 @@ body {
     height: 100vh;
     width: 100%;
     color: white;
+    z-index: 999;
 }
 
 .parent_graph {
@@ -253,9 +254,13 @@ li {
 /* nexser */
 
 #nex {
+    display: block;
     filter: blur(0px);
     margin-left: 0;
     margin-right: 0;
+    position: absolute;
+    width: 100%;
+    height: 100%;
 }
 
 #nex.old {
@@ -263,6 +268,8 @@ li {
     margin-left: 8%;
     margin-right: 8%;
     overflow: hidden;
+    position: relative;
+    width: auto;
 }
 
 #nexser {

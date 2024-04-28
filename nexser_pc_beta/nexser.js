@@ -856,7 +856,9 @@ if (ua.includes("mobile")) {
             localStorage.setItem('start_nexser', start_nexser);
             document.querySelector('.welcome_windows').style.display = ""
             setTimeout(() => {
-                desktop.style.display = "block"
+                desktop.style.display = "block";
+                document.getElementById('files').style.display = "block";
+                document.getElementById('taskbar').style.display = "block";
             }, 1000);
             setTimeout(() => {
                 setColor()
