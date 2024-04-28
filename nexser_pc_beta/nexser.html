@@ -28,7 +28,8 @@
             <div autocapitalize="bold" class="prompt_text">[nexser prompt beta version v1.4<span
                     class="test_name"></span>]</div>
             <form autocomplete="off" method="get" name="prompt_text_form" onsubmit="return false;">
-                <span>nexser\></span><input type="text" class="name focus" name="prompt_text" placeholder="command">
+                <span>nexser\></span><input type="text" class="name focus" style="font-family: Courier;"
+                    name="prompt_text" placeholder="command">
             </form>
             <p class="prompt_error_text"></p>
             <div style="color: lime;">
@@ -46,18 +47,20 @@
             </div>
             <p class="help" style="color: deepskyblue;"></p>
             <div style="position: relative; top: 10px;">
-                <h3>help command(click)</h3>
-                <span class="hover_blue"
-                    style="display: inline-block; color: white; border: solid 1px white; box-shadow: 5px 5px #888888;"
-                    onclick="help_command()">nexser open</span>
+                <ul>
+                    <li>help command(click)</li>
+                    <li class="hover_blue"
+                        style="display: inline-block; color: white; border: solid 1px white; box-shadow: 5px 5px #888888;"
+                        onclick="help_command()">nexser open</li>
 
-                <span class="hover_blue"
-                    style="margin-top: 50px; position: absolute; left: 0px; display: inline-block; color: white; border: solid 1px white; box-shadow: 5px 5px #888888;"
-                    onclick="help_command2()">nexser program</span>
+                    <li class="hover_blue"
+                        style="margin-top: 50px; position: absolute; left: 0px; display: inline-block; color: white; border: solid 1px white; box-shadow: 5px 5px #888888;"
+                        onclick="help_command2()">nexser program</li>
 
-                <span class="hover_red"
-                    style="margin-top: 100px; position: absolute; left: 0px; display: inline-block; color: white; border: solid 1px white; box-shadow: 5px 5px #888888;"
-                    onclick="help_command_clear()">command clear</span>
+                    <li class="hover_red"
+                        style="margin-top: 100px; position: absolute; left: 0px; display: inline-block; color: white; border: solid 1px white; box-shadow: 5px 5px #888888;"
+                        onclick="help_command_clear()">command clear</li>
+                </ul>
             </div>
             <progress id="myProgress" value="0" max="100">0%</progress><br><br><br><br><br><br>
 
@@ -106,38 +109,38 @@
 
         <div id="nexser_program">
             <div>
-                <span style="display: block; text-align: center; color: white;" class="bold">NEXSER
+                <span style="display: block; text-align: center; color: white;">NEXSER
                     PROGRAM</span>
                 <div style="border: double 5px white; border-color: darkblue; height: 90vh; background-color: #DCDCDC;">
-                    <p class="bold">NEXSER PROGRAM STARTUP LIST</p>
+                    <p>NEXSER PROGRAM STARTUP LIST</p>
                     <div class="mini_window" style="border-color: darkblue;">
                         <ul style="column-count: 2;">
-                            <li>my computer&emsp;<span class="startup_computer">OFF</span></li>
-                            <li>note pad&emsp;<span class="startup_note">OFF</span></li>
-                            <li>color&emsp;<span class="startup_color">OFF</span></li>
-                            <li>screen text&emsp;<span class="startup_screen">OFF</span></li>
-                            <li>htmlviewer edit&emsp;<span class="startup_htmlviewer_edit">OFF</span></li>
-                            <li>guide book&emsp;<span class="startup_guidebook">OFF</span></li>
-                            <li>objective sheet&emsp;<span class="startup_objective">OFF</span></li>
-                            <li>calendar&emsp;<span class="startup_calendar">OFF</span></li>
+                            <li>my computer:&emsp;<span class="startup_computer">OFF</span></li>
+                            <li>note pad:&emsp;<span class="startup_note">OFF</span></li>
+                            <li>color:&emsp;<span class="startup_color">OFF</span></li>
+                            <li>screen text:&emsp;<span class="startup_screen">OFF</span></li>
+                            <li>htmlviewer edit:&emsp;<span class="startup_htmlviewer_edit">OFF</span></li>
+                            <li>guide book:&emsp;<span class="startup_guidebook">OFF</span></li>
+                            <li>objective sheet:&emsp;<span class="startup_objective">OFF</span></li>
+                            <li>calendar:&emsp;<span class="startup_calendar">OFF</span></li>
                         </ul><br>
                     </div>
                     <div class="mini_window" style="border-color: darkblue;">
-                        <div style="width: 100%; border-bottom: solid 1px darkblue;" class="bold">STARTUP MODE</div>
+                        <div style="width: 100%; border-bottom: solid 1px darkblue;">STARTUP MODE</div>
                         <ul>
-                            <li>speed&emsp;<span class="startup_speed">LOW</span></li>
+                            <li>speed:&emsp;<span class="startup_speed">LOW</span></li>
                         </ul><br>
                     </div>
                     <div class="mini_window" style="border-color: darkblue;">
-                        <div style="width: 100%; border-bottom: solid 1px darkblue;" class="bold">DRIVER</div>
+                        <div style="width: 100%; border-bottom: solid 1px darkblue;">DRIVER</div>
                         <ul>
-                            <li>sound&emsp;<span class="startup_sound">INSTALL</span></li>
+                            <li>sound:&emsp;<span class="startup_sound">INSTALL</span></li>
                         </ul><br>
                     </div>
                     <div class="mini_window" style="border-color: darkblue;">
-                        <div style="width: 100%; border-bottom: solid 1px darkblue;" class="bold">SCREEN MODE</div>
+                        <div style="width: 100%; border-bottom: solid 1px darkblue;">SCREEN MODE</div>
                         <ul>
-                            <li>desktop version text&emsp;<span class="startup_versiontext">OFF</span></li>
+                            <li>desktop version text:&emsp;<span class="startup_versiontext">OFF</span></li>
                         </ul>
                     </div>
 
@@ -198,16 +201,16 @@
                             style="font-size: small; font-weight: bold; position: absolute;">nexser
                             へようこそ!<br>このnexserはPCに搭載されている&nbsp;windows&nbsp;に近い操作が可能です。(一部異なります。)<br>バグ・不具合が発生した場合にはページを再ロードすることを推奨します。<br>それでは、楽しいnexserライフを!
                         </span>
-                        <button class="button2 start_nexser" onmouseup="nexser_on(),sound_stop()"
-                            style="font-size: x-large; position: absolute; bottom: 5px; left: 5px;">start
-                            nexser</button>
+                        <button class="button2 start_nexser" onmouseup="nexser_on(),sound_stop()"><span>&emsp;start
+                                nexser&emsp;</span></button>
                         <div style="position: absolute; right: 0px; bottom: 20px;">
                             <ul>
                                 <li class="bold">next login welcome nexser open?</li>
                             </ul>
-                            <span class="button2 login_welcome" style="position: absolute; top: 20px;">YES</span>
+                            <span class="button2 login_welcome"
+                                style="position: absolute; top: 20px;">&emsp;YES&emsp;</span>
                             <span class="button2 nologin_welcome"
-                                style="position: absolute; top: 20px; left: 40px;">NO</span>
+                                style="position: absolute; top: 20px; left: 70px;">&emsp;NO&emsp;</span>
                         </div>
                     </div>
 
@@ -2914,28 +2917,29 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
 
                 <div class="test_allwindow"></div>
 
-                <div class="error_windows active" style="z-index: 999999;">
+                <div class="error_windows active back_silver" style="z-index: 999999;">
                     <div class="error_title" style="background: navy; color: white;">
                         <span class="bold">&nbsp;error</span>
                     </div>
                     <span class="close_button2 button2">&nbsp;✕&nbsp;</span><br>
-                    <p><span class="error_icon">✕</span><span>&emsp;&emsp;</span><span class="window_error_text">test
+                    <p><span class="error_icon bold">✕</span><span>&emsp;&emsp;&nbsp;</span><span
+                            class="window_error_text">test
                             window error</span>&emsp;</p>
                     <br>
                 </div>
 
-                <div class="warning_windows" style="z-index: 999999;">
+                <div class="warning_windows back_silver" style="z-index: 999999;">
                     <div class="warning_title" style="background: navy; color: white;">
                         <span>&nbsp;</span><span class="warning_title_text bold">warning</span>
                     </div>
                     <span class="close_button3 button2">&nbsp;✕&nbsp;</span><br>
-                    <p><span class="warning_icon">!</span>&emsp;&emsp;<span class="window_warning_text"></span>
+                    <p><span class="warning_icon">!</span>&emsp;&emsp;&nbsp;<span class="window_warning_text"></span>
                     </p>
                     <span class="shutdown_button button2 shutdown" onclick="window_none()"
-                        style="position: absolute; top: 85%; left: 50%; transform: translate(-50%, -50%);">&nbsp;OK&nbsp;</span>
+                        style="position: absolute; top: 85%; left: 50%; transform: translate(-50%, -50%);">&emsp;OK&emsp;</span>
                     <span class="warningclose_button button2"
                         style="display: none; position: absolute; top: 85%; left: 50%; transform: translate(-50%, -50%);"
-                        onclick="warning_windows_close()">&nbsp;OK&nbsp;</span><br>
+                        onclick="warning_windows_close()">&emsp;OK&emsp;</span><br>
                 </div>
 
                 <div id="screen_saver_group">

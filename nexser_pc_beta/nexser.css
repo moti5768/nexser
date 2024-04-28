@@ -18,11 +18,12 @@ body {
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
+    font-family: Courier;
+    font-size: x-large;
     display: none;
     height: 100vh;
     width: 100%;
     color: darkblue;
-    font-size: 20px;
     background: darkblue;
 }
 
@@ -211,7 +212,8 @@ li {
 
 #prompt {
     height: 100vh;
-    font-family: system-ui;
+
+    font-family: Courier;
     color: white;
     -webkit-user-select: none;
     -moz-user-select: none;
@@ -279,6 +281,18 @@ li {
     background: #52adad;
 }
 
+.start_nexser {
+    font-size: xx-large;
+    position: absolute;
+    bottom: 5px;
+    left: 5px;
+}
+
+.start_nexser>span {
+    outline: 1.5px dotted black;
+    outline-offset: -5px;
+}
+
 /* buttons */
 
 .button {
@@ -339,6 +353,11 @@ button.pressed {
 span.pressed {
     padding-left: 1px;
     width: auto;
+}
+
+.shutdown_button {
+    outline: 1.5px dotted black;
+    outline-offset: -5px;
 }
 
 /* files */
@@ -724,6 +743,16 @@ body::-webkit-scrollbar {
     z-index: 99999;
 }
 
+.login_welcome {
+    outline: 1.5px dotted black;
+    outline-offset: -5px;
+}
+
+.nologin_welcome {
+    outline: 1.5px dotted black;
+    outline-offset: -5px;
+}
+
 .resize {
     resize: both;
 }
@@ -860,7 +889,7 @@ body::-webkit-scrollbar {
     height: 20px;
     width: 20px;
     line-height: 22.5px;
-    border: solid 0.25px black;
+    border: solid 1.5px black;
     box-shadow: 1.5px 1.5px dimgray;
     background: yellow;
     color: black;
@@ -872,18 +901,18 @@ body::-webkit-scrollbar {
 
 .error_icon {
     display: block;
-    font-size: 13px;
-    font-weight: bold;
-    height: 20px;
-    width: 20px;
-    line-height: 22.5px;
+    font-size: 15px;
+    font-family: monospace;
+    height: 22px;
+    width: 22px;
+    line-height: 23px;
     border: solid 1px darkred;
     box-shadow: 1.5px 1.5px dimgray;
     background: #FF0033;
     border-radius: 20px;
     color: white;
     position: absolute;
-    left: 2.5px;
+    left: 2px;
     text-align: center;
     justify-content: center;
 }
@@ -909,6 +938,11 @@ body::-webkit-scrollbar {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
+}
+
+.warningclose_button {
+    outline: 1.5px dotted black;
+    outline-offset: -5px;
 }
 
 .error_windows.active {
@@ -1209,7 +1243,9 @@ body::-webkit-scrollbar {
     top: 3px;
     right: 3.5px;
     text-align: center;
-    font-size: 10px;
+    justify-content: center;
+    font-size: 11px;
+    line-height: 16.5px;
 }
 
 .close_button2 {
@@ -1220,7 +1256,9 @@ body::-webkit-scrollbar {
     top: 3px;
     right: 3.5px;
     text-align: center;
-    font-size: 10px;
+    justify-content: center;
+    font-size: 11px;
+    line-height: 16.5px;
     z-index: 1;
 }
 
@@ -1232,7 +1270,9 @@ body::-webkit-scrollbar {
     top: 3px;
     right: 3.5px;
     text-align: center;
-    font-size: 10px;
+    justify-content: center;
+    font-size: 11px;
+    line-height: 16.5px;
     z-index: 1;
 }
 
@@ -1245,7 +1285,9 @@ body::-webkit-scrollbar {
     top: 3px;
     right: 3.5px;
     text-align: center;
-    font-size: 10px;
+    justify-content: center;
+    font-size: 11px;
+    line-height: 16.5px;
 }
 
 /* 飾り */
@@ -1265,7 +1307,7 @@ body::-webkit-scrollbar {
     top: 3px;
     right: 22.5px;
     text-align: center;
-    font-size: 10px;
+    font-size: 11px;
 }
 
 .minscreen_button {
@@ -1277,7 +1319,7 @@ body::-webkit-scrollbar {
     top: 3px;
     right: 23.5px;
     text-align: center;
-    font-size: 10px;
+    font-size: 11px;
 }
 
 .minimization_button {
@@ -1288,7 +1330,7 @@ body::-webkit-scrollbar {
     top: 3px;
     right: 41.5px;
     text-align: center;
-    font-size: 10px;
+    font-size: 11px;
 }
 
 /*list */
