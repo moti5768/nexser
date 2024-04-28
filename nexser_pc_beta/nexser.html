@@ -3,10 +3,23 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="description" content="nexser version1.4 これはテストです">
     <link rel="stylesheet" href="nexser.css">
     <title>nexser beta version 1.4</title>
+
+    <script>
+        document.addEventListener('wheel', function (e) {
+            if (e.ctrlKey) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+        document.addEventListener('touchmove', function (e) {
+            if (e.touches.length > 1) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+    </script>
 </head>
 
 <body>
@@ -190,7 +203,7 @@
                             nexser</button>
                         <div style="position: absolute; right: 0px; bottom: 20px;">
                             <ul>
-                                <li class="bold">next login welcome windows open?</li>
+                                <li class="bold">next login welcome nexser open?</li>
                             </ul>
                             <span class="button2 login_welcome" style="position: absolute; top: 20px;">YES</span>
                             <span class="button2 nologin_welcome"
@@ -258,44 +271,46 @@
                             <span class="minimization_button button2">&nbsp;―&nbsp;</span><br>
                         </div>
 
-                        <ul class="black_text window_inline_list border2">
-                            <div class="window_files test_button3">
-                                <li>control_panel</li><span class="window_file_icon"></span>
-                            </div>
-                            <div class="window_files test_button6">
-                                <li>nexser prompt</li><span class="window_file_icon"></span>
-                            </div>
-                            <div class="window_files test_button2">
-                                <li>my_computer</li><span class="window_file_icon"></span>
-                            </div>
-                            <div class="window_files">
-                                <li>test</li><span class="window_file_icon2"></span>
-                            </div>
-                            <div class="window_files">
-                                <li>test</li><span class="window_file_icon2"></span>
-                            </div>
-                            <div class="window_files">
-                                <li>test</li><span class="window_file_icon2"></span>
-                            </div>
-                            <div class="window_files">
-                                <li>test</li><span class="window_file_icon2"></span>
-                            </div>
-                            <div class="window_files">
-                                <li>test</li><span class="window_file_icon2"></span>
-                            </div>
-                            <div class="window_files">
-                                <li>test</li><span class="window_file_icon2"></span>
-                            </div>
-                            <div class="window_files">
-                                <li>test</li><span class="window_file_icon2"></span>
-                            </div>
-                            <div class="window_files">
-                                <li>test</li><span class="window_file_icon2"></span>
-                            </div>
-                            <div class="window_files">
-                                <li>test</li><span class="window_file_icon2"></span>
-                            </div>
-                        </ul>
+                        <div class="window_contents">
+                            <ul class="black_text window_inline_list">
+                                <div class="window_files test_button3">
+                                    <li>control_panel</li><span class="window_file_icon"></span>
+                                </div>
+                                <div class="window_files test_button6">
+                                    <li>nexser prompt</li><span class="window_file_icon"></span>
+                                </div>
+                                <div class="window_files test_button2">
+                                    <li>my_computer</li><span class="window_file_icon"></span>
+                                </div>
+                                <div class="window_files">
+                                    <li>test</li><span class="window_file_icon2"></span>
+                                </div>
+                                <div class="window_files">
+                                    <li>test</li><span class="window_file_icon2"></span>
+                                </div>
+                                <div class="window_files">
+                                    <li>test</li><span class="window_file_icon2"></span>
+                                </div>
+                                <div class="window_files">
+                                    <li>test</li><span class="window_file_icon2"></span>
+                                </div>
+                                <div class="window_files">
+                                    <li>test</li><span class="window_file_icon2"></span>
+                                </div>
+                                <div class="window_files">
+                                    <li>test</li><span class="window_file_icon2"></span>
+                                </div>
+                                <div class="window_files">
+                                    <li>test</li><span class="window_file_icon2"></span>
+                                </div>
+                                <div class="window_files">
+                                    <li>test</li><span class="window_file_icon2"></span>
+                                </div>
+                                <div class="window_files">
+                                    <li>test</li><span class="window_file_icon2"></span>
+                                </div>
+                            </ul>
+                        </div>
                     </div>
 
                     <div class="child_windows file_windows my_computer resize active">
@@ -369,32 +384,34 @@
 
                         </div>
 
-                        <ul class="black_text window_inline_list border2">
-                            <div class="window_files test_button">
-                                <li>main</li><span class="window_file_icon"></span>
-                            </div>
-                            <div class="window_files test_button5">
-                                <li>system</li><span class="window_file_icon"></span>
-                            </div>
-                            <div class="window_files test_button14">
-                                <li>window mode</li><span class="window_file_icon"></span>
-                            </div>
-                            <div class="window_files test_button15">
-                                <li>accessory</li><span class="window_file_icon"></span>
-                            </div>
-                            <div class="window_files test_button24">
-                                <li>debug</li><span class="window_file_icon"></span>
-                            </div>
-                            <div class="window_files">
-                                <li>test</li><span class="window_file_icon2"></span>
-                            </div>
-                            <div class="window_files">
-                                <li>test</li><span class="window_file_icon2"></span>
-                            </div>
-                            <div class="window_files">
-                                <li>test</li><span class="window_file_icon2"></span>
-                            </div>
-                        </ul>
+                        <div class="window_contents">
+                            <ul class="black_text window_inline_list">
+                                <div class="window_files test_button">
+                                    <li>main</li><span class="window_file_icon"></span>
+                                </div>
+                                <div class="window_files test_button5">
+                                    <li>system</li><span class="window_file_icon"></span>
+                                </div>
+                                <div class="window_files test_button14">
+                                    <li>window mode</li><span class="window_file_icon"></span>
+                                </div>
+                                <div class="window_files test_button15">
+                                    <li>accessory</li><span class="window_file_icon"></span>
+                                </div>
+                                <div class="window_files test_button24">
+                                    <li>debug</li><span class="window_file_icon"></span>
+                                </div>
+                                <div class="window_files">
+                                    <li>test</li><span class="window_file_icon2"></span>
+                                </div>
+                                <div class="window_files">
+                                    <li>test</li><span class="window_file_icon2"></span>
+                                </div>
+                                <div class="window_files">
+                                    <li>test</li><span class="window_file_icon2"></span>
+                                </div>
+                            </ul>
+                        </div>
                     </div>
 
                     <div class="child_windows note_pad active back_silver">
@@ -689,47 +706,49 @@
 
                         </div>
 
-                        <ul class="black_text window_inline_list border2">
-                            <div class="window_files test_button7">
-                                <li>clock</li><span class="window_file_icon"></span>
-                            </div>
-                            <div class="window_files test_button16">
-                                <li>calc</li><span class="window_file_icon"></span>
-                            </div>
-                            <div class="window_files test_button12">
-                                <li>notepad</li><span class="window_file_icon"></span>
-                            </div>
-                            <div class="window_files test_button13">
-                                <li>text drop</li><span class="window_file_icon"></span>
-                            </div>
-                            <div class="window_files test_button18">
-                                <li>camera</li><span class="window_file_icon"></span>
-                            </div>
-                            <div class="window_files test_button21">
-                                <li>video upload</li><span class="window_file_icon"></span>
-                            </div>
-                            <div class="window_files test_button19">
-                                <li>htmlviewer edit</li><span class="window_file_icon"></span>
-                            </div>
-                            <div class="window_files test_button25">
-                                <li>file download menu</li><span class="window_file_icon"></span>
-                            </div>
-                            <div class="window_files test_button27">
-                                <li>stop watch</li><span class="window_file_icon"></span>
-                            </div>
-                            <div class="window_files test_button30">
-                                <li>objective text</li><span class="window_file_icon"></span>
-                            </div>
-                            <div class="window_files test_button29">
-                                <li>tetris</li><span class="window_file_icon"></span>
-                            </div>
-                            <div class="window_files test_button31">
-                                <li>calendar</li><span class="window_file_icon"></span>
-                            </div>
-                            <div class="window_files test_button32">
-                                <li>cpu calc</li><span class="window_file_icon"></span>
-                            </div>
-                        </ul>
+                        <div class="window_contents">
+                            <ul class="black_text window_inline_list">
+                                <div class="window_files test_button7">
+                                    <li>clock</li><span class="window_file_icon"></span>
+                                </div>
+                                <div class="window_files test_button16">
+                                    <li>calc</li><span class="window_file_icon"></span>
+                                </div>
+                                <div class="window_files test_button12">
+                                    <li>notepad</li><span class="window_file_icon"></span>
+                                </div>
+                                <div class="window_files test_button13">
+                                    <li>text drop</li><span class="window_file_icon"></span>
+                                </div>
+                                <div class="window_files test_button18">
+                                    <li>camera</li><span class="window_file_icon"></span>
+                                </div>
+                                <div class="window_files test_button21">
+                                    <li>video upload</li><span class="window_file_icon"></span>
+                                </div>
+                                <div class="window_files test_button19">
+                                    <li>htmlviewer edit</li><span class="window_file_icon"></span>
+                                </div>
+                                <div class="window_files test_button25">
+                                    <li>file download menu</li><span class="window_file_icon"></span>
+                                </div>
+                                <div class="window_files test_button27">
+                                    <li>stop watch</li><span class="window_file_icon"></span>
+                                </div>
+                                <div class="window_files test_button30">
+                                    <li>objective text</li><span class="window_file_icon"></span>
+                                </div>
+                                <div class="window_files test_button29">
+                                    <li>tetris</li><span class="window_file_icon"></span>
+                                </div>
+                                <div class="window_files test_button31">
+                                    <li>calendar</li><span class="window_file_icon"></span>
+                                </div>
+                                <div class="window_files test_button32">
+                                    <li>cpu calc</li><span class="window_file_icon"></span>
+                                </div>
+                            </ul>
+                        </div>
                     </div>
 
                     <div class="child_windows file_windows control_panel resize active">
@@ -803,44 +822,46 @@
 
                         </div>
 
-                        <ul class="black_text window_inline_list border2">
-                            <div class="window_files test_button8">
-                                <li>sound</li><span class="window_file_icon"></span>
-                            </div>
-                            <div class="window_files test_button4">
-                                <li>color</li><span class="window_file_icon"></span>
-                            </div>
-                            <div class="window_files test_button9">
-                                <li>driver</li><span class="window_file_icon"></span>
-                            </div>
-                            <div class="window_files test_button10">
-                                <li>mouse</li><span class="window_file_icon"></span>
-                            </div>
-                            <div class="window_files test_button11">
-                                <li>screen text</li><span class="window_file_icon"></span>
-                            </div>
-                            <div class="window_files test_button17">
-                                <li>nexser sound</li><span class="window_file_icon"></span>
-                            </div>
-                            <div class="window_files test_button22">
-                                <li>font</li><span class="window_file_icon"></span>
-                            </div>
-                            <div class="window_files test_button26">
-                                <li>display</li><span class="window_file_icon"></span>
-                            </div>
-                            <div class="window_files">
-                                <li>test</li><span class="window_file_icon2"></span>
-                            </div>
-                            <div class="window_files">
-                                <li>test</li><span class="window_file_icon2"></span>
-                            </div>
-                            <div class="window_files">
-                                <li>test</li><span class="window_file_icon2"></span>
-                            </div>
-                            <div class="window_files">
-                                <li>test</li><span class="window_file_icon2"></span>
-                            </div><br>
-                        </ul>
+                        <div class="window_contents">
+                            <ul class="black_text window_inline_list">
+                                <div class="window_files test_button8">
+                                    <li>sound</li><span class="window_file_icon"></span>
+                                </div>
+                                <div class="window_files test_button4">
+                                    <li>color</li><span class="window_file_icon"></span>
+                                </div>
+                                <div class="window_files test_button9">
+                                    <li>driver</li><span class="window_file_icon"></span>
+                                </div>
+                                <div class="window_files test_button10">
+                                    <li>mouse</li><span class="window_file_icon"></span>
+                                </div>
+                                <div class="window_files test_button11">
+                                    <li>screen text</li><span class="window_file_icon"></span>
+                                </div>
+                                <div class="window_files test_button17">
+                                    <li>nexser sound</li><span class="window_file_icon"></span>
+                                </div>
+                                <div class="window_files test_button22">
+                                    <li>font</li><span class="window_file_icon"></span>
+                                </div>
+                                <div class="window_files test_button26">
+                                    <li>display</li><span class="window_file_icon"></span>
+                                </div>
+                                <div class="window_files">
+                                    <li>test</li><span class="window_file_icon2"></span>
+                                </div>
+                                <div class="window_files">
+                                    <li>test</li><span class="window_file_icon2"></span>
+                                </div>
+                                <div class="window_files">
+                                    <li>test</li><span class="window_file_icon2"></span>
+                                </div>
+                                <div class="window_files">
+                                    <li>test</li><span class="window_file_icon2"></span>
+                                </div><br>
+                            </ul>
+                        </div>
                         <div class="window_bottom border2">
                             <p>&nbsp;8&nbsp;objects</p>
                         </div>
@@ -1540,7 +1561,7 @@
                         </div>
                     </div>
 
-                    <div class="child_windows display_menu resize active back_silver">
+                    <div class="child_windows display_menu active back_silver">
 
                         <div class="title">
                             <span class="title_icon"></span><span>&emsp;&emsp;display</span>
@@ -2022,14 +2043,16 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
 
                             <div class="mini_window">
                                 <p>preview</p>
-                                <ul class="black_text window_inline_list border2">
-                                    <div class="window_files">
-                                        <li>test</li><span class="window_file_icon"></span>
-                                    </div>
-                                    <div class="window_files">
-                                        <li>test</li><span class="window_file_icon2"></span>
-                                    </div>
-                                </ul>
+                                <div class="window_contents">
+                                    <ul class="black_text window_inline_list">
+                                        <div class="window_files">
+                                            <li>test</li><span class="window_file_icon"></span>
+                                        </div>
+                                        <div class="window_files">
+                                            <li>test</li><span class="window_file_icon2"></span>
+                                        </div>
+                                    </ul>
+                                </div>
                             </div>
                         </div>
                     </div>

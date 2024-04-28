@@ -636,6 +636,7 @@ if (ua.includes("mobile")) {
             }, 100)
             setTimeout(() => {
                 document.querySelector('html').style.cursor = 'progress';
+                document.querySelector('.pattern_backgrounds').style.display = "block";
             }, 100);
         } else {
             func1();
@@ -800,6 +801,8 @@ if (ua.includes("mobile")) {
 
     function start_check() {
         document.querySelector('html').style.cursor = 'none';
+        taskbar.style.display = "none";
+        document.getElementById('files').style.display = "none";
         if (!localStorage.getItem('start_nexser') || desktop.style.display == "block") {
             prompt.style.display = "none";
             nexser_program.style.display = "none";
@@ -824,7 +827,7 @@ if (ua.includes("mobile")) {
                 setColor();
                 document.querySelector('html').style.cursor = '';
                 toolbar.style.display = "none";
-            }, 1000);
+            }, 1500);
             setTimeout(() => {
                 startup_window_open();
                 taskbtn_load();
@@ -832,15 +835,18 @@ if (ua.includes("mobile")) {
                     toolbar.style.display = "block";
                 }
                 if (localStorage.getItem('taskbar_position_button')) {
+                    taskbar.style.display = "block";
                     toolbar.style.bottom = "";
                     toolbar.style.left = "";
                     toolbar.style.top = "40px";
                 } else {
+                    taskbar.style.display = "block";
                     toolbar.style.top = "";
                     toolbar.style.left = "";
                     toolbar.style.bottom = "40px";
                 }
-            }, 1500);
+                document.getElementById('files').style.display = "block";
+            }, 2000);
         }
     }
 
@@ -3306,14 +3312,6 @@ if (ua.includes("mobile")) {
     document.querySelector('.time').addEventListener('click', function () {
         taskbtn_load()
     })
-
-    window.onload = function () {
-        function disableScroll(event) {
-            event.preventDefault();
-        }
-        document.addEventListener('touchmove', disableScroll, { passive: false });
-        document.addEventListener('mousewheel', disableScroll, { passive: false });
-    }
 
     document.querySelectorAll('.note_drag').forEach(function (note_drag) {
         note_drag.addEventListener('mousedown', function () {
