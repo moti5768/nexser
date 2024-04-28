@@ -1554,6 +1554,9 @@ if (ua.includes("mobile")) {
         if (localStorage.getItem('saver_on')) {
             document.querySelector('.saver_mode').textContent = "ON"
         }
+        if (localStorage.getItem('display_old')) {
+            old_screen()
+        }
         if (localStorage.getItem('file_none')) {
             document.querySelector('.files_inline').style.display = "none"
         }
@@ -3566,6 +3569,17 @@ if (ua.includes("mobile")) {
         document.querySelector('.saver_mode').textContent = "OFF"
     })
 
+
+    document.querySelector('.display_old').addEventListener('click', function () {
+        const display_old = document.querySelector('.display_old');
+        localStorage.setItem('display_old', display_old);
+        old_screen();
+    })
+    document.querySelector('.display_now').addEventListener('click', function () {
+        localStorage.removeItem('display_old');
+        old_screen_reset();
+    })
+
     const KEY_COLOR = "COLOR";				// 文字色用キー
     const KEY_BKCOLOR = "BKCOLOR";			// 背景色用キー
 
@@ -5195,6 +5209,15 @@ if (ua.includes("mobile")) {
                 val = 0;
             }, 1000);
         }
+    }
+
+    // old_screen()
+
+    function old_screen() {
+        document.getElementById('nex').classList.add('old');
+    }
+    function old_screen_reset() {
+        document.getElementById('nex').classList.remove('old');
     }
 
 }
