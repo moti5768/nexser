@@ -1162,9 +1162,10 @@ body::-webkit-scrollbar {
     white-space: nowrap;
     display: flex;
     background: #c0c0c0;
-    height: 20.5px;
+    height: 25px;
     position: relative;
     top: 0px;
+    line-height: 25px;
     z-index: 1;
 }
 
@@ -1342,11 +1343,15 @@ body::-webkit-scrollbar {
 .parent_list {
     font-size: small;
     text-align: center;
+    line-height: 25px;
 }
 
 .child_list {
     display: none;
     z-index: 99999;
+    line-height: 20px;
+    position: absolute;
+    top: 2.5px;
 }
 
 .child_list ul {
