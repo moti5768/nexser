@@ -78,19 +78,33 @@ if (ua.includes("mobile")) {
 
     const tetris_mneu = document.querySelector('.tetris_menu');
 
-    const sound_1 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/The-Microsoft-Sound.mp3");
-    const sound_2 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/tada.mp3");
-    const sound_3 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/chord.mp3");
-    const sound_4 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/chimes.mp3");
-    const sound_5 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/ding.mp3");
-    const sound_6 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/utopia.mp3");
-    const sound_7 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/welcome.mp3");
-    const sound_8 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/windows98.start.mp3");
-    const sound_9 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/windows98.logoff.mp3");
-    const sound_10 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/windows2000_startup.mp3");
-    const sound_11 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/windows2000_shutdown.mp3");
-    const sound_12 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/windowsxp_startup.mp3");
-    const sound_13 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/windowsxp_shutdown.mp3");
+    let sound_1 = null;
+    let sound_2 = null;
+    let sound_3 = null;
+    let sound_4 = null;
+    let sound_5 = null;
+    let sound_6 = null;
+    let sound_7 = null;
+    let sound_8 = null;
+    let sound_9 = null;
+    let sound_10 = null;
+    let sound_11 = null;
+    let sound_12 = null;
+    let sound_13 = null;
+
+    sound_1 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/The-Microsoft-Sound.mp3");
+    sound_2 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/tada.mp3");
+    sound_3 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/chord.mp3");
+    sound_4 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/chimes.mp3");
+    sound_5 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/ding.mp3");
+    sound_6 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/utopia.mp3");
+    sound_7 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/welcome.mp3");
+    sound_8 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/windows98.start.mp3");
+    sound_9 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/windows98.logoff.mp3");
+    sound_10 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/windows2000_startup.mp3");
+    sound_11 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/windows2000_shutdown.mp3");
+    sound_12 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/windowsxp_startup.mp3");
+    sound_13 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/windowsxp_shutdown.mp3");
 
     function sound() {
         if (localStorage.getItem('driver_sound')) {
@@ -158,6 +172,35 @@ if (ua.includes("mobile")) {
         }
     }
 
+    function sound_stop() {
+        sound_1.pause();
+        sound_2.pause();
+        sound_3.pause();
+        sound_4.pause();
+        sound_5.pause();
+        sound_6.pause();
+        sound_7.pause();
+        sound_8.pause();
+        sound_9.pause();
+        sound_10.pause();
+        sound_11.pause();
+        sound_12.pause();
+        sound_13.pause();
+        sound_1.currentTime = 0;
+        sound_2.currentTime = 0;
+        sound_3.currentTime = 0;
+        sound_4.currentTime = 0;
+        sound_5.currentTime = 0;
+        sound_6.currentTime = 0;
+        sound_7.currentTime = 0;
+        sound_8.currentTime = 0;
+        sound_9.currentTime = 0;
+        sound_10.currentTime = 0;
+        sound_11.currentTime = 0;
+        sound_12.currentTime = 0;
+        sound_13.currentTime = 0;
+    }
+
     document.querySelectorAll('.sound_play_button').forEach(function (sound_play_button2) {
         sound_play_button2.textContent = "▶"
     })
@@ -189,35 +232,6 @@ if (ua.includes("mobile")) {
             })
         })
     })
-
-    function sound_stop() {
-        sound_1.pause();
-        sound_2.pause();
-        sound_3.pause();
-        sound_4.pause();
-        sound_5.pause();
-        sound_6.pause();
-        sound_7.pause();
-        sound_8.pause();
-        sound_9.pause();
-        sound_10.pause();
-        sound_11.pause();
-        sound_12.pause();
-        sound_13.pause();
-        sound_1.currentTime = 0;
-        sound_2.currentTime = 0;
-        sound_3.currentTime = 0;
-        sound_4.currentTime = 0;
-        sound_5.currentTime = 0;
-        sound_6.currentTime = 0;
-        sound_7.currentTime = 0;
-        sound_8.currentTime = 0;
-        sound_9.currentTime = 0;
-        sound_10.currentTime = 0;
-        sound_11.currentTime = 0;
-        sound_12.currentTime = 0;
-        sound_13.currentTime = 0;
-    }
 
     document.querySelector('#prompt').addEventListener('click', function () {
         document.querySelector('.focus').focus();
