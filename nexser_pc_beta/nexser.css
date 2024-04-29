@@ -558,9 +558,10 @@ input[type="file"] {
     left: 5px;
     border-top: 1.5px #eee solid;
     border-left: 1.5px #eee solid;
-    border-bottom: 1.5px #333 solid;
-    border-right: 1.5px #333 solid;
+    border-bottom: 1.5px #000 solid;
+    border-right: 1.5px #000 solid;
     box-shadow: 3px 3px dimgray;
+    outline: 1px solid gray;
     pointer-events: none;
 }
 
@@ -990,8 +991,9 @@ body::-webkit-scrollbar {
     left: 5px;
     border-top: 1.5px #eee solid;
     border-left: 1.5px #eee solid;
-    border-bottom: 1.5px #333 solid;
-    border-right: 1.5px #333 solid;
+    border-bottom: 1.5px #000 solid;
+    border-right: 1.5px #000 solid;
+    outline: 1px solid gray;
     pointer-events: none;
 }
 
@@ -1025,9 +1027,10 @@ body::-webkit-scrollbar {
     bottom: 26px;
     border-top: 1.5px #eee solid;
     border-left: 1.5px #eee solid;
-    border-bottom: 1.5px #333 solid;
-    border-right: 1.5px #333 solid;
+    border-bottom: 1.5px #000 solid;
+    border-right: 1.5px #000 solid;
     box-shadow: 2.5px 2.5px dimgray;
+    outline: 1px solid gray;
     pointer-events: none;
 }
 
@@ -1087,6 +1090,7 @@ body::-webkit-scrollbar {
     box-sizing: content-box;
     box-shadow: 3px 3px dimgray;
     pointer-events: none;
+    outline: 1px solid gray;
 }
 
 .dli-folder>span {
