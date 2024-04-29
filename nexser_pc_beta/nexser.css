@@ -1407,6 +1407,8 @@ body::-webkit-scrollbar {
 
 .child_list li:hover {
     outline: none;
+    background: darkblue;
+    color: white;
 }
 
 .sample_child_list {
