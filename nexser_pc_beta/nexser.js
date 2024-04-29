@@ -1,7 +1,5 @@
 var supportsPassive = false; try { var opts = Object.defineProperty({}, 'passive', { get: function () { supportsPassive = true; } }); window.addEventListener("testPassive", null, opts); window.removeEventListener("testPassive", null, opts); } catch (e) { }
 
-const ua2 = navigator.userAgent.toLowerCase();
-document.querySelector('.user_text').textContent = (ua2)
 const ua = navigator.userAgent.toLowerCase();
 if (ua.includes("mobile")) {
     // Mobile (iPhone、iPad「Chrome、Edge」、Android)
