@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1.0">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="description" content="nexser version1.4 これはテストです">
     <link rel="stylesheet" href="nexser.css">
     <title>nexser beta version 1.4</title>
@@ -25,11 +25,10 @@
 <body>
     <div id="nex" class="nexser_group">
         <div id="prompt" style="display: none;">
-            <div autocapitalize="bold" class="prompt_text">[nexser prompt beta version v1.4<span
-                    class="test_name"></span>]</div>
+            <div class="prompt_text">[nexser prompt beta version v1.4<span class="test_name"></span>]</div>
             <form autocomplete="off" method="get" name="prompt_text_form" onsubmit="return false;">
                 <span>nexser\></span><input type="text" class="name focus" style="font-family: Courier;"
-                    name="prompt_text">
+                    name="prompt_text" placeholder="|">
             </form>
             <p class="prompt_error_text"></p>
             <div style="color: lime;">
@@ -513,10 +512,11 @@
                             <input type="button" class="button2" value="&emsp;save&emsp;" onclick="save()">
                             <input type="button" class="button2" value="&emsp;load&emsp;" onclick="load()">
                             <input type="button" class="button2" value="&emsp;windows2000 text load&emsp;"
-                                onclick="win2000_load()" style="position: absolute; right: 0px; top: 48px;">
+                                onclick="win2000_load()" style="position: absolute; right: 0px; top: 52.5px;">
                             <input type="button" id="cleartextbtn" class="button2" value="&emsp;clear&emsp;">
                         </div>
                         <form name="note_form">
+                            <label for="note_text" style="display: none;">メモ内容を入力:</label>
                             <textarea id="note_text" name="note_area" class="note_area border2" cols="50"
                                 rows="15"></textarea>
                         </form>
@@ -1179,16 +1179,16 @@
 
                             <div class="window_inline_menus_parent">
                                 <ul>
-                                    <li>&emsp;&emsp;access&emsp;&emsp;</li>
+                                    <li>&nbsp;access&nbsp;</li>
                                 </ul>
                                 <div class="window_inline_menus_child"><br>
-                                    <p>lastaccess:&emsp;<span id="lastaccess_day"></span></p>
+                                    <p class="bold">lastaccess:&emsp;<span id="lastaccess_day"></span></p>
                                 </div>
                             </div>
 
                             <div class="window_inline_menus_parent">
                                 <ul>
-                                    <li>&emsp;&emsp;test3&emsp;&emsp;</li>
+                                    <li>&nbsp;test3&nbsp;</li>
                                 </ul>
                                 <div class="window_inline_menus_child">
                                     <span>test3</span>
@@ -1197,7 +1197,7 @@
 
                             <div class="window_inline_menus_parent">
                                 <ul>
-                                    <li>&emsp;&emsp;test4&emsp;&emsp;</li>
+                                    <li>&nbsp;test4&nbsp;</li>
                                 </ul>
                                 <div class="window_inline_menus_child">
                                     <span>test4</span>
@@ -1351,8 +1351,7 @@
                             <div class="prompt_text2" style="color: white;">[nexser prompt beta version 1.4<span
                                     class="test_name2"></span>]&emsp;&emsp;&emsp;</div>
                             <form autocomplete="off" method="get" name="prompt_text_form2" onsubmit="return false;">
-                                <input type="text" class="name2 focus2 p_text" name="prompt_text2"
-                                    placeholder="command">
+                                <input type="text" class="name2 focus2 p_text" name="prompt_text2" placeholder="|">
                             </form>
                             <p class="prompt_error_text2"></p>
                             <p class="help2" style="color: skyblue;"></p>
@@ -1648,7 +1647,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
 
                             <div class="window_inline_menus_parent">
                                 <ul>
-                                    <li>&emsp;&emsp;screen saver&emsp;&emsp;</li>
+                                    <li>&nbsp;screen saver&nbsp;</li>
                                 </ul>
                                 <div class="window_inline_menus_child">
                                     <p>default: 3minutes</p>
@@ -1663,20 +1662,20 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
 
                             <div class="window_inline_menus_parent">
                                 <ul>
-                                    <li>&emsp;&emsp;others&emsp;&emsp;</li>
+                                    <li>&nbsp;others&nbsp;</li>
                                 </ul>
                                 <div class="window_inline_menus_child">
-                                    <p>Full screen</p>
+                                    <p class="window_menus_title">Full screen</p>
                                     <div class="mini_window">
                                         <button class="button2" onclick="full()">ON</button><br>
                                         <button class="button2" onclick="min()">OFF</button>
                                     </div>
-                                    <p>toolbar</p>
+                                    <p class="window_menus_title">toolbar</p>
                                     <div class="mini_window">
                                         <button class="button2 toolbar_on">ON</button><br>
                                         <button class="button2 toolbar_off">OFF</button>
                                     </div>
-                                    <p>desktop filetext background</p>
+                                    <p class="window_menus_title">filetext background</p>
                                     <div class="mini_window">
                                         <button class="button2 filettext_backcolor_on">ON</button><br>
                                         <button class="button2 filettext_backcolor_off">OFF</button>
@@ -1686,10 +1685,10 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
 
                             <div class="window_inline_menus_parent">
                                 <ul>
-                                    <li>&emsp;&emsp;aspect ratio&emsp;&emsp;</li>
+                                    <li>&nbsp;aspect ratio&nbsp;</li>
                                 </ul>
                                 <div class="window_inline_menus_child">
-                                    <p>display</p>
+                                    <p class="window_menus_title">display</p>
                                     <div class="mini_window">
                                         <button class="button2 display_now">NOW</button><br>
                                         <button class="button2 display_old">OLD</button>
@@ -1699,13 +1698,61 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
 
                             <div class="window_inline_menus_parent">
                                 <ul>
-                                    <li>&emsp;&emsp;settings&emsp;&emsp;</li>
+                                    <li>&nbsp;graphics&nbsp;</li>
                                 </ul>
                                 <div class="window_inline_menus_child">
-                                    <span>coming soon</span>
+                                    <p class="window_menus_title">window title shadow
+                                    </p>
+                                    <div class="border2 small"
+                                        style="background: whitesmoke; height: auto; width: 200px; display: inline-block; position: absolute; left: 5px; top: 40px;">
+                                        <p>この機能をオンにすると、すべてのウィンドウにあるリストに影が表示されます。<br>(※スタートメニューのリストには影が表示されません。)</p>
+                                    </div>
+                                    <div style="position: absolute; bottom: 5px; left: 5px; width: 100%;">
+                                        <span class="button2 list_shadow_on"
+                                            style="position: absolute; left: 0px; bottom: 0px;">&emsp;ON&emsp;</span>
+                                        <span class="button2 list_shadow_off"
+                                            style="position: absolute; left: 70px; bottom: 0px;">&emsp;OFF&emsp;</span>
+                                    </div>
+                                    <div class="window_menu_right_content border2" style="background-color: #52adad;">
+
+                                        <div class="mini_windows_sample"
+                                            style="pointer-events: none; height: 150px; width: auto; position: absolute; top: 10px;">
+
+                                            <div class="title" style="background-color: navy; text-align: left;">
+                                                <span class="title_icon"></span><span>&emsp;&emsp;sample</span>
+                                            </div>
+
+                                            <div class="title_buttons">
+                                                <span class="close_button button2">&nbsp;✕&nbsp;</span>
+                                                <span class="bigscreen_button button2">&nbsp;□&nbsp;</span>
+                                                <span class="minscreen_button button2">&nbsp;❒&nbsp;</span>
+                                                <span class="minimization_button button2">&nbsp;―&nbsp;</span><br>
+                                            </div>
+
+                                            <div class="title2">
+
+                                                <div class="parent_list">
+                                                    <ul>
+                                                        <li> icon(<ins>I</ins>) </li>
+                                                    </ul>
+                                                    <div class="sample_child_list">
+                                                        <ul>
+                                                            <li class="hover_blue shutdown">shutdown</li>
+                                                            <li class="hover_blue">test</li>
+                                                            <li class="hover_blue">test</li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <p>test test test test test test test</p>
+                                                <p>text text text text text</p>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-
                         </div>
                     </div>
 
@@ -1740,7 +1787,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
 
                         <div class="title_buttons">
                             <span class="drag_button">&nbsp;</span>
-                            <span class="close_button button2">&nbsp;✕&nbsp;</span><br>
+                            <span class="close_button button2" onclick="calc_clear()">&nbsp;✕&nbsp;</span><br>
                         </div>
 
                         <div class="title2">
@@ -1906,7 +1953,8 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                 playsinline></video><br>
                             <label class="button2">
                                 <input type="file" accept='video/*' onchange="preview2(this, 'previewVideo2')"
-                                    placeholder="">movie upload
+                                    placeholder="">movie
+                                upload
                             </label>
                             <span class="button2" onclick="preview2_play()">&nbsp;▶&nbsp;</span>
                             <span class="button2" onclick="preview2_stop()">&nbsp;||&nbsp;</span>
@@ -2316,7 +2364,8 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
 
                             <div style="position: absolute; bottom: 0; width: 100%;">
                                 <span>Nexser version 1.4</span>
-                                <p style="display: block; position: absolute; bottom: 0px; right: 0px;">cpu calc version
+                                <p style="display: block; position: absolute; bottom: 0px; right: 0px;">
+                                    cpu calc version
                                     0.1
                                 </p>
                             </div>
@@ -2394,8 +2443,8 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
 
                         </div>
 
-                        <div class="mini_window">
-                            <p class="underline" style="color: red; font-size: 40px;">Welcome Nexser
+                        <div class="window_contents">
+                            <p class=" underline" style="color: red; font-size: 40px;">Welcome Nexser
                                 Guidebook
                             </p>
                             <p class="large bold">Nexser Guidebookへようこそ!</p>
@@ -2404,9 +2453,11 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             <div class="mini_window">
                                 <p class="bold">目次(以下をクリックしてください)</p>
                                 <ul style="color: purple;">
-                                    <li class="hover_blue guidebook_window" style="cursor: pointer;">1.ウィンドウ
+                                    <li class="hover_blue guidebook_window" style="cursor: pointer;">
+                                        1.ウィンドウ
                                     </li>
-                                    <li class="hover_blue guidebook_file" style="cursor: pointer;">2.ファイル
+                                    <li class="hover_blue guidebook_file" style="cursor: pointer;">
+                                        2.ファイル
                                     </li>
                                     <li class="hover_blue guidebook_taskbar" style="cursor: pointer;">
                                         3.タスクバー</li>
@@ -2480,11 +2531,14 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                         </ul>
                                         <div class="child_list">
                                             <ul>
-                                                <li class="hover_blue window_fullleft">window full left</li>
+                                                <li class="hover_blue window_fullleft">window full left
+                                                </li>
                                                 <li class="hover_blue window_fullright">
                                                     window full right</li>
-                                                <li class="hover_blue window_half_big">window half big</li>
-                                                <li class="hover_blue windowsize_reset">window size reset</li>
+                                                <li class="hover_blue window_half_big">window half big
+                                                </li>
+                                                <li class="hover_blue windowsize_reset">window size
+                                                    reset</li>
                                             </ul>
                                         </div>
                                     </div>
@@ -2674,10 +2728,12 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                                     ←
                                                 </td>
                                                 <td id="tetris-fall-button" class="tetris-button tetbtn button2 large"
-                                                    style="width: 50px;">↓
+                                                    style="width: 50px;">
+                                                    ↓
                                                 </td>
                                                 <td id="tetris-move-right-button"
-                                                    class="tetris-button tetbtn button2 large" style="width: 50px;">→
+                                                    class="tetris-button tetbtn button2 large" style="width: 50px;">
+                                                    →
                                                 </td>
                                             </tr>
                                         </table>
@@ -2733,7 +2789,8 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                     style="font-size: 20px; background-color:dimgray ;color:silver; font-weight: bold; writing-mode: vertical-rl; transform: rotate(180deg); height: 100%; width: 25px; position: absolute;">
                                     &nbsp;nexser <span style="color: white;">1.4</span></li>
                                 <ul style="background: rgb(177, 39, 26); color: white;">
-                                    <li class="nexser_guidebook small" style="margin-left: 25px;">guidebook</li>
+                                    <li class="nexser_guidebook small" style="margin-left: 25px;">
+                                        guidebook</li>
                                 </ul>
                                 <div class="parent_start_menu_lists">
                                     <ul>
@@ -2830,7 +2887,8 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
 
                                 <div class="parent_start_menu_lists">
                                     <ul>
-                                        <li>&nbsp;entertainment<span class="list_right_text">➡</span></li>
+                                        <li>&nbsp;entertainment<span class="list_right_text">➡</span>
+                                        </li>
                                     </ul>
                                     <div class="child_start_menu_lists border">
                                         <ul>
@@ -2867,11 +2925,13 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                 </div>
                                 <ul>
 
-                                    <li class="test_button23" style="margin-left: 25px;">&nbsp;setting</li>
+                                    <li class="test_button23" style="margin-left: 25px;">&nbsp;setting
+                                    </li>
                                 </ul><br>
                                 <div class="parent_start_menu_lists">
                                     <ul>
-                                        <li>&nbsp;start options<span class="list_right_text">➡</span></li>
+                                        <li>&nbsp;start options<span class="list_right_text">➡</span>
+                                        </li>
                                     </ul>
                                     <div class="child_start_menu_lists border">
                                         <ul>

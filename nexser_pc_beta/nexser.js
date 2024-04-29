@@ -696,6 +696,8 @@ if (ua.includes("mobile")) {
                         fileborder_reset();
                         cpubench_clear();
                         cpucalc_reset();
+                        p_clear();
+                        calc_clear();
                         document.querySelector('.focus2').textContent = "";
 
                         setTimeout(() => {
@@ -752,7 +754,8 @@ if (ua.includes("mobile")) {
                         document.querySelector('.note_title').textContent = "notepad"
                     }
                     setTimeout(() => {
-                        helpmenu_close()
+                        window_none();
+                        helpmenu_close();
                         desktop.style.display = "none";
                         window_reset();
                         preview2_stop();
@@ -760,10 +763,11 @@ if (ua.includes("mobile")) {
                         timerreset();
                         document.querySelector('#code_html').style.display = "none";
                         document.querySelector('#code_script').style.display = "none";
-                        window_none();
                         fileborder_reset();
                         cpubench_clear();
                         cpucalc_reset();
+                        p_clear();
+                        calc_clear();
                         document.querySelector('.focus2').textContent = "";
 
                         setTimeout(() => {
@@ -883,9 +887,6 @@ if (ua.includes("mobile")) {
             }, 2000);
         }, 100);
     })
-
-
-
 
     document.querySelector('.login_welcome').addEventListener('click', function () {
         const login_welcome = document.querySelector('.login_welcome');
@@ -1558,6 +1559,9 @@ if (ua.includes("mobile")) {
         }
         if (localStorage.getItem('display_old')) {
             old_screen()
+        }
+        if (localStorage.getItem('list_shadow_on')) {
+            list_shadow()
         }
         if (localStorage.getItem('file_none')) {
             document.querySelector('.files_inline').style.display = "none"
@@ -3582,6 +3586,16 @@ if (ua.includes("mobile")) {
         old_screen_reset();
     })
 
+    document.querySelector('.list_shadow_on').addEventListener('click', function () {
+        const list_shadow_on = document.querySelector('.list_shadow_on');
+        localStorage.setItem('list_shadow_on', list_shadow_on);
+        list_shadow();
+    })
+    document.querySelector('.list_shadow_off').addEventListener('click', function () {
+        localStorage.removeItem('list_shadow_on');
+        list_shadow_reset();
+    })
+
     const KEY_COLOR = "COLOR";				// 文字色用キー
     const KEY_BKCOLOR = "BKCOLOR";			// 背景色用キー
 
@@ -5220,6 +5234,30 @@ if (ua.includes("mobile")) {
     }
     function old_screen_reset() {
         document.getElementById('nex').classList.remove('old');
+    }
+
+
+    // list_shadow()
+
+    function list_shadow() {
+        document.querySelectorAll('.child_list').forEach(function (childlist_shadow) {
+            let childlist_shadow2 = childlist_shadow.lastElementChild;
+            childlist_shadow2.classList.add('shadow');
+        })
+        document.querySelectorAll('.sample_child_list').forEach(function (childlist_shadow) {
+            let childlist_shadow2 = childlist_shadow.lastElementChild;
+            childlist_shadow2.classList.add('shadow');
+        })
+    }
+    function list_shadow_reset() {
+        document.querySelectorAll('.child_list').forEach(function (childlist_shadow) {
+            let childlist_shadow2 = childlist_shadow.lastElementChild;
+            childlist_shadow2.classList.remove('shadow');
+        })
+        document.querySelectorAll('.sample_child_list').forEach(function (childlist_shadow) {
+            let childlist_shadow2 = childlist_shadow.lastElementChild;
+            childlist_shadow2.classList.remove('shadow');
+        })
     }
 
 }
