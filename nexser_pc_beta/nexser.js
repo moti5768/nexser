@@ -4707,7 +4707,6 @@ if (ua.includes("mobile")) {
         }, 500);
     }
 
-
     async function startCamera() {
         const start_camera = document.querySelector('#start_camera');
         sessionStorage.setItem('start_camera', start_camera);
