@@ -744,6 +744,32 @@ body::-webkit-scrollbar {
     z-index: 99999;
 }
 
+.welicon_1 {
+    width: 125px;
+    height: 125px;
+    background: silver;
+    position: absolute;
+    bottom: 160px;
+    right: 150px;
+    border: solid 10px #73a5d7;
+    outline: solid 1px #99CCFF;
+    box-shadow: 10px 10px #333333;
+    background: linear-gradient(-140deg, steelblue 20%, whitesmoke);
+}
+
+.welicon_2 {
+    width: 125px;
+    height: 125px;
+    background: silver;
+    position: absolute;
+    bottom: 60px;
+    right: 50px;
+    border: solid 10px #6699CC;
+    outline: solid 1px #669999;
+    box-shadow: 10px 10px #333333;
+    background: linear-gradient(40deg, steelblue 25%, blue);
+}
+
 .login_welcome {
     outline: 1.5px dotted black;
     outline-offset: -5px;
@@ -1254,12 +1280,7 @@ body::-webkit-scrollbar {
     height: 200px;
 }
 
-.list_shadow_on {
-    outline: 1.5px dotted black;
-    outline-offset: -5px;
-}
-
-.list_shadow_off {
+.borderinline_dotted {
     outline: 1.5px dotted black;
     outline-offset: -5px;
 }
@@ -1366,7 +1387,7 @@ body::-webkit-scrollbar {
 /*list */
 
 .parent_list {
-    font-size: small;
+    font-size: 12.5px;
     text-align: center;
     line-height: 25px;
 }
@@ -1430,7 +1451,6 @@ body::-webkit-scrollbar {
     border-top: solid 1.5px whitesmoke;
     outline: solid 1px dimgray;
 }
-
 
 .window_contents {
     overflow: auto;
