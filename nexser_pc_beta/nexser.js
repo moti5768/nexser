@@ -79,19 +79,7 @@ if (ua.includes("mobile")) {
 
     const tetris_mneu = document.querySelector('.tetris_menu');
 
-    let sound_1 = null;
-    let sound_2 = null;
-    let sound_3 = null;
-    let sound_4 = null;
-    let sound_5 = null;
-    let sound_6 = null;
-    let sound_7 = null;
-    let sound_8 = null;
-    let sound_9 = null;
-    let sound_10 = null;
-    let sound_11 = null;
-    let sound_12 = null;
-    let sound_13 = null;
+    let sound_1, sound_2, sound_3, sound_4, sound_5, sound_6, sound_7, sound_8, sound_9, sound_10, sound_11, sound_12, sound_13;
 
     sound_1 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/The-Microsoft-Sound.mp3");
     sound_2 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/tada.mp3");
@@ -2698,26 +2686,6 @@ if (ua.includes("mobile")) {
         })
     })
 
-
-    document.querySelectorAll('.title_buttons').forEach(function (title_buttons) {
-
-        const zindexchildwindows = title_buttons.closest('.child_windows');
-
-        title_buttons.addEventListener('dblclick', function () {
-
-            if (!zindexchildwindows.classList.contains('half2')) {
-                zindexchildwindows.style.width = "55%";
-                zindexchildwindows.style.height = "55%";
-                zindexchildwindows.classList.add('half2');
-            } else if (zindexchildwindows.classList.contains('half2')) {
-                zindexchildwindows.style.width = "";
-                zindexchildwindows.style.height = "";
-                zindexchildwindows.classList.remove('half2');
-            }
-        })
-    })
-
-
     document.querySelectorAll('.note_pad, .child').forEach(function (notepad_foccus) {
         notepad_foccus.addEventListener('mouseup', function () {
             if (!note_pad.classList.contains('active')) {
@@ -4585,7 +4553,7 @@ if (ua.includes("mobile")) {
         }
     })
 
-    document.querySelector('.files_inline, child').addEventListener('mousedown', function () {
+    document.querySelector('.files_inline, .child').addEventListener('mousedown', function () {
         getLargestZIndex('.child_windows');
         z_index.textContent = getLargestZIndex('.child_windows');
     })

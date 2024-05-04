@@ -661,6 +661,10 @@ input[type="file"] {
     width: 200px;
 }
 
+.font_menu {
+    width: 200px;
+}
+
 /* color_btn */
 
 .color_btn {
@@ -1024,7 +1028,6 @@ body::-webkit-scrollbar {
     border-bottom: 1.5px #000 solid;
     border-right: 1.5px #000 solid;
     outline: 1px solid gray;
-    pointer-events: none;
 }
 
 .child_windows.big .minscreen_button {
