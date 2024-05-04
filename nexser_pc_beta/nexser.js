@@ -1892,17 +1892,6 @@ if (ua.includes("mobile")) {
                 document.querySelector('.prompt_error_text').textContent = "success";
                 nexser_boot_check();
                 break;
-            case 'install/fast_start':
-                const prompt_data2 = document.prompt_text_form.prompt_text.value;
-                localStorage.setItem('prompt_data2', prompt_data2);
-                prompt_text.style.color = "";
-                document.querySelector('.prompt_error_text').textContent = "高速起動システムをインストールしました";
-                break;
-            case 'uninstall/fast_start':
-                localStorage.removeItem('prompt_data2');
-                prompt_text.style.color = "";
-                document.querySelector('.prompt_error_text').textContent = "高速起動システムをアンインストールしました";
-                break;
             case 'nexser/program':
                 const prompt_data3 = document.prompt_text_form.prompt_text.value;
                 localStorage.setItem('prompt_data3', prompt_data3);
@@ -1910,48 +1899,7 @@ if (ua.includes("mobile")) {
                 document.querySelector('.prompt_error_text').textContent = "success";
                 nexser_program_open()
                 break;
-            case 'help':
-                document.querySelector('.prompt_error_text').textContent = "";
-                document.querySelector('.help').textContent = "nexser/open\ntaskbar/none\ntaskbar/active";
-                msg.innerText = "";
-                prompt_text.style.color = "";
-                break;
-            case 'windows95/sound/start/play':
-                document.querySelector('.prompt_error_text').textContent = "";
-                sound();
-                prompt_text.style.color = "";
-                document.querySelector('.prompt_error_text').textContent = "";
-                break;
-            case 'windows95/sound/shutdown/play':
-                document.querySelector('.prompt_error_text').textContent = "";
-                sound2();
-                prompt_text.style.color = "";
-                document.querySelector('.prompt_error_text').textContent = "";
-                break;
-            case 'screen/full':
-                document.querySelector('.prompt_error_text').textContent = "";
-                full();
-                prompt_text.style.color = "";
-                break;
-            case 'screen/min':
-                document.querySelector('.prompt_error_text').textContent = "";
-                min();
-                prompt_text.style.color = "";
-                break;
-            case 'taskbar/none':
-                taskbar.style.display = "none";
-                document.querySelector('.prompt_error_text').textContent = "タスクバーの表示がオフになりました。";
-                const data_taskbar_none = document.prompt_text_form.prompt_text.value;
-                localStorage.setItem('data_taskbar_none', data_taskbar_none);
-                prompt_text.style.color = "";
-                taskbar_none()
-                break;
-            case 'taskbar/active':
-                taskbar.style.display = "block";
-                document.querySelector('.prompt_error_text').textContent = "タスクバーの表示がオンになりました。";
-                localStorage.removeItem('data_taskbar_none');
-                prompt_text.style.color = "";
-                break;
+
             case 'nexser/code/html':
                 document.querySelector('.prompt_error_text').textContent = "connect";
                 prompt_text.style.color = "";
@@ -1965,12 +1913,8 @@ if (ua.includes("mobile")) {
                 document.querySelector('#code_html').style.display = "none";
                 break;
             case 'nexser/code/html/copy':
-                // 文字をすべて選択
-                // コピー対象をJavaScript上で変数として定義する
                 var copyTarget = document.getElementById('code_html');
-                // コピー対象のテキストを選択する
                 copyTarget.select();
-                // 選択しているテキストをクリップボードにコピーする
                 document.execCommand("Copy");
                 document.querySelector('.prompt_error_text').textContent = "";
                 document.querySelector('#code_html').style.display = "none";
@@ -1978,38 +1922,15 @@ if (ua.includes("mobile")) {
                 document.querySelector('.focus').focus();
                 break;
             case 'nexser/code/script/copy':
-                // 文字をすべて選択
-                // コピー対象をJavaScript上で変数として定義する
                 var copyTarget = document.getElementById('code_script');
-                // コピー対象のテキストを選択する
                 copyTarget.select();
-                // 選択しているテキストをクリップボードにコピーする
                 document.execCommand("Copy");
                 document.querySelector('.prompt_error_text').textContent = "";
                 document.querySelector('#code_html').style.display = "none";
                 document.querySelector('#code_script').style.display = "none";
                 document.querySelector('.focus').focus();
                 break;
-            case 'cpu/bench':
-                document.querySelector('.prompt_error_text').textContent = "bench connect";
-                prompt_text.style.color = "";
-                cpubench()
-                break;
-            case 'windows95/open':
-                document.querySelector('.prompt_error_text').textContent = "";
-                window.open("//moti5768.github.io/moti.world/windows95.html");
-                prompt_text.style.color = "";
-                break;
-            case 'windows2000/open':
-                document.querySelector('.prompt_error_text').textContent = "";
-                window.open("//moti5768.github.io/moti.world/windows%202000/windows2000_beta.html");
-                prompt_text.style.color = "";
-                break;
-            case 'windowsystem/open':
-                document.querySelector('.prompt_error_text').textContent = "";
-                window.open("//moti5768.github.io/moti.world/new%20OS/WindowSystem.html");
-                prompt_text.style.color = "";
-                break;
+
             default:
                 document.querySelector('.prompt_error_text').textContent = "コマンドが違います!";
                 document.querySelector('.help').textContent = "";
@@ -2147,7 +2068,8 @@ if (ua.includes("mobile")) {
             case 'cpu/bench':
                 document.querySelector('.prompt_error_text2').textContent = "bench connect";
                 prompt_text2.style.color = "";
-                cpubench()
+                cpu_calc_menu.classList.remove('active');
+                cpucalc_open();
                 break;
             case 'nexser/data/clear':
                 document.querySelector('.prompt_error_text2').textContent = "";
@@ -3297,21 +3219,7 @@ if (ua.includes("mobile")) {
             })
             test = cpu_calc_menu.firstElementChild;
             test.classList.add('navy');
-
-            const cpumenu1 = document.querySelector('.cpumenu_1');
-
-            if (!cpu_calc_menu.classList.contains('active') || cpumenu1.style.display == "block") {
-                setTimeout(() => {
-                    document.querySelector('.cpumenu_1').style.display = "none";
-                    document.querySelector('.cpubuttons').style.display = "none";
-                    document.querySelector('.cputitle').style.display = "none";
-                    setTimeout(() => {
-                        document.querySelector('.cpumenu_2').style.display = "block";
-                        document.querySelector('.cpubuttons').style.display = "block";
-                        document.querySelector('.cputitle').style.display = "flex";
-                    }, 0);
-                }, 3000);
-            }
+            cpucalc_open();
         });
     });
 
@@ -3329,6 +3237,23 @@ if (ua.includes("mobile")) {
             test.classList.add('navy');
         });
     });
+
+    function cpucalc_open() {
+        const cpumenu1 = document.querySelector('.cpumenu_1');
+
+        if (!cpu_calc_menu.classList.contains('active') || cpumenu1.style.display == "block") {
+            setTimeout(() => {
+                document.querySelector('.cpumenu_1').style.display = "none";
+                document.querySelector('.cpubuttons').style.display = "none";
+                document.querySelector('.cputitle').style.display = "none";
+                setTimeout(() => {
+                    document.querySelector('.cpumenu_2').style.display = "block";
+                    document.querySelector('.cpubuttons').style.display = "block";
+                    document.querySelector('.cputitle').style.display = "flex";
+                }, 0);
+            }, 3000);
+        }
+    }
 
     function cpucalc_reset() {
         setTimeout(() => {
@@ -4749,7 +4674,11 @@ if (ua.includes("mobile")) {
                 bu2 = bu.innerHTML = Math.floor(battery.level * 100);
             });
             navigator.getBattery().then((battery) => {
-                document.querySelector('.battery_time').textContent = (`${battery.dischargingTime}` + "seconnds");
+                if (battery.charging == true) {
+                    document.querySelector('.battery_time').textContent = (`${battery.dischargingTime}`);
+                } else if (battery.charging == false) {
+                    document.querySelector('.battery_time').textContent = (`${battery.dischargingTime}` + "seconds");
+                }
             })
             batterylevel();
         }, 100);

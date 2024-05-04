@@ -657,6 +657,10 @@ input[type="file"] {
     user-select: none;
 }
 
+.windowmode_menu {
+    width: 200px;
+}
+
 /* color_btn */
 
 .color_btn {

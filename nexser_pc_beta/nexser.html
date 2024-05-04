@@ -202,15 +202,12 @@
                                 <li>・この本体のコードのコピー禁止。</li>
                                 <li>・プライバシー情報は第三者へ提供しないこと。</li>
                                 <li>・test</li>
-                                <li>・test</li>
-                                <li>・test</li>
-                                <li>・test</li>
-                                <li>・test</li>
-                                <li>・test</li>
-                                <li>・test</li>
-                                <li>・test</li>
-                                <li>・test</li>
-                                <li>・test</li>
+                                <li>[&emsp;利用する際の注意&emsp;]</li>
+                                <li>・保存したデータは他のパソコンに共有が出来ません。</li>
+                                <li>・各ブラウザの仕様により、保存したデータが一週間で消える可能性があります。(永久的に残る場合もある。)</li>
+                                <li>・ブラウザの履歴を消すと、Nexserに保存したデータも消えます。</li>
+                                <li>・データが消えないようにするためには、定期的に保存してください。</li>
+                                <li>・(※各端末の容量により、保存できるデータ量が変わります。)</li>
                                 <li>・test</li>
                             </ul>
                         </span>
@@ -1846,7 +1843,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         </div>
                     </div>
 
-                    <div class="child_windows text_drop_menu active">
+                    <div class="child_windows text_drop_menu active back_silver">
                         <div class="title">
                             <span class="title_icon"></span><span>&emsp;&emsp;text drop</span>
                         </div>
@@ -1861,12 +1858,12 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             <input type="button" class="button2" value="&emsp;load&emsp;" onclick="load2()">
                             <input type="button" id="cleartextbtn2" class="button2" value="&emsp;clear&emsp;">
                         </div>
-                        <div class="mini_window">
-                            <form name="drop_form" action="">
+                        <div>
+                            <form name="drop_form" action="" class="border2">
                                 <textarea name="drop_area" class="drop_area" id="drop" cols="50" rows="10" maxlength="0"
                                     style="border: none; resize: none; outline: none; background: whitesmoke; color: black;"></textarea>
                             </form>
-                            <span id="drop_save_text">no save</span>
+                            <span id="drop_save_text" class="border2">no save</span>
                         </div>
                     </div>
 
@@ -1953,34 +1950,12 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                 </div>
                             </div>
 
-                            <div class="parent_list">
-                                <ul>
-                                    <li>&emsp;icon&emsp;</li>
-                                </ul>
-                                <div class="child_list">
-                                    <ul>
-                                        <li class="shutdown">shutdown</li>
-                                    </ul>
-                                </div>
-                            </div>
-
-                            <div class="parent_list">
-                                <ul>
-                                    <li>&emsp;icon&emsp;</li>
-                                </ul>
-                                <div class="child_list">
-                                    <ul>
-                                        <li class="shutdown">shutdown</li>
-                                    </ul>
-                                </div>
-                            </div>
-
                         </div>
 
-                        <div class="mini_window">
+                        <div class="border2">
                             <div style="pointer-events: none;">
-                                <video id="v" class="border"
-                                    style="background-color: black; height: 400px; width: 640px" playsinline></video>
+                                <video id="v" style="background-color: black; height: 400px; width: 640px"
+                                    playsinline></video>
                             </div>
                             <span id="start_camera" class="button2" onclick="startCamera2()">start</span>
                             <span class="button2" onclick="stopCamera()"
@@ -2143,28 +2118,6 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                 </div>
                             </div>
 
-                            <div class="parent_list">
-                                <ul>
-                                    <li>&emsp;icon&emsp;</li>
-                                </ul>
-                                <div class="child_list">
-                                    <ul>
-                                        <li class="shutdown">shutdown</li>
-                                    </ul>
-                                </div>
-                            </div>
-
-                            <div class="parent_list">
-                                <ul>
-                                    <li>&emsp;icon&emsp;</li>
-                                </ul>
-                                <div class="child_list">
-                                    <ul>
-                                        <li class="shutdown">shutdown</li>
-                                    </ul>
-                                </div>
-                            </div>
-
                         </div>
 
                         <p class="bold large">taskbar</p>
@@ -2229,30 +2182,32 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             </div>
 
                         </div>
-                        <p>export</p>
-                        <span id="download" class="button2">data download</span><br>
-                        <div class="mini_window">
-                            <p>inport</p>
-                            <label>
-                                <span class="button2">NOTEDATA</span><input class="button2" type="file"
-                                    onchange="fileChanged(this)" style="display: none;">
-                            </label><br>
-                            <label>
-                                <span class="button2">BKCOLOR</span><input class="button2" type="file"
-                                    onchange="fileChanged2(this)" style="display: none;">
-                            </label><br>
-                            <label>
-                                <span class="button2">COLOR</span><input class="button2" type="file"
-                                    onchange="fileChanged3(this)" style="display: none;">
-                            </label><br>
-                            <label>
-                                <span class="button2">DRIVER_COLOR</span><input class="button2" type="file"
-                                    onchange="fileChanged4(this)" style="display: none;">
-                            </label><br>
-                            <label>
-                                <span class="button2">DRIVER_SOUND</span><input class="button2" type="file"
-                                    onchange="fileChanged5(this)" style="display: none;">
-                            </label>
+                        <div class="border2" style="background: whitesmoke;">
+                            <p>export</p>
+                            <span id="download" class="button2">data download</span><br>
+                            <div class="mini_window">
+                                <p>inport</p>
+                                <label>
+                                    <span class="button2">NOTEDATA</span><input class="button2" type="file"
+                                        onchange="fileChanged(this)" style="display: none;">
+                                </label><br>
+                                <label>
+                                    <span class="button2">BKCOLOR</span><input class="button2" type="file"
+                                        onchange="fileChanged2(this)" style="display: none;">
+                                </label><br>
+                                <label>
+                                    <span class="button2">COLOR</span><input class="button2" type="file"
+                                        onchange="fileChanged3(this)" style="display: none;">
+                                </label><br>
+                                <label>
+                                    <span class="button2">DRIVER_COLOR</span><input class="button2" type="file"
+                                        onchange="fileChanged4(this)" style="display: none;">
+                                </label><br>
+                                <label>
+                                    <span class="button2">DRIVER_SOUND</span><input class="button2" type="file"
+                                        onchange="fileChanged5(this)" style="display: none;">
+                                </label>
+                            </div>
                         </div>
                     </div>
 
@@ -2314,14 +2269,16 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
 
                         </div>
 
-                        <div id="time" style="font-size: 40px; text-align: center;">00:00:00.000</div>
-                        <div id="buttons" style="display: flex; justify-content: center;">
-                            <input id="start" class="button2" type="button" value="start"
-                                style="font-size: 30px; margin: 5px;">
-                            <input id="stop" class="button2" type="button" value="stop"
-                                style="font-size: 30px; margin: 5px;">
-                            <input id="reset" class="button2" type="button" value="reset"
-                                style="font-size: 30px; margin: 5px;">
+                        <div class="border2" style="background: whitesmoke;">
+                            <div id="time" style="font-size: 40px; text-align: center;">00:00:00.000</div>
+                            <div id="buttons" style="display: flex; justify-content: center;">
+                                <input id="start" class="button2" type="button" value="start"
+                                    style="font-size: 30px; margin: 5px;">
+                                <input id="stop" class="button2" type="button" value="stop"
+                                    style="font-size: 30px; margin: 5px;">
+                                <input id="reset" class="button2" type="button" value="reset"
+                                    style="font-size: 30px; margin: 5px;">
+                            </div>
                         </div>
                     </div>
 
@@ -2351,7 +2308,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             </div>
                         </div>
 
-                        <div class="calendar_content">
+                        <div class="calendar_content border2">
                             <div class="wrapper">
                                 <!-- xxxx年xx月を表示 -->
                                 <h1 id="header"></h1>
