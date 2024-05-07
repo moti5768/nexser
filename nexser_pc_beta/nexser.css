@@ -496,7 +496,6 @@ input[type="file"] {
     -ms-user-select: none;
     user-select: none;
     display: none;
-    box-shadow: 0 0 0 0.5px dimgray;
 }
 
 .child_start_menu {
@@ -833,10 +832,11 @@ body::-webkit-scrollbar {
 
 .mini_window_startmenu {
     width: 150px;
-    height: 215px;
+    height: 195px;
     background: silver;
     position: absolute;
     bottom: 30px;
+    outline: solid 1px dimgray;
 }
 
 .mini_windows_sample {
@@ -1636,28 +1636,6 @@ textarea {
 .child_windows.big #preview {
     width: 99.9%;
     height: 95.0vh;
-}
-
-/* help */
-
-.help_menu {
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-    display: none;
-    font-size: medium;
-    position: absolute;
-    width: 100%;
-    height: 100px;
-    pointer-events: none;
-}
-
-.help_border {
-    background: #FFFF55;
-    border: solid 1px black;
-    text-align: center;
-    box-shadow: 5px 5px black;
 }
 
 /* power_icon */

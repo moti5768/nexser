@@ -263,7 +263,6 @@ if (ua.includes("mobile")) {
         document.querySelector('.start_button').classList.remove('pressed');
         document.querySelector('.battery_child').classList.remove('pressed');
         document.querySelector('.battery_menu').style.display = "none";
-        helpmenu_close()
         document.querySelectorAll('.title').forEach(function (wt) {
             wt.classList.remove('navy');
         })
@@ -681,7 +680,6 @@ if (ua.includes("mobile")) {
                 } else if (gets == gets2) {
                     sound_stop();
                     shutdown_sound();
-                    helpmenu_close();
                     document.querySelector('.welcome_windows').style.display = "none";
                     document.querySelector('html').style.cursor = 'none';
                     if (!localStorage.getItem('noteData')) {
@@ -691,7 +689,6 @@ if (ua.includes("mobile")) {
                     }
                     setTimeout(() => {
                         window_none();
-                        helpmenu_close();
                         desktop.style.display = "none";
                         localStorage.removeItem('prompt_data');
                         window_reset();
@@ -714,7 +711,6 @@ if (ua.includes("mobile")) {
                             });
                             document.getElementsByClassName('name')[0].value = "";
                             document.querySelector('.prompt_error_text').textContent = "";
-                            document.querySelector('.help').textContent = "";
                             msg.innerText = "";
                             prompt_text.style.color = "";
                             nexser.style.display = "none";
@@ -752,7 +748,6 @@ if (ua.includes("mobile")) {
                 } else if (gets == gets2) {
                     sound_stop();
                     shutdown_sound();
-                    helpmenu_close();
                     document.querySelector('.welcome_windows').style.display = "none";
                     document.querySelector('html').style.cursor = 'none';
                     if (!localStorage.getItem('noteData')) {
@@ -762,7 +757,6 @@ if (ua.includes("mobile")) {
                     }
                     setTimeout(() => {
                         window_none();
-                        helpmenu_close();
                         desktop.style.display = "none";
                         window_reset();
                         preview2_stop();
@@ -784,7 +778,6 @@ if (ua.includes("mobile")) {
                             });
                             document.getElementsByClassName('name')[0].value = "";
                             document.querySelector('.prompt_error_text').textContent = "";
-                            document.querySelector('.help').textContent = "";
                             msg.innerText = "";
                             prompt_text.style.color = "";
                             nexser.style.display = "none";
@@ -878,7 +871,6 @@ if (ua.includes("mobile")) {
             setTimeout(() => {
                 startup_window_open()
                 taskbtn_load()
-                helpmenu_open()
             }, 3000);
         }, 100);
     }
@@ -1011,19 +1003,6 @@ if (ua.includes("mobile")) {
         document.querySelector('.welcome_windows').style.display = "block"
         desktop.style.display = "none";
         welcome_animation();
-    }
-
-    function helpmenu_open() {
-        document.querySelector('.help_menu').style.display = "block"
-        if (localStorage.getItem('taskbar_position_button')) {
-            document.querySelector('.help_menu').style.top = "40px"
-        } else if (!localStorage.getItem('taskbar_position_button')) {
-            document.querySelector('.help_menu').style.top = "auto"
-            document.querySelector('.help_menu').style.bottom = "0px"
-        }
-    }
-    function helpmenu_close() {
-        document.querySelector('.help_menu').style.display = "none"
     }
 
     startup_window_open()
@@ -1870,7 +1849,6 @@ if (ua.includes("mobile")) {
         switch (prompt_text3) {
             case '':
                 document.querySelector('.prompt_error_text').textContent = "";
-                document.querySelector('.help').textContent = "";
                 msg.innerText = "";
                 prompt_text.style.color = "";
                 break;
@@ -1921,7 +1899,6 @@ if (ua.includes("mobile")) {
 
             default:
                 document.querySelector('.prompt_error_text').textContent = "コマンドが違います!";
-                document.querySelector('.help').textContent = "";
                 msg.innerText = "";
                 prompt_text.style.color = "red";
                 break;
