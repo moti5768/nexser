@@ -224,7 +224,7 @@ li {
 #prompt2 {
     font-family: system-ui;
     color: white;
-    background: rgb(51, 51, 184);
+    background: black;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
@@ -246,11 +246,11 @@ li {
 
 #prompt2 .name2 {
     font-size: small;
-    width: 50%;
+    width: 100%;
     border: none;
     outline: none;
     color: white;
-    background: rgb(51, 51, 184);
+    background: black;
 }
 
 /* nexser */
@@ -1586,8 +1586,14 @@ textarea {
 }
 
 .objective_area {
-    background: white;
+    background: whitesmoke;
     white-space: nowrap;
+    resize: both;
+    width: 750px;
+    height: 400px;
+    min-width: 750px;
+    min-height: 200px;
+    font-size: large;
 }
 
 /* calc */
@@ -1962,6 +1968,17 @@ td {
     top: 0px;
 
     background: linear-gradient(#3f96cd, hsl(171, 40%, 91%));
+}
+
+.backgrounds9 {
+    display: none;
+    height: 100%;
+    width: 100%;
+    z-index: 0;
+    position: absolute;
+    top: 0px;
+
+    background: linear-gradient(-150deg, teal, steelblue);
 }
 
 .pattern_btn {

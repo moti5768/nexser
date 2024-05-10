@@ -921,69 +921,25 @@ if (ua.includes("mobile")) {
                     document.querySelector('.welcome_text1').style.fontSize = "70px"
                     document.querySelector('.welcome_text1').style.marginTop = "80px"
                     document.querySelector('.welcome_text1').style.marginLeft = "25px"
-                }, 1000);
-                setTimeout(() => {
-                    document.querySelector('.welcome_text1').style.fontSize = "60px"
-                    document.querySelector('.welcome_text1').style.marginTop = "40px"
-                    document.querySelector('.welcome_text1').style.marginLeft = "15px"
-                }, 1200);
-                setTimeout(() => {
-                    document.querySelector('.welcome_text1').style.fontSize = "50px"
-                    document.querySelector('.welcome_text1').style.marginTop = "20px"
-                    document.querySelector('.welcome_text1').style.marginLeft = "10px"
-                }, 1400);
-                setTimeout(() => {
-                    document.querySelector('.welcome_text1').style.fontSize = "45px"
-                    document.querySelector('.welcome_text1').style.marginTop = "10px"
-                    document.querySelector('.welcome_text1').style.marginLeft = "5px"
-                }, 1500);
-                setTimeout(() => {
+                    document.querySelector('.welcome_text1').style.transition = "0.3s cubic-bezier(0, 0, 1, 1)"
                     document.querySelector('.welcome_text1').style.fontSize = "40px"
                     document.querySelector('.welcome_text1').style.marginTop = "0px"
                     document.querySelector('.welcome_text1').style.marginLeft = "0px"
-                }, 1600);
+                }, 1000);
 
                 setTimeout(() => {
                     welunder.style.width = "5%"
-                }, 2500);
-                setTimeout(() => {
-                    welunder.style.width = "15%"
-                }, 2550);
-                setTimeout(() => {
-                    welunder.style.width = "25%"
-                }, 2600);
-                setTimeout(() => {
-                    welunder.style.width = "35%"
-                }, 2650);
-                setTimeout(() => {
-                    welunder.style.width = "45%"
-                }, 2700);
-                setTimeout(() => {
-                    welunder.style.width = "55%"
-                }, 2725);
-                setTimeout(() => {
-                    welunder.style.width = "65%"
-                }, 2750);
-                setTimeout(() => {
-                    welunder.style.width = "75%"
-                }, 2775);
-                setTimeout(() => {
-                    welunder.style.width = "80%"
-                }, 2800);
-                setTimeout(() => {
-                    welunder.style.width = "85%"
-                }, 2825);
-                setTimeout(() => {
+                    welunder.style.transition = "0.5s cubic-bezier(0, 0, 1, 1)"
                     welunder.style.width = "100%"
-                }, 2850);
+                }, 2000);
 
                 setTimeout(() => {
                     document.querySelector('.welcome_text2').style.display = "block";
-                }, 3500);
+                }, 2500);
                 setTimeout(() => {
                     document.querySelector('.welcome_icons').style.display = "block";
                     document.querySelector('html').style.cursor = '';
-                }, 4000);
+                }, 3000);
 
                 setTimeout(() => {
                     if (!localStorage.getItem('start_nexser')) {
@@ -992,8 +948,8 @@ if (ua.includes("mobile")) {
                         document.querySelector('.start_nexser').style.display = "none";
                         document.querySelector('.startnexser_close').style.display = "block";
                     }
-                }, 5000);
-            }, 500);
+                }, 3500);
+            }, 250);
 
         });
 
@@ -1911,7 +1867,6 @@ if (ua.includes("mobile")) {
         switch (prompt_text5) {
             case '':
                 document.querySelector('.prompt_error_text2').textContent = "";
-                document.querySelector('.help2').textContent = "";
                 msg2.innerText = "";
                 prompt_text2.style.color = "";
                 break;
@@ -1988,8 +1943,9 @@ if (ua.includes("mobile")) {
             case 'allwindow/open':
                 document.querySelector('.prompt_error_text2').textContent = "";
                 prompt_text2.style.color = "";
-                window_active()
-                taskbtn_load()
+                window_active();
+                taskbtn_load();
+                cpucalc_open();
                 break;
             case 'allwindow/min':
                 document.querySelector('.prompt_error_text2').textContent = "";
@@ -2077,7 +2033,6 @@ if (ua.includes("mobile")) {
                 break;
             default:
                 document.querySelector('.prompt_error_text2').textContent = "コマンドが違います!";
-                document.querySelector('.help2').textContent = "";
                 msg2.innerText = "";
                 prompt_text2.style.color = "red";
                 break;
@@ -2618,11 +2573,18 @@ if (ua.includes("mobile")) {
 
             document.querySelectorAll('.window_inline_menus_parent').forEach(function (parent_list2) {
                 parent_list2.classList.remove('select');
-                const menus_child = parent_list2.lastElementChild;
-                menus_child.style.display = "none"
             })
             parent_list.classList.add('select');
-            const menus_child2 = parent_list.lastElementChild;
+
+            document.querySelectorAll('.window_inline_menus_parent').forEach(function (parent_list3) {
+                const menus_child = parent_list3.lastElementChild;
+                menus_child.style.display = "none"
+            })
+        })
+    })
+    document.querySelectorAll('.window_inline_menus_parent').forEach(function (parent_list4) {
+        parent_list4.addEventListener('mousedown', function () {
+            const menus_child2 = parent_list4.lastElementChild;
             menus_child2.style.display = "block"
         })
     })
@@ -3347,13 +3309,13 @@ if (ua.includes("mobile")) {
             drag.classList.remove("drag");
             document.querySelectorAll('.title').forEach(function (title) {
                 document.querySelector('.navy').style.background = ""
-                window_prompt.style.background = "rgb(51, 51, 184)"
+                window_prompt.style.background = "black"
                 window_back_silver()
             })
             // 半透明
             document.querySelectorAll('.child_windows').forEach(function (title) {
                 title.style.opacity = "";
-                window_prompt.style.background = "rgb(51, 51, 184)"
+                window_prompt.style.background = "black"
                 window_back_silver()
             })
             // 移動してる時だけ黒枠のみ
@@ -3361,7 +3323,7 @@ if (ua.includes("mobile")) {
                 title.style.background = "";
                 title.style.border = "";
                 document.querySelector('iframe').style.opacity = "";
-                window_prompt.style.background = "rgb(51, 51, 184)"
+                window_prompt.style.background = "black"
                 window_back_silver()
             })
             document.querySelectorAll('.title,.title2,.title_buttons,.window_inline_list,.mini_window,button,input,textarea,p,#prompt2,.window_inline_list2').forEach(function (title) {
@@ -3758,6 +3720,7 @@ if (ua.includes("mobile")) {
         document.querySelector('.backgrounds6').style.display = "none";
         document.querySelector('.backgrounds7').style.display = "none";
         document.querySelector('.backgrounds8').style.display = "none";
+        document.querySelector('.backgrounds9').style.display = "none";
         localStorage.removeItem('back_pattern_1');
         localStorage.removeItem('back_pattern_2');
         localStorage.removeItem('back_pattern_3');
@@ -3766,6 +3729,7 @@ if (ua.includes("mobile")) {
         localStorage.removeItem('back_pattern_6');
         localStorage.removeItem('back_pattern_7');
         localStorage.removeItem('back_pattern_8');
+        localStorage.removeItem('back_pattern_9');
     }
 
     document.querySelector('.back_pattern_1').addEventListener('click', function () {
@@ -3808,6 +3772,11 @@ if (ua.includes("mobile")) {
         localStorage.setItem('back_pattern_8', back_pattern_8);
         back_pattern_set()
     })
+    document.querySelector('.back_pattern_9').addEventListener('click', function () {
+        const back_pattern_9 = document.querySelector('.back_pattern_9');
+        localStorage.setItem('back_pattern_9', back_pattern_9);
+        back_pattern_set()
+    })
 
     function back_pattern_set() {
         if (localStorage.getItem('back_pattern_1')) {
@@ -3833,6 +3802,9 @@ if (ua.includes("mobile")) {
         }
         if (localStorage.getItem('back_pattern_8')) {
             document.querySelector('.backgrounds8').style.display = "block";
+        }
+        if (localStorage.getItem('back_pattern_9')) {
+            document.querySelector('.backgrounds9').style.display = "block";
         }
     }
 
@@ -4561,6 +4533,12 @@ if (ua.includes("mobile")) {
                 child_win_posi3.style.top = "auto"
             })
 
+            if (check(elm1, elm2) && localStorage.getItem('taskbar_position_button')) {
+                toolbar.style.top = "40px";
+            } else if (check(elm1, elm2)) {
+                toolbar.style.top = "";
+            }
+
         } else {
             const taskbar_position_button = document.querySelector('.taskbar_position_button');
             localStorage.setItem('taskbar_position_button', taskbar_position_button);
@@ -4588,6 +4566,12 @@ if (ua.includes("mobile")) {
                 child_win_posi3.style.transition = "";
                 child_win_posi3.style.top = "40px";
             })
+
+            if (check(elm1, elm2) && localStorage.getItem('taskbar_position_button')) {
+                toolbar.style.top = "40px";
+            } else if (check(elm1, elm2)) {
+                toolbar.style.top = "";
+            }
 
         }
     })
@@ -5168,7 +5152,6 @@ if (ua.includes("mobile")) {
     function old_screen_reset() {
         document.getElementById('nex').classList.remove('old');
     }
-
 
     // list_shadow()
 
