@@ -82,20 +82,7 @@ if (ua.includes("mobile")) {
 
     const tetris_mneu = document.querySelector('.tetris_menu');
 
-    setTimeout(load_nexser)
     function load_nexser() {
-
-        setColor();
-        taskbar_none();
-        title_none();
-        screen_backtextload();
-        notecolor_change();
-        taskgroup_load();
-        batterylevel();
-        window_back_silver();
-        caload();
-        titlecolor_set();
-        back_pattern_set();
 
         if (!localStorage.getItem('start_nexser') && localStorage.getItem('prompt_data')) {
             start_check()
@@ -127,210 +114,6 @@ if (ua.includes("mobile")) {
             document.querySelector('.pattern_backgrounds').style.display = "block";
         }
 
-        if (localStorage.getItem('driver_sound')) {
-            document.querySelector('.installbutton_1').textContent = "uninstall"
-        }
-        if (localStorage.getItem('driver_color')) {
-            document.querySelector('.installbutton_2').textContent = "uninstall"
-        }
-        if (localStorage.getItem('backtext')) {
-            const backtext_data2 = localStorage.getItem('backtext_data');
-            document.querySelector('#background_text').textContent = (backtext_data2)
-            background_text.classList.add('block')
-        }
-        if (!localStorage.getItem('backtext')) {
-            background_text.classList.remove('block')
-        }
-        if (localStorage.getItem('backtext')) {
-            document.querySelector('.backtext_mode').textContent = "ON"
-        }
-        if (localStorage.getItem('noteData')) {
-            load()
-            document.querySelector('.note_title').textContent = "notepad(save keep)"
-        }
-        if (localStorage.getItem('textdropdata')) {
-            load2()
-        }
-        if (localStorage.getItem('objectiveData') || localStorage.getItem('objectiveTitleData')) {
-            objective_load()
-        }
-        if (localStorage.getItem('startup_note')) {
-            document.querySelector('.startup_note').textContent = "ON"
-        }
-        if (localStorage.getItem('startup_computer')) {
-            document.querySelector('.startup_computer').textContent = "ON"
-        }
-        if (localStorage.getItem('startup_color')) {
-            document.querySelector('.startup_color').textContent = "ON"
-        }
-        if (localStorage.getItem('startup_screen')) {
-            document.querySelector('.startup_screen').textContent = "ON"
-        }
-        if (localStorage.getItem('startup_htmlviewer_edit')) {
-            document.querySelector('.startup_htmlviewer_edit').textContent = "ON"
-        }
-        if (localStorage.getItem('startup_guidebook')) {
-            document.querySelector('.startup_guidebook').textContent = "ON"
-        }
-        if (localStorage.getItem('startup_objective')) {
-            document.querySelector('.startup_objective').textContent = "ON"
-        }
-        if (localStorage.getItem('startup_calendar')) {
-            document.querySelector('.startup_calendar').textContent = "ON"
-        }
-        if (localStorage.getItem('prompt_data2')) {
-            document.querySelector('.startup_speed').textContent = "HIGH"
-        }
-        if (localStorage.getItem('driver_sound')) {
-            document.querySelector('.startup_sound').textContent = "UN INSTALL"
-        }
-        if (localStorage.getItem('startup_versiontext')) {
-            document.querySelector('.startup_versiontext').textContent = "ON"
-            document.querySelector('.desktop_version_text').style.display = "block";
-        } else {
-            document.querySelector('.desktop_version_text').style.display = "none";
-        }
-        if (localStorage.getItem('startup_1')) {
-            document.querySelector('.startup_1').textContent = "set!"
-        } else {
-            document.querySelector('.startup_1').textContent = "no set"
-        }
-        if (localStorage.getItem('startup_2')) {
-            document.querySelector('.startup_2').textContent = "set!"
-        } else {
-            document.querySelector('.startup_2').textContent = "no set"
-        }
-        if (localStorage.getItem('startup_3')) {
-            document.querySelector('.startup_3').textContent = "set!"
-        } else {
-            document.querySelector('.startup_3').textContent = "no set"
-        }
-        if (localStorage.getItem('startup_4')) {
-            document.querySelector('.startup_4').textContent = "set!"
-        } else {
-            document.querySelector('.startup_4').textContent = "no set"
-        }
-        if (localStorage.getItem('startup_5')) {
-            document.querySelector('.startup_5').textContent = "set!"
-        } else {
-            document.querySelector('.startup_5').textContent = "no set"
-        }
-
-        if (localStorage.getItem('shutdown_1')) {
-            document.querySelector('.shutdown_1').textContent = "set!"
-        } else {
-            document.querySelector('.shutdown_1').textContent = "no set"
-        }
-        if (localStorage.getItem('shutdown_2')) {
-            document.querySelector('.shutdown_2').textContent = "set!"
-        } else {
-            document.querySelector('.shutdown_2').textContent = "no set"
-        }
-        if (localStorage.getItem('shutdown_3')) {
-            document.querySelector('.shutdown_3').textContent = "set!"
-        } else {
-            document.querySelector('.shutdown_3').textContent = "no set"
-        }
-        if (localStorage.getItem('shutdown_4')) {
-            document.querySelector('.shutdown_4').textContent = "set!"
-        } else {
-            document.querySelector('.shutdown_4').textContent = "no set"
-        }
-        if (localStorage.getItem('shutdown_5')) {
-            document.querySelector('.shutdown_5').textContent = "set!"
-        } else {
-            document.querySelector('.shutdown_5').textContent = "no set"
-        }
-
-        if (localStorage.getItem('note_text_bold')) {
-            document.querySelector('.note_area').style.fontWeight = "bold";
-            document.querySelector('.test_notetext').style.fontWeight = "bold";
-        }
-        if (localStorage.getItem('note_text_oblique')) {
-            document.querySelector('.note_area').style.fontStyle = "oblique";
-            document.querySelector('.test_notetext').style.fontStyle = "oblique";
-        }
-        if (localStorage.getItem('note_text_underline')) {
-            document.querySelector('.note_area').style.textDecoration = "underline";
-            document.querySelector('.test_notetext').style.textDecoration = "underline";
-        }
-
-        if (localStorage.getItem('window_invisible')) {
-            document.querySelector('.windowmode').textContent = "invisible"
-        }
-        if (localStorage.getItem('window_borderblack')) {
-            document.querySelector('.windowmode').textContent = "border black"
-        }
-
-        if (localStorage.getItem('font_default')) {
-            document.querySelector("body").style.fontFamily = "serif";
-        }
-        if (localStorage.getItem('font_sans_serif')) {
-            document.querySelector("body").style.fontFamily = "sans-serif";
-        }
-        if (localStorage.getItem('font_cursive')) {
-            document.querySelector("body").style.fontFamily = "cursive";
-        }
-        if (localStorage.getItem('font_fantasy')) {
-            document.querySelector("body").style.fontFamily = "fantasy";
-        }
-        if (localStorage.getItem('font_monospace')) {
-            document.querySelector("body").style.fontFamily = "monospace";
-        }
-
-        if (localStorage.getItem('windowfile_1')) {
-            window_file_list_change()
-        }
-        if (localStorage.getItem('windowfile_2')) {
-            window_file_list_reset()
-        }
-        if (localStorage.getItem('clock_button')) {
-            document.querySelector('.clock_button').textContent = "on"
-            document.querySelector('.time').style.display = "none";
-            document.querySelector('.taskbar_rightgroup').style.width = "140px"
-        }
-        if (localStorage.getItem('taskbar_position_button')) {
-            document.querySelector('.taskbar_position_button').textContent = "bottom"
-            document.getElementById('taskbar').style.top = "0px"
-            document.querySelector('.child_start_menu').style.top = "40px"
-            document.querySelector('.child_start_menu').style.bottom = "auto"
-            document.querySelector('.battery_menu').style.top = "35px"
-            document.querySelector('.battery_menu').style.bottom = "auto"
-            document.querySelector('.files_inline').style.top = "40px"
-            document.querySelector('.files_inline').style.bottom = "auto"
-        }
-
-        if (localStorage.getItem('taskbar_position_button')) {
-            toolbar.style.top = "40px";
-        }
-        if (localStorage.getItem('toolbar_on')) {
-            toolbar.style.display = "block"
-        }
-        if (localStorage.getItem('saver_on')) {
-            document.querySelector('.saver_mode').textContent = "ON"
-        }
-        if (localStorage.getItem('display_old')) {
-            old_screen()
-        }
-        if (localStorage.getItem('list_shadow_on')) {
-            list_shadow()
-        }
-        if (localStorage.getItem('file_none')) {
-            document.querySelector('.files_inline').style.display = "none"
-        }
-
-        if (localStorage.getItem('backtext_small')) {
-            document.querySelector('#background_text').style.fontSize = "15px";
-            document.querySelector('#background_text2').style.fontSize = "15px"
-        }
-        if (localStorage.getItem('backtext_medium')) {
-            document.querySelector('#background_text').style.fontSize = "30px";
-            document.querySelector('#background_text2').style.fontSize = "30px"
-        }
-        if (localStorage.getItem('backtext_large')) {
-            document.querySelector('#background_text').style.fontSize = "45px";
-            document.querySelector('#background_text2').style.fontSize = "45px"
-        }
         sessionStorage.removeItem('start_camera');
         localStorage.removeItem('note_texts');
 
@@ -339,6 +122,226 @@ if (ua.includes("mobile")) {
     let sound_1, sound_2, sound_3, sound_4, sound_5, sound_6, sound_7, sound_8, sound_9, sound_10, sound_11, sound_12, sound_13;
 
     new Promise((resolve) => {
+        setTimeout(load_nexser, resolve());
+        setTimeout(() => {
+            if (localStorage.getItem('driver_sound')) {
+                document.querySelector('.installbutton_1').textContent = "uninstall"
+            }
+            if (localStorage.getItem('driver_color')) {
+                document.querySelector('.installbutton_2').textContent = "uninstall"
+            }
+            if (localStorage.getItem('backtext')) {
+                const backtext_data2 = localStorage.getItem('backtext_data');
+                document.querySelector('#background_text').textContent = (backtext_data2)
+                background_text.classList.add('block')
+            }
+            if (!localStorage.getItem('backtext')) {
+                background_text.classList.remove('block')
+            }
+            if (localStorage.getItem('backtext')) {
+                document.querySelector('.backtext_mode').textContent = "ON"
+            }
+            if (localStorage.getItem('noteData')) {
+                load()
+                document.querySelector('.note_title').textContent = "notepad(save keep)"
+            }
+            if (localStorage.getItem('textdropdata')) {
+                load2()
+            }
+            if (localStorage.getItem('objectiveData') || localStorage.getItem('objectiveTitleData')) {
+                objective_load()
+            }
+            if (localStorage.getItem('startup_note')) {
+                document.querySelector('.startup_note').textContent = "ON"
+            }
+            if (localStorage.getItem('startup_computer')) {
+                document.querySelector('.startup_computer').textContent = "ON"
+            }
+            if (localStorage.getItem('startup_color')) {
+                document.querySelector('.startup_color').textContent = "ON"
+            }
+            if (localStorage.getItem('startup_screen')) {
+                document.querySelector('.startup_screen').textContent = "ON"
+            }
+            if (localStorage.getItem('startup_htmlviewer_edit')) {
+                document.querySelector('.startup_htmlviewer_edit').textContent = "ON"
+            }
+            if (localStorage.getItem('startup_guidebook')) {
+                document.querySelector('.startup_guidebook').textContent = "ON"
+            }
+            if (localStorage.getItem('startup_objective')) {
+                document.querySelector('.startup_objective').textContent = "ON"
+            }
+            if (localStorage.getItem('startup_calendar')) {
+                document.querySelector('.startup_calendar').textContent = "ON"
+            }
+            if (localStorage.getItem('prompt_data2')) {
+                document.querySelector('.startup_speed').textContent = "HIGH"
+            }
+            if (localStorage.getItem('driver_sound')) {
+                document.querySelector('.startup_sound').textContent = "UN INSTALL"
+            }
+            if (localStorage.getItem('startup_versiontext')) {
+                document.querySelector('.startup_versiontext').textContent = "ON"
+                document.querySelector('.desktop_version_text').style.display = "block";
+            } else {
+                document.querySelector('.desktop_version_text').style.display = "none";
+            }
+            if (localStorage.getItem('startup_1')) {
+                document.querySelector('.startup_1').textContent = "set!"
+            } else {
+                document.querySelector('.startup_1').textContent = "no set"
+            }
+            if (localStorage.getItem('startup_2')) {
+                document.querySelector('.startup_2').textContent = "set!"
+            } else {
+                document.querySelector('.startup_2').textContent = "no set"
+            }
+            if (localStorage.getItem('startup_3')) {
+                document.querySelector('.startup_3').textContent = "set!"
+            } else {
+                document.querySelector('.startup_3').textContent = "no set"
+            }
+            if (localStorage.getItem('startup_4')) {
+                document.querySelector('.startup_4').textContent = "set!"
+            } else {
+                document.querySelector('.startup_4').textContent = "no set"
+            }
+            if (localStorage.getItem('startup_5')) {
+                document.querySelector('.startup_5').textContent = "set!"
+            } else {
+                document.querySelector('.startup_5').textContent = "no set"
+            }
+
+            if (localStorage.getItem('shutdown_1')) {
+                document.querySelector('.shutdown_1').textContent = "set!"
+            } else {
+                document.querySelector('.shutdown_1').textContent = "no set"
+            }
+            if (localStorage.getItem('shutdown_2')) {
+                document.querySelector('.shutdown_2').textContent = "set!"
+            } else {
+                document.querySelector('.shutdown_2').textContent = "no set"
+            }
+            if (localStorage.getItem('shutdown_3')) {
+                document.querySelector('.shutdown_3').textContent = "set!"
+            } else {
+                document.querySelector('.shutdown_3').textContent = "no set"
+            }
+            if (localStorage.getItem('shutdown_4')) {
+                document.querySelector('.shutdown_4').textContent = "set!"
+            } else {
+                document.querySelector('.shutdown_4').textContent = "no set"
+            }
+            if (localStorage.getItem('shutdown_5')) {
+                document.querySelector('.shutdown_5').textContent = "set!"
+            } else {
+                document.querySelector('.shutdown_5').textContent = "no set"
+            }
+
+            if (localStorage.getItem('note_text_bold')) {
+                document.querySelector('.note_area').style.fontWeight = "bold";
+                document.querySelector('.test_notetext').style.fontWeight = "bold";
+            }
+            if (localStorage.getItem('note_text_oblique')) {
+                document.querySelector('.note_area').style.fontStyle = "oblique";
+                document.querySelector('.test_notetext').style.fontStyle = "oblique";
+            }
+            if (localStorage.getItem('note_text_underline')) {
+                document.querySelector('.note_area').style.textDecoration = "underline";
+                document.querySelector('.test_notetext').style.textDecoration = "underline";
+            }
+
+            if (localStorage.getItem('window_invisible')) {
+                document.querySelector('.windowmode').textContent = "invisible"
+            }
+            if (localStorage.getItem('window_borderblack')) {
+                document.querySelector('.windowmode').textContent = "border black"
+            }
+
+            if (localStorage.getItem('font_default')) {
+                document.querySelector("body").style.fontFamily = "serif";
+            }
+            if (localStorage.getItem('font_sans_serif')) {
+                document.querySelector("body").style.fontFamily = "sans-serif";
+            }
+            if (localStorage.getItem('font_cursive')) {
+                document.querySelector("body").style.fontFamily = "cursive";
+            }
+            if (localStorage.getItem('font_fantasy')) {
+                document.querySelector("body").style.fontFamily = "fantasy";
+            }
+            if (localStorage.getItem('font_monospace')) {
+                document.querySelector("body").style.fontFamily = "monospace";
+            }
+
+            if (localStorage.getItem('windowfile_1')) {
+                window_file_list_change()
+            }
+            if (localStorage.getItem('windowfile_2')) {
+                window_file_list_reset()
+            }
+            if (localStorage.getItem('clock_button')) {
+                document.querySelector('.clock_button').textContent = "on"
+                document.querySelector('.time').style.display = "none";
+                document.querySelector('.taskbar_rightgroup').style.width = "140px"
+            }
+            if (localStorage.getItem('taskbar_position_button')) {
+                document.querySelector('.taskbar_position_button').textContent = "bottom"
+                document.getElementById('taskbar').style.top = "0px"
+                document.querySelector('.child_start_menu').style.top = "40px"
+                document.querySelector('.child_start_menu').style.bottom = "auto"
+                document.querySelector('.battery_menu').style.top = "35px"
+                document.querySelector('.battery_menu').style.bottom = "auto"
+                document.querySelector('.files_inline').style.top = "40px"
+                document.querySelector('.files_inline').style.bottom = "auto"
+            }
+
+            if (localStorage.getItem('taskbar_position_button')) {
+                toolbar.style.top = "40px";
+            }
+            if (localStorage.getItem('toolbar_on')) {
+                toolbar.style.display = "block"
+            }
+            if (localStorage.getItem('saver_on')) {
+                document.querySelector('.saver_mode').textContent = "ON"
+            }
+            if (localStorage.getItem('display_old')) {
+                old_screen()
+            }
+            if (localStorage.getItem('list_shadow_on')) {
+                list_shadow()
+            }
+            if (localStorage.getItem('file_none')) {
+                document.querySelector('.files_inline').style.display = "none"
+            }
+
+            if (localStorage.getItem('backtext_small')) {
+                document.querySelector('#background_text').style.fontSize = "15px";
+                document.querySelector('#background_text2').style.fontSize = "15px"
+            }
+            if (localStorage.getItem('backtext_medium')) {
+                document.querySelector('#background_text').style.fontSize = "30px";
+                document.querySelector('#background_text2').style.fontSize = "30px"
+            }
+            if (localStorage.getItem('backtext_large')) {
+                document.querySelector('#background_text').style.fontSize = "45px";
+                document.querySelector('#background_text2').style.fontSize = "45px"
+            }
+            setColor();
+            taskbar_none();
+            title_none();
+            screen_backtextload();
+            notecolor_change();
+            taskgroup_load();
+            batterylevel();
+            window_back_silver();
+            caload();
+            titlecolor_set();
+            back_pattern_set();
+
+            resolve();
+        }, 10);
         setTimeout(() => {
             sound_1 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/The-Microsoft-Sound.mp3");
             sound_2 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/tada.mp3");
@@ -358,7 +361,7 @@ if (ua.includes("mobile")) {
         }, 1000);
     }).then(() => {
         // 処理が無事終わったことを受けとって実行される処理
-        console.log("サウンドファイルの読み込み　終了");
+        console.log("読み込み終了");
     });
 
     function sound() {
@@ -497,7 +500,7 @@ if (ua.includes("mobile")) {
     })
 
     document.getElementById('startbtn').addEventListener('mousedown', function () {
-        document.querySelectorAll('.desktop_files').forEach(function (df1) {
+        Array.from(document.getElementsByClassName('desktop_files')).forEach((df1) => {
             const file10 = df1.firstElementChild;
             file10.classList.remove('file_select');
         })
@@ -1747,7 +1750,7 @@ if (ua.includes("mobile")) {
         localStorage.removeItem(KEY_BKCOLOR, bkcolor);
         background_text.style.color = ""
         document.getElementById('background_text2').style.color = ""
-        document.querySelectorAll('.desktop_files').forEach(function (desktop_files) {
+        Array.from(document.getElementsByClassName('desktop_files')).forEach((desktop_files) => {
             const deskfile_text = desktop_files.firstElementChild;
             deskfile_text.style.color = ""
         })
@@ -2115,7 +2118,7 @@ if (ua.includes("mobile")) {
             taskbtn_load()
         });
     })
-    document.querySelectorAll('.desktop_files').forEach(function (desktop_files) {
+    Array.from(document.getElementsByClassName('desktop_files')).forEach((desktop_files) => {
         desktop_files.addEventListener('click', function () {
             start_menu.style.display = "none";
             document.querySelector('.start_button').classList.remove('pressed');
@@ -2499,9 +2502,9 @@ if (ua.includes("mobile")) {
         })
     })
 
-    document.querySelectorAll('.desktop_files').forEach(function (desktop_files) {
+    Array.from(document.getElementsByClassName('desktop_files')).forEach((desktop_files) => {
         desktop_files.addEventListener('mousedown', function () {
-            document.querySelectorAll('.desktop_files').forEach(function (df1) {
+            Array.from(document.getElementsByClassName('desktop_files')).forEach((df1) => {
                 const file10 = df1.firstElementChild;
                 file10.classList.remove('file_select');
             })
@@ -3523,19 +3526,19 @@ if (ua.includes("mobile")) {
     function setColor() {
         if (localStorage.getItem('driver_color')) {
             document.querySelector("body").style.color = color;
-            document.querySelector("#nexser").style.backgroundColor = bkcolor;
-            document.querySelector(".mini_desktop").style.backgroundColor = bkcolor;
+            document.getElementById("nexser").style.backgroundColor = bkcolor;
+            document.getElementsByClassName("mini_desktop")[0].style.backgroundColor = bkcolor;
             if (bkcolor == "white" || bkcolor == "whitesmoke") {
                 background_text.style.color = "black"
                 document.getElementById('background_text2').style.color = "black"
-                document.querySelectorAll('.desktop_files').forEach(function (desktop_files) {
+                Array.from(document.getElementsByClassName('desktop_files')).forEach((desktop_files) => {
                     const deskfile_text = desktop_files.firstElementChild;
                     deskfile_text.style.color = "black"
                 })
             } else {
                 background_text.style.color = ""
                 document.getElementById('background_text2').style.color = ""
-                document.querySelectorAll('.desktop_files').forEach(function (desktop_files) {
+                Array.from(document.getElementsByClassName('desktop_files')).forEach((desktop_files) => {
                     const deskfile_text = desktop_files.firstElementChild;
                     deskfile_text.style.color = ""
                 })
@@ -4426,7 +4429,7 @@ if (ua.includes("mobile")) {
             window_file_icon.style.height = "20px";
             window_file_icon.style.marginBottom = "-20px";
         });
-        document.querySelectorAll('.window_files').forEach(function (window_files) {
+        Array.from(document.getElementsByClassName('window_files')).forEach((window_files) => {
             window_files.style.margin = "0px";
             window_files.style.paddingTop = "10px";
             window_files.style.width = "100%";
@@ -4445,7 +4448,7 @@ if (ua.includes("mobile")) {
             window_file_icon.style.height = "";
             window_file_icon.style.marginBottom = "";
         });
-        document.querySelectorAll('.window_files').forEach(function (window_files) {
+        Array.from(document.getElementsByClassName('window_files')).forEach((window_files) => {
             window_files.style.margin = "";
             window_files.style.paddingTop = "";
             window_files.style.width = "";
@@ -4576,7 +4579,7 @@ if (ua.includes("mobile")) {
         }
     })
 
-    document.querySelectorAll('.window_files').forEach(function (window_files) {
+    Array.from(document.getElementsByClassName('window_files')).forEach((window_files) => {
         window_files.addEventListener('mousedown', function () {
             fileborder_reset()
         })
@@ -4587,10 +4590,10 @@ if (ua.includes("mobile")) {
     })
 
     function fileborder_reset() {
-        document.querySelectorAll('.window_files').forEach(function (window_files) {
+        Array.from(document.getElementsByClassName('window_files')).forEach((window_files) => {
             window_files.classList.remove('file_border');
         })
-        document.querySelectorAll('.desktop_files').forEach(function (df1) {
+        Array.from(document.getElementsByClassName('desktop_files')).forEach((df1) => {
             const file10 = df1.firstElementChild;
             file10.classList.remove('file_select');
         })
