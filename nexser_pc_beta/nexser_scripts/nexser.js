@@ -75,6 +75,9 @@ if (ua.includes("mobile")) {
     const error_windows = document.querySelector('.error_windows');
     const warning_windows = document.querySelector('.warning_windows');
 
+    const sound_play_button = document.getElementsByClassName('sound_play_button');
+    const sound_stop_button = document.getElementsByClassName('sound_stop_button');
+
     // game
 
     const tetris_mneu = document.querySelector('.tetris_menu');
@@ -189,41 +192,39 @@ if (ua.includes("mobile")) {
         sound_12.currentTime = 0;
         sound_13.currentTime = 0;
 
-        document.querySelectorAll('.sound_play_button').forEach(function (sound_play_button2) {
-            sound_play_button2.textContent = "▶"
+        Array.from(sound_play_button).forEach((sound_play_buttons) => {
+            sound_play_buttons.textContent = "▶"
         })
     }
 
-    console.log(location.href);
-
-    document.querySelectorAll('.sound_play_button').forEach(function (sound_play_button2) {
-        sound_play_button2.textContent = "▶"
+    Array.from(sound_play_button).forEach((sound_play_buttons) => {
+        sound_play_buttons.textContent = "▶"
     })
-    document.querySelectorAll('.sound_play_button').forEach(function (sound_play_button) {
-        sound_play_button.addEventListener('mousedown', function () {
+    Array.from(sound_play_button).forEach((sound_play_buttons) => {
+        sound_play_buttons.addEventListener('mousedown', function () {
             sound_stop()
-            document.querySelectorAll('.sound_play_button').forEach(function (sound_play_button2) {
-                sound_play_button2.textContent = "▶"
+            Array.from(sound_play_button).forEach((sound_play_buttons) => {
+                sound_play_buttons.textContent = "▶"
             })
         })
-        sound_play_button.addEventListener('click', function () {
+        sound_play_buttons.addEventListener('click', function () {
             if (!localStorage.getItem('driver_sound')) {
                 document.querySelector('.window_error_text').textContent = "driver sound no install!"
                 error_windows.classList.remove('active')
                 prompt_text2.style.color = "";
                 sound3()
                 document.querySelector('.test_allwindow').style.display = "block";
-                sound_play_button2.textContent = "▶"
+                sound_play_buttons.textContent = "▶"
             } else {
-                sound_play_button.textContent = "||"
+                sound_play_buttons.textContent = "||"
             }
         })
     })
-    document.querySelectorAll('.sound_stop_button').forEach(function (sound_stop_button) {
-        sound_stop_button.addEventListener('mousedown', function () {
+    Array.from(sound_stop_button).forEach((sound_stop_buttons) => {
+        sound_stop_buttons.addEventListener('mousedown', function () {
             sound_stop()
-            document.querySelectorAll('.sound_play_button').forEach(function (sound_play_button2) {
-                sound_play_button2.textContent = "▶"
+            Array.from(sound_play_button).forEach((sound_play_buttons) => {
+                sound_play_buttons.textContent = "▶"
             })
         })
     })
@@ -293,18 +294,17 @@ if (ua.includes("mobile")) {
         z_index.textContent = getLargestZIndex('.child_windows');
     });
 
-    document.querySelectorAll('.button').forEach(function (button) {
+    Array.from(document.getElementsByClassName('button')).forEach((button) => {
         button.addEventListener('click', function () {
             let tscbtn = button.firstChild;
             tscbtn = button.classList.toggle('pressed');
-            console.log(tscbtn)
         });
     });
-    document.querySelectorAll('.button2').forEach(function (button2) {
+    Array.from(document.getElementsByClassName('button2')).forEach((button2) => {
         button2.addEventListener('mousedown', function () {
             button2.classList.add('pressed');
             addEventListener('mouseup', function () {
-                document.querySelectorAll('.button2').forEach(function (button2) {
+                Array.from(document.getElementsByClassName('button2')).forEach((button2) => {
                     button2.classList.remove('pressed');
                 })
             });
@@ -1406,7 +1406,6 @@ if (ua.includes("mobile")) {
             document.querySelector('.startup_5').textContent = "no set"
         }
 
-
         if (localStorage.getItem('shutdown_1')) {
             document.querySelector('.shutdown_1').textContent = "set!"
         } else {
@@ -1522,7 +1521,6 @@ if (ua.includes("mobile")) {
             document.querySelector('#background_text').style.fontSize = "45px";
             document.querySelector('#background_text2').style.fontSize = "45px"
         }
-
         sessionStorage.removeItem('start_camera')
     }
 
@@ -2594,7 +2592,7 @@ if (ua.includes("mobile")) {
     })
 
     function window_back_silver() {
-        document.querySelectorAll('.back_silver').forEach(function (back_silver) {
+        Array.from(document.getElementsByClassName('back_silver')).forEach((back_silver) => {
             back_silver.style.background = "silver"
         })
     }
@@ -3780,31 +3778,31 @@ if (ua.includes("mobile")) {
 
     function back_pattern_set() {
         if (localStorage.getItem('back_pattern_1')) {
-            document.querySelector('.backgrounds1').style.display = "block";
+            document.getElementsByClassName('backgrounds1')[0].style.display = "block";
         }
         if (localStorage.getItem('back_pattern_2')) {
-            document.querySelector('.backgrounds2').style.display = "block";
+            document.getElementsByClassName('backgrounds2')[0].style.display = "block";
         }
         if (localStorage.getItem('back_pattern_3')) {
-            document.querySelector('.backgrounds3').style.display = "block";
+            document.getElementsByClassName('backgrounds3')[0].style.display = "block";
         }
         if (localStorage.getItem('back_pattern_4')) {
-            document.querySelector('.backgrounds4').style.display = "block";
+            document.getElementsByClassName('backgrounds4')[0].style.display = "block";
         }
         if (localStorage.getItem('back_pattern_5')) {
-            document.querySelector('.backgrounds5').style.display = "block";
+            document.getElementsByClassName('backgrounds5')[0].style.display = "block";
         }
         if (localStorage.getItem('back_pattern_6')) {
-            document.querySelector('.backgrounds6').style.display = "block";
+            document.getElementsByClassName('backgrounds6')[0].style.display = "block";
         }
         if (localStorage.getItem('back_pattern_7')) {
-            document.querySelector('.backgrounds7').style.display = "block";
+            document.getElementsByClassName('backgrounds7')[0].style.display = "block";
         }
         if (localStorage.getItem('back_pattern_8')) {
-            document.querySelector('.backgrounds8').style.display = "block";
+            document.getElementsByClassName('backgrounds8')[0].style.display = "block";
         }
         if (localStorage.getItem('back_pattern_9')) {
-            document.querySelector('.backgrounds9').style.display = "block";
+            document.getElementsByClassName('backgrounds9')[0].style.display = "block";
         }
     }
 
@@ -3905,9 +3903,9 @@ if (ua.includes("mobile")) {
             var hours = date.getHours().toString().padStart(2, '0');
             var minutes = date.getMinutes().toString().padStart(2, '0');
             var seconds = date.getSeconds().toString().padStart(2, '0');
-            var clock = document.querySelectorAll('.date_clock, .date_clock2');
-            clock.forEach(function (clock_text) {
-                clock_text.textContent = (hours + ":" + minutes + ":" + seconds + "");
+            let clock = document.getElementsByClassName('date_clock');
+            Array.from(clock).forEach((element) => {
+                element.textContent = (hours + ":" + minutes + ":" + seconds + "");
             });
             navigator.getBattery().then(function (battery) {
                 if (battery.level == 1 && battery.charging == true) {
@@ -3930,7 +3928,7 @@ if (ua.includes("mobile")) {
                 }
             })
             taskgroup_load();
-        }, 100)
+        })
     }
 
     const nowdate = new Date();
@@ -3952,22 +3950,18 @@ if (ua.includes("mobile")) {
     // 右クリックイベントの登録
     document.getElementById("button1").addEventListener("contextmenu", function (event) {
         event.preventDefault();
-        setTimeout(() => {
-            document.querySelector('.mouse_right').classList.add('active');
-        }, 0);
+        document.querySelector('.mouse_right').classList.add('active');
         setTimeout(() => {
             document.querySelector('.mouse_right').classList.remove('active');
-        }, 500);
+        }, 250);
     });
 
     // 左クリックイベントの登録
     document.getElementById("button1").addEventListener("click", function () {
-        setTimeout(() => {
-            document.querySelector('.mouse_left').classList.add('active');
-        }, 0);
+        document.querySelector('.mouse_left').classList.add('active');
         setTimeout(() => {
             document.querySelector('.mouse_left').classList.remove('active');
-        }, 500);
+        }, 250);
     });
 
     function notecolor_change_blue() {
@@ -4599,18 +4593,18 @@ if (ua.includes("mobile")) {
     function batterylevel() {
         setTimeout(() => {
             navigator.getBattery().then(function (battery) {
-                let bu = document.querySelector('.taskbattery');
-                bu2 = bu.innerHTML = Math.floor(battery.level * 100);
+                let bu = document.getElementsByClassName('taskbattery');
+                bu2 = bu[0].innerHTML = Math.floor(battery.level * 100);
             });
             navigator.getBattery().then((battery) => {
                 if (battery.charging == true) {
-                    document.querySelector('.battery_time').textContent = (`${battery.dischargingTime}`);
+                    document.getElementsByClassName('battery_time')[0].textContent = (`${battery.dischargingTime}`);
                 } else if (battery.charging == false) {
-                    document.querySelector('.battery_time').textContent = (`${battery.dischargingTime}` + "seconds");
+                    document.getElementsByClassName('battery_time')[0].textContent = (`${battery.dischargingTime}` + "seconds");
                 }
             })
             batterylevel();
-        }, 100);
+        });
     }
 
     async function startCamera() {
