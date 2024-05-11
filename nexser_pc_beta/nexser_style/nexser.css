@@ -282,15 +282,10 @@ li {
 }
 
 .start_nexser {
-    font-size: xx-large;
+    font-size: x-large;
     position: absolute;
-    bottom: 5px;
-    left: 5px;
-}
-
-.start_nexser>span {
-    outline: 1.5px dotted black;
-    outline-offset: -5px;
+    bottom: 0;
+    left: 250px;
 }
 
 /* buttons */
@@ -353,11 +348,6 @@ button.pressed {
 span.pressed {
     padding-left: 1px;
     width: auto;
-}
-
-.shutdown_button {
-    outline: 1.5px dotted black;
-    outline-offset: -5px;
 }
 
 /* files */
@@ -431,7 +421,6 @@ input[type="file"] {
     border-right: 1.5px #eee solid;
     border-top: 1.5px #333 solid;
     border-left: 1.5px #333 solid;
-
     outline: 1.5px dotted black;
     outline-offset: -5px;
 }
@@ -777,14 +766,16 @@ body::-webkit-scrollbar {
     background: linear-gradient(40deg, steelblue 25%, blue);
 }
 
-.login_welcome {
-    outline: 1.5px dotted black;
-    outline-offset: -5px;
+.login_form {
+    position: absolute;
+    right: 0px;
+    bottom: 0px;
 }
 
-.nologin_welcome {
-    outline: 1.5px dotted black;
-    outline-offset: -5px;
+.login_buttons {
+    display: inline-block;
+    position: relative;
+    left: 100px;
 }
 
 .resize {
@@ -973,11 +964,6 @@ body::-webkit-scrollbar {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-}
-
-.warningclose_button {
-    outline: 1.5px dotted black;
-    outline-offset: -5px;
 }
 
 .error_windows.active {

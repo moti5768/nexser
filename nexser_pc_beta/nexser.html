@@ -189,7 +189,7 @@
                             style="display: block; width: 100%; height: 1px; position: absolute; top: 75px; border-top: solid 2px black;"></span>
 
                         <span class="welcome_text2 border2"
-                            style="background: whitesmoke; margin-top: 80px; margin-left: 5px; width: 350px; height: 260px; font-size: small; font-weight: bold; position: absolute; overflow-y: scroll;">
+                            style="background: whitesmoke; margin-top: 70px; margin-left: 5px; width: 350px; height: 260px; font-size: small; font-weight: bold; position: absolute; overflow-y: scroll;">
                             <p>nexserへようこそ!<br>このnexserはPCに搭載されている&nbsp;windows&nbsp;に近い操作が可能です。(一部異なります。)<br>バグ・不具合が発生した場合にはページを再ロードすることを推奨します。
                             </p>
                             <ul>
@@ -207,16 +207,17 @@
                             </ul>
                         </span>
                         <p style="position: absolute; bottom: 0;">Nexser version 1.4</p>
-                        <button class="button2 start_nexser" onmouseup="nexser_on(),sound_stop()"><span>&emsp;start
+                        <button class="button2 start_nexser borderinline_dotted"
+                            onmouseup="nexser_on(),sound_stop()"><span>&emsp;start
                                 nexser&emsp;</span></button>
-                        <div style="position: absolute; right: 0px; bottom: 20px;">
+                        <div class="login_form">
                             <ul>
-                                <li class="bold">毎ログイン時にこの画面を表示させる。</li>
+                                <li class="bold small">毎ログイン時にこの画面を表示させる。</li>
                             </ul>
-                            <span class="button2 login_welcome"
-                                style="position: absolute; top: 20px;">&emsp;YES&emsp;</span>
-                            <span class="button2 nologin_welcome"
-                                style="position: absolute; top: 20px; left: 70px;">&emsp;NO&emsp;</span>
+                            <div class="login_buttons">
+                                <span class="button2 login_welcome borderinline_dotted">&emsp;YES&emsp;</span>
+                                <span class="button2 nologin_welcome borderinline_dotted">&emsp;NO&emsp;</span>
+                            </div>
                         </div>
                     </div>
 
@@ -1409,7 +1410,7 @@
                         </div>
 
                         <p>mouse click</p>
-                        <span id="button1" class="button2">CLICK!</span><br>
+                        <span id="button1" class="button2 borderinline_dotted">CLICK!</span><br>
                         <div class="mini_window" style="display: flex;">
                             <span class="mouse_left border"
                                 style="margin-top: 5px; margin-bottom: 5px; text-align: center; display: block; width: 50px; height: 50px;">left</span>
@@ -1454,15 +1455,16 @@
                         </form>
                         <input type="submit" class="button2" value="submit" onclick="backtext_check()">
                         <input type="submit" class="button2" value="clear" onclick="backtext_clear()"><br>
-                        <button class="button2" id="backtext_on">backtext on</button><br>
-                        <button class="button2" id="backtext_off">backtext off</button>
+                        <button class="button2" id="backtext_on">&nbsp;backtext on&nbsp;</button><br>
+                        <button class="button2" id="backtext_off">&nbsp;backtext off&nbsp;</button>
                         <div class="mini_window">
                             <p>SIZE:&emsp;&emsp;</p>
                             <ul style="column-count: 2;">
-                                <li class="backtext_small"><button class="button2">small</button></li>
-                                <li class="backtext_medium"><button class="button2">medium</button></li>
-                                <li class="backtext_large"><button class="button2">large</button></li>
-                                <li onclick="backtextSize_clear()"><span class="button2">Reset</span></li>
+                                <li class="backtext_small"><button class="button2">&nbsp;small&nbsp;</button></li>
+                                <li class="backtext_medium"><button class="button2">&nbsp;medium&nbsp;</button></li>
+                                <li class="backtext_large"><button class="button2">&nbsp;large&nbsp;</button></li>
+                                <li onclick="backtextSize_clear()"><span
+                                        class="button2 borderinline_dotted">&nbsp;Reset&nbsp;</span></li>
                             </ul>
                         </div>
                         <div class="mini_window">
@@ -2815,9 +2817,9 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                     <span class="close_button3 button2">&nbsp;✕&nbsp;</span><br>
                     <p><span class="warning_icon">!</span>&emsp;&emsp;&nbsp;<span class="window_warning_text"></span>
                     </p>
-                    <span class="shutdown_button button2 shutdown" onclick="window_none()"
+                    <span class="shutdown_button button2 shutdown borderinline_dotted" onclick="window_none()"
                         style="position: absolute; top: 85%; left: 50%; transform: translate(-50%, -50%);">&emsp;OK&emsp;</span>
-                    <span class="warningclose_button button2"
+                    <span class="warningclose_button button2 borderinline_dotted"
                         style="display: none; position: absolute; top: 85%; left: 50%; transform: translate(-50%, -50%);"
                         onclick="warning_windows_close()">&emsp;OK&emsp;</span><br>
                 </div>
@@ -2839,14 +2841,10 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
     </div>
 
 </body>
-<script src="nexser_scripts/nexser.js"></script>
+<script defer src="nexser_scripts/nexser.js"></script>
 <script src="nexser_scripts/tetris.js"></script>
 <script>
     tetris = new tetris();
-    function mereset() {
-        const me = document.getElementById('message');
-        me.textContent = ""
-    }
 </script>
 
 </html>

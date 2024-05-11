@@ -312,3 +312,8 @@ class tetris {
         context.fillRect(0, 0, canvas.width, canvas.height);
     }
 }
+
+function mereset() {
+    const me = document.getElementById('message');
+    me.textContent = ""
+}
