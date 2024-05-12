@@ -27,6 +27,22 @@ body {
     background: darkblue;
 }
 
+.restart_text {
+    display: none;
+    background: black;
+    height: 100vh;
+    font-family: Courier;
+    font-size: 20px;
+    pointer-events: none;
+}
+
+.restart_text>p {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
 .nexser_boot_menu {
     -webkit-user-select: none;
     -moz-user-select: none;
@@ -92,6 +108,18 @@ li {
 
 .black_text {
     color: black;
+}
+
+.lime_text {
+    color: lime;
+}
+
+.red_text {
+    color: red;
+}
+
+.blue_text {
+    color: blue;
 }
 
 /* text_size */
@@ -211,6 +239,7 @@ li {
 }
 
 #prompt {
+    display: none;
     height: 100vh;
 
     font-family: Courier;
@@ -219,6 +248,10 @@ li {
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
+}
+
+.focus {
+    font-family: Courier;
 }
 
 #prompt2 {

@@ -82,53 +82,183 @@ if (ua.includes("mobile")) {
 
     const tetris_mneu = document.querySelector('.tetris_menu');
 
-    function load_nexser() {
 
-        if (!localStorage.getItem('start_nexser') && localStorage.getItem('prompt_data')) {
-            start_check()
-        } else if (localStorage.getItem('prompt_data') && localStorage.getItem('start_nexser')) {
-            prompt.style.display = "none";
-            nexser_program.style.display = "none";
-            nexser.style.display = "block";
-            desktop.style.display = "block"
-            taskbtn_load()
-            document.querySelector('.welcome_windows').style.display = "none";
-        } else if (localStorage.getItem('prompt_data3')) {
-            prompt.style.display = "none";
-            nexser_program.style.display = "block";
-            nexser.style.display = "none";
-            desktop.style.display = "none";
-            document.querySelector('html').style.cursor = 'crosshair';
-        } else {
-            prompt.style.display = "block";
-            nexser_program.style.display = "none";
-            nexser.style.display = "none";
-            desktop.style.display = "none";
-            document.querySelector('.focus').focus();
+    let sound_1 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/The-Microsoft-Sound.mp3");
+    let sound_2 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/tada.mp3");
+    let sound_3 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/chord.mp3");
+    let sound_4 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/chimes.mp3");
+    let sound_5 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/ding.mp3");
+    let sound_6 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/utopia.mp3");
+    let sound_7 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/welcome.mp3");
+    let sound_8 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/windows98.start.mp3");
+    let sound_9 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/windows98.logoff.mp3");
+    let sound_10 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/windows2000_startup.mp3");
+    let sound_11 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/windows2000_shutdown.mp3");
+    let sound_12 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/windowsxp_startup.mp3");
+    let sound_13 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/windowsxp_shutdown.mp3");
+    sound_1.preload = 'auto';
+    sound_2.preload = 'auto';
+    sound_3.preload = 'auto';
+    sound_4.preload = 'auto';
+    sound_5.preload = 'auto';
+    sound_6.preload = 'auto';
+    sound_7.preload = 'auto';
+    sound_8.preload = 'auto';
+    sound_9.preload = 'auto';
+    sound_10.preload = 'auto';
+    sound_11.preload = 'auto';
+    sound_12.preload = 'auto';
+    sound_13.preload = 'auto';
+
+    function sound() {
+        if (localStorage.getItem('driver_sound')) {
+            sound_1.play();
         }
-        if (localStorage.getItem('deskprompt')) {
-            nexser_program.style.display = "block";
-            desktop.style.display = "none";
-            document.querySelector('.pattern_backgrounds').style.display = "none";
-        } else {
-            document.querySelector('.pattern_backgrounds').style.display = "block";
+    }
+    function sound2() {
+        if (localStorage.getItem('driver_sound')) {
+            sound_2.play();
         }
-
-        sessionStorage.removeItem('start_camera');
-        localStorage.removeItem('note_texts');
-
+    }
+    function sound3() {
+        if (localStorage.getItem('driver_sound')) {
+            sound_3.play();
+        }
+    }
+    function sound4() {
+        if (localStorage.getItem('driver_sound')) {
+            sound_4.play();
+        }
+    }
+    function sound5() {
+        if (localStorage.getItem('driver_sound')) {
+            sound_5.play();
+        }
+    }
+    function sound6() {
+        if (localStorage.getItem('driver_sound')) {
+            sound_6.play();
+        }
+    }
+    function sound7() {
+        if (localStorage.getItem('driver_sound')) {
+            sound_7.play();
+        }
+    }
+    function sound8() {
+        if (localStorage.getItem('driver_sound')) {
+            sound_8.play();
+        }
+    }
+    function sound9() {
+        if (localStorage.getItem('driver_sound')) {
+            sound_9.play();
+        }
+    }
+    function sound10() {
+        if (localStorage.getItem('driver_sound')) {
+            sound_10.play();
+        }
+    }
+    function sound11() {
+        if (localStorage.getItem('driver_sound')) {
+            sound_11.play();
+        }
+    }
+    function sound12() {
+        if (localStorage.getItem('driver_sound')) {
+            sound_12.play();
+        }
+    }
+    function sound13() {
+        if (localStorage.getItem('driver_sound')) {
+            sound_13.play();
+        }
     }
 
-    let sound_1, sound_2, sound_3, sound_4, sound_5, sound_6, sound_7, sound_8, sound_9, sound_10, sound_11, sound_12, sound_13;
+    function sound_stop() {
+        sound_1.pause();
+        sound_2.pause();
+        sound_3.pause();
+        sound_4.pause();
+        sound_5.pause();
+        sound_6.pause();
+        sound_7.pause();
+        sound_8.pause();
+        sound_9.pause();
+        sound_10.pause();
+        sound_11.pause();
+        sound_12.pause();
+        sound_13.pause();
+        sound_1.currentTime = 0;
+        sound_2.currentTime = 0;
+        sound_3.currentTime = 0;
+        sound_4.currentTime = 0;
+        sound_5.currentTime = 0;
+        sound_6.currentTime = 0;
+        sound_7.currentTime = 0;
+        sound_8.currentTime = 0;
+        sound_9.currentTime = 0;
+        sound_10.currentTime = 0;
+        sound_11.currentTime = 0;
+        sound_12.currentTime = 0;
+        sound_13.currentTime = 0;
+
+        Array.from(sound_play_button).forEach((sound_play_buttons) => {
+            sound_play_buttons.textContent = "▶"
+        })
+    }
+
+    Array.from(sound_play_button).forEach((sound_play_buttons) => {
+        sound_play_buttons.textContent = "▶"
+    })
+    Array.from(sound_play_button).forEach((sound_play_buttons) => {
+        sound_play_buttons.addEventListener('mousedown', function () {
+            sound_stop()
+            Array.from(sound_play_button).forEach((sound_play_buttons) => {
+                sound_play_buttons.textContent = "▶"
+            })
+        })
+        sound_play_buttons.addEventListener('click', function () {
+            if (!localStorage.getItem('driver_sound')) {
+                document.querySelector('.window_error_text').textContent = "driver sound no install!"
+                error_windows.classList.remove('active')
+                prompt_text2.style.color = "";
+                sound3()
+                document.querySelector('.test_allwindow').style.display = "block";
+                sound_play_buttons.textContent = "▶"
+            } else {
+                sound_play_buttons.textContent = "||"
+            }
+        })
+    })
+    Array.from(sound_stop_button).forEach((sound_stop_buttons) => {
+        sound_stop_buttons.addEventListener('mousedown', function () {
+            sound_stop()
+            Array.from(sound_play_button).forEach((sound_play_buttons) => {
+                sound_play_buttons.textContent = "▶"
+            })
+        })
+    })
 
     new Promise((resolve) => {
         setTimeout(load_nexser, resolve());
         setTimeout(() => {
-            if (localStorage.getItem('driver_sound')) {
-                document.querySelector('.installbutton_1').textContent = "uninstall"
-            }
+            setColor();
+            taskbar_none();
+            title_none();
+            screen_backtextload();
+            notecolor_change();
+            taskgroup_load();
+            window_back_silver();
+            caload();
+            titlecolor_set();
+            back_pattern_set();
             if (localStorage.getItem('driver_color')) {
                 document.querySelector('.installbutton_2').textContent = "uninstall"
+            }
+            if (localStorage.getItem('driver_sound')) {
+                document.querySelector('.installbutton_1').textContent = "uninstall"
             }
             if (localStorage.getItem('backtext')) {
                 const backtext_data2 = localStorage.getItem('backtext_data');
@@ -328,172 +458,99 @@ if (ua.includes("mobile")) {
                 document.querySelector('#background_text').style.fontSize = "45px";
                 document.querySelector('#background_text2').style.fontSize = "45px"
             }
-            setColor();
-            taskbar_none();
-            title_none();
-            screen_backtextload();
-            notecolor_change();
-            taskgroup_load();
-            batterylevel();
-            window_back_silver();
-            caload();
-            titlecolor_set();
-            back_pattern_set();
+            resolve();
+        }, 0);
+        function taskgroup_load() {
+            setTimeout(() => {
+                var date = new Date();
+                var year = date.getFullYear();
+                var month = date.getMonth() + 1;
+                var day = date.getDate();
+                document.querySelector('.date_day').textContent = (year + "/" + month + "/" + day + "");
+                var hours = date.getHours().toString().padStart(2, '0');
+                var minutes = date.getMinutes().toString().padStart(2, '0');
+                var seconds = date.getSeconds().toString().padStart(2, '0');
+                let clock = document.getElementsByClassName('date_clock');
+                Array.from(clock).forEach((element) => {
+                    element.textContent = (hours + ":" + minutes + ":" + seconds + "");
+                });
+                navigator.getBattery().then((battery) => {
+                    if (battery.level == 1 && battery.charging == true) {
+                        document.querySelector('.battery_child').style.color = "lime"
+                        document.querySelector('.battery_child').style.background = "black"
+                    } else if (battery.charging == false) {
+                        document.querySelector('.battery_child').style.color = "black"
+                        document.querySelector('.battery_child').style.background = ""
+                    } else {
+                        document.querySelector('.battery_child').style.color = "#FF9900"
+                        document.querySelector('.battery_child').style.background = "black"
+                    }
 
-            resolve();
-        }, 10);
-        setTimeout(() => {
-            sound_1 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/The-Microsoft-Sound.mp3");
-            sound_2 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/tada.mp3");
-            sound_3 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/chord.mp3");
-            sound_4 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/chimes.mp3");
-            sound_5 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/ding.mp3");
-            sound_6 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/utopia.mp3");
-            sound_7 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/welcome.mp3");
-            sound_8 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/windows98.start.mp3");
-            sound_9 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/windows98.logoff.mp3");
-            sound_10 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/windows2000_startup.mp3");
-            sound_11 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/windows2000_shutdown.mp3");
-            sound_12 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/windowsxp_startup.mp3");
-            sound_13 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/windowsxp_shutdown.mp3");
-            //無事処理が終わったことを伝える
-            resolve();
-        }, 1000);
+                    if (battery.level == 0.20 && battery.charging == false) {
+                        document.querySelector('.notice_text').textContent = "バッテリー残量が少なくなっています!(※充電しない限りこの表示は残り続けます。)"
+                        notice_menu.style.left = "0px";
+                        notice_menu.classList.remove('active');
+                    } else {
+                        notice_menu.classList.add('active');
+                    }
+                    resolve()
+                }, 50)
+                setTimeout(() => {
+                    navigator.getBattery().then((battery) => {
+                        let bu = document.getElementsByClassName('taskbattery');
+                        bu2 = bu[0].textContent = Math.floor(battery.level * 100);
+                    });
+                    navigator.getBattery().then((battery) => {
+                        if (battery.charging == true) {
+                            document.getElementsByClassName('battery_time')[0].textContent = (`${battery.dischargingTime}`);
+                        } else if (battery.charging == false) {
+                            document.getElementsByClassName('battery_time')[0].textContent = (`${battery.dischargingTime}` + "seconds");
+                        }
+                    })
+                    resolve()
+                }, 50);
+                taskgroup_load();
+            }, 50)
+        }
     }).then(() => {
         // 処理が無事終わったことを受けとって実行される処理
         console.log("読み込み終了");
     });
 
-    function sound() {
-        if (localStorage.getItem('driver_sound')) {
-            sound_1.play();
+    function load_nexser() {
+        if (!localStorage.getItem('start_nexser') && localStorage.getItem('prompt_data')) {
+            start_check()
+        } else if (localStorage.getItem('prompt_data') && localStorage.getItem('start_nexser')) {
+            prompt.style.display = "none";
+            nexser_program.style.display = "none";
+            nexser.style.display = "block";
+            desktop.style.display = "block"
+            taskbtn_load()
+            document.querySelector('.welcome_windows').style.display = "none";
+        } else if (localStorage.getItem('prompt_data3')) {
+            prompt.style.display = "none";
+            nexser_program.style.display = "block";
+            nexser.style.display = "none";
+            desktop.style.display = "none";
+            document.querySelector('html').style.cursor = 'crosshair';
+        } else {
+            prompt.style.display = "block";
+            nexser_program.style.display = "none";
+            nexser.style.display = "none";
+            desktop.style.display = "none";
+            document.querySelector('.focus').focus();
         }
-    }
-    function sound2() {
-        if (localStorage.getItem('driver_sound')) {
-            sound_2.play();
+        if (localStorage.getItem('deskprompt')) {
+            nexser_program.style.display = "block";
+            desktop.style.display = "none";
+            document.getElementsByClassName('pattern_backgrounds')[0].style.display = "none";
+        } else {
+            document.getElementsByClassName('pattern_backgrounds')[0].style.display = "block";
         }
-    }
-    function sound3() {
-        if (localStorage.getItem('driver_sound')) {
-            sound_3.play();
-        }
-    }
-    function sound4() {
-        if (localStorage.getItem('driver_sound')) {
-            sound_4.play();
-        }
-    }
-    function sound5() {
-        if (localStorage.getItem('driver_sound')) {
-            sound_5.play();
-        }
-    }
-    function sound6() {
-        if (localStorage.getItem('driver_sound')) {
-            sound_6.play();
-        }
-    }
-    function sound7() {
-        if (localStorage.getItem('driver_sound')) {
-            sound_7.play();
-        }
-    }
-    function sound8() {
-        if (localStorage.getItem('driver_sound')) {
-            sound_8.play();
-        }
-    }
-    function sound9() {
-        if (localStorage.getItem('driver_sound')) {
-            sound_9.play();
-        }
-    }
-    function sound10() {
-        if (localStorage.getItem('driver_sound')) {
-            sound_10.play();
-        }
-    }
-    function sound11() {
-        if (localStorage.getItem('driver_sound')) {
-            sound_11.play();
-        }
-    }
-    function sound12() {
-        if (localStorage.getItem('driver_sound')) {
-            sound_12.play();
-        }
-    }
-    function sound13() {
-        if (localStorage.getItem('driver_sound')) {
-            sound_13.play();
-        }
-    }
 
-    function sound_stop() {
-        sound_1.pause();
-        sound_2.pause();
-        sound_3.pause();
-        sound_4.pause();
-        sound_5.pause();
-        sound_6.pause();
-        sound_7.pause();
-        sound_8.pause();
-        sound_9.pause();
-        sound_10.pause();
-        sound_11.pause();
-        sound_12.pause();
-        sound_13.pause();
-        sound_1.currentTime = 0;
-        sound_2.currentTime = 0;
-        sound_3.currentTime = 0;
-        sound_4.currentTime = 0;
-        sound_5.currentTime = 0;
-        sound_6.currentTime = 0;
-        sound_7.currentTime = 0;
-        sound_8.currentTime = 0;
-        sound_9.currentTime = 0;
-        sound_10.currentTime = 0;
-        sound_11.currentTime = 0;
-        sound_12.currentTime = 0;
-        sound_13.currentTime = 0;
-
-        Array.from(sound_play_button).forEach((sound_play_buttons) => {
-            sound_play_buttons.textContent = "▶"
-        })
+        sessionStorage.removeItem('start_camera');
+        localStorage.removeItem('note_texts');
     }
-
-    Array.from(sound_play_button).forEach((sound_play_buttons) => {
-        sound_play_buttons.textContent = "▶"
-    })
-    Array.from(sound_play_button).forEach((sound_play_buttons) => {
-        sound_play_buttons.addEventListener('mousedown', function () {
-            sound_stop()
-            Array.from(sound_play_button).forEach((sound_play_buttons) => {
-                sound_play_buttons.textContent = "▶"
-            })
-        })
-        sound_play_buttons.addEventListener('click', function () {
-            if (!localStorage.getItem('driver_sound')) {
-                document.querySelector('.window_error_text').textContent = "driver sound no install!"
-                error_windows.classList.remove('active')
-                prompt_text2.style.color = "";
-                sound3()
-                document.querySelector('.test_allwindow').style.display = "block";
-                sound_play_buttons.textContent = "▶"
-            } else {
-                sound_play_buttons.textContent = "||"
-            }
-        })
-    })
-    Array.from(sound_stop_button).forEach((sound_stop_buttons) => {
-        sound_stop_buttons.addEventListener('mousedown', function () {
-            sound_stop()
-            Array.from(sound_play_button).forEach((sound_play_buttons) => {
-                sound_play_buttons.textContent = "▶"
-            })
-        })
-    })
 
     document.querySelector('#prompt').addEventListener('click', function () {
         document.querySelector('.focus').focus();
@@ -589,8 +646,8 @@ if (ua.includes("mobile")) {
     function nexser_program_open() {
         func2();
         desktop.style.display = "none";
-        document.querySelector('.pattern_backgrounds').style.display = "none";
-        document.querySelector('.welcome_windows').style.display = "none";
+        document.getElementsByClassName('pattern_backgrounds')[0].style.display = "none";
+        document.getElementsByClassName('welcome_windows')[0].style.display = "none";
         sound_stop();
         document.querySelector('.prompt_error_text').textContent = "";
         document.querySelector('html').style.cursor = 'crosshair';
@@ -600,8 +657,8 @@ if (ua.includes("mobile")) {
             setTimeout(function () {
                 taskbar_none();
                 nexser_program.style.display = "block";
-            }, 100);
-        }, 100);
+            }, 50);
+        }, 50);
     }
 
     function nexser_program_close() {
@@ -615,15 +672,15 @@ if (ua.includes("mobile")) {
                     taskbar_none();
                     nexser_program.style.display = "none";
                     document.querySelector('.focus').focus();
-                }, 500);
-            }, 500);
+                }, 100);
+            }, 100);
         } else {
             nexser_program.style.display = "none";
             localStorage.removeItem('deskprompt');
             setTimeout(() => {
                 desktop.style.display = "block";
-                document.querySelector('.pattern_backgrounds').style.display = "block";
-            }, 1000);
+                document.getElementsByClassName('pattern_backgrounds')[0].style.display = "block";
+            }, 500);
         }
     }
 
@@ -913,6 +970,7 @@ if (ua.includes("mobile")) {
                     }
                     setTimeout(() => {
                         window_none();
+                        console.log("noneeee")
                         desktop.style.display = "none";
                         localStorage.removeItem('prompt_data');
                         window_reset();
@@ -1005,11 +1063,11 @@ if (ua.includes("mobile")) {
                             msg.innerText = "";
                             prompt_text.style.color = "";
                             nexser.style.display = "none";
-                            document.querySelector('.restart').style.display = "block";
+                            document.querySelector('.restart_text').style.display = "block";
                             start_menu.style.display = "none";
                         }, 500);
                         setTimeout(() => {
-                            document.querySelector('.restart').style.display = "none";
+                            document.querySelector('.restart_text').style.display = "none";
                         }, 2500);
                         setTimeout(() => {
                             nexser_start()
@@ -1087,27 +1145,21 @@ if (ua.includes("mobile")) {
                 desktop.style.display = "block";
                 document.getElementById('files').style.display = "block";
                 document.getElementById('taskbar').style.display = "block";
-            }, 1000);
-            setTimeout(() => {
-                setColor()
-                document.querySelector('html').style.cursor = '';
-            }, 2000);
-            setTimeout(() => {
-                startup_window_open()
-                taskbtn_load()
-            }, 3000);
-        }, 100);
-    }
-
-    document.querySelector('.startnexser_close').addEventListener('mouseup', function () {
-        setTimeout(() => {
-            document.querySelector('.welcome_windows').style.display = "none"
-            setTimeout(() => {
-                desktop.style.display = "block"
             }, 500);
             setTimeout(() => {
                 setColor()
+                document.querySelector('html').style.cursor = '';
+            }, 1500);
+            setTimeout(() => {
+                startup_window_open()
+                taskbtn_load()
             }, 2000);
+        }, 50);
+    }
+
+    document.getElementsByClassName('startnexser_close')[0].addEventListener('click', function () {
+        setTimeout(() => {
+            document.querySelector('.welcome_windows').style.display = "none"
         }, 100);
     })
 
@@ -1122,57 +1174,51 @@ if (ua.includes("mobile")) {
 
     function welcome_animation() {
         sound_stop();
-        document.querySelector('html').style.cursor = 'none';
         sound7();
-        document.querySelector('.start_nexser').style.display = "none";
-        document.querySelector('.startnexser_close').style.display = "none";
-        document.querySelector('.welcome_window_inline').style.display = "none";
-        document.querySelector('.welcome_text1').style.position = "absolute";
-        document.querySelector('.welcome_text1').style.fontSize = "80px";
-        document.querySelector('.welcome_text1').style.marginTop = "125px";
-        document.querySelector('.welcome_text1').style.marginLeft = "50px";
-        document.querySelector('.welcome_underline').style.right = "0";
-        const welunder = document.querySelector('.welcome_underline');
-        welunder.style.width = "0%"
-        document.querySelector('.welcome_text2').style.display = "none";
-        document.querySelector('.welcome_icons').style.display = "none";
+        document.querySelector('html').style.cursor = 'none';
+        document.getElementsByClassName('start_nexser')[0].style.display = "none";
+        document.getElementsByClassName('startnexser_close')[0].style.display = "none";
+        document.getElementsByClassName('welcome_window_inline')[0].style.display = "none";
+        document.getElementsByClassName('welcome_text1')[0].style.position = "absolute";
+        document.getElementsByClassName('welcome_text1')[0].style.fontSize = "80px";
+        document.getElementsByClassName('welcome_text1')[0].style.marginTop = "125px";
+        document.getElementsByClassName('welcome_text1')[0].style.marginLeft = "50px";
+        document.getElementsByClassName('welcome_underline')[0].style.right = "0";
+        document.getElementsByClassName('welcome_underline')[0].style.width = "0%";
+        document.getElementsByClassName('welcome_text2')[0].style.display = "none";
+        document.getElementsByClassName('welcome_icons')[0].style.display = "none";
 
         setTimeout(() => {
 
             setTimeout(() => {
-                document.querySelector('.welcome_window_inline').style.display = "block"
+                document.getElementsByClassName('welcome_window_inline')[0].style.display = "block"
                 setTimeout(() => {
-                    document.querySelector('.welcome_text1').style.fontSize = "70px"
-                    document.querySelector('.welcome_text1').style.marginTop = "80px"
-                    document.querySelector('.welcome_text1').style.marginLeft = "25px"
-                    document.querySelector('.welcome_text1').style.transition = "0.3s cubic-bezier(0, 0, 1, 1)"
-                    document.querySelector('.welcome_text1').style.fontSize = "40px"
-                    document.querySelector('.welcome_text1').style.marginTop = "0px"
-                    document.querySelector('.welcome_text1').style.marginLeft = "0px"
+                    document.getElementsByClassName('welcome_text1')[0].style.fontSize = "70px"
+                    document.getElementsByClassName('welcome_text1')[0].style.marginTop = "80px"
+                    document.getElementsByClassName('welcome_text1')[0].style.marginLeft = "25px"
+                    document.getElementsByClassName('welcome_text1')[0].style.transition = "0.25s cubic-bezier(0, 0, 1, 1)"
+                    document.getElementsByClassName('welcome_text1')[0].style.fontSize = "40px"
+                    document.getElementsByClassName('welcome_text1')[0].style.marginTop = "0px"
+                    document.getElementsByClassName('welcome_text1')[0].style.marginLeft = "0px"
+                }, 500);
+
+                setTimeout(() => {
+                    document.getElementsByClassName('welcome_underline')[0].style.width = "5%"
+                    document.getElementsByClassName('welcome_underline')[0].style.transition = "0.25s cubic-bezier(0, 0, 1, 1)"
+                    document.getElementsByClassName('welcome_underline')[0].style.width = "100%"
+                    setTimeout(() => {
+                        document.getElementsByClassName('welcome_text2')[0].style.display = "block";
+                        document.getElementsByClassName('welcome_icons')[0].style.display = "block";
+                        document.querySelector('html').style.cursor = '';
+                        if (!localStorage.getItem('start_nexser')) {
+                            document.getElementsByClassName('start_nexser')[0].style.display = "block";
+                        } else {
+                            document.getElementsByClassName('start_nexser')[0].style.display = "none";
+                            document.getElementsByClassName('startnexser_close')[0].style.display = "block";
+                        }
+                    }, 300);
                 }, 1000);
 
-                setTimeout(() => {
-                    welunder.style.width = "5%"
-                    welunder.style.transition = "0.5s cubic-bezier(0, 0, 1, 1)"
-                    welunder.style.width = "100%"
-                }, 2000);
-
-                setTimeout(() => {
-                    document.querySelector('.welcome_text2').style.display = "block";
-                }, 2500);
-                setTimeout(() => {
-                    document.querySelector('.welcome_icons').style.display = "block";
-                    document.querySelector('html').style.cursor = '';
-                }, 3000);
-
-                setTimeout(() => {
-                    if (!localStorage.getItem('start_nexser')) {
-                        document.querySelector('.start_nexser').style.display = "block";
-                    } else {
-                        document.querySelector('.start_nexser').style.display = "none";
-                        document.querySelector('.startnexser_close').style.display = "block";
-                    }
-                }, 3500);
             }, 250);
 
         });
@@ -1181,7 +1227,6 @@ if (ua.includes("mobile")) {
 
     function welcome() {
         document.querySelector('.welcome_windows').style.display = "block"
-        desktop.style.display = "none";
         welcome_animation();
     }
 
@@ -2069,51 +2114,51 @@ if (ua.includes("mobile")) {
 
     setInterval(() => {
         if (prompt.style.display == "block") {
-            navigator.getBattery().then(function (battery) {
-                document.querySelector('.level').innerHTML = battery.level;
-                document.querySelector('.charging').innerHTML = battery.charging;
-                document.querySelector('.chargingTime').innerHTML = battery.chargingTime;
-                document.querySelector('.dischargingTime').innerHTML = battery.dischargingTime;
+            navigator.getBattery().then((battery) => {
+                document.getElementsByClassName('level')[0].innerHTML = battery.level;
+                document.getElementsByClassName('charging')[0].innerHTML = battery.charging;
+                document.getElementsByClassName('chargingTime')[0].innerHTML = battery.chargingTime;
+                document.getElementsByClassName('dischargingTime')[0].innerHTML = battery.dischargingTime;
             });
-            document.querySelector('.memory').textContent = (`Memory:   ${(performance.memory.usedJSHeapSize / 1024).toFixed(2)}KB`);
-            document.querySelector('.memory2').textContent = (`使用可能なメモリ    ${(performance.memory.jsHeapSizeLimit / 1048576).toFixed(2)}MB`);
-            document.querySelector('.memory3').textContent = (`割り当てられたメモリ  ${(performance.memory.totalJSHeapSize / 1024).toFixed(2)}KB`);
-            document.querySelector('.memory4').textContent = (`現在使用中のメモリ   ${(performance.memory.usedJSHeapSize / 1024).toFixed(2)}KB`);
+            document.getElementsByClassName('memory')[0].textContent = (`Memory:   ${(performance.memory.usedJSHeapSize / 1024).toFixed(2)}KB`);
+            document.getElementsByClassName('memory2')[0].textContent = (`使用可能なメモリ    ${(performance.memory.jsHeapSizeLimit / 1048576).toFixed(2)}MB`);
+            document.getElementsByClassName('memory3')[0].textContent = (`割り当てられたメモリ  ${(performance.memory.totalJSHeapSize / 1024).toFixed(2)}KB`);
+            document.getElementsByClassName('memory4')[0].textContent = (`現在使用中のメモリ   ${(performance.memory.usedJSHeapSize / 1024).toFixed(2)}KB`);
 
             const locallength = localStorage.length;
-            document.querySelector('.length_localStorage').textContent = (locallength);
+            document.getElementsByClassName('length_localStorage')[0].textContent = (locallength);
 
         } else {
             const locallength = localStorage.length;
-            document.querySelector('.tests').textContent = (locallength);
+            document.getElementsByClassName('tests')[0].textContent = (locallength);
 
             const backtext_data2 = localStorage.getItem('backtext_data');
-            document.querySelector('#background_text2').textContent = (backtext_data2)
+            document.getElementById('background_text2').textContent = (backtext_data2)
 
             const get = document.getElementsByClassName('child_windows');
             const get2 = document.getElementsByClassName('active');
             gets = get.length;
             gets2 = get2.length - 1;
-            document.querySelector('.child_windows_length').textContent = (gets);
-            document.querySelector('.active_length').textContent = (gets2);
+            document.getElementsByClassName('child_windows_length')[0].textContent = (gets);
+            document.getElementsByClassName('active_length')[0].textContent = (gets2);
 
             if (localStorage.getItem(KEY_BKCOLOR, bkcolor)) {
-                document.querySelector(".mini_desktop").style.backgroundColor = bkcolor;
+                document.getElementsByClassName('mini_desktop')[0].style.backgroundColor = bkcolor;
             }
 
             if (localStorage.getItem('MemoData_export')) {
-                document.querySelector('.inport_icon').style.color = "white"
-                document.querySelector('.inport_icon').style.background = "black"
+                document.getElementsByClassName('inport_icon')[0].style.color = "white"
+                document.getElementsByClassName('inport_icon')[0].style.background = "black"
             } else {
-                document.querySelector('.inport_icon').style.color = ""
-                document.querySelector('.inport_icon').style.background = ""
+                document.getElementsByClassName('inport_icon')[0].style.color = ""
+                document.getElementsByClassName('inport_icon')[0].style.background = ""
             }
             const un = document.getElementsByClassName('navy').length;
             document.querySelector('.title_navy').textContent = un;
         }
     }, 100);
 
-    document.querySelectorAll('.window_inline_list').forEach(function (window_inline_list) {
+    Array.from(document.getElementsByClassName('window_inline_list')).forEach((window_inline_list) => {
         window_inline_list.addEventListener('click', function () {
             taskbtn_load()
         });
@@ -3524,27 +3569,30 @@ if (ua.includes("mobile")) {
      * 文字色と背景色を変更する
      */
     function setColor() {
-        if (localStorage.getItem('driver_color')) {
-            document.querySelector("body").style.color = color;
-            document.getElementById("nexser").style.backgroundColor = bkcolor;
-            document.getElementsByClassName("mini_desktop")[0].style.backgroundColor = bkcolor;
-            if (bkcolor == "white" || bkcolor == "whitesmoke") {
-                background_text.style.color = "black"
-                document.getElementById('background_text2').style.color = "black"
-                Array.from(document.getElementsByClassName('desktop_files')).forEach((desktop_files) => {
-                    const deskfile_text = desktop_files.firstElementChild;
-                    deskfile_text.style.color = "black"
-                })
-            } else {
-                background_text.style.color = ""
-                document.getElementById('background_text2').style.color = ""
-                Array.from(document.getElementsByClassName('desktop_files')).forEach((desktop_files) => {
-                    const deskfile_text = desktop_files.firstElementChild;
-                    deskfile_text.style.color = ""
-                })
+        setTimeout(() => {
+            if (localStorage.getItem('driver_color')) {
+                document.querySelector("body").style.color = color;
+                document.getElementById("nexser").style.backgroundColor = bkcolor;
+                document.getElementsByClassName("mini_desktop")[0].style.backgroundColor = bkcolor;
+                if (bkcolor == "white" || bkcolor == "whitesmoke") {
+                    background_text.style.color = "black"
+                    document.getElementById('background_text2').style.color = "black"
+                    Array.from(document.getElementsByClassName('desktop_files')).forEach((desktop_files) => {
+                        const deskfile_text = desktop_files.firstElementChild;
+                        deskfile_text.style.color = "black"
+                    })
+                } else {
+                    background_text.style.color = ""
+                    document.getElementById('background_text2').style.color = ""
+                    Array.from(document.getElementsByClassName('desktop_files')).forEach((desktop_files) => {
+                        const deskfile_text = desktop_files.firstElementChild;
+                        deskfile_text.style.color = ""
+                    })
+                }
             }
-        }
+        }, 0);
     }
+
     /*
      * 起動時にローカルストレージの内容をチェックして色を設定
      */
@@ -3900,44 +3948,6 @@ if (ua.includes("mobile")) {
         } else if (ele.requestFullscreen) {
             document.exitFullscreen() // HTML5 Fullscreen API
         }
-    }
-
-    function taskgroup_load() {
-        setTimeout(() => {
-            var date = new Date();
-            var year = date.getFullYear();
-            var month = date.getMonth() + 1;
-            var day = date.getDate();
-            document.querySelector('.date_day').textContent = (year + "/" + month + "/" + day + "");
-            var hours = date.getHours().toString().padStart(2, '0');
-            var minutes = date.getMinutes().toString().padStart(2, '0');
-            var seconds = date.getSeconds().toString().padStart(2, '0');
-            let clock = document.getElementsByClassName('date_clock');
-            Array.from(clock).forEach((element) => {
-                element.textContent = (hours + ":" + minutes + ":" + seconds + "");
-            });
-            navigator.getBattery().then(function (battery) {
-                if (battery.level == 1 && battery.charging == true) {
-                    document.querySelector('.battery_child').style.color = "lime"
-                    document.querySelector('.battery_child').style.background = "black"
-                } else if (battery.charging == false) {
-                    document.querySelector('.battery_child').style.color = "black"
-                    document.querySelector('.battery_child').style.background = ""
-                } else {
-                    document.querySelector('.battery_child').style.color = "#FF9900"
-                    document.querySelector('.battery_child').style.background = "black"
-                }
-
-                if (battery.level == 0.20 && battery.charging == false) {
-                    document.querySelector('.notice_text').textContent = "バッテリー残量が少なくなっています!(※充電しない限りこの表示は残り続けます。)"
-                    notice_menu.style.left = "0px";
-                    notice_menu.classList.remove('active');
-                } else {
-                    notice_menu.classList.add('active');
-                }
-            })
-            taskgroup_load();
-        })
     }
 
     const nowdate = new Date();
@@ -4420,7 +4430,7 @@ if (ua.includes("mobile")) {
     }
 
     function window_file_list_change() {
-        document.querySelectorAll('.window_inline_list').forEach(function (window_inline_list) {
+        Array.from(document.getElementsByClassName('window_inline_list')).forEach((window_inline_list) => {
             window_inline_list.style.columnCount = "1";
             window_inline_list.style.display = "block";
         });
@@ -4439,7 +4449,7 @@ if (ua.includes("mobile")) {
         });
     }
     function window_file_list_reset() {
-        document.querySelectorAll('.window_inline_list').forEach(function (window_inline_list) {
+        Array.from(document.getElementsByClassName('window_inline_list')).forEach((window_inline_list) => {
             window_inline_list.style.columnCount = "";
             window_inline_list.style.display = "flex";
         });
@@ -4597,23 +4607,6 @@ if (ua.includes("mobile")) {
             const file10 = df1.firstElementChild;
             file10.classList.remove('file_select');
         })
-    }
-
-    function batterylevel() {
-        setTimeout(() => {
-            navigator.getBattery().then(function (battery) {
-                let bu = document.getElementsByClassName('taskbattery');
-                bu2 = bu[0].innerHTML = Math.floor(battery.level * 100);
-            });
-            navigator.getBattery().then((battery) => {
-                if (battery.charging == true) {
-                    document.getElementsByClassName('battery_time')[0].textContent = (`${battery.dischargingTime}`);
-                } else if (battery.charging == false) {
-                    document.getElementsByClassName('battery_time')[0].textContent = (`${battery.dischargingTime}` + "seconds");
-                }
-            })
-            batterylevel();
-        });
     }
 
     async function startCamera() {
@@ -4831,7 +4824,7 @@ if (ua.includes("mobile")) {
             };
             setTimeout(() => {
                 load()
-            }, 1000);
+            }, 500);
         }
     }
     function fileChanged2(input) {
@@ -4846,7 +4839,7 @@ if (ua.includes("mobile")) {
                     getStorage();
                     setStorage()
                     setColor()
-                }, 1000);
+                }, 500);
             };
         }
     }
@@ -4862,7 +4855,7 @@ if (ua.includes("mobile")) {
                     getStorage();
                     setStorage()
                     setColor()
-                }, 1000);
+                }, 500);
             };
         }
     }
@@ -4879,7 +4872,7 @@ if (ua.includes("mobile")) {
                     getStorage();
                     setStorage()
                     setColor()
-                }, 1000);
+                }, 500);
             };
         }
     }

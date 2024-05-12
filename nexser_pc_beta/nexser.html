@@ -24,14 +24,13 @@
 
 <body>
     <div id="nex" class="nexser_group">
-        <div id="prompt" style="display: none;">
+        <div id="prompt">
             <div class="prompt_text">[nexser prompt beta version v1.4<span class="test_name"></span>]</div>
             <form autocomplete="off" method="get" name="prompt_text_form" onsubmit="return false;">
-                <span>nexser\></span><input type="text" class="name focus" style="font-family: Courier;"
-                    name="prompt_text" placeholder="|">
+                <span>nexser\></span><input type="text" class="name focus" name="prompt_text" placeholder="|">
             </form>
             <p class="prompt_error_text"></p>
-            <div style="color: lime;">
+            <div class="lime_text">
                 <p class="memory"></p>
                 <p class="memory2"></p>
                 <p class="memory3"></p>
@@ -47,27 +46,22 @@
                 <ul>
                     <li>help command(click)</li>
                     <li class="hover_blue"
-                        style="display: inline-block; color: white; border: solid 1px white; box-shadow: 5px 5px #888888;"
+                        style="display: inline-block; border: solid 1px white; box-shadow: 5px 5px #888888;"
                         onclick="help_command()">nexser open</li>
 
                     <li class="hover_blue"
-                        style="margin-top: 50px; position: absolute; left: 0px; display: inline-block; color: white; border: solid 1px white; box-shadow: 5px 5px #888888;"
+                        style="margin-top: 50px; position: absolute; left: 0px; display: inline-block; border: solid 1px white; box-shadow: 5px 5px #888888;"
                         onclick="help_command2()">nexser program</li>
 
                     <li class="hover_red"
-                        style="margin-top: 100px; position: absolute; left: 0px; display: inline-block; color: white; border: solid 1px white; box-shadow: 5px 5px #888888;"
+                        style="margin-top: 100px; position: absolute; left: 0px; display: inline-block; border: solid 1px white; box-shadow: 5px 5px #888888;"
                         onclick="help_command_clear()">command clear</li>
                 </ul>
             </div>
             <progress id="myProgress" value="0" max="100">0%</progress><br><br><br><br><br><br>
 
             <code>
-                    <textarea id="code_html" style="display: none; width: 99%; height: 65vh; background-color: black; color: white; resize: none; outline: none;">
-
-                        
-
-
-
+                    <textarea id="code_html" style="display: none; width: 99%; height: 65vh; background-color: black; resize: none; outline: none;">
 
 
 
@@ -76,12 +70,7 @@
 
 
             <code>
-                    <textarea id="code_script" style="display: none; width: 99%; height: 65vh; background-color: black; color: white; resize: none; outline: none;">
-
-                        
-
-
-
+                    <textarea id="code_script" style="display: none; width: 99%; height: 65vh; background-color: black; resize: none; outline: none;">
 
 
 
@@ -106,9 +95,10 @@
 
         <div id="nexser_program">
             <div>
-                <span style="display: block; text-align: center; color: white;">NEXSER
+                <span style="display: block; text-align: center;" class="white_text">NEXSER
                     PROGRAM</span>
-                <div style="border: double 5px white; border-color: darkblue; height: 90vh; background-color: #DCDCDC;">
+                <div style=" border: double 5px white; border-color: darkblue; height: 90vh; background-color:
+                    #DCDCDC;">
                     <p>NEXSER PROGRAM STARTUP LIST</p>
                     <div class="mini_window" style="border-color: darkblue;">
                         <ul style="column-count: 2;">
@@ -149,10 +139,8 @@
             </div>
         </div>
 
-        <div class="restart" style="background: black; height: 100vh; display: none; pointer-events: none;">
-            <p
-                style="font-family: Courier; color: white; font-size: 20px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
-                nexser restart...</p>
+        <div class="restart_text white_text">
+            <p>nexser restart...</p>
         </div>
 
         <div id="nexser">
@@ -2842,9 +2830,9 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
 
 </body>
 <script defer src="nexser_scripts/nexser.js"></script>
-<!-- <script src="nexser_scripts/tetris.js"></script>
+<script src="nexser_scripts/tetris.js"></script>
 <script>
     tetris = new tetris();
-</script> -->
+</script>
 
 </html>
