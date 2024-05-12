@@ -2384,16 +2384,16 @@ if (ua.includes("mobile")) {
             windowright.classList.add('rightwindow');
 
             if (localStorage.getItem('taskbar_position_button')) {
-                windowright.style.left = "auto";
+                windowright.style.left = "";
                 windowright.style.top = "40px";
-                windowright.style.right = "0";
+                windowright.style.right = "0px";
                 windowright.style.height = "100%";
                 windowright.style.width = "49.9%";
                 windowright.style.transition = "0.08s cubic-bezier(0, 0, 1, 1)";
             } else {
-                windowright.style.left = "auto";
+                windowright.style.left = "";
                 windowright.style.top = "0";
-                windowright.style.right = "0";
+                windowright.style.right = "0px";
                 windowright.style.height = "100%";
                 windowright.style.width = "49.9%";
                 windowright.style.transition = "0.08s cubic-bezier(0, 0, 1, 1)";
@@ -2440,26 +2440,28 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.windowsize_reset').forEach(function (windowsize_reset) {
         windowsize_reset.addEventListener('click', function () {
             const windowsizereset = windowsize_reset.closest('.child_windows');
+            windowsizereset.style.transition = "0.08s cubic-bezier(0, 0, 1, 1)";
             const windowsizereset2 = windowsizereset.lastElementChild;
-            windowsizereset2.style.bottom = "0"
+            windowsizereset2.style.bottom = "0";
 
             if (windowsizereset.classList.contains('rightwindow')) {
                 windowsizereset.style.height = "";
-                windowsizereset.style.width = "0";
+                windowsizereset.style.width = "max-content";
+                windowsizereset.style.right = "0";
             } else {
                 windowsizereset.style.height = "";
                 windowsizereset.style.width = "";
+                windowsizereset.style.right = "";
             }
 
             windowsizereset.classList.remove('big');
 
-            windowsizereset.style.transition = "0.08s cubic-bezier(0, 0, 1, 1)"
             setTimeout(() => {
                 windowsizereset.style.transition = ""
             }, 100);
 
-            windowsizereset.classList.remove('rightwindow');
             windowsizereset.classList.remove('leftwindow');
+            windowsizereset.classList.remove('rightwindow');
 
             let shiftX = event.clientX - windowsize_reset.getBoundingClientRect().left;
             let shiftY = event.clientY - windowsize_reset.getBoundingClientRect().top;
