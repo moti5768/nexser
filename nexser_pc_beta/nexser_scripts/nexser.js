@@ -82,19 +82,19 @@ if (ua.includes("mobile")) {
 
     const tetris_mneu = document.querySelector('.tetris_menu');
 
-    let sound_1 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/The-Microsoft-Sound.mp3");
-    let sound_2 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/tada.mp3");
-    let sound_3 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/chord.mp3");
-    let sound_4 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/chimes.mp3");
-    let sound_5 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/ding.mp3");
-    let sound_6 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/utopia.mp3");
-    let sound_7 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/welcome.mp3");
-    let sound_8 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/windows98.start.mp3");
-    let sound_9 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/windows98.logoff.mp3");
-    let sound_10 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/windows2000_startup.mp3");
-    let sound_11 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/windows2000_shutdown.mp3");
-    let sound_12 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/windowsxp_startup.mp3");
-    let sound_13 = new Audio("//github.com/moti5768/nexser/raw/main/nexser_sounds/windowsxp_shutdown.mp3");
+    let sound_1 = new Audio("https://github.com/moti5768/nexser/raw/main/nexser_sounds/The-Microsoft-Sound.mp3");
+    let sound_2 = new Audio("https://github.com/moti5768/nexser/raw/main/nexser_sounds/tada.mp3");
+    let sound_3 = new Audio("https://github.com/moti5768/nexser/raw/main/nexser_sounds/chord.mp3");
+    let sound_4 = new Audio("https://github.com/moti5768/nexser/raw/main/nexser_sounds/chimes.mp3");
+    let sound_5 = new Audio("https://github.com/moti5768/nexser/raw/main/nexser_sounds/ding.mp3");
+    let sound_6 = new Audio("https://github.com/moti5768/nexser/raw/main/nexser_sounds/utopia.mp3");
+    let sound_7 = new Audio("https://github.com/moti5768/nexser/raw/main/nexser_sounds/welcome.mp3");
+    let sound_8 = new Audio("https://github.com/moti5768/nexser/raw/main/nexser_sounds/windows98.start.mp3");
+    let sound_9 = new Audio("https://github.com/moti5768/nexser/raw/main/nexser_sounds/windows98.logoff.mp3");
+    let sound_10 = new Audio("https://github.com/moti5768/nexser/raw/main/nexser_sounds/windows2000_startup.mp3");
+    let sound_11 = new Audio("https://github.com/moti5768/nexser/raw/main/nexser_sounds/windows2000_shutdown.mp3");
+    let sound_12 = new Audio("https://github.com/moti5768/nexser/raw/main/nexser_sounds/windowsxp_startup.mp3");
+    let sound_13 = new Audio("https://github.com/moti5768/nexser/raw/main/nexser_sounds/windowsxp_shutdown.mp3");
     sound_1.preload = 'auto';
     sound_2.preload = 'auto';
     sound_3.preload = 'auto';
