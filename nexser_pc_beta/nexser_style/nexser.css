@@ -255,13 +255,17 @@ li {
 }
 
 #prompt2 {
-    font-family: system-ui;
+    font-family: Courier;
     color: white;
     background: black;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
+}
+
+.focus2 {
+    font-family: Courier;
 }
 
 .nexser_group {
