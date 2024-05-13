@@ -1230,6 +1230,58 @@ body::-webkit-scrollbar {
     outline-offset: -3px;
 }
 
+.window_tool {
+    background: silver;
+    border-top: solid 1.5px gray;
+    height: 25px;
+}
+
+.windowtool_parent {
+    display: block;
+    background: whitesmoke;
+    width: 200px;
+    height: 20px;
+    border-top: solid 1.5px black;
+    border-left: solid 1.5px black;
+    border-right: solid 1.5px black;
+    border-bottom: solid 1.5px dimgray;
+    outline: solid 1px white;
+    margin-top: 1px;
+}
+
+.windowtool_child {
+    display: none;
+    overflow-y: scroll;
+    width: 200px;
+    height: 150px;
+    background-color: whitesmoke;
+    border: solid 1.5px dimgray;
+    outline: solid 1px black;
+    position: absolute;
+    top: 75px;
+    font-size: medium;
+    text-align: left;
+    justify-content: center;
+    z-index: 1;
+}
+
+.winchild_border {
+    display: block;
+    border: solid 0.5px white;
+    position: absolute;
+    width: 100%;
+    top: 50px;
+}
+
+.windowtool_child li {
+    padding-left: 35px;
+}
+
+.windowtool_child>ul>li:hover {
+    background: darkblue;
+    color: white;
+}
+
 #nexser_program li:hover {
     background: darkblue;
     color: white;

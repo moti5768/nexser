@@ -556,6 +556,9 @@ if (ua.includes("mobile")) {
     })
 
     document.getElementById('startbtn').addEventListener('mousedown', function () {
+        document.querySelectorAll('.windowtool_child').forEach(function (windowtool_child) {
+            windowtool_child.style.display = "none"
+        })
         Array.from(document.getElementsByClassName('desktop_files')).forEach((df1) => {
             const file10 = df1.firstElementChild;
             file10.classList.remove('file_select');
@@ -589,6 +592,9 @@ if (ua.includes("mobile")) {
         document.querySelectorAll('.title').forEach(function (wt) {
             wt.classList.remove('navy');
         })
+        document.querySelectorAll('.windowtool_child').forEach(function (windowtool_child) {
+            windowtool_child.style.display = "none"
+        })
         titlecolor_set();
     });
     document.getElementById('files').addEventListener('click', function () {
@@ -601,6 +607,9 @@ if (ua.includes("mobile")) {
         document.querySelectorAll('.title').forEach(function (wt) {
             wt.classList.remove('navy');
             titlecolor_set();
+        })
+        document.querySelectorAll('.windowtool_child').forEach(function (windowtool_child) {
+            windowtool_child.style.display = "none"
         })
     });
     parent_start_menu.addEventListener('click', function () {
@@ -1709,6 +1718,10 @@ if (ua.includes("mobile")) {
         notearea.style.width = "";
         warning_windows.style.display = "none";
         error_windows.classList.add('active');
+
+        document.querySelectorAll('.windowtool_child').forEach(function (windowtool_child) {
+            windowtool_child.style.display = "none"
+        })
     }
     function window_active() {
         document.querySelectorAll('.child_windows').forEach(function (allwindow_active) {
@@ -2538,6 +2551,9 @@ if (ua.includes("mobile")) {
         parent_list.addEventListener('mouseover', function () {
             let parentlist = parent_list.lastElementChild;
             parentlist.style.display = "flex"
+            document.querySelectorAll('.windowtool_child').forEach(function (windowtool_child) {
+                windowtool_child.style.display = "none"
+            })
             document.querySelectorAll('.parent_list').forEach(function (c_list) {
                 c_list.addEventListener('mouseleave', function () {
                     document.querySelectorAll('.child_list', '.active').forEach(function (cb_list) {
@@ -2547,6 +2563,46 @@ if (ua.includes("mobile")) {
             })
         })
     })
+
+
+    document.querySelectorAll('.windowtool_parent').forEach(function (windowtool_parent) {
+        windowtool_parent.addEventListener('mousedown', function () {
+            document.querySelectorAll('.windowtool_child').forEach(function (windowtool_child) {
+                windowtool_child.style.display = "none"
+            })
+        })
+        windowtool_parent.addEventListener('click', function () {
+            let parentlist = windowtool_parent.lastElementChild;
+            if (parentlist.style.display == "block") {
+                parentlist.style.display = "none"
+            } else {
+                parentlist.style.display = "block"
+            }
+        })
+    })
+
+    document.querySelectorAll('.title, .drag_button').forEach(function (title) {
+        title.addEventListener('mousedown', function () {
+            document.querySelectorAll('.windowtool_child').forEach(function (windowtool_child) {
+                windowtool_child.style.display = "none"
+            })
+        })
+    })
+    document.querySelectorAll('.title2').forEach(function (title2) {
+        title2.addEventListener('mousedown', function () {
+            document.querySelectorAll('.windowtool_child').forEach(function (windowtool_child) {
+                windowtool_child.style.display = "none"
+            })
+        })
+    })
+    document.querySelectorAll('.window_contents').forEach(function (window_contents) {
+        window_contents.addEventListener('mousedown', function () {
+            document.querySelectorAll('.windowtool_child').forEach(function (windowtool_child) {
+                windowtool_child.style.display = "none"
+            })
+        })
+    })
+
 
     Array.from(document.getElementsByClassName('desktop_files')).forEach((desktop_files) => {
         desktop_files.addEventListener('mousedown', function () {
