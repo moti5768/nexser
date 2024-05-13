@@ -457,6 +457,14 @@ if (ua.includes("mobile")) {
                 document.querySelector('#background_text').style.fontSize = "45px";
                 document.querySelector('#background_text2').style.fontSize = "45px"
             }
+            if (localStorage.getItem('allwindow_toolbar')) {
+                document.querySelectorAll('.window_tool').forEach(function (window_tool) {
+                    window_tool.style.display = "block"
+                })
+                document.querySelectorAll('.window_inline_side').forEach(function (window_inline_side) {
+                    window_inline_side.style.top = "31px"
+                })
+            }
             resolve();
         }, 0);
         function taskgroup_load() {
@@ -2572,6 +2580,26 @@ if (ua.includes("mobile")) {
             } else {
                 parentlist.style.display = "block"
             }
+        })
+    })
+    document.querySelectorAll('.allwindow_toolbar').forEach(function (allwindow_toolbar) {
+        allwindow_toolbar.addEventListener('click', function () {
+            document.querySelectorAll('.window_tool').forEach(function (window_tool) {
+                if (window_tool.style.display == "block") {
+                    window_tool.style.display = "none"
+                    localStorage.removeItem('allwindow_toolbar');
+
+                    document.querySelectorAll('.window_inline_side').forEach(function (window_inline_side) {
+                        window_inline_side.style.top = ""
+                    })
+                } else {
+                    window_tool.style.display = "block"
+                    localStorage.setItem('allwindow_toolbar', allwindow_toolbar);
+                    document.querySelectorAll('.window_inline_side').forEach(function (window_inline_side) {
+                        window_inline_side.style.top = "31px"
+                    })
+                }
+            })
         })
     })
 
