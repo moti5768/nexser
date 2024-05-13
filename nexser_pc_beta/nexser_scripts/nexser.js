@@ -4672,7 +4672,7 @@ if (ua.includes("mobile")) {
         window_files.addEventListener('mousedown', function () {
             fileborder_reset()
         })
-        window_files.addEventListener('mouseup', function () {
+        window_files.addEventListener('click', function () {
             fileborder_reset()
             window_files.classList.add('file_border');
         })

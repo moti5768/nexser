@@ -1036,6 +1036,10 @@ body::-webkit-scrollbar {
     position: absolute;
     color: white;
     pointer-events: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
 }
 
 .title_icon {
@@ -1235,6 +1239,10 @@ body::-webkit-scrollbar {
     background: silver;
     border-top: solid 1.5px gray;
     height: 30px;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
 }
 
 .windowtool_parent {
