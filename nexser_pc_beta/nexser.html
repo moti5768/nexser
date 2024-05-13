@@ -5554,13 +5554,7 @@
                                 })
                             })
                         
-                        
                             document.querySelectorAll(&#039;.windowtool_parent&#039;).forEach(function (windowtool_parent) {
-                                windowtool_parent.addEventListener(&#039;mousedown&#039;, function () {
-                                    document.querySelectorAll(&#039;.windowtool_child&#039;).forEach(function (windowtool_child) {
-                                        windowtool_child.style.display = &quot;none&quot;
-                                    })
-                                })
                                 windowtool_parent.addEventListener(&#039;click&#039;, function () {
                                     let parentlist = windowtool_parent.lastElementChild;
                                     if (parentlist.style.display == &quot;block&quot;) {

@@ -2564,13 +2564,7 @@ if (ua.includes("mobile")) {
         })
     })
 
-
     document.querySelectorAll('.windowtool_parent').forEach(function (windowtool_parent) {
-        windowtool_parent.addEventListener('mousedown', function () {
-            document.querySelectorAll('.windowtool_child').forEach(function (windowtool_child) {
-                windowtool_child.style.display = "none"
-            })
-        })
         windowtool_parent.addEventListener('click', function () {
             let parentlist = windowtool_parent.lastElementChild;
             if (parentlist.style.display == "block") {
