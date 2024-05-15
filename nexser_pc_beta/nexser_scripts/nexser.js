@@ -423,13 +423,35 @@ if (ua.includes("mobile")) {
                 document.querySelector('.child_start_menu').style.bottom = "auto"
                 document.querySelector('.battery_menu').style.top = "35px"
                 document.querySelector('.battery_menu').style.bottom = "auto"
-                document.querySelector('.files_inline').style.top = "40px"
-                document.querySelector('.files_inline').style.bottom = "auto"
             }
 
-            if (localStorage.getItem('taskbar_position_button')) {
-                toolbar.style.top = "40px";
+
+
+
+            if (localStorage.getItem('taskbar_position_button') && localStorage.getItem('data_taskbar_none')) {
+                document.querySelector('.files_inline').style.top = "auto"
+                document.querySelector('.files_inline').style.bottom = ""
+            } else if (localStorage.getItem('taskbar_position_button') && !localStorage.getItem('data_taskbar_none')) {
+                document.querySelector('.files_inline').style.top = "40px"
+                document.querySelector('.files_inline').style.bottom = "auto"
+            } else {
+                document.querySelector('.files_inline').style.top = "auto"
+                document.querySelector('.files_inline').style.bottom = ""
             }
+
+
+
+
+            if (localStorage.getItem('data_taskbar_none') && localStorage.getItem('taskbar_position_button')) {
+                toolbar.style.top = "0px";
+            } else if (localStorage.getItem('data_taskbar_none') && !localStorage.getItem('taskbar_position_button')) {
+                toolbar.style.bottom = "0px";
+            } else if (localStorage.getItem('taskbar_position_button')) {
+                toolbar.style.top = "40px";
+            } else {
+                toolbar.style.bottom = "40px";
+            }
+
             if (localStorage.getItem('toolbar_on')) {
                 toolbar.style.display = "block"
             }
@@ -1141,11 +1163,29 @@ if (ua.includes("mobile")) {
                     toolbar.style.bottom = "";
                     toolbar.style.left = "";
                     toolbar.style.top = "40px";
+
+                    if (localStorage.getItem('data_taskbar_none')) {
+                        taskbar.style.display = "none";
+                        toolbar.style.top = "0px";
+                    } else {
+                        taskbar.style.display = "block";
+                        toolbar.style.top = "40px";
+                    }
+
                 } else {
                     taskbar.style.display = "block";
                     toolbar.style.top = "";
                     toolbar.style.left = "";
                     toolbar.style.bottom = "40px";
+
+                    if (localStorage.getItem('data_taskbar_none')) {
+                        taskbar.style.display = "none";
+                        toolbar.style.bottom = "0px";
+                    } else {
+                        taskbar.style.display = "block";
+                        toolbar.style.bottom = "40px";
+                    }
+
                 }
                 document.getElementById('files').style.display = "block";
             }, 2000);
@@ -1775,6 +1815,8 @@ if (ua.includes("mobile")) {
             sessionStorage.clear();
             alldata_clear();
             document.querySelector('.tests').textContent = (alllength);
+            taskbar_active();
+            document.querySelector('.files_inline').style.display = "flex";
 
             document.querySelector('.test_allwindow').style.display = "block";
             warning_windows.style.display = "block";
@@ -1827,7 +1869,57 @@ if (ua.includes("mobile")) {
         if (localStorage.getItem('data_taskbar_none')) {
             taskbar.style.display = "none";
             my_computer.classList.remove('active');
+
+            if (localStorage.getItem('taskbar_position_button')) {
+                toolbar.style.top = "0px";
+            } else {
+                toolbar.style.bottom = "0px";
+            }
         }
+
+        if (localStorage.getItem('taskbar_position_button') && localStorage.getItem('data_taskbar_none')) {
+            document.querySelector('.files_inline').style.top = "auto"
+            document.querySelector('.files_inline').style.bottom = ""
+        } else if (localStorage.getItem('taskbar_position_button') && !localStorage.getItem('data_taskbar_none')) {
+            document.querySelector('.files_inline').style.top = "40px"
+            document.querySelector('.files_inline').style.bottom = "auto"
+        } else {
+            document.querySelector('.files_inline').style.top = "auto"
+            document.querySelector('.files_inline').style.bottom = ""
+        }
+
+    }
+
+    function taskbar_active() {
+        localStorage.removeItem('data_taskbar_none');
+        if (!localStorage.getItem('data_taskbar_none')) {
+            taskbar.style.display = "block";
+            my_computer.classList.remove('active');
+
+            if (check(elm1, elm2) && !localStorage.getItem('taskbar_position_button')) {
+                toolbar.style.bottom = "40px";
+            } else if (check(elm1, elm2)) {
+                toolbar.style.bottom = "";
+            }
+
+            if (check(elm1, elm2) && localStorage.getItem('taskbar_position_button')) {
+                toolbar.style.top = "40px";
+            } else if (check(elm1, elm2)) {
+                toolbar.style.top = "";
+            }
+        }
+
+        if (localStorage.getItem('taskbar_position_button') && localStorage.getItem('data_taskbar_none')) {
+            document.querySelector('.files_inline').style.top = "auto"
+            document.querySelector('.files_inline').style.bottom = ""
+        } else if (localStorage.getItem('taskbar_position_button') && !localStorage.getItem('data_taskbar_none')) {
+            document.querySelector('.files_inline').style.top = "40px"
+            document.querySelector('.files_inline').style.bottom = "auto"
+        } else {
+            document.querySelector('.files_inline').style.top = "auto"
+            document.querySelector('.files_inline').style.bottom = ""
+        }
+
     }
 
     function help_command() {
@@ -1990,10 +2082,9 @@ if (ua.includes("mobile")) {
                 taskbar_none()
                 break;
             case 'taskbar/active':
-                taskbar.style.display = "block";
                 document.querySelector('.prompt_error_text2').textContent = "タスクバーの表示がオンになりました。";
-                localStorage.removeItem('data_taskbar_none');
                 prompt_text2.style.color = "";
+                taskbar_active()
                 break;
             case 'allwindow/reset':
                 document.querySelector('.prompt_error_text2').textContent = "";
@@ -2222,6 +2313,8 @@ if (ua.includes("mobile")) {
                 const closebutton2 = close_button2.closest('.error_windows');
                 closebutton2.classList.add('active');
                 document.querySelector('.test_allwindow').style.display = "none";
+                document.getElementsByClassName('error_title_text')[0].textContent = "error"
+                document.getElementsByClassName('error_icon')[0].style.display = ""
             }, 100);
         });
     })
@@ -4684,8 +4777,16 @@ if (ua.includes("mobile")) {
             document.querySelector('.battery_menu').style.top = "35px"
             document.querySelector('.battery_menu').style.bottom = "auto"
 
-            document.querySelector('.files_inline').style.top = "40px"
-            document.querySelector('.files_inline').style.bottom = "auto"
+            if (localStorage.getItem('taskbar_position_button') && localStorage.getItem('data_taskbar_none')) {
+                document.querySelector('.files_inline').style.top = "auto"
+                document.querySelector('.files_inline').style.bottom = ""
+            } else if (localStorage.getItem('taskbar_position_button') && !localStorage.getItem('data_taskbar_none')) {
+                document.querySelector('.files_inline').style.top = "40px"
+                document.querySelector('.files_inline').style.bottom = "auto"
+            } else {
+                document.querySelector('.files_inline').style.top = "auto"
+                document.querySelector('.files_inline').style.bottom = ""
+            }
 
             document.querySelectorAll('.big').forEach(function (child_win_posi) {
                 child_win_posi.style.transition = "";

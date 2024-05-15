@@ -1021,6 +1021,7 @@ body::-webkit-scrollbar {
     color: white;
     position: absolute;
     left: 2px;
+    top: 46.5px;
     text-align: center;
     justify-content: center;
 }
@@ -2158,6 +2159,10 @@ progress::-webkit-progress-value {
 }
 
 .bom_menu {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
     width: 400px;
     height: 500px;
 }
@@ -2197,8 +2202,8 @@ progress::-webkit-progress-value {
     border-right: 1.5px #eee solid;
     border-top: 1.5px #333 solid;
     border-left: 1.5px #333 solid;
-    background: gray;
-    color: white;
+    background: darkgray;
+    color: black;
 }
 
 #board .bomb {
@@ -2212,8 +2217,8 @@ progress::-webkit-progress-value {
 }
 
 #board .clear {
-    display: block;
-    background-color: green;
+    display: inline-block;
+    background-color: limegreen;
     color: white;
     font-family: "Material Icons";
     content: "B";

@@ -19,7 +19,13 @@ function init() {
     w = Number(document.getElementById("w").value); // 横のマスの数
     bomb = Number(document.getElementById("b").value); // 爆弾の数
     if (h * w - 9 < bomb) {
-        alert("エラー：爆弾の数が正しく入力されていません。");
+
+        document.querySelector('html').style.cursor = '';
+        document.querySelector('.window_error_text').textContent = "エラー：爆弾の数が正しく入力されていません。"
+        document.getElementsByClassName('error_title_text')[0].textContent = "main sweeper"
+        document.getElementsByClassName('error_windows')[0].classList.remove('active')
+        sound3()
+        document.querySelector('.test_allwindow').style.display = "block";
         return;
     }
     data = [];
@@ -94,7 +100,14 @@ function leftClicked() {
             }
         }
         board.style.pointerEvents = "none";
-        alert("GAME OVER");
+
+        document.querySelector('html').style.cursor = '';
+        document.querySelector('.window_error_text').textContent = "　　GAMEOVER　　　　"
+        document.getElementsByClassName('error_title_text')[0].textContent = "main sweeper"
+        document.getElementsByClassName('error_icon')[0].style.display = "none"
+        document.getElementsByClassName('error_windows')[0].classList.remove('active')
+        document.querySelector('.test_allwindow').style.display = "block";
+
         clearTimeout(timeoutId);
         return;
     }
@@ -117,7 +130,14 @@ function leftClicked() {
             }
         }
         board.style.pointerEvents = "none";
-        alert("CLEAR!!");
+
+        document.querySelector('html').style.cursor = '';
+        document.querySelector('.window_error_text').textContent = "　　CLEAR　　　　"
+        document.getElementsByClassName('error_title_text')[0].textContent = "main sweeper"
+        document.getElementsByClassName('error_icon')[0].style.display = "none"
+        document.getElementsByClassName('error_windows')[0].classList.remove('active')
+        document.querySelector('.test_allwindow').style.display = "block";
+
         clearTimeout(timeoutId);
         return;
     }
