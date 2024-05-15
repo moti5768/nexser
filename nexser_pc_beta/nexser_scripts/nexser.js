@@ -81,6 +81,7 @@ if (ua.includes("mobile")) {
     // game
 
     const tetris_mneu = document.querySelector('.tetris_menu');
+    const bom_menu = document.querySelector('.bom_menu');
 
     let sound_1 = new Audio("https://github.com/moti5768/nexser/raw/main/nexser_sounds/The-Microsoft-Sound.mp3");
     let sound_2 = new Audio("https://github.com/moti5768/nexser/raw/main/nexser_sounds/tada.mp3");
@@ -1000,7 +1001,6 @@ if (ua.includes("mobile")) {
                         cpucalc_reset();
                         p_clear();
                         calc_clear();
-                        document.querySelector('.focus2').textContent = "";
 
                         setTimeout(() => {
                             document.querySelectorAll('.button').forEach(function (button) {
@@ -1527,7 +1527,8 @@ if (ua.includes("mobile")) {
 
     document.getElementById('window_invisible').addEventListener('click', function () {
         if (localStorage.getItem('window_invisible')) {
-            localStorage.removeItem('window_invisible')
+            localStorage.removeItem('window_invisible');
+            document.querySelector('.windowmode').textContent = "default"
         } else {
             windowmode_reset()
             const window_invisible = document.querySelector('#window_invisible');
@@ -1537,7 +1538,8 @@ if (ua.includes("mobile")) {
     })
     document.getElementById('window_borderblack').addEventListener('click', function () {
         if (localStorage.getItem('window_borderblack')) {
-            localStorage.removeItem('window_borderblack')
+            localStorage.removeItem('window_borderblack');
+            document.querySelector('.windowmode').textContent = "default"
         } else {
             windowmode_reset()
             const window_borderblack = document.querySelector('#window_borderblack');
@@ -2090,17 +2092,17 @@ if (ua.includes("mobile")) {
 
             case 'windows95/open':
                 document.querySelector('.prompt_error_text2').textContent = "";
-                window.open("//moti5768.github.io/moti.world/windows95.html");
+                window.open("https://moti5768.github.io/moti.world/windows95.html");
                 prompt_text2.style.color = "";
                 break;
             case 'windows2000/open':
                 document.querySelector('.prompt_error_text2').textContent = "";
-                window.open("//moti5768.github.io/moti.world/windows%202000/windows2000_beta.html");
+                window.open("https://moti5768.github.io/moti.world/windows%202000/windows2000_beta.html");
                 prompt_text2.style.color = "";
                 break;
             case 'windowsystem/open':
                 document.querySelector('.prompt_error_text2').textContent = "";
-                window.open("//moti5768.github.io/moti.world/new%20OS/WindowSystem.html");
+                window.open("https://moti5768.github.io/moti.world/new%20OS/WindowSystem.html");
                 prompt_text2.style.color = "";
                 break;
             default:
@@ -2112,7 +2114,7 @@ if (ua.includes("mobile")) {
     }
 
     function p_clear() {
-        document.querySelector('.p_text').value = "";
+        document.querySelector('.focus2').value = "";
     }
 
     function screen_backtextload() {
@@ -2175,6 +2177,8 @@ if (ua.includes("mobile")) {
             }
             const un = document.getElementsByClassName('navy').length;
             document.querySelector('.title_navy').textContent = un;
+
+            document.getElementsByClassName('cpu_cores')[0].textContent = (navigator.hardwareConcurrency);
         }
     }, 100);
 
@@ -2390,6 +2394,9 @@ if (ua.includes("mobile")) {
                 windowleft.style.width = "49.9%";
                 windowleft.style.transition = "0.08s cubic-bezier(0, 0, 1, 1)";
             }
+            setTimeout(() => {
+                windowleft.style.transition = ""
+            }, 100);
 
             windowleft.classList.remove('big');
             windowleft.classList.remove('default');
@@ -2419,6 +2426,9 @@ if (ua.includes("mobile")) {
                 windowright.style.width = "49.9%";
                 windowright.style.transition = "0.08s cubic-bezier(0, 0, 1, 1)";
             }
+            setTimeout(() => {
+                windowright.style.transition = ""
+            }, 100);
 
             windowright.classList.remove('big');
             windowright.classList.remove('default');
@@ -2761,6 +2771,11 @@ if (ua.includes("mobile")) {
             if (!note_pad.classList.contains('active')) {
                 document.querySelector('.note_area').focus()
             }
+        });
+    })
+    document.querySelectorAll('.window_prompt, .child').forEach(function (window_prompt) {
+        window_prompt.addEventListener('mouseup', function () {
+            document.querySelector('.focus2').focus()
         });
     })
 
@@ -3278,6 +3293,13 @@ if (ua.includes("mobile")) {
 
     function cpucalc_open() {
         const cpumenu1 = document.querySelector('.cpumenu_1');
+        z = largestZIndex++;
+        document.getElementsByClassName('cpu_calc_menu')[0].style.zIndex = z;
+        document.querySelectorAll('.title').forEach(function (wt) {
+            wt.classList.remove('navy')
+        })
+        test = document.querySelector('.cpu_calc_menu').firstElementChild;
+        test.classList.add('navy');
 
         if (!cpu_calc_menu.classList.contains('active') || cpumenu1.style.display == "block") {
             setTimeout(() => {
@@ -3299,7 +3321,7 @@ if (ua.includes("mobile")) {
             document.querySelector('.cpumenu_2').style.display = "none";
             document.querySelector('.cpubuttons').style.display = "none";
             document.querySelector('.cputitle').style.display = "none";
-        }, 200);
+        }, 100);
     }
 
     // games
@@ -3315,6 +3337,21 @@ if (ua.includes("mobile")) {
                 wt.classList.remove('navy')
             })
             wt = tetris_mneu.firstElementChild;
+            wt.classList.add('navy');
+        });
+    });
+
+    document.querySelectorAll('.test_button34').forEach(function (test_button29) {
+        test_button29.addEventListener('click', function () {
+            bom_menu.classList.toggle('active');
+            bom_menu.closest('.child_windows');
+            z = largestZIndex++;
+            bom_menu.style.zIndex = z;
+
+            document.querySelectorAll('.title').forEach(function (wt) {
+                wt.classList.remove('navy')
+            })
+            wt = bom_menu.firstElementChild;
             wt.classList.add('navy');
         });
     });
@@ -3418,12 +3455,12 @@ if (ua.includes("mobile")) {
             }
             // 移動してる時だけ黒枠のみ
             if (localStorage.getItem('window_borderblack')) {
-                document.querySelectorAll('.child_windows').forEach(function (title) {
+                document.querySelectorAll('.child_windows, .child').forEach(function (title) {
                     document.querySelector('iframe').style.opacity = "0";
-                    title.style.background = bkcolor;
+                    title.style.background = "rgba(255, 255, 255, 0)";
                     title.style.border = "solid 2px black";
                 })
-                document.querySelectorAll('.title,.title2,.title_buttons,.window_inline_list,.mini_window,button,input,textarea,p,#prompt2,.window_inline_list2').forEach(function (title) {
+                document.querySelectorAll('.title,.title2,.title_buttons,.window_inline_list,.mini_window,button,input,textarea,p,#prompt2,.window_inline_list2,.window_tool,.window_inline_side,.window_bottom,form,.border2,.window_inline_menus').forEach(function (title) {
                     title.style.opacity = "0"
                 })
             }
@@ -3450,14 +3487,14 @@ if (ua.includes("mobile")) {
                 window_back_silver()
             })
             // 移動してる時だけ黒枠のみ
-            document.querySelectorAll('.child_windows').forEach(function (title) {
+            document.querySelectorAll('.child_windows,.child').forEach(function (title) {
                 title.style.background = "";
                 title.style.border = "";
                 document.querySelector('iframe').style.opacity = "";
                 window_prompt.style.background = "black"
                 window_back_silver()
             })
-            document.querySelectorAll('.title,.title2,.title_buttons,.window_inline_list,.mini_window,button,input,textarea,p,#prompt2,.window_inline_list2').forEach(function (title) {
+            document.querySelectorAll('.title,.title2,.title_buttons,.window_inline_list,.mini_window,button,input,textarea,p,#prompt2,.window_inline_list2,.window_tool,.window_inline_side,.window_bottom,form,.border2,.window_inline_menus').forEach(function (title) {
                 title.style.opacity = ""
                 window_back_silver()
             })
@@ -4563,17 +4600,21 @@ if (ua.includes("mobile")) {
         }
     }
 
-    document.querySelector('.windowfile1').addEventListener('click', function () {
-        const windowfile_1 = document.querySelector('.windowfile1');
-        localStorage.setItem('windowfile_1', windowfile_1);
-        localStorage.removeItem('windowfile_2')
-        window_file_list_change()
+    Array.from(document.getElementsByClassName('windowfile1')).forEach((windowfile1) => {
+        windowfile1.addEventListener('click', function () {
+            const windowfile_1 = document.querySelector('.windowfile1');
+            localStorage.setItem('windowfile_1', windowfile_1);
+            localStorage.removeItem('windowfile_2')
+            window_file_list_change()
+        })
     })
-    document.querySelector('.windowfile2').addEventListener('click', function () {
-        const windowfile_2 = document.querySelector('.windowfile1');
-        localStorage.setItem('windowfile_2', windowfile_2);
-        localStorage.removeItem('windowfile_1')
-        window_file_list_reset()
+    Array.from(document.getElementsByClassName('windowfile2')).forEach((windowfile2) => {
+        windowfile2.addEventListener('click', function () {
+            const windowfile_2 = document.querySelector('.windowfile1');
+            localStorage.setItem('windowfile_2', windowfile_2);
+            localStorage.removeItem('windowfile_1')
+            window_file_list_reset()
+        })
     })
 
 

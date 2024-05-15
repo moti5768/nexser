@@ -250,6 +250,11 @@ li {
     user-select: none;
 }
 
+#prompt2 {
+    height: 200px;
+    width: 500px;
+}
+
 .focus {
     font-family: Courier;
 }
@@ -590,6 +595,42 @@ input[type="file"] {
     pointer-events: none;
 }
 
+.button_file_icon {
+    display: block;
+    width: 18px;
+    height: 12.5px;
+    background-image: radial-gradient(#FFFFBB 1px, #CCCC66 1px);
+    background-size: 3px 3px;
+    margin-top: 2px;
+    margin-bottom: 2px;
+    margin-left: 3px;
+    margin-right: 3px;
+    border-top: 1.5px #eee solid;
+    border-left: 1.5px #eee solid;
+    border-bottom: 1.5px #000 solid;
+    border-right: 1.5px #000 solid;
+    outline: 1px solid gray;
+    pointer-events: none;
+}
+
+.button_file_icon2 {
+    display: block;
+    width: 15px;
+    height: 9.5px;
+    background-image: radial-gradient(whitesmoke 1px, gray 1px);
+    background-size: 3px 3px;
+    margin-top: 2px;
+    margin-bottom: 2px;
+    margin-left: 3px;
+    margin-right: 3px;
+    border-top: 1.5px #eee solid;
+    border-left: 1.5px #eee solid;
+    border-bottom: 1.5px #000 solid;
+    border-right: 1.5px #000 solid;
+    outline: 1px solid dimgray;
+    pointer-events: none;
+}
+
 /* window */
 #soft_windows {
     width: 100%;
@@ -673,6 +714,10 @@ input[type="file"] {
 .display_menu {
     width: 600px;
     height: 325px;
+}
+
+.debug_menu {
+    width: 300px;
 }
 
 .cpu_calc_menu {
@@ -1243,6 +1288,20 @@ body::-webkit-scrollbar {
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
+}
+
+.windowtool_buttons {
+    display: inline;
+    width: 100%;
+    height: 25px;
+    position: absolute;
+    top: 54px;
+    left: 210px;
+}
+
+.windowtool_buttons_child {
+    width: auto;
+    height: 25px;
 }
 
 .windowtool_parent {
@@ -2096,4 +2155,81 @@ progress::-webkit-progress-bar {
 
 progress::-webkit-progress-value {
     background-color: gray;
+}
+
+.bom_menu {
+    width: 400px;
+    height: 500px;
+}
+
+#board {
+    position: absolute;
+    top: 100px;
+    margin-left: 5px;
+    border-collapse: collapse;
+    background: dimgray;
+}
+
+#board>tr {
+    width: 30px;
+    height: 30px;
+}
+
+#board>tr>td {
+    display: inline-block;
+    background: silver;
+    border-top: 1.5px #eee solid;
+    border-left: 1.5px #eee solid;
+    border-bottom: 1.5px #333 solid;
+    border-right: 1.5px #333 solid;
+    width: 30px;
+    height: 30px;
+    margin: 0.2px;
+}
+
+.flag::before {
+    font-family: "Material Icons";
+    content: "\e153";
+}
+
+#board .open {
+    border-bottom: 1.5px #eee solid;
+    border-right: 1.5px #eee solid;
+    border-top: 1.5px #333 solid;
+    border-left: 1.5px #333 solid;
+    background: gray;
+    color: white;
+}
+
+#board .bomb {
+    background: red;
+    color: white;
+}
+
+.bomb::before {
+    font-family: "Material Icons";
+    content: "B";
+}
+
+#board .clear {
+    display: block;
+    background-color: green;
+    color: white;
+    font-family: "Material Icons";
+    content: "B";
+}
+
+.clear::before {
+    font-family: "Material Icons";
+    content: "B";
+}
+
+.bom_table {
+    display: table;
+    border-collapse: separate;
+    box-sizing: border-box;
+    text-indent: initial;
+    unicode-bidi: isolate;
+    border-spacing: 2px;
+    border-color: gray;
 }
