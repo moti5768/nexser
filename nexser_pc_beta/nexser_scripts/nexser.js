@@ -254,6 +254,10 @@ if (ua.includes("mobile")) {
             caload();
             titlecolor_set();
             back_pattern_set();
+
+            const t = localStorage.getItem('taskbar_height');
+            taskbar.style.height = t + "px";
+
             if (localStorage.getItem('driver_color')) {
                 document.querySelector('.installbutton_2').textContent = "uninstall"
             }
@@ -441,15 +445,18 @@ if (ua.includes("mobile")) {
 
 
 
-
             if (localStorage.getItem('data_taskbar_none') && localStorage.getItem('taskbar_position_button')) {
                 toolbar.style.top = "0px";
             } else if (localStorage.getItem('data_taskbar_none') && !localStorage.getItem('taskbar_position_button')) {
                 toolbar.style.bottom = "0px";
             } else if (localStorage.getItem('taskbar_position_button')) {
-                toolbar.style.top = "40px";
+                const task = document.getElementById('taskbar').clientHeight;
+                toolbar.style.top = task + "px";
+                toolbar.style.top = t + "px";
             } else {
-                toolbar.style.bottom = "40px";
+                const task = document.getElementById('taskbar').clientHeight;
+                toolbar.style.bottom = task + "px";
+                toolbar.style.bottom = t + "px";
             }
 
             if (localStorage.getItem('toolbar_on')) {
@@ -488,6 +495,7 @@ if (ua.includes("mobile")) {
                     window_inline_side.style.top = "31px"
                 })
             }
+
             resolve();
         }, 0);
         function taskgroup_load() {
@@ -620,9 +628,7 @@ if (ua.includes("mobile")) {
         document.querySelector('.start_button').classList.remove('pressed');
         document.querySelector('.battery_child').classList.remove('pressed');
         document.querySelector('.battery_menu').style.display = "none";
-        document.querySelectorAll('.title').forEach(function (wt) {
-            wt.classList.remove('navy');
-        })
+        alltitle_navyreomve();
         document.querySelectorAll('.windowtool_child').forEach(function (windowtool_child) {
             windowtool_child.style.display = "none"
         })
@@ -635,10 +641,8 @@ if (ua.includes("mobile")) {
         titlecolor_set();
     });
     document.getElementById('taskbar').addEventListener('mousedown', function () {
-        document.querySelectorAll('.title').forEach(function (wt) {
-            wt.classList.remove('navy');
-            titlecolor_set();
-        })
+        alltitle_navyreomve();
+        titlecolor_set();
         document.querySelectorAll('.windowtool_child').forEach(function (windowtool_child) {
             windowtool_child.style.display = "none"
         })
@@ -676,8 +680,7 @@ if (ua.includes("mobile")) {
         });
     });
 
-    document.querySelector('.deskprompt').addEventListener('click', function () {
-        const deskprompt = document.querySelector('.deskprompt');
+    document.querySelector('.deskprompt').addEventListener('click', function (deskprompt) {
         localStorage.setItem('deskprompt', deskprompt);
     })
 
@@ -723,118 +726,107 @@ if (ua.includes("mobile")) {
         }
     }
 
-    document.querySelector('.startup_note').addEventListener('click', function () {
+    document.querySelector('.startup_note').addEventListener('click', function (startup_note) {
         if (localStorage.getItem('startup_note')) {
             localStorage.removeItem('startup_note')
             document.querySelector('.startup_note').textContent = "OFF"
         } else {
-            const startup_note = document.querySelector('.startup_note');
             localStorage.setItem('startup_note', startup_note);
             document.querySelector('.startup_note').textContent = "ON"
         }
     })
-    document.querySelector('.startup_computer').addEventListener('click', function () {
+    document.querySelector('.startup_computer').addEventListener('click', function (startup_computer) {
         if (localStorage.getItem('startup_computer')) {
             localStorage.removeItem('startup_computer')
             document.querySelector('.startup_computer').textContent = "OFF"
         } else {
-            const startup_computer = document.querySelector('.startup_computer');
             localStorage.setItem('startup_computer', startup_computer);
             document.querySelector('.startup_computer').textContent = "ON"
         }
     })
-    document.querySelector('.startup_color').addEventListener('click', function () {
+    document.querySelector('.startup_color').addEventListener('click', function (startup_color) {
         if (localStorage.getItem('startup_color')) {
             localStorage.removeItem('startup_color')
             document.querySelector('.startup_color').textContent = "OFF"
         } else {
-            const startup_color = document.querySelector('.startup_color');
             localStorage.setItem('startup_color', startup_color);
             document.querySelector('.startup_color').textContent = "ON"
         }
     })
-    document.querySelector('.startup_screen').addEventListener('click', function () {
+    document.querySelector('.startup_screen').addEventListener('click', function (startup_screen) {
         if (localStorage.getItem('startup_screen')) {
             localStorage.removeItem('startup_screen')
             document.querySelector('.startup_screen').textContent = "OFF"
         } else {
-            const startup_screen = document.querySelector('.startup_screen');
             localStorage.setItem('startup_screen', startup_screen);
             document.querySelector('.startup_screen').textContent = "ON"
         }
     })
-    document.querySelector('.startup_htmlviewer_edit').addEventListener('click', function () {
+    document.querySelector('.startup_htmlviewer_edit').addEventListener('click', function (startup_htmlviewer_edit) {
         if (localStorage.getItem('startup_htmlviewer_edit')) {
             localStorage.removeItem('startup_htmlviewer_edit')
             document.querySelector('.startup_htmlviewer_edit').textContent = "OFF"
         } else {
-            const startup_htmlviewer_edit = document.querySelector('.startup_htmlviewer_edit');
             localStorage.setItem('startup_htmlviewer_edit', startup_htmlviewer_edit);
             document.querySelector('.startup_htmlviewer_edit').textContent = "ON"
         }
     })
-    document.querySelector('.startup_guidebook').addEventListener('click', function () {
+    document.querySelector('.startup_guidebook').addEventListener('click', function (startup_guidebook) {
         if (localStorage.getItem('startup_guidebook')) {
             localStorage.removeItem('startup_guidebook')
             document.querySelector('.startup_guidebook').textContent = "OFF"
         } else {
-            const startup_guidebook = document.querySelector('.startup_guidebook');
             localStorage.setItem('startup_guidebook', startup_guidebook);
             document.querySelector('.startup_guidebook').textContent = "ON"
         }
     })
-    document.querySelector('.startup_objective').addEventListener('click', function () {
+    document.querySelector('.startup_objective').addEventListener('click', function (startup_objective) {
         if (localStorage.getItem('startup_objective')) {
             localStorage.removeItem('startup_objective')
             document.querySelector('.startup_objective').textContent = "OFF"
         } else {
-            const startup_objective = document.querySelector('.startup_objective');
             localStorage.setItem('startup_objective', startup_objective);
             document.querySelector('.startup_objective').textContent = "ON"
         }
     })
-    document.querySelector('.startup_calendar').addEventListener('click', function () {
+    document.querySelector('.startup_calendar').addEventListener('click', function (startup_calendar) {
         if (localStorage.getItem('startup_calendar')) {
             localStorage.removeItem('startup_calendar')
             document.querySelector('.startup_calendar').textContent = "OFF"
         } else {
-            const startup_calendar = document.querySelector('.startup_calendar');
             localStorage.setItem('startup_calendar', startup_calendar);
             document.querySelector('.startup_calendar').textContent = "ON"
         }
     })
 
-    document.querySelector('.startup_speed').addEventListener('click', function () {
+    document.querySelector('.startup_speed').addEventListener('click', function (prompt_data2) {
         if (localStorage.getItem('prompt_data2')) {
             localStorage.removeItem('prompt_data2')
             document.querySelector('.startup_speed').textContent = "LOW"
         } else {
-            const prompt_data2 = document.querySelector('.startup_speed');
             localStorage.setItem('prompt_data2', prompt_data2);
             document.querySelector('.startup_speed').textContent = "HIGH"
         }
     })
 
-    document.querySelector('.startup_sound').addEventListener('click', function () {
+    document.querySelector('.startup_sound').addEventListener('click', function (startup_sound) {
         if (localStorage.getItem('driver_sound')) {
             localStorage.removeItem('driver_sound')
             document.querySelector('.startup_sound').textContent = "INSTALL"
             document.querySelector('.installbutton_1').textContent = "install"
         } else {
-            const startup_sound = document.querySelector('.startup_sound');
             localStorage.setItem('driver_sound', startup_sound);
             document.querySelector('.startup_sound').textContent = "UN INSTALL"
             document.querySelector('.installbutton_1').textContent = "uninstall"
         }
     })
 
-    document.querySelector('.startup_versiontext').addEventListener('click', function () {
+    document.querySelector('.startup_versiontext').addEventListener('click', function (startup_versiontext) {
         if (localStorage.getItem('startup_versiontext')) {
             localStorage.removeItem('startup_versiontext')
             document.querySelector('.startup_versiontext').textContent = "OFF"
             document.querySelector('.desktop_version_text').style.display = "none";
         } else {
-            const startup_versiontext = document.querySelector('.startup_versiontext');
             localStorage.setItem('startup_versiontext', startup_versiontext);
             document.querySelector('.startup_versiontext').textContent = "ON";
             document.querySelector('.desktop_version_text').style.display = "block";
@@ -849,56 +841,51 @@ if (ua.includes("mobile")) {
         localStorage.removeItem('font_monospace');
     }
 
-    document.querySelector('.font_default').addEventListener('click', function () {
+    document.querySelector('.font_default').addEventListener('click', function (font_default) {
         font_clear()
         if (localStorage.getItem('font_default')) {
             localStorage.removeItem('font_default');
         } else {
-            const font_default = document.querySelector('.font_default');
             localStorage.setItem('font_default', font_default);
             document.querySelector("body").style.fontFamily = "serif";
         }
     })
 
-    document.querySelector('.font_sans_serif').addEventListener('click', function () {
+    document.querySelector('.font_sans_serif').addEventListener('click', function (font_sans_serif) {
         font_clear()
         if (localStorage.getItem('font_sans_serif')) {
             localStorage.removeItem('font_sans_serif');
         } else {
-            const font_sans_serif = document.querySelector('.font_sans_serif');
             localStorage.setItem('font_sans_serif', font_sans_serif);
             document.querySelector("body").style.fontFamily = "sans-serif";
         }
     })
 
-    document.querySelector('.font_cursive').addEventListener('click', function () {
+    document.querySelector('.font_cursive').addEventListener('click', function (font_cursive) {
         font_clear()
         if (localStorage.getItem('font_cursive')) {
             localStorage.removeItem('font_cursive');
         } else {
-            const font_cursive = document.querySelector('.font_cursive');
             localStorage.setItem('font_cursive', font_cursive);
             document.querySelector("body").style.fontFamily = "cursive";
         }
     })
 
-    document.querySelector('.font_fantasy').addEventListener('click', function () {
+    document.querySelector('.font_fantasy').addEventListener('click', function (font_fantasy) {
         font_clear()
         if (localStorage.getItem('font_fantasy')) {
             localStorage.removeItem('font_fantasy');
         } else {
-            const font_fantasy = document.querySelector('.font_fantasy');
             localStorage.setItem('font_fantasy', font_fantasy);
             document.querySelector("body").style.fontFamily = "fantasy";
         }
     })
 
-    document.querySelector('.font_monospace').addEventListener('click', function () {
+    document.querySelector('.font_monospace').addEventListener('click', function (font_monospace) {
         font_clear()
         if (localStorage.getItem('font_monospace')) {
             localStorage.removeItem('font_monospace');
         } else {
-            const font_monospace = document.querySelector('.font_monospace');
             localStorage.setItem('font_monospace', font_monospace);
             document.querySelector("body").style.fontFamily = "monospace";
         }
@@ -917,14 +904,13 @@ if (ua.includes("mobile")) {
         }
     }
 
-    document.querySelector('.boot_sound').addEventListener('click', function () {
+    document.querySelector('.boot_sound').addEventListener('click', function (boot_sound) {
         if (localStorage.getItem('driver_sound')) {
             localStorage.removeItem('driver_sound')
             document.querySelector('.startup_sound').textContent = "INSTALL"
             document.querySelector('.installbutton_1').textContent = "install"
         } else {
-            const startup_sound = document.querySelector('.startup_sound');
-            localStorage.setItem('driver_sound', startup_sound);
+            localStorage.setItem('driver_sound', boot_sound);
             document.querySelector('.startup_sound').textContent = "UN INSTALL"
             document.querySelector('.installbutton_1').textContent = "uninstall"
         }
@@ -1009,7 +995,6 @@ if (ua.includes("mobile")) {
                     }
                     setTimeout(() => {
                         window_none();
-                        console.log("noneeee")
                         desktop.style.display = "none";
                         localStorage.removeItem('prompt_data');
                         window_reset();
@@ -1124,6 +1109,7 @@ if (ua.includes("mobile")) {
     })
 
     function start_check() {
+        const t = localStorage.getItem('taskbar_height');
         document.querySelector('html').style.cursor = 'none';
         taskbar.style.display = "none";
         document.getElementById('files').style.display = "none";
@@ -1163,6 +1149,7 @@ if (ua.includes("mobile")) {
                     toolbar.style.bottom = "";
                     toolbar.style.left = "";
                     toolbar.style.top = "40px";
+                    toolbar.style.top = t + "px";
 
                     if (localStorage.getItem('data_taskbar_none')) {
                         taskbar.style.display = "none";
@@ -1170,6 +1157,7 @@ if (ua.includes("mobile")) {
                     } else {
                         taskbar.style.display = "block";
                         toolbar.style.top = "40px";
+                        toolbar.style.top = t + "px";
                     }
 
                 } else {
@@ -1177,6 +1165,7 @@ if (ua.includes("mobile")) {
                     toolbar.style.top = "";
                     toolbar.style.left = "";
                     toolbar.style.bottom = "40px";
+                    toolbar.style.bottom = t + "px";
 
                     if (localStorage.getItem('data_taskbar_none')) {
                         taskbar.style.display = "none";
@@ -1184,6 +1173,7 @@ if (ua.includes("mobile")) {
                     } else {
                         taskbar.style.display = "block";
                         toolbar.style.bottom = "40px";
+                        toolbar.style.bottom = t + "px";
                     }
 
                 }
@@ -1219,8 +1209,7 @@ if (ua.includes("mobile")) {
         }, 100);
     })
 
-    document.querySelector('.login_welcome').addEventListener('click', function () {
-        const login_welcome = document.querySelector('.login_welcome');
+    document.querySelector('.login_welcome').addEventListener('click', function (login_welcome) {
         localStorage.setItem('login_welcome', login_welcome);
     })
     document.querySelector('.nologin_welcome').addEventListener('click', function () {
@@ -1293,9 +1282,7 @@ if (ua.includes("mobile")) {
             element.closest('.child_windows');
             element.classList.remove('active');
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             wt = element.firstElementChild;
             wt.classList.add('navy');
         }
@@ -1304,9 +1291,7 @@ if (ua.includes("mobile")) {
             element.closest('.child_windows');
             element.classList.remove('active');
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             wt = element.firstElementChild;
             wt.classList.add('navy');
         }
@@ -1318,9 +1303,7 @@ if (ua.includes("mobile")) {
             element.closest('.child_windows');
             element.classList.remove('active');
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             wt = element.firstElementChild;
             wt.classList.add('navy');
         }
@@ -1329,9 +1312,7 @@ if (ua.includes("mobile")) {
             element.closest('.child_windows');
             element.classList.remove('active');
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             wt = element.firstElementChild;
             wt.classList.add('navy');
         }
@@ -1340,9 +1321,7 @@ if (ua.includes("mobile")) {
             element.closest('.child_windows');
             element.classList.remove('active');
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             wt = element.firstElementChild;
             wt.classList.add('navy');
         }
@@ -1351,9 +1330,7 @@ if (ua.includes("mobile")) {
             element.closest('.child_windows');
             element.classList.remove('active');
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             wt = element.firstElementChild;
             wt.classList.add('navy');
         }
@@ -1362,9 +1339,7 @@ if (ua.includes("mobile")) {
             element.closest('.child_windows');
             element.classList.remove('active');
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             wt = element.firstElementChild;
             wt.classList.add('navy');
         }
@@ -1373,29 +1348,26 @@ if (ua.includes("mobile")) {
             element.closest('.child_windows');
             element.classList.remove('active');
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             wt = element.firstElementChild;
             wt.classList.add('navy');
         }
         titlecolor_set()
     }
 
-    document.getElementById('sound_driver').addEventListener('click', function () {
+    document.getElementById('sound_driver').addEventListener('click', function (sound_driver) {
         if (localStorage.getItem('driver_sound')) {
             localStorage.removeItem('driver_sound')
             document.querySelector('.installbutton_1').textContent = "install"
             document.querySelector('.startup_sound').textContent = "INSTALL"
             sound_stop()
         } else {
-            const sound_driver = document.querySelector('#sound_driver');
             localStorage.setItem('driver_sound', sound_driver);
             document.querySelector('.installbutton_1').textContent = "uninstall"
             document.querySelector('.startup_sound').textContent = "UN INSTALL"
         }
     })
-    document.getElementById('color_driver').addEventListener('click', function () {
+    document.getElementById('color_driver').addEventListener('click', function (color_driver) {
         if (localStorage.getItem('driver_color')) {
             localStorage.removeItem('driver_color')
             document.querySelector('.installbutton_2').textContent = "install"
@@ -1403,7 +1375,6 @@ if (ua.includes("mobile")) {
             titlecolor_remove();
             titlecolor_set();
         } else {
-            const color_driver = document.querySelector('#color_driver');
             localStorage.setItem('driver_color', color_driver);
             document.querySelector('.installbutton_2').textContent = "uninstall";
             titlecolor_remove();
@@ -1411,52 +1382,47 @@ if (ua.includes("mobile")) {
         }
     })
 
-    document.querySelector('.startup_1').addEventListener('click', function () {
+    document.querySelector('.startup_1').addEventListener('click', function (startup_1) {
         startupsound_reset()
         if (localStorage.getItem('startup_1')) {
             document.querySelector('.startup_1').textContent = "no set"
         } else {
-            const startup_1 = document.querySelector('.startup_1');
             localStorage.setItem('startup_1', startup_1);
             document.querySelector('.startup_1').textContent = "set!"
         }
     })
-    document.querySelector('.startup_2').addEventListener('click', function () {
+    document.querySelector('.startup_2').addEventListener('click', function (startup_2) {
         startupsound_reset()
         if (localStorage.getItem('startup_2')) {
             document.querySelector('.startup_2').textContent = "no set"
         } else {
-            const startup_2 = document.querySelector('.startup_2');
             localStorage.setItem('startup_2', startup_2);
             document.querySelector('.startup_2').textContent = "set!"
         }
     })
-    document.querySelector('.startup_3').addEventListener('click', function () {
+    document.querySelector('.startup_3').addEventListener('click', function (startup_3) {
         startupsound_reset()
         if (localStorage.getItem('startup_3')) {
             document.querySelector('.startup_3').textContent = "no set"
         } else {
-            const startup_3 = document.querySelector('.startup_3');
             localStorage.setItem('startup_3', startup_3);
             document.querySelector('.startup_3').textContent = "set!"
         }
     })
-    document.querySelector('.startup_4').addEventListener('click', function () {
+    document.querySelector('.startup_4').addEventListener('click', function (startup_4) {
         startupsound_reset()
         if (localStorage.getItem('startup_4')) {
             document.querySelector('.startup_4').textContent = "no set"
         } else {
-            const startup_4 = document.querySelector('.startup_4');
             localStorage.setItem('startup_4', startup_4);
             document.querySelector('.startup_4').textContent = "set!"
         }
     })
-    document.querySelector('.startup_5').addEventListener('click', function () {
+    document.querySelector('.startup_5').addEventListener('click', function (startup_5) {
         startupsound_reset()
         if (localStorage.getItem('startup_5')) {
             document.querySelector('.startup_5').textContent = "no set"
         } else {
-            const startup_5 = document.querySelector('.startup_5');
             localStorage.setItem('startup_5', startup_5);
             document.querySelector('.startup_5').textContent = "set!"
         }
@@ -1485,52 +1451,47 @@ if (ua.includes("mobile")) {
         }
     }
 
-    document.querySelector('.shutdown_1').addEventListener('click', function () {
+    document.querySelector('.shutdown_1').addEventListener('click', function (shutdown_1) {
         shutdownsound_reset()
         if (localStorage.getItem('shutdown_1')) {
             document.querySelector('.shutdown_1').textContent = "no set"
         } else {
-            const shutdown_1 = document.querySelector('.shutdown_2');
             localStorage.setItem('shutdown_1', shutdown_1);
             document.querySelector('.shutdown_1').textContent = "set!"
         }
     })
-    document.querySelector('.shutdown_2').addEventListener('click', function () {
+    document.querySelector('.shutdown_2').addEventListener('click', function (shutdown_2) {
         shutdownsound_reset()
         if (localStorage.getItem('shutdown_2')) {
             document.querySelector('.shutdown_2').textContent = "no set"
         } else {
-            const shutdown_2 = document.querySelector('.shutdown_2');
             localStorage.setItem('shutdown_2', shutdown_2);
             document.querySelector('.shutdown_2').textContent = "set!"
         }
     })
-    document.querySelector('.shutdown_3').addEventListener('click', function () {
+    document.querySelector('.shutdown_3').addEventListener('click', function (shutdown_3) {
         shutdownsound_reset()
         if (localStorage.getItem('shutdown_3')) {
             document.querySelector('.shutdown_3').textContent = "no set"
         } else {
-            const shutdown_3 = document.querySelector('.shutdown_3');
             localStorage.setItem('shutdown_3', shutdown_3);
             document.querySelector('.shutdown_3').textContent = "set!"
         }
     })
-    document.querySelector('.shutdown_4').addEventListener('click', function () {
+    document.querySelector('.shutdown_4').addEventListener('click', function (shutdown_4) {
         shutdownsound_reset()
         if (localStorage.getItem('shutdown_4')) {
             document.querySelector('.shutdown_4').textContent = "no set"
         } else {
-            const shutdown_4 = document.querySelector('.shutdown_4');
             localStorage.setItem('shutdown_4', shutdown_4);
             document.querySelector('.shutdown_4').textContent = "set!"
         }
     })
-    document.querySelector('.shutdown_5').addEventListener('click', function () {
+    document.querySelector('.shutdown_5').addEventListener('click', function (shutdown_5) {
         shutdownsound_reset()
         if (localStorage.getItem('shutdown_5')) {
             document.querySelector('.shutdown_5').textContent = "no set"
         } else {
-            const shutdown_5 = document.querySelector('.shutdown_5');
             localStorage.setItem('shutdown_5', shutdown_5);
             document.querySelector('.shutdown_5').textContent = "set!"
         }
@@ -1565,31 +1526,28 @@ if (ua.includes("mobile")) {
         document.querySelector('.windowmode').textContent = "default"
     }
 
-    document.getElementById('window_invisible').addEventListener('click', function () {
+    document.getElementById('window_invisible').addEventListener('click', function (window_invisible) {
         if (localStorage.getItem('window_invisible')) {
             localStorage.removeItem('window_invisible');
             document.querySelector('.windowmode').textContent = "default"
         } else {
             windowmode_reset()
-            const window_invisible = document.querySelector('#window_invisible');
             localStorage.setItem('window_invisible', window_invisible);
             document.querySelector('.windowmode').textContent = "invisible"
         }
     })
-    document.getElementById('window_borderblack').addEventListener('click', function () {
+    document.getElementById('window_borderblack').addEventListener('click', function (window_borderblack) {
         if (localStorage.getItem('window_borderblack')) {
             localStorage.removeItem('window_borderblack');
             document.querySelector('.windowmode').textContent = "default"
         } else {
             windowmode_reset()
-            const window_borderblack = document.querySelector('#window_borderblack');
             localStorage.setItem('window_borderblack', window_borderblack);
             document.querySelector('.windowmode').textContent = "border black"
         }
     })
 
-    document.getElementById('backtext_on').addEventListener('click', function () {
-        const backtext = document.querySelector('#backtext_on');
+    document.getElementById('backtext_on').addEventListener('click', function (backtext) {
         localStorage.setItem('backtext', backtext);
         const backtext_data2 = localStorage.getItem('backtext_data');
         document.querySelector('#background_text').textContent = (backtext_data2);
@@ -1603,25 +1561,22 @@ if (ua.includes("mobile")) {
     })
 
 
-    document.querySelector('.backtext_small').addEventListener('click', function () {
+    document.querySelector('.backtext_small').addEventListener('click', function (backtext_small) {
         backtextSize_clear();
-        const backtext_small = document.querySelector('.backtext_small');
         localStorage.setItem('backtext_small', backtext_small);
         const backtext_data2 = localStorage.getItem('backtext_data');
         document.querySelector('#background_text').style.fontSize = "15px";
         document.querySelector('#background_text2').style.fontSize = "15px";
     })
-    document.querySelector('.backtext_medium').addEventListener('click', function () {
+    document.querySelector('.backtext_medium').addEventListener('click', function (backtext_medium) {
         backtextSize_clear();
-        const backtext_medium = document.querySelector('.backtext_medium');
         localStorage.setItem('backtext_medium', backtext_medium);
         const backtext_data2 = localStorage.getItem('backtext_data');
         document.querySelector('#background_text').style.fontSize = "30px";
         document.querySelector('#background_text2').style.fontSize = "30px";
     })
-    document.querySelector('.backtext_large').addEventListener('click', function () {
+    document.querySelector('.backtext_large').addEventListener('click', function (backtext_large) {
         backtextSize_clear();
-        const backtext_large = document.querySelector('.backtext_large');
         localStorage.setItem('backtext_large', backtext_large);
         const backtext_data2 = localStorage.getItem('backtext_data');
         document.querySelector('#background_text').style.fontSize = "45px";
@@ -1772,6 +1727,7 @@ if (ua.includes("mobile")) {
         document.querySelectorAll('.windowtool_child').forEach(function (windowtool_child) {
             windowtool_child.style.display = "none"
         })
+        msg2.innerText = ''
     }
     function window_active() {
         document.querySelectorAll('.child_windows').forEach(function (allwindow_active) {
@@ -1888,25 +1844,82 @@ if (ua.includes("mobile")) {
             document.querySelector('.files_inline').style.bottom = ""
         }
 
+        if (localStorage.getItem('data_taskbar_none')) {
+            document.querySelectorAll('.big').forEach(function (child_win_posi) {
+                child_win_posi.style.top = "auto"
+            })
+            document.querySelectorAll('.leftwindow').forEach(function (child_win_posi2) {
+                child_win_posi2.style.top = "auto"
+            })
+            document.querySelectorAll('.rightwindow').forEach(function (child_win_posi3) {
+                child_win_posi3.style.top = "auto"
+            })
+        } else if (localStorage.getItem('taskbar_position_button')) {
+            document.querySelectorAll('.big').forEach(function (child_win_posi) {
+                child_win_posi.style.transition = "";
+                child_win_posi.style.top = "40px";
+            })
+            document.querySelectorAll('.leftwindow').forEach(function (child_win_posi2) {
+                child_win_posi2.style.transition = "";
+                child_win_posi2.style.top = "40px";
+            })
+            document.querySelectorAll('.rightwindow').forEach(function (child_win_posi3) {
+                child_win_posi3.style.transition = "";
+                child_win_posi3.style.top = "40px";
+            })
+        }
+
     }
 
     function taskbar_active() {
         localStorage.removeItem('data_taskbar_none');
+        const task = document.getElementById('taskbar').clientHeight;
+        const t = localStorage.getItem('taskbar_height');
+        taskbar.style.height = t + "px";
+
         if (!localStorage.getItem('data_taskbar_none')) {
             taskbar.style.display = "block";
             my_computer.classList.remove('active');
 
             if (check(elm1, elm2) && !localStorage.getItem('taskbar_position_button')) {
-                toolbar.style.bottom = "40px";
+                toolbar.style.bottom = task + "px";
+                toolbar.style.bottom = t + "px";
             } else if (check(elm1, elm2)) {
                 toolbar.style.bottom = "";
             }
 
             if (check(elm1, elm2) && localStorage.getItem('taskbar_position_button')) {
-                toolbar.style.top = "40px";
+                toolbar.style.top = task + "px";
+                toolbar.style.top = t + "px";
             } else if (check(elm1, elm2)) {
                 toolbar.style.top = "";
             }
+
+            if (localStorage.getItem('data_taskbar_none')) {
+                document.querySelectorAll('.big').forEach(function (child_win_posi) {
+                    child_win_posi.style.top = "auto"
+                })
+                document.querySelectorAll('.leftwindow').forEach(function (child_win_posi2) {
+                    child_win_posi2.style.top = "auto"
+                })
+                document.querySelectorAll('.rightwindow').forEach(function (child_win_posi3) {
+                    child_win_posi3.style.top = "auto"
+                })
+            } else if (localStorage.getItem('taskbar_position_button')) {
+                document.querySelectorAll('.big').forEach(function (child_win_posi) {
+                    child_win_posi.style.transition = "";
+                    child_win_posi.style.top = "40px";
+                })
+                document.querySelectorAll('.leftwindow').forEach(function (child_win_posi2) {
+                    child_win_posi2.style.transition = "";
+                    child_win_posi2.style.top = "40px";
+                })
+                document.querySelectorAll('.rightwindow').forEach(function (child_win_posi3) {
+                    child_win_posi3.style.transition = "";
+                    child_win_posi3.style.top = "40px";
+                })
+            }
+
         }
 
         if (localStorage.getItem('taskbar_position_button') && localStorage.getItem('data_taskbar_none')) {
@@ -2045,9 +2058,7 @@ if (ua.includes("mobile")) {
                 z = largestZIndex++;
                 command_help_menu.style.zIndex = z;
 
-                document.querySelectorAll('.title').forEach(function (wt) {
-                    wt.classList.remove('navy')
-                })
+                alltitle_navyreomve();
                 wt = command_help_menu.firstElementChild;
                 wt.classList.add('navy');
                 break;
@@ -2181,6 +2192,18 @@ if (ua.includes("mobile")) {
                 document.querySelector('.files_inline').style.display = "flex";
                 break;
 
+            case 'taskbar/setting':
+                document.querySelector('.prompt_error_text2').textContent = "";
+                prompt_text2.style.color = "";
+                const taskmenu = document.querySelector('.taskbar_setting_menu');
+                taskmenu.classList.remove('active');
+                z = largestZIndex++;
+                taskmenu.style.zIndex = z;
+                alltitle_navyreomve();
+                test = taskmenu.firstElementChild;
+                test.classList.add('navy');
+                break;
+
             case 'windows95/open':
                 document.querySelector('.prompt_error_text2').textContent = "";
                 window.open("https://moti5768.github.io/moti.world/windows95.html");
@@ -2272,7 +2295,6 @@ if (ua.includes("mobile")) {
             document.getElementsByClassName('cpu_cores')[0].textContent = (navigator.hardwareConcurrency);
         }
     }, 100);
-
     Array.from(document.getElementsByClassName('window_inline_list')).forEach((window_inline_list) => {
         window_inline_list.addEventListener('click', function () {
             taskbtn_load()
@@ -2361,7 +2383,13 @@ if (ua.includes("mobile")) {
             bigscreenbutton.classList.remove('rightwindow');
             bigscreenbutton.classList.remove('leftwindow');
 
-            if (localStorage.getItem('taskbar_position_button')) {
+            if (localStorage.getItem('data_taskbar_none')) {
+                bigscreenbutton.style.height = ""
+                bigscreenbutton.style.width = ""
+                bigscreenbutton.style.top = "0"
+                bigscreenbutton.style.left = "0"
+                bigscreenbutton.style.transition = "0.08s cubic-bezier(0, 0, 1, 1)"
+            } else if (localStorage.getItem('taskbar_position_button')) {
                 bigscreenbutton.style.height = ""
                 bigscreenbutton.style.width = ""
                 bigscreenbutton.style.top = "40px"
@@ -2374,6 +2402,7 @@ if (ua.includes("mobile")) {
                 bigscreenbutton.style.left = "0"
                 bigscreenbutton.style.transition = "0.08s cubic-bezier(0, 0, 1, 1)"
             }
+
             setTimeout(() => {
                 bigscreenbutton.style.transition = ""
             }, 100);
@@ -2472,7 +2501,14 @@ if (ua.includes("mobile")) {
             windowleft.classList.remove('rightwindow');
             windowleft.classList.add('leftwindow');
 
-            if (localStorage.getItem('taskbar_position_button')) {
+            if (localStorage.getItem('data_taskbar_none')) {
+                windowleft.style.right = "auto";
+                windowleft.style.top = "0";
+                windowleft.style.left = "0";
+                windowleft.style.height = "100%";
+                windowleft.style.width = "49.9%";
+                windowleft.style.transition = "0.08s cubic-bezier(0, 0, 1, 1)";
+            } else if (localStorage.getItem('taskbar_position_button')) {
                 windowleft.style.right = "auto";
                 windowleft.style.top = "40px";
                 windowleft.style.left = "0";
@@ -2504,7 +2540,14 @@ if (ua.includes("mobile")) {
             windowright.classList.remove('leftwindow');
             windowright.classList.add('rightwindow');
 
-            if (localStorage.getItem('taskbar_position_button')) {
+            if (localStorage.getItem('data_taskbar_none')) {
+                windowright.style.left = "";
+                windowright.style.top = "0";
+                windowright.style.right = "0px";
+                windowright.style.height = "100%";
+                windowright.style.width = "49.9%";
+                windowright.style.transition = "0.08s cubic-bezier(0, 0, 1, 1)";
+            } else if (localStorage.getItem('taskbar_position_button')) {
                 windowright.style.left = "";
                 windowright.style.top = "40px";
                 windowright.style.right = "0px";
@@ -2872,6 +2915,12 @@ if (ua.includes("mobile")) {
         });
     })
 
+    function alltitle_navyreomve() {
+        document.querySelectorAll('.title').forEach(function (wt) {
+            wt.classList.remove('navy')
+        })
+    }
+
     document.querySelectorAll('.nexser_guidebook').forEach(function (nexser_guidebook) {
         nexser_guidebook.addEventListener('click', function () {
             nexser_guidebook_menu.classList.toggle('active');
@@ -2879,9 +2928,7 @@ if (ua.includes("mobile")) {
             z = largestZIndex++;
             nexser_guidebook_menu.style.zIndex = z;
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             test = nexser_guidebook_menu.firstElementChild;
             test.classList.add('navy');
         });
@@ -2893,9 +2940,7 @@ if (ua.includes("mobile")) {
             z = largestZIndex++;
             guidebook_window_menu.style.zIndex = z;
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             test = guidebook_window_menu.firstElementChild;
             test.classList.add('navy');
         });
@@ -2907,9 +2952,7 @@ if (ua.includes("mobile")) {
             z = largestZIndex++;
             guidebook_file_menu.style.zIndex = z;
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             test = guidebook_file_menu.firstElementChild;
             test.classList.add('navy');
         });
@@ -2921,9 +2964,7 @@ if (ua.includes("mobile")) {
             z = largestZIndex++;
             guidebook_taskbar_menu.style.zIndex = z;
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             test = guidebook_taskbar_menu.firstElementChild;
             test.classList.add('navy');
         });
@@ -2936,11 +2977,10 @@ if (ua.includes("mobile")) {
             z = largestZIndex++;
             main.style.zIndex = z;
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             wt = main.firstElementChild;
             wt.classList.add('navy');
+
         });
     });
     document.querySelectorAll('.test_button2').forEach(function (test_button2) {
@@ -2950,9 +2990,7 @@ if (ua.includes("mobile")) {
             z = largestZIndex++;
             my_computer.style.zIndex = z;
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             wt = my_computer.firstElementChild;
             wt.classList.add('navy');
         });
@@ -2964,9 +3002,7 @@ if (ua.includes("mobile")) {
             z = largestZIndex++;
             control.style.zIndex = z;
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             wt = control.firstElementChild;
             wt.classList.add('navy');
         });
@@ -2978,9 +3014,7 @@ if (ua.includes("mobile")) {
             z = largestZIndex++;
             color_menu.style.zIndex = z;
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             wt = color_menu.firstElementChild;
             wt.classList.add('navy');
         });
@@ -2992,9 +3026,7 @@ if (ua.includes("mobile")) {
             z = largestZIndex++;
             system_menu.style.zIndex = z;
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             wt = system_menu.firstElementChild;
             wt.classList.add('navy');
         });
@@ -3006,9 +3038,7 @@ if (ua.includes("mobile")) {
             z = largestZIndex++;
             window_prompt.style.zIndex = z;
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             wt = window_prompt.firstElementChild;
             wt.classList.add('navy');
         });
@@ -3020,9 +3050,7 @@ if (ua.includes("mobile")) {
             z = largestZIndex++;
             clock_menu.style.zIndex = z;
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             wt = clock_menu.firstElementChild;
             wt.classList.add('navy');
         });
@@ -3034,9 +3062,7 @@ if (ua.includes("mobile")) {
             z = largestZIndex++;
             sound_menu.style.zIndex = z;
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             wt = sound_menu.firstElementChild;
             wt.classList.add('navy');
         });
@@ -3048,9 +3074,7 @@ if (ua.includes("mobile")) {
             z = largestZIndex++;
             driver_menu.style.zIndex = z;
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             wt = driver_menu.firstElementChild;
             wt.classList.add('navy');
         });
@@ -3062,9 +3086,7 @@ if (ua.includes("mobile")) {
             z = largestZIndex++;
             mouse_menu.style.zIndex = z;
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             wt = mouse_menu.firstElementChild;
             wt.classList.add('navy');
         });
@@ -3076,9 +3098,7 @@ if (ua.includes("mobile")) {
             z = largestZIndex++;
             screen_text_menu.style.zIndex = z;
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             wt = screen_text_menu.firstElementChild;
             wt.classList.add('navy');
         });
@@ -3107,9 +3127,7 @@ if (ua.includes("mobile")) {
             z = largestZIndex++;
             text_drop_menu.style.zIndex = z;
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             wt = text_drop_menu.firstElementChild;
             wt.classList.add('navy');
         });
@@ -3121,9 +3139,7 @@ if (ua.includes("mobile")) {
             z = largestZIndex++;
             windowmode_menu.style.zIndex = z;
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             wt = windowmode_menu.firstElementChild;
             wt.classList.add('navy');
         });
@@ -3135,9 +3151,7 @@ if (ua.includes("mobile")) {
             z = largestZIndex++;
             accessory_menu.style.zIndex = z;
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             wt = accessory_menu.firstElementChild;
             wt.classList.add('navy');
         });
@@ -3149,9 +3163,7 @@ if (ua.includes("mobile")) {
             z = largestZIndex++;
             calc_menu.style.zIndex = z;
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             wt = calc_menu.firstElementChild;
             wt.classList.add('navy');
         });
@@ -3163,9 +3175,7 @@ if (ua.includes("mobile")) {
             z = largestZIndex++;
             nexser_sound_menu.style.zIndex = z;
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             wt = nexser_sound_menu.firstElementChild;
             wt.classList.add('navy');
         });
@@ -3177,9 +3187,7 @@ if (ua.includes("mobile")) {
             z = largestZIndex++;
             camera_menu.style.zIndex = z;
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             wt = camera_menu.firstElementChild;
             wt.classList.add('navy');
         });
@@ -3191,9 +3199,7 @@ if (ua.includes("mobile")) {
             z = largestZIndex++;
             htmlviewer_edit_menu.style.zIndex = z;
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             wt = htmlviewer_edit_menu.firstElementChild;
             wt.classList.add('navy');
         });
@@ -3205,9 +3211,7 @@ if (ua.includes("mobile")) {
             z = largestZIndex++;
             htmlviewer_run_menu.style.zIndex = z;
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             wt = htmlviewer_run_menu.firstElementChild;
             wt.classList.add('navy');
         });
@@ -3219,9 +3223,7 @@ if (ua.includes("mobile")) {
             z = largestZIndex++;
             uploadvideo_menu.style.zIndex = z;
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             wt = uploadvideo_menu.firstElementChild;
             wt.classList.add('navy');
         });
@@ -3233,9 +3235,7 @@ if (ua.includes("mobile")) {
             z = largestZIndex++;
             font_menu.style.zIndex = z;
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             wt = font_menu.firstElementChild;
             wt.classList.add('navy');
         });
@@ -3247,9 +3247,7 @@ if (ua.includes("mobile")) {
             z = largestZIndex++;
             setting_menu.style.zIndex = z;
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             wt = setting_menu.firstElementChild;
             wt.classList.add('navy');
         });
@@ -3261,9 +3259,7 @@ if (ua.includes("mobile")) {
             z = largestZIndex++;
             debug_menu.style.zIndex = z;
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             wt = debug_menu.firstElementChild;
             wt.classList.add('navy');
         });
@@ -3275,9 +3271,7 @@ if (ua.includes("mobile")) {
             z = largestZIndex++;
             file_download_menu.style.zIndex = z;
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             wt = file_download_menu.firstElementChild;
             wt.classList.add('navy');
         });
@@ -3289,9 +3283,7 @@ if (ua.includes("mobile")) {
             z = largestZIndex++;
             display_menu.style.zIndex = z;
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             wt = display_menu.firstElementChild;
             wt.classList.add('navy');
         });
@@ -3303,9 +3295,7 @@ if (ua.includes("mobile")) {
             z = largestZIndex++;
             stopwatch_menu.style.zIndex = z;
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             wt = stopwatch_menu.firstElementChild;
             wt.classList.add('navy');
         });
@@ -3317,9 +3307,7 @@ if (ua.includes("mobile")) {
             z = largestZIndex++;
             comment_menu.style.zIndex = z;
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             wt = comment_menu.firstElementChild;
             wt.classList.add('navy');
         });
@@ -3331,9 +3319,7 @@ if (ua.includes("mobile")) {
             z = largestZIndex++;
             objective_menu.style.zIndex = z;
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             test = objective_menu.firstElementChild;
             test.classList.add('navy');
         });
@@ -3345,9 +3331,7 @@ if (ua.includes("mobile")) {
             z = largestZIndex++;
             calendar_menu.style.zIndex = z;
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             test = calendar_menu.firstElementChild;
             test.classList.add('navy');
         });
@@ -3360,9 +3344,7 @@ if (ua.includes("mobile")) {
             z = largestZIndex++;
             cpu_calc_menu.style.zIndex = z;
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             test = cpu_calc_menu.firstElementChild;
             test.classList.add('navy');
             cpucalc_open();
@@ -3376,9 +3358,7 @@ if (ua.includes("mobile")) {
             z = largestZIndex++;
             browser_menu.style.zIndex = z;
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             test = browser_menu.firstElementChild;
             test.classList.add('navy');
         });
@@ -3388,9 +3368,7 @@ if (ua.includes("mobile")) {
         const cpumenu1 = document.querySelector('.cpumenu_1');
         z = largestZIndex++;
         document.getElementsByClassName('cpu_calc_menu')[0].style.zIndex = z;
-        document.querySelectorAll('.title').forEach(function (wt) {
-            wt.classList.remove('navy')
-        })
+        alltitle_navyreomve();
         test = document.querySelector('.cpu_calc_menu').firstElementChild;
         test.classList.add('navy');
 
@@ -3426,9 +3404,7 @@ if (ua.includes("mobile")) {
             z = largestZIndex++;
             tetris_mneu.style.zIndex = z;
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             wt = tetris_mneu.firstElementChild;
             wt.classList.add('navy');
         });
@@ -3441,9 +3417,7 @@ if (ua.includes("mobile")) {
             z = largestZIndex++;
             bom_menu.style.zIndex = z;
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             wt = bom_menu.firstElementChild;
             wt.classList.add('navy');
         });
@@ -3667,17 +3641,18 @@ if (ua.includes("mobile")) {
             //クラス名 .drag も消す
             drag.classList.remove("drag");
 
+            const task = document.getElementById('taskbar').clientHeight;
             if (check(elm1, elm2) && localStorage.getItem('taskbar_position_button')) {
-                toolbar.style.top = "40px";
+                toolbar.style.top = task + "px";
             } else if (check(elm1, elm2)) {
                 toolbar.style.top = "";
+                toolbar.style.bottom = task + "px";
             }
 
         }
     })
 
-    document.querySelector('.toolbar_on').addEventListener('click', function () {
-        const toolbar_on = document.querySelector('.toolbar_on');
+    document.querySelector('.toolbar_on').addEventListener('click', function (toolbar_on) {
         localStorage.setItem('toolbar_on', toolbar_on);
         toolbar.style.display = "block"
     })
@@ -3686,8 +3661,7 @@ if (ua.includes("mobile")) {
         toolbar.style.display = "none"
     })
 
-    document.querySelector('.filettext_backcolor_off').addEventListener('click', function () {
-        const filettext_backcolor_off = document.querySelector('.filettext_backcolor_off');
+    document.querySelector('.filettext_backcolor_off').addEventListener('click', function (filettext_backcolor_off) {
         localStorage.setItem('filettext_backcolor_off', filettext_backcolor_off);
         filettext_backcolor()
     })
@@ -3696,8 +3670,7 @@ if (ua.includes("mobile")) {
         filettext_backcolor()
     })
 
-    document.querySelector('.saver_on').addEventListener('click', function () {
-        const saver_on = document.querySelector('.saver_on');
+    document.querySelector('.saver_on').addEventListener('click', function (saver_on) {
         localStorage.setItem('saver_on', saver_on);
         document.querySelector('.saver_mode').textContent = "ON"
     })
@@ -3707,8 +3680,7 @@ if (ua.includes("mobile")) {
     })
 
 
-    document.querySelector('.display_old').addEventListener('click', function () {
-        const display_old = document.querySelector('.display_old');
+    document.querySelector('.display_old').addEventListener('click', function (display_old) {
         localStorage.setItem('display_old', display_old);
         old_screen();
     })
@@ -3717,8 +3689,7 @@ if (ua.includes("mobile")) {
         old_screen_reset();
     })
 
-    document.querySelector('.list_shadow_on').addEventListener('click', function () {
-        const list_shadow_on = document.querySelector('.list_shadow_on');
+    document.querySelector('.list_shadow_on').addEventListener('click', function (list_shadow_on) {
         localStorage.setItem('list_shadow_on', list_shadow_on);
         list_shadow();
     })
@@ -3865,36 +3836,28 @@ if (ua.includes("mobile")) {
         localStorage.removeItem('titlebar_black');
     }
 
-    document.querySelector('.titlebar_red').addEventListener('click', function () {
-        const titlebar_red = document.querySelector('.titlebar_red');
+    document.querySelector('.titlebar_red').addEventListener('click', function (titlebar_red) {
         localStorage.setItem('titlebar_red', titlebar_red);
     })
-    document.querySelector('.titlebar_blue').addEventListener('click', function () {
-        const titlebar_blue = document.querySelector('.titlebar_blue');
+    document.querySelector('.titlebar_blue').addEventListener('click', function (titlebar_blue) {
         localStorage.setItem('titlebar_blue', titlebar_blue);
     })
-    document.querySelector('.titlebar_green').addEventListener('click', function () {
-        const titlebar_green = document.querySelector('.titlebar_green');
+    document.querySelector('.titlebar_green').addEventListener('click', function (titlebar_green) {
         localStorage.setItem('titlebar_green', titlebar_green);
     })
-    document.querySelector('.titlebar_yellow').addEventListener('click', function () {
-        const titlebar_yellow = document.querySelector('.titlebar_yellow');
+    document.querySelector('.titlebar_yellow').addEventListener('click', function (titlebar_yellow) {
         localStorage.setItem('titlebar_yellow', titlebar_yellow);
     })
-    document.querySelector('.titlebar_orange').addEventListener('click', function () {
-        const titlebar_orange = document.querySelector('.titlebar_orange');
+    document.querySelector('.titlebar_orange').addEventListener('click', function (titlebar_orange) {
         localStorage.setItem('titlebar_orange', titlebar_orange);
     })
-    document.querySelector('.titlebar_pink').addEventListener('click', function () {
-        const titlebar_pink = document.querySelector('.titlebar_pink');
+    document.querySelector('.titlebar_pink').addEventListener('click', function (titlebar_pink) {
         localStorage.setItem('titlebar_pink', titlebar_pink);
     })
-    document.querySelector('.titlebar_purple').addEventListener('click', function () {
-        const titlebar_purple = document.querySelector('.titlebar_purple');
+    document.querySelector('.titlebar_purple').addEventListener('click', function (titlebar_purple) {
         localStorage.setItem('titlebar_purple', titlebar_purple);
     })
-    document.querySelector('.titlebar_black').addEventListener('click', function () {
-        const titlebar_black = document.querySelector('.titlebar_black');
+    document.querySelector('.titlebar_black').addEventListener('click', function (titlebar_black) {
         localStorage.setItem('titlebar_black', titlebar_black);
     })
 
@@ -3996,48 +3959,39 @@ if (ua.includes("mobile")) {
         localStorage.removeItem('back_pattern_9');
     }
 
-    document.querySelector('.back_pattern_1').addEventListener('click', function () {
-        const back_pattern_1 = document.querySelector('.back_pattern_1');
+    document.querySelector('.back_pattern_1').addEventListener('click', function (back_pattern_1) {
         localStorage.setItem('back_pattern_1', back_pattern_1);
         back_pattern_set()
     })
-    document.querySelector('.back_pattern_2').addEventListener('click', function () {
-        const back_pattern_2 = document.querySelector('.back_pattern_2');
+    document.querySelector('.back_pattern_2').addEventListener('click', function (back_pattern_2) {
         localStorage.setItem('back_pattern_2', back_pattern_2);
         back_pattern_set()
     })
-    document.querySelector('.back_pattern_3').addEventListener('click', function () {
-        const back_pattern_3 = document.querySelector('.back_pattern_3');
+    document.querySelector('.back_pattern_3').addEventListener('click', function (back_pattern_3) {
         localStorage.setItem('back_pattern_3', back_pattern_3);
         back_pattern_set()
     })
-    document.querySelector('.back_pattern_4').addEventListener('click', function () {
-        const back_pattern_4 = document.querySelector('.back_pattern_4');
+    document.querySelector('.back_pattern_4').addEventListener('click', function (back_pattern_4) {
         localStorage.setItem('back_pattern_4', back_pattern_4);
         back_pattern_set()
     })
-    document.querySelector('.back_pattern_5').addEventListener('click', function () {
-        const back_pattern_5 = document.querySelector('.back_pattern_5');
+    document.querySelector('.back_pattern_5').addEventListener('click', function (back_pattern_5) {
         localStorage.setItem('back_pattern_5', back_pattern_5);
         back_pattern_set()
     })
-    document.querySelector('.back_pattern_6').addEventListener('click', function () {
-        const back_pattern_6 = document.querySelector('.back_pattern_6');
+    document.querySelector('.back_pattern_6').addEventListener('click', function (back_pattern_6) {
         localStorage.setItem('back_pattern_6', back_pattern_6);
         back_pattern_set()
     })
-    document.querySelector('.back_pattern_7').addEventListener('click', function () {
-        const back_pattern_7 = document.querySelector('.back_pattern_7');
+    document.querySelector('.back_pattern_7').addEventListener('click', function (back_pattern_7) {
         localStorage.setItem('back_pattern_7', back_pattern_7);
         back_pattern_set()
     })
-    document.querySelector('.back_pattern_8').addEventListener('click', function () {
-        const back_pattern_8 = document.querySelector('.back_pattern_8');
+    document.querySelector('.back_pattern_8').addEventListener('click', function (back_pattern_8) {
         localStorage.setItem('back_pattern_8', back_pattern_8);
         back_pattern_set()
     })
-    document.querySelector('.back_pattern_9').addEventListener('click', function () {
-        const back_pattern_9 = document.querySelector('.back_pattern_9');
+    document.querySelector('.back_pattern_9').addEventListener('click', function (back_pattern_9) {
         localStorage.setItem('back_pattern_9', back_pattern_9);
         back_pattern_set()
     })
@@ -4711,7 +4665,7 @@ if (ua.includes("mobile")) {
     })
 
 
-    document.querySelector('.clock_button').addEventListener('click', function () {
+    document.querySelector('.clock_button').addEventListener('click', function (clock_button) {
         if (localStorage.getItem('clock_button')) {
             localStorage.removeItem('clock_button')
             document.querySelector('.clock_button').textContent = "off"
@@ -4719,7 +4673,6 @@ if (ua.includes("mobile")) {
 
             document.querySelector('.taskbar_rightgroup').style.width = ""
         } else {
-            const clock_button = document.querySelector('.clock_button');
             localStorage.setItem('clock_button', clock_button);
             document.querySelector('.clock_button').textContent = "on"
             document.querySelector('.time').style.display = "none";
@@ -4788,18 +4741,30 @@ if (ua.includes("mobile")) {
                 document.querySelector('.files_inline').style.bottom = ""
             }
 
-            document.querySelectorAll('.big').forEach(function (child_win_posi) {
-                child_win_posi.style.transition = "";
-                child_win_posi.style.top = "40px";
-            })
-            document.querySelectorAll('.leftwindow').forEach(function (child_win_posi2) {
-                child_win_posi2.style.transition = "";
-                child_win_posi2.style.top = "40px";
-            })
-            document.querySelectorAll('.rightwindow').forEach(function (child_win_posi3) {
-                child_win_posi3.style.transition = "";
-                child_win_posi3.style.top = "40px";
-            })
+            if (localStorage.getItem('data_taskbar_none')) {
+                document.querySelectorAll('.big').forEach(function (child_win_posi) {
+                    child_win_posi.style.top = "auto"
+                })
+                document.querySelectorAll('.leftwindow').forEach(function (child_win_posi2) {
+                    child_win_posi2.style.top = "auto"
+                })
+                document.querySelectorAll('.rightwindow').forEach(function (child_win_posi3) {
+                    child_win_posi3.style.top = "auto"
+                })
+            } else {
+                document.querySelectorAll('.big').forEach(function (child_win_posi) {
+                    child_win_posi.style.transition = "";
+                    child_win_posi.style.top = "40px";
+                })
+                document.querySelectorAll('.leftwindow').forEach(function (child_win_posi2) {
+                    child_win_posi2.style.transition = "";
+                    child_win_posi2.style.top = "40px";
+                })
+                document.querySelectorAll('.rightwindow').forEach(function (child_win_posi3) {
+                    child_win_posi3.style.transition = "";
+                    child_win_posi3.style.top = "40px";
+                })
+            }
 
             if (check(elm1, elm2) && localStorage.getItem('taskbar_position_button')) {
                 toolbar.style.top = "40px";
@@ -4875,9 +4840,7 @@ if (ua.includes("mobile")) {
             z = largestZIndex++;
             htmlviewer_run_menu.style.zIndex = z;
 
-            document.querySelectorAll('.title').forEach(function (wt) {
-                wt.classList.remove('navy')
-            })
+            alltitle_navyreomve();
             wt = htmlviewer_run_menu.firstElementChild;
             wt.classList.add('navy');
         });
@@ -5391,6 +5354,51 @@ if (ua.includes("mobile")) {
             let childlist_shadow2 = childlist_shadow.lastElementChild;
             childlist_shadow2.classList.remove('shadow');
         })
+    }
+
+    function taskheight_submit() {
+        const taskvalue = document.getElementsByClassName('taskbar_height_value')[0].value;
+        const task = document.getElementById('taskbar').clientHeight;
+        if (taskvalue == 0 || taskvalue == "") {
+            document.getElementById('taskbar').style.height = "40px"
+
+            if (check(elm1, elm2) && !localStorage.getItem('taskbar_position_button')) {
+                toolbar.style.bottom = task + "px";
+            } else if (check(elm1, elm2)) {
+                toolbar.style.bottom = "";
+            }
+
+            if (check(elm1, elm2) && localStorage.getItem('taskbar_position_button')) {
+                toolbar.style.top = task + "px";
+            } else if (check(elm1, elm2)) {
+                toolbar.style.top = "";
+            }
+
+        } else if (40 <= taskvalue && taskvalue < 151) {
+            taskbar.style.height = taskvalue + "px"
+
+            if (check(elm1, elm2) && !localStorage.getItem('taskbar_position_button')) {
+                toolbar.style.bottom = taskvalue + "px";
+            } else if (check(elm1, elm2)) {
+                toolbar.style.bottom = "";
+            }
+
+            if (check(elm1, elm2) && localStorage.getItem('taskbar_position_button')) {
+                setTimeout(() => {
+                    toolbar.style.bottom = "";
+                    toolbar.style.top = taskvalue + "px";
+                }, 10);
+            } else if (check(elm1, elm2)) {
+                toolbar.style.top = "";
+            }
+
+        }
+        const t = localStorage.setItem('taskbar_height', taskvalue)
+    }
+
+    function taskheight_clear() {
+        const t = localStorage.removeItem('taskbar_height');
+        taskbar.style.height = "";
     }
 
 }

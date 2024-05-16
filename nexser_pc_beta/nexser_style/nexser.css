@@ -450,10 +450,12 @@ input[type="file"] {
 }
 
 .start_button {
+    display: inline-block;
     background: silver;
-    position: absolute;
-    bottom: 6px;
+    position: relative;
+    bottom: 0px;
     left: 10px;
+    top: 7px;
     box-shadow: 0 0 0 0.5px dimgray;
 }
 
@@ -471,6 +473,7 @@ input[type="file"] {
     position: absolute;
     height: 100%;
     left: 60px;
+    top: 0px;
 }
 
 #taskbar .task_icons {
@@ -491,7 +494,7 @@ input[type="file"] {
     position: absolute;
     right: 5px;
     column-count: 3;
-    margin-top: 6px;
+    top: 6px;
 }
 
 .inport_icon {
