@@ -600,6 +600,24 @@ input[type="file"] {
 
 .button_file_icon {
     display: block;
+    width: 15px;
+    height: 9.5px;
+    background-image: radial-gradient(whitesmoke 1px, gray 1px);
+    background-size: 3px 3px;
+    margin-top: 2px;
+    margin-bottom: 2px;
+    margin-left: 3px;
+    margin-right: 3px;
+    border-top: 1.5px #eee solid;
+    border-left: 1.5px #eee solid;
+    border-bottom: 1.5px #000 solid;
+    border-right: 1.5px #000 solid;
+    outline: 1px solid dimgray;
+    pointer-events: none;
+}
+
+.button_file_icon2 {
+    display: block;
     width: 18px;
     height: 12.5px;
     background-image: radial-gradient(#FFFFBB 1px, #CCCC66 1px);
@@ -616,11 +634,11 @@ input[type="file"] {
     pointer-events: none;
 }
 
-.button_file_icon2 {
+.button_file_icon3 {
     display: block;
     width: 15px;
     height: 9.5px;
-    background-image: radial-gradient(whitesmoke 1px, gray 1px);
+    background-image: radial-gradient(steelblue 1px, skyblue 1px);
     background-size: 3px 3px;
     margin-top: 2px;
     margin-bottom: 2px;
@@ -630,7 +648,7 @@ input[type="file"] {
     border-left: 1.5px #eee solid;
     border-bottom: 1.5px #000 solid;
     border-right: 1.5px #000 solid;
-    outline: 1px solid dimgray;
+    outline: 1px solid gray;
     pointer-events: none;
 }
 

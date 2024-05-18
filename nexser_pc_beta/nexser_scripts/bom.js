@@ -7,7 +7,7 @@ let timeoutId;
 
 const btn = document.getElementById("btn");
 btn.addEventListener("click", init);
-const text = document.getElementById("text");
+const text = document.getElementById("bom_texts");
 const board = document.getElementById("board");
 const bombCount = document.querySelector(".bombCount");
 const result = document.getElementById("result");
@@ -30,6 +30,7 @@ function init() {
     }
     data = [];
     text.style.display = "none";
+    document.getElementsByClassName('bom_stage')[0].style.display = "block";
     board.innerHTML = "";
     board.style.pointerEvents = "auto";
     clearTimeout(timeoutId);
@@ -222,3 +223,11 @@ function timer() {
         timer();
     }, 1000);
 }
+
+document.querySelector('.bom_close').addEventListener('click', function () {
+    text.style.display = "block";
+    clearTimeout(timeoutId);
+    time.textContent = "000";
+    result.textContent = "";
+    document.getElementsByClassName('bom_stage')[0].style.display = "none";
+})

@@ -3,8 +3,10 @@ var supportsPassive = false; try { var opts = Object.defineProperty({}, 'passive
 const ua = navigator.userAgent.toLowerCase();
 if (ua.includes("mobile")) {
     // Mobile (iPhone、iPad「Chrome、Edge」、Android)
+    alert("この端末は対応していません!")
 } else if (ua.indexOf("ipad") > -1 || (ua.indexOf("macintosh") > -1 && "ontouchend" in document)) {
     // Mobile (iPad「Safari」)
+    alert("この端末は対応していません!")
 } else {
     const shutdown = document.getElementsByClassName('shutdown');
     const restart = document.getElementsByClassName('restart');
@@ -414,6 +416,9 @@ if (ua.includes("mobile")) {
             }
             if (localStorage.getItem('windowfile_2')) {
                 window_file_list_reset()
+            }
+            if (localStorage.getItem('windowfile_3')) {
+                window_file_list_change2()
             }
             if (localStorage.getItem('clock_button')) {
                 document.querySelector('.clock_button').textContent = "on"
@@ -2052,9 +2057,67 @@ if (ua.includes("mobile")) {
     }
 
     function prompt_text_check2() {
+
         const prompt_text4 = document.querySelector('.focus2');
         const prompt_text5 = prompt_text4.value;
+
+
+
+        const command_1 = "backgroundColor=>";
+        const a = prompt_text5.substring(17);
+
+        const command_2 = "textColor=>";
+        const b = prompt_text5.substring(11);
+
+        const command_3 = "alert=>";
+        const c = prompt_text5.substring(7);
+
+        const command_4 = "math=>";
+        const d = prompt_text5.substring(6);
+
+
+
         switch (prompt_text5) {
+
+
+            // commands
+            // background
+            case command_1 + a:
+                prompt_text2.style.color = "";
+
+                document.querySelector('#nexser').style.background = a;
+                document.querySelector('.prompt_error_text2').textContent = "";
+                break;
+
+            case command_2 + b:
+                prompt_text2.style.color = "";
+
+                document.querySelector('body').style.color = b;
+                document.querySelector('.prompt_error_text2').textContent = "";
+                break;
+
+            case command_3 + c:
+                prompt_text2.style.color = "";
+                alert(c);
+                document.querySelector('.prompt_error_text2').textContent = "";
+                break;
+
+            case command_4 + d:
+                prompt_text2.style.color = "";
+
+                var result = Function('return (' + d + ');')();
+                document.querySelector('.prompt_error_text2').textContent = result;
+                break;
+
+
+
+
+
+
+
+
+
+
             case '':
                 document.querySelector('.prompt_error_text2').textContent = "";
                 msg2.innerText = "";
@@ -4634,6 +4697,27 @@ if (ua.includes("mobile")) {
             sss2 = sss.style.width = "";
         });
     }
+
+    function window_file_list_change2() {
+        Array.from(document.getElementsByClassName('window_inline_list')).forEach((window_inline_list) => {
+            window_inline_list.style.columnCount = "2";
+            window_inline_list.style.display = "block";
+        });
+        document.querySelectorAll('.window_file_icon, .window_file_icon2').forEach(function (window_file_icon) {
+            window_file_icon.style.width = "30px";
+            window_file_icon.style.height = "20px";
+            window_file_icon.style.marginBottom = "-20px";
+        });
+        Array.from(document.getElementsByClassName('window_files')).forEach((window_files) => {
+            window_files.style.margin = "0px";
+            window_files.style.paddingTop = "10px";
+            window_files.style.width = "100%";
+            let sss = window_files.firstElementChild;
+            sss2 = sss.style.paddingLeft = "50px";
+            sss2 = sss.style.width = "";
+        });
+    }
+
     function window_file_list_reset() {
         Array.from(document.getElementsByClassName('window_inline_list')).forEach((window_inline_list) => {
             window_inline_list.style.columnCount = "";
@@ -4670,20 +4754,28 @@ if (ua.includes("mobile")) {
         }
     }
 
-    Array.from(document.getElementsByClassName('windowfile1')).forEach((windowfile1) => {
-        windowfile1.addEventListener('click', function () {
-            const windowfile_1 = document.querySelector('.windowfile1');
+    Array.from(document.getElementsByClassName('windowfile1')).forEach((windowfile_1) => {
+        windowfile_1.addEventListener('click', function () {
             localStorage.setItem('windowfile_1', windowfile_1);
             localStorage.removeItem('windowfile_2')
+            localStorage.removeItem('windowfile_3')
             window_file_list_change()
         })
     })
-    Array.from(document.getElementsByClassName('windowfile2')).forEach((windowfile2) => {
-        windowfile2.addEventListener('click', function () {
-            const windowfile_2 = document.querySelector('.windowfile1');
+    Array.from(document.getElementsByClassName('windowfile2')).forEach((windowfile_2) => {
+        windowfile_2.addEventListener('click', function () {
             localStorage.setItem('windowfile_2', windowfile_2);
             localStorage.removeItem('windowfile_1')
+            localStorage.removeItem('windowfile_3')
             window_file_list_reset()
+        })
+    })
+    Array.from(document.getElementsByClassName('windowfile3')).forEach((windowfile_3) => {
+        windowfile_3.addEventListener('click', function () {
+            localStorage.setItem('windowfile_3', windowfile_3);
+            localStorage.removeItem('windowfile_1')
+            localStorage.removeItem('windowfile_2')
+            window_file_list_change2()
         })
     })
 
@@ -5394,10 +5486,11 @@ if (ua.includes("mobile")) {
     }
 
     function taskheight_submit() {
-        const taskvalue = document.getElementsByClassName('taskbar_height_value')[0].value;
+        let taskvalue = document.getElementsByClassName('taskbar_height_value')[0].value;
         const task = document.getElementById('taskbar').clientHeight;
-        const t = localStorage.setItem('taskbar_height', taskvalue);
-        if (taskvalue == 0 || taskvalue == "") {
+        if (taskvalue == "") {
+            taskvalue = 40;
+            const t = localStorage.setItem('taskbar_height', taskvalue);
             document.getElementById('taskbar').style.height = "40px"
             document.querySelector('.files_inline').style.top = ""
 
@@ -5413,7 +5506,13 @@ if (ua.includes("mobile")) {
                 toolbar.style.top = "";
             }
 
+        } else if (0 <= taskvalue && taskvalue < 40) {
+            document.querySelector('.window_error_text').textContent = "タスクバーの設定範囲以下に設定されています!"
+            error_windows.classList.remove('active')
+            sound3();
+            document.querySelector('.test_allwindow').style.display = "block";
         } else if (40 <= taskvalue && taskvalue < 151) {
+            const t = localStorage.setItem('taskbar_height', taskvalue);
             taskbar.style.height = taskvalue + "px"
 
             if (check(elm1, elm2) && !localStorage.getItem('taskbar_position_button')) {
@@ -5436,15 +5535,30 @@ if (ua.includes("mobile")) {
                 document.querySelector('.files_inline').style.top = t2 + "px"
             }
 
+        } else {
+            document.querySelector('.window_error_text').textContent = "タスクバーの設定範囲を超えています!"
+            error_windows.classList.remove('active')
+            sound3();
+            document.querySelector('.test_allwindow').style.display = "block";
         }
     }
 
     function taskheight_clear() {
+        document.getElementsByClassName('taskbar_height_value')[0].value = "";
         localStorage.removeItem('taskbar_height');
         taskbar.style.height = "";
         if (localStorage.getItem('taskbar_position_button')) {
             document.querySelector('.files_inline').style.top = "40px"
         }
     }
+
+    document.querySelectorAll('.window_files').forEach(function (window_files) {
+        // setInterval(() => {
+        //     const test3 = new Date().toLocaleString();
+        //     window_files.textContent = "TIME" + "　" + test3
+        // }, 100);
+        window_files.style.height = taskbar;
+
+    })
 
 }
