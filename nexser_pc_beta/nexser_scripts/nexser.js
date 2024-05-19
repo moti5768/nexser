@@ -413,12 +413,14 @@ if (ua.includes("mobile")) {
 
             if (localStorage.getItem('windowfile_1')) {
                 window_file_list_change()
-            }
-            if (localStorage.getItem('windowfile_2')) {
-                window_file_list_reset()
-            }
-            if (localStorage.getItem('windowfile_3')) {
+            } else if (localStorage.getItem('windowfile_3')) {
                 window_file_list_change2()
+            } else if (localStorage.getItem('windowfile_2')) {
+                window_file_list_reset()
+            } else {
+                Array.from(document.getElementsByClassName('windowfile_time')).forEach((windowfile_time) => {
+                    windowfile_time.style.display = "none"
+                })
             }
             if (localStorage.getItem('clock_button')) {
                 document.querySelector('.clock_button').textContent = "on"
@@ -502,11 +504,19 @@ if (ua.includes("mobile")) {
                     window_inline_side.style.top = "31px"
                 })
             }
+            if (localStorage.getItem('clockdata_analog')) {
+                document.getElementsByClassName('digital_clock_area')[0].style.display = "none";
+                document.getElementsByClassName('analog_clock_area')[0].style.display = "block"
+            } else {
+                document.getElementsByClassName('digital_clock_area')[0].style.display = "flex";
+                document.getElementsByClassName('analog_clock_area')[0].style.display = "none"
+            }
 
             resolve();
         }, 0);
         function taskgroup_load() {
             setTimeout(() => {
+                getTime();
                 var date = new Date();
                 var year = date.getFullYear();
                 var month = date.getMonth() + 1;
@@ -519,6 +529,7 @@ if (ua.includes("mobile")) {
                 Array.from(clock).forEach((element) => {
                     element.textContent = (hours + ":" + minutes + ":" + seconds + "");
                 });
+
                 navigator.getBattery().then((battery) => {
                     if (battery.level == 1 && battery.charging == true) {
                         document.querySelector('.battery_child').style.color = "lime"
@@ -2056,6 +2067,7 @@ if (ua.includes("mobile")) {
         }
     }
 
+
     function prompt_text_check2() {
 
         const prompt_text4 = document.querySelector('.focus2');
@@ -2075,7 +2087,11 @@ if (ua.includes("mobile")) {
         const command_4 = "math=>";
         const d = prompt_text5.substring(6);
 
+        const command_5 = "console(num)=>";
+        const e = prompt_text5.substring(14);
 
+        const command_6 = "console(str)=>";
+        const f = prompt_text5.substring(14);
 
         switch (prompt_text5) {
 
@@ -2104,10 +2120,23 @@ if (ua.includes("mobile")) {
 
             case command_4 + d:
                 prompt_text2.style.color = "";
-
                 var result = Function('return (' + d + ');')();
                 document.querySelector('.prompt_error_text2').textContent = result;
                 break;
+
+            case command_5 + e:
+                prompt_text2.style.color = "";
+                var result = Function('return (' + e + ');')();
+                console.log(result);
+                document.querySelector('.prompt_error_text2').textContent = "";
+                break;
+
+            case command_6 + f:
+                prompt_text2.style.color = "";
+                console.log(f);
+                document.querySelector('.prompt_error_text2').textContent = "";
+                break;
+
 
 
 
@@ -2835,6 +2864,22 @@ if (ua.includes("mobile")) {
         })
     })
 
+
+    document.querySelectorAll('.clockdata_analog').forEach(function (clockdata_analog) {
+        clockdata_analog.addEventListener('click', function () {
+            localStorage.setItem('clockdata_analog', clockdata_analog)
+            document.getElementsByClassName('digital_clock_area')[0].style.display = "none";
+            document.getElementsByClassName('analog_clock_area')[0].style.display = "block"
+        })
+    })
+    document.querySelectorAll('.clockdata_digital').forEach(function (clockdata_digital) {
+        clockdata_digital.addEventListener('click', function () {
+            localStorage.removeItem('clockdata_analog')
+            document.getElementsByClassName('digital_clock_area')[0].style.display = "flex";
+            document.getElementsByClassName('analog_clock_area')[0].style.display = "none"
+        })
+    })
+
     document.querySelectorAll('.title, .drag_button').forEach(function (title) {
         title.addEventListener('mousedown', function () {
             document.querySelectorAll('.windowtool_child').forEach(function (windowtool_child) {
@@ -3457,6 +3502,8 @@ if (ua.includes("mobile")) {
         alltitle_navyreomve();
         test = document.querySelector('.cpu_calc_menu').firstElementChild;
         test.classList.add('navy');
+        titlecolor_set();
+        document.getElementsByClassName('focus2')[0].blur()
 
         if (!cpu_calc_menu.classList.contains('active') || cpumenu1.style.display == "block") {
             setTimeout(() => {
@@ -4684,8 +4731,8 @@ if (ua.includes("mobile")) {
             window_inline_list.style.display = "block";
         });
         document.querySelectorAll('.window_file_icon, .window_file_icon2').forEach(function (window_file_icon) {
-            window_file_icon.style.width = "30px";
-            window_file_icon.style.height = "20px";
+            window_file_icon.style.width = "28px";
+            window_file_icon.style.height = "18px";
             window_file_icon.style.marginBottom = "-20px";
         });
         Array.from(document.getElementsByClassName('window_files')).forEach((window_files) => {
@@ -4693,9 +4740,12 @@ if (ua.includes("mobile")) {
             window_files.style.paddingTop = "10px";
             window_files.style.width = "100%";
             let sss = window_files.firstElementChild;
-            sss2 = sss.style.paddingLeft = "50px";
-            sss2 = sss.style.width = "";
+            sss.style.paddingLeft = "50px";
         });
+
+        Array.from(document.getElementsByClassName('windowfile_time')).forEach((windowfile_time) => {
+            windowfile_time.style.display = "block"
+        })
     }
 
     function window_file_list_change2() {
@@ -4704,8 +4754,8 @@ if (ua.includes("mobile")) {
             window_inline_list.style.display = "block";
         });
         document.querySelectorAll('.window_file_icon, .window_file_icon2').forEach(function (window_file_icon) {
-            window_file_icon.style.width = "30px";
-            window_file_icon.style.height = "20px";
+            window_file_icon.style.width = "28px";
+            window_file_icon.style.height = "18px";
             window_file_icon.style.marginBottom = "-20px";
         });
         Array.from(document.getElementsByClassName('window_files')).forEach((window_files) => {
@@ -4714,8 +4764,11 @@ if (ua.includes("mobile")) {
             window_files.style.width = "100%";
             let sss = window_files.firstElementChild;
             sss2 = sss.style.paddingLeft = "50px";
-            sss2 = sss.style.width = "";
         });
+
+        Array.from(document.getElementsByClassName('windowfile_time')).forEach((windowfile_time) => {
+            windowfile_time.style.display = "block"
+        })
     }
 
     function window_file_list_reset() {
@@ -4736,6 +4789,10 @@ if (ua.includes("mobile")) {
             sss2 = sss.style.paddingLeft = "";
             sss2 = sss.style.width = "";
         });
+
+        Array.from(document.getElementsByClassName('windowfile_time')).forEach((windowfile_time) => {
+            windowfile_time.style.display = "none"
+        })
     }
 
     filettext_backcolor()
@@ -5553,12 +5610,147 @@ if (ua.includes("mobile")) {
     }
 
     document.querySelectorAll('.window_files').forEach(function (window_files) {
-        // setInterval(() => {
-        //     const test3 = new Date().toLocaleString();
-        //     window_files.textContent = "TIME" + "　" + test3
-        // }, 100);
-        window_files.style.height = taskbar;
+        window_files.addEventListener('click', function () {
 
+            const wf = window_files.lastElementChild;
+            const filetimes = new Date().toLocaleString();
+            wf.textContent = filetimes;
+
+        })
     })
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    const canvas = document.getElementById("analog_clock");
+    const ctx = canvas.getContext('2d');
+    let d;
+    let year;
+    let month;
+    let date;
+    let day;
+    let dayArr = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    let hours;
+    let minutes;
+    let seconds;
+    let dateText;
+
+    function sRotate() {
+        ctx.beginPath();
+        ctx.moveTo(150, 150);
+        ctx.lineTo(150 + 140 * Math.cos(Math.PI / 180 * (270 + seconds * 6)), 150 + 140 * Math.sin(Math.PI / 180 * (270 + seconds * 6)));
+        ctx.lineWidth = 1.0;
+        ctx.stroke();
+    }
+
+    function mRotate() {
+        ctx.beginPath();
+        ctx.moveTo(150, 150);
+        ctx.lineWidth = 3.0;
+        ctx.lineTo(150 + 130 * Math.cos(Math.PI / 180 * (270 + 6 * (minutes + seconds / 60))), 150 + 130 * Math.sin(Math.PI / 180 * (270 + 6 * (minutes + seconds / 60))));
+        ctx.stroke();
+    }
+
+    function hRotate() {
+        ctx.beginPath();
+        ctx.moveTo(150, 150);
+        ctx.lineWidth = 6.0;
+        ctx.lineTo(150 + 100 * Math.cos(Math.PI / 180 * (270 + 30 * (hours + minutes / 60))), 150 + 100 * Math.sin(Math.PI / 180 * (270 + 30 * (hours + minutes / 60))));
+        ctx.stroke();
+    }
+
+    function rotate() {
+        sRotate();
+        mRotate();
+        hRotate();
+    }
+
+    function branchAmPm() {
+        if (hours >= 0) {
+            return "P M";
+        } else {
+            return "A M";
+        }
+    }
+
+    function draw() {
+        drawBoard();
+        drawScale();
+        drawText();
+        rotate();
+    }
+
+    function drawText() {
+        dateText = `${year}-${("0" + month).slice(-2)}-${("0" + date).slice(-2)} ${dayArr[day]}`;
+        ctx.font = "20px 'ＭＳ ゴシック'";
+        ctx.textAlign = "center";
+        textArrX = [210, 255, 275, 260, 215, 150, 90, 45, 25, 45, 85, 150];
+        textArrY = [55, 100, 160, 225, 270, 285, 270, 220, 160, 100, 55, 35];
+        for (let i = 0; i <= 11; i++) {
+            ctx.fillText(i + 1, textArrX[i], textArrY[i]);
+        }
+        ctx.font = "15px 'ＭＳ ゴシック'";
+        ctx.fillText(dateText, 150, 80);
+        ctx.fillText(branchAmPm(), 150, 100);
+    }
+
+    function drawScale() {
+        for (let l = 0; l < 60; l++) {
+            ctx.beginPath();
+            ctx.moveTo(150 + 150 * Math.cos(Math.PI / 180 * (270 + l * 6)), 150 + 150 * Math.sin(Math.PI / 180 * (270 + l * 6)));
+            ctx.lineTo(150 + 145 * Math.cos(Math.PI / 180 * (270 + l * 6)), 150 + 145 * Math.sin(Math.PI / 180 * (270 + l * 6)));
+            ctx.lineWidth = 1;
+            ctx.stroke();
+        }
+        for (let m = 0; m < 12; m++) {
+            ctx.beginPath();
+            ctx.moveTo(150 + 150 * Math.cos(Math.PI / 180 * (270 + m * 30)), 150 + 150 * Math.sin(Math.PI / 180 * (270 + m * 30)));
+            ctx.lineTo(150 + 140 * Math.cos(Math.PI / 180 * (270 + m * 30)), 150 + 140 * Math.sin(Math.PI / 180 * (270 + m * 30)));
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+        }
+    }
+
+    function drawBoard() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.beginPath();
+        ctx.arc(150, 150, 150, 0, Math.PI * 2);
+        ctx.lineWidth = 1.0;
+        ctx.stroke();
+    }
+
+    function getTime() {
+        d = new Date();
+        year = d.getFullYear();
+        month = d.getMonth() + 1;
+        date = d.getDate();
+        day = d.getDay();
+        hours = d.getHours() - 12;
+        minutes = d.getMinutes();
+        seconds = d.getSeconds();
+        draw()
+    }
 
 }

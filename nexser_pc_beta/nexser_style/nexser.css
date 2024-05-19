@@ -713,7 +713,7 @@ input[type="file"] {
 }
 
 .clock_menu {
-    width: 200px;
+    width: 300px;
 }
 
 .mouse_menu {
@@ -1685,6 +1685,15 @@ body::-webkit-scrollbar {
 .window_files:hover {
     color: white;
     background: darkblue;
+}
+
+.window_files>.windowfile_time {
+    position: absolute;
+    bottom: 0px;
+    right: 0px;
+    width: auto;
+    font-size: small;
+    padding-left: 10px;
 }
 
 .child_start_menu li:hover {
