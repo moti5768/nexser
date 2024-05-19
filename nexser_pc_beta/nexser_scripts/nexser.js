@@ -2305,6 +2305,8 @@ if (ua.includes("mobile")) {
                 alltitle_navyreomve();
                 test = taskmenu.firstElementChild;
                 test.classList.add('navy');
+                titlecolor_set();
+                document.getElementsByClassName('focus2')[0].blur();
                 break;
 
             case 'windows95/open':
