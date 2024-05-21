@@ -1732,7 +1732,8 @@
                                                     &lt;div class=&quot;prompt_text2&quot; style=&quot;color: white;&quot;&gt;[nexser prompt beta version
                                                         1.4&lt;span class=&quot;test_name2&quot;&gt;&lt;/span&gt;]&lt;/div&gt;
                                                     &lt;form autocomplete=&quot;off&quot; method=&quot;get&quot; name=&quot;prompt_text_form2&quot; onsubmit=&quot;return false;&quot;&gt;
-                                                        &lt;input type=&quot;text&quot; class=&quot;name2 focus2&quot; name=&quot;prompt_text2&quot; placeholder=&quot;|&quot;&gt;
+                                                        &lt;input type=&quot;text&quot; class=&quot;name2 focus2&quot; name=&quot;prompt_text2&quot; id=&quot;command2&quot;
+                                                            placeholder=&quot;|&quot;&gt;
                                                     &lt;/form&gt;
                                                     &lt;p class=&quot;prompt_error_text2&quot;&gt;&lt;/p&gt;
                                                 &lt;/div&gt;
@@ -3866,10 +3867,16 @@
                                         const task = document.getElementById(&#039;taskbar&#039;).clientHeight;
                                         toolbar.style.top = task + &quot;px&quot;;
                                         toolbar.style.top = t + &quot;px&quot;;
+                        
+                                        document.querySelector(&#039;.child_start_menu&#039;).style.top = task + &quot;px&quot;
+                                        document.querySelector(&#039;.child_start_menu&#039;).style.top = t + &quot;px&quot;
                                     } else {
                                         const task = document.getElementById(&#039;taskbar&#039;).clientHeight;
                                         toolbar.style.bottom = task + &quot;px&quot;;
                                         toolbar.style.bottom = t + &quot;px&quot;;
+                        
+                                        document.querySelector(&#039;.child_start_menu&#039;).style.bottom = task + &quot;px&quot;
+                                        document.querySelector(&#039;.child_start_menu&#039;).style.bottom = t + &quot;px&quot;
                                     }
                         
                                     if (localStorage.getItem(&#039;toolbar_on&#039;)) {
@@ -5478,24 +5485,36 @@
                                 const prompt_text5 = prompt_text4.value;
                         
                         
+                                const command_1 = &quot;backgroundColor()=&gt;&quot;;
+                                const a = prompt_text5.substring(19);
                         
-                                const command_1 = &quot;backgroundColor=&gt;&quot;;
-                                const a = prompt_text5.substring(17);
+                                const command_2 = &quot;textColor()=&gt;&quot;;
+                                const b = prompt_text5.substring(13);
                         
-                                const command_2 = &quot;textColor=&gt;&quot;;
-                                const b = prompt_text5.substring(11);
+                                const command_3 = &quot;alert()=&gt;&quot;;
+                                const c = prompt_text5.substring(9);
                         
-                                const command_3 = &quot;alert=&gt;&quot;;
-                                const c = prompt_text5.substring(7);
-                        
-                                const command_4 = &quot;math=&gt;&quot;;
-                                const d = prompt_text5.substring(6);
+                                const command_4 = &quot;math()=&gt;&quot;;
+                                const d = prompt_text5.substring(8);
                         
                                 const command_5 = &quot;console(num)=&gt;&quot;;
                                 const e = prompt_text5.substring(14);
                         
                                 const command_6 = &quot;console(str)=&gt;&quot;;
                                 const f = prompt_text5.substring(14);
+                        
+                                const command_7 = &quot;binary(10-&gt;2)=&gt;&quot;;
+                                const g = prompt_text5.substring(15);
+                        
+                                const command_8 = &quot;binary(2-&gt;10)=&gt;&quot;;
+                                const h = prompt_text5.substring(15);
+                        
+                        
+                                const command_9 = &quot;number(text)=&gt;&quot;;
+                                const i = prompt_text5.substring(14);
+                        
+                        
+                        
                         
                                 switch (prompt_text5) {
                         
@@ -5541,12 +5560,36 @@
                                         document.querySelector(&#039;.prompt_error_text2&#039;).textContent = &quot;&quot;;
                                         break;
                         
+                                    case command_7 + g:
+                                        prompt_text2.style.color = &quot;&quot;;
+                                        const g2 = parseInt(g);
+                                        document.querySelector(&#039;.prompt_error_text2&#039;).textContent = (g2.toString(2));
+                                        break;
+                        
+                                    case command_8 + h:
+                                        prompt_text2.style.color = &quot;&quot;;
+                                        const h2 = parseInt(h, 2);
+                                        document.querySelector(&#039;.prompt_error_text2&#039;).textContent = (h2.toString(10));
+                                        break;
                         
                         
                         
                         
+                                    case command_9 + i:
                         
+                                        prompt_text2.style.color = &quot;&quot;;
+                                        var test = &quot;,&quot;;
                         
+                                        let arraySplit = i.split(test);
+                                        console.log(arraySplit)
+                                        let newStr = (String(arraySplit).replace(/,/g, &quot;&quot;).replace(/[ ( / ) / @ / = / { / } / ` / ・ / . / &#039; / &quot; / # / &amp; / % / $ / ! / ~ /　/ / &lt; / &gt; ]/g, &quot;&quot;).replace(/[a-z]/gi, &quot;&quot;).replaceAll(&quot;01&quot;, &quot;A&quot;).replaceAll(&quot;02&quot;, &quot;B&quot;).replaceAll(&quot;03&quot;, &quot;C&quot;).replaceAll(&quot;04&quot;, &quot;D&quot;).replaceAll(&quot;05&quot;, &quot;E&quot;).replaceAll(&quot;06&quot;, &quot;F&quot;)
+                                            .replaceAll(&quot;07&quot;, &quot;G&quot;).replaceAll(&quot;08&quot;, &quot;H&quot;).replaceAll(&quot;09&quot;, &quot;I&quot;).replaceAll(&quot;10&quot;, &quot;J&quot;).replaceAll(&quot;11&quot;, &quot;K&quot;).replaceAll(&quot;12&quot;, &quot;L&quot;).replaceAll(&quot;13&quot;, &quot;M&quot;)
+                                            .replaceAll(&quot;14&quot;, &quot;N&quot;).replaceAll(&quot;15&quot;, &quot;O&quot;).replaceAll(&quot;16&quot;, &quot;P&quot;).replaceAll(&quot;17&quot;, &quot;Q&quot;).replaceAll(&quot;18&quot;, &quot;R&quot;).replaceAll(&quot;19&quot;, &quot;S&quot;).replaceAll(&quot;20&quot;, &quot;T&quot;)
+                                            .replaceAll(&quot;21&quot;, &quot;U&quot;).replaceAll(&quot;22&quot;, &quot;V&quot;).replaceAll(&quot;23&quot;, &quot;W&quot;).replaceAll(&quot;24&quot;, &quot;X&quot;).replaceAll(&quot;25&quot;, &quot;Y&quot;).replaceAll(&quot;26&quot;, &quot;Z&quot;)
+                                            .replaceAll(&quot;99&quot;, &quot; &quot;).replaceAll(&quot;98&quot;, &quot;,&quot;).replaceAll(&quot;97&quot;, &quot;(&quot;).replaceAll(&quot;96&quot;, &quot;)&quot;).replaceAll(&quot;95&quot;, &quot;&quot;));
+                                        document.querySelector(&#039;.prompt_error_text2&#039;).textContent = newStr;
+                        
+                                        break;
                         
                         
                         
@@ -5735,6 +5778,7 @@
                                         break;
                                 }
                             }
+                        
                         
                             function p_clear() {
                                 document.querySelector(&#039;.focus2&#039;).value = &quot;&quot;;
@@ -8274,7 +8318,12 @@
                                     document.querySelector(&#039;.taskbar_position_button&#039;).textContent = &quot;top&quot;
                                     document.getElementById(&#039;taskbar&#039;).style.top = &quot;&quot;
                                     document.querySelector(&#039;.child_start_menu&#039;).style.top = &quot;auto&quot;
-                                    document.querySelector(&#039;.child_start_menu&#039;).style.bottom = &quot;&quot;
+                                    document.querySelector(&#039;.child_start_menu&#039;).style.bottom = &quot;&quot;;
+                        
+                                    const task = document.getElementById(&#039;taskbar&#039;).clientHeight;
+                        
+                                    document.querySelector(&#039;.child_start_menu&#039;).style.bottom = task + &quot;px&quot;
+                                    document.querySelector(&#039;.child_start_menu&#039;).style.bottom = t + &quot;px&quot;
                         
                                     document.querySelector(&#039;.battery_menu&#039;).style.top = &quot;auto&quot;
                                     document.querySelector(&#039;.battery_menu&#039;).style.bottom = &quot;&quot;
@@ -8295,6 +8344,7 @@
                                     if (check(elm1, elm2) &amp;&amp; localStorage.getItem(&#039;taskbar_position_button&#039;)) {
                                         toolbar.style.top = &quot;40px&quot;;
                                         toolbar.style.top = t + &quot;px&quot;;
+                        
                                     } else if (check(elm1, elm2)) {
                                         toolbar.style.top = &quot;&quot;;
                                         toolbar.style.bottom = t + &quot;px&quot;;
@@ -8308,6 +8358,11 @@
                                     document.getElementById(&#039;taskbar&#039;).style.top = &quot;0px&quot;
                                     document.querySelector(&#039;.child_start_menu&#039;).style.top = &quot;40px&quot;
                                     document.querySelector(&#039;.child_start_menu&#039;).style.bottom = &quot;auto&quot;
+                        
+                                    const task = document.getElementById(&#039;taskbar&#039;).clientHeight;
+                        
+                                    document.querySelector(&#039;.child_start_menu&#039;).style.top = task + &quot;px&quot;
+                                    document.querySelector(&#039;.child_start_menu&#039;).style.top = t + &quot;px&quot;
                         
                                     document.querySelector(&#039;.battery_menu&#039;).style.top = &quot;35px&quot;
                                     document.querySelector(&#039;.battery_menu&#039;).style.bottom = &quot;auto&quot;
@@ -8996,6 +9051,16 @@
                                     if (localStorage.getItem(&#039;taskbar_position_button&#039;)) {
                                         const t2 = localStorage.getItem(&#039;taskbar_height&#039;);
                                         document.querySelector(&#039;.files_inline&#039;).style.top = t2 + &quot;px&quot;
+                        
+                                        const task = document.getElementById(&#039;taskbar&#039;).clientHeight;
+                        
+                                        document.querySelector(&#039;.child_start_menu&#039;).style.top = task + &quot;px&quot;
+                                        document.querySelector(&#039;.child_start_menu&#039;).style.top = t + &quot;px&quot;
+                                    } else {
+                                        const task = document.getElementById(&#039;taskbar&#039;).clientHeight;
+                        
+                                        document.querySelector(&#039;.child_start_menu&#039;).style.bottom = task + &quot;px&quot;
+                                        document.querySelector(&#039;.child_start_menu&#039;).style.bottom = t + &quot;px&quot;
                                     }
                         
                                 } else {
@@ -9012,6 +9077,12 @@
                                 taskbar.style.height = &quot;&quot;;
                                 if (localStorage.getItem(&#039;taskbar_position_button&#039;)) {
                                     document.querySelector(&#039;.files_inline&#039;).style.top = &quot;40px&quot;
+                        
+                                    const task = document.getElementById(&#039;taskbar&#039;).clientHeight;
+                                    document.querySelector(&#039;.child_start_menu&#039;).style.top = task + &quot;px&quot;
+                                } else {
+                                    const task = document.getElementById(&#039;taskbar&#039;).clientHeight;
+                                    document.querySelector(&#039;.child_start_menu&#039;).style.bottom = task + &quot;px&quot;
                                 }
                             }
                         
@@ -9024,30 +9095,6 @@
                         
                                 })
                             })
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
                         
                         
                             const canvas = document.getElementById(&quot;analog_clock&quot;);
@@ -10754,7 +10801,8 @@
                             <div class="prompt_text2" style="color: white;">[nexser prompt beta version
                                 1.4<span class="test_name2"></span>]</div>
                             <form autocomplete="off" method="get" name="prompt_text_form2" onsubmit="return false;">
-                                <input type="text" class="name2 focus2" name="prompt_text2" placeholder="|">
+                                <input type="text" class="name2 focus2" name="prompt_text2" id="command2"
+                                    placeholder="|">
                             </form>
                             <p class="prompt_error_text2"></p>
                         </div>

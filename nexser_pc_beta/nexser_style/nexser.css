@@ -250,11 +250,6 @@ li {
     user-select: none;
 }
 
-#prompt2 {
-    height: 200px;
-    width: 500px;
-}
-
 .focus {
     font-family: Courier;
 }
@@ -267,6 +262,13 @@ li {
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
+    height: 200px;
+    width: 500px;
+}
+
+.big #prompt2 {
+    height: 100%;
+    width: 100%;
 }
 
 .focus2 {
@@ -602,7 +604,7 @@ input[type="file"] {
     display: block;
     width: 15px;
     height: 9.5px;
-    background-image: radial-gradient(whitesmoke 1px, gray 1px);
+    background-image: radial-gradient(steelblue 1px, skyblue 1px);
     background-size: 3px 3px;
     margin-top: 2px;
     margin-bottom: 2px;
@@ -638,7 +640,7 @@ input[type="file"] {
     display: block;
     width: 15px;
     height: 9.5px;
-    background-image: radial-gradient(steelblue 1px, skyblue 1px);
+    background-image: radial-gradient(lime 1px, limegreen 1px);
     background-size: 3px 3px;
     margin-top: 2px;
     margin-bottom: 2px;

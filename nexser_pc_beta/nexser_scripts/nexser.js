@@ -462,10 +462,16 @@ if (ua.includes("mobile")) {
                 const task = document.getElementById('taskbar').clientHeight;
                 toolbar.style.top = task + "px";
                 toolbar.style.top = t + "px";
+
+                document.querySelector('.child_start_menu').style.top = task + "px"
+                document.querySelector('.child_start_menu').style.top = t + "px"
             } else {
                 const task = document.getElementById('taskbar').clientHeight;
                 toolbar.style.bottom = task + "px";
                 toolbar.style.bottom = t + "px";
+
+                document.querySelector('.child_start_menu').style.bottom = task + "px"
+                document.querySelector('.child_start_menu').style.bottom = t + "px"
             }
 
             if (localStorage.getItem('toolbar_on')) {
@@ -2074,24 +2080,36 @@ if (ua.includes("mobile")) {
         const prompt_text5 = prompt_text4.value;
 
 
+        const command_1 = "backgroundColor()=>";
+        const a = prompt_text5.substring(19);
 
-        const command_1 = "backgroundColor=>";
-        const a = prompt_text5.substring(17);
+        const command_2 = "textColor()=>";
+        const b = prompt_text5.substring(13);
 
-        const command_2 = "textColor=>";
-        const b = prompt_text5.substring(11);
+        const command_3 = "alert()=>";
+        const c = prompt_text5.substring(9);
 
-        const command_3 = "alert=>";
-        const c = prompt_text5.substring(7);
-
-        const command_4 = "math=>";
-        const d = prompt_text5.substring(6);
+        const command_4 = "math()=>";
+        const d = prompt_text5.substring(8);
 
         const command_5 = "console(num)=>";
         const e = prompt_text5.substring(14);
 
         const command_6 = "console(str)=>";
         const f = prompt_text5.substring(14);
+
+        const command_7 = "binary(10->2)=>";
+        const g = prompt_text5.substring(15);
+
+        const command_8 = "binary(2->10)=>";
+        const h = prompt_text5.substring(15);
+
+
+        const command_9 = "number(text)=>";
+        const i = prompt_text5.substring(14);
+
+
+
 
         switch (prompt_text5) {
 
@@ -2137,12 +2155,36 @@ if (ua.includes("mobile")) {
                 document.querySelector('.prompt_error_text2').textContent = "";
                 break;
 
+            case command_7 + g:
+                prompt_text2.style.color = "";
+                const g2 = parseInt(g);
+                document.querySelector('.prompt_error_text2').textContent = (g2.toString(2));
+                break;
+
+            case command_8 + h:
+                prompt_text2.style.color = "";
+                const h2 = parseInt(h, 2);
+                document.querySelector('.prompt_error_text2').textContent = (h2.toString(10));
+                break;
 
 
 
 
+            case command_9 + i:
 
+                prompt_text2.style.color = "";
+                var test = ",";
 
+                let arraySplit = i.split(test);
+                console.log(arraySplit)
+                let newStr = (String(arraySplit).replace(/,/g, "").replace(/[ ( / ) / @ / = / { / } / ` / ・ / . / ' / " / # / & / % / $ / ! / ~ /　/ / < / > ]/g, "").replace(/[a-z]/gi, "").replaceAll("01", "A").replaceAll("02", "B").replaceAll("03", "C").replaceAll("04", "D").replaceAll("05", "E").replaceAll("06", "F")
+                    .replaceAll("07", "G").replaceAll("08", "H").replaceAll("09", "I").replaceAll("10", "J").replaceAll("11", "K").replaceAll("12", "L").replaceAll("13", "M")
+                    .replaceAll("14", "N").replaceAll("15", "O").replaceAll("16", "P").replaceAll("17", "Q").replaceAll("18", "R").replaceAll("19", "S").replaceAll("20", "T")
+                    .replaceAll("21", "U").replaceAll("22", "V").replaceAll("23", "W").replaceAll("24", "X").replaceAll("25", "Y").replaceAll("26", "Z")
+                    .replaceAll("99", " ").replaceAll("98", ",").replaceAll("97", "(").replaceAll("96", ")").replaceAll("95", ""));
+                document.querySelector('.prompt_error_text2').textContent = newStr;
+
+                break;
 
 
 
@@ -2331,6 +2373,7 @@ if (ua.includes("mobile")) {
                 break;
         }
     }
+
 
     function p_clear() {
         document.querySelector('.focus2').value = "";
@@ -4870,7 +4913,12 @@ if (ua.includes("mobile")) {
             document.querySelector('.taskbar_position_button').textContent = "top"
             document.getElementById('taskbar').style.top = ""
             document.querySelector('.child_start_menu').style.top = "auto"
-            document.querySelector('.child_start_menu').style.bottom = ""
+            document.querySelector('.child_start_menu').style.bottom = "";
+
+            const task = document.getElementById('taskbar').clientHeight;
+
+            document.querySelector('.child_start_menu').style.bottom = task + "px"
+            document.querySelector('.child_start_menu').style.bottom = t + "px"
 
             document.querySelector('.battery_menu').style.top = "auto"
             document.querySelector('.battery_menu').style.bottom = ""
@@ -4891,6 +4939,7 @@ if (ua.includes("mobile")) {
             if (check(elm1, elm2) && localStorage.getItem('taskbar_position_button')) {
                 toolbar.style.top = "40px";
                 toolbar.style.top = t + "px";
+
             } else if (check(elm1, elm2)) {
                 toolbar.style.top = "";
                 toolbar.style.bottom = t + "px";
@@ -4904,6 +4953,11 @@ if (ua.includes("mobile")) {
             document.getElementById('taskbar').style.top = "0px"
             document.querySelector('.child_start_menu').style.top = "40px"
             document.querySelector('.child_start_menu').style.bottom = "auto"
+
+            const task = document.getElementById('taskbar').clientHeight;
+
+            document.querySelector('.child_start_menu').style.top = task + "px"
+            document.querySelector('.child_start_menu').style.top = t + "px"
 
             document.querySelector('.battery_menu').style.top = "35px"
             document.querySelector('.battery_menu').style.bottom = "auto"
@@ -5592,6 +5646,16 @@ if (ua.includes("mobile")) {
             if (localStorage.getItem('taskbar_position_button')) {
                 const t2 = localStorage.getItem('taskbar_height');
                 document.querySelector('.files_inline').style.top = t2 + "px"
+
+                const task = document.getElementById('taskbar').clientHeight;
+
+                document.querySelector('.child_start_menu').style.top = task + "px"
+                document.querySelector('.child_start_menu').style.top = t + "px"
+            } else {
+                const task = document.getElementById('taskbar').clientHeight;
+
+                document.querySelector('.child_start_menu').style.bottom = task + "px"
+                document.querySelector('.child_start_menu').style.bottom = t + "px"
             }
 
         } else {
@@ -5608,6 +5672,12 @@ if (ua.includes("mobile")) {
         taskbar.style.height = "";
         if (localStorage.getItem('taskbar_position_button')) {
             document.querySelector('.files_inline').style.top = "40px"
+
+            const task = document.getElementById('taskbar').clientHeight;
+            document.querySelector('.child_start_menu').style.top = task + "px"
+        } else {
+            const task = document.getElementById('taskbar').clientHeight;
+            document.querySelector('.child_start_menu').style.bottom = task + "px"
         }
     }
 
@@ -5620,30 +5690,6 @@ if (ua.includes("mobile")) {
 
         })
     })
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
     const canvas = document.getElementById("analog_clock");
