@@ -1133,6 +1133,7 @@ if (ua.includes("mobile")) {
     })
 
     function start_check() {
+
         const t = localStorage.getItem('taskbar_height');
         document.querySelector('html').style.cursor = 'none';
         taskbar.style.display = "none";
@@ -1170,11 +1171,14 @@ if (ua.includes("mobile")) {
                 }
                 if (localStorage.getItem('taskbar_position_button')) {
                     taskbar.style.display = "block";
+                    const task = document.getElementById('taskbar').clientHeight;
                     toolbar.style.bottom = "";
                     toolbar.style.left = "";
                     toolbar.style.top = "40px";
                     toolbar.style.top = t + "px";
                     document.querySelector('.files_inline').style.top = t + "px"
+
+                    document.querySelector('.child_start_menu').style.top = task + "px"
 
                     if (localStorage.getItem('data_taskbar_none')) {
                         taskbar.style.display = "none";
@@ -1188,10 +1192,13 @@ if (ua.includes("mobile")) {
 
                 } else {
                     taskbar.style.display = "block";
+                    const task = document.getElementById('taskbar').clientHeight;
                     toolbar.style.top = "";
                     toolbar.style.left = "";
                     toolbar.style.bottom = "40px";
                     toolbar.style.bottom = t + "px";
+
+                    document.querySelector('.child_start_menu').style.bottom = task + "px"
 
                     if (localStorage.getItem('data_taskbar_none')) {
                         taskbar.style.display = "none";
@@ -2173,16 +2180,26 @@ if (ua.includes("mobile")) {
             case command_9 + i:
 
                 prompt_text2.style.color = "";
-                var test = ",";
 
-                let arraySplit = i.split(test);
+                let arraySplit = i.match(/.{3}/gi)
                 console.log(arraySplit)
-                let newStr = (String(arraySplit).replace(/,/g, "").replace(/[ ( / ) / @ / = / { / } / ` / ・ / . / ' / " / # / & / % / $ / ! / ~ /　/ / < / > ]/g, "").replace(/[a-z]/gi, "").replaceAll("01", "A").replaceAll("02", "B").replaceAll("03", "C").replaceAll("04", "D").replaceAll("05", "E").replaceAll("06", "F")
-                    .replaceAll("07", "G").replaceAll("08", "H").replaceAll("09", "I").replaceAll("10", "J").replaceAll("11", "K").replaceAll("12", "L").replaceAll("13", "M")
-                    .replaceAll("14", "N").replaceAll("15", "O").replaceAll("16", "P").replaceAll("17", "Q").replaceAll("18", "R").replaceAll("19", "S").replaceAll("20", "T")
-                    .replaceAll("21", "U").replaceAll("22", "V").replaceAll("23", "W").replaceAll("24", "X").replaceAll("25", "Y").replaceAll("26", "Z")
-                    .replaceAll("99", " ").replaceAll("98", ",").replaceAll("97", "(").replaceAll("96", ")").replaceAll("95", ""));
-                document.querySelector('.prompt_error_text2').textContent = newStr;
+                let newStr = (String(arraySplit).replace(/[ ( / ) / @ / = / < / > / ` / ・ / . / ' / " / # / & / % / $ / ! / ~ /　/ / < / > / { / } / + / - / _ / * ]/g, "").replace(/[a-z]/gi, "")
+                    .replaceAll("01,", "A").replaceAll("02,", "B").replaceAll("03,", "C").replaceAll("04,", "D").replaceAll("05,", "E").replaceAll("06,", "F")
+                    .replaceAll("07,", "G").replaceAll("08,", "H").replaceAll("09,", "I").replaceAll("10,", "J").replaceAll("11,", "K").replaceAll("12,", "L")
+                    .replaceAll("13,", "M").replaceAll("14,", "N").replaceAll("15,", "O").replaceAll("16,", "P").replaceAll("17,", "Q").replaceAll("18,", "R")
+                    .replaceAll("19,", "S").replaceAll("20,", "T").replaceAll("21,", "U").replaceAll("22,", "V").replaceAll("23,", "W").replaceAll("24,", "X")
+                    .replaceAll("25,", "Y").replaceAll("26,", "Z").replace("00,", "")
+
+                    .replaceAll("||,", " ")
+
+                    .replaceAll("|,1", "+").replaceAll("|,2", "-").replaceAll("|,3", "*").replaceAll("|,4", "/")
+
+                    .replaceAll("|1,", "!").replaceAll("|2,", "#").replaceAll("|3,", "$").replaceAll("|4,", "%").replaceAll("|5,", "&").replaceAll("|6,", "'")
+
+                    .replaceAll(",1|", "(").replaceAll(",2|", ")").replaceAll(",3|", "{").replaceAll(",4|", "}").replaceAll(",5|", "<").replaceAll(",6|", ">")
+
+                );
+                document.querySelector('.prompt_error_text2').textContent = (String(newStr).replace(/[","]/gi, ""));
 
                 break;
 

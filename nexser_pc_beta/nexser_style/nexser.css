@@ -263,7 +263,11 @@ li {
     -ms-user-select: none;
     user-select: none;
     height: 200px;
-    width: 500px;
+    width: auto;
+}
+
+.focus2::-webkit-scrollbar {
+    display: none;
 }
 
 .big #prompt2 {
@@ -289,8 +293,9 @@ li {
 }
 
 #prompt2 .name2 {
-    font-size: small;
+    font-size: medium;
     width: 100%;
+    height: auto;
     border: none;
     outline: none;
     color: white;
@@ -720,6 +725,11 @@ input[type="file"] {
 
 .mouse_menu {
     width: 400px;
+}
+
+.window_prompt {
+    width: 600px;
+    height: 300px;
 }
 
 .nexser_sound_menu {
