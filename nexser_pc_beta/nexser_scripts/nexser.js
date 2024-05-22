@@ -2112,8 +2112,12 @@ if (ua.includes("mobile")) {
         const h = prompt_text5.substring(15);
 
 
-        const command_9 = "number(text)=>";
-        const i = prompt_text5.substring(14);
+        const command_9 = "program(num,sym->text)=>";
+        const i = prompt_text5.substring(24);
+
+
+        const command_10 = "program(text)=>";
+        const j = prompt_text5.substring(15);
 
 
 
@@ -2183,25 +2187,148 @@ if (ua.includes("mobile")) {
 
                 let arraySplit = i.match(/.{3}/gi)
                 console.log(arraySplit)
-                let newStr = (String(arraySplit).replace(/[ ( / ) / @ / = / < / > / ` / ・ / . / ' / " / # / & / % / $ / ! / ~ /　/ / < / > / { / } / + / - / _ / * ]/g, "").replace(/[a-z]/gi, "")
+                let newStr = (String(arraySplit).replace(/[a-z]/gi, "")
                     .replaceAll("01,", "A").replaceAll("02,", "B").replaceAll("03,", "C").replaceAll("04,", "D").replaceAll("05,", "E").replaceAll("06,", "F")
                     .replaceAll("07,", "G").replaceAll("08,", "H").replaceAll("09,", "I").replaceAll("10,", "J").replaceAll("11,", "K").replaceAll("12,", "L")
                     .replaceAll("13,", "M").replaceAll("14,", "N").replaceAll("15,", "O").replaceAll("16,", "P").replaceAll("17,", "Q").replaceAll("18,", "R")
                     .replaceAll("19,", "S").replaceAll("20,", "T").replaceAll("21,", "U").replaceAll("22,", "V").replaceAll("23,", "W").replaceAll("24,", "X")
-                    .replaceAll("25,", "Y").replaceAll("26,", "Z").replace("00,", "")
+                    .replaceAll("25,", "Y").replaceAll("26,", "Z").replace(",|,", "")
 
-                    .replaceAll("||,", " ")
+                    .replaceAll("[ ]", " ").replaceAll("{ }", "<br>").replaceAll("{~}", "~")
 
-                    .replaceAll("|,1", "+").replaceAll("|,2", "-").replaceAll("|,3", "*").replaceAll("|,4", "/")
+                    .replaceAll("{+}", "+").replaceAll("{-}", "-").replaceAll("{*}", "*").replaceAll("{/}", "/").replaceAll("{.}", ".").replaceAll("{・}", "・")
 
-                    .replaceAll("|1,", "!").replaceAll("|2,", "#").replaceAll("|3,", "$").replaceAll("|4,", "%").replaceAll("|5,", "&").replaceAll("|6,", "'")
+                    .replaceAll("{!}", "!").replaceAll("{#}", "#").replaceAll("{$}", "$").replaceAll("{%}", "%").replaceAll("{&}", "&").replaceAll("{'}", "'").replaceAll("{=}", "=").replaceAll("{_}", "_")
 
-                    .replaceAll(",1|", "(").replaceAll(",2|", ")").replaceAll(",3|", "{").replaceAll(",4|", "}").replaceAll(",5|", "<").replaceAll(",6|", ">")
+                    .replaceAll("-(-", "(").replaceAll("-)-", ")").replaceAll("-{-", "{").replaceAll("-}-", "}").replaceAll("-<-", "<").replaceAll("->-", ">")
 
                 );
-                document.querySelector('.prompt_error_text2').textContent = (String(newStr).replace(/[","]/gi, ""));
+
+                const str2 = newStr.toLowerCase();
+
+                document.querySelector('.prompt_error_text2').textContent = (String(str2).replace(/[","]/gi, ""));
+
+                const test999 = document.querySelector('.prompt_error_text2').textContent;
+
+                setTimeout(() => {
+
+                    document.querySelectorAll('.prompt_shell_menu').forEach(function (prompt_shell_menu) {
+                        prompt_shell_menu.closest('.child_windows');
+                        prompt_shell_menu.classList.remove('active');
+                        z = largestZIndex++;
+                        prompt_shell_menu.style.zIndex = z;
+
+                        alltitle_navyreomve();
+                        wt = prompt_shell_menu.firstElementChild;
+                        wt.classList.add('navy');
+                    });
+                    document.getElementById('shell').innerText = document.getElementById('shell').value = test999;
+
+                    setTimeout(() => {
+
+                        document.querySelectorAll('.htmlviewer_run_menu').forEach(function (htmlviewer_run_menu) {
+                            htmlviewer_run_menu.closest('.child_windows');
+                            htmlviewer_run_menu.classList.remove('active');
+                            z = largestZIndex++;
+                            htmlviewer_run_menu.style.zIndex = z;
+
+                            alltitle_navyreomve();
+                            wt = htmlviewer_run_menu.firstElementChild;
+                            wt.classList.add('navy');
+                        });
+                        preview.srcdoc = test999;
+
+                    }, 100);
+                }, 100);
+
+
+                document.querySelector('.prompt_error_text2').textContent = "";
+                document.getElementsByClassName('test_name2')[0].textContent = ""
 
                 break;
+
+
+
+
+
+
+
+
+
+
+
+
+
+            case command_10 + j:
+
+                prompt_text2.style.color = "";
+                console.log(j)
+                let newStr2 = (String(j)
+
+                    .replaceAll("{h}", "<html>").replaceAll("{/h}", "</html>")
+
+
+                    .replaceAll("{sty}", "<style>").replaceAll("{/sty}", "</style>")
+
+
+                    .replaceAll("{s}", "<script>").replaceAll("{/s}", "</script>")
+
+                    .replaceAll("{s.conlog}", "console.log")
+
+                    .replaceAll("{s.dmt}", "document")
+                    .replaceAll("{s.gid}", "getElementById")
+                    .replaceAll("{s.qes}", "querySelector")
+
+                    .replaceAll("{s.texcon}", "textContent")
+                    .replaceAll("{s.intext}", "innerText")
+                    .replaceAll("{s.inhtml}", "innerHTML")
+
+
+                );
+                document.querySelector('.prompt_error_text2').textContent = (String(newStr2));
+
+                const test9992 = document.querySelector('.prompt_error_text2').textContent;
+
+                setTimeout(() => {
+
+                    document.querySelectorAll('.prompt_shell_menu').forEach(function (prompt_shell_menu) {
+                        prompt_shell_menu.closest('.child_windows');
+                        prompt_shell_menu.classList.remove('active');
+                        z = largestZIndex++;
+                        prompt_shell_menu.style.zIndex = z;
+
+                        alltitle_navyreomve();
+                        wt = prompt_shell_menu.firstElementChild;
+                        wt.classList.add('navy');
+                    });
+                    document.getElementById('shell').innerText = document.getElementById('shell').value = test9992;
+
+                    setTimeout(() => {
+
+                        document.querySelectorAll('.htmlviewer_run_menu').forEach(function (htmlviewer_run_menu) {
+                            htmlviewer_run_menu.closest('.child_windows');
+                            htmlviewer_run_menu.classList.remove('active');
+                            z = largestZIndex++;
+                            htmlviewer_run_menu.style.zIndex = z;
+
+                            alltitle_navyreomve();
+                            wt = htmlviewer_run_menu.firstElementChild;
+                            wt.classList.add('navy');
+                        });
+                        preview.srcdoc = test9992;
+
+                    }, 100);
+                }, 100);
+
+
+                document.querySelector('.prompt_error_text2').textContent = "";
+                document.getElementsByClassName('test_name2')[0].textContent = ""
+
+                break;
+
+
+
+
 
 
 
