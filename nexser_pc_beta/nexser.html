@@ -1736,7 +1736,7 @@
                                                         onkeydown=&quot;if(event.keyCode == 13){return false;}&quot;&gt;
                                                         &lt;textarea class=&quot;name2 focus2&quot; name=&quot;prompt_text2&quot; placeholder=&quot;|&quot;&gt;&lt;/textarea&gt;
                                                     &lt;/form&gt;
-                                                    &lt;p class=&quot;prompt_error_text2 medium&quot; style=&quot;margin-top: 40px;&quot;&gt;&lt;/p&gt;
+                                                    &lt;p class=&quot;prompt_error_text2 medium&quot;&gt;&lt;/p&gt;
                                                 &lt;/div&gt;
                                             &lt;/div&gt;
                         
@@ -1755,7 +1755,7 @@
                                                 &lt;/div&gt;
                         
                                                 &lt;div&gt;
-                                                    &lt;textarea id=&quot;shell&quot; style=&quot;pointer-events: none;&quot;&gt;&lt;/textarea&gt;
+                                                    &lt;textarea id=&quot;shell&quot;&gt;&lt;/textarea&gt;
                                                 &lt;/div&gt;
                                             &lt;/div&gt;
                         
@@ -3351,7 +3351,7 @@
                                         &lt;/div&gt;
                         
                                         &lt;div id=&quot;toolbar&quot; class=&quot;border&quot;&gt;
-                                            &lt;div style=&quot;margin-top: 1.5px; margin-left: 3px;&quot;&gt;
+                                            &lt;div style=&quot;margin-top: 1.5px; margin-left: 5px;&quot;&gt;
                                                 &lt;ul&gt;
                                                     &lt;span class=&quot;drag_button2 border2&quot; style=&quot;cursor: all-scroll;&quot;&gt;&amp;emsp;&amp;nbsp;&lt;/span&gt;
                                                     &lt;li style=&quot;width: 22.5px;&quot; class=&quot;button2&quot;&gt;&amp;nbsp;&lt;span class=&quot;magnifying_glass&quot;&gt;&lt;/span&gt;
@@ -4132,6 +4132,13 @@
                         
                             document.querySelector(&#039;.deskprompt&#039;).addEventListener(&#039;click&#039;, function (deskprompt) {
                                 localStorage.setItem(&#039;deskprompt&#039;, deskprompt);
+                            })
+                        
+                            document.querySelector(&#039;#shell&#039;).addEventListener(&#039;click&#039;, function (shell) {
+                                document.getElementById(&#039;shell&#039;).blur()
+                            })
+                            document.querySelector(&#039;#shell&#039;).addEventListener(&#039;mousedown&#039;, function (shell) {
+                                document.getElementById(&#039;shell&#039;).blur()
                             })
                         
                         
@@ -5538,13 +5545,20 @@
                                 const h = prompt_text5.substring(15);
                         
                         
-                                const command_9 = &quot;program(num,sym-&gt;text)=&gt;&quot;;
-                                const i = prompt_text5.substring(24);
+                                const command_9 = &quot;program(num-&gt;text)=&gt;&quot;;
+                                const i = prompt_text5.substring(20);
                         
                         
-                                const command_10 = &quot;program(text)=&gt;&quot;;
-                                const j = prompt_text5.substring(15);
+                                const command_10 = &quot;program(context-&gt;text)=&gt;&quot;;
+                                const j = prompt_text5.substring(24);
                         
+                        
+                                const command_11 = &quot;program(text-&gt;num)=&gt;&quot;;
+                                const k = prompt_text5.substring(20);
+                        
+                        
+                                const command_12 = &quot;program(text-&gt;context)=&gt;&quot;;
+                                const l = prompt_text5.substring(24);
                         
                         
                         
@@ -5611,30 +5625,28 @@
                         
                                         prompt_text2.style.color = &quot;&quot;;
                         
-                                        let arraySplit = i.match(/.{3}/gi)
+                                        let arraySplit = i.match(/.{3}/g)
                                         console.log(arraySplit)
                                         let newStr = (String(arraySplit).replace(/[a-z]/gi, &quot;&quot;)
-                                            .replaceAll(&quot;01,&quot;, &quot;A&quot;).replaceAll(&quot;02,&quot;, &quot;B&quot;).replaceAll(&quot;03,&quot;, &quot;C&quot;).replaceAll(&quot;04,&quot;, &quot;D&quot;).replaceAll(&quot;05,&quot;, &quot;E&quot;).replaceAll(&quot;06,&quot;, &quot;F&quot;)
-                                            .replaceAll(&quot;07,&quot;, &quot;G&quot;).replaceAll(&quot;08,&quot;, &quot;H&quot;).replaceAll(&quot;09,&quot;, &quot;I&quot;).replaceAll(&quot;10,&quot;, &quot;J&quot;).replaceAll(&quot;11,&quot;, &quot;K&quot;).replaceAll(&quot;12,&quot;, &quot;L&quot;)
-                                            .replaceAll(&quot;13,&quot;, &quot;M&quot;).replaceAll(&quot;14,&quot;, &quot;N&quot;).replaceAll(&quot;15,&quot;, &quot;O&quot;).replaceAll(&quot;16,&quot;, &quot;P&quot;).replaceAll(&quot;17,&quot;, &quot;Q&quot;).replaceAll(&quot;18,&quot;, &quot;R&quot;)
-                                            .replaceAll(&quot;19,&quot;, &quot;S&quot;).replaceAll(&quot;20,&quot;, &quot;T&quot;).replaceAll(&quot;21,&quot;, &quot;U&quot;).replaceAll(&quot;22,&quot;, &quot;V&quot;).replaceAll(&quot;23,&quot;, &quot;W&quot;).replaceAll(&quot;24,&quot;, &quot;X&quot;)
-                                            .replaceAll(&quot;25,&quot;, &quot;Y&quot;).replaceAll(&quot;26,&quot;, &quot;Z&quot;).replace(&quot;,|,&quot;, &quot;&quot;)
+                                            .replaceAll(&quot;01|&quot;, &quot;A&quot;).replaceAll(&quot;02|&quot;, &quot;B&quot;).replaceAll(&quot;03|&quot;, &quot;C&quot;).replaceAll(&quot;04|&quot;, &quot;D&quot;).replaceAll(&quot;05|&quot;, &quot;E&quot;).replaceAll(&quot;06|&quot;, &quot;F&quot;)
+                                            .replaceAll(&quot;07|&quot;, &quot;G&quot;).replaceAll(&quot;08|&quot;, &quot;H&quot;).replaceAll(&quot;09|&quot;, &quot;I&quot;).replaceAll(&quot;10|&quot;, &quot;J&quot;).replaceAll(&quot;11|&quot;, &quot;K&quot;).replaceAll(&quot;12|&quot;, &quot;L&quot;)
+                                            .replaceAll(&quot;13|&quot;, &quot;M&quot;).replaceAll(&quot;14|&quot;, &quot;N&quot;).replaceAll(&quot;15|&quot;, &quot;O&quot;).replaceAll(&quot;16|&quot;, &quot;P&quot;).replaceAll(&quot;17|&quot;, &quot;Q&quot;).replaceAll(&quot;18|&quot;, &quot;R&quot;)
+                                            .replaceAll(&quot;19|&quot;, &quot;S&quot;).replaceAll(&quot;20|&quot;, &quot;T&quot;).replaceAll(&quot;21|&quot;, &quot;U&quot;).replaceAll(&quot;22|&quot;, &quot;V&quot;).replaceAll(&quot;23|&quot;, &quot;W&quot;).replaceAll(&quot;24|&quot;, &quot;X&quot;)
+                                            .replaceAll(&quot;25|&quot;, &quot;Y&quot;).replaceAll(&quot;26|&quot;, &quot;Z&quot;)
                         
-                                            .replaceAll(&quot;[ ]&quot;, &quot; &quot;).replaceAll(&quot;{ }&quot;, &quot;&lt;br&gt;&quot;).replaceAll(&quot;{~}&quot;, &quot;~&quot;)
                         
-                                            .replaceAll(&quot;{+}&quot;, &quot;+&quot;).replaceAll(&quot;{-}&quot;, &quot;-&quot;).replaceAll(&quot;{*}&quot;, &quot;*&quot;).replaceAll(&quot;{/}&quot;, &quot;/&quot;).replaceAll(&quot;{.}&quot;, &quot;.&quot;).replaceAll(&quot;{・}&quot;, &quot;・&quot;)
-                        
-                                            .replaceAll(&quot;{!}&quot;, &quot;!&quot;).replaceAll(&quot;{#}&quot;, &quot;#&quot;).replaceAll(&quot;{$}&quot;, &quot;$&quot;).replaceAll(&quot;{%}&quot;, &quot;%&quot;).replaceAll(&quot;{&amp;}&quot;, &quot;&amp;&quot;).replaceAll(&quot;{&#039;}&quot;, &quot;&#039;&quot;).replaceAll(&quot;{=}&quot;, &quot;=&quot;).replaceAll(&quot;{_}&quot;, &quot;_&quot;)
-                        
-                                            .replaceAll(&quot;-(-&quot;, &quot;(&quot;).replaceAll(&quot;-)-&quot;, &quot;)&quot;).replaceAll(&quot;-{-&quot;, &quot;{&quot;).replaceAll(&quot;-}-&quot;, &quot;}&quot;).replaceAll(&quot;-&lt;-&quot;, &quot;&lt;&quot;).replaceAll(&quot;-&gt;-&quot;, &quot;&gt;&quot;)
+                                            .replaceAll(&quot;01^&quot;, &quot;a&quot;).replaceAll(&quot;02^&quot;, &quot;b&quot;).replaceAll(&quot;03^&quot;, &quot;c&quot;).replaceAll(&quot;04^&quot;, &quot;d&quot;).replaceAll(&quot;05^&quot;, &quot;e&quot;).replaceAll(&quot;06^&quot;, &quot;f&quot;)
+                                            .replaceAll(&quot;07^&quot;, &quot;g&quot;).replaceAll(&quot;08^&quot;, &quot;h&quot;).replaceAll(&quot;09^&quot;, &quot;i&quot;).replaceAll(&quot;10^&quot;, &quot;j&quot;).replaceAll(&quot;11^&quot;, &quot;k&quot;).replaceAll(&quot;12^&quot;, &quot;l&quot;)
+                                            .replaceAll(&quot;13^&quot;, &quot;m&quot;).replaceAll(&quot;14^&quot;, &quot;n&quot;).replaceAll(&quot;15^&quot;, &quot;o&quot;).replaceAll(&quot;16^&quot;, &quot;p&quot;).replaceAll(&quot;17^&quot;, &quot;q&quot;).replaceAll(&quot;18^&quot;, &quot;r&quot;)
+                                            .replaceAll(&quot;19^&quot;, &quot;s&quot;).replaceAll(&quot;20^&quot;, &quot;t&quot;).replaceAll(&quot;21^&quot;, &quot;u&quot;).replaceAll(&quot;22^&quot;, &quot;v&quot;).replaceAll(&quot;23^&quot;, &quot;w&quot;).replaceAll(&quot;24^&quot;, &quot;x&quot;)
+                                            .replaceAll(&quot;25^&quot;, &quot;y&quot;).replaceAll(&quot;26^&quot;, &quot;z&quot;)
                         
                                         );
                         
-                                        const str2 = newStr.toLowerCase();
-                        
-                                        document.querySelector(&#039;.prompt_error_text2&#039;).textContent = (String(str2).replace(/[&quot;,&quot;]/gi, &quot;&quot;));
+                                        document.querySelector(&#039;.prompt_error_text2&#039;).textContent = (String(newStr).replace(/[,]/gi, &quot;&quot;));
                         
                                         const test999 = document.querySelector(&#039;.prompt_error_text2&#039;).textContent;
+                                        console.log(newStr)
                         
                                         setTimeout(() =&gt; {
                         
@@ -5648,7 +5660,7 @@
                                                 wt = prompt_shell_menu.firstElementChild;
                                                 wt.classList.add(&#039;navy&#039;);
                                             });
-                                            document.getElementById(&#039;shell&#039;).innerText = document.getElementById(&#039;shell&#039;).value = test999;
+                                            document.getElementById(&#039;shell&#039;).innerHTML = document.getElementById(&#039;shell&#039;).value = test999;
                         
                                             setTimeout(() =&gt; {
                         
@@ -5692,22 +5704,40 @@
                                         let newStr2 = (String(j)
                         
                                             .replaceAll(&quot;{h}&quot;, &quot;&lt;html&gt;&quot;).replaceAll(&quot;{/h}&quot;, &quot;&lt;/html&gt;&quot;)
+                                            .replaceAll(&quot;{class}&quot;, &quot;class=&quot;)
+                                            .replaceAll(&quot;{id}&quot;, &quot;id=&quot;)
                         
                         
                                             .replaceAll(&quot;{sty}&quot;, &quot;&lt;style&gt;&quot;).replaceAll(&quot;{/sty}&quot;, &quot;&lt;/style&gt;&quot;)
+                                            .replaceAll(&quot;{bgc}&quot;, &quot;background-color&quot;)
+                                            .replaceAll(&quot;{bk}&quot;, &quot;background&quot;)
+                                            .replaceAll(&quot;{clr}&quot;, &quot;color&quot;)
+                                            .replaceAll(&quot;{mgn}&quot;, &quot;margin&quot;)
+                                            .replaceAll(&quot;{pdg}&quot;, &quot;padding&quot;)
+                                            .replaceAll(&quot;{dsp}&quot;, &quot;display&quot;)
+                                            .replaceAll(&quot;{wdh}&quot;, &quot;width&quot;)
+                                            .replaceAll(&quot;{hgt}&quot;, &quot;height&quot;)
+                                            .replaceAll(&quot;{pstn}&quot;, &quot;position&quot;)
+                                            .replaceAll(&quot;{ftsze}&quot;, &quot;font-size&quot;)
+                                            .replaceAll(&quot;{ftwigt}&quot;, &quot;font-weight&quot;)
+                                            .replaceAll(&quot;{brdr}&quot;, &quot;border&quot;)
                         
                         
                                             .replaceAll(&quot;{s}&quot;, &quot;&lt;script&gt;&quot;).replaceAll(&quot;{/s}&quot;, &quot;&lt;/script&gt;&quot;)
                         
-                                            .replaceAll(&quot;{s.conlog}&quot;, &quot;console.log&quot;)
+                                            .replaceAll(&quot;{conlog}&quot;, &quot;console.log&quot;)
                         
-                                            .replaceAll(&quot;{s.dmt}&quot;, &quot;document&quot;)
-                                            .replaceAll(&quot;{s.gid}&quot;, &quot;getElementById&quot;)
-                                            .replaceAll(&quot;{s.qes}&quot;, &quot;querySelector&quot;)
+                                            .replaceAll(&quot;{dmt}&quot;, &quot;document&quot;)
+                                            .replaceAll(&quot;{gid}&quot;, &quot;getElementById&quot;)
+                                            .replaceAll(&quot;{qes}&quot;, &quot;querySelector&quot;)
                         
-                                            .replaceAll(&quot;{s.texcon}&quot;, &quot;textContent&quot;)
-                                            .replaceAll(&quot;{s.intext}&quot;, &quot;innerText&quot;)
-                                            .replaceAll(&quot;{s.inhtml}&quot;, &quot;innerHTML&quot;)
+                                            .replaceAll(&quot;{texcon}&quot;, &quot;textContent&quot;)
+                                            .replaceAll(&quot;{intext}&quot;, &quot;innerText&quot;)
+                                            .replaceAll(&quot;{inhtml}&quot;, &quot;innerHTML&quot;)
+                        
+                                            .replaceAll(&quot;{addevlis}&quot;, &quot;addEventListener&quot;)
+                                            .replaceAll(&quot;{onclk}&quot;, &quot;onclick&quot;)
+                                            .replaceAll(&quot;{func}&quot;, &quot;function&quot;)
                         
                         
                                         );
@@ -5756,6 +5786,136 @@
                         
                         
                         
+                        
+                        
+                        
+                        
+                                    case command_11 + k:
+                        
+                                        prompt_text2.style.color = &quot;&quot;;
+                        
+                                        let arraySplit3 = k.split(&#039;&#039;);
+                                        console.log(arraySplit3)
+                                        let newStr3 = (String(arraySplit3)
+                                            .replaceAll(&quot;A&quot;, &quot;01|&quot;).replaceAll(&quot;B&quot;, &quot;02|&quot;).replaceAll(&quot;C&quot;, &quot;03|&quot;).replaceAll(&quot;D&quot;, &quot;04|&quot;).replaceAll(&quot;E&quot;, &quot;05|&quot;).replaceAll(&quot;F&quot;, &quot;06|&quot;)
+                                            .replaceAll(&quot;G&quot;, &quot;07|&quot;).replaceAll(&quot;H&quot;, &quot;08|&quot;).replaceAll(&quot;I&quot;, &quot;09|&quot;).replaceAll(&quot;J&quot;, &quot;10|&quot;).replaceAll(&quot;K&quot;, &quot;11|&quot;).replaceAll(&quot;L&quot;, &quot;12|&quot;)
+                                            .replaceAll(&quot;M&quot;, &quot;13|&quot;).replaceAll(&quot;N&quot;, &quot;14|&quot;).replaceAll(&quot;O&quot;, &quot;15|&quot;).replaceAll(&quot;P&quot;, &quot;16|&quot;).replaceAll(&quot;Q&quot;, &quot;17|&quot;).replaceAll(&quot;R&quot;, &quot;18|&quot;)
+                                            .replaceAll(&quot;S&quot;, &quot;19|&quot;).replaceAll(&quot;T&quot;, &quot;20|&quot;).replaceAll(&quot;U&quot;, &quot;21|&quot;).replaceAll(&quot;V&quot;, &quot;22|&quot;).replaceAll(&quot;W&quot;, &quot;23|&quot;).replaceAll(&quot;X&quot;, &quot;24|&quot;)
+                                            .replaceAll(&quot;Y&quot;, &quot;25|&quot;).replaceAll(&quot;Z&quot;, &quot;26|&quot;)
+                        
+                        
+                                            .replaceAll(&quot;a&quot;, &quot;01^&quot;).replaceAll(&quot;b&quot;, &quot;02^&quot;).replaceAll(&quot;c&quot;, &quot;03^&quot;).replaceAll(&quot;d&quot;, &quot;04^&quot;).replaceAll(&quot;e&quot;, &quot;05^&quot;).replaceAll(&quot;f&quot;, &quot;06^&quot;)
+                                            .replaceAll(&quot;g&quot;, &quot;07^&quot;).replaceAll(&quot;h&quot;, &quot;08^&quot;).replaceAll(&quot;i&quot;, &quot;09^&quot;).replaceAll(&quot;j&quot;, &quot;10^&quot;).replaceAll(&quot;k&quot;, &quot;11^&quot;).replaceAll(&quot;l&quot;, &quot;12^&quot;)
+                                            .replaceAll(&quot;m&quot;, &quot;13^&quot;).replaceAll(&quot;n&quot;, &quot;14^&quot;).replaceAll(&quot;o&quot;, &quot;15^&quot;).replaceAll(&quot;p&quot;, &quot;16^&quot;).replaceAll(&quot;q&quot;, &quot;17^&quot;).replaceAll(&quot;r&quot;, &quot;18^&quot;)
+                                            .replaceAll(&quot;s&quot;, &quot;19^&quot;).replaceAll(&quot;t&quot;, &quot;20^&quot;).replaceAll(&quot;u&quot;, &quot;21^&quot;).replaceAll(&quot;v&quot;, &quot;22^&quot;).replaceAll(&quot;w&quot;, &quot;23^&quot;).replaceAll(&quot;x&quot;, &quot;24^&quot;)
+                                            .replaceAll(&quot;y&quot;, &quot;25^&quot;).replaceAll(&quot;z&quot;, &quot;26^&quot;)
+                        
+                                        );
+                        
+                                        document.querySelector(&#039;.prompt_error_text2&#039;).innerHTML = (String(newStr3).replace(/[,]/gi, &quot;&quot;));
+                        
+                                        const test9995 = document.querySelector(&#039;.prompt_error_text2&#039;).textContent;
+                                        console.log(newStr3)
+                        
+                                        setTimeout(() =&gt; {
+                        
+                                            document.querySelectorAll(&#039;.prompt_shell_menu&#039;).forEach(function (prompt_shell_menu) {
+                                                prompt_shell_menu.closest(&#039;.child_windows&#039;);
+                                                prompt_shell_menu.classList.remove(&#039;active&#039;);
+                                                z = largestZIndex++;
+                                                prompt_shell_menu.style.zIndex = z;
+                        
+                                                alltitle_navyreomve();
+                                                wt = prompt_shell_menu.firstElementChild;
+                                                wt.classList.add(&#039;navy&#039;);
+                                            });
+                                            document.getElementById(&#039;shell&#039;).textContent = document.getElementById(&#039;shell&#039;).value = test9995;
+                        
+                                        }, 100);
+                        
+                        
+                                        document.querySelector(&#039;.prompt_error_text2&#039;).textContent = &quot;&quot;;
+                                        document.getElementsByClassName(&#039;test_name2&#039;)[0].textContent = &quot;&quot;
+                        
+                                        break;
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                                    case command_12 + l:
+                        
+                                        prompt_text2.style.color = &quot;&quot;;
+                                        console.log(l)
+                                        let newStr10 = (String(l)
+                        
+                                            .replaceAll(&quot;&lt;html&gt;&quot;, &quot;{h}&quot;).replaceAll(&quot;&lt;/html&gt;&quot;, &quot;{/h}&quot;)
+                                            .replaceAll(&quot;class=&quot;, &quot;{class}&quot;)
+                                            .replaceAll(&quot;id=&quot;, &quot;{id}&quot;)
+                        
+                        
+                                            .replaceAll(&quot;&lt;style&gt;&quot;, &quot;{sty}&quot;).replaceAll(&quot;&lt;/style&gt;&quot;, &quot;{/sty}&quot;)
+                                            .replaceAll(&quot;background-color&quot;, &quot;{bgc}&quot;)
+                                            .replaceAll(&quot;background&quot;, &quot;{bk}&quot;)
+                                            .replaceAll(&quot;color&quot;, &quot;{clr}&quot;)
+                                            .replaceAll(&quot;margin&quot;, &quot;{mgn}&quot;)
+                                            .replaceAll(&quot;padding&quot;, &quot;{pdg}&quot;)
+                                            .replaceAll(&quot;display&quot;, &quot;{dsp}&quot;)
+                                            .replaceAll(&quot;width&quot;, &quot;{wdh}&quot;)
+                                            .replaceAll(&quot;height&quot;, &quot;{hgt}&quot;)
+                                            .replaceAll(&quot;position&quot;, &quot;{pstn}&quot;)
+                                            .replaceAll(&quot;font-size&quot;, &quot;{ftsze}&quot;)
+                                            .replaceAll(&quot;font-weight&quot;, &quot;{ftwigt}&quot;)
+                                            .replaceAll(&quot;border&quot;, &quot;{brdr}&quot;)
+                        
+                        
+                                            .replaceAll(&quot;&lt;script&gt;&quot;, &quot;{s}&quot;).replaceAll(&quot;&lt;/script&gt;&quot;, &quot;{/s}&quot;)
+                        
+                                            .replaceAll(&quot;console.log&quot;, &quot;{conlog}&quot;)
+                        
+                                            .replaceAll(&quot;document&quot;, &quot;{dmt}&quot;)
+                                            .replaceAll(&quot;getElementById&quot;, &quot;{gid}&quot;,)
+                                            .replaceAll(&quot;querySelector&quot;, &quot;{qes}&quot;,)
+                        
+                                            .replaceAll(&quot;textContent&quot;, &quot;{texcon}&quot;)
+                                            .replaceAll(&quot;innerText&quot;, &quot;{intext}&quot;)
+                                            .replaceAll(&quot;innerHTML&quot;, &quot;{inhtml}&quot;)
+                        
+                                            .replaceAll(&quot;addEventListener&quot;, &quot;{addevlis}&quot;)
+                                            .replaceAll(&quot;onclick&quot;, &quot;{onclk}&quot;)
+                                            .replaceAll(&quot;function&quot;, &quot;{func}&quot;)
+                        
+                        
+                                        );
+                                        document.querySelector(&#039;.prompt_error_text2&#039;).textContent = (String(newStr10));
+                        
+                                        const test9999 = document.querySelector(&#039;.prompt_error_text2&#039;).textContent;
+                        
+                                        setTimeout(() =&gt; {
+                        
+                                            document.querySelectorAll(&#039;.prompt_shell_menu&#039;).forEach(function (prompt_shell_menu) {
+                                                prompt_shell_menu.closest(&#039;.child_windows&#039;);
+                                                prompt_shell_menu.classList.remove(&#039;active&#039;);
+                                                z = largestZIndex++;
+                                                prompt_shell_menu.style.zIndex = z;
+                        
+                                                alltitle_navyreomve();
+                                                wt = prompt_shell_menu.firstElementChild;
+                                                wt.classList.add(&#039;navy&#039;);
+                                            });
+                                            document.getElementById(&#039;shell&#039;).innerText = document.getElementById(&#039;shell&#039;).value = test9999;
+                        
+                                        }, 100);
+                        
+                        
+                                        document.querySelector(&#039;.prompt_error_text2&#039;).textContent = &quot;&quot;;
+                                        document.getElementsByClassName(&#039;test_name2&#039;)[0].textContent = &quot;&quot;
+                        
+                                        break;
                         
                         
                         
@@ -6456,6 +6616,11 @@
                                     } else {
                                         parentlist.style.display = &quot;block&quot;
                                     }
+                                })
+                            })
+                            document.querySelectorAll(&#039;.windowtool_child&#039;).forEach(function (windowtool_child) {
+                                windowtool_child.addEventListener(&#039;click&#039;, function () {
+                                    taskbtn_load()
                                 })
                             })
                             document.querySelectorAll(&#039;.allwindow_toolbar&#039;).forEach(function (allwindow_toolbar) {
@@ -10970,7 +11135,7 @@
                                 onkeydown="if(event.keyCode == 13){return false;}">
                                 <textarea class="name2 focus2" name="prompt_text2" placeholder="|"></textarea>
                             </form>
-                            <p class="prompt_error_text2 medium" style="margin-top: 40px;"></p>
+                            <p class="prompt_error_text2 medium"></p>
                         </div>
                     </div>
 
@@ -10989,7 +11154,7 @@
                         </div>
 
                         <div>
-                            <textarea id="shell" style="pointer-events: none;"></textarea>
+                            <textarea id="shell"></textarea>
                         </div>
                     </div>
 
@@ -12585,7 +12750,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                 </div>
 
                 <div id="toolbar" class="border">
-                    <div style="margin-top: 1.5px; margin-left: 3px;">
+                    <div style="margin-top: 1.5px; margin-left: 5px;">
                         <ul>
                             <span class="drag_button2 border2" style="cursor: all-scroll;">&emsp;&nbsp;</span>
                             <li style="width: 22.5px;" class="button2">&nbsp;<span class="magnifying_glass"></span>

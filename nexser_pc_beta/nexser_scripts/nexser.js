@@ -708,6 +708,13 @@ if (ua.includes("mobile")) {
         localStorage.setItem('deskprompt', deskprompt);
     })
 
+    document.querySelector('#shell').addEventListener('click', function (shell) {
+        document.getElementById('shell').blur()
+    })
+    document.querySelector('#shell').addEventListener('mousedown', function (shell) {
+        document.getElementById('shell').blur()
+    })
+
 
     function nexser_program_open() {
         func2();
@@ -2112,13 +2119,20 @@ if (ua.includes("mobile")) {
         const h = prompt_text5.substring(15);
 
 
-        const command_9 = "program(num,sym->text)=>";
-        const i = prompt_text5.substring(24);
+        const command_9 = "program(num->text)=>";
+        const i = prompt_text5.substring(20);
 
 
-        const command_10 = "program(text)=>";
-        const j = prompt_text5.substring(15);
+        const command_10 = "program(context->text)=>";
+        const j = prompt_text5.substring(24);
 
+
+        const command_11 = "program(text->num)=>";
+        const k = prompt_text5.substring(20);
+
+
+        const command_12 = "program(text->context)=>";
+        const l = prompt_text5.substring(24);
 
 
 
@@ -2185,30 +2199,28 @@ if (ua.includes("mobile")) {
 
                 prompt_text2.style.color = "";
 
-                let arraySplit = i.match(/.{3}/gi)
+                let arraySplit = i.match(/.{3}/g)
                 console.log(arraySplit)
                 let newStr = (String(arraySplit).replace(/[a-z]/gi, "")
-                    .replaceAll("01,", "A").replaceAll("02,", "B").replaceAll("03,", "C").replaceAll("04,", "D").replaceAll("05,", "E").replaceAll("06,", "F")
-                    .replaceAll("07,", "G").replaceAll("08,", "H").replaceAll("09,", "I").replaceAll("10,", "J").replaceAll("11,", "K").replaceAll("12,", "L")
-                    .replaceAll("13,", "M").replaceAll("14,", "N").replaceAll("15,", "O").replaceAll("16,", "P").replaceAll("17,", "Q").replaceAll("18,", "R")
-                    .replaceAll("19,", "S").replaceAll("20,", "T").replaceAll("21,", "U").replaceAll("22,", "V").replaceAll("23,", "W").replaceAll("24,", "X")
-                    .replaceAll("25,", "Y").replaceAll("26,", "Z").replace(",|,", "")
+                    .replaceAll("01|", "A").replaceAll("02|", "B").replaceAll("03|", "C").replaceAll("04|", "D").replaceAll("05|", "E").replaceAll("06|", "F")
+                    .replaceAll("07|", "G").replaceAll("08|", "H").replaceAll("09|", "I").replaceAll("10|", "J").replaceAll("11|", "K").replaceAll("12|", "L")
+                    .replaceAll("13|", "M").replaceAll("14|", "N").replaceAll("15|", "O").replaceAll("16|", "P").replaceAll("17|", "Q").replaceAll("18|", "R")
+                    .replaceAll("19|", "S").replaceAll("20|", "T").replaceAll("21|", "U").replaceAll("22|", "V").replaceAll("23|", "W").replaceAll("24|", "X")
+                    .replaceAll("25|", "Y").replaceAll("26|", "Z")
 
-                    .replaceAll("[ ]", " ").replaceAll("{ }", "<br>").replaceAll("{~}", "~")
 
-                    .replaceAll("{+}", "+").replaceAll("{-}", "-").replaceAll("{*}", "*").replaceAll("{/}", "/").replaceAll("{.}", ".").replaceAll("{・}", "・")
-
-                    .replaceAll("{!}", "!").replaceAll("{#}", "#").replaceAll("{$}", "$").replaceAll("{%}", "%").replaceAll("{&}", "&").replaceAll("{'}", "'").replaceAll("{=}", "=").replaceAll("{_}", "_")
-
-                    .replaceAll("-(-", "(").replaceAll("-)-", ")").replaceAll("-{-", "{").replaceAll("-}-", "}").replaceAll("-<-", "<").replaceAll("->-", ">")
+                    .replaceAll("01^", "a").replaceAll("02^", "b").replaceAll("03^", "c").replaceAll("04^", "d").replaceAll("05^", "e").replaceAll("06^", "f")
+                    .replaceAll("07^", "g").replaceAll("08^", "h").replaceAll("09^", "i").replaceAll("10^", "j").replaceAll("11^", "k").replaceAll("12^", "l")
+                    .replaceAll("13^", "m").replaceAll("14^", "n").replaceAll("15^", "o").replaceAll("16^", "p").replaceAll("17^", "q").replaceAll("18^", "r")
+                    .replaceAll("19^", "s").replaceAll("20^", "t").replaceAll("21^", "u").replaceAll("22^", "v").replaceAll("23^", "w").replaceAll("24^", "x")
+                    .replaceAll("25^", "y").replaceAll("26^", "z")
 
                 );
 
-                const str2 = newStr.toLowerCase();
-
-                document.querySelector('.prompt_error_text2').textContent = (String(str2).replace(/[","]/gi, ""));
+                document.querySelector('.prompt_error_text2').textContent = (String(newStr).replace(/[,]/gi, ""));
 
                 const test999 = document.querySelector('.prompt_error_text2').textContent;
+                console.log(newStr)
 
                 setTimeout(() => {
 
@@ -2222,7 +2234,7 @@ if (ua.includes("mobile")) {
                         wt = prompt_shell_menu.firstElementChild;
                         wt.classList.add('navy');
                     });
-                    document.getElementById('shell').innerText = document.getElementById('shell').value = test999;
+                    document.getElementById('shell').innerHTML = document.getElementById('shell').value = test999;
 
                     setTimeout(() => {
 
@@ -2266,22 +2278,40 @@ if (ua.includes("mobile")) {
                 let newStr2 = (String(j)
 
                     .replaceAll("{h}", "<html>").replaceAll("{/h}", "</html>")
+                    .replaceAll("{class}", "class=")
+                    .replaceAll("{id}", "id=")
 
 
                     .replaceAll("{sty}", "<style>").replaceAll("{/sty}", "</style>")
+                    .replaceAll("{bgc}", "background-color")
+                    .replaceAll("{bk}", "background")
+                    .replaceAll("{clr}", "color")
+                    .replaceAll("{mgn}", "margin")
+                    .replaceAll("{pdg}", "padding")
+                    .replaceAll("{dsp}", "display")
+                    .replaceAll("{wdh}", "width")
+                    .replaceAll("{hgt}", "height")
+                    .replaceAll("{pstn}", "position")
+                    .replaceAll("{ftsze}", "font-size")
+                    .replaceAll("{ftwigt}", "font-weight")
+                    .replaceAll("{brdr}", "border")
 
 
                     .replaceAll("{s}", "<script>").replaceAll("{/s}", "</script>")
 
-                    .replaceAll("{s.conlog}", "console.log")
+                    .replaceAll("{conlog}", "console.log")
 
-                    .replaceAll("{s.dmt}", "document")
-                    .replaceAll("{s.gid}", "getElementById")
-                    .replaceAll("{s.qes}", "querySelector")
+                    .replaceAll("{dmt}", "document")
+                    .replaceAll("{gid}", "getElementById")
+                    .replaceAll("{qes}", "querySelector")
 
-                    .replaceAll("{s.texcon}", "textContent")
-                    .replaceAll("{s.intext}", "innerText")
-                    .replaceAll("{s.inhtml}", "innerHTML")
+                    .replaceAll("{texcon}", "textContent")
+                    .replaceAll("{intext}", "innerText")
+                    .replaceAll("{inhtml}", "innerHTML")
+
+                    .replaceAll("{addevlis}", "addEventListener")
+                    .replaceAll("{onclk}", "onclick")
+                    .replaceAll("{func}", "function")
 
 
                 );
@@ -2330,6 +2360,136 @@ if (ua.includes("mobile")) {
 
 
 
+
+
+
+
+            case command_11 + k:
+
+                prompt_text2.style.color = "";
+
+                let arraySplit3 = k.split('');
+                console.log(arraySplit3)
+                let newStr3 = (String(arraySplit3)
+                    .replaceAll("A", "01|").replaceAll("B", "02|").replaceAll("C", "03|").replaceAll("D", "04|").replaceAll("E", "05|").replaceAll("F", "06|")
+                    .replaceAll("G", "07|").replaceAll("H", "08|").replaceAll("I", "09|").replaceAll("J", "10|").replaceAll("K", "11|").replaceAll("L", "12|")
+                    .replaceAll("M", "13|").replaceAll("N", "14|").replaceAll("O", "15|").replaceAll("P", "16|").replaceAll("Q", "17|").replaceAll("R", "18|")
+                    .replaceAll("S", "19|").replaceAll("T", "20|").replaceAll("U", "21|").replaceAll("V", "22|").replaceAll("W", "23|").replaceAll("X", "24|")
+                    .replaceAll("Y", "25|").replaceAll("Z", "26|")
+
+
+                    .replaceAll("a", "01^").replaceAll("b", "02^").replaceAll("c", "03^").replaceAll("d", "04^").replaceAll("e", "05^").replaceAll("f", "06^")
+                    .replaceAll("g", "07^").replaceAll("h", "08^").replaceAll("i", "09^").replaceAll("j", "10^").replaceAll("k", "11^").replaceAll("l", "12^")
+                    .replaceAll("m", "13^").replaceAll("n", "14^").replaceAll("o", "15^").replaceAll("p", "16^").replaceAll("q", "17^").replaceAll("r", "18^")
+                    .replaceAll("s", "19^").replaceAll("t", "20^").replaceAll("u", "21^").replaceAll("v", "22^").replaceAll("w", "23^").replaceAll("x", "24^")
+                    .replaceAll("y", "25^").replaceAll("z", "26^")
+
+                );
+
+                document.querySelector('.prompt_error_text2').innerHTML = (String(newStr3).replace(/[,]/gi, ""));
+
+                const test9995 = document.querySelector('.prompt_error_text2').textContent;
+                console.log(newStr3)
+
+                setTimeout(() => {
+
+                    document.querySelectorAll('.prompt_shell_menu').forEach(function (prompt_shell_menu) {
+                        prompt_shell_menu.closest('.child_windows');
+                        prompt_shell_menu.classList.remove('active');
+                        z = largestZIndex++;
+                        prompt_shell_menu.style.zIndex = z;
+
+                        alltitle_navyreomve();
+                        wt = prompt_shell_menu.firstElementChild;
+                        wt.classList.add('navy');
+                    });
+                    document.getElementById('shell').textContent = document.getElementById('shell').value = test9995;
+
+                }, 100);
+
+
+                document.querySelector('.prompt_error_text2').textContent = "";
+                document.getElementsByClassName('test_name2')[0].textContent = ""
+
+                break;
+
+
+
+
+
+
+
+
+
+            case command_12 + l:
+
+                prompt_text2.style.color = "";
+                console.log(l)
+                let newStr10 = (String(l)
+
+                    .replaceAll("<html>", "{h}").replaceAll("</html>", "{/h}")
+                    .replaceAll("class=", "{class}")
+                    .replaceAll("id=", "{id}")
+
+
+                    .replaceAll("<style>", "{sty}").replaceAll("</style>", "{/sty}")
+                    .replaceAll("background-color", "{bgc}")
+                    .replaceAll("background", "{bk}")
+                    .replaceAll("color", "{clr}")
+                    .replaceAll("margin", "{mgn}")
+                    .replaceAll("padding", "{pdg}")
+                    .replaceAll("display", "{dsp}")
+                    .replaceAll("width", "{wdh}")
+                    .replaceAll("height", "{hgt}")
+                    .replaceAll("position", "{pstn}")
+                    .replaceAll("font-size", "{ftsze}")
+                    .replaceAll("font-weight", "{ftwigt}")
+                    .replaceAll("border", "{brdr}")
+
+
+                    .replaceAll("<script>", "{s}").replaceAll("</script>", "{/s}")
+
+                    .replaceAll("console.log", "{conlog}")
+
+                    .replaceAll("document", "{dmt}")
+                    .replaceAll("getElementById", "{gid}",)
+                    .replaceAll("querySelector", "{qes}",)
+
+                    .replaceAll("textContent", "{texcon}")
+                    .replaceAll("innerText", "{intext}")
+                    .replaceAll("innerHTML", "{inhtml}")
+
+                    .replaceAll("addEventListener", "{addevlis}")
+                    .replaceAll("onclick", "{onclk}")
+                    .replaceAll("function", "{func}")
+
+
+                );
+                document.querySelector('.prompt_error_text2').textContent = (String(newStr10));
+
+                const test9999 = document.querySelector('.prompt_error_text2').textContent;
+
+                setTimeout(() => {
+
+                    document.querySelectorAll('.prompt_shell_menu').forEach(function (prompt_shell_menu) {
+                        prompt_shell_menu.closest('.child_windows');
+                        prompt_shell_menu.classList.remove('active');
+                        z = largestZIndex++;
+                        prompt_shell_menu.style.zIndex = z;
+
+                        alltitle_navyreomve();
+                        wt = prompt_shell_menu.firstElementChild;
+                        wt.classList.add('navy');
+                    });
+                    document.getElementById('shell').innerText = document.getElementById('shell').value = test9999;
+
+                }, 100);
+
+
+                document.querySelector('.prompt_error_text2').textContent = "";
+                document.getElementsByClassName('test_name2')[0].textContent = ""
+
+                break;
 
 
 
@@ -3030,6 +3190,11 @@ if (ua.includes("mobile")) {
             } else {
                 parentlist.style.display = "block"
             }
+        })
+    })
+    document.querySelectorAll('.windowtool_child').forEach(function (windowtool_child) {
+        windowtool_child.addEventListener('click', function () {
+            taskbtn_load()
         })
     })
     document.querySelectorAll('.allwindow_toolbar').forEach(function (allwindow_toolbar) {
