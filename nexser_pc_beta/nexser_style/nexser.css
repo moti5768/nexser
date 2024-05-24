@@ -279,15 +279,13 @@ li {
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
-    /* height: 200px;
-    width: auto; */
 }
 
 .name2 {
     position: relative;
     font-size: small;
     width: 100%;
-    height: 30vh;
+    height: 100vh;
     border: none;
     outline: none;
     color: white;
@@ -605,7 +603,7 @@ input[type="file"] {
     display: block;
     width: 15px;
     height: 9.5px;
-    background-image: radial-gradient(steelblue 1px, skyblue 1px);
+    background-image: radial-gradient(dimgray 1px, silver 1px);
     background-size: 3px 3px;
     margin-top: 2px;
     margin-bottom: 2px;
@@ -641,7 +639,7 @@ input[type="file"] {
     display: block;
     width: 15px;
     height: 9.5px;
-    background-image: radial-gradient(lime 1px, limegreen 1px);
+    background-image: radial-gradient(white 1px, gray 1px);
     background-size: 3px 3px;
     margin-top: 2px;
     margin-bottom: 2px;
@@ -1197,6 +1195,8 @@ body::-webkit-scrollbar {
     padding-right: 5px;
     background: #52adad;
     pointer-events: none;
+    position: absolute;
+    bottom: 0;
 }
 
 .desktop_files_text.file_select {
@@ -1225,7 +1225,6 @@ body::-webkit-scrollbar {
     box-sizing: content-box;
     box-shadow: 3px 3px dimgray;
     pointer-events: none;
-    outline: 1px solid gray;
 }
 
 .dli-folder>span {

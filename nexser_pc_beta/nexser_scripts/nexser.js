@@ -25,8 +25,6 @@ if (ua.includes("mobile")) {
 
     const nameText = document.querySelector('.name');
     const msg = document.querySelector('.test_name');
-    const nameText2 = document.querySelector('.name2');
-    const msg2 = document.querySelector('.test_name2');
     const prompt = document.getElementById('prompt');
     const prompt_text = document.querySelector('.prompt_text');
     const prompt_text2 = document.querySelector('.prompt_text2');
@@ -244,9 +242,9 @@ if (ua.includes("mobile")) {
     })
 
     new Promise((resolve) => {
+        setColor();
         setTimeout(load_nexser, resolve());
         setTimeout(() => {
-            setColor();
             taskbar_none();
             title_none();
             screen_backtextload();
@@ -606,6 +604,7 @@ if (ua.includes("mobile")) {
             nexser_program.style.display = "block";
             desktop.style.display = "none";
             document.getElementsByClassName('pattern_backgrounds')[0].style.display = "none";
+            document.querySelector('html').style.cursor = 'crosshair';
         } else {
             document.getElementsByClassName('pattern_backgrounds')[0].style.display = "block";
         }
@@ -755,6 +754,21 @@ if (ua.includes("mobile")) {
                 document.getElementsByClassName('pattern_backgrounds')[0].style.display = "block";
             }, 500);
         }
+
+        setTimeout(() => {
+            if (localStorage.getItem('taskbar_position_button')) {
+                const task = document.getElementById('taskbar').clientHeight;
+                toolbar.style.top = task + "px";
+
+                document.querySelector('.child_start_menu').style.top = task + "px"
+            } else {
+                const task = document.getElementById('taskbar').clientHeight;
+                toolbar.style.bottom = task + "px";
+
+                document.querySelector('.child_start_menu').style.bottom = task + "px"
+            }
+        }, 500);
+
     }
 
     document.querySelector('.startup_note').addEventListener('click', function (startup_note) {
@@ -1767,7 +1781,6 @@ if (ua.includes("mobile")) {
         document.querySelectorAll('.windowtool_child').forEach(function (windowtool_child) {
             windowtool_child.style.display = "none"
         })
-        msg2.innerText = ''
     }
     function window_active() {
         document.querySelectorAll('.child_windows').forEach(function (allwindow_active) {
@@ -2021,7 +2034,6 @@ if (ua.includes("mobile")) {
     }
 
     function butotnClick2() {
-        msg2.innerText = '\b' + nameText2.value + '';
         prompt_text_check2();
     }
 
@@ -2118,89 +2130,72 @@ if (ua.includes("mobile")) {
         const command_8 = "binary(2->10)=>";
         const h = prompt_text5.substring(15);
 
-
         const command_9 = "program(num->text)=>";
         const i = prompt_text5.substring(20);
-
 
         const command_10 = "program(context->text)=>";
         const j = prompt_text5.substring(24);
 
-
         const command_11 = "program(text->num)=>";
         const k = prompt_text5.substring(20);
-
 
         const command_12 = "program(text->context)=>";
         const l = prompt_text5.substring(24);
 
-
-
         switch (prompt_text5) {
 
-
             // commands
-            // background
             case command_1 + a:
                 prompt_text2.style.color = "";
-
                 document.querySelector('#nexser').style.background = a;
-                document.querySelector('.prompt_error_text2').textContent = "";
                 break;
 
             case command_2 + b:
                 prompt_text2.style.color = "";
-
                 document.querySelector('body').style.color = b;
-                document.querySelector('.prompt_error_text2').textContent = "";
                 break;
 
             case command_3 + c:
                 prompt_text2.style.color = "";
                 alert(c);
-                document.querySelector('.prompt_error_text2').textContent = "";
                 break;
 
             case command_4 + d:
                 prompt_text2.style.color = "";
                 var result = Function('return (' + d + ');')();
-                document.querySelector('.prompt_error_text2').textContent = result;
+                document.querySelector('#shell').textContent = result;
+                shellmenu_open()
                 break;
 
             case command_5 + e:
                 prompt_text2.style.color = "";
-                var result = Function('return (' + e + ');')();
-                console.log(result);
-                document.querySelector('.prompt_error_text2').textContent = "";
+                var result2 = Function('return (' + e + ');')();
+                console.log(result2);
                 break;
 
             case command_6 + f:
                 prompt_text2.style.color = "";
                 console.log(f);
-                document.querySelector('.prompt_error_text2').textContent = "";
                 break;
 
             case command_7 + g:
                 prompt_text2.style.color = "";
                 const g2 = parseInt(g);
-                document.querySelector('.prompt_error_text2').textContent = (g2.toString(2));
+                document.querySelector('#shell').textContent = (g2.toString(2));
+                shellmenu_open()
                 break;
 
             case command_8 + h:
                 prompt_text2.style.color = "";
                 const h2 = parseInt(h, 2);
-                document.querySelector('.prompt_error_text2').textContent = (h2.toString(10));
+                document.querySelector('#shell').textContent = (h2.toString(10));
+                shellmenu_open()
                 break;
 
-
-
-
             case command_9 + i:
-
                 prompt_text2.style.color = "";
 
                 let arraySplit = i.match(/.{3}/g)
-                console.log(arraySplit)
                 let newStr = (String(arraySplit).replace(/[a-z]/gi, "")
                     .replaceAll("01|", "A").replaceAll("02|", "B").replaceAll("03|", "C").replaceAll("04|", "D").replaceAll("05|", "E").replaceAll("06|", "F")
                     .replaceAll("07|", "G").replaceAll("08|", "H").replaceAll("09|", "I").replaceAll("10|", "J").replaceAll("11|", "K").replaceAll("12|", "L")
@@ -2217,23 +2212,13 @@ if (ua.includes("mobile")) {
 
                 );
 
-                document.querySelector('.prompt_error_text2').textContent = (String(newStr).replace(/[,]/gi, ""));
+                document.querySelector('#shell').textContent = (String(newStr).replace(/[,]/gi, ""));
 
-                const test999 = document.querySelector('.prompt_error_text2').textContent;
-                console.log(newStr)
+                const test999 = document.querySelector('#shell').textContent;
 
                 setTimeout(() => {
 
-                    document.querySelectorAll('.prompt_shell_menu').forEach(function (prompt_shell_menu) {
-                        prompt_shell_menu.closest('.child_windows');
-                        prompt_shell_menu.classList.remove('active');
-                        z = largestZIndex++;
-                        prompt_shell_menu.style.zIndex = z;
-
-                        alltitle_navyreomve();
-                        wt = prompt_shell_menu.firstElementChild;
-                        wt.classList.add('navy');
-                    });
+                    shellmenu_open()
                     document.getElementById('shell').innerHTML = document.getElementById('shell').value = test999;
 
                     setTimeout(() => {
@@ -2252,29 +2237,13 @@ if (ua.includes("mobile")) {
 
                     }, 100);
                 }, 100);
-
-
-                document.querySelector('.prompt_error_text2').textContent = "";
-                document.getElementsByClassName('test_name2')[0].textContent = ""
-
                 break;
-
-
-
-
-
-
-
-
-
-
 
 
 
             case command_10 + j:
 
                 prompt_text2.style.color = "";
-                console.log(j)
                 let newStr2 = (String(j)
 
                     .replaceAll("{h}", "<html>").replaceAll("{/h}", "</html>")
@@ -2315,22 +2284,13 @@ if (ua.includes("mobile")) {
 
 
                 );
-                document.querySelector('.prompt_error_text2').textContent = (String(newStr2));
+                document.querySelector('#shell').textContent = (String(newStr2));
 
-                const test9992 = document.querySelector('.prompt_error_text2').textContent;
+                const test9992 = document.querySelector('#shell').textContent;
 
                 setTimeout(() => {
 
-                    document.querySelectorAll('.prompt_shell_menu').forEach(function (prompt_shell_menu) {
-                        prompt_shell_menu.closest('.child_windows');
-                        prompt_shell_menu.classList.remove('active');
-                        z = largestZIndex++;
-                        prompt_shell_menu.style.zIndex = z;
-
-                        alltitle_navyreomve();
-                        wt = prompt_shell_menu.firstElementChild;
-                        wt.classList.add('navy');
-                    });
+                    shellmenu_open()
                     document.getElementById('shell').innerText = document.getElementById('shell').value = test9992;
 
                     setTimeout(() => {
@@ -2349,18 +2309,7 @@ if (ua.includes("mobile")) {
 
                     }, 100);
                 }, 100);
-
-
-                document.querySelector('.prompt_error_text2').textContent = "";
-                document.getElementsByClassName('test_name2')[0].textContent = ""
-
                 break;
-
-
-
-
-
-
 
 
 
@@ -2369,7 +2318,6 @@ if (ua.includes("mobile")) {
                 prompt_text2.style.color = "";
 
                 let arraySplit3 = k.split('');
-                console.log(arraySplit3)
                 let newStr3 = (String(arraySplit3)
                     .replaceAll("A", "01|").replaceAll("B", "02|").replaceAll("C", "03|").replaceAll("D", "04|").replaceAll("E", "05|").replaceAll("F", "06|")
                     .replaceAll("G", "07|").replaceAll("H", "08|").replaceAll("I", "09|").replaceAll("J", "10|").replaceAll("K", "11|").replaceAll("L", "12|")
@@ -2386,45 +2334,23 @@ if (ua.includes("mobile")) {
 
                 );
 
-                document.querySelector('.prompt_error_text2').innerHTML = (String(newStr3).replace(/[,]/gi, ""));
+                document.querySelector('#shell').innerHTML = (String(newStr3).replace(/[,]/gi, ""));
 
-                const test9995 = document.querySelector('.prompt_error_text2').textContent;
-                console.log(newStr3)
+                const test9995 = document.querySelector('#shell').textContent;
 
                 setTimeout(() => {
 
-                    document.querySelectorAll('.prompt_shell_menu').forEach(function (prompt_shell_menu) {
-                        prompt_shell_menu.closest('.child_windows');
-                        prompt_shell_menu.classList.remove('active');
-                        z = largestZIndex++;
-                        prompt_shell_menu.style.zIndex = z;
-
-                        alltitle_navyreomve();
-                        wt = prompt_shell_menu.firstElementChild;
-                        wt.classList.add('navy');
-                    });
+                    shellmenu_open()
                     document.getElementById('shell').textContent = document.getElementById('shell').value = test9995;
 
                 }, 100);
-
-
-                document.querySelector('.prompt_error_text2').textContent = "";
-                document.getElementsByClassName('test_name2')[0].textContent = ""
-
                 break;
-
-
-
-
-
-
 
 
 
             case command_12 + l:
 
                 prompt_text2.style.color = "";
-                console.log(l)
                 let newStr10 = (String(l)
 
                     .replaceAll("<html>", "{h}").replaceAll("</html>", "{/h}")
@@ -2465,42 +2391,23 @@ if (ua.includes("mobile")) {
 
 
                 );
-                document.querySelector('.prompt_error_text2').textContent = (String(newStr10));
+                document.querySelector('#shell').textContent = (String(newStr10));
 
-                const test9999 = document.querySelector('.prompt_error_text2').textContent;
+                const test9999 = document.querySelector('#shell').textContent;
 
                 setTimeout(() => {
 
-                    document.querySelectorAll('.prompt_shell_menu').forEach(function (prompt_shell_menu) {
-                        prompt_shell_menu.closest('.child_windows');
-                        prompt_shell_menu.classList.remove('active');
-                        z = largestZIndex++;
-                        prompt_shell_menu.style.zIndex = z;
-
-                        alltitle_navyreomve();
-                        wt = prompt_shell_menu.firstElementChild;
-                        wt.classList.add('navy');
-                    });
+                    shellmenu_open()
                     document.getElementById('shell').innerText = document.getElementById('shell').value = test9999;
 
                 }, 100);
-
-
-                document.querySelector('.prompt_error_text2').textContent = "";
-                document.getElementsByClassName('test_name2')[0].textContent = ""
-
                 break;
-
 
 
             case '':
-                document.querySelector('.prompt_error_text2').textContent = "";
-                msg2.innerText = "";
                 prompt_text2.style.color = "";
                 break;
             case 'help':
-                document.querySelector('.prompt_error_text2').textContent = "";
-                msg2.innerText = "";
                 prompt_text2.style.color = "";
 
                 command_help_menu.classList.remove('active');
@@ -2512,42 +2419,33 @@ if (ua.includes("mobile")) {
                 wt.classList.add('navy');
                 break;
             case 'windows95/sound/start/play':
-                document.querySelector('.prompt_error_text2').textContent = "";
                 sound();
                 prompt_text2.style.color = "";
-                document.querySelector('.prompt_error_text2').textContent = "";
                 break;
             case 'windows95/sound/shutdown/play':
-                document.querySelector('.prompt_error_text2').textContent = "";
                 sound2();
                 prompt_text2.style.color = "";
-                document.querySelector('.prompt_error_text2').textContent = "";
                 break;
             case 'screen/full':
-                document.querySelector('.prompt_error_text2').textContent = "";
                 full();
                 prompt_text2.style.color = "";
                 break;
             case 'screen/min':
-                document.querySelector('.prompt_error_text2').textContent = "";
                 min();
                 prompt_text2.style.color = "";
                 break;
             case 'taskbar/none':
                 taskbar.style.display = "none";
-                document.querySelector('.prompt_error_text2').textContent = "タスクバーの表示がオフになりました。";
                 const data_taskbar_none = document.prompt_text_form2.prompt_text2.value;
                 localStorage.setItem('data_taskbar_none', data_taskbar_none);
                 prompt_text2.style.color = "";
                 taskbar_none()
                 break;
             case 'taskbar/active':
-                document.querySelector('.prompt_error_text2').textContent = "タスクバーの表示がオンになりました。";
                 prompt_text2.style.color = "";
                 taskbar_active()
                 break;
             case 'allwindow/reset':
-                document.querySelector('.prompt_error_text2').textContent = "";
                 prompt_text2.style.color = "";
                 window_reset()
                 break;
@@ -2559,44 +2457,38 @@ if (ua.includes("mobile")) {
                     sound3()
                     document.querySelector('.test_allwindow').style.display = "block";
                 } else {
-                    document.querySelector('.prompt_error_text2').textContent = "";
+
                     prompt_text2.style.color = "";
                     window_none()
                     taskbtn_load()
                 }
                 break;
             case 'allwindow/open':
-                document.querySelector('.prompt_error_text2').textContent = "";
                 prompt_text2.style.color = "";
                 window_active();
                 taskbtn_load();
                 cpucalc_open();
                 break;
             case 'allwindow/min':
-                document.querySelector('.prompt_error_text2').textContent = "";
                 prompt_text2.style.color = "";
                 allwindow_min()
                 break;
             case 'allwindow/big':
-                document.querySelector('.prompt_error_text2').textContent = "";
                 prompt_text2.style.color = "";
                 allwindow_big()
                 break;
             case 'title/none':
-                document.querySelector('.prompt_error_text2').textContent = "";
                 const data_title_none = document.prompt_text_form2.prompt_text2.value;
                 localStorage.setItem('data_title_none', data_title_none);
                 prompt_text2.style.color = "";
                 title_none()
                 break;
             case 'title/active':
-                document.querySelector('.prompt_error_text2').textContent = "";
                 localStorage.removeItem('data_title_none');
                 prompt_text2.style.color = "";
                 title_active()
                 break;
             case 'window/font/large':
-                document.querySelector('.prompt_error_text2').textContent = "";
                 prompt_text2.style.color = "";
                 let test_window = document.getElementsByClassName('child_windows')
                 Array.from(test_window).forEach(element => {
@@ -2604,7 +2496,6 @@ if (ua.includes("mobile")) {
                 })
                 break;
             case 'window/font/reset':
-                document.querySelector('.prompt_error_text2').textContent = "";
                 prompt_text2.style.color = "";
                 let test_window2 = document.getElementsByClassName('child_windows')
                 Array.from(test_window2).forEach(element => {
@@ -2612,37 +2503,31 @@ if (ua.includes("mobile")) {
                 })
                 break;
             case 'cpu/bench':
-                document.querySelector('.prompt_error_text2').textContent = "bench connect";
                 prompt_text2.style.color = "";
                 cpu_calc_menu.classList.remove('active');
                 cpucalc_open();
                 break;
             case 'nexser/data/clear':
-                document.querySelector('.prompt_error_text2').textContent = "";
                 allStorage_clear()
                 prompt_text2.style.color = "";
                 break;
             case 'welcome':
-                document.querySelector('.prompt_error_text2').textContent = "";
                 prompt_text2.style.color = "";
                 welcome()
                 break;
             case 'file/none':
-                document.querySelector('.prompt_error_text2').textContent = "";
                 const file_none = document.prompt_text_form2.prompt_text2.value;
                 localStorage.setItem('file_none', file_none);
                 prompt_text2.style.color = "";
                 document.querySelector('.files_inline').style.display = "none";
                 break;
             case 'file/active':
-                document.querySelector('.prompt_error_text2').textContent = "";
                 localStorage.removeItem('file_none');
                 prompt_text2.style.color = "";
                 document.querySelector('.files_inline').style.display = "flex";
                 break;
 
             case 'taskbar/setting':
-                document.querySelector('.prompt_error_text2').textContent = "";
                 prompt_text2.style.color = "";
                 const taskmenu = document.querySelector('.taskbar_setting_menu');
                 taskmenu.classList.remove('active');
@@ -2656,26 +2541,35 @@ if (ua.includes("mobile")) {
                 break;
 
             case 'windows95/open':
-                document.querySelector('.prompt_error_text2').textContent = "";
                 window.open("https://moti5768.github.io/moti.world/windows95.html");
                 prompt_text2.style.color = "";
                 break;
             case 'windows2000/open':
-                document.querySelector('.prompt_error_text2').textContent = "";
                 window.open("https://moti5768.github.io/moti.world/windows%202000/windows2000_beta.html");
                 prompt_text2.style.color = "";
                 break;
             case 'windowsystem/open':
-                document.querySelector('.prompt_error_text2').textContent = "";
                 window.open("https://moti5768.github.io/moti.world/new%20OS/WindowSystem.html");
                 prompt_text2.style.color = "";
                 break;
             default:
-                document.querySelector('.prompt_error_text2').textContent = "コマンドが違います!";
-                msg2.innerText = "";
                 prompt_text2.style.color = "red";
                 break;
         }
+    }
+
+
+    function shellmenu_open() {
+        document.querySelectorAll('.prompt_shell_menu').forEach(function (prompt_shell_menu) {
+            prompt_shell_menu.closest('.child_windows');
+            prompt_shell_menu.classList.remove('active');
+            z = largestZIndex++;
+            prompt_shell_menu.style.zIndex = z;
+
+            alltitle_navyreomve();
+            wt = prompt_shell_menu.firstElementChild;
+            wt.classList.add('navy');
+        });
     }
 
 
