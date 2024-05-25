@@ -1379,6 +1379,28 @@ body::-webkit-scrollbar {
     color: white;
 }
 
+.nexser_search_menu {
+    width: 650px;
+}
+
+#myUL {
+    break-inside: avoid;
+}
+
+#myUL>li {
+    display: inline-block;
+    margin-top: 3px;
+    margin-left: 3px;
+    margin-right: 3px;
+    min-width: max-content;
+    width: 200px;
+}
+
+#myUL>li:hover {
+    background: darkblue;
+    color: white;
+}
+
 .pointer_none {
     pointer-events: none;
     color: gray;
@@ -1465,6 +1487,7 @@ body::-webkit-scrollbar {
 }
 
 .borderinline_dotted {
+    display: inline-block;
     outline: 1.5px dotted black;
     outline-offset: -5px;
 }

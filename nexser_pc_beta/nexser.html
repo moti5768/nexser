@@ -1889,7 +1889,7 @@
                                 </ul>
                                 <div class="window_inline_menus_child menuchild1">
                                     <p style="display: block; text-align: left; width: 150px; margin-top: 5px; margin-left: 5px;"
-                                        class="border2">
+                                        class="border">
                                         window titlebar color</p>
                                     <ul style="display: flex; margin-left: 10px; margin-top: 5px;">
                                         <li class="color_btn button2 titlebar_red" style="background: red;">
@@ -1907,12 +1907,14 @@
                                         </li>
                                         <li class="color_btn button2 titlebar_black" style="background: black;">
                                         </li>
+                                        <li class="color_btn button2 titlebar_teal" style="background: teal;">
+                                        </li>
                                         <li class="color_btn button2" style="background: rgba();">
                                         </li>
                                     </ul>
 
                                     <p style="display: block; text-align: left; width: 140px; margin-top: 5px; margin-left: 5px;"
-                                        class="border2">
+                                        class="border">
                                         background pattern</p>
                                     <ul style="display: flex; margin-left: 10px; margin-top: 5px;">
                                         <li class="pattern_btn button2 back_pattern_1" style="background-image: radial-gradient(black 1.5px, rgba(0, 0, 0, 0) 1.5px);
@@ -1962,10 +1964,16 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                     <li>&nbsp;screen saver&nbsp;</li>
                                 </ul>
                                 <div class="window_inline_menus_child">
-                                    <p class="window_menus_title">default: 3minutes</p>
-                                    <div><br>
+                                    <p class="window_menus_title">setting</p>
+                                    <div style="position: absolute; left: 10px; top: 30px; width: 100px;">
+                                        <p class="bold large" style="text-align: left;">MODE:</p>
                                         <span class="button2 saver_on borderinline_dotted">&emsp;ON&emsp;</span>
-                                        <span class="button2 saver_off borderinline_dotted">&emsp;OFF&emsp;</span>
+                                        <span style="margin-top: 5px;"
+                                            class="button2 saver_off borderinline_dotted">&emsp;OFF&emsp;</span>
+                                        <p class="bold large" style="text-align: left;">PREVIEW:</p>
+                                        <span class="button2 borderinline_dotted" onclick="screen_saver()">
+                                            &emsp;TEST&emsp;</span>
+                                        <p style="width: 175px;" class="small">(※モードがOFFの場合、<br>プレビューは表示されません)</p>
                                     </div>
                                     <p style="position: absolute; bottom: 0px;">MODE:<span class="saver_mode">OFF</span>
                                     </p>
@@ -2249,12 +2257,15 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
 
                         <div class="mini_window" style="height: 365px;">
                             <textarea id="editor" class="border2" style="background: whitesmoke;"></textarea>
-                            <button class="button2" onclick="run()"
-                                style="position: absolute; left: 0px;">&nbsp;run&nbsp;</button>
-                            <button class="button2" onclick="testcode_save()"
-                                style="position: absolute; left: 40px;">&nbsp;save&nbsp;</button>
-                            <button class="button2" onclick="testcode_html()"
-                                style="position: absolute; left: 90px;">&nbsp;html&nbsp;</button>
+                            <div style="margin-top: 5px;">
+                                <button class="button2" onclick="run()"
+                                    style="position: absolute; left: 0px;">&nbsp;run&nbsp;</button>
+                                <button class="button2" onclick="testcode_save()"
+                                    style="position: absolute; left: 40px;">&nbsp;save&nbsp;</button>
+                                <button class="button2" onclick="testcode_html()"
+                                    style="position: absolute; left: 90px;">&nbsp;html&nbsp;</button>
+                            </div>
+
                         </div>
                     </div>
 
@@ -2643,8 +2654,6 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                     </div>
 
 
-
-
                     <div class="child_windows taskbar_setting_menu active back_silver">
 
                         <div class="title">
@@ -2683,6 +2692,198 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         </div>
                     </div>
 
+
+                    <div class="child_windows tetris_menu active resize back_silver">
+
+                        <div class="title">
+                            <span class="title_icon"></span><span>&emsp;&emsp;tetris</span>
+                        </div>
+
+                        <div class="title_buttons">
+                            <span class="drag_button">&nbsp;</span>
+                            <span class="close_button button2">&nbsp;✕&nbsp;</span>
+                            <span class="bigscreen_button button2">&nbsp;□&nbsp;</span>
+                            <span class="minscreen_button button2">&nbsp;❒&nbsp;</span>
+                            <span class="minimization_button button2">&nbsp;―&nbsp;</span>
+                        </div>
+
+                        <div class="tetris_game">
+                            <div class="wrapper-container">
+                                <span class="tetris-container">
+                                    <canvas class="stage border2" id="stage" width="250px" height="500px"
+                                        style="background-color:#333333;">
+                                    </canvas>
+                                    <span class="tetris-panel-container">
+                                        <p>Next&emsp;&nbsp;ver 0.0.1</p>
+                                        <canvas id="next" class="line border2" width="130px" height="150px">
+                                        </canvas>
+                                        <p class="small">スコア:<span id="lines">0</span></p>
+                                        <p class="small">最高スコア(試験的):<span id="lines2">0</span></p>
+                                        <p><span id="message"></span><br></p>
+                                        <div class="tetris-panel-container-padding"></div>
+                                        <table class="tetris-button-panel tetbtn" style="margin-left: 25px;">
+                                            <tr class="tetbutton">
+                                                <td id="tetris-rotate-button"
+                                                    class="tetris-button tetbtn2 button2 large" style="width: 50px;">↻
+                                                </td>
+                                            </tr>
+                                            <tr class="tetbutton">
+                                                <td id="tetris-move-left-button"
+                                                    class="tetris-button tetbtn button2 large" style="width: 50px;">
+                                                    ←
+                                                </td>
+                                                <td id="tetris-fall-button" class="tetris-button tetbtn button2 large"
+                                                    style="width: 50px;">
+                                                    ↓
+                                                </td>
+                                                <td id="tetris-move-right-button"
+                                                    class="tetris-button tetbtn button2 large" style="width: 50px;">
+                                                    →
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </span>
+                                </span>
+                            </div><br>
+                            <span class="button2 borderinline_dotted" onclick="tetris.startGame()">&emsp;TETRIS
+                                START&emsp;</span>
+                        </div>
+                    </div>
+
+                    <div class="child_windows bom_menu resize back_silver active">
+
+                        <div class="title">
+                            <span class="title_icon"></span><span>&emsp;&emsp;main sweeper</span>
+                        </div>
+
+                        <div class="title_buttons">
+                            <span class="drag_button">&nbsp;</span>
+                            <span class="close_button button2 bom_close">&nbsp;✕&nbsp;</span>
+                            <span class="bigscreen_button button2">&nbsp;□&nbsp;</span>
+                            <span class="minscreen_button button2">&nbsp;❒&nbsp;</span>
+                            <span class="minimization_button button2">&nbsp;―&nbsp;</span>
+                        </div><br>
+
+                        <div id="setting">
+                            <span class="border">&nbsp;W&nbsp;</span>
+                            <input class="border2" type="number" id="w" value="9" min="2" max="50">
+                            <span class="border">&nbsp;H&nbsp;</span>
+                            <input class="border2" type="number" id="h" value="9" min="2" max="25">
+                            <span class="border">&nbsp;B&nbsp;</span>
+                            <input class="border2" type="number" id="b" value="10" min="1" max="1250">
+                            <span>count:<span class="bombCount">0</span></span>
+                        </div>
+                        <div id="setting2">
+                            <div id="btn" class="button2 borderinline_dotted">
+                                &emsp;スタート&emsp;
+                            </div>
+                            <span class="border">TIME:&emsp;<span id="bom_time" class="timers">000</span>&emsp;</span>
+                        </div>
+                        <div class="bom_stage" style="display: none;">
+                            <table class="bom_board" id="board">
+                                <tbody>
+                                    <tr>
+                                        <td class="bor" style="display: none;"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <h3 id="result"></h3>
+                        </div>
+                        <div id="bom_texts">
+                            <h3>
+                                &lt;設定&gt;
+                            </h3>
+                            <p>W: 横のマスの数</p>
+                            <p>H: 縦のマスの数</p>
+                            <p>B: 爆弾の数</p>
+                            <h3>
+                                &lt;操作&gt;
+                            </h3>
+                            <p>左クリック: マスを開ける</p>
+                            <p>右クリック: ☐マークを付ける</p>
+                            <p class="bold" style="color: red;">(タッチ操作対応 一部非対応)</p>
+                        </div>
+                    </div>
+
+                    <div class="child_windows nexser_search_menu resize active back_silver">
+                        <div class="title">
+                            <span class="title_icon"></span><span>&emsp;&emsp;nexser search</span>
+                        </div>
+
+                        <div class="title_buttons">
+                            <span class="drag_button">&nbsp;</span>
+                            <span class="close_button button2 bom_close">&nbsp;✕&nbsp;</span>
+                            <span class="bigscreen_button button2">&nbsp;□&nbsp;</span>
+                            <span class="minscreen_button button2">&nbsp;❒&nbsp;</span>
+                            <span class="minimization_button button2">&nbsp;―&nbsp;</span>
+                        </div><br>
+
+                        <input type="text" id="myInput" class="border large" style="width: 100%; margin-top: 10px;"
+                            autocomplete="off" onkeyup="myFunction()" placeholder="検索したい言葉を入力">
+                        <div class="window_contents">
+                            <ul id="myUL">
+
+                                <li class="test_button button2"><span>&emsp;main&emsp;</span></li>
+
+                                <li class="test_button2 button2">
+                                    <span>&emsp;mycomputer&emsp;</span>
+                                </li>
+
+                                <li class="test_button3 button2">
+                                    <span>&emsp;controlpanel&emsp;</span>
+                                </li>
+
+                                <li class="test_button4 button2">
+                                    <span>&emsp;color&emsp;</span>
+                                </li>
+
+                                <li class="test_button5 button2">
+                                    <span>&emsp;system&emsp;</span>
+                                </li>
+
+                                <li class="test_button6 button2">
+                                    <span>&emsp;prompt&emsp;</span>
+                                </li>
+
+                                <li class="test_button7 button2">
+                                    <span>&emsp;clock&emsp;</span>
+                                </li>
+
+                                <li class="test_button8 button2">
+                                    <span>&emsp;sound&emsp;</span>
+                                </li>
+
+                                <li class="test_button9 button2">
+                                    <span>&emsp;driver&emsp;</span>
+                                </li>
+
+                                <li class="test_button10 button2">
+                                    <span>&emsp;mouse&emsp;</span>
+                                </li>
+
+                                <li class="test_button11 button2">
+                                    <span>&emsp;screentext&emsp;</span>
+                                </li>
+
+                                <li class="test_button12 button2">
+                                    <span>&emsp;notepad&emsp;</span>
+                                </li>
+
+                                <li class="test_button13 button2">
+                                    <span>&emsp;textdrop&emsp;</span>
+                                </li>
+
+                                <li class="test_button14 button2">
+                                    <span>&emsp;windowmode&emsp;</span>
+                                </li>
+
+                                <li class="test_button15 button2">
+                                    <span>&emsp;accessory&emsp;</span>
+                                </li>
+
+                            </ul>
+                        </div>
+                    </div>
 
 
                     <div class="child_windows nexser_guidebook_menu resize active">
@@ -2748,7 +2949,6 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                         3.タスクバー</li>
                                 </ul>
                             </div>
-
                         </div>
                     </div>
 
@@ -2959,118 +3159,6 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             </p>
                         </div>
                     </div>
-
-                    <div class="child_windows tetris_menu active resize back_silver">
-
-                        <div class="title">
-                            <span class="title_icon"></span><span>&emsp;&emsp;tetris</span>
-                        </div>
-
-                        <div class="title_buttons">
-                            <span class="drag_button">&nbsp;</span>
-                            <span class="close_button button2">&nbsp;✕&nbsp;</span>
-                            <span class="bigscreen_button button2">&nbsp;□&nbsp;</span>
-                            <span class="minscreen_button button2">&nbsp;❒&nbsp;</span>
-                            <span class="minimization_button button2">&nbsp;―&nbsp;</span>
-                        </div>
-
-                        <div class="tetris_game">
-                            <div class="wrapper-container">
-                                <span class="tetris-container">
-                                    <canvas class="stage border2" id="stage" width="250px" height="500px"
-                                        style="background-color:#333333;">
-                                    </canvas>
-                                    <span class="tetris-panel-container">
-                                        <p>Next&emsp;&nbsp;ver 0.0.1</p>
-                                        <canvas id="next" class="line border2" width="130px" height="150px">
-                                        </canvas>
-                                        <p class="small">スコア:<span id="lines">0</span></p>
-                                        <p class="small">最高スコア(試験的):<span id="lines2">0</span></p>
-                                        <p><span id="message"></span><br></p>
-                                        <div class="tetris-panel-container-padding"></div>
-                                        <table class="tetris-button-panel tetbtn" style="margin-left: 25px;">
-                                            <tr class="tetbutton">
-                                                <td id="tetris-rotate-button"
-                                                    class="tetris-button tetbtn2 button2 large" style="width: 50px;">↻
-                                                </td>
-                                            </tr>
-                                            <tr class="tetbutton">
-                                                <td id="tetris-move-left-button"
-                                                    class="tetris-button tetbtn button2 large" style="width: 50px;">
-                                                    ←
-                                                </td>
-                                                <td id="tetris-fall-button" class="tetris-button tetbtn button2 large"
-                                                    style="width: 50px;">
-                                                    ↓
-                                                </td>
-                                                <td id="tetris-move-right-button"
-                                                    class="tetris-button tetbtn button2 large" style="width: 50px;">
-                                                    →
-                                                </td>
-                                            </tr>
-                                        </table>
-                                    </span>
-                                </span>
-                            </div><br>
-                            <span class="button2" onclick="tetris.startGame()">TETRIS START</span>
-                        </div>
-                    </div>
-
-                    <div class="child_windows bom_menu resize back_silver active">
-
-                        <div class="title">
-                            <span class="title_icon"></span><span>&emsp;&emsp;main sweeper</span>
-                        </div>
-
-                        <div class="title_buttons">
-                            <span class="drag_button">&nbsp;</span>
-                            <span class="close_button button2 bom_close">&nbsp;✕&nbsp;</span>
-                            <span class="bigscreen_button button2">&nbsp;□&nbsp;</span>
-                            <span class="minscreen_button button2">&nbsp;❒&nbsp;</span>
-                            <span class="minimization_button button2">&nbsp;―&nbsp;</span>
-                        </div><br>
-
-                        <div id="setting">
-                            <span class="border">&nbsp;W&nbsp;</span>
-                            <input class="border2" type="number" id="w" value="9" min="2" max="50">
-                            <span class="border">&nbsp;H&nbsp;</span>
-                            <input class="border2" type="number" id="h" value="9" min="2" max="25">
-                            <span class="border">&nbsp;B&nbsp;</span>
-                            <input class="border2" type="number" id="b" value="10" min="1" max="1250">
-                            <span>count:<span class="bombCount">0</span></span>
-                        </div>
-                        <div id="setting2">
-                            <div id="btn" class="button2">
-                                スタート
-                            </div>
-                            <span class="border">TIME:&emsp;<span id="bom_time" class="timers">000</span>&emsp;</span>
-                        </div>
-                        <div class="bom_stage" style="display: none;">
-                            <table class="bom_board" id="board">
-                                <tbody>
-                                    <tr>
-                                        <td class="bor" style="display: none;"></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                            <h3 id="result"></h3>
-                        </div>
-                        <div id="bom_texts">
-                            <h3>
-                                &lt;設定&gt;
-                            </h3>
-                            <p>W: 横のマスの数</p>
-                            <p>H: 縦のマスの数</p>
-                            <p>B: 爆弾の数</p>
-                            <h3>
-                                &lt;操作&gt;
-                            </h3>
-                            <p>左クリック: マスを開ける</p>
-                            <p>右クリック: ☐マークを付ける</p>
-                            <p class="bold" style="color: red;">(タッチ操作対応 一部非対応)</p>
-                        </div>
-                    </div>
-
 
                 </div>
 
@@ -3286,7 +3374,8 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                     <div style="margin-top: 1.5px; margin-left: 5px;">
                         <ul>
                             <span class="drag_button2 border2" style="cursor: all-scroll;">&emsp;&nbsp;</span>
-                            <li style="width: 22.5px;" class="button2">&nbsp;<span class="magnifying_glass"></span>
+                            <li style="width: 22.5px;" class="button2 nexser_search">&nbsp;<span
+                                    class="magnifying_glass"></span>
                             </li>
                             <li style="width: 22.5px;" class="button2">&nbsp;T&nbsp;</li>
                             <li style="width: 22.5px;" class="button2">&nbsp;T&nbsp;</li>

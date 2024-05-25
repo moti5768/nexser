@@ -72,6 +72,8 @@ if (ua.includes("mobile")) {
 
     const notice_menu = document.querySelector('.notice_menu');
 
+    const nexser_search_menu = document.querySelector('.nexser_search_menu')
+
     const error_windows = document.querySelector('.error_windows');
     const warning_windows = document.querySelector('.warning_windows');
 
@@ -3300,6 +3302,43 @@ if (ua.includes("mobile")) {
         })
     }
 
+
+
+    document.querySelectorAll('.nexser_search').forEach(function (nexser_search) {
+        nexser_search.addEventListener('click', function () {
+            nexser_search_menu.classList.toggle('active');
+            nexser_search_menu.closest('.child_windows');
+            z = largestZIndex++;
+            nexser_search_menu.style.zIndex = z;
+
+            alltitle_navyreomve();
+            test = nexser_search_menu.firstElementChild;
+            test.classList.add('navy');
+            titlecolor_set();
+        });
+    });
+
+    function myFunction() {
+        // Declare variables
+        var input, filter, ul, li, a, i, txtValue;
+        input = document.getElementById('myInput');
+        filter = input.value.toUpperCase();
+        ul = document.getElementById("myUL");
+        li = ul.getElementsByTagName('li');
+
+        // Loop through all list items, and hide those who don't match the search query
+        for (i = 0; i < li.length; i++) {
+            a = li[i].getElementsByTagName("span")[0];
+            txtValue = a.textContent || a.innerText;
+            if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                li[i].style.display = "";
+            } else {
+                li[i].style.display = "none";
+            }
+        }
+    }
+
+
     document.querySelectorAll('.nexser_guidebook').forEach(function (nexser_guidebook) {
         nexser_guidebook.addEventListener('click', function () {
             nexser_guidebook_menu.classList.toggle('active');
@@ -3310,6 +3349,7 @@ if (ua.includes("mobile")) {
             alltitle_navyreomve();
             test = nexser_guidebook_menu.firstElementChild;
             test.classList.add('navy');
+            titlecolor_set()
         });
     });
     document.querySelectorAll('.guidebook_window').forEach(function (guidebook_window) {
@@ -3322,6 +3362,7 @@ if (ua.includes("mobile")) {
             alltitle_navyreomve();
             test = guidebook_window_menu.firstElementChild;
             test.classList.add('navy');
+            titlecolor_set()
         });
     });
     document.querySelectorAll('.guidebook_file').forEach(function (guidebook_file) {
@@ -3334,6 +3375,7 @@ if (ua.includes("mobile")) {
             alltitle_navyreomve();
             test = guidebook_file_menu.firstElementChild;
             test.classList.add('navy');
+            titlecolor_set()
         });
     });
     document.querySelectorAll('.guidebook_taskbar').forEach(function (guidebook_taskbar) {
@@ -3346,6 +3388,7 @@ if (ua.includes("mobile")) {
             alltitle_navyreomve();
             test = guidebook_taskbar_menu.firstElementChild;
             test.classList.add('navy');
+            titlecolor_set()
         });
     });
 
@@ -4215,6 +4258,7 @@ if (ua.includes("mobile")) {
         localStorage.removeItem('titlebar_pink');
         localStorage.removeItem('titlebar_purple');
         localStorage.removeItem('titlebar_black');
+        localStorage.removeItem('titlebar_teal');
     }
 
     document.querySelector('.titlebar_red').addEventListener('click', function (titlebar_red) {
@@ -4240,6 +4284,9 @@ if (ua.includes("mobile")) {
     })
     document.querySelector('.titlebar_black').addEventListener('click', function (titlebar_black) {
         localStorage.setItem('titlebar_black', titlebar_black);
+    })
+    document.querySelector('.titlebar_teal').addEventListener('click', function (titlebar_teal) {
+        localStorage.setItem('titlebar_teal', titlebar_teal);
     })
 
     function titlecolor_set() {
@@ -4306,6 +4353,14 @@ if (ua.includes("mobile")) {
                 });
                 document.querySelectorAll('.navy').forEach(function (navy) {
                     navy.style.background = "black";
+                });
+            }
+            if (localStorage.getItem('titlebar_teal')) {
+                document.querySelectorAll('.title').forEach(function (title) {
+                    title.style.background = "#483D8B";
+                });
+                document.querySelectorAll('.navy').forEach(function (navy) {
+                    navy.style.background = "teal";
                 });
             }
         }
@@ -5518,61 +5573,67 @@ if (ua.includes("mobile")) {
         }
     }
 
-    (function () {
-        //60秒 * 3 = 180  (3分)
-        const sec = 180;
-        const events = ['keydown', 'mousemove', 'mousedown'];
-        let timeoutId;
-        let len = events.length;
+    //60秒 * 3 = 180  (3分)
+    const sec = 180;
+    const events = ['keydown', 'mousemove', 'mousedown'];
+    let timeoutId;
+    let testtime2;
+    let len = events.length;
 
-        // タイマー設定
-        function setTimer() {
-            timeoutId = setTimeout(server, sec * 1000);
-        }
-        function resetTimer() {
-            clearTimeout(timeoutId);
-            setTimer();
+    saver_setTimer();
+    setEvents(resetTimer);
+
+    function sever2() {
+        testtime2 = setTimeout(() => {
             if (localStorage.getItem('saver_on')) {
-                document.querySelector('.saver_time').textContent = (len = 0);
-            } else {
-                document.querySelector('.saver_time').textContent = "none";
+                document.querySelector('.saver_time').textContent = len++;
             }
-            if (screen_saver_group.style.display == "block") {
-                document.querySelector('html').style.cursor = '';
-                document.querySelector('.screen_saver1').style.display = "none"
-            }
+            sever2()
+        }, 1000);
+        if (!localStorage.getItem('saver_on')) {
+            document.querySelector('.saver_time').textContent = "none";
         }
+    }
 
-        // イベント設定
-        function setEvents(func) {
-            while (len--) {
-                addEventListener(events[len], func, false);
-            }
-            setInterval(() => {
-                if (localStorage.getItem('saver_on')) {
-                    document.querySelector('.saver_time').textContent = (len++);
-                } else {
-                    document.querySelector('.saver_time').textContent = "none";
-                }
-            }, 1000);
+    // タイマー設定
+    function saver_setTimer() {
+        timeoutId = setTimeout(screen_saver, sec * 1000);
+    }
+    function resetTimer() {
+        clearTimeout(timeoutId);
+        clearTimeout(testtime2);
+        sever2()
+        saver_setTimer();
+        document.querySelector('.saver_time').textContent = len = 0;
+        if (localStorage.getItem('saver_on')) {
+            document.querySelector('.saver_time').textContent = len++;
         }
-
-        // ログアウト
-        function server() {
-            if (screen_saver_group.style.display == "none" || desktop.style.display == "block" && localStorage.getItem('saver_on')) {
-                screen_saver_group.style.display = "block"
-                document.querySelector('html').style.cursor = 'none';
-                document.querySelector('.screen_saver1').style.display = "block"
-                console.log("saver")
-
-            } else {
-                console.log("saver no!")
-            }
+        if (screen_saver_group.style.display == "block") {
+            document.querySelector('html').style.cursor = '';
+            document.querySelector('.screen_saver1').style.display = "none"
         }
+    }
 
-        setTimer();
-        setEvents(resetTimer);
-    })();
+    // イベント設定
+    function setEvents(func) {
+        while (len--) {
+            addEventListener(events[len], func, false);
+        }
+    }
+
+    // ログアウト
+    function screen_saver() {
+        if (screen_saver_group.style.display == "none" || desktop.style.display == "block" && localStorage.getItem('saver_on')) {
+            screen_saver_group.style.display = "block"
+            document.querySelector('html').style.cursor = 'none';
+            document.querySelector('.screen_saver1').style.display = "block"
+        }
+        setTimeout(() => {
+            clearTimeout(timeoutId);
+            clearTimeout(testtime2);
+        }, 1000);
+    }
+
 
     const time = document.getElementById('time');
     const startButton = document.getElementById('start');
