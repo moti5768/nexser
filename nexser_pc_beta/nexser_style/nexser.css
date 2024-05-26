@@ -1464,7 +1464,7 @@ body::-webkit-scrollbar {
     border-left: solid 1.5px whitesmoke;
     border-top: solid 1.5px whitesmoke;
     border-bottom: solid 1.5px black;
-    border-radius: 3px;
+    border-radius: 1.5px;
     z-index: 2;
 }
 
