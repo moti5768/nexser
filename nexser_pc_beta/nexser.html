@@ -1965,18 +1965,47 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                 </ul>
                                 <div class="window_inline_menus_child">
                                     <p class="window_menus_title">setting</p>
+
                                     <div style="position: absolute; left: 10px; top: 30px; width: 100px;">
-                                        <p class="bold large" style="text-align: left;">MODE:</p>
-                                        <span class="button2 saver_on borderinline_dotted">&emsp;ON&emsp;</span>
+                                        <span class="bold large border" style="text-align: left;">MODE:</span>
+                                        <span class="button2 saver_on pointer_none borderinline_dotted"
+                                            style="margin-top: 5px;">&emsp;ON&emsp;</span>
                                         <span style="margin-top: 5px;"
                                             class="button2 saver_off borderinline_dotted">&emsp;OFF&emsp;</span>
-                                        <p class="bold large" style="text-align: left;">PREVIEW:</p>
-                                        <span class="button2 borderinline_dotted" onclick="screen_saver()">
+                                        <span class="bold large border" style="text-align: left;">PREVIEW:</span>
+                                        <span class="button2 borderinline_dotted" style="margin-top: 5px;"
+                                            onclick="screen_saver()">
                                             &emsp;TEST&emsp;</span>
                                         <p style="width: 175px;" class="small">(※モードがOFFの場合、<br>プレビューは表示されません)</p>
                                     </div>
-                                    <p style="position: absolute; bottom: 0px;">MODE:<span class="saver_mode">OFF</span>
+
+                                    <p class="bold" style="position: absolute; bottom: 0px;">MODE:<span
+                                            class="saver_mode">OFF</span>
                                     </p>
+
+                                    <div style="position: absolute; left: 200px; top: 30px; width: 120px;">
+                                        <span class="bold large border"
+                                            style="text-align: left;">SECOND:</span><span>(60~900)</span>
+                                        <input type="text" class="border2 saver_second large" style="width: 50px;"
+                                            placeholder="|" maxlength="3">
+                                        <button class="button2 large borderinline_dotted"
+                                            onclick="savertime()">&emsp;OK&emsp;</button>
+                                        <p class="bold">saver time: <span class="screensaver_text">none</span></p>
+                                    </div>
+
+                                    <div
+                                        style="position: absolute; left: 400px; top: 30px; width: 150px; height: 100%;">
+                                        <span class="bold large border" style="text-align: left;">SCREEN</span>
+                                        <span class="large button2 borderinline_dotted" style="margin-top: 5px;"
+                                            onclick="saver1()">&emsp;SCREEN
+                                            1&emsp;</span>
+                                        <span class="large button2 borderinline_dotted" style="margin-top: 5px;"
+                                            onclick="saver2()">&emsp;SCREEN
+                                            2&emsp;</span>
+                                        <p class="bold" style="text-align: left;">SCREEN:&emsp;<span
+                                                class="screen_mode">1</span></p>
+                                    </div>
+
                                 </div>
                             </div>
 
@@ -2393,7 +2422,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         </div>
                     </div>
 
-                    <div class="child_windows notice_menu active" style="position: absolute; left: 0px;">
+                    <div class="notice_menu">
                         <div class="title">
                             <span class="title_icon"></span><span>&emsp;&emsp;notice</span>
                         </div><br>
@@ -2823,67 +2852,68 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         <div class="window_contents">
                             <ul id="myUL">
 
-                                <li class="test_button button2"><span>&emsp;main&emsp;</span></li>
+                                <li class="test_button button2 borderinline_dotted"><span>&emsp;main&emsp;</span></li>
 
-                                <li class="test_button2 button2">
+                                <li class="test_button2 button2 borderinline_dotted">
                                     <span>&emsp;mycomputer&emsp;</span>
                                 </li>
 
-                                <li class="test_button3 button2">
+                                <li class="test_button3 button2 borderinline_dotted">
                                     <span>&emsp;controlpanel&emsp;</span>
                                 </li>
 
-                                <li class="test_button4 button2">
+                                <li class="test_button4 button2 borderinline_dotted">
                                     <span>&emsp;color&emsp;</span>
                                 </li>
 
-                                <li class="test_button5 button2">
+                                <li class="test_button5 button2 borderinline_dotted">
                                     <span>&emsp;system&emsp;</span>
                                 </li>
 
-                                <li class="test_button6 button2">
+                                <li class="test_button6 button2 borderinline_dotted">
                                     <span>&emsp;prompt&emsp;</span>
                                 </li>
 
-                                <li class="test_button7 button2">
+                                <li class="test_button7 button2 borderinline_dotted">
                                     <span>&emsp;clock&emsp;</span>
                                 </li>
 
-                                <li class="test_button8 button2">
+                                <li class="test_button8 button2 borderinline_dotted">
                                     <span>&emsp;sound&emsp;</span>
                                 </li>
 
-                                <li class="test_button9 button2">
+                                <li class="test_button9 button2 borderinline_dotted">
                                     <span>&emsp;driver&emsp;</span>
                                 </li>
 
-                                <li class="test_button10 button2">
+                                <li class="test_button10 button2 borderinline_dotted">
                                     <span>&emsp;mouse&emsp;</span>
                                 </li>
 
-                                <li class="test_button11 button2">
+                                <li class="test_button11 button2 borderinline_dotted">
                                     <span>&emsp;screentext&emsp;</span>
                                 </li>
 
-                                <li class="test_button12 button2">
+                                <li class="test_button12 button2 borderinline_dotted">
                                     <span>&emsp;notepad&emsp;</span>
                                 </li>
 
-                                <li class="test_button13 button2">
+                                <li class="test_button13 button2 borderinline_dotted">
                                     <span>&emsp;textdrop&emsp;</span>
                                 </li>
 
-                                <li class="test_button14 button2">
+                                <li class="test_button14 button2 borderinline_dotted">
                                     <span>&emsp;windowmode&emsp;</span>
                                 </li>
 
-                                <li class="test_button15 button2">
+                                <li class="test_button15 button2 borderinline_dotted">
                                     <span>&emsp;accessory&emsp;</span>
                                 </li>
 
                             </ul>
                         </div>
                     </div>
+
 
 
                     <div class="child_windows nexser_guidebook_menu resize active">
@@ -3162,7 +3192,11 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
 
                 </div>
 
+
+
+
                 <div id="taskbar_group">
+
                     <div id="taskbar">
                         <span id="startbtn" class="start_button border bold">&nbsp;start&nbsp;</span>
                         <div class="taskbar_buttons" style="resize: horizontal;">
@@ -3413,12 +3447,19 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                 </div>
 
                 <div id="screen_saver_group">
+
                     <div class="screen_saver1">
                         <p style="font-size: 30px; position: absolute; bottom: 0; right: 10px;">nexser
                             screensaver
                         </p>
                     </div>
-                    <div class="screen_saver2"></div>
+
+                    <div class="screen_saver2">
+                        <p style="font-size: 30px; position: absolute; bottom: 0; right: 10px;">nexser
+                            screensaver
+                        </p>
+                    </div>
+
                     <div class="screen_saver3"></div>
                 </div>
 

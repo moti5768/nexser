@@ -477,9 +477,6 @@ if (ua.includes("mobile")) {
             if (localStorage.getItem('toolbar_on')) {
                 toolbar.style.display = "block"
             }
-            if (localStorage.getItem('saver_on')) {
-                document.querySelector('.saver_mode').textContent = "ON"
-            }
             if (localStorage.getItem('display_old')) {
                 old_screen()
             }
@@ -518,6 +515,22 @@ if (ua.includes("mobile")) {
                 document.getElementsByClassName('analog_clock_area')[0].style.display = "none"
             }
 
+            if (localStorage.getItem('saver_time')) {
+                document.getElementsByClassName('saver_on')[0].classList.remove('pointer_none');
+                document.getElementsByClassName('screensaver_text')[0].textContent = localStorage.getItem('saver_time');
+            } else {
+                localStorage.removeItem('saver_on')
+                localStorage.removeItem('saver_time')
+            }
+            if (localStorage.getItem('saver_on')) {
+                document.querySelector('.saver_mode').textContent = "ON"
+            }
+
+            if (localStorage.getItem('saver2')) {
+                saver2()
+            }
+
+
             resolve();
         }, 0);
         function taskgroup_load() {
@@ -548,12 +561,11 @@ if (ua.includes("mobile")) {
                         document.querySelector('.battery_child').style.background = "black"
                     }
 
-                    if (battery.level == 0.20 && battery.charging == false) {
+                    if (0 <= battery.level && battery.level < 0.21 && battery.charging == false) {
                         document.querySelector('.notice_text').textContent = "バッテリー残量が少なくなっています!(※充電しない限りこの表示は残り続けます。)"
-                        notice_menu.style.left = "0px";
-                        notice_menu.classList.remove('active');
+                        notice_menu.style.display = "block";
                     } else {
-                        notice_menu.classList.add('active');
+                        notice_menu.style.display = "none"
                     }
                     resolve()
                 }, 50)
@@ -686,21 +698,20 @@ if (ua.includes("mobile")) {
     });
 
     Array.from(document.getElementsByClassName('button')).forEach((button) => {
-        button.addEventListener('click', function () {
+        button.addEventListener('click', () => {
             let tscbtn = button.firstChild;
             tscbtn = button.classList.toggle('pressed');
         });
     });
+
     Array.from(document.getElementsByClassName('button2')).forEach((button2) => {
-        button2.addEventListener('mousedown', function () {
+        button2.addEventListener('mousedown', () => {
             button2.classList.add('pressed');
-            addEventListener('mouseup', function () {
-                Array.from(document.getElementsByClassName('button2')).forEach((button2) => {
-                    button2.classList.remove('pressed');
-                })
-            });
         });
-        button2.addEventListener('mouseleave', function () {
+        button2.addEventListener('mouseleave', () => {
+            button2.classList.remove('pressed');
+        });
+        button2.addEventListener('mouseup', () => {
             button2.classList.remove('pressed');
         });
     });
@@ -1787,7 +1798,7 @@ if (ua.includes("mobile")) {
     function window_active() {
         document.querySelectorAll('.child_windows').forEach(function (allwindow_active) {
             allwindow_active.classList.remove('active');
-            document.querySelector('.notice_menu').classList.add('active')
+            notice_menu.style.display = "block"
         });
     }
 
@@ -3951,7 +3962,7 @@ if (ua.includes("mobile")) {
                     title.style.background = "rgba(255, 255, 255, 0)";
                     title.style.border = "solid 2px black";
                 })
-                document.querySelectorAll('.title,.title2,.title_buttons,.window_inline_list,.mini_window,button,input,textarea,p,#prompt2,.window_inline_list2,.window_tool,.window_inline_side,.window_bottom,form,.border2,.window_inline_menus').forEach(function (title) {
+                document.querySelectorAll('.title,.title2,.title_buttons,.window_inline_list,.mini_window,button,input,textarea,p,#prompt2,.window_inline_list2,.window_tool,.window_inline_side,.window_bottom,form,.border2,.window_inline_menus,.window_contents').forEach(function (title) {
                     title.style.opacity = "0"
                 })
             }
@@ -3985,7 +3996,7 @@ if (ua.includes("mobile")) {
                 window_prompt.style.background = "black"
                 window_back_silver()
             })
-            document.querySelectorAll('.title,.title2,.title_buttons,.window_inline_list,.mini_window,button,input,textarea,p,#prompt2,.window_inline_list2,.window_tool,.window_inline_side,.window_bottom,form,.border2,.window_inline_menus').forEach(function (title) {
+            document.querySelectorAll('.title,.title2,.title_buttons,.window_inline_list,.mini_window,button,input,textarea,p,#prompt2,.window_inline_list2,.window_tool,.window_inline_side,.window_bottom,form,.border2,.window_inline_menus,.window_contents').forEach(function (title) {
                 title.style.opacity = ""
                 window_back_silver()
             })
@@ -4949,10 +4960,10 @@ if (ua.includes("mobile")) {
             localStorage.removeItem('MemoData_export');
 
             notice_menu.style.left = "0px";
-            notice_menu.classList.remove('active');
+            notice_menu.style.display = "block"
 
             setTimeout(() => {
-                notice_menu.classList.add('active');
+                notice_menu.style.display = "none"
             }, 5000);
         } else {
             document.querySelector('.window_error_text').textContent = "windows2000 textdata no!"
@@ -5573,8 +5584,25 @@ if (ua.includes("mobile")) {
         }
     }
 
-    //60秒 * 3 = 180  (3分)
-    const sec = 180;
+    function savertime() {
+        const stime = document.getElementsByClassName('saver_second')[0].value;
+
+        if (60 <= stime && stime < 901) {
+            localStorage.removeItem('saver_time')
+            localStorage.setItem('saver_time', stime)
+            document.getElementsByClassName('saver_on')[0].classList.remove('pointer_none')
+            saver_setTimer();
+            setEvents(resetTimer);
+            document.getElementsByClassName('screensaver_text')[0].textContent = stime;
+        } else {
+            document.querySelector('.window_error_text').textContent = "指定時間の範囲内ではありません!"
+            error_windows.classList.remove('active')
+            sound3();
+            document.querySelector('.test_allwindow').style.display = "block";
+        }
+    }
+
+    let sec = localStorage.getItem('saver_time');
     const events = ['keydown', 'mousemove', 'mousedown'];
     let timeoutId;
     let testtime2;
@@ -5585,6 +5613,7 @@ if (ua.includes("mobile")) {
 
     function sever2() {
         testtime2 = setTimeout(() => {
+            sec = localStorage.getItem('saver_time');
             if (localStorage.getItem('saver_on')) {
                 document.querySelector('.saver_time').textContent = len++;
             }
@@ -5597,9 +5626,11 @@ if (ua.includes("mobile")) {
 
     // タイマー設定
     function saver_setTimer() {
+        sec = localStorage.getItem('saver_time');
         timeoutId = setTimeout(screen_saver, sec * 1000);
     }
     function resetTimer() {
+        sec = localStorage.getItem('saver_time');
         clearTimeout(timeoutId);
         clearTimeout(testtime2);
         sever2()
@@ -5611,6 +5642,7 @@ if (ua.includes("mobile")) {
         if (screen_saver_group.style.display == "block") {
             document.querySelector('html').style.cursor = '';
             document.querySelector('.screen_saver1').style.display = "none"
+            document.querySelector('.screen_saver2').style.display = "none"
         }
     }
 
@@ -5621,12 +5653,34 @@ if (ua.includes("mobile")) {
         }
     }
 
+    function saver_clear() {
+        localStorage.removeItem('saver1')
+        localStorage.removeItem('saver2')
+    }
+
+    function saver1(saver1) {
+        saver_clear();
+        localStorage.setItem('saver1', saver1);
+        document.getElementsByClassName('screen_mode')[0].textContent = "1";
+    }
+    function saver2(saver2) {
+        saver_clear();
+        localStorage.setItem('saver2', saver2);
+        document.getElementsByClassName('screen_mode')[0].textContent = "2";
+    }
     // ログアウト
     function screen_saver() {
-        if (screen_saver_group.style.display == "none" || desktop.style.display == "block" && localStorage.getItem('saver_on')) {
-            screen_saver_group.style.display = "block"
+        if (screen_saver_group.style.display == "none" || desktop.style.display == "block" && localStorage.getItem('saver_on') && localStorage.getItem('saver_time')) {
+            screen_saver_group.style.display = "block";
+            if (localStorage.getItem('saver1')) {
+                document.querySelector('.screen_saver1').style.display = "block";
+            } else if (localStorage.getItem('saver2')) {
+                document.querySelector('.screen_saver2').style.display = "block";
+            } else {
+                document.querySelector('.screen_saver1').style.display = "block";
+            }
+
             document.querySelector('html').style.cursor = 'none';
-            document.querySelector('.screen_saver1').style.display = "block"
         }
         setTimeout(() => {
             clearTimeout(timeoutId);
