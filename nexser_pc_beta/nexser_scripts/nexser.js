@@ -530,6 +530,16 @@ if (ua.includes("mobile")) {
                 saver2()
             }
 
+            if (localStorage.getItem('backcolor_blackwhite')) {
+                document.getElementById('nex').style.filter = "grayscale(100%)";
+            }
+            if (localStorage.getItem('backcolor_invert')) {
+                document.getElementById('nex').style.filter = "invert(100%)";
+            }
+            if (localStorage.getItem('backcolor_hue')) {
+                document.getElementById('nex').style.filter = "hue-rotate(100deg)";
+            }
+
 
             resolve();
         }, 0);
@@ -781,7 +791,6 @@ if (ua.includes("mobile")) {
                 document.querySelector('.child_start_menu').style.bottom = task + "px"
             }
         }, 500);
-
     }
 
     document.querySelector('.startup_note').addEventListener('click', function (startup_note) {
@@ -2175,8 +2184,8 @@ if (ua.includes("mobile")) {
 
             case command_4 + d:
                 prompt_text2.style.color = "";
-                var result = Function('return (' + d + ');')();
-                document.querySelector('#shell').textContent = result;
+                var result5 = Function('return (' + d + ');')();
+                document.querySelector('#shell').textContent = result5;
                 shellmenu_open()
                 break;
 
@@ -2251,8 +2260,6 @@ if (ua.includes("mobile")) {
                     }, 100);
                 }, 100);
                 break;
-
-
 
             case command_10 + j:
 
@@ -5903,6 +5910,30 @@ if (ua.includes("mobile")) {
         document.getElementById('nex').classList.remove('old');
     }
 
+    function backcolorfilter_clear() {
+        localStorage.removeItem("backcolor_blackwhite");
+        localStorage.removeItem("backcolor_invert");
+        localStorage.removeItem("backcolor_hue");
+        document.getElementById('nex').style.filter = "";
+    }
+
+    function color_bw(backcolor_blackwhite) {
+        backcolorfilter_clear()
+        document.getElementById('nex').style.filter = "grayscale(100%)";
+        localStorage.setItem("backcolor_blackwhite", backcolor_blackwhite);
+    }
+
+    function color_invert(backcolor_invert) {
+        backcolorfilter_clear()
+        document.getElementById('nex').style.filter = "invert(100%)";
+        localStorage.setItem("backcolor_invert", backcolor_invert);
+    }
+
+    function color_hue(backcolor_hue) {
+        backcolorfilter_clear()
+        document.getElementById('nex').style.filter = "hue-rotate(100deg)";
+        localStorage.setItem("backcolor_hue", backcolor_hue);
+    }
     // list_shadow()
 
     function list_shadow() {

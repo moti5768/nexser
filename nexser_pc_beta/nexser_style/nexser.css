@@ -300,7 +300,6 @@ li {
 
 #nex {
     display: block;
-    filter: blur(0px);
     margin-left: 0;
     margin-right: 0;
     position: absolute;
@@ -309,7 +308,6 @@ li {
 }
 
 #nex.old {
-    filter: blur(0.3px);
     margin-left: 8%;
     margin-right: 8%;
     overflow: hidden;
@@ -498,10 +496,13 @@ input[type="file"] {
     bottom: 0px;
     left: 10px;
     top: 7px;
+    width: 45px;
     box-shadow: 0 0 0 0.5px dimgray;
+    box-sizing: border-box;
 }
 
 .start_button.pressed {
+    display: block;
     background: darkgray;
     border-bottom: 1.5px #eee solid;
     border-right: 1.5px #eee solid;
@@ -511,7 +512,6 @@ input[type="file"] {
     outline-offset: -5px;
     padding-top: 1.5px;
     padding-left: 1.5px;
-    box-sizing: border-box;
 }
 
 #taskbar .taskbar_buttons {
@@ -1952,7 +1952,7 @@ textarea {
 
 .htmlviewer_edit_menu {
     width: 800px;
-    height: 500px;
+    height: 510px;
 }
 
 .prompt_shell_menu {
@@ -2164,16 +2164,21 @@ textarea {
 }
 
 .tetris-button.tetbtn {
-    height: 60px;
+    display: block;
+    float: left;
+    height: 70px;
     text-align: center;
+    box-sizing: border-box;
 }
 
 .tetris-button.tetbtn2 {
-    height: 60px;
+    display: block;
+    height: 70px;
     text-align: center;
     position: relative;
-    left: 62.5px;
-    bottom: 5px;
+    left: 50px;
+    bottom: 0px;
+    box-sizing: border-box;
 }
 
 .tetris-button.tetbtn2.active {
@@ -2337,6 +2342,13 @@ td {
 }
 
 .pattern_btn {
+    width: 30px;
+    height: 30px;
+    margin-right: 5px;
+    box-sizing: border-box;
+}
+
+.display_pattern_btn {
     width: 30px;
     height: 30px;
     margin-right: 5px;
