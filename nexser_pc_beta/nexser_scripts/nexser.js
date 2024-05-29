@@ -5039,6 +5039,16 @@ if (ua.includes("mobile")) {
         calc_result.value = "";
     }
 
+    function calc_oneremove() {
+        const ca1 = calc_result.value;
+        const result = ca1.slice(0, -1);
+        calc_result.value = result;
+        calc_result.value = new Function("return " + calc_result.value)();
+        const child_graph = document.querySelector(".child_graph");
+        calc_result.value = Math.round(calc_result.value);
+        calc();
+    }
+
     function window_file_list_change() {
         Array.from(document.getElementsByClassName('window_inline_list')).forEach((window_inline_list) => {
             window_inline_list.style.columnCount = "1";

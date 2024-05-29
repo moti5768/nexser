@@ -348,6 +348,7 @@ li {
     -ms-user-select: none;
     user-select: none;
     list-style: none;
+    box-sizing: border-box;
 }
 
 .button.pressed {
@@ -356,11 +357,9 @@ li {
     border-right: 1.5px #eee solid;
     border-top: 1.5px #333 solid;
     border-left: 1.5px #333 solid;
-}
-
-button.pressed {
+    padding-top: 1px;
     padding-left: 1px;
-    width: auto;
+    box-sizing: border-box;
 }
 
 .button2 {
@@ -386,11 +385,44 @@ button.pressed {
     border-right: 1.5px #eee solid;
     border-top: 1.5px #333 solid;
     border-left: 1.5px #333 solid;
+    padding-top: 1px;
+    padding-left: 1px;
+    box-sizing: border-box;
 }
 
-span.pressed {
-    padding-left: 1px;
-    width: auto;
+.apply_button {
+    display: inline-block;
+    width: 75px;
+    height: 30px;
+    box-sizing: border-box;
+    outline: 1.5px dotted black;
+    outline-offset: -5px;
+}
+
+.apply_button2 {
+    width: 150px;
+    height: 30px;
+    box-sizing: border-box;
+    outline: 1.5px dotted black;
+    outline-offset: -5px;
+}
+
+.windowfile1 {
+    width: 25px;
+    height: 20px;
+    box-sizing: border-box;
+}
+
+.windowfile2 {
+    width: 30px;
+    height: 22.5px;
+    box-sizing: border-box;
+}
+
+.windowfile3 {
+    width: 25px;
+    height: 20px;
+    box-sizing: border-box;
 }
 
 /* files */
@@ -427,6 +459,15 @@ input[type="file"] {
     right: 0px;
     bottom: 40px;
     z-index: 999996;
+}
+
+#toolbar>div>div>span {
+    margin-left: 2px;
+    margin-right: 2px;
+    width: 25px;
+    height: 25px;
+    float: left;
+    box-sizing: border-box;
 }
 
 .drag_button2 {
@@ -468,25 +509,37 @@ input[type="file"] {
     border-left: 1.5px #333 solid;
     outline: 1.5px dotted black;
     outline-offset: -5px;
+    padding-top: 1.5px;
+    padding-left: 1.5px;
+    box-sizing: border-box;
 }
 
 #taskbar .taskbar_buttons {
     position: absolute;
-    height: 100%;
     left: 60px;
     top: 0px;
+    break-inside: avoid;
+    box-sizing: border-box;
+    float: left;
 }
 
 #taskbar .task_icons {
     margin-top: 7px;
-    height: 65%;
+    height: 30px;
     border-left: solid 2px white;
     border-right: solid 2px white;
 }
 
-#taskbar .button {
-    margin-left: 2px;
-    margin-right: 2px;
+.task_icons .button {
+    display: block;
+    box-sizing: border-box;
+    float: left;
+    margin-left: 2.5px;
+    margin-right: 2.5px;
+    width: 100px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .taskbar_rightgroup {
@@ -731,7 +784,15 @@ input[type="file"] {
 }
 
 .sound_play_button {
-    height: 21.5px;
+    display: inline-block;
+    height: 24px;
+    box-sizing: border-box;
+}
+
+.sound_stop_button {
+    display: inline-block;
+    height: 24px;
+    box-sizing: border-box;
 }
 
 .file_download_menu {
@@ -769,6 +830,7 @@ input[type="file"] {
     width: 30px;
     height: 30px;
     margin-right: 5px;
+    box-sizing: border-box;
 }
 
 /* scrollbar */
@@ -1422,12 +1484,15 @@ body::-webkit-scrollbar {
 }
 
 #myUL>li {
-    display: inline-block;
+    display: block;
     margin-top: 3px;
     margin-left: 3px;
     margin-right: 3px;
     min-width: max-content;
     width: 200px;
+    box-sizing: border-box;
+    height: 30px;
+    float: left;
 }
 
 .pointer_none {
@@ -1523,8 +1588,9 @@ body::-webkit-scrollbar {
 
 /* title_buttons */
 .close_button {
-    width: 16.5px;
-    height: 16.5px;
+    display: inline-block;
+    width: 19px;
+    height: 19px;
     background: #c0c0c0;
     position: absolute;
     top: 3px;
@@ -1532,12 +1598,13 @@ body::-webkit-scrollbar {
     text-align: center;
     justify-content: center;
     font-size: 11px;
-    line-height: 16.5px;
+    box-sizing: border-box;
 }
 
 .close_button2 {
-    width: 16.5px;
-    height: 16.5px;
+    display: inline-block;
+    width: 19px;
+    height: 19px;
     background: #c0c0c0;
     position: absolute;
     top: 3px;
@@ -1545,13 +1612,14 @@ body::-webkit-scrollbar {
     text-align: center;
     justify-content: center;
     font-size: 11px;
-    line-height: 16.5px;
+    box-sizing: border-box;
     z-index: 1;
 }
 
 .close_button3 {
-    width: 16.5px;
-    height: 16.5px;
+    display: inline-block;
+    width: 19px;
+    height: 19px;
     background: #c0c0c0;
     position: absolute;
     top: 3px;
@@ -1559,14 +1627,15 @@ body::-webkit-scrollbar {
     text-align: center;
     justify-content: center;
     font-size: 11px;
-    line-height: 16.5px;
+    box-sizing: border-box;
     z-index: 1;
 }
 
 /* 飾り */
 .close_button4 {
-    width: 16.5px;
-    height: 16.5px;
+    display: inline-block;
+    width: 19px;
+    height: 19px;
     background: #c0c0c0;
     position: absolute;
     top: 3px;
@@ -1574,7 +1643,7 @@ body::-webkit-scrollbar {
     text-align: center;
     justify-content: center;
     font-size: 11px;
-    line-height: 16.5px;
+    box-sizing: border-box;
 }
 
 /* 飾り */
@@ -1587,37 +1656,45 @@ body::-webkit-scrollbar {
 }
 
 .bigscreen_button {
-    width: 16.5px;
-    height: 16.5px;
+    display: inline-block;
+    width: 19px;
+    height: 19px;
     background: #c0c0c0;
     position: absolute;
     top: 3px;
-    right: 22.5px;
+    right: 23px;
     text-align: center;
+    justify-content: center;
     font-size: 11px;
+    box-sizing: border-box;
 }
 
 .minscreen_button {
-    width: 16.5px;
-    height: 16.5px;
     display: none;
+    width: 19px;
+    height: 19px;
     background: #c0c0c0;
     position: absolute;
     top: 3px;
-    right: 23.5px;
+    right: 23px;
     text-align: center;
+    justify-content: center;
     font-size: 11px;
+    box-sizing: border-box;
 }
 
 .minimization_button {
-    width: 16.5px;
-    height: 16.5px;
+    display: inline-block;
+    width: 19px;
+    height: 19px;
     background: #c0c0c0;
     position: absolute;
     top: 3px;
-    right: 41.5px;
+    right: 42.5px;
     text-align: center;
+    justify-content: center;
     font-size: 11px;
+    box-sizing: border-box;
 }
 
 /*list */
@@ -1846,7 +1923,10 @@ textarea {
 }
 
 .calc_button {
+    display: block;
+    float: left;
     margin-top: 5px;
+    margin-right: 3px;
     font-size: large;
     width: 34px;
     height: 31px;
@@ -1857,6 +1937,7 @@ textarea {
     color: black;
     background: silver;
     outline: none;
+    box-sizing: border-box;
 }
 
 /* htmlviewer */
@@ -2259,6 +2340,7 @@ td {
     width: 30px;
     height: 30px;
     margin-right: 5px;
+    box-sizing: border-box;
 }
 
 /* progress */

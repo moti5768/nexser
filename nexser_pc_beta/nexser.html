@@ -1865,7 +1865,8 @@
                         
                                                 &lt;div class=&quot;border2&quot; style=&quot;background: whitesmoke;&quot;&gt;
                                                     &lt;p&gt;mouse click&lt;/p&gt;
-                                                    &lt;span id=&quot;button1&quot; class=&quot;button2 borderinline_dotted&quot;&gt;&amp;nbsp;CLICK!&amp;nbsp;&lt;/span&gt;&lt;br&gt;
+                                                    &lt;span id=&quot;button1&quot; class=&quot;button2 borderinline_dotted&quot;
+                                                        style=&quot;display: block; box-sizing: border-box; height: 25px; width: 65px;&quot;&gt;&amp;nbsp;CLICK!&amp;nbsp;&lt;/span&gt;
                                                     &lt;div class=&quot;mini_window&quot; style=&quot;display: flex;&quot;&gt;
                                                         &lt;span class=&quot;mouse_left border&quot;
                                                             style=&quot;margin-top: 5px; margin-bottom: 5px; text-align: center; display: block; width: 50px; height: 50px;&quot;&gt;left&lt;/span&gt;
@@ -1919,8 +1920,8 @@
                                                         &lt;li class=&quot;backtext_small&quot;&gt;&lt;button class=&quot;button2&quot;&gt;&amp;nbsp;small&amp;nbsp;&lt;/button&gt;&lt;/li&gt;
                                                         &lt;li class=&quot;backtext_medium&quot;&gt;&lt;button class=&quot;button2&quot;&gt;&amp;nbsp;medium&amp;nbsp;&lt;/button&gt;&lt;/li&gt;
                                                         &lt;li class=&quot;backtext_large&quot;&gt;&lt;button class=&quot;button2&quot;&gt;&amp;nbsp;large&amp;nbsp;&lt;/button&gt;&lt;/li&gt;
-                                                        &lt;li onclick=&quot;backtextSize_clear()&quot;&gt;&lt;span
-                                                                class=&quot;button2 borderinline_dotted&quot;&gt;&amp;nbsp;Reset&amp;nbsp;&lt;/span&gt;&lt;/li&gt;
+                                                        &lt;li onclick=&quot;backtextSize_clear()&quot;&gt;&lt;button class=&quot;button2&quot;&gt;&amp;nbsp;Reset&amp;nbsp;&lt;/button&gt;
+                                                        &lt;/li&gt;
                                                     &lt;/ul&gt;
                                                 &lt;/div&gt;
                                                 &lt;div class=&quot;mini_window&quot;&gt;
@@ -2033,14 +2034,13 @@
                         
                                                             &lt;div style=&quot;position: absolute; left: 10px; top: 30px; width: 100px;&quot;&gt;
                                                                 &lt;span class=&quot;bold large border&quot; style=&quot;text-align: left;&quot;&gt;MODE:&lt;/span&gt;
-                                                                &lt;span class=&quot;button2 saver_on pointer_none borderinline_dotted&quot;
+                                                                &lt;span class=&quot;button2 saver_on pointer_none apply_button&quot;
                                                                     style=&quot;margin-top: 5px;&quot;&gt;&amp;emsp;ON&amp;emsp;&lt;/span&gt;
                                                                 &lt;span style=&quot;margin-top: 5px;&quot;
-                                                                    class=&quot;button2 saver_off borderinline_dotted&quot;&gt;&amp;emsp;OFF&amp;emsp;&lt;/span&gt;
+                                                                    class=&quot;button2 saver_off apply_button&quot;&gt;&amp;emsp;OFF&amp;emsp;&lt;/span&gt;
                                                                 &lt;span class=&quot;bold large border&quot; style=&quot;text-align: left;&quot;&gt;PREVIEW:&lt;/span&gt;
-                                                                &lt;span class=&quot;button2 borderinline_dotted&quot; style=&quot;margin-top: 5px;&quot;
-                                                                    onclick=&quot;screen_saver()&quot;&gt;
-                                                                    &amp;emsp;TEST&amp;emsp;&lt;/span&gt;
+                                                                &lt;button class=&quot;button2 apply_button&quot; style=&quot;margin-top: 5px;&quot;
+                                                                    onclick=&quot;screen_saver()&quot;&gt;&amp;emsp;TEST&amp;emsp;&lt;/button&gt;
                                                                 &lt;p style=&quot;width: 175px;&quot; class=&quot;small&quot;&gt;(※モードがOFFの場合、&lt;br&gt;プレビューは表示されません)&lt;/p&gt;
                                                             &lt;/div&gt;
                         
@@ -2053,7 +2053,7 @@
                                                                     style=&quot;text-align: left;&quot;&gt;SECOND:&lt;/span&gt;&lt;span&gt;(60~900)&lt;/span&gt;
                                                                 &lt;input type=&quot;text&quot; class=&quot;border2 saver_second large&quot; style=&quot;width: 50px;&quot;
                                                                     placeholder=&quot;|&quot; maxlength=&quot;3&quot;&gt;
-                                                                &lt;button class=&quot;button2 large borderinline_dotted&quot;
+                                                                &lt;button class=&quot;button2 large apply_button&quot;
                                                                     onclick=&quot;savertime()&quot;&gt;&amp;emsp;OK&amp;emsp;&lt;/button&gt;
                                                                 &lt;p class=&quot;bold&quot;&gt;saver time: &lt;span class=&quot;screensaver_text&quot;&gt;none&lt;/span&gt;&lt;/p&gt;
                                                             &lt;/div&gt;
@@ -2061,10 +2061,10 @@
                                                             &lt;div
                                                                 style=&quot;position: absolute; left: 400px; top: 30px; width: 150px; height: 100%;&quot;&gt;
                                                                 &lt;span class=&quot;bold large border&quot; style=&quot;text-align: left;&quot;&gt;SCREEN&lt;/span&gt;
-                                                                &lt;span class=&quot;large button2 borderinline_dotted&quot; style=&quot;margin-top: 5px;&quot;
+                                                                &lt;span class=&quot;large button2 apply_button2&quot; style=&quot;margin-top: 5px;&quot;
                                                                     onclick=&quot;saver1()&quot;&gt;&amp;emsp;SCREEN
                                                                     1&amp;emsp;&lt;/span&gt;
-                                                                &lt;span class=&quot;large button2 borderinline_dotted&quot; style=&quot;margin-top: 5px;&quot;
+                                                                &lt;span class=&quot;large button2 apply_button2&quot; style=&quot;margin-top: 5px;&quot;
                                                                     onclick=&quot;saver2()&quot;&gt;&amp;emsp;SCREEN
                                                                     2&amp;emsp;&lt;/span&gt;
                                                                 &lt;p class=&quot;bold&quot; style=&quot;text-align: left;&quot;&gt;SCREEN:&amp;emsp;&lt;span
@@ -2081,20 +2081,19 @@
                                                         &lt;div class=&quot;window_inline_menus_child&quot;&gt;
                                                             &lt;p class=&quot;window_menus_title&quot;&gt;Full screen&lt;/p&gt;
                                                             &lt;div&gt;&lt;br&gt;
-                                                                &lt;span class=&quot;button2 borderinline_dotted&quot; onclick=&quot;full()&quot;&gt;&amp;emsp;ON&amp;emsp;&lt;/span&gt;
-                                                                &lt;span class=&quot;button2 borderinline_dotted&quot; onclick=&quot;min()&quot;&gt;&amp;emsp;OFF&amp;emsp;&lt;/span&gt;
+                                                                &lt;span class=&quot;button2 apply_button&quot; onclick=&quot;full()&quot;&gt;&amp;emsp;ON&amp;emsp;&lt;/span&gt;
+                                                                &lt;span class=&quot;button2 apply_button&quot; onclick=&quot;min()&quot;&gt;&amp;emsp;OFF&amp;emsp;&lt;/span&gt;
                                                             &lt;/div&gt;&lt;br&gt;
                                                             &lt;p class=&quot;window_menus_title&quot;&gt;toolbar&lt;/p&gt;
                                                             &lt;div class=&quot;mini_window&quot;&gt;&lt;br&gt;
-                                                                &lt;span class=&quot;button2 toolbar_on borderinline_dotted&quot;&gt;&amp;emsp;ON&amp;emsp;&lt;/span&gt;
-                                                                &lt;span class=&quot;button2 toolbar_off borderinline_dotted&quot;&gt;&amp;emsp;OFF&amp;emsp;&lt;/span&gt;
+                                                                &lt;span class=&quot;button2 toolbar_on apply_button&quot;&gt;&amp;emsp;ON&amp;emsp;&lt;/span&gt;
+                                                                &lt;span class=&quot;button2 toolbar_off apply_button&quot;&gt;&amp;emsp;OFF&amp;emsp;&lt;/span&gt;
                                                             &lt;/div&gt;&lt;br&gt;
                                                             &lt;p class=&quot;window_menus_title&quot;&gt;filetext background&lt;/p&gt;
                                                             &lt;div class=&quot;mini_window&quot;&gt;&lt;br&gt;
+                                                                &lt;span class=&quot;button2 filettext_backcolor_on apply_button&quot;&gt;&amp;emsp;ON&amp;emsp;&lt;/span&gt;
                                                                 &lt;span
-                                                                    class=&quot;button2 filettext_backcolor_on borderinline_dotted&quot;&gt;&amp;emsp;ON&amp;emsp;&lt;/span&gt;
-                                                                &lt;span
-                                                                    class=&quot;button2 filettext_backcolor_off borderinline_dotted&quot;&gt;&amp;emsp;OFF&amp;emsp;&lt;/span&gt;
+                                                                    class=&quot;button2 filettext_backcolor_off apply_button&quot;&gt;&amp;emsp;OFF&amp;emsp;&lt;/span&gt;
                                                             &lt;/div&gt;
                                                         &lt;/div&gt;
                                                     &lt;/div&gt;
@@ -2112,9 +2111,9 @@
                                                             &lt;/div&gt;
                         
                                                             &lt;div style=&quot;position: absolute; bottom: 5px; left: 5px; width: 100%;&quot;&gt;
-                                                                &lt;span class=&quot;button2 display_now borderinline_dotted&quot;
-                                                                    style=&quot;position: absolute; left: 0px; bottom: 0px;&quot;&gt;&amp;emsp;NOW&amp;emsp;&lt;/span&gt;
-                                                                &lt;span class=&quot;button2 display_old borderinline_dotted&quot;
+                                                                &lt;span class=&quot;button2 display_now apply_button&quot;
+                                                                    style=&quot;position: absolute; left: 0px; bottom: 0px; width: 80px;&quot;&gt;&amp;emsp;NOW&amp;emsp;&lt;/span&gt;
+                                                                &lt;span class=&quot;button2 display_old apply_button&quot;
                                                                     style=&quot;position: absolute; left: 90px; bottom: 0px;&quot;&gt;&amp;emsp;OLD&amp;emsp;&lt;/span&gt;
                                                             &lt;/div&gt;
                         
@@ -2171,10 +2170,10 @@
                                                                 &lt;/p&gt;
                                                             &lt;/div&gt;
                                                             &lt;div style=&quot;position: absolute; bottom: 5px; left: 5px; width: 100%;&quot;&gt;
-                                                                &lt;span class=&quot;button2 list_shadow_on borderinline_dotted&quot;
+                                                                &lt;span class=&quot;button2 list_shadow_on apply_button&quot;
                                                                     style=&quot;position: absolute; left: 0px; bottom: 0px;&quot;&gt;&amp;emsp;ON&amp;emsp;&lt;/span&gt;
-                                                                &lt;span class=&quot;button2 list_shadow_off borderinline_dotted&quot;
-                                                                    style=&quot;position: absolute; left: 70px; bottom: 0px;&quot;&gt;&amp;emsp;OFF&amp;emsp;&lt;/span&gt;
+                                                                &lt;span class=&quot;button2 list_shadow_off apply_button&quot;
+                                                                    style=&quot;position: absolute; left: 80px; bottom: 0px;&quot;&gt;&amp;emsp;OFF&amp;emsp;&lt;/span&gt;
                                                             &lt;/div&gt;
                                                             &lt;div class=&quot;window_menu_right_content border2&quot; style=&quot;background-color: #52adad;&quot;&gt;
                         
@@ -2261,43 +2260,47 @@
                                                             &lt;ul&gt;
                                                                 &lt;li onclick=&quot;calc2()&quot;&gt;四捨五入&lt;/li&gt;
                                                                 &lt;li onclick=&quot;calc_clear()&quot;&gt;clear&lt;/li&gt;
+                                                                &lt;li onclick=&quot;calc_oneremove()&quot;&gt;oneremove&lt;/li&gt;
                                                             &lt;/ul&gt;
                                                         &lt;/div&gt;
                                                     &lt;/div&gt;
                         
                                                 &lt;/div&gt;
                         
-                                                &lt;div class=&quot;parent_graph border&quot;&gt;
-                                                    &lt;span class=&quot;child_graph&quot;&gt;&lt;/span&gt;
-                                                &lt;/div&gt;
+                                                &lt;div class=&quot;window_contents&quot;&gt;
                         
-                                                &lt;div class=&quot;border2&quot; style=&quot;background: whitesmoke;&quot;&gt;
-                                                    &lt;div class=&quot;black_text&quot; style=&quot;width: 150px; height: 170px; padding: 5px;&quot;&gt;
-                                                        &lt;input type=&quot;text&quot; class=&quot;border&quot; id=&quot;result&quot;
-                                                            style=&quot;width: 150px; height: 25px; pointer-events: none;&quot;&gt;
-                                                        &lt;div&gt;
-                                                            &lt;input type=&quot;button&quot; class=&quot;button2 calc_button&quot; value=&quot;1&quot; onclick=&quot;edit(this)&quot;&gt;
-                                                            &lt;input type=&quot;button&quot; class=&quot;button2 calc_button&quot; value=&quot;2&quot; onclick=&quot;edit(this)&quot;&gt;
-                                                            &lt;input type=&quot;button&quot; class=&quot;button2 calc_button&quot; value=&quot;3&quot; onclick=&quot;edit(this)&quot;&gt;
-                                                            &lt;input type=&quot;button&quot; class=&quot;button2 calc_button&quot; value=&quot;+&quot; onclick=&quot;edit(this)&quot;&gt;
-                                                        &lt;/div&gt;
-                                                        &lt;div&gt;
-                                                            &lt;input type=&quot;button&quot; class=&quot;button2 calc_button&quot; value=&quot;4&quot; onclick=&quot;edit(this)&quot;&gt;
-                                                            &lt;input type=&quot;button&quot; class=&quot;button2 calc_button&quot; value=&quot;5&quot; onclick=&quot;edit(this)&quot;&gt;
-                                                            &lt;input type=&quot;button&quot; class=&quot;button2 calc_button&quot; value=&quot;6&quot; onclick=&quot;edit(this)&quot;&gt;
-                                                            &lt;input type=&quot;button&quot; class=&quot;button2 calc_button&quot; value=&quot;-&quot; onclick=&quot;edit(this)&quot;&gt;
-                                                        &lt;/div&gt;
-                                                        &lt;div&gt;
-                                                            &lt;input type=&quot;button&quot; class=&quot;button2 calc_button&quot; value=&quot;7&quot; onclick=&quot;edit(this)&quot;&gt;
-                                                            &lt;input type=&quot;button&quot; class=&quot;button2 calc_button&quot; value=&quot;8&quot; onclick=&quot;edit(this)&quot;&gt;
-                                                            &lt;input type=&quot;button&quot; class=&quot;button2 calc_button&quot; value=&quot;9&quot; onclick=&quot;edit(this)&quot;&gt;
-                                                            &lt;input type=&quot;button&quot; class=&quot;button2 calc_button&quot; value=&quot;/&quot; onclick=&quot;edit(this)&quot;&gt;
-                                                        &lt;/div&gt;
-                                                        &lt;div&gt;
-                                                            &lt;input type=&quot;button&quot; class=&quot;button2 calc_button&quot; value=&quot;0&quot; onclick=&quot;edit(this)&quot;&gt;
-                                                            &lt;input type=&quot;button&quot; class=&quot;button2 calc_button&quot; value=&quot;.&quot; onclick=&quot;edit(this)&quot;&gt;
-                                                            &lt;input type=&quot;button&quot; class=&quot;button2 calc_button&quot; value=&quot;*&quot; onclick=&quot;edit(this)&quot;&gt;
-                                                            &lt;input type=&quot;button&quot; class=&quot;button2 calc_button&quot; value=&quot;=&quot; onclick=&quot;calc()&quot;&gt;
+                                                    &lt;div class=&quot;parent_graph border&quot;&gt;
+                                                        &lt;span class=&quot;child_graph&quot;&gt;&lt;/span&gt;
+                                                    &lt;/div&gt;
+                        
+                                                    &lt;div style=&quot;background: whitesmoke;&quot;&gt;
+                                                        &lt;div class=&quot;black_text&quot; style=&quot;width: 150px; height: 170px; padding: 5px;&quot;&gt;
+                                                            &lt;input type=&quot;text&quot; class=&quot;border&quot; id=&quot;result&quot;
+                                                                style=&quot;width: 150px; height: 25px; pointer-events: none;&quot;&gt;
+                                                            &lt;div&gt;
+                                                                &lt;input type=&quot;button&quot; class=&quot;button2 calc_button&quot; value=&quot;1&quot; onclick=&quot;edit(this)&quot;&gt;
+                                                                &lt;input type=&quot;button&quot; class=&quot;button2 calc_button&quot; value=&quot;2&quot; onclick=&quot;edit(this)&quot;&gt;
+                                                                &lt;input type=&quot;button&quot; class=&quot;button2 calc_button&quot; value=&quot;3&quot; onclick=&quot;edit(this)&quot;&gt;
+                                                                &lt;input type=&quot;button&quot; class=&quot;button2 calc_button&quot; value=&quot;+&quot; onclick=&quot;edit(this)&quot;&gt;
+                                                            &lt;/div&gt;
+                                                            &lt;div&gt;
+                                                                &lt;input type=&quot;button&quot; class=&quot;button2 calc_button&quot; value=&quot;4&quot; onclick=&quot;edit(this)&quot;&gt;
+                                                                &lt;input type=&quot;button&quot; class=&quot;button2 calc_button&quot; value=&quot;5&quot; onclick=&quot;edit(this)&quot;&gt;
+                                                                &lt;input type=&quot;button&quot; class=&quot;button2 calc_button&quot; value=&quot;6&quot; onclick=&quot;edit(this)&quot;&gt;
+                                                                &lt;input type=&quot;button&quot; class=&quot;button2 calc_button&quot; value=&quot;-&quot; onclick=&quot;edit(this)&quot;&gt;
+                                                            &lt;/div&gt;
+                                                            &lt;div&gt;
+                                                                &lt;input type=&quot;button&quot; class=&quot;button2 calc_button&quot; value=&quot;7&quot; onclick=&quot;edit(this)&quot;&gt;
+                                                                &lt;input type=&quot;button&quot; class=&quot;button2 calc_button&quot; value=&quot;8&quot; onclick=&quot;edit(this)&quot;&gt;
+                                                                &lt;input type=&quot;button&quot; class=&quot;button2 calc_button&quot; value=&quot;9&quot; onclick=&quot;edit(this)&quot;&gt;
+                                                                &lt;input type=&quot;button&quot; class=&quot;button2 calc_button&quot; value=&quot;/&quot; onclick=&quot;edit(this)&quot;&gt;
+                                                            &lt;/div&gt;
+                                                            &lt;div&gt;
+                                                                &lt;input type=&quot;button&quot; class=&quot;button2 calc_button&quot; value=&quot;0&quot; onclick=&quot;edit(this)&quot;&gt;
+                                                                &lt;input type=&quot;button&quot; class=&quot;button2 calc_button&quot; value=&quot;.&quot; onclick=&quot;edit(this)&quot;&gt;
+                                                                &lt;input type=&quot;button&quot; class=&quot;button2 calc_button&quot; value=&quot;*&quot; onclick=&quot;edit(this)&quot;&gt;
+                                                                &lt;input type=&quot;button&quot; class=&quot;button2 calc_button&quot; value=&quot;=&quot; onclick=&quot;calc()&quot;&gt;
+                                                            &lt;/div&gt;
                                                         &lt;/div&gt;
                                                     &lt;/div&gt;
                                                 &lt;/div&gt;
@@ -2615,12 +2618,12 @@
                                                 &lt;div class=&quot;border2&quot; style=&quot;background: whitesmoke;&quot;&gt;
                                                     &lt;div id=&quot;time&quot; style=&quot;font-size: 40px; text-align: center;&quot;&gt;00:00:00.000&lt;/div&gt;
                                                     &lt;div id=&quot;buttons&quot; style=&quot;display: flex; justify-content: center;&quot;&gt;
-                                                        &lt;input id=&quot;start&quot; class=&quot;button2&quot; type=&quot;button&quot; value=&quot;start&quot;
-                                                            style=&quot;font-size: 30px; margin: 5px;&quot;&gt;
-                                                        &lt;input id=&quot;stop&quot; class=&quot;button2&quot; type=&quot;button&quot; value=&quot;stop&quot;
-                                                            style=&quot;font-size: 30px; margin: 5px;&quot;&gt;
-                                                        &lt;input id=&quot;reset&quot; class=&quot;button2&quot; type=&quot;button&quot; value=&quot;reset&quot;
-                                                            style=&quot;font-size: 30px; margin: 5px;&quot;&gt;
+                                                        &lt;input id=&quot;start&quot; class=&quot;button2 apply_button&quot; type=&quot;button&quot; value=&quot;start&quot;
+                                                            style=&quot;font-size: 25px; margin: 5px;&quot;&gt;
+                                                        &lt;input id=&quot;stop&quot; class=&quot;button2 apply_button&quot; type=&quot;button&quot; value=&quot;stop&quot;
+                                                            style=&quot;font-size: 25px; margin: 5px;&quot;&gt;
+                                                        &lt;input id=&quot;reset&quot; class=&quot;button2 apply_button&quot; type=&quot;button&quot; value=&quot;reset&quot;
+                                                            style=&quot;font-size: 25px; margin: 5px;&quot;&gt;
                                                     &lt;/div&gt;
                                                 &lt;/div&gt;
                                             &lt;/div&gt;
@@ -2868,7 +2871,7 @@
                                                     &lt;span&gt;count:&lt;span class=&quot;bombCount&quot;&gt;0&lt;/span&gt;&lt;/span&gt;
                                                 &lt;/div&gt;
                                                 &lt;div id=&quot;setting2&quot;&gt;
-                                                    &lt;div id=&quot;btn&quot; class=&quot;button2 borderinline_dotted&quot;&gt;
+                                                    &lt;div id=&quot;btn&quot; class=&quot; button2 apply_button&quot; style=&quot;width: 100px;&quot;&gt;
                                                         &amp;emsp;スタート&amp;emsp;
                                                     &lt;/div&gt;
                                                     &lt;span class=&quot;border&quot;&gt;TIME:&amp;emsp;&lt;span id=&quot;bom_time&quot; class=&quot;timers&quot;&gt;000&lt;/span&gt;&amp;emsp;&lt;/span&gt;
@@ -3264,15 +3267,15 @@
                         
                                             &lt;div id=&quot;taskbar&quot;&gt;
                                                 &lt;span id=&quot;startbtn&quot; class=&quot;start_button border bold&quot;&gt;&amp;nbsp;start&amp;nbsp;&lt;/span&gt;
-                                                &lt;div class=&quot;taskbar_buttons&quot; style=&quot;resize: horizontal;&quot;&gt;
-                                                    &lt;ul class=&quot;task_icons&quot;&gt;
-                                                        &lt;li class=&quot;button test_button&quot;&gt;main&lt;/li&gt;
-                                                        &lt;li class=&quot;button test_button2&quot;&gt;my_computer&lt;/li&gt;
-                                                        &lt;li class=&quot;button test_button6&quot;&gt;nexser prompt&lt;/li&gt;
-                                                        &lt;li class=&quot;button test_button7&quot;&gt;clock&lt;/li&gt;
-                                                        &lt;li class=&quot;button test_button9&quot;&gt;driver&lt;/li&gt;
-                                                        &lt;li class=&quot;button test_button12&quot;&gt;notepad&lt;/li&gt;
-                                                    &lt;/ul&gt;
+                                                &lt;div class=&quot;taskbar_buttons&quot;&gt;
+                                                    &lt;div class=&quot;task_icons&quot;&gt;
+                                                        &lt;span class=&quot;button test_button&quot;&gt;main&lt;/span&gt;
+                                                        &lt;span class=&quot;button test_button2&quot;&gt;my_computer&lt;/span&gt;
+                                                        &lt;span class=&quot;button test_button6&quot;&gt;nexser prompt&lt;/span&gt;
+                                                        &lt;span class=&quot;button test_button7&quot;&gt;clock&lt;/span&gt;
+                                                        &lt;span class=&quot;button test_button9&quot;&gt;driver&lt;/span&gt;
+                                                        &lt;span class=&quot;button test_button12&quot;&gt;notepad&lt;/span&gt;
+                                                    &lt;/div&gt;
                                                 &lt;/div&gt;
                                                 &lt;div class=&quot;taskbar_rightgroup&quot;&gt;
                                                     &lt;ul class=&quot;inport_icon border&quot;&gt;
@@ -3470,17 +3473,16 @@
                                         &lt;/div&gt;
                         
                                         &lt;div id=&quot;toolbar&quot; class=&quot;border&quot;&gt;
-                                            &lt;div style=&quot;margin-top: 1.5px; margin-left: 5px;&quot;&gt;
-                                                &lt;ul&gt;
+                                            &lt;div style=&quot;margin-top: 2px; margin-left: 1px;&quot;&gt;
+                                                &lt;div&gt;
                                                     &lt;span class=&quot;drag_button2 border2&quot; style=&quot;cursor: all-scroll;&quot;&gt;&amp;emsp;&amp;nbsp;&lt;/span&gt;
-                                                    &lt;li style=&quot;width: 22.5px;&quot; class=&quot;button2 nexser_search&quot;&gt;&amp;nbsp;&lt;span
-                                                            class=&quot;magnifying_glass&quot;&gt;&lt;/span&gt;
-                                                    &lt;/li&gt;
-                                                    &lt;li style=&quot;width: 22.5px;&quot; class=&quot;button2&quot;&gt;&amp;nbsp;T&amp;nbsp;&lt;/li&gt;
-                                                    &lt;li style=&quot;width: 22.5px;&quot; class=&quot;button2&quot;&gt;&amp;nbsp;T&amp;nbsp;&lt;/li&gt;
-                                                    &lt;li style=&quot;width: 22.5px;&quot; class=&quot;button2&quot;&gt;&amp;nbsp;T&amp;nbsp;&lt;/li&gt;
-                                                    &lt;li style=&quot;width: 22.5px;&quot; class=&quot;button2&quot;&gt;&amp;nbsp;T&amp;nbsp;&lt;/li&gt;
-                                                &lt;/ul&gt;
+                                                    &lt;span class=&quot;button2 nexser_search&quot;&gt;&amp;nbsp;&lt;span class=&quot;magnifying_glass&quot;&gt;&lt;/span&gt;
+                                                    &lt;/span&gt;
+                                                    &lt;span class=&quot;button2&quot;&gt;&amp;nbsp;T&amp;nbsp;&lt;/span&gt;
+                                                    &lt;span class=&quot;button2&quot;&gt;&amp;nbsp;T&amp;nbsp;&lt;/span&gt;
+                                                    &lt;span class=&quot;button2&quot;&gt;&amp;nbsp;T&amp;nbsp;&lt;/span&gt;
+                                                    &lt;span class=&quot;button2&quot;&gt;&amp;nbsp;T&amp;nbsp;&lt;/span&gt;
+                                                &lt;/div&gt;
                                             &lt;/div&gt;
                                         &lt;/div&gt;
                         
@@ -8592,6 +8594,16 @@
                                 calc_result.value = &quot;&quot;;
                             }
                         
+                            function calc_oneremove() {
+                                const ca1 = calc_result.value;
+                                const result = ca1.slice(0, -1);
+                                calc_result.value = result;
+                                calc_result.value = new Function(&quot;return &quot; + calc_result.value)();
+                                const child_graph = document.querySelector(&quot;.child_graph&quot;);
+                                calc_result.value = Math.round(calc_result.value);
+                                calc();
+                            }
+                        
                             function window_file_list_change() {
                                 Array.from(document.getElementsByClassName(&#039;window_inline_list&#039;)).forEach((window_inline_list) =&gt; {
                                     window_inline_list.style.columnCount = &quot;1&quot;;
@@ -11400,7 +11412,8 @@
 
                         <div class="border2" style="background: whitesmoke;">
                             <p>mouse click</p>
-                            <span id="button1" class="button2 borderinline_dotted">&nbsp;CLICK!&nbsp;</span><br>
+                            <span id="button1" class="button2 borderinline_dotted"
+                                style="display: block; box-sizing: border-box; height: 25px; width: 65px;">&nbsp;CLICK!&nbsp;</span>
                             <div class="mini_window" style="display: flex;">
                                 <span class="mouse_left border"
                                     style="margin-top: 5px; margin-bottom: 5px; text-align: center; display: block; width: 50px; height: 50px;">left</span>
@@ -11454,8 +11467,8 @@
                                 <li class="backtext_small"><button class="button2">&nbsp;small&nbsp;</button></li>
                                 <li class="backtext_medium"><button class="button2">&nbsp;medium&nbsp;</button></li>
                                 <li class="backtext_large"><button class="button2">&nbsp;large&nbsp;</button></li>
-                                <li onclick="backtextSize_clear()"><span
-                                        class="button2 borderinline_dotted">&nbsp;Reset&nbsp;</span></li>
+                                <li onclick="backtextSize_clear()"><button class="button2">&nbsp;Reset&nbsp;</button>
+                                </li>
                             </ul>
                         </div>
                         <div class="mini_window">
@@ -11568,14 +11581,13 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
 
                                     <div style="position: absolute; left: 10px; top: 30px; width: 100px;">
                                         <span class="bold large border" style="text-align: left;">MODE:</span>
-                                        <span class="button2 saver_on pointer_none borderinline_dotted"
+                                        <span class="button2 saver_on pointer_none apply_button"
                                             style="margin-top: 5px;">&emsp;ON&emsp;</span>
                                         <span style="margin-top: 5px;"
-                                            class="button2 saver_off borderinline_dotted">&emsp;OFF&emsp;</span>
+                                            class="button2 saver_off apply_button">&emsp;OFF&emsp;</span>
                                         <span class="bold large border" style="text-align: left;">PREVIEW:</span>
-                                        <span class="button2 borderinline_dotted" style="margin-top: 5px;"
-                                            onclick="screen_saver()">
-                                            &emsp;TEST&emsp;</span>
+                                        <button class="button2 apply_button" style="margin-top: 5px;"
+                                            onclick="screen_saver()">&emsp;TEST&emsp;</button>
                                         <p style="width: 175px;" class="small">(※モードがOFFの場合、<br>プレビューは表示されません)</p>
                                     </div>
 
@@ -11588,7 +11600,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                             style="text-align: left;">SECOND:</span><span>(60~900)</span>
                                         <input type="text" class="border2 saver_second large" style="width: 50px;"
                                             placeholder="|" maxlength="3">
-                                        <button class="button2 large borderinline_dotted"
+                                        <button class="button2 large apply_button"
                                             onclick="savertime()">&emsp;OK&emsp;</button>
                                         <p class="bold">saver time: <span class="screensaver_text">none</span></p>
                                     </div>
@@ -11596,10 +11608,10 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                     <div
                                         style="position: absolute; left: 400px; top: 30px; width: 150px; height: 100%;">
                                         <span class="bold large border" style="text-align: left;">SCREEN</span>
-                                        <span class="large button2 borderinline_dotted" style="margin-top: 5px;"
+                                        <span class="large button2 apply_button2" style="margin-top: 5px;"
                                             onclick="saver1()">&emsp;SCREEN
                                             1&emsp;</span>
-                                        <span class="large button2 borderinline_dotted" style="margin-top: 5px;"
+                                        <span class="large button2 apply_button2" style="margin-top: 5px;"
                                             onclick="saver2()">&emsp;SCREEN
                                             2&emsp;</span>
                                         <p class="bold" style="text-align: left;">SCREEN:&emsp;<span
@@ -11616,20 +11628,19 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                 <div class="window_inline_menus_child">
                                     <p class="window_menus_title">Full screen</p>
                                     <div><br>
-                                        <span class="button2 borderinline_dotted" onclick="full()">&emsp;ON&emsp;</span>
-                                        <span class="button2 borderinline_dotted" onclick="min()">&emsp;OFF&emsp;</span>
+                                        <span class="button2 apply_button" onclick="full()">&emsp;ON&emsp;</span>
+                                        <span class="button2 apply_button" onclick="min()">&emsp;OFF&emsp;</span>
                                     </div><br>
                                     <p class="window_menus_title">toolbar</p>
                                     <div class="mini_window"><br>
-                                        <span class="button2 toolbar_on borderinline_dotted">&emsp;ON&emsp;</span>
-                                        <span class="button2 toolbar_off borderinline_dotted">&emsp;OFF&emsp;</span>
+                                        <span class="button2 toolbar_on apply_button">&emsp;ON&emsp;</span>
+                                        <span class="button2 toolbar_off apply_button">&emsp;OFF&emsp;</span>
                                     </div><br>
                                     <p class="window_menus_title">filetext background</p>
                                     <div class="mini_window"><br>
+                                        <span class="button2 filettext_backcolor_on apply_button">&emsp;ON&emsp;</span>
                                         <span
-                                            class="button2 filettext_backcolor_on borderinline_dotted">&emsp;ON&emsp;</span>
-                                        <span
-                                            class="button2 filettext_backcolor_off borderinline_dotted">&emsp;OFF&emsp;</span>
+                                            class="button2 filettext_backcolor_off apply_button">&emsp;OFF&emsp;</span>
                                     </div>
                                 </div>
                             </div>
@@ -11647,9 +11658,9 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                     </div>
 
                                     <div style="position: absolute; bottom: 5px; left: 5px; width: 100%;">
-                                        <span class="button2 display_now borderinline_dotted"
-                                            style="position: absolute; left: 0px; bottom: 0px;">&emsp;NOW&emsp;</span>
-                                        <span class="button2 display_old borderinline_dotted"
+                                        <span class="button2 display_now apply_button"
+                                            style="position: absolute; left: 0px; bottom: 0px; width: 80px;">&emsp;NOW&emsp;</span>
+                                        <span class="button2 display_old apply_button"
                                             style="position: absolute; left: 90px; bottom: 0px;">&emsp;OLD&emsp;</span>
                                     </div>
 
@@ -11706,10 +11717,10 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                         </p>
                                     </div>
                                     <div style="position: absolute; bottom: 5px; left: 5px; width: 100%;">
-                                        <span class="button2 list_shadow_on borderinline_dotted"
+                                        <span class="button2 list_shadow_on apply_button"
                                             style="position: absolute; left: 0px; bottom: 0px;">&emsp;ON&emsp;</span>
-                                        <span class="button2 list_shadow_off borderinline_dotted"
-                                            style="position: absolute; left: 70px; bottom: 0px;">&emsp;OFF&emsp;</span>
+                                        <span class="button2 list_shadow_off apply_button"
+                                            style="position: absolute; left: 80px; bottom: 0px;">&emsp;OFF&emsp;</span>
                                     </div>
                                     <div class="window_menu_right_content border2" style="background-color: #52adad;">
 
@@ -11796,43 +11807,47 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                     <ul>
                                         <li onclick="calc2()">四捨五入</li>
                                         <li onclick="calc_clear()">clear</li>
+                                        <li onclick="calc_oneremove()">oneremove</li>
                                     </ul>
                                 </div>
                             </div>
 
                         </div>
 
-                        <div class="parent_graph border">
-                            <span class="child_graph"></span>
-                        </div>
+                        <div class="window_contents">
 
-                        <div class="border2" style="background: whitesmoke;">
-                            <div class="black_text" style="width: 150px; height: 170px; padding: 5px;">
-                                <input type="text" class="border" id="result"
-                                    style="width: 150px; height: 25px; pointer-events: none;">
-                                <div>
-                                    <input type="button" class="button2 calc_button" value="1" onclick="edit(this)">
-                                    <input type="button" class="button2 calc_button" value="2" onclick="edit(this)">
-                                    <input type="button" class="button2 calc_button" value="3" onclick="edit(this)">
-                                    <input type="button" class="button2 calc_button" value="+" onclick="edit(this)">
-                                </div>
-                                <div>
-                                    <input type="button" class="button2 calc_button" value="4" onclick="edit(this)">
-                                    <input type="button" class="button2 calc_button" value="5" onclick="edit(this)">
-                                    <input type="button" class="button2 calc_button" value="6" onclick="edit(this)">
-                                    <input type="button" class="button2 calc_button" value="-" onclick="edit(this)">
-                                </div>
-                                <div>
-                                    <input type="button" class="button2 calc_button" value="7" onclick="edit(this)">
-                                    <input type="button" class="button2 calc_button" value="8" onclick="edit(this)">
-                                    <input type="button" class="button2 calc_button" value="9" onclick="edit(this)">
-                                    <input type="button" class="button2 calc_button" value="/" onclick="edit(this)">
-                                </div>
-                                <div>
-                                    <input type="button" class="button2 calc_button" value="0" onclick="edit(this)">
-                                    <input type="button" class="button2 calc_button" value="." onclick="edit(this)">
-                                    <input type="button" class="button2 calc_button" value="*" onclick="edit(this)">
-                                    <input type="button" class="button2 calc_button" value="=" onclick="calc()">
+                            <div class="parent_graph border">
+                                <span class="child_graph"></span>
+                            </div>
+
+                            <div style="background: whitesmoke;">
+                                <div class="black_text" style="width: 150px; height: 170px; padding: 5px;">
+                                    <input type="text" class="border" id="result"
+                                        style="width: 150px; height: 25px; pointer-events: none;">
+                                    <div>
+                                        <input type="button" class="button2 calc_button" value="1" onclick="edit(this)">
+                                        <input type="button" class="button2 calc_button" value="2" onclick="edit(this)">
+                                        <input type="button" class="button2 calc_button" value="3" onclick="edit(this)">
+                                        <input type="button" class="button2 calc_button" value="+" onclick="edit(this)">
+                                    </div>
+                                    <div>
+                                        <input type="button" class="button2 calc_button" value="4" onclick="edit(this)">
+                                        <input type="button" class="button2 calc_button" value="5" onclick="edit(this)">
+                                        <input type="button" class="button2 calc_button" value="6" onclick="edit(this)">
+                                        <input type="button" class="button2 calc_button" value="-" onclick="edit(this)">
+                                    </div>
+                                    <div>
+                                        <input type="button" class="button2 calc_button" value="7" onclick="edit(this)">
+                                        <input type="button" class="button2 calc_button" value="8" onclick="edit(this)">
+                                        <input type="button" class="button2 calc_button" value="9" onclick="edit(this)">
+                                        <input type="button" class="button2 calc_button" value="/" onclick="edit(this)">
+                                    </div>
+                                    <div>
+                                        <input type="button" class="button2 calc_button" value="0" onclick="edit(this)">
+                                        <input type="button" class="button2 calc_button" value="." onclick="edit(this)">
+                                        <input type="button" class="button2 calc_button" value="*" onclick="edit(this)">
+                                        <input type="button" class="button2 calc_button" value="=" onclick="calc()">
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -12150,12 +12165,12 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         <div class="border2" style="background: whitesmoke;">
                             <div id="time" style="font-size: 40px; text-align: center;">00:00:00.000</div>
                             <div id="buttons" style="display: flex; justify-content: center;">
-                                <input id="start" class="button2" type="button" value="start"
-                                    style="font-size: 30px; margin: 5px;">
-                                <input id="stop" class="button2" type="button" value="stop"
-                                    style="font-size: 30px; margin: 5px;">
-                                <input id="reset" class="button2" type="button" value="reset"
-                                    style="font-size: 30px; margin: 5px;">
+                                <input id="start" class="button2 apply_button" type="button" value="start"
+                                    style="font-size: 25px; margin: 5px;">
+                                <input id="stop" class="button2 apply_button" type="button" value="stop"
+                                    style="font-size: 25px; margin: 5px;">
+                                <input id="reset" class="button2 apply_button" type="button" value="reset"
+                                    style="font-size: 25px; margin: 5px;">
                             </div>
                         </div>
                     </div>
@@ -12403,7 +12418,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             <span>count:<span class="bombCount">0</span></span>
                         </div>
                         <div id="setting2">
-                            <div id="btn" class="button2 borderinline_dotted">
+                            <div id="btn" class=" button2 apply_button" style="width: 100px;">
                                 &emsp;スタート&emsp;
                             </div>
                             <span class="border">TIME:&emsp;<span id="bom_time" class="timers">000</span>&emsp;</span>
@@ -12799,15 +12814,15 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
 
                     <div id="taskbar">
                         <span id="startbtn" class="start_button border bold">&nbsp;start&nbsp;</span>
-                        <div class="taskbar_buttons" style="resize: horizontal;">
-                            <ul class="task_icons">
-                                <li class="button test_button">main</li>
-                                <li class="button test_button2">my_computer</li>
-                                <li class="button test_button6">nexser prompt</li>
-                                <li class="button test_button7">clock</li>
-                                <li class="button test_button9">driver</li>
-                                <li class="button test_button12">notepad</li>
-                            </ul>
+                        <div class="taskbar_buttons">
+                            <div class="task_icons">
+                                <span class="button test_button">main</span>
+                                <span class="button test_button2">my_computer</span>
+                                <span class="button test_button6">nexser prompt</span>
+                                <span class="button test_button7">clock</span>
+                                <span class="button test_button9">driver</span>
+                                <span class="button test_button12">notepad</span>
+                            </div>
                         </div>
                         <div class="taskbar_rightgroup">
                             <ul class="inport_icon border">
@@ -13005,17 +13020,16 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                 </div>
 
                 <div id="toolbar" class="border">
-                    <div style="margin-top: 1.5px; margin-left: 5px;">
-                        <ul>
+                    <div style="margin-top: 2px; margin-left: 1px;">
+                        <div>
                             <span class="drag_button2 border2" style="cursor: all-scroll;">&emsp;&nbsp;</span>
-                            <li style="width: 22.5px;" class="button2 nexser_search">&nbsp;<span
-                                    class="magnifying_glass"></span>
-                            </li>
-                            <li style="width: 22.5px;" class="button2">&nbsp;T&nbsp;</li>
-                            <li style="width: 22.5px;" class="button2">&nbsp;T&nbsp;</li>
-                            <li style="width: 22.5px;" class="button2">&nbsp;T&nbsp;</li>
-                            <li style="width: 22.5px;" class="button2">&nbsp;T&nbsp;</li>
-                        </ul>
+                            <span class="button2 nexser_search">&nbsp;<span class="magnifying_glass"></span>
+                            </span>
+                            <span class="button2">&nbsp;T&nbsp;</span>
+                            <span class="button2">&nbsp;T&nbsp;</span>
+                            <span class="button2">&nbsp;T&nbsp;</span>
+                            <span class="button2">&nbsp;T&nbsp;</span>
+                        </div>
                     </div>
                 </div>
 
