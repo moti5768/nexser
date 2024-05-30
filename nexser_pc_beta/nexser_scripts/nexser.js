@@ -56,7 +56,7 @@ if (ua.includes("mobile")) {
     const htmlviewer_run_menu = document.querySelector('.htmlviewer_run_menu');
     const uploadvideo_menu = document.querySelector('.uploadvideo_menu');
     const font_menu = document.querySelector('.font_menu');
-    const setting_menu = document.querySelector('.setting_menu');
+    const file_setting_menu = document.querySelector('.file_setting_menu');
     const debug_menu = document.querySelector('.debug_menu');
     const file_download_menu = document.querySelector('.file_download_menu');
     const display_menu = document.querySelector('.display_menu');
@@ -65,6 +65,7 @@ if (ua.includes("mobile")) {
     const objective_menu = document.querySelector('.objective_menu');
     const calendar_menu = document.querySelector('.calendar_menu');
     const browser_menu = document.querySelector('.browser_menu');
+    const taskbar_setting_menu = document.querySelector('.taskbar_setting_menu');
 
     const cpu_calc_menu = document.querySelector('.cpu_calc_menu');
 
@@ -542,6 +543,10 @@ if (ua.includes("mobile")) {
 
             if (localStorage.getItem('taskbar_autohide')) {
                 document.getElementById('taskbar').style.bottom = "-35px"
+            }
+            if (localStorage.getItem('taskbar_autohide') && (localStorage.getItem('taskbar_autohide'))) {
+                const t2 = t - 5;
+                document.getElementById('taskbar').style.bottom = "-" + t2 + "px";
             }
 
 
@@ -1901,8 +1906,13 @@ if (ua.includes("mobile")) {
     }
 
     function taskbar_autohide(taskbar_autohide) {
+        const t = localStorage.getItem('taskbar_height');
         localStorage.setItem('taskbar_autohide', taskbar_autohide);
         document.getElementById('taskbar').style.bottom = "-35px";
+        if (localStorage.getItem('taskbar_autohide') && (localStorage.getItem('taskbar_autohide'))) {
+            const t2 = t - 5;
+            document.getElementById('taskbar').style.bottom = "-" + t2 + "px";
+        }
     }
     function taskbar_reset() {
         localStorage.removeItem('taskbar_autohide');
@@ -1911,13 +1921,38 @@ if (ua.includes("mobile")) {
 
 
     document.querySelectorAll('#taskbar').forEach(function (taskbar) {
+        const t = localStorage.getItem('taskbar_height');
         taskbar.addEventListener('mouseleave', function () {
             if (localStorage.getItem('taskbar_autohide')) {
                 taskbar.style.bottom = "-35px"
             }
+            if (localStorage.getItem('taskbar_autohide') && (localStorage.getItem('taskbar_autohide'))) {
+                const t2 = t - 5;
+                document.getElementById('taskbar').style.bottom = "-" + t2 + "px";
+            }
         });
         taskbar.addEventListener('mouseover', function () {
             taskbar.style.bottom = ""
+        });
+    })
+
+
+    document.querySelectorAll('.child_start_menu').forEach(function (child_start_menu) {
+        const t = localStorage.getItem('taskbar_height');
+        child_start_menu.addEventListener('mouseleave', function () {
+            if (localStorage.getItem('taskbar_autohide')) {
+                taskbar.style.bottom = "-35px"
+            }
+            if (localStorage.getItem('taskbar_autohide') && (localStorage.getItem('taskbar_autohide'))) {
+                const t2 = t - 5;
+                document.getElementById('taskbar').style.bottom = "-" + t2 + "px";
+            }
+        });
+        child_start_menu.addEventListener('mouseover', function () {
+            taskbar.style.bottom = ""
+        });
+        child_start_menu.addEventListener('click', function () {
+            titlecolor_set()
         });
     })
 
@@ -2571,19 +2606,6 @@ if (ua.includes("mobile")) {
                 localStorage.removeItem('file_none');
                 prompt_text2.style.color = "";
                 document.querySelector('.files_inline').style.display = "flex";
-                break;
-
-            case 'taskbar':
-                prompt_text2.style.color = "";
-                const taskmenu = document.querySelector('.taskbar_setting_menu');
-                taskmenu.classList.remove('active');
-                z = largestZIndex++;
-                taskmenu.style.zIndex = z;
-                alltitle_navyreomve();
-                test = taskmenu.firstElementChild;
-                test.classList.add('navy');
-                titlecolor_set();
-                document.getElementsByClassName('focus2')[0].blur();
                 break;
 
             case 'windows95/open':
@@ -3708,13 +3730,13 @@ if (ua.includes("mobile")) {
     });
     document.querySelectorAll('.test_button23').forEach(function (test_button23) {
         test_button23.addEventListener('click', function () {
-            setting_menu.classList.toggle('active');
-            setting_menu.closest('.child_windows');
+            file_setting_menu.classList.toggle('active');
+            file_setting_menu.closest('.child_windows');
             z = largestZIndex++;
-            setting_menu.style.zIndex = z;
+            file_setting_menu.style.zIndex = z;
 
             alltitle_navyreomve();
-            wt = setting_menu.firstElementChild;
+            wt = file_setting_menu.firstElementChild;
             wt.classList.add('navy');
         });
     });
@@ -3826,6 +3848,19 @@ if (ua.includes("mobile")) {
 
             alltitle_navyreomve();
             test = browser_menu.firstElementChild;
+            test.classList.add('navy');
+        });
+    });
+
+    document.querySelectorAll('.test_button35').forEach(function (test_button35) {
+        test_button35.addEventListener('click', function () {
+            taskbar_setting_menu.classList.toggle('active');
+            taskbar_setting_menu.closest('.child_windows');
+            z = largestZIndex++;
+            taskbar_setting_menu.style.zIndex = z;
+
+            alltitle_navyreomve();
+            test = taskbar_setting_menu.firstElementChild;
             test.classList.add('navy');
         });
     });
