@@ -540,6 +540,10 @@ if (ua.includes("mobile")) {
                 document.getElementById('nex').style.filter = "hue-rotate(100deg)";
             }
 
+            if (localStorage.getItem('taskbar_autohide')) {
+                document.getElementById('taskbar').style.bottom = "-35px"
+            }
+
 
             resolve();
         }, 0);
@@ -1896,6 +1900,28 @@ if (ua.includes("mobile")) {
         })
     }
 
+    function taskbar_autohide(taskbar_autohide) {
+        localStorage.setItem('taskbar_autohide', taskbar_autohide);
+        document.getElementById('taskbar').style.bottom = "-35px";
+    }
+    function taskbar_reset() {
+        localStorage.removeItem('taskbar_autohide');
+        document.getElementById('taskbar').style.bottom = "";
+    }
+
+
+    document.querySelectorAll('#taskbar').forEach(function (taskbar) {
+        taskbar.addEventListener('mouseleave', function () {
+            if (localStorage.getItem('taskbar_autohide')) {
+                taskbar.style.bottom = "-35px"
+            }
+        });
+        taskbar.addEventListener('mouseover', function () {
+            taskbar.style.bottom = ""
+        });
+    })
+
+
     function taskbar_none() {
         if (localStorage.getItem('data_taskbar_none')) {
             taskbar.style.display = "none";
@@ -2547,7 +2573,7 @@ if (ua.includes("mobile")) {
                 document.querySelector('.files_inline').style.display = "flex";
                 break;
 
-            case 'taskbar/setting':
+            case 'taskbar':
                 prompt_text2.style.color = "";
                 const taskmenu = document.querySelector('.taskbar_setting_menu');
                 taskmenu.classList.remove('active');

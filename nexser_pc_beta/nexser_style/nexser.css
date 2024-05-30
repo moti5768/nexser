@@ -395,6 +395,7 @@ li {
     box-sizing: border-box;
     outline: 1.5px dotted black;
     outline-offset: -5px;
+    text-align: center;
 }
 
 .apply_button2 {
@@ -403,6 +404,7 @@ li {
     box-sizing: border-box;
     outline: 1.5px dotted black;
     outline-offset: -5px;
+    text-align: center;
 }
 
 .windowfile1 {
