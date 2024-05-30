@@ -544,9 +544,10 @@ if (ua.includes("mobile")) {
             if (localStorage.getItem('taskbar_autohide')) {
                 document.getElementById('taskbar').style.bottom = "-35px"
             }
-            if (localStorage.getItem('taskbar_autohide') && (localStorage.getItem('taskbar_autohide'))) {
+            if (localStorage.getItem('taskbar_height') && (localStorage.getItem('taskbar_autohide'))) {
                 const t2 = t - 5;
                 document.getElementById('taskbar').style.bottom = "-" + t2 + "px";
+                console.log(t2)
             }
 
 
@@ -1909,9 +1910,10 @@ if (ua.includes("mobile")) {
         const t = localStorage.getItem('taskbar_height');
         localStorage.setItem('taskbar_autohide', taskbar_autohide);
         document.getElementById('taskbar').style.bottom = "-35px";
-        if (localStorage.getItem('taskbar_autohide') && (localStorage.getItem('taskbar_autohide'))) {
+        if (localStorage.getItem('taskbar_height') && (localStorage.getItem('taskbar_autohide'))) {
             const t2 = t - 5;
             document.getElementById('taskbar').style.bottom = "-" + t2 + "px";
+            console.log(t2)
         }
     }
     function taskbar_reset() {
@@ -1924,11 +1926,12 @@ if (ua.includes("mobile")) {
         const t = localStorage.getItem('taskbar_height');
         taskbar.addEventListener('mouseleave', function () {
             if (localStorage.getItem('taskbar_autohide')) {
-                taskbar.style.bottom = "-35px"
+                document.getElementById('taskbar').style.bottom = "-35px"
             }
-            if (localStorage.getItem('taskbar_autohide') && (localStorage.getItem('taskbar_autohide'))) {
+            if (localStorage.getItem('taskbar_height') && (localStorage.getItem('taskbar_autohide'))) {
                 const t2 = t - 5;
                 document.getElementById('taskbar').style.bottom = "-" + t2 + "px";
+                console.log(t2)
             }
         });
         taskbar.addEventListener('mouseover', function () {
@@ -1943,9 +1946,10 @@ if (ua.includes("mobile")) {
             if (localStorage.getItem('taskbar_autohide')) {
                 taskbar.style.bottom = "-35px"
             }
-            if (localStorage.getItem('taskbar_autohide') && (localStorage.getItem('taskbar_autohide'))) {
+            if (localStorage.getItem('taskbar_height') && (localStorage.getItem('taskbar_autohide'))) {
                 const t2 = t - 5;
                 document.getElementById('taskbar').style.bottom = "-" + t2 + "px";
+                console.log(t2)
             }
         });
         child_start_menu.addEventListener('mouseover', function () {
