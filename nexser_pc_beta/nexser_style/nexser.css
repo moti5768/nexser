@@ -499,21 +499,20 @@ input[type="file"] {
     left: 10px;
     top: 7px;
     width: 45px;
+    height: 26.5px;
     box-shadow: 0 0 0 0.5px dimgray;
     box-sizing: border-box;
 }
 
 .start_button.pressed {
-    display: block;
-    background: darkgray;
     border-bottom: 1.5px #eee solid;
     border-right: 1.5px #eee solid;
     border-top: 1.5px #333 solid;
     border-left: 1.5px #333 solid;
     outline: 1.5px dotted black;
     outline-offset: -5px;
-    padding-top: 1.5px;
-    padding-left: 1.5px;
+    padding-top: 1px;
+    padding-left: 1px;
 }
 
 #taskbar .taskbar_buttons {
@@ -539,9 +538,23 @@ input[type="file"] {
     margin-left: 2.5px;
     margin-right: 2.5px;
     width: 100px;
+    height: 26.5px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.task_icons .button.pressed {
+    background: #DDDDDD;
+    text-shadow:
+        0.1px 0.1px 0,
+        0.1px -0.1px 0px,
+        -0.1px 0.1px 0,
+        -0.1px -0.1px 0px,
+        0.1px 0px 0px,
+        0px 0.1px 0px,
+        -0.1px 0px 0px,
+        0px -0.1px 0px;
 }
 
 .taskbar_rightgroup {
@@ -709,6 +722,10 @@ input[type="file"] {
 }
 
 /* window */
+.back_silver {
+    background: silver;
+}
+
 #soft_windows {
     width: 100%;
     height: 100%;
@@ -786,7 +803,8 @@ input[type="file"] {
 }
 
 .sound_play_button {
-    display: inline-block;
+    display: block;
+    float: left;
     height: 24px;
     box-sizing: border-box;
 }
@@ -806,6 +824,10 @@ input[type="file"] {
     height: 325px;
 }
 
+.note_pad {
+    width: 600px;
+}
+
 .debug_menu {
     width: 300px;
 }
@@ -823,6 +845,21 @@ input[type="file"] {
 
 .font_menu {
     width: 200px;
+}
+
+.youtubevideo_menu {
+    width: 250px;
+    height: auto;
+}
+
+#youtubeframe {
+    height: 400px;
+    width: 700px;
+}
+
+.big #youtubeframe {
+    height: 78vh;
+    width: 100%;
 }
 
 /* color_btn */
@@ -969,7 +1006,6 @@ body::-webkit-scrollbar {
     width: 200px;
     height: 100%;
     position: absolute;
-    top: 0px;
 }
 
 .mini_window_left_content {
@@ -990,7 +1026,7 @@ body::-webkit-scrollbar {
     border-top: solid 1.5px whitesmoke;
     border-bottom: 1.5px #333 solid;
     position: absolute;
-    bottom: -1px;
+    bottom: 50px;
     z-index: 999996;
 }
 
@@ -1008,12 +1044,15 @@ body::-webkit-scrollbar {
     font-size: 15px;
     width: auto;
     height: 300px;
-    border: solid 2px #c0c0c0;
+    border: solid 3px #c0c0c0;
     outline: 1px solid gray;
-    outline-offset: 0.5px;
+    outline-offset: 0.4px;
+    box-shadow: 0 0 0 1.5px whitesmoke,
+        0 0 0 2px dimgray,
+        0 0 0 2.5px #000000;
     background: whitesmoke;
     position: absolute;
-    top: 100px;
+    top: 50px;
     left: 20px;
     z-index: 0;
     min-width: max-content;
@@ -1119,9 +1158,9 @@ body::-webkit-scrollbar {
     display: block;
     font-size: 13px;
     font-weight: bold;
-    height: 22px;
-    width: 22px;
-    line-height: 28px;
+    height: 24px;
+    width: 24px;
+    line-height: 30px;
     border-bottom: solid 1.5px black;
     clip-path: polygon(0 100%, 50% 0, 100% 100%);
     background: yellow;
@@ -1134,11 +1173,11 @@ body::-webkit-scrollbar {
 
 .error_icon {
     display: block;
-    font-size: 15px;
+    font-size: 18px;
     font-family: monospace;
-    height: 22px;
-    width: 22px;
-    line-height: 23px;
+    height: 24px;
+    width: 24px;
+    line-height: 25px;
     border: solid 1px darkred;
     box-shadow: 1.5px 1.5px dimgray;
     background: #FF0033;
@@ -1211,6 +1250,10 @@ body::-webkit-scrollbar {
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
+}
+
+.child_windows .title.center {
+    text-align: center;
 }
 
 .title_icon {
@@ -1462,7 +1505,7 @@ body::-webkit-scrollbar {
 
 .winchild_border {
     display: block;
-    border: solid 0.5px white;
+    border-top: solid 1px white;
     position: absolute;
     width: 100%;
     top: 50px;
@@ -1771,8 +1814,7 @@ body::-webkit-scrollbar {
     overflow: auto;
     width: 100%;
     height: 100%;
-    border-top: solid 1.5px black;
-    border-left: solid 1.5px black;
+    background: whitesmoke;
 }
 
 .window_inline_list {
@@ -1871,9 +1913,8 @@ body::-webkit-scrollbar {
 /* note */
 
 .note_area {
-    font-size: large;
     outline: none;
-    height: 100%;
+    height: 300px;
     width: 100%;
     min-width: max-content;
     background: white;

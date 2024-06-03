@@ -66,6 +66,7 @@ if (ua.includes("mobile")) {
     const calendar_menu = document.querySelector('.calendar_menu');
     const browser_menu = document.querySelector('.browser_menu');
     const taskbar_setting_menu = document.querySelector('.taskbar_setting_menu');
+    const youtubevideo_menu = document.querySelector('.youtubevideo_menu');
 
     const cpu_calc_menu = document.querySelector('.cpu_calc_menu');
 
@@ -252,11 +253,13 @@ if (ua.includes("mobile")) {
             title_none();
             screen_backtextload();
             notecolor_change();
+            notetextsize_change();
             taskgroup_load();
             window_back_silver();
             caload();
             titlecolor_set();
             back_pattern_set();
+            load_videourl();
 
             const t = localStorage.getItem('taskbar_height');
             taskbar.style.height = t + "px";
@@ -549,7 +552,6 @@ if (ua.includes("mobile")) {
                 document.getElementById('taskbar').style.bottom = "-" + t2 + "px";
                 console.log(t2)
             }
-
 
             resolve();
         }, 0);
@@ -994,6 +996,7 @@ if (ua.includes("mobile")) {
     })
 
     function nexser_start() {
+        load_videourl();
         document.querySelector('.nexser_boot_menu').style.display = "none";
         const prompt_data = "nexser_boot_test";
         localStorage.setItem('prompt_data', prompt_data);
@@ -1061,6 +1064,7 @@ if (ua.includes("mobile")) {
                     sound3()
                     document.querySelector('.test_allwindow').style.display = "block";
                 } else if (gets == gets2) {
+                    videourl_reset();
                     sound_stop();
                     shutdown_sound();
                     document.querySelector('.welcome_windows').style.display = "none";
@@ -1834,6 +1838,13 @@ if (ua.includes("mobile")) {
         });
     }
 
+    function title_center() {
+        document.querySelectorAll('.title').forEach(function (title) {
+            title.classList.add('center')
+            localStorage.setItem('title_center', title)
+        });
+    }
+
     function alldata_clear() {
         // localStorage.removeItem('data_taskbar_none');
         toolbar.style.display = "none";
@@ -1923,15 +1934,14 @@ if (ua.includes("mobile")) {
 
 
     document.querySelectorAll('#taskbar').forEach(function (taskbar) {
-        const t = localStorage.getItem('taskbar_height');
         taskbar.addEventListener('mouseleave', function () {
-            if (localStorage.getItem('taskbar_autohide')) {
-                document.getElementById('taskbar').style.bottom = "-35px"
-            }
             if (localStorage.getItem('taskbar_height') && (localStorage.getItem('taskbar_autohide'))) {
+                const t = localStorage.getItem('taskbar_height');
                 const t2 = t - 5;
                 document.getElementById('taskbar').style.bottom = "-" + t2 + "px";
                 console.log(t2)
+            } else if (!localStorage.getItem('taskbar_height') && localStorage.getItem('taskbar_autohide')) {
+                document.getElementById('taskbar').style.bottom = "-35px"
             }
         });
         taskbar.addEventListener('mouseover', function () {
@@ -3869,6 +3879,19 @@ if (ua.includes("mobile")) {
         });
     });
 
+    document.querySelectorAll('.test_button36').forEach(function (test_button36) {
+        test_button36.addEventListener('click', function () {
+            youtubevideo_menu.classList.toggle('active');
+            youtubevideo_menu.closest('.child_windows');
+            z = largestZIndex++;
+            youtubevideo_menu.style.zIndex = z;
+
+            alltitle_navyreomve();
+            test = youtubevideo_menu.firstElementChild;
+            test.classList.add('navy');
+        });
+    });
+
     function cpucalc_open() {
         const cpumenu1 = document.querySelector('.cpumenu_1');
         z = largestZIndex++;
@@ -4780,6 +4803,41 @@ if (ua.includes("mobile")) {
         }
     }
 
+    function notetext_reset() {
+        localStorage.removeItem('notetext_small');
+        localStorage.removeItem('notetext_medium');
+        localStorage.removeItem('notetext_large');
+    }
+
+    function notetextsize_change() {
+        let noteData = document.getElementsByClassName('note_area')
+        if (localStorage.getItem('notetext_small')) {
+            noteData[0].style.fontSize = "small";
+        }
+        if (localStorage.getItem('notetext_medium')) {
+            noteData[0].style.fontSize = "medium";
+        }
+        if (localStorage.getItem('notetext_large')) {
+            noteData[0].style.fontSize = "large";
+        }
+    }
+
+    function notetext_small(notetext_small) {
+        notetext_reset();
+        localStorage.setItem('notetext_small', notetext_small);
+        notetextsize_change()
+    }
+    function notetext_medium(notetext_medium) {
+        notetext_reset();
+        localStorage.setItem('notetext_medium', notetext_medium);
+        notetextsize_change()
+    }
+    function notetext_large(notetext_large) {
+        notetext_reset();
+        localStorage.setItem('notetext_large', notetext_large);
+        notetextsize_change()
+    }
+
     // 保存
     function save() {
         if (note_form.note_area.value === "") {
@@ -5137,6 +5195,7 @@ if (ua.includes("mobile")) {
             window_files.style.width = "100%";
             let sss = window_files.firstElementChild;
             sss.style.paddingLeft = "50px";
+            sss.style.width = "auto";
         });
 
         Array.from(document.getElementsByClassName('windowfile_time')).forEach((windowfile_time) => {
@@ -5160,6 +5219,7 @@ if (ua.includes("mobile")) {
             window_files.style.width = "100%";
             let sss = window_files.firstElementChild;
             sss2 = sss.style.paddingLeft = "50px";
+            sss2 = sss.style.width = "auto";
         });
 
         Array.from(document.getElementsByClassName('windowfile_time')).forEach((windowfile_time) => {
@@ -6225,4 +6285,71 @@ if (ua.includes("mobile")) {
         draw()
     }
 
+
+    document.querySelector('.youtubevideo_button').addEventListener('click', function () {
+        const url = document.querySelector("#youtube").value;
+        const id = url.replace("watch?v=", "embed/");
+        document.querySelector("#youtubeframe").src = id + "?enablejsapi=1&mute=1";
+    });
+
+    function url_save() {
+        const url2 = document.querySelector("#youtube").value;
+        const id2 = url2.replace("watch?v=", "embed/");
+        const url3 = id2 + "?enablejsapi=1&mute=1";
+        console.log(url3)
+        localStorage.setItem('video_url', url3)
+    }
+
+    function videourl_reset() {
+        y_iframeController('stopVideo');
+        document.querySelector("#youtubeframe").src = "";
+    }
+
+
+    function load_videourl() {
+        if (localStorage.getItem('video_url')) {
+            const youtubeurl = localStorage.getItem('video_url');
+            document.querySelector('#youtube').value = youtubeurl;
+            const url = document.querySelector("#youtube").value;
+            document.querySelector("#youtubeframe").src = url;
+        }
+    }
+
+
+    // 再生ボタンを押した時のアクション（JavaScriptの場合）
+    document.getElementById('youtube_play').addEventListener('click', function () {
+        y_iframeController('playVideo');
+    });
+
+    // 一時停止ボタンを押した時のアクション（JavaScriptの場合）
+    document.getElementById('youtube_pause').addEventListener('click', function () {
+        y_iframeController('pauseVideo');
+    });
+
+    // 停止ボタンを押した時のアクション（JavaScriptの場合）
+    document.getElementById('youtube_stop').addEventListener('click', function () {
+        y_iframeController('stopVideo');
+    });
+
+    // シークバー移動ボタンを押した時のアクション（JavaScriptの場合）
+    document.getElementById('youtube_seek').addEventListener('click', function () {
+        //(secondsパラメータ : 指定の秒数の位置へ移動)
+        y_iframeController('seekTo', '[20]');
+    });
+
+    // ミュートボタン（音声無し）を押した時のアクション（JavaScriptの場合）
+    document.getElementById('youtube_mute').addEventListener('click', function () {
+        y_iframeController('mute');
+    });
+
+    // アンミュート（音声あり）ボタンを押した時のアクション（JavaScriptの場合）
+    document.getElementById('youtube_unmute').addEventListener('click', function () {
+        y_iframeController('unMute');
+    });
+
+    // postMessageを送信する関数
+    function y_iframeController(action, arg = null) {
+        const youtubeWindow = document.getElementById("youtubeframe").contentWindow;
+        youtubeWindow.postMessage('{"event":"command", "func":"' + action + '", "args":' + arg + '}', '*');
+    };
 }
