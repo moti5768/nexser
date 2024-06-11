@@ -1064,7 +1064,6 @@ if (ua.includes("mobile")) {
                     sound3()
                     document.querySelector('.test_allwindow').style.display = "block";
                 } else if (gets == gets2) {
-                    videourl_reset();
                     sound_stop();
                     shutdown_sound();
                     document.querySelector('.welcome_windows').style.display = "none";
@@ -1079,16 +1078,9 @@ if (ua.includes("mobile")) {
                         desktop.style.display = "none";
                         localStorage.removeItem('prompt_data');
                         window_reset();
-                        preview2_stop();
-                        timerstop();
-                        timerreset();
                         document.querySelector('#code_html').style.display = "none";
                         document.querySelector('#code_script').style.display = "none";
                         fileborder_reset();
-                        cpubench_clear();
-                        cpucalc_reset();
-                        p_clear();
-                        calc_clear();
 
                         setTimeout(() => {
                             document.querySelectorAll('.button').forEach(function (button) {
@@ -1145,16 +1137,9 @@ if (ua.includes("mobile")) {
                         window_none();
                         desktop.style.display = "none";
                         window_reset();
-                        preview2_stop();
-                        timerstop();
-                        timerreset();
                         document.querySelector('#code_html').style.display = "none";
                         document.querySelector('#code_script').style.display = "none";
                         fileborder_reset();
-                        cpubench_clear();
-                        cpucalc_reset();
-                        p_clear();
-                        calc_clear();
                         document.querySelector('.focus2').textContent = "";
 
                         setTimeout(() => {
@@ -1796,6 +1781,18 @@ if (ua.includes("mobile")) {
             document.querySelector('.minimization_button').style.visibility = "visible";
             allwindow.classList.remove('half2');
         });
+
+        bom_reset();
+        cpubench_clear();
+        timerstop();
+        timerreset();
+        cpubench_clear();
+        cpucalc_reset();
+        p_clear();
+        calc_clear();
+        preview2_stop();
+        videourl_reset();
+
     }
     function window_none() {
         document.querySelectorAll('.child_windows').forEach(function (allwindow_none) {
@@ -1817,6 +1814,7 @@ if (ua.includes("mobile")) {
         document.querySelectorAll('.windowtool_child').forEach(function (windowtool_child) {
             windowtool_child.style.display = "none"
         })
+
     }
     function window_active() {
         document.querySelectorAll('.child_windows').forEach(function (allwindow_active) {
@@ -1844,6 +1842,11 @@ if (ua.includes("mobile")) {
             localStorage.setItem('title_center', title)
         });
     }
+
+    Array.from(document.getElementsByClassName('nexser_title_text')).forEach((nexser_title_text) => {
+        const nexserTitle = document.querySelector('.nexser_title').textContent;
+        nexser_title_text.textContent = nexserTitle;
+    })
 
     function alldata_clear() {
         // localStorage.removeItem('data_taskbar_none');
@@ -2484,17 +2487,14 @@ if (ua.includes("mobile")) {
                     .replaceAll("onclick", "{onclk}")
                     .replaceAll("function", "{func}")
 
-
                 );
                 document.querySelector('#shell').textContent = (String(newStr10));
 
                 const test9999 = document.querySelector('#shell').textContent;
 
                 setTimeout(() => {
-
                     shellmenu_open()
                     document.getElementById('shell').innerText = document.getElementById('shell').value = test9999;
-
                 }, 100);
                 break;
 
@@ -3192,6 +3192,11 @@ if (ua.includes("mobile")) {
                 }
             })
         })
+    })
+
+    toolbar.addEventListener('mousedown', function () {
+        alltitle_navyreomve();
+        titlecolor_set();
     })
 
 

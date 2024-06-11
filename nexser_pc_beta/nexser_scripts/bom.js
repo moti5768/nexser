@@ -225,9 +225,12 @@ function timer() {
 }
 
 document.querySelector('.bom_close').addEventListener('click', function () {
+    bom_reset()
+})
+function bom_reset() {
     text.style.display = "block";
     clearTimeout(timeoutId);
     time.textContent = "000";
     result.textContent = "";
     document.getElementsByClassName('bom_stage')[0].style.display = "none";
-})
+}
