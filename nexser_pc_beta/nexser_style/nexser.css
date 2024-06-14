@@ -807,7 +807,8 @@ input[type="file"] {
 }
 
 .clock_menu {
-    width: 300px;
+    width: 305px;
+    height: 385px;
 }
 
 .mouse_menu {

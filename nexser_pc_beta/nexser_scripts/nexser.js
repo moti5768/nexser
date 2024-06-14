@@ -2499,6 +2499,24 @@ if (ua.includes("mobile")) {
                 break;
 
 
+            case 'nexser/memory':
+                document.querySelector('.memory_menu').classList.remove('active');
+
+                document.querySelectorAll('.memory_menu').forEach(function (memory_menu) {
+                    memory_menu.closest('.child_windows');
+                    memory_menu.classList.remove('active');
+                    z = largestZIndex++;
+                    memory_menu.style.zIndex = z;
+
+                    alltitle_navyreomve();
+                    wt = memory_menu.firstElementChild;
+                    wt.classList.add('navy');
+                })
+
+                prompt_text2.style.color = "";
+                break;
+
+
             case '':
                 prompt_text2.style.color = "";
                 break;
@@ -2623,15 +2641,15 @@ if (ua.includes("mobile")) {
                 break;
 
             case 'windows95/open':
-                window.open("https://moti5768.github.io/moti.world/windows95.html");
+                location.href = 'https://moti5768.github.io/moti.world/windows95.html'
                 prompt_text2.style.color = "";
                 break;
             case 'windows2000/open':
-                window.open("https://moti5768.github.io/moti.world/windows%202000/windows2000_beta.html");
+                location.href = 'https://moti5768.github.io/moti.world/windows%202000/windows2000_beta.html'
                 prompt_text2.style.color = "";
                 break;
             case 'windowsystem/open':
-                window.open("https://moti5768.github.io/moti.world/new%20OS/WindowSystem.html");
+                location.href = 'https://moti5768.github.io/moti.world/new%20OS/WindowSystem.html'
                 prompt_text2.style.color = "";
                 break;
             default:
@@ -2721,6 +2739,13 @@ if (ua.includes("mobile")) {
             document.querySelector('.title_navy').textContent = un;
 
             document.getElementsByClassName('cpu_cores')[0].textContent = (navigator.hardwareConcurrency);
+
+
+            document.getElementsByClassName('window_memory')[0].textContent = (`Memory:   ${(performance.memory.usedJSHeapSize / 1024).toFixed(2)}KB`);
+            document.getElementsByClassName('window_memory2')[0].textContent = (`使用可能なメモリ    ${(performance.memory.jsHeapSizeLimit / 1048576).toFixed(2)}MB`);
+            document.getElementsByClassName('window_memory3')[0].textContent = (`割り当てられたメモリ  ${(performance.memory.totalJSHeapSize / 1024).toFixed(2)}KB`);
+            document.getElementsByClassName('window_memory4')[0].textContent = (`現在使用中のメモリ   ${(performance.memory.usedJSHeapSize / 1024).toFixed(2)}KB`);
+
         }
     }, 100);
     Array.from(document.getElementsByClassName('window_inline_list')).forEach((window_inline_list) => {
@@ -3403,7 +3428,7 @@ if (ua.includes("mobile")) {
         });
     });
 
-    function myFunction() {
+    function nexser_search() {
         // Declare variables
         var input, filter, ul, li, a, i, txtValue;
         input = document.getElementById('myInput');

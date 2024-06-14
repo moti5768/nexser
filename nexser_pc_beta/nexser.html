@@ -277,7 +277,7 @@
                                     <li class="windowfile_time"></li>
                                 </div>
                                 <div class="window_files test_button23">
-                                    <li>setting</li><span class="window_file_icon"></span>
+                                    <li>file setting</li><span class="window_file_icon"></span>
                                     <li class="windowfile_time"></li>
                                 </div>
                                 <div class="window_files">
@@ -529,15 +529,15 @@
 
                         <div class="window_contents border2">
                             <ul class="black_text window_inline_list">
-                                <div class="window_files" onclick="(window.open('https://www.google.com', '_blank'))">
+                                <div class="window_files" onClick="location.href='https://www.google.com/'">
                                     <li>Google</li><span class="window_file_icon"></span>
                                     <li class="windowfile_time"></li>
                                 </div>
-                                <div class="window_files" onclick="(window.open('https://www.yahoo.co.jp', '_blank'))">
+                                <div class="window_files" onClick="location.href='https://www.yahoo.co.jp/'">
                                     <li>Yahoo!</li><span class="window_file_icon"></span>
                                     <li class="windowfile_time"></li>
                                 </div>
-                                <div class="window_files" onclick="(window.open('https://www.bing.com', '_blank'))">
+                                <div class="window_files" onClick="location.href='https://www.bing.com/'">
                                     <li>Bing</li><span class="window_file_icon"></span>
                                     <li class="windowfile_time"></li>
                                 </div>
@@ -1218,7 +1218,7 @@
 
                     </div>
 
-                    <div class="child_windows nexser_sound_menu active resize back_silver">
+                    <div class="child_windows nexser_sound_menu active resize">
                         <div class="title">
                             <span class="title_icon"></span><span>&emsp;&emsp;nexser sound</span>
                         </div>
@@ -2899,7 +2899,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         </div><br>
 
                         <input type="text" id="myInput" class="border large" style="width: 100%; margin-top: 10px;"
-                            autocomplete="off" onkeyup="myFunction()" placeholder="検索したい言葉を入力">
+                            autocomplete="off" onkeyup="nexser_search()" placeholder="検索したい言葉を入力">
                         <div class="window_contents border2">
                             <ul id="myUL">
 
@@ -3006,6 +3006,26 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         </div>
                     </div>
 
+
+                    <div class="child_windows memory_menu active back_silver" style="width: 250px;">
+                        <div class="title">
+                            <span class="title_icon"></span><span>&emsp;&emsp;memory</span>
+                        </div>
+
+                        <div class="title_buttons">
+                            <span class="drag_button">&nbsp;</span>
+                            <span class="close_button button2">&nbsp;✕&nbsp;</span><br>
+                        </div>
+
+                        <div class="window_content">
+                            <p class="border2">Memory</p>
+                            <span class="window_memory"></span><br>
+                            <span class="window_memory2"></span><br>
+                            <span class="window_memory3"></span><br>
+                            <span class="window_memory4"></span>
+                        </div>
+
+                    </div>
 
 
                     <div class="child_windows nexser_guidebook_menu resize active">
@@ -3271,7 +3291,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                                 <p>main</p>
                                                 <p>games</p>
                                                 <p>entertainment</p>
-                                                <p>setting</p>
+                                                <p>file setting</p>
                                                 <p>test</p><br>
                                                 <p>start options</p>
                                                 <p>shutdown</p>
@@ -3318,10 +3338,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             <ul>
                                 <li class="task_battery"><span style="height: 28px; box-sizing: border-box;"
                                         class="battery_child button">
-                                        <p>
-                                            BATTERY:
-                                            <span class="taskbattery"></span>%
-                                        </p>
+                                        <p>BATTERY:<span class="taskbattery"></span>%</p>
                                     </span>
                                 </li>
                             </ul>
