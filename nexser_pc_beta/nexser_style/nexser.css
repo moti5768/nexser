@@ -545,6 +545,9 @@ input[type="file"] {
     break-inside: avoid;
     box-sizing: border-box;
     float: left;
+    display: flex;
+    width: 850px;
+    overflow: auto;
 }
 
 #taskbar .task_icons {
@@ -582,7 +585,7 @@ input[type="file"] {
     width: 250px;
     font-size: medium;
     position: absolute;
-    right: 5px;
+    right: 0px;
     column-count: 3;
     top: 6px;
 }
@@ -598,11 +601,10 @@ input[type="file"] {
     background: silver;
     position: relative;
     text-align: center;
-    margin-left: 50px;
+    margin-left: 40px;
 }
 
 .task_battery {
-    width: 135px;
     background: silver;
     position: relative;
 }
@@ -880,7 +882,7 @@ input[type="file"] {
 }
 
 .big #youtubeframe {
-    height: 78vh;
+    height: 80vh;
     width: 100%;
 }
 
@@ -1005,9 +1007,8 @@ body::-webkit-scrollbar {
 }
 
 .login_buttons {
-    display: inline-block;
     position: relative;
-    left: 100px;
+    left: 80px;
 }
 
 .resize {
@@ -1667,14 +1668,14 @@ body::-webkit-scrollbar {
     font-size: 11px;
     box-sizing: border-box;
     text-shadow:
-        0.3px 0.3px 0,
-        0.3px -0.3px 0px,
-        -0.3px 0.3px 0,
-        -0.3px -0.3px 0px,
-        0.3px 0px 0px,
-        0px 0.3px 0px,
-        -0.3px 0px 0px,
-        0px -0.3px 0px;
+        0.35px 0.35px 0,
+        0.35px -0.35px 0px,
+        -0.35px 0.35px 0,
+        -0.35px -0.35px 0px,
+        0.35px 0px 0px,
+        0px 0.35px 0px,
+        -0.35px 0px 0px,
+        0px -0.35px 0px;
 }
 
 .close_button2 {
@@ -1691,14 +1692,14 @@ body::-webkit-scrollbar {
     box-sizing: border-box;
     z-index: 1;
     text-shadow:
-        0.3px 0.3px 0,
-        0.3px -0.3px 0px,
-        -0.3px 0.3px 0,
-        -0.3px -0.3px 0px,
-        0.3px 0px 0px,
-        0px 0.3px 0px,
-        -0.3px 0px 0px,
-        0px -0.3px 0px;
+        0.35px 0.35px 0,
+        0.35px -0.35px 0px,
+        -0.35px 0.35px 0,
+        -0.35px -0.35px 0px,
+        0.35px 0px 0px,
+        0px 0.35px 0px,
+        -0.35px 0px 0px,
+        0px -0.35px 0px;
 }
 
 .close_button3 {
@@ -1715,14 +1716,14 @@ body::-webkit-scrollbar {
     box-sizing: border-box;
     z-index: 1;
     text-shadow:
-        0.3px 0.3px 0,
-        0.3px -0.3px 0px,
-        -0.3px 0.3px 0,
-        -0.3px -0.3px 0px,
-        0.3px 0px 0px,
-        0px 0.3px 0px,
-        -0.3px 0px 0px,
-        0px -0.3px 0px;
+        0.35px 0.35px 0,
+        0.35px -0.35px 0px,
+        -0.35px 0.35px 0,
+        -0.35px -0.35px 0px,
+        0.35px 0px 0px,
+        0px 0.35px 0px,
+        -0.35px 0px 0px,
+        0px -0.35px 0px;
 }
 
 /* 飾り */
@@ -1739,14 +1740,14 @@ body::-webkit-scrollbar {
     font-size: 11px;
     box-sizing: border-box;
     text-shadow:
-        0.3px 0.3px 0,
-        0.3px -0.3px 0px,
-        -0.3px 0.3px 0,
-        -0.3px -0.3px 0px,
-        0.3px 0px 0px,
-        0px 0.3px 0px,
-        -0.3px 0px 0px,
-        0px -0.3px 0px;
+        0.35px 0.35px 0,
+        0.35px -0.35px 0px,
+        -0.35px 0.35px 0,
+        -0.35px -0.35px 0px,
+        0.35px 0px 0px,
+        0px 0.35px 0px,
+        -0.35px 0px 0px,
+        0px -0.35px 0px;
 }
 
 /* 飾り */
@@ -1817,14 +1818,14 @@ body::-webkit-scrollbar {
     font-size: 11px;
     box-sizing: border-box;
     text-shadow:
-        0.3px 0.3px 0,
-        0.3px -0.3px 0px,
-        -0.3px 0.3px 0,
-        -0.3px -0.3px 0px,
-        0.3px 0px 0px,
-        0px 0.3px 0px,
-        -0.3px 0px 0px,
-        0px -0.3px 0px;
+        0.35px 0.35px 0,
+        0.35px -0.35px 0px,
+        -0.35px 0.35px 0,
+        -0.35px -0.35px 0px,
+        0.35px 0px 0px,
+        0px 0.35px 0px,
+        -0.35px 0px 0px,
+        0px -0.35px 0px;
 }
 
 /*list */

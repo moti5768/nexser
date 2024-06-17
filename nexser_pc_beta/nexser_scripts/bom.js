@@ -1,5 +1,3 @@
-"use strict";
-
 let data = []; // 爆弾が置いてある場所を管理 1=爆弾、0=何もない、-1=最初にクリックされたマスと周囲
 let h, w, bomb, count;
 let startTime; // 測定開始時間
