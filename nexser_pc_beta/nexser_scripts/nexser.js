@@ -67,14 +67,13 @@ if (ua.includes("mobile")) {
     const browser_menu = document.querySelector('.browser_menu');
     const taskbar_setting_menu = document.querySelector('.taskbar_setting_menu');
     const youtubevideo_menu = document.querySelector('.youtubevideo_menu');
-
     const cpu_calc_menu = document.querySelector('.cpu_calc_menu');
-
-    const command_help_menu = document.querySelector('.command_help_menu')
+    const device_menu = document.querySelector('.device_menu');
+    const command_help_menu = document.querySelector('.command_help_menu');
 
     const notice_menu = document.querySelector('.notice_menu');
 
-    const nexser_search_menu = document.querySelector('.nexser_search_menu')
+    const nexser_search_menu = document.querySelector('.nexser_search_menu');
 
     const error_windows = document.querySelector('.error_windows');
     const warning_windows = document.querySelector('.warning_windows');
@@ -85,10 +84,26 @@ if (ua.includes("mobile")) {
     const bom_menu = document.querySelector('.bom_menu');
 
 
+    function lights() {
+        const lightvalue = document.querySelector('.light_value').value;
+        document.querySelector('.screen_light').style.opacity = lightvalue;
+        localStorage.setItem('light_level', lightvalue);
+    }
 
+    const lightlevel = localStorage.getItem('light_level');
+    if (localStorage.getItem('light_level')) {
+        document.querySelector('.screen_light').style.opacity = lightlevel;
+        document.querySelector('.light_value').value = lightlevel;
+    }
 
-
-
+    function lightchild() {
+        const screen_light_range_child = document.querySelector('.screen_light_range_child');
+        if (screen_light_range_child.style.display == "block") {
+            screen_light_range_child.style.display = "none"
+        } else {
+            screen_light_range_child.style.display = "block"
+        }
+    }
 
     // nexserloads
 
@@ -358,6 +373,8 @@ if (ua.includes("mobile")) {
                 document.querySelectorAll('.window_inline_side').forEach(function (window_inline_side) {
                     window_inline_side.style.top = "31px"
                 })
+            } else {
+                document.querySelector('.clock_menu').style.height = "350px"
             }
             if (localStorage.getItem('clockdata_analog')) {
                 document.getElementsByClassName('digital_clock_area')[0].style.display = "none";
@@ -518,6 +535,9 @@ if (ua.includes("mobile")) {
             document.querySelector('.start_button').classList.add('pressed');
             document.querySelector('.battery_menu').style.display = "none";
             document.querySelector('.battery_child').classList.remove('pressed');
+
+            document.querySelector('.screen_light_range_child').style.display = "none";
+            document.querySelector('.sit_button').classList.remove('pressed');
         }
     })
     document.querySelector('.battery_child').addEventListener('click', function () {
@@ -534,6 +554,8 @@ if (ua.includes("mobile")) {
         document.querySelector('.start_button').classList.remove('pressed');
         document.querySelector('.battery_child').classList.remove('pressed');
         document.querySelector('.battery_menu').style.display = "none";
+        document.querySelector('.screen_light_range_child').style.display = "none";
+        document.querySelector('.sit_button').classList.remove('pressed');
         alltitle_navyreomve();
         document.querySelectorAll('.windowtool_child').forEach(function (windowtool_child) {
             windowtool_child.style.display = "none"
@@ -565,6 +587,18 @@ if (ua.includes("mobile")) {
         getLargestZIndex('.child_windows');
         z_index.textContent = getLargestZIndex('.child_windows');
     });
+
+
+    document.querySelectorAll('.child_windows,.welcome_windows,.error_windows,.warning_windows').forEach(function (allwindow) {
+        allwindow.addEventListener('mousedown', function () {
+            document.querySelector('.battery_child').classList.remove('pressed');
+            document.querySelector('.battery_menu').style.display = "none";
+            document.querySelector('.screen_light_range_child').style.display = "none";
+            document.querySelector('.sit_button').classList.remove('pressed');
+        })
+    })
+
+
 
     Array.from(document.getElementsByClassName('button')).forEach((button) => {
         button.addEventListener('click', () => {
@@ -1736,6 +1770,8 @@ if (ua.includes("mobile")) {
             document.querySelector('.close_button3').style.display = "none";
             document.querySelector('.taskbar_position_button').textContent = "top";
             document.getElementById('taskbar').style.top = "";
+            document.getElementById('taskbar').style.bottom = "";
+            document.getElementById('taskbar').style.height = "";
             document.querySelector('.child_start_menu').style.top = "auto";
             document.querySelector('.child_start_menu').style.bottom = "";
 
@@ -2090,7 +2126,7 @@ if (ua.includes("mobile")) {
         const h = prompt_text5.substring(15);
 
         const command_9 = "program(num->text)=>";
-        const i = prompt_text5.substring(20);
+        const i2 = prompt_text5.substring(20);
 
         const command_10 = "program(context->text)=>";
         const j = prompt_text5.substring(24);
@@ -2151,11 +2187,11 @@ if (ua.includes("mobile")) {
                 shellmenu_open()
                 break;
 
-            case command_9 + i:
+            case command_9 + i2:
                 prompt_text2.style.color = "";
 
-                let arraySplit = i.match(/.{3}/g)
-                let newStr = (String(arraySplit).replace(/[a-z]/gi, "")
+                // let arraySplit = i2.split('');
+                let newStr = (String(i2).replace(/[a-z]/gi, "")
                     .replaceAll("01|", "A").replaceAll("02|", "B").replaceAll("03|", "C").replaceAll("04|", "D").replaceAll("05|", "E").replaceAll("06|", "F")
                     .replaceAll("07|", "G").replaceAll("08|", "H").replaceAll("09|", "I").replaceAll("10|", "J").replaceAll("11|", "K").replaceAll("12|", "L")
                     .replaceAll("13|", "M").replaceAll("14|", "N").replaceAll("15|", "O").replaceAll("16|", "P").replaceAll("17|", "Q").replaceAll("18|", "R")
@@ -3067,12 +3103,14 @@ if (ua.includes("mobile")) {
                     document.querySelectorAll('.window_inline_side').forEach(function (window_inline_side) {
                         window_inline_side.style.top = ""
                     })
+                    document.querySelector('.clock_menu').style.height = "350px"
                 } else {
                     window_tool.style.display = "block"
                     localStorage.setItem('allwindow_toolbar', allwindow_toolbar);
                     document.querySelectorAll('.window_inline_side').forEach(function (window_inline_side) {
                         window_inline_side.style.top = "31px"
                     })
+                    document.querySelector('.clock_menu').style.height = ""
                 }
             })
         })
@@ -3777,6 +3815,19 @@ if (ua.includes("mobile")) {
 
             alltitle_navyreomve();
             test = youtubevideo_menu.firstElementChild;
+            test.classList.add('navy');
+        });
+    });
+
+    document.querySelectorAll('.test_button37').forEach(function (test_button37) {
+        test_button37.addEventListener('click', function () {
+            device_menu.classList.toggle('active');
+            device_menu.closest('.child_windows');
+            z = largestZIndex++;
+            device_menu.style.zIndex = z;
+
+            alltitle_navyreomve();
+            test = device_menu.firstElementChild;
             test.classList.add('navy');
         });
     });
@@ -6252,5 +6303,50 @@ if (ua.includes("mobile")) {
         minscreen_buttons.textContent = "❒"
     })
 
+
+
+
+    // navigator.bluetooth.getDevices()
+    //     .then(devices => {
+    //         console.log('検出されたデバイス:', devices);
+    //         // 検出されたデバイスの情報を処理する
+    //     })
+    //     .catch(error => {
+    //         console.error('デバイスの検出に失敗しました:', error);
+    //     });
+
+
+
+    // 利用可能なメディアデバイスのリストを取得してコンソールに表示する
+    navigator.mediaDevices.enumerateDevices()
+        .then((devices) => {
+            devices.forEach((device) => {
+                document.querySelector('.device_text').textContent = (device.kind + ": " + device.label +
+                    " id = " + device.deviceId);
+            });
+        })
+        .catch((error) => {
+            document.querySelector('.device_text').textContent = ("デバイスが検出されませんでした:", error);
+        });
+
+    getOrientation()
+
+    // JavaScriptで画面の向きを判定
+    function getOrientation() {
+        var type = screen.orientation.type;
+        var ori = "";
+        if (type == "portrait-primary") {
+            ori = "縦向き(上部が上)";
+        } else if (type == "portrait-secondary") {
+            ori = "縦向き(上部が下)";
+        } else if (type == "landscape-primary") {
+            ori = "横向き(上部が左)";
+        } else if (type == "landscape-secondary") {
+            ori = "横向き(上部が右)";
+        }
+        document.getElementById("orientation").innerHTML = ori + "<br>" + screen.orientation.angle + "度";
+    }
+    // デバイスの向き変更イベントを追跡
+    window.addEventListener("orientationchange", getOrientation);
 
 }

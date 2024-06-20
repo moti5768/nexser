@@ -153,6 +153,8 @@
 
         <div id="nexser">
 
+            <div class="screen_light"></div>
+
             <div class="pattern_backgrounds">
                 <div class="backgrounds1"></div>
                 <div class="backgrounds2"></div>
@@ -439,8 +441,8 @@
                                     <li>debug</li><span class="window_file_icon"></span>
                                     <li class="windowfile_time"></li>
                                 </div>
-                                <div class="window_files">
-                                    <li>test</li><span class="window_file_icon2"></span>
+                                <div class="window_files test_button37">
+                                    <li>device</li><span class="window_file_icon"></span>
                                     <li class="windowfile_time"></li>
                                 </div>
                                 <div class="window_files">
@@ -1068,7 +1070,7 @@
                         </div>
                     </div>
 
-                    <div class="child_windows sound_menu active resize back_silver">
+                    <div class="child_windows sound_menu active resize">
                         <div class="title">
                             <span class="title_icon"></span><span>&emsp;&emsp;sound</span>
                         </div>
@@ -1163,8 +1165,8 @@
                             </div>
                         </div>
 
-                        <div style="width: 100%;">
-                            <ul class="window_inline_list2 border2" style="background: whitesmoke;">
+                        <div class="window_contents border2">
+                            <ul class="window_inline_list2" style="background: whitesmoke;">
                                 <li class="hover_blue">The Microsoft Sound</li>
                                 <li class="hover_blue">Tada</li>
                                 <li class="hover_blue">Chord</li>
@@ -1332,101 +1334,108 @@
                             </div>
                         </div>
 
-                        <div class="mini_window border2" style="background: whitesmoke;">
-                            <span style="display: block; width: 100%; border-bottom: solid 1px black;">startup
-                                sound</span>
-                            <ul class="black_text">
-                                <li class="hover_blue" style="display: flex; margin-top: 5px; width: 75%;">
-                                    The
-                                    Microsoft
-                                    Sound
-                                    <span class="button2 startup_1" style="position: absolute; right: 80px;"></span>
-                                </li>
+                        <div class="window_contents border2">
+                            <div style="background: whitesmoke;">
+                                <span style="display: block; width: 100%; border-bottom: solid 1px black;">startup
+                                    sound</span>
+                                <ul class="black_text">
+                                    <li class="hover_blue" style="display: flex; margin-top: 5px; width: 75%;">
+                                        The
+                                        Microsoft
+                                        Sound
+                                        <span class="button2 startup_1" style="position: absolute; right: 80px;"></span>
+                                    </li>
 
-                                <li class="hover_blue" style="margin-top: 5px; width: 75%;">Utopia
-                                    <span class="button2 startup_2" style="position: absolute; right: 80px;"></span>
-                                </li>
+                                    <li class="hover_blue" style="margin-top: 5px; width: 75%;">Utopia
+                                        <span class="button2 startup_2" style="position: absolute; right: 80px;"></span>
+                                    </li>
 
-                                <li class="hover_blue" style="margin-top: 5px; width: 75%;">Windows98
-                                    Start
-                                    <span class="button2 startup_3" style="position: absolute; right: 80px;"></span>
-                                </li>
+                                    <li class="hover_blue" style="margin-top: 5px; width: 75%;">Windows98
+                                        Start
+                                        <span class="button2 startup_3" style="position: absolute; right: 80px;"></span>
+                                    </li>
 
-                                <li class="hover_blue" style="margin-top: 5px; width: 75%;">Windows2000
-                                    Start
-                                    <span class="button2 startup_4" style="position: absolute; right: 80px;"></span>
-                                </li>
+                                    <li class="hover_blue" style="margin-top: 5px; width: 75%;">Windows2000
+                                        Start
+                                        <span class="button2 startup_4" style="position: absolute; right: 80px;"></span>
+                                    </li>
 
-                                <li class="hover_blue" style="margin-top: 5px; width: 75%;">WindowsXP
-                                    Start
-                                    <span class="button2 startup_5" style="position: absolute; right: 80px;"></span>
-                                </li>
+                                    <li class="hover_blue" style="margin-top: 5px; width: 75%;">WindowsXP
+                                        Start
+                                        <span class="button2 startup_5" style="position: absolute; right: 80px;"></span>
+                                    </li>
 
-                                <li class="button2" style="margin-top: 5px; position: absolute; right: 80px;"
-                                    onclick="startupsound_reset()">startup sound reset</li><br>
-                            </ul><br>
+                                    <li class="button2" style="margin-top: 5px; position: absolute; right: 80px;"
+                                        onclick="startupsound_reset()">startup sound reset</li><br>
+                                </ul><br>
+                            </div>
+
+                            <div class="mini_window" style="background-color: whitesmoke;">
+                                <span style="display: block; width: 100%; border-bottom: solid 1px black;">shutdown
+                                    sound</span>
+                                <ul class="black_text">
+                                    <li class="hover_blue" style="margin-top: 5px; width: 75%;">Tada
+                                        <span class="button2 shutdown_1"
+                                            style="position: absolute; right: 80px;"></span>
+                                    </li>
+
+                                    <li class="hover_blue" style="margin-top: 5px; width: 75%;">Chimes
+                                        <span class="button2 shutdown_2"
+                                            style="position: absolute; right: 80px;"></span>
+                                    </li>
+
+                                    <li class="hover_blue" style="margin-top: 5px; width: 75%;">Windows98
+                                        logoff
+                                        <span class="button2 shutdown_3"
+                                            style="position: absolute; right: 80px;"></span>
+                                    </li>
+
+                                    <li class="hover_blue" style="margin-top: 5px; width: 75%;">Windows2000
+                                        logoff
+                                        <span class="button2 shutdown_4"
+                                            style="position: absolute; right: 80px;"></span>
+                                    </li>
+
+                                    <li class="hover_blue" style="margin-top: 5px; width: 75%;">WindowsXP
+                                        logoff
+                                        <span class="button2 shutdown_5"
+                                            style="position: absolute; right: 80px;"></span>
+                                    </li>
+
+                                    <li class="button2" style="margin-top: 5px; position: absolute; right: 80px;"
+                                        onclick="shutdownsound_reset()">shutdown sound reset</li><br><br>
+                                </ul>
+                            </div>
+
+                            <div class="window_inline_side" style="font-size: 13.7px; width: 70px;">
+                                <ul
+                                    style="text-align: center; margin-left: 5px; position: absolute; top: 80px; width: 60px;">
+                                    <li class="button2 sound_play_button" style="width: 60px;" onclick="sound()">
+                                    </li>
+                                    <li class="button2 sound_play_button" style="width: 60px; margin-top: 5px;"
+                                        onclick="sound6()"></li>
+                                    <li class="button2 sound_play_button" style="width: 60px; margin-top: 5px;"
+                                        onclick="sound8()"></li>
+                                    <li class="button2 sound_play_button" style="width: 60px; margin-top: 5px;"
+                                        onclick="sound10()"></li>
+                                    <li class="button2 sound_play_button" style="width: 60px; margin-top: 5px;"
+                                        onclick="sound12()"></li>
+
+
+                                    <li class="button2 sound_play_button" style="width: 60px; margin-top: 79px;"
+                                        onclick="sound2()"></li>
+                                    <li class="button2 sound_play_button" style="width: 60px; margin-top: 5px;"
+                                        onclick="sound4()"></li>
+                                    <li class="button2 sound_play_button" style="width: 60px; margin-top: 5px;"
+                                        onclick="sound9()"></li>
+                                    <li class="button2 sound_play_button" style="width: 60px; margin-top: 5px;"
+                                        onclick="sound11()"></li>
+                                    <li class="button2 sound_play_button" style="width: 60px; margin-top: 5px;"
+                                        onclick="sound13()"></li>
+                                </ul>
+                            </div>
+
                         </div>
-
-                        <div class="mini_window border2" style="background-color: whitesmoke;">
-                            <span style="display: block; width: 100%; border-bottom: solid 1px black;">shutdown
-                                sound</span>
-                            <ul class="black_text">
-                                <li class="hover_blue" style="margin-top: 5px; width: 75%;">Tada
-                                    <span class="button2 shutdown_1" style="position: absolute; right: 80px;"></span>
-                                </li>
-
-                                <li class="hover_blue" style="margin-top: 5px; width: 75%;">Chimes
-                                    <span class="button2 shutdown_2" style="position: absolute; right: 80px;"></span>
-                                </li>
-
-                                <li class="hover_blue" style="margin-top: 5px; width: 75%;">Windows98
-                                    logoff
-                                    <span class="button2 shutdown_3" style="position: absolute; right: 80px;"></span>
-                                </li>
-
-                                <li class="hover_blue" style="margin-top: 5px; width: 75%;">Windows2000
-                                    logoff
-                                    <span class="button2 shutdown_4" style="position: absolute; right: 80px;"></span>
-                                </li>
-
-                                <li class="hover_blue" style="margin-top: 5px; width: 75%;">WindowsXP
-                                    logoff
-                                    <span class="button2 shutdown_5" style="position: absolute; right: 80px;"></span>
-                                </li>
-
-                                <li class="button2" style="margin-top: 5px; position: absolute; right: 80px;"
-                                    onclick="shutdownsound_reset()">shutdown sound reset</li><br><br>
-                            </ul>
-                        </div>
-
-                        <div class="window_inline_side" style="font-size: 13.7px; width: 70px;">
-                            <ul
-                                style="text-align: center; margin-left: 5px; position: absolute; top: 80px; width: 60px;">
-                                <li class="button2 sound_play_button" style="width: 60px;" onclick="sound()">
-                                </li>
-                                <li class="button2 sound_play_button" style="width: 60px; margin-top: 5px;"
-                                    onclick="sound6()"></li>
-                                <li class="button2 sound_play_button" style="width: 60px; margin-top: 5px;"
-                                    onclick="sound8()"></li>
-                                <li class="button2 sound_play_button" style="width: 60px; margin-top: 5px;"
-                                    onclick="sound10()"></li>
-                                <li class="button2 sound_play_button" style="width: 60px; margin-top: 5px;"
-                                    onclick="sound12()"></li>
-
-
-                                <li class="button2 sound_play_button" style="width: 60px; margin-top: 79px;"
-                                    onclick="sound2()"></li>
-                                <li class="button2 sound_play_button" style="width: 60px; margin-top: 5px;"
-                                    onclick="sound4()"></li>
-                                <li class="button2 sound_play_button" style="width: 60px; margin-top: 5px;"
-                                    onclick="sound9()"></li>
-                                <li class="button2 sound_play_button" style="width: 60px; margin-top: 5px;"
-                                    onclick="sound11()"></li>
-                                <li class="button2 sound_play_button" style="width: 60px; margin-top: 5px;"
-                                    onclick="sound13()"></li>
-                            </ul>
-                        </div>
-
                     </div>
 
                     <div class="child_windows system_menu active back_silver" style="background-color: silver;">
@@ -1698,7 +1707,7 @@
                         </div>
                     </div>
 
-                    <div class="child_windows prompt_shell_menu back_silver active resize">
+                    <div class="child_windows prompt_shell_menu back_silver resize active">
                         <div class="title">
                             <span class="title_icon"></span><span>&emsp;&emsp;nexser shell</span>
                         </div>
@@ -3027,7 +3036,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                     </div>
 
 
-                    <div class="child_windows memory_menu back_silver active" style="width: 250px;">
+                    <div class="child_windows memory_menu active" style="width: 250px;">
                         <div class="title">
                             <span class="title_icon"></span><span>&emsp;&emsp;memory</span>
                         </div>
@@ -3037,7 +3046,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             <span class="close_button button2"></span><br>
                         </div>
 
-                        <div class="window_content">
+                        <div class="window_contents back_silver">
                             <p class="border2">Memory</p>
                             <span class="window_memory"></span><br>
                             <span class="window_memory2"></span><br>
@@ -3046,6 +3055,28 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         </div>
 
                     </div>
+
+                    <div class="child_windows device_menu resize back_silver active">
+                        <div class="title">
+                            <span class="title_icon"></span><span>&emsp;&emsp;device</span>
+                        </div>
+
+                        <div class="title_buttons">
+                            <span class="drag_button">&nbsp;</span>
+                            <span class="close_button button2"></span>
+                            <span class="bigscreen_button button2"></span>
+                            <span class="minscreen_button button2"></span>
+                            <span class="minimization_button button2"></span><br>
+                        </div><br>
+
+                        <div class="window_contents back_silver">
+                            <p class="device_text border2"></p><br>
+                            <p class="device_text border2" id="orientation"></p>
+                        </div>
+
+                    </div>
+
+
 
 
                     <div class="child_windows nexser_guidebook_menu resize active">
@@ -3352,6 +3383,16 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             </div>
                         </div>
                         <div class="taskbar_rightgroup">
+                            <div class="screen_light_range">
+                                <span class="button sit_button" onclick="lightchild()">&nbsp;SlT&nbsp;</span>
+
+                                <div class="screen_light_range_child border">
+                                    <textarea class="light_value" maxlength="4"></textarea><br>
+                                    <button class="button2" onclick="lights()">sbmit</button>
+                                    <p>0~1</p>
+                                    <p>〇・</p>
+                                </div>
+                            </div>
                             <ul class="inport_icon border">
                                 <span>&nbsp;N&nbsp;</span>
                             </ul>
