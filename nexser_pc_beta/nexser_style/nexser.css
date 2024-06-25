@@ -1178,6 +1178,33 @@ body::-webkit-scrollbar {
     transform: translate(-50%, -50%);
 }
 
+.pass_windows {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    list-style: none;
+    display: block;
+    font-size: 15px;
+    width: 300px;
+    height: auto;
+    border: solid 3px #c0c0c0;
+    outline: 1px solid gray;
+    outline-offset: 0.4px;
+    box-shadow: 0 0 0 1.5px dimgray,
+        0 0 0 3px white,
+        0 0 0 4px #000000;
+    background: white;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.password_menu {
+    width: 250px;
+}
+
 .test_allwindow {
     display: none;
     height: 100%;
