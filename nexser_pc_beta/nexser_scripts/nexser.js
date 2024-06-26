@@ -886,22 +886,43 @@ if (ua.includes("mobile")) {
     })
 
     function pass_submit(passlogin) {
-        const pass = document.querySelector('.password').value;
-        console.log(pass);
-        localStorage.setItem('password', pass);
-        localStorage.setItem('login', passlogin)
+        if (document.querySelector('.password').value == "") {
+            document.querySelector('.window_error_text').textContent = "パスワードが入力されていません!"
+            error_windows.classList.remove('active')
+            sound3()
+            document.querySelector('.test_allwindow').style.display = "block";
+        } else {
+            const pass = document.querySelector('.password').value;
+
+            const password_lock = (String(pass)
+                .replaceAll("0", "a+b").replaceAll("1", "c#d").replaceAll("2", "e*f")
+                .replaceAll("3", "g|h").replaceAll("4", "i=j").replaceAll("5", "k[l")
+                .replaceAll("6", "m]n").replaceAll("7", "o-p").replaceAll("8", "q>r")
+                .replaceAll("9", "s<t")
+            );
+
+            localStorage.setItem('password', password_lock);
+            localStorage.setItem('login', passlogin);
+            document.querySelector('.passcode').textContent = "登録しました";
+        }
     }
 
     function pass_reset() {
         document.querySelector('.password').value = "";
         localStorage.removeItem('password');
-        localStorage.removeItem('login')
+        localStorage.removeItem('login');
+        document.querySelector('.passcode').textContent = "登録していません";
+    }
+
+    if (localStorage.getItem('password')) {
+        document.querySelector('.passcode').textContent = "登録しています";
     }
 
     function pass_check() {
 
         if (localStorage.getItem('password') && !localStorage.getItem('login')) {
             document.querySelector('.password_form').style.display = "block";
+            document.getElementById('pass_form').focus();
             document.querySelector('html').style.cursor = '';
         } else {
             start_check()
@@ -909,7 +930,17 @@ if (ua.includes("mobile")) {
     }
 
     function password_login(login) {
-        if (localStorage.getItem('password') == document.querySelector('#pass_form').value) {
+
+        const password_unlock = localStorage.getItem('password');
+
+        const password_unlock2 = (String(password_unlock)
+            .replaceAll("a+b", "0").replaceAll("c#d", "1").replaceAll("e*f", "2")
+            .replaceAll("g|h", "3").replaceAll("i=j", "4").replaceAll("k[l", "5")
+            .replaceAll("m]n", "6").replaceAll("o-p", "7").replaceAll("q>r", "8")
+            .replaceAll("s<t", "9")
+        );
+
+        if (password_unlock2 == document.querySelector('#pass_form').value) {
             document.querySelector('.password_form').style.display = "none";
             document.querySelector('.pass_no').textContent = "";
             start_check();
@@ -981,7 +1012,6 @@ if (ua.includes("mobile")) {
         element.addEventListener('click', event => {
             document.querySelector('html').style.cursor = 'progress';
             setTimeout(() => {
-                localStorage.removeItem('login');
                 document.querySelector('.test_allwindow').style.display = "block";
                 if (sessionStorage.getItem('start_camera')) {
                     document.querySelector('html').style.cursor = '';
@@ -992,6 +1022,7 @@ if (ua.includes("mobile")) {
                 } else if (gets == gets2) {
                     sound_stop();
                     shutdown_sound();
+                    localStorage.removeItem('login');
                     document.querySelector('.welcome_windows').style.display = "none";
                     document.querySelector('html').style.cursor = 'none';
                     if (!localStorage.getItem('noteData')) {
@@ -1043,7 +1074,6 @@ if (ua.includes("mobile")) {
         element.addEventListener('click', event => {
             document.querySelector('html').style.cursor = 'progress';
             setTimeout(() => {
-                localStorage.removeItem('login');
                 document.querySelector('.test_allwindow').style.display = "block";
                 if (sessionStorage.getItem('start_camera')) {
                     document.querySelector('html').style.cursor = '';
@@ -1054,6 +1084,7 @@ if (ua.includes("mobile")) {
                 } else if (gets == gets2) {
                     sound_stop();
                     shutdown_sound();
+                    localStorage.removeItem('login');
                     document.querySelector('.welcome_windows').style.display = "none";
                     document.querySelector('html').style.cursor = 'none';
                     if (!localStorage.getItem('noteData')) {
@@ -4974,6 +5005,14 @@ if (ua.includes("mobile")) {
             resetShowLength();
             localStorage.removeItem('note_texts');
             note_pad.classList.add('active');
+            taskbtn_load()
+        }, 100);
+    }
+
+    function error_windows_close() {
+        setTimeout(() => {
+            document.querySelector('.test_allwindow').style.display = "none";
+            error_windows.classList.add('active');
             taskbtn_load()
         }, 100);
     }
