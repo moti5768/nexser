@@ -1942,17 +1942,15 @@ if (ua.includes("mobile")) {
         });
     })
 
-
     document.querySelectorAll('.child_start_menu').forEach(function (child_start_menu) {
-        const t = localStorage.getItem('taskbar_height');
         child_start_menu.addEventListener('mouseleave', function () {
-            if (localStorage.getItem('taskbar_autohide')) {
-                taskbar.style.bottom = "-35px"
-            }
             if (localStorage.getItem('taskbar_height') && (localStorage.getItem('taskbar_autohide'))) {
+                const t = localStorage.getItem('taskbar_height');
                 const t2 = t - 5;
                 document.getElementById('taskbar').style.bottom = "-" + t2 + "px";
                 console.log(t2)
+            } else if (localStorage.getItem('taskbar_autohide')) {
+                taskbar.style.bottom = "-35px"
             }
         });
         child_start_menu.addEventListener('mouseover', function () {
@@ -1962,7 +1960,6 @@ if (ua.includes("mobile")) {
             titlecolor_set()
         });
     })
-
 
     function taskbar_none() {
         if (localStorage.getItem('data_taskbar_none')) {
