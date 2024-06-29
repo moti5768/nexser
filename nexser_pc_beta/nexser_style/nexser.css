@@ -860,7 +860,7 @@ input[type="file"] {
 }
 
 .nexser_sound_menu {
-    width: 300px;
+    width: 600px;
 }
 
 .sound_play_button {
@@ -927,6 +927,21 @@ input[type="file"] {
     width: 550px;
     height: auto;
     min-width: 150px;
+}
+
+.text_drop_menu {
+    height: 300px;
+    width: 500px;
+}
+
+.camera_menu {
+    height: min-content;
+    width: min-content;
+}
+
+.big #v {
+    height: 85vh;
+    padding-left: 150px;
 }
 
 /* color_btn */
@@ -2094,6 +2109,11 @@ textarea {
 
 /* objective */
 
+.objective_menu {
+    width: 750px;
+    height: 450px;
+}
+
 .objective_title_area {
     background: white;
     white-space: nowrap;
@@ -2103,12 +2123,17 @@ textarea {
 .objective_area {
     background: whitesmoke;
     white-space: nowrap;
-    resize: both;
-    width: 750px;
-    height: 400px;
-    min-width: 750px;
-    min-height: 200px;
+    width: 100%;
+    height: 100vh;
     font-size: large;
+    scrollbar-width: none;
+}
+
+/* paint */
+
+.paint_menu {
+    width: min-content;
+    height: min-content;
 }
 
 /* calc */
@@ -2143,7 +2168,7 @@ textarea {
 
 #editor {
     width: 100%;
-    height: 65vh;
+    height: 100vh;
     position: relative;
     min-width: 800px;
     resize: none;
@@ -2172,12 +2197,6 @@ textarea {
     color: white;
     font-family: Courier;
     font-size: small;
-}
-
-.child_windows.big #editor {
-    height: 85vh;
-    width: 99.8%;
-    resize: none;
 }
 
 #preview {

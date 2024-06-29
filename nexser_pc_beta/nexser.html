@@ -679,6 +679,18 @@
                                 </div>
                             </div>
 
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;edit&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li onclick="notearea_allselect()">select
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+
                         </div>
 
                         <div class="window_content">
@@ -704,15 +716,17 @@
                         </div>
                     </div>
 
-                    <div class="child_windows objective_menu back_silver active">
+                    <div class="child_windows objective_menu back_silver resize active">
                         <div class="title">
                             <span class="title_icon"></span><span>&emsp;&emsp;objective sheet</span>
                         </div>
 
-
                         <div class="title_buttons">
-                            <span class="drag_button note_drag">&nbsp;</span>
-                            <span class="close_button4 button2 objective_close"></span><br>
+                            <span class="drag_button">&nbsp;</span>
+                            <span class="close_button4 button2 objective_close"></span>
+                            <span class="bigscreen_button button2"></span>
+                            <span class="minscreen_button button2"></span>
+                            <span class="minimization_button button2"></span><br>
                         </div>
 
                         <div class="title2" style="border-bottom: solid 1px black;">
@@ -947,6 +961,14 @@
                                     <li>youtube video url</li><span class="window_file_icon"></span>
                                     <li class="windowfile_time"></li>
                                 </div>
+                                <div class="window_files test_button38">
+                                    <li>omikuji</li><span class="window_file_icon"></span>
+                                    <li class="windowfile_time"></li>
+                                </div>
+                                <div class="window_files test_button40">
+                                    <li>paint</li><span class="window_file_icon"></span>
+                                    <li class="windowfile_time"></li>
+                                </div>
                             </ul>
                         </div>
                     </div>
@@ -1083,8 +1105,8 @@
                                     <li>browser</li><span class="window_file_icon"></span>
                                     <li class="windowfile_time"></li>
                                 </div>
-                                <div class="window_files">
-                                    <li>test</li><span class="window_file_icon2"></span>
+                                <div class="window_files test_button39">
+                                    <li>storage monitor</li><span class="window_file_icon"></span>
                                     <li class="windowfile_time"></li>
                                 </div>
                                 <div class="window_files">
@@ -1924,7 +1946,7 @@
                             <span class="close_button button2"></span><br>
                         </div>
 
-                        <div class="window_contents">
+                        <div class="window_content">
                             <p>background text</p>
                             <form autocomplete="off" method="get" name="back_text_form" class="border2"
                                 onsubmit="return false; length" onkeydown="if(event.keyCode == 13){return false;}">
@@ -2267,15 +2289,17 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         </div>
                     </div>
 
-                    <div class="child_windows text_drop_menu active back_silver">
+                    <div class="child_windows text_drop_menu resize active back_silver">
                         <div class="title">
                             <span class="title_icon"></span><span>&emsp;&emsp;text drop</span>
                         </div>
 
-
                         <div class="title_buttons">
                             <span class="drag_button">&nbsp;</span>
-                            <span class="close_button button2"></span><br>
+                            <span class="close_button button2"></span>
+                            <span class="bigscreen_button button2"></span>
+                            <span class="minscreen_button button2"></span>
+                            <span class="minimization_button button2"></span><br>
                         </div>
 
                         <div class="window_content">
@@ -2288,10 +2312,12 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                 <form name="drop_form" action="" class="border2">
                                     <textarea name="drop_area" class="drop_area" id="drop" cols="50" rows="10"
                                         maxlength="0"
-                                        style="border: none; resize: none; outline: none; background: whitesmoke; color: black;"></textarea>
+                                        style="border: none; resize: none; outline: none; background: whitesmoke; color: black; height: 100vh; width: 100%;"></textarea>
                                 </form>
-                                <span id="drop_save_text" class="border2">no save</span>
                             </div>
+                        </div>
+                        <div class="window_bottom" style="width: 100%;">
+                            <span id="drop_save_text" class="border2">no save</span>
                         </div>
                     </div>
 
@@ -2367,10 +2393,12 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             <span class="title_icon"></span><span>&emsp;&emsp;camera</span>
                         </div>
 
-
                         <div class="title_buttons">
                             <span class="drag_button">&nbsp;</span>
-                            <span class="close_button4 button2 camera_close"></span><br>
+                            <span class="close_button4 button2 camera_close"></span>
+                            <span class="bigscreen_button button2"></span>
+                            <span class="minscreen_button button2"></span>
+                            <span class="minimization_button button2"></span><br>
                         </div>
 
                         <div class="title2">
@@ -2389,11 +2417,10 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         </div>
 
                         <div class="border2 window_content">
-                            <div style="pointer-events: none;">
-                                <video id="v" style="background-color: black; height: 400px; width: 640px"
-                                    playsinline></video>
+                            <div style="background: black; pointer-events: none;">
+                                <video id="v" style="background-color: black;" playsinline></video>
                             </div>
-                            <div style="display: flex;">
+                            <div class="window_bottom" style="width: 100%; display: flex;">
                                 <span id="start_camera" class="button2 apply_button"
                                     onclick="startCamera2()">start</span>
                                 <span class="button2 apply_button" onclick="stopCamera()">finish</span>
@@ -2401,23 +2428,24 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         </div>
                     </div>
 
-                    <div class="child_windows htmlviewer_edit_menu active back_silver">
+                    <div class="child_windows htmlviewer_edit_menu active resize back_silver">
                         <div class=" title">
                             <span class="title_icon"></span><span>&emsp;&emsp;html viewer edit</span>
                         </div>
 
-
                         <div class="title_buttons">
                             <span class="drag_button">&nbsp;</span>
-                            <span class="close_button button2"></span><br>
+                            <span class="close_button button2"></span>
+                            <span class="bigscreen_button button2"></span>
+                            <span class="minscreen_button button2"></span>
+                            <span class="minimization_button button2"></span><br>
                         </div>
 
                         <div class="mini_window window_content">
 
-                            <textarea id="editor" class="border2" style="background: whitesmoke;">
-                            <pre> </pre></textarea>
+                            <textarea id="editor" class="border2" style="background: whitesmoke;"></textarea>
 
-                            <div style="margin-top: 5px;">
+                            <div class="window_bottom back_silver" style="width: 100%; height: 30px; padding-top: 5px;">
                                 <span class="button2 apply_button large bold" onclick="run()"
                                     style="position: absolute; left: 0px; text-align: center;">&nbsp;run&nbsp;</span>
                                 <span class="button2 apply_button large bold" onclick="testcode_save()"
@@ -3139,7 +3167,6 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             <span class="title_icon"></span><span>&emsp;&emsp;memory</span>
                         </div>
 
-
                         <div class="title_buttons">
                             <span class="drag_button">&nbsp;</span>
                             <span class="close_button button2"></span><br>
@@ -3152,7 +3179,6 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             <span class="window_memory3"></span><br>
                             <span class="window_memory4"></span><br>
                         </div>
-
                     </div>
 
                     <div class="child_windows device_menu resize back_silver active">
@@ -3195,12 +3221,94 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
 
                     </div>
 
+                    <div class="child_windows omikuji_menu active" style="width: 250px;">
+                        <div class="title">
+                            <span class="title_icon"></span><span>&emsp;&emsp;omikuji</span>
+                        </div>
+
+                        <div class="title_buttons">
+                            <span class="drag_button">&nbsp;</span>
+                            <span class="close_button button2"></span><br>
+                        </div>
+
+                        <div class="window_contents back_silver"><br>
+                            <span class="apply_button button2 x-large"
+                                style="text-align: center; width: 280px; height: 40px;"
+                                onclick="drawOmikuji()">おみくじ</span><br><br>
+                            <div class="border x-large" style="width: 280px; text-align: center;">
+                                <span class="omikuji_text">おみくじを引いてみよう</span>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <div class="child_windows localstorage_monitor_menu active" style="width: 300px;">
+                        <div class="title">
+                            <span class="title_icon"></span><span>&emsp;&emsp;localstorage monitor</span>
+                        </div>
+
+                        <div class="title_buttons">
+                            <span class="drag_button">&nbsp;</span>
+                            <span class="close_button button2"></span><br>
+                        </div>
+
+                        <div class="window_contents back_silver">
+                            <p>残りのローカルストレージ容量<br><span class="local_memory border2"></span>&emsp;<span
+                                    class="small button2 borderinline_dotted"
+                                    onclick="localmemory_size()">&emsp;残り容量を再計算&emsp;</span></p>
+                            <p>使用中のローカルストレージ容量<br><span class="local_memory2 border2"></span>&emsp;</p>
+                        </div>
+                    </div>
+
+                    <div class="child_windows paint_menu active">
+                        <div class="title">
+                            <span class="title_icon"></span><span>&emsp;&emsp;paint</span>
+                        </div>
+
+                        <div class="title_buttons">
+                            <span class="drag_button">&nbsp;</span>
+                            <span class="close_button button2"></span><br>
+                        </div>
+
+                        <div class="window_contents back_silver">
+                            <canvas class="border2" id="paint_canvas" width="800" height="450"></canvas>
+                        </div>
+                        <div class="window_bottom large" style="width: 100%; display: flex;">
+                            <button class="button2 borderinline_dotted"
+                                onclick="downloadCanvasAsPng()">&nbsp;画像出力&nbsp;</button>
+                            <button class="button2 borderinline_dotted" onclick="eraser()">&nbsp;消しゴム&nbsp;</button>
+                            <button class="button2 borderinline_dotted"
+                                onclick="paint_allclear()">&nbsp;全削除&nbsp;</button>
+
+                            <span>&emsp;線の色:&nbsp;</span>
+                            <select id="paint_selectcolor" class="button2">
+                                <option value="black">black</option>
+                                <option value="white">white</option>
+                                <option value="blue">blue</option>
+                                <option value="red">red</option>
+                                <option value="yellow">yellow</option>
+                                <option value="green">green</option>
+                                <option value="purple">purple</option>
+                                <option value="lime">lime</option>
+                                <option value="skyblue">skyblue</option>
+                                <option value="pink">pink</option>
+                                <option value="orange">orange</option>
+                            </select>
+                            <div style="display: flex;">
+                                <p>線の太さ:&nbsp;</p>
+                                <textarea class="paint_width large border2"
+                                    style="margin-top: 4px; height: 20px;"></textarea>
+                                <button class="button2 borderinline_dotted"
+                                    onclick="changeLineWidth()">&nbsp;変更&nbsp;</button>
+                            </div>
+                        </div>
+
+                    </div>
 
                     <div class="child_windows nexser_guidebook_menu resize active">
                         <div class="title">
                             <span class="title_icon"></span><span>&emsp;&emsp;nexser guidebook</span>
                         </div>
-
 
                         <div class="title_buttons">
                             <span class="drag_button">&nbsp;</span>

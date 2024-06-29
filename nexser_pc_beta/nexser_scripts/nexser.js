@@ -71,6 +71,9 @@ if (ua.includes("mobile")) {
     const cpu_calc_menu = document.querySelector('.cpu_calc_menu');
     const device_menu = document.querySelector('.device_menu');
     const command_help_menu = document.querySelector('.command_help_menu');
+    const omikuji_menu = document.querySelector('.omikuji_menu');
+    const localstorage_monitor_menu = document.querySelector('.localstorage_monitor_menu');
+    const paint_menu = document.querySelector('.paint_menu');
 
     const notice_menu = document.querySelector('.notice_menu');
 
@@ -109,6 +112,7 @@ if (ua.includes("mobile")) {
     // nexserloads
 
     new Promise((resolve) => {
+        setTimeout(localmemory_size, resolve());
         setTimeout(getStorage, resolve());
         setTimeout(taskbar_none, resolve());
         setTimeout(title_none, resolve());
@@ -457,7 +461,7 @@ if (ua.includes("mobile")) {
                         notice_menu.style.display = "none"
                     }
                     resolve()
-                }, 50)
+                }, 1000)
                 setTimeout(() => {
                     navigator.getBattery().then((battery) => {
                         let bu = document.getElementsByClassName('taskbattery');
@@ -976,7 +980,7 @@ if (ua.includes("mobile")) {
                     setTimeout(function () {
                         pass_check()
                         taskbar_none();
-                        if (localStorage.getItem('login_welcome')) {
+                        if (localStorage.getItem('login_welcome') && !localStorage.getItem('password')) {
                             welcome()
                         };
                     }, 100);
@@ -995,7 +999,7 @@ if (ua.includes("mobile")) {
                     setTimeout(function () {
                         pass_check()
                         taskbar_none();
-                        if (localStorage.getItem('login_welcome')) {
+                        if (localStorage.getItem('login_welcome') && !localStorage.getItem('password')) {
                             welcome()
                         };
                     }, 1500);
@@ -1016,6 +1020,12 @@ if (ua.includes("mobile")) {
                 if (sessionStorage.getItem('start_camera')) {
                     document.querySelector('html').style.cursor = '';
                     document.querySelector('.window_error_text').textContent = "camera no finish no shutdown!"
+                    error_windows.classList.remove('active')
+                    sound3()
+                    document.querySelector('.test_allwindow').style.display = "block";
+                } else if (localStorage.getItem('no_shutdown')) {
+                    document.querySelector('html').style.cursor = '';
+                    document.querySelector('.window_error_text').textContent = "welcomeウィンドウが起動するまでシャットダウンはできません!"
                     error_windows.classList.remove('active')
                     sound3()
                     document.querySelector('.test_allwindow').style.display = "block";
@@ -1081,6 +1091,12 @@ if (ua.includes("mobile")) {
                     error_windows.classList.remove('active')
                     sound3()
                     document.querySelector('.test_allwindow').style.display = "block";
+                } else if (localStorage.getItem('no_shutdown')) {
+                    document.querySelector('html').style.cursor = '';
+                    document.querySelector('.window_error_text').textContent = "welcomeウィンドウが起動するまで再起動はできません!"
+                    error_windows.classList.remove('active')
+                    sound3()
+                    document.querySelector('.test_allwindow').style.display = "block";
                 } else if (gets == gets2) {
                     sound_stop();
                     shutdown_sound();
@@ -1134,7 +1150,10 @@ if (ua.includes("mobile")) {
         })
     })
 
-    function start_check() {
+    function start_check(start_check) {
+        if (localStorage.getItem('login_welcome') && localStorage.getItem('password')) {
+            localStorage.setItem('no_shutdown', start_check)
+        };
         const t = localStorage.getItem('taskbar_height');
         document.querySelector('html').style.cursor = 'none';
         taskbar.style.display = "none";
@@ -1205,6 +1224,13 @@ if (ua.includes("mobile")) {
                 document.querySelector('.child_start_menu').style.bottom = task + "px";
                 document.querySelector('.desktop_version_text').style.bottom = task + "px";
                 document.getElementById('files').style.display = "block";
+
+                setTimeout(() => {
+                    if (localStorage.getItem('login_welcome') && localStorage.getItem('password')) {
+                        welcome()
+                        localStorage.removeItem('no_shutdown')
+                    };
+                }, 5000);
             }, 2000);
         }
     }
@@ -3947,6 +3973,48 @@ if (ua.includes("mobile")) {
         });
     });
 
+    document.querySelectorAll('.test_button38').forEach(function (test_button38) {
+        test_button38.addEventListener('click', function () {
+            omikuji_menu.classList.toggle('active');
+            omikuji_menu.closest('.child_windows');
+            z = largestZIndex++;
+            omikuji_menu.style.zIndex = z;
+
+            alltitle_navyreomve();
+            test = omikuji_menu.firstElementChild;
+            test.classList.add('navy');
+        });
+    });
+
+    document.querySelectorAll('.test_button39').forEach(function (test_button39) {
+        test_button39.addEventListener('click', function () {
+            localstorage_monitor_menu.classList.toggle('active');
+            localstorage_monitor_menu.closest('.child_windows');
+            z = largestZIndex++;
+            localstorage_monitor_menu.style.zIndex = z;
+
+            alltitle_navyreomve();
+            test = localstorage_monitor_menu.firstElementChild;
+            test.classList.add('navy');
+        });
+    });
+
+    document.querySelectorAll('.test_button40').forEach(function (test_button40) {
+        test_button40.addEventListener('click', function () {
+            paint_menu.classList.toggle('active');
+            paint_menu.closest('.child_windows');
+            z = largestZIndex++;
+            paint_menu.style.zIndex = z;
+
+            alltitle_navyreomve();
+            test = paint_menu.firstElementChild;
+            test.classList.add('navy');
+        });
+    });
+
+
+
+
     function cpucalc_open() {
         const cpumenu1 = document.querySelector('.cpumenu_1');
         z = largestZIndex++;
@@ -4931,6 +4999,7 @@ if (ua.includes("mobile")) {
             localStorage.setItem('objectiveTitleData', objectiveTitleData);
             let objectiveData = document.objective_form.objective_area.value;
             localStorage.setItem('objectiveData', objectiveData);
+            localStorage.removeItem('objective_area');
         }
 
     }
@@ -4960,25 +5029,36 @@ if (ua.includes("mobile")) {
         }, 100);
     })
 
-
     document.querySelector('.objective_close').addEventListener('click', function () {
         setTimeout(() => {
-            if (!objective_menu.classList.contains('active') && localStorage.getItem('objectiveData') || localStorage.getItem('objectiveTitleData')) {
+            if (!objective_menu.classList.contains('active') && localStorage.getItem('objectiveData') && localStorage.getItem('objectiveTitleData') && (!localStorage.getItem('objective_area'))) {
                 objective_menu.classList.add('active');
+                localStorage.removeItem('objective_area');
                 taskbtn_load();
-            } else {
+            } else if (localStorage.getItem('objective_area')) {
                 document.querySelector('.warning_title_text').textContent = "objective sheet"
-                document.querySelector('.window_warning_text').textContent = "タイトル もしくは 内容を保存してから閉じてください";
+                document.querySelector('.window_warning_text').textContent = "タイトル と 内容を保存してから閉じてください";
                 warning_windows.style.display = "block"
                 document.querySelector('.close_button3').style.display = "block"
                 sound5()
                 document.querySelector('.test_allwindow').style.display = "block";
                 document.querySelector('.shutdown_button').style.display = "none";
                 document.querySelector('.warningclose_button').style.display = "none";
+            } else {
+                objective_menu.classList.add('active');
+                localStorage.removeItem('objective_area');
+                taskbtn_load();
             }
         }, 100);
     })
+    localStorage.removeItem('objective_area')
 
+    document.querySelectorAll('.objective_title_area,.objective_area').forEach(function (objectives_area) {
+        objectives_area.addEventListener('keyup', function () {
+            console.log("objective_area")
+            localStorage.setItem('objective_area', objective_menu);
+        });
+    });
 
     document.querySelector('.camera_close').addEventListener('mouseup', function () {
         setTimeout(() => {
@@ -5025,6 +5105,10 @@ if (ua.includes("mobile")) {
         localStorage.setItem('note_texts', note_texts);
         document.querySelector('.note_title').textContent = "notepad"
     }
+
+    function notearea_allselect() {
+        document.querySelector('.note_area').select();
+    }
     document.getElementById('cleartextbtn').addEventListener('click', function () {
         document.getElementsByClassName("note_area")[0].value = '';
         const memo_save = document.getElementById('memo_save_text');
@@ -5048,6 +5132,7 @@ if (ua.includes("mobile")) {
     function objectiveData_clear() {
         localStorage.removeItem('objectiveData');
         localStorage.removeItem('objectiveTitleData');
+        localStorage.removeItem('objective_area');
         document.querySelector(".objective_area").value = '';
         document.querySelector(".objective_title_area").value = '';
     }
@@ -6233,8 +6318,8 @@ if (ua.includes("mobile")) {
     })
 
 
-    const canvas = document.getElementById("analog_clock");
-    const ctx = canvas.getContext('2d');
+    const clock_canvas = document.getElementById("analog_clock");
+    const clock_ctx = clock_canvas.getContext('2d');
     let d;
     let year;
     let month;
@@ -6247,27 +6332,27 @@ if (ua.includes("mobile")) {
     let dateText;
 
     function sRotate() {
-        ctx.beginPath();
-        ctx.moveTo(150, 150);
-        ctx.lineTo(150 + 140 * Math.cos(Math.PI / 180 * (270 + seconds * 6)), 150 + 140 * Math.sin(Math.PI / 180 * (270 + seconds * 6)));
-        ctx.lineWidth = 1.0;
-        ctx.stroke();
+        clock_ctx.beginPath();
+        clock_ctx.moveTo(150, 150);
+        clock_ctx.lineTo(150 + 140 * Math.cos(Math.PI / 180 * (270 + seconds * 6)), 150 + 140 * Math.sin(Math.PI / 180 * (270 + seconds * 6)));
+        clock_ctx.lineWidth = 1.0;
+        clock_ctx.stroke();
     }
 
     function mRotate() {
-        ctx.beginPath();
-        ctx.moveTo(150, 150);
-        ctx.lineWidth = 3.0;
-        ctx.lineTo(150 + 130 * Math.cos(Math.PI / 180 * (270 + 6 * (minutes + seconds / 60))), 150 + 130 * Math.sin(Math.PI / 180 * (270 + 6 * (minutes + seconds / 60))));
-        ctx.stroke();
+        clock_ctx.beginPath();
+        clock_ctx.moveTo(150, 150);
+        clock_ctx.lineWidth = 3.0;
+        clock_ctx.lineTo(150 + 130 * Math.cos(Math.PI / 180 * (270 + 6 * (minutes + seconds / 60))), 150 + 130 * Math.sin(Math.PI / 180 * (270 + 6 * (minutes + seconds / 60))));
+        clock_ctx.stroke();
     }
 
     function hRotate() {
-        ctx.beginPath();
-        ctx.moveTo(150, 150);
-        ctx.lineWidth = 6.0;
-        ctx.lineTo(150 + 100 * Math.cos(Math.PI / 180 * (270 + 30 * (hours + minutes / 60))), 150 + 100 * Math.sin(Math.PI / 180 * (270 + 30 * (hours + minutes / 60))));
-        ctx.stroke();
+        clock_ctx.beginPath();
+        clock_ctx.moveTo(150, 150);
+        clock_ctx.lineWidth = 6.0;
+        clock_ctx.lineTo(150 + 100 * Math.cos(Math.PI / 180 * (270 + 30 * (hours + minutes / 60))), 150 + 100 * Math.sin(Math.PI / 180 * (270 + 30 * (hours + minutes / 60))));
+        clock_ctx.stroke();
     }
 
     function rotate() {
@@ -6284,7 +6369,7 @@ if (ua.includes("mobile")) {
         }
     }
 
-    function draw() {
+    function clock_draw() {
         drawBoard();
         drawScale();
         drawText();
@@ -6293,41 +6378,41 @@ if (ua.includes("mobile")) {
 
     function drawText() {
         dateText = `${year}-${("0" + month).slice(-2)}-${("0" + date).slice(-2)} ${dayArr[day]}`;
-        ctx.font = "20px 'ＭＳ ゴシック'";
-        ctx.textAlign = "center";
+        clock_ctx.font = "20px 'ＭＳ ゴシック'";
+        clock_ctx.textAlign = "center";
         textArrX = [210, 255, 275, 260, 215, 150, 90, 45, 25, 45, 85, 150];
         textArrY = [55, 100, 160, 225, 270, 285, 270, 220, 160, 100, 55, 35];
         for (let i = 0; i <= 11; i++) {
-            ctx.fillText(i + 1, textArrX[i], textArrY[i]);
+            clock_ctx.fillText(i + 1, textArrX[i], textArrY[i]);
         }
-        ctx.font = "15px 'ＭＳ ゴシック'";
-        ctx.fillText(dateText, 150, 80);
-        ctx.fillText(branchAmPm(), 150, 100);
+        clock_ctx.font = "15px 'ＭＳ ゴシック'";
+        clock_ctx.fillText(dateText, 150, 80);
+        clock_ctx.fillText(branchAmPm(), 150, 100);
     }
 
     function drawScale() {
         for (let l = 0; l < 60; l++) {
-            ctx.beginPath();
-            ctx.moveTo(150 + 150 * Math.cos(Math.PI / 180 * (270 + l * 6)), 150 + 150 * Math.sin(Math.PI / 180 * (270 + l * 6)));
-            ctx.lineTo(150 + 145 * Math.cos(Math.PI / 180 * (270 + l * 6)), 150 + 145 * Math.sin(Math.PI / 180 * (270 + l * 6)));
-            ctx.lineWidth = 1;
-            ctx.stroke();
+            clock_ctx.beginPath();
+            clock_ctx.moveTo(150 + 150 * Math.cos(Math.PI / 180 * (270 + l * 6)), 150 + 150 * Math.sin(Math.PI / 180 * (270 + l * 6)));
+            clock_ctx.lineTo(150 + 145 * Math.cos(Math.PI / 180 * (270 + l * 6)), 150 + 145 * Math.sin(Math.PI / 180 * (270 + l * 6)));
+            clock_ctx.lineWidth = 1;
+            clock_ctx.stroke();
         }
         for (let m = 0; m < 12; m++) {
-            ctx.beginPath();
-            ctx.moveTo(150 + 150 * Math.cos(Math.PI / 180 * (270 + m * 30)), 150 + 150 * Math.sin(Math.PI / 180 * (270 + m * 30)));
-            ctx.lineTo(150 + 140 * Math.cos(Math.PI / 180 * (270 + m * 30)), 150 + 140 * Math.sin(Math.PI / 180 * (270 + m * 30)));
-            ctx.lineWidth = 1.5;
-            ctx.stroke();
+            clock_ctx.beginPath();
+            clock_ctx.moveTo(150 + 150 * Math.cos(Math.PI / 180 * (270 + m * 30)), 150 + 150 * Math.sin(Math.PI / 180 * (270 + m * 30)));
+            clock_ctx.lineTo(150 + 140 * Math.cos(Math.PI / 180 * (270 + m * 30)), 150 + 140 * Math.sin(Math.PI / 180 * (270 + m * 30)));
+            clock_ctx.lineWidth = 1.5;
+            clock_ctx.stroke();
         }
     }
 
     function drawBoard() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.beginPath();
-        ctx.arc(150, 150, 150, 0, Math.PI * 2);
-        ctx.lineWidth = 1.0;
-        ctx.stroke();
+        clock_ctx.clearRect(0, 0, clock_canvas.width, clock_canvas.height);
+        clock_ctx.beginPath();
+        clock_ctx.arc(150, 150, 150, 0, Math.PI * 2);
+        clock_ctx.lineWidth = 1.0;
+        clock_ctx.stroke();
     }
 
     function getTime() {
@@ -6339,20 +6424,23 @@ if (ua.includes("mobile")) {
         hours = d.getHours() - 12;
         minutes = d.getMinutes();
         seconds = d.getSeconds();
-        draw()
+        clock_draw()
     }
 
     document.querySelector('.youtubevideo_button').addEventListener('click', function () {
         const url = document.querySelector("#youtube").value;
         const id = url.replace("watch?v=", "embed/");
         document.querySelector("#youtubeframe").src = id + "?enablejsapi=1&mute=1";
+        setTimeout(() => {
+            y_iframeController('playVideo');
+        }, 1000);
+
     });
 
     function url_save() {
         const url2 = document.querySelector("#youtube").value;
         const id2 = url2.replace("watch?v=", "embed/");
         const url3 = id2 + "?enablejsapi=1&mute=1";
-        console.log(url3)
         localStorage.setItem('video_url', url3)
     }
 
@@ -6474,6 +6562,168 @@ if (ua.includes("mobile")) {
     // デバイスの向き変更イベントを追跡
     window.addEventListener("orientationchange", getOrientation);
 
+
+    function drawOmikuji() {
+        // おみくじの結果のリスト
+        const omikuji_results = ['大吉', '中吉', '小吉', '末吉', '凶'];
+        // ランダムなインデックスを生成
+        const index = Math.floor(Math.random() * omikuji_results.length);
+        // 結果をアラートで表示
+        document.querySelector('.omikuji_text').textContent = omikuji_results[index] + ' です！';
+    }
+
+    const request = new PresentationRequest('nexser.html');
+
+    const monitorAvailability = async () => {
+        const availability = await request.getAvailability();
+        console.log('ディスプレイ: ' + (availability.value ? 'あり' : 'なし'));
+        availability.addEventListener('change', () => {
+            console.log('ディスプレイ: ' + (availability.value ? 'あり' : 'なし'));
+        });
+    };
+    monitorAvailability();
+
+
+    function localmemory_size() {
+        var testKey = 'testStorageKey';
+        var testData = new Array(1024).join('a'); // 1KBのデータを作成
+        var success = true;
+        var maxSize = 0;
+        try {
+            // ローカルストレージに1KBずつデータを追加していく
+            while (success) {
+                localStorage.setItem(testKey + maxSize, testData);
+                maxSize++;
+            }
+        } catch (e) {
+            success = false;
+        }
+        for (var i = 0; i < maxSize; i++) {
+            localStorage.removeItem(testKey + i);
+        }
+        document.querySelector('.local_memory').textContent = '　' + maxSize + 'KB' + '　';
+        localStorage.setItem('maxSize', maxSize)
+    }
+
+    setInterval(() => {
+        function getLocalStorageSize() {
+            let total = 0;
+            for (let key in localStorage) {
+                if (localStorage.hasOwnProperty(key)) {
+                    total += key.length + localStorage[key].length;
+                }
+            }
+            return total;
+        }
+        // キロバイト単位でローカルストレージのサイズを取得
+        const sizeInKilobytes = getLocalStorageSize() / 1024;
+        document.querySelector('.local_memory2').textContent = '　' + sizeInKilobytes + 'KB' + '　';
+
+        if (localStorage.getItem('maxSize') == 0) {
+            document.querySelector('.window_error_text').textContent = "text none not save!"
+            error_windows.classList.remove('active')
+            sound3()
+            document.querySelector('.test_allwindow').style.display = "block";
+        }
+    }, 1000);
+
+    // HTMLのcanvas要素を取得
+    const paint_canvas = document.getElementById('paint_canvas');
+    const paint_ctx = paint_canvas.getContext('2d');
+
+    // 背景色を設定
+    paint_ctx.fillStyle = '#ffffff';
+    paint_ctx.fillRect(0, 0, paint_canvas.width, paint_canvas.height);
+
+    // 描画状態のフラグ
+    let paint_isDrawing = false;
+    let paint_lastX = 0;
+    let paint_lastY = 0;
+    let paint_lineWidth = 5;
+
+    // マウス操作に対応
+    paint_canvas.addEventListener('mousedown', startDrawing);
+    paint_canvas.addEventListener('mousemove', paint_draw);
+    paint_canvas.addEventListener('mouseup', stopDrawing);
+    paint_canvas.addEventListener('mouseout', stopDrawing);
+
+    // タッチ操作に対応（タッチデバイス用）
+    paint_canvas.addEventListener('touchstart', startDrawing);
+    paint_canvas.addEventListener('touchmove', paint_draw);
+    paint_canvas.addEventListener('touchend', stopDrawing);
+
+    document.getElementById('paint_selectcolor').addEventListener('change', function () {
+        localStorage.removeItem('eraser_color')
+    });
+
+    // 描画開始
+    function startDrawing(e) {
+        paint_isDrawing = true;
+        [paint_lastX, paint_lastY] = [e.offsetX || e.touches[0].clientX, e.offsetY || e.touches[0].clientY];
+    }
+
+    // 描画停止
+    function stopDrawing() {
+        paint_isDrawing = false;
+        paint_ctx.beginPath();
+    }
+
+    // 描画
+    function paint_draw(e) {
+        if (!paint_isDrawing) return;
+        if (localStorage.getItem('eraser_color')) {
+            paint_ctx.strokeStyle = "white";
+        } else {
+            paint_ctx.strokeStyle = document.getElementById('paint_selectcolor').value;
+        }
+
+        paint_ctx.lineWidth = paint_lineWidth;
+        paint_ctx.lineCap = 'round';
+        paint_ctx.lineJoin = 'round';
+        paint_ctx.beginPath();
+        paint_ctx.moveTo(paint_lastX, paint_lastY);
+        paint_ctx.lineTo(e.offsetX || e.touches[0].clientX, e.offsetY || e.touches[0].clientY);
+        paint_ctx.stroke();
+        [paint_lastX, paint_lastY] = [e.offsetX || e.touches[0].clientX, e.offsetY || e.touches[0].clientY];
+    }
+    const paintwidth = document.querySelector('.paint_width').value = "5";
+    lineWidth = paintwidth;
+    paint_ctx.strokeStyle = "black";
+    // 線の太さの変更
+    function changeLineWidth() {
+        const paintwidth = document.querySelector('.paint_width').value;
+        paint_lineWidth = paintwidth;
+    }
+
+    // 消しゴム
+    function eraser(eraser_color) {
+        var fillStyleColor = paint_ctx.fillStyle;
+        strokeStyle = fillStyleColor;
+        localStorage.setItem('eraser_color', eraser_color)
+    }
+
+    // 図形の描画
+    function drawShape(shape) {
+        // ここに図形を描画するコードを追加
+    }
+
+    // ツールバーの機能
+    // ここにツールバーのボタンに対応する関数を追加
+
+    // キャンバスを画像として保存
+    function downloadCanvasAsPng() {
+        let canvas = document.getElementById('paint_canvas');
+        let link = document.createElement('a');
+        link.href = canvas.toDataURL('image/png');
+        link.download = 'canvas.png';
+        link.click();
+    }
+
+    function paint_allclear() {
+        paint_ctx.clearRect(0, 0, paint_canvas.width, paint_canvas.height);
+        paint_ctx.fillStyle = '#ffffff';
+        paint_ctx.fillRect(0, 0, paint_canvas.width, paint_canvas.height);
+    }
 
 
 
