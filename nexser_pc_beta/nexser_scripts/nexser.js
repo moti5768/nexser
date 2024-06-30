@@ -126,7 +126,6 @@ if (ua.includes("mobile")) {
         setTimeout(back_pattern_set, resolve());
         setTimeout(load_videourl, resolve());
         setTimeout(pageLoad, resolve())
-
         setTimeout(load_nexser, resolve());
         setTimeout(() => {
             const t = localStorage.getItem('taskbar_height');
@@ -483,6 +482,7 @@ if (ua.includes("mobile")) {
     });
 
     function load_nexser() {
+        localStorage.removeItem('no_shutdown')
         if (localStorage.getItem('password') && !localStorage.getItem('login') && !localStorage.getItem('prompt_data3') && localStorage.getItem('prompt_data')) {
             prompt.style.display = "none";
             nexser_program.style.display = "none";
