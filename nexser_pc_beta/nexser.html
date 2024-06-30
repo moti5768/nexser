@@ -744,7 +744,7 @@
 
                         </div>
 
-                        <div class="window_content">
+                        <div class="window_contents back_silver" style="height: 100%;">
                             <div>
                                 <input type="button" class="button2" value="&emsp;save&emsp;"
                                     onclick="objective_save()">
@@ -762,7 +762,7 @@
                                     cols="1" rows="1"></textarea>
                             </form>
                             <p style="display: inline;" class="border2">目標を記入:</p>
-                            <form name="objective_form">
+                            <form name="objective_form" style="height: 100%;">
                                 <textarea id="objective_text" name="objective_area" class="objective_area border2"
                                     style="overflow: scroll; outline: none;" cols="50" rows="15"></textarea>
                             </form>
@@ -3271,11 +3271,11 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         </div>
 
                         <div class="window_contents back_silver">
-                            <canvas class="border2" id="paint_canvas" width="800" height="450"></canvas>
+                            <canvas class="border2" id="paint_canvas" width="800" height="450">aaaaa</canvas>
                         </div>
-                        <div class="window_bottom large" style="width: 100%; display: flex;">
-                            <button class="button2 borderinline_dotted"
-                                onclick="downloadCanvasAsPng()">&nbsp;画像出力&nbsp;</button>
+                        <div class="window_bottom large" style="width: 100%;">
+                            <button class="button2 borderinline_dotted" onclick="downloadCanvasAsPng()">
+                                &nbsp;画像出力&nbsp;</button>
                             <button class="button2 borderinline_dotted" onclick="eraser()">&nbsp;消しゴム&nbsp;</button>
                             <button class="button2 borderinline_dotted"
                                 onclick="paint_allclear()">&nbsp;全削除&nbsp;</button>
@@ -3300,6 +3300,24 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                     style="margin-top: 4px; height: 20px;"></textarea>
                                 <button class="button2 borderinline_dotted"
                                     onclick="changeLineWidth()">&nbsp;変更&nbsp;</button>
+
+                                <textarea class="paint_text medium border2" style="margin-top: 4px; height: 20px;"
+                                    placeholder="表示する文字の入力"></textarea>
+                                <button class="button2 borderinline_dotted"
+                                    onclick="paintcanvas_text()">キャンバスに文字を表示</button>
+                            </div>
+                            <div style="display: flex;">
+                                <textarea class="paint_filename medium border2"
+                                    style="margin-top: 4px; height: 20px; width: 200px;"
+                                    placeholder="保存するファイル名の入力"></textarea>
+                                <button class="button2 borderinline_dotted" onclick="
+                                    canvasdata_file()">&emsp;出力&emsp;</button>
+                                <label>
+                                    <span class="button2 borderinline_dotted">&emsp;インポート&emsp;</span><input
+                                        class="button2" type="file" id="fileInput" onchange="testfiles(this)"
+                                        style="display: none;">
+                                </label>
+                                </form>
                             </div>
                         </div>
 

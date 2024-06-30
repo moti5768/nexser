@@ -421,7 +421,6 @@ if (ua.includes("mobile")) {
             if (localStorage.getItem('taskbar_height') && (localStorage.getItem('taskbar_autohide'))) {
                 const t2 = t - 5;
                 document.getElementById('taskbar').style.bottom = "-" + t2 + "px";
-                console.log(t2)
             }
             resolve();
         }, 10);
@@ -490,7 +489,6 @@ if (ua.includes("mobile")) {
             nexser.style.display = "block";
             desktop.style.display = "none"
             document.querySelector('.password_form').style.display = "block"
-            console.log("no login")
         } else if (!localStorage.getItem('start_nexser') && localStorage.getItem('prompt_data')) {
             start_check()
         } else if (localStorage.getItem('prompt_data') && localStorage.getItem('start_nexser')) {
@@ -1917,7 +1915,6 @@ if (ua.includes("mobile")) {
         if (localStorage.getItem('taskbar_height') && (localStorage.getItem('taskbar_autohide'))) {
             const t2 = t - 5;
             document.getElementById('taskbar').style.bottom = "-" + t2 + "px";
-            console.log(t2)
         }
     }
     function taskbar_reset() {
@@ -1932,7 +1929,6 @@ if (ua.includes("mobile")) {
                 const t = localStorage.getItem('taskbar_height');
                 const t2 = t - 5;
                 document.getElementById('taskbar').style.bottom = "-" + t2 + "px";
-                console.log(t2)
             } else if (!localStorage.getItem('taskbar_height') && localStorage.getItem('taskbar_autohide')) {
                 document.getElementById('taskbar').style.bottom = "-35px"
             }
@@ -1947,8 +1943,7 @@ if (ua.includes("mobile")) {
             if (localStorage.getItem('taskbar_height') && (localStorage.getItem('taskbar_autohide'))) {
                 const t = localStorage.getItem('taskbar_height');
                 const t2 = t - 5;
-                document.getElementById('taskbar').style.bottom = "-" + t2 + "px";
-                console.log(t2)
+                document.getElementById('taskbar').style.bottom = "-" + t2 + "px"; z
             } else if (localStorage.getItem('taskbar_autohide')) {
                 taskbar.style.bottom = "-35px"
             }
@@ -2267,12 +2262,10 @@ if (ua.includes("mobile")) {
             case command_5 + e:
                 prompt_text2.style.color = "";
                 var result2 = Function('return (' + e + ');')();
-                console.log(result2);
                 break;
 
             case command_6 + f:
                 prompt_text2.style.color = "";
-                console.log(f);
                 break;
 
             case command_7 + g:
@@ -2881,7 +2874,6 @@ if (ua.includes("mobile")) {
             minscreenbutton2.style.bottom = "0px"
 
             const minscreenbutton3 = minscreenbutton.clientWidth;
-            console.log(minscreenbutton3);
 
             minscreenbutton.classList.remove('rightwindow');
             minscreenbutton.classList.remove('leftwindow');
@@ -6105,29 +6097,21 @@ if (ua.includes("mobile")) {
     }
 
     // progress
-    // プログレスバーの進捗値
     var val;
     // 一定間隔で処理を行うintervalのIDを保持
     var intervalID;
 
-    // ボタンを押した時に動く関数
     function func1() {
         document.getElementById("myProgress").style.display = "block"
         val = 0;
         document.getElementById("myProgress").value = val;
-        // 50msおきにプログレスバーを更新する
         intervalID = setInterval("updateProgress()", 0);
     }
 
-    // プログレスバーを更新する
     function updateProgress() {
-        // プログレスバーの進捗値を更新し、プログレスバーに反映させる
         val += 1;
         document.getElementById("myProgress").value = val;
         document.getElementById("myProgress").innerText = val + "%";
-        // console.log("progress:", val, "%");
-
-        // 最大値まで達したら終了
         if (val == 100) {
             clearInterval(intervalID);
             setTimeout(() => {
@@ -6141,19 +6125,13 @@ if (ua.includes("mobile")) {
         document.getElementById("myProgress").style.display = "block"
         val = 0;
         document.getElementById("myProgress").value = val;
-        // 50msおきにプログレスバーを更新する
         intervalID = setInterval("updateProgress2()", 0);
     }
 
-    // プログレスバーを更新する
     function updateProgress2() {
-        // プログレスバーの進捗値を更新し、プログレスバーに反映させる
         val += 20;
         document.getElementById("myProgress").value = val;
         document.getElementById("myProgress").innerText = val + "%";
-        // console.log("progress:", val, "%");
-
-        // 最大値まで達したら終了
         if (val == 100) {
             clearInterval(intervalID);
             setTimeout(() => {
@@ -6162,8 +6140,6 @@ if (ua.includes("mobile")) {
             }, 1000);
         }
     }
-
-    // old_screen()
 
     function old_screen() {
         document.getElementById('nex').classList.add('old');
@@ -6513,21 +6489,6 @@ if (ua.includes("mobile")) {
         minscreen_buttons.textContent = "❒"
     })
 
-
-
-
-    // navigator.bluetooth.getDevices()
-    //     .then(devices => {
-    //         console.log('検出されたデバイス:', devices);
-    //         // 検出されたデバイスの情報を処理する
-    //     })
-    //     .catch(error => {
-    //         console.error('デバイスの検出に失敗しました:', error);
-    //     });
-
-
-
-    // 利用可能なメディアデバイスのリストを取得してコンソールに表示する
     navigator.mediaDevices.enumerateDevices()
         .then((devices) => {
             devices.forEach((device) => {
@@ -6562,24 +6523,12 @@ if (ua.includes("mobile")) {
 
     function drawOmikuji() {
         // おみくじの結果のリスト
-        const omikuji_results = ['大吉', '中吉', '小吉', '末吉', '凶'];
+        const omikuji_results = ['大吉', '中吉', '小吉', '末吉', '凶', '大凶', '超大凶'];
         // ランダムなインデックスを生成
         const index = Math.floor(Math.random() * omikuji_results.length);
         // 結果をアラートで表示
         document.querySelector('.omikuji_text').textContent = omikuji_results[index] + ' です！';
     }
-
-    const request = new PresentationRequest('nexser.html');
-
-    const monitorAvailability = async () => {
-        const availability = await request.getAvailability();
-        console.log('ディスプレイ: ' + (availability.value ? 'あり' : 'なし'));
-        availability.addEventListener('change', () => {
-            console.log('ディスプレイ: ' + (availability.value ? 'あり' : 'なし'));
-        });
-    };
-    monitorAvailability();
-
 
     function localmemory_size() {
         var testKey = 'testStorageKey';
@@ -6623,6 +6572,7 @@ if (ua.includes("mobile")) {
             document.querySelector('.test_allwindow').style.display = "block";
         }
     }, 1000);
+
 
     // HTMLのcanvas要素を取得
     const paint_canvas = document.getElementById('paint_canvas');
@@ -6704,8 +6654,20 @@ if (ua.includes("mobile")) {
         // ここに図形を描画するコードを追加
     }
 
-    // ツールバーの機能
-    // ここにツールバーのボタンに対応する関数を追加
+    // テキストのスタイルを設定
+    paint_ctx.font = '48px serif';
+    paint_ctx.textAlign = 'center';
+    paint_ctx.textBaseline = 'middle';
+
+    function paintcanvas_text() {
+        const paintcanvas_text = document.querySelector('.paint_text').value;
+
+        paint_ctx.fillStyle = 'white';
+        paint_ctx.strokeStyle = 'black';
+        paint_ctx.lineWidth = '1';
+        paint_ctx.fillText(paintcanvas_text, paint_canvas.width / 2, paint_canvas.height / 2);
+        paint_ctx.strokeText(paintcanvas_text, paint_canvas.width / 2, paint_canvas.height / 2);
+    }
 
     // キャンバスを画像として保存
     function downloadCanvasAsPng() {
@@ -6716,12 +6678,48 @@ if (ua.includes("mobile")) {
         link.click();
     }
 
+    // Canvasの内容をJSONに出力
+    function canvasdata_file() {
+        var canvas = document.getElementById('paint_canvas');
+        var dataURL = canvas.toDataURL();
+        var jsonData = JSON.stringify({ image: dataURL });
+
+        // JSONデータをBlobとして外部ファイルに保存
+        var blob = new Blob([jsonData], { type: 'application/json' });
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = document.querySelector('.paint_filename').value + '.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+
+    function testfiles(event) {
+        var file = event.files[0]; // 選択されたファイルを取得
+        var reader = new FileReader();
+        // ファイルの読み込みが完了したら実行されるイベント
+        reader.onload = function (e) {
+            var jsonData = e.target.result; // 読み込んだファイルの内容
+            var data = JSON.parse(jsonData); // JSONデータをオブジェクトに変換
+            // Canvasに描画
+            var canvas = document.getElementById('paint_canvas');
+            var ctx = canvas.getContext('2d');
+            var image = new Image();
+            // 画像が読み込まれたらCanvasに描画
+            image.onload = function () {
+                ctx.drawImage(image, 0, 0);
+            };
+            // ImageオブジェクトのソースにデータURLを設定
+            image.src = data.image;
+        };
+        // ファイルの内容をテキストとして読み込む
+        reader.readAsText(file);
+    }
+
     function paint_allclear() {
         paint_ctx.clearRect(0, 0, paint_canvas.width, paint_canvas.height);
         paint_ctx.fillStyle = '#ffffff';
         paint_ctx.fillRect(0, 0, paint_canvas.width, paint_canvas.height);
     }
-
-
 
 }
