@@ -1,5 +1,3 @@
-"use strict";
-
 let data = []; // 爆弾が置いてある場所を管理 1=爆弾、0=何もない、-1=最初にクリックされたマスと周囲
 let h, w, bomb, count;
 let startTime; // 測定開始時間
@@ -225,9 +223,12 @@ function timer() {
 }
 
 document.querySelector('.bom_close').addEventListener('click', function () {
+    bom_reset()
+})
+function bom_reset() {
     text.style.display = "block";
     clearTimeout(timeoutId);
     time.textContent = "000";
     result.textContent = "";
     document.getElementsByClassName('bom_stage')[0].style.display = "none";
-})
+}
