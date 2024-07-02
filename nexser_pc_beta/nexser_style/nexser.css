@@ -592,17 +592,11 @@ input[type="file"] {
 }
 
 .taskbar_rightgroup {
-    width: 250px;
+    display: flex;
     font-size: medium;
     position: absolute;
     right: 0px;
-    column-count: 3;
     top: 6px;
-}
-
-.screen_light_range {
-    position: absolute;
-    right: 300px;
 }
 
 .screen_light_range_child {
@@ -629,25 +623,31 @@ input[type="file"] {
 
 .inport_icon {
     background: silver;
-    position: absolute;
-    left: -30px;
     text-align: center;
+    margin-left: 10px;
 }
 
 .time {
     background: silver;
     position: relative;
     text-align: center;
-    margin-left: 40px;
+    margin-left: 10px;
+    margin-right: 5px;
 }
 
 .task_battery {
     background: silver;
     position: relative;
+    margin-left: 5px;
+    margin-right: 5px;
 }
 
 .battery_menu {
     display: none;
+}
+
+.battery_time {
+    background: silver;
     position: absolute;
     bottom: 35px;
 }
@@ -2109,11 +2109,6 @@ textarea {
 
 /* objective */
 
-.objective_menu {
-    width: 750px;
-    height: 450px;
-}
-
 .objective_title_area {
     background: white;
     white-space: nowrap;
@@ -2123,9 +2118,11 @@ textarea {
 .objective_area {
     background: whitesmoke;
     white-space: nowrap;
-    width: 100%;
-    height: 90%;
-    box-sizing: border-box;
+    resize: both;
+    width: 750px;
+    height: 400px;
+    min-width: 750px;
+    min-height: 200px;
     font-size: large;
 }
 

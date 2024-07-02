@@ -296,8 +296,13 @@ if (ua.includes("mobile")) {
             if (localStorage.getItem('clock_button')) {
                 document.querySelector('.clock_button').textContent = "on"
                 document.querySelector('.time').style.display = "none";
-                document.querySelector('.taskbar_rightgroup').style.width = "140px"
             }
+
+            if (localStorage.getItem('taskbar_zindex_0')) {
+                taskbar.style.zIndex = "0";
+                document.querySelector('.taskbar_zindex_0').textContent = "on"
+            }
+
             if (localStorage.getItem('taskbar_position_button')) {
                 document.querySelector('.taskbar_position_button').textContent = "bottom"
                 document.getElementById('taskbar').style.top = "0px"
@@ -599,7 +604,6 @@ if (ua.includes("mobile")) {
         z_index.textContent = getLargestZIndex('.child_windows');
     });
 
-
     document.querySelectorAll('.child_windows,.welcome_windows,.error_windows,.warning_windows').forEach(function (allwindow) {
         allwindow.addEventListener('mousedown', function () {
             document.querySelector('.battery_child').classList.remove('pressed');
@@ -608,8 +612,6 @@ if (ua.includes("mobile")) {
             document.querySelector('.sit_button').classList.remove('pressed');
         })
     })
-
-
 
     Array.from(document.getElementsByClassName('button')).forEach((button) => {
         button.addEventListener('click', () => {
@@ -1340,19 +1342,13 @@ if (ua.includes("mobile")) {
             const element = document.querySelector('.my_computer');
             element.closest('.child_windows');
             element.classList.remove('active');
-
-            alltitle_navyreomve();
-            wt = element.firstElementChild;
-            wt.classList.add('navy');
+            zindexwindow_addnavy()
         }
         if (localStorage.getItem('startup_note')) {
             const element = document.querySelector('.note_pad');
             element.closest('.child_windows');
             element.classList.remove('active');
-
-            alltitle_navyreomve();
-            wt = element.firstElementChild;
-            wt.classList.add('navy');
+            zindexwindow_addnavy()
         }
         if (!note_pad.classList.contains('active')) {
             document.querySelector('.note_area').focus();
@@ -1361,55 +1357,37 @@ if (ua.includes("mobile")) {
             const element = document.querySelector('.color');
             element.closest('.child_windows');
             element.classList.remove('active');
-
-            alltitle_navyreomve();
-            wt = element.firstElementChild;
-            wt.classList.add('navy');
+            zindexwindow_addnavy()
         }
         if (localStorage.getItem('startup_screen')) {
             const element = document.querySelector('.screen_text_menu');
             element.closest('.child_windows');
             element.classList.remove('active');
-
-            alltitle_navyreomve();
-            wt = element.firstElementChild;
-            wt.classList.add('navy');
+            zindexwindow_addnavy()
         }
         if (localStorage.getItem('startup_htmlviewer_edit')) {
             const element = document.querySelector('.htmlviewer_edit_menu');
             element.closest('.child_windows');
             element.classList.remove('active');
-
-            alltitle_navyreomve();
-            wt = element.firstElementChild;
-            wt.classList.add('navy');
+            zindexwindow_addnavy()
         }
         if (localStorage.getItem('startup_guidebook')) {
             const element = document.querySelector('.nexser_guidebook_menu');
             element.closest('.child_windows');
             element.classList.remove('active');
-
-            alltitle_navyreomve();
-            wt = element.firstElementChild;
-            wt.classList.add('navy');
+            zindexwindow_addnavy()
         }
         if (localStorage.getItem('startup_objective')) {
             const element = document.querySelector('.objective_menu');
             element.closest('.child_windows');
             element.classList.remove('active');
-
-            alltitle_navyreomve();
-            wt = element.firstElementChild;
-            wt.classList.add('navy');
+            zindexwindow_addnavy()
         }
         if (localStorage.getItem('startup_calendar')) {
             const element = document.querySelector('.calendar_menu');
             element.closest('.child_windows');
             element.classList.remove('active');
-
-            alltitle_navyreomve();
-            wt = element.firstElementChild;
-            wt.classList.add('navy');
+            zindexwindow_addnavy()
         }
         titlecolor_set()
     }
@@ -2662,7 +2640,6 @@ if (ua.includes("mobile")) {
         });
     }
 
-
     function p_clear() {
         document.querySelector('.focus2').value = "";
     }
@@ -2758,10 +2735,6 @@ if (ua.includes("mobile")) {
                 const closebutton = close_button.closest('.child_windows');
                 closebutton.classList.add('active');
                 taskbtn_load()
-
-                const cb = close_button.closest('.child_windows');
-                const cb2 = cb.firstElementChild;
-                cb2.classList.remove('navy')
             }, 100);
             setTimeout(() => {
                 document.querySelectorAll('.select_window').forEach(function (select_window) {
@@ -2778,8 +2751,8 @@ if (ua.includes("mobile")) {
                 const closebutton2 = close_button2.closest('.error_windows');
                 closebutton2.classList.add('active');
                 document.querySelector('.test_allwindow').style.display = "none";
-                document.getElementsByClassName('error_title_text')[0].textContent = "error"
-                document.getElementsByClassName('error_icon')[0].style.display = ""
+                document.getElementsByClassName('error_title_text')[0].textContent = "error";
+                document.getElementsByClassName('error_icon')[0].style.display = "";
             }, 100);
         });
     })
@@ -2792,17 +2765,6 @@ if (ua.includes("mobile")) {
             }, 100);
         });
     })
-
-    document.querySelectorAll('.close_button4').forEach(function (close_button4) {
-        close_button4.addEventListener('click', function () {
-            setTimeout(() => {
-                const cb = close_button4.closest('.child_windows');
-                const cb2 = cb.firstElementChild;
-                cb2.classList.remove('navy')
-            }, 100);
-        });
-    })
-
 
     document.querySelectorAll('.child_windows').forEach(function (child_windows) {
         child_windows.classList.add('default')
@@ -2862,8 +2824,6 @@ if (ua.includes("mobile")) {
                 bigscreenbutton.style.height = child_windows_big2 + - + task + "px"
             }, 100);
 
-
-
         });
     })
 
@@ -2890,7 +2850,6 @@ if (ua.includes("mobile")) {
                 minscreenbutton.classList.remove('big');
                 minscreenbutton.style.transition = ""
             }, 100);
-
 
             setTimeout(() => {
                 minscreenbutton.style.height = "";
@@ -3060,8 +3019,8 @@ if (ua.includes("mobile")) {
             let shiftX = event.clientX - window_half_big.getBoundingClientRect().left;
             let shiftY = event.clientY - window_half_big.getBoundingClientRect().top;
             let top = document.querySelector('.top');
+            console.log(top)
             moveAt(event.pageX, event.pageY);
-            // ボールを（pageX、pageY）座標の中心に置く
             function moveAt(pageX, pageY) {
                 window_half_big.style.left = pageX - shiftX + 'px';
                 window_half_big.style.top = pageY - shiftY + 'px';
@@ -3389,20 +3348,21 @@ if (ua.includes("mobile")) {
             start_menu.style.display = "none";
             document.querySelector('.start_button').classList.remove('pressed');
             taskbtn_load()
-            document.querySelectorAll('.title').forEach(function (wt1) {
-                wt1.classList.remove('navy')
-            })
-            t_childwindows.classList.add('navy');
 
             z = largestZIndex++;
             window_z_index = zindexchildwindows.style.zIndex = z;
             getLargestZIndex('.child_windows');
             z_index.textContent = getLargestZIndex('.child_windows');
-
+            zindexwindow_addnavy()
             titlecolor_set()
         });
         z_index_child_windows.addEventListener('click', function () {
-            titlecolor_set()
+            zindexwindow_addnavy()
+            setTimeout(() => {
+                zindexwindow_addnavy()
+                titlecolor_set()
+            }, 100);
+
         })
     })
 
@@ -3430,26 +3390,18 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.nexser_search').forEach(function (nexser_search) {
         nexser_search.addEventListener('click', function () {
             nexser_search_menu.classList.toggle('active');
-            nexser_search_menu.closest('.child_windows');
             z = largestZIndex++;
             nexser_search_menu.style.zIndex = z;
-
-            alltitle_navyreomve();
-            test = nexser_search_menu.firstElementChild;
-            test.classList.add('navy');
-            titlecolor_set();
+            zindexwindow_addnavy()
         });
     });
 
     function nexser_search() {
-        // Declare variables
         var input, filter, ul, li, a, i, txtValue;
         input = document.getElementById('myInput');
         filter = input.value.toUpperCase();
         ul = document.getElementById("myUL");
         li = ul.getElementsByTagName('li');
-
-        // Loop through all list items, and hide those who don't match the search query
         for (i = 0; i < li.length; i++) {
             a = li[i].getElementsByTagName("span")[0];
             txtValue = a.textContent || a.innerText;
@@ -3461,451 +3413,298 @@ if (ua.includes("mobile")) {
         }
     }
 
-
     document.querySelectorAll('.nexser_guidebook').forEach(function (nexser_guidebook) {
         nexser_guidebook.addEventListener('click', function () {
             nexser_guidebook_menu.classList.toggle('active');
-            nexser_guidebook_menu.closest('.child_windows');
             z = largestZIndex++;
             nexser_guidebook_menu.style.zIndex = z;
-
-            alltitle_navyreomve();
-            test = nexser_guidebook_menu.firstElementChild;
-            test.classList.add('navy');
-            titlecolor_set()
+            zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.guidebook_window').forEach(function (guidebook_window) {
         guidebook_window.addEventListener('click', function () {
             guidebook_window_menu.classList.toggle('active');
-            guidebook_window_menu.closest('.child_windows');
             z = largestZIndex++;
             guidebook_window_menu.style.zIndex = z;
-
-            alltitle_navyreomve();
-            test = guidebook_window_menu.firstElementChild;
-            test.classList.add('navy');
-            titlecolor_set()
+            zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.guidebook_file').forEach(function (guidebook_file) {
         guidebook_file.addEventListener('click', function () {
             guidebook_file_menu.classList.toggle('active');
-            guidebook_file_menu.closest('.child_windows');
             z = largestZIndex++;
             guidebook_file_menu.style.zIndex = z;
-
-            alltitle_navyreomve();
-            test = guidebook_file_menu.firstElementChild;
-            test.classList.add('navy');
-            titlecolor_set()
+            zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.guidebook_taskbar').forEach(function (guidebook_taskbar) {
         guidebook_taskbar.addEventListener('click', function () {
             guidebook_taskbar_menu.classList.toggle('active');
-            guidebook_taskbar_menu.closest('.child_windows');
             z = largestZIndex++;
             guidebook_taskbar_menu.style.zIndex = z;
-
-            alltitle_navyreomve();
-            test = guidebook_taskbar_menu.firstElementChild;
-            test.classList.add('navy');
-            titlecolor_set()
+            zindexwindow_addnavy()
         });
     });
 
     document.querySelectorAll('.passmenu_button').forEach(function (passmenu_button) {
         passmenu_button.addEventListener('click', function () {
             password_menu.classList.toggle('active');
-            password_menu.closest('.child_windows');
             z = largestZIndex++;
             password_menu.style.zIndex = z;
-
-            alltitle_navyreomve();
-            wt = password_menu.firstElementChild;
-            wt.classList.add('navy');
-
+            zindexwindow_addnavy()
         });
     });
 
     document.querySelectorAll('.test_button').forEach(function (test_button) {
         test_button.addEventListener('click', function () {
             main.classList.toggle('active');
-            main.closest('.child_windows');
             z = largestZIndex++;
             main.style.zIndex = z;
-
-            alltitle_navyreomve();
-            wt = main.firstElementChild;
-            wt.classList.add('navy');
-
+            zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button2').forEach(function (test_button2) {
         test_button2.addEventListener('click', function () {
             my_computer.classList.toggle('active');
-            my_computer.closest('.child_windows');
             z = largestZIndex++;
             my_computer.style.zIndex = z;
-
-            alltitle_navyreomve();
-            wt = my_computer.firstElementChild;
-            wt.classList.add('navy');
+            zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button3').forEach(function (test_button3) {
         test_button3.addEventListener('click', function () {
             control.classList.toggle('active');
-            control.closest('.child_windows');
             z = largestZIndex++;
             control.style.zIndex = z;
-
-            alltitle_navyreomve();
-            wt = control.firstElementChild;
-            wt.classList.add('navy');
+            zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button4').forEach(function (test_button4) {
         test_button4.addEventListener('click', function () {
             color_menu.classList.toggle('active');
-            color_menu.closest('.child_windows');
             z = largestZIndex++;
             color_menu.style.zIndex = z;
-
-            alltitle_navyreomve();
-            wt = color_menu.firstElementChild;
-            wt.classList.add('navy');
+            zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button5').forEach(function (test_button5) {
         test_button5.addEventListener('click', function () {
             system_menu.classList.toggle('active');
-            system_menu.closest('.child_windows');
             z = largestZIndex++;
             system_menu.style.zIndex = z;
-
-            alltitle_navyreomve();
-            wt = system_menu.firstElementChild;
-            wt.classList.add('navy');
+            zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button6').forEach(function (test_button6) {
         test_button6.addEventListener('click', function () {
             window_prompt.classList.toggle('active');
-            window_prompt.closest('.child_windows');
             z = largestZIndex++;
             window_prompt.style.zIndex = z;
-
-            alltitle_navyreomve();
-            wt = window_prompt.firstElementChild;
-            wt.classList.add('navy');
+            zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button7').forEach(function (test_button7) {
         test_button7.addEventListener('click', function () {
             clock_menu.classList.toggle('active');
-            clock_menu.closest('.child_windows');
             z = largestZIndex++;
             clock_menu.style.zIndex = z;
-
-            alltitle_navyreomve();
-            wt = clock_menu.firstElementChild;
-            wt.classList.add('navy');
+            zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button8').forEach(function (test_button8) {
         test_button8.addEventListener('click', function () {
             sound_menu.classList.toggle('active');
-            sound_menu.closest('.child_windows');
             z = largestZIndex++;
             sound_menu.style.zIndex = z;
-
-            alltitle_navyreomve();
-            wt = sound_menu.firstElementChild;
-            wt.classList.add('navy');
+            zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button9').forEach(function (test_button9) {
         test_button9.addEventListener('click', function () {
             driver_menu.classList.toggle('active');
-            driver_menu.closest('.child_windows');
             z = largestZIndex++;
             driver_menu.style.zIndex = z;
-
-            alltitle_navyreomve();
-            wt = driver_menu.firstElementChild;
-            wt.classList.add('navy');
+            zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button10').forEach(function (test_button10) {
         test_button10.addEventListener('click', function () {
             mouse_menu.classList.toggle('active');
-            mouse_menu.closest('.child_windows');
             z = largestZIndex++;
             mouse_menu.style.zIndex = z;
-
-            alltitle_navyreomve();
-            wt = mouse_menu.firstElementChild;
-            wt.classList.add('navy');
+            zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button11').forEach(function (test_button11) {
         test_button11.addEventListener('click', function () {
             screen_text_menu.classList.toggle('active');
-            screen_text_menu.closest('.child_windows');
             z = largestZIndex++;
             screen_text_menu.style.zIndex = z;
-
-            alltitle_navyreomve();
-            wt = screen_text_menu.firstElementChild;
-            wt.classList.add('navy');
+            zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button12').forEach(function (test_button12) {
         test_button12.addEventListener('click', function () {
             note_pad.classList.toggle('active');
-            note_pad.closest('.child_windows');
             z = largestZIndex++;
             note_pad.style.zIndex = z;
+            zindexwindow_addnavy()
             if (!note_pad.classList.contains('active')) {
                 document.querySelector('.note_area').focus()
-                document.querySelectorAll('.title').forEach(function (wt1) {
-                    wt1.classList.remove('navy')
-                })
-                const note2 = note_pad.firstElementChild;
-                note2.classList.add('navy');
-
             }
         });
     });
     document.querySelectorAll('.test_button13').forEach(function (test_button13) {
         test_button13.addEventListener('click', function () {
             text_drop_menu.classList.toggle('active');
-            text_drop_menu.closest('.child_windows');
             z = largestZIndex++;
             text_drop_menu.style.zIndex = z;
-
-            alltitle_navyreomve();
-            wt = text_drop_menu.firstElementChild;
-            wt.classList.add('navy');
+            zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button14').forEach(function (test_button14) {
         test_button14.addEventListener('click', function () {
             windowmode_menu.classList.toggle('active');
-            windowmode_menu.closest('.child_windows');
             z = largestZIndex++;
             windowmode_menu.style.zIndex = z;
-
-            alltitle_navyreomve();
-            wt = windowmode_menu.firstElementChild;
-            wt.classList.add('navy');
+            zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button15').forEach(function (test_button15) {
         test_button15.addEventListener('click', function () {
             accessory_menu.classList.toggle('active');
-            accessory_menu.closest('.child_windows');
             z = largestZIndex++;
             accessory_menu.style.zIndex = z;
-
-            alltitle_navyreomve();
-            wt = accessory_menu.firstElementChild;
-            wt.classList.add('navy');
+            zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button16').forEach(function (test_button16) {
         test_button16.addEventListener('click', function () {
             calc_menu.classList.toggle('active');
-            calc_menu.closest('.child_windows');
             z = largestZIndex++;
             calc_menu.style.zIndex = z;
-
-            alltitle_navyreomve();
-            wt = calc_menu.firstElementChild;
-            wt.classList.add('navy');
+            zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button17').forEach(function (test_button17) {
         test_button17.addEventListener('click', function () {
             nexser_sound_menu.classList.toggle('active');
-            nexser_sound_menu.closest('.child_windows');
             z = largestZIndex++;
             nexser_sound_menu.style.zIndex = z;
-
-            alltitle_navyreomve();
-            wt = nexser_sound_menu.firstElementChild;
-            wt.classList.add('navy');
+            zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button18').forEach(function (test_button18) {
         test_button18.addEventListener('click', function () {
             camera_menu.classList.toggle('active');
-            camera_menu.closest('.child_windows');
             z = largestZIndex++;
             camera_menu.style.zIndex = z;
-
-            alltitle_navyreomve();
-            wt = camera_menu.firstElementChild;
-            wt.classList.add('navy');
+            zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button19').forEach(function (test_button19) {
         test_button19.addEventListener('click', function () {
             htmlviewer_edit_menu.classList.toggle('active');
-            htmlviewer_edit_menu.closest('.child_windows');
             z = largestZIndex++;
             htmlviewer_edit_menu.style.zIndex = z;
-
-            alltitle_navyreomve();
-            wt = htmlviewer_edit_menu.firstElementChild;
-            wt.classList.add('navy');
+            zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button20').forEach(function (test_button20) {
         test_button20.addEventListener('click', function () {
             htmlviewer_run_menu.classList.toggle('active');
-            htmlviewer_run_menu.closest('.child_windows');
             z = largestZIndex++;
             htmlviewer_run_menu.style.zIndex = z;
-
-            alltitle_navyreomve();
-            wt = htmlviewer_run_menu.firstElementChild;
-            wt.classList.add('navy');
+            zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button21').forEach(function (test_button21) {
         test_button21.addEventListener('click', function () {
             uploadvideo_menu.classList.toggle('active');
-            uploadvideo_menu.closest('.child_windows');
             z = largestZIndex++;
             uploadvideo_menu.style.zIndex = z;
-
-            alltitle_navyreomve();
-            wt = uploadvideo_menu.firstElementChild;
-            wt.classList.add('navy');
+            zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button22').forEach(function (test_button22) {
         test_button22.addEventListener('click', function () {
             font_menu.classList.toggle('active');
-            font_menu.closest('.child_windows');
             z = largestZIndex++;
             font_menu.style.zIndex = z;
-
-            alltitle_navyreomve();
-            wt = font_menu.firstElementChild;
-            wt.classList.add('navy');
+            zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button23').forEach(function (test_button23) {
         test_button23.addEventListener('click', function () {
             file_setting_menu.classList.toggle('active');
-            file_setting_menu.closest('.child_windows');
             z = largestZIndex++;
             file_setting_menu.style.zIndex = z;
-
-            alltitle_navyreomve();
-            wt = file_setting_menu.firstElementChild;
-            wt.classList.add('navy');
+            zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button24').forEach(function (test_button24) {
         test_button24.addEventListener('click', function () {
             debug_menu.classList.toggle('active');
-            debug_menu.closest('.child_windows');
             z = largestZIndex++;
             debug_menu.style.zIndex = z;
-
-            alltitle_navyreomve();
-            wt = debug_menu.firstElementChild;
-            wt.classList.add('navy');
+            zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button25').forEach(function (test_button25) {
         test_button25.addEventListener('click', function () {
             file_download_menu.classList.toggle('active');
-            file_download_menu.closest('.child_windows');
             z = largestZIndex++;
             file_download_menu.style.zIndex = z;
-
-            alltitle_navyreomve();
-            wt = file_download_menu.firstElementChild;
-            wt.classList.add('navy');
+            zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button26').forEach(function (test_button26) {
         test_button26.addEventListener('click', function () {
             display_menu.classList.toggle('active');
-            display_menu.closest('.child_windows');
             z = largestZIndex++;
             display_menu.style.zIndex = z;
-
-            alltitle_navyreomve();
-            wt = display_menu.firstElementChild;
-            wt.classList.add('navy');
+            zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button27').forEach(function (test_button27) {
         test_button27.addEventListener('click', function () {
             stopwatch_menu.classList.toggle('active');
-            stopwatch_menu.closest('.child_windows');
             z = largestZIndex++;
             stopwatch_menu.style.zIndex = z;
-
-            alltitle_navyreomve();
-            wt = stopwatch_menu.firstElementChild;
-            wt.classList.add('navy');
+            zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button28').forEach(function (test_button28) {
         test_button28.addEventListener('click', function () {
             comment_menu.classList.toggle('active');
-            comment_menu.closest('.child_windows');
             z = largestZIndex++;
             comment_menu.style.zIndex = z;
-
-            alltitle_navyreomve();
-            wt = comment_menu.firstElementChild;
-            wt.classList.add('navy');
+            zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button30').forEach(function (test_button30) {
         test_button30.addEventListener('click', function () {
             objective_menu.classList.toggle('active');
-            objective_menu.closest('.child_windows');
             z = largestZIndex++;
             objective_menu.style.zIndex = z;
-
-            alltitle_navyreomve();
-            test = objective_menu.firstElementChild;
-            test.classList.add('navy');
+            zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button31').forEach(function (test_button31) {
         test_button31.addEventListener('click', function () {
             calendar_menu.classList.toggle('active');
-            calendar_menu.closest('.child_windows');
             z = largestZIndex++;
             calendar_menu.style.zIndex = z;
-
-            alltitle_navyreomve();
-            test = calendar_menu.firstElementChild;
-            test.classList.add('navy');
+            zindexwindow_addnavy()
         });
     });
 
     document.querySelectorAll('.test_button32').forEach(function (test_button32) {
         test_button32.addEventListener('click', function () {
             cpu_calc_menu.classList.toggle('active');
-            cpu_calc_menu.closest('.child_windows');
             z = largestZIndex++;
             cpu_calc_menu.style.zIndex = z;
-
-            alltitle_navyreomve();
-            test = cpu_calc_menu.firstElementChild;
-            test.classList.add('navy');
+            zindexwindow_addnavy()
             cpucalc_open();
         });
     });
@@ -3913,105 +3712,70 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.test_button33').forEach(function (test_button33) {
         test_button33.addEventListener('click', function () {
             browser_menu.classList.toggle('active');
-            browser_menu.closest('.child_windows');
             z = largestZIndex++;
             browser_menu.style.zIndex = z;
-
-            alltitle_navyreomve();
-            test = browser_menu.firstElementChild;
-            test.classList.add('navy');
+            zindexwindow_addnavy()
         });
     });
 
     document.querySelectorAll('.test_button35').forEach(function (test_button35) {
         test_button35.addEventListener('click', function () {
             taskbar_setting_menu.classList.toggle('active');
-            taskbar_setting_menu.closest('.child_windows');
             z = largestZIndex++;
             taskbar_setting_menu.style.zIndex = z;
-
-            alltitle_navyreomve();
-            test = taskbar_setting_menu.firstElementChild;
-            test.classList.add('navy');
+            zindexwindow_addnavy()
         });
     });
 
     document.querySelectorAll('.test_button36').forEach(function (test_button36) {
         test_button36.addEventListener('click', function () {
             youtubevideo_menu.classList.toggle('active');
-            youtubevideo_menu.closest('.child_windows');
             z = largestZIndex++;
             youtubevideo_menu.style.zIndex = z;
-
-            alltitle_navyreomve();
-            test = youtubevideo_menu.firstElementChild;
-            test.classList.add('navy');
+            zindexwindow_addnavy()
         });
     });
 
     document.querySelectorAll('.test_button37').forEach(function (test_button37) {
         test_button37.addEventListener('click', function () {
             device_menu.classList.toggle('active');
-            device_menu.closest('.child_windows');
             z = largestZIndex++;
             device_menu.style.zIndex = z;
-
-            alltitle_navyreomve();
-            test = device_menu.firstElementChild;
-            test.classList.add('navy');
+            zindexwindow_addnavy()
         });
     });
 
     document.querySelectorAll('.test_button38').forEach(function (test_button38) {
         test_button38.addEventListener('click', function () {
             omikuji_menu.classList.toggle('active');
-            omikuji_menu.closest('.child_windows');
             z = largestZIndex++;
             omikuji_menu.style.zIndex = z;
-
-            alltitle_navyreomve();
-            test = omikuji_menu.firstElementChild;
-            test.classList.add('navy');
+            zindexwindow_addnavy()
         });
     });
 
     document.querySelectorAll('.test_button39').forEach(function (test_button39) {
         test_button39.addEventListener('click', function () {
             localstorage_monitor_menu.classList.toggle('active');
-            localstorage_monitor_menu.closest('.child_windows');
             z = largestZIndex++;
             localstorage_monitor_menu.style.zIndex = z;
-
-            alltitle_navyreomve();
-            test = localstorage_monitor_menu.firstElementChild;
-            test.classList.add('navy');
+            zindexwindow_addnavy()
         });
     });
 
     document.querySelectorAll('.test_button40').forEach(function (test_button40) {
         test_button40.addEventListener('click', function () {
             paint_menu.classList.toggle('active');
-            paint_menu.closest('.child_windows');
             z = largestZIndex++;
             paint_menu.style.zIndex = z;
-
-            alltitle_navyreomve();
-            test = paint_menu.firstElementChild;
-            test.classList.add('navy');
+            zindexwindow_addnavy()
         });
     });
-
-
-
 
     function cpucalc_open() {
         const cpumenu1 = document.querySelector('.cpumenu_1');
         z = largestZIndex++;
         document.getElementsByClassName('cpu_calc_menu')[0].style.zIndex = z;
-        alltitle_navyreomve();
-        test = document.querySelector('.cpu_calc_menu').firstElementChild;
-        test.classList.add('navy');
-        titlecolor_set();
         document.getElementsByClassName('focus2')[0].blur()
 
         if (!cpu_calc_menu.classList.contains('active') || cpumenu1.style.display == "block") {
@@ -4042,28 +3806,60 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.test_button29').forEach(function (test_button29) {
         test_button29.addEventListener('click', function () {
             tetris_mneu.classList.toggle('active');
-            tetris_mneu.closest('.child_windows');
             z = largestZIndex++;
             tetris_mneu.style.zIndex = z;
-
-            alltitle_navyreomve();
-            wt = tetris_mneu.firstElementChild;
-            wt.classList.add('navy');
+            zindexwindow_addnavy()
         });
     });
 
     document.querySelectorAll('.test_button34').forEach(function (test_button29) {
         test_button29.addEventListener('click', function () {
             bom_menu.classList.toggle('active');
-            bom_menu.closest('.child_windows');
             z = largestZIndex++;
             bom_menu.style.zIndex = z;
-
-            alltitle_navyreomve();
-            wt = bom_menu.firstElementChild;
-            wt.classList.add('navy');
+            zindexwindow_addnavy()
         });
     });
+
+
+    // 最前面のz-indexを持つ要素に新しいクラス名を付与する関数
+    function assignClassToFrontmostElement(className, newClassName) {
+        // 同じクラス名を持つすべての要素を取得
+        const elements = document.querySelectorAll('.' + className);
+        // 最前面のz-indexを格納する変数
+        let highestZIndex = -Infinity;
+        let frontmostElement = null;
+
+        // 各要素に対してループ処理
+        elements.forEach(function (element) {
+            const ele2 = element.closest('.child_windows')
+            // 現在の要素のz-indexを取得
+            const zIndex = parseInt(window.getComputedStyle(element).zIndex, 10) || 0;
+            // 最前面の要素を更新
+            if (zIndex > highestZIndex) {
+                highestZIndex = zIndex;
+                frontmostElement = ele2;
+            }
+        });
+
+        // 最前面の要素が見つかった場合、新しいクラス名を付与
+        if (frontmostElement) {
+            const foo1 = frontmostElement.firstElementChild;
+            foo1.classList.add(newClassName);
+        }
+
+        // 最前面の要素とそのz-indexを返す
+        return {
+            element: frontmostElement,
+            zIndex: highestZIndex
+        };
+    }
+
+    function zindexwindow_addnavy() {
+        alltitle_navyreomve()
+        assignClassToFrontmostElement('child_windows:not(.active)', 'navy');
+        titlecolor_set()
+    }
 
     document.querySelector('.time').addEventListener('click', function () {
         taskbtn_load()
@@ -4210,19 +4006,15 @@ if (ua.includes("mobile")) {
         }
     })
 
-
     function check(elm1, elm2) {
-
         const d1 = elm1.getBoundingClientRect();
         const d2 = elm2.getBoundingClientRect();
-
         return !(
             d1.top > d2.bottom ||
             d1.right < d2.left ||
             d1.bottom < d2.top ||
             d1.left > d2.right
-        );
-
+        )
     }
 
     const elm1 = document.getElementById('taskbar');
@@ -5075,6 +4867,7 @@ if (ua.includes("mobile")) {
             localStorage.removeItem('note_texts');
             note_pad.classList.add('active');
             taskbtn_load()
+            zindexwindow_addnavy()
         }, 100);
     }
 
@@ -5421,20 +5214,27 @@ if (ua.includes("mobile")) {
         })
     })
 
-
     document.querySelector('.clock_button').addEventListener('click', function (clock_button) {
         if (localStorage.getItem('clock_button')) {
             localStorage.removeItem('clock_button')
             document.querySelector('.clock_button').textContent = "off"
             document.querySelector('.time').style.display = "block"
-
-            document.querySelector('.taskbar_rightgroup').style.width = ""
         } else {
             localStorage.setItem('clock_button', clock_button);
             document.querySelector('.clock_button').textContent = "on"
             document.querySelector('.time').style.display = "none";
+        }
+    })
 
-            document.querySelector('.taskbar_rightgroup').style.width = "140px"
+    document.querySelector('.taskbar_zindex_0').addEventListener('click', function (taskbar_zindex_0) {
+        if (localStorage.getItem('taskbar_zindex_0')) {
+            localStorage.removeItem('taskbar_zindex_0')
+            taskbar.style.zIndex = "";
+            document.querySelector('.taskbar_zindex_0').textContent = "off"
+        } else {
+            localStorage.setItem('taskbar_zindex_0', taskbar_zindex_0);
+            taskbar.style.zIndex = "0";
+            document.querySelector('.taskbar_zindex_0').textContent = "on"
         }
     })
 
@@ -5638,6 +5438,11 @@ if (ua.includes("mobile")) {
     function testcode_html() {
         localStorage.removeItem('editor');
         editor.value = '<!DOCTYPE html>\n<html>\n<head>\n<title>document</title>\n</head>\n<body>\n<button onclick="test()">a</button>\n<script>\nfunction test(){\nalert()\n}\n< (この()は消してね　消さないと動作しません) /script>\n< (この()は消してね　消さないと動作しません) /body>\n</html>'
+    }
+
+    function testcode_clear() {
+        localStorage.removeItem('editor');
+        editor.value = '';
     }
 
     function preview2(obj, previewId) {
@@ -6547,7 +6352,7 @@ if (ua.includes("mobile")) {
         for (var i = 0; i < maxSize; i++) {
             localStorage.removeItem(testKey + i);
         }
-        document.querySelector('.local_memory').textContent = '　' + maxSize + 'KB' + '　';
+        document.querySelector('.local_memory').innerHTML = '&emsp;' + maxSize + 'KB' + '&emsp;';
         localStorage.setItem('maxSize', maxSize)
     }
 
@@ -6561,10 +6366,8 @@ if (ua.includes("mobile")) {
             }
             return total;
         }
-        // キロバイト単位でローカルストレージのサイズを取得
         const sizeInKilobytes = getLocalStorageSize() / 1024;
-        document.querySelector('.local_memory2').textContent = '　' + sizeInKilobytes + 'KB' + '　';
-
+        document.querySelector('.local_memory2').innerHTML = '&emsp;' + sizeInKilobytes + 'KB' + '&emsp;';
         if (localStorage.getItem('maxSize') == 0) {
             document.querySelector('.window_error_text').textContent = "text none not save!"
             error_windows.classList.remove('active')
@@ -6573,7 +6376,6 @@ if (ua.includes("mobile")) {
         }
     }, 1000);
 
-
     // HTMLのcanvas要素を取得
     const paint_canvas = document.getElementById('paint_canvas');
     const paint_ctx = paint_canvas.getContext('2d');
@@ -6581,6 +6383,12 @@ if (ua.includes("mobile")) {
     // 背景色を設定
     paint_ctx.fillStyle = '#ffffff';
     paint_ctx.fillRect(0, 0, paint_canvas.width, paint_canvas.height);
+
+    function paintcanvas_background() {
+        const paintcanvas_backgroundcolor = document.querySelector('.paint_background').value;
+        paint_ctx.fillStyle = paintcanvas_backgroundcolor;
+        paint_ctx.fillRect(0, 0, paint_canvas.width, paint_canvas.height);
+    }
 
     // 描画状態のフラグ
     let paint_isDrawing = false;
