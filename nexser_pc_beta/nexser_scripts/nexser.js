@@ -6739,5 +6739,15 @@ if (ua.includes("mobile")) {
         }
     }
 
+    function nexser_files_output_remove() {
+
+        const parentElement = document.getElementById('nexser_files_output');
+
+        // すべての子要素を削除
+        while (parentElement.firstChild) {
+            parentElement.removeChild(parentElement.firstChild);
+        }
+    }
+
 
 }
