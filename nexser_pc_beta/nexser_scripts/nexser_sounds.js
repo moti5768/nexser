@@ -146,8 +146,8 @@ Array.from(sound_play_button).forEach((sound_play_buttons) => {
             document.querySelector('.window_error_text').textContent = "driver sound no install!"
             error_windows.classList.remove('active')
             prompt_text2.style.color = "";
-            sound3()
             document.querySelector('.test_allwindow').style.display = "block";
+            sound3()
             sound_play_buttons.textContent = "▶"
         } else {
             sound_play_buttons.textContent = "||"

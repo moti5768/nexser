@@ -939,6 +939,11 @@ input[type="file"] {
     width: min-content;
 }
 
+.nexser_files_menu {
+    width: 600px;
+    height: 400px;
+}
+
 .big #v {
     height: 85vh;
     padding-left: 150px;
@@ -1183,9 +1188,9 @@ body::-webkit-scrollbar {
     border: solid 3px #c0c0c0;
     outline: 1px solid gray;
     outline-offset: 0.4px;
-    box-shadow: 0 0 0 1.5px whitesmoke,
-        0 0 0 2px dimgray,
-        0 0 0 2.5px black;
+    box-shadow: 0 0 0 1.5px dimgray,
+        0 0 0 3px white,
+        0 0 0 4px #000000;
     background: white;
     position: absolute;
     top: 45%;
@@ -1258,6 +1263,20 @@ body::-webkit-scrollbar {
     position: absolute;
     background: white;
     color: black;
+    top: 0;
+    z-index: 999999;
+}
+
+.screen_saver3 {
+    display: none;
+    height: 100%;
+    width: 100%;
+    position: absolute;
+    background: gray;
+    color: white;
+    text-shadow: 5px 5px 2.5px black;
+    font-weight: bold;
+    font-size: x-large;
     top: 0;
     z-index: 999999;
 }
@@ -2440,8 +2459,6 @@ td {
     pointer-events: none;
 }
 
-
-
 /* background_pattern */
 
 .backgrounds1 {
@@ -2451,7 +2468,6 @@ td {
     z-index: 0;
     position: absolute;
     top: 0px;
-
     background-image: radial-gradient(black 1.5px, rgba(0, 0, 0, 0) 1.5px);
     background-size: 4px 4px;
 }
@@ -2463,7 +2479,6 @@ td {
     z-index: 0;
     position: absolute;
     top: 0px;
-
     background-image: radial-gradient(black 2px, rgba(0, 0, 0, 0) 2px);
     background-size: 10px 10px;
 }
@@ -2670,4 +2685,77 @@ progress::-webkit-progress-value {
     unicode-bidi: isolate;
     border-spacing: 2px;
     border-color: gray;
+}
+
+/* othello */
+
+.othello_board {
+    display: grid;
+    grid-template-columns: repeat(8, 50px);
+    gap: 2px;
+}
+
+.cell {
+    width: 50px;
+    height: 50px;
+    background-color: green;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.othello_black {
+    background-color: black;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+}
+
+.othello_white {
+    background-color: white;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+}
+
+
+.nexser_files_menu ul {
+    list-style-type: none;
+    padding-left: 20px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.nexser_files_menu ul li {
+    margin: 5px 0;
+    position: relative;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.nexser_files_menu ul li::before {
+    content: "\1F4C4";
+    position: absolute;
+    left: -20px;
+}
+
+.nexser_files_menu .nexser_files_file {
+    color: blue;
+    background: darkgray;
+    border-top: 1.5px dimgray solid;
+    border-left: 1.5px dimgray solid;
+    border-bottom: 1.5px whitesmoke solid;
+    border-right: 1.5px whitesmoke solid;
+}
+
+.nexser_files_menu .nexser_files_folder {
+    color: green;
+    font-weight: bold;
+    background: darkgray;
+    border-top: 1.5px dimgray solid;
+    border-left: 1.5px dimgray solid;
+    border-bottom: 1.5px whitesmoke solid;
+    border-right: 1.5px whitesmoke solid;
+    height: max-content;
 }

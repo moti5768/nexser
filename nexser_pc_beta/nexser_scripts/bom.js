@@ -22,8 +22,8 @@ function init() {
         document.querySelector('.window_error_text').textContent = "エラー：爆弾の数が正しく入力されていません。"
         document.getElementsByClassName('error_title_text')[0].textContent = "main sweeper"
         document.getElementsByClassName('error_windows')[0].classList.remove('active')
-        sound3()
         document.querySelector('.test_allwindow').style.display = "block";
+        sound3()
         return;
     }
     data = [];
