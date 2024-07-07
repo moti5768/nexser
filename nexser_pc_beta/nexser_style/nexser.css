@@ -2764,7 +2764,7 @@ progress::-webkit-progress-value {
     display: block;
     position: absolute;
     z-index: 0;
-    pointer-events: none;
+    /* pointer-events: none; */
 }
 
 .rectangle {
@@ -2776,4 +2776,6 @@ progress::-webkit-progress-value {
     border: 1px solid deepskyblue;
     background: skyblue;
     opacity: 0.5;
+    pointer-events: none;
+    z-index: 0;
 }

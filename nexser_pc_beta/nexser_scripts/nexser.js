@@ -90,6 +90,46 @@ if (ua.includes("mobile")) {
     const othello_menu = document.querySelector('.othello_menu');
 
 
+    let startX, startY, isDrawing = false;
+    let rectangle;
+
+    document.addEventListener('mousedown', (e) => {
+        if (desktop.style.display == "block") {
+            startX = e.clientX;
+            startY = e.clientY;
+            isDrawing = true;
+
+            rectangle = document.createElement('div');
+            rectangle.className = 'rectangle';
+            rectangle.style.left = `${startX}px`;
+            rectangle.style.top = `${startY}px`;
+            document.body.appendChild(rectangle);
+        }
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (isDrawing && desktop.style.display == "block") {
+            const currentX = e.clientX;
+            const currentY = e.clientY;
+            const width = currentX - startX;
+            const height = currentY - startY;
+
+            rectangle.style.width = `${Math.abs(width)}px`;
+            rectangle.style.height = `${Math.abs(height)}px`;
+            rectangle.style.left = `${Math.min(startX, currentX)}px`;
+            rectangle.style.top = `${Math.min(startY, currentY)}px`;
+        }
+    });
+
+    document.addEventListener('mouseup', () => {
+        isDrawing = false;
+        if (rectangle) {
+            document.body.removeChild(rectangle);
+        }
+    });
+
+
+
     function lights() {
         const lightvalue = document.querySelector('.light_value').value;
         document.querySelector('.screen_light').style.opacity = lightvalue;
@@ -4055,6 +4095,15 @@ if (ua.includes("mobile")) {
             } else {
                 var event = e.changedTouches[0];
             }
+
+            // document.getElementsByClassName('rectangle')[0].classList.remove('rectangle')
+
+            const elements = document.querySelectorAll('.rectangle');
+            // 各要素からクラスを削除
+            elements.forEach(element => {
+                element.classList.remove('rectangle');
+            });
+
             //マウスが動いた場所に要素を動かす
             drag.style.top = event.pageY - y + "px";
             drag.style.left = event.pageX - x + "px";
@@ -5863,15 +5912,15 @@ if (ua.includes("mobile")) {
     }
     // ログアウト
     function screen_saver() {
-        if (screen_saver_group.style.display == "none" || desktop.style.display == "block" && localStorage.getItem('saver_on') && localStorage.getItem('saver_time')) {
+        if (screen_saver_group.style.display == "none" && desktop.style.display == "block" && localStorage.getItem('saver_on') && localStorage.getItem('saver_time')) {
             screen_saver_group.style.display = "block";
-            if (localStorage.getItem('saver1')) {
+            if (localStorage.getItem('saver1') && localStorage.getItem('saver_time')) {
                 document.querySelector('.screen_saver1').style.display = "block";
-            } else if (localStorage.getItem('saver2')) {
+            } else if (localStorage.getItem('saver2') && localStorage.getItem('saver_time')) {
                 document.querySelector('.screen_saver2').style.display = "block";
-            } else if (localStorage.getItem('saver3')) {
+            } else if (localStorage.getItem('saver3') && localStorage.getItem('saver_time')) {
                 document.querySelector('.screen_saver3').style.display = "block";
-            } else {
+            } else if (localStorage.getItem('saver_time')) {
                 document.querySelector('.screen_saver1').style.display = "block";
             }
             document.getElementById('nex').style.cursor = 'none';
@@ -6750,45 +6799,5 @@ if (ua.includes("mobile")) {
             parentElement.removeChild(parentElement.firstChild);
         }
     }
-
-
-    let startX, startY, isDrawing = false;
-    let rectangle;
-
-    document.addEventListener('mousedown', (e) => {
-        if (desktop.style.display == "block") {
-            startX = e.clientX;
-            startY = e.clientY;
-            isDrawing = true;
-
-            rectangle = document.createElement('div');
-            rectangle.className = 'rectangle';
-            rectangle.style.left = `${startX}px`;
-            rectangle.style.top = `${startY}px`;
-            document.body.appendChild(rectangle);
-        }
-    });
-
-    document.addEventListener('mousemove', (e) => {
-        if (isDrawing && desktop.style.display == "block") {
-            const currentX = e.clientX;
-            const currentY = e.clientY;
-            const width = currentX - startX;
-            const height = currentY - startY;
-
-            rectangle.style.width = `${Math.abs(width)}px`;
-            rectangle.style.height = `${Math.abs(height)}px`;
-            rectangle.style.left = `${Math.min(startX, currentX)}px`;
-            rectangle.style.top = `${Math.min(startY, currentY)}px`;
-        }
-    });
-
-    document.addEventListener('mouseup', () => {
-        isDrawing = false;
-        if (rectangle) {
-            document.body.removeChild(rectangle);
-        }
-    });
-
 
 }
