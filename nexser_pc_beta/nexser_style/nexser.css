@@ -2759,3 +2759,21 @@ progress::-webkit-progress-value {
     border-right: 1.5px whitesmoke solid;
     height: max-content;
 }
+
+.nexser_background_image {
+    display: block;
+    position: absolute;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.rectangle {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    position: absolute;
+    border: 1px solid deepskyblue;
+    background: skyblue;
+    opacity: 0.5;
+}

@@ -6752,4 +6752,43 @@ if (ua.includes("mobile")) {
     }
 
 
+    let startX, startY, isDrawing = false;
+    let rectangle;
+
+    document.addEventListener('mousedown', (e) => {
+        if (desktop.style.display == "block") {
+            startX = e.clientX;
+            startY = e.clientY;
+            isDrawing = true;
+
+            rectangle = document.createElement('div');
+            rectangle.className = 'rectangle';
+            rectangle.style.left = `${startX}px`;
+            rectangle.style.top = `${startY}px`;
+            document.body.appendChild(rectangle);
+        }
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (isDrawing && desktop.style.display == "block") {
+            const currentX = e.clientX;
+            const currentY = e.clientY;
+            const width = currentX - startX;
+            const height = currentY - startY;
+
+            rectangle.style.width = `${Math.abs(width)}px`;
+            rectangle.style.height = `${Math.abs(height)}px`;
+            rectangle.style.left = `${Math.min(startX, currentX)}px`;
+            rectangle.style.top = `${Math.min(startY, currentY)}px`;
+        }
+    });
+
+    document.addEventListener('mouseup', () => {
+        isDrawing = false;
+        if (rectangle) {
+            document.body.removeChild(rectangle);
+        }
+    });
+
+
 }
