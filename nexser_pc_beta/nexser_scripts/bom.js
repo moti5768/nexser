@@ -18,7 +18,7 @@ function init() {
     bomb = Number(document.getElementById("b").value); // 爆弾の数
     if (h * w - 9 < bomb) {
 
-        document.querySelector('html').style.cursor = '';
+        document.getElementById('nex').style.cursor = '';
         document.querySelector('.window_error_text').textContent = "エラー：爆弾の数が正しく入力されていません。"
         document.getElementsByClassName('error_title_text')[0].textContent = "main sweeper"
         document.getElementsByClassName('error_windows')[0].classList.remove('active')
@@ -100,7 +100,7 @@ function leftClicked() {
         }
         board.style.pointerEvents = "none";
 
-        document.querySelector('html').style.cursor = '';
+        document.getElementById('nex').style.cursor = '';
         document.querySelector('.window_error_text').textContent = "　　GAMEOVER　　　　"
         document.getElementsByClassName('error_title_text')[0].textContent = "main sweeper"
         document.getElementsByClassName('error_icon')[0].style.display = "none"
@@ -130,7 +130,7 @@ function leftClicked() {
         }
         board.style.pointerEvents = "none";
 
-        document.querySelector('html').style.cursor = '';
+        document.getElementById('nex').style.cursor = '';
         document.querySelector('.window_error_text').textContent = "　　CLEAR　　　　"
         document.getElementsByClassName('error_title_text')[0].textContent = "main sweeper"
         document.getElementsByClassName('error_icon')[0].style.display = "none"
