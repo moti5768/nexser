@@ -83,8 +83,6 @@ if (ua.includes("mobile")) {
     const error_windows = document.querySelector('.error_windows');
     const warning_windows = document.querySelector('.warning_windows');
 
-    // game
-
     const tetris_mneu = document.querySelector('.tetris_menu');
     const bom_menu = document.querySelector('.bom_menu');
     const othello_menu = document.querySelector('.othello_menu');
@@ -871,52 +869,31 @@ if (ua.includes("mobile")) {
 
     document.querySelector('.font_default').addEventListener('click', function (font_default) {
         font_clear()
-        if (localStorage.getItem('font_default')) {
-            localStorage.removeItem('font_default');
-        } else {
-            localStorage.setItem('font_default', font_default);
-            document.querySelector("body").style.fontFamily = "serif";
-        }
+        document.querySelector("body").style.fontFamily = "serif";
     })
 
     document.querySelector('.font_sans_serif').addEventListener('click', function (font_sans_serif) {
         font_clear()
-        if (localStorage.getItem('font_sans_serif')) {
-            localStorage.removeItem('font_sans_serif');
-        } else {
-            localStorage.setItem('font_sans_serif', font_sans_serif);
-            document.querySelector("body").style.fontFamily = "sans-serif";
-        }
+        localStorage.setItem('font_sans_serif', font_sans_serif);
+        document.querySelector("body").style.fontFamily = "sans-serif";
     })
 
     document.querySelector('.font_cursive').addEventListener('click', function (font_cursive) {
         font_clear()
-        if (localStorage.getItem('font_cursive')) {
-            localStorage.removeItem('font_cursive');
-        } else {
-            localStorage.setItem('font_cursive', font_cursive);
-            document.querySelector("body").style.fontFamily = "cursive";
-        }
+        localStorage.setItem('font_cursive', font_cursive);
+        document.querySelector("body").style.fontFamily = "cursive";
     })
 
     document.querySelector('.font_fantasy').addEventListener('click', function (font_fantasy) {
         font_clear()
-        if (localStorage.getItem('font_fantasy')) {
-            localStorage.removeItem('font_fantasy');
-        } else {
-            localStorage.setItem('font_fantasy', font_fantasy);
-            document.querySelector("body").style.fontFamily = "fantasy";
-        }
+        localStorage.setItem('font_fantasy', font_fantasy);
+        document.querySelector("body").style.fontFamily = "fantasy";
     })
 
     document.querySelector('.font_monospace').addEventListener('click', function (font_monospace) {
         font_clear()
-        if (localStorage.getItem('font_monospace')) {
-            localStorage.removeItem('font_monospace');
-        } else {
-            localStorage.setItem('font_monospace', font_monospace);
-            document.querySelector("body").style.fontFamily = "monospace";
-        }
+        localStorage.setItem('font_monospace', font_monospace);
+        document.querySelector("body").style.fontFamily = "monospace";
     })
 
     function nexser_boot_check() {
@@ -2375,8 +2352,7 @@ if (ua.includes("mobile")) {
                         document.querySelectorAll('.htmlviewer_run_menu').forEach(function (htmlviewer_run_menu) {
                             htmlviewer_run_menu.closest('.child_windows');
                             htmlviewer_run_menu.classList.remove('active');
-                            z = largestZIndex++;
-                            htmlviewer_run_menu.style.zIndex = z;
+                            htmlviewer_run_menu.style.zIndex = largestZIndex++;
 
                             alltitle_navyreomve();
                             wt = htmlviewer_run_menu.firstElementChild;
@@ -2445,8 +2421,7 @@ if (ua.includes("mobile")) {
                         document.querySelectorAll('.htmlviewer_run_menu').forEach(function (htmlviewer_run_menu) {
                             htmlviewer_run_menu.closest('.child_windows');
                             htmlviewer_run_menu.classList.remove('active');
-                            z = largestZIndex++;
-                            htmlviewer_run_menu.style.zIndex = z;
+                            htmlviewer_run_menu.style.zIndex = largestZIndex++;
 
                             alltitle_navyreomve();
                             wt = htmlviewer_run_menu.firstElementChild;
@@ -2554,8 +2529,7 @@ if (ua.includes("mobile")) {
                 document.querySelectorAll('.memory_menu').forEach(function (memory_menu) {
                     memory_menu.closest('.child_windows');
                     memory_menu.classList.remove('active');
-                    z = largestZIndex++;
-                    memory_menu.style.zIndex = z;
+                    memory_menu.style.zIndex = largestZIndex++;
 
                     alltitle_navyreomve();
                     wt = memory_menu.firstElementChild;
@@ -2573,8 +2547,7 @@ if (ua.includes("mobile")) {
                 prompt_text2.style.color = "";
 
                 command_help_menu.classList.remove('active');
-                z = largestZIndex++;
-                command_help_menu.style.zIndex = z;
+                command_help_menu.style.zIndex = largestZIndex++;
 
                 alltitle_navyreomve();
                 wt = command_help_menu.firstElementChild;
@@ -2712,8 +2685,7 @@ if (ua.includes("mobile")) {
         document.querySelectorAll('.prompt_shell_menu').forEach(function (prompt_shell_menu) {
             prompt_shell_menu.closest('.child_windows');
             prompt_shell_menu.classList.remove('active');
-            z = largestZIndex++;
-            prompt_shell_menu.style.zIndex = z;
+            prompt_shell_menu.style.zIndex = largestZIndex++;
 
             alltitle_navyreomve();
             wt = prompt_shell_menu.firstElementChild;
@@ -3483,8 +3455,7 @@ if (ua.includes("mobile")) {
             start_menu.style.display = "none";
             document.querySelector('.start_button').classList.remove('pressed');
             taskbtn_load()
-            z = largestZIndex++;
-            window_z_index = zindexchildwindows.style.zIndex = z;
+            window_z_index = zindexchildwindows.style.zIndex = largestZIndex++;
             getLargestZIndex('.child_windows');
             z_index.textContent = getLargestZIndex('.child_windows');
             zindexwindow_addnavy()
@@ -3521,8 +3492,7 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.nexser_search').forEach(function (nexser_search) {
         nexser_search.addEventListener('click', function () {
             nexser_search_menu.classList.toggle('active');
-            z = largestZIndex++;
-            nexser_search_menu.style.zIndex = z;
+            nexser_search_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
         });
     });
@@ -3547,32 +3517,28 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.nexser_guidebook').forEach(function (nexser_guidebook) {
         nexser_guidebook.addEventListener('click', function () {
             nexser_guidebook_menu.classList.toggle('active');
-            z = largestZIndex++;
-            nexser_guidebook_menu.style.zIndex = z;
+            nexser_guidebook_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.guidebook_window').forEach(function (guidebook_window) {
         guidebook_window.addEventListener('click', function () {
             guidebook_window_menu.classList.toggle('active');
-            z = largestZIndex++;
-            guidebook_window_menu.style.zIndex = z;
+            guidebook_window_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.guidebook_file').forEach(function (guidebook_file) {
         guidebook_file.addEventListener('click', function () {
             guidebook_file_menu.classList.toggle('active');
-            z = largestZIndex++;
-            guidebook_file_menu.style.zIndex = z;
+            guidebook_file_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.guidebook_taskbar').forEach(function (guidebook_taskbar) {
         guidebook_taskbar.addEventListener('click', function () {
             guidebook_taskbar_menu.classList.toggle('active');
-            z = largestZIndex++;
-            guidebook_taskbar_menu.style.zIndex = z;
+            guidebook_taskbar_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
         });
     });
@@ -3580,8 +3546,7 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.passmenu_button').forEach(function (passmenu_button) {
         passmenu_button.addEventListener('click', function () {
             password_menu.classList.toggle('active');
-            z = largestZIndex++;
-            password_menu.style.zIndex = z;
+            password_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
         });
     });
@@ -3589,96 +3554,84 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.test_button').forEach(function (test_button) {
         test_button.addEventListener('click', function () {
             main.classList.toggle('active');
-            z = largestZIndex++;
-            main.style.zIndex = z;
+            main.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button2').forEach(function (test_button2) {
         test_button2.addEventListener('click', function () {
             my_computer.classList.toggle('active');
-            z = largestZIndex++;
-            my_computer.style.zIndex = z;
+            my_computer.style.zIndex = largestZIndex++;;
             zindexwindow_addnavy();
         });
     });
     document.querySelectorAll('.test_button3').forEach(function (test_button3) {
         test_button3.addEventListener('click', function () {
             control.classList.toggle('active');
-            z = largestZIndex++;
-            control.style.zIndex = z;
+            control.style.zIndex = largestZIndex++;
             zindexwindow_addnavy();
         });
     });
     document.querySelectorAll('.test_button4').forEach(function (test_button4) {
         test_button4.addEventListener('click', function () {
             color_menu.classList.toggle('active');
-            z = largestZIndex++;
-            color_menu.style.zIndex = z;
+            color_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button5').forEach(function (test_button5) {
         test_button5.addEventListener('click', function () {
             system_menu.classList.toggle('active');
-            z = largestZIndex++;
-            system_menu.style.zIndex = z;
+            system_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button6').forEach(function (test_button6) {
         test_button6.addEventListener('click', function () {
             window_prompt.classList.toggle('active');
-            z = largestZIndex++;
-            window_prompt.style.zIndex = z;
+            window_prompt.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button7').forEach(function (test_button7) {
         test_button7.addEventListener('click', function () {
             clock_menu.classList.toggle('active');
-            z = largestZIndex++;
-            clock_menu.style.zIndex = z;
+            clock_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button8').forEach(function (test_button8) {
         test_button8.addEventListener('click', function () {
             sound_menu.classList.toggle('active');
-            z = largestZIndex++;
-            sound_menu.style.zIndex = z;
+            sound_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button9').forEach(function (test_button9) {
         test_button9.addEventListener('click', function () {
             driver_menu.classList.toggle('active');
-            z = largestZIndex++;
-            driver_menu.style.zIndex = z;
+            driver_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button10').forEach(function (test_button10) {
         test_button10.addEventListener('click', function () {
             mouse_menu.classList.toggle('active');
-            z = largestZIndex++;
-            mouse_menu.style.zIndex = z;
+            mouse_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button11').forEach(function (test_button11) {
         test_button11.addEventListener('click', function () {
             screen_text_menu.classList.toggle('active');
-            z = largestZIndex++;
-            screen_text_menu.style.zIndex = z;
+            screen_text_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button12').forEach(function (test_button12) {
         test_button12.addEventListener('click', function () {
             note_pad.classList.toggle('active');
-            z = largestZIndex++;
-            note_pad.style.zIndex = z;
+            note_pad.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
             if (!note_pad.classList.contains('active')) {
                 document.querySelector('.note_area').focus()
@@ -3688,120 +3641,105 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.test_button13').forEach(function (test_button13) {
         test_button13.addEventListener('click', function () {
             text_drop_menu.classList.toggle('active');
-            z = largestZIndex++;
-            text_drop_menu.style.zIndex = z;
+            text_drop_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button14').forEach(function (test_button14) {
         test_button14.addEventListener('click', function () {
             windowmode_menu.classList.toggle('active');
-            z = largestZIndex++;
-            windowmode_menu.style.zIndex = z;
+            windowmode_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button15').forEach(function (test_button15) {
         test_button15.addEventListener('click', function () {
             accessory_menu.classList.toggle('active');
-            z = largestZIndex++;
-            accessory_menu.style.zIndex = z;
+            accessory_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button16').forEach(function (test_button16) {
         test_button16.addEventListener('click', function () {
             calc_menu.classList.toggle('active');
-            z = largestZIndex++;
-            calc_menu.style.zIndex = z;
+            calc_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button17').forEach(function (test_button17) {
         test_button17.addEventListener('click', function () {
             nexser_sound_menu.classList.toggle('active');
-            z = largestZIndex++;
-            nexser_sound_menu.style.zIndex = z;
+            nexser_sound_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button18').forEach(function (test_button18) {
         test_button18.addEventListener('click', function () {
             camera_menu.classList.toggle('active');
-            z = largestZIndex++;
-            camera_menu.style.zIndex = z;
+            camera_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button19').forEach(function (test_button19) {
         test_button19.addEventListener('click', function () {
             htmlviewer_edit_menu.classList.toggle('active');
-            z = largestZIndex++;
-            htmlviewer_edit_menu.style.zIndex = z;
+            htmlviewer_edit_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button20').forEach(function (test_button20) {
         test_button20.addEventListener('click', function () {
             htmlviewer_run_menu.classList.toggle('active');
-            z = largestZIndex++;
-            htmlviewer_run_menu.style.zIndex = z;
+            htmlviewer_run_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button21').forEach(function (test_button21) {
         test_button21.addEventListener('click', function () {
             uploadvideo_menu.classList.toggle('active');
-            z = largestZIndex++;
-            uploadvideo_menu.style.zIndex = z;
+            uploadvideo_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button22').forEach(function (test_button22) {
         test_button22.addEventListener('click', function () {
             font_menu.classList.toggle('active');
-            z = largestZIndex++;
-            font_menu.style.zIndex = z;
+            font_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button23').forEach(function (test_button23) {
         test_button23.addEventListener('click', function () {
             file_setting_menu.classList.toggle('active');
-            z = largestZIndex++;
-            file_setting_menu.style.zIndex = z;
+            file_setting_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button24').forEach(function (test_button24) {
         test_button24.addEventListener('click', function () {
             debug_menu.classList.toggle('active');
-            z = largestZIndex++;
-            debug_menu.style.zIndex = z;
+            debug_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button25').forEach(function (test_button25) {
         test_button25.addEventListener('click', function () {
             file_download_menu.classList.toggle('active');
-            z = largestZIndex++;
-            file_download_menu.style.zIndex = z;
+            file_download_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button26').forEach(function (test_button26) {
         test_button26.addEventListener('click', function () {
             display_menu.classList.toggle('active');
-            z = largestZIndex++;
-            display_menu.style.zIndex = z;
+            display_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button27').forEach(function (test_button27) {
         test_button27.addEventListener('click', function () {
             stopwatch_menu.classList.toggle('active');
-            z = largestZIndex++;
-            stopwatch_menu.style.zIndex = z;
+            stopwatch_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy();
             timerreset()
         });
@@ -3809,24 +3747,21 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.test_button28').forEach(function (test_button28) {
         test_button28.addEventListener('click', function () {
             comment_menu.classList.toggle('active');
-            z = largestZIndex++;
-            comment_menu.style.zIndex = z;
+            comment_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button30').forEach(function (test_button30) {
         test_button30.addEventListener('click', function () {
             objective_menu.classList.toggle('active');
-            z = largestZIndex++;
-            objective_menu.style.zIndex = z;
+            objective_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
         });
     });
     document.querySelectorAll('.test_button31').forEach(function (test_button31) {
         test_button31.addEventListener('click', function () {
             calendar_menu.classList.toggle('active');
-            z = largestZIndex++;
-            calendar_menu.style.zIndex = z;
+            calendar_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
         });
     });
@@ -3834,8 +3769,7 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.test_button32').forEach(function (test_button32) {
         test_button32.addEventListener('click', function () {
             cpu_calc_menu.classList.toggle('active');
-            z = largestZIndex++;
-            cpu_calc_menu.style.zIndex = z;
+            cpu_calc_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
             cpucalc_open();
         });
@@ -3844,8 +3778,7 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.test_button33').forEach(function (test_button33) {
         test_button33.addEventListener('click', function () {
             browser_menu.classList.toggle('active');
-            z = largestZIndex++;
-            browser_menu.style.zIndex = z;
+            browser_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
         });
     });
@@ -3853,8 +3786,7 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.test_button35').forEach(function (test_button35) {
         test_button35.addEventListener('click', function () {
             taskbar_setting_menu.classList.toggle('active');
-            z = largestZIndex++;
-            taskbar_setting_menu.style.zIndex = z;
+            taskbar_setting_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
         });
     });
@@ -3862,8 +3794,7 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.test_button36').forEach(function (test_button36) {
         test_button36.addEventListener('click', function () {
             youtubevideo_menu.classList.toggle('active');
-            z = largestZIndex++;
-            youtubevideo_menu.style.zIndex = z;
+            youtubevideo_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
         });
     });
@@ -3871,8 +3802,7 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.test_button37').forEach(function (test_button37) {
         test_button37.addEventListener('click', function () {
             device_menu.classList.toggle('active');
-            z = largestZIndex++;
-            device_menu.style.zIndex = z;
+            device_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
         });
     });
@@ -3880,8 +3810,7 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.test_button38').forEach(function (test_button38) {
         test_button38.addEventListener('click', function () {
             omikuji_menu.classList.toggle('active');
-            z = largestZIndex++;
-            omikuji_menu.style.zIndex = z;
+            omikuji_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
         });
     });
@@ -3889,8 +3818,7 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.test_button39').forEach(function (test_button39) {
         test_button39.addEventListener('click', function () {
             localstorage_monitor_menu.classList.toggle('active');
-            z = largestZIndex++;
-            localstorage_monitor_menu.style.zIndex = z;
+            localstorage_monitor_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
         });
     });
@@ -3898,8 +3826,7 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.test_button40').forEach(function (test_button40) {
         test_button40.addEventListener('click', function () {
             paint_menu.classList.toggle('active');
-            z = largestZIndex++;
-            paint_menu.style.zIndex = z;
+            paint_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
         });
     });
@@ -3907,8 +3834,7 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.test_button42').forEach(function (test_button42) {
         test_button42.addEventListener('click', function () {
             nexser_files_menu.classList.toggle('active');
-            z = largestZIndex++;
-            nexser_files_menu.style.zIndex = z;
+            nexser_files_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy();
             setTimeout(() => {
                 nexser_files_windowload()
@@ -3919,8 +3845,7 @@ if (ua.includes("mobile")) {
 
     function cpucalc_open() {
         const cpumenu1 = document.querySelector('.cpumenu_1');
-        z = largestZIndex++;
-        document.getElementsByClassName('cpu_calc_menu')[0].style.zIndex = z;
+        document.getElementsByClassName('cpu_calc_menu')[0].style.zIndex = largestZIndex++;
         document.getElementsByClassName('focus2')[0].blur()
 
         if (!cpu_calc_menu.classList.contains('active') || cpumenu1.style.display == "block") {
@@ -3951,8 +3876,7 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.test_button29').forEach(function (test_button29) {
         test_button29.addEventListener('click', function () {
             tetris_mneu.classList.toggle('active');
-            z = largestZIndex++;
-            tetris_mneu.style.zIndex = z;
+            tetris_mneu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
         });
     });
@@ -3960,8 +3884,7 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.test_button34').forEach(function (test_button29) {
         test_button29.addEventListener('click', function () {
             bom_menu.classList.toggle('active');
-            z = largestZIndex++;
-            bom_menu.style.zIndex = z;
+            bom_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
         });
     });
@@ -3969,8 +3892,7 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.test_button41').forEach(function (test_button41) {
         test_button41.addEventListener('click', function () {
             othello_menu.classList.toggle('active');
-            z = largestZIndex++;
-            othello_menu.style.zIndex = z;
+            othello_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
         });
     });
@@ -4095,9 +4017,6 @@ if (ua.includes("mobile")) {
             } else {
                 var event = e.changedTouches[0];
             }
-
-            // document.getElementsByClassName('rectangle')[0].classList.remove('rectangle')
-
             const elements = document.querySelectorAll('.rectangle');
             // 各要素からクラスを削除
             elements.forEach(element => {
@@ -4163,6 +4082,7 @@ if (ua.includes("mobile")) {
                 title.style.opacity = ""
                 window_back_silver()
             })
+            titlecolor_set()
         }
     })
 
@@ -4215,6 +4135,11 @@ if (ua.includes("mobile")) {
             } else {
                 var event = e.changedTouches[0];
             }
+            const elements = document.querySelectorAll('.rectangle');
+            // 各要素からクラスを削除
+            elements.forEach(element => {
+                element.classList.remove('rectangle');
+            });
             //マウスが動いた場所に要素を動かす
             drag.style.top = event.pageY - y + "px";
             drag.style.left = event.pageX - x + "px";
@@ -4625,7 +4550,7 @@ if (ua.includes("mobile")) {
     }
 
 
-    var largestZIndex = 1;
+    var largestZIndex = 0;
     var defaultView = document.defaultView;
     var getLargestZIndex = function () {
         var func = function (queryselectorname) {
@@ -5298,8 +5223,8 @@ if (ua.includes("mobile")) {
             window_files.style.paddingTop = "10px";
             window_files.style.width = "100%";
             let sss = window_files.firstElementChild;
-            sss2 = sss.style.paddingLeft = "50px";
-            sss2 = sss.style.width = "auto";
+            var sss2 = sss.style.paddingLeft = "50px";
+            var sss2 = sss.style.width = "auto";
         });
 
         Array.from(document.getElementsByClassName('windowfile_time')).forEach((windowfile_time) => {
@@ -5576,8 +5501,7 @@ if (ua.includes("mobile")) {
         document.querySelectorAll('.htmlviewer_run_menu').forEach(function (htmlviewer_run_menu) {
             htmlviewer_run_menu.closest('.child_windows');
             htmlviewer_run_menu.classList.remove('active');
-            z = largestZIndex++;
-            htmlviewer_run_menu.style.zIndex = z;
+            htmlviewer_run_menu.style.zIndex = largestZIndex++;
 
             alltitle_navyreomve();
             wt = htmlviewer_run_menu.firstElementChild;
@@ -6638,6 +6562,31 @@ if (ua.includes("mobile")) {
         paint_ctx.fillText(paintcanvas_text, paint_canvas.width / 2, paint_canvas.height / 2);
         paint_ctx.strokeText(paintcanvas_text, paint_canvas.width / 2, paint_canvas.height / 2);
     }
+
+
+
+
+    paint_canvas.addEventListener('dragover', (event) => {
+        event.preventDefault();
+    });
+
+    paint_canvas.addEventListener('drop', (event) => {
+        event.preventDefault();
+        const file = event.dataTransfer.files[0];
+        if (file && file.type.startsWith('image/')) {
+            const paint_image = new Image();
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                paint_image.src = e.target.result;
+                paint_image.onload = () => {
+                    paint_ctx.drawImage(paint_image, 0, 0, paint_canvas.width, paint_canvas.height);
+                };
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+
 
     // キャンバスを画像として保存
     function downloadCanvasAsPng() {
