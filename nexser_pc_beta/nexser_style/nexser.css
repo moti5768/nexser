@@ -817,7 +817,6 @@ input[type="file"] {
 
 .child_windows::-webkit-scrollbar {
     opacity: 0.5;
-    background: yellow;
 }
 
 .child_windows.default {
@@ -1350,18 +1349,6 @@ body::-webkit-scrollbar {
     border: none;
     background: whitesmoke;
     resize: none;
-}
-
-.child_windows.leftwindow {
-    border-top: none;
-    border-bottom: none;
-    border-left: none;
-}
-
-.child_windows.rightwindow {
-    border-top: none;
-    border-bottom: none;
-    border-right: none;
 }
 
 .child_windows .title {
@@ -2776,15 +2763,7 @@ progress::-webkit-progress-value {
     z-index: 0;
 }
 
-
-
-
-
-
-
-
-
-
+/* window resizes */
 .resizer {
     width: 10px;
     height: 10px;
@@ -2801,24 +2780,36 @@ progress::-webkit-progress-value {
     top: -5px;
     left: -5px;
     cursor: nwse-resize;
+    z-index: 2;
+    width: 12.5px;
+    height: 12.5px;
 }
 
 .resizer.top-right {
     top: -5px;
     right: -5px;
     cursor: nesw-resize;
+    z-index: 2;
+    width: 12.5px;
+    height: 12.5px;
 }
 
 .resizer.bottom-left {
     bottom: -5px;
     left: -5px;
     cursor: nesw-resize;
+    z-index: 2;
+    width: 12.5px;
+    height: 12.5px;
 }
 
 .resizer.bottom-right {
     bottom: -5px;
     right: -5px;
     cursor: nwse-resize;
+    z-index: 2;
+    width: 12.5px;
+    height: 12.5px;
 }
 
 .resizer.top {
@@ -2826,7 +2817,8 @@ progress::-webkit-progress-value {
     left: 50%;
     transform: translateX(-50%);
     cursor: ns-resize;
-    width: 90%;
+    width: 100%;
+    z-index: 1;
 }
 
 .resizer.right {
@@ -2834,7 +2826,8 @@ progress::-webkit-progress-value {
     right: -5px;
     transform: translateY(-50%);
     cursor: ew-resize;
-    height: 80%;
+    height: 100%;
+    z-index: 1;
 }
 
 .resizer.bottom {
@@ -2842,7 +2835,8 @@ progress::-webkit-progress-value {
     left: 50%;
     transform: translateX(-50%);
     cursor: ns-resize;
-    width: 90%;
+    width: 100%;
+    z-index: 1;
 }
 
 .resizer.left {
@@ -2850,5 +2844,6 @@ progress::-webkit-progress-value {
     left: -5px;
     transform: translateY(-50%);
     cursor: ew-resize;
-    height: 80%;
+    height: 100%;
+    z-index: 1;
 }

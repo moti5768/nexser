@@ -2353,10 +2353,7 @@ if (ua.includes("mobile")) {
                             htmlviewer_run_menu.closest('.child_windows');
                             htmlviewer_run_menu.classList.remove('active');
                             htmlviewer_run_menu.style.zIndex = largestZIndex++;
-
-                            alltitle_navyreomve();
-                            wt = htmlviewer_run_menu.firstElementChild;
-                            wt.classList.add('navy');
+                            zindexwindow_addnavy();
                         });
                         preview.srcdoc = test999;
 
@@ -2422,10 +2419,7 @@ if (ua.includes("mobile")) {
                             htmlviewer_run_menu.closest('.child_windows');
                             htmlviewer_run_menu.classList.remove('active');
                             htmlviewer_run_menu.style.zIndex = largestZIndex++;
-
-                            alltitle_navyreomve();
-                            wt = htmlviewer_run_menu.firstElementChild;
-                            wt.classList.add('navy');
+                            zindexwindow_addnavy();
                         });
                         preview.srcdoc = test9992;
 
@@ -2530,10 +2524,7 @@ if (ua.includes("mobile")) {
                     memory_menu.closest('.child_windows');
                     memory_menu.classList.remove('active');
                     memory_menu.style.zIndex = largestZIndex++;
-
-                    alltitle_navyreomve();
-                    wt = memory_menu.firstElementChild;
-                    wt.classList.add('navy');
+                    zindexwindow_addnavy();
                 })
 
                 prompt_text2.style.color = "";
@@ -2548,10 +2539,7 @@ if (ua.includes("mobile")) {
 
                 command_help_menu.classList.remove('active');
                 command_help_menu.style.zIndex = largestZIndex++;
-
-                alltitle_navyreomve();
-                wt = command_help_menu.firstElementChild;
-                wt.classList.add('navy');
+                zindexwindow_addnavy();
                 break;
             case 'windows95/sound/start/play':
                 sound();
@@ -2686,10 +2674,7 @@ if (ua.includes("mobile")) {
             prompt_shell_menu.closest('.child_windows');
             prompt_shell_menu.classList.remove('active');
             prompt_shell_menu.style.zIndex = largestZIndex++;
-
-            alltitle_navyreomve();
-            wt = prompt_shell_menu.firstElementChild;
-            wt.classList.add('navy');
+            zindexwindow_addnavy();
         });
     }
 
@@ -2784,17 +2769,10 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.close_button').forEach(function (close_button) {
         close_button.addEventListener('click', function () {
             setTimeout(() => {
-                const closebutton = close_button.closest('.child_windows');
-                closebutton.classList.add('active');
+                const closebutton_closest = close_button.closest('.child_windows');
+                closebutton_closest.classList.add('active');
                 taskbtn_load()
             }, 100);
-            setTimeout(() => {
-                document.querySelectorAll('.select_window').forEach(function (select_window) {
-                    const select_window2 = select_window.closest('.child_windows');
-                    const select_window3 = select_window2.firstElementChild;
-                    select_window3.classList.add('navy')
-                })
-            }, 150);
         });
     })
     document.querySelectorAll('.close_button2').forEach(function (close_button2) {
@@ -2832,6 +2810,15 @@ if (ua.includes("mobile")) {
         });
     })
     document.querySelectorAll('.bigscreen_button').forEach(function (bigscreen_button) {
+        bigscreen_button.addEventListener('mousedown', function () {
+            const elements = document.querySelectorAll('.child_windows');
+            elements.forEach(element => {
+                element.dataset.originalWidth = element.style.width;
+                element.dataset.originalHeight = element.style.height;
+                element.dataset.originalTop = element.style.top;
+                element.dataset.originalLeft = element.style.left;
+            });
+        })
         bigscreen_button.addEventListener('click', function () {
             const bigscreenbutton = bigscreen_button.closest('.child_windows');
 
@@ -2855,7 +2842,7 @@ if (ua.includes("mobile")) {
                 bigscreenbutton.style.width = ""
                 bigscreenbutton.style.top = "0"
                 bigscreenbutton.style.left = "0"
-                bigscreenbutton.style.transition = "0.1s cubic-bezier(0, 0, 1, 1)"
+                bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
             } else if (localStorage.getItem('taskbar_position_button')) {
                 bigscreenbutton.style.height = ""
                 bigscreenbutton.style.width = ""
@@ -2864,13 +2851,13 @@ if (ua.includes("mobile")) {
 
                 bigscreenbutton.style.top = t + "px"
 
-                bigscreenbutton.style.transition = "0.1s cubic-bezier(0, 0, 1, 1)"
+                bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
             } else {
                 bigscreenbutton.style.height = ""
                 bigscreenbutton.style.width = ""
                 bigscreenbutton.style.top = "0"
                 bigscreenbutton.style.left = "0"
-                bigscreenbutton.style.transition = "0.1s cubic-bezier(0, 0, 1, 1)"
+                bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
             }
 
             setTimeout(() => {
@@ -2883,7 +2870,7 @@ if (ua.includes("mobile")) {
                         window_tool.style.display = "block"
                     })
                 }
-            }, 100);
+            }, 150);
             bigscreenbutton.classList.add('big');
             if (!note_pad.classList.contains('active')) {
                 document.querySelector('.note_area').focus()
@@ -2893,7 +2880,7 @@ if (ua.includes("mobile")) {
                 const task = document.getElementById('taskbar').clientHeight;
                 const child_windows_big2 = bigscreenbutton.clientHeight;
                 bigscreenbutton.style.height = child_windows_big2 + - + task + "px"
-            }, 100);
+            }, 150);
 
         });
     })
@@ -2919,20 +2906,25 @@ if (ua.includes("mobile")) {
             minscreenbutton.classList.remove('leftwindow');
 
             minscreenbutton.classList.add('default');
-            minscreenbutton.style.top = "";
-            minscreenbutton.style.left = "";
-            minscreenbutton.style.right = "";
-            minscreenbutton.style.transition = "0.1s cubic-bezier(0, 0, 1, 1)"
+            minscreenbutton.classList.remove('big');
+
+            const elements = document.querySelectorAll('.child_windows');
+            elements.forEach(element => {
+                element.style.width = element.dataset.originalWidth;
+                element.style.height = element.dataset.originalHeight;
+                element.style.top = element.dataset.originalTop;
+                element.style.left = element.dataset.originalLeft;
+            });
+
+            minscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
             setTimeout(() => {
                 if (!note_pad.classList.contains('active')) {
                     document.querySelector('.note_area').focus()
                 }
-                minscreenbutton.classList.remove('big');
                 minscreenbutton.style.transition = ""
-            }, 100);
+            }, 150);
 
             setTimeout(() => {
-                minscreenbutton.style.height = "";
                 for (let child of childElements) {
                     child.style.display = '';
                 }
@@ -2941,7 +2933,7 @@ if (ua.includes("mobile")) {
                         window_tool.style.display = "block"
                     })
                 }
-            }, 100);
+            }, 150);
         });
     });
 
@@ -2958,11 +2950,11 @@ if (ua.includes("mobile")) {
             notearea.style.width = "";
             alliwindow_min.classList.remove('leftwindow');
             alliwindow_min.classList.remove('rightwindow');
-            alliwindow_min.style.transition = "0.1s cubic-bezier(0, 0, 1, 1)"
+            alliwindow_min.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
             setTimeout(() => {
                 alliwindow_min.classList.remove('big');
                 alliwindow_min.style.transition = ""
-            }, 30);
+            }, 150);
         });
     }
 
@@ -2989,13 +2981,13 @@ if (ua.includes("mobile")) {
                 bigscreenbutton.style.width = ""
                 bigscreenbutton.style.top = "40px"
                 bigscreenbutton.style.left = "0"
-                bigscreenbutton.style.transition = "0.1s cubic-bezier(0, 0, 1, 1)"
+                bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
             } else {
                 bigscreenbutton.style.height = ""
                 bigscreenbutton.style.width = ""
                 bigscreenbutton.style.top = "0"
                 bigscreenbutton.style.left = "0"
-                bigscreenbutton.style.transition = "0.1s cubic-bezier(0, 0, 1, 1)"
+                bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
             }
             setTimeout(() => {
                 bigscreenbutton.style.transition = ""
@@ -3007,7 +2999,7 @@ if (ua.includes("mobile")) {
                         window_tool.style.display = "block"
                     })
                 }
-            }, 100);
+            }, 150);
             bigscreenbutton.classList.add('big');
             if (!note_pad.classList.contains('active')) {
                 document.querySelector('.note_area').focus()
@@ -3029,7 +3021,7 @@ if (ua.includes("mobile")) {
                 windowleft.style.left = "0";
                 windowleft.style.height = "100%";
                 windowleft.style.width = "49.9%";
-                windowleft.style.transition = "0.1s cubic-bezier(0, 0, 1, 1)";
+                windowleft.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
             } else if (localStorage.getItem('taskbar_position_button')) {
                 windowleft.style.right = "auto";
                 windowleft.style.top = "40px";
@@ -3039,27 +3031,27 @@ if (ua.includes("mobile")) {
 
                 windowleft.style.top = t + "px";
 
-                windowleft.style.transition = "0.1s cubic-bezier(0, 0, 1, 1)";
+                windowleft.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
             } else {
                 windowleft.style.right = "auto";
                 windowleft.style.top = "0";
                 windowleft.style.left = "0";
                 windowleft.style.height = "100%";
                 windowleft.style.width = "49.9%";
-                windowleft.style.transition = "0.1s cubic-bezier(0, 0, 1, 1)";
+                windowleft.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
             }
             setTimeout(() => {
                 windowleft.style.transition = "";
                 zindexwindow_addnavy()
                 titlecolor_set()
-            }, 100);
+            }, 150);
 
 
             setTimeout(() => {
                 const task = document.getElementById('taskbar').clientHeight;
                 const child_windows_big2 = windowleft.clientHeight;
                 windowleft.style.height = child_windows_big2 + - + task + "px"
-            }, 100);
+            }, 150);
 
             windowleft.classList.remove('big');
             windowleft.classList.remove('default');
@@ -3079,7 +3071,7 @@ if (ua.includes("mobile")) {
                 windowright.style.right = "0px";
                 windowright.style.height = "100%";
                 windowright.style.width = "49.9%";
-                windowright.style.transition = "0.1s cubic-bezier(0, 0, 1, 1)";
+                windowright.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
             } else if (localStorage.getItem('taskbar_position_button')) {
                 windowright.style.left = "";
                 windowright.style.top = "40px";
@@ -3089,26 +3081,26 @@ if (ua.includes("mobile")) {
 
                 windowright.style.top = t + "px";
 
-                windowright.style.transition = "0.1s cubic-bezier(0, 0, 1, 1)";
+                windowright.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
             } else {
                 windowright.style.left = "";
                 windowright.style.top = "0";
                 windowright.style.right = "0px";
                 windowright.style.height = "100%";
                 windowright.style.width = "49.9%";
-                windowright.style.transition = "0.1s cubic-bezier(0, 0, 1, 1)";
+                windowright.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
             }
             setTimeout(() => {
                 windowright.style.transition = "";
                 zindexwindow_addnavy()
                 titlecolor_set()
-            }, 100);
+            }, 150);
 
             setTimeout(() => {
                 const task = document.getElementById('taskbar').clientHeight;
                 const child_windows_big2 = windowright.clientHeight;
                 windowright.style.height = child_windows_big2 + - + task + "px"
-            }, 100);
+            }, 150);
 
             windowright.classList.remove('big');
             windowright.classList.remove('default');
@@ -3138,10 +3130,10 @@ if (ua.includes("mobile")) {
 
             windowhalfbig.style.height = "55%"
             windowhalfbig.style.width = "55%"
-            windowhalfbig.style.transition = "0.1s cubic-bezier(0, 0, 1, 1)"
+            windowhalfbig.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
             setTimeout(() => {
                 windowhalfbig.style.transition = ""
-            }, 100);
+            }, 150);
             windowhalfbig.classList.remove('big')
         })
     })
@@ -3149,7 +3141,7 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.windowsize_reset').forEach(function (windowsize_reset) {
         windowsize_reset.addEventListener('click', function () {
             const windowsizereset = windowsize_reset.closest('.child_windows');
-            windowsizereset.style.transition = "0.1s cubic-bezier(0, 0, 1, 1)";
+            windowsizereset.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
 
             if (windowsizereset.classList.contains('rightwindow')) {
                 windowsizereset.style.height = "";
@@ -3165,7 +3157,7 @@ if (ua.includes("mobile")) {
 
             setTimeout(() => {
                 windowsizereset.style.transition = ""
-            }, 100);
+            }, 150);
 
             windowsizereset.classList.remove('leftwindow');
             windowsizereset.classList.remove('rightwindow');
@@ -3461,6 +3453,12 @@ if (ua.includes("mobile")) {
             zindexwindow_addnavy()
             titlecolor_set()
         });
+        z_index_child_windows.addEventListener('mousemove', function () {
+            const elements = document.querySelectorAll('.rectangle');
+            elements.forEach(element => {
+                element.classList.remove('rectangle');
+            });
+        })
         z_index_child_windows.addEventListener('click', function () {
             zindexwindow_addnavy()
             setTimeout(() => {
@@ -3967,20 +3965,20 @@ if (ua.includes("mobile")) {
                 dragwindow.style.width = "55%";
                 dragwindow.classList.remove('leftwindow');
 
-                dragwindow.style.transition = "0.1s cubic-bezier(0, 0, 1, 1)";
+                dragwindow.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
                 setTimeout(() => {
                     dragwindow.style.transition = ""
-                }, 100);
+                }, 150);
             }
             if (dragwindow.classList.contains('rightwindow')) {
                 dragwindow.style.height = "55%";
                 dragwindow.style.width = "55%";
                 dragwindow.classList.remove('rightwindow');
 
-                dragwindow.style.transition = "0.1s cubic-bezier(0, 0, 1, 1)";
+                dragwindow.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
                 setTimeout(() => {
                     dragwindow.style.transition = ""
-                }, 100);
+                }, 150);
             }
         })
         let drag2 = drag.closest('.child_windows');
@@ -4033,7 +4031,7 @@ if (ua.includes("mobile")) {
             document.body.addEventListener("touchleave", mup, false);
             // 半透明
             if (localStorage.getItem('window_invisible')) {
-                document.querySelectorAll('.child_windows,.child').forEach(function (title) {
+                document.querySelectorAll('.child_windows').forEach(function (title) {
                     title.style.opacity = "0.5";
                 })
             }
@@ -4071,7 +4069,7 @@ if (ua.includes("mobile")) {
                 window_back_silver()
             })
             // 移動してる時だけ黒枠のみ
-            document.querySelectorAll('.child_windows,.child').forEach(function (title) {
+            document.querySelectorAll('.child_windows, .child').forEach(function (title) {
                 title.style.background = "";
                 title.style.border = "";
                 document.querySelector('iframe').style.opacity = "";
@@ -5502,10 +5500,7 @@ if (ua.includes("mobile")) {
             htmlviewer_run_menu.closest('.child_windows');
             htmlviewer_run_menu.classList.remove('active');
             htmlviewer_run_menu.style.zIndex = largestZIndex++;
-
-            alltitle_navyreomve();
-            wt = htmlviewer_run_menu.firstElementChild;
-            wt.classList.add('navy');
+            zindexwindow_addnavy();
         });
         preview.srcdoc = editor.value;
     }
