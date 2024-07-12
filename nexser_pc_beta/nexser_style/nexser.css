@@ -1074,10 +1074,6 @@ body::-webkit-scrollbar {
     left: 80px;
 }
 
-.resize {
-    resize: both;
-}
-
 /* miniwindow */
 
 .mini_window {
@@ -2778,4 +2774,81 @@ progress::-webkit-progress-value {
     opacity: 0.5;
     pointer-events: none;
     z-index: 0;
+}
+
+
+
+
+
+
+
+
+
+
+.resizer {
+    width: 10px;
+    height: 10px;
+    position: absolute;
+    cursor: pointer;
+    z-index: 1;
+}
+
+.big .resizer {
+    display: none;
+}
+
+.resizer.top-left {
+    top: -5px;
+    left: -5px;
+    cursor: nwse-resize;
+}
+
+.resizer.top-right {
+    top: -5px;
+    right: -5px;
+    cursor: nesw-resize;
+}
+
+.resizer.bottom-left {
+    bottom: -5px;
+    left: -5px;
+    cursor: nesw-resize;
+}
+
+.resizer.bottom-right {
+    bottom: -5px;
+    right: -5px;
+    cursor: nwse-resize;
+}
+
+.resizer.top {
+    top: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    cursor: ns-resize;
+    width: 90%;
+}
+
+.resizer.right {
+    top: 50%;
+    right: -5px;
+    transform: translateY(-50%);
+    cursor: ew-resize;
+    height: 80%;
+}
+
+.resizer.bottom {
+    bottom: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    cursor: ns-resize;
+    width: 90%;
+}
+
+.resizer.left {
+    top: 50%;
+    left: -5px;
+    transform: translateY(-50%);
+    cursor: ew-resize;
+    height: 80%;
 }

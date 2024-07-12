@@ -6749,4 +6749,140 @@ if (ua.includes("mobile")) {
         }
     }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    function addResizers(element) {
+        const resizerPositions = ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'top', 'right', 'bottom', 'left'];
+        resizerPositions.forEach(position => {
+            const resizer = document.createElement('div');
+            resizer.classList.add('resizer', position);
+            element.appendChild(resizer);
+        });
+    }
+
+    function makeResizableDivs(className) {
+        const elements = document.querySelectorAll(className);
+        elements.forEach(element => {
+            addResizers(element);
+            const resizers = element.querySelectorAll('.resizer');
+            const minimum_size = 20;
+            let original_width = 0;
+            let original_height = 0;
+            let original_x = 0;
+            let original_y = 0;
+            let original_mouse_x = 0;
+            let original_mouse_y = 0;
+
+            resizers.forEach(resizer => {
+                resizer.addEventListener('mousedown', function (e) {
+                    e.preventDefault();
+                    original_width = parseFloat(getComputedStyle(element, null).getPropertyValue('width').replace('px', ''));
+                    original_height = parseFloat(getComputedStyle(element, null).getPropertyValue('height').replace('px', ''));
+                    original_x = element.getBoundingClientRect().left;
+                    original_y = element.getBoundingClientRect().top;
+                    original_mouse_x = e.pageX;
+                    original_mouse_y = e.pageY;
+
+                    window.addEventListener('mousemove', resize);
+                    window.addEventListener('mouseup', stopResize);
+                });
+
+                function resize(e) {
+                    if (resizer.classList.contains('right')) {
+                        const width = original_width + (e.pageX - original_mouse_x);
+                        if (width > minimum_size) {
+                            element.style.width = width + 'px';
+                        }
+                    } else if (resizer.classList.contains('left')) {
+                        const width = original_width - (e.pageX - original_mouse_x);
+                        if (width > minimum_size) {
+                            element.style.width = width + 'px';
+                            element.style.left = original_x + (e.pageX - original_mouse_x) + 'px';
+                        }
+                    } else if (resizer.classList.contains('bottom')) {
+                        const height = original_height + (e.pageY - original_mouse_y);
+                        if (height > minimum_size) {
+                            element.style.height = height + 'px';
+                        }
+                    } else if (resizer.classList.contains('top')) {
+                        const height = original_height - (e.pageY - original_mouse_y);
+                        if (height > minimum_size) {
+                            element.style.height = height + 'px';
+                            element.style.top = original_y + (e.pageY - original_mouse_y) + 'px';
+                        }
+                    } else if (resizer.classList.contains('bottom-right')) {
+                        const width = original_width + (e.pageX - original_mouse_x);
+                        const height = original_height + (e.pageY - original_mouse_y);
+                        if (width > minimum_size) {
+                            element.style.width = width + 'px';
+                        }
+                        if (height > minimum_size) {
+                            element.style.height = height + 'px';
+                        }
+                    } else if (resizer.classList.contains('bottom-left')) {
+                        const height = original_height + (e.pageY - original_mouse_y);
+                        const width = original_width - (e.pageX - original_mouse_x);
+                        if (height > minimum_size) {
+                            element.style.height = height + 'px';
+                        }
+                        if (width > minimum_size) {
+                            element.style.width = width + 'px';
+                            element.style.left = original_x + (e.pageX - original_mouse_x) + 'px';
+                        }
+                    } else if (resizer.classList.contains('top-right')) {
+                        const width = original_width + (e.pageX - original_mouse_x);
+                        const height = original_height - (e.pageY - original_mouse_y);
+                        if (width > minimum_size) {
+                            element.style.width = width + 'px';
+                        }
+                        if (height > minimum_size) {
+                            element.style.height = height + 'px';
+                            element.style.top = original_y + (e.pageY - original_mouse_y) + 'px';
+                        }
+                    } else if (resizer.classList.contains('top-left')) {
+                        const width = original_width - (e.pageX - original_mouse_x);
+                        const height = original_height - (e.pageY - original_mouse_y);
+                        if (width > minimum_size) {
+                            element.style.width = width + 'px';
+                            element.style.left = original_x + (e.pageX - original_mouse_x) + 'px';
+                        }
+                        if (height > minimum_size) {
+                            element.style.height = height + 'px';
+                            element.style.top = original_y + (e.pageY - original_mouse_y) + 'px';
+                        }
+                    }
+                    const elements = document.querySelectorAll('.rectangle');
+                    // 各要素からクラスを削除
+                    elements.forEach(element => {
+                        element.classList.remove('rectangle');
+                    });
+                }
+
+                function stopResize() {
+                    window.removeEventListener('mousemove', resize);
+                    window.removeEventListener('mouseup', stopResize);
+                }
+            });
+        });
+    }
+
+    makeResizableDivs('.resize');
+
+
+
+
+
 }
