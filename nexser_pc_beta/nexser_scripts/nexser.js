@@ -152,7 +152,6 @@ if (ua.includes("mobile")) {
     // nexser_load
 
     new Promise((resolve) => {
-        setTimeout(localmemory_size, resolve());
         setTimeout(getStorage, resolve());
         setTimeout(taskbar_none, resolve());
         setTimeout(title_none, resolve());
@@ -536,6 +535,10 @@ if (ua.includes("mobile")) {
                 taskgroup_load();
             }, 50)
         }
+        setTimeout(() => {
+            localmemory_size()
+            resolve()
+        }, 500);
     }).then(() => {
         // 処理が無事終わったことを受けとって実行される処理
     });
