@@ -1386,10 +1386,7 @@ if (ua.includes("mobile")) {
             const element = document.querySelector('.note_pad');
             element.closest('.child_windows');
             element.classList.remove('active');
-            zindexwindow_addnavy()
-        }
-        if (!note_pad.classList.contains('active')) {
-            document.querySelector('.note_area').focus();
+            zindexwindow_addnavy();
         }
         if (localStorage.getItem('startup_color')) {
             const element = document.querySelector('.color');
@@ -2755,7 +2752,6 @@ if (ua.includes("mobile")) {
             document.getElementsByClassName('window_memory2')[0].textContent = (`使用可能なメモリ    ${(performance.memory.jsHeapSizeLimit / 1048576).toFixed(2)}MB`);
             document.getElementsByClassName('window_memory3')[0].textContent = (`割り当てられたメモリ  ${(performance.memory.totalJSHeapSize / 1024).toFixed(2)}KB`);
             document.getElementsByClassName('window_memory4')[0].textContent = (`現在使用中のメモリ   ${(performance.memory.usedJSHeapSize / 1024).toFixed(2)}KB`);
-
         }
     }, 100);
     Array.from(document.getElementsByClassName('window_inline_list')).forEach((window_inline_list) => {
@@ -2817,13 +2813,12 @@ if (ua.includes("mobile")) {
     })
     document.querySelectorAll('.bigscreen_button').forEach(function (bigscreen_button) {
         bigscreen_button.addEventListener('mousedown', function () {
-            const elements = document.querySelectorAll('.child_windows');
-            elements.forEach(element => {
-                element.dataset.originalWidth = element.style.width;
-                element.dataset.originalHeight = element.style.height;
-                element.dataset.originalTop = element.style.top;
-                element.dataset.originalLeft = element.style.left;
-            });
+            const elements = document.querySelector('.title.navy');
+            const elements2 = elements.closest('.child_windows');
+            elements2.dataset.originalWidth = elements2.style.width;
+            elements2.dataset.originalHeight = elements2.style.height;
+            elements2.dataset.originalTop = elements2.style.top;
+            elements2.dataset.originalLeft = elements2.style.left;
         })
         bigscreen_button.addEventListener('click', function () {
             const bigscreenbutton = bigscreen_button.closest('.child_windows');
@@ -2878,10 +2873,6 @@ if (ua.includes("mobile")) {
                 }
             }, 150);
             bigscreenbutton.classList.add('big');
-            if (!note_pad.classList.contains('active')) {
-                document.querySelector('.note_area').focus()
-            }
-
             setTimeout(() => {
                 const task = document.getElementById('taskbar').clientHeight;
                 const child_windows_big2 = bigscreenbutton.clientHeight;
@@ -2914,19 +2905,15 @@ if (ua.includes("mobile")) {
             minscreenbutton.classList.add('default');
             minscreenbutton.classList.remove('big');
 
-            const elements = document.querySelectorAll('.child_windows');
-            elements.forEach(element => {
-                element.style.width = element.dataset.originalWidth;
-                element.style.height = element.dataset.originalHeight;
-                element.style.top = element.dataset.originalTop;
-                element.style.left = element.dataset.originalLeft;
-            });
+            const elements = document.querySelector('.title.navy');
+            const elements2 = elements.closest('.child_windows');
+            elements2.style.width = elements2.dataset.originalWidth;
+            elements2.style.height = elements2.dataset.originalHeight;
+            elements2.style.top = elements2.dataset.originalTop;
+            elements2.style.left = elements2.dataset.originalLeft;
 
             minscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
             setTimeout(() => {
-                if (!note_pad.classList.contains('active')) {
-                    document.querySelector('.note_area').focus()
-                }
                 minscreenbutton.style.transition = ""
             }, 150);
 
@@ -3007,9 +2994,6 @@ if (ua.includes("mobile")) {
                 }
             }, 150);
             bigscreenbutton.classList.add('big');
-            if (!note_pad.classList.contains('active')) {
-                document.querySelector('.note_area').focus()
-            }
         });
     }
 
@@ -3419,17 +3403,12 @@ if (ua.includes("mobile")) {
             }, 100);
             setTimeout(() => {
                 resizeTextarea()
+                youtubeframe_resize()
+                cameraframe_resize()
             }, 150);
         })
     })
 
-    document.querySelectorAll('.note_pad, .child').forEach(function (notepad_foccus) {
-        notepad_foccus.addEventListener('mouseup', function () {
-            if (!note_pad.classList.contains('active')) {
-                document.querySelector('.note_area').focus()
-            }
-        });
-    })
     document.querySelectorAll('.window_prompt, .child').forEach(function (window_prompt) {
         window_prompt.addEventListener('mouseup', function () {
             document.querySelector('.focus2').focus()
@@ -3586,10 +3565,7 @@ if (ua.includes("mobile")) {
             note_pad.classList.toggle('active');
             note_pad.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
-            if (!note_pad.classList.contains('active')) {
-                document.querySelector('.note_area').focus()
-                resizeTextarea()
-            }
+            resizeTextarea()
         });
     });
     document.querySelectorAll('.test_button13').forEach(function (test_button13) {
@@ -3632,6 +3608,7 @@ if (ua.includes("mobile")) {
             camera_menu.classList.toggle('active');
             camera_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
+            cameraframe_resize()
         });
     });
     document.querySelectorAll('.test_button19').forEach(function (test_button19) {
@@ -3750,6 +3727,7 @@ if (ua.includes("mobile")) {
             youtubevideo_menu.classList.toggle('active');
             youtubevideo_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
+            youtubeframe_resize()
         });
     });
 
@@ -3897,13 +3875,33 @@ if (ua.includes("mobile")) {
 
     const note_parent = document.querySelector('.note_pad');
     const note_child = document.getElementById('note_text');
-
     const resizeTextarea = () => {
-        note_child.style.width = `${note_parent.clientWidth + - + 5}px`;
-        note_child.style.height = `${note_parent.clientHeight + - + 100}px`;
+        const hehehe1 = note_parent.firstElementChild;
+        if (hehehe1.classList.contains('navy')) {
+            note_child.style.width = `${note_parent.clientWidth + - + 5}px`;
+            note_child.style.height = `${note_parent.clientHeight + - + 100}px`;
+            document.querySelector('.note_area').focus()
+        }
     };
-
     note_parent.addEventListener('mousemove', resizeTextarea);
+
+
+    const youtubeframe_parent = document.querySelector('.youtubevideo_menu');
+    const youtubeframe_child = document.getElementById('youtubeframe');
+    const youtubeframe_resize = () => {
+        youtubeframe_child.style.width = `${youtubeframe_parent.clientWidth}px`;
+        youtubeframe_child.style.height = `${youtubeframe_parent.clientHeight + - + 50}px`;
+    };
+    youtubeframe_parent.addEventListener('mousemove', youtubeframe_resize);
+
+
+    const cameraframe_parent = document.querySelector('.camera_menu');
+    const cameraframe_child = document.getElementById('v');
+    const cameraframe_resize = () => {
+        cameraframe_child.style.width = `${cameraframe_parent.clientWidth}px`;
+        cameraframe_child.style.height = `${cameraframe_parent.clientHeight}px`;
+    };
+    cameraframe_parent.addEventListener('mousemove', cameraframe_resize);
 
     document.querySelectorAll('.drag_button').forEach(function (drag) {
         drag.addEventListener('mousedown', function () {

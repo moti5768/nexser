@@ -830,12 +830,14 @@ input[type="file"] {
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
-    background: darkgray;
+    display: block;
+    width: 100%;
+    background: silver;
     box-shadow: 0 0 0 1.5px whitesmoke,
-        0 0 0 2px dimgray;
+        0 0 0 2.5px dimgray;
     position: absolute;
+    box-sizing: border-box;
     bottom: 0px;
-    width: 99.5%;
 }
 
 /* soft_windows */
@@ -909,18 +911,16 @@ input[type="file"] {
 }
 
 .youtubevideo_menu {
-    width: 250px;
-    height: auto;
+    width: 800px;
+    height: 500px;
+    min-width: 250px;
 }
 
 #youtubeframe {
     height: 400px;
     width: 700px;
-}
-
-.big #youtubeframe {
-    height: 80vh;
-    width: 100%;
+    position: absolute;
+    top: 22.5px;
 }
 
 .device_menu {
@@ -934,19 +934,19 @@ input[type="file"] {
     width: 500px;
 }
 
-.camera_menu {
-    height: min-content;
-    width: min-content;
-}
-
 .nexser_files_menu {
     width: 600px;
     height: 400px;
 }
 
-.big #v {
-    height: 85vh;
-    padding-left: 150px;
+.camera_menu {
+    width: 500px;
+    height: 400px;
+    min-width: 300px;
+}
+
+#v {
+    position: absolute;
 }
 
 /* color_btn */
