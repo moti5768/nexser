@@ -886,6 +886,7 @@ input[type="file"] {
 
 .note_pad {
     width: 600px;
+    height: 400px;
 }
 
 .debug_menu {
@@ -1991,7 +1992,6 @@ body::-webkit-scrollbar {
 }
 
 .window_inline_list {
-    margin-top: 0px;
     display: inline-flex;
     flex-wrap: wrap;
     background: whitesmoke;
@@ -2087,18 +2087,14 @@ body::-webkit-scrollbar {
 
 .note_area {
     outline: none;
-    height: 300px;
-    width: 100%;
-    min-width: max-content;
+    width: min-content;
     background: white;
     overflow: scroll;
     white-space: nowrap;
-}
-
-.child_windows.big .note_area {
     width: 100%;
-    height: 80vh;
+    height: 100%;
     resize: none;
+    position: absolute;
 }
 
 /* textarea */

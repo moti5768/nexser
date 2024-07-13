@@ -594,16 +594,16 @@
                         </div>
                     </div>
 
-                    <div class="child_windows note_pad active back_silver">
+                    <div class="child_windows note_pad active back_silver resize">
                         <div class="title">
                             <span class="title_icon"></span>&emsp;&emsp;<span class="note_title">notepad</span>
                         </div>
 
                         <div class="title_buttons">
-                            <span class="drag_button note_drag">&nbsp;</span>
+                            <span class="drag_button">&nbsp;</span>
                             <span class="close_button4 button2 note_close"></span>
-                            <span class="bigscreen_button button2 notearea_big"></span>
-                            <span class="minscreen_button button2 notearea_min"></span>
+                            <span class="bigscreen_button button2"></span>
+                            <span class="minscreen_button button2"></span>
                             <span class="minimization_button button2"></span><br>
                         </div>
 
@@ -628,11 +628,11 @@
                                 </ul>
                                 <div class="child_list">
                                     <ul>
-                                        <li class="note_fullleft window_fullleft">window full left</li>
-                                        <li class="note_fullright window_fullright">
+                                        <li class="window_fullleft">window full left</li>
+                                        <li class="window_fullright">
                                             window full right</li>
-                                        <li class="note_halfbig window_half_big">window half big</li>
-                                        <li class="note_sizereset windowsize_reset">window size reset
+                                        <li class="window_half_big">window half big</li>
+                                        <li class="windowsize_reset">window size reset
                                         </li>
                                     </ul>
                                 </div>
@@ -708,10 +708,12 @@
                                     onclick="win2000_load()" style="position: absolute; right: 0px; top: 52.5px;">
                                 <input type="button" id="cleartextbtn" class="button2" value="&emsp;clear&emsp;">
                             </div>
-                            <form name="note_form">
+                            <form name="note_form" class="note_forms">
                                 <textarea id="note_text" name="note_area" class="note_area border2" cols="50"
                                     rows="15"></textarea>
                             </form>
+                        </div>
+                        <div class="window_bottom" style="width: 100%;">
                             <ul style="display:flex; position: relative; font-size: 12.5px;">
                                 <li class="border2">Textcount:&emsp;<span id="inputlength">0</span>
                                 </li>
@@ -1126,8 +1128,8 @@
                                 </div><br>
                             </ul>
                         </div>
-                        <div class="window_bottom border2">
-                            <p>&nbsp;9&nbsp;objects</p>
+                        <div class="window_bottom border2" style="width: 100%;">
+                            <p>&nbsp;11&nbsp;objects</p>
                         </div>
                     </div>
 
@@ -2714,6 +2716,9 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                 </li>
                                 <li>
                                     <span>saver_time:&emsp;</span><span class="saver_time">none</span>
+                                </li>
+                                <li>
+                                    <span>drag_window:&emsp;</span><span class="drag_window">none</span>
                                 </li>
                                 <li style="margin-top: 20px;">
                                     <span>cpu cores:&emsp;</span><span class="cpu_cores">none</span>

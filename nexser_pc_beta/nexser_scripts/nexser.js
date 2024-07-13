@@ -2746,6 +2746,9 @@ if (ua.includes("mobile")) {
             const un = document.getElementsByClassName('navy').length;
             document.querySelector('.title_navy').textContent = un;
 
+            const un2 = document.getElementsByClassName('drag').length;
+            document.querySelector('.drag_window').textContent = un2;
+
             document.getElementsByClassName('cpu_cores')[0].textContent = (navigator.hardwareConcurrency);
 
             document.getElementsByClassName('window_memory')[0].textContent = (`Memory:   ${(performance.memory.usedJSHeapSize / 1024).toFixed(2)}KB`);
@@ -3183,59 +3186,6 @@ if (ua.includes("mobile")) {
         });
     })
 
-    document.querySelectorAll('.notearea_big').forEach(function (notearea_big) {
-        notearea_big.addEventListener('click', function () {
-            const notearea = document.querySelector('.note_area');
-            notearea.style.height = ""
-            notearea.style.width = ""
-        });
-    })
-    document.querySelectorAll('.notearea_min').forEach(function (notearea_big) {
-        notearea_big.addEventListener('click', function () {
-            const notearea = document.querySelector('.note_area');
-            notearea.style.height = ""
-            notearea.style.width = ""
-            notearea.style.resize = ""
-        });
-    })
-
-    document.querySelectorAll('.note_fullleft').forEach(function (note_fullleft) {
-        note_fullleft.addEventListener('click', function () {
-            const notearea = document.querySelector('.note_area');
-            notearea.style.height = "80vh"
-            notearea.style.width = ""
-            notearea.style.resize = "none"
-        })
-    })
-    document.querySelectorAll('.note_fullright').forEach(function (note_fullright) {
-        note_fullright.addEventListener('click', function () {
-            const notearea = document.querySelector('.note_area');
-            notearea.style.height = "80vh"
-            notearea.style.width = ""
-            notearea.style.resize = "none"
-        })
-    })
-
-    document.querySelectorAll('.note_halfbig').forEach(function (note_halfbig) {
-        note_halfbig.addEventListener('click', function () {
-            const notearea = document.querySelector('.note_area');
-            notearea.style.height = "41.5vh"
-            notearea.style.width = ""
-            notearea.style.resize = "none"
-        })
-    })
-    document.querySelectorAll('.note_sizereset').forEach(function (note_sizereset) {
-        note_sizereset.addEventListener('click', function () {
-            const notearea = document.querySelector('.note_area');
-            notearea.style.height = ""
-            notearea.style.width = ""
-            notearea.style.resize = ""
-
-            const notearea2 = notearea.closest('.child_windows');
-            notearea2.style.width = "0"
-        })
-    })
-
     document.querySelectorAll('.parent_list').forEach(function (parent_list) {
         parent_list.addEventListener('mouseover', function () {
             let parentlist = parent_list.lastElementChild;
@@ -3455,19 +3405,21 @@ if (ua.includes("mobile")) {
             z_index.textContent = getLargestZIndex('.child_windows');
             zindexwindow_addnavy()
             titlecolor_set()
-        });
-        z_index_child_windows.addEventListener('mousemove', function () {
+
             const elements = document.querySelectorAll('.rectangle');
             elements.forEach(element => {
                 element.classList.remove('rectangle');
             });
-        })
+        });
         z_index_child_windows.addEventListener('click', function () {
             zindexwindow_addnavy()
             setTimeout(() => {
                 zindexwindow_addnavy()
                 titlecolor_set()
             }, 100);
+            setTimeout(() => {
+                resizeTextarea()
+            }, 150);
         })
     })
 
@@ -3636,6 +3588,7 @@ if (ua.includes("mobile")) {
             zindexwindow_addnavy()
             if (!note_pad.classList.contains('active')) {
                 document.querySelector('.note_area').focus()
+                resizeTextarea()
             }
         });
     });
@@ -3942,23 +3895,15 @@ if (ua.includes("mobile")) {
         taskbtn_load()
     })
 
-    document.querySelectorAll('.note_drag').forEach(function (note_drag) {
-        note_drag.addEventListener('mousedown', function () {
-            const notedrag = note_drag.closest('.child_windows');
-            if (notedrag.classList.contains('leftwindow')) {
-                const notearea = document.querySelector('.note_area');
-                notearea.style.height = "41.5vh";
-                notearea.style.width = "";
-                notearea.style.resize = "none";
-            }
-            if (notedrag.classList.contains('rightwindow')) {
-                const notearea = document.querySelector('.note_area');
-                notearea.style.height = "41.5vh";
-                notearea.style.width = "";
-                notearea.style.resize = "none";
-            }
-        })
-    })
+    const note_parent = document.querySelector('.note_pad');
+    const note_child = document.getElementById('note_text');
+
+    const resizeTextarea = () => {
+        note_child.style.width = `${note_parent.clientWidth + - + 5}px`;
+        note_child.style.height = `${note_parent.clientHeight + - + 100}px`;
+    };
+
+    note_parent.addEventListener('mousemove', resizeTextarea);
 
     document.querySelectorAll('.drag_button').forEach(function (drag) {
         drag.addEventListener('mousedown', function () {
@@ -4052,14 +3997,16 @@ if (ua.includes("mobile")) {
         }
         //マウスボタンが上がったら発火
         function mup(e) {
-            var drag = document.getElementsByClassName("drag")[0];
-            //ムーブベントハンドラの消去
+
+            document.querySelectorAll('.drag').forEach(function (drag_windows) {
+                drag_windows.classList.remove("drag");
+            })
+
             document.body.removeEventListener("mousemove", mmove, false);
             drag.removeEventListener("mouseup", mup, false);
             document.body.removeEventListener("touchmove", { passive: false }, mmove, false);
             drag.removeEventListener("touchend", { passive: false }, mup, false);
-            //クラス名 .drag も消す
-            drag.classList.remove("drag");
+
             document.querySelectorAll('.title').forEach(function (title) {
                 document.querySelector('.navy').style.background = ""
                 window_prompt.style.background = "black"
@@ -5028,9 +4975,11 @@ if (ua.includes("mobile")) {
         document.querySelector('.note_title').textContent = "*notepad";
         const note_texts = document.querySelector('.note_area');
         localStorage.setItem('note_texts', note_texts);
+        resizeTextarea()
     }
 
     function onChange() {
+        resizeTextarea()
         let spaceCount = 0;
         const inputText = Array.from(note_area.value);
         const textCount = inputText.length;
@@ -6747,21 +6696,6 @@ if (ua.includes("mobile")) {
         }
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     function addResizers(element) {
         const resizerPositions = ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'top', 'right', 'bottom', 'left'];
         resizerPositions.forEach(position => {
@@ -6879,8 +6813,5 @@ if (ua.includes("mobile")) {
 
     makeResizableDivs('.resize');
 
+};
 
-
-
-
-}
