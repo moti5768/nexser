@@ -979,6 +979,10 @@
                                     <li>othello</li><span class="window_file_icon"></span>
                                     <li class="windowfile_time"></li>
                                 </div>
+                                <div class="window_files test_button43">
+                                    <li>url drop</li><span class="window_file_icon"></span>
+                                    <li class="windowfile_time"></li>
+                                </div>
                             </ul>
                         </div>
                     </div>
@@ -3234,7 +3238,6 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             <span class="title_icon"></span><span>&emsp;&emsp;device</span>
                         </div>
 
-
                         <div class="title_buttons">
                             <span class="drag_button">&nbsp;</span>
                             <span class="close_button button2"></span>
@@ -3314,7 +3317,8 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
 
                         <div class="title_buttons">
                             <span class="drag_button">&nbsp;</span>
-                            <span class="close_button button2"></span><br>
+                            <span class="close_button button2"
+                                onclick="paint_allclear(),paintcanvas_background()"></span><br>
                         </div>
 
                         <div class="window_contents back_silver">
@@ -3392,6 +3396,45 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             <div id="nexser_files_output"></div><br><br>
                         </div>
                     </div>
+
+
+
+
+
+
+
+
+                    <div class="child_windows url_drop_menu resize active">
+                        <div class="title">
+                            <span class="title_icon"></span><span>&emsp;&emsp;url drop</span>
+                        </div>
+
+                        <div class="title_buttons">
+                            <span class="drag_button">&nbsp;</span>
+                            <span class="close_button button2" onclick="urldrop_reset()"></span>
+                            <span class="bigscreen_button button2"></span>
+                            <span class="minscreen_button button2"></span>
+                            <span class="minimization_button button2"></span><br>
+                        </div>
+
+                        <div class="window_contents">
+
+                            <div class="url_drop_area" style="position: absolute;">
+                                <div id="dropzone" style="width: 100%; height: 100%; border: 2px dashed #000;">
+                                    ドラッグしたURLをここにドロップ
+                                </div>
+                                <iframe id="url_iframe"
+                                    style="display: none; width: 100%; height: 100%; border: none; position: absolute; top: 0; left: 0;"></iframe>
+                            </div>
+                        </div>
+                        <div class="window_bottom">
+                            <span class="button2" onclick="urldrop_reset()">URL Reset</span>
+                        </div>
+                    </div>
+
+
+
+
 
                     <div class="child_windows nexser_guidebook_menu resize active">
                         <div class="title">

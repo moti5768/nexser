@@ -945,6 +945,12 @@ input[type="file"] {
     min-width: 300px;
 }
 
+.url_drop_menu {
+    width: 400px;
+    height: 300px;
+    min-width: 200px;
+}
+
 #v {
     position: absolute;
 }

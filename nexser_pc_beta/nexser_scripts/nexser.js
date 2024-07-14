@@ -75,6 +75,7 @@ if (ua.includes("mobile")) {
     const localstorage_monitor_menu = document.querySelector('.localstorage_monitor_menu');
     const paint_menu = document.querySelector('.paint_menu');
     const nexser_files_menu = document.querySelector('.nexser_files_menu');
+    const url_drop_menu = document.querySelector('.url_drop_menu');
 
     const notice_menu = document.querySelector('.notice_menu');
 
@@ -1065,8 +1066,8 @@ if (ua.includes("mobile")) {
                     document.getElementById('nex').style.cursor = '';
                     document.querySelector('.window_error_text').textContent = "welcomeウィンドウが起動するまでシャットダウンはできません!"
                     error_windows.classList.remove('active')
-                    sound3()
                     document.querySelector('.test_allwindow').style.display = "block";
+                    sound3()
                 } else if (gets == gets2) {
                     sound_stop();
                     shutdown_sound();
@@ -2813,6 +2814,7 @@ if (ua.includes("mobile")) {
     })
     document.querySelectorAll('.bigscreen_button').forEach(function (bigscreen_button) {
         bigscreen_button.addEventListener('mousedown', function () {
+            zindexwindow_addnavy()
             const elements = document.querySelector('.title.navy');
             const elements2 = elements.closest('.child_windows');
             elements2.dataset.originalWidth = elements2.style.width;
@@ -3405,6 +3407,7 @@ if (ua.includes("mobile")) {
                 resizeTextarea()
                 youtubeframe_resize()
                 cameraframe_resize()
+                url_drop_resize()
             }, 150);
         })
     })
@@ -3774,6 +3777,15 @@ if (ua.includes("mobile")) {
         });
     });
 
+    document.querySelectorAll('.test_button43').forEach(function (test_button43) {
+        test_button43.addEventListener('click', function () {
+            url_drop_menu.classList.toggle('active');
+            url_drop_menu.style.zIndex = largestZIndex++;
+            zindexwindow_addnavy()
+            url_drop_resize()
+        });
+    });
+
 
     function cpucalc_open() {
         const cpumenu1 = document.querySelector('.cpumenu_1');
@@ -3902,6 +3914,16 @@ if (ua.includes("mobile")) {
         cameraframe_child.style.height = `${cameraframe_parent.clientHeight}px`;
     };
     cameraframe_parent.addEventListener('mousemove', cameraframe_resize);
+
+
+    const url_drop_parent = document.querySelector('.url_drop_menu');
+    const url_drop_child = document.querySelector('.url_drop_area');
+    const url_drop_resize = () => {
+        url_drop_child.style.width = `${url_drop_parent.clientWidth}px`;
+        url_drop_child.style.height = `${url_drop_parent.clientHeight + - + 55}px`;
+    };
+    url_drop_parent.addEventListener('mousemove', url_drop_resize);
+
 
     document.querySelectorAll('.drag_button').forEach(function (drag) {
         drag.addEventListener('mousedown', function () {
@@ -6810,6 +6832,50 @@ if (ua.includes("mobile")) {
     }
 
     makeResizableDivs('.resize');
+
+
+
+
+
+
+
+
+
+    const dropzone = document.getElementById('dropzone');
+    const url_iframe = document.getElementById('url_iframe');
+
+    dropzone.addEventListener('dragover', (event) => {
+        event.preventDefault();
+        dropzone.style.backgroundColor = '#f0f0f0';
+    });
+
+    dropzone.addEventListener('dragleave', (event) => {
+        dropzone.style.backgroundColor = '';
+    });
+
+    dropzone.addEventListener('drop', (event) => {
+        event.preventDefault();
+        dropzone.style.backgroundColor = '';
+
+        const url = event.dataTransfer.getData('text/uri-list');
+        if (url) {
+            url_iframe.src = url;
+            url_iframe.style.display = "block"
+            dropzone.style.display = "none"
+        } else {
+            document.getElementById('nex').style.cursor = '';
+            document.querySelector('.window_error_text').textContent = "有効なURLをドロップしてください。"
+            error_windows.classList.remove('active')
+            document.querySelector('.test_allwindow').style.display = "block";
+            sound3()
+        }
+    });
+
+    function urldrop_reset() {
+        url_iframe.src = "";
+        url_iframe.style.display = "none"
+        dropzone.style.display = "block"
+    }
 
 };
 
