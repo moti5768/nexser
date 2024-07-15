@@ -1802,6 +1802,7 @@ if (ua.includes("mobile")) {
             document.querySelector('.minscreen_button').style.visibility = "visible";
             document.querySelector('.minimization_button').style.visibility = "visible";
             allwindow.classList.remove('half2');
+            allwindow.classList.remove('minimization');
         });
 
         bom_reset();
@@ -2804,12 +2805,19 @@ if (ua.includes("mobile")) {
     })
 
     document.querySelectorAll('.minimization_button').forEach(function (minimizationbutton) {
+        const minimization_button = minimizationbutton.closest('.child_windows');
         minimizationbutton.addEventListener('click', function () {
             setTimeout(() => {
-                const minimization_button = minimizationbutton.closest('.child_windows');
-                minimization_button.classList.add('active');
+                minimization_button.classList.remove('big');
+                minimization_button.classList.add('minimization');
+                minimization_button.style.height = "0px"
+                minimization_button.style.width = "0px"
                 taskbtn_load()
             }, 100);
+            setTimeout(() => {
+                minimization_button.scrollTop = 0;
+                minimization_button.scrollLeft = 0;
+            }, 200);
         });
     })
     document.querySelectorAll('.bigscreen_button').forEach(function (bigscreen_button) {
@@ -2824,7 +2832,7 @@ if (ua.includes("mobile")) {
         })
         bigscreen_button.addEventListener('click', function () {
             const bigscreenbutton = bigscreen_button.closest('.child_windows');
-
+            bigscreenbutton.classList.remove('minimization');
             const childElements = bigscreenbutton.children;
             for (let child of childElements) {
                 child.style.display = 'none';
@@ -2887,10 +2895,8 @@ if (ua.includes("mobile")) {
 
     document.querySelectorAll('.minscreen_button').forEach(function (minscreen_button) {
         minscreen_button.addEventListener('click', function () {
-
             const minscreenbutton = minscreen_button.closest('.child_windows');
             const childElements = minscreenbutton.children;
-
             for (let child of childElements) {
                 child.style.display = 'none';
                 document.querySelectorAll('.title,.title_buttons').forEach(function (titles) {
@@ -2917,6 +2923,10 @@ if (ua.includes("mobile")) {
             minscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
             setTimeout(() => {
                 minscreenbutton.style.transition = ""
+                setTimeout(() => {
+                    minscreenbutton.scrollTop = 0;
+                    minscreenbutton.scrollLeft = 0;
+                }, 100);
             }, 150);
 
             setTimeout(() => {
@@ -3383,6 +3393,8 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.child_windows, .child').forEach(function (z_index_child_windows) {
         const zindexchildwindows = z_index_child_windows.closest('.child_windows');
         z_index_child_windows.addEventListener('mousedown', function () {
+            zindexchildwindows.scrollTop = 0;
+            zindexchildwindows.scrollLeft = 0;
             start_menu.style.display = "none";
             document.querySelector('.start_button').classList.remove('pressed');
             taskbtn_load()
@@ -3398,6 +3410,8 @@ if (ua.includes("mobile")) {
             });
         });
         z_index_child_windows.addEventListener('click', function () {
+            zindexchildwindows.scrollTop = 0;
+            zindexchildwindows.scrollLeft = 0;
             zindexwindow_addnavy()
             setTimeout(() => {
                 zindexwindow_addnavy()
@@ -3409,6 +3423,13 @@ if (ua.includes("mobile")) {
                 cameraframe_resize()
                 url_drop_resize()
             }, 150);
+        })
+        z_index_child_windows.addEventListener('dblclick', function () {
+            if (zindexchildwindows.classList.contains('minimization')) {
+                zindexchildwindows.classList.remove('minimization');
+                zindexchildwindows.style.width = ""
+                zindexchildwindows.style.height = ""
+            }
         })
     })
 
@@ -3772,6 +3793,7 @@ if (ua.includes("mobile")) {
             nexser_files_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy();
             setTimeout(() => {
+                nexser_files_output_remove()
                 nexser_files_windowload()
             }, 100);
         });
@@ -3891,7 +3913,7 @@ if (ua.includes("mobile")) {
         const hehehe1 = note_parent.firstElementChild;
         if (hehehe1.classList.contains('navy')) {
             note_child.style.width = `${note_parent.clientWidth + - + 5}px`;
-            note_child.style.height = `${note_parent.clientHeight + - + 100}px`;
+            note_child.style.height = `${note_parent.clientHeight + - + 105}px`;
             document.querySelector('.note_area').focus()
         }
     };
@@ -6876,6 +6898,15 @@ if (ua.includes("mobile")) {
         url_iframe.style.display = "none"
         dropzone.style.display = "block"
     }
+
+    // クラス名が "target" の要素を全て取得
+    var elements = document.querySelectorAll('.bigscreen_button');
+    elements.forEach(function (element) {
+        var newChild = document.createElement('div');
+        newChild.className = 'bigscreen_button_child';
+        // 子要素を追加
+        element.appendChild(newChild);
+    });
 
 };
 

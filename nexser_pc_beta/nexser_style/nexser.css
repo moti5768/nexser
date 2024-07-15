@@ -951,6 +951,11 @@ input[type="file"] {
     min-width: 200px;
 }
 
+.nexser_files_menu {
+    min-width: 600px;
+    min-width: 300px;
+}
+
 #v {
     position: absolute;
 }
@@ -1348,6 +1353,10 @@ body::-webkit-scrollbar {
 
 .child_windows.active {
     display: none;
+}
+
+.child_windows.minimization {
+    border: solid 3px red;
 }
 
 .child_windows.big {
@@ -1876,6 +1885,22 @@ body::-webkit-scrollbar {
         0px -0.3px 0px;
 }
 
+.bigscreen_button_child {
+    border-top: solid 2px black;
+    position: absolute;
+    top: 3.5px;
+    left: 4px;
+    width: 8.5px;
+}
+
+.pressed .bigscreen_button_child {
+    border-top: solid 2px black;
+    position: absolute;
+    top: 4.5px;
+    left: 4.5px;
+    width: 8.5px;
+}
+
 .minscreen_button {
     display: none;
     width: 19px;
@@ -2109,6 +2134,7 @@ textarea {
     display: block;
     border-radius: 0;
     outline: none;
+    padding: 2.5px;
 }
 
 /* objective */
@@ -2772,9 +2798,14 @@ progress::-webkit-progress-value {
     position: absolute;
     cursor: pointer;
     z-index: 1;
+    margin: -2.5px;
 }
 
 .big .resizer {
+    display: none;
+}
+
+.minimization .resizer {
     display: none;
 }
 
