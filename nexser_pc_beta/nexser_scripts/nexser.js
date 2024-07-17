@@ -2910,7 +2910,6 @@ if (ua.includes("mobile")) {
             minscreenbutton.classList.remove('rightwindow');
             minscreenbutton.classList.remove('leftwindow');
 
-            minscreenbutton.classList.add('default');
             minscreenbutton.classList.remove('big');
 
             const elements = document.querySelector('.title.navy');
