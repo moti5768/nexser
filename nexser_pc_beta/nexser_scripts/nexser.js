@@ -197,6 +197,9 @@ if (ua.includes("mobile")) {
             }
             if (localStorage.getItem('objectiveData') || localStorage.getItem('objectiveTitleData')) {
                 objective_load()
+                objective_resize()
+            } else {
+                objective_resize()
             }
             if (localStorage.getItem('startup_note')) {
                 document.querySelector('.startup_note').textContent = "ON"
@@ -3421,6 +3424,7 @@ if (ua.includes("mobile")) {
                 youtubeframe_resize()
                 cameraframe_resize()
                 url_drop_resize()
+                objective_resize()
             }, 150);
         })
         z_index_child_windows.addEventListener('dblclick', function () {
@@ -3510,13 +3514,13 @@ if (ua.includes("mobile")) {
         test_button.addEventListener('click', function () {
             main.classList.toggle('active');
             main.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+            zindexwindow_addnavy();
         });
     });
     document.querySelectorAll('.test_button2').forEach(function (test_button2) {
         test_button2.addEventListener('click', function () {
             my_computer.classList.toggle('active');
-            my_computer.style.zIndex = largestZIndex++;;
+            my_computer.style.zIndex = largestZIndex++;
             zindexwindow_addnavy();
         });
     });
@@ -3710,6 +3714,7 @@ if (ua.includes("mobile")) {
             objective_menu.classList.toggle('active');
             objective_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
+            objective_resize()
         });
     });
     document.querySelectorAll('.test_button31').forEach(function (test_button31) {
@@ -3944,6 +3949,20 @@ if (ua.includes("mobile")) {
         url_drop_child.style.height = `${url_drop_parent.clientHeight + - + 55}px`;
     };
     url_drop_parent.addEventListener('mousemove', url_drop_resize);
+
+
+
+
+    const objective_parent = document.querySelector('.objective_menu');
+    const objective_child = document.querySelector('.objective_area');
+    const objective_resize = () => {
+        console.log("s")
+        objective_child.style.width = `${objective_parent.clientWidth + - + 5}px`;
+        objective_child.style.height = `${objective_parent.clientHeight + - + 160}px`;
+    };
+    objective_parent.addEventListener('mousemove', objective_resize);
+
+
 
 
     document.querySelectorAll('.drag_button').forEach(function (drag) {

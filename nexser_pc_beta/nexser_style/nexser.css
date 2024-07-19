@@ -2139,21 +2139,22 @@ textarea {
 
 /* objective */
 
+.objective_menu {
+    width: 800px;
+    height: 500px;
+}
+
 .objective_title_area {
     background: white;
     white-space: nowrap;
-    height: 100%;
 }
 
 .objective_area {
     background: whitesmoke;
     white-space: nowrap;
-    resize: both;
-    width: 750px;
-    height: 400px;
-    min-width: 750px;
-    min-height: 200px;
+    resize: none;
     font-size: large;
+    position: absolute;
 }
 
 /* paint */
