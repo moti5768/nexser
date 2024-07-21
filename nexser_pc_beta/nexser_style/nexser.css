@@ -417,6 +417,13 @@ li {
     text-align: center;
 }
 
+.center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
 .windowfile1 {
     width: 25px;
     height: 20px;
@@ -817,12 +824,6 @@ input[type="file"] {
 
 .child_windows::-webkit-scrollbar {
     opacity: 0.5;
-}
-
-.child_windows.default {
-    top: 20%;
-    left: 25%;
-    z-index: 1;
 }
 
 .window_bottom {
@@ -2880,4 +2881,52 @@ progress::-webkit-progress-value {
     cursor: ew-resize;
     height: 100%;
     z-index: 1;
+}
+
+
+/* memory_game */
+
+#game-board {
+    background: green;
+}
+
+.memory_game_menu {
+    width: 1100px;
+    height: 250px;
+}
+
+.card {
+    display: inline-block;
+    border: solid 2px gray;
+    box-shadow: 5px 5px black;
+    background: white;
+    color: black;
+    outline: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    list-style: none;
+    box-sizing: border-box;
+
+    width: 80px;
+    height: 100px;
+    text-align: center;
+    line-height: 100px;
+    font-size: 24px;
+    cursor: pointer;
+    margin: 5px;
+    margin-top: 30px;
+    font-weight: bold;
+    box-sizing: border-box;
+}
+
+.card_hidden {
+    border: solid 2px gray;
+    box-shadow: 5px 5px black;
+    background: white;
+}
+
+.card_matched {
+    background-color: #90EE90;
 }

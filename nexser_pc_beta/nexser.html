@@ -986,6 +986,10 @@
                                     <li>url drop</li><span class="window_file_icon"></span>
                                     <li class="windowfile_time"></li>
                                 </div>
+                                <div class="window_files test_button44">
+                                    <li>memory game</li><span class="window_file_icon"></span>
+                                    <li class="windowfile_time"></li>
+                                </div>
                             </ul>
                         </div>
                     </div>
@@ -3435,9 +3439,33 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         </div>
                     </div>
 
+                    <div class="child_windows memory_game_menu resize active">
+                        <div class="title">
+                            <span class="title_icon"></span><span>&emsp;&emsp;memory game</span>
+                        </div>
 
+                        <div class="title_buttons">
+                            <span class="drag_button">&nbsp;</span>
+                            <span class="close_button button2" onclick="resetGame()"></span>
+                            <span class="bigscreen_button button2"></span>
+                            <span class="minscreen_button button2"></span>
+                            <span class="minimization_button button2"></span><br>
+                        </div>
 
+                        <div class="window_contents" style="background: green;">
+                            <button class="center start_card button2 borderinline_dotted" style="font-size: xx-large;"
+                                onclick="card_board_start()">&emsp;START&emsp;</button>
+                            <div id="game-board"></div>
+                            <p class="x-large white_text" id="game_board_text" style="text-align: center;"></p>
+                        </div>
+                        <div class="window_bottom" style="display: flex;">
+                            <p style="width: 100%;">揃ったペアの数:&nbsp;<span id="match-count">0</span>
 
+                                <span style="position: absolute; bottom: 0; right: 0;">経過時間:
+                                    <span id="elapsed-time">0</span>秒</span>
+                            </p>
+                        </div>
+                    </div>
 
                     <div class="child_windows nexser_guidebook_menu resize active">
                         <div class="title">
@@ -3898,6 +3926,9 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                             </li>
                                             <li class="test_button41">
                                                 &emsp;&emsp;othello<span class="startmenu_file_icon"></span>
+                                            </li>
+                                            <li class="test_button44">
+                                                &emsp;&emsp;memory game<span class="startmenu_file_icon"></span>
                                             </li>
                                         </ul>
                                     </div>
