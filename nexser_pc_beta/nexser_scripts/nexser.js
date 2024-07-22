@@ -8,7 +8,7 @@ if (ua.includes("mobile")) {
     // Mobile (iPad「Safari」)
     alert("この端末は対応していません!")
 } else {
-    const shutdown = document.getElementsByClassName('shutdown');
+    const logoff = document.getElementsByClassName('logoff');
     const restart = document.getElementsByClassName('restart');
 
     const nexser_guidebook_menu = document.querySelector('.nexser_guidebook_menu');
@@ -1054,14 +1054,14 @@ if (ua.includes("mobile")) {
         }
     }
 
-    Array.from(shutdown).forEach(element => {
+    Array.from(logoff).forEach(element => {
         element.addEventListener('click', event => {
             document.getElementById('nex').style.cursor = 'progress';
             setTimeout(() => {
                 document.querySelector('.test_allwindow').style.display = "block";
                 if (sessionStorage.getItem('start_camera')) {
                     document.getElementById('nex').style.cursor = '';
-                    document.querySelector('.window_error_text').textContent = "camera no finish no shutdown!"
+                    document.querySelector('.window_error_text').textContent = "カメラが実行されているため、ログオフできません!"
                     error_windows.classList.remove('active')
                     sound3()
                     document.querySelector('.test_allwindow').style.display = "block";
@@ -1114,7 +1114,7 @@ if (ua.includes("mobile")) {
                     document.querySelector('.shutdown_button').style.display = "block";
                     document.querySelector('.warningclose_button').style.display = "none";
                     document.querySelector('.warning_title_text').textContent = "warning"
-                    document.querySelector('.window_warning_text').textContent = "task window open! shutdown?"
+                    document.querySelector('.window_warning_text').textContent = "ウィンドウが開かれています! ログオフしますか?"
                     sound5()
                     document.getElementById('nex').style.cursor = '';
                 }
@@ -4944,7 +4944,7 @@ if (ua.includes("mobile")) {
                 camera_menu.classList.add('active')
                 taskbtn_load()
             } else if (sessionStorage.getItem('start_camera')) {
-                document.querySelector('.window_error_text').textContent = "camera no finish no close!"
+                document.querySelector('.window_error_text').textContent = "カメラが実行されているため、ウィンドウが閉じれません!"
                 error_windows.classList.remove('active')
                 sound3()
                 document.querySelector('.test_allwindow').style.display = "block";
@@ -5117,7 +5117,7 @@ if (ua.includes("mobile")) {
                 notice_menu.style.display = "none"
             }, 5000);
         } else {
-            document.querySelector('.window_error_text').textContent = "windows2000 textdata no!"
+            document.querySelector('.window_error_text').textContent = "windows2000からテキストデータがエクスポートされていません!"
             error_windows.classList.remove('active')
             document.querySelector('.test_allwindow').style.display = "block";
             sound3();
@@ -5147,7 +5147,7 @@ if (ua.includes("mobile")) {
         if (!localStorage.getItem('textdropdata')) {
             evt.target.textContent = evt.dataTransfer.getData('text');
         } else {
-            document.querySelector('.window_error_text').textContent = "textdata save & text drag no!"
+            document.querySelector('.window_error_text').textContent = "テキストが保存されているため、ドラッグした文字をドロップできません!"
             error_windows.classList.remove('active')
             document.querySelector('.test_allwindow').style.display = "block";
             sound3();
