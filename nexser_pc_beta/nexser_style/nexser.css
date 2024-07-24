@@ -341,6 +341,35 @@ li {
 
 /* buttons */
 
+.task_buttons {
+    display: inline-block;
+    border-top: 1.8px #eee solid;
+    border-left: 1.8px #eee solid;
+    border-bottom: 1.8px #333 solid;
+    border-right: 1.8px #333 solid;
+    box-shadow: 0 0 0 0.5px dimgray;
+    color: black;
+    background: silver;
+    outline: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    list-style: none;
+    box-sizing: border-box;
+}
+
+.task_buttons.pressed {
+    background: darkgray;
+    border-bottom: 1.8px #eee solid;
+    border-right: 1.8px #eee solid;
+    border-top: 1.8px #333 solid;
+    border-left: 1.8px #333 solid;
+    padding-top: 1px;
+    padding-left: 1px;
+    box-sizing: border-box;
+}
+
 .button {
     display: inline-block;
     border-top: 1.8px #eee solid;
@@ -572,7 +601,7 @@ input[type="file"] {
     height: 30px;
 }
 
-.task_icons .button {
+.task_icons .task_buttons {
     display: block;
     box-sizing: border-box;
     float: left;
@@ -585,7 +614,7 @@ input[type="file"] {
     text-overflow: ellipsis;
 }
 
-.task_icons .button.pressed {
+.task_icons .task_buttons.pressed {
     background: #DDDDDD;
     text-shadow:
         0.1px 0.1px 0,
@@ -1969,7 +1998,7 @@ body::-webkit-scrollbar {
     position: absolute;
     top: 20px;
     width: auto;
-    background-color: #c0c0c0;
+    background-color: lightgray;
     border-right: solid 1.5px black;
     border-left: solid 1.5px whitesmoke;
     border-bottom: solid 1.5px black;

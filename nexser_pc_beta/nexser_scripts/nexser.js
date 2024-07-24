@@ -25,7 +25,7 @@ if (ua.includes("mobile")) {
 
     const nameText = document.querySelector('.name');
     const msg = document.querySelector('.test_name');
-    const prompt = document.getElementById('prompt');
+    const screen_prompt = document.getElementById('prompt');
     const prompt_text = document.querySelector('.prompt_text');
     const prompt_text2 = document.querySelector('.prompt_text2');
     const nexser = document.getElementById('nexser');
@@ -550,7 +550,7 @@ if (ua.includes("mobile")) {
     function load_nexser() {
         localStorage.removeItem('no_shutdown')
         if (localStorage.getItem('password') && !localStorage.getItem('login') && !localStorage.getItem('prompt_data3') && localStorage.getItem('prompt_data')) {
-            prompt.style.display = "none";
+            screen_prompt.style.display = "none";
             nexser_program.style.display = "none";
             nexser.style.display = "block";
             desktop.style.display = "none";
@@ -559,20 +559,20 @@ if (ua.includes("mobile")) {
         } else if (!localStorage.getItem('start_nexser') && localStorage.getItem('prompt_data')) {
             start_check()
         } else if (localStorage.getItem('prompt_data') && localStorage.getItem('start_nexser')) {
-            prompt.style.display = "none";
+            screen_prompt.style.display = "none";
             nexser_program.style.display = "none";
             nexser.style.display = "block";
             desktop.style.display = "block"
-            taskbtn_load()
+
             document.querySelector('.welcome_windows').style.display = "none";
         } else if (localStorage.getItem('prompt_data3')) {
-            prompt.style.display = "none";
+            screen_prompt.style.display = "none";
             nexser_program.style.display = "block";
             nexser.style.display = "none";
             desktop.style.display = "none";
             document.getElementById('nex').style.cursor = 'crosshair';
         } else {
-            prompt.style.display = "block";
+            screen_prompt.style.display = "block";
             nexser_program.style.display = "none";
             nexser.style.display = "none";
             desktop.style.display = "none";
@@ -656,12 +656,12 @@ if (ua.includes("mobile")) {
     parent_start_menu.addEventListener('click', function () {
         start_menu.style.display = "none";
         document.querySelector('.start_button').classList.remove('pressed');
-        taskbtn_load()
+
     });
     document.querySelector('.taskbar_buttons, .child').addEventListener('mousedown', function () {
         start_menu.style.display = "none";
         document.querySelector('.start_button').classList.remove('pressed')
-        taskbtn_load()
+
         getLargestZIndex('.child_windows');
         z_index.textContent = getLargestZIndex('.child_windows');
     });
@@ -694,6 +694,18 @@ if (ua.includes("mobile")) {
         });
     });
 
+    Array.from(document.getElementsByClassName('task_buttons')).forEach((button2) => {
+        button2.addEventListener('mousedown', () => {
+            button2.classList.add('pressed');
+        });
+        button2.addEventListener('mouseleave', () => {
+            button2.classList.remove('pressed');
+        });
+        button2.addEventListener('mouseup', () => {
+            button2.classList.remove('pressed');
+        });
+    });
+
     document.querySelector('.deskprompt').addEventListener('click', function (deskprompt) {
         localStorage.setItem('deskprompt', deskprompt);
     })
@@ -714,7 +726,7 @@ if (ua.includes("mobile")) {
         document.getElementById('nex').style.cursor = 'crosshair';
         document.querySelector('.test_allwindow').style.display = "none";
         setTimeout(function () {
-            prompt.style.display = "none";
+            screen_prompt.style.display = "none";
             setTimeout(function () {
                 taskbar_none();
                 nexser_program.style.display = "block";
@@ -728,7 +740,7 @@ if (ua.includes("mobile")) {
         if (!localStorage.getItem('deskprompt')) {
             setTimeout(function () {
                 localStorage.removeItem('prompt_data3')
-                prompt.style.display = "block";
+                screen_prompt.style.display = "block";
                 setTimeout(function () {
                     taskbar_none();
                     nexser_program.style.display = "none";
@@ -908,7 +920,7 @@ if (ua.includes("mobile")) {
             nexser_start()
             document.getElementById('nex').style.cursor = 'none';
         } else if (!localStorage.getItem('driver_sound') && !localStorage.getItem('start_nexser')) {
-            prompt.style.display = "none";
+            screen_prompt.style.display = "none";
             document.querySelector('.nexser_boot_menu').style.display = "block";
             document.querySelector('.nexser_bootmenu_text').textContent = "サウンドドライバー がインストールされていません!";
             document.querySelector('.nexser_bootmenu_text2').textContent = "インストールして nexser を起動しますか?";
@@ -1016,7 +1028,7 @@ if (ua.includes("mobile")) {
             func2();
             setTimeout(function () {
                 console.log(largestZIndex)
-                prompt.style.display = "none";
+                screen_prompt.style.display = "none";
                 setTimeout(function () {
                     nexser.style.display = "block";
                     setTimeout(function () {
@@ -1035,7 +1047,7 @@ if (ua.includes("mobile")) {
         } else {
             func1();
             setTimeout(function () {
-                prompt.style.display = "none";
+                screen_prompt.style.display = "none";
                 setTimeout(function () {
                     nexser.style.display = "block";
                     setTimeout(function () {
@@ -1062,9 +1074,9 @@ if (ua.includes("mobile")) {
                 if (sessionStorage.getItem('start_camera')) {
                     document.getElementById('nex').style.cursor = '';
                     document.querySelector('.window_error_text').textContent = "カメラが実行されているため、ログオフできません!"
-                    error_windows.classList.remove('active')
-                    sound3()
+                    error_windows.classList.remove('active');
                     document.querySelector('.test_allwindow').style.display = "block";
+                    sound3()
                 } else if (localStorage.getItem('no_shutdown')) {
                     document.getElementById('nex').style.cursor = '';
                     document.querySelector('.window_error_text').textContent = "welcomeウィンドウが起動するまでシャットダウンはできません!"
@@ -1102,7 +1114,7 @@ if (ua.includes("mobile")) {
                             msg.innerText = "";
                             prompt_text.style.color = "";
                             nexser.style.display = "none";
-                            prompt.style.display = "block";
+                            screen_prompt.style.display = "block";
                             start_menu.style.display = "none";
                             document.querySelector('.focus').focus();
                             document.getElementById('nex').style.cursor = '';
@@ -1204,7 +1216,7 @@ if (ua.includes("mobile")) {
         taskbar.style.display = "none";
         document.getElementById('files').style.display = "none";
         if (!localStorage.getItem('start_nexser') || desktop.style.display == "block") {
-            prompt.style.display = "none";
+            screen_prompt.style.display = "none";
             nexser_program.style.display = "none";
             nexser.style.display = "block";
             desktop.style.display = "none";
@@ -1212,7 +1224,7 @@ if (ua.includes("mobile")) {
             welcome_animation()
         } else {
             startup_sound();
-            prompt.style.display = "none";
+            screen_prompt.style.display = "none";
             nexser_program.style.display = "none";
             nexser.style.display = "block";
             document.querySelector('.welcome_windows').style.display = "none";
@@ -1230,7 +1242,7 @@ if (ua.includes("mobile")) {
             }, 1500);
             setTimeout(() => {
                 startup_window_open();
-                taskbtn_load();
+                ;
                 if (localStorage.getItem('toolbar_on')) {
                     toolbar.style.display = "block";
                 }
@@ -1312,7 +1324,7 @@ if (ua.includes("mobile")) {
             }, 1500);
             setTimeout(() => {
                 startup_window_open()
-                taskbtn_load()
+
             }, 2000);
         }, 50);
     }
@@ -1699,103 +1711,6 @@ if (ua.includes("mobile")) {
         localStorage.removeItem('backtext_small');
         localStorage.removeItem('backtext_medium');
         localStorage.removeItem('backtext_large');
-    }
-
-    function taskbtn_load() {
-
-        document.querySelectorAll(".taskbar_buttons .test_button").forEach(function (taskbtn) {
-            if (main.classList.contains('active')) {
-                taskbtn.classList.remove('pressed')
-            } else {
-                taskbtn.classList.add('pressed')
-            }
-        })
-        document.querySelectorAll(".taskbar_buttons .test_button2").forEach(function (taskbtn) {
-            if (my_computer.classList.contains('active')) {
-                taskbtn.classList.remove('pressed')
-            } else {
-                taskbtn.classList.add('pressed')
-            }
-        })
-        document.querySelectorAll(".taskbar_buttons .test_button3").forEach(function (taskbtn) {
-            if (control.classList.contains('active')) {
-                taskbtn.classList.remove('pressed')
-            } else {
-                taskbtn.classList.add('pressed')
-            }
-        })
-        document.querySelectorAll(".taskbar_buttons .test_button4").forEach(function (taskbtn) {
-            if (color_menu.classList.contains('active')) {
-                taskbtn.classList.remove('pressed')
-            } else {
-                taskbtn.classList.add('pressed')
-            }
-        })
-        document.querySelectorAll(".taskbar_buttons .test_button5").forEach(function (taskbtn) {
-            if (system_menu.classList.contains('active')) {
-                taskbtn.classList.remove('pressed')
-            } else {
-                taskbtn.classList.add('pressed')
-            }
-        })
-        document.querySelectorAll(".taskbar_buttons .test_button6").forEach(function (taskbtn) {
-            if (window_prompt.classList.contains('active')) {
-                taskbtn.classList.remove('pressed')
-            } else {
-                taskbtn.classList.add('pressed')
-            }
-        })
-        document.querySelectorAll(".taskbar_buttons .test_button7").forEach(function (taskbtn) {
-            if (clock_menu.classList.contains('active')) {
-                taskbtn.classList.remove('pressed')
-            } else {
-                taskbtn.classList.add('pressed')
-            }
-        })
-        document.querySelectorAll(".taskbar_buttons .test_button8").forEach(function (taskbtn) {
-            if (sound_menu.classList.contains('active')) {
-                taskbtn.classList.remove('pressed')
-            } else {
-                taskbtn.classList.add('pressed')
-            }
-        })
-        document.querySelectorAll(".taskbar_buttons .test_button9").forEach(function (taskbtn) {
-            if (driver_menu.classList.contains('active')) {
-                taskbtn.classList.remove('pressed')
-            } else {
-                taskbtn.classList.add('pressed')
-            }
-        })
-
-        document.querySelectorAll(".taskbar_buttons .test_button10").forEach(function (taskbtn) {
-            if (mouse_menu.classList.contains('active')) {
-                taskbtn.classList.remove('pressed')
-            } else {
-                taskbtn.classList.add('pressed')
-            }
-        })
-
-        document.querySelectorAll(".taskbar_buttons .test_button11").forEach(function (taskbtn) {
-            if (screen_text_menu.classList.contains('active')) {
-                taskbtn.classList.remove('pressed')
-            } else {
-                taskbtn.classList.add('pressed')
-            }
-        })
-        document.querySelectorAll(".taskbar_buttons .test_button12").forEach(function (taskbtn) {
-            if (note_pad.classList.contains('active')) {
-                taskbtn.classList.remove('pressed')
-            } else {
-                taskbtn.classList.add('pressed')
-            }
-        })
-        document.querySelectorAll(".taskbar_buttons .test_button13").forEach(function (taskbtn) {
-            if (text_drop_menu.classList.contains('active')) {
-                taskbtn.classList.remove('pressed')
-            } else {
-                taskbtn.classList.add('pressed')
-            }
-        })
     }
 
     function window_reset() {
@@ -2598,13 +2513,13 @@ if (ua.includes("mobile")) {
 
                     prompt_text2.style.color = "";
                     window_none()
-                    taskbtn_load()
+
                 }
                 break;
             case 'allwindow/open':
                 prompt_text2.style.color = "";
                 window_active();
-                taskbtn_load();
+                ;
                 cpucalc_open();
                 break;
             case 'allwindow/min':
@@ -2715,7 +2630,7 @@ if (ua.includes("mobile")) {
     }
 
     setInterval(() => {
-        if (prompt.style.display == "block") {
+        if (screen_prompt.style.display == "block") {
             navigator.getBattery().then((battery) => {
                 document.getElementsByClassName('level')[0].innerHTML = battery.level;
                 document.getElementsByClassName('charging')[0].innerHTML = battery.charging;
@@ -2771,7 +2686,7 @@ if (ua.includes("mobile")) {
     }, 100);
     Array.from(document.getElementsByClassName('window_inline_list')).forEach((window_inline_list) => {
         window_inline_list.addEventListener('click', function () {
-            taskbtn_load()
+
         });
     })
     Array.from(document.getElementsByClassName('desktop_files')).forEach((desktop_files) => {
@@ -2779,7 +2694,7 @@ if (ua.includes("mobile")) {
             start_menu.style.display = "none";
             document.querySelector('.start_button').classList.remove('pressed');
             setTimeout(() => {
-                taskbtn_load()
+
             });
         });
     })
@@ -2788,7 +2703,6 @@ if (ua.includes("mobile")) {
             setTimeout(() => {
                 const closebutton_closest = close_button.closest('.child_windows');
                 closebutton_closest.classList.add('active');
-                taskbtn_load()
             }, 100);
         });
     })
@@ -2821,7 +2735,7 @@ if (ua.includes("mobile")) {
                 minimization_button.classList.add('minimization');
                 minimization_button.style.height = "0px"
                 minimization_button.style.width = "0px"
-                taskbtn_load()
+
             }, 100);
             setTimeout(() => {
                 minimization_button.scrollTop = 0;
@@ -3224,7 +3138,7 @@ if (ua.includes("mobile")) {
     })
     document.querySelectorAll('.windowtool_child').forEach(function (windowtool_child) {
         windowtool_child.addEventListener('click', function () {
-            taskbtn_load()
+
         })
     })
     document.querySelectorAll('.allwindow_toolbar').forEach(function (allwindow_toolbar) {
@@ -3410,7 +3324,7 @@ if (ua.includes("mobile")) {
             zindexchildwindows.scrollLeft = 0;
             start_menu.style.display = "none";
             document.querySelector('.start_button').classList.remove('pressed');
-            taskbtn_load()
+
             window_z_index = zindexchildwindows.style.zIndex = largestZIndex++;
             getLargestZIndex('.child_windows');
             z_index.textContent = getLargestZIndex('.child_windows');
@@ -3423,6 +3337,7 @@ if (ua.includes("mobile")) {
             });
         });
         z_index_child_windows.addEventListener('click', function () {
+
             zindexchildwindows.scrollTop = 0;
             zindexchildwindows.scrollLeft = 0;
             zindexwindow_addnavy()
@@ -3437,6 +3352,7 @@ if (ua.includes("mobile")) {
                 url_drop_resize()
                 objective_resize()
             }, 150);
+
         })
         z_index_child_windows.addEventListener('dblclick', function () {
             if (zindexchildwindows.classList.contains('minimization')) {
@@ -3521,6 +3437,14 @@ if (ua.includes("mobile")) {
         });
     });
 
+    document.querySelectorAll('.window_item').forEach(function (window_item) {
+        window_item.addEventListener('click', function () {
+            setTimeout(() => {
+                test_windows_button()
+            }, 10);
+        });
+    });
+
     document.querySelectorAll('.test_button').forEach(function (test_button) {
         test_button.addEventListener('click', function () {
             main.classList.toggle('active');
@@ -3546,56 +3470,56 @@ if (ua.includes("mobile")) {
         test_button4.addEventListener('click', function () {
             color_menu.classList.toggle('active');
             color_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+            zindexwindow_addnavy();
         });
     });
     document.querySelectorAll('.test_button5').forEach(function (test_button5) {
         test_button5.addEventListener('click', function () {
             system_menu.classList.toggle('active');
             system_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+            zindexwindow_addnavy();
         });
     });
     document.querySelectorAll('.test_button6').forEach(function (test_button6) {
         test_button6.addEventListener('click', function () {
             window_prompt.classList.toggle('active');
             window_prompt.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+            zindexwindow_addnavy();
         });
     });
     document.querySelectorAll('.test_button7').forEach(function (test_button7) {
         test_button7.addEventListener('click', function () {
             clock_menu.classList.toggle('active');
             clock_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+            zindexwindow_addnavy();
         });
     });
     document.querySelectorAll('.test_button8').forEach(function (test_button8) {
         test_button8.addEventListener('click', function () {
             sound_menu.classList.toggle('active');
             sound_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+            zindexwindow_addnavy();
         });
     });
     document.querySelectorAll('.test_button9').forEach(function (test_button9) {
         test_button9.addEventListener('click', function () {
             driver_menu.classList.toggle('active');
             driver_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+            zindexwindow_addnavy();
         });
     });
     document.querySelectorAll('.test_button10').forEach(function (test_button10) {
         test_button10.addEventListener('click', function () {
             mouse_menu.classList.toggle('active');
             mouse_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+            zindexwindow_addnavy();
         });
     });
     document.querySelectorAll('.test_button11').forEach(function (test_button11) {
         test_button11.addEventListener('click', function () {
             screen_text_menu.classList.toggle('active');
             screen_text_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+            zindexwindow_addnavy();
         });
     });
     document.querySelectorAll('.test_button12').forEach(function (test_button12) {
@@ -3892,7 +3816,6 @@ if (ua.includes("mobile")) {
                 frontmostElement = ele2;
             }
         });
-
         // 最前面の要素が見つかった場合、新しいクラス名を付与
         if (frontmostElement) {
             const foo1 = frontmostElement.firstElementChild;
@@ -3913,7 +3836,7 @@ if (ua.includes("mobile")) {
     }
 
     document.querySelector('.time').addEventListener('click', function () {
-        taskbtn_load()
+
     })
 
     const note_parent = document.querySelector('.note_pad');
@@ -4889,7 +4812,7 @@ if (ua.includes("mobile")) {
             }
             if (!note_pad.classList.contains('active') && localStorage.getItem('noteData') && !localStorage.getItem('note_texts')) {
                 note_pad.classList.add('active');
-                taskbtn_load();
+                ;
             } else if (localStorage.getItem('note_texts')) {
                 document.querySelector('.warning_title_text').textContent = "notepad"
                 document.querySelector('.window_warning_text').textContent = "notepad no save window close?(text allremove)"
@@ -4902,7 +4825,7 @@ if (ua.includes("mobile")) {
             } else {
                 localStorage.removeItem('note_texts');
                 note_pad.classList.add('active');
-                taskbtn_load();
+                ;
             }
         }, 100);
     })
@@ -4912,7 +4835,7 @@ if (ua.includes("mobile")) {
             if (!objective_menu.classList.contains('active') && localStorage.getItem('objectiveData') && localStorage.getItem('objectiveTitleData') && (!localStorage.getItem('objective_area'))) {
                 objective_menu.classList.add('active');
                 localStorage.removeItem('objective_area');
-                taskbtn_load();
+                ;
             } else if (localStorage.getItem('objective_area')) {
                 document.querySelector('.warning_title_text').textContent = "objective sheet"
                 document.querySelector('.window_warning_text').textContent = "タイトル と 内容を保存してから閉じてください";
@@ -4925,7 +4848,7 @@ if (ua.includes("mobile")) {
             } else {
                 objective_menu.classList.add('active');
                 localStorage.removeItem('objective_area');
-                taskbtn_load();
+                ;
             }
         }, 100);
     })
@@ -4942,7 +4865,7 @@ if (ua.includes("mobile")) {
         setTimeout(() => {
             if (!sessionStorage.getItem('start_camera')) {
                 camera_menu.classList.add('active')
-                taskbtn_load()
+
             } else if (sessionStorage.getItem('start_camera')) {
                 document.querySelector('.window_error_text').textContent = "カメラが実行されているため、ウィンドウが閉じれません!"
                 error_windows.classList.remove('active')
@@ -4963,7 +4886,7 @@ if (ua.includes("mobile")) {
             resetShowLength();
             localStorage.removeItem('note_texts');
             note_pad.classList.add('active');
-            taskbtn_load()
+
             zindexwindow_addnavy()
         }, 100);
     }
@@ -4972,7 +4895,7 @@ if (ua.includes("mobile")) {
         setTimeout(() => {
             document.querySelector('.test_allwindow').style.display = "none";
             error_windows.classList.add('active');
-            taskbtn_load()
+
         }, 100);
     }
 
@@ -5338,6 +5261,10 @@ if (ua.includes("mobile")) {
     document.querySelector('.files_inline, .child').addEventListener('mousedown', function () {
         getLargestZIndex('.child_windows');
         z_index.textContent = getLargestZIndex('.child_windows');
+    })
+
+    document.querySelector('.files_inline, .child').addEventListener('click', function () {
+        test_windows_button()
     })
 
     document.querySelector('.taskbar_position_button').addEventListener('click', function () {
@@ -7071,6 +6998,116 @@ if (ua.includes("mobile")) {
         // 子要素を追加
         element.appendChild(newChild);
     });
+
+
+
+
+
+
+
+
+    document.addEventListener('DOMContentLoaded', function () {
+        // クラス名が "parent" の要素をすべて取得
+        var parents = document.querySelectorAll('.parentss');
+
+        parents.forEach(function (parent, parentIndex) {
+            // 親要素内のクラス名が "editable" の子要素をすべて取得
+            var elements = parent.querySelectorAll('.editable');
+
+            // ローカルストレージから保存された名前を読み込む
+            elements.forEach(function (element, index) {
+                var savedName = localStorage.getItem('editable-' + parentIndex + '-' + index);
+                if (savedName) {
+                    element.textContent = savedName;
+                }
+            });
+
+            // 親要素に右クリックイベントを追加
+            parent.addEventListener('contextmenu', function (event) {
+                event.preventDefault(); // デフォルトの右クリックメニューを無効化
+
+                // クリックされた要素が親要素または親要素内の空白部分であることを確認
+                if (event.target === parent) {
+                    elements.forEach(function (element, index) {
+                        // 元の名前を保存
+                        var originalName = element.textContent;
+
+                        // 新しい名前を入力するプロンプトを表示
+                        var newName = prompt('新しい名前を入力してください (20文字以内):', element.textContent);
+
+                        // 新しい名前が入力された場合、文字数をチェック
+                        if (newName && newName.length <= 20) {
+                            element.textContent = newName;
+                            localStorage.setItem('editable-' + parentIndex + '-' + index, newName);
+                        } else if (newName) {
+                            document.getElementById('nex').style.cursor = '';
+                            document.querySelector('.window_error_text').textContent = "名前は20文字以内で入力してください!"
+                            error_windows.classList.remove('active');
+                            document.querySelector('.test_allwindow').style.display = "block";
+                            sound3()
+                            element.textContent = originalName; // 元の名前に戻す
+                        } else {
+                            // 新しい名前が入力されなかった場合、元の名前に戻す
+                            element.textContent = originalName;
+                        }
+                    });
+                }
+            });
+        });
+    });
+
+
+    function test_windows_button() {
+
+        const windows = document.querySelectorAll('.navy');
+
+        const windows2 = Array.from(windows).map(child => child.closest('.child_windows'));
+        const buttonsContainer = document.getElementById('task_buttons2');
+        console.log(windows2)
+
+        windows2.forEach((win, index) => {
+
+            const win100 = win.firstElementChild;
+            const win101 = win100.textContent;
+            const windowName = `${index + 1}`;
+            console.log(windowName)
+
+            let button = document.querySelector(`.task_buttons[data-window="${windowName}"]`);
+            // if (!button) {
+            button = document.createElement('button');
+
+            // const windowName = win101 + ` ${index + 1}`;
+            button.textContent = win101 + windowName;
+            button.className = 'task_buttons';
+            button.setAttribute('data-window', windowName);
+            // }
+
+            button.addEventListener('mousedown', () => {
+                button.classList.add('pressed');
+            });
+            button.addEventListener('mouseleave', () => {
+                button.classList.remove('pressed');
+            });
+            button.addEventListener('mouseup', () => {
+                button.classList.remove('pressed');
+            });
+
+            button.addEventListener('click', function () {
+                if (win.classList.contains('active')) {
+                    win.classList.remove('active');
+                    win.style.zIndex = largestZIndex++;
+                    zindexwindow_addnavy();
+                } else {
+                    win.classList.add('active');
+                    buttonsContainer.removeChild(button);
+                }
+            });
+            buttonsContainer.appendChild(button);
+
+        });
+
+    }
+
 
 };
 
