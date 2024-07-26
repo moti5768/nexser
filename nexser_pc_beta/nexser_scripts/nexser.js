@@ -4875,6 +4875,8 @@ if (ua.includes("mobile")) {
         setTimeout(() => {
             if (!sessionStorage.getItem('start_camera')) {
                 camera_menu.classList.add('active')
+                camera_menu.classList.remove('selectwindows')
+                test_windows_button()
 
             } else if (sessionStorage.getItem('start_camera')) {
                 document.querySelector('.window_error_text').textContent = "カメラが実行されているため、ウィンドウが閉じれません!"

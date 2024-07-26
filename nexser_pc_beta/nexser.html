@@ -9060,6 +9060,8 @@
                                 setTimeout(() =&gt; {
                                     if (!sessionStorage.getItem(&#039;start_camera&#039;)) {
                                         camera_menu.classList.add(&#039;active&#039;)
+                                        camera_menu.classList.remove(&#039;selectwindows&#039;)
+                                        test_windows_button()
                         
                                     } else if (sessionStorage.getItem(&#039;start_camera&#039;)) {
                                         document.querySelector(&#039;.window_error_text&#039;).textContent = &quot;カメラが実行されているため、ウィンドウが閉じれません!&quot;
