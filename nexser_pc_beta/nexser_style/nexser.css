@@ -2959,3 +2959,7 @@ progress::-webkit-progress-value {
 .card_matched {
     background-color: #90EE90;
 }
+
+.pinned {
+    background-color: yellow;
+}
