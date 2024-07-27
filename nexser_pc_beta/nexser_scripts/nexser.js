@@ -121,9 +121,9 @@ if (ua.includes("mobile")) {
     });
     document.addEventListener('mouseup', () => {
         isDrawing = false;
-        if (rectangle) {
-            document.body.removeChild(rectangle);
-        }
+        // if (rectangle) {
+        document.body.removeChild(rectangle);
+        // }
     });
 
 
@@ -1126,7 +1126,7 @@ if (ua.includes("mobile")) {
                     document.querySelector('.shutdown_button').style.display = "block";
                     document.querySelector('.warningclose_button').style.display = "none";
                     document.querySelector('.warning_title_text').textContent = "warning"
-                    document.querySelector('.window_warning_text').textContent = "ウィンドウが開かれています! ログオフしますか?"
+                    document.querySelector('.window_warning_text').textContent = "実行されているウィンドウがあります! ログオフしますか?"
                     sound5()
                     document.getElementById('nex').style.cursor = '';
                 }
@@ -1141,7 +1141,7 @@ if (ua.includes("mobile")) {
                 document.querySelector('.test_allwindow').style.display = "block";
                 if (sessionStorage.getItem('start_camera')) {
                     document.getElementById('nex').style.cursor = '';
-                    document.querySelector('.window_error_text').textContent = "camera no finish no restart!"
+                    document.querySelector('.window_error_text').textContent = "カメラが実行されているため、再起動はできません!"
                     error_windows.classList.remove('active')
                     sound3()
                     document.querySelector('.test_allwindow').style.display = "block";
@@ -2234,10 +2234,14 @@ if (ua.includes("mobile")) {
             case command_5 + e:
                 prompt_text2.style.color = "";
                 var result2 = Function('return (' + e + ');')();
+                document.querySelector('#shell').textContent = result2;
+                shellmenu_open()
                 break;
 
             case command_6 + f:
                 prompt_text2.style.color = "";
+                document.querySelector('#shell').textContent = f;
+                shellmenu_open()
                 break;
 
             case command_7 + g:
@@ -3407,317 +3411,316 @@ if (ua.includes("mobile")) {
         }
     }
 
-    document.querySelectorAll('.nexser_guidebook').forEach(function (nexser_guidebook) {
-        nexser_guidebook.addEventListener('click', function () {
+    document.querySelectorAll('.nexser_guidebook').forEach(nexser_guidebook =>
+        nexser_guidebook.addEventListener('click', () => {
             nexser_guidebook_menu.classList.toggle('active');
             nexser_guidebook_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
-        });
-    });
-    document.querySelectorAll('.guidebook_window').forEach(function (guidebook_window) {
-        guidebook_window.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.guidebook_window').forEach(guidebook_window =>
+        guidebook_window.addEventListener('click', () => {
             guidebook_window_menu.classList.toggle('active');
             guidebook_window_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
-        });
-    });
-    document.querySelectorAll('.guidebook_file').forEach(function (guidebook_file) {
-        guidebook_file.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.guidebook_file').forEach(guidebook_file =>
+        guidebook_file.addEventListener('click', () => {
             guidebook_file_menu.classList.toggle('active');
             guidebook_file_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
-        });
-    });
-    document.querySelectorAll('.guidebook_taskbar').forEach(function (guidebook_taskbar) {
-        guidebook_taskbar.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.guidebook_taskbar').forEach(guidebook_taskbar =>
+        guidebook_taskbar.addEventListener('click', () => {
             guidebook_taskbar_menu.classList.toggle('active');
             guidebook_taskbar_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
-        });
-    });
-
-    document.querySelectorAll('.passmenu_button').forEach(function (passmenu_button) {
-        passmenu_button.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.passmenu_button').forEach(passmenu_button =>
+        passmenu_button.addEventListener('click', () => {
             password_menu.classList.toggle('active');
             password_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
-        });
-    });
+        })
+    );
 
-    document.querySelectorAll('.test_button').forEach(function (test_button) {
-        test_button.addEventListener('click', function () {
+    document.querySelectorAll('.test_button').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
             main.classList.toggle('active');
             main.style.zIndex = largestZIndex++;
             zindexwindow_addnavy();
-        });
-    });
-    document.querySelectorAll('.test_button2').forEach(function (test_button2) {
-        test_button2.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.test_button2').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
             my_computer.classList.toggle('active');
             my_computer.style.zIndex = largestZIndex++;
             zindexwindow_addnavy();
-        });
-    });
-    document.querySelectorAll('.test_button3').forEach(function (test_button3) {
-        test_button3.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.test_button3').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
             control.classList.toggle('active');
             control.style.zIndex = largestZIndex++;
             zindexwindow_addnavy();
-        });
-    });
-    document.querySelectorAll('.test_button4').forEach(function (test_button4) {
-        test_button4.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.test_button4').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
             color_menu.classList.toggle('active');
             color_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy();
-        });
-    });
-    document.querySelectorAll('.test_button5').forEach(function (test_button5) {
-        test_button5.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.test_button5').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
             system_menu.classList.toggle('active');
             system_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy();
-        });
-    });
-    document.querySelectorAll('.test_button6').forEach(function (test_button6) {
-        test_button6.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.test_button6').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
             window_prompt.classList.toggle('active');
             window_prompt.style.zIndex = largestZIndex++;
             zindexwindow_addnavy();
-        });
-    });
-    document.querySelectorAll('.test_button7').forEach(function (test_button7) {
-        test_button7.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.test_button7').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
             clock_menu.classList.toggle('active');
             clock_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy();
-        });
-    });
-    document.querySelectorAll('.test_button8').forEach(function (test_button8) {
-        test_button8.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.test_button8').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
             sound_menu.classList.toggle('active');
             sound_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy();
-        });
-    });
-    document.querySelectorAll('.test_button9').forEach(function (test_button9) {
-        test_button9.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.test_button9').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
             driver_menu.classList.toggle('active');
             driver_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy();
-        });
-    });
-    document.querySelectorAll('.test_button10').forEach(function (test_button10) {
-        test_button10.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.test_button10').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
             mouse_menu.classList.toggle('active');
             mouse_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy();
-        });
-    });
-    document.querySelectorAll('.test_button11').forEach(function (test_button11) {
-        test_button11.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.test_button11').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
             screen_text_menu.classList.toggle('active');
             screen_text_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy();
-        });
-    });
-    document.querySelectorAll('.test_button12').forEach(function (test_button12) {
-        test_button12.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.test_button12').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
             note_pad.classList.toggle('active');
             note_pad.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
             resizeTextarea()
-        });
-    });
-    document.querySelectorAll('.test_button13').forEach(function (test_button13) {
-        test_button13.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.test_button13').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
             text_drop_menu.classList.toggle('active');
             text_drop_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
-        });
-    });
-    document.querySelectorAll('.test_button14').forEach(function (test_button14) {
-        test_button14.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.test_button14').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
             windowmode_menu.classList.toggle('active');
             windowmode_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
-        });
-    });
-    document.querySelectorAll('.test_button15').forEach(function (test_button15) {
-        test_button15.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.test_button15').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
             accessory_menu.classList.toggle('active');
             accessory_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
-        });
-    });
-    document.querySelectorAll('.test_button16').forEach(function (test_button16) {
-        test_button16.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.test_button16').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
             calc_menu.classList.toggle('active');
             calc_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
-        });
-    });
-    document.querySelectorAll('.test_button17').forEach(function (test_button17) {
-        test_button17.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.test_button17').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
             nexser_sound_menu.classList.toggle('active');
             nexser_sound_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
-        });
-    });
-    document.querySelectorAll('.test_button18').forEach(function (test_button18) {
-        test_button18.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.test_button18').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
             camera_menu.classList.toggle('active');
             camera_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
             cameraframe_resize()
-        });
-    });
-    document.querySelectorAll('.test_button19').forEach(function (test_button19) {
-        test_button19.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.test_button19').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
             htmlviewer_edit_menu.classList.toggle('active');
             htmlviewer_edit_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
-        });
-    });
-    document.querySelectorAll('.test_button20').forEach(function (test_button20) {
-        test_button20.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.test_button20').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
             htmlviewer_run_menu.classList.toggle('active');
             htmlviewer_run_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
-        });
-    });
-    document.querySelectorAll('.test_button21').forEach(function (test_button21) {
-        test_button21.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.test_button21').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
             uploadvideo_menu.classList.toggle('active');
             uploadvideo_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
-        });
-    });
-    document.querySelectorAll('.test_button22').forEach(function (test_button22) {
-        test_button22.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.test_button22').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
             font_menu.classList.toggle('active');
             font_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
-        });
-    });
-    document.querySelectorAll('.test_button23').forEach(function (test_button23) {
-        test_button23.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.test_button23').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
             file_setting_menu.classList.toggle('active');
             file_setting_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
-        });
-    });
-    document.querySelectorAll('.test_button24').forEach(function (test_button24) {
-        test_button24.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.test_button24').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
             debug_menu.classList.toggle('active');
             debug_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
-        });
-    });
-    document.querySelectorAll('.test_button25').forEach(function (test_button25) {
-        test_button25.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.test_button25').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
             file_download_menu.classList.toggle('active');
             file_download_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
-        });
-    });
-    document.querySelectorAll('.test_button26').forEach(function (test_button26) {
-        test_button26.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.test_button26').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
             display_menu.classList.toggle('active');
             display_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
-        });
-    });
-    document.querySelectorAll('.test_button27').forEach(function (test_button27) {
-        test_button27.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.test_button27').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
             stopwatch_menu.classList.toggle('active');
             stopwatch_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy();
             timerreset()
-        });
-    });
-    document.querySelectorAll('.test_button28').forEach(function (test_button28) {
-        test_button28.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.test_button28').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
             comment_menu.classList.toggle('active');
             comment_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
-        });
-    });
-    document.querySelectorAll('.test_button30').forEach(function (test_button30) {
-        test_button30.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.test_button30').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
             objective_menu.classList.toggle('active');
             objective_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
             objective_resize()
-        });
-    });
-    document.querySelectorAll('.test_button31').forEach(function (test_button31) {
-        test_button31.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.test_button31').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
             calendar_menu.classList.toggle('active');
             calendar_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
-        });
-    });
-    document.querySelectorAll('.test_button32').forEach(function (test_button32) {
-        test_button32.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.test_button32').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
             cpu_calc_menu.classList.toggle('active');
             cpu_calc_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
             cpucalc_open();
-        });
-    });
-    document.querySelectorAll('.test_button33').forEach(function (test_button33) {
-        test_button33.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.test_button33').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
             browser_menu.classList.toggle('active');
             browser_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
-        });
-    });
-    document.querySelectorAll('.test_button35').forEach(function (test_button35) {
-        test_button35.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.test_button35').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
             taskbar_setting_menu.classList.toggle('active');
             taskbar_setting_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
-        });
-    });
-    document.querySelectorAll('.test_button36').forEach(function (test_button36) {
-        test_button36.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.test_button36').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
             youtubevideo_menu.classList.toggle('active');
             youtubevideo_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
             youtubeframe_resize()
-        });
-    });
-    document.querySelectorAll('.test_button37').forEach(function (test_button37) {
-        test_button37.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.test_button37').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
             device_menu.classList.toggle('active');
             device_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
-        });
-    });
-    document.querySelectorAll('.test_button38').forEach(function (test_button38) {
-        test_button38.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.test_button38').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
             omikuji_menu.classList.toggle('active');
             omikuji_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
-        });
-    });
-    document.querySelectorAll('.test_button39').forEach(function (test_button39) {
-        test_button39.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.test_button39').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
             localstorage_monitor_menu.classList.toggle('active');
             localstorage_monitor_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
-        });
-    });
-    document.querySelectorAll('.test_button40').forEach(function (test_button40) {
-        test_button40.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.test_button40').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
             paint_menu.classList.toggle('active');
             paint_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
-        });
-    });
-    document.querySelectorAll('.test_button42').forEach(function (test_button42) {
-        test_button42.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.test_button42').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
             nexser_files_menu.classList.toggle('active');
             nexser_files_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy();
@@ -3725,16 +3728,16 @@ if (ua.includes("mobile")) {
                 nexser_files_output_remove()
                 nexser_files_windowload()
             }, 100);
-        });
-    });
-    document.querySelectorAll('.test_button43').forEach(function (test_button43) {
-        test_button43.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.test_button43').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
             url_drop_menu.classList.toggle('active');
             url_drop_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
             url_drop_resize()
-        });
-    });
+        })
+    );
 
     function cpucalc_open() {
         const cpumenu1 = document.querySelector('.cpumenu_1');
@@ -3766,34 +3769,34 @@ if (ua.includes("mobile")) {
 
     // games
 
-    document.querySelectorAll('.test_button29').forEach(function (test_button29) {
-        test_button29.addEventListener('click', function () {
+    document.querySelectorAll('.test_button29').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
             tetris_mneu.classList.toggle('active');
             tetris_mneu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
-        });
-    });
-    document.querySelectorAll('.test_button34').forEach(function (test_button29) {
-        test_button29.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.test_button34').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
             bom_menu.classList.toggle('active');
             bom_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
-        });
-    });
-    document.querySelectorAll('.test_button41').forEach(function (test_button41) {
-        test_button41.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.test_button41').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
             othello_menu.classList.toggle('active');
             othello_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
-        });
-    });
-    document.querySelectorAll('.test_button44').forEach(function (test_button44) {
-        test_button44.addEventListener('click', function () {
+        })
+    );
+    document.querySelectorAll('.test_button44').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
             memory_game_menu.classList.toggle('active');
             memory_game_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
-        });
-    });
+        })
+    );
 
 
     // 最前面のz-indexを持つ要素に新しいクラス名を付与する関数
@@ -3883,8 +3886,6 @@ if (ua.includes("mobile")) {
         url_drop_child.style.height = `${url_drop_parent.clientHeight + - + 55}px`;
     };
     url_drop_parent.addEventListener('mousemove', url_drop_resize);
-
-
 
 
     const objective_parent = document.querySelector('.objective_menu');
@@ -4822,7 +4823,7 @@ if (ua.includes("mobile")) {
                 test_windows_button()
             } else if (localStorage.getItem('note_texts')) {
                 document.querySelector('.warning_title_text').textContent = "notepad"
-                document.querySelector('.window_warning_text').textContent = "notepad no save window close?(text allremove)"
+                document.querySelector('.window_warning_text').textContent = "編集中です。ウィンドウを終了しますか?(内容は破棄されます)"
                 warning_windows.style.display = "block"
                 document.querySelector('.close_button3').style.display = "block"
                 sound5()
@@ -6247,6 +6248,7 @@ if (ua.includes("mobile")) {
         const id = url.replace("watch?v=", "embed/");
         document.querySelector("#youtubeframe").src = id + "?enablejsapi=1&mute=1";
         setTimeout(() => {
+            y_iframeController('unMute');
             y_iframeController('playVideo');
         }, 1000);
 
@@ -7065,24 +7067,28 @@ if (ua.includes("mobile")) {
         });
     });
 
-    function test_windows_button() {
 
+
+
+    const taskbar_b = document.querySelector('#task_buttons2');
+    function test_windows_button() {
         document.querySelectorAll('.task_buttons').forEach(function (task_buttons) {
             task_buttons.remove()
         });
-
         const windows = document.querySelectorAll('.child_windows.selectwindows');
-        const taskbar_b = document.querySelector('#task_buttons2');
+        windows.forEach((windowElement) => {
+            // 1番目の子要素を取得
+            const firstChild = windowElement.children[0];
+            // その子要素の中の2番目の子要素を取得
+            const nestedChild = firstChild.children[1];
+            const nestedChild2 = nestedChild.textContent;
 
-        windows.forEach((windowElement, index) => {
-            const windowElement2 = windowElement.firstElementChild;
-            const windowElement3 = windowElement2.textContent;
-            const button = document.createElement('button');
-            // button.textContent = windowElement3 + `${index + 1}`;
-            button.textContent = windowElement3;
-            button.addEventListener('click', () => toggleWindow(windowElement));
+            const button = document.createElement('span');
             button.className = 'task_buttons';
+            button.textContent = nestedChild2;
             taskbar_b.appendChild(button);
+
+            button.addEventListener('click', () => toggleWindow(windowElement));
 
             button.addEventListener('mousedown', () => {
                 button.classList.add('pressed');
@@ -7093,15 +7099,11 @@ if (ua.includes("mobile")) {
             button.addEventListener('mouseup', () => {
                 button.classList.remove('pressed');
             });
+
         });
     };
 
     function toggleWindow(windowElement) {
-        // if (windowElement.classList.contains('active')) {
-        //     windowElement.classList.remove('active');
-        // } else {
-        //     windowElement.classList.remove('active');
-        // }
         windowElement.classList.remove('active');
         windowElement.style.zIndex = largestZIndex++;
         zindexwindow_addnavy();

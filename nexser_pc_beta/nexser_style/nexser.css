@@ -1427,6 +1427,10 @@ body::-webkit-scrollbar {
     outline: 1px solid gray;
 }
 
+.title span:nth-child(2) {
+    margin-left: 30px;
+}
+
 .child_windows.big .minscreen_button {
     display: block;
 }
