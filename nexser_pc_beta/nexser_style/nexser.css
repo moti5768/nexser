@@ -2970,3 +2970,11 @@ progress::-webkit-progress-value {
 .pinned {
     background-color: yellow;
 }
+
+
+.item_preview {
+    max-width: 500px;
+    /* ここで表示サイズを小さく設定 */
+    max-height: 500px;
+    /* ここで表示サイズを小さく設定 */
+}

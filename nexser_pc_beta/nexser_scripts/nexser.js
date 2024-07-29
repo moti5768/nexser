@@ -7110,5 +7110,239 @@ if (ua.includes("mobile")) {
     }
 
 
+
+
+
+
+
+    const dropArea = document.querySelector('#desktop');
+
+    dropArea.addEventListener('dragover', (event) => {
+        event.preventDefault();
+        dropArea.style.borderColor = '#000';
+    });
+
+    dropArea.addEventListener('dragleave', () => {
+        dropArea.style.borderColor = '#ccc';
+    });
+
+    dropArea.addEventListener('drop', (event) => {
+        event.preventDefault();
+        dropArea.style.borderColor = '#ccc';
+        const files = event.dataTransfer.files;
+
+        for (const file of files) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const result = e.target.result;
+                const windowDiv = document.createElement('div');
+                windowDiv.classList.add('child_windows');
+                windowDiv.style.left = `${event.clientX}px`;
+                windowDiv.style.top = `${event.clientY}px`;
+                windowDiv.style.zIndex = largestZIndex++;
+
+
+
+
+
+
+
+
+
+
+                // 新しい子要素を生成して追加
+                const newChild = document.createElement('div');
+                newChild.className = "title"
+                windowDiv.appendChild(newChild);
+
+
+
+                const newChild2 = document.createElement('span');
+                newChild2.className = "title_icon"
+                newChild.appendChild(newChild2);
+
+                const newChild22 = document.createElement('span');
+                newChild22.textContent = 'window ' + largestZIndex++;
+                newChild.appendChild(newChild22);
+
+
+                // 新しい子要素を生成して追加
+                const newChild3 = document.createElement('div');
+                newChild3.className = "title_buttons"
+                windowDiv.appendChild(newChild3);
+
+                // 新しい子要素を生成して追加
+                const newChild4_4 = document.createElement('span');
+                newChild4_4.className = "drag_button"
+                newChild3.appendChild(newChild4_4);
+
+
+                // 新しい子要素を生成して追加
+                const newChild4 = document.createElement('span');
+                newChild4.className = "close_button"
+                newChild4.textContent = "✕"
+                newChild4.classList.add('button2')
+                newChild3.appendChild(newChild4);
+
+                // 新しい子要素を生成して追加
+                const newChild4_5 = document.createElement('br');
+                newChild3.appendChild(newChild4_5);
+
+
+                newChild4.addEventListener('mousedown', () => {
+                    newChild4.classList.add('pressed');
+                });
+                newChild4.addEventListener('mouseleave', () => {
+                    newChild4.classList.remove('pressed');
+                });
+                newChild4.addEventListener('mouseup', () => {
+                    newChild4.classList.remove('pressed');
+                });
+                newChild4.addEventListener('click', () => {
+                    setTimeout(() => {
+                        const newChild4_2 = newChild4.closest('.child_windows');
+                        newChild4_2.classList.add('active');
+                        newChild4_2.classList.remove('selectwindows');
+                        newChild4_2.remove();
+                        zindexwindow_addnavy();
+                        titlecolor_set();
+                        test_windows_button()
+                    }, 100);
+                });
+
+
+
+
+
+
+
+
+
+
+
+
+
+                // ドラッグ＆ドロップでウィンドウを移動可能にする
+                windowDiv.addEventListener('mousedown', (e) => {
+
+                    setTimeout(() => {
+                        zindexwindow_addnavy()
+                        titlecolor_set()
+                    }, 100);
+                    windowDiv.style.zIndex = largestZIndex++;
+
+                    // const newChild4_5 = windowDiv.closest('.child_windows')
+
+                    let shiftX = e.clientX - windowDiv.getBoundingClientRect().left;
+                    let shiftY = e.clientY - windowDiv.getBoundingClientRect().top;
+
+                    const moveAt = (pageX, pageY) => {
+                        windowDiv.style.left = pageX - shiftX + 'px';
+                        windowDiv.style.top = pageY - shiftY + 'px';
+                    };
+
+                    const onMouseMove = (e) => {
+                        moveAt(e.pageX, e.pageY);
+                        const elements = document.querySelectorAll('.rectangle');
+                        // 各要素からクラスを削除
+                        elements.forEach(element => {
+                            element.classList.remove('rectangle');
+                        });
+                    };
+
+                    document.addEventListener('mousemove', onMouseMove);
+
+                    windowDiv.addEventListener('mouseup', () => {
+                        document.removeEventListener('mousemove', onMouseMove);
+                    });
+
+                    windowDiv.addEventListener('mouseleave', () => {
+                        document.removeEventListener('mousemove', onMouseMove);
+                    });
+                });
+
+                windowDiv.ondragstart = () => false;
+
+
+
+
+                // 新しい子要素を生成して追加
+                const newChild6 = document.createElement('div');
+                newChild6.className = "window_contents"
+                windowDiv.appendChild(newChild6);
+
+                if (file.type.startsWith('image/')) {
+                    windowDiv.classList.add('selectwindows');
+                    const img = document.createElement('img');
+                    img.src = result;
+                    img.classList.add('item_preview');
+                    img.style.left = "900px";
+                    newChild6.appendChild(img);
+
+                    setTimeout(() => {
+                        test_windows_button()
+                        zindexwindow_addnavy()
+                        titlecolor_set()
+                    }, 100);
+
+                } else if (file.type.startsWith('video/')) {
+                    const video = document.createElement('video');
+                    video.src = result;
+                    video.controls = true;
+                    video.classList.add('item_preview');
+                    newChild6.appendChild(video);
+
+                    setTimeout(() => {
+                        test_windows_button()
+                        zindexwindow_addnavy()
+                        titlecolor_set()
+                    }, 1000);
+
+                } else if (file.type === 'application/pdf') {
+                    const iframe = document.createElement('iframe');
+                    iframe.src = result;
+                    iframe.classList.add('item_preview');
+                    newChild6.appendChild(iframe);
+
+                    setTimeout(() => {
+                        test_windows_button()
+                        zindexwindow_addnavy()
+                        titlecolor_set()
+                    }, 100);
+
+                } else if (file.type.startsWith('text/')) {
+                    const text = document.createElement('p');
+                    text.textContent = e.target.result;
+                    text.classList.add('item_preview');
+                    newChild6.appendChild(text);
+
+                    setTimeout(() => {
+                        test_windows_button()
+                        zindexwindow_addnavy()
+                        titlecolor_set()
+                    }, 100);
+
+                } else {
+                    const unsupported = document.createElement('p');
+                    unsupported.textContent = 'このファイル形式はサポートされていません。';
+                    unsupported.classList.add('item_preview');
+                    newChild6.appendChild(unsupported);
+
+                    setTimeout(() => {
+                        test_windows_button()
+                        zindexwindow_addnavy()
+                        titlecolor_set()
+                    }, 100);
+
+                }
+
+                dropArea.appendChild(windowDiv);
+            };
+            reader.readAsDataURL(file);
+
+        }
+    });
+
+
 };
 
