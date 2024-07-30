@@ -3844,9 +3844,8 @@ if (ua.includes("mobile")) {
         titlecolor_set()
     }
 
-    document.querySelector('.time').addEventListener('click', function () {
-
-    })
+    // document.querySelector('.time').addEventListener('click', function () {
+    // })
 
     const note_parent = document.querySelector('.note_pad');
     const note_child = document.getElementById('note_text');
@@ -7115,7 +7114,7 @@ if (ua.includes("mobile")) {
 
 
 
-    const dropArea = document.querySelector('#desktop');
+    const dropArea = document.querySelector('#files');
 
     dropArea.addEventListener('dragover', (event) => {
         event.preventDefault();
@@ -7136,7 +7135,8 @@ if (ua.includes("mobile")) {
             reader.onload = (e) => {
                 const result = e.target.result;
                 const windowDiv = document.createElement('div');
-                windowDiv.classList.add('child_windows');
+                windowDiv.className = "child_windows"
+                windowDiv.classList.add('testwindow2');
                 windowDiv.style.left = `${event.clientX}px`;
                 windowDiv.style.top = `${event.clientY}px`;
                 windowDiv.style.zIndex = largestZIndex++;
@@ -7153,6 +7153,7 @@ if (ua.includes("mobile")) {
                 // 新しい子要素を生成して追加
                 const newChild = document.createElement('div');
                 newChild.className = "title"
+                newChild.classList.add('testwindow_title');
                 windowDiv.appendChild(newChild);
 
 
@@ -7165,6 +7166,19 @@ if (ua.includes("mobile")) {
                 newChild22.textContent = 'window ' + largestZIndex++;
                 newChild.appendChild(newChild22);
 
+                setTimeout(() => {
+                    document.querySelectorAll('.testwindow2').forEach(function (testwindow2) {
+                        const testwindow2_1 = testwindow2.children[2];
+                        const testwindow2_2 = testwindow2_1.firstElementChild;
+                        console.log(testwindow2_1)
+
+                        testwindow2_2.style.maxWidth = "500px"
+                        testwindow2_2.style.maxHeight = "500px"
+                        testwindow2_2.style.left = "0"
+                        testwindow2.style.width = "500px"
+                        testwindow2.style.height = testwindow2_2
+                    })
+                }, 0);
 
                 // 新しい子要素を生成して追加
                 const newChild3 = document.createElement('div');
@@ -7174,8 +7188,8 @@ if (ua.includes("mobile")) {
                 // 新しい子要素を生成して追加
                 const newChild4_4 = document.createElement('span');
                 newChild4_4.className = "drag_button"
+                newChild4_4.innerHTML = "&emsp;"
                 newChild3.appendChild(newChild4_4);
-
 
                 // 新しい子要素を生成して追加
                 const newChild4 = document.createElement('span');
@@ -7185,9 +7199,39 @@ if (ua.includes("mobile")) {
                 newChild3.appendChild(newChild4);
 
                 // 新しい子要素を生成して追加
+                const newChild4_1 = document.createElement('span');
+                newChild4_1.className = "bigscreen_button2"
+                // newChild4_1.classList.add('bigscreen_button2');
+                newChild4_1.textContent = "☐"
+                newChild4_1.classList.add('button2');
+                newChild3.appendChild(newChild4_1);
+
+                // 新しい子要素を生成して追加
+                const newChild4_2 = document.createElement('span');
+                newChild4_2.className = "minscreen_button"
+                newChild4_2.textContent = "❒"
+                newChild4_2.classList.add('button2');
+                newChild3.appendChild(newChild4_2);
+
+                // 新しい子要素を生成して追加
                 const newChild4_5 = document.createElement('br');
                 newChild3.appendChild(newChild4_5);
 
+                setTimeout(() => {
+
+                    Array.from(document.getElementsByClassName('button2')).forEach((button2) => {
+                        button2.addEventListener('mousedown', () => {
+                            button2.classList.add('pressed');
+                        });
+                        button2.addEventListener('mouseleave', () => {
+                            button2.classList.remove('pressed');
+                        });
+                        button2.addEventListener('mouseup', () => {
+                            button2.classList.remove('pressed');
+                        });
+                    });
+
+                }, 10);
 
                 newChild4.addEventListener('mousedown', () => {
                     newChild4.classList.add('pressed');
@@ -7209,62 +7253,6 @@ if (ua.includes("mobile")) {
                         test_windows_button()
                     }, 100);
                 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-                // ドラッグ＆ドロップでウィンドウを移動可能にする
-                windowDiv.addEventListener('mousedown', (e) => {
-
-                    setTimeout(() => {
-                        zindexwindow_addnavy()
-                        titlecolor_set()
-                    }, 100);
-                    windowDiv.style.zIndex = largestZIndex++;
-
-                    // const newChild4_5 = windowDiv.closest('.child_windows')
-
-                    let shiftX = e.clientX - windowDiv.getBoundingClientRect().left;
-                    let shiftY = e.clientY - windowDiv.getBoundingClientRect().top;
-
-                    const moveAt = (pageX, pageY) => {
-                        windowDiv.style.left = pageX - shiftX + 'px';
-                        windowDiv.style.top = pageY - shiftY + 'px';
-                    };
-
-                    const onMouseMove = (e) => {
-                        moveAt(e.pageX, e.pageY);
-                        const elements = document.querySelectorAll('.rectangle');
-                        // 各要素からクラスを削除
-                        elements.forEach(element => {
-                            element.classList.remove('rectangle');
-                        });
-                    };
-
-                    document.addEventListener('mousemove', onMouseMove);
-
-                    windowDiv.addEventListener('mouseup', () => {
-                        document.removeEventListener('mousemove', onMouseMove);
-                    });
-
-                    windowDiv.addEventListener('mouseleave', () => {
-                        document.removeEventListener('mousemove', onMouseMove);
-                    });
-                });
-
-                windowDiv.ondragstart = () => false;
-
-
-
 
                 // 新しい子要素を生成して追加
                 const newChild6 = document.createElement('div');
@@ -7336,9 +7324,452 @@ if (ua.includes("mobile")) {
 
                 }
 
+                function addResizers2(element) {
+                    const resizerPositions = ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'top', 'right', 'bottom', 'left'];
+                    resizerPositions.forEach(position => {
+                        const resizer = document.createElement('div');
+                        resizer.classList.add('resizer', position);
+                        element.appendChild(resizer);
+                    });
+                }
+
+                function makeResizableDivs2(className) {
+                    const elements = document.querySelectorAll(className);
+                    elements.forEach(element => {
+                        addResizers2(element);
+                        const resizers = element.querySelectorAll('.resizer');
+                        const minimum_size = 20;
+                        let original_width = 0;
+                        let original_height = 0;
+                        let original_x = 0;
+                        let original_y = 0;
+                        let original_mouse_x = 0;
+                        let original_mouse_y = 0;
+
+                        resizers.forEach(resizer => {
+                            resizer.addEventListener('mousedown', function (e) {
+                                e.preventDefault();
+                                original_width = parseFloat(getComputedStyle(element, null).getPropertyValue('width').replace('px', ''));
+                                original_height = parseFloat(getComputedStyle(element, null).getPropertyValue('height').replace('px', ''));
+                                original_x = element.getBoundingClientRect().left;
+                                original_y = element.getBoundingClientRect().top;
+                                original_mouse_x = e.pageX;
+                                original_mouse_y = e.pageY;
+
+                                window.addEventListener('mousemove', resize2);
+                                window.addEventListener('mouseup', stopResize2);
+                            });
+
+                            function resize2(e) {
+                                if (resizer.classList.contains('right')) {
+                                    const width = original_width + (e.pageX - original_mouse_x);
+                                    if (width > minimum_size) {
+                                        element.style.width = width + 'px';
+                                    }
+                                } else if (resizer.classList.contains('left')) {
+                                    const width = original_width - (e.pageX - original_mouse_x);
+                                    if (width > minimum_size) {
+                                        element.style.width = width + 'px';
+                                        element.style.left = original_x + (e.pageX - original_mouse_x) + 'px';
+                                    }
+                                } else if (resizer.classList.contains('bottom')) {
+                                    const height = original_height + (e.pageY - original_mouse_y);
+                                    if (height > minimum_size) {
+                                        element.style.height = height + 'px';
+                                    }
+                                } else if (resizer.classList.contains('top')) {
+                                    const height = original_height - (e.pageY - original_mouse_y);
+                                    if (height > minimum_size) {
+                                        element.style.height = height + 'px';
+                                        element.style.top = original_y + (e.pageY - original_mouse_y) + 'px';
+                                    }
+                                } else if (resizer.classList.contains('bottom-right')) {
+                                    const width = original_width + (e.pageX - original_mouse_x);
+                                    const height = original_height + (e.pageY - original_mouse_y);
+                                    if (width > minimum_size) {
+                                        element.style.width = width + 'px';
+                                    }
+                                    if (height > minimum_size) {
+                                        element.style.height = height + 'px';
+                                    }
+                                } else if (resizer.classList.contains('bottom-left')) {
+                                    const height = original_height + (e.pageY - original_mouse_y);
+                                    const width = original_width - (e.pageX - original_mouse_x);
+                                    if (height > minimum_size) {
+                                        element.style.height = height + 'px';
+                                    }
+                                    if (width > minimum_size) {
+                                        element.style.width = width + 'px';
+                                        element.style.left = original_x + (e.pageX - original_mouse_x) + 'px';
+                                    }
+                                } else if (resizer.classList.contains('top-right')) {
+                                    const width = original_width + (e.pageX - original_mouse_x);
+                                    const height = original_height - (e.pageY - original_mouse_y);
+                                    if (width > minimum_size) {
+                                        element.style.width = width + 'px';
+                                    }
+                                    if (height > minimum_size) {
+                                        element.style.height = height + 'px';
+                                        element.style.top = original_y + (e.pageY - original_mouse_y) + 'px';
+                                    }
+                                } else if (resizer.classList.contains('top-left')) {
+                                    const width = original_width - (e.pageX - original_mouse_x);
+                                    const height = original_height - (e.pageY - original_mouse_y);
+                                    if (width > minimum_size) {
+                                        element.style.width = width + 'px';
+                                        element.style.left = original_x + (e.pageX - original_mouse_x) + 'px';
+                                    }
+                                    if (height > minimum_size) {
+                                        element.style.height = height + 'px';
+                                        element.style.top = original_y + (e.pageY - original_mouse_y) + 'px';
+                                    }
+                                }
+                                const elements = document.querySelectorAll('.rectangle');
+                                // 各要素からクラスを削除
+                                elements.forEach(element => {
+                                    element.classList.remove('rectangle');
+                                });
+                            }
+
+                            function stopResize2() {
+                                window.removeEventListener('mousemove', resize2);
+                                window.removeEventListener('mouseup', stopResize2);
+                            }
+                        });
+                    });
+                }
+
+                setTimeout(() => {
+                    makeResizableDivs2('.testwindow2');
+                }, 10);
+
+
+
+
+
+
+
+
+
+                setTimeout(() => {
+
+                    document.querySelectorAll('.testwindow2, .child').forEach(function (z_index_child_windows) {
+                        const zindexchildwindows = z_index_child_windows.closest('.testwindow2');
+                        z_index_child_windows.addEventListener('mousedown', function () {
+                            zindexchildwindows.scrollTop = 0;
+                            zindexchildwindows.scrollLeft = 0;
+
+                            setTimeout(() => {
+                                document.querySelectorAll('.testwindow2').forEach(function (testwindow2) {
+                                    const hehehe1 = testwindow2.firstElementChild;
+                                    console.log(hehehe1)
+
+                                    const testwindow2_1 = testwindow2.children[2];
+                                    const testwindow2_2 = testwindow2_1.firstElementChild;
+
+                                    testwindow2_2.style.maxWidth = `${testwindow2.clientWidth + - + 5}px`;
+                                    testwindow2_2.style.maxHeight = `${testwindow2.clientHeight + - + 25}px`;
+                                    testwindow2_2.style.left = "0"
+                                })
+                                zindexchildwindows.style.zIndex = largestZIndex++;
+                                zindexwindow_addnavy()
+                                titlecolor_set()
+                            }, 0);
+
+                            const elements = document.querySelectorAll('.rectangle');
+                            elements.forEach(element => {
+                                element.classList.remove('rectangle');
+                            });
+                        });
+                    })
+
+                    document.querySelectorAll('.bigscreen_button2').forEach(function (bigscreen_button) {
+                        bigscreen_button.addEventListener('mousedown', function () {
+                            zindexwindow_addnavy()
+                            const elements = document.querySelector('.testwindow_title.navy');
+                            const elements2 = elements.closest('.testwindow2');
+                            elements2.dataset.originalWidth = elements2.style.width;
+                            elements2.dataset.originalHeight = elements2.style.height;
+                            elements2.dataset.originalTop = elements2.style.top;
+                            elements2.dataset.originalLeft = elements2.style.left;
+                        })
+                        bigscreen_button.addEventListener('click', function () {
+                            const bigscreenbutton = bigscreen_button.closest('.testwindow2');
+                            const childElements = bigscreenbutton.children;
+                            for (let child of childElements) {
+                                child.style.display = 'none';
+                                document.querySelectorAll('.title,.title_buttons').forEach(function (titles) {
+                                    titles.style.display = "block"
+                                })
+                                document.querySelectorAll('.title2').forEach(function (window_title2) {
+                                    window_title2.style.display = "flex"
+                                })
+                            }
+
+                            const t = localStorage.getItem('taskbar_height');
+                            if (localStorage.getItem('data_taskbar_none')) {
+                                bigscreenbutton.style.height = ""
+                                bigscreenbutton.style.width = ""
+                                bigscreenbutton.style.top = "0"
+                                bigscreenbutton.style.left = "0"
+                                bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                            } else if (localStorage.getItem('taskbar_position_button')) {
+                                bigscreenbutton.style.height = ""
+                                bigscreenbutton.style.width = ""
+                                bigscreenbutton.style.top = "40px"
+                                bigscreenbutton.style.left = "0"
+
+                                bigscreenbutton.style.top = t + "px"
+
+                                bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                            } else {
+                                bigscreenbutton.style.height = ""
+                                bigscreenbutton.style.width = ""
+                                bigscreenbutton.style.top = "0"
+                                bigscreenbutton.style.left = "0"
+                                bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                            }
+                            bigscreenbutton.classList.add('big');
+                            setTimeout(() => {
+                                bigscreenbutton.style.transition = ""
+                                for (let child of childElements) {
+                                    child.style.display = '';
+                                }
+                                if (localStorage.getItem('allwindow_toolbar')) {
+                                    document.querySelectorAll('.window_tool').forEach(function (window_tool) {
+                                        window_tool.style.display = "block"
+                                    })
+                                }
+
+                                document.querySelectorAll('.testwindow2').forEach(function (testwindow2) {
+                                    const hehehe1 = testwindow2.firstElementChild;
+                                    console.log(hehehe1)
+
+                                    const testwindow2_1 = testwindow2.children[2];
+                                    const testwindow2_2 = testwindow2_1.firstElementChild;
+
+
+                                    if (hehehe1.classList.contains('navy')) {
+                                        testwindow2_2.style.maxWidth = `${testwindow2.clientWidth + - + 5}px`;
+                                        testwindow2_2.style.maxHeight = `${testwindow2.clientHeight + - + 25}px`;
+                                        testwindow2_2.style.left = "0"
+                                    }
+                                })
+
+                            }, 150);
+                            // setTimeout(() => {
+                            //     const task = document.getElementById('taskbar').clientHeight;
+                            //     const child_windows_big2 = bigscreenbutton.clientHeight;
+                            //     bigscreenbutton.style.height = child_windows_big2 + - + task + "px"
+                            // }, 150);
+
+                        });
+                    })
+
+
+                    document.querySelectorAll('.minscreen_button').forEach(function (minscreen_button) {
+                        minscreen_button.addEventListener('click', function () {
+                            const minscreenbutton = minscreen_button.closest('.testwindow2');
+                            const childElements = minscreenbutton.children;
+                            for (let child of childElements) {
+                                child.style.display = 'none';
+                                document.querySelectorAll('.title,.title_buttons').forEach(function (titles) {
+                                    titles.style.display = "block"
+                                })
+                                document.querySelectorAll('.title2').forEach(function (window_title2) {
+                                    window_title2.style.display = "flex"
+                                })
+                            }
+
+                            minscreenbutton.classList.remove('big');
+
+                            const elements = document.querySelector('.testwindow_title.navy');
+                            const elements2 = elements.closest('.testwindow2');
+                            elements2.style.width = elements2.dataset.originalWidth;
+                            elements2.style.height = elements2.dataset.originalHeight;
+                            elements2.style.top = elements2.dataset.originalTop;
+                            elements2.style.left = elements2.dataset.originalLeft;
+
+                            minscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                            setTimeout(() => {
+                                minscreenbutton.style.transition = ""
+                                setTimeout(() => {
+                                    minscreenbutton.scrollTop = 0;
+                                    minscreenbutton.scrollLeft = 0;
+                                }, 100);
+                            }, 150);
+
+                            setTimeout(() => {
+                                for (let child of childElements) {
+                                    child.style.display = '';
+                                }
+                                if (localStorage.getItem('allwindow_toolbar')) {
+                                    document.querySelectorAll('.window_tool').forEach(function (window_tool) {
+                                        window_tool.style.display = "block"
+                                    })
+                                }
+
+                                document.querySelectorAll('.testwindow2').forEach(function (testwindow2) {
+                                    const hehehe1 = testwindow2.firstElementChild;
+                                    console.log(hehehe1)
+
+                                    const testwindow2_1 = testwindow2.children[2];
+                                    const testwindow2_2 = testwindow2_1.firstElementChild;
+
+
+                                    if (hehehe1.classList.contains('navy')) {
+                                        testwindow2_2.style.maxWidth = `${testwindow2.clientWidth + - + 5}px`;
+                                        testwindow2_2.style.maxHeight = `${testwindow2.clientHeight + - + 25}px`;
+                                        testwindow2_2.style.left = "0"
+                                    }
+                                })
+
+                            }, 150);
+                        });
+                    });
+
+
+
+                    document.querySelectorAll('.drag_button').forEach(function (drag) {
+                        let drag2 = drag.closest('.testwindow2');
+                        //要素内のクリックされた位置を取得するグローバル（のような）変数
+                        var x;
+                        var y;
+                        //マウスが要素内で押されたとき、又はタッチされたとき発火
+                        drag.addEventListener("mousedown", mdown, { passive: false }, false);
+                        drag.addEventListener("touchstart", mdown, { passive: false }, false);
+                        //マウスが押された際の関数
+                        function mdown(e) {
+                            //クラス名に .drag を追加
+                            drag2.classList.add("drag");
+                            //タッチデイベントとマウスのイベントの差異を吸収
+                            if (e.type === "mousedown") {
+                                var event = e;
+                            } else {
+                                var event = e.changedTouches[0];
+                            }
+                            //要素内の相対座標を取得
+                            x = event.pageX - drag2.offsetLeft;
+                            y = event.pageY - drag2.offsetTop;
+                            //ムーブイベントにコールバック
+                            document.body.addEventListener("mousemove", mmove, { passive: false }, false);
+                            document.body.addEventListener("touchmove", mmove, { passive: false }, false);
+                        }
+                        //マウスカーソルが動いたときに発火
+                        function mmove(e) {
+                            //ドラッグしている要素を取得
+                            var drag = document.getElementsByClassName("drag")[0];
+                            //同様にマウスとタッチの差異を吸収
+                            if (e.type === "mousemove") {
+                                var event = e;
+                            } else {
+                                var event = e.changedTouches[0];
+                            }
+                            const elements = document.querySelectorAll('.rectangle');
+                            // 各要素からクラスを削除
+                            elements.forEach(element => {
+                                element.classList.remove('rectangle');
+                            });
+
+                            //マウスが動いた場所に要素を動かす
+                            drag.style.top = event.pageY - y + "px";
+                            drag.style.left = event.pageX - x + "px";
+                            //マウスボタンが離されたとき、またはカーソルが外れたとき発火
+                            drag.addEventListener("mouseup", mup, false);
+                            document.body.addEventListener("mouseleave", mup, false);
+                            drag.addEventListener("touchend", mup, false);
+                            document.body.addEventListener("touchleave", mup, false);
+                            // 半透明
+                            if (localStorage.getItem('window_invisible')) {
+                                document.querySelectorAll('.child_windows').forEach(function (title) {
+                                    title.style.opacity = "0.5";
+                                })
+                            }
+                            // 移動してる時だけ黒枠のみ
+                            if (localStorage.getItem('window_borderblack')) {
+                                document.querySelectorAll('.child_windows, .child').forEach(function (title) {
+                                    document.querySelector('iframe').style.opacity = "0";
+                                    title.style.background = "rgba(255, 255, 255, 0)";
+                                    title.style.border = "solid 2px black";
+                                })
+                                document.querySelectorAll('.title,.title2,.title_buttons,.window_tool,.window_contents,.window_content,.window_bottom,.prompt_content').forEach(function (title) {
+                                    title.style.opacity = "0"
+                                })
+                            }
+                        }
+                        //マウスボタンが上がったら発火
+                        function mup(e) {
+
+                            document.querySelectorAll('.drag').forEach(function (drag_windows) {
+                                drag_windows.classList.remove("drag");
+                            })
+
+                            document.body.removeEventListener("mousemove", mmove, false);
+                            drag.removeEventListener("mouseup", mup, false);
+                            document.body.removeEventListener("touchmove", { passive: false }, mmove, false);
+                            drag.removeEventListener("touchend", { passive: false }, mup, false);
+                            // 半透明
+                            document.querySelectorAll('.child_windows').forEach(function (title) {
+                                title.style.opacity = "";
+                                window_prompt.style.background = "black"
+                                window_back_silver()
+                            })
+                            // 移動してる時だけ黒枠のみ
+                            document.querySelectorAll('.child_windows, .child').forEach(function (title) {
+                                title.style.background = "";
+                                title.style.border = "";
+                                document.querySelector('iframe').style.opacity = "";
+                                window_prompt.style.background = "black"
+                                window_back_silver()
+                            })
+                            document.querySelectorAll('.title,.title2,.title_buttons,.window_tool,.window_contents,.window_content,.window_bottom,.prompt_content').forEach(function (title) {
+                                title.style.opacity = ""
+                                window_back_silver()
+                            })
+                            titlecolor_set()
+                        }
+                    })
+
+
+
+                    // クラス名が "target" の要素を全て取得
+                    document.querySelectorAll('.bigscreen_button2').forEach(function (element) {
+                        var newChild = document.createElement('div');
+                        newChild.className = 'bigscreen_button_child';
+                        // 子要素を追加
+                        element.appendChild(newChild);
+                    });
+
+                    document.querySelectorAll('.testwindow2').forEach(function (testwindow2) {
+                        testwindow2.addEventListener('mousemove', function () {
+                            const hehehe1 = testwindow2.firstElementChild;
+                            console.log(hehehe1)
+
+                            const testwindow2_1 = testwindow2.children[2];
+                            const testwindow2_2 = testwindow2_1.firstElementChild;
+
+
+                            if (hehehe1.classList.contains('navy') && !testwindow2.classList.contains('big')) {
+                                testwindow2_2.style.maxWidth = `${testwindow2.clientWidth + - + 5}px`;
+                                testwindow2_2.style.maxHeight = `${testwindow2.clientHeight + - + 25}px`;
+                                testwindow2_2.style.left = "0"
+                            }
+                        })
+                    });
+
+                }, 10);
+
                 dropArea.appendChild(windowDiv);
+
+
+
             };
             reader.readAsDataURL(file);
+            const elements = document.querySelectorAll('.rectangle');
+            elements.forEach(element => {
+                element.classList.remove('rectangle');
+            });
+
 
         }
     });

@@ -1899,7 +1899,8 @@ body::-webkit-scrollbar {
     right: 0px;
 }
 
-.bigscreen_button {
+.bigscreen_button,
+.bigscreen_button2 {
     display: inline-block;
     width: 19px;
     height: 19px;
@@ -2971,10 +2972,12 @@ progress::-webkit-progress-value {
     background-color: yellow;
 }
 
-
 .item_preview {
-    max-width: 500px;
-    /* ここで表示サイズを小さく設定 */
-    max-height: 500px;
-    /* ここで表示サイズを小さく設定 */
+    position: relative;
+}
+
+.testwindow2 {
+    position: absolute;
+    min-width: 250px;
+    min-height: 250px;
 }
