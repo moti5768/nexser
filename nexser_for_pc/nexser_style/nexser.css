@@ -341,6 +341,35 @@ li {
 
 /* buttons */
 
+.task_buttons {
+    display: inline-block;
+    border-top: 1.8px #eee solid;
+    border-left: 1.8px #eee solid;
+    border-bottom: 1.8px #333 solid;
+    border-right: 1.8px #333 solid;
+    box-shadow: 0 0 0 0.5px dimgray;
+    color: black;
+    background: silver;
+    outline: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    list-style: none;
+    box-sizing: border-box;
+}
+
+.task_buttons.pressed {
+    background: darkgray;
+    border-bottom: 1.8px #eee solid;
+    border-right: 1.8px #eee solid;
+    border-top: 1.8px #333 solid;
+    border-left: 1.8px #333 solid;
+    padding-top: 1px;
+    padding-left: 1px;
+    box-sizing: border-box;
+}
+
 .button {
     display: inline-block;
     border-top: 1.8px #eee solid;
@@ -415,6 +444,13 @@ li {
     outline: 1.5px dotted black;
     outline-offset: -5px;
     text-align: center;
+}
+
+.center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
 }
 
 .windowfile1 {
@@ -493,6 +529,8 @@ input[type="file"] {
     font-size: 15px;
     width: 100%;
     height: 40px;
+    max-height: 90px;
+    min-height: 40px;
     background-color: silver;
     border-top: solid 1.5px whitesmoke;
     border-bottom: 1.5px #333 solid;
@@ -558,6 +596,7 @@ input[type="file"] {
     display: flex;
     width: 850px;
     overflow: auto;
+    height: min-content;
 }
 
 #taskbar .task_icons {
@@ -565,7 +604,7 @@ input[type="file"] {
     height: 30px;
 }
 
-.task_icons .button {
+.task_icons .task_buttons {
     display: block;
     box-sizing: border-box;
     float: left;
@@ -578,7 +617,7 @@ input[type="file"] {
     text-overflow: ellipsis;
 }
 
-.task_icons .button.pressed {
+.task_icons .task_buttons.pressed {
     background: #DDDDDD;
     text-shadow:
         0.1px 0.1px 0,
@@ -592,17 +631,11 @@ input[type="file"] {
 }
 
 .taskbar_rightgroup {
-    width: 250px;
+    display: flex;
     font-size: medium;
     position: absolute;
     right: 0px;
-    column-count: 3;
     top: 6px;
-}
-
-.screen_light_range {
-    position: absolute;
-    right: 300px;
 }
 
 .screen_light_range_child {
@@ -629,25 +662,31 @@ input[type="file"] {
 
 .inport_icon {
     background: silver;
-    position: absolute;
-    left: -30px;
     text-align: center;
+    margin-left: 10px;
 }
 
 .time {
     background: silver;
     position: relative;
     text-align: center;
-    margin-left: 40px;
+    margin-left: 10px;
+    margin-right: 5px;
 }
 
 .task_battery {
     background: silver;
     position: relative;
+    margin-left: 5px;
+    margin-right: 5px;
 }
 
 .battery_menu {
     display: none;
+}
+
+.battery_time {
+    background: silver;
     position: absolute;
     bottom: 35px;
 }
@@ -817,13 +856,6 @@ input[type="file"] {
 
 .child_windows::-webkit-scrollbar {
     opacity: 0.5;
-    background: yellow;
-}
-
-.child_windows.default {
-    top: 20%;
-    left: 25%;
-    z-index: 1;
 }
 
 .window_bottom {
@@ -831,12 +863,14 @@ input[type="file"] {
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
-    background: darkgray;
+    display: block;
+    width: 100%;
+    background: silver;
     box-shadow: 0 0 0 1.5px whitesmoke,
-        0 0 0 2px dimgray;
+        0 0 0 2.5px dimgray;
     position: absolute;
+    box-sizing: border-box;
     bottom: 0px;
-    width: 99.5%;
 }
 
 /* soft_windows */
@@ -887,6 +921,7 @@ input[type="file"] {
 
 .note_pad {
     width: 600px;
+    height: 400px;
 }
 
 .debug_menu {
@@ -909,18 +944,16 @@ input[type="file"] {
 }
 
 .youtubevideo_menu {
-    width: 250px;
-    height: auto;
+    width: 800px;
+    height: 500px;
+    min-width: 250px;
 }
 
 #youtubeframe {
     height: 400px;
     width: 700px;
-}
-
-.big #youtubeframe {
-    height: 80vh;
-    width: 100%;
+    position: absolute;
+    top: 22.5px;
 }
 
 .device_menu {
@@ -934,14 +967,30 @@ input[type="file"] {
     width: 500px;
 }
 
-.camera_menu {
-    height: min-content;
-    width: min-content;
+.nexser_files_menu {
+    width: 600px;
+    height: 400px;
 }
 
-.big #v {
-    height: 85vh;
-    padding-left: 150px;
+.camera_menu {
+    width: 500px;
+    height: 400px;
+    min-width: 300px;
+}
+
+.url_drop_menu {
+    width: 400px;
+    height: 300px;
+    min-width: 200px;
+}
+
+.nexser_files_menu {
+    min-width: 600px;
+    min-width: 300px;
+}
+
+#v {
+    position: absolute;
 }
 
 /* color_btn */
@@ -1069,10 +1118,6 @@ body::-webkit-scrollbar {
     left: 80px;
 }
 
-.resize {
-    resize: both;
-}
-
 /* miniwindow */
 
 .mini_window {
@@ -1183,9 +1228,9 @@ body::-webkit-scrollbar {
     border: solid 3px #c0c0c0;
     outline: 1px solid gray;
     outline-offset: 0.4px;
-    box-shadow: 0 0 0 1.5px whitesmoke,
-        0 0 0 2px dimgray,
-        0 0 0 2.5px black;
+    box-shadow: 0 0 0 1.5px dimgray,
+        0 0 0 3px white,
+        0 0 0 4px #000000;
     background: white;
     position: absolute;
     top: 45%;
@@ -1262,6 +1307,20 @@ body::-webkit-scrollbar {
     z-index: 999999;
 }
 
+.screen_saver3 {
+    display: none;
+    height: 100%;
+    width: 100%;
+    position: absolute;
+    background: gray;
+    color: white;
+    text-shadow: 5px 5px 2.5px black;
+    font-weight: bold;
+    font-size: x-large;
+    top: 0;
+    z-index: 999999;
+}
+
 .warning_icon {
     display: block;
     font-size: 13px;
@@ -1329,24 +1388,16 @@ body::-webkit-scrollbar {
     display: none;
 }
 
+.child_windows.minimization {
+    border: solid 3px red;
+}
+
 .child_windows.big {
     height: 100%;
     width: 100%;
     border: none;
     background: whitesmoke;
     resize: none;
-}
-
-.child_windows.leftwindow {
-    border-top: none;
-    border-bottom: none;
-    border-left: none;
-}
-
-.child_windows.rightwindow {
-    border-top: none;
-    border-bottom: none;
-    border-right: none;
 }
 
 .child_windows .title {
@@ -1377,6 +1428,10 @@ body::-webkit-scrollbar {
     border-bottom: 1.5px #000 solid;
     border-right: 1.5px #000 solid;
     outline: 1px solid gray;
+}
+
+.title span:nth-child(2) {
+    margin-left: 30px;
 }
 
 .child_windows.big .minscreen_button {
@@ -1844,7 +1899,8 @@ body::-webkit-scrollbar {
     right: 0px;
 }
 
-.bigscreen_button {
+.bigscreen_button,
+.bigscreen_button2 {
     display: inline-block;
     width: 19px;
     height: 19px;
@@ -1865,6 +1921,22 @@ body::-webkit-scrollbar {
         0px 0.3px 0px,
         -0.3px 0px 0px,
         0px -0.3px 0px;
+}
+
+.bigscreen_button_child {
+    border-top: solid 2px black;
+    position: absolute;
+    top: 3.5px;
+    left: 4px;
+    width: 8.5px;
+}
+
+.pressed .bigscreen_button_child {
+    border-top: solid 2px black;
+    position: absolute;
+    top: 4.5px;
+    left: 4.5px;
+    width: 8.5px;
 }
 
 .minscreen_button {
@@ -1934,7 +2006,7 @@ body::-webkit-scrollbar {
     position: absolute;
     top: 20px;
     width: auto;
-    background-color: #c0c0c0;
+    background-color: lightgray;
     border-right: solid 1.5px black;
     border-left: solid 1.5px whitesmoke;
     border-bottom: solid 1.5px black;
@@ -1989,7 +2061,6 @@ body::-webkit-scrollbar {
 }
 
 .window_inline_list {
-    margin-top: 0px;
     display: inline-flex;
     flex-wrap: wrap;
     background: whitesmoke;
@@ -2085,18 +2156,14 @@ body::-webkit-scrollbar {
 
 .note_area {
     outline: none;
-    height: 300px;
-    width: 100%;
-    min-width: max-content;
+    width: min-content;
     background: white;
     overflow: scroll;
     white-space: nowrap;
-}
-
-.child_windows.big .note_area {
     width: 100%;
-    height: 80vh;
+    height: 100%;
     resize: none;
+    position: absolute;
 }
 
 /* textarea */
@@ -2105,28 +2172,27 @@ textarea {
     display: block;
     border-radius: 0;
     outline: none;
+    padding: 2.5px;
 }
 
 /* objective */
 
 .objective_menu {
-    width: 750px;
-    height: 450px;
+    width: 800px;
+    height: 500px;
 }
 
 .objective_title_area {
     background: white;
     white-space: nowrap;
-    height: 100%;
 }
 
 .objective_area {
     background: whitesmoke;
     white-space: nowrap;
-    width: 100%;
-    height: 90%;
-    box-sizing: border-box;
+    resize: none;
     font-size: large;
+    position: absolute;
 }
 
 /* paint */
@@ -2443,8 +2509,6 @@ td {
     pointer-events: none;
 }
 
-
-
 /* background_pattern */
 
 .backgrounds1 {
@@ -2454,7 +2518,6 @@ td {
     z-index: 0;
     position: absolute;
     top: 0px;
-
     background-image: radial-gradient(black 1.5px, rgba(0, 0, 0, 0) 1.5px);
     background-size: 4px 4px;
 }
@@ -2466,7 +2529,6 @@ td {
     z-index: 0;
     position: absolute;
     top: 0px;
-
     background-image: radial-gradient(black 2px, rgba(0, 0, 0, 0) 2px);
     background-size: 10px 10px;
 }
@@ -2673,4 +2735,249 @@ progress::-webkit-progress-value {
     unicode-bidi: isolate;
     border-spacing: 2px;
     border-color: gray;
+}
+
+/* othello */
+
+.othello_board {
+    display: grid;
+    grid-template-columns: repeat(8, 50px);
+    gap: 2px;
+}
+
+.cell {
+    width: 50px;
+    height: 50px;
+    background-color: green;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.othello_black {
+    background-color: black;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+}
+
+.othello_white {
+    background-color: white;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+}
+
+
+.nexser_files_menu ul {
+    list-style-type: none;
+    padding-left: 20px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.nexser_files_menu ul li {
+    margin: 5px 0;
+    position: relative;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.nexser_files_menu ul li::before {
+    content: "\1F4C4";
+    position: absolute;
+    left: -20px;
+}
+
+.nexser_files_menu .nexser_files_file {
+    color: blue;
+    background: darkgray;
+    border-top: 1.5px dimgray solid;
+    border-left: 1.5px dimgray solid;
+    border-bottom: 1.5px whitesmoke solid;
+    border-right: 1.5px whitesmoke solid;
+}
+
+.nexser_files_menu .nexser_files_folder {
+    color: green;
+    font-weight: bold;
+    background: darkgray;
+    border-top: 1.5px dimgray solid;
+    border-left: 1.5px dimgray solid;
+    border-bottom: 1.5px whitesmoke solid;
+    border-right: 1.5px whitesmoke solid;
+    height: max-content;
+}
+
+.nexser_background_image {
+    display: block;
+    position: absolute;
+    z-index: 0;
+    /* pointer-events: none; */
+}
+
+.rectangle {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    position: absolute;
+    border: 1px solid deepskyblue;
+    background: skyblue;
+    opacity: 0.5;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* window resizes */
+.resizer {
+    width: 10px;
+    height: 10px;
+    position: absolute;
+    cursor: pointer;
+    z-index: 1;
+    margin: -2.5px;
+}
+
+.big .resizer {
+    display: none;
+}
+
+.minimization .resizer {
+    display: none;
+}
+
+.resizer.top-left {
+    top: -5px;
+    left: -5px;
+    cursor: nwse-resize;
+    z-index: 2;
+    width: 12.5px;
+    height: 12.5px;
+}
+
+.resizer.top-right {
+    top: -5px;
+    right: -5px;
+    cursor: nesw-resize;
+    z-index: 2;
+    width: 12.5px;
+    height: 12.5px;
+}
+
+.resizer.bottom-left {
+    bottom: -5px;
+    left: -5px;
+    cursor: nesw-resize;
+    z-index: 2;
+    width: 12.5px;
+    height: 12.5px;
+}
+
+.resizer.bottom-right {
+    bottom: -5px;
+    right: -5px;
+    cursor: nwse-resize;
+    z-index: 2;
+    width: 12.5px;
+    height: 12.5px;
+}
+
+.resizer.top {
+    top: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    cursor: ns-resize;
+    width: 100%;
+    z-index: 1;
+}
+
+.resizer.right {
+    top: 50%;
+    right: -5px;
+    transform: translateY(-50%);
+    cursor: ew-resize;
+    height: 100%;
+    z-index: 1;
+}
+
+.resizer.bottom {
+    bottom: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    cursor: ns-resize;
+    width: 100%;
+    z-index: 1;
+}
+
+.resizer.left {
+    top: 50%;
+    left: -5px;
+    transform: translateY(-50%);
+    cursor: ew-resize;
+    height: 100%;
+    z-index: 1;
+}
+
+
+/* memory_game */
+
+#game-board {
+    background: green;
+}
+
+.memory_game_menu {
+    width: 1100px;
+    height: 250px;
+}
+
+.card {
+    display: inline-block;
+    border: solid 2px gray;
+    box-shadow: 5px 5px black;
+    background: white;
+    color: black;
+    outline: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    list-style: none;
+    box-sizing: border-box;
+
+    width: 80px;
+    height: 100px;
+    text-align: center;
+    line-height: 100px;
+    font-size: 24px;
+    cursor: pointer;
+    margin: 5px;
+    margin-top: 30px;
+    font-weight: bold;
+    box-sizing: border-box;
+}
+
+.card_hidden {
+    border: solid 2px gray;
+    box-shadow: 5px 5px black;
+    background: white;
+}
+
+.card_matched {
+    background-color: #90EE90;
+}
+
+.pinned {
+    background-color: yellow;
+}
+
+.item_preview {
+    position: relative;
+}
+
+.testwindow2 {
+    position: absolute;
+    min-width: 250px;
+    min-height: 250px;
 }
