@@ -11313,7 +11313,8 @@
                                 dropArea.style.borderColor = &#039;#ccc&#039;;
                                 const files = event.dataTransfer.files;
                         
-                                for (const file of files) {
+                                // ファイルを1つずつ処理する関数
+                                const processFile = (file, x, y) =&gt; {
                                     const reader = new FileReader();
                                     reader.onload = (e) =&gt; {
                                         const result = e.target.result;
@@ -11324,22 +11325,11 @@
                                         windowDiv.style.top = `${event.clientY}px`;
                                         windowDiv.style.zIndex = largestZIndex++;
                         
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
                                         // 新しい子要素を生成して追加
                                         const newChild = document.createElement(&#039;div&#039;);
                                         newChild.className = &quot;title&quot;
                                         newChild.classList.add(&#039;testwindow_title&#039;);
                                         windowDiv.appendChild(newChild);
-                        
-                        
                         
                                         const newChild2 = document.createElement(&#039;span&#039;);
                                         newChild2.className = &quot;title_icon&quot;
@@ -11348,20 +11338,6 @@
                                         const newChild22 = document.createElement(&#039;span&#039;);
                                         newChild22.textContent = &#039;window &#039; + largestZIndex++;
                                         newChild.appendChild(newChild22);
-                        
-                                        setTimeout(() =&gt; {
-                                            document.querySelectorAll(&#039;.testwindow2&#039;).forEach(function (testwindow2) {
-                                                const testwindow2_1 = testwindow2.children[2];
-                                                const testwindow2_2 = testwindow2_1.firstElementChild;
-                                                console.log(testwindow2_1)
-                        
-                                                testwindow2_2.style.maxWidth = &quot;500px&quot;
-                                                testwindow2_2.style.maxHeight = &quot;500px&quot;
-                                                testwindow2_2.style.left = &quot;0&quot;
-                                                testwindow2.style.width = &quot;500px&quot;
-                                                testwindow2.style.height = testwindow2_2
-                                            })
-                                        }, 0);
                         
                                         // 新しい子要素を生成して追加
                                         const newChild3 = document.createElement(&#039;div&#039;);
@@ -11400,47 +11376,14 @@
                                         const newChild4_5 = document.createElement(&#039;br&#039;);
                                         newChild3.appendChild(newChild4_5);
                         
-                                        setTimeout(() =&gt; {
-                        
-                                            Array.from(document.getElementsByClassName(&#039;button2&#039;)).forEach((button2) =&gt; {
-                                                button2.addEventListener(&#039;mousedown&#039;, () =&gt; {
-                                                    button2.classList.add(&#039;pressed&#039;);
-                                                });
-                                                button2.addEventListener(&#039;mouseleave&#039;, () =&gt; {
-                                                    button2.classList.remove(&#039;pressed&#039;);
-                                                });
-                                                button2.addEventListener(&#039;mouseup&#039;, () =&gt; {
-                                                    button2.classList.remove(&#039;pressed&#039;);
-                                                });
-                                            });
-                        
-                                        }, 10);
-                        
-                                        newChild4.addEventListener(&#039;mousedown&#039;, () =&gt; {
-                                            newChild4.classList.add(&#039;pressed&#039;);
-                                        });
-                                        newChild4.addEventListener(&#039;mouseleave&#039;, () =&gt; {
-                                            newChild4.classList.remove(&#039;pressed&#039;);
-                                        });
-                                        newChild4.addEventListener(&#039;mouseup&#039;, () =&gt; {
-                                            newChild4.classList.remove(&#039;pressed&#039;);
-                                        });
-                                        newChild4.addEventListener(&#039;click&#039;, () =&gt; {
-                                            setTimeout(() =&gt; {
-                                                const newChild4_2 = newChild4.closest(&#039;.child_windows&#039;);
-                                                newChild4_2.classList.add(&#039;active&#039;);
-                                                newChild4_2.classList.remove(&#039;selectwindows&#039;);
-                                                newChild4_2.remove();
-                                                zindexwindow_addnavy();
-                                                titlecolor_set();
-                                                test_windows_button()
-                                            }, 100);
-                                        });
-                        
                                         // 新しい子要素を生成して追加
                                         const newChild6 = document.createElement(&#039;div&#039;);
                                         newChild6.className = &quot;window_contents&quot;
                                         windowDiv.appendChild(newChild6);
+                                        setTimeout(() =&gt; {
+                                            windowDiv.classList.add(&#039;no_create_windows&#039;);
+                                        }, 100);
+                        
                         
                                         if (file.type.startsWith(&#039;image/&#039;)) {
                                             windowDiv.classList.add(&#039;selectwindows&#039;);
@@ -11504,137 +11447,173 @@
                                                 zindexwindow_addnavy()
                                                 titlecolor_set()
                                             }, 100);
-                        
                                         }
                         
-                                        function addResizers2(element) {
-                                            const resizerPositions = [&#039;top-left&#039;, &#039;top-right&#039;, &#039;bottom-left&#039;, &#039;bottom-right&#039;, &#039;top&#039;, &#039;right&#039;, &#039;bottom&#039;, &#039;left&#039;];
-                                            resizerPositions.forEach(position =&gt; {
-                                                const resizer = document.createElement(&#039;div&#039;);
-                                                resizer.classList.add(&#039;resizer&#039;, position);
-                                                element.appendChild(resizer);
-                                            });
-                                        }
                         
-                                        function makeResizableDivs2(className) {
-                                            const elements = document.querySelectorAll(className);
-                                            elements.forEach(element =&gt; {
-                                                addResizers2(element);
-                                                const resizers = element.querySelectorAll(&#039;.resizer&#039;);
-                                                const minimum_size = 20;
-                                                let original_width = 0;
-                                                let original_height = 0;
-                                                let original_x = 0;
-                                                let original_y = 0;
-                                                let original_mouse_x = 0;
-                                                let original_mouse_y = 0;
                         
-                                                resizers.forEach(resizer =&gt; {
-                                                    resizer.addEventListener(&#039;mousedown&#039;, function (e) {
-                                                        e.preventDefault();
-                                                        original_width = parseFloat(getComputedStyle(element, null).getPropertyValue(&#039;width&#039;).replace(&#039;px&#039;, &#039;&#039;));
-                                                        original_height = parseFloat(getComputedStyle(element, null).getPropertyValue(&#039;height&#039;).replace(&#039;px&#039;, &#039;&#039;));
-                                                        original_x = element.getBoundingClientRect().left;
-                                                        original_y = element.getBoundingClientRect().top;
-                                                        original_mouse_x = e.pageX;
-                                                        original_mouse_y = e.pageY;
                         
-                                                        window.addEventListener(&#039;mousemove&#039;, resize2);
-                                                        window.addEventListener(&#039;mouseup&#039;, stopResize2);
-                                                    });
                         
-                                                    function resize2(e) {
-                                                        if (resizer.classList.contains(&#039;right&#039;)) {
-                                                            const width = original_width + (e.pageX - original_mouse_x);
-                                                            if (width &gt; minimum_size) {
-                                                                element.style.width = width + &#039;px&#039;;
-                                                            }
-                                                        } else if (resizer.classList.contains(&#039;left&#039;)) {
-                                                            const width = original_width - (e.pageX - original_mouse_x);
-                                                            if (width &gt; minimum_size) {
-                                                                element.style.width = width + &#039;px&#039;;
-                                                                element.style.left = original_x + (e.pageX - original_mouse_x) + &#039;px&#039;;
-                                                            }
-                                                        } else if (resizer.classList.contains(&#039;bottom&#039;)) {
-                                                            const height = original_height + (e.pageY - original_mouse_y);
-                                                            if (height &gt; minimum_size) {
-                                                                element.style.height = height + &#039;px&#039;;
-                                                            }
-                                                        } else if (resizer.classList.contains(&#039;top&#039;)) {
-                                                            const height = original_height - (e.pageY - original_mouse_y);
-                                                            if (height &gt; minimum_size) {
-                                                                element.style.height = height + &#039;px&#039;;
-                                                                element.style.top = original_y + (e.pageY - original_mouse_y) + &#039;px&#039;;
-                                                            }
-                                                        } else if (resizer.classList.contains(&#039;bottom-right&#039;)) {
-                                                            const width = original_width + (e.pageX - original_mouse_x);
-                                                            const height = original_height + (e.pageY - original_mouse_y);
-                                                            if (width &gt; minimum_size) {
-                                                                element.style.width = width + &#039;px&#039;;
-                                                            }
-                                                            if (height &gt; minimum_size) {
-                                                                element.style.height = height + &#039;px&#039;;
-                                                            }
-                                                        } else if (resizer.classList.contains(&#039;bottom-left&#039;)) {
-                                                            const height = original_height + (e.pageY - original_mouse_y);
-                                                            const width = original_width - (e.pageX - original_mouse_x);
-                                                            if (height &gt; minimum_size) {
-                                                                element.style.height = height + &#039;px&#039;;
-                                                            }
-                                                            if (width &gt; minimum_size) {
-                                                                element.style.width = width + &#039;px&#039;;
-                                                                element.style.left = original_x + (e.pageX - original_mouse_x) + &#039;px&#039;;
-                                                            }
-                                                        } else if (resizer.classList.contains(&#039;top-right&#039;)) {
-                                                            const width = original_width + (e.pageX - original_mouse_x);
-                                                            const height = original_height - (e.pageY - original_mouse_y);
-                                                            if (width &gt; minimum_size) {
-                                                                element.style.width = width + &#039;px&#039;;
-                                                            }
-                                                            if (height &gt; minimum_size) {
-                                                                element.style.height = height + &#039;px&#039;;
-                                                                element.style.top = original_y + (e.pageY - original_mouse_y) + &#039;px&#039;;
-                                                            }
-                                                        } else if (resizer.classList.contains(&#039;top-left&#039;)) {
-                                                            const width = original_width - (e.pageX - original_mouse_x);
-                                                            const height = original_height - (e.pageY - original_mouse_y);
-                                                            if (width &gt; minimum_size) {
-                                                                element.style.width = width + &#039;px&#039;;
-                                                                element.style.left = original_x + (e.pageX - original_mouse_x) + &#039;px&#039;;
-                                                            }
-                                                            if (height &gt; minimum_size) {
-                                                                element.style.height = height + &#039;px&#039;;
-                                                                element.style.top = original_y + (e.pageY - original_mouse_y) + &#039;px&#039;;
-                                                            }
-                                                        }
-                                                        const elements = document.querySelectorAll(&#039;.rectangle&#039;);
-                                                        // 各要素からクラスを削除
-                                                        elements.forEach(element =&gt; {
-                                                            element.classList.remove(&#039;rectangle&#039;);
-                                                        });
-                                                    }
                         
-                                                    function stopResize2() {
-                                                        window.removeEventListener(&#039;mousemove&#039;, resize2);
-                                                        window.removeEventListener(&#039;mouseup&#039;, stopResize2);
-                                                    }
+                        
+                        
+                        
+                                        setTimeout(() =&gt; {
+                        
+                                            document.querySelectorAll(&#039;.testwindow2:not(.no_create_windows)&#039;).forEach(function (testwindow2) {
+                                                const testwindow2_1 = testwindow2.children[2];
+                                                const testwindow2_2 = testwindow2_1.firstElementChild;
+                                                testwindow2_2.style.left = &quot;0&quot;
+                                                testwindow2_2.style.width = &quot;100%&quot;
+                                                testwindow2_2.style.height = &quot;95%&quot;
+                                                testwindow2.style.width = &quot;500px&quot;
+                                                testwindow2.style.height = &quot;400px&quot;
+                                            })
+                        
+                                            Array.from(document.getElementsByClassName(&#039;button2&#039;)).forEach((button2) =&gt; {
+                                                button2.addEventListener(&#039;mousedown&#039;, () =&gt; {
+                                                    button2.classList.add(&#039;pressed&#039;);
+                                                });
+                                                button2.addEventListener(&#039;mouseleave&#039;, () =&gt; {
+                                                    button2.classList.remove(&#039;pressed&#039;);
+                                                });
+                                                button2.addEventListener(&#039;mouseup&#039;, () =&gt; {
+                                                    button2.classList.remove(&#039;pressed&#039;);
                                                 });
                                             });
-                                        }
+                                            newChild4.addEventListener(&#039;mousedown&#039;, () =&gt; {
+                                                newChild4.classList.add(&#039;pressed&#039;);
+                                            });
+                                            newChild4.addEventListener(&#039;mouseleave&#039;, () =&gt; {
+                                                newChild4.classList.remove(&#039;pressed&#039;);
+                                            });
+                                            newChild4.addEventListener(&#039;mouseup&#039;, () =&gt; {
+                                                newChild4.classList.remove(&#039;pressed&#039;);
+                                            });
+                                            newChild4.addEventListener(&#039;click&#039;, () =&gt; {
+                                                setTimeout(() =&gt; {
+                                                    const newChild4_2 = newChild4.closest(&#039;.child_windows&#039;);
+                                                    newChild4_2.remove();
+                                                    zindexwindow_addnavy();
+                                                    titlecolor_set();
+                                                    test_windows_button()
+                                                }, 100);
+                                            });
                         
-                                        setTimeout(() =&gt; {
+                                            function addResizers2(element) {
+                                                const resizerPositions = [&#039;top-left&#039;, &#039;top-right&#039;, &#039;bottom-left&#039;, &#039;bottom-right&#039;, &#039;top&#039;, &#039;right&#039;, &#039;bottom&#039;, &#039;left&#039;];
+                                                resizerPositions.forEach(position =&gt; {
+                                                    const resizer = document.createElement(&#039;div&#039;);
+                                                    resizer.classList.add(&#039;resizer&#039;, position);
+                                                    element.appendChild(resizer);
+                                                });
+                                            }
+                        
+                                            function makeResizableDivs2(className) {
+                                                const elements = document.querySelectorAll(className);
+                                                elements.forEach(element =&gt; {
+                                                    addResizers2(element);
+                                                    const resizers = element.querySelectorAll(&#039;.resizer&#039;);
+                                                    const minimum_size = 20;
+                                                    let original_width = 0;
+                                                    let original_height = 0;
+                                                    let original_x = 0;
+                                                    let original_y = 0;
+                                                    let original_mouse_x = 0;
+                                                    let original_mouse_y = 0;
+                        
+                                                    resizers.forEach(resizer =&gt; {
+                                                        resizer.addEventListener(&#039;mousedown&#039;, function (e) {
+                                                            e.preventDefault();
+                                                            original_width = parseFloat(getComputedStyle(element, null).getPropertyValue(&#039;width&#039;).replace(&#039;px&#039;, &#039;&#039;));
+                                                            original_height = parseFloat(getComputedStyle(element, null).getPropertyValue(&#039;height&#039;).replace(&#039;px&#039;, &#039;&#039;));
+                                                            original_x = element.getBoundingClientRect().left;
+                                                            original_y = element.getBoundingClientRect().top;
+                                                            original_mouse_x = e.pageX;
+                                                            original_mouse_y = e.pageY;
+                                                            window.addEventListener(&#039;mousemove&#039;, resize2);
+                                                            window.addEventListener(&#039;mouseup&#039;, stopResize2);
+                                                        });
+                        
+                                                        function resize2(e) {
+                                                            if (resizer.classList.contains(&#039;right&#039;)) {
+                                                                const width = original_width + (e.pageX - original_mouse_x);
+                                                                if (width &gt; minimum_size) {
+                                                                    element.style.width = width + &#039;px&#039;;
+                                                                }
+                                                            } else if (resizer.classList.contains(&#039;left&#039;)) {
+                                                                const width = original_width - (e.pageX - original_mouse_x);
+                                                                if (width &gt; minimum_size) {
+                                                                    element.style.width = width + &#039;px&#039;;
+                                                                    element.style.left = original_x + (e.pageX - original_mouse_x) + &#039;px&#039;;
+                                                                }
+                                                            } else if (resizer.classList.contains(&#039;bottom&#039;)) {
+                                                                const height = original_height + (e.pageY - original_mouse_y);
+                                                                if (height &gt; minimum_size) {
+                                                                    element.style.height = height + &#039;px&#039;;
+                                                                }
+                                                            } else if (resizer.classList.contains(&#039;top&#039;)) {
+                                                                const height = original_height - (e.pageY - original_mouse_y);
+                                                                if (height &gt; minimum_size) {
+                                                                    element.style.height = height + &#039;px&#039;;
+                                                                    element.style.top = original_y + (e.pageY - original_mouse_y) + &#039;px&#039;;
+                                                                }
+                                                            } else if (resizer.classList.contains(&#039;bottom-right&#039;)) {
+                                                                const width = original_width + (e.pageX - original_mouse_x);
+                                                                const height = original_height + (e.pageY - original_mouse_y);
+                                                                if (width &gt; minimum_size) {
+                                                                    element.style.width = width + &#039;px&#039;;
+                                                                }
+                                                                if (height &gt; minimum_size) {
+                                                                    element.style.height = height + &#039;px&#039;;
+                                                                }
+                                                            } else if (resizer.classList.contains(&#039;bottom-left&#039;)) {
+                                                                const height = original_height + (e.pageY - original_mouse_y);
+                                                                const width = original_width - (e.pageX - original_mouse_x);
+                                                                if (height &gt; minimum_size) {
+                                                                    element.style.height = height + &#039;px&#039;;
+                                                                }
+                                                                if (width &gt; minimum_size) {
+                                                                    element.style.width = width + &#039;px&#039;;
+                                                                    element.style.left = original_x + (e.pageX - original_mouse_x) + &#039;px&#039;;
+                                                                }
+                                                            } else if (resizer.classList.contains(&#039;top-right&#039;)) {
+                                                                const width = original_width + (e.pageX - original_mouse_x);
+                                                                const height = original_height - (e.pageY - original_mouse_y);
+                                                                if (width &gt; minimum_size) {
+                                                                    element.style.width = width + &#039;px&#039;;
+                                                                }
+                                                                if (height &gt; minimum_size) {
+                                                                    element.style.height = height + &#039;px&#039;;
+                                                                    element.style.top = original_y + (e.pageY - original_mouse_y) + &#039;px&#039;;
+                                                                }
+                                                            } else if (resizer.classList.contains(&#039;top-left&#039;)) {
+                                                                const width = original_width - (e.pageX - original_mouse_x);
+                                                                const height = original_height - (e.pageY - original_mouse_y);
+                                                                if (width &gt; minimum_size) {
+                                                                    element.style.width = width + &#039;px&#039;;
+                                                                    element.style.left = original_x + (e.pageX - original_mouse_x) + &#039;px&#039;;
+                                                                }
+                                                                if (height &gt; minimum_size) {
+                                                                    element.style.height = height + &#039;px&#039;;
+                                                                    element.style.top = original_y + (e.pageY - original_mouse_y) + &#039;px&#039;;
+                                                                }
+                                                            }
+                                                            const elements = document.querySelectorAll(&#039;.rectangle&#039;);
+                                                            // 各要素からクラスを削除
+                                                            elements.forEach(element =&gt; {
+                                                                element.classList.remove(&#039;rectangle&#039;);
+                                                            });
+                                                        }
+                        
+                                                        function stopResize2() {
+                                                            window.removeEventListener(&#039;mousemove&#039;, resize2);
+                                                            window.removeEventListener(&#039;mouseup&#039;, stopResize2);
+                                                        }
+                                                    });
+                                                });
+                                            }
+                        
                                             makeResizableDivs2(&#039;.testwindow2&#039;);
-                                        }, 10);
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                                        setTimeout(() =&gt; {
                         
                                             document.querySelectorAll(&#039;.testwindow2, .child&#039;).forEach(function (z_index_child_windows) {
                                                 const zindexchildwindows = z_index_child_windows.closest(&#039;.testwindow2&#039;);
@@ -11644,14 +11623,12 @@
                         
                                                     setTimeout(() =&gt; {
                                                         document.querySelectorAll(&#039;.testwindow2&#039;).forEach(function (testwindow2) {
-                                                            const hehehe1 = testwindow2.firstElementChild;
-                                                            console.log(hehehe1)
-                        
                                                             const testwindow2_1 = testwindow2.children[2];
                                                             const testwindow2_2 = testwindow2_1.firstElementChild;
-                        
                                                             testwindow2_2.style.maxWidth = `${testwindow2.clientWidth + - + 5}px`;
                                                             testwindow2_2.style.maxHeight = `${testwindow2.clientHeight + - + 25}px`;
+                                                            testwindow2_2.style.width = &quot;100%&quot;
+                                                            testwindow2_2.style.height = &quot;100%&quot;
                                                             testwindow2_2.style.left = &quot;0&quot;
                                                         })
                                                         zindexchildwindows.style.zIndex = largestZIndex++;
@@ -11726,8 +11703,6 @@
                         
                                                         document.querySelectorAll(&#039;.testwindow2&#039;).forEach(function (testwindow2) {
                                                             const hehehe1 = testwindow2.firstElementChild;
-                                                            console.log(hehehe1)
-                        
                                                             const testwindow2_1 = testwindow2.children[2];
                                                             const testwindow2_2 = testwindow2_1.firstElementChild;
                         
@@ -11794,8 +11769,6 @@
                         
                                                         document.querySelectorAll(&#039;.testwindow2&#039;).forEach(function (testwindow2) {
                                                             const hehehe1 = testwindow2.firstElementChild;
-                                                            console.log(hehehe1)
-                        
                                                             const testwindow2_1 = testwindow2.children[2];
                                                             const testwindow2_2 = testwindow2_1.firstElementChild;
                         
@@ -11926,40 +11899,41 @@
                                             document.querySelectorAll(&#039;.testwindow2&#039;).forEach(function (testwindow2) {
                                                 testwindow2.addEventListener(&#039;mousemove&#039;, function () {
                                                     const hehehe1 = testwindow2.firstElementChild;
-                                                    console.log(hehehe1)
-                        
                                                     const testwindow2_1 = testwindow2.children[2];
                                                     const testwindow2_2 = testwindow2_1.firstElementChild;
-                        
-                        
                                                     if (hehehe1.classList.contains(&#039;navy&#039;) &amp;&amp; !testwindow2.classList.contains(&#039;big&#039;)) {
                                                         testwindow2_2.style.maxWidth = `${testwindow2.clientWidth + - + 5}px`;
                                                         testwindow2_2.style.maxHeight = `${testwindow2.clientHeight + - + 25}px`;
+                                                        testwindow2_2.style.width = &quot;100%&quot;;
+                                                        testwindow2_2.style.height = &quot;100%&quot;;
                                                         testwindow2_2.style.left = &quot;0&quot;
                                                     }
                                                 })
                                             });
                         
-                                        }, 10);
+                                        }, 0);
                         
                                         dropArea.appendChild(windowDiv);
                         
-                        
-                        
                                     };
                                     reader.readAsDataURL(file);
-                                    const elements = document.querySelectorAll(&#039;.rectangle&#039;);
-                                    elements.forEach(element =&gt; {
-                                        element.classList.remove(&#039;rectangle&#039;);
-                                    });
-                        
-                        
                                 }
+                        
+                                // 各ファイルを1つずつ処理
+                                for (let i = 0; i &lt; files.length; i++) {
+                                    const file = files[i];
+                                    setTimeout(() =&gt; {
+                                        processFile(file, event.clientX, event.clientY);
+                                    }, i * 250);
+                                }
+                        
+                                const elements = document.querySelectorAll(&#039;.rectangle&#039;);
+                                elements.forEach(element =&gt; {
+                                    element.classList.remove(&#039;rectangle&#039;);
+                                });
                             });
                         
-                        
                         };
-                        
                         
 
                 </textarea>
@@ -11968,7 +11942,170 @@
             <code>
                     <textarea id="code_script2" class="white_text" style="display: none; width: 99%; height: 65vh; background-color: black; resize: none; outline: none;">
 
-
+                        const error_windows = document.querySelector(&#039;.error_windows&#039;);
+                        const warning_windows = document.querySelector(&#039;.warning_windows&#039;);
+                        const prompt_text2 = document.querySelector(&#039;.prompt_text2&#039;);
+                        
+                        const sound_play_button = document.getElementsByClassName(&#039;sound_play_button&#039;);
+                        const sound_stop_button = document.getElementsByClassName(&#039;sound_stop_button&#039;);
+                        
+                        let sound_1 = new Audio(&quot;nexser_sounds/The-Microsoft-Sound.mp3&quot;);
+                        let sound_2 = new Audio(&quot;nexser_sounds/tada.mp3&quot;);
+                        let sound_3 = new Audio(&quot;nexser_sounds/chord.mp3&quot;);
+                        let sound_4 = new Audio(&quot;nexser_sounds/chimes.mp3&quot;);
+                        let sound_5 = new Audio(&quot;nexser_sounds/ding.mp3&quot;);
+                        let sound_6 = new Audio(&quot;nexser_sounds/utopia.mp3&quot;);
+                        let sound_7 = new Audio(&quot;nexser_sounds/welcome.mp3&quot;);
+                        let sound_8 = new Audio(&quot;nexser_sounds/windows98.start.mp3&quot;);
+                        let sound_9 = new Audio(&quot;nexser_sounds/windows98.logoff.mp3&quot;);
+                        let sound_10 = new Audio(&quot;nexser_sounds/windows2000_startup.mp3&quot;);
+                        let sound_11 = new Audio(&quot;nexser_sounds/windows2000_shutdown.mp3&quot;);
+                        let sound_12 = new Audio(&quot;nexser_sounds/windowsxp_startup.mp3&quot;);
+                        let sound_13 = new Audio(&quot;nexser_sounds/windowsxp_shutdown.mp3&quot;);
+                        sound_1.preload = &#039;auto&#039;;
+                        sound_2.preload = &#039;auto&#039;;
+                        sound_3.preload = &#039;auto&#039;;
+                        sound_4.preload = &#039;auto&#039;;
+                        sound_5.preload = &#039;auto&#039;;
+                        sound_6.preload = &#039;auto&#039;;
+                        sound_7.preload = &#039;auto&#039;;
+                        sound_8.preload = &#039;auto&#039;;
+                        sound_9.preload = &#039;auto&#039;;
+                        sound_10.preload = &#039;auto&#039;;
+                        sound_11.preload = &#039;auto&#039;;
+                        sound_12.preload = &#039;auto&#039;;
+                        sound_13.preload = &#039;auto&#039;;
+                        
+                        function sound() {
+                            if (localStorage.getItem(&#039;driver_sound&#039;)) {
+                                sound_1.play();
+                            }
+                        }
+                        function sound2() {
+                            if (localStorage.getItem(&#039;driver_sound&#039;)) {
+                                sound_2.play();
+                            }
+                        }
+                        function sound3() {
+                            if (localStorage.getItem(&#039;driver_sound&#039;)) {
+                                sound_3.play();
+                            }
+                        }
+                        function sound4() {
+                            if (localStorage.getItem(&#039;driver_sound&#039;)) {
+                                sound_4.play();
+                            }
+                        }
+                        function sound5() {
+                            if (localStorage.getItem(&#039;driver_sound&#039;)) {
+                                sound_5.play();
+                            }
+                        }
+                        function sound6() {
+                            if (localStorage.getItem(&#039;driver_sound&#039;)) {
+                                sound_6.play();
+                            }
+                        }
+                        function sound7() {
+                            if (localStorage.getItem(&#039;driver_sound&#039;)) {
+                                sound_7.play();
+                            }
+                        }
+                        function sound8() {
+                            if (localStorage.getItem(&#039;driver_sound&#039;)) {
+                                sound_8.play();
+                            }
+                        }
+                        function sound9() {
+                            if (localStorage.getItem(&#039;driver_sound&#039;)) {
+                                sound_9.play();
+                            }
+                        }
+                        function sound10() {
+                            if (localStorage.getItem(&#039;driver_sound&#039;)) {
+                                sound_10.play();
+                            }
+                        }
+                        function sound11() {
+                            if (localStorage.getItem(&#039;driver_sound&#039;)) {
+                                sound_11.play();
+                            }
+                        }
+                        function sound12() {
+                            if (localStorage.getItem(&#039;driver_sound&#039;)) {
+                                sound_12.play();
+                            }
+                        }
+                        function sound13() {
+                            if (localStorage.getItem(&#039;driver_sound&#039;)) {
+                                sound_13.play();
+                            }
+                        }
+                        
+                        function sound_stop() {
+                            sound_1.pause();
+                            sound_2.pause();
+                            sound_3.pause();
+                            sound_4.pause();
+                            sound_5.pause();
+                            sound_6.pause();
+                            sound_7.pause();
+                            sound_8.pause();
+                            sound_9.pause();
+                            sound_10.pause();
+                            sound_11.pause();
+                            sound_12.pause();
+                            sound_13.pause();
+                            sound_1.currentTime = 0;
+                            sound_2.currentTime = 0;
+                            sound_3.currentTime = 0;
+                            sound_4.currentTime = 0;
+                            sound_5.currentTime = 0;
+                            sound_6.currentTime = 0;
+                            sound_7.currentTime = 0;
+                            sound_8.currentTime = 0;
+                            sound_9.currentTime = 0;
+                            sound_10.currentTime = 0;
+                            sound_11.currentTime = 0;
+                            sound_12.currentTime = 0;
+                            sound_13.currentTime = 0;
+                        
+                            Array.from(sound_play_button).forEach((sound_play_buttons) =&gt; {
+                                sound_play_buttons.textContent = &quot;▶&quot;
+                            })
+                        }
+                        
+                        Array.from(sound_play_button).forEach((sound_play_buttons) =&gt; {
+                            sound_play_buttons.textContent = &quot;▶&quot;
+                        })
+                        Array.from(sound_play_button).forEach((sound_play_buttons) =&gt; {
+                            sound_play_buttons.addEventListener(&#039;mousedown&#039;, function () {
+                                sound_stop()
+                                Array.from(sound_play_button).forEach((sound_play_buttons) =&gt; {
+                                    sound_play_buttons.textContent = &quot;▶&quot;
+                                })
+                            })
+                            sound_play_buttons.addEventListener(&#039;click&#039;, function () {
+                                if (!localStorage.getItem(&#039;driver_sound&#039;)) {
+                                    document.querySelector(&#039;.window_error_text&#039;).textContent = &quot;driver sound no install!&quot;
+                                    error_windows.classList.remove(&#039;active&#039;)
+                                    prompt_text2.style.color = &quot;&quot;;
+                                    document.querySelector(&#039;.test_allwindow&#039;).style.display = &quot;block&quot;;
+                                    sound3()
+                                    sound_play_buttons.textContent = &quot;▶&quot;
+                                } else {
+                                    sound_play_buttons.textContent = &quot;||&quot;
+                                }
+                            })
+                        })
+                        Array.from(sound_stop_button).forEach((sound_stop_buttons) =&gt; {
+                            sound_stop_buttons.addEventListener(&#039;mousedown&#039;, function () {
+                                sound_stop()
+                                Array.from(sound_play_button).forEach((sound_play_buttons) =&gt; {
+                                    sound_play_buttons.textContent = &quot;▶&quot;
+                                })
+                            })
+                        })
 
                 </textarea>
                 </code>

@@ -7130,7 +7130,8 @@ if (ua.includes("mobile")) {
         dropArea.style.borderColor = '#ccc';
         const files = event.dataTransfer.files;
 
-        for (const file of files) {
+        // ファイルを1つずつ処理する関数
+        const processFile = (file, x, y) => {
             const reader = new FileReader();
             reader.onload = (e) => {
                 const result = e.target.result;
@@ -7141,22 +7142,11 @@ if (ua.includes("mobile")) {
                 windowDiv.style.top = `${event.clientY}px`;
                 windowDiv.style.zIndex = largestZIndex++;
 
-
-
-
-
-
-
-
-
-
                 // 新しい子要素を生成して追加
                 const newChild = document.createElement('div');
                 newChild.className = "title"
                 newChild.classList.add('testwindow_title');
                 windowDiv.appendChild(newChild);
-
-
 
                 const newChild2 = document.createElement('span');
                 newChild2.className = "title_icon"
@@ -7165,20 +7155,6 @@ if (ua.includes("mobile")) {
                 const newChild22 = document.createElement('span');
                 newChild22.textContent = 'window ' + largestZIndex++;
                 newChild.appendChild(newChild22);
-
-                setTimeout(() => {
-                    document.querySelectorAll('.testwindow2').forEach(function (testwindow2) {
-                        const testwindow2_1 = testwindow2.children[2];
-                        const testwindow2_2 = testwindow2_1.firstElementChild;
-                        console.log(testwindow2_1)
-
-                        testwindow2_2.style.maxWidth = "500px"
-                        testwindow2_2.style.maxHeight = "500px"
-                        testwindow2_2.style.left = "0"
-                        testwindow2.style.width = "500px"
-                        testwindow2.style.height = testwindow2_2
-                    })
-                }, 0);
 
                 // 新しい子要素を生成して追加
                 const newChild3 = document.createElement('div');
@@ -7217,47 +7193,14 @@ if (ua.includes("mobile")) {
                 const newChild4_5 = document.createElement('br');
                 newChild3.appendChild(newChild4_5);
 
-                setTimeout(() => {
-
-                    Array.from(document.getElementsByClassName('button2')).forEach((button2) => {
-                        button2.addEventListener('mousedown', () => {
-                            button2.classList.add('pressed');
-                        });
-                        button2.addEventListener('mouseleave', () => {
-                            button2.classList.remove('pressed');
-                        });
-                        button2.addEventListener('mouseup', () => {
-                            button2.classList.remove('pressed');
-                        });
-                    });
-
-                }, 10);
-
-                newChild4.addEventListener('mousedown', () => {
-                    newChild4.classList.add('pressed');
-                });
-                newChild4.addEventListener('mouseleave', () => {
-                    newChild4.classList.remove('pressed');
-                });
-                newChild4.addEventListener('mouseup', () => {
-                    newChild4.classList.remove('pressed');
-                });
-                newChild4.addEventListener('click', () => {
-                    setTimeout(() => {
-                        const newChild4_2 = newChild4.closest('.child_windows');
-                        newChild4_2.classList.add('active');
-                        newChild4_2.classList.remove('selectwindows');
-                        newChild4_2.remove();
-                        zindexwindow_addnavy();
-                        titlecolor_set();
-                        test_windows_button()
-                    }, 100);
-                });
-
                 // 新しい子要素を生成して追加
                 const newChild6 = document.createElement('div');
                 newChild6.className = "window_contents"
                 windowDiv.appendChild(newChild6);
+                setTimeout(() => {
+                    windowDiv.classList.add('no_create_windows');
+                }, 100);
+
 
                 if (file.type.startsWith('image/')) {
                     windowDiv.classList.add('selectwindows');
@@ -7321,137 +7264,173 @@ if (ua.includes("mobile")) {
                         zindexwindow_addnavy()
                         titlecolor_set()
                     }, 100);
-
                 }
 
-                function addResizers2(element) {
-                    const resizerPositions = ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'top', 'right', 'bottom', 'left'];
-                    resizerPositions.forEach(position => {
-                        const resizer = document.createElement('div');
-                        resizer.classList.add('resizer', position);
-                        element.appendChild(resizer);
-                    });
-                }
 
-                function makeResizableDivs2(className) {
-                    const elements = document.querySelectorAll(className);
-                    elements.forEach(element => {
-                        addResizers2(element);
-                        const resizers = element.querySelectorAll('.resizer');
-                        const minimum_size = 20;
-                        let original_width = 0;
-                        let original_height = 0;
-                        let original_x = 0;
-                        let original_y = 0;
-                        let original_mouse_x = 0;
-                        let original_mouse_y = 0;
 
-                        resizers.forEach(resizer => {
-                            resizer.addEventListener('mousedown', function (e) {
-                                e.preventDefault();
-                                original_width = parseFloat(getComputedStyle(element, null).getPropertyValue('width').replace('px', ''));
-                                original_height = parseFloat(getComputedStyle(element, null).getPropertyValue('height').replace('px', ''));
-                                original_x = element.getBoundingClientRect().left;
-                                original_y = element.getBoundingClientRect().top;
-                                original_mouse_x = e.pageX;
-                                original_mouse_y = e.pageY;
 
-                                window.addEventListener('mousemove', resize2);
-                                window.addEventListener('mouseup', stopResize2);
-                            });
 
-                            function resize2(e) {
-                                if (resizer.classList.contains('right')) {
-                                    const width = original_width + (e.pageX - original_mouse_x);
-                                    if (width > minimum_size) {
-                                        element.style.width = width + 'px';
-                                    }
-                                } else if (resizer.classList.contains('left')) {
-                                    const width = original_width - (e.pageX - original_mouse_x);
-                                    if (width > minimum_size) {
-                                        element.style.width = width + 'px';
-                                        element.style.left = original_x + (e.pageX - original_mouse_x) + 'px';
-                                    }
-                                } else if (resizer.classList.contains('bottom')) {
-                                    const height = original_height + (e.pageY - original_mouse_y);
-                                    if (height > minimum_size) {
-                                        element.style.height = height + 'px';
-                                    }
-                                } else if (resizer.classList.contains('top')) {
-                                    const height = original_height - (e.pageY - original_mouse_y);
-                                    if (height > minimum_size) {
-                                        element.style.height = height + 'px';
-                                        element.style.top = original_y + (e.pageY - original_mouse_y) + 'px';
-                                    }
-                                } else if (resizer.classList.contains('bottom-right')) {
-                                    const width = original_width + (e.pageX - original_mouse_x);
-                                    const height = original_height + (e.pageY - original_mouse_y);
-                                    if (width > minimum_size) {
-                                        element.style.width = width + 'px';
-                                    }
-                                    if (height > minimum_size) {
-                                        element.style.height = height + 'px';
-                                    }
-                                } else if (resizer.classList.contains('bottom-left')) {
-                                    const height = original_height + (e.pageY - original_mouse_y);
-                                    const width = original_width - (e.pageX - original_mouse_x);
-                                    if (height > minimum_size) {
-                                        element.style.height = height + 'px';
-                                    }
-                                    if (width > minimum_size) {
-                                        element.style.width = width + 'px';
-                                        element.style.left = original_x + (e.pageX - original_mouse_x) + 'px';
-                                    }
-                                } else if (resizer.classList.contains('top-right')) {
-                                    const width = original_width + (e.pageX - original_mouse_x);
-                                    const height = original_height - (e.pageY - original_mouse_y);
-                                    if (width > minimum_size) {
-                                        element.style.width = width + 'px';
-                                    }
-                                    if (height > minimum_size) {
-                                        element.style.height = height + 'px';
-                                        element.style.top = original_y + (e.pageY - original_mouse_y) + 'px';
-                                    }
-                                } else if (resizer.classList.contains('top-left')) {
-                                    const width = original_width - (e.pageX - original_mouse_x);
-                                    const height = original_height - (e.pageY - original_mouse_y);
-                                    if (width > minimum_size) {
-                                        element.style.width = width + 'px';
-                                        element.style.left = original_x + (e.pageX - original_mouse_x) + 'px';
-                                    }
-                                    if (height > minimum_size) {
-                                        element.style.height = height + 'px';
-                                        element.style.top = original_y + (e.pageY - original_mouse_y) + 'px';
-                                    }
-                                }
-                                const elements = document.querySelectorAll('.rectangle');
-                                // 各要素からクラスを削除
-                                elements.forEach(element => {
-                                    element.classList.remove('rectangle');
-                                });
-                            }
 
-                            function stopResize2() {
-                                window.removeEventListener('mousemove', resize2);
-                                window.removeEventListener('mouseup', stopResize2);
-                            }
+
+
+
+                setTimeout(() => {
+
+                    document.querySelectorAll('.testwindow2:not(.no_create_windows)').forEach(function (testwindow2) {
+                        const testwindow2_1 = testwindow2.children[2];
+                        const testwindow2_2 = testwindow2_1.firstElementChild;
+                        testwindow2_2.style.left = "0"
+                        testwindow2_2.style.width = "100%"
+                        testwindow2_2.style.height = "95%"
+                        testwindow2.style.width = "500px"
+                        testwindow2.style.height = "400px"
+                    })
+
+                    Array.from(document.getElementsByClassName('button2')).forEach((button2) => {
+                        button2.addEventListener('mousedown', () => {
+                            button2.classList.add('pressed');
+                        });
+                        button2.addEventListener('mouseleave', () => {
+                            button2.classList.remove('pressed');
+                        });
+                        button2.addEventListener('mouseup', () => {
+                            button2.classList.remove('pressed');
                         });
                     });
-                }
+                    newChild4.addEventListener('mousedown', () => {
+                        newChild4.classList.add('pressed');
+                    });
+                    newChild4.addEventListener('mouseleave', () => {
+                        newChild4.classList.remove('pressed');
+                    });
+                    newChild4.addEventListener('mouseup', () => {
+                        newChild4.classList.remove('pressed');
+                    });
+                    newChild4.addEventListener('click', () => {
+                        setTimeout(() => {
+                            const newChild4_2 = newChild4.closest('.child_windows');
+                            newChild4_2.remove();
+                            zindexwindow_addnavy();
+                            titlecolor_set();
+                            test_windows_button()
+                        }, 100);
+                    });
 
-                setTimeout(() => {
+                    function addResizers2(element) {
+                        const resizerPositions = ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'top', 'right', 'bottom', 'left'];
+                        resizerPositions.forEach(position => {
+                            const resizer = document.createElement('div');
+                            resizer.classList.add('resizer', position);
+                            element.appendChild(resizer);
+                        });
+                    }
+
+                    function makeResizableDivs2(className) {
+                        const elements = document.querySelectorAll(className);
+                        elements.forEach(element => {
+                            addResizers2(element);
+                            const resizers = element.querySelectorAll('.resizer');
+                            const minimum_size = 20;
+                            let original_width = 0;
+                            let original_height = 0;
+                            let original_x = 0;
+                            let original_y = 0;
+                            let original_mouse_x = 0;
+                            let original_mouse_y = 0;
+
+                            resizers.forEach(resizer => {
+                                resizer.addEventListener('mousedown', function (e) {
+                                    e.preventDefault();
+                                    original_width = parseFloat(getComputedStyle(element, null).getPropertyValue('width').replace('px', ''));
+                                    original_height = parseFloat(getComputedStyle(element, null).getPropertyValue('height').replace('px', ''));
+                                    original_x = element.getBoundingClientRect().left;
+                                    original_y = element.getBoundingClientRect().top;
+                                    original_mouse_x = e.pageX;
+                                    original_mouse_y = e.pageY;
+                                    window.addEventListener('mousemove', resize2);
+                                    window.addEventListener('mouseup', stopResize2);
+                                });
+
+                                function resize2(e) {
+                                    if (resizer.classList.contains('right')) {
+                                        const width = original_width + (e.pageX - original_mouse_x);
+                                        if (width > minimum_size) {
+                                            element.style.width = width + 'px';
+                                        }
+                                    } else if (resizer.classList.contains('left')) {
+                                        const width = original_width - (e.pageX - original_mouse_x);
+                                        if (width > minimum_size) {
+                                            element.style.width = width + 'px';
+                                            element.style.left = original_x + (e.pageX - original_mouse_x) + 'px';
+                                        }
+                                    } else if (resizer.classList.contains('bottom')) {
+                                        const height = original_height + (e.pageY - original_mouse_y);
+                                        if (height > minimum_size) {
+                                            element.style.height = height + 'px';
+                                        }
+                                    } else if (resizer.classList.contains('top')) {
+                                        const height = original_height - (e.pageY - original_mouse_y);
+                                        if (height > minimum_size) {
+                                            element.style.height = height + 'px';
+                                            element.style.top = original_y + (e.pageY - original_mouse_y) + 'px';
+                                        }
+                                    } else if (resizer.classList.contains('bottom-right')) {
+                                        const width = original_width + (e.pageX - original_mouse_x);
+                                        const height = original_height + (e.pageY - original_mouse_y);
+                                        if (width > minimum_size) {
+                                            element.style.width = width + 'px';
+                                        }
+                                        if (height > minimum_size) {
+                                            element.style.height = height + 'px';
+                                        }
+                                    } else if (resizer.classList.contains('bottom-left')) {
+                                        const height = original_height + (e.pageY - original_mouse_y);
+                                        const width = original_width - (e.pageX - original_mouse_x);
+                                        if (height > minimum_size) {
+                                            element.style.height = height + 'px';
+                                        }
+                                        if (width > minimum_size) {
+                                            element.style.width = width + 'px';
+                                            element.style.left = original_x + (e.pageX - original_mouse_x) + 'px';
+                                        }
+                                    } else if (resizer.classList.contains('top-right')) {
+                                        const width = original_width + (e.pageX - original_mouse_x);
+                                        const height = original_height - (e.pageY - original_mouse_y);
+                                        if (width > minimum_size) {
+                                            element.style.width = width + 'px';
+                                        }
+                                        if (height > minimum_size) {
+                                            element.style.height = height + 'px';
+                                            element.style.top = original_y + (e.pageY - original_mouse_y) + 'px';
+                                        }
+                                    } else if (resizer.classList.contains('top-left')) {
+                                        const width = original_width - (e.pageX - original_mouse_x);
+                                        const height = original_height - (e.pageY - original_mouse_y);
+                                        if (width > minimum_size) {
+                                            element.style.width = width + 'px';
+                                            element.style.left = original_x + (e.pageX - original_mouse_x) + 'px';
+                                        }
+                                        if (height > minimum_size) {
+                                            element.style.height = height + 'px';
+                                            element.style.top = original_y + (e.pageY - original_mouse_y) + 'px';
+                                        }
+                                    }
+                                    const elements = document.querySelectorAll('.rectangle');
+                                    // 各要素からクラスを削除
+                                    elements.forEach(element => {
+                                        element.classList.remove('rectangle');
+                                    });
+                                }
+
+                                function stopResize2() {
+                                    window.removeEventListener('mousemove', resize2);
+                                    window.removeEventListener('mouseup', stopResize2);
+                                }
+                            });
+                        });
+                    }
+
                     makeResizableDivs2('.testwindow2');
-                }, 10);
-
-
-
-
-
-
-
-
-
-                setTimeout(() => {
 
                     document.querySelectorAll('.testwindow2, .child').forEach(function (z_index_child_windows) {
                         const zindexchildwindows = z_index_child_windows.closest('.testwindow2');
@@ -7461,14 +7440,12 @@ if (ua.includes("mobile")) {
 
                             setTimeout(() => {
                                 document.querySelectorAll('.testwindow2').forEach(function (testwindow2) {
-                                    const hehehe1 = testwindow2.firstElementChild;
-                                    console.log(hehehe1)
-
                                     const testwindow2_1 = testwindow2.children[2];
                                     const testwindow2_2 = testwindow2_1.firstElementChild;
-
                                     testwindow2_2.style.maxWidth = `${testwindow2.clientWidth + - + 5}px`;
                                     testwindow2_2.style.maxHeight = `${testwindow2.clientHeight + - + 25}px`;
+                                    testwindow2_2.style.width = "100%"
+                                    testwindow2_2.style.height = "100%"
                                     testwindow2_2.style.left = "0"
                                 })
                                 zindexchildwindows.style.zIndex = largestZIndex++;
@@ -7543,8 +7520,6 @@ if (ua.includes("mobile")) {
 
                                 document.querySelectorAll('.testwindow2').forEach(function (testwindow2) {
                                     const hehehe1 = testwindow2.firstElementChild;
-                                    console.log(hehehe1)
-
                                     const testwindow2_1 = testwindow2.children[2];
                                     const testwindow2_2 = testwindow2_1.firstElementChild;
 
@@ -7611,8 +7586,6 @@ if (ua.includes("mobile")) {
 
                                 document.querySelectorAll('.testwindow2').forEach(function (testwindow2) {
                                     const hehehe1 = testwindow2.firstElementChild;
-                                    console.log(hehehe1)
-
                                     const testwindow2_1 = testwindow2.children[2];
                                     const testwindow2_2 = testwindow2_1.firstElementChild;
 
@@ -7743,37 +7716,38 @@ if (ua.includes("mobile")) {
                     document.querySelectorAll('.testwindow2').forEach(function (testwindow2) {
                         testwindow2.addEventListener('mousemove', function () {
                             const hehehe1 = testwindow2.firstElementChild;
-                            console.log(hehehe1)
-
                             const testwindow2_1 = testwindow2.children[2];
                             const testwindow2_2 = testwindow2_1.firstElementChild;
-
-
                             if (hehehe1.classList.contains('navy') && !testwindow2.classList.contains('big')) {
                                 testwindow2_2.style.maxWidth = `${testwindow2.clientWidth + - + 5}px`;
                                 testwindow2_2.style.maxHeight = `${testwindow2.clientHeight + - + 25}px`;
+                                testwindow2_2.style.width = "100%";
+                                testwindow2_2.style.height = "100%";
                                 testwindow2_2.style.left = "0"
                             }
                         })
                     });
 
-                }, 10);
+                }, 0);
 
                 dropArea.appendChild(windowDiv);
 
-
-
             };
             reader.readAsDataURL(file);
-            const elements = document.querySelectorAll('.rectangle');
-            elements.forEach(element => {
-                element.classList.remove('rectangle');
-            });
-
-
         }
+
+        // 各ファイルを1つずつ処理
+        for (let i = 0; i < files.length; i++) {
+            const file = files[i];
+            setTimeout(() => {
+                processFile(file, event.clientX, event.clientY);
+            }, i * 250);
+        }
+
+        const elements = document.querySelectorAll('.rectangle');
+        elements.forEach(element => {
+            element.classList.remove('rectangle');
+        });
     });
 
-
 };
-
