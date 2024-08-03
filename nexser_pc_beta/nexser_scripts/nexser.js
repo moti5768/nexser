@@ -121,9 +121,9 @@ if (ua.includes("mobile")) {
     });
     document.addEventListener('mouseup', () => {
         isDrawing = false;
-        // if (rectangle) {
-        document.body.removeChild(rectangle);
-        // }
+        if (rectangle) {
+            document.body.removeChild(rectangle);
+        }
     });
 
 
@@ -1095,6 +1095,9 @@ if (ua.includes("mobile")) {
                         document.querySelector('.note_title').textContent = "notepad"
                     }
                     setTimeout(() => {
+                        document.querySelectorAll('.testwindow2').forEach(function (testwindow2) {
+                            testwindow2.remove()
+                        })
                         window_none();
                         desktop.style.display = "none";
                         localStorage.removeItem('prompt_data');
@@ -1837,7 +1840,7 @@ if (ua.includes("mobile")) {
             document.querySelector('.shutdown_button').style.display = "block";
             document.querySelector('.warningclose_button').style.display = "none";
             document.querySelector('.warning_title_text').textContent = "nexser";
-            document.querySelector('.window_warning_text').textContent = "nexser alldata remove!!";
+            document.querySelector('.window_warning_text').textContent = "nexserのデータを全削除しました!";
             document.querySelector('.installbutton_1').textContent = "install";
             document.querySelector('.startup_sound').textContent = "INSTALL";
             document.querySelector('.startup_versiontext').textContent = "OFF";
@@ -2062,7 +2065,6 @@ if (ua.includes("mobile")) {
         document.querySelector('.focus').value = ""
     }
 
-    // document.addEventListener('DOMContentLoaded', pageLoad)
     function pageLoad() {
         let textbox = document.querySelector('.name');
         textbox.addEventListener('keydown', enterKeyPress);
@@ -2072,15 +2074,6 @@ if (ua.includes("mobile")) {
                 butotnClick()
             }
         }
-
-        let textbox2 = document.querySelector('.name2');
-        textbox2.addEventListener('keydown', enterKeyPress2);
-
-        function enterKeyPress2(event) {
-            if (event.key === 'Enter') {
-                butotnClick2()
-            }
-        }
     }
 
     function butotnClick() {
@@ -2088,8 +2081,27 @@ if (ua.includes("mobile")) {
         prompt_text_check();
     }
 
-    function butotnClick2() {
-        prompt_text_check2();
+    function handleKeyDown(event, input) {
+        if (event.key === 'Enter') {
+            executeCommand(input);
+        }
+    }
+
+    function executeCommand(input) {
+        prompt_text_check2()
+        // 入力フォームを無効化
+        input.disabled = true;
+        document.querySelector('.name2').classList.remove('name2');
+        document.querySelector('.focus2').classList.remove('focus2');
+        // 新しい入力フォームを生成
+        const newInputContainer = document.createElement('div');
+        newInputContainer.className = 'input_container';
+        newInputContainer.innerHTML = `
+            <span class="small">nexser/></span><input type="text" class="command_input2 name2 focus2" placeholder="|" onkeydown="handleKeyDown(event, this)">
+        `;
+        // 新しい入力フォームを追加
+        document.getElementById('form_container').appendChild(newInputContainer);
+        document.querySelector('.focus2').focus()
     }
 
     function prompt_text_check() {
@@ -2529,7 +2541,6 @@ if (ua.includes("mobile")) {
             case 'allwindow/open':
                 prompt_text2.style.color = "";
                 window_active();
-                ;
                 cpucalc_open();
                 break;
             case 'allwindow/min':
@@ -2606,6 +2617,8 @@ if (ua.includes("mobile")) {
                 prompt_text2.style.color = "red";
                 break;
         }
+        zindexwindow_addnavy()
+        titlecolor_set()
     }
 
 
@@ -3331,17 +3344,15 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.child_windows, .child').forEach(function (z_index_child_windows) {
         const zindexchildwindows = z_index_child_windows.closest('.child_windows');
         z_index_child_windows.addEventListener('mousedown', function () {
-            zindexchildwindows.scrollTop = 0;
-            zindexchildwindows.scrollLeft = 0;
             start_menu.style.display = "none";
             document.querySelector('.start_button').classList.remove('pressed');
-
-            window_z_index = zindexchildwindows.style.zIndex = largestZIndex++;
+            zindexchildwindows.scrollTop = 0;
+            zindexchildwindows.scrollLeft = 0;
             getLargestZIndex('.child_windows');
             z_index.textContent = getLargestZIndex('.child_windows');
-            zindexwindow_addnavy()
-            titlecolor_set()
-
+            window_z_index = zindexchildwindows.style.zIndex = largestZIndex++;
+            zindexwindow_addnavy();
+            titlecolor_set();
             const elements = document.querySelectorAll('.rectangle');
             elements.forEach(element => {
                 element.classList.remove('rectangle');
@@ -3742,7 +3753,6 @@ if (ua.includes("mobile")) {
     function cpucalc_open() {
         const cpumenu1 = document.querySelector('.cpumenu_1');
         document.getElementsByClassName('cpu_calc_menu')[0].style.zIndex = largestZIndex++;
-        document.getElementsByClassName('focus2')[0].blur()
 
         if (!cpu_calc_menu.classList.contains('active') || cpumenu1.style.display == "block") {
             setTimeout(() => {
@@ -3756,6 +3766,9 @@ if (ua.includes("mobile")) {
                 }, 0);
             }, 3000);
         }
+        setTimeout(() => {
+            document.getElementsByClassName('focus2')[0].blur()
+        }, 0);
     }
 
     function cpucalc_reset() {
@@ -3839,13 +3852,12 @@ if (ua.includes("mobile")) {
     }
 
     function zindexwindow_addnavy() {
-        alltitle_navyreomve()
-        assignClassToFrontmostElement('child_windows:not(.active)', 'navy');
-        titlecolor_set()
+        setTimeout(() => {
+            alltitle_navyreomve()
+            assignClassToFrontmostElement('child_windows:not(.active)', 'navy');
+            titlecolor_set()
+        }, 0);
     }
-
-    // document.querySelector('.time').addEventListener('click', function () {
-    // })
 
     const note_parent = document.querySelector('.note_pad');
     const note_child = document.getElementById('note_text');
@@ -5551,142 +5563,6 @@ if (ua.includes("mobile")) {
         document.querySelector('.cpu_run_text4').textContent = "";
     }
 
-
-    const exportedData = localStorage.getItem("noteData");
-    const exportedData2 = localStorage.getItem("BKCOLOR");
-    const exportedData3 = localStorage.getItem("COLOR");
-    const exportedData4 = localStorage.getItem("driver_color");
-    const exportedData5 = localStorage.getItem("driver_sound");
-
-    document.getElementById("download").addEventListener("click", function () {
-        if (localStorage.getItem("noteData")) {
-            const blob = new Blob([exportedData], { type: "text/plain" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = "nexser_NOTEDATA.nex";
-            a.click();
-            URL.revokeObjectURL(url);
-        }
-
-        if (localStorage.getItem("BKCOLOR")) {
-            const blob2 = new Blob([exportedData2], { type: "text/plain" });
-            const url2 = URL.createObjectURL(blob2);
-            const a2 = document.createElement("a");
-            a2.href = url2;
-            a2.download = "nexser_BKCOLOR.nex";
-            a2.click();
-            URL.revokeObjectURL(url2);
-        }
-
-        if (localStorage.getItem("COLOR")) {
-            const blob3 = new Blob([exportedData3], { type: "text/plain" });
-            const url3 = URL.createObjectURL(blob3);
-            const a3 = document.createElement("a");
-            a3.href = url3;
-            a3.download = "nexser_COLOR.nex";
-            a3.click();
-            URL.revokeObjectURL(url3);
-        }
-
-        if (localStorage.getItem("driver_color")) {
-            const blob4 = new Blob([exportedData4], { type: "text/plain" });
-            const url4 = URL.createObjectURL(blob4);
-            const a4 = document.createElement("a");
-            a4.href = url4;
-            a4.download = "nexser_DRIVER_COLOR.nex";
-            a4.click();
-            URL.revokeObjectURL(url4);
-        }
-
-        if (localStorage.getItem("driver_sound")) {
-            const blob5 = new Blob([exportedData5], { type: "text/plain" });
-            const url5 = URL.createObjectURL(blob5);
-            const a5 = document.createElement("a");
-            a5.href = url5;
-            a5.download = "nexser_DRIVER_SOUND.nex";
-            a5.click();
-            URL.revokeObjectURL(url5);
-        }
-
-    });
-
-
-    function fileChanged(input) {
-        for (let i = 0; i < input.files.length; i++) {
-            const file = input.files[i];
-            const reader = new FileReader(exportedData);
-            reader.readAsText(file, 'UTF-8');
-            reader.onload = () => {
-                console.log(reader.result);
-                localStorage.setItem("noteData", reader.result)// JavaScriptオブジェクトとして表示
-            };
-            setTimeout(() => {
-                load()
-            }, 500);
-        }
-    }
-    function fileChanged2(input) {
-        for (let i = 0; i < input.files.length; i++) {
-            const file2 = input.files[i];
-            const reader2 = new FileReader(exportedData2);
-            reader2.readAsText(file2, 'UTF-8');
-            reader2.onload = () => {
-                console.log(reader2.result);
-                localStorage.setItem("BKCOLOR", reader2.result) // JavaScriptオブジェクトとして表示
-                setTimeout(() => {
-                    getStorage();
-                    setStorage()
-                    setColor()
-                }, 500);
-            };
-        }
-    }
-    function fileChanged3(input) {
-        for (let i = 0; i < input.files.length; i++) {
-            const file3 = input.files[i];
-            const reader3 = new FileReader(exportedData3);
-            reader3.readAsText(file3, 'UTF-8');
-            reader3.onload = () => {
-                console.log(reader3.result);
-                localStorage.setItem("COLOR", reader3.result) // JavaScriptオブジェクトとして表示
-                setTimeout(() => {
-                    getStorage();
-                    setStorage()
-                    setColor()
-                }, 500);
-            };
-        }
-    }
-    function fileChanged4(input) {
-        for (let i = 0; i < input.files.length; i++) {
-            const file4 = input.files[i];
-            const reader4 = new FileReader(exportedData4);
-            reader4.readAsText(file4, 'UTF-8');
-            reader4.onload = () => {
-                console.log(reader4.result);
-                localStorage.setItem("driver_color", reader4.result) // JavaScriptオブジェクトとして表示
-                document.querySelector('.installbutton_2').textContent = "uninstall"
-                setTimeout(() => {
-                    getStorage();
-                    setStorage()
-                    setColor()
-                }, 500);
-            };
-        }
-    }
-    function fileChanged5(input) {
-        for (let i = 0; i < input.files.length; i++) {
-            const file5 = input.files[i];
-            const reader5 = new FileReader(exportedData4);
-            reader5.readAsText(file5, 'UTF-8');
-            reader5.onload = () => {
-                console.log(reader5.result);
-                localStorage.setItem("driver_sound", reader5.result) // JavaScriptオブジェクトとして表示
-                document.querySelector('.installbutton_1').textContent = "uninstall"
-            };
-        }
-    }
 
     function savertime() {
         const stime = document.getElementsByClassName('saver_second')[0].value;
@@ -7749,5 +7625,68 @@ if (ua.includes("mobile")) {
             element.classList.remove('rectangle');
         });
     });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    // ローカルストレージの内容を外部出力
+    document.getElementById('exportButton').addEventListener('click', function () {
+        const localStorageData = JSON.stringify(localStorage);
+        const blob = new Blob([localStorageData], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'nexser_localstorage_data.json';
+        a.click();
+        URL.revokeObjectURL(url);
+    });
+
+    // 外部出力したローカルストレージを読み込む
+    document.getElementById('fileInput').addEventListener('change', function (event) {
+        const file = event.target.files[0];
+        const reader = new FileReader();
+
+        reader.onload = function (event) {
+            const data = JSON.parse(event.target.result);
+            for (const key in data) {
+                localStorage.setItem(key, data[key]);
+            }
+            document.querySelector('.warning_title_text').textContent = "nexser"
+            document.querySelector('.window_warning_text').textContent = "ローカルストレージが復元されました! ページを再読み込みしてください。";
+            warning_windows.style.display = "block"
+            document.querySelector('.close_button3').style.display = "block"
+            sound5()
+            document.querySelector('.test_allwindow').style.display = "block";
+            document.querySelector('.shutdown_button').style.display = "none";
+            document.querySelector('.warningclose_button').style.display = "none";
+        };
+
+        reader.readAsText(file);
+    });
+
 
 };
