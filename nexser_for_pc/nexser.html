@@ -1745,7 +1745,6 @@
                             <span class="title_icon"></span><span>nexser prompt beta</span>
                         </div>
 
-
                         <div class="title_buttons">
                             <span class="drag_button">&nbsp;</span>
                             <span class="close_button button2" onclick="p_clear()"></span>
@@ -1786,10 +1785,14 @@
                             <div class="prompt_text2">
                                 <p>[nexser prompt beta version 1.5]</p>
                             </div>
-                            <form autocomplete="off" method="get" name="prompt_text_form2" onsubmit="return false;"
-                                onkeydown="if(event.keyCode == 13){return false;}">
-                                <textarea class="name2 focus2" name="prompt_text2" placeholder="|"></textarea>
-                            </form>
+                            <div id="form_container">
+                                <div class="input_container">
+                                    <span class="small">nexser/></span><input type="text"
+                                        class="command_input2 name2 focus2" placeholder="|"
+                                        onkeydown="handleKeyDown(event, this);if(event.keyCode == 13){return false;}">
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -2670,29 +2673,16 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
 
                         </div>
                         <div class="border2 window_contents">
-                            <p>export</p>
-                            <span id="download" class="button2">data download</span><br>
+                            <p>エクスポート</p>
+                            <span id="exportButton" class="button2 apply_button2"
+                                style="width: max-content;">ローカルストレージを外部出力</span><br>
+
                             <div class="mini_window">
-                                <p>inport</p>
+                                <p>インポート</p>
                                 <label>
-                                    <span class="button2">NOTEDATA</span><input class="button2" type="file"
-                                        onchange="fileChanged(this)" style="display: none;">
-                                </label><br>
-                                <label>
-                                    <span class="button2">BKCOLOR</span><input class="button2" type="file"
-                                        onchange="fileChanged2(this)" style="display: none;">
-                                </label><br>
-                                <label>
-                                    <span class="button2">COLOR</span><input class="button2" type="file"
-                                        onchange="fileChanged3(this)" style="display: none;">
-                                </label><br>
-                                <label>
-                                    <span class="button2">DRIVER_COLOR</span><input class="button2" type="file"
-                                        onchange="fileChanged4(this)" style="display: none;">
-                                </label><br>
-                                <label>
-                                    <span class="button2">DRIVER_SOUND</span><input class="button2" type="file"
-                                        onchange="fileChanged5(this)" style="display: none;">
+                                    <span class="button2 apply_button"
+                                        style="width: max-content;">外部出力したnexserのデータをインポート</span>
+                                    <input class="button2" type="file" id="fileInput">
                                 </label>
                             </div>
                         </div>
