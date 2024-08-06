@@ -276,7 +276,6 @@ li {
     font-family: Courier;
 }
 
-
 .focus2 {
     font-family: Courier;
 }
@@ -290,10 +289,14 @@ li {
     -ms-user-select: none;
     user-select: none;
     position: absolute;
+    width: 100%;
+    resize: none;
 }
 
 .window_prompt_content2 {
     position: absolute;
+    display: block;
+    width: 100%;
 }
 
 .command_input2 {
@@ -301,11 +304,17 @@ li {
     position: relative;
     font-size: small;
     width: 100%;
-    height: max-content;
+    height: 12.5px;
     border: none;
     outline: none;
     color: white;
     background: black;
+    resize: none;
+}
+
+#form_container {
+    width: 100%;
+    height: 100%;
 }
 
 .input_container {
@@ -313,7 +322,7 @@ li {
     font-size: small;
 }
 
-.focus2::-webkit-scrollbar {
+.input_container>textarea::-webkit-scrollbar {
     display: none;
 }
 
@@ -2242,7 +2251,7 @@ textarea {
 /* htmlviewer */
 
 #editor {
-    width: 100%;
+    width: 99%;
     height: 100vh;
     position: relative;
     min-width: 800px;
@@ -2275,9 +2284,8 @@ textarea {
 }
 
 #preview {
-    display: block;
     width: 100%;
-    height: 100vh;
+    height: 100%;
     background: whitesmoke;
 }
 
@@ -2286,11 +2294,6 @@ textarea {
     height: 50vh;
     min-width: 200px;
     min-height: 22.5px;
-}
-
-.child_windows.big #preview {
-    width: 99.9%;
-    height: 95.0vh;
 }
 
 /* power_icon */

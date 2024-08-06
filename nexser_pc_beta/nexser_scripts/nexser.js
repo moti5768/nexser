@@ -1204,7 +1204,7 @@ if (ua.includes("mobile")) {
                     }, 1500);
                 } else {
                     document.getElementById('nex').style.cursor = '';
-                    document.querySelector('.window_error_text').textContent = "window open no restart!"
+                    document.querySelector('.window_error_text').textContent = "全てのウィンドウが閉じてないため、再起動できません!"
                     error_windows.classList.remove('active')
                     prompt_text2.style.color = "";
                     document.querySelector('.test_allwindow').style.display = "block";
@@ -1768,9 +1768,9 @@ if (ua.includes("mobile")) {
         document.querySelectorAll('.child_windows').forEach(function (allwindow_none) {
             allwindow_none.classList.add('active');
             allwindow_none.classList.remove('big');
-
             allwindow_none.classList.remove('rightwindow');
             allwindow_none.classList.remove('leftwindow');
+            allwindow_none.classList.remove('selectwindows');
             allwindow_none.style.right = "";
             windowposition_reset()
             allwindow_none.style.transition = "";
@@ -1819,7 +1819,6 @@ if (ua.includes("mobile")) {
     })
 
     function alldata_clear() {
-        // localStorage.removeItem('data_taskbar_none');
         toolbar.style.display = "none";
         colordata_clear();
         old_screen_reset();
@@ -2099,19 +2098,33 @@ if (ua.includes("mobile")) {
         prompt_text_check2()
         // 入力フォームを無効化
         input.disabled = true;
+        document.querySelector('.name2').classList.add('pointer_none');
         document.querySelector('.name2').classList.remove('name2');
         document.querySelector('.focus2').classList.remove('focus2');
         // 新しい入力フォームを生成
         const newInputContainer = document.createElement('div');
         newInputContainer.className = 'input_container';
         newInputContainer.classList.add('prompt_hukusei2');
-        newInputContainer.innerHTML = `
-            <span class="small">nexser/></span><input type="text" class="command_input2 name2 focus2" placeholder="|" onkeydown="handleKeyDown(event, this)">
-        `;
+        newInputContainer.innerHTML = `<span class="small">nexser/></span><textarea rows="1" class="command_input2 name2 focus2" placeholder="|" onkeydown="handleKeyDown(event, this)"></textarea>`;
         // 新しい入力フォームを追加
         document.getElementById('form_container').appendChild(newInputContainer);
+        setTimeout(() => {
+            commandarea_resize()
+        }, 0);
+
+    }
+
+    function commandarea_resize() {
+        const textarea = document.querySelector('.focus2');
+        textarea.addEventListener('input', () => {
+            textarea.style.height = 'auto'; // 高さをリセット
+            textarea.style.height = textarea.scrollHeight + 'px'; // 内容に応じて高さを設定
+        });
         document.querySelector('.focus2').focus()
     }
+
+    commandarea_resize()
+
 
     function nexser_prompt_reset() {
         setTimeout(() => {
@@ -2120,8 +2133,10 @@ if (ua.includes("mobile")) {
             })
             document.querySelector('.command2').classList.add('name2');
             document.querySelector('.command2').classList.add('focus2');
+            document.querySelector('.command2').classList.remove('pointer_none');
             document.querySelector('.command2').disabled = false;
             document.querySelector('.focus2').focus();
+            document.querySelector('.focus2').style.height = "";
             prompt2_text_clear();
             prompt_text2.style.color = "";
         }, 10);
@@ -2296,7 +2311,6 @@ if (ua.includes("mobile")) {
             case command_9 + i2:
                 prompt_text2.style.color = "";
 
-                // let arraySplit = i2.split('');
                 let newStr = (String(i2).replace(/[a-z]/gi, "")
                     .replaceAll("01|", "A").replaceAll("02|", "B").replaceAll("03|", "C").replaceAll("04|", "D").replaceAll("05|", "E").replaceAll("06|", "F")
                     .replaceAll("07|", "G").replaceAll("08|", "H").replaceAll("09|", "I").replaceAll("10|", "J").replaceAll("11|", "K").replaceAll("12|", "L")
@@ -3959,6 +3973,19 @@ if (ua.includes("mobile")) {
         }
     };
     resize_background_image();
+
+
+    const htmlview_parent = document.querySelector('.htmlviewer_run_menu');
+    const htmlview_child = document.querySelector('.html_view');
+    const htmlview_resize = () => {
+        const hehehe1 = htmlview_parent.firstElementChild;
+        if (hehehe1.classList.contains('navy')) {
+            htmlview_child.style.width = `${htmlview_parent.clientWidth + - + 0}px`;
+            htmlview_child.style.height = `${htmlview_parent.clientHeight + - + 20}px`;
+        }
+    };
+    htmlview_parent.addEventListener('mousemove', htmlview_resize);
+
 
 
     document.querySelectorAll('.drag_button').forEach(function (drag) {
@@ -7724,6 +7751,8 @@ if (ua.includes("mobile")) {
         const reader = new FileReader();
 
         reader.onload = function (event) {
+            localStorage.clear();
+            sessionStorage.clear();
             const data = JSON.parse(event.target.result);
             for (const key in data) {
                 localStorage.setItem(key, data[key]);

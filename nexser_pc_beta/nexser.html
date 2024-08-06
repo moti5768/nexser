@@ -1855,10 +1855,9 @@
                                                         &lt;/div&gt;
                                                         &lt;div id=&quot;form_container&quot;&gt;
                                                             &lt;div class=&quot;input_container&quot;&gt;
-                                                                &lt;span class=&quot;small&quot;&gt;nexser/&gt;&lt;/span&gt;&lt;input type=&quot;text&quot;
+                                                                &lt;span class=&quot;small&quot;&gt;nexser/&gt;&lt;/span&gt;&lt;textarea rows=&quot;1&quot;
                                                                     class=&quot;command_input2 name2 focus2 command2&quot; placeholder=&quot;|&quot;
-                                                                    onkeydown=&quot;handleKeyDown(event, this);if(event.keyCode == 13){return false;}&quot;&gt;
-                                                                &lt;/p&gt;
+                                                                    onkeydown=&quot;handleKeyDown(event, this);if(event.keyCode == 13){return false;}&quot;&gt;&lt;/textarea&gt;
                                                             &lt;/div&gt;
                                                         &lt;/div&gt;
                                                     &lt;/div&gt;
@@ -2563,7 +2562,7 @@
                                                     &lt;span class=&quot;minimization_button button2&quot;&gt;&lt;/span&gt;&lt;br&gt;
                                                 &lt;/div&gt;
                         
-                                                &lt;div class=&quot;mini_window window_content&quot;&gt;
+                                                &lt;div class=&quot;window_content&quot;&gt;
                         
                                                     &lt;textarea id=&quot;editor&quot; class=&quot;border2&quot; style=&quot;background: whitesmoke;&quot;&gt;&lt;/textarea&gt;
                         
@@ -2586,7 +2585,6 @@
                                                     &lt;span class=&quot;title_icon&quot;&gt;&lt;/span&gt;&lt;span&gt;html viewer run&lt;/span&gt;
                                                 &lt;/div&gt;
                         
-                        
                                                 &lt;div class=&quot;title_buttons&quot;&gt;
                                                     &lt;span class=&quot;drag_button&quot;&gt;&amp;nbsp;&lt;/span&gt;
                                                     &lt;span class=&quot;close_button button2&quot;&gt;&lt;/span&gt;
@@ -2594,7 +2592,7 @@
                                                     &lt;span class=&quot;minscreen_button button2&quot;&gt;&lt;/span&gt;
                                                     &lt;span class=&quot;minimization_button button2&quot;&gt;&lt;/span&gt;&lt;br&gt;
                                                 &lt;/div&gt;
-                                                &lt;div&gt;
+                                                &lt;div class=&quot;html_view&quot;&gt;
                                                     &lt;iframe id=&quot;preview&quot; class=&quot;border2&quot;&gt;&lt;/iframe&gt;
                                                 &lt;/div&gt;
                                             &lt;/div&gt;
@@ -2750,7 +2748,7 @@
                                                         style=&quot;width: max-content;&quot;&gt;ローカルストレージを外部出力&lt;/span&gt;&lt;br&gt;
                         
                                                     &lt;div class=&quot;mini_window&quot;&gt;
-                                                        &lt;p&gt;インポート&lt;/p&gt;
+                                                        &lt;p&gt;インポート&lt;br&gt;&lt;span class=&quot;red_text small&quot;&gt;(※今まで編集していたデータは削除されます!)&lt;/span&gt;&lt;/p&gt;
                                                         &lt;label&gt;
                                                             &lt;span class=&quot;button2 apply_button&quot;
                                                                 style=&quot;width: max-content;&quot;&gt;外部出力したnexserのデータをインポート&lt;/span&gt;
@@ -3468,13 +3466,6 @@
                                                 &lt;/div&gt;
                                             &lt;/div&gt;
                         
-                        
-                        
-                        
-                        
-                        
-                        
-                        
                                             &lt;div class=&quot;child_windows url_drop_menu resize active&quot;&gt;
                                                 &lt;div class=&quot;title&quot;&gt;
                                                     &lt;span class=&quot;title_icon&quot;&gt;&lt;/span&gt;&lt;span&gt;url drop&lt;/span&gt;
@@ -3524,7 +3515,8 @@
                                                 &lt;/div&gt;
                                                 &lt;div class=&quot;window_bottom&quot; style=&quot;display: flex;&quot;&gt;
                                                     &lt;p style=&quot;width: 100%;&quot;&gt;揃ったペアの数:&amp;nbsp;&lt;span id=&quot;match-count&quot;&gt;0&lt;/span&gt;
-                        
+                                                        &lt;span class=&quot;button2 apply_button&quot; style=&quot;margin-left: 10px;&quot;
+                                                            onclick=&quot;resetGame()&quot;&gt;reset&lt;/span&gt;
                                                         &lt;span style=&quot;position: absolute; bottom: 0; right: 0;&quot;&gt;経過時間:
                                                             &lt;span id=&quot;elapsed-time&quot;&gt;0&lt;/span&gt;秒&lt;/span&gt;
                                                     &lt;/p&gt;
@@ -4094,7 +4086,7 @@
                                                     &lt;span class=&quot;drag_button2 border2&quot; style=&quot;cursor: all-scroll;&quot;&gt;&amp;emsp;&amp;nbsp;&lt;/span&gt;
                                                     &lt;span class=&quot;button2 nexser_search&quot;&gt;&amp;nbsp;&lt;span class=&quot;magnifying_glass&quot;&gt;&lt;/span&gt;
                                                     &lt;/span&gt;
-                                                    &lt;span class=&quot;button2&quot;&gt;&amp;nbsp;T&amp;nbsp;&lt;/span&gt;
+                                                    &lt;span class=&quot;button2 test_button26&quot;&gt;&amp;nbsp;D&amp;nbsp;&lt;/span&gt;
                                                     &lt;span class=&quot;button2&quot;&gt;&amp;nbsp;T&amp;nbsp;&lt;/span&gt;
                                                     &lt;span class=&quot;button2&quot;&gt;&amp;nbsp;T&amp;nbsp;&lt;/span&gt;
                                                     &lt;span class=&quot;button2&quot;&gt;&amp;nbsp;T&amp;nbsp;&lt;/span&gt;
@@ -5383,7 +5375,7 @@
                                             }, 1500);
                                         } else {
                                             document.getElementById(&#039;nex&#039;).style.cursor = &#039;&#039;;
-                                            document.querySelector(&#039;.window_error_text&#039;).textContent = &quot;window open no restart!&quot;
+                                            document.querySelector(&#039;.window_error_text&#039;).textContent = &quot;全てのウィンドウが閉じてないため、再起動できません!&quot;
                                             error_windows.classList.remove(&#039;active&#039;)
                                             prompt_text2.style.color = &quot;&quot;;
                                             document.querySelector(&#039;.test_allwindow&#039;).style.display = &quot;block&quot;;
@@ -5947,9 +5939,9 @@
                                 document.querySelectorAll(&#039;.child_windows&#039;).forEach(function (allwindow_none) {
                                     allwindow_none.classList.add(&#039;active&#039;);
                                     allwindow_none.classList.remove(&#039;big&#039;);
-                        
                                     allwindow_none.classList.remove(&#039;rightwindow&#039;);
                                     allwindow_none.classList.remove(&#039;leftwindow&#039;);
+                                    allwindow_none.classList.remove(&#039;selectwindows&#039;);
                                     allwindow_none.style.right = &quot;&quot;;
                                     windowposition_reset()
                                     allwindow_none.style.transition = &quot;&quot;;
@@ -5998,7 +5990,6 @@
                             })
                         
                             function alldata_clear() {
-                                // localStorage.removeItem(&#039;data_taskbar_none&#039;);
                                 toolbar.style.display = &quot;none&quot;;
                                 colordata_clear();
                                 old_screen_reset();
@@ -6278,19 +6269,33 @@
                                 prompt_text_check2()
                                 // 入力フォームを無効化
                                 input.disabled = true;
+                                document.querySelector(&#039;.name2&#039;).classList.add(&#039;pointer_none&#039;);
                                 document.querySelector(&#039;.name2&#039;).classList.remove(&#039;name2&#039;);
                                 document.querySelector(&#039;.focus2&#039;).classList.remove(&#039;focus2&#039;);
                                 // 新しい入力フォームを生成
                                 const newInputContainer = document.createElement(&#039;div&#039;);
                                 newInputContainer.className = &#039;input_container&#039;;
                                 newInputContainer.classList.add(&#039;prompt_hukusei2&#039;);
-                                newInputContainer.innerHTML = `
-                                    &lt;span class=&quot;small&quot;&gt;nexser/&gt;&lt;/span&gt;&lt;input type=&quot;text&quot; class=&quot;command_input2 name2 focus2&quot; placeholder=&quot;|&quot; onkeydown=&quot;handleKeyDown(event, this)&quot;&gt;
-                                `;
+                                newInputContainer.innerHTML = `&lt;span class=&quot;small&quot;&gt;nexser/&gt;&lt;/span&gt;&lt;textarea rows=&quot;1&quot; class=&quot;command_input2 name2 focus2&quot; placeholder=&quot;|&quot; onkeydown=&quot;handleKeyDown(event, this)&quot;&gt;&lt;/textarea&gt;`;
                                 // 新しい入力フォームを追加
                                 document.getElementById(&#039;form_container&#039;).appendChild(newInputContainer);
+                                setTimeout(() =&gt; {
+                                    commandarea_resize()
+                                }, 0);
+                        
+                            }
+                        
+                            function commandarea_resize() {
+                                const textarea = document.querySelector(&#039;.focus2&#039;);
+                                textarea.addEventListener(&#039;input&#039;, () =&gt; {
+                                    textarea.style.height = &#039;auto&#039;; // 高さをリセット
+                                    textarea.style.height = textarea.scrollHeight + &#039;px&#039;; // 内容に応じて高さを設定
+                                });
                                 document.querySelector(&#039;.focus2&#039;).focus()
                             }
+                        
+                            commandarea_resize()
+                        
                         
                             function nexser_prompt_reset() {
                                 setTimeout(() =&gt; {
@@ -6299,8 +6304,10 @@
                                     })
                                     document.querySelector(&#039;.command2&#039;).classList.add(&#039;name2&#039;);
                                     document.querySelector(&#039;.command2&#039;).classList.add(&#039;focus2&#039;);
+                                    document.querySelector(&#039;.command2&#039;).classList.remove(&#039;pointer_none&#039;);
                                     document.querySelector(&#039;.command2&#039;).disabled = false;
                                     document.querySelector(&#039;.focus2&#039;).focus();
+                                    document.querySelector(&#039;.focus2&#039;).style.height = &quot;&quot;;
                                     prompt2_text_clear();
                                     prompt_text2.style.color = &quot;&quot;;
                                 }, 10);
@@ -6475,7 +6482,6 @@
                                     case command_9 + i2:
                                         prompt_text2.style.color = &quot;&quot;;
                         
-                                        // let arraySplit = i2.split(&#039;&#039;);
                                         let newStr = (String(i2).replace(/[a-z]/gi, &quot;&quot;)
                                             .replaceAll(&quot;01|&quot;, &quot;A&quot;).replaceAll(&quot;02|&quot;, &quot;B&quot;).replaceAll(&quot;03|&quot;, &quot;C&quot;).replaceAll(&quot;04|&quot;, &quot;D&quot;).replaceAll(&quot;05|&quot;, &quot;E&quot;).replaceAll(&quot;06|&quot;, &quot;F&quot;)
                                             .replaceAll(&quot;07|&quot;, &quot;G&quot;).replaceAll(&quot;08|&quot;, &quot;H&quot;).replaceAll(&quot;09|&quot;, &quot;I&quot;).replaceAll(&quot;10|&quot;, &quot;J&quot;).replaceAll(&quot;11|&quot;, &quot;K&quot;).replaceAll(&quot;12|&quot;, &quot;L&quot;)
@@ -8138,6 +8144,19 @@
                                 }
                             };
                             resize_background_image();
+                        
+                        
+                            const htmlview_parent = document.querySelector(&#039;.htmlviewer_run_menu&#039;);
+                            const htmlview_child = document.querySelector(&#039;.html_view&#039;);
+                            const htmlview_resize = () =&gt; {
+                                const hehehe1 = htmlview_parent.firstElementChild;
+                                if (hehehe1.classList.contains(&#039;navy&#039;)) {
+                                    htmlview_child.style.width = `${htmlview_parent.clientWidth + - + 0}px`;
+                                    htmlview_child.style.height = `${htmlview_parent.clientHeight + - + 20}px`;
+                                }
+                            };
+                            htmlview_parent.addEventListener(&#039;mousemove&#039;, htmlview_resize);
+                        
                         
                         
                             document.querySelectorAll(&#039;.drag_button&#039;).forEach(function (drag) {
@@ -11903,6 +11922,8 @@
                                 const reader = new FileReader();
                         
                                 reader.onload = function (event) {
+                                    localStorage.clear();
+                                    sessionStorage.clear();
                                     const data = JSON.parse(event.target.result);
                                     for (const key in data) {
                                         localStorage.setItem(key, data[key]);
@@ -11930,7 +11951,170 @@
             <code>
                     <textarea id="code_script2" class="white_text" style="display: none; width: 99%; height: 65vh; background-color: black; resize: none; outline: none;">
 
-
+                        const error_windows = document.querySelector(&#039;.error_windows&#039;);
+                        const warning_windows = document.querySelector(&#039;.warning_windows&#039;);
+                        const prompt_text2 = document.querySelector(&#039;.prompt_text2&#039;);
+                        
+                        const sound_play_button = document.getElementsByClassName(&#039;sound_play_button&#039;);
+                        const sound_stop_button = document.getElementsByClassName(&#039;sound_stop_button&#039;);
+                        
+                        let sound_1 = new Audio(&quot;nexser_sounds/The-Microsoft-Sound.mp3&quot;);
+                        let sound_2 = new Audio(&quot;nexser_sounds/tada.mp3&quot;);
+                        let sound_3 = new Audio(&quot;nexser_sounds/chord.mp3&quot;);
+                        let sound_4 = new Audio(&quot;nexser_sounds/chimes.mp3&quot;);
+                        let sound_5 = new Audio(&quot;nexser_sounds/ding.mp3&quot;);
+                        let sound_6 = new Audio(&quot;nexser_sounds/utopia.mp3&quot;);
+                        let sound_7 = new Audio(&quot;nexser_sounds/welcome.mp3&quot;);
+                        let sound_8 = new Audio(&quot;nexser_sounds/windows98.start.mp3&quot;);
+                        let sound_9 = new Audio(&quot;nexser_sounds/windows98.logoff.mp3&quot;);
+                        let sound_10 = new Audio(&quot;nexser_sounds/windows2000_startup.mp3&quot;);
+                        let sound_11 = new Audio(&quot;nexser_sounds/windows2000_shutdown.mp3&quot;);
+                        let sound_12 = new Audio(&quot;nexser_sounds/windowsxp_startup.mp3&quot;);
+                        let sound_13 = new Audio(&quot;nexser_sounds/windowsxp_shutdown.mp3&quot;);
+                        sound_1.preload = &#039;auto&#039;;
+                        sound_2.preload = &#039;auto&#039;;
+                        sound_3.preload = &#039;auto&#039;;
+                        sound_4.preload = &#039;auto&#039;;
+                        sound_5.preload = &#039;auto&#039;;
+                        sound_6.preload = &#039;auto&#039;;
+                        sound_7.preload = &#039;auto&#039;;
+                        sound_8.preload = &#039;auto&#039;;
+                        sound_9.preload = &#039;auto&#039;;
+                        sound_10.preload = &#039;auto&#039;;
+                        sound_11.preload = &#039;auto&#039;;
+                        sound_12.preload = &#039;auto&#039;;
+                        sound_13.preload = &#039;auto&#039;;
+                        
+                        function sound() {
+                            if (localStorage.getItem(&#039;driver_sound&#039;)) {
+                                sound_1.play();
+                            }
+                        }
+                        function sound2() {
+                            if (localStorage.getItem(&#039;driver_sound&#039;)) {
+                                sound_2.play();
+                            }
+                        }
+                        function sound3() {
+                            if (localStorage.getItem(&#039;driver_sound&#039;)) {
+                                sound_3.play();
+                            }
+                        }
+                        function sound4() {
+                            if (localStorage.getItem(&#039;driver_sound&#039;)) {
+                                sound_4.play();
+                            }
+                        }
+                        function sound5() {
+                            if (localStorage.getItem(&#039;driver_sound&#039;)) {
+                                sound_5.play();
+                            }
+                        }
+                        function sound6() {
+                            if (localStorage.getItem(&#039;driver_sound&#039;)) {
+                                sound_6.play();
+                            }
+                        }
+                        function sound7() {
+                            if (localStorage.getItem(&#039;driver_sound&#039;)) {
+                                sound_7.play();
+                            }
+                        }
+                        function sound8() {
+                            if (localStorage.getItem(&#039;driver_sound&#039;)) {
+                                sound_8.play();
+                            }
+                        }
+                        function sound9() {
+                            if (localStorage.getItem(&#039;driver_sound&#039;)) {
+                                sound_9.play();
+                            }
+                        }
+                        function sound10() {
+                            if (localStorage.getItem(&#039;driver_sound&#039;)) {
+                                sound_10.play();
+                            }
+                        }
+                        function sound11() {
+                            if (localStorage.getItem(&#039;driver_sound&#039;)) {
+                                sound_11.play();
+                            }
+                        }
+                        function sound12() {
+                            if (localStorage.getItem(&#039;driver_sound&#039;)) {
+                                sound_12.play();
+                            }
+                        }
+                        function sound13() {
+                            if (localStorage.getItem(&#039;driver_sound&#039;)) {
+                                sound_13.play();
+                            }
+                        }
+                        
+                        function sound_stop() {
+                            sound_1.pause();
+                            sound_2.pause();
+                            sound_3.pause();
+                            sound_4.pause();
+                            sound_5.pause();
+                            sound_6.pause();
+                            sound_7.pause();
+                            sound_8.pause();
+                            sound_9.pause();
+                            sound_10.pause();
+                            sound_11.pause();
+                            sound_12.pause();
+                            sound_13.pause();
+                            sound_1.currentTime = 0;
+                            sound_2.currentTime = 0;
+                            sound_3.currentTime = 0;
+                            sound_4.currentTime = 0;
+                            sound_5.currentTime = 0;
+                            sound_6.currentTime = 0;
+                            sound_7.currentTime = 0;
+                            sound_8.currentTime = 0;
+                            sound_9.currentTime = 0;
+                            sound_10.currentTime = 0;
+                            sound_11.currentTime = 0;
+                            sound_12.currentTime = 0;
+                            sound_13.currentTime = 0;
+                        
+                            Array.from(sound_play_button).forEach((sound_play_buttons) =&gt; {
+                                sound_play_buttons.textContent = &quot;▶&quot;
+                            })
+                        }
+                        
+                        Array.from(sound_play_button).forEach((sound_play_buttons) =&gt; {
+                            sound_play_buttons.textContent = &quot;▶&quot;
+                        })
+                        Array.from(sound_play_button).forEach((sound_play_buttons) =&gt; {
+                            sound_play_buttons.addEventListener(&#039;mousedown&#039;, function () {
+                                sound_stop()
+                                Array.from(sound_play_button).forEach((sound_play_buttons) =&gt; {
+                                    sound_play_buttons.textContent = &quot;▶&quot;
+                                })
+                            })
+                            sound_play_buttons.addEventListener(&#039;click&#039;, function () {
+                                if (!localStorage.getItem(&#039;driver_sound&#039;)) {
+                                    document.querySelector(&#039;.window_error_text&#039;).textContent = &quot;サウンドドライバー がインストールされていません!&quot;
+                                    error_windows.classList.remove(&#039;active&#039;)
+                                    prompt_text2.style.color = &quot;&quot;;
+                                    document.querySelector(&#039;.test_allwindow&#039;).style.display = &quot;block&quot;;
+                                    sound3()
+                                    sound_play_buttons.textContent = &quot;▶&quot;
+                                } else {
+                                    sound_play_buttons.textContent = &quot;||&quot;
+                                }
+                            })
+                        })
+                        Array.from(sound_stop_button).forEach((sound_stop_buttons) =&gt; {
+                            sound_stop_buttons.addEventListener(&#039;mousedown&#039;, function () {
+                                sound_stop()
+                                Array.from(sound_play_button).forEach((sound_play_buttons) =&gt; {
+                                    sound_play_buttons.textContent = &quot;▶&quot;
+                                })
+                            })
+                        })
 
                 </textarea>
                 </code>
@@ -13640,10 +13824,9 @@
                                 </div>
                                 <div id="form_container">
                                     <div class="input_container">
-                                        <span class="small">nexser/></span><input type="text"
+                                        <span class="small">nexser/></span><textarea rows="1"
                                             class="command_input2 name2 focus2 command2" placeholder="|"
-                                            onkeydown="handleKeyDown(event, this);if(event.keyCode == 13){return false;}">
-                                        </p>
+                                            onkeydown="handleKeyDown(event, this);if(event.keyCode == 13){return false;}"></textarea>
                                     </div>
                                 </div>
                             </div>
@@ -14348,7 +14531,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             <span class="minimization_button button2"></span><br>
                         </div>
 
-                        <div class="mini_window window_content">
+                        <div class="window_content">
 
                             <textarea id="editor" class="border2" style="background: whitesmoke;"></textarea>
 
@@ -14371,7 +14554,6 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             <span class="title_icon"></span><span>html viewer run</span>
                         </div>
 
-
                         <div class="title_buttons">
                             <span class="drag_button">&nbsp;</span>
                             <span class="close_button button2"></span>
@@ -14379,7 +14561,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             <span class="minscreen_button button2"></span>
                             <span class="minimization_button button2"></span><br>
                         </div>
-                        <div>
+                        <div class="html_view">
                             <iframe id="preview" class="border2"></iframe>
                         </div>
                     </div>
@@ -14535,7 +14717,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                 style="width: max-content;">ローカルストレージを外部出力</span><br>
 
                             <div class="mini_window">
-                                <p>インポート</p>
+                                <p>インポート<br><span class="red_text small">(※今まで編集していたデータは削除されます!)</span></p>
                                 <label>
                                     <span class="button2 apply_button"
                                         style="width: max-content;">外部出力したnexserのデータをインポート</span>
@@ -15253,13 +15435,6 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         </div>
                     </div>
 
-
-
-
-
-
-
-
                     <div class="child_windows url_drop_menu resize active">
                         <div class="title">
                             <span class="title_icon"></span><span>url drop</span>
@@ -15309,7 +15484,8 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         </div>
                         <div class="window_bottom" style="display: flex;">
                             <p style="width: 100%;">揃ったペアの数:&nbsp;<span id="match-count">0</span>
-
+                                <span class="button2 apply_button" style="margin-left: 10px;"
+                                    onclick="resetGame()">reset</span>
                                 <span style="position: absolute; bottom: 0; right: 0;">経過時間:
                                     <span id="elapsed-time">0</span>秒</span>
                             </p>
@@ -15879,7 +16055,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             <span class="drag_button2 border2" style="cursor: all-scroll;">&emsp;&nbsp;</span>
                             <span class="button2 nexser_search">&nbsp;<span class="magnifying_glass"></span>
                             </span>
-                            <span class="button2">&nbsp;T&nbsp;</span>
+                            <span class="button2 test_button26">&nbsp;D&nbsp;</span>
                             <span class="button2">&nbsp;T&nbsp;</span>
                             <span class="button2">&nbsp;T&nbsp;</span>
                             <span class="button2">&nbsp;T&nbsp;</span>
