@@ -339,6 +339,10 @@ if (ua.includes("mobile")) {
                 document.querySelector('.clock_button').textContent = "on"
                 document.querySelector('.time').style.display = "none";
             }
+            if (localStorage.getItem('battery_button')) {
+                document.querySelector('.battery_button').textContent = "on"
+                document.querySelector('.task_battery').style.display = "none";
+            }
 
             if (localStorage.getItem('taskbar_zindex_0')) {
                 taskbar.style.zIndex = "0";
@@ -717,6 +721,9 @@ if (ua.includes("mobile")) {
     })
 
     function nexser_program_open() {
+        y_iframeController('pauseVideo');
+        preview2_stop();
+        document.querySelectorAll('video').forEach(video => video.pause());
         func2();
         desktop.style.display = "none";
         document.getElementsByClassName('pattern_backgrounds')[0].style.display = "none";
@@ -1725,7 +1732,7 @@ if (ua.includes("mobile")) {
             const notearea = document.querySelector('.note_area');
             notearea.style.height = "";
             notearea.style.width = "";
-            windowposition_reset()
+            windowposition_reset();
             allwindow.classList.remove('leftwindow');
             allwindow.classList.remove('rightwindow');
             allwindow.style.transition = "";
@@ -1734,7 +1741,7 @@ if (ua.includes("mobile")) {
             document.querySelector('.minimization_button').style.visibility = "visible";
             allwindow.classList.remove('minimization');
             allwindow.classList.remove('selectwindows')
-            test_windows_button()
+            test_windows_button();
         });
 
         bom_reset();
@@ -1743,11 +1750,12 @@ if (ua.includes("mobile")) {
         timerreset();
         cpubench_clear();
         cpucalc_reset();
-        p_clear();
+        prompt2_text_clear();
         calc_clear();
         preview2_stop();
         videourl_reset();
         resetGame();
+        nexser_prompt_reset();
         document.querySelector('.password').value = "";
         document.querySelector('#pass_form').value = "";
 
@@ -1919,7 +1927,7 @@ if (ua.includes("mobile")) {
             if (localStorage.getItem('taskbar_height') && (localStorage.getItem('taskbar_autohide'))) {
                 const t = localStorage.getItem('taskbar_height');
                 const t2 = t - 5;
-                document.getElementById('taskbar').style.bottom = "-" + t2 + "px"; z
+                document.getElementById('taskbar').style.bottom = "-" + t2 + "px";
             } else if (localStorage.getItem('taskbar_autohide')) {
                 taskbar.style.bottom = "-35px"
             }
@@ -2096,12 +2104,27 @@ if (ua.includes("mobile")) {
         // 新しい入力フォームを生成
         const newInputContainer = document.createElement('div');
         newInputContainer.className = 'input_container';
+        newInputContainer.classList.add('prompt_hukusei2');
         newInputContainer.innerHTML = `
             <span class="small">nexser/></span><input type="text" class="command_input2 name2 focus2" placeholder="|" onkeydown="handleKeyDown(event, this)">
         `;
         // 新しい入力フォームを追加
         document.getElementById('form_container').appendChild(newInputContainer);
         document.querySelector('.focus2').focus()
+    }
+
+    function nexser_prompt_reset() {
+        setTimeout(() => {
+            document.querySelectorAll('.prompt_hukusei2').forEach(function (prompt_hukusei2) {
+                prompt_hukusei2.remove()
+            })
+            document.querySelector('.command2').classList.add('name2');
+            document.querySelector('.command2').classList.add('focus2');
+            document.querySelector('.command2').disabled = false;
+            document.querySelector('.focus2').focus();
+            prompt2_text_clear();
+            prompt_text2.style.color = "";
+        }, 10);
     }
 
     function prompt_text_check() {
@@ -2468,7 +2491,6 @@ if (ua.includes("mobile")) {
                 }, 100);
                 break;
 
-
             case 'nexser/memory':
                 document.querySelector('.memory_menu').classList.remove('active');
 
@@ -2601,6 +2623,12 @@ if (ua.includes("mobile")) {
                 document.querySelector('.files_inline').style.display = "flex";
                 break;
 
+            case 'reset':
+                prompt_text2.style.color = "";
+                nexser_prompt_reset()
+                break;
+
+
             case 'windows95/open':
                 location.href = 'https://moti5768.github.io/moti.world/windows95.html'
                 prompt_text2.style.color = "";
@@ -2631,8 +2659,10 @@ if (ua.includes("mobile")) {
         });
     }
 
-    function p_clear() {
-        document.querySelector('.focus2').value = "";
+    function prompt2_text_clear() {
+        document.querySelectorAll('.command_input2').forEach(function (command_input2) {
+            command_input2.value = "";
+        })
     }
 
     function screen_backtextload() {
@@ -2707,6 +2737,7 @@ if (ua.includes("mobile")) {
             document.getElementsByClassName('window_memory2')[0].textContent = (`使用可能なメモリ    ${(performance.memory.jsHeapSizeLimit / 1048576).toFixed(2)}MB`);
             document.getElementsByClassName('window_memory3')[0].textContent = (`割り当てられたメモリ  ${(performance.memory.totalJSHeapSize / 1024).toFixed(2)}KB`);
             document.getElementsByClassName('window_memory4')[0].textContent = (`現在使用中のメモリ   ${(performance.memory.usedJSHeapSize / 1024).toFixed(2)}KB`);
+            resize_background_image();
         }
     }, 100);
     Array.from(document.getElementsByClassName('window_inline_list')).forEach((window_inline_list) => {
@@ -3909,6 +3940,26 @@ if (ua.includes("mobile")) {
 
 
 
+    const window_prompt_content2 = document.querySelector('.window_prompt_content2');
+    const window_prompt_resize = () => {
+        window_prompt_content2.style.width = `${window_prompt.clientWidth}px`;
+        window_prompt_content2.style.height = `${window_prompt.clientHeight + - + 50}px`;
+    };
+    window_prompt.addEventListener('mousemove', window_prompt_resize);
+
+
+    const background_image_parent = document.getElementById('nexser');
+    const background_image_child = document.querySelector('.nexser_background_image');
+    const background_image_child2 = background_image_child.children;
+
+    const resize_background_image = () => {
+        for (let i = 0; i < background_image_child2.length; i++) {
+            background_image_child2[i].style.width = `${background_image_parent.clientWidth}px`;
+            background_image_child2[i].style.height = `${background_image_parent.clientHeight}px`;
+        }
+    };
+    resize_background_image();
+
 
     document.querySelectorAll('.drag_button').forEach(function (drag) {
         drag.addEventListener('mousedown', function () {
@@ -4208,7 +4259,7 @@ if (ua.includes("mobile")) {
             localStorage.setItem(KEY_COLOR, select4);
             getStorage()
         } else {
-            document.querySelector('.window_error_text').textContent = "driver color no install!"
+            document.querySelector('.window_error_text').textContent = "カラードライバーがインストールされていません!"
             error_windows.classList.remove('active')
             prompt_text2.style.color = "";
             document.querySelector('.test_allwindow').style.display = "block";
@@ -4255,7 +4306,7 @@ if (ua.includes("mobile")) {
             // 変更した色名をストレージに保存
             setStorage();
         } else {
-            document.querySelector('.window_error_text').textContent = "driver color no install!"
+            document.querySelector('.window_error_text').textContent = "カラードライバーがインストールされていません!"
             error_windows.classList.remove('active')
             prompt_text2.style.color = "";
             document.querySelector('.test_allwindow').style.display = "block";
@@ -4269,7 +4320,7 @@ if (ua.includes("mobile")) {
             if (localStorage.getItem('driver_color')) {
                 titlecolor_set();
             } else {
-                document.querySelector('.window_error_text').textContent = "driver color no install!"
+                document.querySelector('.window_error_text').textContent = "カラードライバーがインストールされていません!"
                 error_windows.classList.remove('active')
                 document.querySelector('.test_allwindow').style.display = "block";
                 sound3()
@@ -5268,6 +5319,18 @@ if (ua.includes("mobile")) {
             localStorage.setItem('clock_button', clock_button);
             document.querySelector('.clock_button').textContent = "on"
             document.querySelector('.time').style.display = "none";
+        }
+    })
+
+    document.querySelector('.battery_button').addEventListener('click', function (battery_button) {
+        if (localStorage.getItem('battery_button')) {
+            localStorage.removeItem('battery_button')
+            document.querySelector('.battery_button').textContent = "off"
+            document.querySelector('.task_battery').style.display = "block"
+        } else {
+            localStorage.setItem('battery_button', battery_button);
+            document.querySelector('.battery_button').textContent = "on"
+            document.querySelector('.task_battery').style.display = "none";
         }
     })
 
@@ -7008,615 +7071,632 @@ if (ua.includes("mobile")) {
 
         // ファイルを1つずつ処理する関数
         const processFile = (file, x, y) => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const result = e.target.result;
-                const windowDiv = document.createElement('div');
-                windowDiv.className = "child_windows"
-                windowDiv.classList.add('testwindow2');
-                windowDiv.style.left = `${event.clientX}px`;
-                windowDiv.style.top = `${event.clientY}px`;
-                windowDiv.style.zIndex = largestZIndex++;
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const result = e.target.result;
+                    const windowDiv = document.createElement('div');
+                    windowDiv.className = "child_windows"
+                    windowDiv.classList.add('testwindow2');
+                    windowDiv.style.left = `${event.clientX}px`;
+                    windowDiv.style.top = `${event.clientY}px`;
+                    windowDiv.style.zIndex = largestZIndex++;
 
-                // 新しい子要素を生成して追加
-                const newChild = document.createElement('div');
-                newChild.className = "title"
-                newChild.classList.add('testwindow_title');
-                windowDiv.appendChild(newChild);
+                    // 新しい子要素を生成して追加
+                    const newChild = document.createElement('div');
+                    newChild.className = "title"
+                    newChild.classList.add('testwindow_title');
+                    windowDiv.appendChild(newChild);
 
-                const newChild2 = document.createElement('span');
-                newChild2.className = "title_icon"
-                newChild.appendChild(newChild2);
+                    const newChild2 = document.createElement('span');
+                    newChild2.className = "title_icon"
+                    newChild.appendChild(newChild2);
 
-                const newChild22 = document.createElement('span');
-                newChild22.textContent = 'window ' + largestZIndex++;
-                newChild.appendChild(newChild22);
+                    const newChild22 = document.createElement('span');
+                    newChild22.textContent = 'window ' + largestZIndex++;
+                    newChild.appendChild(newChild22);
 
-                // 新しい子要素を生成して追加
-                const newChild3 = document.createElement('div');
-                newChild3.className = "title_buttons"
-                windowDiv.appendChild(newChild3);
+                    // 新しい子要素を生成して追加
+                    const newChild3 = document.createElement('div');
+                    newChild3.className = "title_buttons"
+                    windowDiv.appendChild(newChild3);
 
-                // 新しい子要素を生成して追加
-                const newChild4_4 = document.createElement('span');
-                newChild4_4.className = "drag_button"
-                newChild4_4.innerHTML = "&emsp;"
-                newChild3.appendChild(newChild4_4);
+                    // 新しい子要素を生成して追加
+                    const newChild4_4 = document.createElement('span');
+                    newChild4_4.className = "drag_button"
+                    newChild4_4.innerHTML = "&emsp;"
+                    newChild3.appendChild(newChild4_4);
 
-                // 新しい子要素を生成して追加
-                const newChild4 = document.createElement('span');
-                newChild4.className = "close_button"
-                newChild4.textContent = "✕"
-                newChild4.classList.add('button2')
-                newChild3.appendChild(newChild4);
+                    // 新しい子要素を生成して追加
+                    const newChild4 = document.createElement('span');
+                    newChild4.className = "close_button"
+                    newChild4.textContent = "✕"
+                    newChild4.classList.add('button2')
+                    newChild3.appendChild(newChild4);
 
-                // 新しい子要素を生成して追加
-                const newChild4_1 = document.createElement('span');
-                newChild4_1.className = "bigscreen_button2"
-                // newChild4_1.classList.add('bigscreen_button2');
-                newChild4_1.textContent = "☐"
-                newChild4_1.classList.add('button2');
-                newChild3.appendChild(newChild4_1);
+                    // 新しい子要素を生成して追加
+                    const newChild4_1 = document.createElement('span');
+                    newChild4_1.className = "bigscreen_button2"
+                    // newChild4_1.classList.add('bigscreen_button2');
+                    newChild4_1.textContent = "☐"
+                    newChild4_1.classList.add('button2');
+                    newChild3.appendChild(newChild4_1);
 
-                // 新しい子要素を生成して追加
-                const newChild4_2 = document.createElement('span');
-                newChild4_2.className = "minscreen_button"
-                newChild4_2.textContent = "❒"
-                newChild4_2.classList.add('button2');
-                newChild3.appendChild(newChild4_2);
+                    // 新しい子要素を生成して追加
+                    const newChild4_2 = document.createElement('span');
+                    newChild4_2.className = "minscreen_button"
+                    newChild4_2.textContent = "❒"
+                    newChild4_2.classList.add('button2');
+                    newChild3.appendChild(newChild4_2);
 
-                // 新しい子要素を生成して追加
-                const newChild4_5 = document.createElement('br');
-                newChild3.appendChild(newChild4_5);
+                    // 新しい子要素を生成して追加
+                    const newChild4_5 = document.createElement('br');
+                    newChild3.appendChild(newChild4_5);
 
-                // 新しい子要素を生成して追加
-                const newChild6 = document.createElement('div');
-                newChild6.className = "window_contents"
-                windowDiv.appendChild(newChild6);
-                setTimeout(() => {
-                    windowDiv.classList.add('no_create_windows');
-                }, 100);
-
-
-                if (file.type.startsWith('image/')) {
-                    windowDiv.classList.add('selectwindows');
-                    const img = document.createElement('img');
-                    img.src = result;
-                    img.classList.add('item_preview');
-                    img.style.left = "900px";
-                    newChild6.appendChild(img);
-
+                    // 新しい子要素を生成して追加
+                    const newChild6 = document.createElement('div');
+                    newChild6.className = "window_contents"
+                    windowDiv.appendChild(newChild6);
                     setTimeout(() => {
-                        test_windows_button()
-                        zindexwindow_addnavy()
-                        titlecolor_set()
+                        windowDiv.classList.add('no_create_windows');
                     }, 100);
 
-                } else if (file.type.startsWith('video/')) {
-                    const video = document.createElement('video');
-                    video.src = result;
-                    video.controls = true;
-                    video.classList.add('item_preview');
-                    newChild6.appendChild(video);
 
-                    setTimeout(() => {
-                        test_windows_button()
-                        zindexwindow_addnavy()
-                        titlecolor_set()
-                    }, 1000);
+                    if (file.type.startsWith('image/')) {
+                        windowDiv.classList.add('selectwindows');
+                        const img = document.createElement('img');
+                        img.src = result;
+                        img.classList.add('item_preview');
+                        img.style.left = "900px";
+                        newChild6.appendChild(img);
 
-                } else if (file.type === 'application/pdf') {
-                    const iframe = document.createElement('iframe');
-                    iframe.src = result;
-                    iframe.classList.add('item_preview');
-                    newChild6.appendChild(iframe);
-
-                    setTimeout(() => {
-                        test_windows_button()
-                        zindexwindow_addnavy()
-                        titlecolor_set()
-                    }, 100);
-
-                } else if (file.type.startsWith('text/')) {
-                    const text = document.createElement('p');
-                    text.textContent = e.target.result;
-                    text.classList.add('item_preview');
-                    newChild6.appendChild(text);
-
-                    setTimeout(() => {
-                        test_windows_button()
-                        zindexwindow_addnavy()
-                        titlecolor_set()
-                    }, 100);
-
-                } else {
-                    const unsupported = document.createElement('p');
-                    unsupported.textContent = 'このファイル形式はサポートされていません。';
-                    unsupported.classList.add('item_preview');
-                    newChild6.appendChild(unsupported);
-
-                    setTimeout(() => {
-                        test_windows_button()
-                        zindexwindow_addnavy()
-                        titlecolor_set()
-                    }, 100);
-                }
-
-
-
-
-
-
-
-
-
-                setTimeout(() => {
-
-                    document.querySelectorAll('.testwindow2:not(.no_create_windows)').forEach(function (testwindow2) {
-                        const testwindow2_1 = testwindow2.children[2];
-                        const testwindow2_2 = testwindow2_1.firstElementChild;
-                        testwindow2_2.style.left = "0"
-                        testwindow2_2.style.width = "100%"
-                        testwindow2_2.style.height = "95%"
-                        testwindow2.style.width = "500px"
-                        testwindow2.style.height = "400px"
-                    })
-
-                    Array.from(document.getElementsByClassName('button2')).forEach((button2) => {
-                        button2.addEventListener('mousedown', () => {
-                            button2.classList.add('pressed');
-                        });
-                        button2.addEventListener('mouseleave', () => {
-                            button2.classList.remove('pressed');
-                        });
-                        button2.addEventListener('mouseup', () => {
-                            button2.classList.remove('pressed');
-                        });
-                    });
-                    newChild4.addEventListener('mousedown', () => {
-                        newChild4.classList.add('pressed');
-                    });
-                    newChild4.addEventListener('mouseleave', () => {
-                        newChild4.classList.remove('pressed');
-                    });
-                    newChild4.addEventListener('mouseup', () => {
-                        newChild4.classList.remove('pressed');
-                    });
-                    newChild4.addEventListener('click', () => {
                         setTimeout(() => {
-                            const newChild4_2 = newChild4.closest('.child_windows');
-                            newChild4_2.remove();
-                            zindexwindow_addnavy();
-                            titlecolor_set();
                             test_windows_button()
-                        }, 100);
-                    });
-
-                    function addResizers2(element) {
-                        const resizerPositions = ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'top', 'right', 'bottom', 'left'];
-                        resizerPositions.forEach(position => {
-                            const resizer = document.createElement('div');
-                            resizer.classList.add('resizer', position);
-                            element.appendChild(resizer);
-                        });
-                    }
-
-                    function makeResizableDivs2(className) {
-                        const elements = document.querySelectorAll(className);
-                        elements.forEach(element => {
-                            addResizers2(element);
-                            const resizers = element.querySelectorAll('.resizer');
-                            const minimum_size = 20;
-                            let original_width = 0;
-                            let original_height = 0;
-                            let original_x = 0;
-                            let original_y = 0;
-                            let original_mouse_x = 0;
-                            let original_mouse_y = 0;
-
-                            resizers.forEach(resizer => {
-                                resizer.addEventListener('mousedown', function (e) {
-                                    e.preventDefault();
-                                    original_width = parseFloat(getComputedStyle(element, null).getPropertyValue('width').replace('px', ''));
-                                    original_height = parseFloat(getComputedStyle(element, null).getPropertyValue('height').replace('px', ''));
-                                    original_x = element.getBoundingClientRect().left;
-                                    original_y = element.getBoundingClientRect().top;
-                                    original_mouse_x = e.pageX;
-                                    original_mouse_y = e.pageY;
-                                    window.addEventListener('mousemove', resize2);
-                                    window.addEventListener('mouseup', stopResize2);
-                                });
-
-                                function resize2(e) {
-                                    if (resizer.classList.contains('right')) {
-                                        const width = original_width + (e.pageX - original_mouse_x);
-                                        if (width > minimum_size) {
-                                            element.style.width = width + 'px';
-                                        }
-                                    } else if (resizer.classList.contains('left')) {
-                                        const width = original_width - (e.pageX - original_mouse_x);
-                                        if (width > minimum_size) {
-                                            element.style.width = width + 'px';
-                                            element.style.left = original_x + (e.pageX - original_mouse_x) + 'px';
-                                        }
-                                    } else if (resizer.classList.contains('bottom')) {
-                                        const height = original_height + (e.pageY - original_mouse_y);
-                                        if (height > minimum_size) {
-                                            element.style.height = height + 'px';
-                                        }
-                                    } else if (resizer.classList.contains('top')) {
-                                        const height = original_height - (e.pageY - original_mouse_y);
-                                        if (height > minimum_size) {
-                                            element.style.height = height + 'px';
-                                            element.style.top = original_y + (e.pageY - original_mouse_y) + 'px';
-                                        }
-                                    } else if (resizer.classList.contains('bottom-right')) {
-                                        const width = original_width + (e.pageX - original_mouse_x);
-                                        const height = original_height + (e.pageY - original_mouse_y);
-                                        if (width > minimum_size) {
-                                            element.style.width = width + 'px';
-                                        }
-                                        if (height > minimum_size) {
-                                            element.style.height = height + 'px';
-                                        }
-                                    } else if (resizer.classList.contains('bottom-left')) {
-                                        const height = original_height + (e.pageY - original_mouse_y);
-                                        const width = original_width - (e.pageX - original_mouse_x);
-                                        if (height > minimum_size) {
-                                            element.style.height = height + 'px';
-                                        }
-                                        if (width > minimum_size) {
-                                            element.style.width = width + 'px';
-                                            element.style.left = original_x + (e.pageX - original_mouse_x) + 'px';
-                                        }
-                                    } else if (resizer.classList.contains('top-right')) {
-                                        const width = original_width + (e.pageX - original_mouse_x);
-                                        const height = original_height - (e.pageY - original_mouse_y);
-                                        if (width > minimum_size) {
-                                            element.style.width = width + 'px';
-                                        }
-                                        if (height > minimum_size) {
-                                            element.style.height = height + 'px';
-                                            element.style.top = original_y + (e.pageY - original_mouse_y) + 'px';
-                                        }
-                                    } else if (resizer.classList.contains('top-left')) {
-                                        const width = original_width - (e.pageX - original_mouse_x);
-                                        const height = original_height - (e.pageY - original_mouse_y);
-                                        if (width > minimum_size) {
-                                            element.style.width = width + 'px';
-                                            element.style.left = original_x + (e.pageX - original_mouse_x) + 'px';
-                                        }
-                                        if (height > minimum_size) {
-                                            element.style.height = height + 'px';
-                                            element.style.top = original_y + (e.pageY - original_mouse_y) + 'px';
-                                        }
-                                    }
-                                    const elements = document.querySelectorAll('.rectangle');
-                                    // 各要素からクラスを削除
-                                    elements.forEach(element => {
-                                        element.classList.remove('rectangle');
-                                    });
-                                }
-
-                                function stopResize2() {
-                                    window.removeEventListener('mousemove', resize2);
-                                    window.removeEventListener('mouseup', stopResize2);
-                                }
-                            });
-                        });
-                    }
-
-                    makeResizableDivs2('.testwindow2');
-
-                    document.querySelectorAll('.testwindow2, .child').forEach(function (z_index_child_windows) {
-                        const zindexchildwindows = z_index_child_windows.closest('.testwindow2');
-                        z_index_child_windows.addEventListener('mousedown', function () {
-                            zindexchildwindows.scrollTop = 0;
-                            zindexchildwindows.scrollLeft = 0;
-
-                            setTimeout(() => {
-                                document.querySelectorAll('.testwindow2').forEach(function (testwindow2) {
-                                    const testwindow2_1 = testwindow2.children[2];
-                                    const testwindow2_2 = testwindow2_1.firstElementChild;
-                                    testwindow2_2.style.maxWidth = `${testwindow2.clientWidth + - + 5}px`;
-                                    testwindow2_2.style.maxHeight = `${testwindow2.clientHeight + - + 25}px`;
-                                    testwindow2_2.style.width = "100%"
-                                    testwindow2_2.style.height = "100%"
-                                    testwindow2_2.style.left = "0"
-                                })
-                                zindexchildwindows.style.zIndex = largestZIndex++;
-                                zindexwindow_addnavy()
-                                titlecolor_set()
-                            }, 0);
-
-                            const elements = document.querySelectorAll('.rectangle');
-                            elements.forEach(element => {
-                                element.classList.remove('rectangle');
-                            });
-                        });
-                    })
-
-                    document.querySelectorAll('.bigscreen_button2').forEach(function (bigscreen_button) {
-                        bigscreen_button.addEventListener('mousedown', function () {
                             zindexwindow_addnavy()
-                            const elements = document.querySelector('.testwindow_title.navy');
-                            const elements2 = elements.closest('.testwindow2');
-                            elements2.dataset.originalWidth = elements2.style.width;
-                            elements2.dataset.originalHeight = elements2.style.height;
-                            elements2.dataset.originalTop = elements2.style.top;
-                            elements2.dataset.originalLeft = elements2.style.left;
-                        })
-                        bigscreen_button.addEventListener('click', function () {
-                            const bigscreenbutton = bigscreen_button.closest('.testwindow2');
-                            const childElements = bigscreenbutton.children;
-                            for (let child of childElements) {
-                                child.style.display = 'none';
-                                document.querySelectorAll('.title,.title_buttons').forEach(function (titles) {
-                                    titles.style.display = "block"
-                                })
-                                document.querySelectorAll('.title2').forEach(function (window_title2) {
-                                    window_title2.style.display = "flex"
-                                })
-                            }
-
-                            const t = localStorage.getItem('taskbar_height');
-                            if (localStorage.getItem('data_taskbar_none')) {
-                                bigscreenbutton.style.height = ""
-                                bigscreenbutton.style.width = ""
-                                bigscreenbutton.style.top = "0"
-                                bigscreenbutton.style.left = "0"
-                                bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
-                            } else if (localStorage.getItem('taskbar_position_button')) {
-                                bigscreenbutton.style.height = ""
-                                bigscreenbutton.style.width = ""
-                                bigscreenbutton.style.top = "40px"
-                                bigscreenbutton.style.left = "0"
-
-                                bigscreenbutton.style.top = t + "px"
-
-                                bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
-                            } else {
-                                bigscreenbutton.style.height = ""
-                                bigscreenbutton.style.width = ""
-                                bigscreenbutton.style.top = "0"
-                                bigscreenbutton.style.left = "0"
-                                bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
-                            }
-                            bigscreenbutton.classList.add('big');
-                            setTimeout(() => {
-                                bigscreenbutton.style.transition = ""
-                                for (let child of childElements) {
-                                    child.style.display = '';
-                                }
-                                if (localStorage.getItem('allwindow_toolbar')) {
-                                    document.querySelectorAll('.window_tool').forEach(function (window_tool) {
-                                        window_tool.style.display = "block"
-                                    })
-                                }
-
-                                document.querySelectorAll('.testwindow2').forEach(function (testwindow2) {
-                                    const hehehe1 = testwindow2.firstElementChild;
-                                    const testwindow2_1 = testwindow2.children[2];
-                                    const testwindow2_2 = testwindow2_1.firstElementChild;
-
-
-                                    if (hehehe1.classList.contains('navy')) {
-                                        testwindow2_2.style.maxWidth = `${testwindow2.clientWidth + - + 5}px`;
-                                        testwindow2_2.style.maxHeight = `${testwindow2.clientHeight + - + 25}px`;
-                                        testwindow2_2.style.left = "0"
-                                    }
-                                })
-
-                            }, 150);
-                            // setTimeout(() => {
-                            //     const task = document.getElementById('taskbar').clientHeight;
-                            //     const child_windows_big2 = bigscreenbutton.clientHeight;
-                            //     bigscreenbutton.style.height = child_windows_big2 + - + task + "px"
-                            // }, 150);
-
-                        });
-                    })
-
-
-                    document.querySelectorAll('.minscreen_button').forEach(function (minscreen_button) {
-                        minscreen_button.addEventListener('click', function () {
-                            const minscreenbutton = minscreen_button.closest('.testwindow2');
-                            const childElements = minscreenbutton.children;
-                            for (let child of childElements) {
-                                child.style.display = 'none';
-                                document.querySelectorAll('.title,.title_buttons').forEach(function (titles) {
-                                    titles.style.display = "block"
-                                })
-                                document.querySelectorAll('.title2').forEach(function (window_title2) {
-                                    window_title2.style.display = "flex"
-                                })
-                            }
-
-                            minscreenbutton.classList.remove('big');
-
-                            const elements = document.querySelector('.testwindow_title.navy');
-                            const elements2 = elements.closest('.testwindow2');
-                            elements2.style.width = elements2.dataset.originalWidth;
-                            elements2.style.height = elements2.dataset.originalHeight;
-                            elements2.style.top = elements2.dataset.originalTop;
-                            elements2.style.left = elements2.dataset.originalLeft;
-
-                            minscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
-                            setTimeout(() => {
-                                minscreenbutton.style.transition = ""
-                                setTimeout(() => {
-                                    minscreenbutton.scrollTop = 0;
-                                    minscreenbutton.scrollLeft = 0;
-                                }, 100);
-                            }, 150);
-
-                            setTimeout(() => {
-                                for (let child of childElements) {
-                                    child.style.display = '';
-                                }
-                                if (localStorage.getItem('allwindow_toolbar')) {
-                                    document.querySelectorAll('.window_tool').forEach(function (window_tool) {
-                                        window_tool.style.display = "block"
-                                    })
-                                }
-
-                                document.querySelectorAll('.testwindow2').forEach(function (testwindow2) {
-                                    const hehehe1 = testwindow2.firstElementChild;
-                                    const testwindow2_1 = testwindow2.children[2];
-                                    const testwindow2_2 = testwindow2_1.firstElementChild;
-
-
-                                    if (hehehe1.classList.contains('navy')) {
-                                        testwindow2_2.style.maxWidth = `${testwindow2.clientWidth + - + 5}px`;
-                                        testwindow2_2.style.maxHeight = `${testwindow2.clientHeight + - + 25}px`;
-                                        testwindow2_2.style.left = "0"
-                                    }
-                                })
-
-                            }, 150);
-                        });
-                    });
-
-
-
-                    document.querySelectorAll('.drag_button').forEach(function (drag) {
-                        let drag2 = drag.closest('.testwindow2');
-                        //要素内のクリックされた位置を取得するグローバル（のような）変数
-                        var x;
-                        var y;
-                        //マウスが要素内で押されたとき、又はタッチされたとき発火
-                        drag.addEventListener("mousedown", mdown, { passive: false }, false);
-                        drag.addEventListener("touchstart", mdown, { passive: false }, false);
-                        //マウスが押された際の関数
-                        function mdown(e) {
-                            //クラス名に .drag を追加
-                            drag2.classList.add("drag");
-                            //タッチデイベントとマウスのイベントの差異を吸収
-                            if (e.type === "mousedown") {
-                                var event = e;
-                            } else {
-                                var event = e.changedTouches[0];
-                            }
-                            //要素内の相対座標を取得
-                            x = event.pageX - drag2.offsetLeft;
-                            y = event.pageY - drag2.offsetTop;
-                            //ムーブイベントにコールバック
-                            document.body.addEventListener("mousemove", mmove, { passive: false }, false);
-                            document.body.addEventListener("touchmove", mmove, { passive: false }, false);
-                        }
-                        //マウスカーソルが動いたときに発火
-                        function mmove(e) {
-                            //ドラッグしている要素を取得
-                            var drag = document.getElementsByClassName("drag")[0];
-                            //同様にマウスとタッチの差異を吸収
-                            if (e.type === "mousemove") {
-                                var event = e;
-                            } else {
-                                var event = e.changedTouches[0];
-                            }
-                            const elements = document.querySelectorAll('.rectangle');
-                            // 各要素からクラスを削除
-                            elements.forEach(element => {
-                                element.classList.remove('rectangle');
-                            });
-
-                            //マウスが動いた場所に要素を動かす
-                            drag.style.top = event.pageY - y + "px";
-                            drag.style.left = event.pageX - x + "px";
-                            //マウスボタンが離されたとき、またはカーソルが外れたとき発火
-                            drag.addEventListener("mouseup", mup, false);
-                            document.body.addEventListener("mouseleave", mup, false);
-                            drag.addEventListener("touchend", mup, false);
-                            document.body.addEventListener("touchleave", mup, false);
-                            // 半透明
-                            if (localStorage.getItem('window_invisible')) {
-                                document.querySelectorAll('.child_windows').forEach(function (title) {
-                                    title.style.opacity = "0.5";
-                                })
-                            }
-                            // 移動してる時だけ黒枠のみ
-                            if (localStorage.getItem('window_borderblack')) {
-                                document.querySelectorAll('.child_windows, .child').forEach(function (title) {
-                                    document.querySelector('iframe').style.opacity = "0";
-                                    title.style.background = "rgba(255, 255, 255, 0)";
-                                    title.style.border = "solid 2px black";
-                                })
-                                document.querySelectorAll('.title,.title2,.title_buttons,.window_tool,.window_contents,.window_content,.window_bottom,.prompt_content').forEach(function (title) {
-                                    title.style.opacity = "0"
-                                })
-                            }
-                        }
-                        //マウスボタンが上がったら発火
-                        function mup(e) {
-
-                            document.querySelectorAll('.drag').forEach(function (drag_windows) {
-                                drag_windows.classList.remove("drag");
-                            })
-
-                            document.body.removeEventListener("mousemove", mmove, false);
-                            drag.removeEventListener("mouseup", mup, false);
-                            document.body.removeEventListener("touchmove", { passive: false }, mmove, false);
-                            drag.removeEventListener("touchend", { passive: false }, mup, false);
-                            // 半透明
-                            document.querySelectorAll('.child_windows').forEach(function (title) {
-                                title.style.opacity = "";
-                                window_prompt.style.background = "black"
-                                window_back_silver()
-                            })
-                            // 移動してる時だけ黒枠のみ
-                            document.querySelectorAll('.child_windows, .child').forEach(function (title) {
-                                title.style.background = "";
-                                title.style.border = "";
-                                document.querySelector('iframe').style.opacity = "";
-                                window_prompt.style.background = "black"
-                                window_back_silver()
-                            })
-                            document.querySelectorAll('.title,.title2,.title_buttons,.window_tool,.window_contents,.window_content,.window_bottom,.prompt_content').forEach(function (title) {
-                                title.style.opacity = ""
-                                window_back_silver()
-                            })
                             titlecolor_set()
-                        }
-                    })
+                        }, 100);
+
+                    } else if (file.type.startsWith('video/')) {
+                        const video = document.createElement('video');
+                        video.src = result;
+                        video.controls = true;
+                        video.classList.add('item_preview');
+                        newChild6.appendChild(video);
+
+                        setTimeout(() => {
+                            test_windows_button()
+                            zindexwindow_addnavy()
+                            titlecolor_set()
+                        }, 1000);
+
+                    } else if (file.type === 'application/pdf') {
+                        const iframe = document.createElement('iframe');
+                        iframe.src = result;
+                        iframe.classList.add('item_preview');
+                        newChild6.appendChild(iframe);
+
+                        setTimeout(() => {
+                            test_windows_button()
+                            zindexwindow_addnavy()
+                            titlecolor_set()
+                        }, 100);
+
+                    } else if (file.type.startsWith('text/')) {
+                        const text = document.createElement('p');
+                        text.textContent = e.target.result;
+                        text.classList.add('item_preview');
+                        newChild6.appendChild(text);
+
+                        setTimeout(() => {
+                            test_windows_button()
+                            zindexwindow_addnavy()
+                            titlecolor_set()
+                        }, 100);
+
+                    } else {
+                        const unsupported = document.createElement('p');
+                        unsupported.textContent = 'このファイル形式はサポートされていません。';
+                        unsupported.classList.add('item_preview');
+                        newChild6.appendChild(unsupported);
+
+                        setTimeout(() => {
+                            test_windows_button()
+                            zindexwindow_addnavy()
+                            titlecolor_set()
+                        }, 100);
+                    }
 
 
 
-                    // クラス名が "target" の要素を全て取得
-                    document.querySelectorAll('.bigscreen_button2').forEach(function (element) {
-                        var newChild = document.createElement('div');
-                        newChild.className = 'bigscreen_button_child';
-                        // 子要素を追加
-                        element.appendChild(newChild);
-                    });
 
-                    document.querySelectorAll('.testwindow2').forEach(function (testwindow2) {
-                        testwindow2.addEventListener('mousemove', function () {
-                            const hehehe1 = testwindow2.firstElementChild;
+
+
+
+
+
+                    setTimeout(() => {
+
+                        document.querySelectorAll('.testwindow2:not(.no_create_windows)').forEach(function (testwindow2) {
                             const testwindow2_1 = testwindow2.children[2];
                             const testwindow2_2 = testwindow2_1.firstElementChild;
-                            if (hehehe1.classList.contains('navy') && !testwindow2.classList.contains('big')) {
-                                testwindow2_2.style.maxWidth = `${testwindow2.clientWidth + - + 5}px`;
-                                testwindow2_2.style.maxHeight = `${testwindow2.clientHeight + - + 25}px`;
-                                testwindow2_2.style.width = "100%";
-                                testwindow2_2.style.height = "100%";
-                                testwindow2_2.style.left = "0"
+                            testwindow2_2.style.left = "0"
+                            testwindow2_2.style.width = "100%"
+                            testwindow2_2.style.height = "95%"
+                            testwindow2.style.width = "500px"
+                            testwindow2.style.height = "400px"
+                        })
+
+                        Array.from(document.getElementsByClassName('button2')).forEach((button2) => {
+                            button2.addEventListener('mousedown', () => {
+                                button2.classList.add('pressed');
+                            });
+                            button2.addEventListener('mouseleave', () => {
+                                button2.classList.remove('pressed');
+                            });
+                            button2.addEventListener('mouseup', () => {
+                                button2.classList.remove('pressed');
+                            });
+                        });
+                        newChild4.addEventListener('mousedown', () => {
+                            newChild4.classList.add('pressed');
+                        });
+                        newChild4.addEventListener('mouseleave', () => {
+                            newChild4.classList.remove('pressed');
+                        });
+                        newChild4.addEventListener('mouseup', () => {
+                            newChild4.classList.remove('pressed');
+                        });
+                        newChild4.addEventListener('click', () => {
+                            setTimeout(() => {
+                                const newChild4_2 = newChild4.closest('.child_windows');
+                                newChild4_2.remove();
+                                zindexwindow_addnavy();
+                                titlecolor_set();
+                                test_windows_button()
+                            }, 100);
+                        });
+
+                        function addResizers2(element) {
+                            const resizerPositions = ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'top', 'right', 'bottom', 'left'];
+                            resizerPositions.forEach(position => {
+                                const resizer = document.createElement('div');
+                                resizer.classList.add('resizer', position);
+                                element.appendChild(resizer);
+                            });
+                        }
+
+                        function makeResizableDivs2(className) {
+                            const elements = document.querySelectorAll(className);
+                            elements.forEach(element => {
+                                addResizers2(element);
+                                const resizers = element.querySelectorAll('.resizer');
+                                const minimum_size = 20;
+                                let original_width = 0;
+                                let original_height = 0;
+                                let original_x = 0;
+                                let original_y = 0;
+                                let original_mouse_x = 0;
+                                let original_mouse_y = 0;
+
+                                resizers.forEach(resizer => {
+                                    resizer.addEventListener('mousedown', function (e) {
+                                        e.preventDefault();
+                                        original_width = parseFloat(getComputedStyle(element, null).getPropertyValue('width').replace('px', ''));
+                                        original_height = parseFloat(getComputedStyle(element, null).getPropertyValue('height').replace('px', ''));
+                                        original_x = element.getBoundingClientRect().left;
+                                        original_y = element.getBoundingClientRect().top;
+                                        original_mouse_x = e.pageX;
+                                        original_mouse_y = e.pageY;
+                                        window.addEventListener('mousemove', resize2);
+                                        window.addEventListener('mouseup', stopResize2);
+                                    });
+
+                                    function resize2(e) {
+                                        if (resizer.classList.contains('right')) {
+                                            const width = original_width + (e.pageX - original_mouse_x);
+                                            if (width > minimum_size) {
+                                                element.style.width = width + 'px';
+                                            }
+                                        } else if (resizer.classList.contains('left')) {
+                                            const width = original_width - (e.pageX - original_mouse_x);
+                                            if (width > minimum_size) {
+                                                element.style.width = width + 'px';
+                                                element.style.left = original_x + (e.pageX - original_mouse_x) + 'px';
+                                            }
+                                        } else if (resizer.classList.contains('bottom')) {
+                                            const height = original_height + (e.pageY - original_mouse_y);
+                                            if (height > minimum_size) {
+                                                element.style.height = height + 'px';
+                                            }
+                                        } else if (resizer.classList.contains('top')) {
+                                            const height = original_height - (e.pageY - original_mouse_y);
+                                            if (height > minimum_size) {
+                                                element.style.height = height + 'px';
+                                                element.style.top = original_y + (e.pageY - original_mouse_y) + 'px';
+                                            }
+                                        } else if (resizer.classList.contains('bottom-right')) {
+                                            const width = original_width + (e.pageX - original_mouse_x);
+                                            const height = original_height + (e.pageY - original_mouse_y);
+                                            if (width > minimum_size) {
+                                                element.style.width = width + 'px';
+                                            }
+                                            if (height > minimum_size) {
+                                                element.style.height = height + 'px';
+                                            }
+                                        } else if (resizer.classList.contains('bottom-left')) {
+                                            const height = original_height + (e.pageY - original_mouse_y);
+                                            const width = original_width - (e.pageX - original_mouse_x);
+                                            if (height > minimum_size) {
+                                                element.style.height = height + 'px';
+                                            }
+                                            if (width > minimum_size) {
+                                                element.style.width = width + 'px';
+                                                element.style.left = original_x + (e.pageX - original_mouse_x) + 'px';
+                                            }
+                                        } else if (resizer.classList.contains('top-right')) {
+                                            const width = original_width + (e.pageX - original_mouse_x);
+                                            const height = original_height - (e.pageY - original_mouse_y);
+                                            if (width > minimum_size) {
+                                                element.style.width = width + 'px';
+                                            }
+                                            if (height > minimum_size) {
+                                                element.style.height = height + 'px';
+                                                element.style.top = original_y + (e.pageY - original_mouse_y) + 'px';
+                                            }
+                                        } else if (resizer.classList.contains('top-left')) {
+                                            const width = original_width - (e.pageX - original_mouse_x);
+                                            const height = original_height - (e.pageY - original_mouse_y);
+                                            if (width > minimum_size) {
+                                                element.style.width = width + 'px';
+                                                element.style.left = original_x + (e.pageX - original_mouse_x) + 'px';
+                                            }
+                                            if (height > minimum_size) {
+                                                element.style.height = height + 'px';
+                                                element.style.top = original_y + (e.pageY - original_mouse_y) + 'px';
+                                            }
+                                        }
+                                        const elements = document.querySelectorAll('.rectangle');
+                                        // 各要素からクラスを削除
+                                        elements.forEach(element => {
+                                            element.classList.remove('rectangle');
+                                        });
+                                    }
+
+                                    function stopResize2() {
+                                        window.removeEventListener('mousemove', resize2);
+                                        window.removeEventListener('mouseup', stopResize2);
+                                    }
+                                });
+                            });
+                        }
+
+                        makeResizableDivs2('.testwindow2');
+
+                        document.querySelectorAll('.testwindow2, .child').forEach(function (z_index_child_windows) {
+                            const zindexchildwindows = z_index_child_windows.closest('.testwindow2');
+                            z_index_child_windows.addEventListener('mousedown', function () {
+                                zindexchildwindows.scrollTop = 0;
+                                zindexchildwindows.scrollLeft = 0;
+
+                                setTimeout(() => {
+                                    document.querySelectorAll('.testwindow2').forEach(function (testwindow2) {
+                                        const testwindow2_1 = testwindow2.children[2];
+                                        const testwindow2_2 = testwindow2_1.firstElementChild;
+                                        testwindow2_2.style.maxWidth = `${testwindow2.clientWidth + - + 5}px`;
+                                        testwindow2_2.style.maxHeight = `${testwindow2.clientHeight + - + 25}px`;
+                                        testwindow2_2.style.width = "100%"
+                                        testwindow2_2.style.height = "100%"
+                                        testwindow2_2.style.left = "0"
+                                    })
+                                    zindexchildwindows.style.zIndex = largestZIndex++;
+                                    zindexwindow_addnavy()
+                                    titlecolor_set()
+                                }, 0);
+
+                                const elements = document.querySelectorAll('.rectangle');
+                                elements.forEach(element => {
+                                    element.classList.remove('rectangle');
+                                });
+                            });
+                        })
+
+                        document.querySelectorAll('.bigscreen_button2').forEach(function (bigscreen_button) {
+                            bigscreen_button.addEventListener('mousedown', function () {
+                                zindexwindow_addnavy()
+                                const elements = document.querySelector('.testwindow_title.navy');
+                                const elements2 = elements.closest('.testwindow2');
+                                elements2.dataset.originalWidth = elements2.style.width;
+                                elements2.dataset.originalHeight = elements2.style.height;
+                                elements2.dataset.originalTop = elements2.style.top;
+                                elements2.dataset.originalLeft = elements2.style.left;
+                            })
+                            bigscreen_button.addEventListener('click', function () {
+                                const bigscreenbutton = bigscreen_button.closest('.testwindow2');
+                                const childElements = bigscreenbutton.children;
+                                for (let child of childElements) {
+                                    child.style.display = 'none';
+                                    document.querySelectorAll('.title,.title_buttons').forEach(function (titles) {
+                                        titles.style.display = "block"
+                                    })
+                                    document.querySelectorAll('.title2').forEach(function (window_title2) {
+                                        window_title2.style.display = "flex"
+                                    })
+                                }
+
+                                const t = localStorage.getItem('taskbar_height');
+                                if (localStorage.getItem('data_taskbar_none')) {
+                                    bigscreenbutton.style.height = ""
+                                    bigscreenbutton.style.width = ""
+                                    bigscreenbutton.style.top = "0"
+                                    bigscreenbutton.style.left = "0"
+                                    bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                                } else if (localStorage.getItem('taskbar_position_button')) {
+                                    bigscreenbutton.style.height = ""
+                                    bigscreenbutton.style.width = ""
+                                    bigscreenbutton.style.top = "40px"
+                                    bigscreenbutton.style.left = "0"
+
+                                    bigscreenbutton.style.top = t + "px"
+
+                                    bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                                } else {
+                                    bigscreenbutton.style.height = ""
+                                    bigscreenbutton.style.width = ""
+                                    bigscreenbutton.style.top = "0"
+                                    bigscreenbutton.style.left = "0"
+                                    bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                                }
+                                bigscreenbutton.classList.add('big');
+                                setTimeout(() => {
+                                    bigscreenbutton.style.transition = ""
+                                    for (let child of childElements) {
+                                        child.style.display = '';
+                                    }
+                                    if (localStorage.getItem('allwindow_toolbar')) {
+                                        document.querySelectorAll('.window_tool').forEach(function (window_tool) {
+                                            window_tool.style.display = "block"
+                                        })
+                                    }
+
+                                    document.querySelectorAll('.testwindow2').forEach(function (testwindow2) {
+                                        const hehehe1 = testwindow2.firstElementChild;
+                                        const testwindow2_1 = testwindow2.children[2];
+                                        const testwindow2_2 = testwindow2_1.firstElementChild;
+
+
+                                        if (hehehe1.classList.contains('navy')) {
+                                            testwindow2_2.style.maxWidth = `${testwindow2.clientWidth + - + 5}px`;
+                                            testwindow2_2.style.maxHeight = `${testwindow2.clientHeight + - + 25}px`;
+                                            testwindow2_2.style.left = "0"
+                                        }
+                                    })
+
+                                }, 150);
+                                // setTimeout(() => {
+                                //     const task = document.getElementById('taskbar').clientHeight;
+                                //     const child_windows_big2 = bigscreenbutton.clientHeight;
+                                //     bigscreenbutton.style.height = child_windows_big2 + - + task + "px"
+                                // }, 150);
+
+                            });
+                        })
+
+
+                        document.querySelectorAll('.minscreen_button').forEach(function (minscreen_button) {
+                            minscreen_button.addEventListener('click', function () {
+                                const minscreenbutton = minscreen_button.closest('.testwindow2');
+                                const childElements = minscreenbutton.children;
+                                for (let child of childElements) {
+                                    child.style.display = 'none';
+                                    document.querySelectorAll('.title,.title_buttons').forEach(function (titles) {
+                                        titles.style.display = "block"
+                                    })
+                                    document.querySelectorAll('.title2').forEach(function (window_title2) {
+                                        window_title2.style.display = "flex"
+                                    })
+                                }
+
+                                minscreenbutton.classList.remove('big');
+
+                                const elements = document.querySelector('.testwindow_title.navy');
+                                const elements2 = elements.closest('.testwindow2');
+                                elements2.style.width = elements2.dataset.originalWidth;
+                                elements2.style.height = elements2.dataset.originalHeight;
+                                elements2.style.top = elements2.dataset.originalTop;
+                                elements2.style.left = elements2.dataset.originalLeft;
+
+                                minscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                                setTimeout(() => {
+                                    minscreenbutton.style.transition = ""
+                                    setTimeout(() => {
+                                        minscreenbutton.scrollTop = 0;
+                                        minscreenbutton.scrollLeft = 0;
+                                    }, 100);
+                                }, 150);
+
+                                setTimeout(() => {
+                                    for (let child of childElements) {
+                                        child.style.display = '';
+                                    }
+                                    if (localStorage.getItem('allwindow_toolbar')) {
+                                        document.querySelectorAll('.window_tool').forEach(function (window_tool) {
+                                            window_tool.style.display = "block"
+                                        })
+                                    }
+
+                                    document.querySelectorAll('.testwindow2').forEach(function (testwindow2) {
+                                        const hehehe1 = testwindow2.firstElementChild;
+                                        const testwindow2_1 = testwindow2.children[2];
+                                        const testwindow2_2 = testwindow2_1.firstElementChild;
+
+
+                                        if (hehehe1.classList.contains('navy')) {
+                                            testwindow2_2.style.maxWidth = `${testwindow2.clientWidth + - + 5}px`;
+                                            testwindow2_2.style.maxHeight = `${testwindow2.clientHeight + - + 25}px`;
+                                            testwindow2_2.style.left = "0"
+                                        }
+                                    })
+
+                                }, 150);
+                            });
+                        });
+
+
+
+                        document.querySelectorAll('.drag_button').forEach(function (drag) {
+                            let drag2 = drag.closest('.testwindow2');
+                            //要素内のクリックされた位置を取得するグローバル（のような）変数
+                            var x;
+                            var y;
+                            //マウスが要素内で押されたとき、又はタッチされたとき発火
+                            drag.addEventListener("mousedown", mdown, { passive: false }, false);
+                            drag.addEventListener("touchstart", mdown, { passive: false }, false);
+                            //マウスが押された際の関数
+                            function mdown(e) {
+                                //クラス名に .drag を追加
+                                drag2.classList.add("drag");
+                                //タッチデイベントとマウスのイベントの差異を吸収
+                                if (e.type === "mousedown") {
+                                    var event = e;
+                                } else {
+                                    var event = e.changedTouches[0];
+                                }
+                                //要素内の相対座標を取得
+                                x = event.pageX - drag2.offsetLeft;
+                                y = event.pageY - drag2.offsetTop;
+                                //ムーブイベントにコールバック
+                                document.body.addEventListener("mousemove", mmove, { passive: false }, false);
+                                document.body.addEventListener("touchmove", mmove, { passive: false }, false);
+                            }
+                            //マウスカーソルが動いたときに発火
+                            function mmove(e) {
+                                //ドラッグしている要素を取得
+                                var drag = document.getElementsByClassName("drag")[0];
+                                //同様にマウスとタッチの差異を吸収
+                                if (e.type === "mousemove") {
+                                    var event = e;
+                                } else {
+                                    var event = e.changedTouches[0];
+                                }
+                                const elements = document.querySelectorAll('.rectangle');
+                                // 各要素からクラスを削除
+                                elements.forEach(element => {
+                                    element.classList.remove('rectangle');
+                                });
+
+                                //マウスが動いた場所に要素を動かす
+                                drag.style.top = event.pageY - y + "px";
+                                drag.style.left = event.pageX - x + "px";
+                                //マウスボタンが離されたとき、またはカーソルが外れたとき発火
+                                drag.addEventListener("mouseup", mup, false);
+                                document.body.addEventListener("mouseleave", mup, false);
+                                drag.addEventListener("touchend", mup, false);
+                                document.body.addEventListener("touchleave", mup, false);
+                                // 半透明
+                                if (localStorage.getItem('window_invisible')) {
+                                    document.querySelectorAll('.child_windows').forEach(function (title) {
+                                        title.style.opacity = "0.5";
+                                    })
+                                }
+                                // 移動してる時だけ黒枠のみ
+                                if (localStorage.getItem('window_borderblack')) {
+                                    document.querySelectorAll('.child_windows, .child').forEach(function (title) {
+                                        document.querySelector('iframe').style.opacity = "0";
+                                        title.style.background = "rgba(255, 255, 255, 0)";
+                                        title.style.border = "solid 2px black";
+                                    })
+                                    document.querySelectorAll('.title,.title2,.title_buttons,.window_tool,.window_contents,.window_content,.window_bottom,.prompt_content').forEach(function (title) {
+                                        title.style.opacity = "0"
+                                    })
+                                }
+                            }
+                            //マウスボタンが上がったら発火
+                            function mup(e) {
+
+                                document.querySelectorAll('.drag').forEach(function (drag_windows) {
+                                    drag_windows.classList.remove("drag");
+                                })
+
+                                document.body.removeEventListener("mousemove", mmove, false);
+                                drag.removeEventListener("mouseup", mup, false);
+                                document.body.removeEventListener("touchmove", { passive: false }, mmove, false);
+                                drag.removeEventListener("touchend", { passive: false }, mup, false);
+                                // 半透明
+                                document.querySelectorAll('.child_windows').forEach(function (title) {
+                                    title.style.opacity = "";
+                                    window_prompt.style.background = "black"
+                                    window_back_silver()
+                                })
+                                // 移動してる時だけ黒枠のみ
+                                document.querySelectorAll('.child_windows, .child').forEach(function (title) {
+                                    title.style.background = "";
+                                    title.style.border = "";
+                                    document.querySelector('iframe').style.opacity = "";
+                                    window_prompt.style.background = "black"
+                                    window_back_silver()
+                                })
+                                document.querySelectorAll('.title,.title2,.title_buttons,.window_tool,.window_contents,.window_content,.window_bottom,.prompt_content').forEach(function (title) {
+                                    title.style.opacity = ""
+                                    window_back_silver()
+                                })
+                                titlecolor_set()
                             }
                         })
-                    });
 
-                }, 0);
 
-                dropArea.appendChild(windowDiv);
 
-            };
-            reader.readAsDataURL(file);
+                        // クラス名が "target" の要素を全て取得
+                        document.querySelectorAll('.bigscreen_button2').forEach(function (element) {
+                            var newChild = document.createElement('div');
+                            newChild.className = 'bigscreen_button_child';
+                            // 子要素を追加
+                            element.appendChild(newChild);
+                        });
+
+                        document.querySelectorAll('.testwindow2').forEach(function (testwindow2) {
+                            testwindow2.addEventListener('mousemove', function () {
+                                const hehehe1 = testwindow2.firstElementChild;
+                                const testwindow2_1 = testwindow2.children[2];
+                                const testwindow2_2 = testwindow2_1.firstElementChild;
+                                if (hehehe1.classList.contains('navy') && !testwindow2.classList.contains('big')) {
+                                    testwindow2_2.style.maxWidth = `${testwindow2.clientWidth + - + 5}px`;
+                                    testwindow2_2.style.maxHeight = `${testwindow2.clientHeight + - + 25}px`;
+                                    testwindow2_2.style.width = "100%";
+                                    testwindow2_2.style.height = "100%";
+                                    testwindow2_2.style.left = "0"
+                                }
+                            })
+                        });
+
+                    }, 0);
+
+                    dropArea.appendChild(windowDiv);
+                    setTimeout(() => {
+                        resolve();
+                    }, 500); // 0.5秒後に処理完了
+                };
+                reader.readAsDataURL(file);
+            })
         }
 
         // 各ファイルを1つずつ処理
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
             setTimeout(() => {
-                processFile(file, event.clientX, event.clientY);
+                document.querySelector('.warning_title_text').textContent = "nexser"
+                document.querySelector('.window_warning_text').textContent = `読み込み中... ${i + 1} of ${files.length}: ${file.name}`;
+                warning_windows.style.display = "block"
+                document.querySelector('.close_button3').style.display = "block"
+                document.querySelector('.shutdown_button').style.display = "none";
+                document.querySelector('.warningclose_button').style.display = "none";
+                // ダミーの非同期処理を実行
+                processFile(file, event.clientX, event.clientY).then(() => {
+                    // 処理終了メッセージを表示
+                    warning_windows.style.display = "none"
+                }).catch(error => {
+                    console.error(`Error processing file ${i + 1}:`, error);
+                    processingMessage.innerText = `Error processing file ${i + 1} of ${files.length}: ${file.name}`;
+                });
             }, i * 250);
         }
 
@@ -7625,33 +7705,6 @@ if (ua.includes("mobile")) {
             element.classList.remove('rectangle');
         });
     });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     // ローカルストレージの内容を外部出力
     document.getElementById('exportButton').addEventListener('click', function () {
@@ -7676,7 +7729,7 @@ if (ua.includes("mobile")) {
                 localStorage.setItem(key, data[key]);
             }
             document.querySelector('.warning_title_text').textContent = "nexser"
-            document.querySelector('.window_warning_text').textContent = "ローカルストレージが復元されました! ページを再読み込みしてください。";
+            document.querySelector('.window_warning_text').textContent = "データが復元されました! ページを再読み込みしてください。";
             warning_windows.style.display = "block"
             document.querySelector('.close_button3').style.display = "block"
             sound5()

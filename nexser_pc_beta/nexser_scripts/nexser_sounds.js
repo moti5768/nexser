@@ -143,7 +143,7 @@ Array.from(sound_play_button).forEach((sound_play_buttons) => {
     })
     sound_play_buttons.addEventListener('click', function () {
         if (!localStorage.getItem('driver_sound')) {
-            document.querySelector('.window_error_text').textContent = "driver sound no install!"
+            document.querySelector('.window_error_text').textContent = "サウンドドライバー がインストールされていません!"
             error_windows.classList.remove('active')
             prompt_text2.style.color = "";
             document.querySelector('.test_allwindow').style.display = "block";
