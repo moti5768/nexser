@@ -959,15 +959,16 @@ if (ua.includes("mobile")) {
             const pass = document.querySelector('.password').value;
 
             const password_lock = (String(pass)
-                .replaceAll("0", "a+b").replaceAll("1", "c#d").replaceAll("2", "e*f")
-                .replaceAll("3", "g|h").replaceAll("4", "i=j").replaceAll("5", "k[l")
-                .replaceAll("6", "m]n").replaceAll("7", "o-p").replaceAll("8", "q>r")
-                .replaceAll("9", "s<t")
+                .replaceAll("0", ".a+b.").replaceAll("1", ".c#d.").replaceAll("2", ".e*f.")
+                .replaceAll("3", ".g|h.").replaceAll("4", ".i=j.").replaceAll("5", ".k[l.")
+                .replaceAll("6", ".m]n.").replaceAll("7", ".o-p.").replaceAll("8", ".q>r.")
+                .replaceAll("9", ".s<t.")
             );
 
             localStorage.setItem('password', password_lock);
             localStorage.setItem('login', passlogin);
             document.querySelector('.passcode').textContent = "登録しました";
+            document.querySelector('.pass_locked').textContent = password_lock;
         }
     }
 
@@ -998,10 +999,10 @@ if (ua.includes("mobile")) {
         const password_unlock = localStorage.getItem('password');
 
         const password_unlock2 = (String(password_unlock)
-            .replaceAll("a+b", "0").replaceAll("c#d", "1").replaceAll("e*f", "2")
-            .replaceAll("g|h", "3").replaceAll("i=j", "4").replaceAll("k[l", "5")
-            .replaceAll("m]n", "6").replaceAll("o-p", "7").replaceAll("q>r", "8")
-            .replaceAll("s<t", "9")
+            .replaceAll(".a+b.", "0").replaceAll(".c#d.", "1").replaceAll(".e*f.", "2")
+            .replaceAll(".g|h.", "3").replaceAll(".i=j.", "4").replaceAll(".k[l.", "5")
+            .replaceAll(".m]n.", "6").replaceAll(".o-p.", "7").replaceAll(".q>r.", "8")
+            .replaceAll(".s<t.", "9")
         );
 
         if (password_unlock2 == document.querySelector('#pass_form').value) {
@@ -1471,6 +1472,8 @@ if (ua.includes("mobile")) {
             localStorage.removeItem('login');
             document.getElementById('desktop').style.display = "none";
             document.querySelector('#pass_form').focus();
+            window_none();
+            window_reset();
             sound_stop()
         } else if (localStorage.getItem('password') && gets != gets2) {
             document.getElementById('nex').style.cursor = '';
@@ -2547,7 +2550,7 @@ if (ua.includes("mobile")) {
                 break;
             case 'taskbar/none':
                 taskbar.style.display = "none";
-                const data_taskbar_none = document.prompt_text_form2.prompt_text2.value;
+                const data_taskbar_none = document.querySelector('.focus2').value;
                 localStorage.setItem('data_taskbar_none', data_taskbar_none);
                 prompt_text2.style.color = "";
                 taskbar_none()
@@ -2588,7 +2591,7 @@ if (ua.includes("mobile")) {
                 allwindow_big()
                 break;
             case 'title/none':
-                const data_title_none = document.prompt_text_form2.prompt_text2.value;
+                const data_title_none = document.querySelector('.focus2').value;
                 localStorage.setItem('data_title_none', data_title_none);
                 prompt_text2.style.color = "";
                 title_none()
@@ -2626,7 +2629,7 @@ if (ua.includes("mobile")) {
                 welcome()
                 break;
             case 'file/none':
-                const file_none = document.prompt_text_form2.prompt_text2.value;
+                const file_none = document.querySelector('.focus2').value;
                 localStorage.setItem('file_none', file_none);
                 prompt_text2.style.color = "";
                 document.querySelector('.files_inline').style.display = "none";
@@ -2674,8 +2677,8 @@ if (ua.includes("mobile")) {
     }
 
     function prompt2_text_clear() {
-        document.querySelectorAll('.command_input2').forEach(function (command_input2) {
-            command_input2.value = "";
+        document.querySelectorAll('.focus2').forEach(function (focus2) {
+            focus2.value = "";
         })
     }
 
@@ -7120,7 +7123,8 @@ if (ua.includes("mobile")) {
                     newChild.appendChild(newChild2);
 
                     const newChild22 = document.createElement('span');
-                    newChild22.textContent = 'window ' + largestZIndex++;
+                    newChild22.textContent = `${file.name}`;
+                    newChild22.classList.add('white_space_wrap');
                     newChild.appendChild(newChild22);
 
                     // 新しい子要素を生成して追加

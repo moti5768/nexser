@@ -666,12 +666,11 @@ input[type="file"] {
 }
 
 .screen_light_range_child>textarea {
-    top: 5px;
-    display: inline;
+    top: 2.5px;
+    display: inline-block;
     outline: none;
-    border: solid 1px black;
     position: absolute;
-    width: 35px;
+    width: 30px;
     height: 20px;
     left: 0.5px;
     resize: none;
@@ -702,10 +701,10 @@ input[type="file"] {
 
 .battery_menu {
     display: none;
+    background: silver;
 }
 
 .battery_time {
-    background: silver;
     position: absolute;
     bottom: 35px;
 }
@@ -2994,4 +2993,12 @@ progress::-webkit-progress-value {
     position: absolute;
     min-width: 250px;
     min-height: 250px;
+}
+
+.white_space_wrap {
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 75%;
 }

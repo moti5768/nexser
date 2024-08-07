@@ -44,6 +44,7 @@
             </div>
             <div style="position: relative; top: 10px;">
                 <ul>
+                    <li>Enter で実行</li>
                     <li>help command(click)</li>
                     <li class="hover_blue"
                         style="display: inline-block; border: solid 1px white; box-shadow: 5px 5px #888888;"
@@ -109,6 +110,7 @@
                                     &lt;/div&gt;
                                     &lt;div style=&quot;position: relative; top: 10px;&quot;&gt;
                                         &lt;ul&gt;
+                                            &lt;li&gt;Enter で実行&lt;/li&gt;
                                             &lt;li&gt;help command(click)&lt;/li&gt;
                                             &lt;li class=&quot;hover_blue&quot;
                                                 style=&quot;display: inline-block; border: solid 1px white; box-shadow: 5px 5px #888888;&quot;
@@ -3337,6 +3339,7 @@
                                                     &lt;button class=&quot;button2 apply_button&quot; onclick=&quot;pass_submit()&quot;&gt;submit&lt;/button&gt;
                                                     &lt;button class=&quot;button2 apply_button&quot; onclick=&quot;pass_reset()&quot;&gt;reset&lt;/button&gt;
                                                     &lt;p&gt;パスワード:&amp;emsp;&lt;span class=&quot;passcode&quot;&gt;登録していません&lt;/span&gt;&lt;/p&gt;
+                                                    &lt;p&gt;lock number &lt;span class=&quot;pass_locked&quot;&gt;&lt;/span&gt;&lt;/p&gt;
                                                 &lt;/div&gt;
                         
                                             &lt;/div&gt;
@@ -3829,7 +3832,7 @@
                                                     &lt;div class=&quot;screen_light_range&quot;&gt;
                                                         &lt;span class=&quot;button sit_button&quot; onclick=&quot;lightchild()&quot;&gt;&amp;nbsp;SlT&amp;nbsp;&lt;/span&gt;
                                                         &lt;div class=&quot;screen_light_range_child border&quot;&gt;
-                                                            &lt;textarea class=&quot;light_value&quot; maxlength=&quot;4&quot;
+                                                            &lt;textarea class=&quot;light_value border&quot; maxlength=&quot;4&quot;
                                                                 onkeydown=&quot;if(event.keyCode == 13){return false;}&quot;&gt;&lt;/textarea&gt;&lt;br&gt;
                                                             &lt;button class=&quot;button2&quot; onclick=&quot;lights()&quot;&gt;sbmit&lt;/button&gt;
                                                             &lt;p&gt;0~1&lt;/p&gt;
@@ -3845,8 +3848,7 @@
                                                                 &lt;p&gt;BATTERY:&lt;span class=&quot;taskbattery&quot;&gt;&lt;/span&gt;%&lt;/p&gt;
                                                             &lt;/span&gt;
                                                         &lt;/li&gt;
-                                                        &lt;div class=&quot;battery_menu&quot;
-                                                            style=&quot;font-size: large; width: auto; height: auto; background: silver;&quot;&gt;
+                                                        &lt;div class=&quot;battery_menu&quot; style=&quot;font-size: large; width: auto; height: auto;&quot;&gt;
                                                             &lt;span class=&quot;battery_time border&quot;&gt;none&lt;/span&gt;
                                                         &lt;/div&gt;
                                                     &lt;/div&gt;
@@ -5130,15 +5132,16 @@
                                     const pass = document.querySelector(&#039;.password&#039;).value;
                         
                                     const password_lock = (String(pass)
-                                        .replaceAll(&quot;0&quot;, &quot;a+b&quot;).replaceAll(&quot;1&quot;, &quot;c#d&quot;).replaceAll(&quot;2&quot;, &quot;e*f&quot;)
-                                        .replaceAll(&quot;3&quot;, &quot;g|h&quot;).replaceAll(&quot;4&quot;, &quot;i=j&quot;).replaceAll(&quot;5&quot;, &quot;k[l&quot;)
-                                        .replaceAll(&quot;6&quot;, &quot;m]n&quot;).replaceAll(&quot;7&quot;, &quot;o-p&quot;).replaceAll(&quot;8&quot;, &quot;q&gt;r&quot;)
-                                        .replaceAll(&quot;9&quot;, &quot;s&lt;t&quot;)
+                                        .replaceAll(&quot;0&quot;, &quot;.a+b.&quot;).replaceAll(&quot;1&quot;, &quot;.c#d.&quot;).replaceAll(&quot;2&quot;, &quot;.e*f.&quot;)
+                                        .replaceAll(&quot;3&quot;, &quot;.g|h.&quot;).replaceAll(&quot;4&quot;, &quot;.i=j.&quot;).replaceAll(&quot;5&quot;, &quot;.k[l.&quot;)
+                                        .replaceAll(&quot;6&quot;, &quot;.m]n.&quot;).replaceAll(&quot;7&quot;, &quot;.o-p.&quot;).replaceAll(&quot;8&quot;, &quot;.q&gt;r.&quot;)
+                                        .replaceAll(&quot;9&quot;, &quot;.s&lt;t.&quot;)
                                     );
                         
                                     localStorage.setItem(&#039;password&#039;, password_lock);
                                     localStorage.setItem(&#039;login&#039;, passlogin);
                                     document.querySelector(&#039;.passcode&#039;).textContent = &quot;登録しました&quot;;
+                                    document.querySelector(&#039;.pass_locked&#039;).textContent = password_lock;
                                 }
                             }
                         
@@ -5169,10 +5172,10 @@
                                 const password_unlock = localStorage.getItem(&#039;password&#039;);
                         
                                 const password_unlock2 = (String(password_unlock)
-                                    .replaceAll(&quot;a+b&quot;, &quot;0&quot;).replaceAll(&quot;c#d&quot;, &quot;1&quot;).replaceAll(&quot;e*f&quot;, &quot;2&quot;)
-                                    .replaceAll(&quot;g|h&quot;, &quot;3&quot;).replaceAll(&quot;i=j&quot;, &quot;4&quot;).replaceAll(&quot;k[l&quot;, &quot;5&quot;)
-                                    .replaceAll(&quot;m]n&quot;, &quot;6&quot;).replaceAll(&quot;o-p&quot;, &quot;7&quot;).replaceAll(&quot;q&gt;r&quot;, &quot;8&quot;)
-                                    .replaceAll(&quot;s&lt;t&quot;, &quot;9&quot;)
+                                    .replaceAll(&quot;.a+b.&quot;, &quot;0&quot;).replaceAll(&quot;.c#d.&quot;, &quot;1&quot;).replaceAll(&quot;.e*f.&quot;, &quot;2&quot;)
+                                    .replaceAll(&quot;.g|h.&quot;, &quot;3&quot;).replaceAll(&quot;.i=j.&quot;, &quot;4&quot;).replaceAll(&quot;.k[l.&quot;, &quot;5&quot;)
+                                    .replaceAll(&quot;.m]n.&quot;, &quot;6&quot;).replaceAll(&quot;.o-p.&quot;, &quot;7&quot;).replaceAll(&quot;.q&gt;r.&quot;, &quot;8&quot;)
+                                    .replaceAll(&quot;.s&lt;t.&quot;, &quot;9&quot;)
                                 );
                         
                                 if (password_unlock2 == document.querySelector(&#039;#pass_form&#039;).value) {
@@ -5642,6 +5645,8 @@
                                     localStorage.removeItem(&#039;login&#039;);
                                     document.getElementById(&#039;desktop&#039;).style.display = &quot;none&quot;;
                                     document.querySelector(&#039;#pass_form&#039;).focus();
+                                    window_none();
+                                    window_reset();
                                     sound_stop()
                                 } else if (localStorage.getItem(&#039;password&#039;) &amp;&amp; gets != gets2) {
                                     document.getElementById(&#039;nex&#039;).style.cursor = &#039;&#039;;
@@ -6718,7 +6723,7 @@
                                         break;
                                     case &#039;taskbar/none&#039;:
                                         taskbar.style.display = &quot;none&quot;;
-                                        const data_taskbar_none = document.prompt_text_form2.prompt_text2.value;
+                                        const data_taskbar_none = document.querySelector(&#039;.focus2&#039;).value;
                                         localStorage.setItem(&#039;data_taskbar_none&#039;, data_taskbar_none);
                                         prompt_text2.style.color = &quot;&quot;;
                                         taskbar_none()
@@ -6759,7 +6764,7 @@
                                         allwindow_big()
                                         break;
                                     case &#039;title/none&#039;:
-                                        const data_title_none = document.prompt_text_form2.prompt_text2.value;
+                                        const data_title_none = document.querySelector(&#039;.focus2&#039;).value;
                                         localStorage.setItem(&#039;data_title_none&#039;, data_title_none);
                                         prompt_text2.style.color = &quot;&quot;;
                                         title_none()
@@ -6797,7 +6802,7 @@
                                         welcome()
                                         break;
                                     case &#039;file/none&#039;:
-                                        const file_none = document.prompt_text_form2.prompt_text2.value;
+                                        const file_none = document.querySelector(&#039;.focus2&#039;).value;
                                         localStorage.setItem(&#039;file_none&#039;, file_none);
                                         prompt_text2.style.color = &quot;&quot;;
                                         document.querySelector(&#039;.files_inline&#039;).style.display = &quot;none&quot;;
@@ -6845,8 +6850,8 @@
                             }
                         
                             function prompt2_text_clear() {
-                                document.querySelectorAll(&#039;.command_input2&#039;).forEach(function (command_input2) {
-                                    command_input2.value = &quot;&quot;;
+                                document.querySelectorAll(&#039;.focus2&#039;).forEach(function (focus2) {
+                                    focus2.value = &quot;&quot;;
                                 })
                             }
                         
@@ -11291,7 +11296,8 @@
                                             newChild.appendChild(newChild2);
                         
                                             const newChild22 = document.createElement(&#039;span&#039;);
-                                            newChild22.textContent = &#039;window &#039; + largestZIndex++;
+                                            newChild22.textContent = `${file.name}`;
+                                            newChild22.classList.add(&#039;white_space_wrap&#039;);
                                             newChild.appendChild(newChild22);
                         
                                             // 新しい子要素を生成して追加
@@ -15306,6 +15312,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             <button class="button2 apply_button" onclick="pass_submit()">submit</button>
                             <button class="button2 apply_button" onclick="pass_reset()">reset</button>
                             <p>パスワード:&emsp;<span class="passcode">登録していません</span></p>
+                            <p>lock number <span class="pass_locked"></span></p>
                         </div>
 
                     </div>
@@ -15798,7 +15805,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             <div class="screen_light_range">
                                 <span class="button sit_button" onclick="lightchild()">&nbsp;SlT&nbsp;</span>
                                 <div class="screen_light_range_child border">
-                                    <textarea class="light_value" maxlength="4"
+                                    <textarea class="light_value border" maxlength="4"
                                         onkeydown="if(event.keyCode == 13){return false;}"></textarea><br>
                                     <button class="button2" onclick="lights()">sbmit</button>
                                     <p>0~1</p>
@@ -15814,8 +15821,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                         <p>BATTERY:<span class="taskbattery"></span>%</p>
                                     </span>
                                 </li>
-                                <div class="battery_menu"
-                                    style="font-size: large; width: auto; height: auto; background: silver;">
+                                <div class="battery_menu" style="font-size: large; width: auto; height: auto;">
                                     <span class="battery_time border">none</span>
                                 </div>
                             </div>
