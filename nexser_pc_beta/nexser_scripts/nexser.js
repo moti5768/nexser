@@ -483,8 +483,11 @@ if (ua.includes("mobile")) {
             if (localStorage.getItem('wallpaper_95')) {
                 document.querySelector('.nexser_backgroundimage_1').style.display = "block"
             }
-            if (localStorage.getItem('wallpaper_xp')) {
+            if (localStorage.getItem('wallpaper_95_2')) {
                 document.querySelector('.nexser_backgroundimage_2').style.display = "block"
+            }
+            if (localStorage.getItem('wallpaper_xp')) {
+                document.querySelector('.nexser_backgroundimage_3').style.display = "block"
             }
 
             resolve();
@@ -6607,7 +6610,9 @@ if (ua.includes("mobile")) {
     function wallpaper_allremove() {
         document.querySelector('.nexser_backgroundimage_1').style.display = "none"
         document.querySelector('.nexser_backgroundimage_2').style.display = "none"
+        document.querySelector('.nexser_backgroundimage_3').style.display = "none"
         localStorage.removeItem('wallpaper_95')
+        localStorage.removeItem('wallpaper_95_2')
         localStorage.removeItem('wallpaper_xp')
     }
 
@@ -6618,10 +6623,16 @@ if (ua.includes("mobile")) {
         document.querySelector('.nexser_backgroundimage_1').style.display = "block"
     })
 
+    document.querySelector('.wallpaper_95_2').addEventListener('click', function (wallpaper_95_2) {
+        wallpaper_allremove()
+        localStorage.setItem('wallpaper_95_2', wallpaper_95_2);
+        document.querySelector('.nexser_backgroundimage_2').style.display = "block"
+    })
+
     document.querySelector('.wallpaper_xp').addEventListener('click', function (wallpaper_xp) {
         wallpaper_allremove()
         localStorage.setItem('wallpaper_xp', wallpaper_xp);
-        document.querySelector('.nexser_backgroundimage_2').style.display = "block"
+        document.querySelector('.nexser_backgroundimage_3').style.display = "block"
     })
 
     const othello_board = document.getElementById('othello_board');
@@ -7790,7 +7801,7 @@ if (ua.includes("mobile")) {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'nexser_localstorage_data.json';
+        a.download = 'nexser_storageData.json';
         a.click();
         URL.revokeObjectURL(url);
     });
