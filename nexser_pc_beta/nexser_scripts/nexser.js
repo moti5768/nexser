@@ -609,11 +609,9 @@ if (ua.includes("mobile")) {
             file10.classList.remove('file_select');
         })
         if (start_menu.style.display == "block") {
-            // noneで非表示
             start_menu.style.display = "none";
             document.querySelector('.start_button').classList.remove('pressed')
         } else {
-            // blockで表示
             start_menu.style.display = "block";
             document.querySelector('.start_button').classList.add('pressed');
             document.querySelector('.battery_menu').style.display = "none";
@@ -625,10 +623,8 @@ if (ua.includes("mobile")) {
     })
     document.querySelector('.battery_child').addEventListener('click', function () {
         if (document.querySelector('.battery_menu').style.display == "block") {
-            // noneで非表示
             document.querySelector('.battery_menu').style.display = "none";
         } else {
-            // blockで表示
             document.querySelector('.battery_menu').style.display = "block";
         }
     })
@@ -2120,8 +2116,8 @@ if (ua.includes("mobile")) {
     function commandarea_resize() {
         const textarea = document.querySelector('.focus2');
         textarea.addEventListener('input', () => {
-            textarea.style.height = 'auto'; // 高さをリセット
-            textarea.style.height = textarea.scrollHeight + 'px'; // 内容に応じて高さを設定
+            textarea.style.height = 'auto';
+            textarea.style.height = textarea.scrollHeight + 'px';
         });
         document.querySelector('.focus2').focus()
     }
@@ -2508,20 +2504,6 @@ if (ua.includes("mobile")) {
                 }, 100);
                 break;
 
-            case 'nexser/memory':
-                document.querySelector('.memory_menu').classList.remove('active');
-
-                document.querySelectorAll('.memory_menu').forEach(function (memory_menu) {
-                    memory_menu.closest('.child_windows');
-                    memory_menu.classList.remove('active');
-                    memory_menu.style.zIndex = largestZIndex++;
-                    zindexwindow_addnavy();
-                })
-
-                prompt_text2.style.color = "";
-                break;
-
-
             case '':
                 prompt_text2.style.color = "";
                 break;
@@ -2645,7 +2627,6 @@ if (ua.includes("mobile")) {
                 nexser_prompt_reset()
                 break;
 
-
             case 'windows95/open':
                 location.href = 'https://moti5768.github.io/moti.world/windows95.html'
                 prompt_text2.style.color = "";
@@ -2755,10 +2736,6 @@ if (ua.includes("mobile")) {
 
             document.getElementsByClassName('cpu_cores')[0].textContent = (navigator.hardwareConcurrency);
 
-            document.getElementsByClassName('window_memory')[0].textContent = (`Memory:   ${(performance.memory.usedJSHeapSize / 1024).toFixed(2)}KB`);
-            document.getElementsByClassName('window_memory2')[0].textContent = (`使用可能なメモリ    ${(performance.memory.jsHeapSizeLimit / 1048576).toFixed(2)}MB`);
-            document.getElementsByClassName('window_memory3')[0].textContent = (`割り当てられたメモリ  ${(performance.memory.totalJSHeapSize / 1024).toFixed(2)}KB`);
-            document.getElementsByClassName('window_memory4')[0].textContent = (`現在使用中のメモリ   ${(performance.memory.usedJSHeapSize / 1024).toFixed(2)}KB`);
             resize_background_image();
         }
     }, 100);
@@ -4099,7 +4076,6 @@ if (ua.includes("mobile")) {
         }
         //マウスボタンが上がったら発火
         function mup(e) {
-
             document.querySelectorAll('.drag').forEach(function (drag_windows) {
                 drag_windows.classList.remove("drag");
             })
@@ -4109,11 +4085,6 @@ if (ua.includes("mobile")) {
             document.body.removeEventListener("touchmove", { passive: false }, mmove, false);
             drag.removeEventListener("touchend", { passive: false }, mup, false);
 
-            // document.querySelectorAll('.title').forEach(function (title) {
-            //     document.querySelector('.navy').style.background = ""
-            //     window_prompt.style.background = "black"
-            //     window_back_silver()
-            // })
             // 半透明
             document.querySelectorAll('.child_windows').forEach(function (title) {
                 title.style.opacity = "";
@@ -6353,8 +6324,6 @@ if (ua.includes("mobile")) {
         document.querySelector('.omikuji_text').textContent = omikuji_results[index] + ' です！';
     }
 
-
-    // shellmenu_open();
     function localmemory_size() {
         document.querySelectorAll('.prompt_shell_menu').forEach(function (prompt_shell_menu) {
             prompt_shell_menu.closest('.child_windows');
@@ -6382,14 +6351,13 @@ if (ua.includes("mobile")) {
             document.querySelector('.local_memory').innerHTML = '&emsp;' + maxSize + 'KB' + '&emsp;';
             localStorage.setItem('maxSize', maxSize);
 
-            // 計算が終わった後に次の処理を実行
             nextProcess();
         }, 100);
 
     }
 
     function nextProcess() {
-        const delay = 25; // delay in milliseconds
+        const delay = 25;
         const totalDelay = localStorage.length * delay;
         for (let i = 0; i < localStorage.length; i++) {
             setTimeout(() => {
@@ -6658,7 +6626,6 @@ if (ua.includes("mobile")) {
 
     function othello_start() {
         othello_reset()
-        // Set initial pieces
         const initialPositions = [27, 28, 35, 36];
         initialPositions.forEach(index => {
             const piece = document.createElement('div');
@@ -6669,13 +6636,10 @@ if (ua.includes("mobile")) {
 
     function handleClick(event) {
         const cell = event.target;
-        if (cell.children.length > 0) return; // Ignore if cell is not empty
-
+        if (cell.children.length > 0) return;
         const piece = document.createElement('div');
         piece.classList.add(currentPlayer);
         cell.appendChild(piece);
-
-        // Switch player
         currentPlayer = currentPlayer === 'othello_black' ? 'othello_white' : 'othello_black';
     }
 
@@ -6913,7 +6877,7 @@ if (ua.includes("mobile")) {
 
     function createBoard() {
         const gameBoard = document.getElementById('game-board');
-        gameBoard.innerHTML = ''; // ボードをクリア
+        gameBoard.innerHTML = '';
         shuffle(cards);
         cards.forEach(card => {
             const cardElement = document.createElement('div');
@@ -6922,8 +6886,8 @@ if (ua.includes("mobile")) {
             cardElement.addEventListener('click', flipCard);
             gameBoard.appendChild(cardElement);
         });
-        card_startTime = new Date(); // ゲーム開始時間を記録
-        card_timerInterval = setInterval(updateElapsedTime, 1000); // タイマーを開始
+        card_startTime = new Date();
+        card_timerInterval = setInterval(updateElapsedTime, 1000);
     }
 
     function flipCard() {
@@ -6949,7 +6913,7 @@ if (ua.includes("mobile")) {
             disableCards();
             updateMatchCount();
             if (matchCount === cards.length / 2) {
-                clearInterval(card_timerInterval); // タイマーを停止
+                clearInterval(card_timerInterval);
                 showCongratulationsMessage();
             }
         } else {
@@ -6988,7 +6952,7 @@ if (ua.includes("mobile")) {
         matchCount = 0;
         document.getElementById('match-count').textContent = matchCount;
         document.getElementById('game_board_text').textContent = ""
-        clearInterval(card_timerInterval); // タイマーを停止
+        clearInterval(card_timerInterval);
         document.getElementById('elapsed-time').textContent = '0';
         document.getElementsByClassName('start_card')[0].style.display = "block"
         document.getElementById('game-board').style.display = "none"
@@ -7009,14 +6973,6 @@ if (ua.includes("mobile")) {
         createBoard()
     }
 
-
-
-
-
-
-
-
-
     windowposition_reset()
     function windowposition_reset() {
         document.querySelectorAll('.child_windows').forEach(element => {
@@ -7025,13 +6981,9 @@ if (ua.includes("mobile")) {
         });
     }
 
-
-
-    // クラス名が "target" の要素を全て取得
     document.querySelectorAll('.bigscreen_button').forEach(function (element) {
         var newChild = document.createElement('div');
         newChild.className = 'bigscreen_button_child';
-        // 子要素を追加
         element.appendChild(newChild);
     });
 
@@ -7058,20 +7010,12 @@ if (ua.includes("mobile")) {
                 }
             });
 
-            // 親要素に右クリックイベントを追加
             parent.addEventListener('contextmenu', function (event) {
-                event.preventDefault(); // デフォルトの右クリックメニューを無効化
-
-                // クリックされた要素が親要素または親要素内の空白部分であることを確認
+                event.preventDefault();
                 if (event.target === parent) {
                     elements.forEach(function (element, index) {
-                        // 元の名前を保存
                         var originalName = element.textContent;
-
-                        // 新しい名前を入力するプロンプトを表示
                         var newName = prompt('新しい名前を入力してください (20文字以内):', element.textContent);
-
-                        // 新しい名前が入力された場合、文字数をチェック
                         if (newName && newName.length <= 20) {
                             element.textContent = newName;
                             localStorage.setItem('editable-' + parentIndex + '-' + index, newName);
@@ -7081,9 +7025,8 @@ if (ua.includes("mobile")) {
                             error_windows.classList.remove('active');
                             document.querySelector('.test_allwindow').style.display = "block";
                             sound3()
-                            element.textContent = originalName; // 元の名前に戻す
+                            element.textContent = originalName;
                         } else {
-                            // 新しい名前が入力されなかった場合、元の名前に戻す
                             element.textContent = originalName;
                         }
                     });
@@ -7169,7 +7112,6 @@ if (ua.includes("mobile")) {
                     windowDiv.style.top = `${event.clientY}px`;
                     windowDiv.style.zIndex = largestZIndex++;
 
-                    // 新しい子要素を生成して追加
                     const newChild = document.createElement('div');
                     newChild.className = "title"
                     newChild.classList.add('testwindow_title');
@@ -7184,44 +7126,36 @@ if (ua.includes("mobile")) {
                     newChild22.classList.add('white_space_wrap');
                     newChild.appendChild(newChild22);
 
-                    // 新しい子要素を生成して追加
                     const newChild3 = document.createElement('div');
                     newChild3.className = "title_buttons"
                     windowDiv.appendChild(newChild3);
 
-                    // 新しい子要素を生成して追加
                     const newChild4_4 = document.createElement('span');
                     newChild4_4.className = "drag_button"
                     newChild4_4.innerHTML = "&emsp;"
                     newChild3.appendChild(newChild4_4);
 
-                    // 新しい子要素を生成して追加
                     const newChild4 = document.createElement('span');
                     newChild4.className = "close_button"
                     newChild4.textContent = "✕"
                     newChild4.classList.add('button2')
                     newChild3.appendChild(newChild4);
 
-                    // 新しい子要素を生成して追加
                     const newChild4_1 = document.createElement('span');
                     newChild4_1.className = "bigscreen_button2"
-                    // newChild4_1.classList.add('bigscreen_button2');
                     newChild4_1.textContent = "☐"
                     newChild4_1.classList.add('button2');
                     newChild3.appendChild(newChild4_1);
 
-                    // 新しい子要素を生成して追加
                     const newChild4_2 = document.createElement('span');
                     newChild4_2.className = "minscreen_button"
                     newChild4_2.textContent = "❒"
                     newChild4_2.classList.add('button2');
                     newChild3.appendChild(newChild4_2);
 
-                    // 新しい子要素を生成して追加
                     const newChild4_5 = document.createElement('br');
                     newChild3.appendChild(newChild4_5);
 
-                    // 新しい子要素を生成して追加
                     const newChild6 = document.createElement('div');
                     newChild6.className = "window_contents"
                     windowDiv.appendChild(newChild6);
@@ -7560,11 +7494,6 @@ if (ua.includes("mobile")) {
                                     })
 
                                 }, 150);
-                                // setTimeout(() => {
-                                //     const task = document.getElementById('taskbar').clientHeight;
-                                //     const child_windows_big2 = bigscreenbutton.clientHeight;
-                                //     bigscreenbutton.style.height = child_windows_big2 + - + task + "px"
-                                // }, 150);
 
                             });
                         })
@@ -7761,7 +7690,7 @@ if (ua.includes("mobile")) {
                     dropArea.appendChild(windowDiv);
                     setTimeout(() => {
                         resolve();
-                    }, 500); // 0.5秒後に処理完了
+                    }, 500);
                 };
                 reader.readAsDataURL(file);
             })

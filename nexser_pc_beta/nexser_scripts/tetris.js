@@ -318,10 +318,8 @@ function mereset() {
     me.textContent = ""
 }
 
-// グローバル変数としてTetrisオブジェクトを作成
 tetris = new tetris();
 
-// ボタンのクリックイベントでクラスのメソッドを呼び出す関数
 function tetris_start() {
     tetris.startGame();
 }
