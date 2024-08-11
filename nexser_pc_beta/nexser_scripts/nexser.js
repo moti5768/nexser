@@ -73,6 +73,7 @@ if (ua.includes("mobile")) {
     const command_help_menu = document.querySelector('.command_help_menu');
     const omikuji_menu = document.querySelector('.omikuji_menu');
     const localstorage_monitor_menu = document.querySelector('.localstorage_monitor_menu');
+    const localstorage_details_menu = document.querySelector('.localstorage_details_menu');
     const paint_menu = document.querySelector('.paint_menu');
     const nexser_files_menu = document.querySelector('.nexser_files_menu');
     const url_drop_menu = document.querySelector('.url_drop_menu');
@@ -3487,6 +3488,13 @@ if (ua.includes("mobile")) {
             zindexwindow_addnavy()
         })
     );
+    document.querySelectorAll('.localstorage_details').forEach(localstorage_details =>
+        localstorage_details.addEventListener('click', () => {
+            localstorage_details_menu.classList.toggle('active');
+            localstorage_details_menu.style.zIndex = largestZIndex++;
+            zindexwindow_addnavy()
+        })
+    );
 
     document.querySelectorAll('.test_button').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
@@ -4842,7 +4850,7 @@ if (ua.includes("mobile")) {
     // 保存
     function save() {
         if (note_form.note_area.value === "") {
-            document.querySelector('.window_error_text').textContent = "text none not save!"
+            document.querySelector('.window_error_text').textContent = "テキストが無いため、保存できません!"
             error_windows.classList.remove('active')
             document.querySelector('.test_allwindow').style.display = "block";
             sound3()
@@ -6325,6 +6333,7 @@ if (ua.includes("mobile")) {
     }
 
     function localmemory_size() {
+        document.querySelector('.local_memory_button').classList.add('pointer_none');
         document.querySelectorAll('.prompt_shell_menu').forEach(function (prompt_shell_menu) {
             prompt_shell_menu.closest('.child_windows');
             prompt_shell_menu.classList.remove('active');
@@ -6348,32 +6357,58 @@ if (ua.includes("mobile")) {
             for (var i = 0; i < maxSize; i++) {
                 localStorage.removeItem(testKey + i);
             }
-            document.querySelector('.local_memory').innerHTML = '&emsp;' + maxSize + 'KB' + '&emsp;';
-            localStorage.setItem('maxSize', maxSize);
+            document.querySelector('.local_memory').innerHTML = ""
 
-            nextProcess();
-        }, 100);
-
-    }
-
-    function nextProcess() {
-        const delay = 25;
-        const totalDelay = localStorage.length * delay;
-        for (let i = 0; i < localStorage.length; i++) {
+            const delay = 25;
+            const totalDelay = localStorage.length * delay;
+            for (let i = 0; i < localStorage.length; i++) {
+                setTimeout(() => {
+                    const key = localStorage.key(i);
+                    const value = localStorage.getItem(key);
+                    const valueType = typeof value;
+                    const valueLength = value.length;
+                    const valueSize = new Blob([value]).size; // バイト数を計算
+                    document.getElementById('shell').textContent = (`Key: ${key}, Value: ${value}, Type: ${valueType}, Length: ${valueLength}, Size: ${valueSize} bytes`);
+                }, i * delay);
+            }
             setTimeout(() => {
-                const key = localStorage.key(i);
-                const value = localStorage.getItem(key);
-                const valueType = typeof value;
-                const valueLength = value.length;
-                document.getElementById('shell').textContent = (`Key: ${key}, Value: ${value}, Type: ${valueType}, Length: ${valueLength}`);
-            }, i * delay);
-        }
-        setTimeout(() => {
-            shellmenu_close();
-        }, totalDelay + 1000);
+                shellmenu_close();
+                document.querySelector('.local_memory').innerHTML = '&emsp;' + maxSize + 'KB' + '&emsp;';
+                localStorage.setItem('maxSize', maxSize);
+                displayLocalStorageDetails();
+                document.querySelector('.local_memory_button').classList.remove('pointer_none');
+            }, totalDelay + 500);
+        }, 10);
     }
 
 
+
+    // ローカルストレージの内容を1個ずつ詳細にリストに追加し、合計サイズを計算する関数
+    function displayLocalStorageDetails() {
+        document.querySelectorAll('.localstorage_key').forEach(function (localstorage_key) {
+            localstorage_key.remove()
+        });
+        const list = document.getElementById('localStorageList');
+        let totalSize = 0;
+
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            const value = localStorage.getItem(key);
+            const valueSize = new Blob([value]).size; // バイト数を計算
+            totalSize += valueSize;
+
+            const listItem = document.createElement('li');
+            listItem.classList.add('border');
+            listItem.classList.add('localstorage_key');
+            listItem.style.width = "max-content"
+            listItem.textContent = `Key: ${key}, Size: ${valueSize} bytes`;
+            list.appendChild(listItem);
+        }
+
+        // 合計サイズを表示
+        const totalSizeElement = document.getElementById('totalSize');
+        totalSizeElement.textContent = `Total Size: ${totalSize} bytes`;
+    }
 
 
     setInterval(() => {

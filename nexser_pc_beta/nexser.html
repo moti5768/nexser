@@ -3235,9 +3235,31 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
 
                         <div class="window_contents back_silver">
                             <p>残りのローカルストレージ容量<br><span class="local_memory border2"></span>&emsp;<span
-                                    class="small button2 borderinline_dotted"
+                                    class="small button2 borderinline_dotted local_memory_button"
                                     onclick="localmemory_size()">&emsp;残り容量を再計算&emsp;</span></p>
                             <p>使用中のローカルストレージ容量<br><span class="local_memory2 border2"></span>&emsp;</p>
+                            <button class="apply_button2 button2 localstorage_details">詳細を見る</button>
+                        </div>
+                    </div>
+
+                    <div class="child_windows localstorage_details_menu resize active"
+                        style="width: 300px; height: 200px;">
+                        <div class="title">
+                            <span class="title_icon"></span><span>localstorage details</span>
+                        </div>
+
+                        <div class="title_buttons">
+                            <span class="drag_button">&nbsp;</span>
+                            <span class="close_button button2"></span>
+                            <span class="bigscreen_button button2"></span>
+                            <span class="minscreen_button button2"></span>
+                            <span class="minimization_button button2"></span><br>
+                        </div>
+
+                        <div class="window_contents back_silver">
+                            <p class="x-large bold">Local Storage Details</p>
+                            <ul id="localStorageList"></ul>
+                            <p class="bold x-large" id="totalSize"></p><br>
                         </div>
                     </div>
 
