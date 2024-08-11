@@ -2715,14 +2715,8 @@ if (ua.includes("mobile")) {
                 document.getElementsByClassName('chargingTime')[0].innerHTML = battery.chargingTime;
                 document.getElementsByClassName('dischargingTime')[0].innerHTML = battery.dischargingTime;
             });
-            document.getElementsByClassName('memory')[0].textContent = (`Memory:   ${(performance.memory.usedJSHeapSize / 1024).toFixed(2)}KB`);
-            document.getElementsByClassName('memory2')[0].textContent = (`使用可能なメモリ    ${(performance.memory.jsHeapSizeLimit / 1048576).toFixed(2)}MB`);
-            document.getElementsByClassName('memory3')[0].textContent = (`割り当てられたメモリ  ${(performance.memory.totalJSHeapSize / 1024).toFixed(2)}KB`);
-            document.getElementsByClassName('memory4')[0].textContent = (`現在使用中のメモリ   ${(performance.memory.usedJSHeapSize / 1024).toFixed(2)}KB`);
-
             const locallength = localStorage.length;
             document.getElementsByClassName('length_localStorage')[0].textContent = (locallength);
-
         } else {
             const locallength = localStorage.length;
             document.getElementsByClassName('tests')[0].textContent = (locallength);
