@@ -547,9 +547,7 @@ if (ua.includes("mobile")) {
             localmemory_size()
             resolve()
         }, 500);
-    }).then(() => {
-        // 処理が無事終わったことを受けとって実行される処理
-    });
+    })
 
     function load_nexser() {
         localStorage.removeItem('no_shutdown')
@@ -984,7 +982,7 @@ if (ua.includes("mobile")) {
     }
 
     function pass_check() {
-
+        setColor();
         if (localStorage.getItem('password') && !localStorage.getItem('login')) {
             document.querySelector('.password_form').style.display = "block";
             document.getElementById('pass_form').focus();
@@ -1253,7 +1251,6 @@ if (ua.includes("mobile")) {
             }, 1500);
             setTimeout(() => {
                 startup_window_open();
-                ;
                 if (localStorage.getItem('toolbar_on')) {
                     toolbar.style.display = "block";
                 }
@@ -2675,6 +2672,17 @@ if (ua.includes("mobile")) {
             zindexwindow_addnavy();
         });
     }
+    function shellmenu_close() {
+        document.querySelectorAll('.prompt_shell_menu').forEach(function (prompt_shell_menu) {
+            prompt_shell_menu.closest('.child_windows');
+            document.getElementById('shell').textContent = "";
+            prompt_shell_menu.classList.add('active');
+            prompt_shell_menu.classList.remove('selectwindows');
+            prompt_shell_menu.style.zIndex = largestZIndex++;
+            zindexwindow_addnavy();
+            test_windows_button()
+        });
+    }
 
     function prompt2_text_clear() {
         document.querySelectorAll('.focus2').forEach(function (focus2) {
@@ -3990,6 +3998,17 @@ if (ua.includes("mobile")) {
     htmlview_parent.addEventListener('mousemove', htmlview_resize);
 
 
+    const htmlview_parent2 = document.querySelector('.htmlviewer_edit_menu');
+    const htmlview_child2 = document.querySelector('#editor');
+    const htmlview_resize2 = () => {
+        const hehehe1 = htmlview_parent2.firstElementChild;
+        if (hehehe1.classList.contains('navy')) {
+            htmlview_child2.style.width = `${htmlview_parent2.clientWidth + - + 5}px`;
+            htmlview_child2.style.height = `${htmlview_parent2.clientHeight + - + 65}px`;
+        }
+    };
+    htmlview_parent2.addEventListener('mousemove', htmlview_resize2);
+
 
     document.querySelectorAll('.drag_button').forEach(function (drag) {
         drag.addEventListener('mousedown', function () {
@@ -4487,11 +4506,10 @@ if (ua.includes("mobile")) {
         }
     }
 
-
-
     document.querySelectorAll('.pattern_btn').forEach(function (color_btn) {
         color_btn.addEventListener('click', function () {
             back_pattern_remove();
+            wallpaper_allremove()
         });
     })
 
@@ -6338,26 +6356,60 @@ if (ua.includes("mobile")) {
         document.querySelector('.omikuji_text').textContent = omikuji_results[index] + ' です！';
     }
 
+
+    // shellmenu_open();
     function localmemory_size() {
-        var testKey = 'testStorageKey';
-        var testData = new Array(1024).join('a'); // 1KBのデータを作成
-        var success = true;
-        var maxSize = 0;
-        try {
-            // ローカルストレージに1KBずつデータを追加していく
-            while (success) {
-                localStorage.setItem(testKey + maxSize, testData);
-                maxSize++;
+        document.querySelectorAll('.prompt_shell_menu').forEach(function (prompt_shell_menu) {
+            prompt_shell_menu.closest('.child_windows');
+            prompt_shell_menu.classList.remove('active');
+            prompt_shell_menu.style.zIndex = largestZIndex + 5;
+            zindexwindow_addnavy();
+        });
+        setTimeout(() => {
+            var testKey = 'testStorageKey';
+            var testData = new Array(1024).join('a'); // 1KBのデータを作成
+            var success = true;
+            var maxSize = 0;
+            try {
+                // ローカルストレージに1KBずつデータを追加していく
+                while (success) {
+                    localStorage.setItem(testKey + maxSize, testData);
+                    maxSize++;
+                }
+            } catch (e) {
+                success = false;
             }
-        } catch (e) {
-            success = false;
-        }
-        for (var i = 0; i < maxSize; i++) {
-            localStorage.removeItem(testKey + i);
-        }
-        document.querySelector('.local_memory').innerHTML = '&emsp;' + maxSize + 'KB' + '&emsp;';
-        localStorage.setItem('maxSize', maxSize)
+            for (var i = 0; i < maxSize; i++) {
+                localStorage.removeItem(testKey + i);
+            }
+            document.querySelector('.local_memory').innerHTML = '&emsp;' + maxSize + 'KB' + '&emsp;';
+            localStorage.setItem('maxSize', maxSize);
+
+            // 計算が終わった後に次の処理を実行
+            nextProcess();
+        }, 100);
+
     }
+
+    function nextProcess() {
+        const delay = 25; // delay in milliseconds
+        const totalDelay = localStorage.length * delay;
+        for (let i = 0; i < localStorage.length; i++) {
+            setTimeout(() => {
+                const key = localStorage.key(i);
+                const value = localStorage.getItem(key);
+                const valueType = typeof value;
+                const valueLength = value.length;
+                document.getElementById('shell').textContent = (`Key: ${key}, Value: ${value}, Type: ${valueType}, Length: ${valueLength}`);
+            }, i * delay);
+        }
+        setTimeout(() => {
+            shellmenu_close();
+        }, totalDelay + 1000);
+    }
+
+
+
 
     setInterval(() => {
         function getLocalStorageSize() {
@@ -7773,6 +7825,41 @@ if (ua.includes("mobile")) {
 
         reader.readAsText(file);
     });
+
+
+    function nexser_search_button() {
+        const windows = document.querySelectorAll('.child_windows');
+        windows.forEach((windowElement) => {
+            // 1番目の子要素を取得
+            const firstChild = windowElement.children[0];
+            // その子要素の中の2番目の子要素を取得
+            const nestedChild = firstChild.children[1];
+            const nestedChild2 = nestedChild.textContent;
+
+            const button = document.createElement('li');
+            button.className = 'borderinline_dotted';
+            button.classList.add('button2')
+
+            const button_span_child = document.createElement('span');
+            button_span_child.textContent = "　" + nestedChild2 + "　";
+            document.getElementById('myUL').appendChild(button);
+            button.appendChild(button_span_child);
+
+            button.addEventListener('click', () => toggleWindow(windowElement));
+
+            button.addEventListener('mousedown', () => {
+                button.classList.add('pressed');
+            });
+            button.addEventListener('mouseleave', () => {
+                button.classList.remove('pressed');
+            });
+            button.addEventListener('mouseup', () => {
+                button.classList.remove('pressed');
+            });
+
+        });
+    };
+    nexser_search_button()
 
 
 };

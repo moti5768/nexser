@@ -312,7 +312,16 @@ class tetris {
         context.fillRect(0, 0, canvas.width, canvas.height);
     }
 }
+
 function mereset() {
     const me = document.getElementById('message');
     me.textContent = ""
+}
+
+// グローバル変数としてTetrisオブジェクトを作成
+tetris = new tetris();
+
+// ボタンのクリックイベントでクラスのメソッドを呼び出す関数
+function tetris_start() {
+    tetris.startGame();
 }

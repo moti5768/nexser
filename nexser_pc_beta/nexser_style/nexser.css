@@ -705,6 +705,7 @@ input[type="file"] {
 }
 
 .battery_time {
+    background: silver;
     position: absolute;
     bottom: 35px;
 }
@@ -1702,7 +1703,7 @@ body::-webkit-scrollbar {
 }
 
 .nexser_search_menu {
-    width: 650px;
+    width: 850px;
 }
 
 #myUL {
@@ -2250,10 +2251,10 @@ textarea {
 /* htmlviewer */
 
 #editor {
-    width: 99%;
-    height: 100vh;
-    position: relative;
-    min-width: 800px;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    min-width: 350px;
     resize: none;
 }
 
@@ -2274,7 +2275,7 @@ textarea {
     -ms-user-select: none;
     user-select: none;
     position: relative;
-    width: 100%;
+    width: 99.5%;
     height: 100vh;
     background: black;
     color: white;
