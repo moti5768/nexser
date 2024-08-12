@@ -7831,4 +7831,44 @@ if (ua.includes("mobile")) {
     nexser_search_button()
 
 
+
+
+    const elements = document.querySelectorAll('.desktop_files');
+
+    elements.forEach((element, index) => {
+        // 初期位置を設定
+        const savedPosition = localStorage.getItem(`draggable-${index}`);
+        if (savedPosition) {
+            const [x, y] = savedPosition.split(',');
+            element.style.position = "absolute";
+            element.style.left = `${x}px`;
+            element.style.top = `${y}px`;
+        }
+
+        // ドラッグ可能にする
+        element.draggable = true;
+
+        let offsetX, offsetY;
+
+        element.addEventListener('dragstart', (e) => {
+            offsetX = e.clientX - element.getBoundingClientRect().left;
+            offsetY = e.clientY - element.getBoundingClientRect().top;
+            e.dataTransfer.setData('text/plain', null); // 必要に応じてデータを設定
+        });
+
+        element.addEventListener('dragend', (e) => {
+            const x = e.clientX - offsetX;
+            const y = e.clientY - offsetY;
+            element.style.position = "absolute";
+            element.style.top = "";
+            element.style.left = `${x}px`;
+            element.style.top = `${y}px`;
+
+            // 位置を保存
+            localStorage.setItem(`draggable-${index}`, `${x},${y}`);
+        });
+    });
+
+
+
 };
