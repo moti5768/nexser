@@ -2274,9 +2274,7 @@ textarea {
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
-    position: relative;
-    width: 99.5%;
-    height: 100vh;
+    position: absolute;
     background: black;
     color: white;
     font-family: Courier;

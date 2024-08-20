@@ -1215,7 +1215,6 @@
                                                     &lt;span class=&quot;title_icon&quot;&gt;&lt;/span&gt;&lt;span&gt;sound&lt;/span&gt;
                                                 &lt;/div&gt;
                         
-                        
                                                 &lt;div class=&quot;title_buttons&quot;&gt;
                                                     &lt;span class=&quot;drag_button&quot;&gt;&amp;nbsp;&lt;/span&gt;
                                                     &lt;span class=&quot;close_button button2&quot;&gt;&lt;/span&gt;
@@ -1322,6 +1321,7 @@
                                                         &lt;li class=&quot;hover_blue&quot;&gt;Windows2000 logoff&lt;/li&gt;
                                                         &lt;li class=&quot;hover_blue&quot;&gt;WindowsXP start&lt;/li&gt;
                                                         &lt;li class=&quot;hover_blue&quot;&gt;WindowsXP logoff&lt;/li&gt;
+                                                        &lt;li class=&quot;hover_blue&quot;&gt;WindowsXP criticalstop&lt;/li&gt;
                                                     &lt;/ul&gt;
                         
                                                     &lt;div class=&quot;window_inline_side&quot; style=&quot;font-size: 13.7px;&quot;&gt;
@@ -1374,6 +1374,9 @@
                                                             &lt;/li&gt;
                                                             &lt;li class=&quot;button2 sound_stop_button&quot; style=&quot;width: 30px;&quot;&gt;stop&lt;/li&gt;
                                                             &lt;li class=&quot;button2 sound_play_button&quot; style=&quot;width: 60px;&quot; onclick=&quot;sound13()&quot;&gt;
+                                                            &lt;/li&gt;
+                                                            &lt;li class=&quot;button2 sound_stop_button&quot; style=&quot;width: 30px;&quot;&gt;stop&lt;/li&gt;
+                                                            &lt;li class=&quot;button2 sound_play_button&quot; style=&quot;width: 60px;&quot; onclick=&quot;sound14()&quot;&gt;
                                                             &lt;/li&gt;
                                                             &lt;li class=&quot;button2 sound_stop_button&quot; style=&quot;width: 30px;&quot;&gt;stop&lt;/li&gt;
                                                         &lt;/ul&gt;
@@ -1803,7 +1806,7 @@
                                                 &lt;/div&gt;
                                             &lt;/div&gt;
                         
-                                            &lt;div class=&quot;child_windows window_prompt resize active&quot; style=&quot; background-color: black;&quot;&gt;
+                                            &lt;div class=&quot;child_windows window_prompt resize active&quot; style=&quot;background: black;&quot;&gt;
                                                 &lt;div class=&quot;title&quot;&gt;
                                                     &lt;span class=&quot;title_icon&quot;&gt;&lt;/span&gt;&lt;span&gt;nexser prompt beta&lt;/span&gt;
                                                 &lt;/div&gt;
@@ -1861,7 +1864,7 @@
                                                 &lt;/div&gt;
                                             &lt;/div&gt;
                         
-                                            &lt;div class=&quot;child_windows prompt_shell_menu resize active&quot;&gt;
+                                            &lt;div class=&quot;child_windows prompt_shell_menu resize&quot;&gt;
                                                 &lt;div class=&quot;title&quot;&gt;
                                                     &lt;span class=&quot;title_icon&quot;&gt;&lt;/span&gt;&lt;span&gt;nexser shell&lt;/span&gt;
                                                 &lt;/div&gt;
@@ -1877,7 +1880,6 @@
                                                     &lt;textarea id=&quot;shell&quot;&gt;&lt;/textarea&gt;
                                                 &lt;/div&gt;
                                             &lt;/div&gt;
-                        
                         
                                             &lt;div class=&quot;child_windows command_help_menu resize active&quot;&gt;
                                                 &lt;div class=&quot;title&quot;&gt;
@@ -2025,11 +2027,10 @@
                                                 &lt;/div&gt;
                                             &lt;/div&gt;
                         
-                                            &lt;div class=&quot;child_windows screen_text_menu active back_silver&quot;&gt;
+                                            &lt;div class=&quot;child_windows screen_text_menu back_silver active&quot;&gt;
                                                 &lt;div class=&quot;title&quot;&gt;
                                                     &lt;span class=&quot;title_icon&quot;&gt;&lt;/span&gt;&lt;span&gt;screen text&lt;/span&gt;
                                                 &lt;/div&gt;
-                        
                         
                                                 &lt;div class=&quot;title_buttons&quot;&gt;
                                                     &lt;span class=&quot;drag_button&quot;&gt;&amp;nbsp;&lt;/span&gt;
@@ -2550,7 +2551,7 @@
                                                 &lt;/div&gt;
                                             &lt;/div&gt;
                         
-                                            &lt;div class=&quot;child_windows htmlviewer_edit_menu active resize back_silver&quot;&gt;
+                                            &lt;div class=&quot;child_windows htmlviewer_edit_menu resize back_silver active&quot;&gt;
                                                 &lt;div class=&quot;title&quot;&gt;
                                                     &lt;span class=&quot;title_icon&quot;&gt;&lt;/span&gt;&lt;span&gt;html viewer edit&lt;/span&gt;
                                                 &lt;/div&gt;
@@ -3814,7 +3815,7 @@
                                                     &lt;/div&gt;
                                                 &lt;/div&gt;
                                             &lt;/div&gt;
-                                            &lt;div id=&quot;start_menu&quot; class=&quot;parent_start_menu&quot;&gt;
+                                            &lt;div id=&quot;start_menu&quot; class=&quot;parent_start_menu parentstartmenu2&quot;&gt;
                                                 &lt;div class=&quot;child_start_menu border&quot;&gt;
                                                     &lt;ul&gt;
                                                         &lt;li
@@ -4219,6 +4220,13 @@
                             let startX, startY, isDrawing = false;
                             let rectangle;
                             document.addEventListener(&#039;mousedown&#039;, (e) =&gt; {
+                                var isClickInsideStartButton = document.querySelector(&#039;.start_button&#039;).contains(e.target);
+                                var isClickInsideParentStartMenu2 = document.querySelector(&#039;.parentstartmenu2&#039;).contains(e.target);
+                        
+                                if (!isClickInsideStartButton &amp;&amp; !isClickInsideParentStartMenu2) {
+                                    startmenu_close()
+                                }
+                        
                                 if (desktop.style.display == &quot;block&quot;) {
                                     startX = e.clientX;
                                     startY = e.clientY;
@@ -4606,13 +4614,22 @@
                                     }
                         
                                     if (localStorage.getItem(&#039;wallpaper_95&#039;)) {
-                                        document.querySelector(&#039;.nexser_backgroundimage_1&#039;).style.display = &quot;block&quot;
+                                        document.querySelector(&#039;.nexser_backgroundimage_1&#039;).style.display = &quot;block&quot;;
+                                        minidesk_backgroundresize1();
+                                        background_img.style.width = &quot;100%&quot;
+                                        background_img.style.height = &quot;100%&quot;
                                     }
                                     if (localStorage.getItem(&#039;wallpaper_95_2&#039;)) {
-                                        document.querySelector(&#039;.nexser_backgroundimage_2&#039;).style.display = &quot;block&quot;
+                                        document.querySelector(&#039;.nexser_backgroundimage_2&#039;).style.display = &quot;block&quot;;
+                                        minidesk_backgroundresize2();
+                                        background_img.style.width = &quot;100%&quot;
+                                        background_img.style.height = &quot;100%&quot;
                                     }
                                     if (localStorage.getItem(&#039;wallpaper_xp&#039;)) {
-                                        document.querySelector(&#039;.nexser_backgroundimage_3&#039;).style.display = &quot;block&quot;
+                                        document.querySelector(&#039;.nexser_backgroundimage_3&#039;).style.display = &quot;block&quot;;
+                                        minidesk_backgroundresize3();
+                                        background_img.style.width = &quot;100%&quot;
+                                        background_img.style.height = &quot;100%&quot;
                                     }
                         
                                     resolve();
@@ -4725,6 +4742,11 @@
                                 document.querySelector(&#039;.focus&#039;).focus();
                             })
                         
+                            function startmenu_close() {
+                                start_menu.style.display = &quot;none&quot;;
+                                document.querySelector(&#039;.start_button&#039;).classList.remove(&#039;pressed&#039;);
+                            }
+                        
                             document.getElementById(&#039;startbtn&#039;).addEventListener(&#039;mousedown&#039;, function () {
                                 document.querySelectorAll(&#039;.windowtool_child&#039;).forEach(function (windowtool_child) {
                                     windowtool_child.style.display = &quot;none&quot;
@@ -4734,8 +4756,7 @@
                                     file10.classList.remove(&#039;file_select&#039;);
                                 })
                                 if (start_menu.style.display == &quot;block&quot;) {
-                                    start_menu.style.display = &quot;none&quot;;
-                                    document.querySelector(&#039;.start_button&#039;).classList.remove(&#039;pressed&#039;)
+                                    startmenu_close()
                                 } else {
                                     start_menu.style.display = &quot;block&quot;;
                                     document.querySelector(&#039;.start_button&#039;).classList.add(&#039;pressed&#039;);
@@ -4754,8 +4775,6 @@
                                 }
                             })
                             document.getElementById(&#039;files&#039;).addEventListener(&#039;mousedown&#039;, function () {
-                                start_menu.style.display = &quot;none&quot;;
-                                document.querySelector(&#039;.start_button&#039;).classList.remove(&#039;pressed&#039;);
                                 document.querySelector(&#039;.battery_child&#039;).classList.remove(&#039;pressed&#039;);
                                 document.querySelector(&#039;.battery_menu&#039;).style.display = &quot;none&quot;;
                                 document.querySelector(&#039;.screen_light_range_child&#039;).style.display = &quot;none&quot;;
@@ -4779,15 +4798,7 @@
                                     windowtool_child.style.display = &quot;none&quot;
                                 })
                             });
-                            parent_start_menu.addEventListener(&#039;click&#039;, function () {
-                                start_menu.style.display = &quot;none&quot;;
-                                document.querySelector(&#039;.start_button&#039;).classList.remove(&#039;pressed&#039;);
-                        
-                            });
                             document.querySelector(&#039;.taskbar_buttons, .child&#039;).addEventListener(&#039;mousedown&#039;, function () {
-                                start_menu.style.display = &quot;none&quot;;
-                                document.querySelector(&#039;.start_button&#039;).classList.remove(&#039;pressed&#039;)
-                        
                                 getLargestZIndex(&#039;.child_windows&#039;);
                                 z_index.textContent = getLargestZIndex(&#039;.child_windows&#039;);
                             });
@@ -4843,6 +4854,7 @@
                             })
                         
                             function nexser_program_open() {
+                                startmenu_close();
                                 y_iframeController(&#039;pauseVideo&#039;);
                                 preview2_stop();
                                 document.querySelectorAll(&#039;video&#039;).forEach(video =&gt; video.pause());
@@ -5117,16 +5129,13 @@
                             }
                         
                             function password_login(login) {
-                        
                                 const password_unlock = localStorage.getItem(&#039;password&#039;);
-                        
                                 const password_unlock2 = (String(password_unlock)
                                     .replaceAll(&quot;.a+b.&quot;, &quot;0&quot;).replaceAll(&quot;.c#d.&quot;, &quot;1&quot;).replaceAll(&quot;.e*f.&quot;, &quot;2&quot;)
                                     .replaceAll(&quot;.g|h.&quot;, &quot;3&quot;).replaceAll(&quot;.i=j.&quot;, &quot;4&quot;).replaceAll(&quot;.k[l.&quot;, &quot;5&quot;)
                                     .replaceAll(&quot;.m]n.&quot;, &quot;6&quot;).replaceAll(&quot;.o-p.&quot;, &quot;7&quot;).replaceAll(&quot;.q&gt;r.&quot;, &quot;8&quot;)
                                     .replaceAll(&quot;.s&lt;t.&quot;, &quot;9&quot;)
                                 );
-                        
                                 if (password_unlock2 == document.querySelector(&#039;#pass_form&#039;).value) {
                                     document.querySelector(&#039;.password_form&#039;).style.display = &quot;none&quot;;
                                     document.querySelector(&#039;.pass_no&#039;).textContent = &quot;&quot;;
@@ -5150,9 +5159,9 @@
                                 document.querySelector(&#039;#code_html&#039;).style.display = &quot;none&quot;;
                                 document.querySelector(&#039;#code_script&#039;).style.display = &quot;none&quot;;
                                 document.querySelector(&#039;#code_script2&#039;).style.display = &quot;none&quot;;
-                                document.querySelector(&#039;.start_button&#039;).classList.remove(&#039;pressed&#039;);
                                 document.querySelector(&#039;.focus&#039;).blur();
                                 window_none();
+                                startmenu_close();
                                 document.getElementById(&#039;nex&#039;).style.cursor = &#039;none&#039;;
                                 if (localStorage.getItem(&#039;prompt_data2&#039;)) {
                                     func2();
@@ -5199,6 +5208,7 @@
                             Array.from(logoff).forEach(element =&gt; {
                                 element.addEventListener(&#039;click&#039;, event =&gt; {
                                     document.getElementById(&#039;nex&#039;).style.cursor = &#039;progress&#039;;
+                                    startmenu_close()
                                     setTimeout(() =&gt; {
                                         document.querySelector(&#039;.test_allwindow&#039;).style.display = &quot;block&quot;;
                                         if (sessionStorage.getItem(&#039;start_camera&#039;)) {
@@ -5248,7 +5258,6 @@
                                                     prompt_text.style.color = &quot;&quot;;
                                                     nexser.style.display = &quot;none&quot;;
                                                     screen_prompt.style.display = &quot;block&quot;;
-                                                    start_menu.style.display = &quot;none&quot;;
                                                     document.querySelector(&#039;.focus&#039;).focus();
                                                     document.getElementById(&#039;nex&#039;).style.cursor = &#039;&#039;;
                                                 }, 500);
@@ -5270,6 +5279,7 @@
                             Array.from(restart).forEach(element =&gt; {
                                 element.addEventListener(&#039;click&#039;, event =&gt; {
                                     document.getElementById(&#039;nex&#039;).style.cursor = &#039;progress&#039;;
+                                    startmenu_close()
                                     setTimeout(() =&gt; {
                                         document.querySelector(&#039;.test_allwindow&#039;).style.display = &quot;block&quot;;
                                         if (sessionStorage.getItem(&#039;start_camera&#039;)) {
@@ -5316,7 +5326,6 @@
                                                     prompt_text.style.color = &quot;&quot;;
                                                     nexser.style.display = &quot;none&quot;;
                                                     document.querySelector(&#039;.restart_text&#039;).style.display = &quot;block&quot;;
-                                                    start_menu.style.display = &quot;none&quot;;
                                                 }, 500);
                                                 setTimeout(() =&gt; {
                                                     document.querySelector(&#039;.restart_text&#039;).style.display = &quot;none&quot;;
@@ -5531,6 +5540,7 @@
                             function welcome() {
                                 document.querySelector(&#039;.welcome_windows&#039;).style.display = &quot;block&quot;
                                 welcome_animation();
+                                startmenu_close();
                             }
                         
                             startup_window_open()
@@ -5587,6 +5597,7 @@
                         
                         
                             function nexser_signout() {
+                                startmenu_close()
                                 if (localStorage.getItem(&#039;password&#039;) &amp;&amp; gets == gets2) {
                                     document.getElementsByClassName(&#039;welcome_windows&#039;)[0].style.display = &quot;none&quot;;
                                     document.querySelector(&#039;.password_form&#039;).style.display = &quot;block&quot;;
@@ -5954,18 +5965,15 @@
                             function allStorage_clear() {
                                 const alllength = localStorage.length;
                                 if (alllength &gt; 0) {
-                        
                                     if (sessionStorage.getItem(&#039;start_camera&#039;)) {
                                         stopCamera()
                                     }
-                        
                                     localStorage.clear();
                                     sessionStorage.clear();
                                     alldata_clear();
                                     document.querySelector(&#039;.tests&#039;).textContent = (alllength);
                                     taskbar_active();
                                     document.querySelector(&#039;.files_inline&#039;).style.display = &quot;flex&quot;;
-                        
                                     document.querySelector(&#039;.test_allwindow&#039;).style.display = &quot;block&quot;;
                                     warning_windows.style.display = &quot;block&quot;;
                                     document.querySelector(&#039;.shutdown_button&#039;).style.display = &quot;block&quot;;
@@ -6028,7 +6036,6 @@
                                 localStorage.removeItem(&#039;taskbar_autohide&#039;);
                                 document.getElementById(&#039;taskbar&#039;).style.bottom = &quot;&quot;;
                             }
-                        
                         
                             document.querySelectorAll(&#039;#taskbar&#039;).forEach(function (taskbar) {
                                 taskbar.addEventListener(&#039;mouseleave&#039;, function () {
@@ -6235,7 +6242,6 @@
                                 setTimeout(() =&gt; {
                                     commandarea_resize()
                                 }, 0);
-                        
                             }
                         
                             function commandarea_resize() {
@@ -6386,11 +6392,14 @@
                                     case command_1 + a:
                                         prompt_text2.style.color = &quot;&quot;;
                                         document.querySelector(&#039;#nexser&#039;).style.background = a;
+                                        localStorage.setItem(&#039;BKCOLOR&#039;, a);
+                                        wallpaper_allremove()
                                         break;
                         
                                     case command_2 + b:
                                         prompt_text2.style.color = &quot;&quot;;
                                         document.querySelector(&#039;body&#039;).style.color = b;
+                                        localStorage.setItem(&#039;COLOR&#039;, b);
                                         break;
                         
                                     case command_3 + c:
@@ -6408,27 +6417,27 @@
                                     case command_5 + e:
                                         prompt_text2.style.color = &quot;&quot;;
                                         var result2 = Function(&#039;return (&#039; + e + &#039;);&#039;)();
-                                        document.querySelector(&#039;#shell&#039;).textContent = result2;
+                                        document.querySelector(&#039;#shell&#039;).value = result2;
                                         shellmenu_open()
                                         break;
                         
                                     case command_6 + f:
                                         prompt_text2.style.color = &quot;&quot;;
-                                        document.querySelector(&#039;#shell&#039;).textContent = f;
+                                        document.querySelector(&#039;#shell&#039;).value = f;
                                         shellmenu_open()
                                         break;
                         
                                     case command_7 + g:
                                         prompt_text2.style.color = &quot;&quot;;
                                         const g2 = parseInt(g);
-                                        document.querySelector(&#039;#shell&#039;).textContent = (g2.toString(2));
+                                        document.querySelector(&#039;#shell&#039;).value = (g2.toString(2));
                                         shellmenu_open()
                                         break;
                         
                                     case command_8 + h:
                                         prompt_text2.style.color = &quot;&quot;;
                                         const h2 = parseInt(h, 2);
-                                        document.querySelector(&#039;#shell&#039;).textContent = (h2.toString(10));
+                                        document.querySelector(&#039;#shell&#039;).value = (h2.toString(10));
                                         shellmenu_open()
                                         break;
                         
@@ -6632,9 +6641,19 @@
                                     case &#039;&#039;:
                                         prompt_text2.style.color = &quot;&quot;;
                                         break;
+                        
+                                    case &#039;local/memory&#039;:
+                                        prompt_text2.style.color = &quot;&quot;;
+                                        localmemory_size()
+                                        setTimeout(() =&gt; {
+                                            localstorage_details_menu.classList.remove(&#039;active&#039;);
+                                            localstorage_details_menu.style.zIndex = largestZIndex++;
+                                            zindexwindow_addnavy();
+                                        }, 1000);
+                                        break;
+                        
                                     case &#039;help&#039;:
                                         prompt_text2.style.color = &quot;&quot;;
-                        
                                         command_help_menu.classList.remove(&#039;active&#039;);
                                         command_help_menu.style.zIndex = largestZIndex++;
                                         zindexwindow_addnavy();
@@ -6678,10 +6697,8 @@
                                             document.querySelector(&#039;.test_allwindow&#039;).style.display = &quot;block&quot;;
                                             sound3()
                                         } else {
-                        
                                             prompt_text2.style.color = &quot;&quot;;
                                             window_none()
-                        
                                         }
                                         break;
                                     case &#039;allwindow/open&#039;:
@@ -6772,7 +6789,6 @@
                                 titlecolor_set()
                             }
                         
-                        
                             function shellmenu_open() {
                                 document.querySelectorAll(&#039;.prompt_shell_menu&#039;).forEach(function (prompt_shell_menu) {
                                     prompt_shell_menu.closest(&#039;.child_windows&#039;);
@@ -6784,11 +6800,12 @@
                             function shellmenu_close() {
                                 document.querySelectorAll(&#039;.prompt_shell_menu&#039;).forEach(function (prompt_shell_menu) {
                                     prompt_shell_menu.closest(&#039;.child_windows&#039;);
+                                    document.getElementById(&#039;shell&#039;).value = &quot;&quot;;
                                     document.getElementById(&#039;shell&#039;).textContent = &quot;&quot;;
+                                    document.getElementById(&#039;shell&#039;).innerHTML = &quot;&quot;;
                                     prompt_shell_menu.classList.add(&#039;active&#039;);
                                     prompt_shell_menu.classList.remove(&#039;selectwindows&#039;);
                                     prompt_shell_menu.style.zIndex = largestZIndex++;
-                                    zindexwindow_addnavy();
                                     test_windows_button()
                                 });
                             }
@@ -6867,12 +6884,6 @@
                             Array.from(document.getElementsByClassName(&#039;window_inline_list&#039;)).forEach((window_inline_list) =&gt; {
                                 window_inline_list.addEventListener(&#039;click&#039;, function () {
                         
-                                });
-                            })
-                            Array.from(document.getElementsByClassName(&#039;desktop_files&#039;)).forEach((desktop_files) =&gt; {
-                                desktop_files.addEventListener(&#039;click&#039;, function () {
-                                    start_menu.style.display = &quot;none&quot;;
-                                    document.querySelector(&#039;.start_button&#039;).classList.remove(&#039;pressed&#039;);
                                 });
                             })
                             document.querySelectorAll(&#039;.close_button&#039;).forEach(function (close_button) {
@@ -7499,8 +7510,6 @@
                             document.querySelectorAll(&#039;.child_windows, .child&#039;).forEach(function (z_index_child_windows) {
                                 const zindexchildwindows = z_index_child_windows.closest(&#039;.child_windows&#039;);
                                 z_index_child_windows.addEventListener(&#039;mousedown&#039;, function () {
-                                    start_menu.style.display = &quot;none&quot;;
-                                    document.querySelector(&#039;.start_button&#039;).classList.remove(&#039;pressed&#039;);
                                     zindexchildwindows.scrollTop = 0;
                                     zindexchildwindows.scrollLeft = 0;
                                     getLargestZIndex(&#039;.child_windows&#039;);
@@ -8015,9 +8024,10 @@
                         
                             function zindexwindow_addnavy() {
                                 setTimeout(() =&gt; {
-                                    alltitle_navyreomve()
+                                    alltitle_navyreomve();
                                     assignClassToFrontmostElement(&#039;child_windows:not(.active)&#039;, &#039;navy&#039;);
-                                    titlecolor_set()
+                                    titlecolor_set();
+                                    startmenu_close();
                                 }, 0);
                             }
                         
@@ -8078,6 +8088,13 @@
                             };
                             window_prompt.addEventListener(&#039;mousemove&#039;, window_prompt_resize);
                         
+                            const shell_parent = document.querySelector(&#039;.prompt_shell_menu&#039;);
+                            const shell_child = document.querySelector(&#039;#shell&#039;);
+                            const shell_resize = () =&gt; {
+                                shell_child.style.width = `${shell_parent.clientWidth}px`;
+                                shell_child.style.height = `${shell_parent.clientHeight + - + 30}px`;
+                            };
+                            shell_parent.addEventListener(&#039;mousemove&#039;, shell_resize);
                         
                             const background_image_parent = document.getElementById(&#039;nexser&#039;);
                             const background_image_child = document.querySelector(&#039;.nexser_background_image&#039;);
@@ -10457,19 +10474,22 @@
                             }
                         
                             function localmemory_size() {
+                                setTimeout(() =&gt; {
+                                    document.getElementById(&#039;shell&#039;).value = &quot;&quot;;
+                                }, 0);
                                 document.querySelector(&#039;.local_memory_button&#039;).classList.add(&#039;pointer_none&#039;);
                                 document.querySelectorAll(&#039;.prompt_shell_menu&#039;).forEach(function (prompt_shell_menu) {
                                     prompt_shell_menu.closest(&#039;.child_windows&#039;);
                                     prompt_shell_menu.classList.remove(&#039;active&#039;);
                                     prompt_shell_menu.style.zIndex = largestZIndex + 5;
                                     zindexwindow_addnavy();
+                                    shell_resize()
                                 });
                                 setTimeout(() =&gt; {
                                     var testKey = &#039;testStorageKey&#039;;
                                     var testData = new Array(1024).join(&#039;a&#039;); // 1KBのデータを作成
                                     var success = true;
-                                    var maxSize = 0;
-                                    try {
+                                    var maxSize = 0; try {
                                         // ローカルストレージに1KBずつデータを追加していく
                                         while (success) {
                                             localStorage.setItem(testKey + maxSize, testData);
@@ -10482,7 +10502,6 @@
                                         localStorage.removeItem(testKey + i);
                                     }
                                     document.querySelector(&#039;.local_memory&#039;).innerHTML = &quot;&quot;
-                        
                                     const delay = 25;
                                     const totalDelay = localStorage.length * delay;
                                     for (let i = 0; i &lt; localStorage.length; i++) {
@@ -10492,7 +10511,7 @@
                                             const valueType = typeof value;
                                             const valueLength = value.length;
                                             const valueSize = new Blob([value]).size; // バイト数を計算
-                                            document.getElementById(&#039;shell&#039;).textContent = (`Key: ${key}, Value: ${value}, Type: ${valueType}, Length: ${valueLength}, Size: ${valueSize} bytes`);
+                                            document.getElementById(&#039;shell&#039;).value = (`Key: ${key}, Value: ${value}, Type: ${valueType}, Length: ${valueLength}, Size: ${valueSize} bytes`);
                                         }, i * delay);
                                     }
                                     setTimeout(() =&gt; {
@@ -10505,30 +10524,24 @@
                                 }, 10);
                             }
                         
-                        
-                        
-                            // ローカルストレージの内容を1個ずつ詳細にリストに追加し、合計サイズを計算する関数
                             function displayLocalStorageDetails() {
                                 document.querySelectorAll(&#039;.localstorage_key&#039;).forEach(function (localstorage_key) {
                                     localstorage_key.remove()
                                 });
                                 const list = document.getElementById(&#039;localStorageList&#039;);
                                 let totalSize = 0;
-                        
                                 for (let i = 0; i &lt; localStorage.length; i++) {
                                     const key = localStorage.key(i);
                                     const value = localStorage.getItem(key);
                                     const valueSize = new Blob([value]).size; // バイト数を計算
                                     totalSize += valueSize;
-                        
                                     const listItem = document.createElement(&#039;li&#039;);
                                     listItem.classList.add(&#039;border&#039;);
                                     listItem.classList.add(&#039;localstorage_key&#039;);
                                     listItem.style.width = &quot;max-content&quot;
-                                    listItem.textContent = `Key: ${key}, Size: ${valueSize} bytes`;
+                                    listItem.textContent = `Key name: ${key}, Size: ${valueSize} bytes`;
                                     list.appendChild(listItem);
                                 }
-                        
                                 // 合計サイズを表示
                                 const totalSizeElement = document.getElementById(&#039;totalSize&#039;);
                                 totalSizeElement.textContent = `Total Size: ${totalSize} bytes`;
@@ -10554,21 +10567,15 @@
                                     sound3()
                                 }
                             }, 1000);
-                        
-                            // HTMLのcanvas要素を取得
                             const paint_canvas = document.getElementById(&#039;paint_canvas&#039;);
                             const paint_ctx = paint_canvas.getContext(&#039;2d&#039;);
-                        
-                            // 背景色を設定
                             paint_ctx.fillStyle = &#039;#ffffff&#039;;
                             paint_ctx.fillRect(0, 0, paint_canvas.width, paint_canvas.height);
-                        
                             function paintcanvas_background() {
                                 const paintcanvas_backgroundcolor = document.querySelector(&#039;.paint_background&#039;).value;
                                 paint_ctx.fillStyle = paintcanvas_backgroundcolor;
                                 paint_ctx.fillRect(0, 0, paint_canvas.width, paint_canvas.height);
                             }
-                        
                             // 描画状態のフラグ
                             let paint_isDrawing = false;
                             let paint_lastX = 0;
@@ -10645,24 +10652,17 @@
                             paint_ctx.font = &#039;48px serif&#039;;
                             paint_ctx.textAlign = &#039;center&#039;;
                             paint_ctx.textBaseline = &#039;middle&#039;;
-                        
                             function paintcanvas_text() {
                                 const paintcanvas_text = document.querySelector(&#039;.paint_text&#039;).value;
-                        
                                 paint_ctx.fillStyle = &#039;white&#039;;
                                 paint_ctx.strokeStyle = &#039;black&#039;;
                                 paint_ctx.lineWidth = &#039;1&#039;;
                                 paint_ctx.fillText(paintcanvas_text, paint_canvas.width / 2, paint_canvas.height / 2);
                                 paint_ctx.strokeText(paintcanvas_text, paint_canvas.width / 2, paint_canvas.height / 2);
                             }
-                        
-                        
-                        
-                        
                             paint_canvas.addEventListener(&#039;dragover&#039;, (event) =&gt; {
                                 event.preventDefault();
                             });
-                        
                             paint_canvas.addEventListener(&#039;drop&#039;, (event) =&gt; {
                                 event.preventDefault();
                                 const file = event.dataTransfer.files[0];
@@ -10735,6 +10735,8 @@
                             }
                         
                             function wallpaper_allremove() {
+                                background_img.src = &quot;&quot;;
+                                background_img.style.display = &quot;none&quot;;
                                 document.querySelector(&#039;.nexser_backgroundimage_1&#039;).style.display = &quot;none&quot;
                                 document.querySelector(&#039;.nexser_backgroundimage_2&#039;).style.display = &quot;none&quot;
                                 document.querySelector(&#039;.nexser_backgroundimage_3&#039;).style.display = &quot;none&quot;
@@ -10747,19 +10749,22 @@
                             document.querySelector(&#039;.wallpaper_95&#039;).addEventListener(&#039;click&#039;, function (wallpaper_95) {
                                 wallpaper_allremove()
                                 localStorage.setItem(&#039;wallpaper_95&#039;, wallpaper_95);
-                                document.querySelector(&#039;.nexser_backgroundimage_1&#039;).style.display = &quot;block&quot;
+                                document.querySelector(&#039;.nexser_backgroundimage_1&#039;).style.display = &quot;block&quot;;
+                                minidesk_backgroundresize1();
                             })
                         
                             document.querySelector(&#039;.wallpaper_95_2&#039;).addEventListener(&#039;click&#039;, function (wallpaper_95_2) {
                                 wallpaper_allremove()
                                 localStorage.setItem(&#039;wallpaper_95_2&#039;, wallpaper_95_2);
-                                document.querySelector(&#039;.nexser_backgroundimage_2&#039;).style.display = &quot;block&quot;
+                                document.querySelector(&#039;.nexser_backgroundimage_2&#039;).style.display = &quot;block&quot;;
+                                minidesk_backgroundresize2();
                             })
                         
                             document.querySelector(&#039;.wallpaper_xp&#039;).addEventListener(&#039;click&#039;, function (wallpaper_xp) {
                                 wallpaper_allremove()
                                 localStorage.setItem(&#039;wallpaper_xp&#039;, wallpaper_xp);
-                                document.querySelector(&#039;.nexser_backgroundimage_3&#039;).style.display = &quot;block&quot;
+                                document.querySelector(&#039;.nexser_backgroundimage_3&#039;).style.display = &quot;block&quot;;
+                                minidesk_backgroundresize3();
                             })
                         
                             const othello_board = document.getElementById(&#039;othello_board&#039;);
@@ -10960,16 +10965,7 @@
                                     });
                                 });
                             }
-                        
                             makeResizableDivs(&#039;.resize&#039;);
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
                         
                             const dropzone = document.getElementById(&#039;dropzone&#039;);
                             const url_iframe = document.getElementById(&#039;url_iframe&#039;);
@@ -11235,12 +11231,6 @@
                                 windowElement.style.zIndex = largestZIndex++;
                                 zindexwindow_addnavy();
                             }
-                        
-                        
-                        
-                        
-                        
-                        
                         
                             const dropArea = document.querySelector(&#039;#files&#039;);
                         
@@ -11868,7 +11858,7 @@
                                         // ダミーの非同期処理を実行
                                         processFile(file, event.clientX, event.clientY).then(() =&gt; {
                                             // 処理終了メッセージを表示
-                                            warning_windows.style.display = &quot;none&quot;
+                                            warning_windows.style.display = &quot;none&quot;;
                                         }).catch(error =&gt; {
                                             console.error(`Error processing file ${i + 1}:`, error);
                                             processingMessage.innerText = `Error processing file ${i + 1} of ${files.length}: ${file.name}`;
@@ -11937,7 +11927,6 @@
                                     button_span_child.textContent = &quot;　&quot; + nestedChild2 + &quot;　&quot;;
                                     document.getElementById(&#039;myUL&#039;).appendChild(button);
                                     button.appendChild(button_span_child);
-                        
                                     button.addEventListener(&#039;click&#039;, () =&gt; toggleWindow(windowElement));
                         
                                     button.addEventListener(&#039;mousedown&#039;, () =&gt; {
@@ -11954,13 +11943,8 @@
                             };
                             nexser_search_button()
                         
-                        
-                        
-                        
                             const elements = document.querySelectorAll(&#039;.desktop_files&#039;);
-                        
                             elements.forEach((element, index) =&gt; {
-                                // 初期位置を設定
                                 const savedPosition = localStorage.getItem(`draggable-${index}`);
                                 if (savedPosition) {
                                     const [x, y] = savedPosition.split(&#039;,&#039;);
@@ -11968,31 +11952,79 @@
                                     element.style.left = `${x}px`;
                                     element.style.top = `${y}px`;
                                 }
-                        
-                                // ドラッグ可能にする
                                 element.draggable = true;
-                        
                                 let offsetX, offsetY;
-                        
                                 element.addEventListener(&#039;dragstart&#039;, (e) =&gt; {
                                     offsetX = e.clientX - element.getBoundingClientRect().left;
                                     offsetY = e.clientY - element.getBoundingClientRect().top;
-                                    e.dataTransfer.setData(&#039;text/plain&#039;, null); // 必要に応じてデータを設定
+                                    e.dataTransfer.setData(&#039;text/plain&#039;, null);
+                                    element.style.border = &quot;1.9px dotted orangered&quot;;
+                                    element.style.opacity = &quot;0.99&quot;;
+                                    const element2 = element.firstElementChild;
+                                    const element3 = element.children[1];
+                                    element2.style.opacity = &quot;0&quot;;
+                                    element3.style.opacity = &quot;0&quot;;
+                                    setTimeout(() =&gt; {
+                                        element2.style.opacity = &quot;&quot;;
+                                        element3.style.opacity = &quot;&quot;;
+                                    }, 0);
+                                    if (rectangle) {
+                                        document.body.removeChild(rectangle);
+                                    }
                                 });
-                        
                                 element.addEventListener(&#039;dragend&#039;, (e) =&gt; {
                                     const x = e.clientX - offsetX;
                                     const y = e.clientY - offsetY;
                                     element.style.position = &quot;absolute&quot;;
-                                    element.style.top = &quot;&quot;;
                                     element.style.left = `${x}px`;
                                     element.style.top = `${y}px`;
-                        
-                                    // 位置を保存
+                                    const element2 = element.firstElementChild;
+                                    const element3 = element.children[1];
+                                    element2.style.opacity = &quot;&quot;;
+                                    element3.style.opacity = &quot;&quot;;
+                                    element.style.opacity = &quot;&quot;;
+                                    element.style.border = &quot;&quot;;
                                     localStorage.setItem(`draggable-${index}`, `${x},${y}`);
+                                    if (rectangle) {
+                                        document.body.removeChild(rectangle);
+                                    }
                                 });
                             });
                         
+                            var background_img = document.createElement(&quot;img&quot;);
+                            function minidesk_backgroundresize1() {
+                                background_img.style.display = &quot;block&quot;;
+                                background_img.src = &quot;nexser_image/Windows95_wallpaper.jpg&quot;; // 画像のパスを指定
+                                // 特定のクラスを持つ要素を取得
+                                var targetElement = document.querySelector(&quot;.mini_desktop&quot;);
+                                targetElement.appendChild(background_img);
+                                const minidesk_parent = document.querySelector(&#039;.mini_desktop&#039;);
+                                const minidesk_child = background_img
+                                minidesk_child.style.width = `${minidesk_parent.clientWidth}px`;
+                                minidesk_child.style.height = `${minidesk_parent.clientHeight}px`;
+                            }
+                            function minidesk_backgroundresize2() {
+                                background_img.style.display = &quot;block&quot;;
+                                background_img.src = &quot;nexser_image/Windows95_wallpaper_2.png&quot;; // 画像のパスを指定
+                                // 特定のクラスを持つ要素を取得
+                                var targetElement = document.querySelector(&quot;.mini_desktop&quot;);
+                                targetElement.appendChild(background_img);
+                                const minidesk_parent = document.querySelector(&#039;.mini_desktop&#039;);
+                                const minidesk_child = background_img
+                                minidesk_child.style.width = `${minidesk_parent.clientWidth}px`;
+                                minidesk_child.style.height = `${minidesk_parent.clientHeight}px`;
+                            }
+                            function minidesk_backgroundresize3() {
+                                background_img.style.display = &quot;block&quot;;
+                                background_img.src = &quot;nexser_image/Windowsxp_wallpaper.jpg&quot;; // 画像のパスを指定
+                                // 特定のクラスを持つ要素を取得
+                                var targetElement = document.querySelector(&quot;.mini_desktop&quot;);
+                                targetElement.appendChild(background_img);
+                                const minidesk_parent = document.querySelector(&#039;.mini_desktop&#039;);
+                                const minidesk_child = background_img
+                                minidesk_child.style.width = `${minidesk_parent.clientWidth}px`;
+                                minidesk_child.style.height = `${minidesk_parent.clientHeight}px`;
+                            }
                         
                         
                         };
@@ -13251,7 +13283,6 @@
                             <span class="title_icon"></span><span>sound</span>
                         </div>
 
-
                         <div class="title_buttons">
                             <span class="drag_button">&nbsp;</span>
                             <span class="close_button button2"></span>
@@ -13358,6 +13389,7 @@
                                 <li class="hover_blue">Windows2000 logoff</li>
                                 <li class="hover_blue">WindowsXP start</li>
                                 <li class="hover_blue">WindowsXP logoff</li>
+                                <li class="hover_blue">WindowsXP criticalstop</li>
                             </ul>
 
                             <div class="window_inline_side" style="font-size: 13.7px;">
@@ -13410,6 +13442,9 @@
                                     </li>
                                     <li class="button2 sound_stop_button" style="width: 30px;">stop</li>
                                     <li class="button2 sound_play_button" style="width: 60px;" onclick="sound13()">
+                                    </li>
+                                    <li class="button2 sound_stop_button" style="width: 30px;">stop</li>
+                                    <li class="button2 sound_play_button" style="width: 60px;" onclick="sound14()">
                                     </li>
                                     <li class="button2 sound_stop_button" style="width: 30px;">stop</li>
                                 </ul>
@@ -13839,7 +13874,7 @@
                         </div>
                     </div>
 
-                    <div class="child_windows window_prompt resize active" style=" background-color: black;">
+                    <div class="child_windows window_prompt resize active" style="background: black;">
                         <div class="title">
                             <span class="title_icon"></span><span>nexser prompt beta</span>
                         </div>
@@ -13897,7 +13932,7 @@
                         </div>
                     </div>
 
-                    <div class="child_windows prompt_shell_menu resize active">
+                    <div class="child_windows prompt_shell_menu resize">
                         <div class="title">
                             <span class="title_icon"></span><span>nexser shell</span>
                         </div>
@@ -13913,7 +13948,6 @@
                             <textarea id="shell"></textarea>
                         </div>
                     </div>
-
 
                     <div class="child_windows command_help_menu resize active">
                         <div class="title">
@@ -14061,11 +14095,10 @@
                         </div>
                     </div>
 
-                    <div class="child_windows screen_text_menu active back_silver">
+                    <div class="child_windows screen_text_menu back_silver active">
                         <div class="title">
                             <span class="title_icon"></span><span>screen text</span>
                         </div>
-
 
                         <div class="title_buttons">
                             <span class="drag_button">&nbsp;</span>
@@ -14586,7 +14619,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         </div>
                     </div>
 
-                    <div class="child_windows htmlviewer_edit_menu active resize back_silver">
+                    <div class="child_windows htmlviewer_edit_menu resize back_silver active">
                         <div class="title">
                             <span class="title_icon"></span><span>html viewer edit</span>
                         </div>
@@ -15850,7 +15883,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             </div>
                         </div>
                     </div>
-                    <div id="start_menu" class="parent_start_menu">
+                    <div id="start_menu" class="parent_start_menu parentstartmenu2">
                         <div class="child_start_menu border">
                             <ul>
                                 <li
