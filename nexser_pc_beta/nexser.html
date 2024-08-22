@@ -1199,8 +1199,8 @@
                                                             &lt;li&gt;nexser files text&lt;/li&gt;&lt;span class=&quot;window_file_icon&quot;&gt;&lt;/span&gt;
                                                             &lt;li class=&quot;windowfile_time&quot;&gt;&lt;/li&gt;
                                                         &lt;/div&gt;
-                                                        &lt;div class=&quot;window_files&quot;&gt;
-                                                            &lt;li&gt;test&lt;/li&gt;&lt;span class=&quot;window_file_icon2&quot;&gt;&lt;/span&gt;
+                                                        &lt;div class=&quot;window_files test_button45&quot;&gt;
+                                                            &lt;li&gt;alarm&lt;/li&gt;&lt;span class=&quot;window_file_icon&quot;&gt;&lt;/span&gt;
                                                             &lt;li class=&quot;windowfile_time&quot;&gt;&lt;/li&gt;
                                                         &lt;/div&gt;&lt;br&gt;
                                                     &lt;/ul&gt;
@@ -1624,7 +1624,7 @@
                                                                 &lt;li&gt;&amp;nbsp;access&amp;nbsp;&lt;/li&gt;
                                                             &lt;/ul&gt;
                                                             &lt;div class=&quot;window_inline_menus_child&quot;&gt;&lt;br&gt;
-                                                                &lt;p class=&quot;bold&quot;&gt;lastaccess:&amp;emsp;&lt;span id=&quot;lastaccess_day&quot;&gt;&lt;/span&gt;&lt;/p&gt;
+                                                                &lt;p class=&quot;bold&quot;&gt;Last Access:&amp;emsp;&lt;span id=&quot;lastaccess_day&quot;&gt;&lt;/span&gt;&lt;/p&gt;
                                                             &lt;/div&gt;
                                                         &lt;/div&gt;
                         
@@ -1913,8 +1913,6 @@
                         
                                                 &lt;div class=&quot;commands window_contents border2&quot;&gt;
                                                     &lt;ul style=&quot;column-count: 2;&quot;&gt;
-                                                        &lt;li&gt;windows95/sound/start/play&lt;/li&gt;
-                                                        &lt;li&gt;windows95/sound/shutdown/play&lt;/li&gt;
                                                         &lt;li&gt;screen/full&lt;/li&gt;
                                                         &lt;li&gt;screen/min&lt;/li&gt;
                                                         &lt;li&gt;taskbar/none&lt;/li&gt;
@@ -2221,6 +2219,8 @@
                                                                     &lt;button class=&quot;button2 large apply_button&quot;
                                                                         onclick=&quot;savertime()&quot;&gt;&amp;emsp;OK&amp;emsp;&lt;/button&gt;
                                                                     &lt;p class=&quot;bold&quot;&gt;saver time: &lt;span class=&quot;screensaver_text&quot;&gt;none&lt;/span&gt;&lt;/p&gt;
+                                                                    &lt;button class=&quot;button2 small apply_button2&quot;
+                                                                        onclick=&quot;savertime_clear()&quot;&gt;&amp;emsp;タイムリセット&amp;emsp;&lt;/button&gt;
                                                                 &lt;/div&gt;
                         
                                                                 &lt;div
@@ -3305,8 +3305,7 @@
                                                 &lt;/div&gt;
                                             &lt;/div&gt;
                         
-                                            &lt;div class=&quot;child_windows localstorage_details_menu resize active&quot;
-                                                style=&quot;width: 300px; height: 200px;&quot;&gt;
+                                            &lt;div class=&quot;child_windows localstorage_details_menu resize active&quot;&gt;
                                                 &lt;div class=&quot;title&quot;&gt;
                                                     &lt;span class=&quot;title_icon&quot;&gt;&lt;/span&gt;&lt;span&gt;localstorage details&lt;/span&gt;
                                                 &lt;/div&gt;
@@ -3469,6 +3468,115 @@
                                                     &lt;/p&gt;
                                                 &lt;/div&gt;
                                             &lt;/div&gt;
+                        
+                                            &lt;div class=&quot;child_windows alarm_menu active&quot;&gt;
+                                                &lt;div class=&quot;title&quot;&gt;
+                                                    &lt;span class=&quot;title_icon&quot;&gt;&lt;/span&gt;&lt;span&gt;alarm&lt;/span&gt;
+                                                &lt;/div&gt;
+                                                &lt;div class=&quot;title_buttons&quot;&gt;
+                                                    &lt;span class=&quot;drag_button&quot;&gt;&amp;nbsp;&lt;/span&gt;
+                                                    &lt;span class=&quot;close_button button2&quot;&gt;&lt;/span&gt;&lt;br&gt;
+                                                &lt;/div&gt;
+                        
+                                                &lt;div id=&quot;timerText&quot; class=&quot;x-large&quot;&gt;00:00:00&lt;/div&gt;
+                                                &lt;form name=&quot;alarm_form&quot;&gt;
+                                                    &lt;p class=&quot;time_text&quot;&gt;アラーム: &lt;select name=&quot;option_hours&quot;&gt;
+                                                            &lt;option value=&quot;0&quot;&gt;00&lt;/option&gt;
+                                                            &lt;option value=&quot;1&quot;&gt;01&lt;/option&gt;
+                                                            &lt;option value=&quot;2&quot;&gt;02&lt;/option&gt;
+                                                            &lt;option value=&quot;3&quot;&gt;03&lt;/option&gt;
+                                                            &lt;option value=&quot;4&quot;&gt;04&lt;/option&gt;
+                                                            &lt;option value=&quot;5&quot;&gt;05&lt;/option&gt;
+                                                            &lt;option value=&quot;6&quot;&gt;06&lt;/option&gt;
+                                                            &lt;option value=&quot;7&quot;&gt;07&lt;/option&gt;
+                                                            &lt;option value=&quot;8&quot;&gt;08&lt;/option&gt;
+                                                            &lt;option value=&quot;9&quot;&gt;09&lt;/option&gt;
+                                                            &lt;option value=&quot;10&quot;&gt;10&lt;/option&gt;
+                                                            &lt;option value=&quot;11&quot;&gt;11&lt;/option&gt;
+                                                            &lt;option value=&quot;12&quot;&gt;12&lt;/option&gt;
+                                                            &lt;option value=&quot;13&quot;&gt;13&lt;/option&gt;
+                                                            &lt;option value=&quot;14&quot;&gt;14&lt;/option&gt;
+                                                            &lt;option value=&quot;15&quot;&gt;15&lt;/option&gt;
+                                                            &lt;option value=&quot;16&quot;&gt;16&lt;/option&gt;
+                                                            &lt;option value=&quot;17&quot;&gt;17&lt;/option&gt;
+                                                            &lt;option value=&quot;18&quot;&gt;18&lt;/option&gt;
+                                                            &lt;option value=&quot;19&quot;&gt;19&lt;/option&gt;
+                                                            &lt;option value=&quot;20&quot;&gt;20&lt;/option&gt;
+                                                            &lt;option value=&quot;21&quot;&gt;21&lt;/option&gt;
+                                                            &lt;option value=&quot;22&quot;&gt;22&lt;/option&gt;
+                                                            &lt;option value=&quot;23&quot;&gt;23&lt;/option&gt;
+                                                        &lt;/select&gt;
+                                                        &lt;select name=&quot;option_minutes&quot;&gt;
+                                                            &lt;option value=&quot;0&quot;&gt;00&lt;/option&gt;
+                                                            &lt;option value=&quot;1&quot;&gt;01&lt;/option&gt;
+                                                            &lt;option value=&quot;2&quot;&gt;02&lt;/option&gt;
+                                                            &lt;option value=&quot;3&quot;&gt;03&lt;/option&gt;
+                                                            &lt;option value=&quot;4&quot;&gt;04&lt;/option&gt;
+                                                            &lt;option value=&quot;5&quot;&gt;05&lt;/option&gt;
+                                                            &lt;option value=&quot;6&quot;&gt;06&lt;/option&gt;
+                                                            &lt;option value=&quot;7&quot;&gt;07&lt;/option&gt;
+                                                            &lt;option value=&quot;8&quot;&gt;08&lt;/option&gt;
+                                                            &lt;option value=&quot;9&quot;&gt;09&lt;/option&gt;
+                                                            &lt;option value=&quot;10&quot;&gt;10&lt;/option&gt;
+                                                            &lt;option value=&quot;11&quot;&gt;11&lt;/option&gt;
+                                                            &lt;option value=&quot;12&quot;&gt;12&lt;/option&gt;
+                                                            &lt;option value=&quot;13&quot;&gt;13&lt;/option&gt;
+                                                            &lt;option value=&quot;14&quot;&gt;14&lt;/option&gt;
+                                                            &lt;option value=&quot;15&quot;&gt;15&lt;/option&gt;
+                                                            &lt;option value=&quot;16&quot;&gt;16&lt;/option&gt;
+                                                            &lt;option value=&quot;17&quot;&gt;17&lt;/option&gt;
+                                                            &lt;option value=&quot;18&quot;&gt;18&lt;/option&gt;
+                                                            &lt;option value=&quot;19&quot;&gt;19&lt;/option&gt;
+                                                            &lt;option value=&quot;20&quot;&gt;20&lt;/option&gt;
+                                                            &lt;option value=&quot;21&quot;&gt;21&lt;/option&gt;
+                                                            &lt;option value=&quot;22&quot;&gt;22&lt;/option&gt;
+                                                            &lt;option value=&quot;23&quot;&gt;23&lt;/option&gt;
+                                                            &lt;option value=&quot;24&quot;&gt;24&lt;/option&gt;
+                                                            &lt;option value=&quot;25&quot;&gt;25&lt;/option&gt;
+                                                            &lt;option value=&quot;26&quot;&gt;26&lt;/option&gt;
+                                                            &lt;option value=&quot;27&quot;&gt;27&lt;/option&gt;
+                                                            &lt;option value=&quot;28&quot;&gt;28&lt;/option&gt;
+                                                            &lt;option value=&quot;29&quot;&gt;29&lt;/option&gt;
+                                                            &lt;option value=&quot;30&quot;&gt;30&lt;/option&gt;
+                                                            &lt;option value=&quot;31&quot;&gt;31&lt;/option&gt;
+                                                            &lt;option value=&quot;32&quot;&gt;32&lt;/option&gt;
+                                                            &lt;option value=&quot;33&quot;&gt;33&lt;/option&gt;
+                                                            &lt;option value=&quot;34&quot;&gt;34&lt;/option&gt;
+                                                            &lt;option value=&quot;35&quot;&gt;35&lt;/option&gt;
+                                                            &lt;option value=&quot;36&quot;&gt;36&lt;/option&gt;
+                                                            &lt;option value=&quot;37&quot;&gt;37&lt;/option&gt;
+                                                            &lt;option value=&quot;38&quot;&gt;38&lt;/option&gt;
+                                                            &lt;option value=&quot;39&quot;&gt;39&lt;/option&gt;
+                                                            &lt;option value=&quot;40&quot;&gt;40&lt;/option&gt;
+                                                            &lt;option value=&quot;41&quot;&gt;41&lt;/option&gt;
+                                                            &lt;option value=&quot;42&quot;&gt;42&lt;/option&gt;
+                                                            &lt;option value=&quot;43&quot;&gt;43&lt;/option&gt;
+                                                            &lt;option value=&quot;44&quot;&gt;44&lt;/option&gt;
+                                                            &lt;option value=&quot;45&quot;&gt;45&lt;/option&gt;
+                                                            &lt;option value=&quot;46&quot;&gt;46&lt;/option&gt;
+                                                            &lt;option value=&quot;47&quot;&gt;47&lt;/option&gt;
+                                                            &lt;option value=&quot;48&quot;&gt;48&lt;/option&gt;
+                                                            &lt;option value=&quot;49&quot;&gt;49&lt;/option&gt;
+                                                            &lt;option value=&quot;50&quot;&gt;50&lt;/option&gt;
+                                                            &lt;option value=&quot;51&quot;&gt;51&lt;/option&gt;
+                                                            &lt;option value=&quot;52&quot;&gt;52&lt;/option&gt;
+                                                            &lt;option value=&quot;53&quot;&gt;53&lt;/option&gt;
+                                                            &lt;option value=&quot;54&quot;&gt;54&lt;/option&gt;
+                                                            &lt;option value=&quot;55&quot;&gt;55&lt;/option&gt;
+                                                            &lt;option value=&quot;56&quot;&gt;56&lt;/option&gt;
+                                                            &lt;option value=&quot;57&quot;&gt;57&lt;/option&gt;
+                                                            &lt;option value=&quot;58&quot;&gt;58&lt;/option&gt;
+                                                            &lt;option value=&quot;59&quot;&gt;59&lt;/option&gt;
+                                                        &lt;/select&gt; &lt;span class=&quot;time_btn button2&quot; id=&quot;set_btn&quot;&gt;設定&lt;/span&gt;
+                                                    &lt;/p&gt;
+                                                &lt;/form&gt;
+                                                &lt;div class=&quot;container&quot;&gt;
+                                                    &lt;p&gt;アラーム設定時刻&lt;/p&gt;
+                                                    &lt;ul id=&quot;parent_list&quot;&gt;
+                                                    &lt;/ul&gt;
+                                                &lt;/div&gt;
+                                            &lt;/div&gt;
+                        
                         
                                             &lt;div class=&quot;child_windows nexser_guidebook_menu resize active&quot;&gt;
                                                 &lt;div class=&quot;title&quot;&gt;
@@ -4202,6 +4310,7 @@
                             const paint_menu = document.querySelector(&#039;.paint_menu&#039;);
                             const nexser_files_menu = document.querySelector(&#039;.nexser_files_menu&#039;);
                             const url_drop_menu = document.querySelector(&#039;.url_drop_menu&#039;);
+                            const alarm_menu = document.querySelector(&#039;.alarm_menu&#039;);
                         
                             const notice_menu = document.querySelector(&#039;.notice_menu&#039;);
                         
@@ -4631,7 +4740,6 @@
                                         background_img.style.width = &quot;100%&quot;
                                         background_img.style.height = &quot;100%&quot;
                                     }
-                        
                                     resolve();
                                 }, 10);
                         
@@ -6644,12 +6752,18 @@
                         
                                     case &#039;local/memory&#039;:
                                         prompt_text2.style.color = &quot;&quot;;
-                                        localmemory_size()
-                                        setTimeout(() =&gt; {
-                                            localstorage_details_menu.classList.remove(&#039;active&#039;);
-                                            localstorage_details_menu.style.zIndex = largestZIndex++;
-                                            zindexwindow_addnavy();
-                                        }, 1000);
+                                        new Promise((resolve) =&gt; {
+                                            setTimeout(() =&gt; {
+                                                localmemory_size(),
+                                                    resolve();
+                                            }, 0)
+                                            setTimeout(() =&gt; {
+                                                localstorage_details_menu.classList.remove(&#039;active&#039;);
+                                                localstorage_details_menu.style.zIndex = largestZIndex++;
+                                                zindexwindow_addnavy();
+                                                resolve()
+                                            }, 2000);
+                                        })
                                         break;
                         
                                     case &#039;help&#039;:
@@ -6657,14 +6771,6 @@
                                         command_help_menu.classList.remove(&#039;active&#039;);
                                         command_help_menu.style.zIndex = largestZIndex++;
                                         zindexwindow_addnavy();
-                                        break;
-                                    case &#039;windows95/sound/start/play&#039;:
-                                        sound();
-                                        prompt_text2.style.color = &quot;&quot;;
-                                        break;
-                                    case &#039;windows95/sound/shutdown/play&#039;:
-                                        sound2();
-                                        prompt_text2.style.color = &quot;&quot;;
                                         break;
                                     case &#039;screen/full&#039;:
                                         full();
@@ -7421,7 +7527,6 @@
                                     let parentstartmenulists = parent_startmenu_lists.lastElementChild;
                                     parentstartmenulists.style.display = &quot;block&quot;
                                 })
-                        
                                 parent_startmenu_lists.addEventListener(&#039;mouseleave&#039;, function () {
                                     document.querySelectorAll(&#039;.child_start_menu_lists&#039;).forEach(function (child_startmenu_lists) {
                                         child_startmenu_lists.style.display = &quot;none&quot;;
@@ -7920,6 +8025,13 @@
                                     url_drop_resize()
                                 })
                             );
+                            document.querySelectorAll(&#039;.test_button45&#039;).forEach(testbtn =&gt;
+                                testbtn.addEventListener(&#039;click&#039;, () =&gt; {
+                                    alarm_menu.classList.toggle(&#039;active&#039;);
+                                    alarm_menu.style.zIndex = largestZIndex++;
+                                    zindexwindow_addnavy()
+                                })
+                            );
                         
                             function cpucalc_open() {
                                 const cpumenu1 = document.querySelector(&#039;.cpumenu_1&#039;);
@@ -8057,7 +8169,7 @@
                             const cameraframe_child = document.getElementById(&#039;v&#039;);
                             const cameraframe_resize = () =&gt; {
                                 cameraframe_child.style.width = `${cameraframe_parent.clientWidth}px`;
-                                cameraframe_child.style.height = `${cameraframe_parent.clientHeight}px`;
+                                cameraframe_child.style.height = `${cameraframe_parent.clientHeight + - + 85}px`;
                             };
                             cameraframe_parent.addEventListener(&#039;mousemove&#039;, cameraframe_resize);
                         
@@ -8820,7 +8932,6 @@
                         
                             const outputdate = `${yeardate}/${monthdate + 1}/${dates}/${hourdate % 12}:${mindate}${ampm}`;
                             document.getElementById(&#039;lastaccess_day&#039;).textContent = outputdate;
-                        
                             // 右クリックイベントの登録
                             document.getElementById(&quot;button1&quot;).addEventListener(&quot;contextmenu&quot;, function (event) {
                                 event.preventDefault();
@@ -8868,7 +8979,6 @@
                                 localStorage.setItem(&#039;note_textcolor_yellow&#039;, note_textcolor_yellow);
                                 notecolor_change()
                             }
-                        
                             function notecolor_change() {
                                 if (localStorage.getItem(&#039;note_textcolor_blue&#039;)) {
                                     document.querySelector(&#039;.note_area&#039;).style.color = &quot;blue&quot;;
@@ -8891,7 +9001,6 @@
                                     document.querySelector(&#039;.test_notetext&#039;).style.color = &quot;yellow&quot;;
                                 }
                             }
-                        
                             function notecolor_remove() {
                                 localStorage.removeItem(&#039;note_textcolor_blue&#039;)
                                 localStorage.removeItem(&#039;note_textcolor_green&#039;)
@@ -8900,12 +9009,14 @@
                                 localStorage.removeItem(&#039;note_textcolor_yellow&#039;)
                                 document.querySelector(&#039;.note_area&#039;).style.color = &quot;&quot;;
                                 document.querySelector(&#039;.test_notetext&#039;).style.color = &quot;&quot;;
+                                notetitle();
                             }
                         
                             function notetext_all_bold() {
                                 var Note = document.querySelector(&#039;.note_area&#039;);
                                 const note_text_bold = document.querySelector(&#039;.notetext_bold&#039;);
                                 localStorage.setItem(&#039;note_text_bold&#039;, note_text_bold);
+                                notetitle();
                                 if (localStorage.getItem(&#039;note_text_bold&#039;) &amp;&amp; Note.style.fontWeight == &quot;normal&quot;) {
                                     Note.style.fontWeight = &quot;bold&quot;;
                                     document.querySelector(&#039;.test_notetext&#039;).style.fontWeight = &quot;bold&quot;;
@@ -8923,6 +9034,7 @@
                                 var Note = document.querySelector(&#039;.note_area&#039;);
                                 const note_text_oblique = document.querySelector(&#039;.notetext_oblique&#039;);
                                 localStorage.setItem(&#039;note_text_oblique&#039;, note_text_oblique);
+                                notetitle();
                                 if (localStorage.getItem(&#039;note_text_oblique&#039;) &amp;&amp; Note.style.fontStyle == &quot;normal&quot;) {
                                     Note.style.fontStyle = &quot;oblique&quot;;
                                     document.querySelector(&#039;.test_notetext&#039;).style.fontStyle = &quot;oblique&quot;;
@@ -8935,11 +9047,11 @@
                                     document.querySelector(&#039;.test_notetext&#039;).style.fontStyle = &quot;oblique&quot;;
                                 }
                             }
-                        
                             function notetext_all_underline() {
                                 var Note = document.querySelector(&#039;.note_area&#039;);
                                 const note_text_underline = document.querySelector(&#039;.notetext_underline&#039;);
                                 localStorage.setItem(&#039;note_text_underline&#039;, note_text_underline);
+                                notetitle();
                                 if (Note.style.textDecoration == &quot;none&quot; &amp;&amp; localStorage.getItem(&#039;note_text_underline&#039;)) {
                                     Note.style.textDecoration = &quot;underline&quot;;
                                     document.querySelector(&#039;.test_notetext&#039;).style.textDecoration = &quot;underline&quot;;
@@ -9810,6 +9922,12 @@
                                 }
                             }
                         
+                            function savertime_clear() {
+                                const stime = document.getElementsByClassName(&#039;saver_second&#039;)[0].value;
+                                localStorage.removeItem(&#039;saver_time&#039;)
+                                document.getElementsByClassName(&#039;screensaver_text&#039;)[0].textContent = &quot;none&quot;;
+                            }
+                        
                             let sec = localStorage.getItem(&#039;saver_time&#039;);
                             const events = [&#039;keydown&#039;, &#039;mousemove&#039;, &#039;mousedown&#039;];
                             let timeoutId;
@@ -10481,7 +10599,7 @@
                                 document.querySelectorAll(&#039;.prompt_shell_menu&#039;).forEach(function (prompt_shell_menu) {
                                     prompt_shell_menu.closest(&#039;.child_windows&#039;);
                                     prompt_shell_menu.classList.remove(&#039;active&#039;);
-                                    prompt_shell_menu.style.zIndex = largestZIndex + 5;
+                                    prompt_shell_menu.style.zIndex = largestZIndex++;
                                     zindexwindow_addnavy();
                                     shell_resize()
                                 });
@@ -12027,6 +12145,161 @@
                             }
                         
                         
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                            let currentDate = new Date();
+                            let alarm_hours = currentDate.getHours();
+                            let alarm_minutes = currentDate.getMinutes();
+                            let alarm_seconds = currentDate.getSeconds();
+                            let timerText = document.getElementById(&#039;timerText&#039;);
+                            let set_btn = document.getElementById(&#039;set_btn&#039;);
+                            let delete_btn = document.getElementById(&#039;delete_btn&#039;);
+                            let option_hours;
+                            let option_minutes;
+                            let parent_list = document.getElementById(&#039;parent_list&#039;);
+                            let record = JSON.parse(localStorage.getItem(&#039;alarms&#039;)) || []; // Load alarms from local storage
+                            let x = record.length; // Initialize x based on the number of alarms in local storage
+                        
+                            //アラーム設定用オブジェクト
+                            let Setting = function (sethour, setminute) {
+                                this.sethour = sethour;
+                                this.setminute = setminute;
+                            };
+                        
+                            // 時計の&quot;12:1&quot;を&quot;12:01&quot;と表記
+                            function adjustDigit(num) {
+                                let digit;
+                                if (num &lt; 10) { digit = `0${num}`; }
+                                else { digit = num; }
+                                return digit;
+                            }
+                        
+                            // アラームセット
+                            set_btn.addEventListener(&#039;click&#039;, function () {
+                                //アラームは最大5まで
+                                let lis = parent_list.getElementsByTagName(&#039;li&#039;);
+                                let len = lis.length;
+                                if (len &gt;= 5) { return; }
+                        
+                                //設定時間を記録
+                                option_hours = document.alarm_form.option_hours.value;
+                                option_minutes = document.alarm_form.option_minutes.value;
+                                record[x] = new Setting(option_hours, option_minutes);
+                        
+                                //設定時間を表示
+                                let container_list = document.createElement(&#039;li&#039;);
+                                let list_content = document.createTextNode(`${record[x].sethour}時${record[x].setminute}分`);
+                                parent_list.appendChild(container_list);
+                                container_list.appendChild(list_content);
+                        
+                                //表示削除用ボタン
+                                let list_span = document.createElement(&#039;span&#039;);
+                                let id_li = document.createAttribute(&#039;id&#039;);
+                                let id_span = document.createAttribute(&#039;id&#039;);
+                                let span_content = document.createTextNode(&#039;削除&#039;);
+                                container_list.appendChild(list_span);
+                                list_span.appendChild(span_content);
+                                container_list.setAttributeNode(id_li);
+                                container_list.id = x;
+                                container_list.classList.add(&#039;deletes&#039;);
+                                list_span.classList.add(&#039;delete_btn&#039;);
+                                list_span.classList.add(&#039;button2&#039;);
+                        
+                                //設定時刻と表示を削除
+                                addDeleteFunctionality();
+                                x++;
+                                saveAlarms(); // Save alarms to local storage after setting
+                            });
+                        
+                            // Save alarms to local storage
+                            function saveAlarms() {
+                                localStorage.setItem(&#039;alarms&#039;, JSON.stringify(record));
+                            }
+                        
+                            // Load alarms from local storage on page load
+                            function loadAlarms() {
+                                for (let i = 0; i &lt; record.length; i++) {
+                                    if (record[i] !== &#039;disabled&#039;) {
+                                        let container_list = document.createElement(&#039;li&#039;);
+                                        let list_content = document.createTextNode(`${record[i].sethour}時${record[i].setminute}分`);
+                                        parent_list.appendChild(container_list);
+                                        container_list.appendChild(list_content);
+                        
+                                        let list_span = document.createElement(&#039;span&#039;);
+                                        let span_content = document.createTextNode(&#039;削除&#039;);
+                                        container_list.appendChild(list_span);
+                                        list_span.appendChild(span_content);
+                                        container_list.id = i;
+                                        container_list.classList.add(&#039;deletes&#039;);
+                                        list_span.classList.add(&#039;delete_btn&#039;);
+                                    }
+                                }
+                                addDeleteFunctionality(); // Add delete functionality after loading alarms
+                            }
+                        
+                            // Add delete functionality to delete buttons
+                            function addDeleteFunctionality() {
+                                let deletes = document.getElementsByClassName(&#039;deletes&#039;);
+                                for (var i = 0, de_len = deletes.length; i &lt; de_len; i++) {
+                                    deletes[i].onclick = function () {
+                                        record[this.id] = &#039;disabled&#039;;
+                                        this.id = &#039;temp&#039;;
+                                        var temp = document.getElementById(&#039;temp&#039;);
+                                        temp.parentNode.removeChild(temp);
+                                        saveAlarms(); // Save alarms to local storage after deletion
+                                    };
+                                }
+                            }
+                        
+                            //時計を動かす
+                            function updateCurrentTime() {
+                                setTimeout(function () {
+                                    currentDate = new Date();
+                                    alarm_hours = adjustDigit(currentDate.getHours());
+                                    alarm_minutes = adjustDigit(currentDate.getMinutes());
+                                    alarm_seconds = adjustDigit(currentDate.getSeconds());
+                                    timerText.innerHTML = `${alarm_hours}:${alarm_minutes}:${alarm_seconds}`;
+                        
+                                    //アラーム機能
+                                    for (var i = 0, len = record.length; i &lt; len; i++) {
+                                        if (record[i].sethour == currentDate.getHours() &amp;&amp; record[i].setminute == currentDate.getMinutes() &amp;&amp; alarm_seconds == 0) {
+                                            alert(&#039;お時間です!&#039;);
+                                        };
+                                    };
+                                    updateCurrentTime();
+                                }, 100);
+                            }
+                        
+                            // Load alarms and start the clock
+                            loadAlarms();
+                            updateCurrentTime();
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
                         };
 
                 </textarea>
@@ -12035,179 +12308,7 @@
             <code>
                     <textarea id="code_script2" class="white_text" style="display: none; width: 99%; height: 65vh; background-color: black; resize: none; outline: none;">
 
-                        const error_windows = document.querySelector(&#039;.error_windows&#039;);
-                        const warning_windows = document.querySelector(&#039;.warning_windows&#039;);
-                        const prompt_text2 = document.querySelector(&#039;.prompt_text2&#039;);
-                        
-                        const sound_play_button = document.getElementsByClassName(&#039;sound_play_button&#039;);
-                        const sound_stop_button = document.getElementsByClassName(&#039;sound_stop_button&#039;);
-                        
-                        let sound_1 = new Audio(&quot;nexser_sounds/The-Microsoft-Sound.mp3&quot;);
-                        let sound_2 = new Audio(&quot;nexser_sounds/tada.mp3&quot;);
-                        let sound_3 = new Audio(&quot;nexser_sounds/chord.mp3&quot;);
-                        let sound_4 = new Audio(&quot;nexser_sounds/chimes.mp3&quot;);
-                        let sound_5 = new Audio(&quot;nexser_sounds/ding.mp3&quot;);
-                        let sound_6 = new Audio(&quot;nexser_sounds/utopia.mp3&quot;);
-                        let sound_7 = new Audio(&quot;nexser_sounds/welcome.mp3&quot;);
-                        let sound_8 = new Audio(&quot;nexser_sounds/windows98.start.mp3&quot;);
-                        let sound_9 = new Audio(&quot;nexser_sounds/windows98.logoff.mp3&quot;);
-                        let sound_10 = new Audio(&quot;nexser_sounds/windows2000_startup.mp3&quot;);
-                        let sound_11 = new Audio(&quot;nexser_sounds/windows2000_shutdown.mp3&quot;);
-                        let sound_12 = new Audio(&quot;nexser_sounds/windowsxp_startup.mp3&quot;);
-                        let sound_13 = new Audio(&quot;nexser_sounds/windowsxp_shutdown.mp3&quot;);
-                        let sound_14 = new Audio(&quot;nexser_sounds/windowsxp_criticalstop.mp3&quot;);
-                        sound_1.preload = &#039;auto&#039;;
-                        sound_2.preload = &#039;auto&#039;;
-                        sound_3.preload = &#039;auto&#039;;
-                        sound_4.preload = &#039;auto&#039;;
-                        sound_5.preload = &#039;auto&#039;;
-                        sound_6.preload = &#039;auto&#039;;
-                        sound_7.preload = &#039;auto&#039;;
-                        sound_8.preload = &#039;auto&#039;;
-                        sound_9.preload = &#039;auto&#039;;
-                        sound_10.preload = &#039;auto&#039;;
-                        sound_11.preload = &#039;auto&#039;;
-                        sound_12.preload = &#039;auto&#039;;
-                        sound_13.preload = &#039;auto&#039;;
-                        sound_14.preload = &#039;auto&#039;;
-                        
-                        function sound() {
-                            if (localStorage.getItem(&#039;driver_sound&#039;)) {
-                                sound_1.play();
-                            }
-                        }
-                        function sound2() {
-                            if (localStorage.getItem(&#039;driver_sound&#039;)) {
-                                sound_2.play();
-                            }
-                        }
-                        function sound3() {
-                            if (localStorage.getItem(&#039;driver_sound&#039;)) {
-                                sound_3.play();
-                            }
-                        }
-                        function sound4() {
-                            if (localStorage.getItem(&#039;driver_sound&#039;)) {
-                                sound_4.play();
-                            }
-                        }
-                        function sound5() {
-                            if (localStorage.getItem(&#039;driver_sound&#039;)) {
-                                sound_5.play();
-                            }
-                        }
-                        function sound6() {
-                            if (localStorage.getItem(&#039;driver_sound&#039;)) {
-                                sound_6.play();
-                            }
-                        }
-                        function sound7() {
-                            if (localStorage.getItem(&#039;driver_sound&#039;)) {
-                                sound_7.play();
-                            }
-                        }
-                        function sound8() {
-                            if (localStorage.getItem(&#039;driver_sound&#039;)) {
-                                sound_8.play();
-                            }
-                        }
-                        function sound9() {
-                            if (localStorage.getItem(&#039;driver_sound&#039;)) {
-                                sound_9.play();
-                            }
-                        }
-                        function sound10() {
-                            if (localStorage.getItem(&#039;driver_sound&#039;)) {
-                                sound_10.play();
-                            }
-                        }
-                        function sound11() {
-                            if (localStorage.getItem(&#039;driver_sound&#039;)) {
-                                sound_11.play();
-                            }
-                        }
-                        function sound12() {
-                            if (localStorage.getItem(&#039;driver_sound&#039;)) {
-                                sound_12.play();
-                            }
-                        }
-                        function sound13() {
-                            if (localStorage.getItem(&#039;driver_sound&#039;)) {
-                                sound_13.play();
-                            }
-                        }
-                        function sound14() {
-                            if (localStorage.getItem(&#039;driver_sound&#039;)) {
-                                sound_14.play();
-                            }
-                        }
-                        
-                        function sound_stop() {
-                            sound_1.pause();
-                            sound_2.pause();
-                            sound_3.pause();
-                            sound_4.pause();
-                            sound_5.pause();
-                            sound_6.pause();
-                            sound_7.pause();
-                            sound_8.pause();
-                            sound_9.pause();
-                            sound_10.pause();
-                            sound_11.pause();
-                            sound_12.pause();
-                            sound_13.pause();
-                            sound_14.pause();
-                            sound_1.currentTime = 0;
-                            sound_2.currentTime = 0;
-                            sound_3.currentTime = 0;
-                            sound_4.currentTime = 0;
-                            sound_5.currentTime = 0;
-                            sound_6.currentTime = 0;
-                            sound_7.currentTime = 0;
-                            sound_8.currentTime = 0;
-                            sound_9.currentTime = 0;
-                            sound_10.currentTime = 0;
-                            sound_11.currentTime = 0;
-                            sound_12.currentTime = 0;
-                            sound_13.currentTime = 0;
-                            sound_14.currentTime = 0;
-                        
-                            Array.from(sound_play_button).forEach((sound_play_buttons) =&gt; {
-                                sound_play_buttons.textContent = &quot;▶&quot;
-                            })
-                        }
-                        
-                        Array.from(sound_play_button).forEach((sound_play_buttons) =&gt; {
-                            sound_play_buttons.textContent = &quot;▶&quot;
-                        })
-                        Array.from(sound_play_button).forEach((sound_play_buttons) =&gt; {
-                            sound_play_buttons.addEventListener(&#039;mousedown&#039;, function () {
-                                sound_stop()
-                                Array.from(sound_play_button).forEach((sound_play_buttons) =&gt; {
-                                    sound_play_buttons.textContent = &quot;▶&quot;
-                                })
-                            })
-                            sound_play_buttons.addEventListener(&#039;click&#039;, function () {
-                                if (!localStorage.getItem(&#039;driver_sound&#039;)) {
-                                    document.querySelector(&#039;.window_error_text&#039;).textContent = &quot;サウンドドライバー がインストールされていません!&quot;
-                                    error_windows.classList.remove(&#039;active&#039;)
-                                    prompt_text2.style.color = &quot;&quot;;
-                                    document.querySelector(&#039;.test_allwindow&#039;).style.display = &quot;block&quot;;
-                                    sound3()
-                                    sound_play_buttons.textContent = &quot;▶&quot;
-                                } else {
-                                    sound_play_buttons.textContent = &quot;||&quot;
-                                }
-                            })
-                        })
-                        Array.from(sound_stop_button).forEach((sound_stop_buttons) =&gt; {
-                            sound_stop_buttons.addEventListener(&#039;mousedown&#039;, function () {
-                                sound_stop()
-                                Array.from(sound_play_button).forEach((sound_play_buttons) =&gt; {
-                                    sound_play_buttons.textContent = &quot;▶&quot;
-                                })
-                            })
-                        })
+
 
                 </textarea>
                 </code>
@@ -13267,8 +13368,8 @@
                                     <li>nexser files text</li><span class="window_file_icon"></span>
                                     <li class="windowfile_time"></li>
                                 </div>
-                                <div class="window_files">
-                                    <li>test</li><span class="window_file_icon2"></span>
+                                <div class="window_files test_button45">
+                                    <li>alarm</li><span class="window_file_icon"></span>
                                     <li class="windowfile_time"></li>
                                 </div><br>
                             </ul>
@@ -13692,7 +13793,7 @@
                                         <li>&nbsp;access&nbsp;</li>
                                     </ul>
                                     <div class="window_inline_menus_child"><br>
-                                        <p class="bold">lastaccess:&emsp;<span id="lastaccess_day"></span></p>
+                                        <p class="bold">Last Access:&emsp;<span id="lastaccess_day"></span></p>
                                     </div>
                                 </div>
 
@@ -13981,8 +14082,6 @@
 
                         <div class="commands window_contents border2">
                             <ul style="column-count: 2;">
-                                <li>windows95/sound/start/play</li>
-                                <li>windows95/sound/shutdown/play</li>
                                 <li>screen/full</li>
                                 <li>screen/min</li>
                                 <li>taskbar/none</li>
@@ -14289,6 +14388,8 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                             <button class="button2 large apply_button"
                                                 onclick="savertime()">&emsp;OK&emsp;</button>
                                             <p class="bold">saver time: <span class="screensaver_text">none</span></p>
+                                            <button class="button2 small apply_button2"
+                                                onclick="savertime_clear()">&emsp;タイムリセット&emsp;</button>
                                         </div>
 
                                         <div
@@ -15373,8 +15474,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         </div>
                     </div>
 
-                    <div class="child_windows localstorage_details_menu resize active"
-                        style="width: 300px; height: 200px;">
+                    <div class="child_windows localstorage_details_menu resize active">
                         <div class="title">
                             <span class="title_icon"></span><span>localstorage details</span>
                         </div>
@@ -15537,6 +15637,115 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             </p>
                         </div>
                     </div>
+
+                    <div class="child_windows alarm_menu active">
+                        <div class="title">
+                            <span class="title_icon"></span><span>alarm</span>
+                        </div>
+                        <div class="title_buttons">
+                            <span class="drag_button">&nbsp;</span>
+                            <span class="close_button button2"></span><br>
+                        </div>
+
+                        <div id="timerText" class="x-large">00:00:00</div>
+                        <form name="alarm_form">
+                            <p class="time_text">アラーム: <select name="option_hours">
+                                    <option value="0">00</option>
+                                    <option value="1">01</option>
+                                    <option value="2">02</option>
+                                    <option value="3">03</option>
+                                    <option value="4">04</option>
+                                    <option value="5">05</option>
+                                    <option value="6">06</option>
+                                    <option value="7">07</option>
+                                    <option value="8">08</option>
+                                    <option value="9">09</option>
+                                    <option value="10">10</option>
+                                    <option value="11">11</option>
+                                    <option value="12">12</option>
+                                    <option value="13">13</option>
+                                    <option value="14">14</option>
+                                    <option value="15">15</option>
+                                    <option value="16">16</option>
+                                    <option value="17">17</option>
+                                    <option value="18">18</option>
+                                    <option value="19">19</option>
+                                    <option value="20">20</option>
+                                    <option value="21">21</option>
+                                    <option value="22">22</option>
+                                    <option value="23">23</option>
+                                </select>
+                                <select name="option_minutes">
+                                    <option value="0">00</option>
+                                    <option value="1">01</option>
+                                    <option value="2">02</option>
+                                    <option value="3">03</option>
+                                    <option value="4">04</option>
+                                    <option value="5">05</option>
+                                    <option value="6">06</option>
+                                    <option value="7">07</option>
+                                    <option value="8">08</option>
+                                    <option value="9">09</option>
+                                    <option value="10">10</option>
+                                    <option value="11">11</option>
+                                    <option value="12">12</option>
+                                    <option value="13">13</option>
+                                    <option value="14">14</option>
+                                    <option value="15">15</option>
+                                    <option value="16">16</option>
+                                    <option value="17">17</option>
+                                    <option value="18">18</option>
+                                    <option value="19">19</option>
+                                    <option value="20">20</option>
+                                    <option value="21">21</option>
+                                    <option value="22">22</option>
+                                    <option value="23">23</option>
+                                    <option value="24">24</option>
+                                    <option value="25">25</option>
+                                    <option value="26">26</option>
+                                    <option value="27">27</option>
+                                    <option value="28">28</option>
+                                    <option value="29">29</option>
+                                    <option value="30">30</option>
+                                    <option value="31">31</option>
+                                    <option value="32">32</option>
+                                    <option value="33">33</option>
+                                    <option value="34">34</option>
+                                    <option value="35">35</option>
+                                    <option value="36">36</option>
+                                    <option value="37">37</option>
+                                    <option value="38">38</option>
+                                    <option value="39">39</option>
+                                    <option value="40">40</option>
+                                    <option value="41">41</option>
+                                    <option value="42">42</option>
+                                    <option value="43">43</option>
+                                    <option value="44">44</option>
+                                    <option value="45">45</option>
+                                    <option value="46">46</option>
+                                    <option value="47">47</option>
+                                    <option value="48">48</option>
+                                    <option value="49">49</option>
+                                    <option value="50">50</option>
+                                    <option value="51">51</option>
+                                    <option value="52">52</option>
+                                    <option value="53">53</option>
+                                    <option value="54">54</option>
+                                    <option value="55">55</option>
+                                    <option value="56">56</option>
+                                    <option value="57">57</option>
+                                    <option value="58">58</option>
+                                    <option value="59">59</option>
+                                </select> <span class="time_btn button2" id="set_btn">設定</span>
+                            </p>
+                        </form>
+                        <div class="container">
+                            <p>アラーム設定時刻</p>
+                            <ul id="parent_list">
+                            </ul>
+                        </div>
+                    </div>
+
 
                     <div class="child_windows nexser_guidebook_menu resize active">
                         <div class="title">

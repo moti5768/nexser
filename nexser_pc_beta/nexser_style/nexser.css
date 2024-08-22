@@ -1008,6 +1008,11 @@ input[type="file"] {
     min-width: 300px;
 }
 
+.localstorage_details_menu {
+    width: 700px;
+    height: 500px;
+}
+
 #v {
     position: absolute;
 }

@@ -77,6 +77,7 @@ if (ua.includes("mobile")) {
     const paint_menu = document.querySelector('.paint_menu');
     const nexser_files_menu = document.querySelector('.nexser_files_menu');
     const url_drop_menu = document.querySelector('.url_drop_menu');
+    const alarm_menu = document.querySelector('.alarm_menu');
 
     const notice_menu = document.querySelector('.notice_menu');
 
@@ -506,7 +507,6 @@ if (ua.includes("mobile")) {
                 background_img.style.width = "100%"
                 background_img.style.height = "100%"
             }
-
             resolve();
         }, 10);
 
@@ -2519,12 +2519,18 @@ if (ua.includes("mobile")) {
 
             case 'local/memory':
                 prompt_text2.style.color = "";
-                localmemory_size()
-                setTimeout(() => {
-                    localstorage_details_menu.classList.remove('active');
-                    localstorage_details_menu.style.zIndex = largestZIndex++;
-                    zindexwindow_addnavy();
-                }, 1000);
+                new Promise((resolve) => {
+                    setTimeout(() => {
+                        localmemory_size(),
+                            resolve();
+                    }, 0)
+                    setTimeout(() => {
+                        localstorage_details_menu.classList.remove('active');
+                        localstorage_details_menu.style.zIndex = largestZIndex++;
+                        zindexwindow_addnavy();
+                        resolve()
+                    }, 2000);
+                })
                 break;
 
             case 'help':
@@ -2532,14 +2538,6 @@ if (ua.includes("mobile")) {
                 command_help_menu.classList.remove('active');
                 command_help_menu.style.zIndex = largestZIndex++;
                 zindexwindow_addnavy();
-                break;
-            case 'windows95/sound/start/play':
-                sound();
-                prompt_text2.style.color = "";
-                break;
-            case 'windows95/sound/shutdown/play':
-                sound2();
-                prompt_text2.style.color = "";
                 break;
             case 'screen/full':
                 full();
@@ -3296,7 +3294,6 @@ if (ua.includes("mobile")) {
             let parentstartmenulists = parent_startmenu_lists.lastElementChild;
             parentstartmenulists.style.display = "block"
         })
-
         parent_startmenu_lists.addEventListener('mouseleave', function () {
             document.querySelectorAll('.child_start_menu_lists').forEach(function (child_startmenu_lists) {
                 child_startmenu_lists.style.display = "none";
@@ -3795,6 +3792,13 @@ if (ua.includes("mobile")) {
             url_drop_resize()
         })
     );
+    document.querySelectorAll('.test_button45').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
+            alarm_menu.classList.toggle('active');
+            alarm_menu.style.zIndex = largestZIndex++;
+            zindexwindow_addnavy()
+        })
+    );
 
     function cpucalc_open() {
         const cpumenu1 = document.querySelector('.cpumenu_1');
@@ -3932,7 +3936,7 @@ if (ua.includes("mobile")) {
     const cameraframe_child = document.getElementById('v');
     const cameraframe_resize = () => {
         cameraframe_child.style.width = `${cameraframe_parent.clientWidth}px`;
-        cameraframe_child.style.height = `${cameraframe_parent.clientHeight}px`;
+        cameraframe_child.style.height = `${cameraframe_parent.clientHeight + - + 85}px`;
     };
     cameraframe_parent.addEventListener('mousemove', cameraframe_resize);
 
@@ -4695,7 +4699,6 @@ if (ua.includes("mobile")) {
 
     const outputdate = `${yeardate}/${monthdate + 1}/${dates}/${hourdate % 12}:${mindate}${ampm}`;
     document.getElementById('lastaccess_day').textContent = outputdate;
-
     // 右クリックイベントの登録
     document.getElementById("button1").addEventListener("contextmenu", function (event) {
         event.preventDefault();
@@ -4743,7 +4746,6 @@ if (ua.includes("mobile")) {
         localStorage.setItem('note_textcolor_yellow', note_textcolor_yellow);
         notecolor_change()
     }
-
     function notecolor_change() {
         if (localStorage.getItem('note_textcolor_blue')) {
             document.querySelector('.note_area').style.color = "blue";
@@ -4766,7 +4768,6 @@ if (ua.includes("mobile")) {
             document.querySelector('.test_notetext').style.color = "yellow";
         }
     }
-
     function notecolor_remove() {
         localStorage.removeItem('note_textcolor_blue')
         localStorage.removeItem('note_textcolor_green')
@@ -4775,12 +4776,14 @@ if (ua.includes("mobile")) {
         localStorage.removeItem('note_textcolor_yellow')
         document.querySelector('.note_area').style.color = "";
         document.querySelector('.test_notetext').style.color = "";
+        notetitle();
     }
 
     function notetext_all_bold() {
         var Note = document.querySelector('.note_area');
         const note_text_bold = document.querySelector('.notetext_bold');
         localStorage.setItem('note_text_bold', note_text_bold);
+        notetitle();
         if (localStorage.getItem('note_text_bold') && Note.style.fontWeight == "normal") {
             Note.style.fontWeight = "bold";
             document.querySelector('.test_notetext').style.fontWeight = "bold";
@@ -4798,6 +4801,7 @@ if (ua.includes("mobile")) {
         var Note = document.querySelector('.note_area');
         const note_text_oblique = document.querySelector('.notetext_oblique');
         localStorage.setItem('note_text_oblique', note_text_oblique);
+        notetitle();
         if (localStorage.getItem('note_text_oblique') && Note.style.fontStyle == "normal") {
             Note.style.fontStyle = "oblique";
             document.querySelector('.test_notetext').style.fontStyle = "oblique";
@@ -4810,11 +4814,11 @@ if (ua.includes("mobile")) {
             document.querySelector('.test_notetext').style.fontStyle = "oblique";
         }
     }
-
     function notetext_all_underline() {
         var Note = document.querySelector('.note_area');
         const note_text_underline = document.querySelector('.notetext_underline');
         localStorage.setItem('note_text_underline', note_text_underline);
+        notetitle();
         if (Note.style.textDecoration == "none" && localStorage.getItem('note_text_underline')) {
             Note.style.textDecoration = "underline";
             document.querySelector('.test_notetext').style.textDecoration = "underline";
@@ -5685,6 +5689,12 @@ if (ua.includes("mobile")) {
         }
     }
 
+    function savertime_clear() {
+        const stime = document.getElementsByClassName('saver_second')[0].value;
+        localStorage.removeItem('saver_time')
+        document.getElementsByClassName('screensaver_text')[0].textContent = "none";
+    }
+
     let sec = localStorage.getItem('saver_time');
     const events = ['keydown', 'mousemove', 'mousedown'];
     let timeoutId;
@@ -6356,7 +6366,7 @@ if (ua.includes("mobile")) {
         document.querySelectorAll('.prompt_shell_menu').forEach(function (prompt_shell_menu) {
             prompt_shell_menu.closest('.child_windows');
             prompt_shell_menu.classList.remove('active');
-            prompt_shell_menu.style.zIndex = largestZIndex + 5;
+            prompt_shell_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy();
             shell_resize()
         });
@@ -7900,6 +7910,161 @@ if (ua.includes("mobile")) {
         minidesk_child.style.width = `${minidesk_parent.clientWidth}px`;
         minidesk_child.style.height = `${minidesk_parent.clientHeight}px`;
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    let currentDate = new Date();
+    let alarm_hours = currentDate.getHours();
+    let alarm_minutes = currentDate.getMinutes();
+    let alarm_seconds = currentDate.getSeconds();
+    let timerText = document.getElementById('timerText');
+    let set_btn = document.getElementById('set_btn');
+    let delete_btn = document.getElementById('delete_btn');
+    let option_hours;
+    let option_minutes;
+    let parent_list = document.getElementById('parent_list');
+    let record = JSON.parse(localStorage.getItem('alarms')) || []; // Load alarms from local storage
+    let x = record.length; // Initialize x based on the number of alarms in local storage
+
+    //アラーム設定用オブジェクト
+    let Setting = function (sethour, setminute) {
+        this.sethour = sethour;
+        this.setminute = setminute;
+    };
+
+    // 時計の"12:1"を"12:01"と表記
+    function adjustDigit(num) {
+        let digit;
+        if (num < 10) { digit = `0${num}`; }
+        else { digit = num; }
+        return digit;
+    }
+
+    // アラームセット
+    set_btn.addEventListener('click', function () {
+        //アラームは最大5まで
+        let lis = parent_list.getElementsByTagName('li');
+        let len = lis.length;
+        if (len >= 5) { return; }
+
+        //設定時間を記録
+        option_hours = document.alarm_form.option_hours.value;
+        option_minutes = document.alarm_form.option_minutes.value;
+        record[x] = new Setting(option_hours, option_minutes);
+
+        //設定時間を表示
+        let container_list = document.createElement('li');
+        let list_content = document.createTextNode(`${record[x].sethour}時${record[x].setminute}分`);
+        parent_list.appendChild(container_list);
+        container_list.appendChild(list_content);
+
+        //表示削除用ボタン
+        let list_span = document.createElement('span');
+        let id_li = document.createAttribute('id');
+        let id_span = document.createAttribute('id');
+        let span_content = document.createTextNode('削除');
+        container_list.appendChild(list_span);
+        list_span.appendChild(span_content);
+        container_list.setAttributeNode(id_li);
+        container_list.id = x;
+        container_list.classList.add('deletes');
+        list_span.classList.add('delete_btn');
+        list_span.classList.add('button2');
+
+        //設定時刻と表示を削除
+        addDeleteFunctionality();
+        x++;
+        saveAlarms(); // Save alarms to local storage after setting
+    });
+
+    // Save alarms to local storage
+    function saveAlarms() {
+        localStorage.setItem('alarms', JSON.stringify(record));
+    }
+
+    // Load alarms from local storage on page load
+    function loadAlarms() {
+        for (let i = 0; i < record.length; i++) {
+            if (record[i] !== 'disabled') {
+                let container_list = document.createElement('li');
+                let list_content = document.createTextNode(`${record[i].sethour}時${record[i].setminute}分`);
+                parent_list.appendChild(container_list);
+                container_list.appendChild(list_content);
+
+                let list_span = document.createElement('span');
+                let span_content = document.createTextNode('削除');
+                container_list.appendChild(list_span);
+                list_span.appendChild(span_content);
+                container_list.id = i;
+                container_list.classList.add('deletes');
+                list_span.classList.add('delete_btn');
+            }
+        }
+        addDeleteFunctionality(); // Add delete functionality after loading alarms
+    }
+
+    // Add delete functionality to delete buttons
+    function addDeleteFunctionality() {
+        let deletes = document.getElementsByClassName('deletes');
+        for (var i = 0, de_len = deletes.length; i < de_len; i++) {
+            deletes[i].onclick = function () {
+                record[this.id] = 'disabled';
+                this.id = 'temp';
+                var temp = document.getElementById('temp');
+                temp.parentNode.removeChild(temp);
+                saveAlarms(); // Save alarms to local storage after deletion
+            };
+        }
+    }
+
+    //時計を動かす
+    function updateCurrentTime() {
+        setTimeout(function () {
+            currentDate = new Date();
+            alarm_hours = adjustDigit(currentDate.getHours());
+            alarm_minutes = adjustDigit(currentDate.getMinutes());
+            alarm_seconds = adjustDigit(currentDate.getSeconds());
+            timerText.innerHTML = `${alarm_hours}:${alarm_minutes}:${alarm_seconds}`;
+
+            //アラーム機能
+            for (var i = 0, len = record.length; i < len; i++) {
+                if (record[i].sethour == currentDate.getHours() && record[i].setminute == currentDate.getMinutes() && alarm_seconds == 0) {
+                    alert('お時間です!');
+                };
+            };
+            updateCurrentTime();
+        }, 100);
+    }
+
+    // Load alarms and start the clock
+    loadAlarms();
+    updateCurrentTime();
+
+
+
+
+
+
+
+
+
+
 
 
 };
