@@ -98,16 +98,32 @@ if (ua.includes("mobile")) {
     document.addEventListener('mousedown', (e) => {
         var isClickInsideStartButton = document.querySelector('.start_button').contains(e.target);
         var isClickInsideParentStartMenu2 = document.querySelector('.parentstartmenu2').contains(e.target);
-
         if (!isClickInsideStartButton && !isClickInsideParentStartMenu2) {
             startmenu_close()
+        }
+        var isClickInsideStartButton3 = Array.from(document.querySelectorAll('.windowtool_child ,.windowtool_parent')).some(button => button.contains(e.target));
+        if (!isClickInsideStartButton3) {
+            document.querySelectorAll('.windowtool_child').forEach(button => {
+                button.style.display = "none";
+            });
+        }
+
+        var isClickInsideStartButton4 = document.querySelector('.battery_child').contains(e.target);
+        if (!isClickInsideStartButton4) {
+            document.querySelector('.battery_menu').style.display = "none";
+            document.querySelector('.battery_child').classList.remove('pressed');
+        }
+
+        var isClickInsideStartButton5 = document.querySelector('.sit_button').contains(e.target);
+        if (!isClickInsideStartButton5) {
+            document.querySelector('.screen_light_range_child').style.display = "none";
+            document.querySelector('.sit_button').classList.remove('pressed');
         }
 
         if (desktop.style.display == "block") {
             startX = e.clientX;
             startY = e.clientY;
             isDrawing = true;
-
             rectangle = document.createElement('div');
             rectangle.className = 'rectangle';
             rectangle.style.left = `${startX}px`;
@@ -121,7 +137,6 @@ if (ua.includes("mobile")) {
             const currentY = e.clientY;
             const width = currentX - startX;
             const height = currentY - startY;
-
             rectangle.style.width = `${Math.abs(width)}px`;
             rectangle.style.height = `${Math.abs(height)}px`;
             rectangle.style.left = `${Math.min(startX, currentX)}px`;
@@ -134,8 +149,6 @@ if (ua.includes("mobile")) {
             document.body.removeChild(rectangle);
         }
     });
-
-
 
     function lights() {
         const lightvalue = document.querySelector('.light_value').value;
@@ -159,7 +172,6 @@ if (ua.includes("mobile")) {
     }
 
     // nexser_load
-
     new Promise((resolve) => {
         setTimeout(getStorage, resolve());
         setTimeout(taskbar_none, resolve());
@@ -352,7 +364,6 @@ if (ua.includes("mobile")) {
                 document.querySelector('.battery_button').textContent = "on"
                 document.querySelector('.task_battery').style.display = "none";
             }
-
             if (localStorage.getItem('taskbar_zindex_0')) {
                 taskbar.style.zIndex = "0";
                 document.querySelector('.taskbar_zindex_0').textContent = "on"
@@ -623,9 +634,6 @@ if (ua.includes("mobile")) {
     }
 
     document.getElementById('startbtn').addEventListener('mousedown', function () {
-        document.querySelectorAll('.windowtool_child').forEach(function (windowtool_child) {
-            windowtool_child.style.display = "none"
-        })
         Array.from(document.getElementsByClassName('desktop_files')).forEach((df1) => {
             const file10 = df1.firstElementChild;
             file10.classList.remove('file_select');
@@ -635,11 +643,6 @@ if (ua.includes("mobile")) {
         } else {
             start_menu.style.display = "block";
             document.querySelector('.start_button').classList.add('pressed');
-            document.querySelector('.battery_menu').style.display = "none";
-            document.querySelector('.battery_child').classList.remove('pressed');
-
-            document.querySelector('.screen_light_range_child').style.display = "none";
-            document.querySelector('.sit_button').classList.remove('pressed');
         }
     })
     document.querySelector('.battery_child').addEventListener('click', function () {
@@ -650,14 +653,7 @@ if (ua.includes("mobile")) {
         }
     })
     document.getElementById('files').addEventListener('mousedown', function () {
-        document.querySelector('.battery_child').classList.remove('pressed');
-        document.querySelector('.battery_menu').style.display = "none";
-        document.querySelector('.screen_light_range_child').style.display = "none";
-        document.querySelector('.sit_button').classList.remove('pressed');
         alltitle_navyreomve();
-        document.querySelectorAll('.windowtool_child').forEach(function (windowtool_child) {
-            windowtool_child.style.display = "none"
-        })
         titlecolor_set();
     });
     document.getElementById('files').addEventListener('click', function () {
@@ -669,23 +665,11 @@ if (ua.includes("mobile")) {
     document.getElementById('taskbar').addEventListener('mousedown', function () {
         alltitle_navyreomve();
         titlecolor_set();
-        document.querySelectorAll('.windowtool_child').forEach(function (windowtool_child) {
-            windowtool_child.style.display = "none"
-        })
     });
     document.querySelector('.taskbar_buttons, .child').addEventListener('mousedown', function () {
         getLargestZIndex('.child_windows');
         z_index.textContent = getLargestZIndex('.child_windows');
     });
-
-    document.querySelectorAll('.child_windows,.welcome_windows,.error_windows,.warning_windows').forEach(function (allwindow) {
-        allwindow.addEventListener('mousedown', function () {
-            document.querySelector('.battery_child').classList.remove('pressed');
-            document.querySelector('.battery_menu').style.display = "none";
-            document.querySelector('.screen_light_range_child').style.display = "none";
-            document.querySelector('.sit_button').classList.remove('pressed');
-        })
-    })
 
     Array.from(document.getElementsByClassName('button')).forEach((button) => {
         button.addEventListener('click', () => {
@@ -1790,11 +1774,6 @@ if (ua.includes("mobile")) {
         notearea.style.width = "";
         warning_windows.style.display = "none";
         error_windows.classList.add('active');
-
-        document.querySelectorAll('.windowtool_child').forEach(function (windowtool_child) {
-            windowtool_child.style.display = "none"
-        })
-
     }
     function window_active() {
         document.querySelectorAll('.child_windows').forEach(function (allwindow_active) {
@@ -2564,7 +2543,7 @@ if (ua.includes("mobile")) {
                 break;
             case 'allwindow/close':
                 if (localStorage.getItem('data_taskbar_none')) {
-                    document.querySelector('.window_error_text').textContent = "taskbar none window close no!"
+                    document.querySelector('.window_error_text').textContent = "タスクバーが非表示のため、ウィンドウが閉じれません!"
                     error_windows.classList.remove('active')
                     prompt_text2.style.color = "";
                     document.querySelector('.test_allwindow').style.display = "block";
@@ -3199,11 +3178,7 @@ if (ua.includes("mobile")) {
             }
         })
     })
-    document.querySelectorAll('.windowtool_child').forEach(function (windowtool_child) {
-        windowtool_child.addEventListener('click', function () {
 
-        })
-    })
     document.querySelectorAll('.allwindow_toolbar').forEach(function (allwindow_toolbar) {
         allwindow_toolbar.addEventListener('click', function () {
             document.querySelectorAll('.window_tool').forEach(function (window_tool) {
@@ -3250,29 +3225,12 @@ if (ua.includes("mobile")) {
 
     document.querySelectorAll('.title, .drag_button').forEach(function (title) {
         title.addEventListener('mousedown', function () {
-            document.querySelectorAll('.windowtool_child').forEach(function (windowtool_child) {
-                windowtool_child.style.display = "none"
-            })
             setTimeout(() => {
                 zindexwindow_addnavy()
                 titlecolor_set()
             }, 100);
         })
 
-    })
-    document.querySelectorAll('.title2').forEach(function (title2) {
-        title2.addEventListener('mousedown', function () {
-            document.querySelectorAll('.windowtool_child').forEach(function (windowtool_child) {
-                windowtool_child.style.display = "none"
-            })
-        })
-    })
-    document.querySelectorAll('.window_contents').forEach(function (window_contents) {
-        window_contents.addEventListener('mousedown', function () {
-            document.querySelectorAll('.windowtool_child').forEach(function (windowtool_child) {
-                windowtool_child.style.display = "none"
-            })
-        })
     })
 
 
@@ -5015,7 +4973,6 @@ if (ua.includes("mobile")) {
         setTimeout(() => {
             document.querySelector('.test_allwindow').style.display = "none";
             error_windows.classList.add('active');
-
         }, 100);
     }
 
@@ -5083,6 +5040,33 @@ if (ua.includes("mobile")) {
         const note_texts = document.querySelector('.note_area');
         localStorage.setItem('note_texts', note_texts);
         resizeTextarea()
+    }
+
+    function note_lineheight(note_lineheight) {
+        notetitle();
+        if (localStorage.getItem('note_lineheight')) {
+            localStorage.removeItem('note_lineheight')
+            note_area.style.lineHeight = ""
+        } else {
+            note_area.style.lineHeight = "1.5"
+            localStorage.setItem('note_lineheight', note_lineheight)
+        }
+    }
+    function note_textspacing(note_textspacing) {
+        notetitle();
+        if (localStorage.getItem('note_textspacing')) {
+            localStorage.removeItem('note_textspacing')
+            note_area.style.letterSpacing = ""
+        } else {
+            note_area.style.letterSpacing = "0.25em"
+            localStorage.setItem('note_textspacing', note_textspacing)
+        }
+    }
+    if (localStorage.getItem('note_lineheight')) {
+        note_area.style.lineHeight = "1.5"
+    }
+    if (localStorage.getItem('note_textspacing')) {
+        note_area.style.letterSpacing = "0.25em"
     }
 
     function onChange() {

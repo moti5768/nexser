@@ -2897,8 +2897,9 @@ progress::-webkit-progress-value {
     right: -5px;
     cursor: nwse-resize;
     z-index: 2;
-    width: 12.5px;
-    height: 12.5px;
+    width: 20px;
+    height: 20px;
+    background: silver;
 }
 
 .resizer.top {
