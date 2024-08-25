@@ -1,13 +1,13 @@
 var supportsPassive = false; try { var opts = Object.defineProperty({}, 'passive', { get: function () { supportsPassive = true; } }); window.addEventListener("testPassive", null, opts); window.removeEventListener("testPassive", null, opts); } catch (e) { }
 
 const ua = navigator.userAgent.toLowerCase();
-if (ua.includes("mobile")) {
+//if (ua.includes("mobile")) {
     // Mobile (iPhone、iPad「Chrome、Edge」、Android)
-    alert("この端末は対応していません!")
-} else if (ua.indexOf("ipad") > -1 || (ua.indexOf("macintosh") > -1 && "ontouchend" in document)) {
+    //alert("この端末は対応していません!")
+//} else if (ua.indexOf("ipad") > -1 || (ua.indexOf("macintosh") > -1 && "ontouchend" in document)) {
     // Mobile (iPad「Safari」)
     alert("この端末は対応していません!")
-} else {
+//} else {
     const logoff = document.getElementsByClassName('logoff');
     const restart = document.getElementsByClassName('restart');
 
@@ -8051,4 +8051,4 @@ if (ua.includes("mobile")) {
 
 
 
-};
+//};
