@@ -6,7 +6,7 @@
     //alert("この端末は対応していません!")
 //} else if (ua.indexOf("ipad") > -1 || (ua.indexOf("macintosh") > -1 && "ontouchend" in document)) {
     // Mobile (iPad「Safari」)
-    alert("この端末は対応していません!")
+    //alert("この端末は対応していません!")
 //} else {
     const logoff = document.getElementsByClassName('logoff');
     const restart = document.getElementsByClassName('restart');
