@@ -3006,3 +3006,14 @@ progress::-webkit-progress-value {
     text-overflow: ellipsis;
     width: 75%;
 }
+
+.test_site_menu {
+    width: 500px;
+    height: 400px;
+}
+
+.site_frame {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}

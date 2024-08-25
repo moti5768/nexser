@@ -1,13 +1,13 @@
-//var supportsPassive = false; try { var opts = Object.defineProperty({}, 'passive', { get: function () { supportsPassive = true; } }); window.addEventListener("testPassive", null, opts); window.removeEventListener("testPassive", null, opts); } catch (e) { }
+var supportsPassive = false; try { var opts = Object.defineProperty({}, 'passive', { get: function () { supportsPassive = true; } }); window.addEventListener("testPassive", null, opts); window.removeEventListener("testPassive", null, opts); } catch (e) { }
 
-//const ua = navigator.userAgent.toLowerCase();
-//if (ua.includes("mobile")) {
+const ua = navigator.userAgent.toLowerCase();
+if (ua.includes("mobile")) {
     // Mobile (iPhone、iPad「Chrome、Edge」、Android)
-    //alert("この端末は対応していません!")
-//} else if (ua.indexOf("ipad") > -1 || (ua.indexOf("macintosh") > -1 && "ontouchend" in document)) {
+    alert("この端末は対応していません!")
+} else if (ua.indexOf("ipad") > -1 || (ua.indexOf("macintosh") > -1 && "ontouchend" in document)) {
     // Mobile (iPad「Safari」)
-    //alert("この端末は対応していません!")
-//} else {
+    alert("この端末は対応していません!")
+} else {
     const logoff = document.getElementsByClassName('logoff');
     const restart = document.getElementsByClassName('restart');
 
@@ -78,6 +78,7 @@
     const nexser_files_menu = document.querySelector('.nexser_files_menu');
     const url_drop_menu = document.querySelector('.url_drop_menu');
     const alarm_menu = document.querySelector('.alarm_menu');
+    const test_site_menu = document.querySelector('.test_site_menu');
 
     const notice_menu = document.querySelector('.notice_menu');
 
@@ -629,7 +630,7 @@
     })
 
     function startmenu_close() {
-        start_menu.style.display = "none";
+        parent_start_menu.style.display = "none";
         document.querySelector('.start_button').classList.remove('pressed');
     }
 
@@ -638,10 +639,10 @@
             const file10 = df1.firstElementChild;
             file10.classList.remove('file_select');
         })
-        if (start_menu.style.display == "block") {
+        if (parent_start_menu.style.display == "block") {
             startmenu_close()
         } else {
-            start_menu.style.display = "block";
+            parent_start_menu.style.display = "block";
             document.querySelector('.start_button').classList.add('pressed');
         }
     })
@@ -2615,6 +2616,12 @@
                 prompt_text2.style.color = "";
                 document.querySelector('.files_inline').style.display = "flex";
                 break;
+            case 'page/20230528':
+                prompt_text2.style.color = "";
+                document.querySelector('.test_site_menu').classList.remove('active');
+                test_site_menu.style.zIndex = largestZIndex++;
+                zindexwindow_addnavy()
+                break;
 
             case 'reset':
                 prompt_text2.style.color = "";
@@ -2818,22 +2825,26 @@
                 bigscreenbutton.style.width = ""
                 bigscreenbutton.style.top = "0"
                 bigscreenbutton.style.left = "0"
-                bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                if (localStorage.getItem('window_animation')) {
+                    bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                }
             } else if (localStorage.getItem('taskbar_position_button')) {
                 bigscreenbutton.style.height = ""
                 bigscreenbutton.style.width = ""
                 bigscreenbutton.style.top = "40px"
                 bigscreenbutton.style.left = "0"
-
                 bigscreenbutton.style.top = t + "px"
-
-                bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                if (localStorage.getItem('window_animation')) {
+                    bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                }
             } else {
                 bigscreenbutton.style.height = ""
                 bigscreenbutton.style.width = ""
                 bigscreenbutton.style.top = "0"
                 bigscreenbutton.style.left = "0"
-                bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                if (localStorage.getItem('window_animation')) {
+                    bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                }
             }
 
             setTimeout(() => {
@@ -2856,6 +2867,17 @@
 
         });
     })
+
+
+
+
+    function window_animation_true() {
+        const window_animation = "test_animation"
+        localStorage.setItem('window_animation', window_animation)
+    }
+    function window_animation_false() {
+        localStorage.removeItem('window_animation')
+    }
 
 
     document.querySelectorAll('.minscreen_button').forEach(function (minscreen_button) {
@@ -2883,8 +2905,9 @@
             elements2.style.height = elements2.dataset.originalHeight;
             elements2.style.top = elements2.dataset.originalTop;
             elements2.style.left = elements2.dataset.originalLeft;
-
-            minscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+            if (localStorage.getItem('window_animation')) {
+                minscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+            }
             setTimeout(() => {
                 minscreenbutton.style.transition = ""
                 setTimeout(() => {
@@ -2919,7 +2942,9 @@
             notearea.style.width = "";
             alliwindow_min.classList.remove('leftwindow');
             alliwindow_min.classList.remove('rightwindow');
-            alliwindow_min.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+            if (localStorage.getItem('window_animation')) {
+                alliwindow_min.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+            }
             setTimeout(() => {
                 alliwindow_min.classList.remove('big');
                 alliwindow_min.style.transition = ""
@@ -2950,13 +2975,17 @@
                 bigscreenbutton.style.width = ""
                 bigscreenbutton.style.top = "40px"
                 bigscreenbutton.style.left = "0"
-                bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                if (localStorage.getItem('window_animation')) {
+                    bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                }
             } else {
                 bigscreenbutton.style.height = ""
                 bigscreenbutton.style.width = ""
                 bigscreenbutton.style.top = "0"
                 bigscreenbutton.style.left = "0"
-                bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                if (localStorage.getItem('window_animation')) {
+                    bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                }
             }
             setTimeout(() => {
                 bigscreenbutton.style.transition = ""
@@ -2987,24 +3016,28 @@
                 windowleft.style.left = "0";
                 windowleft.style.height = "100%";
                 windowleft.style.width = "49.9%";
-                windowleft.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+                if (localStorage.getItem('window_animation')) {
+                    windowleft.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+                }
             } else if (localStorage.getItem('taskbar_position_button')) {
                 windowleft.style.right = "auto";
                 windowleft.style.top = "40px";
                 windowleft.style.left = "0";
                 windowleft.style.height = "100%";
                 windowleft.style.width = "49.9%";
-
                 windowleft.style.top = t + "px";
-
-                windowleft.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+                if (localStorage.getItem('window_animation')) {
+                    windowleft.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+                }
             } else {
                 windowleft.style.right = "auto";
                 windowleft.style.top = "0";
                 windowleft.style.left = "0";
                 windowleft.style.height = "100%";
                 windowleft.style.width = "49.9%";
-                windowleft.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+                if (localStorage.getItem('window_animation')) {
+                    windowleft.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+                }
             }
             setTimeout(() => {
                 windowleft.style.transition = "";
@@ -3036,24 +3069,28 @@
                 windowright.style.right = "0px";
                 windowright.style.height = "100%";
                 windowright.style.width = "49.9%";
-                windowright.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+                if (localStorage.getItem('window_animation')) {
+                    windowright.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+                }
             } else if (localStorage.getItem('taskbar_position_button')) {
                 windowright.style.left = "";
                 windowright.style.top = "40px";
                 windowright.style.right = "0px";
                 windowright.style.height = "100%";
                 windowright.style.width = "49.9%";
-
                 windowright.style.top = t + "px";
-
-                windowright.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+                if (localStorage.getItem('window_animation')) {
+                    windowright.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+                }
             } else {
                 windowright.style.left = "";
                 windowright.style.top = "0";
                 windowright.style.right = "0px";
                 windowright.style.height = "100%";
                 windowright.style.width = "49.9%";
-                windowright.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+                if (localStorage.getItem('window_animation')) {
+                    windowright.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+                }
             }
             setTimeout(() => {
                 windowright.style.transition = "";
@@ -3101,7 +3138,9 @@
 
             windowhalfbig.style.height = "55%"
             windowhalfbig.style.width = "55%"
-            windowhalfbig.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+            if (localStorage.getItem('window_animation')) {
+                windowhalfbig.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+            }
             setTimeout(() => {
                 windowhalfbig.style.transition = ""
             }, 150);
@@ -3112,7 +3151,9 @@
     document.querySelectorAll('.windowsize_reset').forEach(function (windowsize_reset) {
         windowsize_reset.addEventListener('click', function () {
             const windowsizereset = windowsize_reset.closest('.child_windows');
-            windowsizereset.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+            if (localStorage.getItem('window_animation')) {
+                windowsizereset.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+            }
 
             if (windowsizereset.classList.contains('rightwindow')) {
                 windowsizereset.style.height = "";
@@ -3917,13 +3958,13 @@
     objective_parent.addEventListener('mousemove', objective_resize);
 
 
-
     const window_prompt_content2 = document.querySelector('.window_prompt_content2');
     const window_prompt_resize = () => {
         window_prompt_content2.style.width = `${window_prompt.clientWidth}px`;
         window_prompt_content2.style.height = `${window_prompt.clientHeight + - + 50}px`;
     };
     window_prompt.addEventListener('mousemove', window_prompt_resize);
+
 
     const shell_parent = document.querySelector('.prompt_shell_menu');
     const shell_child = document.querySelector('#shell');
@@ -3932,6 +3973,16 @@
         shell_child.style.height = `${shell_parent.clientHeight + - + 30}px`;
     };
     shell_parent.addEventListener('mousemove', shell_resize);
+
+
+    const test_site_parent = document.querySelector('.test_site_menu');
+    const test_site_child = document.querySelector('.site_frame');
+    const test_site_resize = () => {
+        test_site_child.style.width = `${test_site_parent.clientWidth}px`;
+        test_site_child.style.height = `${test_site_parent.clientHeight + - + 30}px`;
+    };
+    test_site_parent.addEventListener('mousemove', test_site_resize);
+
 
     const background_image_parent = document.getElementById('nexser');
     const background_image_child = document.querySelector('.nexser_background_image');
@@ -3977,8 +4028,9 @@
                 dragwindow.style.height = "55%";
                 dragwindow.style.width = "55%";
                 dragwindow.classList.remove('leftwindow');
-
-                dragwindow.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+                if (localStorage.getItem('window_animation')) {
+                    dragwindow.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+                }
                 setTimeout(() => {
                     dragwindow.style.transition = ""
                 }, 150);
@@ -3987,8 +4039,9 @@
                 dragwindow.style.height = "55%";
                 dragwindow.style.width = "55%";
                 dragwindow.classList.remove('rightwindow');
-
-                dragwindow.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+                if (localStorage.getItem('window_animation')) {
+                    dragwindow.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+                }
                 setTimeout(() => {
                     dragwindow.style.transition = ""
                 }, 150);
@@ -7469,22 +7522,26 @@
                                     bigscreenbutton.style.width = ""
                                     bigscreenbutton.style.top = "0"
                                     bigscreenbutton.style.left = "0"
-                                    bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                                    if (localStorage.getItem('window_animation')) {
+                                        bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                                    }
                                 } else if (localStorage.getItem('taskbar_position_button')) {
                                     bigscreenbutton.style.height = ""
                                     bigscreenbutton.style.width = ""
                                     bigscreenbutton.style.top = "40px"
                                     bigscreenbutton.style.left = "0"
-
                                     bigscreenbutton.style.top = t + "px"
-
-                                    bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                                    if (localStorage.getItem('window_animation')) {
+                                        bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                                    }
                                 } else {
                                     bigscreenbutton.style.height = ""
                                     bigscreenbutton.style.width = ""
                                     bigscreenbutton.style.top = "0"
                                     bigscreenbutton.style.left = "0"
-                                    bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                                    if (localStorage.getItem('window_animation')) {
+                                        bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                                    }
                                 }
                                 bigscreenbutton.classList.add('big');
                                 setTimeout(() => {
@@ -7539,8 +7596,9 @@
                                 elements2.style.height = elements2.dataset.originalHeight;
                                 elements2.style.top = elements2.dataset.originalTop;
                                 elements2.style.left = elements2.dataset.originalLeft;
-
-                                minscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                                if (localStorage.getItem('window_animation')) {
+                                    minscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                                }
                                 setTimeout(() => {
                                     minscreenbutton.style.transition = ""
                                     setTimeout(() => {
@@ -7998,6 +8056,7 @@
                 container_list.id = i;
                 container_list.classList.add('deletes');
                 list_span.classList.add('delete_btn');
+                list_span.classList.add('button2');
             }
         }
         addDeleteFunctionality(); // Add delete functionality after loading alarms
@@ -8051,4 +8110,4 @@
 
 
 
-//};
+};
