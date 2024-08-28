@@ -1013,6 +1013,11 @@ input[type="file"] {
     height: 500px;
 }
 
+.console_error_menu {
+    width: 600px;
+    height: 400px;
+}
+
 #v {
     position: absolute;
 }
@@ -1364,7 +1369,7 @@ body::-webkit-scrollbar {
 
 .error_icon {
     display: block;
-    font-size: 18px;
+    font-size: 16.5px;
     font-family: monospace;
     height: 24px;
     width: 24px;
@@ -1379,6 +1384,7 @@ body::-webkit-scrollbar {
     top: 46.5px;
     text-align: center;
     justify-content: center;
+    text-shadow: 0.2px 0.2px 0, 0.2px -0.2px 0px, -0.2px 0.2px 0, -0.2px -0.2px 0px, 0.2px 0px 0px, 0px 0.2px 0px, -0.2px 0px 0px, 0px -0.2px 0px;
 }
 
 .warning_windows {
@@ -2124,13 +2130,13 @@ body::-webkit-scrollbar {
 }
 
 .window_files.file_border {
-    outline: 1.5px dotted darkblue;
-    outline-offset: -1.5px;
+    background: blue;
+    color: white;
 }
 
-.window_files:hover {
-    color: white;
-    background: darkblue;
+.window_files.file_border2 {
+    outline: 1.5px dotted darkblue;
+    outline-offset: -1.5px;
 }
 
 .window_files>.windowfile_time {

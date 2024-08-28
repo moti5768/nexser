@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="description" content="nexser beta version">
-    <link rel="preload" as="style" href="nexser_style/nexser.css" onload="this.rel='stylesheet'">
+    <link type="text/css" rel="preload" as="style" href="nexser_style/nexser.css" onload="this.rel='stylesheet'">
     <title class="nexser_title">nexser beta version 1.6</title>
 
     <script>
@@ -67,7 +67,7 @@
                             &lt;meta charset=&quot;UTF-8&quot;&gt;
                             &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width,initial-scale=1&quot;&gt;
                             &lt;meta name=&quot;description&quot; content=&quot;nexser beta version&quot;&gt;
-                            &lt;link rel=&quot;preload&quot; as=&quot;style&quot; href=&quot;nexser_style/nexser.css&quot; onload=&quot;this.rel=&#039;stylesheet&#039;&quot;&gt;
+                            &lt;link type=&quot;text/css&quot; rel=&quot;preload&quot; as=&quot;style&quot; href=&quot;nexser_style/nexser.css&quot; onload=&quot;this.rel=&#039;stylesheet&#039;&quot;&gt;
                             &lt;title class=&quot;nexser_title&quot;&gt;nexser beta version 1.6&lt;/title&gt;
                         
                             &lt;script&gt;
@@ -710,31 +710,21 @@
                                                         &lt;/ul&gt;
                                                         &lt;div class=&quot;child_list&quot;&gt;
                                                             &lt;ul&gt;
-                                                                &lt;li class=&quot;notetext_bold&quot; onclick=&quot;notetext_all_bold()&quot;&gt;alltext
-                                                                    bold&lt;/li&gt;
-                                                                &lt;li class=&quot;notetext_oblique&quot; onclick=&quot;notetext_all_oblique()&quot;&gt;
-                                                                    alltext
-                                                                    oblique&lt;/li&gt;
-                                                                &lt;li class=&quot;notetext_underline&quot; onclick=&quot;notetext_all_underline()&quot;&gt;
-                                                                    alltext
-                                                                    underline&lt;/li&gt;
+                                                                &lt;p class=&quot;bold small underline&quot; style=&quot;text-align: left; padding-right: 20px;&quot;&gt;
+                                                                    Text decoration
+                                                                &lt;/p&gt;
+                                                                &lt;li class=&quot;notetext_bold&quot; onclick=&quot;notetext_all_bold()&quot;&gt;bold&lt;/li&gt;
+                                                                &lt;li class=&quot;notetext_oblique&quot; onclick=&quot;notetext_all_oblique()&quot;&gt;oblique&lt;/li&gt;
+                                                                &lt;li class=&quot;notetext_underline&quot; onclick=&quot;notetext_all_underline()&quot;&gt;underline&lt;/li&gt;
                                                                 &lt;div class=&quot;note_text_color&quot;&gt;
-                                                                    &lt;li onclick=&quot;notecolor_remove()&quot;&gt;text
-                                                                        black&lt;/li&gt;
-                                                                    &lt;li class=&quot;notetext_blue&quot; onclick=&quot;notecolor_change_blue()&quot;&gt;
-                                                                        text
-                                                                        blue&lt;/li&gt;
-                                                                    &lt;li class=&quot;notetext_green&quot; onclick=&quot;notecolor_change_green()&quot;&gt;
-                                                                        text green&lt;/li&gt;
-                                                                    &lt;li class=&quot;notetext_red&quot; onclick=&quot;notecolor_change_red()&quot;&gt;
-                                                                        text
-                                                                        red&lt;/li&gt;
-                                                                    &lt;li class=&quot;notetext_orange&quot; onclick=&quot;notecolor_change_orange()&quot;&gt;
-                                                                        text
-                                                                        orange&lt;/li&gt;
-                                                                    &lt;li class=&quot;notetext_yellow&quot; onclick=&quot;notecolor_change_yellow()&quot;&gt;
-                                                                        text
-                                                                        yellow&lt;/li&gt;
+                                                                    &lt;p class=&quot;bold small underline&quot; style=&quot;text-align: left;&quot;&gt;Text color&lt;/p&gt;
+                                                                    &lt;li onclick=&quot;notecolor_remove()&quot;&gt;black&lt;/li&gt;
+                                                                    &lt;li class=&quot;notetext_blue&quot; onclick=&quot;notecolor_change_blue()&quot;&gt;blue&lt;/li&gt;
+                                                                    &lt;li class=&quot;notetext_green&quot; onclick=&quot;notecolor_change_green()&quot;&gt;green&lt;/li&gt;
+                                                                    &lt;li class=&quot;notetext_red&quot; onclick=&quot;notecolor_change_red()&quot;&gt;red&lt;/li&gt;
+                                                                    &lt;li class=&quot;notetext_orange&quot; onclick=&quot;notecolor_change_orange()&quot;&gt;orange&lt;/li&gt;
+                                                                    &lt;li class=&quot;notetext_yellow&quot; onclick=&quot;notecolor_change_yellow()&quot;&gt;yellow
+                                                                    &lt;/li&gt;
                                                                 &lt;/div&gt;
                                                             &lt;/ul&gt;
                                                         &lt;/div&gt;
@@ -788,7 +778,7 @@
                                                         &lt;li class=&quot;border2&quot;&gt;Textcount:&amp;emsp;&lt;span id=&quot;inputlength&quot;&gt;0&lt;/span&gt;
                                                         &lt;/li&gt;
                                                         &lt;li class=&quot;border2&quot; style=&quot;margin-left: 20px;&quot;&gt;Mode:&amp;emsp;&lt;span
-                                                                class=&quot;test_notetext&quot;&gt;Text&lt;/span&gt;&lt;/li&gt;
+                                                                class=&quot;test_notetext&quot;&gt;Text&amp;nbsp;&lt;/span&gt;&lt;/li&gt;
                                                         &lt;li class=&quot;border2&quot; style=&quot;margin-left: 20px;&quot; id=&quot;memo_save_text&quot;&gt;
                                                         &lt;/li&gt;
                                                     &lt;/ul&gt;
@@ -3593,7 +3583,6 @@
                                                 &lt;/div&gt;
                                             &lt;/div&gt;
                         
-                        
                                             &lt;div class=&quot;child_windows test_site_menu resize active&quot;&gt;
                                                 &lt;div class=&quot;title&quot;&gt;
                                                     &lt;span class=&quot;title_icon&quot;&gt;&lt;/span&gt;&lt;span&gt;test site&lt;/span&gt;
@@ -3608,6 +3597,23 @@
                                                 &lt;/div&gt;
                                                 &lt;div class=&quot;window_content&quot;&gt;
                                                     &lt;iframe src=&quot;index.html&quot; class=&quot;site_frame&quot; frameborder=&quot;0&quot;&gt;&lt;/iframe&gt;
+                                                &lt;/div&gt;
+                                            &lt;/div&gt;
+                        
+                                            &lt;div class=&quot;child_windows console_error_menu resize active&quot;&gt;
+                                                &lt;div class=&quot;title&quot;&gt;
+                                                    &lt;span class=&quot;title_icon&quot;&gt;&lt;/span&gt;&lt;span&gt;console error&lt;/span&gt;
+                                                &lt;/div&gt;
+                        
+                                                &lt;div class=&quot;title_buttons&quot;&gt;
+                                                    &lt;span class=&quot;drag_button&quot;&gt;&amp;nbsp;&lt;/span&gt;
+                                                    &lt;span class=&quot;close_button button2&quot;&gt;&lt;/span&gt;
+                                                    &lt;span class=&quot;bigscreen_button button2&quot;&gt;&lt;/span&gt;
+                                                    &lt;span class=&quot;minscreen_button button2&quot;&gt;&lt;/span&gt;
+                                                    &lt;span class=&quot;minimization_button button2&quot;&gt;&lt;/span&gt;&lt;br&gt;
+                                                &lt;/div&gt;
+                                                &lt;div class=&quot;window_contents&quot; style=&quot;background: black; color: white; height: 100%;&quot;&gt;
+                                                    &lt;p id=&quot;console_error_text&quot;&gt;&lt;/p&gt;&lt;br&gt;
                                                 &lt;/div&gt;
                                             &lt;/div&gt;
                         
@@ -4142,7 +4148,14 @@
                                                                     &lt;/div&gt;
                                                                 &lt;/div&gt;
                                                             &lt;/div&gt;
-                                                        &lt;/div&gt;&lt;br&gt;
+                                                        &lt;/div&gt;
+                        
+                                                        &lt;div class=&quot;parent_start_menu_lists console_list&quot; style=&quot;display: none;&quot;&gt;
+                                                            &lt;ul&gt;
+                                                                &lt;li class=&quot;console_error_btn&quot;&gt;&amp;nbsp;console error&amp;nbsp;&lt;/li&gt;
+                                                            &lt;/ul&gt;
+                                                        &lt;/div&gt;
+                                                        &lt;br&gt;
                         
                                                         &lt;div class=&quot;parent_start_menu_lists&quot;&gt;
                                                             &lt;ul&gt;
@@ -4199,7 +4212,7 @@
                                                 &lt;span class=&quot;bold error_title_text&quot;&gt;&amp;nbsp;error&lt;/span&gt;
                                             &lt;/div&gt;
                                             &lt;span class=&quot;close_button2 button2&quot;&gt;&lt;/span&gt;&lt;br&gt;
-                                            &lt;p&gt;&lt;span class=&quot;error_icon bold&quot;&gt;✕&lt;/span&gt;&lt;span&gt;&amp;emsp;&amp;emsp;&amp;nbsp;&lt;/span&gt;&lt;span
+                                            &lt;p&gt;&lt;span class=&quot;error_icon&quot;&gt;✕&lt;/span&gt;&lt;span&gt;&amp;emsp;&amp;emsp;&amp;nbsp;&lt;/span&gt;&lt;span
                                                     class=&quot;window_error_text&quot;&gt;test
                                                     window error&lt;/span&gt;&amp;emsp;&lt;/p&gt;
                                             &lt;span class=&quot;button2 borderinline_dotted&quot;
@@ -4345,6 +4358,7 @@
                             const url_drop_menu = document.querySelector(&#039;.url_drop_menu&#039;);
                             const alarm_menu = document.querySelector(&#039;.alarm_menu&#039;);
                             const test_site_menu = document.querySelector(&#039;.test_site_menu&#039;);
+                            const console_error_menu = document.querySelector(&#039;.console_error_menu&#039;);
                         
                             const notice_menu = document.querySelector(&#039;.notice_menu&#039;);
                         
@@ -4363,6 +4377,20 @@
                             let startX, startY, isDrawing = false;
                             let rectangle;
                             document.addEventListener(&#039;mousedown&#039;, (e) =&gt; {
+                        
+                                var isClickInsideStartButton7 = Array.from(document.querySelectorAll(&#039;.window_files&#039;)).some(button =&gt; button.contains(e.target));
+                                if (!isClickInsideStartButton7) {
+                                    Array.from(document.getElementsByClassName(&#039;window_files&#039;)).forEach((window_files3) =&gt; {
+                                        window_files3.classList.remove(&#039;file_border2&#039;);
+                                        if (window_files3.classList.contains(&#039;file_border&#039;)) {
+                                            document.querySelector(&#039;.file_border&#039;).classList.add(&#039;file_border2&#039;);
+                                            document.querySelector(&#039;.file_border2&#039;).classList.remove(&#039;file_border&#039;);
+                                        }
+                                    })
+                        
+                                }
+                        
+                        
                                 var isClickInsideStartButton = document.querySelector(&#039;.start_button&#039;).contains(e.target);
                                 var isClickInsideParentStartMenu2 = document.querySelector(&#039;.parentstartmenu2&#039;).contains(e.target);
                                 if (!isClickInsideStartButton &amp;&amp; !isClickInsideParentStartMenu2) {
@@ -4376,13 +4404,15 @@
                                 }
                         
                                 var isClickInsideStartButton4 = document.querySelector(&#039;.battery_child&#039;).contains(e.target);
-                                if (!isClickInsideStartButton4) {
+                                var isClickInsideStartButton4_2 = document.querySelector(&#039;.battery_menu&#039;).contains(e.target);
+                                if (!isClickInsideStartButton4 &amp;&amp; !isClickInsideStartButton4_2) {
                                     document.querySelector(&#039;.battery_menu&#039;).style.display = &quot;none&quot;;
                                     document.querySelector(&#039;.battery_child&#039;).classList.remove(&#039;pressed&#039;);
                                 }
                         
                                 var isClickInsideStartButton5 = document.querySelector(&#039;.sit_button&#039;).contains(e.target);
-                                if (!isClickInsideStartButton5) {
+                                var isClickInsideStartButton6 = document.querySelector(&#039;.screen_light_range_child&#039;).contains(e.target);
+                                if (!isClickInsideStartButton5 &amp;&amp; !isClickInsideStartButton6) {
                                     document.querySelector(&#039;.screen_light_range_child&#039;).style.display = &quot;none&quot;;
                                     document.querySelector(&#039;.sit_button&#039;).classList.remove(&#039;pressed&#039;);
                                 }
@@ -6889,6 +6919,17 @@
                                         zindexwindow_addnavy()
                                         break;
                         
+                                    case &#039;startmenu(console(error))=&gt;true&#039;:
+                                        prompt_text2.style.color = &quot;&quot;;
+                                        localStorage.setItem(&#039;startmenu_console&#039;, prompt_text2);
+                                        document.querySelector(&#039;.console_list&#039;).style.display = &quot;block&quot;;
+                                        break;
+                                    case &#039;startmenu(console(error))=&gt;false&#039;:
+                                        prompt_text2.style.color = &quot;&quot;;
+                                        localStorage.removeItem(&#039;startmenu_console&#039;);
+                                        document.querySelector(&#039;.console_list&#039;).style.display = &quot;none&quot;;
+                                        break;
+                        
                                     case &#039;reset&#039;:
                                         prompt_text2.style.color = &quot;&quot;;
                                         nexser_prompt_reset()
@@ -6912,6 +6953,10 @@
                                 }
                                 zindexwindow_addnavy()
                                 titlecolor_set()
+                            }
+                        
+                            if (localStorage.getItem(&#039;startmenu_console&#039;)) {
+                                document.querySelector(&#039;.console_list&#039;).style.display = &quot;block&quot;
                             }
                         
                             function shellmenu_open() {
@@ -7762,6 +7807,14 @@
                                 localstorage_details.addEventListener(&#039;click&#039;, () =&gt; {
                                     localstorage_details_menu.classList.toggle(&#039;active&#039;);
                                     localstorage_details_menu.style.zIndex = largestZIndex++;
+                                    zindexwindow_addnavy()
+                                })
+                            );
+                        
+                            document.querySelectorAll(&#039;.console_error_btn&#039;).forEach(testbtn =&gt;
+                                testbtn.addEventListener(&#039;click&#039;, () =&gt; {
+                                    console_error_menu.classList.toggle(&#039;active&#039;);
+                                    console_error_menu.style.zIndex = largestZIndex++;
                                     zindexwindow_addnavy()
                                 })
                             );
@@ -9132,16 +9185,19 @@
                                 notetext_reset();
                                 localStorage.setItem(&#039;notetext_small&#039;, notetext_small);
                                 notetextsize_change()
+                                notetitle()
                             }
                             function notetext_medium(notetext_medium) {
                                 notetext_reset();
                                 localStorage.setItem(&#039;notetext_medium&#039;, notetext_medium);
                                 notetextsize_change()
+                                notetitle()
                             }
                             function notetext_large(notetext_large) {
                                 notetext_reset();
                                 localStorage.setItem(&#039;notetext_large&#039;, notetext_large);
                                 notetextsize_change()
+                                notetitle()
                             }
                         
                             // 保存
@@ -9345,8 +9401,33 @@
                             const textCountElement = document.querySelector(&quot;#inputlength&quot;);
                         
                             // キーボードで入力する場合
-                            note_area.addEventListener(&quot;keyup&quot;, onChange);
-                            note_area.addEventListener(&quot;keyup&quot;, notetitle);
+                            note_area.addEventListener(&quot;keydown&quot;, function (event) {
+                                if (event.ctrlKey &amp;&amp; event.key === &#039;s&#039;) {
+                                    event.preventDefault(); // Cancel the default action
+                                } else {
+                                    notetitle(event);
+                                    onchange(event)
+                                }
+                                note_area.addEventListener(&quot;keyup&quot;, function (event) {
+                                    if (event.ctrlKey &amp;&amp; event.key === &#039;s&#039;) {
+                                        save()
+                                    }
+                                })
+                        
+                            });
+                        
+                            document.addEventListener(&#039;keyup&#039;, function (event) {
+                                if (event.key === &#039;s&#039; &amp;&amp; event.getModifierState(&#039;Fn&#039;)) {
+                                    // Your event handling code here
+                                    console.log(&#039;Function key + S key pressed&#039;);
+                                    if (localStorage.getItem(&#039;note_texts&#039;)) {
+                                        save();
+                                    }
+                                }
+                            });
+                        
+                        
+                        
                         
                             // ペーストした場合
                             note_area.addEventListener(&quot;paste&quot;, () =&gt; {
@@ -9399,9 +9480,7 @@
                                         spaceCount++
                                     }
                                 });
-                        
-                                const memo_save = document.getElementById(&#039;memo_save_text&#039;);
-                                memo_save.textContent = &quot;&quot;;
+                                document.getElementById(&#039;memo_save_text&#039;).textContent = &quot;&quot;;
                                 if (!localStorage.getItem(&#039;noteData&#039;)) {
                                     document.querySelector(&#039;.note_title&#039;).textContent = &quot;notepad&quot;
                                 }
@@ -9813,18 +9892,19 @@
                         
                             Array.from(document.getElementsByClassName(&#039;window_files&#039;)).forEach((window_files) =&gt; {
                                 window_files.addEventListener(&#039;mousedown&#039;, function () {
-                                    fileborder_reset()
+                                    document.querySelector(&#039;.file_border&#039;).classList.add(&#039;file_border2&#039;)
+                                    document.querySelector(&#039;.file_border2&#039;).classList.remove(&#039;file_border&#039;)
                                 })
                                 window_files.addEventListener(&#039;click&#039;, function () {
-                                    fileborder_reset()
+                                    Array.from(document.getElementsByClassName(&#039;window_files&#039;)).forEach((window_files2) =&gt; {
+                                        window_files2.classList.remove(&#039;file_border&#039;);
+                                        window_files2.classList.remove(&#039;file_border2&#039;);
+                                    })
                                     window_files.classList.add(&#039;file_border&#039;);
                                 })
                             })
                         
                             function fileborder_reset() {
-                                Array.from(document.getElementsByClassName(&#039;window_files&#039;)).forEach((window_files) =&gt; {
-                                    window_files.classList.remove(&#039;file_border&#039;);
-                                })
                                 Array.from(document.getElementsByClassName(&#039;desktop_files&#039;)).forEach((df1) =&gt; {
                                     const file10 = df1.firstElementChild;
                                     file10.classList.remove(&#039;file_select&#039;);
@@ -12065,40 +12145,96 @@
                                 });
                             });
                         
-                            // ローカルストレージの内容を外部出力
+                        
                             document.getElementById(&#039;exportButton&#039;).addEventListener(&#039;click&#039;, function () {
                                 const localStorageData = JSON.stringify(localStorage);
-                                const blob = new Blob([localStorageData], { type: &#039;application/json&#039; });
+                        
+                                // Base64エンコード関数
+                                function base64Encode(str) {
+                                    return btoa(unescape(encodeURIComponent(str)));
+                                }
+                        
+                                // Base64デコード関数
+                                function base64Decode(str) {
+                                    return decodeURIComponent(escape(atob(str)));
+                                }
+                        
+                                // XOR暗号化関数
+                                function xorEncrypt(data, key) {
+                                    let encrypted = &#039;&#039;;
+                                    for (let i = 0; i &lt; data.length; i++) {
+                                        encrypted += String.fromCharCode(data.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+                                    }
+                                    return encrypted;
+                                }
+                        
+                                const key = &#039;your-encryption-key&#039;; // 暗号化キーを設定
+                        
+                                // データをエンコードして圧縮
+                                const encodedData = base64Encode(localStorageData);
+                        
+                                // 圧縮データを暗号化
+                                const encryptedData = xorEncrypt(encodedData, key);
+                        
+                                // 暗号化データをBlobに変換してダウンロード
+                                const blob = new Blob([encryptedData], { type: &#039;application/json&#039; });
                                 const url = URL.createObjectURL(blob);
                                 const a = document.createElement(&#039;a&#039;);
                                 a.href = url;
-                                a.download = &#039;nexser_storageData.json&#039;;
+                                a.download = &#039;nexser_storageData_encrypted.json&#039;;
                                 a.click();
                                 URL.revokeObjectURL(url);
                             });
                         
-                            // 外部出力したローカルストレージを読み込む
+                        
+                        
                             document.getElementById(&#039;fileInput&#039;).addEventListener(&#039;change&#039;, function (event) {
                                 const file = event.target.files[0];
                                 const reader = new FileReader();
-                        
                                 reader.onload = function (event) {
+                                    // Base64デコード関数
+                                    function base64Decode(str) {
+                                        return decodeURIComponent(escape(atob(str)));
+                                    }
+                        
+                                    // XOR復号化関数
+                                    function xorDecrypt(data, key) {
+                                        let decrypted = &#039;&#039;;
+                                        for (let i = 0; i &lt; data.length; i++) {
+                                            decrypted += String.fromCharCode(data.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+                                        }
+                                        return decrypted;
+                                    }
+                        
+                                    const key = &#039;your-encryption-key&#039;; // 暗号化キーを設定
+                                    const encryptedData = event.target.result;
+                        
+                                    // データを復号化
+                                    const decryptedData = xorDecrypt(encryptedData, key);
+                        
+                                    // データをデコード
+                                    const decodedData = base64Decode(decryptedData);
+                        
+                                    // JSON形式にパース
+                                    const data = JSON.parse(decodedData);
+                        
+                                    // ローカルストレージをクリアしてデータを復元
                                     localStorage.clear();
                                     sessionStorage.clear();
-                                    const data = JSON.parse(event.target.result);
                                     for (const key in data) {
                                         localStorage.setItem(key, data[key]);
                                     }
-                                    document.querySelector(&#039;.warning_title_text&#039;).textContent = &quot;nexser&quot;
+                        
+                                    // UIの更新
+                                    document.querySelector(&#039;.warning_title_text&#039;).textContent = &quot;nexser&quot;;
                                     document.querySelector(&#039;.window_warning_text&#039;).textContent = &quot;データが復元されました! ページを再読み込みしてください。&quot;;
-                                    warning_windows.style.display = &quot;block&quot;
-                                    document.querySelector(&#039;.close_button3&#039;).style.display = &quot;block&quot;
-                                    sound5()
+                                    warning_windows.style.display = &quot;block&quot;;
+                                    document.querySelector(&#039;.close_button3&#039;).style.display = &quot;block&quot;;
+                                    sound5();
                                     document.querySelector(&#039;.test_allwindow&#039;).style.display = &quot;block&quot;;
                                     document.querySelector(&#039;.shutdown_button&#039;).style.display = &quot;none&quot;;
                                     document.querySelector(&#039;.warningclose_button&#039;).style.display = &quot;none&quot;;
                                 };
-                        
                                 reader.readAsText(file);
                             });
                         
@@ -12366,14 +12502,18 @@
                             updateCurrentTime();
                         
                         
-                        
-                        
-                        
-                        
-                        
-                        
-                        
-                        
+                            window.onerror = function (message, source, lineno, colno, error) {
+                                const errorLog = document.getElementById(&#039;console_error_text&#039;);
+                                const errorMessage = `
+                                    メッセージ: ${message}
+                                    ソース: ${source}
+                                    行: ${lineno}
+                                    列: ${colno}
+                                    エラーオブジェクト: ${error}
+                                `;
+                                errorLog.textContent += errorMessage + &#039;\n&#039;;
+                                return false; // デフォルトのエラーハンドリングを行う
+                            };
                         
                         
                         };
@@ -13127,31 +13267,21 @@
                                 </ul>
                                 <div class="child_list">
                                     <ul>
-                                        <li class="notetext_bold" onclick="notetext_all_bold()">alltext
-                                            bold</li>
-                                        <li class="notetext_oblique" onclick="notetext_all_oblique()">
-                                            alltext
-                                            oblique</li>
-                                        <li class="notetext_underline" onclick="notetext_all_underline()">
-                                            alltext
-                                            underline</li>
+                                        <p class="bold small underline" style="text-align: left; padding-right: 20px;">
+                                            Text decoration
+                                        </p>
+                                        <li class="notetext_bold" onclick="notetext_all_bold()">bold</li>
+                                        <li class="notetext_oblique" onclick="notetext_all_oblique()">oblique</li>
+                                        <li class="notetext_underline" onclick="notetext_all_underline()">underline</li>
                                         <div class="note_text_color">
-                                            <li onclick="notecolor_remove()">text
-                                                black</li>
-                                            <li class="notetext_blue" onclick="notecolor_change_blue()">
-                                                text
-                                                blue</li>
-                                            <li class="notetext_green" onclick="notecolor_change_green()">
-                                                text green</li>
-                                            <li class="notetext_red" onclick="notecolor_change_red()">
-                                                text
-                                                red</li>
-                                            <li class="notetext_orange" onclick="notecolor_change_orange()">
-                                                text
-                                                orange</li>
-                                            <li class="notetext_yellow" onclick="notecolor_change_yellow()">
-                                                text
-                                                yellow</li>
+                                            <p class="bold small underline" style="text-align: left;">Text color</p>
+                                            <li onclick="notecolor_remove()">black</li>
+                                            <li class="notetext_blue" onclick="notecolor_change_blue()">blue</li>
+                                            <li class="notetext_green" onclick="notecolor_change_green()">green</li>
+                                            <li class="notetext_red" onclick="notecolor_change_red()">red</li>
+                                            <li class="notetext_orange" onclick="notecolor_change_orange()">orange</li>
+                                            <li class="notetext_yellow" onclick="notecolor_change_yellow()">yellow
+                                            </li>
                                         </div>
                                     </ul>
                                 </div>
@@ -13205,7 +13335,7 @@
                                 <li class="border2">Textcount:&emsp;<span id="inputlength">0</span>
                                 </li>
                                 <li class="border2" style="margin-left: 20px;">Mode:&emsp;<span
-                                        class="test_notetext">Text</span></li>
+                                        class="test_notetext">Text&nbsp;</span></li>
                                 <li class="border2" style="margin-left: 20px;" id="memo_save_text">
                                 </li>
                             </ul>
@@ -16010,7 +16140,6 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         </div>
                     </div>
 
-
                     <div class="child_windows test_site_menu resize active">
                         <div class="title">
                             <span class="title_icon"></span><span>test site</span>
@@ -16025,6 +16154,23 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         </div>
                         <div class="window_content">
                             <iframe src="index.html" class="site_frame" frameborder="0"></iframe>
+                        </div>
+                    </div>
+
+                    <div class="child_windows console_error_menu resize active">
+                        <div class="title">
+                            <span class="title_icon"></span><span>console error</span>
+                        </div>
+
+                        <div class="title_buttons">
+                            <span class="drag_button">&nbsp;</span>
+                            <span class="close_button button2"></span>
+                            <span class="bigscreen_button button2"></span>
+                            <span class="minscreen_button button2"></span>
+                            <span class="minimization_button button2"></span><br>
+                        </div>
+                        <div class="window_contents" style="background: black; color: white; height: 100%;">
+                            <p id="console_error_text"></p><br>
                         </div>
                     </div>
 
@@ -16559,7 +16705,14 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                             </div>
                                         </div>
                                     </div>
-                                </div><br>
+                                </div>
+
+                                <div class="parent_start_menu_lists console_list" style="display: none;">
+                                    <ul>
+                                        <li class="console_error_btn">&nbsp;console error&nbsp;</li>
+                                    </ul>
+                                </div>
+                                <br>
 
                                 <div class="parent_start_menu_lists">
                                     <ul>
@@ -16616,7 +16769,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         <span class="bold error_title_text">&nbsp;error</span>
                     </div>
                     <span class="close_button2 button2"></span><br>
-                    <p><span class="error_icon bold">✕</span><span>&emsp;&emsp;&nbsp;</span><span
+                    <p><span class="error_icon">✕</span><span>&emsp;&emsp;&nbsp;</span><span
                             class="window_error_text">test
                             window error</span>&emsp;</p>
                     <span class="button2 borderinline_dotted"

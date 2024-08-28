@@ -79,6 +79,7 @@ if (ua.includes("mobile")) {
     const url_drop_menu = document.querySelector('.url_drop_menu');
     const alarm_menu = document.querySelector('.alarm_menu');
     const test_site_menu = document.querySelector('.test_site_menu');
+    const console_error_menu = document.querySelector('.console_error_menu');
 
     const notice_menu = document.querySelector('.notice_menu');
 
@@ -97,6 +98,20 @@ if (ua.includes("mobile")) {
     let startX, startY, isDrawing = false;
     let rectangle;
     document.addEventListener('mousedown', (e) => {
+
+        var isClickInsideStartButton7 = Array.from(document.querySelectorAll('.window_files')).some(button => button.contains(e.target));
+        if (!isClickInsideStartButton7) {
+            Array.from(document.getElementsByClassName('window_files')).forEach((window_files3) => {
+                window_files3.classList.remove('file_border2');
+                if (window_files3.classList.contains('file_border')) {
+                    document.querySelector('.file_border').classList.add('file_border2');
+                    document.querySelector('.file_border2').classList.remove('file_border');
+                }
+            })
+
+        }
+
+
         var isClickInsideStartButton = document.querySelector('.start_button').contains(e.target);
         var isClickInsideParentStartMenu2 = document.querySelector('.parentstartmenu2').contains(e.target);
         if (!isClickInsideStartButton && !isClickInsideParentStartMenu2) {
@@ -110,13 +125,15 @@ if (ua.includes("mobile")) {
         }
 
         var isClickInsideStartButton4 = document.querySelector('.battery_child').contains(e.target);
-        if (!isClickInsideStartButton4) {
+        var isClickInsideStartButton4_2 = document.querySelector('.battery_menu').contains(e.target);
+        if (!isClickInsideStartButton4 && !isClickInsideStartButton4_2) {
             document.querySelector('.battery_menu').style.display = "none";
             document.querySelector('.battery_child').classList.remove('pressed');
         }
 
         var isClickInsideStartButton5 = document.querySelector('.sit_button').contains(e.target);
-        if (!isClickInsideStartButton5) {
+        var isClickInsideStartButton6 = document.querySelector('.screen_light_range_child').contains(e.target);
+        if (!isClickInsideStartButton5 && !isClickInsideStartButton6) {
             document.querySelector('.screen_light_range_child').style.display = "none";
             document.querySelector('.sit_button').classList.remove('pressed');
         }
@@ -2623,6 +2640,17 @@ if (ua.includes("mobile")) {
                 zindexwindow_addnavy()
                 break;
 
+            case 'startmenu(console(error))=>true':
+                prompt_text2.style.color = "";
+                localStorage.setItem('startmenu_console', prompt_text2);
+                document.querySelector('.console_list').style.display = "block";
+                break;
+            case 'startmenu(console(error))=>false':
+                prompt_text2.style.color = "";
+                localStorage.removeItem('startmenu_console');
+                document.querySelector('.console_list').style.display = "none";
+                break;
+
             case 'reset':
                 prompt_text2.style.color = "";
                 nexser_prompt_reset()
@@ -2646,6 +2674,10 @@ if (ua.includes("mobile")) {
         }
         zindexwindow_addnavy()
         titlecolor_set()
+    }
+
+    if (localStorage.getItem('startmenu_console')) {
+        document.querySelector('.console_list').style.display = "block"
     }
 
     function shellmenu_open() {
@@ -3496,6 +3528,14 @@ if (ua.includes("mobile")) {
         localstorage_details.addEventListener('click', () => {
             localstorage_details_menu.classList.toggle('active');
             localstorage_details_menu.style.zIndex = largestZIndex++;
+            zindexwindow_addnavy()
+        })
+    );
+
+    document.querySelectorAll('.console_error_btn').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
+            console_error_menu.classList.toggle('active');
+            console_error_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
         })
     );
@@ -4866,16 +4906,19 @@ if (ua.includes("mobile")) {
         notetext_reset();
         localStorage.setItem('notetext_small', notetext_small);
         notetextsize_change()
+        notetitle()
     }
     function notetext_medium(notetext_medium) {
         notetext_reset();
         localStorage.setItem('notetext_medium', notetext_medium);
         notetextsize_change()
+        notetitle()
     }
     function notetext_large(notetext_large) {
         notetext_reset();
         localStorage.setItem('notetext_large', notetext_large);
         notetextsize_change()
+        notetitle()
     }
 
     // 保存
@@ -5079,8 +5122,33 @@ if (ua.includes("mobile")) {
     const textCountElement = document.querySelector("#inputlength");
 
     // キーボードで入力する場合
-    note_area.addEventListener("keyup", onChange);
-    note_area.addEventListener("keyup", notetitle);
+    note_area.addEventListener("keydown", function (event) {
+        if (event.ctrlKey && event.key === 's') {
+            event.preventDefault(); // Cancel the default action
+        } else {
+            notetitle(event);
+            onchange(event)
+        }
+        note_area.addEventListener("keyup", function (event) {
+            if (event.ctrlKey && event.key === 's') {
+                save()
+            }
+        })
+
+    });
+
+    document.addEventListener('keyup', function (event) {
+        if (event.key === 's' && event.getModifierState('Fn')) {
+            // Your event handling code here
+            console.log('Function key + S key pressed');
+            if (localStorage.getItem('note_texts')) {
+                save();
+            }
+        }
+    });
+
+
+
 
     // ペーストした場合
     note_area.addEventListener("paste", () => {
@@ -5133,9 +5201,7 @@ if (ua.includes("mobile")) {
                 spaceCount++
             }
         });
-
-        const memo_save = document.getElementById('memo_save_text');
-        memo_save.textContent = "";
+        document.getElementById('memo_save_text').textContent = "";
         if (!localStorage.getItem('noteData')) {
             document.querySelector('.note_title').textContent = "notepad"
         }
@@ -5547,18 +5613,19 @@ if (ua.includes("mobile")) {
 
     Array.from(document.getElementsByClassName('window_files')).forEach((window_files) => {
         window_files.addEventListener('mousedown', function () {
-            fileborder_reset()
+            document.querySelector('.file_border').classList.add('file_border2')
+            document.querySelector('.file_border2').classList.remove('file_border')
         })
         window_files.addEventListener('click', function () {
-            fileborder_reset()
+            Array.from(document.getElementsByClassName('window_files')).forEach((window_files2) => {
+                window_files2.classList.remove('file_border');
+                window_files2.classList.remove('file_border2');
+            })
             window_files.classList.add('file_border');
         })
     })
 
     function fileborder_reset() {
-        Array.from(document.getElementsByClassName('window_files')).forEach((window_files) => {
-            window_files.classList.remove('file_border');
-        })
         Array.from(document.getElementsByClassName('desktop_files')).forEach((df1) => {
             const file10 = df1.firstElementChild;
             file10.classList.remove('file_select');
@@ -7799,40 +7866,96 @@ if (ua.includes("mobile")) {
         });
     });
 
-    // ローカルストレージの内容を外部出力
+
     document.getElementById('exportButton').addEventListener('click', function () {
         const localStorageData = JSON.stringify(localStorage);
-        const blob = new Blob([localStorageData], { type: 'application/json' });
+
+        // Base64エンコード関数
+        function base64Encode(str) {
+            return btoa(unescape(encodeURIComponent(str)));
+        }
+
+        // Base64デコード関数
+        function base64Decode(str) {
+            return decodeURIComponent(escape(atob(str)));
+        }
+
+        // XOR暗号化関数
+        function xorEncrypt(data, key) {
+            let encrypted = '';
+            for (let i = 0; i < data.length; i++) {
+                encrypted += String.fromCharCode(data.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+            }
+            return encrypted;
+        }
+
+        const key = 'your-encryption-key'; // 暗号化キーを設定
+
+        // データをエンコードして圧縮
+        const encodedData = base64Encode(localStorageData);
+
+        // 圧縮データを暗号化
+        const encryptedData = xorEncrypt(encodedData, key);
+
+        // 暗号化データをBlobに変換してダウンロード
+        const blob = new Blob([encryptedData], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'nexser_storageData.json';
+        a.download = 'nexser_storageData_encrypted.json';
         a.click();
         URL.revokeObjectURL(url);
     });
 
-    // 外部出力したローカルストレージを読み込む
+
+
     document.getElementById('fileInput').addEventListener('change', function (event) {
         const file = event.target.files[0];
         const reader = new FileReader();
-
         reader.onload = function (event) {
+            // Base64デコード関数
+            function base64Decode(str) {
+                return decodeURIComponent(escape(atob(str)));
+            }
+
+            // XOR復号化関数
+            function xorDecrypt(data, key) {
+                let decrypted = '';
+                for (let i = 0; i < data.length; i++) {
+                    decrypted += String.fromCharCode(data.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+                }
+                return decrypted;
+            }
+
+            const key = 'your-encryption-key'; // 暗号化キーを設定
+            const encryptedData = event.target.result;
+
+            // データを復号化
+            const decryptedData = xorDecrypt(encryptedData, key);
+
+            // データをデコード
+            const decodedData = base64Decode(decryptedData);
+
+            // JSON形式にパース
+            const data = JSON.parse(decodedData);
+
+            // ローカルストレージをクリアしてデータを復元
             localStorage.clear();
             sessionStorage.clear();
-            const data = JSON.parse(event.target.result);
             for (const key in data) {
                 localStorage.setItem(key, data[key]);
             }
-            document.querySelector('.warning_title_text').textContent = "nexser"
+
+            // UIの更新
+            document.querySelector('.warning_title_text').textContent = "nexser";
             document.querySelector('.window_warning_text').textContent = "データが復元されました! ページを再読み込みしてください。";
-            warning_windows.style.display = "block"
-            document.querySelector('.close_button3').style.display = "block"
-            sound5()
+            warning_windows.style.display = "block";
+            document.querySelector('.close_button3').style.display = "block";
+            sound5();
             document.querySelector('.test_allwindow').style.display = "block";
             document.querySelector('.shutdown_button').style.display = "none";
             document.querySelector('.warningclose_button').style.display = "none";
         };
-
         reader.readAsText(file);
     });
 
@@ -8100,14 +8223,18 @@ if (ua.includes("mobile")) {
     updateCurrentTime();
 
 
-
-
-
-
-
-
-
-
+    window.onerror = function (message, source, lineno, colno, error) {
+        const errorLog = document.getElementById('console_error_text');
+        const errorMessage = `
+            メッセージ: ${message}
+            ソース: ${source}
+            行: ${lineno}
+            列: ${colno}
+            エラーオブジェクト: ${error}
+        `;
+        errorLog.textContent += errorMessage + '\n';
+        return false; // デフォルトのエラーハンドリングを行う
+    };
 
 
 };
