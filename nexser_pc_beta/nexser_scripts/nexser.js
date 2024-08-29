@@ -80,6 +80,7 @@ if (ua.includes("mobile")) {
     const alarm_menu = document.querySelector('.alarm_menu');
     const test_site_menu = document.querySelector('.test_site_menu');
     const console_error_menu = document.querySelector('.console_error_menu');
+    const kakeibo_menu = document.querySelector('.kakeibo_menu');
 
     const notice_menu = document.querySelector('.notice_menu');
 
@@ -168,24 +169,12 @@ if (ua.includes("mobile")) {
         }
     });
 
-    function lights() {
-        const lightvalue = document.querySelector('.light_value').value;
-        document.querySelector('.screen_light').style.opacity = lightvalue;
-        localStorage.setItem('light_level', lightvalue);
-    }
-
-    const lightlevel = localStorage.getItem('light_level');
-    if (localStorage.getItem('light_level')) {
-        document.querySelector('.screen_light').style.opacity = lightlevel;
-        document.querySelector('.light_value').value = lightlevel;
-    }
-
     function lightchild() {
         const screen_light_range_child = document.querySelector('.screen_light_range_child');
-        if (screen_light_range_child.style.display == "block") {
+        if (screen_light_range_child.style.display == "flex") {
             screen_light_range_child.style.display = "none"
         } else {
-            screen_light_range_child.style.display = "block"
+            screen_light_range_child.style.display = "flex"
         }
     }
 
@@ -1825,15 +1814,6 @@ if (ua.includes("mobile")) {
         nexser_title_text.textContent = nexserTitle;
     })
 
-    function alldata_clear() {
-        toolbar.style.display = "none";
-        colordata_clear();
-        old_screen_reset();
-        list_shadow_reset();
-        back_pattern_remove();
-        titlecolor_remove();
-    }
-
     function allStorage_clear() {
         const alllength = localStorage.length;
         if (alllength > 0) {
@@ -1842,42 +1822,14 @@ if (ua.includes("mobile")) {
             }
             localStorage.clear();
             sessionStorage.clear();
-            alldata_clear();
             document.querySelector('.tests').textContent = (alllength);
             taskbar_active();
-            document.querySelector('.files_inline').style.display = "flex";
             document.querySelector('.test_allwindow').style.display = "block";
             warning_windows.style.display = "block";
             document.querySelector('.shutdown_button').style.display = "block";
             document.querySelector('.warningclose_button').style.display = "none";
             document.querySelector('.warning_title_text').textContent = "nexser";
-            document.querySelector('.window_warning_text').textContent = "nexserのデータを全削除しました!";
-            document.querySelector('.installbutton_1').textContent = "install";
-            document.querySelector('.startup_sound').textContent = "INSTALL";
-            document.querySelector('.startup_versiontext').textContent = "OFF";
-            document.querySelector('.installbutton_2').textContent = "install";
-
-            document.querySelector('.close_button3').style.display = "none";
-            document.querySelector('.taskbar_position_button').textContent = "top";
-            document.getElementById('taskbar').style.top = "";
-            document.getElementById('taskbar').style.bottom = "";
-            document.getElementById('taskbar').style.height = "";
-            document.querySelector('.child_start_menu').style.top = "auto";
-            document.querySelector('.child_start_menu').style.bottom = "";
-
-            document.querySelector('.startup_computer').textContent = "OFF";
-            document.querySelector('.startup_note').textContent = "OFF";
-            document.querySelector('.startup_color').textContent = "OFF";
-            document.querySelector('.startup_screen').textContent = "OFF";
-            document.querySelector('.startup_htmlviewer_edit').textContent = "OFF";
-            document.querySelector('.startup_guidebook').textContent = "OFF";
-
-            document.querySelector('.startup_htmlviewer_edit').textContent = "OFF";
-            document.querySelector('.startup_speed').textContent = "OFF";
-
-            document.querySelectorAll('.big').forEach(function (child_win_posi) {
-                child_win_posi.style.top = "auto"
-            })
+            document.querySelector('.window_warning_text').textContent = "nexserのデータを全削除しました!　5秒後に再ロードします!";
         }
     }
 
@@ -2615,8 +2567,11 @@ if (ua.includes("mobile")) {
                 cpucalc_open();
                 break;
             case 'nexser/data/clear':
-                allStorage_clear()
                 prompt_text2.style.color = "";
+                allStorage_clear()
+                setTimeout(() => {
+                    window.location = '';
+                }, 5000);
                 break;
             case 'welcome':
                 prompt_text2.style.color = "";
@@ -2848,9 +2803,6 @@ if (ua.includes("mobile")) {
                 })
             }
 
-            bigscreenbutton.classList.remove('rightwindow');
-            bigscreenbutton.classList.remove('leftwindow');
-
             const t = localStorage.getItem('taskbar_height');
             if (localStorage.getItem('data_taskbar_none')) {
                 bigscreenbutton.style.height = ""
@@ -2869,6 +2821,14 @@ if (ua.includes("mobile")) {
                 if (localStorage.getItem('window_animation')) {
                     bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
                 }
+            } else if (bigscreenbutton.classList.contains('rightwindow')) {
+                bigscreenbutton.style.height = ""
+                bigscreenbutton.style.width = ""
+                bigscreenbutton.style.top = "0"
+                bigscreenbutton.style.left = ""
+                if (localStorage.getItem('window_animation')) {
+                    bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                }
             } else {
                 bigscreenbutton.style.height = ""
                 bigscreenbutton.style.width = ""
@@ -2878,6 +2838,9 @@ if (ua.includes("mobile")) {
                     bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
                 }
             }
+
+            bigscreenbutton.classList.remove('rightwindow');
+            bigscreenbutton.classList.remove('leftwindow');
 
             setTimeout(() => {
                 bigscreenbutton.style.transition = ""
@@ -2910,7 +2873,6 @@ if (ua.includes("mobile")) {
     function window_animation_false() {
         localStorage.removeItem('window_animation')
     }
-
 
     document.querySelectorAll('.minscreen_button').forEach(function (minscreen_button) {
         minscreen_button.addEventListener('click', function () {
@@ -3536,6 +3498,14 @@ if (ua.includes("mobile")) {
         testbtn.addEventListener('click', () => {
             console_error_menu.classList.toggle('active');
             console_error_menu.style.zIndex = largestZIndex++;
+            zindexwindow_addnavy()
+        })
+    );
+
+    document.querySelectorAll('.kakeibo_btn').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
+            kakeibo_menu.classList.toggle('active');
+            kakeibo_menu.style.zIndex = largestZIndex++;
             zindexwindow_addnavy()
         })
     );
@@ -4962,14 +4932,17 @@ if (ua.includes("mobile")) {
             document.querySelector('.test_allwindow').style.display = "block";
             sound3()
         }
-        if (!objective_title_form.objective_title_area.value == "" || !objective_form.objective_area.value == "") {
+        if (!objective_title_form.objective_title_area.value == "" && !objective_form.objective_area.value == "") {
             let objectiveTitleData = document.objective_title_form.objective_title_area.value;
             localStorage.setItem('objectiveTitleData', objectiveTitleData);
             let objectiveData = document.objective_form.objective_area.value;
             localStorage.setItem('objectiveData', objectiveData);
             localStorage.removeItem('objective_area');
+            document.querySelector('.objective_title').textContent = "objective sheet(save)";
         }
-
+    }
+    if (localStorage.getItem('objectiveTitleData') && localStorage.getItem('objectiveData')) {
+        document.querySelector('.objective_title').textContent = "objective sheet(save keep)";
     }
 
     document.querySelector('.note_close').addEventListener('click', function () {
@@ -5026,11 +4999,25 @@ if (ua.includes("mobile")) {
     localStorage.removeItem('objective_area')
 
     document.querySelectorAll('.objective_title_area,.objective_area').forEach(function (objectives_area) {
-        objectives_area.addEventListener('keyup', function () {
-            console.log("objective_area")
-            localStorage.setItem('objective_area', objective_menu);
+        objectives_area.addEventListener("keydown", function (event) {
+            if (event.ctrlKey && event.key === 's') {
+                event.preventDefault(); // Cancel the default action
+            } else {
+                objective_title(event);
+            }
+            objectives_area.addEventListener("keyup", function (event) {
+                if (event.ctrlKey && event.key === 's') {
+                    objective_save()
+                }
+            })
         });
     });
+    function objective_title() {
+        objectiveData_clear();
+        objective_resize();
+        document.querySelector('.objective_title').textContent = "*objective sheet";
+        localStorage.setItem('objective_area', objective_menu);
+    }
 
     document.querySelector('.camera_close').addEventListener('mouseup', function () {
         setTimeout(() => {
@@ -5108,8 +5095,7 @@ if (ua.includes("mobile")) {
         localStorage.removeItem('objectiveData');
         localStorage.removeItem('objectiveTitleData');
         localStorage.removeItem('objective_area');
-        document.querySelector(".objective_area").value = '';
-        document.querySelector(".objective_title_area").value = '';
+        document.querySelector('.objective_title').textContent = "objective sheet";
     }
 
     function resetShowLength() {
@@ -5134,7 +5120,6 @@ if (ua.includes("mobile")) {
                 save()
             }
         })
-
     });
 
     document.addEventListener('keyup', function (event) {
@@ -5290,11 +5275,12 @@ if (ua.includes("mobile")) {
         evt.preventDefault();
     });
     dr.addEventListener('drop', function (evt) {
+        evt.preventDefault();
         if (!localStorage.getItem('textdropdata')) {
-            evt.target.textContent = evt.dataTransfer.getData('text');
+            evt.target.textContent += evt.dataTransfer.getData('text'); // 新しいテキストを追加
         } else {
-            document.querySelector('.window_error_text').textContent = "テキストが保存されているため、ドラッグした文字をドロップできません!"
-            error_windows.classList.remove('active')
+            document.querySelector('.window_error_text').textContent = "テキストが保存されているため、ドラッグした文字をドロップできません!";
+            error_windows.classList.remove('active');
             document.querySelector('.test_allwindow').style.display = "block";
             sound3();
         }
@@ -8235,6 +8221,125 @@ if (ua.includes("mobile")) {
         errorLog.textContent += errorMessage + '\n';
         return false; // デフォルトのエラーハンドリングを行う
     };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    document.addEventListener('DOMContentLoaded', () => {
+        kakeibo_loadEntries();
+        kakeibo_setCurrentDateTime();
+    });
+
+    function kakeibo_setCurrentDateTime() {
+        const now = new Date();
+        const date = now.toISOString().split('T')[0];
+        const time = now.toTimeString().split(' ')[0].slice(0, 5);
+
+        document.getElementById('date').value = date;
+        document.getElementById('time').value = time;
+    }
+
+    function kakeibo_addEntry() {
+        const type = document.getElementById('type').value;
+        const amount = parseFloat(document.getElementById('amount').value) || 0;
+        const description = document.getElementById('description').value;
+        const date = document.getElementById('date').value;
+        const time = document.getElementById('time').value;
+
+        const entry = { type, amount, description, date, time };
+        kakeibo_saveEntry(entry);
+        kakeibo_displayEntries();
+        kakeibo_calculateTotal();
+    }
+
+    function kakeibo_saveEntry(entry) {
+        let entries = JSON.parse(localStorage.getItem('entries')) || [];
+        entries.push(entry);
+        localStorage.setItem('entries', JSON.stringify(entries));
+    }
+
+    function kakeibo_loadEntries() {
+        kakeibo_displayEntries();
+        kakeibo_calculateTotal();
+    }
+
+    function kakeibo_displayEntries() {
+        const entries = JSON.parse(localStorage.getItem('entries')) || [];
+        const entriesContainer = document.getElementById('entries');
+        entriesContainer.innerHTML = '';
+
+        entries.forEach((entry, index) => {
+            const entryDiv = document.createElement('div');
+            entryDiv.classList.add('entry');
+            const color = entry.type === '収入' ? 'red' : 'blue';
+            entryDiv.innerHTML = `
+                <div class="border" style="color: ${color};"><strong>${entry.type}</strong>: ¥${entry.amount} - ${entry.description} (${entry.date} ${entry.time})</div>
+                <button class="button2 medium" onclick="kakeibo_deleteEntry(${index})">削除</button>
+            `;
+            entriesContainer.appendChild(entryDiv);
+        });
+    }
+
+    function kakeibo_deleteEntry(index) {
+        let entries = JSON.parse(localStorage.getItem('entries')) || [];
+        entries.splice(index, 1);
+        localStorage.setItem('entries', JSON.stringify(entries));
+        kakeibo_displayEntries();
+        kakeibo_calculateTotal();
+    }
+
+    function kakeibo_calculateTotal() {
+        const entries = JSON.parse(localStorage.getItem('entries')) || [];
+        let total = 0;
+
+        entries.forEach(entry => {
+            if (entry.type === '収入') {
+                total += entry.amount;
+            } else {
+                total -= entry.amount;
+            }
+        });
+        document.getElementById('total').innerText = `合計: ¥${total}`;
+    }
+
+
+    const slider = document.getElementById('opacitySlider');
+    const targetDiv = document.querySelector('.screen_light');
+    const valueDisplay = document.getElementById('valueDisplay');
+
+    // ローカルストレージから保存された透明度を取得
+    const savedOpacity = localStorage.getItem('divOpacity');
+    if (savedOpacity !== null) {
+        targetDiv.style.opacity = 1 - savedOpacity;
+        slider.value = savedOpacity * 100;
+        valueDisplay.textContent = slider.value;
+    }
+
+    slider.addEventListener('input', () => {
+        const opacityValue = 1 - (slider.value / 100);
+        targetDiv.style.opacity = opacityValue;
+        valueDisplay.textContent = slider.value;
+
+        // 透明度をローカルストレージに保存
+        localStorage.setItem('divOpacity', 1 - opacityValue);
+    });
 
 
 };

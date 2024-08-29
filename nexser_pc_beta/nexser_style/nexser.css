@@ -658,23 +658,11 @@ input[type="file"] {
 
 .screen_light_range_child {
     display: none;
-    width: 38px;
-    height: 100px;
+    width: 120px;
+    height: 30px;
     background: silver;
     position: absolute;
     bottom: 36px;
-}
-
-.screen_light_range_child>textarea {
-    top: 2.5px;
-    display: inline-block;
-    outline: none;
-    position: absolute;
-    width: 30px;
-    height: 20px;
-    left: 0.5px;
-    resize: none;
-    font-size: large;
 }
 
 .inport_icon {
@@ -1016,6 +1004,11 @@ input[type="file"] {
 .console_error_menu {
     width: 600px;
     height: 400px;
+}
+
+.kakeibo_menu {
+    width: 800px;
+    height: 500px;
 }
 
 #v {
@@ -3022,4 +3015,45 @@ progress::-webkit-progress-value {
     position: absolute;
     width: 100%;
     height: 100%;
+}
+
+
+#opacitySlider {
+    margin-top: 10px;
+    margin-left: 5px;
+    margin-right: 40px;
+    -webkit-appearance: none;
+    width: 100%;
+    height: 8px;
+    background: #ddd;
+    outline: none;
+    transition: opacity .2s;
+    border-top: 1.5px #eee solid;
+    border-left: 1.5px #eee solid;
+    border-bottom: 1.5px #333 solid;
+    border-right: 1.5px #333 solid;
+}
+
+#opacitySlider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background: silver;
+    border-top: 1.5px #eee solid;
+    border-left: 1.5px #eee solid;
+    border-bottom: 1.5px #333 solid;
+    border-right: 1.5px #333 solid;
+    cursor: pointer;
+}
+
+#opacitySlider::-moz-range-thumb {
+    width: 15px;
+    height: 15px;
+    background: silver;
+    border-top: 1.5px #eee solid;
+    border-left: 1.5px #eee solid;
+    border-bottom: 1.5px #333 solid;
+    border-right: 1.5px #333 solid;
+    cursor: pointer;
 }

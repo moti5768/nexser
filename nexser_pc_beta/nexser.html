@@ -787,7 +787,7 @@
                         
                                             &lt;div class=&quot;child_windows objective_menu back_silver resize active&quot;&gt;
                                                 &lt;div class=&quot;title&quot;&gt;
-                                                    &lt;span class=&quot;title_icon&quot;&gt;&lt;/span&gt;&lt;span&gt;objective sheet&lt;/span&gt;
+                                                    &lt;span class=&quot;title_icon&quot;&gt;&lt;/span&gt;&lt;span class=&quot;objective_title&quot;&gt;objective sheet&lt;/span&gt;
                                                 &lt;/div&gt;
                         
                                                 &lt;div class=&quot;title_buttons&quot;&gt;
@@ -1048,6 +1048,10 @@
                                                         &lt;/div&gt;
                                                         &lt;div class=&quot;window_files test_button44&quot;&gt;
                                                             &lt;li&gt;memory game&lt;/li&gt;&lt;span class=&quot;window_file_icon&quot;&gt;&lt;/span&gt;
+                                                            &lt;li class=&quot;windowfile_time&quot;&gt;&lt;/li&gt;
+                                                        &lt;/div&gt;
+                                                        &lt;div class=&quot;window_files kakeibo_btn&quot;&gt;
+                                                            &lt;li&gt;kakeibo&lt;/li&gt;&lt;span class=&quot;window_file_icon&quot;&gt;&lt;/span&gt;
                                                             &lt;li class=&quot;windowfile_time&quot;&gt;&lt;/li&gt;
                                                         &lt;/div&gt;
                                                     &lt;/ul&gt;
@@ -3617,6 +3621,49 @@
                                                 &lt;/div&gt;
                                             &lt;/div&gt;
                         
+                                            &lt;div class=&quot;child_windows kakeibo_menu resize back_silver active&quot;&gt;
+                                                &lt;div class=&quot;title&quot;&gt;
+                                                    &lt;span class=&quot;title_icon&quot;&gt;&lt;/span&gt;&lt;span&gt;kakeibo&lt;/span&gt;
+                                                &lt;/div&gt;
+                        
+                                                &lt;div class=&quot;title_buttons&quot;&gt;
+                                                    &lt;span class=&quot;drag_button&quot;&gt;&amp;nbsp;&lt;/span&gt;
+                                                    &lt;span class=&quot;close_button button2&quot;&gt;&lt;/span&gt;
+                                                    &lt;span class=&quot;bigscreen_button button2&quot;&gt;&lt;/span&gt;
+                                                    &lt;span class=&quot;minscreen_button button2&quot;&gt;&lt;/span&gt;
+                                                    &lt;span class=&quot;minimization_button button2&quot;&gt;&lt;/span&gt;&lt;br&gt;
+                                                &lt;/div&gt;
+                                                &lt;div class=&quot;window_contents back_silver large&quot;&gt;
+                                                    &lt;span class=&quot;x-large bold border2&quot;&gt;家計簿&lt;/span&gt;
+                                                    &lt;div class=&quot;input-group&quot;&gt;
+                                                        &lt;label for=&quot;type&quot;&gt;タイプ:&lt;/label&gt;
+                                                        &lt;select id=&quot;type&quot; class=&quot;border medium back_silver&quot;&gt;
+                                                            &lt;option value=&quot;収入&quot;&gt;収入&lt;/option&gt;
+                                                            &lt;option value=&quot;支出&quot;&gt;支出&lt;/option&gt;
+                                                        &lt;/select&gt;
+                                                    &lt;/div&gt;
+                                                    &lt;div class=&quot;input-group border&quot;&gt;
+                                                        &lt;label for=&quot;amount&quot;&gt;金額:&lt;/label&gt;
+                                                        &lt;input type=&quot;number&quot; id=&quot;amount&quot; class=&quot;border2 large&quot; placeholder=&quot;金額を入力&quot;&gt;
+                                                    &lt;/div&gt;
+                                                    &lt;div class=&quot;input-group border&quot;&gt;
+                                                        &lt;label for=&quot;description&quot;&gt;内容:&lt;/label&gt;
+                                                        &lt;textarea id=&quot;description&quot; class=&quot;border2 large&quot; placeholder=&quot;内容を入力&quot;&gt;&lt;/textarea&gt;
+                                                    &lt;/div&gt;
+                                                    &lt;div class=&quot;input-group border&quot;&gt;
+                                                        &lt;label for=&quot;date&quot; class=&quot;border&quot;&gt;日付:&lt;/label&gt;
+                                                        &lt;input type=&quot;date&quot; id=&quot;date&quot; class=&quot;border2 large&quot;&gt;
+                                                    &lt;/div&gt;
+                                                    &lt;div class=&quot;input-group border&quot;&gt;
+                                                        &lt;label for=&quot;time&quot; class=&quot;border&quot;&gt;時間:&lt;/label&gt;
+                                                        &lt;input type=&quot;time&quot; id=&quot;time&quot; class=&quot;border2 large&quot;&gt;
+                                                    &lt;/div&gt;
+                                                    &lt;button onclick=&quot;kakeibo_addEntry()&quot; class=&quot;button2 medium&quot;&gt;追加&lt;/button&gt;
+                                                    &lt;div class=&quot;total&quot; id=&quot;total&quot;&gt;&lt;/div&gt;
+                                                    &lt;div id=&quot;entries&quot; class=&quot;border&quot;&gt;&lt;/div&gt;&lt;br&gt;
+                                                &lt;/div&gt;
+                                            &lt;/div&gt;
+                        
                                             &lt;div class=&quot;child_windows nexser_guidebook_menu resize active&quot;&gt;
                                                 &lt;div class=&quot;title&quot;&gt;
                                                     &lt;span class=&quot;title_icon&quot;&gt;&lt;/span&gt;&lt;span&gt;nexser guidebook&lt;/span&gt;
@@ -3934,11 +3981,9 @@
                                                     &lt;div class=&quot;screen_light_range&quot;&gt;
                                                         &lt;span class=&quot;button sit_button&quot; onclick=&quot;lightchild()&quot;&gt;&amp;nbsp;SlT&amp;nbsp;&lt;/span&gt;
                                                         &lt;div class=&quot;screen_light_range_child border&quot;&gt;
-                                                            &lt;textarea class=&quot;light_value border&quot; maxlength=&quot;4&quot;
-                                                                onkeydown=&quot;if(event.keyCode == 13){return false;}&quot;&gt;&lt;/textarea&gt;&lt;br&gt;
-                                                            &lt;button class=&quot;button2&quot; onclick=&quot;lights()&quot;&gt;sbmit&lt;/button&gt;
-                                                            &lt;p&gt;0~1&lt;/p&gt;
-                                                            &lt;p&gt;〇・&lt;/p&gt;
+                                                            &lt;input type=&quot;range&quot; id=&quot;opacitySlider&quot; min=&quot;0&quot; max=&quot;100&quot; value=&quot;100&quot;&gt;
+                                                            &lt;span id=&quot;valueDisplay&quot;
+                                                                style=&quot;position: absolute; right: 0px; margin-top: 2.5px; margin-right: 4px;&quot;&gt;100&lt;/span&gt;
                                                         &lt;/div&gt;
                                                     &lt;/div&gt;
                                                     &lt;div class=&quot;inport_icon border&quot;&gt;
@@ -4359,6 +4404,7 @@
                             const alarm_menu = document.querySelector(&#039;.alarm_menu&#039;);
                             const test_site_menu = document.querySelector(&#039;.test_site_menu&#039;);
                             const console_error_menu = document.querySelector(&#039;.console_error_menu&#039;);
+                            const kakeibo_menu = document.querySelector(&#039;.kakeibo_menu&#039;);
                         
                             const notice_menu = document.querySelector(&#039;.notice_menu&#039;);
                         
@@ -4447,24 +4493,12 @@
                                 }
                             });
                         
-                            function lights() {
-                                const lightvalue = document.querySelector(&#039;.light_value&#039;).value;
-                                document.querySelector(&#039;.screen_light&#039;).style.opacity = lightvalue;
-                                localStorage.setItem(&#039;light_level&#039;, lightvalue);
-                            }
-                        
-                            const lightlevel = localStorage.getItem(&#039;light_level&#039;);
-                            if (localStorage.getItem(&#039;light_level&#039;)) {
-                                document.querySelector(&#039;.screen_light&#039;).style.opacity = lightlevel;
-                                document.querySelector(&#039;.light_value&#039;).value = lightlevel;
-                            }
-                        
                             function lightchild() {
                                 const screen_light_range_child = document.querySelector(&#039;.screen_light_range_child&#039;);
-                                if (screen_light_range_child.style.display == &quot;block&quot;) {
+                                if (screen_light_range_child.style.display == &quot;flex&quot;) {
                                     screen_light_range_child.style.display = &quot;none&quot;
                                 } else {
-                                    screen_light_range_child.style.display = &quot;block&quot;
+                                    screen_light_range_child.style.display = &quot;flex&quot;
                                 }
                             }
                         
@@ -6104,15 +6138,6 @@
                                 nexser_title_text.textContent = nexserTitle;
                             })
                         
-                            function alldata_clear() {
-                                toolbar.style.display = &quot;none&quot;;
-                                colordata_clear();
-                                old_screen_reset();
-                                list_shadow_reset();
-                                back_pattern_remove();
-                                titlecolor_remove();
-                            }
-                        
                             function allStorage_clear() {
                                 const alllength = localStorage.length;
                                 if (alllength &gt; 0) {
@@ -6121,42 +6146,14 @@
                                     }
                                     localStorage.clear();
                                     sessionStorage.clear();
-                                    alldata_clear();
                                     document.querySelector(&#039;.tests&#039;).textContent = (alllength);
                                     taskbar_active();
-                                    document.querySelector(&#039;.files_inline&#039;).style.display = &quot;flex&quot;;
                                     document.querySelector(&#039;.test_allwindow&#039;).style.display = &quot;block&quot;;
                                     warning_windows.style.display = &quot;block&quot;;
                                     document.querySelector(&#039;.shutdown_button&#039;).style.display = &quot;block&quot;;
                                     document.querySelector(&#039;.warningclose_button&#039;).style.display = &quot;none&quot;;
                                     document.querySelector(&#039;.warning_title_text&#039;).textContent = &quot;nexser&quot;;
-                                    document.querySelector(&#039;.window_warning_text&#039;).textContent = &quot;nexserのデータを全削除しました!&quot;;
-                                    document.querySelector(&#039;.installbutton_1&#039;).textContent = &quot;install&quot;;
-                                    document.querySelector(&#039;.startup_sound&#039;).textContent = &quot;INSTALL&quot;;
-                                    document.querySelector(&#039;.startup_versiontext&#039;).textContent = &quot;OFF&quot;;
-                                    document.querySelector(&#039;.installbutton_2&#039;).textContent = &quot;install&quot;;
-                        
-                                    document.querySelector(&#039;.close_button3&#039;).style.display = &quot;none&quot;;
-                                    document.querySelector(&#039;.taskbar_position_button&#039;).textContent = &quot;top&quot;;
-                                    document.getElementById(&#039;taskbar&#039;).style.top = &quot;&quot;;
-                                    document.getElementById(&#039;taskbar&#039;).style.bottom = &quot;&quot;;
-                                    document.getElementById(&#039;taskbar&#039;).style.height = &quot;&quot;;
-                                    document.querySelector(&#039;.child_start_menu&#039;).style.top = &quot;auto&quot;;
-                                    document.querySelector(&#039;.child_start_menu&#039;).style.bottom = &quot;&quot;;
-                        
-                                    document.querySelector(&#039;.startup_computer&#039;).textContent = &quot;OFF&quot;;
-                                    document.querySelector(&#039;.startup_note&#039;).textContent = &quot;OFF&quot;;
-                                    document.querySelector(&#039;.startup_color&#039;).textContent = &quot;OFF&quot;;
-                                    document.querySelector(&#039;.startup_screen&#039;).textContent = &quot;OFF&quot;;
-                                    document.querySelector(&#039;.startup_htmlviewer_edit&#039;).textContent = &quot;OFF&quot;;
-                                    document.querySelector(&#039;.startup_guidebook&#039;).textContent = &quot;OFF&quot;;
-                        
-                                    document.querySelector(&#039;.startup_htmlviewer_edit&#039;).textContent = &quot;OFF&quot;;
-                                    document.querySelector(&#039;.startup_speed&#039;).textContent = &quot;OFF&quot;;
-                        
-                                    document.querySelectorAll(&#039;.big&#039;).forEach(function (child_win_posi) {
-                                        child_win_posi.style.top = &quot;auto&quot;
-                                    })
+                                    document.querySelector(&#039;.window_warning_text&#039;).textContent = &quot;nexserのデータを全削除しました!　5秒後に再ロードします!&quot;;
                                 }
                             }
                         
@@ -6894,8 +6891,11 @@
                                         cpucalc_open();
                                         break;
                                     case &#039;nexser/data/clear&#039;:
-                                        allStorage_clear()
                                         prompt_text2.style.color = &quot;&quot;;
+                                        allStorage_clear()
+                                        setTimeout(() =&gt; {
+                                            window.location = &#039;&#039;;
+                                        }, 5000);
                                         break;
                                     case &#039;welcome&#039;:
                                         prompt_text2.style.color = &quot;&quot;;
@@ -7127,9 +7127,6 @@
                                         })
                                     }
                         
-                                    bigscreenbutton.classList.remove(&#039;rightwindow&#039;);
-                                    bigscreenbutton.classList.remove(&#039;leftwindow&#039;);
-                        
                                     const t = localStorage.getItem(&#039;taskbar_height&#039;);
                                     if (localStorage.getItem(&#039;data_taskbar_none&#039;)) {
                                         bigscreenbutton.style.height = &quot;&quot;
@@ -7148,6 +7145,14 @@
                                         if (localStorage.getItem(&#039;window_animation&#039;)) {
                                             bigscreenbutton.style.transition = &quot;0.15s cubic-bezier(0, 0, 1, 1)&quot;
                                         }
+                                    } else if (bigscreenbutton.classList.contains(&#039;rightwindow&#039;)) {
+                                        bigscreenbutton.style.height = &quot;&quot;
+                                        bigscreenbutton.style.width = &quot;&quot;
+                                        bigscreenbutton.style.top = &quot;0&quot;
+                                        bigscreenbutton.style.left = &quot;&quot;
+                                        if (localStorage.getItem(&#039;window_animation&#039;)) {
+                                            bigscreenbutton.style.transition = &quot;0.15s cubic-bezier(0, 0, 1, 1)&quot;
+                                        }
                                     } else {
                                         bigscreenbutton.style.height = &quot;&quot;
                                         bigscreenbutton.style.width = &quot;&quot;
@@ -7157,6 +7162,9 @@
                                             bigscreenbutton.style.transition = &quot;0.15s cubic-bezier(0, 0, 1, 1)&quot;
                                         }
                                     }
+                        
+                                    bigscreenbutton.classList.remove(&#039;rightwindow&#039;);
+                                    bigscreenbutton.classList.remove(&#039;leftwindow&#039;);
                         
                                     setTimeout(() =&gt; {
                                         bigscreenbutton.style.transition = &quot;&quot;
@@ -7189,7 +7197,6 @@
                             function window_animation_false() {
                                 localStorage.removeItem(&#039;window_animation&#039;)
                             }
-                        
                         
                             document.querySelectorAll(&#039;.minscreen_button&#039;).forEach(function (minscreen_button) {
                                 minscreen_button.addEventListener(&#039;click&#039;, function () {
@@ -7815,6 +7822,14 @@
                                 testbtn.addEventListener(&#039;click&#039;, () =&gt; {
                                     console_error_menu.classList.toggle(&#039;active&#039;);
                                     console_error_menu.style.zIndex = largestZIndex++;
+                                    zindexwindow_addnavy()
+                                })
+                            );
+                        
+                            document.querySelectorAll(&#039;.kakeibo_btn&#039;).forEach(testbtn =&gt;
+                                testbtn.addEventListener(&#039;click&#039;, () =&gt; {
+                                    kakeibo_menu.classList.toggle(&#039;active&#039;);
+                                    kakeibo_menu.style.zIndex = largestZIndex++;
                                     zindexwindow_addnavy()
                                 })
                             );
@@ -9241,14 +9256,17 @@
                                     document.querySelector(&#039;.test_allwindow&#039;).style.display = &quot;block&quot;;
                                     sound3()
                                 }
-                                if (!objective_title_form.objective_title_area.value == &quot;&quot; || !objective_form.objective_area.value == &quot;&quot;) {
+                                if (!objective_title_form.objective_title_area.value == &quot;&quot; &amp;&amp; !objective_form.objective_area.value == &quot;&quot;) {
                                     let objectiveTitleData = document.objective_title_form.objective_title_area.value;
                                     localStorage.setItem(&#039;objectiveTitleData&#039;, objectiveTitleData);
                                     let objectiveData = document.objective_form.objective_area.value;
                                     localStorage.setItem(&#039;objectiveData&#039;, objectiveData);
                                     localStorage.removeItem(&#039;objective_area&#039;);
+                                    document.querySelector(&#039;.objective_title&#039;).textContent = &quot;objective sheet(save)&quot;;
                                 }
-                        
+                            }
+                            if (localStorage.getItem(&#039;objectiveTitleData&#039;) &amp;&amp; localStorage.getItem(&#039;objectiveData&#039;)) {
+                                document.querySelector(&#039;.objective_title&#039;).textContent = &quot;objective sheet(save keep)&quot;;
                             }
                         
                             document.querySelector(&#039;.note_close&#039;).addEventListener(&#039;click&#039;, function () {
@@ -9305,11 +9323,25 @@
                             localStorage.removeItem(&#039;objective_area&#039;)
                         
                             document.querySelectorAll(&#039;.objective_title_area,.objective_area&#039;).forEach(function (objectives_area) {
-                                objectives_area.addEventListener(&#039;keyup&#039;, function () {
-                                    console.log(&quot;objective_area&quot;)
-                                    localStorage.setItem(&#039;objective_area&#039;, objective_menu);
+                                objectives_area.addEventListener(&quot;keydown&quot;, function (event) {
+                                    if (event.ctrlKey &amp;&amp; event.key === &#039;s&#039;) {
+                                        event.preventDefault(); // Cancel the default action
+                                    } else {
+                                        objective_title(event);
+                                    }
+                                    objectives_area.addEventListener(&quot;keyup&quot;, function (event) {
+                                        if (event.ctrlKey &amp;&amp; event.key === &#039;s&#039;) {
+                                            objective_save()
+                                        }
+                                    })
                                 });
                             });
+                            function objective_title() {
+                                objectiveData_clear();
+                                objective_resize();
+                                document.querySelector(&#039;.objective_title&#039;).textContent = &quot;*objective sheet&quot;;
+                                localStorage.setItem(&#039;objective_area&#039;, objective_menu);
+                            }
                         
                             document.querySelector(&#039;.camera_close&#039;).addEventListener(&#039;mouseup&#039;, function () {
                                 setTimeout(() =&gt; {
@@ -9387,8 +9419,7 @@
                                 localStorage.removeItem(&#039;objectiveData&#039;);
                                 localStorage.removeItem(&#039;objectiveTitleData&#039;);
                                 localStorage.removeItem(&#039;objective_area&#039;);
-                                document.querySelector(&quot;.objective_area&quot;).value = &#039;&#039;;
-                                document.querySelector(&quot;.objective_title_area&quot;).value = &#039;&#039;;
+                                document.querySelector(&#039;.objective_title&#039;).textContent = &quot;objective sheet&quot;;
                             }
                         
                             function resetShowLength() {
@@ -9413,7 +9444,6 @@
                                         save()
                                     }
                                 })
-                        
                             });
                         
                             document.addEventListener(&#039;keyup&#039;, function (event) {
@@ -9569,11 +9599,12 @@
                                 evt.preventDefault();
                             });
                             dr.addEventListener(&#039;drop&#039;, function (evt) {
+                                evt.preventDefault();
                                 if (!localStorage.getItem(&#039;textdropdata&#039;)) {
-                                    evt.target.textContent = evt.dataTransfer.getData(&#039;text&#039;);
+                                    evt.target.textContent += evt.dataTransfer.getData(&#039;text&#039;); // 新しいテキストを追加
                                 } else {
-                                    document.querySelector(&#039;.window_error_text&#039;).textContent = &quot;テキストが保存されているため、ドラッグした文字をドロップできません!&quot;
-                                    error_windows.classList.remove(&#039;active&#039;)
+                                    document.querySelector(&#039;.window_error_text&#039;).textContent = &quot;テキストが保存されているため、ドラッグした文字をドロップできません!&quot;;
+                                    error_windows.classList.remove(&#039;active&#039;);
                                     document.querySelector(&#039;.test_allwindow&#039;).style.display = &quot;block&quot;;
                                     sound3();
                                 }
@@ -12516,6 +12547,125 @@
                             };
                         
                         
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                            document.addEventListener(&#039;DOMContentLoaded&#039;, () =&gt; {
+                                kakeibo_loadEntries();
+                                kakeibo_setCurrentDateTime();
+                            });
+                        
+                            function kakeibo_setCurrentDateTime() {
+                                const now = new Date();
+                                const date = now.toISOString().split(&#039;T&#039;)[0];
+                                const time = now.toTimeString().split(&#039; &#039;)[0].slice(0, 5);
+                        
+                                document.getElementById(&#039;date&#039;).value = date;
+                                document.getElementById(&#039;time&#039;).value = time;
+                            }
+                        
+                            function kakeibo_addEntry() {
+                                const type = document.getElementById(&#039;type&#039;).value;
+                                const amount = parseFloat(document.getElementById(&#039;amount&#039;).value) || 0;
+                                const description = document.getElementById(&#039;description&#039;).value;
+                                const date = document.getElementById(&#039;date&#039;).value;
+                                const time = document.getElementById(&#039;time&#039;).value;
+                        
+                                const entry = { type, amount, description, date, time };
+                                kakeibo_saveEntry(entry);
+                                kakeibo_displayEntries();
+                                kakeibo_calculateTotal();
+                            }
+                        
+                            function kakeibo_saveEntry(entry) {
+                                let entries = JSON.parse(localStorage.getItem(&#039;entries&#039;)) || [];
+                                entries.push(entry);
+                                localStorage.setItem(&#039;entries&#039;, JSON.stringify(entries));
+                            }
+                        
+                            function kakeibo_loadEntries() {
+                                kakeibo_displayEntries();
+                                kakeibo_calculateTotal();
+                            }
+                        
+                            function kakeibo_displayEntries() {
+                                const entries = JSON.parse(localStorage.getItem(&#039;entries&#039;)) || [];
+                                const entriesContainer = document.getElementById(&#039;entries&#039;);
+                                entriesContainer.innerHTML = &#039;&#039;;
+                        
+                                entries.forEach((entry, index) =&gt; {
+                                    const entryDiv = document.createElement(&#039;div&#039;);
+                                    entryDiv.classList.add(&#039;entry&#039;);
+                                    const color = entry.type === &#039;収入&#039; ? &#039;red&#039; : &#039;blue&#039;;
+                                    entryDiv.innerHTML = `
+                                        &lt;div class=&quot;border&quot; style=&quot;color: ${color};&quot;&gt;&lt;strong&gt;${entry.type}&lt;/strong&gt;: &yen;${entry.amount} - ${entry.description} (${entry.date} ${entry.time})&lt;/div&gt;
+                                        &lt;button class=&quot;button2 medium&quot; onclick=&quot;kakeibo_deleteEntry(${index})&quot;&gt;削除&lt;/button&gt;
+                                    `;
+                                    entriesContainer.appendChild(entryDiv);
+                                });
+                            }
+                        
+                            function kakeibo_deleteEntry(index) {
+                                let entries = JSON.parse(localStorage.getItem(&#039;entries&#039;)) || [];
+                                entries.splice(index, 1);
+                                localStorage.setItem(&#039;entries&#039;, JSON.stringify(entries));
+                                kakeibo_displayEntries();
+                                kakeibo_calculateTotal();
+                            }
+                        
+                            function kakeibo_calculateTotal() {
+                                const entries = JSON.parse(localStorage.getItem(&#039;entries&#039;)) || [];
+                                let total = 0;
+                        
+                                entries.forEach(entry =&gt; {
+                                    if (entry.type === &#039;収入&#039;) {
+                                        total += entry.amount;
+                                    } else {
+                                        total -= entry.amount;
+                                    }
+                                });
+                                document.getElementById(&#039;total&#039;).innerText = `合計: &yen;${total}`;
+                            }
+                        
+                        
+                            const slider = document.getElementById(&#039;opacitySlider&#039;);
+                            const targetDiv = document.querySelector(&#039;.screen_light&#039;);
+                            const valueDisplay = document.getElementById(&#039;valueDisplay&#039;);
+                        
+                            // ローカルストレージから保存された透明度を取得
+                            const savedOpacity = localStorage.getItem(&#039;divOpacity&#039;);
+                            if (savedOpacity !== null) {
+                                targetDiv.style.opacity = 1 - savedOpacity;
+                                slider.value = savedOpacity * 100;
+                                valueDisplay.textContent = slider.value;
+                            }
+                        
+                            slider.addEventListener(&#039;input&#039;, () =&gt; {
+                                const opacityValue = 1 - (slider.value / 100);
+                                targetDiv.style.opacity = opacityValue;
+                                valueDisplay.textContent = slider.value;
+                        
+                                // 透明度をローカルストレージに保存
+                                localStorage.setItem(&#039;divOpacity&#039;, 1 - opacityValue);
+                            });
+                        
+                        
                         };
 
                 </textarea>
@@ -13344,7 +13494,7 @@
 
                     <div class="child_windows objective_menu back_silver resize active">
                         <div class="title">
-                            <span class="title_icon"></span><span>objective sheet</span>
+                            <span class="title_icon"></span><span class="objective_title">objective sheet</span>
                         </div>
 
                         <div class="title_buttons">
@@ -13605,6 +13755,10 @@
                                 </div>
                                 <div class="window_files test_button44">
                                     <li>memory game</li><span class="window_file_icon"></span>
+                                    <li class="windowfile_time"></li>
+                                </div>
+                                <div class="window_files kakeibo_btn">
+                                    <li>kakeibo</li><span class="window_file_icon"></span>
                                     <li class="windowfile_time"></li>
                                 </div>
                             </ul>
@@ -16174,6 +16328,49 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         </div>
                     </div>
 
+                    <div class="child_windows kakeibo_menu resize back_silver active">
+                        <div class="title">
+                            <span class="title_icon"></span><span>kakeibo</span>
+                        </div>
+
+                        <div class="title_buttons">
+                            <span class="drag_button">&nbsp;</span>
+                            <span class="close_button button2"></span>
+                            <span class="bigscreen_button button2"></span>
+                            <span class="minscreen_button button2"></span>
+                            <span class="minimization_button button2"></span><br>
+                        </div>
+                        <div class="window_contents back_silver large">
+                            <span class="x-large bold border2">家計簿</span>
+                            <div class="input-group">
+                                <label for="type">タイプ:</label>
+                                <select id="type" class="border medium back_silver">
+                                    <option value="収入">収入</option>
+                                    <option value="支出">支出</option>
+                                </select>
+                            </div>
+                            <div class="input-group border">
+                                <label for="amount">金額:</label>
+                                <input type="number" id="amount" class="border2 large" placeholder="金額を入力">
+                            </div>
+                            <div class="input-group border">
+                                <label for="description">内容:</label>
+                                <textarea id="description" class="border2 large" placeholder="内容を入力"></textarea>
+                            </div>
+                            <div class="input-group border">
+                                <label for="date" class="border">日付:</label>
+                                <input type="date" id="date" class="border2 large">
+                            </div>
+                            <div class="input-group border">
+                                <label for="time" class="border">時間:</label>
+                                <input type="time" id="time" class="border2 large">
+                            </div>
+                            <button onclick="kakeibo_addEntry()" class="button2 medium">追加</button>
+                            <div class="total" id="total"></div>
+                            <div id="entries" class="border"></div><br>
+                        </div>
+                    </div>
+
                     <div class="child_windows nexser_guidebook_menu resize active">
                         <div class="title">
                             <span class="title_icon"></span><span>nexser guidebook</span>
@@ -16491,11 +16688,9 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             <div class="screen_light_range">
                                 <span class="button sit_button" onclick="lightchild()">&nbsp;SlT&nbsp;</span>
                                 <div class="screen_light_range_child border">
-                                    <textarea class="light_value border" maxlength="4"
-                                        onkeydown="if(event.keyCode == 13){return false;}"></textarea><br>
-                                    <button class="button2" onclick="lights()">sbmit</button>
-                                    <p>0~1</p>
-                                    <p>〇・</p>
+                                    <input type="range" id="opacitySlider" min="0" max="100" value="100">
+                                    <span id="valueDisplay"
+                                        style="position: absolute; right: 0px; margin-top: 2.5px; margin-right: 4px;">100</span>
                                 </div>
                             </div>
                             <div class="inport_icon border">
