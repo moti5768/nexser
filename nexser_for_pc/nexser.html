@@ -961,7 +961,7 @@
                                     <li class="windowfile_time"></li>
                                 </div>
                                 <div class="window_files test_button32">
-                                    <li>cpu calc</li><span class="window_file_icon"></span>
+                                    <li>cpu bench</li><span class="window_file_icon"></span>
                                     <li class="windowfile_time"></li>
                                 </div>
                                 <div class="window_files test_button36">
@@ -2826,9 +2826,9 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                     </div>
                     <!-- !カレンダー -->
 
-                    <div class="child_windows cpu_calc_menu back_silver active">
+                    <div class="child_windows cpu_bench_menu back_silver active">
                         <div class="title">
-                            <span class="title_icon"></span><span>cpu calc</span>
+                            <span class="title_icon"></span><span>cpu bench</span>
                         </div>
 
                         <div class="title_buttons cpubuttons" style="display: none;">
@@ -2854,57 +2854,39 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                 style="width: 700px; height: 400px; background: linear-gradient(45deg, silver, blue);">
                                 <div style="border: solid 2px black; height: 395px;">
                                     <p style="font-size: 80px; text-align: center; padding-top: 125px;">
-                                        <span class="border2">CPU CALC</span>
-                                        <span class="large border2" style="position: absolute; bottom: 125px;">version
+                                        <span class="border2">CPU BENCH</span>
+                                        <span class="large white_text"
+                                            style="position: absolute; bottom: 10px; right: 10px;">version
                                             0.1</span>
                                     </p>
                                     <p
                                         style="font-size: 20px; padding-top: 25px; position: absolute; top: 25px; left: 5px;">
                                         <span class="border2 nexser_title_text"></span>
                                     </p>
-
-                                    <ul class="white_text"
-                                        style="column-count: 2; font-size: 40px; width: 100px; opacity: 0.8; text-align: center; position: absolute; bottom: 10px; right: 50px;">
-                                        <li>+</li>
-                                        <li>－</li>
-                                        <li>×</li>
-                                        <li>÷</li>
-                                    </ul>
                                 </div>
                             </div>
 
-                            <div class="cpumenu_2" style="width: 500px; height: 300px; display: none;">
-                                <p class="x-large white_text" style="background-color: black;">cpu calc</p>
-                                <span class="border2">10000</span>
-                                <button class="button2" onclick="cpubench()">CPU CALC RUN</button>
+                            <div class="cpumenu_2" style="width: 800px; height: 450px; display: none;">
+                                <p class="x-large white_text" style="background-color: black;">cpu bench</p>
+
+                                <div style="display: flex;">
+                                    <canvas id="benchmarkCanvas" style="background: black;" width="800"
+                                        height="300"></canvas>
+                                </div>
+
+                                <button class="button2 cpurun_btn large apply_button2" style="width: 200px;"
+                                    onclick="cpubench()">&emsp;CPU BENCH RUN&emsp;</button>
                                 <p class="cpu_run_text border"
                                     style="width: auto; height: 20px; background-color: white;">
                                 </p>
 
-                                <span class="border2">15000</span>
-                                <button class="button2" onclick="cpubench2()">CPU CALC RUN</button>
-                                <p class="cpu_run_text2 border"
-                                    style="width: auto; height: 20px; background-color: white;">
-                                </p>
-
-                                <span class="border2">20000</span>
-                                <button class="button2" onclick="cpubench3()">CPU CALC RUN</button>
-                                <p class="cpu_run_text3 border"
-                                    style="width: auto; height: 20px; background-color: white;">
-                                </p>
-
-                                <span class="border2">25000</span>
-                                <button class="button2" onclick="cpubench4()">CPU CALC RUN</button>
-                                <p class="cpu_run_text4 border"
-                                    style="width: auto; height: 20px; background-color: white;">
-                                </p>
-                                <span class="button2" onclick="cpubench_clear()">CPU RUN CLEAR</span>
+                                <span class="button2 cpurun_btn_clear pointer_none" onclick="cpubench_clear()">&emsp;CPU
+                                    BENCH CLEAR&emsp;</span>
 
                                 <div style="position: absolute; bottom: 0; width: 100%;">
                                     <span class="nexser_title_text"></span>
                                     <p style="display: block; position: absolute; bottom: 0px; right: 0px;">
-                                        cpu calc version
-                                        0.1
+                                        cpu bench version: 0.1
                                     </p>
                                 </div>
                             </div>

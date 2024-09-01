@@ -68,7 +68,7 @@ if (ua.includes("mobile")) {
     const browser_menu = document.querySelector('.browser_menu');
     const taskbar_setting_menu = document.querySelector('.taskbar_setting_menu');
     const youtubevideo_menu = document.querySelector('.youtubevideo_menu');
-    const cpu_calc_menu = document.querySelector('.cpu_calc_menu');
+    const cpu_bench_menu = document.querySelector('.cpu_bench_menu');
     const device_menu = document.querySelector('.device_menu');
     const command_help_menu = document.querySelector('.command_help_menu');
     const omikuji_menu = document.querySelector('.omikuji_menu');
@@ -2476,7 +2476,6 @@ if (ua.includes("mobile")) {
                     setTimeout(() => {
                         localstorage_details_menu.classList.remove('active');
                         localstorage_details_menu.style.zIndex = largestZIndex++;
-
                         resolve()
                     }, 2000);
                 })
@@ -2563,7 +2562,7 @@ if (ua.includes("mobile")) {
                 break;
             case 'cpu/bench':
                 prompt_text2.style.color = "";
-                cpu_calc_menu.classList.remove('active');
+                cpu_bench_menu.classList.remove('active');
                 cpucalc_open();
                 break;
             case 'nexser/data/clear':
@@ -3725,8 +3724,8 @@ if (ua.includes("mobile")) {
     );
     document.querySelectorAll('.test_button32').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
-            cpu_calc_menu.classList.toggle('active');
-            cpu_calc_menu.style.zIndex = largestZIndex++;
+            cpu_bench_menu.classList.toggle('active');
+            cpu_bench_menu.style.zIndex = largestZIndex++;
 
             cpucalc_open();
         })
@@ -3810,9 +3809,9 @@ if (ua.includes("mobile")) {
 
     function cpucalc_open() {
         const cpumenu1 = document.querySelector('.cpumenu_1');
-        document.getElementsByClassName('cpu_calc_menu')[0].style.zIndex = largestZIndex++;
-
-        if (!cpu_calc_menu.classList.contains('active') || cpumenu1.style.display == "block") {
+        document.getElementsByClassName('cpu_bench_menu')[0].style.zIndex = largestZIndex++;
+        zindexwindow_addnavy()
+        if (!cpu_bench_menu.classList.contains('active') || cpumenu1.style.display == "block") {
             setTimeout(() => {
                 document.querySelector('.cpumenu_1').style.display = "none";
                 document.querySelector('.cpubuttons').style.display = "none";
@@ -3914,7 +3913,6 @@ if (ua.includes("mobile")) {
             alltitle_navyreomve();
             assignClassToFrontmostElement('child_windows:not(.active)', 'navy');
             titlecolor_set();
-            startmenu_close();
         }, 0);
     }
 
@@ -5703,62 +5701,58 @@ if (ua.includes("mobile")) {
         playerWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
     }
 
+
+
+
+
+
+
+    let isStopped = false; // ストップフラグ
+
     function cpubench() {
-        start = (new Date()).getTime();
-        n = 0;
-        for (i = 0; i < 10000; i++) {
-            for (j = 0; j < 10000; j++) {
-                n = (n + i) / j;
+        const cpu_canvas = document.getElementById('benchmarkCanvas');
+        const cpu_ctx = cpu_canvas.getContext('2d');
+        const numRectangles = 10000;
+        const batchSize = 10; // 一度に描画する四角形の数
+        let i = 0;
+        cpubench_clear()
+        isStopped = false;
+        const startTime = performance.now();
+        document.querySelector('.cpurun_btn').classList.add('pointer_none')
+        document.querySelector('.cpu_run_text').textContent = "描画中...";
+
+        function drawBatch() {
+            if (isStopped) return; // ストップフラグが立っている場合は描画を中止
+
+            for (let j = 0; j < batchSize && i < numRectangles; j++, i++) {
+                cpu_ctx.fillStyle = `rgb(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255})`;
+                cpu_ctx.fillRect(Math.random() * cpu_canvas.width, Math.random() * cpu_canvas.height, 50, 50);
+            }
+            if (i < numRectangles) {
+                requestAnimationFrame(drawBatch);
+            } else {
+                const endTime = performance.now();
+                const timeTaken = Math.floor((endTime - startTime) / 1000); // ミリ秒を秒に変換し、少数を切り捨て
+                document.querySelector('.cpu_run_text').textContent = `四角形を${numRectangles}個描画するのにかかった時間: ${timeTaken}秒`;
+                document.querySelector('.cpurun_btn').classList.remove('pointer_none')
+                document.querySelector('.cpurun_btn_clear').classList.remove('pointer_none')
             }
         }
-        end = (new Date()).getTime();
-        cputime = (end - start) / 1000;
-        document.querySelector('.cpu_run_text').textContent = ('計算時間は' + cputime + '秒でした');
+        drawBatch();
     }
-    function cpubench2() {
-        start = (new Date()).getTime();
-        n = 0;
-        for (i = 0; i < 15000; i++) {
-            for (j = 0; j < 15000; j++) {
-                n = (n + i) / j;
-            }
-        }
-        end = (new Date()).getTime();
-        cputime = (end - start) / 1000;
-        document.querySelector('.cpu_run_text2').textContent = ('計算時間は' + cputime + '秒でした');
-    }
-    function cpubench3() {
-        start = (new Date()).getTime();
-        n = 0;
-        for (i = 0; i < 20000; i++) {
-            for (j = 0; j < 20000; j++) {
-                n = (n + i) / j;
-            }
-        }
-        end = (new Date()).getTime();
-        cputime = (end - start) / 1000;
-        document.querySelector('.cpu_run_text3').textContent = ('計算時間は' + cputime + '秒でした');
-    }
-    function cpubench4() {
-        start = (new Date()).getTime();
-        n = 0;
-        for (i = 0; i < 25000; i++) {
-            for (j = 0; j < 25000; j++) {
-                n = (n + i) / j;
-            }
-        }
-        end = (new Date()).getTime();
-        cputime = (end - start) / 1000;
-        document.querySelector('.cpu_run_text4').textContent = ('計算時間は' + cputime + '秒でした');
-    }
+
+
 
     function cpubench_clear() {
+        isStopped = true;
+        const cpu_canvas = document.getElementById('benchmarkCanvas');
+        const cpu_ctx = cpu_canvas.getContext('2d');
+        cpu_ctx.clearRect(0, 0, cpu_canvas.width, cpu_canvas.height);
+        i = 0; // カウンターをリセット
         document.querySelector('.cpu_run_text').textContent = "";
-        document.querySelector('.cpu_run_text2').textContent = "";
-        document.querySelector('.cpu_run_text3').textContent = "";
-        document.querySelector('.cpu_run_text4').textContent = "";
+        document.querySelector('.cpurun_btn').classList.remove('pointer_none')
+        document.querySelector('.cpurun_btn_clear').classList.add('pointer_none')
     }
-
 
     function savertime() {
         const stime = document.getElementsByClassName('saver_second')[0].value;
@@ -6456,7 +6450,6 @@ if (ua.includes("mobile")) {
             prompt_shell_menu.closest('.child_windows');
             prompt_shell_menu.classList.remove('active');
             prompt_shell_menu.style.zIndex = largestZIndex++;
-
             shell_resize()
         });
         setTimeout(() => {
@@ -6494,7 +6487,6 @@ if (ua.includes("mobile")) {
                 localStorage.setItem('maxSize', maxSize);
                 displayLocalStorageDetails();
                 document.querySelector('.local_memory_button').classList.remove('pointer_none');
-
             }, totalDelay + 500);
         }, 10);
     }
@@ -8379,6 +8371,7 @@ if (ua.includes("mobile")) {
             // console.log('Active class count changed:', currentActiveCount);
             previousActiveCount = currentActiveCount;
             zindexwindow_addnavy()
+            startmenu_close()
         }
     };
 
