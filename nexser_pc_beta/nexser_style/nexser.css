@@ -935,7 +935,7 @@ input[type="file"] {
     width: 300px;
 }
 
-.cpu_calc_menu {
+.cpu_bench_menu {
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
@@ -2844,6 +2844,10 @@ progress::-webkit-progress-value {
     opacity: 0.5;
     pointer-events: none;
     z-index: 0;
+}
+
+.resize_none {
+    resize: none;
 }
 
 /* window resizes */

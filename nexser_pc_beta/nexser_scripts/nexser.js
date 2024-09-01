@@ -68,7 +68,7 @@ if (ua.includes("mobile")) {
     const browser_menu = document.querySelector('.browser_menu');
     const taskbar_setting_menu = document.querySelector('.taskbar_setting_menu');
     const youtubevideo_menu = document.querySelector('.youtubevideo_menu');
-    const cpu_calc_menu = document.querySelector('.cpu_calc_menu');
+    const cpu_bench_menu = document.querySelector('.cpu_bench_menu');
     const device_menu = document.querySelector('.device_menu');
     const command_help_menu = document.querySelector('.command_help_menu');
     const omikuji_menu = document.querySelector('.omikuji_menu');
@@ -1415,48 +1415,48 @@ if (ua.includes("mobile")) {
             const element = document.querySelector('.my_computer');
             element.closest('.child_windows');
             element.classList.remove('active');
-            zindexwindow_addnavy()
+
         }
         if (localStorage.getItem('startup_note')) {
             const element = document.querySelector('.note_pad');
             element.closest('.child_windows');
             element.classList.remove('active');
-            zindexwindow_addnavy();
+
         }
         if (localStorage.getItem('startup_color')) {
             const element = document.querySelector('.color_menu');
             element.classList.remove('active');
-            zindexwindow_addnavy()
+
         }
         if (localStorage.getItem('startup_screen')) {
             const element = document.querySelector('.screen_text_menu');
             element.closest('.child_windows');
             element.classList.remove('active');
-            zindexwindow_addnavy()
+
         }
         if (localStorage.getItem('startup_htmlviewer_edit')) {
             const element = document.querySelector('.htmlviewer_edit_menu');
             element.closest('.child_windows');
             element.classList.remove('active');
-            zindexwindow_addnavy()
+
         }
         if (localStorage.getItem('startup_guidebook')) {
             const element = document.querySelector('.nexser_guidebook_menu');
             element.closest('.child_windows');
             element.classList.remove('active');
-            zindexwindow_addnavy()
+
         }
         if (localStorage.getItem('startup_objective')) {
             const element = document.querySelector('.objective_menu');
             element.closest('.child_windows');
             element.classList.remove('active');
-            zindexwindow_addnavy()
+
         }
         if (localStorage.getItem('startup_calendar')) {
             const element = document.querySelector('.calendar_menu');
             element.closest('.child_windows');
             element.classList.remove('active');
-            zindexwindow_addnavy()
+
         }
         titlecolor_set()
     }
@@ -2299,7 +2299,7 @@ if (ua.includes("mobile")) {
                             htmlviewer_run_menu.closest('.child_windows');
                             htmlviewer_run_menu.classList.remove('active');
                             htmlviewer_run_menu.style.zIndex = largestZIndex++;
-                            zindexwindow_addnavy();
+
                         });
                         preview.srcdoc = test999;
 
@@ -2365,7 +2365,7 @@ if (ua.includes("mobile")) {
                             htmlviewer_run_menu.closest('.child_windows');
                             htmlviewer_run_menu.classList.remove('active');
                             htmlviewer_run_menu.style.zIndex = largestZIndex++;
-                            zindexwindow_addnavy();
+
                         });
                         preview.srcdoc = test9992;
 
@@ -2476,7 +2476,6 @@ if (ua.includes("mobile")) {
                     setTimeout(() => {
                         localstorage_details_menu.classList.remove('active');
                         localstorage_details_menu.style.zIndex = largestZIndex++;
-                        zindexwindow_addnavy();
                         resolve()
                     }, 2000);
                 })
@@ -2486,7 +2485,7 @@ if (ua.includes("mobile")) {
                 prompt_text2.style.color = "";
                 command_help_menu.classList.remove('active');
                 command_help_menu.style.zIndex = largestZIndex++;
-                zindexwindow_addnavy();
+
                 break;
             case 'screen/full':
                 full();
@@ -2563,7 +2562,7 @@ if (ua.includes("mobile")) {
                 break;
             case 'cpu/bench':
                 prompt_text2.style.color = "";
-                cpu_calc_menu.classList.remove('active');
+                cpu_bench_menu.classList.remove('active');
                 cpucalc_open();
                 break;
             case 'nexser/data/clear':
@@ -2592,7 +2591,7 @@ if (ua.includes("mobile")) {
                 prompt_text2.style.color = "";
                 document.querySelector('.test_site_menu').classList.remove('active');
                 test_site_menu.style.zIndex = largestZIndex++;
-                zindexwindow_addnavy()
+
                 break;
 
             case 'startmenu(console(error))=>true':
@@ -2627,7 +2626,7 @@ if (ua.includes("mobile")) {
                 prompt_text2.style.color = "red";
                 break;
         }
-        zindexwindow_addnavy()
+
         titlecolor_set()
     }
 
@@ -2640,7 +2639,7 @@ if (ua.includes("mobile")) {
             prompt_shell_menu.closest('.child_windows');
             prompt_shell_menu.classList.remove('active');
             prompt_shell_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy();
+            zindexwindow_addnavy()
         });
     }
     function shellmenu_close() {
@@ -2781,7 +2780,7 @@ if (ua.includes("mobile")) {
     })
     document.querySelectorAll('.bigscreen_button').forEach(function (bigscreen_button) {
         bigscreen_button.addEventListener('mousedown', function () {
-            zindexwindow_addnavy()
+
             const elements = document.querySelector('.title.navy');
             const elements2 = elements.closest('.child_windows');
             elements2.dataset.originalWidth = elements2.style.width;
@@ -3035,7 +3034,7 @@ if (ua.includes("mobile")) {
             }
             setTimeout(() => {
                 windowleft.style.transition = "";
-                zindexwindow_addnavy()
+
                 titlecolor_set()
             }, 150);
 
@@ -3088,7 +3087,7 @@ if (ua.includes("mobile")) {
             }
             setTimeout(() => {
                 windowright.style.transition = "";
-                zindexwindow_addnavy()
+
                 titlecolor_set()
             }, 150);
 
@@ -3261,7 +3260,7 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.title, .drag_button').forEach(function (title) {
         title.addEventListener('mousedown', function () {
             setTimeout(() => {
-                zindexwindow_addnavy()
+
                 titlecolor_set()
             }, 100);
         })
@@ -3380,7 +3379,7 @@ if (ua.includes("mobile")) {
             getLargestZIndex('.child_windows');
             z_index.textContent = getLargestZIndex('.child_windows');
             window_z_index = zindexchildwindows.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy();
+            zindexwindow_addnavy()
             titlecolor_set();
             const elements = document.querySelectorAll('.rectangle');
             elements.forEach(element => {
@@ -3391,9 +3390,9 @@ if (ua.includes("mobile")) {
 
             zindexchildwindows.scrollTop = 0;
             zindexchildwindows.scrollLeft = 0;
-            zindexwindow_addnavy()
+
             setTimeout(() => {
-                zindexwindow_addnavy()
+
                 titlecolor_set()
             }, 100);
             setTimeout(() => {
@@ -3430,7 +3429,7 @@ if (ua.includes("mobile")) {
         nexser_search.addEventListener('click', function () {
             nexser_search_menu.classList.toggle('active');
             nexser_search_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         });
     });
 
@@ -3455,42 +3454,42 @@ if (ua.includes("mobile")) {
         nexser_guidebook.addEventListener('click', () => {
             nexser_guidebook_menu.classList.toggle('active');
             nexser_guidebook_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.guidebook_window').forEach(guidebook_window =>
         guidebook_window.addEventListener('click', () => {
             guidebook_window_menu.classList.toggle('active');
             guidebook_window_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.guidebook_file').forEach(guidebook_file =>
         guidebook_file.addEventListener('click', () => {
             guidebook_file_menu.classList.toggle('active');
             guidebook_file_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.guidebook_taskbar').forEach(guidebook_taskbar =>
         guidebook_taskbar.addEventListener('click', () => {
             guidebook_taskbar_menu.classList.toggle('active');
             guidebook_taskbar_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.passmenu_button').forEach(passmenu_button =>
         passmenu_button.addEventListener('click', () => {
             password_menu.classList.toggle('active');
             password_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.localstorage_details').forEach(localstorage_details =>
         localstorage_details.addEventListener('click', () => {
             localstorage_details_menu.classList.toggle('active');
             localstorage_details_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
 
@@ -3498,7 +3497,7 @@ if (ua.includes("mobile")) {
         testbtn.addEventListener('click', () => {
             console_error_menu.classList.toggle('active');
             console_error_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
 
@@ -3506,7 +3505,7 @@ if (ua.includes("mobile")) {
         testbtn.addEventListener('click', () => {
             kakeibo_menu.classList.toggle('active');
             kakeibo_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
 
@@ -3514,84 +3513,83 @@ if (ua.includes("mobile")) {
         testbtn.addEventListener('click', () => {
             main.classList.toggle('active');
             main.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy();
         })
     );
     document.querySelectorAll('.test_button2').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             my_computer.classList.toggle('active');
             my_computer.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy();
+
         })
     );
     document.querySelectorAll('.test_button3').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             control.classList.toggle('active');
             control.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy();
+
         })
     );
     document.querySelectorAll('.test_button4').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             color_menu.classList.toggle('active');
             color_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy();
+
         })
     );
     document.querySelectorAll('.test_button5').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             system_menu.classList.toggle('active');
             system_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy();
+
         })
     );
     document.querySelectorAll('.test_button6').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             window_prompt.classList.toggle('active');
             window_prompt.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy();
+
         })
     );
     document.querySelectorAll('.test_button7').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             clock_menu.classList.toggle('active');
             clock_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy();
+
         })
     );
     document.querySelectorAll('.test_button8').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             sound_menu.classList.toggle('active');
             sound_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy();
+
         })
     );
     document.querySelectorAll('.test_button9').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             driver_menu.classList.toggle('active');
             driver_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy();
+
         })
     );
     document.querySelectorAll('.test_button10').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             mouse_menu.classList.toggle('active');
             mouse_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy();
+
         })
     );
     document.querySelectorAll('.test_button11').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             screen_text_menu.classList.toggle('active');
             screen_text_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy();
+
         })
     );
     document.querySelectorAll('.test_button12').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             note_pad.classList.toggle('active');
             note_pad.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
             resizeTextarea()
         })
     );
@@ -3599,42 +3597,42 @@ if (ua.includes("mobile")) {
         testbtn.addEventListener('click', () => {
             text_drop_menu.classList.toggle('active');
             text_drop_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button14').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             windowmode_menu.classList.toggle('active');
             windowmode_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button15').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             accessory_menu.classList.toggle('active');
             accessory_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button16').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             calc_menu.classList.toggle('active');
             calc_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button17').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             nexser_sound_menu.classList.toggle('active');
             nexser_sound_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button18').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             camera_menu.classList.toggle('active');
             camera_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
             cameraframe_resize()
         })
     );
@@ -3642,63 +3640,63 @@ if (ua.includes("mobile")) {
         testbtn.addEventListener('click', () => {
             htmlviewer_edit_menu.classList.toggle('active');
             htmlviewer_edit_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button20').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             htmlviewer_run_menu.classList.toggle('active');
             htmlviewer_run_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button21').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             uploadvideo_menu.classList.toggle('active');
             uploadvideo_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button22').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             font_menu.classList.toggle('active');
             font_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button23').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             file_setting_menu.classList.toggle('active');
             file_setting_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button24').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             debug_menu.classList.toggle('active');
             debug_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button25').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             file_download_menu.classList.toggle('active');
             file_download_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button26').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             display_menu.classList.toggle('active');
             display_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button27').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             stopwatch_menu.classList.toggle('active');
             stopwatch_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy();
+
             timerreset()
         })
     );
@@ -3706,14 +3704,14 @@ if (ua.includes("mobile")) {
         testbtn.addEventListener('click', () => {
             comment_menu.classList.toggle('active');
             comment_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button30').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             objective_menu.classList.toggle('active');
             objective_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
             objective_resize()
         })
     );
@@ -3721,14 +3719,14 @@ if (ua.includes("mobile")) {
         testbtn.addEventListener('click', () => {
             calendar_menu.classList.toggle('active');
             calendar_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button32').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
-            cpu_calc_menu.classList.toggle('active');
-            cpu_calc_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+            cpu_bench_menu.classList.toggle('active');
+            cpu_bench_menu.style.zIndex = largestZIndex++;
+
             cpucalc_open();
         })
     );
@@ -3736,21 +3734,21 @@ if (ua.includes("mobile")) {
         testbtn.addEventListener('click', () => {
             browser_menu.classList.toggle('active');
             browser_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button35').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             taskbar_setting_menu.classList.toggle('active');
             taskbar_setting_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button36').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             youtubevideo_menu.classList.toggle('active');
             youtubevideo_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
             youtubeframe_resize()
         })
     );
@@ -3758,35 +3756,35 @@ if (ua.includes("mobile")) {
         testbtn.addEventListener('click', () => {
             device_menu.classList.toggle('active');
             device_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button38').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             omikuji_menu.classList.toggle('active');
             omikuji_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button39').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             localstorage_monitor_menu.classList.toggle('active');
             localstorage_monitor_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button40').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             paint_menu.classList.toggle('active');
             paint_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button42').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             nexser_files_menu.classList.toggle('active');
             nexser_files_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy();
+
             setTimeout(() => {
                 nexser_files_output_remove()
                 nexser_files_windowload()
@@ -3797,7 +3795,7 @@ if (ua.includes("mobile")) {
         testbtn.addEventListener('click', () => {
             url_drop_menu.classList.toggle('active');
             url_drop_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
             url_drop_resize()
         })
     );
@@ -3805,15 +3803,15 @@ if (ua.includes("mobile")) {
         testbtn.addEventListener('click', () => {
             alarm_menu.classList.toggle('active');
             alarm_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
 
     function cpucalc_open() {
         const cpumenu1 = document.querySelector('.cpumenu_1');
-        document.getElementsByClassName('cpu_calc_menu')[0].style.zIndex = largestZIndex++;
-
-        if (!cpu_calc_menu.classList.contains('active') || cpumenu1.style.display == "block") {
+        document.getElementsByClassName('cpu_bench_menu')[0].style.zIndex = largestZIndex++;
+        zindexwindow_addnavy()
+        if (!cpu_bench_menu.classList.contains('active') || cpumenu1.style.display == "block") {
             setTimeout(() => {
                 document.querySelector('.cpumenu_1').style.display = "none";
                 document.querySelector('.cpubuttons').style.display = "none";
@@ -3845,28 +3843,28 @@ if (ua.includes("mobile")) {
         testbtn.addEventListener('click', () => {
             tetris_mneu.classList.toggle('active');
             tetris_mneu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button34').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             bom_menu.classList.toggle('active');
             bom_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button41').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             othello_menu.classList.toggle('active');
             othello_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button44').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             memory_game_menu.classList.toggle('active');
             memory_game_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
 
@@ -3915,7 +3913,6 @@ if (ua.includes("mobile")) {
             alltitle_navyreomve();
             assignClassToFrontmostElement('child_windows:not(.active)', 'navy');
             titlecolor_set();
-            startmenu_close();
         }, 0);
     }
 
@@ -5048,7 +5045,7 @@ if (ua.includes("mobile")) {
             note_pad.classList.add('active');
             note_pad.classList.remove('selectwindows')
             test_windows_button()
-            zindexwindow_addnavy()
+
         }, 100);
     }
 
@@ -5661,7 +5658,7 @@ if (ua.includes("mobile")) {
             htmlviewer_run_menu.closest('.child_windows');
             htmlviewer_run_menu.classList.remove('active');
             htmlviewer_run_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy();
+            zindexwindow_addnavy()
         });
         preview.srcdoc = editor.value;
     }
@@ -5704,62 +5701,58 @@ if (ua.includes("mobile")) {
         playerWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
     }
 
+
+
+
+
+
+
+    let isStopped = false; // ストップフラグ
+
     function cpubench() {
-        start = (new Date()).getTime();
-        n = 0;
-        for (i = 0; i < 10000; i++) {
-            for (j = 0; j < 10000; j++) {
-                n = (n + i) / j;
+        const cpu_canvas = document.getElementById('benchmarkCanvas');
+        const cpu_ctx = cpu_canvas.getContext('2d');
+        const numRectangles = 10000;
+        const batchSize = 10; // 一度に描画する四角形の数
+        let i = 0;
+        cpubench_clear()
+        isStopped = false;
+        const startTime = performance.now();
+        document.querySelector('.cpurun_btn').classList.add('pointer_none')
+        document.querySelector('.cpu_run_text').textContent = "描画中...";
+
+        function drawBatch() {
+            if (isStopped) return; // ストップフラグが立っている場合は描画を中止
+
+            for (let j = 0; j < batchSize && i < numRectangles; j++, i++) {
+                cpu_ctx.fillStyle = `rgb(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255})`;
+                cpu_ctx.fillRect(Math.random() * cpu_canvas.width, Math.random() * cpu_canvas.height, 50, 50);
+            }
+            if (i < numRectangles) {
+                requestAnimationFrame(drawBatch);
+            } else {
+                const endTime = performance.now();
+                const timeTaken = Math.floor((endTime - startTime) / 1000); // ミリ秒を秒に変換し、少数を切り捨て
+                document.querySelector('.cpu_run_text').textContent = `四角形を${numRectangles}個描画するのにかかった時間: ${timeTaken}秒`;
+                document.querySelector('.cpurun_btn').classList.remove('pointer_none')
+                document.querySelector('.cpurun_btn_clear').classList.remove('pointer_none')
             }
         }
-        end = (new Date()).getTime();
-        cputime = (end - start) / 1000;
-        document.querySelector('.cpu_run_text').textContent = ('計算時間は' + cputime + '秒でした');
+        drawBatch();
     }
-    function cpubench2() {
-        start = (new Date()).getTime();
-        n = 0;
-        for (i = 0; i < 15000; i++) {
-            for (j = 0; j < 15000; j++) {
-                n = (n + i) / j;
-            }
-        }
-        end = (new Date()).getTime();
-        cputime = (end - start) / 1000;
-        document.querySelector('.cpu_run_text2').textContent = ('計算時間は' + cputime + '秒でした');
-    }
-    function cpubench3() {
-        start = (new Date()).getTime();
-        n = 0;
-        for (i = 0; i < 20000; i++) {
-            for (j = 0; j < 20000; j++) {
-                n = (n + i) / j;
-            }
-        }
-        end = (new Date()).getTime();
-        cputime = (end - start) / 1000;
-        document.querySelector('.cpu_run_text3').textContent = ('計算時間は' + cputime + '秒でした');
-    }
-    function cpubench4() {
-        start = (new Date()).getTime();
-        n = 0;
-        for (i = 0; i < 25000; i++) {
-            for (j = 0; j < 25000; j++) {
-                n = (n + i) / j;
-            }
-        }
-        end = (new Date()).getTime();
-        cputime = (end - start) / 1000;
-        document.querySelector('.cpu_run_text4').textContent = ('計算時間は' + cputime + '秒でした');
-    }
+
+
 
     function cpubench_clear() {
+        isStopped = true;
+        const cpu_canvas = document.getElementById('benchmarkCanvas');
+        const cpu_ctx = cpu_canvas.getContext('2d');
+        cpu_ctx.clearRect(0, 0, cpu_canvas.width, cpu_canvas.height);
+        i = 0; // カウンターをリセット
         document.querySelector('.cpu_run_text').textContent = "";
-        document.querySelector('.cpu_run_text2').textContent = "";
-        document.querySelector('.cpu_run_text3').textContent = "";
-        document.querySelector('.cpu_run_text4').textContent = "";
+        document.querySelector('.cpurun_btn').classList.remove('pointer_none')
+        document.querySelector('.cpurun_btn_clear').classList.add('pointer_none')
     }
-
 
     function savertime() {
         const stime = document.getElementsByClassName('saver_second')[0].value;
@@ -6457,7 +6450,6 @@ if (ua.includes("mobile")) {
             prompt_shell_menu.closest('.child_windows');
             prompt_shell_menu.classList.remove('active');
             prompt_shell_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy();
             shell_resize()
         });
         setTimeout(() => {
@@ -6501,26 +6493,36 @@ if (ua.includes("mobile")) {
 
     function displayLocalStorageDetails() {
         document.querySelectorAll('.localstorage_key').forEach(function (localstorage_key) {
-            localstorage_key.remove()
+            localstorage_key.remove();
         });
         const list = document.getElementById('localStorageList');
         let totalSize = 0;
+        // すべてのキーを取得してアルファベット順にソート
+        const keys = [];
         for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
+            keys.push(localStorage.key(i));
+        }
+        keys.sort(); // キーをアルファベット順にソート
+
+        // ソートされたキーを使ってループ
+        keys.forEach(function (key) {
             const value = localStorage.getItem(key);
             const valueSize = new Blob([value]).size; // バイト数を計算
             totalSize += valueSize;
             const listItem = document.createElement('li');
             listItem.classList.add('border');
             listItem.classList.add('localstorage_key');
-            listItem.style.width = "max-content"
-            listItem.textContent = `Key name: ${key}, Size: ${valueSize} bytes`;
+            listItem.style.width = "max-content";
+            listItem.style.marginTop = "5px";
+            listItem.textContent = `Keyname: ${key}, Size: ${valueSize} Byte`;
             list.appendChild(listItem);
-        }
+        });
+
         // 合計サイズを表示
         const totalSizeElement = document.getElementById('totalSize');
-        totalSizeElement.textContent = `Total Size: ${totalSize} bytes`;
+        totalSizeElement.textContent = `Total Size: ${totalSize} Byte`;
     }
+
 
 
     setInterval(() => {
@@ -7197,14 +7199,13 @@ if (ua.includes("mobile")) {
             button.addEventListener('mouseup', () => {
                 button.classList.remove('pressed');
             });
-
         });
     };
 
     function toggleWindow(windowElement) {
         windowElement.classList.remove('active');
         windowElement.style.zIndex = largestZIndex++;
-        zindexwindow_addnavy();
+        zindexwindow_addnavy()
     }
 
     const dropArea = document.querySelector('#files');
@@ -7298,7 +7299,7 @@ if (ua.includes("mobile")) {
 
                         setTimeout(() => {
                             test_windows_button()
-                            zindexwindow_addnavy()
+
                             titlecolor_set()
                         }, 100);
 
@@ -7311,7 +7312,7 @@ if (ua.includes("mobile")) {
 
                         setTimeout(() => {
                             test_windows_button()
-                            zindexwindow_addnavy()
+
                             titlecolor_set()
                         }, 1000);
 
@@ -7323,7 +7324,7 @@ if (ua.includes("mobile")) {
 
                         setTimeout(() => {
                             test_windows_button()
-                            zindexwindow_addnavy()
+
                             titlecolor_set()
                         }, 100);
 
@@ -7335,7 +7336,7 @@ if (ua.includes("mobile")) {
 
                         setTimeout(() => {
                             test_windows_button()
-                            zindexwindow_addnavy()
+
                             titlecolor_set()
                         }, 100);
 
@@ -7347,7 +7348,7 @@ if (ua.includes("mobile")) {
 
                         setTimeout(() => {
                             test_windows_button()
-                            zindexwindow_addnavy()
+
                             titlecolor_set()
                         }, 100);
                     }
@@ -7396,7 +7397,7 @@ if (ua.includes("mobile")) {
                             setTimeout(() => {
                                 const newChild4_2 = newChild4.closest('.child_windows');
                                 newChild4_2.remove();
-                                zindexwindow_addnavy();
+
                                 titlecolor_set();
                                 test_windows_button()
                             }, 100);
@@ -7523,7 +7524,6 @@ if (ua.includes("mobile")) {
                             z_index_child_windows.addEventListener('mousedown', function () {
                                 zindexchildwindows.scrollTop = 0;
                                 zindexchildwindows.scrollLeft = 0;
-
                                 setTimeout(() => {
                                     document.querySelectorAll('.testwindow2').forEach(function (testwindow2) {
                                         const testwindow2_1 = testwindow2.children[2];
@@ -7548,7 +7548,7 @@ if (ua.includes("mobile")) {
 
                         document.querySelectorAll('.bigscreen_button2').forEach(function (bigscreen_button) {
                             bigscreen_button.addEventListener('mousedown', function () {
-                                zindexwindow_addnavy()
+
                                 const elements = document.querySelector('.testwindow_title.navy');
                                 const elements2 = elements.closest('.testwindow2');
                                 elements2.dataset.originalWidth = elements2.style.width;
@@ -7817,6 +7817,7 @@ if (ua.includes("mobile")) {
                     }, 0);
 
                     dropArea.appendChild(windowDiv);
+                    zindexwindow_addnavy()
                     setTimeout(() => {
                         resolve();
                     }, 500);
@@ -8340,6 +8341,49 @@ if (ua.includes("mobile")) {
         // 透明度をローカルストレージに保存
         localStorage.setItem('divOpacity', 1 - opacityValue);
     });
+
+
+
+
+
+
+
+    // 監視対象の要素を取得
+    const targetNodes = document.querySelectorAll('.child_windows');
+
+    // 監視する変更の種類を設定
+    const config = { attributes: true, childList: true, subtree: true };
+
+    // 前回のカウントを保持する変数
+    let previousActiveCount = 0;
+
+    // コールバック関数を定義
+    const callback = function (mutationsList, observer) {
+        let currentActiveCount = 0;
+        targetNodes.forEach(node => {
+            if (node.classList.contains('active')) {
+                currentActiveCount++;
+            }
+        });
+
+        if (currentActiveCount !== previousActiveCount) {
+            // クラス名 'active' の数が変わった時の処理
+            // console.log('Active class count changed:', currentActiveCount);
+            previousActiveCount = currentActiveCount;
+            zindexwindow_addnavy()
+            startmenu_close()
+        }
+    };
+
+    // MutationObserverを作成
+    const observer = new MutationObserver(callback);
+
+    // すべての対象要素に対して監視を開始
+    targetNodes.forEach(node => observer.observe(node, config));
+
+
+
+
 
 
 };
