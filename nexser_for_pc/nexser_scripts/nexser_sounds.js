@@ -18,6 +18,7 @@ let sound_10 = new Audio("nexser_sounds/windows2000_startup.mp3");
 let sound_11 = new Audio("nexser_sounds/windows2000_shutdown.mp3");
 let sound_12 = new Audio("nexser_sounds/windowsxp_startup.mp3");
 let sound_13 = new Audio("nexser_sounds/windowsxp_shutdown.mp3");
+let sound_14 = new Audio("nexser_sounds/windowsxp_criticalstop.mp3");
 sound_1.preload = 'auto';
 sound_2.preload = 'auto';
 sound_3.preload = 'auto';
@@ -31,6 +32,7 @@ sound_10.preload = 'auto';
 sound_11.preload = 'auto';
 sound_12.preload = 'auto';
 sound_13.preload = 'auto';
+sound_14.preload = 'auto';
 
 function sound() {
     if (localStorage.getItem('driver_sound')) {
@@ -97,6 +99,11 @@ function sound13() {
         sound_13.play();
     }
 }
+function sound14() {
+    if (localStorage.getItem('driver_sound')) {
+        sound_14.play();
+    }
+}
 
 function sound_stop() {
     sound_1.pause();
@@ -112,6 +119,7 @@ function sound_stop() {
     sound_11.pause();
     sound_12.pause();
     sound_13.pause();
+    sound_14.pause();
     sound_1.currentTime = 0;
     sound_2.currentTime = 0;
     sound_3.currentTime = 0;
@@ -125,6 +133,7 @@ function sound_stop() {
     sound_11.currentTime = 0;
     sound_12.currentTime = 0;
     sound_13.currentTime = 0;
+    sound_14.currentTime = 0;
 
     Array.from(sound_play_button).forEach((sound_play_buttons) => {
         sound_play_buttons.textContent = "▶"
@@ -143,7 +152,7 @@ Array.from(sound_play_button).forEach((sound_play_buttons) => {
     })
     sound_play_buttons.addEventListener('click', function () {
         if (!localStorage.getItem('driver_sound')) {
-            document.querySelector('.window_error_text').textContent = "driver sound no install!"
+            document.querySelector('.window_error_text').textContent = "サウンドドライバー がインストールされていません!"
             error_windows.classList.remove('active')
             prompt_text2.style.color = "";
             document.querySelector('.test_allwindow').style.display = "block";

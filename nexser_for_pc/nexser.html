@@ -5,9 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="description" content="nexser beta version">
-    <link rel="preload" as="style" href="nexser_style/nexser.css" onload="this.rel='stylesheet'">
-
-    <title class="nexser_title">nexser beta version 1.5</title>
+    <link type="text/css" rel="preload" as="style" href="nexser_style/nexser.css" onload="this.rel='stylesheet'">
+    <title class="nexser_title">nexser beta version 1.6</title>
 
     <script>
         document.addEventListener('wheel', function (e) {
@@ -32,10 +31,6 @@
             </form>
             <p class="prompt_error_text"></p>
             <div class="lime_text">
-                <p class="memory"></p>
-                <p class="memory2"></p>
-                <p class="memory3"></p>
-                <p class="memory4"></p>
                 <p>Batterylevel:&emsp;<span class="level"></span></p>
                 <p>Charging:&emsp;<span class="charging"></span></p>
                 <p>ChargingTime:&emsp;<span class="chargingTime"></span></p>
@@ -45,6 +40,7 @@
             </div>
             <div style="position: relative; top: 10px;">
                 <ul>
+                    <li>Enter で実行</li>
                     <li>help command(click)</li>
                     <li class="hover_blue"
                         style="display: inline-block; border: solid 1px white; box-shadow: 5px 5px #888888;"
@@ -170,10 +166,16 @@
 
             <div class="nexser_background_image">
                 <div class="nexser_backgroundimage_1" style="display: none;">
-                    <img src="nexser_image/Windows95_wallpaper.jpg">
+                    <img class="nexser_backgroundimage_1_child" src="nexser_image/Windows95_wallpaper.jpg"
+                        style="width: 100%; height: 100%;">
                 </div>
                 <div class="nexser_backgroundimage_2" style="display: none;">
-                    <img src="nexser_image/Windowsxp_wallpaper.jpg">
+                    <img class="nexser_backgroundimage_2_child" src="nexser_image/Windows95_wallpaper_2.png"
+                        style="width: 100%; height: 100%;">
+                </div>
+                <div class="nexser_backgroundimage_3" style="display: none;">
+                    <img class="nexser_backgroundimage_3_child" src="nexser_image/Windowsxp_wallpaper.jpg"
+                        style="width: 100%; height: 100%;">
                 </div>
             </div>
 
@@ -646,31 +648,21 @@
                                 </ul>
                                 <div class="child_list">
                                     <ul>
-                                        <li class="notetext_bold" onclick="notetext_all_bold()">alltext
-                                            bold</li>
-                                        <li class="notetext_oblique" onclick="notetext_all_oblique()">
-                                            alltext
-                                            oblique</li>
-                                        <li class="notetext_underline" onclick="notetext_all_underline()">
-                                            alltext
-                                            underline</li>
+                                        <p class="bold small underline" style="text-align: left; padding-right: 20px;">
+                                            Text decoration
+                                        </p>
+                                        <li class="notetext_bold" onclick="notetext_all_bold()">bold</li>
+                                        <li class="notetext_oblique" onclick="notetext_all_oblique()">oblique</li>
+                                        <li class="notetext_underline" onclick="notetext_all_underline()">underline</li>
                                         <div class="note_text_color">
-                                            <li onclick="notecolor_remove()">text
-                                                black</li>
-                                            <li class="notetext_blue" onclick="notecolor_change_blue()">
-                                                text
-                                                blue</li>
-                                            <li class="notetext_green" onclick="notecolor_change_green()">
-                                                text green</li>
-                                            <li class="notetext_red" onclick="notecolor_change_red()">
-                                                text
-                                                red</li>
-                                            <li class="notetext_orange" onclick="notecolor_change_orange()">
-                                                text
-                                                orange</li>
-                                            <li class="notetext_yellow" onclick="notecolor_change_yellow()">
-                                                text
-                                                yellow</li>
+                                            <p class="bold small underline" style="text-align: left;">Text color</p>
+                                            <li onclick="notecolor_remove()">black</li>
+                                            <li class="notetext_blue" onclick="notecolor_change_blue()">blue</li>
+                                            <li class="notetext_green" onclick="notecolor_change_green()">green</li>
+                                            <li class="notetext_red" onclick="notecolor_change_red()">red</li>
+                                            <li class="notetext_orange" onclick="notecolor_change_orange()">orange</li>
+                                            <li class="notetext_yellow" onclick="notecolor_change_yellow()">yellow
+                                            </li>
                                         </div>
                                     </ul>
                                 </div>
@@ -682,6 +674,10 @@
                                 </ul>
                                 <div class="child_list">
                                     <ul>
+                                        <li onclick="note_lineheight()">Note lineHeight
+                                        </li>
+                                        <li onclick="note_textspacing()">Note text spacing
+                                        </li>
                                         <li onclick="notedata_clear()">Notedata clear
                                         </li>
                                     </ul>
@@ -720,7 +716,7 @@
                                 <li class="border2">Textcount:&emsp;<span id="inputlength">0</span>
                                 </li>
                                 <li class="border2" style="margin-left: 20px;">Mode:&emsp;<span
-                                        class="test_notetext">Text</span></li>
+                                        class="test_notetext">Text&nbsp;</span></li>
                                 <li class="border2" style="margin-left: 20px;" id="memo_save_text">
                                 </li>
                             </ul>
@@ -729,7 +725,7 @@
 
                     <div class="child_windows objective_menu back_silver resize active">
                         <div class="title">
-                            <span class="title_icon"></span><span>objective sheet</span>
+                            <span class="title_icon"></span><span class="objective_title">objective sheet</span>
                         </div>
 
                         <div class="title_buttons">
@@ -992,6 +988,10 @@
                                     <li>memory game</li><span class="window_file_icon"></span>
                                     <li class="windowfile_time"></li>
                                 </div>
+                                <div class="window_files kakeibo_btn">
+                                    <li>kakeibo</li><span class="window_file_icon"></span>
+                                    <li class="windowfile_time"></li>
+                                </div>
                             </ul>
                         </div>
                     </div>
@@ -1135,8 +1135,8 @@
                                     <li>nexser files text</li><span class="window_file_icon"></span>
                                     <li class="windowfile_time"></li>
                                 </div>
-                                <div class="window_files">
-                                    <li>test</li><span class="window_file_icon2"></span>
+                                <div class="window_files test_button45">
+                                    <li>alarm</li><span class="window_file_icon"></span>
                                     <li class="windowfile_time"></li>
                                 </div><br>
                             </ul>
@@ -1150,7 +1150,6 @@
                         <div class="title">
                             <span class="title_icon"></span><span>sound</span>
                         </div>
-
 
                         <div class="title_buttons">
                             <span class="drag_button">&nbsp;</span>
@@ -1258,6 +1257,7 @@
                                 <li class="hover_blue">Windows2000 logoff</li>
                                 <li class="hover_blue">WindowsXP start</li>
                                 <li class="hover_blue">WindowsXP logoff</li>
+                                <li class="hover_blue">WindowsXP criticalstop</li>
                             </ul>
 
                             <div class="window_inline_side" style="font-size: 13.7px;">
@@ -1312,6 +1312,9 @@
                                     <li class="button2 sound_play_button" style="width: 60px;" onclick="sound13()">
                                     </li>
                                     <li class="button2 sound_stop_button" style="width: 30px;">stop</li>
+                                    <li class="button2 sound_play_button" style="width: 60px;" onclick="sound14()">
+                                    </li>
+                                    <li class="button2 sound_stop_button" style="width: 30px;">stop</li>
                                 </ul>
                             </div>
                         </div>
@@ -1322,7 +1325,6 @@
                         <div class="title">
                             <span class="title_icon"></span><span>nexser sound</span>
                         </div>
-
 
                         <div class="title_buttons">
                             <span class="drag_button">&nbsp;</span>
@@ -1539,7 +1541,7 @@
                                         <p class="window_menus_title">system</p>
                                         <ul style="text-align: left; margin-left: 60px;">
                                             <li class="bold" style="margin-top: 60px;">nexser beta&copy;</li>
-                                            <li style="margin-top: 20px;">version 1.5</li>
+                                            <li style="margin-top: 20px;">version 1.6</li>
                                             <li>2023-2024</li>
                                         </ul>
 
@@ -1558,7 +1560,7 @@
                                         <li>&nbsp;access&nbsp;</li>
                                     </ul>
                                     <div class="window_inline_menus_child"><br>
-                                        <p class="bold">lastaccess:&emsp;<span id="lastaccess_day"></span></p>
+                                        <p class="bold">Last Access:&emsp;<span id="lastaccess_day"></span></p>
                                     </div>
                                 </div>
 
@@ -1692,13 +1694,15 @@
                             <span class="close_button button2"></span><br>
                         </div>
 
-                        <div class="window_content">
-                            <p><input type="text" id="bkcolor" size="40" class="border" autocomplete="off"
-                                    placeholder="backcolor red, skyblue, #ffcc00 ...">
+                        <div class="window_content back_silver" style="padding-top: 10px;">
+                            <p><input type="text" id="bkcolor" size="40" class="large border2" autocomplete="off"
+                                    placeholder="background">
                             </p>
-                            <p><input type="text" id="color" size="40" class="border" autocomplete="off"
-                                    placeholder="text_color red, skyblue, #ffcc00 ...">
+                            <span class="border">例: red, skyblue, #ffcc00 ...</span>
+                            <p><input type="text" id="color" size="40" class="large border2" autocomplete="off"
+                                    placeholder="text">
                             </p>
+                            <span class="border">例: red, skyblue, #ffcc00 ...</span>
                             <p><button class="button2" id="changeBtn">color set</button></p>
                             <button class="button2" onclick="colordata_clear()">colors data
                                 clear</button>
@@ -1708,6 +1712,7 @@
                                     <option value="">default</option>
                                     <option value=" black">black</option>
                                     <option value="white">white</option>
+                                    <option value="gray">gray</option>
                                     <option value="blue">blue</option>
                                     <option value="red">red</option>
                                     <option value="yellow">yellow</option>
@@ -1724,6 +1729,7 @@
                                     <option value="">default</option>
                                     <option value="black">black</option>
                                     <option value="white">white</option>
+                                    <option value="gray">gray</option>
                                     <option value="blue">blue</option>
                                     <option value="red">red</option>
                                     <option value="yellow">yellow</option>
@@ -1740,14 +1746,14 @@
                         </div>
                     </div>
 
-                    <div class="child_windows window_prompt resize active" style=" background-color: black;">
+                    <div class="child_windows window_prompt resize active" style="background: black;">
                         <div class="title">
                             <span class="title_icon"></span><span>nexser prompt beta</span>
                         </div>
 
                         <div class="title_buttons">
                             <span class="drag_button">&nbsp;</span>
-                            <span class="close_button button2" onclick="p_clear()"></span>
+                            <span class="close_button button2" onclick="nexser_prompt_reset()"></span>
                             <span class="bigscreen_button button2"></span>
                             <span class="minscreen_button button2"></span>
                             <span class="minimization_button button2"></span><br>
@@ -1775,28 +1781,30 @@
                                 </ul>
                                 <div class="child_list">
                                     <ul>
-                                        <li onclick="p_clear()">text clear</li>
+                                        <li onclick="prompt2_text_clear()">text clear</li>
                                     </ul>
                                 </div>
                             </div>
                         </div>
 
-                        <div id="prompt2" class="prompt_content">
-                            <div class="prompt_text2">
-                                <p>[nexser prompt beta version 1.5]</p>
-                            </div>
-                            <div id="form_container">
-                                <div class="input_container">
-                                    <span class="small">nexser/></span><input type="text"
-                                        class="command_input2 name2 focus2" placeholder="|"
-                                        onkeydown="handleKeyDown(event, this);if(event.keyCode == 13){return false;}">
-                                    </p>
+                        <div class="window_contents window_prompt_content2"
+                            style="background: black; position: absolute; top: 50px;">
+                            <div id="prompt2" class="prompt_content">
+                                <div class="prompt_text2">
+                                    <p>[nexser prompt beta version 1.6]</p>
+                                </div>
+                                <div id="form_container">
+                                    <div class="input_container">
+                                        <span class="small">nexser/></span><textarea rows="1"
+                                            class="command_input2 name2 focus2 command2" placeholder="|"
+                                            onkeydown="handleKeyDown(event, this);if(event.keyCode == 13){return false;}"></textarea>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="child_windows prompt_shell_menu resize active">
+                    <div class="child_windows prompt_shell_menu resize">
                         <div class="title">
                             <span class="title_icon"></span><span>nexser shell</span>
                         </div>
@@ -1812,7 +1820,6 @@
                             <textarea id="shell"></textarea>
                         </div>
                     </div>
-
 
                     <div class="child_windows command_help_menu resize active">
                         <div class="title">
@@ -1844,10 +1851,8 @@
                             </div>
                         </div>
 
-                        <div class="commands window_contents">
+                        <div class="commands window_contents border2">
                             <ul style="column-count: 2;">
-                                <li>windows95/sound/start/play</li>
-                                <li>windows95/sound/shutdown/play</li>
                                 <li>screen/full</li>
                                 <li>screen/min</li>
                                 <li>taskbar/none</li>
@@ -1856,6 +1861,7 @@
                                 <li>allwindow/close</li>
                                 <li>allwindow/open</li>
                                 <li>allwindow/min</li>
+                                <li>allwindow/big</li>
                                 <li>title/none</li>
                                 <li>title/active</li>
                                 <li>window/font/large</li>
@@ -1865,6 +1871,7 @@
                                 <li style="color: blue;">cpu/bench</li>
                                 <li style="color: red;">nexser/data/clear</li>
                                 <li style="color: green;">welcome</li>
+                                <li style="background: black;  color: white;">reset</li>
                                 <li>windows95/open</li>
                                 <li>windows2000/open</li>
                                 <li>windowsystem/open</li>
@@ -1932,32 +1939,36 @@
                                 <span class="mouse_right border"
                                     style="margin-top: 5px; margin-bottom: 5px; text-align: center; display: block; width: 50px; height: 50px;">right</span>
                             </div>
-                            <div class="mini_window">
-                                <div class="mini_screen hover_red"
-                                    style="text-align: center; justify-content: center; color: white; height: 60px;">
+                            <div class="mini_window" style="text-align: center; justify-content: center; color: white;">
+                                <div class="mini_screen hover_red" style="height: 60px;">
                                     hover_red</div>
-                                <div class="mini_screen hover_blue"
-                                    style="text-align: center; justify-content: center; color: white; height: 60px;">
+                                <div class="mini_screen hover_blue" style="height: 60px;">
                                     hover_blue</div>
-                                <div class="mini_screen hover_green"
-                                    style="text-align: center; justify-content: center; color: white; height: 60px;">
+                                <div class="mini_screen hover_green" style="height: 60px;">
                                     hover_green</div>
                                 <div class="mouse_miniwindow border">
                                     <div class="mouse_testbutton">
                                         <p class="bold">click button test</p>
-                                        <span class="button" style="font-size: 30px;">Button 1</span>
-                                        <span class="button2" style="font-size: 30px;">Button 2</span>
+                                        <span class="borderinline_dotted button"
+                                            style="height: 28px; width: 140px;">Button
+                                            1</span>
+                                        <span class="borderinline_dotted button2"
+                                            style="height: 28px; width: 140px;">Button
+                                            2</span>
+                                        <button class="button2"
+                                            style="height: 20px; font-size: large; float: right; position: absolute; left: 25px; top: 110px; transform: scale(2);">▼</button>
+                                        <span class="button2 close_button4" style="position: absolute; left: 75px; top:
+                                            105px; transform: scale(2);"></span>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="child_windows screen_text_menu active back_silver">
+                    <div class="child_windows screen_text_menu back_silver active">
                         <div class="title">
                             <span class="title_icon"></span><span>screen text</span>
                         </div>
-
 
                         <div class="title_buttons">
                             <span class="drag_button">&nbsp;</span>
@@ -2148,6 +2159,8 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                             <button class="button2 large apply_button"
                                                 onclick="savertime()">&emsp;OK&emsp;</button>
                                             <p class="bold">saver time: <span class="screensaver_text">none</span></p>
+                                            <button class="button2 small apply_button2"
+                                                onclick="savertime_clear()">&emsp;タイムリセット&emsp;</button>
                                         </div>
 
                                         <div
@@ -2175,26 +2188,32 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                     </ul>
                                     <div class="window_inline_menus_child">
                                         <p class="window_menus_title">Full screen</p>
-                                        <div><br>
+                                        <div style="height: 35px;"><br>
                                             <span class="button2 apply_button" onclick="full()">&emsp;ON&emsp;</span>
                                             <span class="button2 apply_button" onclick="min()">&emsp;OFF&emsp;</span>
                                         </div><br>
                                         <p class="window_menus_title">toolbar</p>
-                                        <div class="mini_window"><br>
+                                        <div class="mini_window" style="height: 35px;"><br>
                                             <span class="button2 toolbar_on apply_button">&emsp;ON&emsp;</span>
                                             <span class="button2 toolbar_off apply_button">&emsp;OFF&emsp;</span>
                                         </div><br>
                                         <p class="window_menus_title">filetext background</p>
-                                        <div class="mini_window"><br>
+                                        <div class="mini_window" style="height: 35px;"><br>
                                             <span
                                                 class="button2 filettext_backcolor_on apply_button">&emsp;ON&emsp;</span>
                                             <span
                                                 class="button2 filettext_backcolor_off apply_button">&emsp;OFF&emsp;</span>
+                                        </div><br>
+                                        <p class="window_menus_title">window animation</p>
+                                        <div class="mini_window" style="height: 35px;"><br>
+                                            <span class="button2 apply_button" onclick="window_animation_true()">
+                                                &emsp;ON&emsp;</span>
+                                            <span class="button2 apply_button" onclick="window_animation_false()">
+                                                &emsp;OFF&emsp;</span>
                                         </div>
+
                                     </div>
                                 </div>
-
-
 
                                 <div class="window_inline_menus_parent">
                                     <ul>
@@ -2205,11 +2224,13 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                         <div style="display: flex; top: 40px; position: absolute;">
                                             <button class="button2 apply_button2 wallpaper_95"
                                                 style="margin-left: 2.5px; margin-right: 2.5px;">&emsp;Windows95&emsp;</button>
+                                            <button class="button2 apply_button2 wallpaper_95_2"
+                                                style="margin-left: 2.5px; margin-right: 2.5px;">&emsp;Windows95(2)&emsp;</button>
                                             <button class="button2 apply_button2 wallpaper_xp"
                                                 style="margin-left: 2.5px; margin-right: 2.5px;">&emsp;WindowsXP&emsp;</button>
 
                                             <button class="button2 apply_button2"
-                                                style="margin-left: 2.5px; margin-right: 2.5px;"
+                                                style="position: absolute; top: 35px; margin-left: 2.5px; margin-right: 2.5px;"
                                                 onclick="wallpaper_allremove()">&emsp;CLEAR&emsp;</button>
                                         </div>
                                     </div>
@@ -2478,7 +2499,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         </div>
                     </div>
 
-                    <div class="child_windows htmlviewer_edit_menu active resize back_silver">
+                    <div class="child_windows htmlviewer_edit_menu resize back_silver active">
                         <div class="title">
                             <span class="title_icon"></span><span>html viewer edit</span>
                         </div>
@@ -2491,7 +2512,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             <span class="minimization_button button2"></span><br>
                         </div>
 
-                        <div class="mini_window window_content">
+                        <div class="window_content">
 
                             <textarea id="editor" class="border2" style="background: whitesmoke;"></textarea>
 
@@ -2514,7 +2535,6 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             <span class="title_icon"></span><span>html viewer run</span>
                         </div>
 
-
                         <div class="title_buttons">
                             <span class="drag_button">&nbsp;</span>
                             <span class="close_button button2"></span>
@@ -2522,7 +2542,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             <span class="minscreen_button button2"></span>
                             <span class="minimization_button button2"></span><br>
                         </div>
-                        <div>
+                        <div class="html_view">
                             <iframe id="preview" class="border2"></iframe>
                         </div>
                     </div>
@@ -2678,7 +2698,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                 style="width: max-content;">ローカルストレージを外部出力</span><br>
 
                             <div class="mini_window">
-                                <p>インポート</p>
+                                <p>インポート<br><span class="red_text small">(※今まで編集していたデータは削除されます!)</span></p>
                                 <label>
                                     <span class="button2 apply_button"
                                         style="width: max-content;">外部出力したnexserのデータをインポート</span>
@@ -2936,8 +2956,8 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             <div class="mini_window">
                                 <p class="bold large">taskbar</p>
                                 <div class="mini_window border2" style="background: whitesmoke;">
-                                    <p>clock&emsp;<button class="clock_button button2">off</button>
-                                    </p>
+                                    <p>clock&emsp;<button class="clock_button button2">off</button></p>
+                                    <p>battery&emsp;<button class="battery_button button2">off</button></p>
                                     <p>taskbar position&emsp;<button
                                             class="taskbar_position_button button2">top</button>
                                     </p>
@@ -2997,7 +3017,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                         </span>
                                     </span>
                                 </div><br>
-                                <span class="button2 apply_button2" onclick="tetris.startGame()">&emsp;TETRIS
+                                <span class="button2 apply_button2" onclick="tetris_start()">&emsp;TETRIS
                                     START&emsp;</span>
                             </div>
                         </div>
@@ -3031,6 +3051,8 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                 </div>
                                 <span class="border">TIME:&emsp;<span id="bom_time"
                                         class="timers">000</span>&emsp;</span>
+                                <span>前回のクリアタイム: <span style="pointer-events: none;"
+                                        class="button2 bom_clear_time"></span>秒</span>
                             </div>
                             <div class="bom_stage" style="display: none;">
                                 <table class="bom_board" id="board">
@@ -3076,67 +3098,6 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                 autocomplete="off" onkeyup="nexser_search()" placeholder="検索したい言葉を入力">
                             <div class="window_content">
                                 <ul id="myUL">
-
-                                    <li class="test_button button2 borderinline_dotted">
-                                        <span>&emsp;main&emsp;</span>
-                                    </li>
-
-                                    <li class="test_button2 button2 borderinline_dotted">
-                                        <span>&emsp;mycomputer&emsp;</span>
-                                    </li>
-
-                                    <li class="test_button3 button2 borderinline_dotted">
-                                        <span>&emsp;controlpanel&emsp;</span>
-                                    </li>
-
-                                    <li class="test_button4 button2 borderinline_dotted">
-                                        <span>&emsp;color&emsp;</span>
-                                    </li>
-
-                                    <li class="test_button5 button2 borderinline_dotted">
-                                        <span>&emsp;system&emsp;</span>
-                                    </li>
-
-                                    <li class="test_button6 button2 borderinline_dotted">
-                                        <span>&emsp;prompt&emsp;</span>
-                                    </li>
-
-                                    <li class="test_button7 button2 borderinline_dotted">
-                                        <span>&emsp;clock&emsp;</span>
-                                    </li>
-
-                                    <li class="test_button8 button2 borderinline_dotted">
-                                        <span>&emsp;sound&emsp;</span>
-                                    </li>
-
-                                    <li class="test_button9 button2 borderinline_dotted">
-                                        <span>&emsp;driver&emsp;</span>
-                                    </li>
-
-                                    <li class="test_button10 button2 borderinline_dotted">
-                                        <span>&emsp;mouse&emsp;</span>
-                                    </li>
-
-                                    <li class="test_button11 button2 borderinline_dotted">
-                                        <span>&emsp;screentext&emsp;</span>
-                                    </li>
-
-                                    <li class="test_button12 button2 borderinline_dotted">
-                                        <span>&emsp;notepad&emsp;</span>
-                                    </li>
-
-                                    <li class="test_button13 button2 borderinline_dotted">
-                                        <span>&emsp;textdrop&emsp;</span>
-                                    </li>
-
-                                    <li class="test_button14 button2 borderinline_dotted">
-                                        <span>&emsp;windowmode&emsp;</span>
-                                    </li>
-
-                                    <li class="test_button15 button2 borderinline_dotted">
-                                        <span>&emsp;accessory&emsp;</span>
-                                    </li>
-
                                 </ul>
                             </div>
                         </div>
@@ -3213,25 +3174,6 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         </div>
                     </div>
 
-
-                    <div class="child_windows memory_menu active" style="width: 250px;">
-                        <div class="title">
-                            <span class="title_icon"></span><span>memory</span>
-                        </div>
-                        <div class="title_buttons">
-                            <span class="drag_button">&nbsp;</span>
-                            <span class="close_button button2"></span><br>
-                        </div>
-
-                        <div class="window_contents back_silver">
-                            <p class="border2">Memory</p>
-                            <span class="window_memory"></span><br>
-                            <span class="window_memory2"></span><br>
-                            <span class="window_memory3"></span><br>
-                            <span class="window_memory4"></span><br>
-                        </div>
-                    </div>
-
                     <div class="child_windows device_menu resize back_silver active">
                         <div class="title">
                             <span class="title_icon"></span><span>device</span>
@@ -3267,6 +3209,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             <button class="button2 apply_button" onclick="pass_submit()">submit</button>
                             <button class="button2 apply_button" onclick="pass_reset()">reset</button>
                             <p>パスワード:&emsp;<span class="passcode">登録していません</span></p>
+                            <p>lock number <span class="pass_locked"></span></p>
                         </div>
 
                     </div>
@@ -3303,9 +3246,30 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
 
                         <div class="window_contents back_silver">
                             <p>残りのローカルストレージ容量<br><span class="local_memory border2"></span>&emsp;<span
-                                    class="small button2 borderinline_dotted"
+                                    class="small button2 borderinline_dotted local_memory_button"
                                     onclick="localmemory_size()">&emsp;残り容量を再計算&emsp;</span></p>
                             <p>使用中のローカルストレージ容量<br><span class="local_memory2 border2"></span>&emsp;</p>
+                            <button class="apply_button2 button2 localstorage_details">詳細を見る</button>
+                        </div>
+                    </div>
+
+                    <div class="child_windows localstorage_details_menu resize active">
+                        <div class="title">
+                            <span class="title_icon"></span><span>localstorage details</span>
+                        </div>
+
+                        <div class="title_buttons">
+                            <span class="drag_button">&nbsp;</span>
+                            <span class="close_button button2"></span>
+                            <span class="bigscreen_button button2"></span>
+                            <span class="minscreen_button button2"></span>
+                            <span class="minimization_button button2"></span><br>
+                        </div>
+
+                        <div class="window_contents back_silver">
+                            <p class="x-large bold">Local Storage Details</p>
+                            <ul id="localStorageList"></ul>
+                            <p class="bold x-large" id="totalSize"></p><br>
                         </div>
                     </div>
 
@@ -3396,13 +3360,6 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         </div>
                     </div>
 
-
-
-
-
-
-
-
                     <div class="child_windows url_drop_menu resize active">
                         <div class="title">
                             <span class="title_icon"></span><span>url drop</span>
@@ -3452,10 +3409,197 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         </div>
                         <div class="window_bottom" style="display: flex;">
                             <p style="width: 100%;">揃ったペアの数:&nbsp;<span id="match-count">0</span>
-
+                                <span class="button2 apply_button" style="margin-left: 10px;"
+                                    onclick="resetGame()">reset</span>
                                 <span style="position: absolute; bottom: 0; right: 0;">経過時間:
                                     <span id="elapsed-time">0</span>秒</span>
                             </p>
+                        </div>
+                    </div>
+
+                    <div class="child_windows alarm_menu active">
+                        <div class="title">
+                            <span class="title_icon"></span><span>alarm</span>
+                        </div>
+                        <div class="title_buttons">
+                            <span class="drag_button">&nbsp;</span>
+                            <span class="close_button button2"></span><br>
+                        </div>
+
+                        <div id="timerText" class="x-large">00:00:00</div>
+                        <form name="alarm_form">
+                            <p class="time_text">アラーム: <select name="option_hours">
+                                    <option value="0">00</option>
+                                    <option value="1">01</option>
+                                    <option value="2">02</option>
+                                    <option value="3">03</option>
+                                    <option value="4">04</option>
+                                    <option value="5">05</option>
+                                    <option value="6">06</option>
+                                    <option value="7">07</option>
+                                    <option value="8">08</option>
+                                    <option value="9">09</option>
+                                    <option value="10">10</option>
+                                    <option value="11">11</option>
+                                    <option value="12">12</option>
+                                    <option value="13">13</option>
+                                    <option value="14">14</option>
+                                    <option value="15">15</option>
+                                    <option value="16">16</option>
+                                    <option value="17">17</option>
+                                    <option value="18">18</option>
+                                    <option value="19">19</option>
+                                    <option value="20">20</option>
+                                    <option value="21">21</option>
+                                    <option value="22">22</option>
+                                    <option value="23">23</option>
+                                </select>
+                                <select name="option_minutes">
+                                    <option value="0">00</option>
+                                    <option value="1">01</option>
+                                    <option value="2">02</option>
+                                    <option value="3">03</option>
+                                    <option value="4">04</option>
+                                    <option value="5">05</option>
+                                    <option value="6">06</option>
+                                    <option value="7">07</option>
+                                    <option value="8">08</option>
+                                    <option value="9">09</option>
+                                    <option value="10">10</option>
+                                    <option value="11">11</option>
+                                    <option value="12">12</option>
+                                    <option value="13">13</option>
+                                    <option value="14">14</option>
+                                    <option value="15">15</option>
+                                    <option value="16">16</option>
+                                    <option value="17">17</option>
+                                    <option value="18">18</option>
+                                    <option value="19">19</option>
+                                    <option value="20">20</option>
+                                    <option value="21">21</option>
+                                    <option value="22">22</option>
+                                    <option value="23">23</option>
+                                    <option value="24">24</option>
+                                    <option value="25">25</option>
+                                    <option value="26">26</option>
+                                    <option value="27">27</option>
+                                    <option value="28">28</option>
+                                    <option value="29">29</option>
+                                    <option value="30">30</option>
+                                    <option value="31">31</option>
+                                    <option value="32">32</option>
+                                    <option value="33">33</option>
+                                    <option value="34">34</option>
+                                    <option value="35">35</option>
+                                    <option value="36">36</option>
+                                    <option value="37">37</option>
+                                    <option value="38">38</option>
+                                    <option value="39">39</option>
+                                    <option value="40">40</option>
+                                    <option value="41">41</option>
+                                    <option value="42">42</option>
+                                    <option value="43">43</option>
+                                    <option value="44">44</option>
+                                    <option value="45">45</option>
+                                    <option value="46">46</option>
+                                    <option value="47">47</option>
+                                    <option value="48">48</option>
+                                    <option value="49">49</option>
+                                    <option value="50">50</option>
+                                    <option value="51">51</option>
+                                    <option value="52">52</option>
+                                    <option value="53">53</option>
+                                    <option value="54">54</option>
+                                    <option value="55">55</option>
+                                    <option value="56">56</option>
+                                    <option value="57">57</option>
+                                    <option value="58">58</option>
+                                    <option value="59">59</option>
+                                </select> <span class="time_btn button2" id="set_btn">設定</span>
+                            </p>
+                        </form>
+                        <div class="container">
+                            <p>アラーム設定時刻</p>
+                            <ul id="parent_list">
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="child_windows test_site_menu resize active">
+                        <div class="title">
+                            <span class="title_icon"></span><span>test site</span>
+                        </div>
+
+                        <div class="title_buttons">
+                            <span class="drag_button">&nbsp;</span>
+                            <span class="close_button button2"></span>
+                            <span class="bigscreen_button button2"></span>
+                            <span class="minscreen_button button2"></span>
+                            <span class="minimization_button button2"></span><br>
+                        </div>
+                        <div class="window_content">
+                            <iframe src="index.html" class="site_frame" frameborder="0"></iframe>
+                        </div>
+                    </div>
+
+                    <div class="child_windows console_error_menu resize active">
+                        <div class="title">
+                            <span class="title_icon"></span><span>console error</span>
+                        </div>
+
+                        <div class="title_buttons">
+                            <span class="drag_button">&nbsp;</span>
+                            <span class="close_button button2"></span>
+                            <span class="bigscreen_button button2"></span>
+                            <span class="minscreen_button button2"></span>
+                            <span class="minimization_button button2"></span><br>
+                        </div>
+                        <div class="window_contents" style="background: black; color: white; height: 100%;">
+                            <p id="console_error_text"></p><br>
+                        </div>
+                    </div>
+
+                    <div class="child_windows kakeibo_menu resize back_silver active">
+                        <div class="title">
+                            <span class="title_icon"></span><span>kakeibo</span>
+                        </div>
+
+                        <div class="title_buttons">
+                            <span class="drag_button">&nbsp;</span>
+                            <span class="close_button button2"></span>
+                            <span class="bigscreen_button button2"></span>
+                            <span class="minscreen_button button2"></span>
+                            <span class="minimization_button button2"></span><br>
+                        </div>
+                        <div class="window_contents back_silver large">
+                            <span class="x-large bold border2">家計簿</span>
+                            <div class="input-group">
+                                <label for="type">タイプ:</label>
+                                <select id="type" class="border medium back_silver">
+                                    <option value="収入">収入</option>
+                                    <option value="支出">支出</option>
+                                </select>
+                            </div>
+                            <div class="input-group border">
+                                <label for="amount">金額:</label>
+                                <input type="number" id="amount" class="border2 large" placeholder="金額を入力">
+                            </div>
+                            <div class="input-group border">
+                                <label for="description">内容:</label>
+                                <textarea id="description" class="border2 large resize_none" style="width: 600px;"
+                                    placeholder="内容を入力"></textarea>
+                            </div>
+                            <div class="input-group border">
+                                <label for="date" class="border">日付:</label>
+                                <input type="date" id="date" class="border2 large">
+                            </div>
+                            <div class="input-group border">
+                                <label for="time" class="border">時間:</label>
+                                <input type="time" id="time" class="border2 large">
+                            </div>
+                            <button onclick="kakeibo_addEntry()" class="button2 medium">追加</button>
+                            <div class="total" id="total"></div>
+                            <div id="entries" class="border"></div><br>
                         </div>
                     </div>
 
@@ -3614,10 +3758,21 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                 </p>
 
                                 <p class="x-large bold underline">title buttons</p>
-                                <p>[]ボタンでウィンドウを閉じることができます。</p>
-                                <p>[]ボタンでウィンドウの最大化をすることができます。</p>
-                                <p>[]ボタンでウィンドウの縮小化をすることができます。</p>
-                                <p>[]ボタンでウィンドウの最小化をすることができます。</p>
+                                <ul style="pointer-events: none;">
+                                    <li><span class="close_button button2"
+                                            style="position: absolute; left: 5px; top: 125px;"></span>&emsp;&emsp;ボタンでウィンドウを閉じることができます。
+                                    </li>
+                                    <li style="margin-top: 10px;"><span class="bigscreen_button button2"
+                                            style="position: absolute; left: 5px; top: 160px;"></span>&emsp;&emsp;ボタンでウィンドウの最大化をすることができます。
+                                    </li>
+                                    <li style="margin-top: 10px;"><span class="minscreen_button button2"
+                                            style="display: block; position: absolute; left: 5px; top: 220px;"></span>&emsp;&emsp;ボタンでウィンドウの縮小化をすることができます。
+                                    </li>
+                                    <li style="margin-top: 10px;"><span class="minimization_button button2"
+                                            style="position: absolute; left: 5px; top: 275px;"></span>&emsp;&emsp;ボタンでウィンドウの最小化をすることができます。
+                                    </li>
+                                </ul>
+
                             </div>
                         </div>
                     </div>
@@ -3716,8 +3871,8 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                     <div class="mini_window_startmenu border">
                                         <ul>
                                             <li
-                                                style="font-size: 20px; background-color:dimgray ;color:silver; font-weight: bold; writing-mode: vertical-rl; transform: rotate(180deg); height: 100%; width: 25px; position: absolute;">
-                                                &nbsp;nexser <span style="color: white;">1.5</span></li>
+                                                style="font-size: 20px; background-color:dimgray; color:silver; font-weight: bold; writing-mode: vertical-rl; transform: rotate(180deg); height: 100%; width: 25px; position: absolute;">
+                                                &nbsp;nexser <span style="color: white;">1.6</span></li>
                                             <div style="position: absolute; left: 30px; width: 100%;">
                                                 <p class="small"
                                                     style="display:block; width: 125px; position: absolute; left: -5px; background: rgb(177, 39, 26); color: white;">
@@ -3756,20 +3911,18 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         <div class="first_taskbar_buttons">
                             <span class="button2 test_button33">B</span>
                         </div>
+
                         <div class="taskbar_buttons">
                             <div class="task_icons" id="task_buttons2">
-
                             </div>
                         </div>
                         <div class="taskbar_rightgroup">
                             <div class="screen_light_range">
                                 <span class="button sit_button" onclick="lightchild()">&nbsp;SlT&nbsp;</span>
                                 <div class="screen_light_range_child border">
-                                    <textarea class="light_value" maxlength="4"
-                                        onkeydown="if(event.keyCode == 13){return false;}"></textarea><br>
-                                    <button class="button2" onclick="lights()">sbmit</button>
-                                    <p>0~1</p>
-                                    <p>〇・</p>
+                                    <input type="range" id="opacitySlider" min="0" max="100" value="100">
+                                    <span id="valueDisplay"
+                                        style="position: absolute; right: 0px; margin-top: 2.5px; margin-right: 4px;">100</span>
                                 </div>
                             </div>
                             <div class="inport_icon border">
@@ -3781,8 +3934,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                         <p>BATTERY:<span class="taskbattery"></span>%</p>
                                     </span>
                                 </li>
-                                <div class="battery_menu"
-                                    style="font-size: large; width: auto; height: auto; background: silver;">
+                                <div class="battery_menu" style="font-size: large; width: auto; height: auto;">
                                     <span class="battery_time border">none</span>
                                 </div>
                             </div>
@@ -3794,12 +3946,12 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             </div>
                         </div>
                     </div>
-                    <div id="start_menu" class="parent_start_menu">
+                    <div id="start_menu" class="parent_start_menu parentstartmenu2">
                         <div class="child_start_menu border">
                             <ul>
                                 <li
-                                    style="font-size: 20px; background-color:dimgray ;color:silver; font-weight: bold; writing-mode: vertical-rl; transform: rotate(180deg); height: 100%; width: 25px; position: absolute;">
-                                    &nbsp;nexser&nbsp;<span style="color: white;">1.5</span></li>
+                                    style="font-size: 20px; background-color:dimgray; color:silver; font-weight: bold; writing-mode: vertical-rl; transform: rotate(180deg); height: 100%; width: 25px; position: absolute;">
+                                    &nbsp;nexser&nbsp;<span style="color: white;">1.6</span></li>
                                 <ul style="background: rgb(177, 39, 26); color: white;">
                                     <li class="nexser_guidebook small" style="margin-left: 25px;">
                                         guidebook</li>
@@ -3980,7 +4132,14 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                             </div>
                                         </div>
                                     </div>
-                                </div><br>
+                                </div>
+
+                                <div class="parent_start_menu_lists console_list" style="display: none;">
+                                    <ul>
+                                        <li class="console_error_btn">&nbsp;console error&nbsp;</li>
+                                    </ul>
+                                </div>
+                                <br>
 
                                 <div class="parent_start_menu_lists">
                                     <ul>
@@ -4022,7 +4181,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             <span class="drag_button2 border2" style="cursor: all-scroll;">&emsp;&nbsp;</span>
                             <span class="button2 nexser_search">&nbsp;<span class="magnifying_glass"></span>
                             </span>
-                            <span class="button2">&nbsp;T&nbsp;</span>
+                            <span class="button2 test_button26">&nbsp;D&nbsp;</span>
                             <span class="button2">&nbsp;T&nbsp;</span>
                             <span class="button2">&nbsp;T&nbsp;</span>
                             <span class="button2">&nbsp;T&nbsp;</span>
@@ -4037,7 +4196,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         <span class="bold error_title_text">&nbsp;error</span>
                     </div>
                     <span class="close_button2 button2"></span><br>
-                    <p><span class="error_icon bold">✕</span><span>&emsp;&emsp;&nbsp;</span><span
+                    <p><span class="error_icon">✕</span><span>&emsp;&emsp;&nbsp;</span><span
                             class="window_error_text">test
                             window error</span>&emsp;</p>
                     <span class="button2 borderinline_dotted"
@@ -4091,9 +4250,6 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
 <script src="nexser_scripts/nexser.js" defer></script>
 <script src="nexser_scripts/nexser_sounds.js" defer></script>
 <script src="nexser_scripts/tetris.js"></script>
-<script>
-    tetris = new tetris();
-</script>
 <script src="nexser_scripts/bom.js"></script>
 
 </html>

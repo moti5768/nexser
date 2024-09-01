@@ -276,7 +276,6 @@ li {
     font-family: Courier;
 }
 
-
 .focus2 {
     font-family: Courier;
 }
@@ -289,6 +288,15 @@ li {
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
+    position: absolute;
+    width: 100%;
+    resize: none;
+}
+
+.window_prompt_content2 {
+    position: absolute;
+    display: block;
+    width: 100%;
 }
 
 .command_input2 {
@@ -296,11 +304,17 @@ li {
     position: relative;
     font-size: small;
     width: 100%;
-    height: max-content;
+    height: 12.5px;
     border: none;
     outline: none;
     color: white;
     background: black;
+    resize: none;
+}
+
+#form_container {
+    width: 100%;
+    height: 100%;
 }
 
 .input_container {
@@ -308,7 +322,7 @@ li {
     font-size: small;
 }
 
-.focus2::-webkit-scrollbar {
+.input_container>textarea::-webkit-scrollbar {
     display: none;
 }
 
@@ -535,8 +549,6 @@ input[type="file"] {
     font-size: 15px;
     width: 100%;
     height: 40px;
-    max-height: 90px;
-    min-height: 40px;
     background-color: silver;
     border-top: solid 1.5px whitesmoke;
     border-bottom: 1.5px #333 solid;
@@ -646,30 +658,18 @@ input[type="file"] {
 
 .screen_light_range_child {
     display: none;
-    width: 38px;
-    height: 100px;
+    width: 120px;
+    height: 30px;
     background: silver;
     position: absolute;
     bottom: 36px;
-}
-
-.screen_light_range_child>textarea {
-    top: 5px;
-    display: inline;
-    outline: none;
-    border: solid 1px black;
-    position: absolute;
-    width: 35px;
-    height: 20px;
-    left: 0.5px;
-    resize: none;
-    font-size: large;
 }
 
 .inport_icon {
     background: silver;
     text-align: center;
     margin-left: 10px;
+    margin-right: 5px;
 }
 
 .time {
@@ -689,6 +689,7 @@ input[type="file"] {
 
 .battery_menu {
     display: none;
+    background: silver;
 }
 
 .battery_time {
@@ -993,6 +994,21 @@ input[type="file"] {
 .nexser_files_menu {
     min-width: 600px;
     min-width: 300px;
+}
+
+.localstorage_details_menu {
+    width: 700px;
+    height: 500px;
+}
+
+.console_error_menu {
+    width: 600px;
+    height: 400px;
+}
+
+.kakeibo_menu {
+    width: 800px;
+    height: 500px;
 }
 
 #v {
@@ -1346,7 +1362,7 @@ body::-webkit-scrollbar {
 
 .error_icon {
     display: block;
-    font-size: 18px;
+    font-size: 16.5px;
     font-family: monospace;
     height: 24px;
     width: 24px;
@@ -1361,6 +1377,7 @@ body::-webkit-scrollbar {
     top: 46.5px;
     text-align: center;
     justify-content: center;
+    text-shadow: 0.2px 0.2px 0, 0.2px -0.2px 0px, -0.2px 0.2px 0, -0.2px -0.2px 0px, 0.2px 0px 0px, 0px 0.2px 0px, -0.2px 0px 0px, 0px -0.2px 0px;
 }
 
 .warning_windows {
@@ -1690,7 +1707,7 @@ body::-webkit-scrollbar {
 }
 
 .nexser_search_menu {
-    width: 650px;
+    width: 850px;
 }
 
 #myUL {
@@ -2106,13 +2123,13 @@ body::-webkit-scrollbar {
 }
 
 .window_files.file_border {
-    outline: 1.5px dotted darkblue;
-    outline-offset: -1.5px;
+    background: blue;
+    color: white;
 }
 
-.window_files:hover {
-    color: white;
-    background: darkblue;
+.window_files.file_border2 {
+    outline: 1.5px dotted darkblue;
+    outline-offset: -1.5px;
 }
 
 .window_files>.windowfile_time {
@@ -2239,9 +2256,9 @@ textarea {
 
 #editor {
     width: 100%;
-    height: 100vh;
-    position: relative;
-    min-width: 800px;
+    height: 100%;
+    position: absolute;
+    min-width: 350px;
     resize: none;
 }
 
@@ -2261,9 +2278,7 @@ textarea {
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
-    position: relative;
-    width: 100%;
-    height: 100vh;
+    position: absolute;
     background: black;
     color: white;
     font-family: Courier;
@@ -2271,9 +2286,8 @@ textarea {
 }
 
 #preview {
-    display: block;
     width: 100%;
-    height: 100vh;
+    height: 100%;
     background: whitesmoke;
 }
 
@@ -2282,11 +2296,6 @@ textarea {
     height: 50vh;
     min-width: 200px;
     min-height: 22.5px;
-}
-
-.child_windows.big #preview {
-    width: 99.9%;
-    height: 95.0vh;
 }
 
 /* power_icon */
@@ -2820,7 +2829,8 @@ progress::-webkit-progress-value {
     display: block;
     position: absolute;
     z-index: 0;
-    /* pointer-events: none; */
+    width: 100%;
+    height: 100vh;
 }
 
 .rectangle {
@@ -2834,6 +2844,10 @@ progress::-webkit-progress-value {
     opacity: 0.5;
     pointer-events: none;
     z-index: 0;
+}
+
+.resize_none {
+    resize: none;
 }
 
 /* window resizes */
@@ -2886,8 +2900,8 @@ progress::-webkit-progress-value {
     right: -5px;
     cursor: nwse-resize;
     z-index: 2;
-    width: 12.5px;
-    height: 12.5px;
+    width: 20px;
+    height: 20px;
 }
 
 .resizer.top {
@@ -2986,4 +3000,64 @@ progress::-webkit-progress-value {
     position: absolute;
     min-width: 250px;
     min-height: 250px;
+}
+
+.white_space_wrap {
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 75%;
+}
+
+.test_site_menu {
+    width: 500px;
+    height: 400px;
+}
+
+.site_frame {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+
+
+#opacitySlider {
+    margin-top: 10px;
+    margin-left: 5px;
+    margin-right: 40px;
+    -webkit-appearance: none;
+    width: 100%;
+    height: 8px;
+    background: #ddd;
+    outline: none;
+    transition: opacity .2s;
+    border-top: 1.5px #eee solid;
+    border-left: 1.5px #eee solid;
+    border-bottom: 1.5px #333 solid;
+    border-right: 1.5px #333 solid;
+}
+
+#opacitySlider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background: silver;
+    border-top: 1.5px #eee solid;
+    border-left: 1.5px #eee solid;
+    border-bottom: 1.5px #333 solid;
+    border-right: 1.5px #333 solid;
+    cursor: pointer;
+}
+
+#opacitySlider::-moz-range-thumb {
+    width: 15px;
+    height: 15px;
+    background: silver;
+    border-top: 1.5px #eee solid;
+    border-left: 1.5px #eee solid;
+    border-bottom: 1.5px #333 solid;
+    border-right: 1.5px #333 solid;
+    cursor: pointer;
 }

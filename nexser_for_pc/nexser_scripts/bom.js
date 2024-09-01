@@ -136,10 +136,19 @@ function leftClicked() {
         document.getElementsByClassName('error_icon')[0].style.display = "none"
         document.getElementsByClassName('error_windows')[0].classList.remove('active')
         document.querySelector('.test_allwindow').style.display = "block";
+        const bom_time = document.getElementById('bom_time').textContent;
+        document.querySelector('.bom_clear_time').textContent = bom_time;
+        localStorage.setItem('bom_time', bom_time)
 
         clearTimeout(timeoutId);
         return;
     }
+}
+
+document.querySelector('.bom_clear_time').textContent = "000";
+let bom_time2 = localStorage.getItem('bom_time')
+if (localStorage.getItem('bom_time')) {
+    document.querySelector('.bom_clear_time').textContent = bom_time2;
 }
 
 // 右クリック 旗を置く

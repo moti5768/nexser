@@ -312,7 +312,14 @@ class tetris {
         context.fillRect(0, 0, canvas.width, canvas.height);
     }
 }
+
 function mereset() {
     const me = document.getElementById('message');
     me.textContent = ""
+}
+
+tetris = new tetris();
+
+function tetris_start() {
+    tetris.startGame();
 }

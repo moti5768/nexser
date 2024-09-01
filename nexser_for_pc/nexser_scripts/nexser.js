@@ -73,9 +73,14 @@ if (ua.includes("mobile")) {
     const command_help_menu = document.querySelector('.command_help_menu');
     const omikuji_menu = document.querySelector('.omikuji_menu');
     const localstorage_monitor_menu = document.querySelector('.localstorage_monitor_menu');
+    const localstorage_details_menu = document.querySelector('.localstorage_details_menu');
     const paint_menu = document.querySelector('.paint_menu');
     const nexser_files_menu = document.querySelector('.nexser_files_menu');
     const url_drop_menu = document.querySelector('.url_drop_menu');
+    const alarm_menu = document.querySelector('.alarm_menu');
+    const test_site_menu = document.querySelector('.test_site_menu');
+    const console_error_menu = document.querySelector('.console_error_menu');
+    const kakeibo_menu = document.querySelector('.kakeibo_menu');
 
     const notice_menu = document.querySelector('.notice_menu');
 
@@ -94,11 +99,50 @@ if (ua.includes("mobile")) {
     let startX, startY, isDrawing = false;
     let rectangle;
     document.addEventListener('mousedown', (e) => {
+
+        var isClickInsideStartButton7 = Array.from(document.querySelectorAll('.window_files')).some(button => button.contains(e.target));
+        if (!isClickInsideStartButton7) {
+            Array.from(document.getElementsByClassName('window_files')).forEach((window_files3) => {
+                window_files3.classList.remove('file_border2');
+                if (window_files3.classList.contains('file_border')) {
+                    document.querySelector('.file_border').classList.add('file_border2');
+                    document.querySelector('.file_border2').classList.remove('file_border');
+                }
+            })
+
+        }
+
+
+        var isClickInsideStartButton = document.querySelector('.start_button').contains(e.target);
+        var isClickInsideParentStartMenu2 = document.querySelector('.parentstartmenu2').contains(e.target);
+        if (!isClickInsideStartButton && !isClickInsideParentStartMenu2) {
+            startmenu_close()
+        }
+        var isClickInsideStartButton3 = Array.from(document.querySelectorAll('.windowtool_child ,.windowtool_parent')).some(button => button.contains(e.target));
+        if (!isClickInsideStartButton3) {
+            document.querySelectorAll('.windowtool_child').forEach(button => {
+                button.style.display = "none";
+            });
+        }
+
+        var isClickInsideStartButton4 = document.querySelector('.battery_child').contains(e.target);
+        var isClickInsideStartButton4_2 = document.querySelector('.battery_menu').contains(e.target);
+        if (!isClickInsideStartButton4 && !isClickInsideStartButton4_2) {
+            document.querySelector('.battery_menu').style.display = "none";
+            document.querySelector('.battery_child').classList.remove('pressed');
+        }
+
+        var isClickInsideStartButton5 = document.querySelector('.sit_button').contains(e.target);
+        var isClickInsideStartButton6 = document.querySelector('.screen_light_range_child').contains(e.target);
+        if (!isClickInsideStartButton5 && !isClickInsideStartButton6) {
+            document.querySelector('.screen_light_range_child').style.display = "none";
+            document.querySelector('.sit_button').classList.remove('pressed');
+        }
+
         if (desktop.style.display == "block") {
             startX = e.clientX;
             startY = e.clientY;
             isDrawing = true;
-
             rectangle = document.createElement('div');
             rectangle.className = 'rectangle';
             rectangle.style.left = `${startX}px`;
@@ -112,7 +156,6 @@ if (ua.includes("mobile")) {
             const currentY = e.clientY;
             const width = currentX - startX;
             const height = currentY - startY;
-
             rectangle.style.width = `${Math.abs(width)}px`;
             rectangle.style.height = `${Math.abs(height)}px`;
             rectangle.style.left = `${Math.min(startX, currentX)}px`;
@@ -126,31 +169,16 @@ if (ua.includes("mobile")) {
         }
     });
 
-
-
-    function lights() {
-        const lightvalue = document.querySelector('.light_value').value;
-        document.querySelector('.screen_light').style.opacity = lightvalue;
-        localStorage.setItem('light_level', lightvalue);
-    }
-
-    const lightlevel = localStorage.getItem('light_level');
-    if (localStorage.getItem('light_level')) {
-        document.querySelector('.screen_light').style.opacity = lightlevel;
-        document.querySelector('.light_value').value = lightlevel;
-    }
-
     function lightchild() {
         const screen_light_range_child = document.querySelector('.screen_light_range_child');
-        if (screen_light_range_child.style.display == "block") {
+        if (screen_light_range_child.style.display == "flex") {
             screen_light_range_child.style.display = "none"
         } else {
-            screen_light_range_child.style.display = "block"
+            screen_light_range_child.style.display = "flex"
         }
     }
 
     // nexser_load
-
     new Promise((resolve) => {
         setTimeout(getStorage, resolve());
         setTimeout(taskbar_none, resolve());
@@ -339,7 +367,10 @@ if (ua.includes("mobile")) {
                 document.querySelector('.clock_button').textContent = "on"
                 document.querySelector('.time').style.display = "none";
             }
-
+            if (localStorage.getItem('battery_button')) {
+                document.querySelector('.battery_button').textContent = "on"
+                document.querySelector('.task_battery').style.display = "none";
+            }
             if (localStorage.getItem('taskbar_zindex_0')) {
                 taskbar.style.zIndex = "0";
                 document.querySelector('.taskbar_zindex_0').textContent = "on"
@@ -477,12 +508,23 @@ if (ua.includes("mobile")) {
             }
 
             if (localStorage.getItem('wallpaper_95')) {
-                document.querySelector('.nexser_backgroundimage_1').style.display = "block"
+                document.querySelector('.nexser_backgroundimage_1').style.display = "block";
+                minidesk_backgroundresize1();
+                background_img.style.width = "100%"
+                background_img.style.height = "100%"
+            }
+            if (localStorage.getItem('wallpaper_95_2')) {
+                document.querySelector('.nexser_backgroundimage_2').style.display = "block";
+                minidesk_backgroundresize2();
+                background_img.style.width = "100%"
+                background_img.style.height = "100%"
             }
             if (localStorage.getItem('wallpaper_xp')) {
-                document.querySelector('.nexser_backgroundimage_2').style.display = "block"
+                document.querySelector('.nexser_backgroundimage_3').style.display = "block";
+                minidesk_backgroundresize3();
+                background_img.style.width = "100%"
+                background_img.style.height = "100%"
             }
-
             resolve();
         }, 10);
 
@@ -543,9 +585,7 @@ if (ua.includes("mobile")) {
             localmemory_size()
             resolve()
         }, 500);
-    }).then(() => {
-        // 処理が無事終わったことを受けとって実行される処理
-    });
+    })
 
     function load_nexser() {
         localStorage.removeItem('no_shutdown')
@@ -595,49 +635,32 @@ if (ua.includes("mobile")) {
         document.querySelector('.focus').focus();
     })
 
+    function startmenu_close() {
+        parent_start_menu.style.display = "none";
+        document.querySelector('.start_button').classList.remove('pressed');
+    }
+
     document.getElementById('startbtn').addEventListener('mousedown', function () {
-        document.querySelectorAll('.windowtool_child').forEach(function (windowtool_child) {
-            windowtool_child.style.display = "none"
-        })
         Array.from(document.getElementsByClassName('desktop_files')).forEach((df1) => {
             const file10 = df1.firstElementChild;
             file10.classList.remove('file_select');
         })
-        if (start_menu.style.display == "block") {
-            // noneで非表示
-            start_menu.style.display = "none";
-            document.querySelector('.start_button').classList.remove('pressed')
+        if (parent_start_menu.style.display == "block") {
+            startmenu_close()
         } else {
-            // blockで表示
-            start_menu.style.display = "block";
+            parent_start_menu.style.display = "block";
             document.querySelector('.start_button').classList.add('pressed');
-            document.querySelector('.battery_menu').style.display = "none";
-            document.querySelector('.battery_child').classList.remove('pressed');
-
-            document.querySelector('.screen_light_range_child').style.display = "none";
-            document.querySelector('.sit_button').classList.remove('pressed');
         }
     })
     document.querySelector('.battery_child').addEventListener('click', function () {
         if (document.querySelector('.battery_menu').style.display == "block") {
-            // noneで非表示
             document.querySelector('.battery_menu').style.display = "none";
         } else {
-            // blockで表示
             document.querySelector('.battery_menu').style.display = "block";
         }
     })
     document.getElementById('files').addEventListener('mousedown', function () {
-        start_menu.style.display = "none";
-        document.querySelector('.start_button').classList.remove('pressed');
-        document.querySelector('.battery_child').classList.remove('pressed');
-        document.querySelector('.battery_menu').style.display = "none";
-        document.querySelector('.screen_light_range_child').style.display = "none";
-        document.querySelector('.sit_button').classList.remove('pressed');
         alltitle_navyreomve();
-        document.querySelectorAll('.windowtool_child').forEach(function (windowtool_child) {
-            windowtool_child.style.display = "none"
-        })
         titlecolor_set();
     });
     document.getElementById('files').addEventListener('click', function () {
@@ -649,31 +672,11 @@ if (ua.includes("mobile")) {
     document.getElementById('taskbar').addEventListener('mousedown', function () {
         alltitle_navyreomve();
         titlecolor_set();
-        document.querySelectorAll('.windowtool_child').forEach(function (windowtool_child) {
-            windowtool_child.style.display = "none"
-        })
-    });
-    parent_start_menu.addEventListener('click', function () {
-        start_menu.style.display = "none";
-        document.querySelector('.start_button').classList.remove('pressed');
-
     });
     document.querySelector('.taskbar_buttons, .child').addEventListener('mousedown', function () {
-        start_menu.style.display = "none";
-        document.querySelector('.start_button').classList.remove('pressed')
-
         getLargestZIndex('.child_windows');
         z_index.textContent = getLargestZIndex('.child_windows');
     });
-
-    document.querySelectorAll('.child_windows,.welcome_windows,.error_windows,.warning_windows').forEach(function (allwindow) {
-        allwindow.addEventListener('mousedown', function () {
-            document.querySelector('.battery_child').classList.remove('pressed');
-            document.querySelector('.battery_menu').style.display = "none";
-            document.querySelector('.screen_light_range_child').style.display = "none";
-            document.querySelector('.sit_button').classList.remove('pressed');
-        })
-    })
 
     Array.from(document.getElementsByClassName('button')).forEach((button) => {
         button.addEventListener('click', () => {
@@ -717,6 +720,10 @@ if (ua.includes("mobile")) {
     })
 
     function nexser_program_open() {
+        startmenu_close();
+        y_iframeController('pauseVideo');
+        preview2_stop();
+        document.querySelectorAll('video').forEach(video => video.pause());
         func2();
         desktop.style.display = "none";
         document.getElementsByClassName('pattern_backgrounds')[0].style.display = "none";
@@ -952,15 +959,16 @@ if (ua.includes("mobile")) {
             const pass = document.querySelector('.password').value;
 
             const password_lock = (String(pass)
-                .replaceAll("0", "a+b").replaceAll("1", "c#d").replaceAll("2", "e*f")
-                .replaceAll("3", "g|h").replaceAll("4", "i=j").replaceAll("5", "k[l")
-                .replaceAll("6", "m]n").replaceAll("7", "o-p").replaceAll("8", "q>r")
-                .replaceAll("9", "s<t")
+                .replaceAll("0", ".a+b.").replaceAll("1", ".c#d.").replaceAll("2", ".e*f.")
+                .replaceAll("3", ".g|h.").replaceAll("4", ".i=j.").replaceAll("5", ".k[l.")
+                .replaceAll("6", ".m]n.").replaceAll("7", ".o-p.").replaceAll("8", ".q>r.")
+                .replaceAll("9", ".s<t.")
             );
 
             localStorage.setItem('password', password_lock);
             localStorage.setItem('login', passlogin);
             document.querySelector('.passcode').textContent = "登録しました";
+            document.querySelector('.pass_locked').textContent = password_lock;
         }
     }
 
@@ -976,7 +984,7 @@ if (ua.includes("mobile")) {
     }
 
     function pass_check() {
-
+        setColor();
         if (localStorage.getItem('password') && !localStorage.getItem('login')) {
             document.querySelector('.password_form').style.display = "block";
             document.getElementById('pass_form').focus();
@@ -987,16 +995,13 @@ if (ua.includes("mobile")) {
     }
 
     function password_login(login) {
-
         const password_unlock = localStorage.getItem('password');
-
         const password_unlock2 = (String(password_unlock)
-            .replaceAll("a+b", "0").replaceAll("c#d", "1").replaceAll("e*f", "2")
-            .replaceAll("g|h", "3").replaceAll("i=j", "4").replaceAll("k[l", "5")
-            .replaceAll("m]n", "6").replaceAll("o-p", "7").replaceAll("q>r", "8")
-            .replaceAll("s<t", "9")
+            .replaceAll(".a+b.", "0").replaceAll(".c#d.", "1").replaceAll(".e*f.", "2")
+            .replaceAll(".g|h.", "3").replaceAll(".i=j.", "4").replaceAll(".k[l.", "5")
+            .replaceAll(".m]n.", "6").replaceAll(".o-p.", "7").replaceAll(".q>r.", "8")
+            .replaceAll(".s<t.", "9")
         );
-
         if (password_unlock2 == document.querySelector('#pass_form').value) {
             document.querySelector('.password_form').style.display = "none";
             document.querySelector('.pass_no').textContent = "";
@@ -1020,9 +1025,9 @@ if (ua.includes("mobile")) {
         document.querySelector('#code_html').style.display = "none";
         document.querySelector('#code_script').style.display = "none";
         document.querySelector('#code_script2').style.display = "none";
-        document.querySelector('.start_button').classList.remove('pressed');
         document.querySelector('.focus').blur();
         window_none();
+        startmenu_close();
         document.getElementById('nex').style.cursor = 'none';
         if (localStorage.getItem('prompt_data2')) {
             func2();
@@ -1069,6 +1074,7 @@ if (ua.includes("mobile")) {
     Array.from(logoff).forEach(element => {
         element.addEventListener('click', event => {
             document.getElementById('nex').style.cursor = 'progress';
+            startmenu_close()
             setTimeout(() => {
                 document.querySelector('.test_allwindow').style.display = "block";
                 if (sessionStorage.getItem('start_camera')) {
@@ -1118,7 +1124,6 @@ if (ua.includes("mobile")) {
                             prompt_text.style.color = "";
                             nexser.style.display = "none";
                             screen_prompt.style.display = "block";
-                            start_menu.style.display = "none";
                             document.querySelector('.focus').focus();
                             document.getElementById('nex').style.cursor = '';
                         }, 500);
@@ -1140,6 +1145,7 @@ if (ua.includes("mobile")) {
     Array.from(restart).forEach(element => {
         element.addEventListener('click', event => {
             document.getElementById('nex').style.cursor = 'progress';
+            startmenu_close()
             setTimeout(() => {
                 document.querySelector('.test_allwindow').style.display = "block";
                 if (sessionStorage.getItem('start_camera')) {
@@ -1186,7 +1192,6 @@ if (ua.includes("mobile")) {
                             prompt_text.style.color = "";
                             nexser.style.display = "none";
                             document.querySelector('.restart_text').style.display = "block";
-                            start_menu.style.display = "none";
                         }, 500);
                         setTimeout(() => {
                             document.querySelector('.restart_text').style.display = "none";
@@ -1197,7 +1202,7 @@ if (ua.includes("mobile")) {
                     }, 1500);
                 } else {
                     document.getElementById('nex').style.cursor = '';
-                    document.querySelector('.window_error_text').textContent = "window open no restart!"
+                    document.querySelector('.window_error_text').textContent = "全てのウィンドウが閉じてないため、再起動できません!"
                     error_windows.classList.remove('active')
                     prompt_text2.style.color = "";
                     document.querySelector('.test_allwindow').style.display = "block";
@@ -1245,7 +1250,6 @@ if (ua.includes("mobile")) {
             }, 1500);
             setTimeout(() => {
                 startup_window_open();
-                ;
                 if (localStorage.getItem('toolbar_on')) {
                     toolbar.style.display = "block";
                 }
@@ -1402,6 +1406,7 @@ if (ua.includes("mobile")) {
     function welcome() {
         document.querySelector('.welcome_windows').style.display = "block"
         welcome_animation();
+        startmenu_close();
     }
 
     startup_window_open()
@@ -1410,60 +1415,63 @@ if (ua.includes("mobile")) {
             const element = document.querySelector('.my_computer');
             element.closest('.child_windows');
             element.classList.remove('active');
-            zindexwindow_addnavy()
+
         }
         if (localStorage.getItem('startup_note')) {
             const element = document.querySelector('.note_pad');
             element.closest('.child_windows');
             element.classList.remove('active');
-            zindexwindow_addnavy();
+
         }
         if (localStorage.getItem('startup_color')) {
             const element = document.querySelector('.color_menu');
             element.classList.remove('active');
-            zindexwindow_addnavy()
+
         }
         if (localStorage.getItem('startup_screen')) {
             const element = document.querySelector('.screen_text_menu');
             element.closest('.child_windows');
             element.classList.remove('active');
-            zindexwindow_addnavy()
+
         }
         if (localStorage.getItem('startup_htmlviewer_edit')) {
             const element = document.querySelector('.htmlviewer_edit_menu');
             element.closest('.child_windows');
             element.classList.remove('active');
-            zindexwindow_addnavy()
+
         }
         if (localStorage.getItem('startup_guidebook')) {
             const element = document.querySelector('.nexser_guidebook_menu');
             element.closest('.child_windows');
             element.classList.remove('active');
-            zindexwindow_addnavy()
+
         }
         if (localStorage.getItem('startup_objective')) {
             const element = document.querySelector('.objective_menu');
             element.closest('.child_windows');
             element.classList.remove('active');
-            zindexwindow_addnavy()
+
         }
         if (localStorage.getItem('startup_calendar')) {
             const element = document.querySelector('.calendar_menu');
             element.closest('.child_windows');
             element.classList.remove('active');
-            zindexwindow_addnavy()
+
         }
         titlecolor_set()
     }
 
 
     function nexser_signout() {
+        startmenu_close()
         if (localStorage.getItem('password') && gets == gets2) {
             document.getElementsByClassName('welcome_windows')[0].style.display = "none";
             document.querySelector('.password_form').style.display = "block";
             localStorage.removeItem('login');
             document.getElementById('desktop').style.display = "none";
             document.querySelector('#pass_form').focus();
+            window_none();
+            window_reset();
             sound_stop()
         } else if (localStorage.getItem('password') && gets != gets2) {
             document.getElementById('nex').style.cursor = '';
@@ -1725,7 +1733,7 @@ if (ua.includes("mobile")) {
             const notearea = document.querySelector('.note_area');
             notearea.style.height = "";
             notearea.style.width = "";
-            windowposition_reset()
+            windowposition_reset();
             allwindow.classList.remove('leftwindow');
             allwindow.classList.remove('rightwindow');
             allwindow.style.transition = "";
@@ -1734,7 +1742,7 @@ if (ua.includes("mobile")) {
             document.querySelector('.minimization_button').style.visibility = "visible";
             allwindow.classList.remove('minimization');
             allwindow.classList.remove('selectwindows')
-            test_windows_button()
+            test_windows_button();
         });
 
         bom_reset();
@@ -1743,11 +1751,12 @@ if (ua.includes("mobile")) {
         timerreset();
         cpubench_clear();
         cpucalc_reset();
-        p_clear();
+        prompt2_text_clear();
         calc_clear();
         preview2_stop();
         videourl_reset();
         resetGame();
+        nexser_prompt_reset();
         document.querySelector('.password').value = "";
         document.querySelector('#pass_form').value = "";
 
@@ -1760,9 +1769,9 @@ if (ua.includes("mobile")) {
         document.querySelectorAll('.child_windows').forEach(function (allwindow_none) {
             allwindow_none.classList.add('active');
             allwindow_none.classList.remove('big');
-
             allwindow_none.classList.remove('rightwindow');
             allwindow_none.classList.remove('leftwindow');
+            allwindow_none.classList.remove('selectwindows');
             allwindow_none.style.right = "";
             windowposition_reset()
             allwindow_none.style.transition = "";
@@ -1772,11 +1781,6 @@ if (ua.includes("mobile")) {
         notearea.style.width = "";
         warning_windows.style.display = "none";
         error_windows.classList.add('active');
-
-        document.querySelectorAll('.windowtool_child').forEach(function (windowtool_child) {
-            windowtool_child.style.display = "none"
-        })
-
     }
     function window_active() {
         document.querySelectorAll('.child_windows').forEach(function (allwindow_active) {
@@ -1810,63 +1814,22 @@ if (ua.includes("mobile")) {
         nexser_title_text.textContent = nexserTitle;
     })
 
-    function alldata_clear() {
-        // localStorage.removeItem('data_taskbar_none');
-        toolbar.style.display = "none";
-        colordata_clear();
-        old_screen_reset();
-        list_shadow_reset();
-        back_pattern_remove();
-        titlecolor_remove();
-    }
-
     function allStorage_clear() {
         const alllength = localStorage.length;
         if (alllength > 0) {
-
             if (sessionStorage.getItem('start_camera')) {
                 stopCamera()
             }
-
             localStorage.clear();
             sessionStorage.clear();
-            alldata_clear();
             document.querySelector('.tests').textContent = (alllength);
             taskbar_active();
-            document.querySelector('.files_inline').style.display = "flex";
-
             document.querySelector('.test_allwindow').style.display = "block";
             warning_windows.style.display = "block";
             document.querySelector('.shutdown_button').style.display = "block";
             document.querySelector('.warningclose_button').style.display = "none";
             document.querySelector('.warning_title_text').textContent = "nexser";
-            document.querySelector('.window_warning_text').textContent = "nexserのデータを全削除しました!";
-            document.querySelector('.installbutton_1').textContent = "install";
-            document.querySelector('.startup_sound').textContent = "INSTALL";
-            document.querySelector('.startup_versiontext').textContent = "OFF";
-            document.querySelector('.installbutton_2').textContent = "install";
-
-            document.querySelector('.close_button3').style.display = "none";
-            document.querySelector('.taskbar_position_button').textContent = "top";
-            document.getElementById('taskbar').style.top = "";
-            document.getElementById('taskbar').style.bottom = "";
-            document.getElementById('taskbar').style.height = "";
-            document.querySelector('.child_start_menu').style.top = "auto";
-            document.querySelector('.child_start_menu').style.bottom = "";
-
-            document.querySelector('.startup_computer').textContent = "OFF";
-            document.querySelector('.startup_note').textContent = "OFF";
-            document.querySelector('.startup_color').textContent = "OFF";
-            document.querySelector('.startup_screen').textContent = "OFF";
-            document.querySelector('.startup_htmlviewer_edit').textContent = "OFF";
-            document.querySelector('.startup_guidebook').textContent = "OFF";
-
-            document.querySelector('.startup_htmlviewer_edit').textContent = "OFF";
-            document.querySelector('.startup_speed').textContent = "OFF";
-
-            document.querySelectorAll('.big').forEach(function (child_win_posi) {
-                child_win_posi.style.top = "auto"
-            })
+            document.querySelector('.window_warning_text').textContent = "nexserのデータを全削除しました!　5秒後に再ロードします!";
         }
     }
 
@@ -1898,7 +1861,6 @@ if (ua.includes("mobile")) {
         document.getElementById('taskbar').style.bottom = "";
     }
 
-
     document.querySelectorAll('#taskbar').forEach(function (taskbar) {
         taskbar.addEventListener('mouseleave', function () {
             if (localStorage.getItem('taskbar_height') && (localStorage.getItem('taskbar_autohide'))) {
@@ -1919,7 +1881,7 @@ if (ua.includes("mobile")) {
             if (localStorage.getItem('taskbar_height') && (localStorage.getItem('taskbar_autohide'))) {
                 const t = localStorage.getItem('taskbar_height');
                 const t2 = t - 5;
-                document.getElementById('taskbar').style.bottom = "-" + t2 + "px"; z
+                document.getElementById('taskbar').style.bottom = "-" + t2 + "px";
             } else if (localStorage.getItem('taskbar_autohide')) {
                 taskbar.style.bottom = "-35px"
             }
@@ -2091,17 +2053,47 @@ if (ua.includes("mobile")) {
         prompt_text_check2()
         // 入力フォームを無効化
         input.disabled = true;
+        document.querySelector('.name2').classList.add('pointer_none');
         document.querySelector('.name2').classList.remove('name2');
         document.querySelector('.focus2').classList.remove('focus2');
         // 新しい入力フォームを生成
         const newInputContainer = document.createElement('div');
         newInputContainer.className = 'input_container';
-        newInputContainer.innerHTML = `
-            <span class="small">nexser/></span><input type="text" class="command_input2 name2 focus2" placeholder="|" onkeydown="handleKeyDown(event, this)">
-        `;
+        newInputContainer.classList.add('prompt_hukusei2');
+        newInputContainer.innerHTML = `<span class="small">nexser/></span><textarea rows="1" class="command_input2 name2 focus2" placeholder="|" onkeydown="handleKeyDown(event, this)"></textarea>`;
         // 新しい入力フォームを追加
         document.getElementById('form_container').appendChild(newInputContainer);
+        setTimeout(() => {
+            commandarea_resize()
+        }, 0);
+    }
+
+    function commandarea_resize() {
+        const textarea = document.querySelector('.focus2');
+        textarea.addEventListener('input', () => {
+            textarea.style.height = 'auto';
+            textarea.style.height = textarea.scrollHeight + 'px';
+        });
         document.querySelector('.focus2').focus()
+    }
+
+    commandarea_resize()
+
+
+    function nexser_prompt_reset() {
+        setTimeout(() => {
+            document.querySelectorAll('.prompt_hukusei2').forEach(function (prompt_hukusei2) {
+                prompt_hukusei2.remove()
+            })
+            document.querySelector('.command2').classList.add('name2');
+            document.querySelector('.command2').classList.add('focus2');
+            document.querySelector('.command2').classList.remove('pointer_none');
+            document.querySelector('.command2').disabled = false;
+            document.querySelector('.focus2').focus();
+            document.querySelector('.focus2').style.height = "";
+            prompt2_text_clear();
+            prompt_text2.style.color = "";
+        }, 10);
     }
 
     function prompt_text_check() {
@@ -2224,11 +2216,14 @@ if (ua.includes("mobile")) {
             case command_1 + a:
                 prompt_text2.style.color = "";
                 document.querySelector('#nexser').style.background = a;
+                localStorage.setItem('BKCOLOR', a);
+                wallpaper_allremove()
                 break;
 
             case command_2 + b:
                 prompt_text2.style.color = "";
                 document.querySelector('body').style.color = b;
+                localStorage.setItem('COLOR', b);
                 break;
 
             case command_3 + c:
@@ -2246,34 +2241,33 @@ if (ua.includes("mobile")) {
             case command_5 + e:
                 prompt_text2.style.color = "";
                 var result2 = Function('return (' + e + ');')();
-                document.querySelector('#shell').textContent = result2;
+                document.querySelector('#shell').value = result2;
                 shellmenu_open()
                 break;
 
             case command_6 + f:
                 prompt_text2.style.color = "";
-                document.querySelector('#shell').textContent = f;
+                document.querySelector('#shell').value = f;
                 shellmenu_open()
                 break;
 
             case command_7 + g:
                 prompt_text2.style.color = "";
                 const g2 = parseInt(g);
-                document.querySelector('#shell').textContent = (g2.toString(2));
+                document.querySelector('#shell').value = (g2.toString(2));
                 shellmenu_open()
                 break;
 
             case command_8 + h:
                 prompt_text2.style.color = "";
                 const h2 = parseInt(h, 2);
-                document.querySelector('#shell').textContent = (h2.toString(10));
+                document.querySelector('#shell').value = (h2.toString(10));
                 shellmenu_open()
                 break;
 
             case command_9 + i2:
                 prompt_text2.style.color = "";
 
-                // let arraySplit = i2.split('');
                 let newStr = (String(i2).replace(/[a-z]/gi, "")
                     .replaceAll("01|", "A").replaceAll("02|", "B").replaceAll("03|", "C").replaceAll("04|", "D").replaceAll("05|", "E").replaceAll("06|", "F")
                     .replaceAll("07|", "G").replaceAll("08|", "H").replaceAll("09|", "I").replaceAll("10|", "J").replaceAll("11|", "K").replaceAll("12|", "L")
@@ -2305,7 +2299,7 @@ if (ua.includes("mobile")) {
                             htmlviewer_run_menu.closest('.child_windows');
                             htmlviewer_run_menu.classList.remove('active');
                             htmlviewer_run_menu.style.zIndex = largestZIndex++;
-                            zindexwindow_addnavy();
+
                         });
                         preview.srcdoc = test999;
 
@@ -2371,7 +2365,7 @@ if (ua.includes("mobile")) {
                             htmlviewer_run_menu.closest('.child_windows');
                             htmlviewer_run_menu.classList.remove('active');
                             htmlviewer_run_menu.style.zIndex = largestZIndex++;
-                            zindexwindow_addnavy();
+
                         });
                         preview.srcdoc = test9992;
 
@@ -2468,38 +2462,31 @@ if (ua.includes("mobile")) {
                 }, 100);
                 break;
 
-
-            case 'nexser/memory':
-                document.querySelector('.memory_menu').classList.remove('active');
-
-                document.querySelectorAll('.memory_menu').forEach(function (memory_menu) {
-                    memory_menu.closest('.child_windows');
-                    memory_menu.classList.remove('active');
-                    memory_menu.style.zIndex = largestZIndex++;
-                    zindexwindow_addnavy();
-                })
-
-                prompt_text2.style.color = "";
-                break;
-
-
             case '':
                 prompt_text2.style.color = "";
                 break;
+
+            case 'local/memory':
+                prompt_text2.style.color = "";
+                new Promise((resolve) => {
+                    setTimeout(() => {
+                        localmemory_size(),
+                            resolve();
+                    }, 0)
+                    setTimeout(() => {
+                        localstorage_details_menu.classList.remove('active');
+                        localstorage_details_menu.style.zIndex = largestZIndex++;
+
+                        resolve()
+                    }, 2000);
+                })
+                break;
+
             case 'help':
                 prompt_text2.style.color = "";
-
                 command_help_menu.classList.remove('active');
                 command_help_menu.style.zIndex = largestZIndex++;
-                zindexwindow_addnavy();
-                break;
-            case 'windows95/sound/start/play':
-                sound();
-                prompt_text2.style.color = "";
-                break;
-            case 'windows95/sound/shutdown/play':
-                sound2();
-                prompt_text2.style.color = "";
+
                 break;
             case 'screen/full':
                 full();
@@ -2511,7 +2498,7 @@ if (ua.includes("mobile")) {
                 break;
             case 'taskbar/none':
                 taskbar.style.display = "none";
-                const data_taskbar_none = document.prompt_text_form2.prompt_text2.value;
+                const data_taskbar_none = document.querySelector('.focus2').value;
                 localStorage.setItem('data_taskbar_none', data_taskbar_none);
                 prompt_text2.style.color = "";
                 taskbar_none()
@@ -2526,16 +2513,14 @@ if (ua.includes("mobile")) {
                 break;
             case 'allwindow/close':
                 if (localStorage.getItem('data_taskbar_none')) {
-                    document.querySelector('.window_error_text').textContent = "taskbar none window close no!"
+                    document.querySelector('.window_error_text').textContent = "タスクバーが非表示のため、ウィンドウが閉じれません!"
                     error_windows.classList.remove('active')
                     prompt_text2.style.color = "";
                     document.querySelector('.test_allwindow').style.display = "block";
                     sound3()
                 } else {
-
                     prompt_text2.style.color = "";
                     window_none()
-
                 }
                 break;
             case 'allwindow/open':
@@ -2552,7 +2537,7 @@ if (ua.includes("mobile")) {
                 allwindow_big()
                 break;
             case 'title/none':
-                const data_title_none = document.prompt_text_form2.prompt_text2.value;
+                const data_title_none = document.querySelector('.focus2').value;
                 localStorage.setItem('data_title_none', data_title_none);
                 prompt_text2.style.color = "";
                 title_none()
@@ -2582,15 +2567,18 @@ if (ua.includes("mobile")) {
                 cpucalc_open();
                 break;
             case 'nexser/data/clear':
-                allStorage_clear()
                 prompt_text2.style.color = "";
+                allStorage_clear()
+                setTimeout(() => {
+                    window.location = '';
+                }, 5000);
                 break;
             case 'welcome':
                 prompt_text2.style.color = "";
                 welcome()
                 break;
             case 'file/none':
-                const file_none = document.prompt_text_form2.prompt_text2.value;
+                const file_none = document.querySelector('.focus2').value;
                 localStorage.setItem('file_none', file_none);
                 prompt_text2.style.color = "";
                 document.querySelector('.files_inline').style.display = "none";
@@ -2599,6 +2587,28 @@ if (ua.includes("mobile")) {
                 localStorage.removeItem('file_none');
                 prompt_text2.style.color = "";
                 document.querySelector('.files_inline').style.display = "flex";
+                break;
+            case 'page/20230528':
+                prompt_text2.style.color = "";
+                document.querySelector('.test_site_menu').classList.remove('active');
+                test_site_menu.style.zIndex = largestZIndex++;
+
+                break;
+
+            case 'startmenu(console(error))=>true':
+                prompt_text2.style.color = "";
+                localStorage.setItem('startmenu_console', prompt_text2);
+                document.querySelector('.console_list').style.display = "block";
+                break;
+            case 'startmenu(console(error))=>false':
+                prompt_text2.style.color = "";
+                localStorage.removeItem('startmenu_console');
+                document.querySelector('.console_list').style.display = "none";
+                break;
+
+            case 'reset':
+                prompt_text2.style.color = "";
+                nexser_prompt_reset()
                 break;
 
             case 'windows95/open':
@@ -2617,22 +2627,39 @@ if (ua.includes("mobile")) {
                 prompt_text2.style.color = "red";
                 break;
         }
-        zindexwindow_addnavy()
+
         titlecolor_set()
     }
 
+    if (localStorage.getItem('startmenu_console')) {
+        document.querySelector('.console_list').style.display = "block"
+    }
 
     function shellmenu_open() {
         document.querySelectorAll('.prompt_shell_menu').forEach(function (prompt_shell_menu) {
             prompt_shell_menu.closest('.child_windows');
             prompt_shell_menu.classList.remove('active');
             prompt_shell_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy();
+            zindexwindow_addnavy()
+        });
+    }
+    function shellmenu_close() {
+        document.querySelectorAll('.prompt_shell_menu').forEach(function (prompt_shell_menu) {
+            prompt_shell_menu.closest('.child_windows');
+            document.getElementById('shell').value = "";
+            document.getElementById('shell').textContent = "";
+            document.getElementById('shell').innerHTML = "";
+            prompt_shell_menu.classList.add('active');
+            prompt_shell_menu.classList.remove('selectwindows');
+            prompt_shell_menu.style.zIndex = largestZIndex++;
+            test_windows_button()
         });
     }
 
-    function p_clear() {
-        document.querySelector('.focus2').value = "";
+    function prompt2_text_clear() {
+        document.querySelectorAll('.focus2').forEach(function (focus2) {
+            focus2.value = "";
+        })
     }
 
     function screen_backtextload() {
@@ -2660,14 +2687,8 @@ if (ua.includes("mobile")) {
                 document.getElementsByClassName('chargingTime')[0].innerHTML = battery.chargingTime;
                 document.getElementsByClassName('dischargingTime')[0].innerHTML = battery.dischargingTime;
             });
-            document.getElementsByClassName('memory')[0].textContent = (`Memory:   ${(performance.memory.usedJSHeapSize / 1024).toFixed(2)}KB`);
-            document.getElementsByClassName('memory2')[0].textContent = (`使用可能なメモリ    ${(performance.memory.jsHeapSizeLimit / 1048576).toFixed(2)}MB`);
-            document.getElementsByClassName('memory3')[0].textContent = (`割り当てられたメモリ  ${(performance.memory.totalJSHeapSize / 1024).toFixed(2)}KB`);
-            document.getElementsByClassName('memory4')[0].textContent = (`現在使用中のメモリ   ${(performance.memory.usedJSHeapSize / 1024).toFixed(2)}KB`);
-
             const locallength = localStorage.length;
             document.getElementsByClassName('length_localStorage')[0].textContent = (locallength);
-
         } else {
             const locallength = localStorage.length;
             document.getElementsByClassName('tests')[0].textContent = (locallength);
@@ -2703,21 +2724,12 @@ if (ua.includes("mobile")) {
 
             document.getElementsByClassName('cpu_cores')[0].textContent = (navigator.hardwareConcurrency);
 
-            document.getElementsByClassName('window_memory')[0].textContent = (`Memory:   ${(performance.memory.usedJSHeapSize / 1024).toFixed(2)}KB`);
-            document.getElementsByClassName('window_memory2')[0].textContent = (`使用可能なメモリ    ${(performance.memory.jsHeapSizeLimit / 1048576).toFixed(2)}MB`);
-            document.getElementsByClassName('window_memory3')[0].textContent = (`割り当てられたメモリ  ${(performance.memory.totalJSHeapSize / 1024).toFixed(2)}KB`);
-            document.getElementsByClassName('window_memory4')[0].textContent = (`現在使用中のメモリ   ${(performance.memory.usedJSHeapSize / 1024).toFixed(2)}KB`);
+            resize_background_image();
         }
     }, 100);
     Array.from(document.getElementsByClassName('window_inline_list')).forEach((window_inline_list) => {
         window_inline_list.addEventListener('click', function () {
 
-        });
-    })
-    Array.from(document.getElementsByClassName('desktop_files')).forEach((desktop_files) => {
-        desktop_files.addEventListener('click', function () {
-            start_menu.style.display = "none";
-            document.querySelector('.start_button').classList.remove('pressed');
         });
     })
     document.querySelectorAll('.close_button').forEach(function (close_button) {
@@ -2769,7 +2781,7 @@ if (ua.includes("mobile")) {
     })
     document.querySelectorAll('.bigscreen_button').forEach(function (bigscreen_button) {
         bigscreen_button.addEventListener('mousedown', function () {
-            zindexwindow_addnavy()
+
             const elements = document.querySelector('.title.navy');
             const elements2 = elements.closest('.child_windows');
             elements2.dataset.originalWidth = elements2.style.width;
@@ -2791,32 +2803,44 @@ if (ua.includes("mobile")) {
                 })
             }
 
-            bigscreenbutton.classList.remove('rightwindow');
-            bigscreenbutton.classList.remove('leftwindow');
-
             const t = localStorage.getItem('taskbar_height');
             if (localStorage.getItem('data_taskbar_none')) {
                 bigscreenbutton.style.height = ""
                 bigscreenbutton.style.width = ""
                 bigscreenbutton.style.top = "0"
                 bigscreenbutton.style.left = "0"
-                bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                if (localStorage.getItem('window_animation')) {
+                    bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                }
             } else if (localStorage.getItem('taskbar_position_button')) {
                 bigscreenbutton.style.height = ""
                 bigscreenbutton.style.width = ""
                 bigscreenbutton.style.top = "40px"
                 bigscreenbutton.style.left = "0"
-
                 bigscreenbutton.style.top = t + "px"
-
-                bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                if (localStorage.getItem('window_animation')) {
+                    bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                }
+            } else if (bigscreenbutton.classList.contains('rightwindow')) {
+                bigscreenbutton.style.height = ""
+                bigscreenbutton.style.width = ""
+                bigscreenbutton.style.top = "0"
+                bigscreenbutton.style.left = ""
+                if (localStorage.getItem('window_animation')) {
+                    bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                }
             } else {
                 bigscreenbutton.style.height = ""
                 bigscreenbutton.style.width = ""
                 bigscreenbutton.style.top = "0"
                 bigscreenbutton.style.left = "0"
-                bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                if (localStorage.getItem('window_animation')) {
+                    bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                }
             }
+
+            bigscreenbutton.classList.remove('rightwindow');
+            bigscreenbutton.classList.remove('leftwindow');
 
             setTimeout(() => {
                 bigscreenbutton.style.transition = ""
@@ -2839,6 +2863,16 @@ if (ua.includes("mobile")) {
         });
     })
 
+
+
+
+    function window_animation_true() {
+        const window_animation = "test_animation"
+        localStorage.setItem('window_animation', window_animation)
+    }
+    function window_animation_false() {
+        localStorage.removeItem('window_animation')
+    }
 
     document.querySelectorAll('.minscreen_button').forEach(function (minscreen_button) {
         minscreen_button.addEventListener('click', function () {
@@ -2865,8 +2899,9 @@ if (ua.includes("mobile")) {
             elements2.style.height = elements2.dataset.originalHeight;
             elements2.style.top = elements2.dataset.originalTop;
             elements2.style.left = elements2.dataset.originalLeft;
-
-            minscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+            if (localStorage.getItem('window_animation')) {
+                minscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+            }
             setTimeout(() => {
                 minscreenbutton.style.transition = ""
                 setTimeout(() => {
@@ -2901,7 +2936,9 @@ if (ua.includes("mobile")) {
             notearea.style.width = "";
             alliwindow_min.classList.remove('leftwindow');
             alliwindow_min.classList.remove('rightwindow');
-            alliwindow_min.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+            if (localStorage.getItem('window_animation')) {
+                alliwindow_min.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+            }
             setTimeout(() => {
                 alliwindow_min.classList.remove('big');
                 alliwindow_min.style.transition = ""
@@ -2932,13 +2969,17 @@ if (ua.includes("mobile")) {
                 bigscreenbutton.style.width = ""
                 bigscreenbutton.style.top = "40px"
                 bigscreenbutton.style.left = "0"
-                bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                if (localStorage.getItem('window_animation')) {
+                    bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                }
             } else {
                 bigscreenbutton.style.height = ""
                 bigscreenbutton.style.width = ""
                 bigscreenbutton.style.top = "0"
                 bigscreenbutton.style.left = "0"
-                bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                if (localStorage.getItem('window_animation')) {
+                    bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                }
             }
             setTimeout(() => {
                 bigscreenbutton.style.transition = ""
@@ -2969,28 +3010,32 @@ if (ua.includes("mobile")) {
                 windowleft.style.left = "0";
                 windowleft.style.height = "100%";
                 windowleft.style.width = "49.9%";
-                windowleft.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+                if (localStorage.getItem('window_animation')) {
+                    windowleft.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+                }
             } else if (localStorage.getItem('taskbar_position_button')) {
                 windowleft.style.right = "auto";
                 windowleft.style.top = "40px";
                 windowleft.style.left = "0";
                 windowleft.style.height = "100%";
                 windowleft.style.width = "49.9%";
-
                 windowleft.style.top = t + "px";
-
-                windowleft.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+                if (localStorage.getItem('window_animation')) {
+                    windowleft.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+                }
             } else {
                 windowleft.style.right = "auto";
                 windowleft.style.top = "0";
                 windowleft.style.left = "0";
                 windowleft.style.height = "100%";
                 windowleft.style.width = "49.9%";
-                windowleft.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+                if (localStorage.getItem('window_animation')) {
+                    windowleft.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+                }
             }
             setTimeout(() => {
                 windowleft.style.transition = "";
-                zindexwindow_addnavy()
+
                 titlecolor_set()
             }, 150);
 
@@ -3018,28 +3063,32 @@ if (ua.includes("mobile")) {
                 windowright.style.right = "0px";
                 windowright.style.height = "100%";
                 windowright.style.width = "49.9%";
-                windowright.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+                if (localStorage.getItem('window_animation')) {
+                    windowright.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+                }
             } else if (localStorage.getItem('taskbar_position_button')) {
                 windowright.style.left = "";
                 windowright.style.top = "40px";
                 windowright.style.right = "0px";
                 windowright.style.height = "100%";
                 windowright.style.width = "49.9%";
-
                 windowright.style.top = t + "px";
-
-                windowright.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+                if (localStorage.getItem('window_animation')) {
+                    windowright.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+                }
             } else {
                 windowright.style.left = "";
                 windowright.style.top = "0";
                 windowright.style.right = "0px";
                 windowright.style.height = "100%";
                 windowright.style.width = "49.9%";
-                windowright.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+                if (localStorage.getItem('window_animation')) {
+                    windowright.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+                }
             }
             setTimeout(() => {
                 windowright.style.transition = "";
-                zindexwindow_addnavy()
+
                 titlecolor_set()
             }, 150);
 
@@ -3083,7 +3132,9 @@ if (ua.includes("mobile")) {
 
             windowhalfbig.style.height = "55%"
             windowhalfbig.style.width = "55%"
-            windowhalfbig.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+            if (localStorage.getItem('window_animation')) {
+                windowhalfbig.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+            }
             setTimeout(() => {
                 windowhalfbig.style.transition = ""
             }, 150);
@@ -3094,7 +3145,9 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.windowsize_reset').forEach(function (windowsize_reset) {
         windowsize_reset.addEventListener('click', function () {
             const windowsizereset = windowsize_reset.closest('.child_windows');
-            windowsizereset.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+            if (localStorage.getItem('window_animation')) {
+                windowsizereset.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+            }
 
             if (windowsizereset.classList.contains('rightwindow')) {
                 windowsizereset.style.height = "";
@@ -3160,11 +3213,7 @@ if (ua.includes("mobile")) {
             }
         })
     })
-    document.querySelectorAll('.windowtool_child').forEach(function (windowtool_child) {
-        windowtool_child.addEventListener('click', function () {
 
-        })
-    })
     document.querySelectorAll('.allwindow_toolbar').forEach(function (allwindow_toolbar) {
         allwindow_toolbar.addEventListener('click', function () {
             document.querySelectorAll('.window_tool').forEach(function (window_tool) {
@@ -3211,29 +3260,12 @@ if (ua.includes("mobile")) {
 
     document.querySelectorAll('.title, .drag_button').forEach(function (title) {
         title.addEventListener('mousedown', function () {
-            document.querySelectorAll('.windowtool_child').forEach(function (windowtool_child) {
-                windowtool_child.style.display = "none"
-            })
             setTimeout(() => {
-                zindexwindow_addnavy()
+
                 titlecolor_set()
             }, 100);
         })
 
-    })
-    document.querySelectorAll('.title2').forEach(function (title2) {
-        title2.addEventListener('mousedown', function () {
-            document.querySelectorAll('.windowtool_child').forEach(function (windowtool_child) {
-                windowtool_child.style.display = "none"
-            })
-        })
-    })
-    document.querySelectorAll('.window_contents').forEach(function (window_contents) {
-        window_contents.addEventListener('mousedown', function () {
-            document.querySelectorAll('.windowtool_child').forEach(function (windowtool_child) {
-                windowtool_child.style.display = "none"
-            })
-        })
     })
 
 
@@ -3255,7 +3287,6 @@ if (ua.includes("mobile")) {
             let parentstartmenulists = parent_startmenu_lists.lastElementChild;
             parentstartmenulists.style.display = "block"
         })
-
         parent_startmenu_lists.addEventListener('mouseleave', function () {
             document.querySelectorAll('.child_start_menu_lists').forEach(function (child_startmenu_lists) {
                 child_startmenu_lists.style.display = "none";
@@ -3344,14 +3375,12 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.child_windows, .child').forEach(function (z_index_child_windows) {
         const zindexchildwindows = z_index_child_windows.closest('.child_windows');
         z_index_child_windows.addEventListener('mousedown', function () {
-            start_menu.style.display = "none";
-            document.querySelector('.start_button').classList.remove('pressed');
             zindexchildwindows.scrollTop = 0;
             zindexchildwindows.scrollLeft = 0;
             getLargestZIndex('.child_windows');
             z_index.textContent = getLargestZIndex('.child_windows');
             window_z_index = zindexchildwindows.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy();
+            zindexwindow_addnavy()
             titlecolor_set();
             const elements = document.querySelectorAll('.rectangle');
             elements.forEach(element => {
@@ -3362,9 +3391,9 @@ if (ua.includes("mobile")) {
 
             zindexchildwindows.scrollTop = 0;
             zindexchildwindows.scrollLeft = 0;
-            zindexwindow_addnavy()
+
             setTimeout(() => {
-                zindexwindow_addnavy()
+
                 titlecolor_set()
             }, 100);
             setTimeout(() => {
@@ -3401,7 +3430,7 @@ if (ua.includes("mobile")) {
         nexser_search.addEventListener('click', function () {
             nexser_search_menu.classList.toggle('active');
             nexser_search_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         });
     });
 
@@ -3426,35 +3455,58 @@ if (ua.includes("mobile")) {
         nexser_guidebook.addEventListener('click', () => {
             nexser_guidebook_menu.classList.toggle('active');
             nexser_guidebook_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.guidebook_window').forEach(guidebook_window =>
         guidebook_window.addEventListener('click', () => {
             guidebook_window_menu.classList.toggle('active');
             guidebook_window_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.guidebook_file').forEach(guidebook_file =>
         guidebook_file.addEventListener('click', () => {
             guidebook_file_menu.classList.toggle('active');
             guidebook_file_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.guidebook_taskbar').forEach(guidebook_taskbar =>
         guidebook_taskbar.addEventListener('click', () => {
             guidebook_taskbar_menu.classList.toggle('active');
             guidebook_taskbar_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.passmenu_button').forEach(passmenu_button =>
         passmenu_button.addEventListener('click', () => {
             password_menu.classList.toggle('active');
             password_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
+        })
+    );
+    document.querySelectorAll('.localstorage_details').forEach(localstorage_details =>
+        localstorage_details.addEventListener('click', () => {
+            localstorage_details_menu.classList.toggle('active');
+            localstorage_details_menu.style.zIndex = largestZIndex++;
+
+        })
+    );
+
+    document.querySelectorAll('.console_error_btn').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
+            console_error_menu.classList.toggle('active');
+            console_error_menu.style.zIndex = largestZIndex++;
+
+        })
+    );
+
+    document.querySelectorAll('.kakeibo_btn').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
+            kakeibo_menu.classList.toggle('active');
+            kakeibo_menu.style.zIndex = largestZIndex++;
+
         })
     );
 
@@ -3462,84 +3514,83 @@ if (ua.includes("mobile")) {
         testbtn.addEventListener('click', () => {
             main.classList.toggle('active');
             main.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy();
         })
     );
     document.querySelectorAll('.test_button2').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             my_computer.classList.toggle('active');
             my_computer.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy();
+
         })
     );
     document.querySelectorAll('.test_button3').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             control.classList.toggle('active');
             control.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy();
+
         })
     );
     document.querySelectorAll('.test_button4').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             color_menu.classList.toggle('active');
             color_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy();
+
         })
     );
     document.querySelectorAll('.test_button5').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             system_menu.classList.toggle('active');
             system_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy();
+
         })
     );
     document.querySelectorAll('.test_button6').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             window_prompt.classList.toggle('active');
             window_prompt.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy();
+
         })
     );
     document.querySelectorAll('.test_button7').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             clock_menu.classList.toggle('active');
             clock_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy();
+
         })
     );
     document.querySelectorAll('.test_button8').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             sound_menu.classList.toggle('active');
             sound_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy();
+
         })
     );
     document.querySelectorAll('.test_button9').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             driver_menu.classList.toggle('active');
             driver_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy();
+
         })
     );
     document.querySelectorAll('.test_button10').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             mouse_menu.classList.toggle('active');
             mouse_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy();
+
         })
     );
     document.querySelectorAll('.test_button11').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             screen_text_menu.classList.toggle('active');
             screen_text_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy();
+
         })
     );
     document.querySelectorAll('.test_button12').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             note_pad.classList.toggle('active');
             note_pad.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
             resizeTextarea()
         })
     );
@@ -3547,42 +3598,42 @@ if (ua.includes("mobile")) {
         testbtn.addEventListener('click', () => {
             text_drop_menu.classList.toggle('active');
             text_drop_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button14').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             windowmode_menu.classList.toggle('active');
             windowmode_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button15').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             accessory_menu.classList.toggle('active');
             accessory_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button16').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             calc_menu.classList.toggle('active');
             calc_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button17').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             nexser_sound_menu.classList.toggle('active');
             nexser_sound_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button18').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             camera_menu.classList.toggle('active');
             camera_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
             cameraframe_resize()
         })
     );
@@ -3590,63 +3641,63 @@ if (ua.includes("mobile")) {
         testbtn.addEventListener('click', () => {
             htmlviewer_edit_menu.classList.toggle('active');
             htmlviewer_edit_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button20').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             htmlviewer_run_menu.classList.toggle('active');
             htmlviewer_run_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button21').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             uploadvideo_menu.classList.toggle('active');
             uploadvideo_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button22').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             font_menu.classList.toggle('active');
             font_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button23').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             file_setting_menu.classList.toggle('active');
             file_setting_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button24').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             debug_menu.classList.toggle('active');
             debug_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button25').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             file_download_menu.classList.toggle('active');
             file_download_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button26').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             display_menu.classList.toggle('active');
             display_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button27').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             stopwatch_menu.classList.toggle('active');
             stopwatch_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy();
+
             timerreset()
         })
     );
@@ -3654,14 +3705,14 @@ if (ua.includes("mobile")) {
         testbtn.addEventListener('click', () => {
             comment_menu.classList.toggle('active');
             comment_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button30').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             objective_menu.classList.toggle('active');
             objective_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
             objective_resize()
         })
     );
@@ -3669,14 +3720,14 @@ if (ua.includes("mobile")) {
         testbtn.addEventListener('click', () => {
             calendar_menu.classList.toggle('active');
             calendar_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button32').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             cpu_calc_menu.classList.toggle('active');
             cpu_calc_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
             cpucalc_open();
         })
     );
@@ -3684,21 +3735,21 @@ if (ua.includes("mobile")) {
         testbtn.addEventListener('click', () => {
             browser_menu.classList.toggle('active');
             browser_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button35').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             taskbar_setting_menu.classList.toggle('active');
             taskbar_setting_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button36').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             youtubevideo_menu.classList.toggle('active');
             youtubevideo_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
             youtubeframe_resize()
         })
     );
@@ -3706,35 +3757,35 @@ if (ua.includes("mobile")) {
         testbtn.addEventListener('click', () => {
             device_menu.classList.toggle('active');
             device_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button38').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             omikuji_menu.classList.toggle('active');
             omikuji_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button39').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             localstorage_monitor_menu.classList.toggle('active');
             localstorage_monitor_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button40').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             paint_menu.classList.toggle('active');
             paint_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button42').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             nexser_files_menu.classList.toggle('active');
             nexser_files_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy();
+
             setTimeout(() => {
                 nexser_files_output_remove()
                 nexser_files_windowload()
@@ -3745,8 +3796,15 @@ if (ua.includes("mobile")) {
         testbtn.addEventListener('click', () => {
             url_drop_menu.classList.toggle('active');
             url_drop_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
             url_drop_resize()
+        })
+    );
+    document.querySelectorAll('.test_button45').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
+            alarm_menu.classList.toggle('active');
+            alarm_menu.style.zIndex = largestZIndex++;
+
         })
     );
 
@@ -3786,28 +3844,28 @@ if (ua.includes("mobile")) {
         testbtn.addEventListener('click', () => {
             tetris_mneu.classList.toggle('active');
             tetris_mneu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button34').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             bom_menu.classList.toggle('active');
             bom_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button41').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             othello_menu.classList.toggle('active');
             othello_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
     document.querySelectorAll('.test_button44').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             memory_game_menu.classList.toggle('active');
             memory_game_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+
         })
     );
 
@@ -3853,9 +3911,10 @@ if (ua.includes("mobile")) {
 
     function zindexwindow_addnavy() {
         setTimeout(() => {
-            alltitle_navyreomve()
+            alltitle_navyreomve();
             assignClassToFrontmostElement('child_windows:not(.active)', 'navy');
-            titlecolor_set()
+            titlecolor_set();
+            startmenu_close();
         }, 0);
     }
 
@@ -3885,7 +3944,7 @@ if (ua.includes("mobile")) {
     const cameraframe_child = document.getElementById('v');
     const cameraframe_resize = () => {
         cameraframe_child.style.width = `${cameraframe_parent.clientWidth}px`;
-        cameraframe_child.style.height = `${cameraframe_parent.clientHeight}px`;
+        cameraframe_child.style.height = `${cameraframe_parent.clientHeight + - + 85}px`;
     };
     cameraframe_parent.addEventListener('mousemove', cameraframe_resize);
 
@@ -3908,6 +3967,67 @@ if (ua.includes("mobile")) {
     objective_parent.addEventListener('mousemove', objective_resize);
 
 
+    const window_prompt_content2 = document.querySelector('.window_prompt_content2');
+    const window_prompt_resize = () => {
+        window_prompt_content2.style.width = `${window_prompt.clientWidth}px`;
+        window_prompt_content2.style.height = `${window_prompt.clientHeight + - + 50}px`;
+    };
+    window_prompt.addEventListener('mousemove', window_prompt_resize);
+
+
+    const shell_parent = document.querySelector('.prompt_shell_menu');
+    const shell_child = document.querySelector('#shell');
+    const shell_resize = () => {
+        shell_child.style.width = `${shell_parent.clientWidth}px`;
+        shell_child.style.height = `${shell_parent.clientHeight + - + 30}px`;
+    };
+    shell_parent.addEventListener('mousemove', shell_resize);
+
+
+    const test_site_parent = document.querySelector('.test_site_menu');
+    const test_site_child = document.querySelector('.site_frame');
+    const test_site_resize = () => {
+        test_site_child.style.width = `${test_site_parent.clientWidth}px`;
+        test_site_child.style.height = `${test_site_parent.clientHeight + - + 30}px`;
+    };
+    test_site_parent.addEventListener('mousemove', test_site_resize);
+
+
+    const background_image_parent = document.getElementById('nexser');
+    const background_image_child = document.querySelector('.nexser_background_image');
+    const background_image_child2 = background_image_child.children;
+
+    const resize_background_image = () => {
+        for (let i = 0; i < background_image_child2.length; i++) {
+            background_image_child2[i].style.width = `${background_image_parent.clientWidth}px`;
+            background_image_child2[i].style.height = `${background_image_parent.clientHeight}px`;
+        }
+    };
+    resize_background_image();
+
+
+    const htmlview_parent = document.querySelector('.htmlviewer_run_menu');
+    const htmlview_child = document.querySelector('.html_view');
+    const htmlview_resize = () => {
+        const hehehe1 = htmlview_parent.firstElementChild;
+        if (hehehe1.classList.contains('navy')) {
+            htmlview_child.style.width = `${htmlview_parent.clientWidth + - + 0}px`;
+            htmlview_child.style.height = `${htmlview_parent.clientHeight + - + 20}px`;
+        }
+    };
+    htmlview_parent.addEventListener('mousemove', htmlview_resize);
+
+
+    const htmlview_parent2 = document.querySelector('.htmlviewer_edit_menu');
+    const htmlview_child2 = document.querySelector('#editor');
+    const htmlview_resize2 = () => {
+        const hehehe1 = htmlview_parent2.firstElementChild;
+        if (hehehe1.classList.contains('navy')) {
+            htmlview_child2.style.width = `${htmlview_parent2.clientWidth + - + 5}px`;
+            htmlview_child2.style.height = `${htmlview_parent2.clientHeight + - + 65}px`;
+        }
+    };
+    htmlview_parent2.addEventListener('mousemove', htmlview_resize2);
 
 
     document.querySelectorAll('.drag_button').forEach(function (drag) {
@@ -3917,8 +4037,9 @@ if (ua.includes("mobile")) {
                 dragwindow.style.height = "55%";
                 dragwindow.style.width = "55%";
                 dragwindow.classList.remove('leftwindow');
-
-                dragwindow.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+                if (localStorage.getItem('window_animation')) {
+                    dragwindow.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+                }
                 setTimeout(() => {
                     dragwindow.style.transition = ""
                 }, 150);
@@ -3927,8 +4048,9 @@ if (ua.includes("mobile")) {
                 dragwindow.style.height = "55%";
                 dragwindow.style.width = "55%";
                 dragwindow.classList.remove('rightwindow');
-
-                dragwindow.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+                if (localStorage.getItem('window_animation')) {
+                    dragwindow.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+                }
                 setTimeout(() => {
                     dragwindow.style.transition = ""
                 }, 150);
@@ -4002,7 +4124,6 @@ if (ua.includes("mobile")) {
         }
         //マウスボタンが上がったら発火
         function mup(e) {
-
             document.querySelectorAll('.drag').forEach(function (drag_windows) {
                 drag_windows.classList.remove("drag");
             })
@@ -4012,11 +4133,6 @@ if (ua.includes("mobile")) {
             document.body.removeEventListener("touchmove", { passive: false }, mmove, false);
             drag.removeEventListener("touchend", { passive: false }, mup, false);
 
-            // document.querySelectorAll('.title').forEach(function (title) {
-            //     document.querySelector('.navy').style.background = ""
-            //     window_prompt.style.background = "black"
-            //     window_back_silver()
-            // })
             // 半透明
             document.querySelectorAll('.child_windows').forEach(function (title) {
                 title.style.opacity = "";
@@ -4208,7 +4324,7 @@ if (ua.includes("mobile")) {
             localStorage.setItem(KEY_COLOR, select4);
             getStorage()
         } else {
-            document.querySelector('.window_error_text').textContent = "driver color no install!"
+            document.querySelector('.window_error_text').textContent = "カラードライバーがインストールされていません!"
             error_windows.classList.remove('active')
             prompt_text2.style.color = "";
             document.querySelector('.test_allwindow').style.display = "block";
@@ -4255,7 +4371,7 @@ if (ua.includes("mobile")) {
             // 変更した色名をストレージに保存
             setStorage();
         } else {
-            document.querySelector('.window_error_text').textContent = "driver color no install!"
+            document.querySelector('.window_error_text').textContent = "カラードライバーがインストールされていません!"
             error_windows.classList.remove('active')
             prompt_text2.style.color = "";
             document.querySelector('.test_allwindow').style.display = "block";
@@ -4269,7 +4385,7 @@ if (ua.includes("mobile")) {
             if (localStorage.getItem('driver_color')) {
                 titlecolor_set();
             } else {
-                document.querySelector('.window_error_text').textContent = "driver color no install!"
+                document.querySelector('.window_error_text').textContent = "カラードライバーがインストールされていません!"
                 error_windows.classList.remove('active')
                 document.querySelector('.test_allwindow').style.display = "block";
                 sound3()
@@ -4406,11 +4522,10 @@ if (ua.includes("mobile")) {
         }
     }
 
-
-
     document.querySelectorAll('.pattern_btn').forEach(function (color_btn) {
         color_btn.addEventListener('click', function () {
             back_pattern_remove();
+            wallpaper_allremove()
         });
     })
 
@@ -4604,7 +4719,6 @@ if (ua.includes("mobile")) {
 
     const outputdate = `${yeardate}/${monthdate + 1}/${dates}/${hourdate % 12}:${mindate}${ampm}`;
     document.getElementById('lastaccess_day').textContent = outputdate;
-
     // 右クリックイベントの登録
     document.getElementById("button1").addEventListener("contextmenu", function (event) {
         event.preventDefault();
@@ -4652,7 +4766,6 @@ if (ua.includes("mobile")) {
         localStorage.setItem('note_textcolor_yellow', note_textcolor_yellow);
         notecolor_change()
     }
-
     function notecolor_change() {
         if (localStorage.getItem('note_textcolor_blue')) {
             document.querySelector('.note_area').style.color = "blue";
@@ -4675,7 +4788,6 @@ if (ua.includes("mobile")) {
             document.querySelector('.test_notetext').style.color = "yellow";
         }
     }
-
     function notecolor_remove() {
         localStorage.removeItem('note_textcolor_blue')
         localStorage.removeItem('note_textcolor_green')
@@ -4684,12 +4796,14 @@ if (ua.includes("mobile")) {
         localStorage.removeItem('note_textcolor_yellow')
         document.querySelector('.note_area').style.color = "";
         document.querySelector('.test_notetext').style.color = "";
+        notetitle();
     }
 
     function notetext_all_bold() {
         var Note = document.querySelector('.note_area');
         const note_text_bold = document.querySelector('.notetext_bold');
         localStorage.setItem('note_text_bold', note_text_bold);
+        notetitle();
         if (localStorage.getItem('note_text_bold') && Note.style.fontWeight == "normal") {
             Note.style.fontWeight = "bold";
             document.querySelector('.test_notetext').style.fontWeight = "bold";
@@ -4707,6 +4821,7 @@ if (ua.includes("mobile")) {
         var Note = document.querySelector('.note_area');
         const note_text_oblique = document.querySelector('.notetext_oblique');
         localStorage.setItem('note_text_oblique', note_text_oblique);
+        notetitle();
         if (localStorage.getItem('note_text_oblique') && Note.style.fontStyle == "normal") {
             Note.style.fontStyle = "oblique";
             document.querySelector('.test_notetext').style.fontStyle = "oblique";
@@ -4719,11 +4834,11 @@ if (ua.includes("mobile")) {
             document.querySelector('.test_notetext').style.fontStyle = "oblique";
         }
     }
-
     function notetext_all_underline() {
         var Note = document.querySelector('.note_area');
         const note_text_underline = document.querySelector('.notetext_underline');
         localStorage.setItem('note_text_underline', note_text_underline);
+        notetitle();
         if (Note.style.textDecoration == "none" && localStorage.getItem('note_text_underline')) {
             Note.style.textDecoration = "underline";
             document.querySelector('.test_notetext').style.textDecoration = "underline";
@@ -4760,22 +4875,25 @@ if (ua.includes("mobile")) {
         notetext_reset();
         localStorage.setItem('notetext_small', notetext_small);
         notetextsize_change()
+        notetitle()
     }
     function notetext_medium(notetext_medium) {
         notetext_reset();
         localStorage.setItem('notetext_medium', notetext_medium);
         notetextsize_change()
+        notetitle()
     }
     function notetext_large(notetext_large) {
         notetext_reset();
         localStorage.setItem('notetext_large', notetext_large);
         notetextsize_change()
+        notetitle()
     }
 
     // 保存
     function save() {
         if (note_form.note_area.value === "") {
-            document.querySelector('.window_error_text').textContent = "text none not save!"
+            document.querySelector('.window_error_text').textContent = "テキストが無いため、保存できません!"
             error_windows.classList.remove('active')
             document.querySelector('.test_allwindow').style.display = "block";
             sound3()
@@ -4813,14 +4931,17 @@ if (ua.includes("mobile")) {
             document.querySelector('.test_allwindow').style.display = "block";
             sound3()
         }
-        if (!objective_title_form.objective_title_area.value == "" || !objective_form.objective_area.value == "") {
+        if (!objective_title_form.objective_title_area.value == "" && !objective_form.objective_area.value == "") {
             let objectiveTitleData = document.objective_title_form.objective_title_area.value;
             localStorage.setItem('objectiveTitleData', objectiveTitleData);
             let objectiveData = document.objective_form.objective_area.value;
             localStorage.setItem('objectiveData', objectiveData);
             localStorage.removeItem('objective_area');
+            document.querySelector('.objective_title').textContent = "objective sheet(save)";
         }
-
+    }
+    if (localStorage.getItem('objectiveTitleData') && localStorage.getItem('objectiveData')) {
+        document.querySelector('.objective_title').textContent = "objective sheet(save keep)";
     }
 
     document.querySelector('.note_close').addEventListener('click', function () {
@@ -4877,11 +4998,25 @@ if (ua.includes("mobile")) {
     localStorage.removeItem('objective_area')
 
     document.querySelectorAll('.objective_title_area,.objective_area').forEach(function (objectives_area) {
-        objectives_area.addEventListener('keyup', function () {
-            console.log("objective_area")
-            localStorage.setItem('objective_area', objective_menu);
+        objectives_area.addEventListener("keydown", function (event) {
+            if (event.ctrlKey && event.key === 's') {
+                event.preventDefault(); // Cancel the default action
+            } else {
+                objective_title(event);
+            }
+            objectives_area.addEventListener("keyup", function (event) {
+                if (event.ctrlKey && event.key === 's') {
+                    objective_save()
+                }
+            })
         });
     });
+    function objective_title() {
+        objectiveData_clear();
+        objective_resize();
+        document.querySelector('.objective_title').textContent = "*objective sheet";
+        localStorage.setItem('objective_area', objective_menu);
+    }
 
     document.querySelector('.camera_close').addEventListener('mouseup', function () {
         setTimeout(() => {
@@ -4912,7 +5047,7 @@ if (ua.includes("mobile")) {
             note_pad.classList.add('active');
             note_pad.classList.remove('selectwindows')
             test_windows_button()
-            zindexwindow_addnavy()
+
         }, 100);
     }
 
@@ -4920,7 +5055,6 @@ if (ua.includes("mobile")) {
         setTimeout(() => {
             document.querySelector('.test_allwindow').style.display = "none";
             error_windows.classList.add('active');
-
         }, 100);
     }
 
@@ -4960,8 +5094,7 @@ if (ua.includes("mobile")) {
         localStorage.removeItem('objectiveData');
         localStorage.removeItem('objectiveTitleData');
         localStorage.removeItem('objective_area');
-        document.querySelector(".objective_area").value = '';
-        document.querySelector(".objective_title_area").value = '';
+        document.querySelector('.objective_title').textContent = "objective sheet";
     }
 
     function resetShowLength() {
@@ -4974,8 +5107,32 @@ if (ua.includes("mobile")) {
     const textCountElement = document.querySelector("#inputlength");
 
     // キーボードで入力する場合
-    note_area.addEventListener("keyup", onChange);
-    note_area.addEventListener("keyup", notetitle);
+    note_area.addEventListener("keydown", function (event) {
+        if (event.ctrlKey && event.key === 's') {
+            event.preventDefault(); // Cancel the default action
+        } else {
+            notetitle(event);
+            onchange(event)
+        }
+        note_area.addEventListener("keyup", function (event) {
+            if (event.ctrlKey && event.key === 's') {
+                save()
+            }
+        })
+    });
+
+    document.addEventListener('keyup', function (event) {
+        if (event.key === 's' && event.getModifierState('Fn')) {
+            // Your event handling code here
+            console.log('Function key + S key pressed');
+            if (localStorage.getItem('note_texts')) {
+                save();
+            }
+        }
+    });
+
+
+
 
     // ペーストした場合
     note_area.addEventListener("paste", () => {
@@ -4990,6 +5147,33 @@ if (ua.includes("mobile")) {
         resizeTextarea()
     }
 
+    function note_lineheight(note_lineheight) {
+        notetitle();
+        if (localStorage.getItem('note_lineheight')) {
+            localStorage.removeItem('note_lineheight')
+            note_area.style.lineHeight = ""
+        } else {
+            note_area.style.lineHeight = "1.5"
+            localStorage.setItem('note_lineheight', note_lineheight)
+        }
+    }
+    function note_textspacing(note_textspacing) {
+        notetitle();
+        if (localStorage.getItem('note_textspacing')) {
+            localStorage.removeItem('note_textspacing')
+            note_area.style.letterSpacing = ""
+        } else {
+            note_area.style.letterSpacing = "0.25em"
+            localStorage.setItem('note_textspacing', note_textspacing)
+        }
+    }
+    if (localStorage.getItem('note_lineheight')) {
+        note_area.style.lineHeight = "1.5"
+    }
+    if (localStorage.getItem('note_textspacing')) {
+        note_area.style.letterSpacing = "0.25em"
+    }
+
     function onChange() {
         resizeTextarea()
         let spaceCount = 0;
@@ -5001,9 +5185,7 @@ if (ua.includes("mobile")) {
                 spaceCount++
             }
         });
-
-        const memo_save = document.getElementById('memo_save_text');
-        memo_save.textContent = "";
+        document.getElementById('memo_save_text').textContent = "";
         if (!localStorage.getItem('noteData')) {
             document.querySelector('.note_title').textContent = "notepad"
         }
@@ -5092,11 +5274,12 @@ if (ua.includes("mobile")) {
         evt.preventDefault();
     });
     dr.addEventListener('drop', function (evt) {
+        evt.preventDefault();
         if (!localStorage.getItem('textdropdata')) {
-            evt.target.textContent = evt.dataTransfer.getData('text');
+            evt.target.textContent += evt.dataTransfer.getData('text'); // 新しいテキストを追加
         } else {
-            document.querySelector('.window_error_text').textContent = "テキストが保存されているため、ドラッグした文字をドロップできません!"
-            error_windows.classList.remove('active')
+            document.querySelector('.window_error_text').textContent = "テキストが保存されているため、ドラッグした文字をドロップできません!";
+            error_windows.classList.remove('active');
             document.querySelector('.test_allwindow').style.display = "block";
             sound3();
         }
@@ -5271,6 +5454,18 @@ if (ua.includes("mobile")) {
         }
     })
 
+    document.querySelector('.battery_button').addEventListener('click', function (battery_button) {
+        if (localStorage.getItem('battery_button')) {
+            localStorage.removeItem('battery_button')
+            document.querySelector('.battery_button').textContent = "off"
+            document.querySelector('.task_battery').style.display = "block"
+        } else {
+            localStorage.setItem('battery_button', battery_button);
+            document.querySelector('.battery_button').textContent = "on"
+            document.querySelector('.task_battery').style.display = "none";
+        }
+    })
+
     document.querySelector('.taskbar_zindex_0').addEventListener('click', function (taskbar_zindex_0) {
         if (localStorage.getItem('taskbar_zindex_0')) {
             localStorage.removeItem('taskbar_zindex_0')
@@ -5403,18 +5598,19 @@ if (ua.includes("mobile")) {
 
     Array.from(document.getElementsByClassName('window_files')).forEach((window_files) => {
         window_files.addEventListener('mousedown', function () {
-            fileborder_reset()
+            document.querySelector('.file_border').classList.add('file_border2')
+            document.querySelector('.file_border2').classList.remove('file_border')
         })
         window_files.addEventListener('click', function () {
-            fileborder_reset()
+            Array.from(document.getElementsByClassName('window_files')).forEach((window_files2) => {
+                window_files2.classList.remove('file_border');
+                window_files2.classList.remove('file_border2');
+            })
             window_files.classList.add('file_border');
         })
     })
 
     function fileborder_reset() {
-        Array.from(document.getElementsByClassName('window_files')).forEach((window_files) => {
-            window_files.classList.remove('file_border');
-        })
         Array.from(document.getElementsByClassName('desktop_files')).forEach((df1) => {
             const file10 = df1.firstElementChild;
             file10.classList.remove('file_select');
@@ -5464,7 +5660,7 @@ if (ua.includes("mobile")) {
             htmlviewer_run_menu.closest('.child_windows');
             htmlviewer_run_menu.classList.remove('active');
             htmlviewer_run_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy();
+            zindexwindow_addnavy()
         });
         preview.srcdoc = editor.value;
     }
@@ -5580,6 +5776,12 @@ if (ua.includes("mobile")) {
             document.querySelector('.test_allwindow').style.display = "block";
             sound3();
         }
+    }
+
+    function savertime_clear() {
+        const stime = document.getElementsByClassName('saver_second')[0].value;
+        localStorage.removeItem('saver_time')
+        document.getElementsByClassName('screensaver_text')[0].textContent = "none";
     }
 
     let sec = localStorage.getItem('saver_time');
@@ -6246,25 +6448,90 @@ if (ua.includes("mobile")) {
     }
 
     function localmemory_size() {
-        var testKey = 'testStorageKey';
-        var testData = new Array(1024).join('a'); // 1KBのデータを作成
-        var success = true;
-        var maxSize = 0;
-        try {
-            // ローカルストレージに1KBずつデータを追加していく
-            while (success) {
-                localStorage.setItem(testKey + maxSize, testData);
-                maxSize++;
+        setTimeout(() => {
+            document.getElementById('shell').value = "";
+        }, 0);
+        document.querySelector('.local_memory_button').classList.add('pointer_none');
+        document.querySelectorAll('.prompt_shell_menu').forEach(function (prompt_shell_menu) {
+            prompt_shell_menu.closest('.child_windows');
+            prompt_shell_menu.classList.remove('active');
+            prompt_shell_menu.style.zIndex = largestZIndex++;
+
+            shell_resize()
+        });
+        setTimeout(() => {
+            var testKey = 'testStorageKey';
+            var testData = new Array(1024).join('a'); // 1KBのデータを作成
+            var success = true;
+            var maxSize = 0; try {
+                // ローカルストレージに1KBずつデータを追加していく
+                while (success) {
+                    localStorage.setItem(testKey + maxSize, testData);
+                    maxSize++;
+                }
+            } catch (e) {
+                success = false;
             }
-        } catch (e) {
-            success = false;
-        }
-        for (var i = 0; i < maxSize; i++) {
-            localStorage.removeItem(testKey + i);
-        }
-        document.querySelector('.local_memory').innerHTML = '&emsp;' + maxSize + 'KB' + '&emsp;';
-        localStorage.setItem('maxSize', maxSize)
+            for (var i = 0; i < maxSize; i++) {
+                localStorage.removeItem(testKey + i);
+            }
+            document.querySelector('.local_memory').innerHTML = ""
+            const delay = 25;
+            const totalDelay = localStorage.length * delay;
+            for (let i = 0; i < localStorage.length; i++) {
+                setTimeout(() => {
+                    const key = localStorage.key(i);
+                    const value = localStorage.getItem(key);
+                    const valueType = typeof value;
+                    const valueLength = value.length;
+                    const valueSize = new Blob([value]).size; // バイト数を計算
+                    document.getElementById('shell').value = (`Key: ${key}, Value: ${value}, Type: ${valueType}, Length: ${valueLength}, Size: ${valueSize} bytes`);
+                }, i * delay);
+            }
+            setTimeout(() => {
+                shellmenu_close();
+                document.querySelector('.local_memory').innerHTML = '&emsp;' + maxSize + 'KB' + '&emsp;';
+                localStorage.setItem('maxSize', maxSize);
+                displayLocalStorageDetails();
+                document.querySelector('.local_memory_button').classList.remove('pointer_none');
+
+            }, totalDelay + 500);
+        }, 10);
     }
+
+    function displayLocalStorageDetails() {
+        document.querySelectorAll('.localstorage_key').forEach(function (localstorage_key) {
+            localstorage_key.remove();
+        });
+        const list = document.getElementById('localStorageList');
+        let totalSize = 0;
+        // すべてのキーを取得してアルファベット順にソート
+        const keys = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            keys.push(localStorage.key(i));
+        }
+        keys.sort(); // キーをアルファベット順にソート
+
+        // ソートされたキーを使ってループ
+        keys.forEach(function (key) {
+            const value = localStorage.getItem(key);
+            const valueSize = new Blob([value]).size; // バイト数を計算
+            totalSize += valueSize;
+            const listItem = document.createElement('li');
+            listItem.classList.add('border');
+            listItem.classList.add('localstorage_key');
+            listItem.style.width = "max-content";
+            listItem.style.marginTop = "5px";
+            listItem.textContent = `Keyname: ${key}, Size: ${valueSize} Byte`;
+            list.appendChild(listItem);
+        });
+
+        // 合計サイズを表示
+        const totalSizeElement = document.getElementById('totalSize');
+        totalSizeElement.textContent = `Total Size: ${totalSize} Byte`;
+    }
+
+
 
     setInterval(() => {
         function getLocalStorageSize() {
@@ -6285,21 +6552,15 @@ if (ua.includes("mobile")) {
             sound3()
         }
     }, 1000);
-
-    // HTMLのcanvas要素を取得
     const paint_canvas = document.getElementById('paint_canvas');
     const paint_ctx = paint_canvas.getContext('2d');
-
-    // 背景色を設定
     paint_ctx.fillStyle = '#ffffff';
     paint_ctx.fillRect(0, 0, paint_canvas.width, paint_canvas.height);
-
     function paintcanvas_background() {
         const paintcanvas_backgroundcolor = document.querySelector('.paint_background').value;
         paint_ctx.fillStyle = paintcanvas_backgroundcolor;
         paint_ctx.fillRect(0, 0, paint_canvas.width, paint_canvas.height);
     }
-
     // 描画状態のフラグ
     let paint_isDrawing = false;
     let paint_lastX = 0;
@@ -6376,24 +6637,17 @@ if (ua.includes("mobile")) {
     paint_ctx.font = '48px serif';
     paint_ctx.textAlign = 'center';
     paint_ctx.textBaseline = 'middle';
-
     function paintcanvas_text() {
         const paintcanvas_text = document.querySelector('.paint_text').value;
-
         paint_ctx.fillStyle = 'white';
         paint_ctx.strokeStyle = 'black';
         paint_ctx.lineWidth = '1';
         paint_ctx.fillText(paintcanvas_text, paint_canvas.width / 2, paint_canvas.height / 2);
         paint_ctx.strokeText(paintcanvas_text, paint_canvas.width / 2, paint_canvas.height / 2);
     }
-
-
-
-
     paint_canvas.addEventListener('dragover', (event) => {
         event.preventDefault();
     });
-
     paint_canvas.addEventListener('drop', (event) => {
         event.preventDefault();
         const file = event.dataTransfer.files[0];
@@ -6466,9 +6720,13 @@ if (ua.includes("mobile")) {
     }
 
     function wallpaper_allremove() {
+        background_img.src = "";
+        background_img.style.display = "none";
         document.querySelector('.nexser_backgroundimage_1').style.display = "none"
         document.querySelector('.nexser_backgroundimage_2').style.display = "none"
+        document.querySelector('.nexser_backgroundimage_3').style.display = "none"
         localStorage.removeItem('wallpaper_95')
+        localStorage.removeItem('wallpaper_95_2')
         localStorage.removeItem('wallpaper_xp')
     }
 
@@ -6476,13 +6734,22 @@ if (ua.includes("mobile")) {
     document.querySelector('.wallpaper_95').addEventListener('click', function (wallpaper_95) {
         wallpaper_allremove()
         localStorage.setItem('wallpaper_95', wallpaper_95);
-        document.querySelector('.nexser_backgroundimage_1').style.display = "block"
+        document.querySelector('.nexser_backgroundimage_1').style.display = "block";
+        minidesk_backgroundresize1();
+    })
+
+    document.querySelector('.wallpaper_95_2').addEventListener('click', function (wallpaper_95_2) {
+        wallpaper_allremove()
+        localStorage.setItem('wallpaper_95_2', wallpaper_95_2);
+        document.querySelector('.nexser_backgroundimage_2').style.display = "block";
+        minidesk_backgroundresize2();
     })
 
     document.querySelector('.wallpaper_xp').addEventListener('click', function (wallpaper_xp) {
         wallpaper_allremove()
         localStorage.setItem('wallpaper_xp', wallpaper_xp);
-        document.querySelector('.nexser_backgroundimage_2').style.display = "block"
+        document.querySelector('.nexser_backgroundimage_3').style.display = "block";
+        minidesk_backgroundresize3();
     })
 
     const othello_board = document.getElementById('othello_board');
@@ -6508,7 +6775,6 @@ if (ua.includes("mobile")) {
 
     function othello_start() {
         othello_reset()
-        // Set initial pieces
         const initialPositions = [27, 28, 35, 36];
         initialPositions.forEach(index => {
             const piece = document.createElement('div');
@@ -6519,13 +6785,10 @@ if (ua.includes("mobile")) {
 
     function handleClick(event) {
         const cell = event.target;
-        if (cell.children.length > 0) return; // Ignore if cell is not empty
-
+        if (cell.children.length > 0) return;
         const piece = document.createElement('div');
         piece.classList.add(currentPlayer);
         cell.appendChild(piece);
-
-        // Switch player
         currentPlayer = currentPlayer === 'othello_black' ? 'othello_white' : 'othello_black';
     }
 
@@ -6687,16 +6950,7 @@ if (ua.includes("mobile")) {
             });
         });
     }
-
     makeResizableDivs('.resize');
-
-
-
-
-
-
-
-
 
     const dropzone = document.getElementById('dropzone');
     const url_iframe = document.getElementById('url_iframe');
@@ -6763,7 +7017,7 @@ if (ua.includes("mobile")) {
 
     function createBoard() {
         const gameBoard = document.getElementById('game-board');
-        gameBoard.innerHTML = ''; // ボードをクリア
+        gameBoard.innerHTML = '';
         shuffle(cards);
         cards.forEach(card => {
             const cardElement = document.createElement('div');
@@ -6772,8 +7026,8 @@ if (ua.includes("mobile")) {
             cardElement.addEventListener('click', flipCard);
             gameBoard.appendChild(cardElement);
         });
-        card_startTime = new Date(); // ゲーム開始時間を記録
-        card_timerInterval = setInterval(updateElapsedTime, 1000); // タイマーを開始
+        card_startTime = new Date();
+        card_timerInterval = setInterval(updateElapsedTime, 1000);
     }
 
     function flipCard() {
@@ -6799,7 +7053,7 @@ if (ua.includes("mobile")) {
             disableCards();
             updateMatchCount();
             if (matchCount === cards.length / 2) {
-                clearInterval(card_timerInterval); // タイマーを停止
+                clearInterval(card_timerInterval);
                 showCongratulationsMessage();
             }
         } else {
@@ -6838,7 +7092,7 @@ if (ua.includes("mobile")) {
         matchCount = 0;
         document.getElementById('match-count').textContent = matchCount;
         document.getElementById('game_board_text').textContent = ""
-        clearInterval(card_timerInterval); // タイマーを停止
+        clearInterval(card_timerInterval);
         document.getElementById('elapsed-time').textContent = '0';
         document.getElementsByClassName('start_card')[0].style.display = "block"
         document.getElementById('game-board').style.display = "none"
@@ -6859,14 +7113,6 @@ if (ua.includes("mobile")) {
         createBoard()
     }
 
-
-
-
-
-
-
-
-
     windowposition_reset()
     function windowposition_reset() {
         document.querySelectorAll('.child_windows').forEach(element => {
@@ -6875,13 +7121,9 @@ if (ua.includes("mobile")) {
         });
     }
 
-
-
-    // クラス名が "target" の要素を全て取得
     document.querySelectorAll('.bigscreen_button').forEach(function (element) {
         var newChild = document.createElement('div');
         newChild.className = 'bigscreen_button_child';
-        // 子要素を追加
         element.appendChild(newChild);
     });
 
@@ -6908,20 +7150,12 @@ if (ua.includes("mobile")) {
                 }
             });
 
-            // 親要素に右クリックイベントを追加
             parent.addEventListener('contextmenu', function (event) {
-                event.preventDefault(); // デフォルトの右クリックメニューを無効化
-
-                // クリックされた要素が親要素または親要素内の空白部分であることを確認
+                event.preventDefault();
                 if (event.target === parent) {
                     elements.forEach(function (element, index) {
-                        // 元の名前を保存
                         var originalName = element.textContent;
-
-                        // 新しい名前を入力するプロンプトを表示
                         var newName = prompt('新しい名前を入力してください (20文字以内):', element.textContent);
-
-                        // 新しい名前が入力された場合、文字数をチェック
                         if (newName && newName.length <= 20) {
                             element.textContent = newName;
                             localStorage.setItem('editable-' + parentIndex + '-' + index, newName);
@@ -6931,9 +7165,8 @@ if (ua.includes("mobile")) {
                             error_windows.classList.remove('active');
                             document.querySelector('.test_allwindow').style.display = "block";
                             sound3()
-                            element.textContent = originalName; // 元の名前に戻す
+                            element.textContent = originalName;
                         } else {
-                            // 新しい名前が入力されなかった場合、元の名前に戻す
                             element.textContent = originalName;
                         }
                     });
@@ -6974,21 +7207,14 @@ if (ua.includes("mobile")) {
             button.addEventListener('mouseup', () => {
                 button.classList.remove('pressed');
             });
-
         });
     };
 
     function toggleWindow(windowElement) {
         windowElement.classList.remove('active');
         windowElement.style.zIndex = largestZIndex++;
-        zindexwindow_addnavy();
+        zindexwindow_addnavy()
     }
-
-
-
-
-
-
 
     const dropArea = document.querySelector('#files');
 
@@ -7008,615 +7234,624 @@ if (ua.includes("mobile")) {
 
         // ファイルを1つずつ処理する関数
         const processFile = (file, x, y) => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const result = e.target.result;
-                const windowDiv = document.createElement('div');
-                windowDiv.className = "child_windows"
-                windowDiv.classList.add('testwindow2');
-                windowDiv.style.left = `${event.clientX}px`;
-                windowDiv.style.top = `${event.clientY}px`;
-                windowDiv.style.zIndex = largestZIndex++;
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const result = e.target.result;
+                    const windowDiv = document.createElement('div');
+                    windowDiv.className = "child_windows"
+                    windowDiv.classList.add('testwindow2');
+                    windowDiv.style.left = `${event.clientX}px`;
+                    windowDiv.style.top = `${event.clientY}px`;
+                    windowDiv.style.zIndex = largestZIndex++;
 
-                // 新しい子要素を生成して追加
-                const newChild = document.createElement('div');
-                newChild.className = "title"
-                newChild.classList.add('testwindow_title');
-                windowDiv.appendChild(newChild);
+                    const newChild = document.createElement('div');
+                    newChild.className = "title"
+                    newChild.classList.add('testwindow_title');
+                    windowDiv.appendChild(newChild);
 
-                const newChild2 = document.createElement('span');
-                newChild2.className = "title_icon"
-                newChild.appendChild(newChild2);
+                    const newChild2 = document.createElement('span');
+                    newChild2.className = "title_icon"
+                    newChild.appendChild(newChild2);
 
-                const newChild22 = document.createElement('span');
-                newChild22.textContent = 'window ' + largestZIndex++;
-                newChild.appendChild(newChild22);
+                    const newChild22 = document.createElement('span');
+                    newChild22.textContent = `${file.name}`;
+                    newChild22.classList.add('white_space_wrap');
+                    newChild.appendChild(newChild22);
 
-                // 新しい子要素を生成して追加
-                const newChild3 = document.createElement('div');
-                newChild3.className = "title_buttons"
-                windowDiv.appendChild(newChild3);
+                    const newChild3 = document.createElement('div');
+                    newChild3.className = "title_buttons"
+                    windowDiv.appendChild(newChild3);
 
-                // 新しい子要素を生成して追加
-                const newChild4_4 = document.createElement('span');
-                newChild4_4.className = "drag_button"
-                newChild4_4.innerHTML = "&emsp;"
-                newChild3.appendChild(newChild4_4);
+                    const newChild4_4 = document.createElement('span');
+                    newChild4_4.className = "drag_button"
+                    newChild4_4.innerHTML = "&emsp;"
+                    newChild3.appendChild(newChild4_4);
 
-                // 新しい子要素を生成して追加
-                const newChild4 = document.createElement('span');
-                newChild4.className = "close_button"
-                newChild4.textContent = "✕"
-                newChild4.classList.add('button2')
-                newChild3.appendChild(newChild4);
+                    const newChild4 = document.createElement('span');
+                    newChild4.className = "close_button"
+                    newChild4.textContent = "✕"
+                    newChild4.classList.add('button2')
+                    newChild3.appendChild(newChild4);
 
-                // 新しい子要素を生成して追加
-                const newChild4_1 = document.createElement('span');
-                newChild4_1.className = "bigscreen_button2"
-                // newChild4_1.classList.add('bigscreen_button2');
-                newChild4_1.textContent = "☐"
-                newChild4_1.classList.add('button2');
-                newChild3.appendChild(newChild4_1);
+                    const newChild4_1 = document.createElement('span');
+                    newChild4_1.className = "bigscreen_button2"
+                    newChild4_1.textContent = "☐"
+                    newChild4_1.classList.add('button2');
+                    newChild3.appendChild(newChild4_1);
 
-                // 新しい子要素を生成して追加
-                const newChild4_2 = document.createElement('span');
-                newChild4_2.className = "minscreen_button"
-                newChild4_2.textContent = "❒"
-                newChild4_2.classList.add('button2');
-                newChild3.appendChild(newChild4_2);
+                    const newChild4_2 = document.createElement('span');
+                    newChild4_2.className = "minscreen_button"
+                    newChild4_2.textContent = "❒"
+                    newChild4_2.classList.add('button2');
+                    newChild3.appendChild(newChild4_2);
 
-                // 新しい子要素を生成して追加
-                const newChild4_5 = document.createElement('br');
-                newChild3.appendChild(newChild4_5);
+                    const newChild4_5 = document.createElement('br');
+                    newChild3.appendChild(newChild4_5);
 
-                // 新しい子要素を生成して追加
-                const newChild6 = document.createElement('div');
-                newChild6.className = "window_contents"
-                windowDiv.appendChild(newChild6);
-                setTimeout(() => {
-                    windowDiv.classList.add('no_create_windows');
-                }, 100);
-
-
-                if (file.type.startsWith('image/')) {
-                    windowDiv.classList.add('selectwindows');
-                    const img = document.createElement('img');
-                    img.src = result;
-                    img.classList.add('item_preview');
-                    img.style.left = "900px";
-                    newChild6.appendChild(img);
-
+                    const newChild6 = document.createElement('div');
+                    newChild6.className = "window_contents"
+                    windowDiv.appendChild(newChild6);
                     setTimeout(() => {
-                        test_windows_button()
-                        zindexwindow_addnavy()
-                        titlecolor_set()
+                        windowDiv.classList.add('no_create_windows');
                     }, 100);
 
-                } else if (file.type.startsWith('video/')) {
-                    const video = document.createElement('video');
-                    video.src = result;
-                    video.controls = true;
-                    video.classList.add('item_preview');
-                    newChild6.appendChild(video);
 
-                    setTimeout(() => {
-                        test_windows_button()
-                        zindexwindow_addnavy()
-                        titlecolor_set()
-                    }, 1000);
+                    if (file.type.startsWith('image/')) {
+                        windowDiv.classList.add('selectwindows');
+                        const img = document.createElement('img');
+                        img.src = result;
+                        img.classList.add('item_preview');
+                        img.style.left = "900px";
+                        newChild6.appendChild(img);
 
-                } else if (file.type === 'application/pdf') {
-                    const iframe = document.createElement('iframe');
-                    iframe.src = result;
-                    iframe.classList.add('item_preview');
-                    newChild6.appendChild(iframe);
-
-                    setTimeout(() => {
-                        test_windows_button()
-                        zindexwindow_addnavy()
-                        titlecolor_set()
-                    }, 100);
-
-                } else if (file.type.startsWith('text/')) {
-                    const text = document.createElement('p');
-                    text.textContent = e.target.result;
-                    text.classList.add('item_preview');
-                    newChild6.appendChild(text);
-
-                    setTimeout(() => {
-                        test_windows_button()
-                        zindexwindow_addnavy()
-                        titlecolor_set()
-                    }, 100);
-
-                } else {
-                    const unsupported = document.createElement('p');
-                    unsupported.textContent = 'このファイル形式はサポートされていません。';
-                    unsupported.classList.add('item_preview');
-                    newChild6.appendChild(unsupported);
-
-                    setTimeout(() => {
-                        test_windows_button()
-                        zindexwindow_addnavy()
-                        titlecolor_set()
-                    }, 100);
-                }
-
-
-
-
-
-
-
-
-
-                setTimeout(() => {
-
-                    document.querySelectorAll('.testwindow2:not(.no_create_windows)').forEach(function (testwindow2) {
-                        const testwindow2_1 = testwindow2.children[2];
-                        const testwindow2_2 = testwindow2_1.firstElementChild;
-                        testwindow2_2.style.left = "0"
-                        testwindow2_2.style.width = "100%"
-                        testwindow2_2.style.height = "95%"
-                        testwindow2.style.width = "500px"
-                        testwindow2.style.height = "400px"
-                    })
-
-                    Array.from(document.getElementsByClassName('button2')).forEach((button2) => {
-                        button2.addEventListener('mousedown', () => {
-                            button2.classList.add('pressed');
-                        });
-                        button2.addEventListener('mouseleave', () => {
-                            button2.classList.remove('pressed');
-                        });
-                        button2.addEventListener('mouseup', () => {
-                            button2.classList.remove('pressed');
-                        });
-                    });
-                    newChild4.addEventListener('mousedown', () => {
-                        newChild4.classList.add('pressed');
-                    });
-                    newChild4.addEventListener('mouseleave', () => {
-                        newChild4.classList.remove('pressed');
-                    });
-                    newChild4.addEventListener('mouseup', () => {
-                        newChild4.classList.remove('pressed');
-                    });
-                    newChild4.addEventListener('click', () => {
                         setTimeout(() => {
-                            const newChild4_2 = newChild4.closest('.child_windows');
-                            newChild4_2.remove();
-                            zindexwindow_addnavy();
-                            titlecolor_set();
                             test_windows_button()
-                        }, 100);
-                    });
 
-                    function addResizers2(element) {
-                        const resizerPositions = ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'top', 'right', 'bottom', 'left'];
-                        resizerPositions.forEach(position => {
-                            const resizer = document.createElement('div');
-                            resizer.classList.add('resizer', position);
-                            element.appendChild(resizer);
-                        });
-                    }
-
-                    function makeResizableDivs2(className) {
-                        const elements = document.querySelectorAll(className);
-                        elements.forEach(element => {
-                            addResizers2(element);
-                            const resizers = element.querySelectorAll('.resizer');
-                            const minimum_size = 20;
-                            let original_width = 0;
-                            let original_height = 0;
-                            let original_x = 0;
-                            let original_y = 0;
-                            let original_mouse_x = 0;
-                            let original_mouse_y = 0;
-
-                            resizers.forEach(resizer => {
-                                resizer.addEventListener('mousedown', function (e) {
-                                    e.preventDefault();
-                                    original_width = parseFloat(getComputedStyle(element, null).getPropertyValue('width').replace('px', ''));
-                                    original_height = parseFloat(getComputedStyle(element, null).getPropertyValue('height').replace('px', ''));
-                                    original_x = element.getBoundingClientRect().left;
-                                    original_y = element.getBoundingClientRect().top;
-                                    original_mouse_x = e.pageX;
-                                    original_mouse_y = e.pageY;
-                                    window.addEventListener('mousemove', resize2);
-                                    window.addEventListener('mouseup', stopResize2);
-                                });
-
-                                function resize2(e) {
-                                    if (resizer.classList.contains('right')) {
-                                        const width = original_width + (e.pageX - original_mouse_x);
-                                        if (width > minimum_size) {
-                                            element.style.width = width + 'px';
-                                        }
-                                    } else if (resizer.classList.contains('left')) {
-                                        const width = original_width - (e.pageX - original_mouse_x);
-                                        if (width > minimum_size) {
-                                            element.style.width = width + 'px';
-                                            element.style.left = original_x + (e.pageX - original_mouse_x) + 'px';
-                                        }
-                                    } else if (resizer.classList.contains('bottom')) {
-                                        const height = original_height + (e.pageY - original_mouse_y);
-                                        if (height > minimum_size) {
-                                            element.style.height = height + 'px';
-                                        }
-                                    } else if (resizer.classList.contains('top')) {
-                                        const height = original_height - (e.pageY - original_mouse_y);
-                                        if (height > minimum_size) {
-                                            element.style.height = height + 'px';
-                                            element.style.top = original_y + (e.pageY - original_mouse_y) + 'px';
-                                        }
-                                    } else if (resizer.classList.contains('bottom-right')) {
-                                        const width = original_width + (e.pageX - original_mouse_x);
-                                        const height = original_height + (e.pageY - original_mouse_y);
-                                        if (width > minimum_size) {
-                                            element.style.width = width + 'px';
-                                        }
-                                        if (height > minimum_size) {
-                                            element.style.height = height + 'px';
-                                        }
-                                    } else if (resizer.classList.contains('bottom-left')) {
-                                        const height = original_height + (e.pageY - original_mouse_y);
-                                        const width = original_width - (e.pageX - original_mouse_x);
-                                        if (height > minimum_size) {
-                                            element.style.height = height + 'px';
-                                        }
-                                        if (width > minimum_size) {
-                                            element.style.width = width + 'px';
-                                            element.style.left = original_x + (e.pageX - original_mouse_x) + 'px';
-                                        }
-                                    } else if (resizer.classList.contains('top-right')) {
-                                        const width = original_width + (e.pageX - original_mouse_x);
-                                        const height = original_height - (e.pageY - original_mouse_y);
-                                        if (width > minimum_size) {
-                                            element.style.width = width + 'px';
-                                        }
-                                        if (height > minimum_size) {
-                                            element.style.height = height + 'px';
-                                            element.style.top = original_y + (e.pageY - original_mouse_y) + 'px';
-                                        }
-                                    } else if (resizer.classList.contains('top-left')) {
-                                        const width = original_width - (e.pageX - original_mouse_x);
-                                        const height = original_height - (e.pageY - original_mouse_y);
-                                        if (width > minimum_size) {
-                                            element.style.width = width + 'px';
-                                            element.style.left = original_x + (e.pageX - original_mouse_x) + 'px';
-                                        }
-                                        if (height > minimum_size) {
-                                            element.style.height = height + 'px';
-                                            element.style.top = original_y + (e.pageY - original_mouse_y) + 'px';
-                                        }
-                                    }
-                                    const elements = document.querySelectorAll('.rectangle');
-                                    // 各要素からクラスを削除
-                                    elements.forEach(element => {
-                                        element.classList.remove('rectangle');
-                                    });
-                                }
-
-                                function stopResize2() {
-                                    window.removeEventListener('mousemove', resize2);
-                                    window.removeEventListener('mouseup', stopResize2);
-                                }
-                            });
-                        });
-                    }
-
-                    makeResizableDivs2('.testwindow2');
-
-                    document.querySelectorAll('.testwindow2, .child').forEach(function (z_index_child_windows) {
-                        const zindexchildwindows = z_index_child_windows.closest('.testwindow2');
-                        z_index_child_windows.addEventListener('mousedown', function () {
-                            zindexchildwindows.scrollTop = 0;
-                            zindexchildwindows.scrollLeft = 0;
-
-                            setTimeout(() => {
-                                document.querySelectorAll('.testwindow2').forEach(function (testwindow2) {
-                                    const testwindow2_1 = testwindow2.children[2];
-                                    const testwindow2_2 = testwindow2_1.firstElementChild;
-                                    testwindow2_2.style.maxWidth = `${testwindow2.clientWidth + - + 5}px`;
-                                    testwindow2_2.style.maxHeight = `${testwindow2.clientHeight + - + 25}px`;
-                                    testwindow2_2.style.width = "100%"
-                                    testwindow2_2.style.height = "100%"
-                                    testwindow2_2.style.left = "0"
-                                })
-                                zindexchildwindows.style.zIndex = largestZIndex++;
-                                zindexwindow_addnavy()
-                                titlecolor_set()
-                            }, 0);
-
-                            const elements = document.querySelectorAll('.rectangle');
-                            elements.forEach(element => {
-                                element.classList.remove('rectangle');
-                            });
-                        });
-                    })
-
-                    document.querySelectorAll('.bigscreen_button2').forEach(function (bigscreen_button) {
-                        bigscreen_button.addEventListener('mousedown', function () {
-                            zindexwindow_addnavy()
-                            const elements = document.querySelector('.testwindow_title.navy');
-                            const elements2 = elements.closest('.testwindow2');
-                            elements2.dataset.originalWidth = elements2.style.width;
-                            elements2.dataset.originalHeight = elements2.style.height;
-                            elements2.dataset.originalTop = elements2.style.top;
-                            elements2.dataset.originalLeft = elements2.style.left;
-                        })
-                        bigscreen_button.addEventListener('click', function () {
-                            const bigscreenbutton = bigscreen_button.closest('.testwindow2');
-                            const childElements = bigscreenbutton.children;
-                            for (let child of childElements) {
-                                child.style.display = 'none';
-                                document.querySelectorAll('.title,.title_buttons').forEach(function (titles) {
-                                    titles.style.display = "block"
-                                })
-                                document.querySelectorAll('.title2').forEach(function (window_title2) {
-                                    window_title2.style.display = "flex"
-                                })
-                            }
-
-                            const t = localStorage.getItem('taskbar_height');
-                            if (localStorage.getItem('data_taskbar_none')) {
-                                bigscreenbutton.style.height = ""
-                                bigscreenbutton.style.width = ""
-                                bigscreenbutton.style.top = "0"
-                                bigscreenbutton.style.left = "0"
-                                bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
-                            } else if (localStorage.getItem('taskbar_position_button')) {
-                                bigscreenbutton.style.height = ""
-                                bigscreenbutton.style.width = ""
-                                bigscreenbutton.style.top = "40px"
-                                bigscreenbutton.style.left = "0"
-
-                                bigscreenbutton.style.top = t + "px"
-
-                                bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
-                            } else {
-                                bigscreenbutton.style.height = ""
-                                bigscreenbutton.style.width = ""
-                                bigscreenbutton.style.top = "0"
-                                bigscreenbutton.style.left = "0"
-                                bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
-                            }
-                            bigscreenbutton.classList.add('big');
-                            setTimeout(() => {
-                                bigscreenbutton.style.transition = ""
-                                for (let child of childElements) {
-                                    child.style.display = '';
-                                }
-                                if (localStorage.getItem('allwindow_toolbar')) {
-                                    document.querySelectorAll('.window_tool').forEach(function (window_tool) {
-                                        window_tool.style.display = "block"
-                                    })
-                                }
-
-                                document.querySelectorAll('.testwindow2').forEach(function (testwindow2) {
-                                    const hehehe1 = testwindow2.firstElementChild;
-                                    const testwindow2_1 = testwindow2.children[2];
-                                    const testwindow2_2 = testwindow2_1.firstElementChild;
-
-
-                                    if (hehehe1.classList.contains('navy')) {
-                                        testwindow2_2.style.maxWidth = `${testwindow2.clientWidth + - + 5}px`;
-                                        testwindow2_2.style.maxHeight = `${testwindow2.clientHeight + - + 25}px`;
-                                        testwindow2_2.style.left = "0"
-                                    }
-                                })
-
-                            }, 150);
-                            // setTimeout(() => {
-                            //     const task = document.getElementById('taskbar').clientHeight;
-                            //     const child_windows_big2 = bigscreenbutton.clientHeight;
-                            //     bigscreenbutton.style.height = child_windows_big2 + - + task + "px"
-                            // }, 150);
-
-                        });
-                    })
-
-
-                    document.querySelectorAll('.minscreen_button').forEach(function (minscreen_button) {
-                        minscreen_button.addEventListener('click', function () {
-                            const minscreenbutton = minscreen_button.closest('.testwindow2');
-                            const childElements = minscreenbutton.children;
-                            for (let child of childElements) {
-                                child.style.display = 'none';
-                                document.querySelectorAll('.title,.title_buttons').forEach(function (titles) {
-                                    titles.style.display = "block"
-                                })
-                                document.querySelectorAll('.title2').forEach(function (window_title2) {
-                                    window_title2.style.display = "flex"
-                                })
-                            }
-
-                            minscreenbutton.classList.remove('big');
-
-                            const elements = document.querySelector('.testwindow_title.navy');
-                            const elements2 = elements.closest('.testwindow2');
-                            elements2.style.width = elements2.dataset.originalWidth;
-                            elements2.style.height = elements2.dataset.originalHeight;
-                            elements2.style.top = elements2.dataset.originalTop;
-                            elements2.style.left = elements2.dataset.originalLeft;
-
-                            minscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
-                            setTimeout(() => {
-                                minscreenbutton.style.transition = ""
-                                setTimeout(() => {
-                                    minscreenbutton.scrollTop = 0;
-                                    minscreenbutton.scrollLeft = 0;
-                                }, 100);
-                            }, 150);
-
-                            setTimeout(() => {
-                                for (let child of childElements) {
-                                    child.style.display = '';
-                                }
-                                if (localStorage.getItem('allwindow_toolbar')) {
-                                    document.querySelectorAll('.window_tool').forEach(function (window_tool) {
-                                        window_tool.style.display = "block"
-                                    })
-                                }
-
-                                document.querySelectorAll('.testwindow2').forEach(function (testwindow2) {
-                                    const hehehe1 = testwindow2.firstElementChild;
-                                    const testwindow2_1 = testwindow2.children[2];
-                                    const testwindow2_2 = testwindow2_1.firstElementChild;
-
-
-                                    if (hehehe1.classList.contains('navy')) {
-                                        testwindow2_2.style.maxWidth = `${testwindow2.clientWidth + - + 5}px`;
-                                        testwindow2_2.style.maxHeight = `${testwindow2.clientHeight + - + 25}px`;
-                                        testwindow2_2.style.left = "0"
-                                    }
-                                })
-
-                            }, 150);
-                        });
-                    });
-
-
-
-                    document.querySelectorAll('.drag_button').forEach(function (drag) {
-                        let drag2 = drag.closest('.testwindow2');
-                        //要素内のクリックされた位置を取得するグローバル（のような）変数
-                        var x;
-                        var y;
-                        //マウスが要素内で押されたとき、又はタッチされたとき発火
-                        drag.addEventListener("mousedown", mdown, { passive: false }, false);
-                        drag.addEventListener("touchstart", mdown, { passive: false }, false);
-                        //マウスが押された際の関数
-                        function mdown(e) {
-                            //クラス名に .drag を追加
-                            drag2.classList.add("drag");
-                            //タッチデイベントとマウスのイベントの差異を吸収
-                            if (e.type === "mousedown") {
-                                var event = e;
-                            } else {
-                                var event = e.changedTouches[0];
-                            }
-                            //要素内の相対座標を取得
-                            x = event.pageX - drag2.offsetLeft;
-                            y = event.pageY - drag2.offsetTop;
-                            //ムーブイベントにコールバック
-                            document.body.addEventListener("mousemove", mmove, { passive: false }, false);
-                            document.body.addEventListener("touchmove", mmove, { passive: false }, false);
-                        }
-                        //マウスカーソルが動いたときに発火
-                        function mmove(e) {
-                            //ドラッグしている要素を取得
-                            var drag = document.getElementsByClassName("drag")[0];
-                            //同様にマウスとタッチの差異を吸収
-                            if (e.type === "mousemove") {
-                                var event = e;
-                            } else {
-                                var event = e.changedTouches[0];
-                            }
-                            const elements = document.querySelectorAll('.rectangle');
-                            // 各要素からクラスを削除
-                            elements.forEach(element => {
-                                element.classList.remove('rectangle');
-                            });
-
-                            //マウスが動いた場所に要素を動かす
-                            drag.style.top = event.pageY - y + "px";
-                            drag.style.left = event.pageX - x + "px";
-                            //マウスボタンが離されたとき、またはカーソルが外れたとき発火
-                            drag.addEventListener("mouseup", mup, false);
-                            document.body.addEventListener("mouseleave", mup, false);
-                            drag.addEventListener("touchend", mup, false);
-                            document.body.addEventListener("touchleave", mup, false);
-                            // 半透明
-                            if (localStorage.getItem('window_invisible')) {
-                                document.querySelectorAll('.child_windows').forEach(function (title) {
-                                    title.style.opacity = "0.5";
-                                })
-                            }
-                            // 移動してる時だけ黒枠のみ
-                            if (localStorage.getItem('window_borderblack')) {
-                                document.querySelectorAll('.child_windows, .child').forEach(function (title) {
-                                    document.querySelector('iframe').style.opacity = "0";
-                                    title.style.background = "rgba(255, 255, 255, 0)";
-                                    title.style.border = "solid 2px black";
-                                })
-                                document.querySelectorAll('.title,.title2,.title_buttons,.window_tool,.window_contents,.window_content,.window_bottom,.prompt_content').forEach(function (title) {
-                                    title.style.opacity = "0"
-                                })
-                            }
-                        }
-                        //マウスボタンが上がったら発火
-                        function mup(e) {
-
-                            document.querySelectorAll('.drag').forEach(function (drag_windows) {
-                                drag_windows.classList.remove("drag");
-                            })
-
-                            document.body.removeEventListener("mousemove", mmove, false);
-                            drag.removeEventListener("mouseup", mup, false);
-                            document.body.removeEventListener("touchmove", { passive: false }, mmove, false);
-                            drag.removeEventListener("touchend", { passive: false }, mup, false);
-                            // 半透明
-                            document.querySelectorAll('.child_windows').forEach(function (title) {
-                                title.style.opacity = "";
-                                window_prompt.style.background = "black"
-                                window_back_silver()
-                            })
-                            // 移動してる時だけ黒枠のみ
-                            document.querySelectorAll('.child_windows, .child').forEach(function (title) {
-                                title.style.background = "";
-                                title.style.border = "";
-                                document.querySelector('iframe').style.opacity = "";
-                                window_prompt.style.background = "black"
-                                window_back_silver()
-                            })
-                            document.querySelectorAll('.title,.title2,.title_buttons,.window_tool,.window_contents,.window_content,.window_bottom,.prompt_content').forEach(function (title) {
-                                title.style.opacity = ""
-                                window_back_silver()
-                            })
                             titlecolor_set()
-                        }
-                    })
+                        }, 100);
+
+                    } else if (file.type.startsWith('video/')) {
+                        const video = document.createElement('video');
+                        video.src = result;
+                        video.controls = true;
+                        video.classList.add('item_preview');
+                        newChild6.appendChild(video);
+
+                        setTimeout(() => {
+                            test_windows_button()
+
+                            titlecolor_set()
+                        }, 1000);
+
+                    } else if (file.type === 'application/pdf') {
+                        const iframe = document.createElement('iframe');
+                        iframe.src = result;
+                        iframe.classList.add('item_preview');
+                        newChild6.appendChild(iframe);
+
+                        setTimeout(() => {
+                            test_windows_button()
+
+                            titlecolor_set()
+                        }, 100);
+
+                    } else if (file.type.startsWith('text/')) {
+                        const text = document.createElement('p');
+                        text.textContent = e.target.result;
+                        text.classList.add('item_preview');
+                        newChild6.appendChild(text);
+
+                        setTimeout(() => {
+                            test_windows_button()
+
+                            titlecolor_set()
+                        }, 100);
+
+                    } else {
+                        const unsupported = document.createElement('p');
+                        unsupported.textContent = 'このファイル形式はサポートされていません。';
+                        unsupported.classList.add('item_preview');
+                        newChild6.appendChild(unsupported);
+
+                        setTimeout(() => {
+                            test_windows_button()
+
+                            titlecolor_set()
+                        }, 100);
+                    }
 
 
 
-                    // クラス名が "target" の要素を全て取得
-                    document.querySelectorAll('.bigscreen_button2').forEach(function (element) {
-                        var newChild = document.createElement('div');
-                        newChild.className = 'bigscreen_button_child';
-                        // 子要素を追加
-                        element.appendChild(newChild);
-                    });
 
-                    document.querySelectorAll('.testwindow2').forEach(function (testwindow2) {
-                        testwindow2.addEventListener('mousemove', function () {
-                            const hehehe1 = testwindow2.firstElementChild;
+
+
+
+
+
+                    setTimeout(() => {
+
+                        document.querySelectorAll('.testwindow2:not(.no_create_windows)').forEach(function (testwindow2) {
                             const testwindow2_1 = testwindow2.children[2];
                             const testwindow2_2 = testwindow2_1.firstElementChild;
-                            if (hehehe1.classList.contains('navy') && !testwindow2.classList.contains('big')) {
-                                testwindow2_2.style.maxWidth = `${testwindow2.clientWidth + - + 5}px`;
-                                testwindow2_2.style.maxHeight = `${testwindow2.clientHeight + - + 25}px`;
-                                testwindow2_2.style.width = "100%";
-                                testwindow2_2.style.height = "100%";
-                                testwindow2_2.style.left = "0"
+                            testwindow2_2.style.left = "0"
+                            testwindow2_2.style.width = "100%"
+                            testwindow2_2.style.height = "95%"
+                            testwindow2.style.width = "500px"
+                            testwindow2.style.height = "400px"
+                        })
+
+                        Array.from(document.getElementsByClassName('button2')).forEach((button2) => {
+                            button2.addEventListener('mousedown', () => {
+                                button2.classList.add('pressed');
+                            });
+                            button2.addEventListener('mouseleave', () => {
+                                button2.classList.remove('pressed');
+                            });
+                            button2.addEventListener('mouseup', () => {
+                                button2.classList.remove('pressed');
+                            });
+                        });
+                        newChild4.addEventListener('mousedown', () => {
+                            newChild4.classList.add('pressed');
+                        });
+                        newChild4.addEventListener('mouseleave', () => {
+                            newChild4.classList.remove('pressed');
+                        });
+                        newChild4.addEventListener('mouseup', () => {
+                            newChild4.classList.remove('pressed');
+                        });
+                        newChild4.addEventListener('click', () => {
+                            setTimeout(() => {
+                                const newChild4_2 = newChild4.closest('.child_windows');
+                                newChild4_2.remove();
+
+                                titlecolor_set();
+                                test_windows_button()
+                            }, 100);
+                        });
+
+                        function addResizers2(element) {
+                            const resizerPositions = ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'top', 'right', 'bottom', 'left'];
+                            resizerPositions.forEach(position => {
+                                const resizer = document.createElement('div');
+                                resizer.classList.add('resizer', position);
+                                element.appendChild(resizer);
+                            });
+                        }
+
+                        function makeResizableDivs2(className) {
+                            const elements = document.querySelectorAll(className);
+                            elements.forEach(element => {
+                                addResizers2(element);
+                                const resizers = element.querySelectorAll('.resizer');
+                                const minimum_size = 20;
+                                let original_width = 0;
+                                let original_height = 0;
+                                let original_x = 0;
+                                let original_y = 0;
+                                let original_mouse_x = 0;
+                                let original_mouse_y = 0;
+
+                                resizers.forEach(resizer => {
+                                    resizer.addEventListener('mousedown', function (e) {
+                                        e.preventDefault();
+                                        original_width = parseFloat(getComputedStyle(element, null).getPropertyValue('width').replace('px', ''));
+                                        original_height = parseFloat(getComputedStyle(element, null).getPropertyValue('height').replace('px', ''));
+                                        original_x = element.getBoundingClientRect().left;
+                                        original_y = element.getBoundingClientRect().top;
+                                        original_mouse_x = e.pageX;
+                                        original_mouse_y = e.pageY;
+                                        window.addEventListener('mousemove', resize2);
+                                        window.addEventListener('mouseup', stopResize2);
+                                    });
+
+                                    function resize2(e) {
+                                        if (resizer.classList.contains('right')) {
+                                            const width = original_width + (e.pageX - original_mouse_x);
+                                            if (width > minimum_size) {
+                                                element.style.width = width + 'px';
+                                            }
+                                        } else if (resizer.classList.contains('left')) {
+                                            const width = original_width - (e.pageX - original_mouse_x);
+                                            if (width > minimum_size) {
+                                                element.style.width = width + 'px';
+                                                element.style.left = original_x + (e.pageX - original_mouse_x) + 'px';
+                                            }
+                                        } else if (resizer.classList.contains('bottom')) {
+                                            const height = original_height + (e.pageY - original_mouse_y);
+                                            if (height > minimum_size) {
+                                                element.style.height = height + 'px';
+                                            }
+                                        } else if (resizer.classList.contains('top')) {
+                                            const height = original_height - (e.pageY - original_mouse_y);
+                                            if (height > minimum_size) {
+                                                element.style.height = height + 'px';
+                                                element.style.top = original_y + (e.pageY - original_mouse_y) + 'px';
+                                            }
+                                        } else if (resizer.classList.contains('bottom-right')) {
+                                            const width = original_width + (e.pageX - original_mouse_x);
+                                            const height = original_height + (e.pageY - original_mouse_y);
+                                            if (width > minimum_size) {
+                                                element.style.width = width + 'px';
+                                            }
+                                            if (height > minimum_size) {
+                                                element.style.height = height + 'px';
+                                            }
+                                        } else if (resizer.classList.contains('bottom-left')) {
+                                            const height = original_height + (e.pageY - original_mouse_y);
+                                            const width = original_width - (e.pageX - original_mouse_x);
+                                            if (height > minimum_size) {
+                                                element.style.height = height + 'px';
+                                            }
+                                            if (width > minimum_size) {
+                                                element.style.width = width + 'px';
+                                                element.style.left = original_x + (e.pageX - original_mouse_x) + 'px';
+                                            }
+                                        } else if (resizer.classList.contains('top-right')) {
+                                            const width = original_width + (e.pageX - original_mouse_x);
+                                            const height = original_height - (e.pageY - original_mouse_y);
+                                            if (width > minimum_size) {
+                                                element.style.width = width + 'px';
+                                            }
+                                            if (height > minimum_size) {
+                                                element.style.height = height + 'px';
+                                                element.style.top = original_y + (e.pageY - original_mouse_y) + 'px';
+                                            }
+                                        } else if (resizer.classList.contains('top-left')) {
+                                            const width = original_width - (e.pageX - original_mouse_x);
+                                            const height = original_height - (e.pageY - original_mouse_y);
+                                            if (width > minimum_size) {
+                                                element.style.width = width + 'px';
+                                                element.style.left = original_x + (e.pageX - original_mouse_x) + 'px';
+                                            }
+                                            if (height > minimum_size) {
+                                                element.style.height = height + 'px';
+                                                element.style.top = original_y + (e.pageY - original_mouse_y) + 'px';
+                                            }
+                                        }
+                                        const elements = document.querySelectorAll('.rectangle');
+                                        // 各要素からクラスを削除
+                                        elements.forEach(element => {
+                                            element.classList.remove('rectangle');
+                                        });
+                                    }
+
+                                    function stopResize2() {
+                                        window.removeEventListener('mousemove', resize2);
+                                        window.removeEventListener('mouseup', stopResize2);
+                                    }
+                                });
+                            });
+                        }
+
+                        makeResizableDivs2('.testwindow2');
+
+                        document.querySelectorAll('.testwindow2, .child').forEach(function (z_index_child_windows) {
+                            const zindexchildwindows = z_index_child_windows.closest('.testwindow2');
+                            z_index_child_windows.addEventListener('mousedown', function () {
+                                zindexchildwindows.scrollTop = 0;
+                                zindexchildwindows.scrollLeft = 0;
+                                setTimeout(() => {
+                                    document.querySelectorAll('.testwindow2').forEach(function (testwindow2) {
+                                        const testwindow2_1 = testwindow2.children[2];
+                                        const testwindow2_2 = testwindow2_1.firstElementChild;
+                                        testwindow2_2.style.maxWidth = `${testwindow2.clientWidth + - + 5}px`;
+                                        testwindow2_2.style.maxHeight = `${testwindow2.clientHeight + - + 25}px`;
+                                        testwindow2_2.style.width = "100%"
+                                        testwindow2_2.style.height = "100%"
+                                        testwindow2_2.style.left = "0"
+                                    })
+                                    zindexchildwindows.style.zIndex = largestZIndex++;
+                                    zindexwindow_addnavy()
+                                    titlecolor_set()
+                                }, 0);
+
+                                const elements = document.querySelectorAll('.rectangle');
+                                elements.forEach(element => {
+                                    element.classList.remove('rectangle');
+                                });
+                            });
+                        })
+
+                        document.querySelectorAll('.bigscreen_button2').forEach(function (bigscreen_button) {
+                            bigscreen_button.addEventListener('mousedown', function () {
+
+                                const elements = document.querySelector('.testwindow_title.navy');
+                                const elements2 = elements.closest('.testwindow2');
+                                elements2.dataset.originalWidth = elements2.style.width;
+                                elements2.dataset.originalHeight = elements2.style.height;
+                                elements2.dataset.originalTop = elements2.style.top;
+                                elements2.dataset.originalLeft = elements2.style.left;
+                            })
+                            bigscreen_button.addEventListener('click', function () {
+                                const bigscreenbutton = bigscreen_button.closest('.testwindow2');
+                                const childElements = bigscreenbutton.children;
+                                for (let child of childElements) {
+                                    child.style.display = 'none';
+                                    document.querySelectorAll('.title,.title_buttons').forEach(function (titles) {
+                                        titles.style.display = "block"
+                                    })
+                                    document.querySelectorAll('.title2').forEach(function (window_title2) {
+                                        window_title2.style.display = "flex"
+                                    })
+                                }
+
+                                const t = localStorage.getItem('taskbar_height');
+                                if (localStorage.getItem('data_taskbar_none')) {
+                                    bigscreenbutton.style.height = ""
+                                    bigscreenbutton.style.width = ""
+                                    bigscreenbutton.style.top = "0"
+                                    bigscreenbutton.style.left = "0"
+                                    if (localStorage.getItem('window_animation')) {
+                                        bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                                    }
+                                } else if (localStorage.getItem('taskbar_position_button')) {
+                                    bigscreenbutton.style.height = ""
+                                    bigscreenbutton.style.width = ""
+                                    bigscreenbutton.style.top = "40px"
+                                    bigscreenbutton.style.left = "0"
+                                    bigscreenbutton.style.top = t + "px"
+                                    if (localStorage.getItem('window_animation')) {
+                                        bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                                    }
+                                } else {
+                                    bigscreenbutton.style.height = ""
+                                    bigscreenbutton.style.width = ""
+                                    bigscreenbutton.style.top = "0"
+                                    bigscreenbutton.style.left = "0"
+                                    if (localStorage.getItem('window_animation')) {
+                                        bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                                    }
+                                }
+                                bigscreenbutton.classList.add('big');
+                                setTimeout(() => {
+                                    bigscreenbutton.style.transition = ""
+                                    for (let child of childElements) {
+                                        child.style.display = '';
+                                    }
+                                    if (localStorage.getItem('allwindow_toolbar')) {
+                                        document.querySelectorAll('.window_tool').forEach(function (window_tool) {
+                                            window_tool.style.display = "block"
+                                        })
+                                    }
+
+                                    document.querySelectorAll('.testwindow2').forEach(function (testwindow2) {
+                                        const hehehe1 = testwindow2.firstElementChild;
+                                        const testwindow2_1 = testwindow2.children[2];
+                                        const testwindow2_2 = testwindow2_1.firstElementChild;
+
+
+                                        if (hehehe1.classList.contains('navy')) {
+                                            testwindow2_2.style.maxWidth = `${testwindow2.clientWidth + - + 5}px`;
+                                            testwindow2_2.style.maxHeight = `${testwindow2.clientHeight + - + 25}px`;
+                                            testwindow2_2.style.left = "0"
+                                        }
+                                    })
+
+                                }, 150);
+
+                            });
+                        })
+
+
+                        document.querySelectorAll('.minscreen_button').forEach(function (minscreen_button) {
+                            minscreen_button.addEventListener('click', function () {
+                                const minscreenbutton = minscreen_button.closest('.testwindow2');
+                                const childElements = minscreenbutton.children;
+                                for (let child of childElements) {
+                                    child.style.display = 'none';
+                                    document.querySelectorAll('.title,.title_buttons').forEach(function (titles) {
+                                        titles.style.display = "block"
+                                    })
+                                    document.querySelectorAll('.title2').forEach(function (window_title2) {
+                                        window_title2.style.display = "flex"
+                                    })
+                                }
+
+                                minscreenbutton.classList.remove('big');
+
+                                const elements = document.querySelector('.testwindow_title.navy');
+                                const elements2 = elements.closest('.testwindow2');
+                                elements2.style.width = elements2.dataset.originalWidth;
+                                elements2.style.height = elements2.dataset.originalHeight;
+                                elements2.style.top = elements2.dataset.originalTop;
+                                elements2.style.left = elements2.dataset.originalLeft;
+                                if (localStorage.getItem('window_animation')) {
+                                    minscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                                }
+                                setTimeout(() => {
+                                    minscreenbutton.style.transition = ""
+                                    setTimeout(() => {
+                                        minscreenbutton.scrollTop = 0;
+                                        minscreenbutton.scrollLeft = 0;
+                                    }, 100);
+                                }, 150);
+
+                                setTimeout(() => {
+                                    for (let child of childElements) {
+                                        child.style.display = '';
+                                    }
+                                    if (localStorage.getItem('allwindow_toolbar')) {
+                                        document.querySelectorAll('.window_tool').forEach(function (window_tool) {
+                                            window_tool.style.display = "block"
+                                        })
+                                    }
+
+                                    document.querySelectorAll('.testwindow2').forEach(function (testwindow2) {
+                                        const hehehe1 = testwindow2.firstElementChild;
+                                        const testwindow2_1 = testwindow2.children[2];
+                                        const testwindow2_2 = testwindow2_1.firstElementChild;
+
+
+                                        if (hehehe1.classList.contains('navy')) {
+                                            testwindow2_2.style.maxWidth = `${testwindow2.clientWidth + - + 5}px`;
+                                            testwindow2_2.style.maxHeight = `${testwindow2.clientHeight + - + 25}px`;
+                                            testwindow2_2.style.left = "0"
+                                        }
+                                    })
+
+                                }, 150);
+                            });
+                        });
+
+
+
+                        document.querySelectorAll('.drag_button').forEach(function (drag) {
+                            let drag2 = drag.closest('.testwindow2');
+                            //要素内のクリックされた位置を取得するグローバル（のような）変数
+                            var x;
+                            var y;
+                            //マウスが要素内で押されたとき、又はタッチされたとき発火
+                            drag.addEventListener("mousedown", mdown, { passive: false }, false);
+                            drag.addEventListener("touchstart", mdown, { passive: false }, false);
+                            //マウスが押された際の関数
+                            function mdown(e) {
+                                //クラス名に .drag を追加
+                                drag2.classList.add("drag");
+                                //タッチデイベントとマウスのイベントの差異を吸収
+                                if (e.type === "mousedown") {
+                                    var event = e;
+                                } else {
+                                    var event = e.changedTouches[0];
+                                }
+                                //要素内の相対座標を取得
+                                x = event.pageX - drag2.offsetLeft;
+                                y = event.pageY - drag2.offsetTop;
+                                //ムーブイベントにコールバック
+                                document.body.addEventListener("mousemove", mmove, { passive: false }, false);
+                                document.body.addEventListener("touchmove", mmove, { passive: false }, false);
+                            }
+                            //マウスカーソルが動いたときに発火
+                            function mmove(e) {
+                                //ドラッグしている要素を取得
+                                var drag = document.getElementsByClassName("drag")[0];
+                                //同様にマウスとタッチの差異を吸収
+                                if (e.type === "mousemove") {
+                                    var event = e;
+                                } else {
+                                    var event = e.changedTouches[0];
+                                }
+                                const elements = document.querySelectorAll('.rectangle');
+                                // 各要素からクラスを削除
+                                elements.forEach(element => {
+                                    element.classList.remove('rectangle');
+                                });
+
+                                //マウスが動いた場所に要素を動かす
+                                drag.style.top = event.pageY - y + "px";
+                                drag.style.left = event.pageX - x + "px";
+                                //マウスボタンが離されたとき、またはカーソルが外れたとき発火
+                                drag.addEventListener("mouseup", mup, false);
+                                document.body.addEventListener("mouseleave", mup, false);
+                                drag.addEventListener("touchend", mup, false);
+                                document.body.addEventListener("touchleave", mup, false);
+                                // 半透明
+                                if (localStorage.getItem('window_invisible')) {
+                                    document.querySelectorAll('.child_windows').forEach(function (title) {
+                                        title.style.opacity = "0.5";
+                                    })
+                                }
+                                // 移動してる時だけ黒枠のみ
+                                if (localStorage.getItem('window_borderblack')) {
+                                    document.querySelectorAll('.child_windows, .child').forEach(function (title) {
+                                        document.querySelector('iframe').style.opacity = "0";
+                                        title.style.background = "rgba(255, 255, 255, 0)";
+                                        title.style.border = "solid 2px black";
+                                    })
+                                    document.querySelectorAll('.title,.title2,.title_buttons,.window_tool,.window_contents,.window_content,.window_bottom,.prompt_content').forEach(function (title) {
+                                        title.style.opacity = "0"
+                                    })
+                                }
+                            }
+                            //マウスボタンが上がったら発火
+                            function mup(e) {
+
+                                document.querySelectorAll('.drag').forEach(function (drag_windows) {
+                                    drag_windows.classList.remove("drag");
+                                })
+
+                                document.body.removeEventListener("mousemove", mmove, false);
+                                drag.removeEventListener("mouseup", mup, false);
+                                document.body.removeEventListener("touchmove", { passive: false }, mmove, false);
+                                drag.removeEventListener("touchend", { passive: false }, mup, false);
+                                // 半透明
+                                document.querySelectorAll('.child_windows').forEach(function (title) {
+                                    title.style.opacity = "";
+                                    window_prompt.style.background = "black"
+                                    window_back_silver()
+                                })
+                                // 移動してる時だけ黒枠のみ
+                                document.querySelectorAll('.child_windows, .child').forEach(function (title) {
+                                    title.style.background = "";
+                                    title.style.border = "";
+                                    document.querySelector('iframe').style.opacity = "";
+                                    window_prompt.style.background = "black"
+                                    window_back_silver()
+                                })
+                                document.querySelectorAll('.title,.title2,.title_buttons,.window_tool,.window_contents,.window_content,.window_bottom,.prompt_content').forEach(function (title) {
+                                    title.style.opacity = ""
+                                    window_back_silver()
+                                })
+                                titlecolor_set()
                             }
                         })
-                    });
 
-                }, 0);
 
-                dropArea.appendChild(windowDiv);
 
-            };
-            reader.readAsDataURL(file);
+                        // クラス名が "target" の要素を全て取得
+                        document.querySelectorAll('.bigscreen_button2').forEach(function (element) {
+                            var newChild = document.createElement('div');
+                            newChild.className = 'bigscreen_button_child';
+                            // 子要素を追加
+                            element.appendChild(newChild);
+                        });
+
+                        document.querySelectorAll('.testwindow2').forEach(function (testwindow2) {
+                            testwindow2.addEventListener('mousemove', function () {
+                                const hehehe1 = testwindow2.firstElementChild;
+                                const testwindow2_1 = testwindow2.children[2];
+                                const testwindow2_2 = testwindow2_1.firstElementChild;
+                                if (hehehe1.classList.contains('navy') && !testwindow2.classList.contains('big')) {
+                                    testwindow2_2.style.maxWidth = `${testwindow2.clientWidth + - + 5}px`;
+                                    testwindow2_2.style.maxHeight = `${testwindow2.clientHeight + - + 25}px`;
+                                    testwindow2_2.style.width = "100%";
+                                    testwindow2_2.style.height = "100%";
+                                    testwindow2_2.style.left = "0"
+                                }
+                            })
+                        });
+
+                    }, 0);
+
+                    dropArea.appendChild(windowDiv);
+                    zindexwindow_addnavy()
+                    setTimeout(() => {
+                        resolve();
+                    }, 500);
+                };
+                reader.readAsDataURL(file);
+            })
         }
 
         // 各ファイルを1つずつ処理
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
             setTimeout(() => {
-                processFile(file, event.clientX, event.clientY);
+                document.querySelector('.warning_title_text').textContent = "nexser"
+                document.querySelector('.window_warning_text').textContent = `読み込み中... ${i + 1} of ${files.length}: ${file.name}`;
+                warning_windows.style.display = "block"
+                document.querySelector('.close_button3').style.display = "block"
+                document.querySelector('.shutdown_button').style.display = "none";
+                document.querySelector('.warningclose_button').style.display = "none";
+                // ダミーの非同期処理を実行
+                processFile(file, event.clientX, event.clientY).then(() => {
+                    // 処理終了メッセージを表示
+                    warning_windows.style.display = "none";
+                }).catch(error => {
+                    console.error(`Error processing file ${i + 1}:`, error);
+                    processingMessage.innerText = `Error processing file ${i + 1} of ${files.length}: ${file.name}`;
+                });
             }, i * 250);
         }
 
@@ -7627,66 +7862,535 @@ if (ua.includes("mobile")) {
     });
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    // ローカルストレージの内容を外部出力
     document.getElementById('exportButton').addEventListener('click', function () {
         const localStorageData = JSON.stringify(localStorage);
-        const blob = new Blob([localStorageData], { type: 'application/json' });
+
+        // Base64エンコード関数
+        function base64Encode(str) {
+            return btoa(unescape(encodeURIComponent(str)));
+        }
+
+        // Base64デコード関数
+        function base64Decode(str) {
+            return decodeURIComponent(escape(atob(str)));
+        }
+
+        // XOR暗号化関数
+        function xorEncrypt(data, key) {
+            let encrypted = '';
+            for (let i = 0; i < data.length; i++) {
+                encrypted += String.fromCharCode(data.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+            }
+            return encrypted;
+        }
+
+        const key = 'your-encryption-key'; // 暗号化キーを設定
+
+        // データをエンコードして圧縮
+        const encodedData = base64Encode(localStorageData);
+
+        // 圧縮データを暗号化
+        const encryptedData = xorEncrypt(encodedData, key);
+
+        // 暗号化データをBlobに変換してダウンロード
+        const blob = new Blob([encryptedData], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'nexser_localstorage_data.json';
+        a.download = 'nexser_storageData_encrypted.json';
         a.click();
         URL.revokeObjectURL(url);
     });
 
-    // 外部出力したローカルストレージを読み込む
+
+
     document.getElementById('fileInput').addEventListener('change', function (event) {
         const file = event.target.files[0];
         const reader = new FileReader();
-
         reader.onload = function (event) {
-            const data = JSON.parse(event.target.result);
+            // Base64デコード関数
+            function base64Decode(str) {
+                return decodeURIComponent(escape(atob(str)));
+            }
+
+            // XOR復号化関数
+            function xorDecrypt(data, key) {
+                let decrypted = '';
+                for (let i = 0; i < data.length; i++) {
+                    decrypted += String.fromCharCode(data.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+                }
+                return decrypted;
+            }
+
+            const key = 'your-encryption-key'; // 暗号化キーを設定
+            const encryptedData = event.target.result;
+
+            // データを復号化
+            const decryptedData = xorDecrypt(encryptedData, key);
+
+            // データをデコード
+            const decodedData = base64Decode(decryptedData);
+
+            // JSON形式にパース
+            const data = JSON.parse(decodedData);
+
+            // ローカルストレージをクリアしてデータを復元
+            localStorage.clear();
+            sessionStorage.clear();
             for (const key in data) {
                 localStorage.setItem(key, data[key]);
             }
-            document.querySelector('.warning_title_text').textContent = "nexser"
-            document.querySelector('.window_warning_text').textContent = "ローカルストレージが復元されました! ページを再読み込みしてください。";
-            warning_windows.style.display = "block"
-            document.querySelector('.close_button3').style.display = "block"
-            sound5()
+
+            // UIの更新
+            document.querySelector('.warning_title_text').textContent = "nexser";
+            document.querySelector('.window_warning_text').textContent = "データが復元されました! ページを再読み込みしてください。";
+            warning_windows.style.display = "block";
+            document.querySelector('.close_button3').style.display = "block";
+            sound5();
             document.querySelector('.test_allwindow').style.display = "block";
             document.querySelector('.shutdown_button').style.display = "none";
             document.querySelector('.warningclose_button').style.display = "none";
         };
-
         reader.readAsText(file);
     });
+
+
+    function nexser_search_button() {
+        const windows = document.querySelectorAll('.child_windows');
+        windows.forEach((windowElement) => {
+            // 1番目の子要素を取得
+            const firstChild = windowElement.children[0];
+            // その子要素の中の2番目の子要素を取得
+            const nestedChild = firstChild.children[1];
+            const nestedChild2 = nestedChild.textContent;
+
+            const button = document.createElement('li');
+            button.className = 'borderinline_dotted';
+            button.classList.add('button2')
+
+            const button_span_child = document.createElement('span');
+            button_span_child.textContent = "　" + nestedChild2 + "　";
+            document.getElementById('myUL').appendChild(button);
+            button.appendChild(button_span_child);
+            button.addEventListener('click', () => toggleWindow(windowElement));
+
+            button.addEventListener('mousedown', () => {
+                button.classList.add('pressed');
+            });
+            button.addEventListener('mouseleave', () => {
+                button.classList.remove('pressed');
+            });
+            button.addEventListener('mouseup', () => {
+                button.classList.remove('pressed');
+            });
+
+        });
+    };
+    nexser_search_button()
+
+    const elements = document.querySelectorAll('.desktop_files');
+    elements.forEach((element, index) => {
+        const savedPosition = localStorage.getItem(`draggable-${index}`);
+        if (savedPosition) {
+            const [x, y] = savedPosition.split(',');
+            element.style.position = "absolute";
+            element.style.left = `${x}px`;
+            element.style.top = `${y}px`;
+        }
+        element.draggable = true;
+        let offsetX, offsetY;
+        element.addEventListener('dragstart', (e) => {
+            offsetX = e.clientX - element.getBoundingClientRect().left;
+            offsetY = e.clientY - element.getBoundingClientRect().top;
+            e.dataTransfer.setData('text/plain', null);
+            element.style.border = "1.9px dotted orangered";
+            element.style.opacity = "0.99";
+            const element2 = element.firstElementChild;
+            const element3 = element.children[1];
+            element2.style.opacity = "0";
+            element3.style.opacity = "0";
+            setTimeout(() => {
+                element2.style.opacity = "";
+                element3.style.opacity = "";
+            }, 0);
+            if (rectangle) {
+                document.body.removeChild(rectangle);
+            }
+        });
+        element.addEventListener('dragend', (e) => {
+            const x = e.clientX - offsetX;
+            const y = e.clientY - offsetY;
+            element.style.position = "absolute";
+            element.style.left = `${x}px`;
+            element.style.top = `${y}px`;
+            const element2 = element.firstElementChild;
+            const element3 = element.children[1];
+            element2.style.opacity = "";
+            element3.style.opacity = "";
+            element.style.opacity = "";
+            element.style.border = "";
+            localStorage.setItem(`draggable-${index}`, `${x},${y}`);
+            if (rectangle) {
+                document.body.removeChild(rectangle);
+            }
+        });
+    });
+
+    var background_img = document.createElement("img");
+    function minidesk_backgroundresize1() {
+        background_img.style.display = "block";
+        background_img.src = "nexser_image/Windows95_wallpaper.jpg"; // 画像のパスを指定
+        // 特定のクラスを持つ要素を取得
+        var targetElement = document.querySelector(".mini_desktop");
+        targetElement.appendChild(background_img);
+        const minidesk_parent = document.querySelector('.mini_desktop');
+        const minidesk_child = background_img
+        minidesk_child.style.width = `${minidesk_parent.clientWidth}px`;
+        minidesk_child.style.height = `${minidesk_parent.clientHeight}px`;
+    }
+    function minidesk_backgroundresize2() {
+        background_img.style.display = "block";
+        background_img.src = "nexser_image/Windows95_wallpaper_2.png"; // 画像のパスを指定
+        // 特定のクラスを持つ要素を取得
+        var targetElement = document.querySelector(".mini_desktop");
+        targetElement.appendChild(background_img);
+        const minidesk_parent = document.querySelector('.mini_desktop');
+        const minidesk_child = background_img
+        minidesk_child.style.width = `${minidesk_parent.clientWidth}px`;
+        minidesk_child.style.height = `${minidesk_parent.clientHeight}px`;
+    }
+    function minidesk_backgroundresize3() {
+        background_img.style.display = "block";
+        background_img.src = "nexser_image/Windowsxp_wallpaper.jpg"; // 画像のパスを指定
+        // 特定のクラスを持つ要素を取得
+        var targetElement = document.querySelector(".mini_desktop");
+        targetElement.appendChild(background_img);
+        const minidesk_parent = document.querySelector('.mini_desktop');
+        const minidesk_child = background_img
+        minidesk_child.style.width = `${minidesk_parent.clientWidth}px`;
+        minidesk_child.style.height = `${minidesk_parent.clientHeight}px`;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    let currentDate = new Date();
+    let alarm_hours = currentDate.getHours();
+    let alarm_minutes = currentDate.getMinutes();
+    let alarm_seconds = currentDate.getSeconds();
+    let timerText = document.getElementById('timerText');
+    let set_btn = document.getElementById('set_btn');
+    let delete_btn = document.getElementById('delete_btn');
+    let option_hours;
+    let option_minutes;
+    let parent_list = document.getElementById('parent_list');
+    let record = JSON.parse(localStorage.getItem('alarms')) || []; // Load alarms from local storage
+    let x = record.length; // Initialize x based on the number of alarms in local storage
+
+    //アラーム設定用オブジェクト
+    let Setting = function (sethour, setminute) {
+        this.sethour = sethour;
+        this.setminute = setminute;
+    };
+
+    // 時計の"12:1"を"12:01"と表記
+    function adjustDigit(num) {
+        let digit;
+        if (num < 10) { digit = `0${num}`; }
+        else { digit = num; }
+        return digit;
+    }
+
+    // アラームセット
+    set_btn.addEventListener('click', function () {
+        //アラームは最大5まで
+        let lis = parent_list.getElementsByTagName('li');
+        let len = lis.length;
+        if (len >= 5) { return; }
+
+        //設定時間を記録
+        option_hours = document.alarm_form.option_hours.value;
+        option_minutes = document.alarm_form.option_minutes.value;
+        record[x] = new Setting(option_hours, option_minutes);
+
+        //設定時間を表示
+        let container_list = document.createElement('li');
+        let list_content = document.createTextNode(`${record[x].sethour}時${record[x].setminute}分`);
+        parent_list.appendChild(container_list);
+        container_list.appendChild(list_content);
+
+        //表示削除用ボタン
+        let list_span = document.createElement('span');
+        let id_li = document.createAttribute('id');
+        let id_span = document.createAttribute('id');
+        let span_content = document.createTextNode('削除');
+        container_list.appendChild(list_span);
+        list_span.appendChild(span_content);
+        container_list.setAttributeNode(id_li);
+        container_list.id = x;
+        container_list.classList.add('deletes');
+        list_span.classList.add('delete_btn');
+        list_span.classList.add('button2');
+
+        //設定時刻と表示を削除
+        addDeleteFunctionality();
+        x++;
+        saveAlarms(); // Save alarms to local storage after setting
+    });
+
+    // Save alarms to local storage
+    function saveAlarms() {
+        localStorage.setItem('alarms', JSON.stringify(record));
+    }
+
+    // Load alarms from local storage on page load
+    function loadAlarms() {
+        for (let i = 0; i < record.length; i++) {
+            if (record[i] !== 'disabled') {
+                let container_list = document.createElement('li');
+                let list_content = document.createTextNode(`${record[i].sethour}時${record[i].setminute}分`);
+                parent_list.appendChild(container_list);
+                container_list.appendChild(list_content);
+
+                let list_span = document.createElement('span');
+                let span_content = document.createTextNode('削除');
+                container_list.appendChild(list_span);
+                list_span.appendChild(span_content);
+                container_list.id = i;
+                container_list.classList.add('deletes');
+                list_span.classList.add('delete_btn');
+                list_span.classList.add('button2');
+            }
+        }
+        addDeleteFunctionality(); // Add delete functionality after loading alarms
+    }
+
+    // Add delete functionality to delete buttons
+    function addDeleteFunctionality() {
+        let deletes = document.getElementsByClassName('deletes');
+        for (var i = 0, de_len = deletes.length; i < de_len; i++) {
+            deletes[i].onclick = function () {
+                record[this.id] = 'disabled';
+                this.id = 'temp';
+                var temp = document.getElementById('temp');
+                temp.parentNode.removeChild(temp);
+                saveAlarms(); // Save alarms to local storage after deletion
+            };
+        }
+    }
+
+    //時計を動かす
+    function updateCurrentTime() {
+        setTimeout(function () {
+            currentDate = new Date();
+            alarm_hours = adjustDigit(currentDate.getHours());
+            alarm_minutes = adjustDigit(currentDate.getMinutes());
+            alarm_seconds = adjustDigit(currentDate.getSeconds());
+            timerText.innerHTML = `${alarm_hours}:${alarm_minutes}:${alarm_seconds}`;
+
+            //アラーム機能
+            for (var i = 0, len = record.length; i < len; i++) {
+                if (record[i].sethour == currentDate.getHours() && record[i].setminute == currentDate.getMinutes() && alarm_seconds == 0) {
+                    alert('お時間です!');
+                };
+            };
+            updateCurrentTime();
+        }, 100);
+    }
+
+    // Load alarms and start the clock
+    loadAlarms();
+    updateCurrentTime();
+
+
+    window.onerror = function (message, source, lineno, colno, error) {
+        const errorLog = document.getElementById('console_error_text');
+        const errorMessage = `
+            メッセージ: ${message}
+            ソース: ${source}
+            行: ${lineno}
+            列: ${colno}
+            エラーオブジェクト: ${error}
+        `;
+        errorLog.textContent += errorMessage + '\n';
+        return false; // デフォルトのエラーハンドリングを行う
+    };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    document.addEventListener('DOMContentLoaded', () => {
+        kakeibo_loadEntries();
+        kakeibo_setCurrentDateTime();
+    });
+
+    function kakeibo_setCurrentDateTime() {
+        const now = new Date();
+        const date = now.toISOString().split('T')[0];
+        const time = now.toTimeString().split(' ')[0].slice(0, 5);
+
+        document.getElementById('date').value = date;
+        document.getElementById('time').value = time;
+    }
+
+    function kakeibo_addEntry() {
+        const type = document.getElementById('type').value;
+        const amount = parseFloat(document.getElementById('amount').value) || 0;
+        const description = document.getElementById('description').value;
+        const date = document.getElementById('date').value;
+        const time = document.getElementById('time').value;
+
+        const entry = { type, amount, description, date, time };
+        kakeibo_saveEntry(entry);
+        kakeibo_displayEntries();
+        kakeibo_calculateTotal();
+    }
+
+    function kakeibo_saveEntry(entry) {
+        let entries = JSON.parse(localStorage.getItem('entries')) || [];
+        entries.push(entry);
+        localStorage.setItem('entries', JSON.stringify(entries));
+    }
+
+    function kakeibo_loadEntries() {
+        kakeibo_displayEntries();
+        kakeibo_calculateTotal();
+    }
+
+    function kakeibo_displayEntries() {
+        const entries = JSON.parse(localStorage.getItem('entries')) || [];
+        const entriesContainer = document.getElementById('entries');
+        entriesContainer.innerHTML = '';
+
+        entries.forEach((entry, index) => {
+            const entryDiv = document.createElement('div');
+            entryDiv.classList.add('entry');
+            const color = entry.type === '収入' ? 'red' : 'blue';
+            entryDiv.innerHTML = `
+                <div class="border" style="color: ${color};"><strong>${entry.type}</strong>: ¥${entry.amount} - ${entry.description} (${entry.date} ${entry.time})</div>
+                <button class="button2 medium" onclick="kakeibo_deleteEntry(${index})">削除</button>
+            `;
+            entriesContainer.appendChild(entryDiv);
+        });
+    }
+
+    function kakeibo_deleteEntry(index) {
+        let entries = JSON.parse(localStorage.getItem('entries')) || [];
+        entries.splice(index, 1);
+        localStorage.setItem('entries', JSON.stringify(entries));
+        kakeibo_displayEntries();
+        kakeibo_calculateTotal();
+    }
+
+    function kakeibo_calculateTotal() {
+        const entries = JSON.parse(localStorage.getItem('entries')) || [];
+        let total = 0;
+
+        entries.forEach(entry => {
+            if (entry.type === '収入') {
+                total += entry.amount;
+            } else {
+                total -= entry.amount;
+            }
+        });
+        document.getElementById('total').innerText = `合計: ¥${total}`;
+    }
+
+
+    const slider = document.getElementById('opacitySlider');
+    const targetDiv = document.querySelector('.screen_light');
+    const valueDisplay = document.getElementById('valueDisplay');
+
+    // ローカルストレージから保存された透明度を取得
+    const savedOpacity = localStorage.getItem('divOpacity');
+    if (savedOpacity !== null) {
+        targetDiv.style.opacity = 1 - savedOpacity;
+        slider.value = savedOpacity * 100;
+        valueDisplay.textContent = slider.value;
+    }
+
+    slider.addEventListener('input', () => {
+        const opacityValue = 1 - (slider.value / 100);
+        targetDiv.style.opacity = opacityValue;
+        valueDisplay.textContent = slider.value;
+
+        // 透明度をローカルストレージに保存
+        localStorage.setItem('divOpacity', 1 - opacityValue);
+    });
+
+
+
+
+
+
+
+    // 監視対象の要素を取得
+    const targetNodes = document.querySelectorAll('.child_windows');
+
+    // 監視する変更の種類を設定
+    const config = { attributes: true, childList: true, subtree: true };
+
+    // 前回のカウントを保持する変数
+    let previousActiveCount = 0;
+
+    // コールバック関数を定義
+    const callback = function (mutationsList, observer) {
+        let currentActiveCount = 0;
+        targetNodes.forEach(node => {
+            if (node.classList.contains('active')) {
+                currentActiveCount++;
+            }
+        });
+
+        if (currentActiveCount !== previousActiveCount) {
+            // クラス名 'active' の数が変わった時の処理
+            // console.log('Active class count changed:', currentActiveCount);
+            previousActiveCount = currentActiveCount;
+            zindexwindow_addnavy()
+        }
+    };
+
+    // MutationObserverを作成
+    const observer = new MutationObserver(callback);
+
+    // すべての対象要素に対して監視を開始
+    targetNodes.forEach(node => observer.observe(node, config));
+
+
+
+
 
 
 };
