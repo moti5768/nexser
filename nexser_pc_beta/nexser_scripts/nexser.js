@@ -255,6 +255,9 @@ if (ua.includes("mobile")) {
             if (localStorage.getItem('prompt_data2')) {
                 document.querySelector('.startup_speed').textContent = "HIGH"
             }
+            if (localStorage.getItem('auto_startup')) {
+                document.querySelector('.auto_startup').textContent = "ON"
+            }
             if (localStorage.getItem('driver_sound')) {
                 document.querySelector('.startup_sound').textContent = "UN INSTALL"
             }
@@ -603,7 +606,6 @@ if (ua.includes("mobile")) {
             nexser_program.style.display = "none";
             nexser.style.display = "block";
             desktop.style.display = "block"
-
             document.querySelector('.welcome_windows').style.display = "none";
         } else if (localStorage.getItem('prompt_data3')) {
             screen_prompt.style.display = "none";
@@ -625,6 +627,11 @@ if (ua.includes("mobile")) {
             document.getElementById('nex').style.cursor = 'crosshair';
         } else {
             document.getElementsByClassName('pattern_backgrounds')[0].style.display = "block";
+        }
+
+        if (screen_prompt.style.display == "block" && localStorage.getItem('auto_startup')) {
+            help_command()
+            prompt_text_check()
         }
 
         sessionStorage.removeItem('start_camera');
@@ -858,6 +865,16 @@ if (ua.includes("mobile")) {
         } else {
             localStorage.setItem('prompt_data2', prompt_data2);
             document.querySelector('.startup_speed').textContent = "HIGH"
+        }
+    })
+
+    document.querySelector('.auto_startup').addEventListener('click', function (auto_startup) {
+        if (localStorage.getItem('auto_startup')) {
+            localStorage.removeItem('auto_startup')
+            document.querySelector('.auto_startup').textContent = "OFF"
+        } else {
+            localStorage.setItem('auto_startup', auto_startup);
+            document.querySelector('.auto_startup').textContent = "ON"
         }
     })
 
@@ -3726,7 +3743,6 @@ if (ua.includes("mobile")) {
         testbtn.addEventListener('click', () => {
             cpu_bench_menu.classList.toggle('active');
             cpu_bench_menu.style.zIndex = largestZIndex++;
-
             cpucalc_open();
         })
     );
@@ -5621,7 +5637,6 @@ if (ua.includes("mobile")) {
         const cameraStream = await navigator.mediaDevices.getUserMedia({
             video: {
                 facingMode: 'environment',
-
                 aspectRatio: {
                     exact: 1.6,
                 },
@@ -7168,8 +7183,6 @@ if (ua.includes("mobile")) {
     });
 
 
-
-
     const taskbar_b = document.querySelector('#task_buttons2');
     function test_windows_button() {
         document.querySelectorAll('.task_buttons').forEach(function (task_buttons) {
@@ -7185,6 +7198,7 @@ if (ua.includes("mobile")) {
 
             const button = document.createElement('span');
             button.className = 'task_buttons';
+            button.classList.add('button2')
             button.textContent = nestedChild2;
             taskbar_b.appendChild(button);
 
@@ -7958,7 +7972,8 @@ if (ua.includes("mobile")) {
 
             const button = document.createElement('li');
             button.className = 'borderinline_dotted';
-            button.classList.add('button2')
+            button.classList.add('button2');
+            button.classList.add('search_button');
 
             const button_span_child = document.createElement('span');
             button_span_child.textContent = "　" + nestedChild2 + "　";
@@ -8063,22 +8078,13 @@ if (ua.includes("mobile")) {
         minidesk_child.style.height = `${minidesk_parent.clientHeight}px`;
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    document.querySelectorAll('.search_button').forEach(search_button =>
+        search_button.addEventListener('click', () => {
+            if (!cpu_bench_menu.classList.contains('active')) {
+                cpucalc_open()
+            }
+        })
+    );
 
 
     let currentDate = new Date();

@@ -381,10 +381,6 @@ li {
 
 .task_buttons.pressed {
     background: darkgray;
-    border-bottom: 1.8px #eee solid;
-    border-right: 1.8px #eee solid;
-    border-top: 1.8px #333 solid;
-    border-left: 1.8px #333 solid;
     padding-top: 1px;
     padding-left: 1px;
     box-sizing: border-box;
@@ -392,28 +388,31 @@ li {
 
 .button {
     display: inline-block;
-    border-top: 1.8px #eee solid;
-    border-left: 1.8px #eee solid;
-    border-bottom: 1.8px #333 solid;
-    border-right: 1.8px #333 solid;
-    box-shadow: 0 0 0 0.5px dimgray;
-    color: black;
-    background: silver;
-    outline: none;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
     list-style: none;
     box-sizing: border-box;
+    background-color: #C3C7CB;
+    color: black;
+    border: 1.8px solid #808080;
+    border-top-color: #fff;
+    border-left-color: #fff;
+    border-right-color: #808080;
+    border-bottom-color: #808080;
+    box-shadow: 0.5px 0.5px black;
+    cursor: pointer;
+    box-sizing: border-box;
 }
 
 .button.pressed {
-    background: darkgray;
-    border-bottom: 1.8px #eee solid;
-    border-right: 1.8px #eee solid;
-    border-top: 1.8px #333 solid;
-    border-left: 1.8px #333 solid;
+    background-color: darkgray;
+    border-top-color: #7a7a7a;
+    border-left-color: #7a7a7a;
+    border-right-color: #fff;
+    border-bottom-color: #fff;
+    box-shadow: 0.5px 0.5px 0 #000 inset;
     padding-top: 1px;
     padding-left: 1px;
     box-sizing: border-box;
@@ -421,27 +420,29 @@ li {
 
 .button2 {
     display: inline-block;
-    border-top: 1.8px #eee solid;
-    border-left: 1.8px #eee solid;
-    border-bottom: 1.8px #333 solid;
-    border-right: 1.8px #333 solid;
-    box-shadow: 0 0 0 0.5px dimgray;
-    color: black;
-    background: silver;
-    outline: none;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
     list-style: none;
+    background-color: #C3C7CB;
+    color: black;
+    border: 1.8px solid #808080;
+    border-top-color: #fff;
+    border-left-color: #fff;
+    border-right-color: #808080;
+    border-bottom-color: #808080;
+    box-shadow: 0.5px 0.5px black;
+    cursor: pointer;
 }
 
 .button2.pressed {
-    background: darkgray;
-    border-bottom: 1.8px #eee solid;
-    border-right: 1.8px #eee solid;
-    border-top: 1.8px #333 solid;
-    border-left: 1.8px #333 solid;
+    background-color: darkgray;
+    border-top-color: #7a7a7a;
+    border-left-color: #7a7a7a;
+    border-right-color: #fff;
+    border-bottom-color: #fff;
+    box-shadow: 0.5px 0.5px 0 #000 inset;
     padding-top: 1px;
     padding-left: 1px;
     box-sizing: border-box;
@@ -559,22 +560,32 @@ input[type="file"] {
 
 .start_button {
     display: inline-block;
-    background: silver;
     position: relative;
     bottom: 0px;
     left: 10px;
     top: 7px;
     width: 45px;
     height: 26.5px;
-    box-shadow: 0 0 0 0.5px dimgray;
+    background-color: #C3C7CB;
+    border: 1.8px solid #808080;
+    border-top-color: #fff;
+    border-left-color: #fff;
+    border-right-color: #808080;
+    border-bottom-color: #808080;
+    box-shadow: 0.5px 0.5px black;
+    cursor: pointer;
     box-sizing: border-box;
 }
 
 .start_button.pressed {
-    border-bottom: 1.5px #eee solid;
-    border-right: 1.5px #eee solid;
-    border-top: 1.5px #333 solid;
-    border-left: 1.5px #333 solid;
+    border-top-color: #7a7a7a;
+    border-left-color: #7a7a7a;
+    border-right-color: #fff;
+    border-bottom-color: #fff;
+    box-shadow: 0.5px 0.5px 0 #000 inset;
+    padding-top: 1px;
+    padding-left: 1px;
+    box-sizing: border-box;
     outline: 1.5px dotted black;
     outline-offset: -5px;
     padding-top: 1px;
@@ -667,6 +678,12 @@ input[type="file"] {
 
 .inport_icon {
     background: silver;
+    border: 1.8px solid #808080;
+    border-top-color: #fff;
+    border-left-color: #fff;
+    border-right-color: #808080;
+    border-bottom-color: #808080;
+    box-shadow: 0.5px 0.5px black;
     text-align: center;
     margin-left: 10px;
     margin-right: 5px;
