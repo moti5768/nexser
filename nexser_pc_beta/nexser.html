@@ -180,21 +180,20 @@
                 </div>
             </div>
 
-            <div class="password_form" style="display: none;">
-                <div class="pass_windows active back_silver">
-                    <div style="background: navy; color: white;">
-                        <span>password</span>
-                        <span class="close_button button2 pointer_none"></span>
-                    </div>
-                    <input class="large border2" type="password" id="pass_form" maxlength="4"
-                        style="height: 20px; margin-top: 10px; width: 295px;">
-                    <button class="button2 borderinline_dotted" style="margin-top: 5px; height: 25px;"
-                        onclick="password_login()">&emsp;login&emsp;</button><span>&emsp;</span><span
-                        class="red_text pass_no"></span>
+            <div class="child_windows pass_signin_menu back_silver active">
+                <div class="title">
+                    <span class="title_icon"></span><span>password</span>
                 </div>
-
-                <br>
+                <div class="title_buttons">
+                    <span class="close_button button2 pointer_none"></span><br>
+                </div>
+                <input class="large border2" type="password" id="pass_form" maxlength="4"
+                    style="height: 20px; margin-top: 10px; width: 250px;">
+                <button class="button2 borderinline_dotted" style="margin-top: 5px; height: 25px;"
+                    onclick="password_login()">&emsp;login&emsp;</button><span>&emsp;</span>
+                <br><span class="red_text pass_no"></span>
             </div>
+
 
             <div class="welcome_windows" style="display: none;">
                 <div class="welcome_title bold" style="background: navy; color: white;">
@@ -2607,12 +2606,9 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                     </div>
 
                     <div class="child_windows file_setting_menu active back_silver" style="width: 350px;">
-
                         <div class="title">
                             <span class="title_icon"></span><span>file setting</span>
                         </div>
-
-
                         <div class="title_buttons">
                             <span class="drag_button">&nbsp;</span>
                             <span class="close_button button2"></span><br>
@@ -2658,11 +2654,14 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         </div>
                     </div>
 
-                    <div class="notice_menu">
+                    <div class="notice_menu child_windows active">
                         <div class="title">
                             <span class="title_icon"></span><span>notice</span>
-                        </div><br>
-
+                        </div>
+                        <div class="title_buttons">
+                            <span class="drag_button">&nbsp;</span>
+                            <span class="close_button button2" onclick="notice_closekeep()"></span><br>
+                        </div>
                         <div class="mini_window">
                             <p class="notice_text">none</p>
                         </div>
@@ -2672,13 +2671,10 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         <div class="title">
                             <span class="title_icon"></span><span>file download</span>
                         </div>
-
-
                         <div class="title_buttons">
                             <span class="drag_button">&nbsp;</span>
                             <span class="close_button button2"></span><br>
                         </div>
-
                         <div class="title2">
 
                             <div class="parent_list">

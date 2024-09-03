@@ -547,49 +547,22 @@ if (ua.includes("mobile")) {
                 Array.from(clock).forEach((element) => {
                     element.textContent = (hours + ":" + minutes + ":" + seconds + "");
                 });
-
-                navigator.getBattery().then((battery) => {
-                    if (battery.level == 1 && battery.charging == true) {
-                        document.querySelector('.battery_child').style.color = "lime"
-                        document.querySelector('.battery_child').style.background = "black"
-                    } else if (battery.charging == false) {
-                        document.querySelector('.battery_child').style.color = "black"
-                        document.querySelector('.battery_child').style.background = ""
-                    } else {
-                        document.querySelector('.battery_child').style.color = "#FF9900"
-                        document.querySelector('.battery_child').style.background = "black"
-                    }
-
-                    if (0 <= battery.level && battery.level < 0.21 && battery.charging == false) {
-                        document.querySelector('.notice_text').textContent = "バッテリー残量が少なくなっています!(※充電しない限りこの表示は残り続けます。)"
-                        notice_menu.style.display = "block";
-                    } else {
-                        notice_menu.style.display = "none"
-                    }
-                    resolve()
-                }, 1000)
-                setTimeout(() => {
-                    navigator.getBattery().then((battery) => {
-                        let bu = document.getElementsByClassName('taskbattery');
-                        bu2 = bu[0].textContent = Math.floor(battery.level * 100);
-                    });
-                    navigator.getBattery().then((battery) => {
-                        if (battery.charging == true) {
-                            document.getElementsByClassName('battery_time')[0].textContent = (`${battery.dischargingTime}`);
-                        } else if (battery.charging == false) {
-                            document.getElementsByClassName('battery_time')[0].textContent = (`${battery.dischargingTime}` + "second");
-                        }
-                    })
-                    resolve()
-                }, 50);
                 taskgroup_load();
-            }, 50)
+                resolve()
+            }, 1000)
         }
+
         setTimeout(() => {
-            localmemory_size()
-            resolve()
+            if (desktop.style.display == "block") {
+                localmemory_size()
+                resolve()
+            }
         }, 500);
     })
+
+    function notice_closekeep(notice_closekeep) {
+        localStorage.setItem('notice_closekeep', notice_closekeep)
+    }
 
     function load_nexser() {
         localStorage.removeItem('no_shutdown')
@@ -598,7 +571,7 @@ if (ua.includes("mobile")) {
             nexser_program.style.display = "none";
             nexser.style.display = "block";
             desktop.style.display = "none";
-            document.querySelector('.password_form').style.display = "block";
+            document.querySelector('.pass_signin_menu').classList.remove('active')
             document.querySelector('#pass_form').focus();
         } else if (!localStorage.getItem('start_nexser') && localStorage.getItem('prompt_data')) {
             start_check()
@@ -1004,7 +977,7 @@ if (ua.includes("mobile")) {
     function pass_check() {
         setColor();
         if (localStorage.getItem('password') && !localStorage.getItem('login')) {
-            document.querySelector('.password_form').style.display = "block";
+            document.querySelector('.pass_signin_menu').classList.remove('active')
             document.getElementById('pass_form').focus();
             document.getElementById('nex').style.cursor = '';
         } else {
@@ -1021,7 +994,7 @@ if (ua.includes("mobile")) {
             .replaceAll(".s<t.", "9")
         );
         if (password_unlock2 == document.querySelector('#pass_form').value) {
-            document.querySelector('.password_form').style.display = "none";
+            document.querySelector('.pass_signin_menu').classList.add('active')
             document.querySelector('.pass_no').textContent = "";
             start_check();
             localStorage.setItem('login', login);
@@ -1321,6 +1294,10 @@ if (ua.includes("mobile")) {
                         localStorage.removeItem('no_shutdown')
                     };
                 }, 5000);
+                setTimeout(() => {
+                    localmemory_size()
+                    document.querySelector('.pass_signin_menu').classList.remove('selectwindows')
+                }, 500);
             }, 2000);
         }
     }
@@ -1484,12 +1461,12 @@ if (ua.includes("mobile")) {
         startmenu_close()
         if (localStorage.getItem('password') && gets == gets2) {
             document.getElementsByClassName('welcome_windows')[0].style.display = "none";
-            document.querySelector('.password_form').style.display = "block";
             localStorage.removeItem('login');
             document.getElementById('desktop').style.display = "none";
             document.querySelector('#pass_form').focus();
             window_none();
             window_reset();
+            document.querySelector('.pass_signin_menu').classList.remove('active')
             sound_stop()
         } else if (localStorage.getItem('password') && gets != gets2) {
             document.getElementById('nex').style.cursor = '';
@@ -2721,7 +2698,7 @@ if (ua.includes("mobile")) {
             const get2 = document.getElementsByClassName('active');
             const get3 = document.getElementsByClassName('task_buttons');
             gets = get.length;
-            gets2 = get2.length - 2;
+            gets2 = get2.length - 1;
             gets3 = get3.length;
             document.getElementsByClassName('child_windows_length')[0].textContent = (gets);
             document.getElementsByClassName('active_length')[0].textContent = (gets2);
@@ -5080,7 +5057,6 @@ if (ua.includes("mobile")) {
             note_pad.classList.add('active');
             note_pad.classList.remove('selectwindows')
             test_windows_button()
-
         }, 100);
     }
 
@@ -5272,13 +5248,7 @@ if (ua.includes("mobile")) {
             const a = document.querySelector('.note_area');
             a.textContent = (old_windows_data);
             localStorage.removeItem('MemoData_export');
-
-            notice_menu.style.left = "0px";
-            notice_menu.style.display = "block"
-
-            setTimeout(() => {
-                notice_menu.style.display = "none"
-            }, 5000);
+            notice_menu.classList.remove('active')
         } else {
             document.querySelector('.window_error_text').textContent = "windows2000からテキストデータがエクスポートされていません!"
             error_windows.classList.remove('active')
@@ -7142,9 +7112,18 @@ if (ua.includes("mobile")) {
     windowposition_reset()
     function windowposition_reset() {
         document.querySelectorAll('.child_windows').forEach(element => {
-            element.style.left = "125px";
-            element.style.top = "125px";
+            element.style.left = "130px";
+            element.style.top = "130px";
         });
+        const noticewindow = document.querySelector('.notice_menu');
+        noticewindow.style.top = "45%";
+        noticewindow.style.left = "50%";
+        noticewindow.style.transform = "translate(-50%, -50%)";
+
+        const pass_signin_menu = document.querySelector('.pass_signin_menu');
+        pass_signin_menu.style.top = "50%";
+        pass_signin_menu.style.left = "50%";
+        pass_signin_menu.style.transform = "translate(-50%, -50%)";
     }
 
     document.querySelectorAll('.bigscreen_button').forEach(function (element) {
@@ -7200,7 +7179,6 @@ if (ua.includes("mobile")) {
             });
         });
     });
-
 
     const taskbar_b = document.querySelector('#task_buttons2');
     function test_windows_button() {
@@ -7329,73 +7307,53 @@ if (ua.includes("mobile")) {
                         img.classList.add('item_preview');
                         img.style.left = "900px";
                         newChild6.appendChild(img);
-
                         setTimeout(() => {
                             test_windows_button()
-
                             titlecolor_set()
                         }, 100);
-
                     } else if (file.type.startsWith('video/')) {
+                        windowDiv.classList.add('selectwindows');
                         const video = document.createElement('video');
                         video.src = result;
                         video.controls = true;
                         video.classList.add('item_preview');
                         newChild6.appendChild(video);
-
                         setTimeout(() => {
                             test_windows_button()
-
                             titlecolor_set()
                         }, 1000);
-
                     } else if (file.type === 'application/pdf') {
+                        windowDiv.classList.add('selectwindows');
                         const iframe = document.createElement('iframe');
                         iframe.src = result;
                         iframe.classList.add('item_preview');
                         newChild6.appendChild(iframe);
-
                         setTimeout(() => {
                             test_windows_button()
-
                             titlecolor_set()
                         }, 100);
-
                     } else if (file.type.startsWith('text/')) {
+                        windowDiv.classList.add('selectwindows');
                         const text = document.createElement('p');
                         text.textContent = e.target.result;
                         text.classList.add('item_preview');
                         newChild6.appendChild(text);
-
                         setTimeout(() => {
                             test_windows_button()
-
                             titlecolor_set()
                         }, 100);
-
                     } else {
                         const unsupported = document.createElement('p');
                         unsupported.textContent = 'このファイル形式はサポートされていません。';
                         unsupported.classList.add('item_preview');
                         newChild6.appendChild(unsupported);
-
                         setTimeout(() => {
                             test_windows_button()
-
                             titlecolor_set()
                         }, 100);
                     }
 
-
-
-
-
-
-
-
-
                     setTimeout(() => {
-
                         document.querySelectorAll('.testwindow2:not(.no_create_windows)').forEach(function (testwindow2) {
                             const testwindow2_1 = testwindow2.children[2];
                             const testwindow2_2 = testwindow2_1.firstElementChild;
@@ -8105,7 +8063,6 @@ if (ua.includes("mobile")) {
         })
     );
 
-
     let currentDate = new Date();
     let alarm_hours = currentDate.getHours();
     let alarm_minutes = currentDate.getMinutes();
@@ -8116,42 +8073,29 @@ if (ua.includes("mobile")) {
     let option_hours;
     let option_minutes;
     let parent_list = document.getElementById('parent_list');
-    let record = JSON.parse(localStorage.getItem('alarms')) || []; // Load alarms from local storage
-    let x = record.length; // Initialize x based on the number of alarms in local storage
-
-    //アラーム設定用オブジェクト
+    let record = JSON.parse(localStorage.getItem('alarms')) || [];
+    let x = record.length;
     let Setting = function (sethour, setminute) {
         this.sethour = sethour;
         this.setminute = setminute;
     };
-
-    // 時計の"12:1"を"12:01"と表記
     function adjustDigit(num) {
         let digit;
         if (num < 10) { digit = `0${num}`; }
         else { digit = num; }
         return digit;
     }
-
-    // アラームセット
     set_btn.addEventListener('click', function () {
-        //アラームは最大5まで
         let lis = parent_list.getElementsByTagName('li');
         let len = lis.length;
         if (len >= 5) { return; }
-
-        //設定時間を記録
         option_hours = document.alarm_form.option_hours.value;
         option_minutes = document.alarm_form.option_minutes.value;
         record[x] = new Setting(option_hours, option_minutes);
-
-        //設定時間を表示
         let container_list = document.createElement('li');
         let list_content = document.createTextNode(`${record[x].sethour}時${record[x].setminute}分`);
         parent_list.appendChild(container_list);
         container_list.appendChild(list_content);
-
-        //表示削除用ボタン
         let list_span = document.createElement('span');
         let id_li = document.createAttribute('id');
         let id_span = document.createAttribute('id');
@@ -8163,19 +8107,13 @@ if (ua.includes("mobile")) {
         container_list.classList.add('deletes');
         list_span.classList.add('delete_btn');
         list_span.classList.add('button2');
-
-        //設定時刻と表示を削除
         addDeleteFunctionality();
         x++;
-        saveAlarms(); // Save alarms to local storage after setting
+        saveAlarms();
     });
-
-    // Save alarms to local storage
     function saveAlarms() {
         localStorage.setItem('alarms', JSON.stringify(record));
     }
-
-    // Load alarms from local storage on page load
     function loadAlarms() {
         for (let i = 0; i < record.length; i++) {
             if (record[i] !== 'disabled') {
@@ -8183,7 +8121,6 @@ if (ua.includes("mobile")) {
                 let list_content = document.createTextNode(`${record[i].sethour}時${record[i].setminute}分`);
                 parent_list.appendChild(container_list);
                 container_list.appendChild(list_content);
-
                 let list_span = document.createElement('span');
                 let span_content = document.createTextNode('削除');
                 container_list.appendChild(list_span);
@@ -8194,10 +8131,8 @@ if (ua.includes("mobile")) {
                 list_span.classList.add('button2');
             }
         }
-        addDeleteFunctionality(); // Add delete functionality after loading alarms
+        addDeleteFunctionality();
     }
-
-    // Add delete functionality to delete buttons
     function addDeleteFunctionality() {
         let deletes = document.getElementsByClassName('deletes');
         for (var i = 0, de_len = deletes.length; i < de_len; i++) {
@@ -8206,12 +8141,10 @@ if (ua.includes("mobile")) {
                 this.id = 'temp';
                 var temp = document.getElementById('temp');
                 temp.parentNode.removeChild(temp);
-                saveAlarms(); // Save alarms to local storage after deletion
+                saveAlarms();
             };
         }
     }
-
-    //時計を動かす
     function updateCurrentTime() {
         setTimeout(function () {
             currentDate = new Date();
@@ -8219,8 +8152,6 @@ if (ua.includes("mobile")) {
             alarm_minutes = adjustDigit(currentDate.getMinutes());
             alarm_seconds = adjustDigit(currentDate.getSeconds());
             timerText.innerHTML = `${alarm_hours}:${alarm_minutes}:${alarm_seconds}`;
-
-            //アラーム機能
             for (var i = 0, len = record.length; i < len; i++) {
                 if (record[i].sethour == currentDate.getHours() && record[i].setminute == currentDate.getMinutes() && alarm_seconds == 0) {
                     alert('お時間です!');
@@ -8229,11 +8160,8 @@ if (ua.includes("mobile")) {
             updateCurrentTime();
         }, 100);
     }
-
-    // Load alarms and start the clock
     loadAlarms();
     updateCurrentTime();
-
 
     window.onerror = function (message, source, lineno, colno, error) {
         const errorLog = document.getElementById('console_error_text');
@@ -8248,69 +8176,37 @@ if (ua.includes("mobile")) {
         return false; // デフォルトのエラーハンドリングを行う
     };
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    document.addEventListener('DOMContentLoaded', () => {
-        kakeibo_loadEntries();
-        kakeibo_setCurrentDateTime();
-    });
-
     function kakeibo_setCurrentDateTime() {
         const now = new Date();
         const date = now.toISOString().split('T')[0];
         const time = now.toTimeString().split(' ')[0].slice(0, 5);
-
         document.getElementById('date').value = date;
         document.getElementById('time').value = time;
     }
-
     function kakeibo_addEntry() {
         const type = document.getElementById('type').value;
         const amount = parseFloat(document.getElementById('amount').value) || 0;
         const description = document.getElementById('description').value;
         const date = document.getElementById('date').value;
         const time = document.getElementById('time').value;
-
         const entry = { type, amount, description, date, time };
         kakeibo_saveEntry(entry);
         kakeibo_displayEntries();
         kakeibo_calculateTotal();
     }
-
     function kakeibo_saveEntry(entry) {
         let entries = JSON.parse(localStorage.getItem('entries')) || [];
         entries.push(entry);
         localStorage.setItem('entries', JSON.stringify(entries));
     }
-
     function kakeibo_loadEntries() {
         kakeibo_displayEntries();
         kakeibo_calculateTotal();
     }
-
     function kakeibo_displayEntries() {
         const entries = JSON.parse(localStorage.getItem('entries')) || [];
         const entriesContainer = document.getElementById('entries');
         entriesContainer.innerHTML = '';
-
         entries.forEach((entry, index) => {
             const entryDiv = document.createElement('div');
             entryDiv.classList.add('entry');
@@ -8322,7 +8218,6 @@ if (ua.includes("mobile")) {
             entriesContainer.appendChild(entryDiv);
         });
     }
-
     function kakeibo_deleteEntry(index) {
         let entries = JSON.parse(localStorage.getItem('entries')) || [];
         entries.splice(index, 1);
@@ -8330,11 +8225,9 @@ if (ua.includes("mobile")) {
         kakeibo_displayEntries();
         kakeibo_calculateTotal();
     }
-
     function kakeibo_calculateTotal() {
         const entries = JSON.parse(localStorage.getItem('entries')) || [];
         let total = 0;
-
         entries.forEach(entry => {
             if (entry.type === '収入') {
                 total += entry.amount;
@@ -8344,45 +8237,28 @@ if (ua.includes("mobile")) {
         });
         document.getElementById('total').innerText = `合計: ¥${total}`;
     }
-
+    kakeibo_loadEntries();
+    kakeibo_setCurrentDateTime();
 
     const slider = document.getElementById('opacitySlider');
     const targetDiv = document.querySelector('.screen_light');
     const valueDisplay = document.getElementById('valueDisplay');
-
-    // ローカルストレージから保存された透明度を取得
     const savedOpacity = localStorage.getItem('divOpacity');
     if (savedOpacity !== null) {
         targetDiv.style.opacity = 1 - savedOpacity;
         slider.value = savedOpacity * 100;
         valueDisplay.textContent = slider.value;
     }
-
     slider.addEventListener('input', () => {
         const opacityValue = 1 - (slider.value / 100);
         targetDiv.style.opacity = opacityValue;
         valueDisplay.textContent = slider.value;
-
-        // 透明度をローカルストレージに保存
         localStorage.setItem('divOpacity', 1 - opacityValue);
     });
 
-
-
-
-
-
-
-    // 監視対象の要素を取得
     const targetNodes = document.querySelectorAll('.child_windows');
-
-    // 監視する変更の種類を設定
     const config = { attributes: true, childList: true, subtree: true };
-
-    // 前回のカウントを保持する変数
     let previousActiveCount = 0;
-
-    // コールバック関数を定義
     const callback = function (mutationsList, observer) {
         let currentActiveCount = 0;
         targetNodes.forEach(node => {
@@ -8390,25 +8266,51 @@ if (ua.includes("mobile")) {
                 currentActiveCount++;
             }
         });
-
         if (currentActiveCount !== previousActiveCount) {
-            // クラス名 'active' の数が変わった時の処理
-            // console.log('Active class count changed:', currentActiveCount);
             previousActiveCount = currentActiveCount;
             zindexwindow_addnavy()
             startmenu_close()
         }
     };
-
-    // MutationObserverを作成
     const observer = new MutationObserver(callback);
-
-    // すべての対象要素に対して監視を開始
     targetNodes.forEach(node => observer.observe(node, config));
 
-
-
-
-
+    navigator.getBattery().then((battery) => {
+        function updateChargeInfo() {
+            if (battery.level == 1 && battery.charging == true) {
+                document.querySelector('.battery_child').style.color = "lime"
+                document.querySelector('.battery_child').style.background = "black"
+            } else if (battery.charging == false) {
+                document.querySelector('.battery_child').style.color = "black"
+                document.querySelector('.battery_child').style.background = ""
+            } else {
+                document.querySelector('.battery_child').style.color = "#FF9900"
+                document.querySelector('.battery_child').style.background = "black"
+                localStorage.setItem('notice_closekeep', battery)
+            }
+            if (!battery.charging && 0 <= battery.level && battery.level < 0.21) {
+                localStorage.removeItem('notice_closekeep')
+            }
+            if (0 <= battery.level && battery.level < 0.21 && battery.charging == false && !localStorage.getItem('notice_closekeep')) {
+                document.querySelector('.notice_text').textContent = "バッテリー残量が少なくなっています!"
+                notice_menu.classList.remove('active')
+                notice_menu.style.zIndex = largestZIndex++;
+                localStorage.removeItem('notice_closekeep')
+                zindexwindow_addnavy()
+            } else {
+                notice_menu.classList.add('active')
+            }
+            if (battery.charging == true) {
+                document.getElementsByClassName('battery_time')[0].textContent = (`${battery.dischargingTime}`);
+            } else if (battery.charging == false) {
+                document.getElementsByClassName('battery_time')[0].textContent = (`${battery.dischargingTime}` + "second");
+            }
+            let bu = document.getElementsByClassName('taskbattery');
+            bu2 = bu[0].textContent = Math.floor(battery.level * 100);
+        }
+        battery.addEventListener('levelchange', updateChargeInfo);
+        battery.addEventListener('chargingchange', updateChargeInfo);
+        updateChargeInfo()
+    })
 
 };
