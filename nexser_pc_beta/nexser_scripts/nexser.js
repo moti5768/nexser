@@ -81,6 +81,7 @@ if (ua.includes("mobile")) {
     const test_site_menu = document.querySelector('.test_site_menu');
     const console_error_menu = document.querySelector('.console_error_menu');
     const kakeibo_menu = document.querySelector('.kakeibo_menu');
+    const nexser_nextversion_menu = document.querySelector('.nexser_nextversion_menu');
 
     const notice_menu = document.querySelector('.notice_menu');
 
@@ -2608,7 +2609,11 @@ if (ua.includes("mobile")) {
                 prompt_text2.style.color = "";
                 document.querySelector('.test_site_menu').classList.remove('active');
                 test_site_menu.style.zIndex = largestZIndex++;
-
+                break;
+            case 'next/version/nexser':
+                prompt_text2.style.color = "";
+                nexser_nextversion_menu.classList.remove('active');
+                nexser_nextversion_menu.style.zIndex = largestZIndex++;
                 break;
 
             case 'startmenu(console(error))=>true':
@@ -4018,6 +4023,20 @@ if (ua.includes("mobile")) {
         }
     };
     resize_background_image();
+
+
+
+    const nexser_nextversion_parent = document.querySelector('.nexser_nextversion_menu');
+    const nexser_nextversion_child = document.querySelector('.nexser_nextframe');
+    const nexser_nextversion_resize = () => {
+        const hehehe1 = nexser_nextversion_parent.firstElementChild;
+        if (hehehe1.classList.contains('navy')) {
+            nexser_nextversion_child.style.width = `${nexser_nextversion_parent.clientWidth + - + 0}px`;
+            nexser_nextversion_child.style.height = `${nexser_nextversion_parent.clientHeight + - + 20}px`;
+        }
+    };
+    nexser_nextversion_parent.addEventListener('mousemove', nexser_nextversion_resize);
+
 
 
     const htmlview_parent = document.querySelector('.htmlviewer_run_menu');

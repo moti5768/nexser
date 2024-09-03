@@ -1028,6 +1028,12 @@ input[type="file"] {
     height: 500px;
 }
 
+.nexser_nextversion_menu {
+    width: 900px;
+    height: 500px;
+    min-width: 250px;
+}
+
 #v {
     position: absolute;
 }
