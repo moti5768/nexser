@@ -181,6 +181,7 @@ if (ua.includes("mobile")) {
 
     // nexser_load
     new Promise((resolve) => {
+        setTimeout(load_nexser, resolve());
         setTimeout(getStorage, resolve());
         setTimeout(taskbar_none, resolve());
         setTimeout(title_none, resolve());
@@ -194,7 +195,6 @@ if (ua.includes("mobile")) {
         setTimeout(back_pattern_set, resolve());
         setTimeout(load_videourl, resolve());
         setTimeout(pageLoad, resolve())
-        setTimeout(load_nexser, resolve());
         setTimeout(() => {
             const t = localStorage.getItem('taskbar_height');
             taskbar.style.height = t + "px";
@@ -389,9 +389,6 @@ if (ua.includes("mobile")) {
                 document.querySelector('.battery_menu').style.bottom = "auto"
             }
 
-
-
-
             if (localStorage.getItem('taskbar_position_button') && localStorage.getItem('data_taskbar_none')) {
                 document.querySelector('.files_inline').style.top = "auto"
                 document.querySelector('.files_inline').style.bottom = ""
@@ -405,8 +402,6 @@ if (ua.includes("mobile")) {
                 document.querySelector('.files_inline').style.bottom = ""
             }
 
-
-
             if (localStorage.getItem('data_taskbar_none') && localStorage.getItem('taskbar_position_button')) {
                 toolbar.style.top = "0px";
             } else if (localStorage.getItem('data_taskbar_none') && !localStorage.getItem('taskbar_position_button')) {
@@ -416,7 +411,6 @@ if (ua.includes("mobile")) {
                 const task = document.getElementById('taskbar').clientHeight;
                 toolbar.style.top = task + "px";
                 toolbar.style.top = t + "px";
-
                 document.querySelector('.child_start_menu').style.top = task + "px"
                 document.querySelector('.child_start_menu').style.top = t + "px"
             } else {
@@ -424,7 +418,6 @@ if (ua.includes("mobile")) {
                 toolbar.style.bottom = task + "px";
                 toolbar.style.bottom = t + "px";
                 document.querySelector('.desktop_version_text').style.bottom = task + "px";
-
                 document.querySelector('.child_start_menu').style.bottom = task + "px"
                 document.querySelector('.child_start_menu').style.bottom = t + "px"
             }
@@ -530,7 +523,7 @@ if (ua.includes("mobile")) {
                 background_img.style.height = "100%"
             }
             resolve();
-        }, 10);
+        }, 100);
 
         function taskgroup_load() {
             setTimeout(() => {
@@ -548,16 +541,8 @@ if (ua.includes("mobile")) {
                     element.textContent = (hours + ":" + minutes + ":" + seconds + "");
                 });
                 taskgroup_load();
-                resolve()
-            }, 1000)
+            }, 100)
         }
-
-        setTimeout(() => {
-            if (desktop.style.display == "block") {
-                localmemory_size()
-                resolve()
-            }
-        }, 500);
     })
 
     function notice_closekeep(notice_closekeep) {
@@ -1295,7 +1280,6 @@ if (ua.includes("mobile")) {
                     };
                 }, 5000);
                 setTimeout(() => {
-                    localmemory_size()
                     document.querySelector('.pass_signin_menu').classList.remove('selectwindows')
                 }, 500);
             }, 2000);
@@ -2069,7 +2053,7 @@ if (ua.includes("mobile")) {
             textarea.style.height = 'auto';
             textarea.style.height = textarea.scrollHeight + 'px';
         });
-        document.querySelector('.focus2').focus()
+        document.getElementsByClassName('focus2')[0].focus()
     }
 
     commandarea_resize()
@@ -5113,7 +5097,7 @@ if (ua.includes("mobile")) {
     // 文字を入力する要素
     const note_area = document.querySelector(".note_area");
     // 文字数を表示する要素
-    const textCountElement = document.querySelector("#inputlength");
+    const textCountElement = document.getElementById("inputlength");
 
     // キーボードで入力する場合
     note_area.addEventListener("keydown", function (event) {
@@ -5121,7 +5105,9 @@ if (ua.includes("mobile")) {
             event.preventDefault(); // Cancel the default action
         } else {
             notetitle(event);
-            onchange(event)
+            setTimeout(() => {
+                onChange()
+            }, 10);
         }
         note_area.addEventListener("keyup", function (event) {
             if (event.ctrlKey && event.key === 's') {
@@ -5139,9 +5125,6 @@ if (ua.includes("mobile")) {
             }
         }
     });
-
-
-
 
     // ペーストした場合
     note_area.addEventListener("paste", () => {
@@ -5196,7 +5179,7 @@ if (ua.includes("mobile")) {
         });
         document.getElementById('memo_save_text').textContent = "";
         if (!localStorage.getItem('noteData')) {
-            document.querySelector('.note_title').textContent = "notepad"
+            document.querySelector('.note_title').textContent = "*notepad"
         }
         // 文字数を表示
         textCountElement.innerHTML = textCount - spaceCount;
@@ -6446,17 +6429,17 @@ if (ua.includes("mobile")) {
     }
 
     function localmemory_size() {
-        setTimeout(() => {
+        if (desktop.style.display == "block") {
             document.getElementById('shell').value = "";
-        }, 0);
-        document.querySelector('.local_memory_button').classList.add('pointer_none');
-        document.querySelectorAll('.prompt_shell_menu').forEach(function (prompt_shell_menu) {
-            prompt_shell_menu.closest('.child_windows');
-            prompt_shell_menu.classList.remove('active');
-            prompt_shell_menu.style.zIndex = largestZIndex++;
-            shell_resize()
-        });
-        setTimeout(() => {
+            document.querySelector('.local_memory_button').classList.add('pointer_none');
+
+            document.querySelectorAll('.prompt_shell_menu').forEach(function (prompt_shell_menu) {
+                prompt_shell_menu.closest('.child_windows');
+                prompt_shell_menu.classList.remove('active');
+                prompt_shell_menu.style.zIndex = largestZIndex++;
+                shell_resize()
+            });
+
             var testKey = 'testStorageKey';
             var testData = new Array(1024).join('a'); // 1KBのデータを作成
             var success = true;
@@ -6492,7 +6475,7 @@ if (ua.includes("mobile")) {
                 displayLocalStorageDetails();
                 document.querySelector('.local_memory_button').classList.remove('pointer_none');
             }, totalDelay + 500);
-        }, 10);
+        }
     }
 
     function displayLocalStorageDetails() {
