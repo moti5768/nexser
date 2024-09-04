@@ -1280,8 +1280,8 @@ body::-webkit-scrollbar {
     user-select: none;
     list-style: none;
     font-size: 15px;
-    height: 80px;
-    width: 320px;
+    height: 90px;
+    width: 300px;
     position: absolute;
 }
 

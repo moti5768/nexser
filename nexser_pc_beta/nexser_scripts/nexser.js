@@ -1,4 +1,9 @@
-var supportsPassive = false; try { var opts = Object.defineProperty({}, 'passive', { get: function () { supportsPassive = true; } }); window.addEventListener("testPassive", null, opts); window.removeEventListener("testPassive", null, opts); } catch (e) { }
+let supportsPassive = false;
+try {
+    const opts = { passive: false, get passive() { supportsPassive = true; return false; } };
+    window.addEventListener("testPassive", null, opts);
+    window.removeEventListener("testPassive", null, opts);
+} catch (e) { }
 
 const ua = navigator.userAgent.toLowerCase();
 if (ua.includes("mobile")) {
@@ -180,370 +185,380 @@ if (ua.includes("mobile")) {
     }
 
     // nexser_load
-    new Promise((resolve) => {
-        setTimeout(load_nexser, resolve(), 100);
-        setTimeout(getStorage, resolve(), 100);
-        setTimeout(taskbar_none, resolve(), 100);
-        setTimeout(title_none, resolve(), 100);
-        setTimeout(screen_backtextload, resolve(), 100);
-        setTimeout(notecolor_change, resolve(), 100);
-        setTimeout(notetextsize_change, resolve(), 100);
-        setTimeout(taskgroup_load, resolve(), 100);
-        setTimeout(window_back_silver, resolve(), 100);
-        setTimeout(caload, resolve(), 100);
-        setTimeout(titlecolor_set, resolve(), 100);
-        setTimeout(back_pattern_set, resolve(), 100);
-        setTimeout(load_videourl, resolve(), 100);
-        setTimeout(pageLoad, resolve(), 100);
-        setTimeout(() => {
-            const t = localStorage.getItem('taskbar_height');
-            taskbar.style.height = t + "px";
+    const tasks = [
+        load_nexser,
+        getStorage,
+        taskbar_none,
+        title_none,
+        screen_backtextload,
+        notecolor_change,
+        notetextsize_change,
+        taskgroup_load,
+        window_back_silver,
+        caload,
+        titlecolor_set,
+        back_pattern_set,
+        load_videourl,
+        pageLoad,
+        nexser_savedata_load
+    ];
 
-            if (localStorage.getItem('driver_color')) {
-                document.querySelector('.installbutton_2').textContent = "uninstall"
-            }
-            if (localStorage.getItem('driver_sound')) {
-                document.querySelector('.installbutton_1').textContent = "uninstall"
-            }
-            if (localStorage.getItem('backtext')) {
-                const backtext_data2 = localStorage.getItem('backtext_data');
-                document.querySelector('#background_text').textContent = (backtext_data2)
-                background_text.classList.add('block')
-            }
-            if (!localStorage.getItem('backtext')) {
-                background_text.classList.remove('block')
-            }
-            if (localStorage.getItem('backtext')) {
-                document.querySelector('.backtext_mode').textContent = "ON"
-            }
-            if (localStorage.getItem('noteData')) {
-                load()
-                document.querySelector('.note_title').textContent = "notepad(save keep)"
-            }
-            if (localStorage.getItem('textdropdata')) {
-                load2()
-            }
-            if (localStorage.getItem('objectiveData') || localStorage.getItem('objectiveTitleData')) {
-                objective_load()
-                objective_resize()
-            } else {
-                objective_resize()
-            }
-            if (localStorage.getItem('startup_note')) {
-                document.querySelector('.startup_note').textContent = "ON"
-            }
-            if (localStorage.getItem('startup_computer')) {
-                document.querySelector('.startup_computer').textContent = "ON"
-            }
-            if (localStorage.getItem('startup_color')) {
-                document.querySelector('.startup_color').textContent = "ON"
-            }
-            if (localStorage.getItem('startup_screen')) {
-                document.querySelector('.startup_screen').textContent = "ON"
-            }
-            if (localStorage.getItem('startup_htmlviewer_edit')) {
-                document.querySelector('.startup_htmlviewer_edit').textContent = "ON"
-            }
-            if (localStorage.getItem('startup_guidebook')) {
-                document.querySelector('.startup_guidebook').textContent = "ON"
-            }
-            if (localStorage.getItem('startup_objective')) {
-                document.querySelector('.startup_objective').textContent = "ON"
-            }
-            if (localStorage.getItem('startup_calendar')) {
-                document.querySelector('.startup_calendar').textContent = "ON"
-            }
-            if (localStorage.getItem('prompt_data2')) {
-                document.querySelector('.startup_speed').textContent = "HIGH"
-            }
-            if (localStorage.getItem('auto_startup')) {
-                document.querySelector('.auto_startup').textContent = "ON"
-            }
-            if (localStorage.getItem('driver_sound')) {
-                document.querySelector('.startup_sound').textContent = "UN INSTALL"
-            }
-            if (localStorage.getItem('startup_versiontext')) {
-                document.querySelector('.startup_versiontext').textContent = "ON"
-                document.querySelector('.desktop_version_text').style.display = "block";
-            } else {
-                document.querySelector('.desktop_version_text').style.display = "none";
-            }
-            if (localStorage.getItem('startup_1')) {
-                document.querySelector('.startup_1').textContent = "set!"
-            } else {
-                document.querySelector('.startup_1').textContent = "no set"
-            }
-            if (localStorage.getItem('startup_2')) {
-                document.querySelector('.startup_2').textContent = "set!"
-            } else {
-                document.querySelector('.startup_2').textContent = "no set"
-            }
-            if (localStorage.getItem('startup_3')) {
-                document.querySelector('.startup_3').textContent = "set!"
-            } else {
-                document.querySelector('.startup_3').textContent = "no set"
-            }
-            if (localStorage.getItem('startup_4')) {
-                document.querySelector('.startup_4').textContent = "set!"
-            } else {
-                document.querySelector('.startup_4').textContent = "no set"
-            }
-            if (localStorage.getItem('startup_5')) {
-                document.querySelector('.startup_5').textContent = "set!"
-            } else {
-                document.querySelector('.startup_5').textContent = "no set"
-            }
+    Promise.all(tasks.map(task => new Promise(resolve => setTimeout(() => resolve(task()), 50))))
+        .then(() => {
+            console.log('すべてのタスクが完了しました');
+        });
 
-            if (localStorage.getItem('shutdown_1')) {
-                document.querySelector('.shutdown_1').textContent = "set!"
-            } else {
-                document.querySelector('.shutdown_1').textContent = "no set"
-            }
-            if (localStorage.getItem('shutdown_2')) {
-                document.querySelector('.shutdown_2').textContent = "set!"
-            } else {
-                document.querySelector('.shutdown_2').textContent = "no set"
-            }
-            if (localStorage.getItem('shutdown_3')) {
-                document.querySelector('.shutdown_3').textContent = "set!"
-            } else {
-                document.querySelector('.shutdown_3').textContent = "no set"
-            }
-            if (localStorage.getItem('shutdown_4')) {
-                document.querySelector('.shutdown_4').textContent = "set!"
-            } else {
-                document.querySelector('.shutdown_4').textContent = "no set"
-            }
-            if (localStorage.getItem('shutdown_5')) {
-                document.querySelector('.shutdown_5').textContent = "set!"
-            } else {
-                document.querySelector('.shutdown_5').textContent = "no set"
-            }
+    function nexser_savedata_load() {
+        const t = localStorage.getItem('taskbar_height');
+        taskbar.style.height = t + "px";
 
-            if (localStorage.getItem('note_text_bold')) {
-                document.querySelector('.note_area').style.fontWeight = "bold";
-                document.querySelector('.test_notetext').style.fontWeight = "bold";
-            }
-            if (localStorage.getItem('note_text_oblique')) {
-                document.querySelector('.note_area').style.fontStyle = "oblique";
-                document.querySelector('.test_notetext').style.fontStyle = "oblique";
-            }
-            if (localStorage.getItem('note_text_underline')) {
-                document.querySelector('.note_area').style.textDecoration = "underline";
-                document.querySelector('.test_notetext').style.textDecoration = "underline";
-            }
-
-            if (localStorage.getItem('window_invisible')) {
-                document.querySelector('.windowmode').textContent = "invisible"
-            }
-            if (localStorage.getItem('window_borderblack')) {
-                document.querySelector('.windowmode').textContent = "border black"
-            }
-
-            if (localStorage.getItem('font_default')) {
-                document.querySelector("body").style.fontFamily = "serif";
-            }
-            if (localStorage.getItem('font_sans_serif')) {
-                document.querySelector("body").style.fontFamily = "sans-serif";
-            }
-            if (localStorage.getItem('font_cursive')) {
-                document.querySelector("body").style.fontFamily = "cursive";
-            }
-            if (localStorage.getItem('font_fantasy')) {
-                document.querySelector("body").style.fontFamily = "fantasy";
-            }
-            if (localStorage.getItem('font_monospace')) {
-                document.querySelector("body").style.fontFamily = "monospace";
-            }
-
-            if (localStorage.getItem('windowfile_1')) {
-                window_file_list_change()
-            } else if (localStorage.getItem('windowfile_3')) {
-                window_file_list_change2()
-            } else if (localStorage.getItem('windowfile_2')) {
-                window_file_list_reset()
-            } else {
-                Array.from(document.getElementsByClassName('windowfile_time')).forEach((windowfile_time) => {
-                    windowfile_time.style.display = "none"
-                })
-            }
-            if (localStorage.getItem('clock_button')) {
-                document.querySelector('.clock_button').textContent = "on"
-                document.querySelector('.time').style.display = "none";
-            }
-            if (localStorage.getItem('battery_button')) {
-                document.querySelector('.battery_button').textContent = "on"
-                document.querySelector('.task_battery').style.display = "none";
-            }
-            if (localStorage.getItem('taskbar_zindex_0')) {
-                taskbar.style.zIndex = "0";
-                document.querySelector('.taskbar_zindex_0').textContent = "on"
-            }
-
-            if (localStorage.getItem('taskbar_position_button')) {
-                document.querySelector('.taskbar_position_button').textContent = "bottom"
-                document.getElementById('taskbar').style.top = "0px"
-                document.querySelector('.child_start_menu').style.top = "40px"
-                document.querySelector('.child_start_menu').style.bottom = "auto"
-                document.querySelector('.battery_menu').style.top = "35px"
-                document.querySelector('.battery_menu').style.bottom = "auto"
-            }
-
-            if (localStorage.getItem('taskbar_position_button') && localStorage.getItem('data_taskbar_none')) {
-                document.querySelector('.files_inline').style.top = "auto"
-                document.querySelector('.files_inline').style.bottom = ""
-            } else if (localStorage.getItem('taskbar_position_button') && !localStorage.getItem('data_taskbar_none')) {
-                document.querySelector('.files_inline').style.top = "40px"
-                document.querySelector('.files_inline').style.bottom = "auto"
-
-                document.querySelector('.files_inline').style.top = t + "px"
-            } else {
-                document.querySelector('.files_inline').style.top = "auto"
-                document.querySelector('.files_inline').style.bottom = ""
-            }
-
-            if (localStorage.getItem('data_taskbar_none') && localStorage.getItem('taskbar_position_button')) {
-                toolbar.style.top = "0px";
-            } else if (localStorage.getItem('data_taskbar_none') && !localStorage.getItem('taskbar_position_button')) {
-                toolbar.style.bottom = "0px";
-                document.querySelector('.desktop_version_text').style.bottom = "0px"
-            } else if (localStorage.getItem('taskbar_position_button')) {
-                const task = document.getElementById('taskbar').clientHeight;
-                toolbar.style.top = task + "px";
-                toolbar.style.top = t + "px";
-                document.querySelector('.child_start_menu').style.top = task + "px"
-                document.querySelector('.child_start_menu').style.top = t + "px"
-            } else {
-                const task = document.getElementById('taskbar').clientHeight;
-                toolbar.style.bottom = task + "px";
-                toolbar.style.bottom = t + "px";
-                document.querySelector('.desktop_version_text').style.bottom = task + "px";
-                document.querySelector('.child_start_menu').style.bottom = task + "px"
-                document.querySelector('.child_start_menu').style.bottom = t + "px"
-            }
-
-            if (localStorage.getItem('toolbar_on')) {
-                toolbar.style.display = "block"
-            }
-            if (localStorage.getItem('display_old')) {
-                old_screen()
-            }
-            if (localStorage.getItem('list_shadow_on')) {
-                list_shadow()
-            }
-            if (localStorage.getItem('file_none')) {
-                document.querySelector('.files_inline').style.display = "none"
-            }
-
-            if (localStorage.getItem('backtext_small')) {
-                document.querySelector('#background_text').style.fontSize = "15px";
-                document.querySelector('#background_text2').style.fontSize = "15px"
-            }
-            if (localStorage.getItem('backtext_medium')) {
-                document.querySelector('#background_text').style.fontSize = "30px";
-                document.querySelector('#background_text2').style.fontSize = "30px"
-            }
-            if (localStorage.getItem('backtext_large')) {
-                document.querySelector('#background_text').style.fontSize = "45px";
-                document.querySelector('#background_text2').style.fontSize = "45px"
-            }
-            if (localStorage.getItem('allwindow_toolbar')) {
-                document.querySelectorAll('.window_tool').forEach(function (window_tool) {
-                    window_tool.style.display = "block"
-                })
-                document.querySelectorAll('.window_inline_side').forEach(function (window_inline_side) {
-                    window_inline_side.style.top = "31px"
-                })
-            } else {
-                document.querySelector('.clock_menu').style.height = "355px"
-                document.querySelectorAll('.window_tool').forEach(function (window_tool) {
-                    window_tool.style.display = "none"
-                })
-            }
-            if (localStorage.getItem('clockdata_analog')) {
-                document.getElementsByClassName('digital_clock_area')[0].style.display = "none";
-                document.getElementsByClassName('analog_clock_area')[0].style.display = "block"
-            } else {
-                document.getElementsByClassName('digital_clock_area')[0].style.display = "flex";
-                document.getElementsByClassName('analog_clock_area')[0].style.display = "none"
-            }
-
-            if (localStorage.getItem('saver_time')) {
-                document.getElementsByClassName('saver_on')[0].classList.remove('pointer_none');
-                document.getElementsByClassName('screensaver_text')[0].textContent = localStorage.getItem('saver_time');
-            } else {
-                localStorage.removeItem('saver_on')
-                localStorage.removeItem('saver_time')
-            }
-            if (localStorage.getItem('saver_on')) {
-                document.querySelector('.saver_mode').textContent = "ON"
-            }
-
-            if (localStorage.getItem('saver2')) {
-                saver2()
-            }
-            if (localStorage.getItem('saver3')) {
-                saver3()
-            }
-
-            if (localStorage.getItem('backcolor_blackwhite')) {
-                document.getElementById('nex').style.filter = "grayscale(100%)";
-            }
-            if (localStorage.getItem('backcolor_invert')) {
-                document.getElementById('nex').style.filter = "invert(100%)";
-            }
-            if (localStorage.getItem('backcolor_hue')) {
-                document.getElementById('nex').style.filter = "hue-rotate(100deg)";
-            }
-
-            if (localStorage.getItem('taskbar_autohide')) {
-                document.getElementById('taskbar').style.bottom = "-35px"
-            }
-            if (localStorage.getItem('taskbar_height') && (localStorage.getItem('taskbar_autohide'))) {
-                const t2 = t - 5;
-                document.getElementById('taskbar').style.bottom = "-" + t2 + "px";
-            }
-
-            if (localStorage.getItem('wallpaper_95')) {
-                document.querySelector('.nexser_backgroundimage_1').style.display = "block";
-                minidesk_backgroundresize1();
-                background_img.style.width = "100%"
-                background_img.style.height = "100%"
-            }
-            if (localStorage.getItem('wallpaper_95_2')) {
-                document.querySelector('.nexser_backgroundimage_2').style.display = "block";
-                minidesk_backgroundresize2();
-                background_img.style.width = "100%"
-                background_img.style.height = "100%"
-            }
-            if (localStorage.getItem('wallpaper_xp')) {
-                document.querySelector('.nexser_backgroundimage_3').style.display = "block";
-                minidesk_backgroundresize3();
-                background_img.style.width = "100%"
-                background_img.style.height = "100%"
-            }
-            resolve();
-        }, 100);
-
-        function taskgroup_load() {
-            setTimeout(() => {
-                getTime();
-                var date = new Date();
-                var year = date.getFullYear();
-                var month = date.getMonth() + 1;
-                var day = date.getDate();
-                document.querySelector('.date_day').textContent = (year + "/" + month + "/" + day + "");
-                var hours = date.getHours().toString().padStart(2, '0');
-                var minutes = date.getMinutes().toString().padStart(2, '0');
-                var seconds = date.getSeconds().toString().padStart(2, '0');
-                let clock = document.getElementsByClassName('date_clock');
-                Array.from(clock).forEach((element) => {
-                    element.textContent = (hours + ":" + minutes + ":" + seconds + "");
-                });
-                taskgroup_load();
-            }, 100)
+        if (localStorage.getItem('driver_color')) {
+            document.querySelector('.installbutton_2').textContent = "uninstall"
         }
-    })
+        if (localStorage.getItem('driver_sound')) {
+            document.querySelector('.installbutton_1').textContent = "uninstall"
+        }
+        if (localStorage.getItem('backtext')) {
+            const backtext_data2 = localStorage.getItem('backtext_data');
+            document.querySelector('#background_text').textContent = (backtext_data2)
+            background_text.classList.add('block')
+        }
+        if (!localStorage.getItem('backtext')) {
+            background_text.classList.remove('block')
+        }
+        if (localStorage.getItem('backtext')) {
+            document.querySelector('.backtext_mode').textContent = "ON"
+        }
+        if (localStorage.getItem('noteData')) {
+            load()
+            document.querySelector('.note_title').textContent = "notepad(save keep)"
+        }
+        if (localStorage.getItem('textdropdata')) {
+            load2()
+        }
+        if (localStorage.getItem('objectiveData') || localStorage.getItem('objectiveTitleData')) {
+            objective_load()
+            objective_resize()
+        } else {
+            objective_resize()
+        }
+        if (localStorage.getItem('startup_note')) {
+            document.querySelector('.startup_note').textContent = "ON"
+        }
+        if (localStorage.getItem('startup_computer')) {
+            document.querySelector('.startup_computer').textContent = "ON"
+        }
+        if (localStorage.getItem('startup_color')) {
+            document.querySelector('.startup_color').textContent = "ON"
+        }
+        if (localStorage.getItem('startup_screen')) {
+            document.querySelector('.startup_screen').textContent = "ON"
+        }
+        if (localStorage.getItem('startup_htmlviewer_edit')) {
+            document.querySelector('.startup_htmlviewer_edit').textContent = "ON"
+        }
+        if (localStorage.getItem('startup_guidebook')) {
+            document.querySelector('.startup_guidebook').textContent = "ON"
+        }
+        if (localStorage.getItem('startup_objective')) {
+            document.querySelector('.startup_objective').textContent = "ON"
+        }
+        if (localStorage.getItem('startup_calendar')) {
+            document.querySelector('.startup_calendar').textContent = "ON"
+        }
+        if (localStorage.getItem('prompt_data2')) {
+            document.querySelector('.startup_speed').textContent = "HIGH"
+        }
+        if (localStorage.getItem('auto_startup')) {
+            document.querySelector('.auto_startup').textContent = "ON"
+        }
+        if (localStorage.getItem('driver_sound')) {
+            document.querySelector('.startup_sound').textContent = "UN INSTALL"
+        }
+        if (localStorage.getItem('startup_versiontext')) {
+            document.querySelector('.startup_versiontext').textContent = "ON"
+            document.querySelector('.desktop_version_text').style.display = "block";
+        } else {
+            document.querySelector('.desktop_version_text').style.display = "none";
+        }
+        if (localStorage.getItem('startup_1')) {
+            document.querySelector('.startup_1').textContent = "set!"
+        } else {
+            document.querySelector('.startup_1').textContent = "no set"
+        }
+        if (localStorage.getItem('startup_2')) {
+            document.querySelector('.startup_2').textContent = "set!"
+        } else {
+            document.querySelector('.startup_2').textContent = "no set"
+        }
+        if (localStorage.getItem('startup_3')) {
+            document.querySelector('.startup_3').textContent = "set!"
+        } else {
+            document.querySelector('.startup_3').textContent = "no set"
+        }
+        if (localStorage.getItem('startup_4')) {
+            document.querySelector('.startup_4').textContent = "set!"
+        } else {
+            document.querySelector('.startup_4').textContent = "no set"
+        }
+        if (localStorage.getItem('startup_5')) {
+            document.querySelector('.startup_5').textContent = "set!"
+        } else {
+            document.querySelector('.startup_5').textContent = "no set"
+        }
+
+        if (localStorage.getItem('shutdown_1')) {
+            document.querySelector('.shutdown_1').textContent = "set!"
+        } else {
+            document.querySelector('.shutdown_1').textContent = "no set"
+        }
+        if (localStorage.getItem('shutdown_2')) {
+            document.querySelector('.shutdown_2').textContent = "set!"
+        } else {
+            document.querySelector('.shutdown_2').textContent = "no set"
+        }
+        if (localStorage.getItem('shutdown_3')) {
+            document.querySelector('.shutdown_3').textContent = "set!"
+        } else {
+            document.querySelector('.shutdown_3').textContent = "no set"
+        }
+        if (localStorage.getItem('shutdown_4')) {
+            document.querySelector('.shutdown_4').textContent = "set!"
+        } else {
+            document.querySelector('.shutdown_4').textContent = "no set"
+        }
+        if (localStorage.getItem('shutdown_5')) {
+            document.querySelector('.shutdown_5').textContent = "set!"
+        } else {
+            document.querySelector('.shutdown_5').textContent = "no set"
+        }
+
+        if (localStorage.getItem('note_text_bold')) {
+            document.querySelector('.note_area').style.fontWeight = "bold";
+            document.querySelector('.test_notetext').style.fontWeight = "bold";
+        }
+        if (localStorage.getItem('note_text_oblique')) {
+            document.querySelector('.note_area').style.fontStyle = "oblique";
+            document.querySelector('.test_notetext').style.fontStyle = "oblique";
+        }
+        if (localStorage.getItem('note_text_underline')) {
+            document.querySelector('.note_area').style.textDecoration = "underline";
+            document.querySelector('.test_notetext').style.textDecoration = "underline";
+        }
+
+        if (localStorage.getItem('window_invisible')) {
+            document.querySelector('.windowmode').textContent = "invisible"
+        }
+        if (localStorage.getItem('window_borderblack')) {
+            document.querySelector('.windowmode').textContent = "border black"
+        }
+
+        if (localStorage.getItem('font_default')) {
+            document.querySelector("body").style.fontFamily = "serif";
+        }
+        if (localStorage.getItem('font_sans_serif')) {
+            document.querySelector("body").style.fontFamily = "sans-serif";
+        }
+        if (localStorage.getItem('font_cursive')) {
+            document.querySelector("body").style.fontFamily = "cursive";
+        }
+        if (localStorage.getItem('font_fantasy')) {
+            document.querySelector("body").style.fontFamily = "fantasy";
+        }
+        if (localStorage.getItem('font_monospace')) {
+            document.querySelector("body").style.fontFamily = "monospace";
+        }
+
+        if (localStorage.getItem('windowfile_1')) {
+            window_file_list_change()
+        } else if (localStorage.getItem('windowfile_3')) {
+            window_file_list_change2()
+        } else if (localStorage.getItem('windowfile_2')) {
+            window_file_list_reset()
+        } else {
+            Array.from(document.getElementsByClassName('windowfile_time')).forEach((windowfile_time) => {
+                windowfile_time.style.display = "none"
+            })
+        }
+        if (localStorage.getItem('clock_button')) {
+            document.querySelector('.clock_button').textContent = "on"
+            document.querySelector('.time').style.display = "none";
+        }
+        if (localStorage.getItem('battery_button')) {
+            document.querySelector('.battery_button').textContent = "on"
+            document.querySelector('.task_battery').style.display = "none";
+        }
+        if (localStorage.getItem('taskbar_zindex_0')) {
+            taskbar.style.zIndex = "0";
+            document.querySelector('.taskbar_zindex_0').textContent = "on"
+        }
+
+        if (localStorage.getItem('taskbar_position_button')) {
+            document.querySelector('.taskbar_position_button').textContent = "bottom"
+            document.getElementById('taskbar').style.top = "0px"
+            document.querySelector('.child_start_menu').style.top = "40px"
+            document.querySelector('.child_start_menu').style.bottom = "auto"
+            document.querySelector('.battery_menu').style.top = "35px"
+            document.querySelector('.battery_menu').style.bottom = "auto"
+        }
+
+        if (localStorage.getItem('taskbar_position_button') && localStorage.getItem('data_taskbar_none')) {
+            document.querySelector('.files_inline').style.top = "auto"
+            document.querySelector('.files_inline').style.bottom = ""
+        } else if (localStorage.getItem('taskbar_position_button') && !localStorage.getItem('data_taskbar_none')) {
+            document.querySelector('.files_inline').style.top = "40px"
+            document.querySelector('.files_inline').style.bottom = "auto"
+
+            document.querySelector('.files_inline').style.top = t + "px"
+        } else {
+            document.querySelector('.files_inline').style.top = "auto"
+            document.querySelector('.files_inline').style.bottom = ""
+        }
+
+        if (localStorage.getItem('data_taskbar_none') && localStorage.getItem('taskbar_position_button')) {
+            toolbar.style.top = "0px";
+        } else if (localStorage.getItem('data_taskbar_none') && !localStorage.getItem('taskbar_position_button')) {
+            toolbar.style.bottom = "0px";
+            document.querySelector('.desktop_version_text').style.bottom = "0px"
+        } else if (localStorage.getItem('taskbar_position_button')) {
+            const task = document.getElementById('taskbar').clientHeight;
+            toolbar.style.top = task + "px";
+            toolbar.style.top = t + "px";
+            document.querySelector('.child_start_menu').style.top = task + "px"
+            document.querySelector('.child_start_menu').style.top = t + "px"
+        } else {
+            const task = document.getElementById('taskbar').clientHeight;
+            toolbar.style.bottom = task + "px";
+            toolbar.style.bottom = t + "px";
+            document.querySelector('.desktop_version_text').style.bottom = task + "px";
+            document.querySelector('.child_start_menu').style.bottom = task + "px"
+            document.querySelector('.child_start_menu').style.bottom = t + "px"
+        }
+
+        if (localStorage.getItem('toolbar_on')) {
+            toolbar.style.display = "block"
+        }
+        if (localStorage.getItem('display_old')) {
+            old_screen()
+        }
+        if (localStorage.getItem('list_shadow_on')) {
+            list_shadow()
+        }
+        if (localStorage.getItem('file_none')) {
+            document.querySelector('.files_inline').style.display = "none"
+        }
+
+        if (localStorage.getItem('backtext_small')) {
+            document.querySelector('#background_text').style.fontSize = "15px";
+            document.querySelector('#background_text2').style.fontSize = "15px"
+        }
+        if (localStorage.getItem('backtext_medium')) {
+            document.querySelector('#background_text').style.fontSize = "30px";
+            document.querySelector('#background_text2').style.fontSize = "30px"
+        }
+        if (localStorage.getItem('backtext_large')) {
+            document.querySelector('#background_text').style.fontSize = "45px";
+            document.querySelector('#background_text2').style.fontSize = "45px"
+        }
+        if (localStorage.getItem('allwindow_toolbar')) {
+            document.querySelectorAll('.window_tool').forEach(function (window_tool) {
+                window_tool.style.display = "block"
+            })
+            document.querySelectorAll('.window_inline_side').forEach(function (window_inline_side) {
+                window_inline_side.style.top = "31px"
+            })
+        } else {
+            document.querySelector('.clock_menu').style.height = "355px"
+            document.querySelectorAll('.window_tool').forEach(function (window_tool) {
+                window_tool.style.display = "none"
+            })
+        }
+        if (localStorage.getItem('clockdata_analog')) {
+            document.getElementsByClassName('digital_clock_area')[0].style.display = "none";
+            document.getElementsByClassName('analog_clock_area')[0].style.display = "block"
+        } else {
+            document.getElementsByClassName('digital_clock_area')[0].style.display = "flex";
+            document.getElementsByClassName('analog_clock_area')[0].style.display = "none"
+        }
+
+        if (localStorage.getItem('saver_time')) {
+            document.getElementsByClassName('saver_on')[0].classList.remove('pointer_none');
+            document.getElementsByClassName('screensaver_text')[0].textContent = localStorage.getItem('saver_time');
+        } else {
+            localStorage.removeItem('saver_on')
+            localStorage.removeItem('saver_time')
+        }
+        if (localStorage.getItem('saver_on')) {
+            document.querySelector('.saver_mode').textContent = "ON"
+        }
+
+        if (localStorage.getItem('saver2')) {
+            saver2()
+        }
+        if (localStorage.getItem('saver3')) {
+            saver3()
+        }
+
+        if (localStorage.getItem('backcolor_blackwhite')) {
+            document.getElementById('nex').style.filter = "grayscale(100%)";
+        }
+        if (localStorage.getItem('backcolor_invert')) {
+            document.getElementById('nex').style.filter = "invert(100%)";
+        }
+        if (localStorage.getItem('backcolor_hue')) {
+            document.getElementById('nex').style.filter = "hue-rotate(100deg)";
+        }
+
+        if (localStorage.getItem('taskbar_autohide')) {
+            document.getElementById('taskbar').style.bottom = "-35px"
+        }
+        if (localStorage.getItem('taskbar_height') && (localStorage.getItem('taskbar_autohide'))) {
+            const t2 = t - 5;
+            document.getElementById('taskbar').style.bottom = "-" + t2 + "px";
+        }
+
+        if (localStorage.getItem('wallpaper_95')) {
+            document.querySelector('.nexser_backgroundimage_1').style.display = "block";
+            minidesk_backgroundresize1();
+            background_img.style.width = "100%"
+            background_img.style.height = "100%"
+        }
+        if (localStorage.getItem('wallpaper_95_2')) {
+            document.querySelector('.nexser_backgroundimage_2').style.display = "block";
+            minidesk_backgroundresize2();
+            background_img.style.width = "100%"
+            background_img.style.height = "100%"
+        }
+        if (localStorage.getItem('wallpaper_xp')) {
+            document.querySelector('.nexser_backgroundimage_3').style.display = "block";
+            minidesk_backgroundresize3();
+            background_img.style.width = "100%"
+            background_img.style.height = "100%"
+        }
+    }
+
+
+
+    function taskgroup_load() {
+        drawClock();
+        var date = new Date();
+        var year = date.getFullYear();
+        var month = (date.getMonth() + 1).toString().padStart(2, '0');
+        var day = date.getDate().toString().padStart(2, '0');
+        document.querySelector('.date_day').textContent = `${year}/${month}/${day}`;
+
+        var hours = date.getHours().toString().padStart(2, '0');
+        var minutes = date.getMinutes().toString().padStart(2, '0');
+        var seconds = date.getSeconds().toString().padStart(2, '0');
+
+        let clockElements = document.getElementsByClassName('date_clock');
+        for (let element of clockElements) {
+            element.textContent = `${hours}:${minutes}:${seconds}`;
+        }
+    }
+
+    setInterval(taskgroup_load, 1000);
+
 
     function notice_closekeep(notice_closekeep) {
         localStorage.setItem('notice_closekeep', notice_closekeep)
@@ -2700,6 +2715,7 @@ if (ua.includes("mobile")) {
             resize_background_image();
         }
     }, 100);
+
     Array.from(document.getElementsByClassName('window_inline_list')).forEach((window_inline_list) => {
         window_inline_list.addEventListener('click', function () {
 
@@ -2752,120 +2768,123 @@ if (ua.includes("mobile")) {
             }, 200);
         });
     })
-    document.querySelectorAll('.bigscreen_button').forEach(function (bigscreen_button) {
-        bigscreen_button.addEventListener('mousedown', function () {
 
+    function addBigScreenButtonListeners(button) {
+        button.addEventListener('mousedown', function () {
             const elements = document.querySelector('.title.navy');
             const elements2 = elements.closest('.child_windows');
             elements2.dataset.originalWidth = elements2.style.width;
             elements2.dataset.originalHeight = elements2.style.height;
             elements2.dataset.originalTop = elements2.style.top;
             elements2.dataset.originalLeft = elements2.style.left;
-        })
-        bigscreen_button.addEventListener('click', function () {
-            const bigscreenbutton = bigscreen_button.closest('.child_windows');
+        });
+        button.addEventListener('click', function () {
+            const bigscreenbutton = button.closest('.child_windows');
             bigscreenbutton.classList.remove('minimization');
             const childElements = bigscreenbutton.children;
             for (let child of childElements) {
                 child.style.display = 'none';
                 document.querySelectorAll('.title,.title_buttons').forEach(function (titles) {
-                    titles.style.display = "block"
-                })
+                    titles.style.display = "block";
+                });
                 document.querySelectorAll('.title2').forEach(function (window_title2) {
-                    window_title2.style.display = "flex"
-                })
+                    window_title2.style.display = "flex";
+                });
             }
-
             const t = localStorage.getItem('taskbar_height');
             if (localStorage.getItem('data_taskbar_none')) {
-                bigscreenbutton.style.height = ""
-                bigscreenbutton.style.width = ""
-                bigscreenbutton.style.top = "0"
-                bigscreenbutton.style.left = "0"
+                bigscreenbutton.style.height = "";
+                bigscreenbutton.style.width = "";
+                bigscreenbutton.style.top = "0";
+                bigscreenbutton.style.left = "0";
                 if (localStorage.getItem('window_animation')) {
-                    bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                    bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
                 }
             } else if (localStorage.getItem('taskbar_position_button')) {
-                bigscreenbutton.style.height = ""
-                bigscreenbutton.style.width = ""
-                bigscreenbutton.style.top = "40px"
-                bigscreenbutton.style.left = "0"
-                bigscreenbutton.style.top = t + "px"
+                bigscreenbutton.style.height = "";
+                bigscreenbutton.style.width = "";
+                bigscreenbutton.style.top = "40px";
+                bigscreenbutton.style.left = "0";
+                bigscreenbutton.style.top = t + "px";
                 if (localStorage.getItem('window_animation')) {
-                    bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                    bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
                 }
             } else if (bigscreenbutton.classList.contains('rightwindow')) {
-                bigscreenbutton.style.height = ""
-                bigscreenbutton.style.width = ""
-                bigscreenbutton.style.top = "0"
-                bigscreenbutton.style.left = ""
+                bigscreenbutton.style.height = "";
+                bigscreenbutton.style.width = "";
+                bigscreenbutton.style.top = "0";
+                bigscreenbutton.style.left = "";
                 if (localStorage.getItem('window_animation')) {
-                    bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                    bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
                 }
             } else {
-                bigscreenbutton.style.height = ""
-                bigscreenbutton.style.width = ""
-                bigscreenbutton.style.top = "0"
-                bigscreenbutton.style.left = "0"
+                bigscreenbutton.style.height = "";
+                bigscreenbutton.style.width = "";
+                bigscreenbutton.style.top = "0";
+                bigscreenbutton.style.left = "0";
                 if (localStorage.getItem('window_animation')) {
-                    bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                    bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
                 }
             }
-
             bigscreenbutton.classList.remove('rightwindow');
             bigscreenbutton.classList.remove('leftwindow');
-
             setTimeout(() => {
-                bigscreenbutton.style.transition = ""
+                bigscreenbutton.style.transition = "";
                 for (let child of childElements) {
                     child.style.display = '';
                 }
                 if (localStorage.getItem('allwindow_toolbar')) {
                     document.querySelectorAll('.window_tool').forEach(function (window_tool) {
-                        window_tool.style.display = "block"
-                    })
+                        window_tool.style.display = "block";
+                    });
                 }
             }, 150);
             bigscreenbutton.classList.add('big');
             setTimeout(() => {
                 const task = document.getElementById('taskbar').clientHeight;
                 const child_windows_big2 = bigscreenbutton.clientHeight;
-                bigscreenbutton.style.height = child_windows_big2 + - + task + "px"
+                bigscreenbutton.style.height = child_windows_big2 - task + "px";
             }, 150);
-
         });
-    })
-
-
-
-
-    function window_animation_true() {
-        const window_animation = "test_animation"
-        localStorage.setItem('window_animation', window_animation)
     }
-    function window_animation_false() {
-        localStorage.removeItem('window_animation')
+    function observeNewElements() {
+        const observer = new MutationObserver(mutations => {
+            mutations.forEach(mutation => {
+                if (mutation.type === 'childList') {
+                    mutation.addedNodes.forEach(node => {
+                        if (node.nodeType === 1) {
+                            if (node.matches('.bigscreen_button')) {
+                                addBigScreenButtonListeners(node);
+                            }
+                            if (node.matches('.child_windows')) {
+                                node.querySelectorAll('.bigscreen_button').forEach(addBigScreenButtonListeners);
+                            }
+                        }
+                    });
+                }
+            });
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
     }
+    document.querySelectorAll('.bigscreen_button').forEach(addBigScreenButtonListeners);
+    observeNewElements();
 
-    document.querySelectorAll('.minscreen_button').forEach(function (minscreen_button) {
-        minscreen_button.addEventListener('click', function () {
-            const minscreenbutton = minscreen_button.closest('.child_windows');
+    function addMinScreenButtonListeners(button) {
+        button.addEventListener('click', function () {
+            const minscreenbutton = button.closest('.child_windows');
             const childElements = minscreenbutton.children;
             for (let child of childElements) {
                 child.style.display = 'none';
                 document.querySelectorAll('.title,.title_buttons').forEach(function (titles) {
-                    titles.style.display = "block"
-                })
+                    titles.style.display = "block";
+                });
                 document.querySelectorAll('.title2').forEach(function (window_title2) {
-                    window_title2.style.display = "flex"
-                })
+                    window_title2.style.display = "flex";
+                });
             }
-
             minscreenbutton.classList.remove('rightwindow');
             minscreenbutton.classList.remove('leftwindow');
-
             minscreenbutton.classList.remove('big');
-
             const elements = document.querySelector('.title.navy');
             const elements2 = elements.closest('.child_windows');
             elements2.style.width = elements2.dataset.originalWidth;
@@ -2873,28 +2892,55 @@ if (ua.includes("mobile")) {
             elements2.style.top = elements2.dataset.originalTop;
             elements2.style.left = elements2.dataset.originalLeft;
             if (localStorage.getItem('window_animation')) {
-                minscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
+                minscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
             }
             setTimeout(() => {
-                minscreenbutton.style.transition = ""
+                minscreenbutton.style.transition = "";
                 setTimeout(() => {
                     minscreenbutton.scrollTop = 0;
                     minscreenbutton.scrollLeft = 0;
                 }, 100);
             }, 150);
-
             setTimeout(() => {
                 for (let child of childElements) {
                     child.style.display = '';
                 }
                 if (localStorage.getItem('allwindow_toolbar')) {
                     document.querySelectorAll('.window_tool').forEach(function (window_tool) {
-                        window_tool.style.display = "block"
-                    })
+                        window_tool.style.display = "block";
+                    });
                 }
             }, 150);
         });
-    });
+    }
+    function observeNewElements2() {
+        const observer = new MutationObserver(mutations => {
+            mutations.forEach(mutation => {
+                if (mutation.type === 'childList') {
+                    mutation.addedNodes.forEach(node => {
+                        if (node.nodeType === 1) {
+                            if (node.matches('.minscreen_button')) {
+                                addMinScreenButtonListeners(node);
+                            }
+                            if (node.matches('.child_windows')) {
+                                node.querySelectorAll('.minscreen_button').forEach(addMinScreenButtonListeners);
+                            }
+                        }
+                    });
+                }
+            });
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+    }
+    document.querySelectorAll('.minscreen_button').forEach(addMinScreenButtonListeners);
+    observeNewElements2();
+
+    function window_animation_true(window_animation) {
+        localStorage.setItem('window_animation', window_animation)
+    }
+    function window_animation_false() {
+        localStorage.removeItem('window_animation')
+    }
 
     function allwindow_min() {
         document.querySelectorAll('.child_windows').forEach(function (alliwindow_min) {
@@ -3234,7 +3280,6 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.title, .drag_button').forEach(function (title) {
         title.addEventListener('mousedown', function () {
             setTimeout(() => {
-
                 titlecolor_set()
             }, 100);
         })
@@ -4019,9 +4064,9 @@ if (ua.includes("mobile")) {
     htmlview_parent2.addEventListener('mousemove', htmlview_resize2);
 
 
-    document.querySelectorAll('.drag_button').forEach(function (drag) {
-        drag.addEventListener('mousedown', function () {
-            const dragwindow = drag.closest('.child_windows');
+    function addDragButtonListeners(button) {
+        button.addEventListener('mousedown', function () {
+            const dragwindow = button.closest('.child_windows');
             if (dragwindow.classList.contains('leftwindow')) {
                 dragwindow.style.height = "55%";
                 dragwindow.style.width = "55%";
@@ -4030,7 +4075,7 @@ if (ua.includes("mobile")) {
                     dragwindow.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
                 }
                 setTimeout(() => {
-                    dragwindow.style.transition = ""
+                    dragwindow.style.transition = "";
                 }, 150);
             }
             if (dragwindow.classList.contains('rightwindow')) {
@@ -4041,108 +4086,116 @@ if (ua.includes("mobile")) {
                     dragwindow.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
                 }
                 setTimeout(() => {
-                    dragwindow.style.transition = ""
+                    dragwindow.style.transition = "";
                 }, 150);
             }
-        })
-        let drag2 = drag.closest('.child_windows');
-        //要素内のクリックされた位置を取得するグローバル（のような）変数
-        var x;
-        var y;
-        //マウスが要素内で押されたとき、又はタッチされたとき発火
-        drag.addEventListener("mousedown", mdown, { passive: false }, false);
-        drag.addEventListener("touchstart", mdown, { passive: false }, false);
-        //マウスが押された際の関数
+        });
+
+        let drag2 = button.closest('.child_windows');
+        var x, y;
+
+        button.addEventListener("mousedown", mdown, { passive: false }, false);
+        button.addEventListener("touchstart", mdown, { passive: false }, false);
+
         function mdown(e) {
-            //クラス名に .drag を追加
             drag2.classList.add("drag");
-            //タッチデイベントとマウスのイベントの差異を吸収
-            if (e.type === "mousedown") {
-                var event = e;
-            } else {
-                var event = e.changedTouches[0];
-            }
-            //要素内の相対座標を取得
+            var event = e.type === "mousedown" ? e : e.changedTouches[0];
             x = event.pageX - drag2.offsetLeft;
             y = event.pageY - drag2.offsetTop;
-            //ムーブイベントにコールバック
             document.body.addEventListener("mousemove", mmove, { passive: false }, false);
             document.body.addEventListener("touchmove", mmove, { passive: false }, false);
         }
-        //マウスカーソルが動いたときに発火
+
         function mmove(e) {
-            //ドラッグしている要素を取得
             var drag = document.getElementsByClassName("drag")[0];
-            //同様にマウスとタッチの差異を吸収
-            if (e.type === "mousemove") {
-                var event = e;
-            } else {
-                var event = e.changedTouches[0];
-            }
+            var event = e.type === "mousemove" ? e : e.changedTouches[0];
             const elements = document.querySelectorAll('.rectangle');
-            // 各要素からクラスを削除
             elements.forEach(element => {
                 element.classList.remove('rectangle');
             });
 
-            //マウスが動いた場所に要素を動かす
             drag.style.top = event.pageY - y + "px";
             drag.style.left = event.pageX - x + "px";
-            //マウスボタンが離されたとき、またはカーソルが外れたとき発火
             drag.addEventListener("mouseup", mup, false);
             document.body.addEventListener("mouseleave", mup, false);
             drag.addEventListener("touchend", mup, false);
             document.body.addEventListener("touchleave", mup, false);
-            // 半透明
+
             if (localStorage.getItem('window_invisible')) {
                 document.querySelectorAll('.child_windows').forEach(function (title) {
                     title.style.opacity = "0.5";
-                })
+                });
             }
-            // 移動してる時だけ黒枠のみ
+
             if (localStorage.getItem('window_borderblack')) {
                 document.querySelectorAll('.child_windows, .child').forEach(function (title) {
                     document.querySelector('iframe').style.opacity = "0";
                     title.style.background = "rgba(255, 255, 255, 0)";
                     title.style.border = "solid 2px black";
-                })
+                });
                 document.querySelectorAll('.title,.title2,.title_buttons,.window_tool,.window_contents,.window_content,.window_bottom,.prompt_content').forEach(function (title) {
-                    title.style.opacity = "0"
-                })
+                    title.style.opacity = "0";
+                });
             }
         }
-        //マウスボタンが上がったら発火
+
         function mup(e) {
             document.querySelectorAll('.drag').forEach(function (drag_windows) {
                 drag_windows.classList.remove("drag");
-            })
+            });
 
             document.body.removeEventListener("mousemove", mmove, false);
-            drag.removeEventListener("mouseup", mup, false);
+            button.removeEventListener("mouseup", mup, false);
             document.body.removeEventListener("touchmove", { passive: false }, mmove, false);
-            drag.removeEventListener("touchend", { passive: false }, mup, false);
+            button.removeEventListener("touchend", { passive: false }, mup, false);
 
-            // 半透明
             document.querySelectorAll('.child_windows').forEach(function (title) {
                 title.style.opacity = "";
-                window_prompt.style.background = "black"
-                window_back_silver()
-            })
-            // 移動してる時だけ黒枠のみ
+                window_prompt.style.background = "black";
+                window_back_silver();
+            });
+
             document.querySelectorAll('.child_windows, .child').forEach(function (title) {
                 title.style.background = "";
                 title.style.border = "";
                 document.querySelector('iframe').style.opacity = "";
-                window_prompt.style.background = "black"
-                window_back_silver()
-            })
+                window_prompt.style.background = "black";
+                window_back_silver();
+            });
+
             document.querySelectorAll('.title,.title2,.title_buttons,.window_tool,.window_contents,.window_content,.window_bottom,.prompt_content').forEach(function (title) {
-                title.style.opacity = ""
-                window_back_silver()
-            })
-            titlecolor_set()
+                title.style.opacity = "";
+                window_back_silver();
+            });
+
+            titlecolor_set();
         }
-    })
+    }
+
+    function observeNewElements3() {
+        const observer = new MutationObserver(mutations => {
+            mutations.forEach(mutation => {
+                if (mutation.type === 'childList') {
+                    mutation.addedNodes.forEach(node => {
+                        if (node.nodeType === 1) {
+                            if (node.matches('.drag_button')) {
+                                addDragButtonListeners(node);
+                            }
+                            if (node.matches('.child_windows')) {
+                                node.querySelectorAll('.drag_button').forEach(addDragButtonListeners);
+                            }
+                        }
+                    });
+                }
+            });
+        });
+
+        observer.observe(document.body, { childList: true, subtree: true });
+    }
+
+    document.querySelectorAll('.drag_button').forEach(addDragButtonListeners);
+    observeNewElements3();
+
 
     function check(elm1, elm2) {
         const d1 = elm1.getBoundingClientRect();
@@ -4389,125 +4442,42 @@ if (ua.includes("mobile")) {
     });
 
     function titlecolor_remove() {
-        document.querySelectorAll('.title').forEach(function (title) {
-            title.style.background = "";
-        });
-        document.querySelectorAll('.navy').forEach(function (navy) {
-            navy.style.background = "";
-        });
-        localStorage.removeItem('titlebar_red');
-        localStorage.removeItem('titlebar_blue');
-        localStorage.removeItem('titlebar_green');
-        localStorage.removeItem('titlebar_yellow');
-        localStorage.removeItem('titlebar_orange');
-        localStorage.removeItem('titlebar_pink');
-        localStorage.removeItem('titlebar_purple');
-        localStorage.removeItem('titlebar_black');
-        localStorage.removeItem('titlebar_teal');
+        document.querySelectorAll('.title, .navy').forEach(el => el.style.background = "");
+        ['titlebar_red', 'titlebar_blue', 'titlebar_green', 'titlebar_yellow', 'titlebar_orange', 'titlebar_pink', 'titlebar_purple', 'titlebar_black', 'titlebar_teal'].forEach(item => localStorage.removeItem(item));
     }
 
-    document.querySelector('.titlebar_red').addEventListener('click', function (titlebar_red) {
-        localStorage.setItem('titlebar_red', titlebar_red);
-    })
-    document.querySelector('.titlebar_blue').addEventListener('click', function (titlebar_blue) {
-        localStorage.setItem('titlebar_blue', titlebar_blue);
-    })
-    document.querySelector('.titlebar_green').addEventListener('click', function (titlebar_green) {
-        localStorage.setItem('titlebar_green', titlebar_green);
-    })
-    document.querySelector('.titlebar_yellow').addEventListener('click', function (titlebar_yellow) {
-        localStorage.setItem('titlebar_yellow', titlebar_yellow);
-    })
-    document.querySelector('.titlebar_orange').addEventListener('click', function (titlebar_orange) {
-        localStorage.setItem('titlebar_orange', titlebar_orange);
-    })
-    document.querySelector('.titlebar_pink').addEventListener('click', function (titlebar_pink) {
-        localStorage.setItem('titlebar_pink', titlebar_pink);
-    })
-    document.querySelector('.titlebar_purple').addEventListener('click', function (titlebar_purple) {
-        localStorage.setItem('titlebar_purple', titlebar_purple);
-    })
-    document.querySelector('.titlebar_black').addEventListener('click', function (titlebar_black) {
-        localStorage.setItem('titlebar_black', titlebar_black);
-    })
-    document.querySelector('.titlebar_teal').addEventListener('click', function (titlebar_teal) {
-        localStorage.setItem('titlebar_teal', titlebar_teal);
-    })
+    ['red', 'blue', 'green', 'yellow', 'orange', 'pink', 'purple', 'black', 'teal'].forEach(color => {
+        document.querySelector(`.titlebar_${color}`).addEventListener('click', () => {
+            localStorage.setItem(`titlebar_${color}`, `titlebar_${color}`);
+        });
+    });
+
 
     function titlecolor_set() {
-        if (localStorage.getItem('driver_color')) {
-            if (localStorage.getItem('titlebar_red')) {
-                document.querySelectorAll('.title').forEach(function (title) {
-                    title.style.background = "#440000";
-                });
-                document.querySelectorAll('.navy').forEach(function (navy) {
-                    navy.style.background = "red";
-                });
-            }
-            if (localStorage.getItem('titlebar_blue')) {
-                document.querySelectorAll('.title').forEach(function (title) {
-                    title.style.background = "#000044";
-                });
-                document.querySelectorAll('.navy').forEach(function (navy) {
-                    navy.style.background = "blue";
-                });
-            }
-            if (localStorage.getItem('titlebar_green')) {
-                document.querySelectorAll('.title').forEach(function (title) {
-                    title.style.background = "#004400";
-                });
-                document.querySelectorAll('.navy').forEach(function (navy) {
-                    navy.style.background = "green";
-                });
-            }
-            if (localStorage.getItem('titlebar_yellow')) {
-                document.querySelectorAll('.title').forEach(function (title) {
-                    title.style.background = "#FFFFAA";
-                });
-                document.querySelectorAll('.navy').forEach(function (navy) {
-                    navy.style.background = "yellow";
-                });
-            }
-            if (localStorage.getItem('titlebar_orange')) {
-                document.querySelectorAll('.title').forEach(function (title) {
-                    title.style.background = "#FFAD90";
-                });
-                document.querySelectorAll('.navy').forEach(function (navy) {
-                    navy.style.background = "orange";
-                });
-            }
-            if (localStorage.getItem('titlebar_pink')) {
-                document.querySelectorAll('.title').forEach(function (title) {
-                    title.style.background = "#FF00FF";
-                });
-                document.querySelectorAll('.navy').forEach(function (navy) {
-                    navy.style.background = "pink";
-                });
-            }
-            if (localStorage.getItem('titlebar_purple')) {
-                document.querySelectorAll('.title').forEach(function (title) {
-                    title.style.background = "#5507FF";
-                });
-                document.querySelectorAll('.navy').forEach(function (navy) {
-                    navy.style.background = "purple";
-                });
-            }
-            if (localStorage.getItem('titlebar_black')) {
-                document.querySelectorAll('.title').forEach(function (title) {
-                    title.style.background = "#555555";
-                });
-                document.querySelectorAll('.navy').forEach(function (navy) {
-                    navy.style.background = "black";
-                });
-            }
-            if (localStorage.getItem('titlebar_teal')) {
-                document.querySelectorAll('.title').forEach(function (title) {
-                    title.style.background = "#483D8B";
-                });
-                document.querySelectorAll('.navy').forEach(function (navy) {
-                    navy.style.background = "teal";
-                });
-            }
+        // 色の設定
+        const colors = {
+            titlebar_red: ["#440000", "red"],
+            titlebar_blue: ["#000044", "blue"],
+            titlebar_green: ["#004400", "green"],
+            titlebar_yellow: ["#FFFFAA", "yellow"],
+            titlebar_orange: ["#FFAD90", "orange"],
+            titlebar_pink: ["#FF00FF", "pink"],
+            titlebar_purple: ["#5507FF", "purple"],
+            titlebar_black: ["#555555", "black"],
+            titlebar_teal: ["#483D8B", "teal"]
+        }
+        const driverColor = localStorage.getItem('driver_color');
+        if (driverColor) {
+            Object.entries(colors).forEach(([key, [bgColor, navyColor]]) => {
+                if (localStorage.getItem(key)) {
+                    document.querySelectorAll('.title').forEach(title => {
+                        title.style.background = bgColor;
+                    });
+                    document.querySelectorAll('.navy').forEach(navy => {
+                        navy.style.background = navyColor;
+                    });
+                }
+            });
         }
     }
 
@@ -6184,112 +6154,64 @@ if (ua.includes("mobile")) {
 
     const clock_canvas = document.getElementById("analog_clock");
     const clock_ctx = clock_canvas.getContext('2d');
-    let d;
-    let year;
-    let month;
-    let date;
-    let day;
-    let dayArr = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    let hours;
-    let minutes;
-    let seconds;
-    let dateText;
+    const dayArr = ["日", "月", "火", "水", "木", "金", "土"];
 
-    function sRotate() {
+    // 時計の針を描く関数
+    function drawHand(length, width, angle) {
         clock_ctx.beginPath();
         clock_ctx.moveTo(150, 150);
-        clock_ctx.lineTo(150 + 140 * Math.cos(Math.PI / 180 * (270 + seconds * 6)), 150 + 140 * Math.sin(Math.PI / 180 * (270 + seconds * 6)));
-        clock_ctx.lineWidth = 1.0;
+        clock_ctx.lineTo(150 + length * Math.cos(Math.PI / 180 * (270 + angle)), 150 + length * Math.sin(Math.PI / 180 * (270 + angle)));
+        clock_ctx.lineWidth = width;
         clock_ctx.stroke();
     }
 
-    function mRotate() {
-        clock_ctx.beginPath();
-        clock_ctx.moveTo(150, 150);
-        clock_ctx.lineWidth = 3.0;
-        clock_ctx.lineTo(150 + 130 * Math.cos(Math.PI / 180 * (270 + 6 * (minutes + seconds / 60))), 150 + 130 * Math.sin(Math.PI / 180 * (270 + 6 * (minutes + seconds / 60))));
-        clock_ctx.stroke();
-    }
+    // 時計を描く関数
+    function drawClock() {
+        const d = new Date();
+        const year = d.getFullYear();
+        const month = d.getMonth() + 1;
+        const date = d.getDate();
+        const day = d.getDay();
+        const hours = d.getHours() % 12;
+        const minutes = d.getMinutes();
+        const seconds = d.getSeconds();
+        const dateText = `${year}-${("0" + month).slice(-2)}-${("0" + date).slice(-2)} ${dayArr[day]}`;
+        const amPm = hours >= 12 ? "午後" : "午前";
 
-    function hRotate() {
-        clock_ctx.beginPath();
-        clock_ctx.moveTo(150, 150);
-        clock_ctx.lineWidth = 6.0;
-        clock_ctx.lineTo(150 + 100 * Math.cos(Math.PI / 180 * (270 + 30 * (hours + minutes / 60))), 150 + 100 * Math.sin(Math.PI / 180 * (270 + 30 * (hours + minutes / 60))));
-        clock_ctx.stroke();
-    }
-
-    function rotate() {
-        sRotate();
-        mRotate();
-        hRotate();
-    }
-
-    function branchAmPm() {
-        if (hours >= 0) {
-            return "P M";
-        } else {
-            return "A M";
-        }
-    }
-
-    function clock_draw() {
-        drawBoard();
-        drawScale();
-        drawText();
-        rotate();
-    }
-
-    function drawText() {
-        dateText = `${year}-${("0" + month).slice(-2)}-${("0" + date).slice(-2)} ${dayArr[day]}`;
-        clock_ctx.font = "20px 'ＭＳ ゴシック'";
-        clock_ctx.textAlign = "center";
-        textArrX = [210, 255, 275, 260, 215, 150, 90, 45, 25, 45, 85, 150];
-        textArrY = [55, 100, 160, 225, 270, 285, 270, 220, 160, 100, 55, 35];
-        for (let i = 0; i <= 11; i++) {
-            clock_ctx.fillText(i + 1, textArrX[i], textArrY[i]);
-        }
-        clock_ctx.font = "15px 'ＭＳ ゴシック'";
-        clock_ctx.fillText(dateText, 150, 80);
-        clock_ctx.fillText(branchAmPm(), 150, 100);
-    }
-
-    function drawScale() {
-        for (let l = 0; l < 60; l++) {
-            clock_ctx.beginPath();
-            clock_ctx.moveTo(150 + 150 * Math.cos(Math.PI / 180 * (270 + l * 6)), 150 + 150 * Math.sin(Math.PI / 180 * (270 + l * 6)));
-            clock_ctx.lineTo(150 + 145 * Math.cos(Math.PI / 180 * (270 + l * 6)), 150 + 145 * Math.sin(Math.PI / 180 * (270 + l * 6)));
-            clock_ctx.lineWidth = 1;
-            clock_ctx.stroke();
-        }
-        for (let m = 0; m < 12; m++) {
-            clock_ctx.beginPath();
-            clock_ctx.moveTo(150 + 150 * Math.cos(Math.PI / 180 * (270 + m * 30)), 150 + 150 * Math.sin(Math.PI / 180 * (270 + m * 30)));
-            clock_ctx.lineTo(150 + 140 * Math.cos(Math.PI / 180 * (270 + m * 30)), 150 + 140 * Math.sin(Math.PI / 180 * (270 + m * 30)));
-            clock_ctx.lineWidth = 1.5;
-            clock_ctx.stroke();
-        }
-    }
-
-    function drawBoard() {
+        // キャンバスをクリア
         clock_ctx.clearRect(0, 0, clock_canvas.width, clock_canvas.height);
         clock_ctx.beginPath();
         clock_ctx.arc(150, 150, 150, 0, Math.PI * 2);
         clock_ctx.lineWidth = 1.0;
         clock_ctx.stroke();
+
+        // 目盛りを描く
+        for (let i = 0; i < 60; i++) {
+            clock_ctx.beginPath();
+            clock_ctx.moveTo(150 + 150 * Math.cos(Math.PI / 180 * (270 + i * 6)), 150 + 150 * Math.sin(Math.PI / 180 * (270 + i * 6)));
+            clock_ctx.lineTo(150 + (i % 5 === 0 ? 140 : 145) * Math.cos(Math.PI / 180 * (270 + i * 6)), 150 + (i % 5 === 0 ? 140 : 145) * Math.sin(Math.PI / 180 * (270 + i * 6)));
+            clock_ctx.lineWidth = i % 5 === 0 ? 1.5 : 1;
+            clock_ctx.stroke();
+        }
+
+        // 数字と日付を描く
+        clock_ctx.font = "20px 'ＭＳ ゴシック'";
+        clock_ctx.textAlign = "center";
+        const textArrX = [210, 255, 275, 260, 215, 150, 90, 45, 25, 45, 85, 150];
+        const textArrY = [55, 100, 160, 225, 270, 285, 270, 220, 160, 100, 55, 35];
+        for (let i = 0; i < 12; i++) {
+            clock_ctx.fillText(i + 1, textArrX[i], textArrY[i]);
+        }
+        clock_ctx.font = "15px 'ＭＳ ゴシック'";
+        clock_ctx.fillText(dateText, 150, 80);
+        clock_ctx.fillText(amPm, 150, 100);
+
+        // 針を描く
+        drawHand(140, 1, seconds * 6);
+        drawHand(130, 3, 6 * (minutes + seconds / 60));
+        drawHand(100, 6, 30 * (hours + minutes / 60));
     }
 
-    function getTime() {
-        d = new Date();
-        year = d.getFullYear();
-        month = d.getMonth() + 1;
-        date = d.getDate();
-        day = d.getDay();
-        hours = d.getHours() - 12;
-        minutes = d.getMinutes();
-        seconds = d.getSeconds();
-        clock_draw()
-    }
 
     document.querySelector('.youtubevideo_button').addEventListener('click', function () {
         const url = document.querySelector("#youtube").value;
@@ -6796,20 +6718,17 @@ if (ua.includes("mobile")) {
     }
 
     function nexser_files_output_remove() {
-
         const parentElement = document.getElementById('nexser_files_output');
-
-        // すべての子要素を削除
         while (parentElement.firstChild) {
             parentElement.removeChild(parentElement.firstChild);
         }
     }
 
     function addResizers(element) {
-        const resizerPositions = ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'top', 'right', 'bottom', 'left'];
-        resizerPositions.forEach(position => {
+        const positions = ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'top', 'right', 'bottom', 'left'];
+        positions.forEach(pos => {
             const resizer = document.createElement('div');
-            resizer.classList.add('resizer', position);
+            resizer.classList.add('resizer', pos);
             element.appendChild(resizer);
         });
     }
@@ -6818,108 +6737,85 @@ if (ua.includes("mobile")) {
         const elements = document.querySelectorAll(className);
         elements.forEach(element => {
             addResizers(element);
-            const resizers = element.querySelectorAll('.resizer');
-            const minimum_size = 20;
-            let original_width = 0;
-            let original_height = 0;
-            let original_x = 0;
-            let original_y = 0;
-            let original_mouse_x = 0;
-            let original_mouse_y = 0;
+            attachResizeHandlers(element);
+        });
 
-            resizers.forEach(resizer => {
-                resizer.addEventListener('mousedown', function (e) {
-                    e.preventDefault();
-                    original_width = parseFloat(getComputedStyle(element, null).getPropertyValue('width').replace('px', ''));
-                    original_height = parseFloat(getComputedStyle(element, null).getPropertyValue('height').replace('px', ''));
-                    original_x = element.getBoundingClientRect().left;
-                    original_y = element.getBoundingClientRect().top;
-                    original_mouse_x = e.pageX;
-                    original_mouse_y = e.pageY;
-
-                    window.addEventListener('mousemove', resize);
-                    window.addEventListener('mouseup', stopResize);
-                });
-
-                function resize(e) {
-                    if (resizer.classList.contains('right')) {
-                        const width = original_width + (e.pageX - original_mouse_x);
-                        if (width > minimum_size) {
-                            element.style.width = width + 'px';
+        const observer = new MutationObserver(mutations => {
+            mutations.forEach(mutation => {
+                if (mutation.type === 'childList') {
+                    mutation.addedNodes.forEach(node => {
+                        if (node.nodeType === 1 && node.matches(className)) {
+                            addResizers(node);
+                            attachResizeHandlers(node);
                         }
-                    } else if (resizer.classList.contains('left')) {
-                        const width = original_width - (e.pageX - original_mouse_x);
-                        if (width > minimum_size) {
-                            element.style.width = width + 'px';
-                            element.style.left = original_x + (e.pageX - original_mouse_x) + 'px';
-                        }
-                    } else if (resizer.classList.contains('bottom')) {
-                        const height = original_height + (e.pageY - original_mouse_y);
-                        if (height > minimum_size) {
-                            element.style.height = height + 'px';
-                        }
-                    } else if (resizer.classList.contains('top')) {
-                        const height = original_height - (e.pageY - original_mouse_y);
-                        if (height > minimum_size) {
-                            element.style.height = height + 'px';
-                            element.style.top = original_y + (e.pageY - original_mouse_y) + 'px';
-                        }
-                    } else if (resizer.classList.contains('bottom-right')) {
-                        const width = original_width + (e.pageX - original_mouse_x);
-                        const height = original_height + (e.pageY - original_mouse_y);
-                        if (width > minimum_size) {
-                            element.style.width = width + 'px';
-                        }
-                        if (height > minimum_size) {
-                            element.style.height = height + 'px';
-                        }
-                    } else if (resizer.classList.contains('bottom-left')) {
-                        const height = original_height + (e.pageY - original_mouse_y);
-                        const width = original_width - (e.pageX - original_mouse_x);
-                        if (height > minimum_size) {
-                            element.style.height = height + 'px';
-                        }
-                        if (width > minimum_size) {
-                            element.style.width = width + 'px';
-                            element.style.left = original_x + (e.pageX - original_mouse_x) + 'px';
-                        }
-                    } else if (resizer.classList.contains('top-right')) {
-                        const width = original_width + (e.pageX - original_mouse_x);
-                        const height = original_height - (e.pageY - original_mouse_y);
-                        if (width > minimum_size) {
-                            element.style.width = width + 'px';
-                        }
-                        if (height > minimum_size) {
-                            element.style.height = height + 'px';
-                            element.style.top = original_y + (e.pageY - original_mouse_y) + 'px';
-                        }
-                    } else if (resizer.classList.contains('top-left')) {
-                        const width = original_width - (e.pageX - original_mouse_x);
-                        const height = original_height - (e.pageY - original_mouse_y);
-                        if (width > minimum_size) {
-                            element.style.width = width + 'px';
-                            element.style.left = original_x + (e.pageX - original_mouse_x) + 'px';
-                        }
-                        if (height > minimum_size) {
-                            element.style.height = height + 'px';
-                            element.style.top = original_y + (e.pageY - original_mouse_y) + 'px';
-                        }
-                    }
-                    const elements = document.querySelectorAll('.rectangle');
-                    // 各要素からクラスを削除
-                    elements.forEach(element => {
-                        element.classList.remove('rectangle');
                     });
-                }
-
-                function stopResize() {
-                    window.removeEventListener('mousemove', resize);
-                    window.removeEventListener('mouseup', stopResize);
                 }
             });
         });
+
+        observer.observe(document.body, { childList: true, subtree: true });
+    }
+
+    function attachResizeHandlers(element) {
+        const resizers = element.querySelectorAll('.resizer');
+        const minSize = 20;
+        let originalWidth, originalHeight, originalX, originalY, originalMouseX, originalMouseY;
+
+        resizers.forEach(resizer => {
+            resizer.addEventListener('mousedown', e => {
+                e.preventDefault();
+                const styles = getComputedStyle(element);
+                originalWidth = parseFloat(styles.width);
+                originalHeight = parseFloat(styles.height);
+                originalX = element.getBoundingClientRect().left;
+                originalY = element.getBoundingClientRect().top;
+                originalMouseX = e.pageX;
+                originalMouseY = e.pageY;
+
+                window.addEventListener('mousemove', resize);
+                window.addEventListener('mouseup', stopResize);
+            });
+
+            function resize(e) {
+                const dx = e.pageX - originalMouseX;
+                const dy = e.pageY - originalMouseY;
+
+                if (resizer.classList.contains('right') || resizer.classList.contains('bottom-right') || resizer.classList.contains('top-right')) {
+                    const newWidth = originalWidth + dx;
+                    if (newWidth > minSize) element.style.width = newWidth + 'px';
+                }
+                if (resizer.classList.contains('left') || resizer.classList.contains('bottom-left') || resizer.classList.contains('top-left')) {
+                    const newWidth = originalWidth - dx;
+                    if (newWidth > minSize) {
+                        element.style.width = newWidth + 'px';
+                        element.style.left = originalX + dx + 'px';
+                    }
+                }
+                if (resizer.classList.contains('bottom') || resizer.classList.contains('bottom-right') || resizer.classList.contains('bottom-left')) {
+                    const newHeight = originalHeight + dy;
+                    if (newHeight > minSize) element.style.height = newHeight + 'px';
+                }
+                if (resizer.classList.contains('top') || resizer.classList.contains('top-right') || resizer.classList.contains('top-left')) {
+                    const newHeight = originalHeight - dy;
+                    if (newHeight > minSize) {
+                        element.style.height = newHeight + 'px';
+                        element.style.top = originalY + dy + 'px';
+                    }
+                }
+                const elements = document.querySelectorAll('.rectangle');
+                elements.forEach(element => {
+                    element.classList.remove('rectangle');
+                });
+            }
+            function stopResize() {
+                window.removeEventListener('mousemove', resize);
+                window.removeEventListener('mouseup', stopResize);
+            }
+        });
     }
     makeResizableDivs('.resize');
+
+
 
     const dropzone = document.getElementById('dropzone');
     const url_iframe = document.getElementById('url_iframe');
@@ -7216,6 +7112,7 @@ if (ua.includes("mobile")) {
                     const result = e.target.result;
                     const windowDiv = document.createElement('div');
                     windowDiv.className = "child_windows"
+                    windowDiv.classList.add('resize');
                     windowDiv.classList.add('testwindow2');
                     windowDiv.style.left = `${event.clientX}px`;
                     windowDiv.style.top = `${event.clientY}px`;
@@ -7251,7 +7148,7 @@ if (ua.includes("mobile")) {
                     newChild3.appendChild(newChild4);
 
                     const newChild4_1 = document.createElement('span');
-                    newChild4_1.className = "bigscreen_button2"
+                    newChild4_1.className = "bigscreen_button"
                     newChild4_1.textContent = "☐"
                     newChild4_1.classList.add('button2');
                     newChild3.appendChild(newChild4_1);
@@ -7361,127 +7258,10 @@ if (ua.includes("mobile")) {
                             setTimeout(() => {
                                 const newChild4_2 = newChild4.closest('.child_windows');
                                 newChild4_2.remove();
-
                                 titlecolor_set();
                                 test_windows_button()
                             }, 100);
                         });
-
-                        function addResizers2(element) {
-                            const resizerPositions = ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'top', 'right', 'bottom', 'left'];
-                            resizerPositions.forEach(position => {
-                                const resizer = document.createElement('div');
-                                resizer.classList.add('resizer', position);
-                                element.appendChild(resizer);
-                            });
-                        }
-
-                        function makeResizableDivs2(className) {
-                            const elements = document.querySelectorAll(className);
-                            elements.forEach(element => {
-                                addResizers2(element);
-                                const resizers = element.querySelectorAll('.resizer');
-                                const minimum_size = 20;
-                                let original_width = 0;
-                                let original_height = 0;
-                                let original_x = 0;
-                                let original_y = 0;
-                                let original_mouse_x = 0;
-                                let original_mouse_y = 0;
-
-                                resizers.forEach(resizer => {
-                                    resizer.addEventListener('mousedown', function (e) {
-                                        e.preventDefault();
-                                        original_width = parseFloat(getComputedStyle(element, null).getPropertyValue('width').replace('px', ''));
-                                        original_height = parseFloat(getComputedStyle(element, null).getPropertyValue('height').replace('px', ''));
-                                        original_x = element.getBoundingClientRect().left;
-                                        original_y = element.getBoundingClientRect().top;
-                                        original_mouse_x = e.pageX;
-                                        original_mouse_y = e.pageY;
-                                        window.addEventListener('mousemove', resize2);
-                                        window.addEventListener('mouseup', stopResize2);
-                                    });
-
-                                    function resize2(e) {
-                                        if (resizer.classList.contains('right')) {
-                                            const width = original_width + (e.pageX - original_mouse_x);
-                                            if (width > minimum_size) {
-                                                element.style.width = width + 'px';
-                                            }
-                                        } else if (resizer.classList.contains('left')) {
-                                            const width = original_width - (e.pageX - original_mouse_x);
-                                            if (width > minimum_size) {
-                                                element.style.width = width + 'px';
-                                                element.style.left = original_x + (e.pageX - original_mouse_x) + 'px';
-                                            }
-                                        } else if (resizer.classList.contains('bottom')) {
-                                            const height = original_height + (e.pageY - original_mouse_y);
-                                            if (height > minimum_size) {
-                                                element.style.height = height + 'px';
-                                            }
-                                        } else if (resizer.classList.contains('top')) {
-                                            const height = original_height - (e.pageY - original_mouse_y);
-                                            if (height > minimum_size) {
-                                                element.style.height = height + 'px';
-                                                element.style.top = original_y + (e.pageY - original_mouse_y) + 'px';
-                                            }
-                                        } else if (resizer.classList.contains('bottom-right')) {
-                                            const width = original_width + (e.pageX - original_mouse_x);
-                                            const height = original_height + (e.pageY - original_mouse_y);
-                                            if (width > minimum_size) {
-                                                element.style.width = width + 'px';
-                                            }
-                                            if (height > minimum_size) {
-                                                element.style.height = height + 'px';
-                                            }
-                                        } else if (resizer.classList.contains('bottom-left')) {
-                                            const height = original_height + (e.pageY - original_mouse_y);
-                                            const width = original_width - (e.pageX - original_mouse_x);
-                                            if (height > minimum_size) {
-                                                element.style.height = height + 'px';
-                                            }
-                                            if (width > minimum_size) {
-                                                element.style.width = width + 'px';
-                                                element.style.left = original_x + (e.pageX - original_mouse_x) + 'px';
-                                            }
-                                        } else if (resizer.classList.contains('top-right')) {
-                                            const width = original_width + (e.pageX - original_mouse_x);
-                                            const height = original_height - (e.pageY - original_mouse_y);
-                                            if (width > minimum_size) {
-                                                element.style.width = width + 'px';
-                                            }
-                                            if (height > minimum_size) {
-                                                element.style.height = height + 'px';
-                                                element.style.top = original_y + (e.pageY - original_mouse_y) + 'px';
-                                            }
-                                        } else if (resizer.classList.contains('top-left')) {
-                                            const width = original_width - (e.pageX - original_mouse_x);
-                                            const height = original_height - (e.pageY - original_mouse_y);
-                                            if (width > minimum_size) {
-                                                element.style.width = width + 'px';
-                                                element.style.left = original_x + (e.pageX - original_mouse_x) + 'px';
-                                            }
-                                            if (height > minimum_size) {
-                                                element.style.height = height + 'px';
-                                                element.style.top = original_y + (e.pageY - original_mouse_y) + 'px';
-                                            }
-                                        }
-                                        const elements = document.querySelectorAll('.rectangle');
-                                        // 各要素からクラスを削除
-                                        elements.forEach(element => {
-                                            element.classList.remove('rectangle');
-                                        });
-                                    }
-
-                                    function stopResize2() {
-                                        window.removeEventListener('mousemove', resize2);
-                                        window.removeEventListener('mouseup', stopResize2);
-                                    }
-                                });
-                            });
-                        }
-
-                        makeResizableDivs2('.testwindow2');
 
                         document.querySelectorAll('.testwindow2, .child').forEach(function (z_index_child_windows) {
                             const zindexchildwindows = z_index_child_windows.closest('.testwindow2');
@@ -7492,10 +7272,10 @@ if (ua.includes("mobile")) {
                                     document.querySelectorAll('.testwindow2').forEach(function (testwindow2) {
                                         const testwindow2_1 = testwindow2.children[2];
                                         const testwindow2_2 = testwindow2_1.firstElementChild;
-                                        testwindow2_2.style.maxWidth = `${testwindow2.clientWidth + - + 5}px`;
-                                        testwindow2_2.style.maxHeight = `${testwindow2.clientHeight + - + 25}px`;
                                         testwindow2_2.style.width = "100%"
                                         testwindow2_2.style.height = "100%"
+                                        testwindow2_2.style.maxWidth = `${testwindow2.clientWidth}px`;
+                                        testwindow2_2.style.maxHeight = `${testwindow2.clientHeight + - + 25}px`;
                                         testwindow2_2.style.left = "0"
                                     })
                                     zindexchildwindows.style.zIndex = largestZIndex++;
@@ -7510,253 +7290,8 @@ if (ua.includes("mobile")) {
                             });
                         })
 
-                        document.querySelectorAll('.bigscreen_button2').forEach(function (bigscreen_button) {
-                            bigscreen_button.addEventListener('mousedown', function () {
-
-                                const elements = document.querySelector('.testwindow_title.navy');
-                                const elements2 = elements.closest('.testwindow2');
-                                elements2.dataset.originalWidth = elements2.style.width;
-                                elements2.dataset.originalHeight = elements2.style.height;
-                                elements2.dataset.originalTop = elements2.style.top;
-                                elements2.dataset.originalLeft = elements2.style.left;
-                            })
-                            bigscreen_button.addEventListener('click', function () {
-                                const bigscreenbutton = bigscreen_button.closest('.testwindow2');
-                                const childElements = bigscreenbutton.children;
-                                for (let child of childElements) {
-                                    child.style.display = 'none';
-                                    document.querySelectorAll('.title,.title_buttons').forEach(function (titles) {
-                                        titles.style.display = "block"
-                                    })
-                                    document.querySelectorAll('.title2').forEach(function (window_title2) {
-                                        window_title2.style.display = "flex"
-                                    })
-                                }
-
-                                const t = localStorage.getItem('taskbar_height');
-                                if (localStorage.getItem('data_taskbar_none')) {
-                                    bigscreenbutton.style.height = ""
-                                    bigscreenbutton.style.width = ""
-                                    bigscreenbutton.style.top = "0"
-                                    bigscreenbutton.style.left = "0"
-                                    if (localStorage.getItem('window_animation')) {
-                                        bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
-                                    }
-                                } else if (localStorage.getItem('taskbar_position_button')) {
-                                    bigscreenbutton.style.height = ""
-                                    bigscreenbutton.style.width = ""
-                                    bigscreenbutton.style.top = "40px"
-                                    bigscreenbutton.style.left = "0"
-                                    bigscreenbutton.style.top = t + "px"
-                                    if (localStorage.getItem('window_animation')) {
-                                        bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
-                                    }
-                                } else {
-                                    bigscreenbutton.style.height = ""
-                                    bigscreenbutton.style.width = ""
-                                    bigscreenbutton.style.top = "0"
-                                    bigscreenbutton.style.left = "0"
-                                    if (localStorage.getItem('window_animation')) {
-                                        bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
-                                    }
-                                }
-                                bigscreenbutton.classList.add('big');
-                                setTimeout(() => {
-                                    bigscreenbutton.style.transition = ""
-                                    for (let child of childElements) {
-                                        child.style.display = '';
-                                    }
-                                    if (localStorage.getItem('allwindow_toolbar')) {
-                                        document.querySelectorAll('.window_tool').forEach(function (window_tool) {
-                                            window_tool.style.display = "block"
-                                        })
-                                    }
-
-                                    document.querySelectorAll('.testwindow2').forEach(function (testwindow2) {
-                                        const hehehe1 = testwindow2.firstElementChild;
-                                        const testwindow2_1 = testwindow2.children[2];
-                                        const testwindow2_2 = testwindow2_1.firstElementChild;
-
-
-                                        if (hehehe1.classList.contains('navy')) {
-                                            testwindow2_2.style.maxWidth = `${testwindow2.clientWidth + - + 5}px`;
-                                            testwindow2_2.style.maxHeight = `${testwindow2.clientHeight + - + 25}px`;
-                                            testwindow2_2.style.left = "0"
-                                        }
-                                    })
-
-                                }, 150);
-
-                            });
-                        })
-
-
-                        document.querySelectorAll('.minscreen_button').forEach(function (minscreen_button) {
-                            minscreen_button.addEventListener('click', function () {
-                                const minscreenbutton = minscreen_button.closest('.testwindow2');
-                                const childElements = minscreenbutton.children;
-                                for (let child of childElements) {
-                                    child.style.display = 'none';
-                                    document.querySelectorAll('.title,.title_buttons').forEach(function (titles) {
-                                        titles.style.display = "block"
-                                    })
-                                    document.querySelectorAll('.title2').forEach(function (window_title2) {
-                                        window_title2.style.display = "flex"
-                                    })
-                                }
-
-                                minscreenbutton.classList.remove('big');
-
-                                const elements = document.querySelector('.testwindow_title.navy');
-                                const elements2 = elements.closest('.testwindow2');
-                                elements2.style.width = elements2.dataset.originalWidth;
-                                elements2.style.height = elements2.dataset.originalHeight;
-                                elements2.style.top = elements2.dataset.originalTop;
-                                elements2.style.left = elements2.dataset.originalLeft;
-                                if (localStorage.getItem('window_animation')) {
-                                    minscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
-                                }
-                                setTimeout(() => {
-                                    minscreenbutton.style.transition = ""
-                                    setTimeout(() => {
-                                        minscreenbutton.scrollTop = 0;
-                                        minscreenbutton.scrollLeft = 0;
-                                    }, 100);
-                                }, 150);
-
-                                setTimeout(() => {
-                                    for (let child of childElements) {
-                                        child.style.display = '';
-                                    }
-                                    if (localStorage.getItem('allwindow_toolbar')) {
-                                        document.querySelectorAll('.window_tool').forEach(function (window_tool) {
-                                            window_tool.style.display = "block"
-                                        })
-                                    }
-
-                                    document.querySelectorAll('.testwindow2').forEach(function (testwindow2) {
-                                        const hehehe1 = testwindow2.firstElementChild;
-                                        const testwindow2_1 = testwindow2.children[2];
-                                        const testwindow2_2 = testwindow2_1.firstElementChild;
-
-
-                                        if (hehehe1.classList.contains('navy')) {
-                                            testwindow2_2.style.maxWidth = `${testwindow2.clientWidth + - + 5}px`;
-                                            testwindow2_2.style.maxHeight = `${testwindow2.clientHeight + - + 25}px`;
-                                            testwindow2_2.style.left = "0"
-                                        }
-                                    })
-
-                                }, 150);
-                            });
-                        });
-
-
-
-                        document.querySelectorAll('.drag_button').forEach(function (drag) {
-                            let drag2 = drag.closest('.testwindow2');
-                            //要素内のクリックされた位置を取得するグローバル（のような）変数
-                            var x;
-                            var y;
-                            //マウスが要素内で押されたとき、又はタッチされたとき発火
-                            drag.addEventListener("mousedown", mdown, { passive: false }, false);
-                            drag.addEventListener("touchstart", mdown, { passive: false }, false);
-                            //マウスが押された際の関数
-                            function mdown(e) {
-                                //クラス名に .drag を追加
-                                drag2.classList.add("drag");
-                                //タッチデイベントとマウスのイベントの差異を吸収
-                                if (e.type === "mousedown") {
-                                    var event = e;
-                                } else {
-                                    var event = e.changedTouches[0];
-                                }
-                                //要素内の相対座標を取得
-                                x = event.pageX - drag2.offsetLeft;
-                                y = event.pageY - drag2.offsetTop;
-                                //ムーブイベントにコールバック
-                                document.body.addEventListener("mousemove", mmove, { passive: false }, false);
-                                document.body.addEventListener("touchmove", mmove, { passive: false }, false);
-                            }
-                            //マウスカーソルが動いたときに発火
-                            function mmove(e) {
-                                //ドラッグしている要素を取得
-                                var drag = document.getElementsByClassName("drag")[0];
-                                //同様にマウスとタッチの差異を吸収
-                                if (e.type === "mousemove") {
-                                    var event = e;
-                                } else {
-                                    var event = e.changedTouches[0];
-                                }
-                                const elements = document.querySelectorAll('.rectangle');
-                                // 各要素からクラスを削除
-                                elements.forEach(element => {
-                                    element.classList.remove('rectangle');
-                                });
-
-                                //マウスが動いた場所に要素を動かす
-                                drag.style.top = event.pageY - y + "px";
-                                drag.style.left = event.pageX - x + "px";
-                                //マウスボタンが離されたとき、またはカーソルが外れたとき発火
-                                drag.addEventListener("mouseup", mup, false);
-                                document.body.addEventListener("mouseleave", mup, false);
-                                drag.addEventListener("touchend", mup, false);
-                                document.body.addEventListener("touchleave", mup, false);
-                                // 半透明
-                                if (localStorage.getItem('window_invisible')) {
-                                    document.querySelectorAll('.child_windows').forEach(function (title) {
-                                        title.style.opacity = "0.5";
-                                    })
-                                }
-                                // 移動してる時だけ黒枠のみ
-                                if (localStorage.getItem('window_borderblack')) {
-                                    document.querySelectorAll('.child_windows, .child').forEach(function (title) {
-                                        document.querySelector('iframe').style.opacity = "0";
-                                        title.style.background = "rgba(255, 255, 255, 0)";
-                                        title.style.border = "solid 2px black";
-                                    })
-                                    document.querySelectorAll('.title,.title2,.title_buttons,.window_tool,.window_contents,.window_content,.window_bottom,.prompt_content').forEach(function (title) {
-                                        title.style.opacity = "0"
-                                    })
-                                }
-                            }
-                            //マウスボタンが上がったら発火
-                            function mup(e) {
-
-                                document.querySelectorAll('.drag').forEach(function (drag_windows) {
-                                    drag_windows.classList.remove("drag");
-                                })
-
-                                document.body.removeEventListener("mousemove", mmove, false);
-                                drag.removeEventListener("mouseup", mup, false);
-                                document.body.removeEventListener("touchmove", { passive: false }, mmove, false);
-                                drag.removeEventListener("touchend", { passive: false }, mup, false);
-                                // 半透明
-                                document.querySelectorAll('.child_windows').forEach(function (title) {
-                                    title.style.opacity = "";
-                                    window_prompt.style.background = "black"
-                                    window_back_silver()
-                                })
-                                // 移動してる時だけ黒枠のみ
-                                document.querySelectorAll('.child_windows, .child').forEach(function (title) {
-                                    title.style.background = "";
-                                    title.style.border = "";
-                                    document.querySelector('iframe').style.opacity = "";
-                                    window_prompt.style.background = "black"
-                                    window_back_silver()
-                                })
-                                document.querySelectorAll('.title,.title2,.title_buttons,.window_tool,.window_contents,.window_content,.window_bottom,.prompt_content').forEach(function (title) {
-                                    title.style.opacity = ""
-                                    window_back_silver()
-                                })
-                                titlecolor_set()
-                            }
-                        })
-
-
-
                         // クラス名が "target" の要素を全て取得
-                        document.querySelectorAll('.bigscreen_button2').forEach(function (element) {
+                        document.querySelectorAll('.bigscreen_button').forEach(function (element) {
                             var newChild = document.createElement('div');
                             newChild.className = 'bigscreen_button_child';
                             // 子要素を追加
@@ -7765,19 +7300,15 @@ if (ua.includes("mobile")) {
 
                         document.querySelectorAll('.testwindow2').forEach(function (testwindow2) {
                             testwindow2.addEventListener('mousemove', function () {
-                                const hehehe1 = testwindow2.firstElementChild;
                                 const testwindow2_1 = testwindow2.children[2];
                                 const testwindow2_2 = testwindow2_1.firstElementChild;
-                                if (hehehe1.classList.contains('navy') && !testwindow2.classList.contains('big')) {
-                                    testwindow2_2.style.maxWidth = `${testwindow2.clientWidth + - + 5}px`;
-                                    testwindow2_2.style.maxHeight = `${testwindow2.clientHeight + - + 25}px`;
-                                    testwindow2_2.style.width = "100%";
-                                    testwindow2_2.style.height = "100%";
-                                    testwindow2_2.style.left = "0"
-                                }
+                                testwindow2_2.style.width = "100%";
+                                testwindow2_2.style.height = "100%";
+                                testwindow2_2.style.maxWidth = `${testwindow2.clientWidth}px`;
+                                testwindow2_2.style.maxHeight = `${testwindow2.clientHeight + - + 25}px`;
+                                testwindow2_2.style.left = "0"
                             })
                         });
-
                     }, 0);
 
                     dropArea.appendChild(windowDiv);
@@ -8236,21 +7767,19 @@ if (ua.includes("mobile")) {
     const targetNodes = document.querySelectorAll('.child_windows');
     const config = { attributes: true, childList: true, subtree: true };
     let previousActiveCount = 0;
-    const callback = function (mutationsList, observer) {
-        let currentActiveCount = 0;
-        targetNodes.forEach(node => {
-            if (node.classList.contains('active')) {
-                currentActiveCount++;
-            }
-        });
+
+    const callback = function () {
+        const currentActiveCount = Array.from(targetNodes).filter(node => node.classList.contains('active')).length;
         if (currentActiveCount !== previousActiveCount) {
             previousActiveCount = currentActiveCount;
-            zindexwindow_addnavy()
-            startmenu_close()
+            zindexwindow_addnavy();
+            startmenu_close();
         }
     };
+
     const observer = new MutationObserver(callback);
     targetNodes.forEach(node => observer.observe(node, config));
+
 
     navigator.getBattery().then((battery) => {
         function updateChargeInfo() {
