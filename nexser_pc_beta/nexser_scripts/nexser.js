@@ -115,7 +115,6 @@ if (ua.includes("mobile")) {
                     document.querySelector('.file_border2').classList.remove('file_border');
                 }
             })
-
         }
 
 
@@ -503,16 +502,6 @@ if (ua.includes("mobile")) {
         }
         if (localStorage.getItem('saver3')) {
             saver3()
-        }
-
-        if (localStorage.getItem('backcolor_blackwhite')) {
-            document.getElementById('nex').style.filter = "grayscale(100%)";
-        }
-        if (localStorage.getItem('backcolor_invert')) {
-            document.getElementById('nex').style.filter = "invert(100%)";
-        }
-        if (localStorage.getItem('backcolor_hue')) {
-            document.getElementById('nex').style.filter = "hue-rotate(100deg)";
         }
 
         if (localStorage.getItem('taskbar_autohide')) {
@@ -2613,7 +2602,6 @@ if (ua.includes("mobile")) {
                 prompt_text2.style.color = "red";
                 break;
         }
-
         titlecolor_set()
     }
 
@@ -2933,11 +2921,11 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.minscreen_button').forEach(addMinScreenButtonListeners);
     observeNewElements2();
 
-    function window_animation_true(window_animation) {
-        localStorage.setItem('window_animation', window_animation)
+    function window_animation_true() {
+        localStorage.setItem('window_animation', true);
     }
     function window_animation_false() {
-        localStorage.removeItem('window_animation')
+        localStorage.removeItem('window_animation');
     }
 
     function allwindow_min() {
@@ -3052,7 +3040,6 @@ if (ua.includes("mobile")) {
             }
             setTimeout(() => {
                 windowleft.style.transition = "";
-
                 titlecolor_set()
             }, 150);
 
@@ -3105,7 +3092,6 @@ if (ua.includes("mobile")) {
             }
             setTimeout(() => {
                 windowright.style.transition = "";
-
                 titlecolor_set()
             }, 150);
 
@@ -3203,33 +3189,29 @@ if (ua.includes("mobile")) {
         });
     })
 
-    document.querySelectorAll('.parent_list').forEach(function (parent_list) {
-        parent_list.addEventListener('mouseover', function () {
-            let parentlist = parent_list.lastElementChild;
-            parentlist.style.display = "flex"
-            document.querySelectorAll('.windowtool_child').forEach(function (windowtool_child) {
-                windowtool_child.style.display = "none"
-            })
-            document.querySelectorAll('.parent_list').forEach(function (c_list) {
-                c_list.addEventListener('mouseleave', function () {
-                    document.querySelectorAll('.child_list', '.active').forEach(function (cb_list) {
+    document.querySelectorAll('.parent_list').forEach(parent_list => {
+        parent_list.addEventListener('mouseover', () => {
+            const parentlist = parent_list.lastElementChild;
+            parentlist.style.display = "flex";
+            document.querySelectorAll('.windowtool_child').forEach(windowtool_child => {
+                windowtool_child.style.display = "none";
+            });
+            document.querySelectorAll('.parent_list').forEach(c_list => {
+                c_list.addEventListener('mouseleave', () => {
+                    document.querySelectorAll('.child_list').forEach(cb_list => {
                         cb_list.style.display = "none";
-                    })
-                })
-            })
-        })
-    })
+                    });
+                });
+            });
+        });
+    });
 
-    document.querySelectorAll('.windowtool_parent').forEach(function (windowtool_parent) {
-        windowtool_parent.addEventListener('click', function () {
-            let parentlist = windowtool_parent.lastElementChild;
-            if (parentlist.style.display == "block") {
-                parentlist.style.display = "none"
-            } else {
-                parentlist.style.display = "block"
-            }
-        })
-    })
+    document.querySelectorAll('.windowtool_parent').forEach(windowtool_parent => {
+        windowtool_parent.addEventListener('click', () => {
+            const parentlist = windowtool_parent.lastElementChild;
+            parentlist.style.display = (parentlist.style.display === "block") ? "none" : "block";
+        });
+    });
 
     document.querySelectorAll('.allwindow_toolbar').forEach(function (allwindow_toolbar) {
         allwindow_toolbar.addEventListener('click', function () {
@@ -3254,128 +3236,91 @@ if (ua.includes("mobile")) {
         })
     })
 
-
-    document.querySelectorAll('.clockdata_analog').forEach(function (clockdata_analog) {
-        clockdata_analog.addEventListener('click', function () {
-            localStorage.setItem('clockdata_analog', clockdata_analog)
+    document.querySelectorAll('.clockdata_analog').forEach(clockdata_analog => {
+        clockdata_analog.addEventListener('click', () => {
+            localStorage.setItem('clockdata_analog', clockdata_analog);
             document.getElementsByClassName('digital_clock_area')[0].style.display = "none";
-            document.getElementsByClassName('analog_clock_area')[0].style.display = "block"
-        })
-    })
-    document.querySelectorAll('.clockdata_digital').forEach(function (clockdata_digital) {
-        clockdata_digital.addEventListener('click', function () {
-            localStorage.removeItem('clockdata_analog')
+            document.getElementsByClassName('analog_clock_area')[0].style.display = "block";
+        });
+    });
+    document.querySelectorAll('.clockdata_digital').forEach(clockdata_digital => {
+        clockdata_digital.addEventListener('click', () => {
+            localStorage.removeItem('clockdata_analog');
             document.getElementsByClassName('digital_clock_area')[0].style.display = "flex";
-            document.getElementsByClassName('analog_clock_area')[0].style.display = "none"
-        })
-    })
+            document.getElementsByClassName('analog_clock_area')[0].style.display = "none";
+        });
+    });
 
-    document.querySelectorAll('.title, .drag_button').forEach(function (title) {
-        title.addEventListener('mousedown', function () {
-            setTimeout(() => {
-                titlecolor_set()
-            }, 100);
-        })
+    Array.from(document.getElementsByClassName('desktop_files')).forEach(desktop_files => {
+        desktop_files.addEventListener('mousedown', () => {
+            Array.from(document.getElementsByClassName('desktop_files')).forEach(df1 => {
+                df1.firstElementChild.classList.remove('file_select');
+            });
+        });
+        desktop_files.addEventListener('click', () => {
+            desktop_files.firstElementChild.classList.add('file_select');
+        });
+    });
 
-    })
-
-
-    Array.from(document.getElementsByClassName('desktop_files')).forEach((desktop_files) => {
-        desktop_files.addEventListener('mousedown', function () {
-            Array.from(document.getElementsByClassName('desktop_files')).forEach((df1) => {
-                const file10 = df1.firstElementChild;
-                file10.classList.remove('file_select');
-            })
-        })
-        desktop_files.addEventListener('click', function () {
-            const file10 = desktop_files.firstElementChild;
-            file10.classList.add('file_select');
-        })
-    })
-
-    document.querySelectorAll('.parent_start_menu_lists').forEach(function (parent_startmenu_lists) {
-        parent_startmenu_lists.addEventListener('mouseover', function () {
-            let parentstartmenulists = parent_startmenu_lists.lastElementChild;
-            parentstartmenulists.style.display = "block"
-        })
-        parent_startmenu_lists.addEventListener('mouseleave', function () {
-            document.querySelectorAll('.child_start_menu_lists').forEach(function (child_startmenu_lists) {
+    document.querySelectorAll('.parent_start_menu_lists').forEach(parent_startmenu_lists => {
+        parent_startmenu_lists.addEventListener('mouseover', () => {
+            parent_startmenu_lists.lastElementChild.style.display = "block";
+        });
+        parent_startmenu_lists.addEventListener('mouseleave', () => {
+            document.querySelectorAll('.child_start_menu_lists, .child_start_menu_lists2, .child_start_menu_lists3').forEach(child_startmenu_lists => {
                 child_startmenu_lists.style.display = "none";
-            })
-            document.querySelectorAll('.child_start_menu_lists2').forEach(function (child_startmenu_lists) {
-                child_startmenu_lists.style.display = "none";
-            })
-            document.querySelectorAll('.child_start_menu_lists3').forEach(function (child_startmenu_lists) {
-                child_startmenu_lists.style.display = "none";
-            })
-        })
-    })
-
-    document.querySelectorAll('.child_start_menu_lists').forEach(function (child_startmenu_lists) {
-        child_startmenu_lists.addEventListener('mouseover', function () {
-            let childstartmenulists = child_startmenu_lists.lastElementChild;
-            childstartmenulists.style.display = "block"
-        })
-
-        child_startmenu_lists.addEventListener('mouseleave', function () {
-            document.querySelectorAll('.child_start_menu_lists').forEach(function (child_startmenu_lists2) {
+            });
+        });
+    });
+    document.querySelectorAll('.child_start_menu_lists').forEach(child_startmenu_lists => {
+        child_startmenu_lists.addEventListener('mouseover', () => {
+            child_startmenu_lists.lastElementChild.style.display = "block";
+        });
+        child_startmenu_lists.addEventListener('mouseleave', () => {
+            document.querySelectorAll('.child_start_menu_lists, .child_start_menu_lists2').forEach(child_startmenu_lists2 => {
                 child_startmenu_lists2.style.display = "none";
-            })
-            document.querySelectorAll('.child_start_menu_lists2').forEach(function (child_startmenu_lists2) {
+            });
+        });
+    });
+    document.querySelectorAll('.child_start_menu_lists2').forEach(child_startmenu_lists => {
+        child_startmenu_lists.addEventListener('mouseover', () => {
+            child_startmenu_lists.lastElementChild.style.display = "block";
+        });
+        child_startmenu_lists.addEventListener('mouseleave', () => {
+            document.querySelectorAll('.child_start_menu_lists, .child_start_menu_lists2, .child_start_menu_lists3').forEach(child_startmenu_lists2 => {
                 child_startmenu_lists2.style.display = "none";
-            })
-        })
-    })
+            });
+        });
+    });
 
-    document.querySelectorAll('.child_start_menu_lists2').forEach(function (child_startmenu_lists) {
-        child_startmenu_lists.addEventListener('mouseover', function () {
-            let childstartmenulists = child_startmenu_lists.lastElementChild;
-            childstartmenulists.style.display = "block"
-        })
-
-        child_startmenu_lists.addEventListener('mouseleave', function () {
-            document.querySelectorAll('.child_start_menu_lists').forEach(function (child_startmenu_lists2) {
-                child_startmenu_lists2.style.display = "none";
-            })
-            document.querySelectorAll('.child_start_menu_lists2').forEach(function (child_startmenu_lists2) {
-                child_startmenu_lists2.style.display = "none";
-            })
-            document.querySelectorAll('.child_start_menu_lists3').forEach(function (child_startmenu_lists2) {
-                child_startmenu_lists2.style.display = "none";
-            })
-        })
-    })
-
-    document.querySelectorAll('.window_inline_menus_parent').forEach(function (parent_list) {
-        parent_list.addEventListener('mousedown', function () {
-            document.querySelectorAll('.menuparent1').forEach(function (menuparent1) {
-                menuparent1.classList.remove('menuparent1')
-            })
-            document.querySelectorAll('.menuchild1').forEach(function (menuchild1) {
-                menuchild1.classList.remove('menuchild1')
-            })
-
-            document.querySelectorAll('.window_inline_menus_parent').forEach(function (parent_list2) {
+    document.querySelectorAll('.window_inline_menus_parent').forEach(parent_list => {
+        parent_list.addEventListener('mousedown', () => {
+            document.querySelectorAll('.menuparent1').forEach(menuparent1 => {
+                menuparent1.classList.remove('menuparent1');
+            });
+            document.querySelectorAll('.menuchild1').forEach(menuchild1 => {
+                menuchild1.classList.remove('menuchild1');
+            });
+            document.querySelectorAll('.window_inline_menus_parent').forEach(parent_list2 => {
                 parent_list2.classList.remove('select');
-            })
+            });
             parent_list.classList.add('select');
 
-            document.querySelectorAll('.window_inline_menus_parent').forEach(function (parent_list3) {
+            document.querySelectorAll('.window_inline_menus_parent').forEach(parent_list3 => {
                 const menus_child = parent_list3.lastElementChild;
-                menus_child.style.display = "none"
-            })
-        })
-    })
-    document.querySelectorAll('.window_inline_menus_parent').forEach(function (parent_list4) {
-        parent_list4.addEventListener('mousedown', function () {
+                menus_child.style.display = "none";
+            });
+        });
+    });
+    document.querySelectorAll('.window_inline_menus_parent').forEach(parent_list4 => {
+        parent_list4.addEventListener('mousedown', () => {
             const menus_child2 = parent_list4.lastElementChild;
-            menus_child2.style.display = "block"
-        })
-    })
-
-    document.querySelectorAll('.menuchild1').forEach(function (menuchild1) {
-        menuchild1.style.display = "block"
-    })
+            menus_child2.style.display = "block";
+        });
+    });
+    document.querySelectorAll('.menuchild1').forEach(menuchild1 => {
+        menuchild1.style.display = "block";
+    });
 
     function window_back_silver() {
         Array.from(document.getElementsByClassName('back_silver')).forEach((back_silver) => {
@@ -3425,24 +3370,23 @@ if (ua.includes("mobile")) {
         })
     })
 
-    document.querySelectorAll('.window_prompt, .child').forEach(function (window_prompt) {
-        window_prompt.addEventListener('mouseup', function () {
-            document.querySelector('.focus2').focus()
+    document.querySelectorAll('.window_prompt, .child').forEach(window_prompt => {
+        window_prompt.addEventListener('mouseup', () => {
+            document.querySelector('.focus2').focus();
         });
-    })
+    });
 
     function alltitle_navyreomve() {
-        document.querySelectorAll('.title').forEach(function (wt) {
-            wt.classList.remove('navy')
-        })
+        document.querySelectorAll('.title').forEach(wt => {
+            wt.classList.remove('navy');
+        });
     }
 
-    document.querySelectorAll('.nexser_search').forEach(function (nexser_search) {
-        nexser_search.addEventListener('click', function () {
+    document.querySelectorAll('.nexser_search').forEach(nexser_search => {
+        nexser_search.addEventListener('click', () => {
             nexser_search_menu.classList.toggle('active');
             nexser_search_menu.style.zIndex = largestZIndex++;
-
-        });
+        })
     });
 
     function nexser_search() {
@@ -3470,42 +3414,36 @@ if (ua.includes("mobile")) {
         nexser_guidebook.addEventListener('click', () => {
             nexser_guidebook_menu.classList.toggle('active');
             nexser_guidebook_menu.style.zIndex = largestZIndex++;
-
         })
     );
     document.querySelectorAll('.guidebook_window').forEach(guidebook_window =>
         guidebook_window.addEventListener('click', () => {
             guidebook_window_menu.classList.toggle('active');
             guidebook_window_menu.style.zIndex = largestZIndex++;
-
         })
     );
     document.querySelectorAll('.guidebook_file').forEach(guidebook_file =>
         guidebook_file.addEventListener('click', () => {
             guidebook_file_menu.classList.toggle('active');
             guidebook_file_menu.style.zIndex = largestZIndex++;
-
         })
     );
     document.querySelectorAll('.guidebook_taskbar').forEach(guidebook_taskbar =>
         guidebook_taskbar.addEventListener('click', () => {
             guidebook_taskbar_menu.classList.toggle('active');
             guidebook_taskbar_menu.style.zIndex = largestZIndex++;
-
         })
     );
     document.querySelectorAll('.passmenu_button').forEach(passmenu_button =>
         passmenu_button.addEventListener('click', () => {
             password_menu.classList.toggle('active');
             password_menu.style.zIndex = largestZIndex++;
-
         })
     );
     document.querySelectorAll('.localstorage_details').forEach(localstorage_details =>
         localstorage_details.addEventListener('click', () => {
             localstorage_details_menu.classList.toggle('active');
             localstorage_details_menu.style.zIndex = largestZIndex++;
-
         })
     );
 
@@ -3513,7 +3451,6 @@ if (ua.includes("mobile")) {
         testbtn.addEventListener('click', () => {
             console_error_menu.classList.toggle('active');
             console_error_menu.style.zIndex = largestZIndex++;
-
         })
     );
 
@@ -3521,7 +3458,6 @@ if (ua.includes("mobile")) {
         testbtn.addEventListener('click', () => {
             kakeibo_menu.classList.toggle('active');
             kakeibo_menu.style.zIndex = largestZIndex++;
-
         })
     );
 
@@ -3535,77 +3471,66 @@ if (ua.includes("mobile")) {
         testbtn.addEventListener('click', () => {
             my_computer.classList.toggle('active');
             my_computer.style.zIndex = largestZIndex++;
-
         })
     );
     document.querySelectorAll('.test_button3').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             control.classList.toggle('active');
             control.style.zIndex = largestZIndex++;
-
         })
     );
     document.querySelectorAll('.test_button4').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             color_menu.classList.toggle('active');
             color_menu.style.zIndex = largestZIndex++;
-
         })
     );
     document.querySelectorAll('.test_button5').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             system_menu.classList.toggle('active');
             system_menu.style.zIndex = largestZIndex++;
-
         })
     );
     document.querySelectorAll('.test_button6').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             window_prompt.classList.toggle('active');
             window_prompt.style.zIndex = largestZIndex++;
-
         })
     );
     document.querySelectorAll('.test_button7').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             clock_menu.classList.toggle('active');
             clock_menu.style.zIndex = largestZIndex++;
-
         })
     );
     document.querySelectorAll('.test_button8').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             sound_menu.classList.toggle('active');
             sound_menu.style.zIndex = largestZIndex++;
-
         })
     );
     document.querySelectorAll('.test_button9').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             driver_menu.classList.toggle('active');
             driver_menu.style.zIndex = largestZIndex++;
-
         })
     );
     document.querySelectorAll('.test_button10').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             mouse_menu.classList.toggle('active');
             mouse_menu.style.zIndex = largestZIndex++;
-
         })
     );
     document.querySelectorAll('.test_button11').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             screen_text_menu.classList.toggle('active');
             screen_text_menu.style.zIndex = largestZIndex++;
-
         })
     );
     document.querySelectorAll('.test_button12').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             note_pad.classList.toggle('active');
             note_pad.style.zIndex = largestZIndex++;
-
             resizeTextarea()
         })
     );
@@ -3613,42 +3538,36 @@ if (ua.includes("mobile")) {
         testbtn.addEventListener('click', () => {
             text_drop_menu.classList.toggle('active');
             text_drop_menu.style.zIndex = largestZIndex++;
-
         })
     );
     document.querySelectorAll('.test_button14').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             windowmode_menu.classList.toggle('active');
             windowmode_menu.style.zIndex = largestZIndex++;
-
         })
     );
     document.querySelectorAll('.test_button15').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             accessory_menu.classList.toggle('active');
             accessory_menu.style.zIndex = largestZIndex++;
-
         })
     );
     document.querySelectorAll('.test_button16').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             calc_menu.classList.toggle('active');
             calc_menu.style.zIndex = largestZIndex++;
-
         })
     );
     document.querySelectorAll('.test_button17').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             nexser_sound_menu.classList.toggle('active');
             nexser_sound_menu.style.zIndex = largestZIndex++;
-
         })
     );
     document.querySelectorAll('.test_button18').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             camera_menu.classList.toggle('active');
             camera_menu.style.zIndex = largestZIndex++;
-
             cameraframe_resize()
         })
     );
@@ -3656,63 +3575,54 @@ if (ua.includes("mobile")) {
         testbtn.addEventListener('click', () => {
             htmlviewer_edit_menu.classList.toggle('active');
             htmlviewer_edit_menu.style.zIndex = largestZIndex++;
-
         })
     );
     document.querySelectorAll('.test_button20').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             htmlviewer_run_menu.classList.toggle('active');
             htmlviewer_run_menu.style.zIndex = largestZIndex++;
-
         })
     );
     document.querySelectorAll('.test_button21').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             uploadvideo_menu.classList.toggle('active');
             uploadvideo_menu.style.zIndex = largestZIndex++;
-
         })
     );
     document.querySelectorAll('.test_button22').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             font_menu.classList.toggle('active');
             font_menu.style.zIndex = largestZIndex++;
-
         })
     );
     document.querySelectorAll('.test_button23').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             file_setting_menu.classList.toggle('active');
             file_setting_menu.style.zIndex = largestZIndex++;
-
         })
     );
     document.querySelectorAll('.test_button24').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             debug_menu.classList.toggle('active');
             debug_menu.style.zIndex = largestZIndex++;
-
         })
     );
     document.querySelectorAll('.test_button25').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             file_download_menu.classList.toggle('active');
             file_download_menu.style.zIndex = largestZIndex++;
-
         })
     );
     document.querySelectorAll('.test_button26').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             display_menu.classList.toggle('active');
             display_menu.style.zIndex = largestZIndex++;
-
         })
     );
     document.querySelectorAll('.test_button27').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             stopwatch_menu.classList.toggle('active');
             stopwatch_menu.style.zIndex = largestZIndex++;
-
             timerreset()
         })
     );
@@ -3720,14 +3630,12 @@ if (ua.includes("mobile")) {
         testbtn.addEventListener('click', () => {
             comment_menu.classList.toggle('active');
             comment_menu.style.zIndex = largestZIndex++;
-
         })
     );
     document.querySelectorAll('.test_button30').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             objective_menu.classList.toggle('active');
             objective_menu.style.zIndex = largestZIndex++;
-
             objective_resize()
         })
     );
@@ -3735,7 +3643,6 @@ if (ua.includes("mobile")) {
         testbtn.addEventListener('click', () => {
             calendar_menu.classList.toggle('active');
             calendar_menu.style.zIndex = largestZIndex++;
-
         })
     );
     document.querySelectorAll('.test_button32').forEach(testbtn =>
@@ -3749,21 +3656,18 @@ if (ua.includes("mobile")) {
         testbtn.addEventListener('click', () => {
             browser_menu.classList.toggle('active');
             browser_menu.style.zIndex = largestZIndex++;
-
         })
     );
     document.querySelectorAll('.test_button35').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             taskbar_setting_menu.classList.toggle('active');
             taskbar_setting_menu.style.zIndex = largestZIndex++;
-
         })
     );
     document.querySelectorAll('.test_button36').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             youtubevideo_menu.classList.toggle('active');
             youtubevideo_menu.style.zIndex = largestZIndex++;
-
             youtubeframe_resize()
         })
     );
@@ -3771,35 +3675,30 @@ if (ua.includes("mobile")) {
         testbtn.addEventListener('click', () => {
             device_menu.classList.toggle('active');
             device_menu.style.zIndex = largestZIndex++;
-
         })
     );
     document.querySelectorAll('.test_button38').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             omikuji_menu.classList.toggle('active');
             omikuji_menu.style.zIndex = largestZIndex++;
-
         })
     );
     document.querySelectorAll('.test_button39').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             localstorage_monitor_menu.classList.toggle('active');
             localstorage_monitor_menu.style.zIndex = largestZIndex++;
-
         })
     );
     document.querySelectorAll('.test_button40').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             paint_menu.classList.toggle('active');
             paint_menu.style.zIndex = largestZIndex++;
-
         })
     );
     document.querySelectorAll('.test_button42').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             nexser_files_menu.classList.toggle('active');
             nexser_files_menu.style.zIndex = largestZIndex++;
-
             setTimeout(() => {
                 nexser_files_output_remove()
                 nexser_files_windowload()
@@ -3810,7 +3709,6 @@ if (ua.includes("mobile")) {
         testbtn.addEventListener('click', () => {
             url_drop_menu.classList.toggle('active');
             url_drop_menu.style.zIndex = largestZIndex++;
-
             url_drop_resize()
         })
     );
@@ -3818,7 +3716,6 @@ if (ua.includes("mobile")) {
         testbtn.addEventListener('click', () => {
             alarm_menu.classList.toggle('active');
             alarm_menu.style.zIndex = largestZIndex++;
-
         })
     );
 
@@ -3840,7 +3737,7 @@ if (ua.includes("mobile")) {
         }
         setTimeout(() => {
             document.getElementsByClassName('focus2')[0].blur()
-        }, 0);
+        }, 100);
     }
 
     function cpubench_reset() {
@@ -3858,31 +3755,26 @@ if (ua.includes("mobile")) {
         testbtn.addEventListener('click', () => {
             tetris_mneu.classList.toggle('active');
             tetris_mneu.style.zIndex = largestZIndex++;
-
         })
     );
     document.querySelectorAll('.test_button34').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             bom_menu.classList.toggle('active');
             bom_menu.style.zIndex = largestZIndex++;
-
         })
     );
     document.querySelectorAll('.test_button41').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             othello_menu.classList.toggle('active');
             othello_menu.style.zIndex = largestZIndex++;
-
         })
     );
     document.querySelectorAll('.test_button44').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             memory_game_menu.classList.toggle('active');
             memory_game_menu.style.zIndex = largestZIndex++;
-
         })
     );
-
 
     // 最前面のz-indexを持つ要素に新しいクラス名を付与する関数
     function assignClassToFrontmostElement(className, newClassName) {
@@ -3928,8 +3820,8 @@ if (ua.includes("mobile")) {
             alltitle_navyreomve();
             assignClassToFrontmostElement('child_windows:not(.active)', 'navy');
             titlecolor_set();
-            document.querySelectorAll('.bigscreen_button').forEach(function (element) {
-                var newChild = document.createElement('div');
+            document.querySelectorAll('.bigscreen_button').forEach(element => {
+                const newChild = document.createElement('div');
                 newChild.className = 'bigscreen_button_child';
                 element.appendChild(newChild);
             });
@@ -3948,7 +3840,6 @@ if (ua.includes("mobile")) {
     };
     note_parent.addEventListener('mousemove', resizeTextarea);
 
-
     const youtubeframe_parent = document.querySelector('.youtubevideo_menu');
     const youtubeframe_child = document.getElementById('youtubeframe');
     const youtubeframe_resize = () => {
@@ -3956,7 +3847,6 @@ if (ua.includes("mobile")) {
         youtubeframe_child.style.height = `${youtubeframe_parent.clientHeight + - + 50}px`;
     };
     youtubeframe_parent.addEventListener('mousemove', youtubeframe_resize);
-
 
     const cameraframe_parent = document.querySelector('.camera_menu');
     const cameraframe_child = document.getElementById('v');
@@ -3966,7 +3856,6 @@ if (ua.includes("mobile")) {
     };
     cameraframe_parent.addEventListener('mousemove', cameraframe_resize);
 
-
     const url_drop_parent = document.querySelector('.url_drop_menu');
     const url_drop_child = document.querySelector('.url_drop_area');
     const url_drop_resize = () => {
@@ -3974,7 +3863,6 @@ if (ua.includes("mobile")) {
         url_drop_child.style.height = `${url_drop_parent.clientHeight + - + 55}px`;
     };
     url_drop_parent.addEventListener('mousemove', url_drop_resize);
-
 
     const objective_parent = document.querySelector('.objective_menu');
     const objective_child = document.querySelector('.objective_area');
@@ -3984,14 +3872,12 @@ if (ua.includes("mobile")) {
     };
     objective_parent.addEventListener('mousemove', objective_resize);
 
-
     const window_prompt_content2 = document.querySelector('.window_prompt_content2');
     const window_prompt_resize = () => {
         window_prompt_content2.style.width = `${window_prompt.clientWidth}px`;
         window_prompt_content2.style.height = `${window_prompt.clientHeight + - + 50}px`;
     };
     window_prompt.addEventListener('mousemove', window_prompt_resize);
-
 
     const shell_parent = document.querySelector('.prompt_shell_menu');
     const shell_child = document.querySelector('#shell');
@@ -4001,7 +3887,6 @@ if (ua.includes("mobile")) {
     };
     shell_parent.addEventListener('mousemove', shell_resize);
 
-
     const test_site_parent = document.querySelector('.test_site_menu');
     const test_site_child = document.querySelector('.site_frame');
     const test_site_resize = () => {
@@ -4009,7 +3894,6 @@ if (ua.includes("mobile")) {
         test_site_child.style.height = `${test_site_parent.clientHeight + - + 30}px`;
     };
     test_site_parent.addEventListener('mousemove', test_site_resize);
-
 
     const background_image_parent = document.getElementById('nexser');
     const background_image_child = document.querySelector('.nexser_background_image');
@@ -4023,8 +3907,6 @@ if (ua.includes("mobile")) {
     };
     resize_background_image();
 
-
-
     const nexser_nextversion_parent = document.querySelector('.nexser_nextversion_menu');
     const nexser_nextversion_child = document.querySelector('.nexser_nextframe');
     const nexser_nextversion_resize = () => {
@@ -4036,8 +3918,6 @@ if (ua.includes("mobile")) {
     };
     nexser_nextversion_parent.addEventListener('mousemove', nexser_nextversion_resize);
 
-
-
     const htmlview_parent = document.querySelector('.htmlviewer_run_menu');
     const htmlview_child = document.querySelector('.html_view');
     const htmlview_resize = () => {
@@ -4048,7 +3928,6 @@ if (ua.includes("mobile")) {
         }
     };
     htmlview_parent.addEventListener('mousemove', htmlview_resize);
-
 
     const htmlview_parent2 = document.querySelector('.htmlviewer_edit_menu');
     const htmlview_child2 = document.querySelector('#editor');
@@ -4187,10 +4066,8 @@ if (ua.includes("mobile")) {
                 }
             });
         });
-
         observer.observe(document.body, { childList: true, subtree: true });
     }
-
     document.querySelectorAll('.drag_button').forEach(addDragButtonListeners);
     observeNewElements3();
 
@@ -4276,27 +4153,26 @@ if (ua.includes("mobile")) {
                 toolbar.style.top = "";
                 toolbar.style.bottom = task + "px";
             }
-
         }
     })
 
-    document.querySelector('.toolbar_on').addEventListener('click', function (toolbar_on) {
-        localStorage.setItem('toolbar_on', toolbar_on);
-        toolbar.style.display = "block"
-    })
-    document.querySelector('.toolbar_off').addEventListener('click', function () {
+    document.querySelector('.toolbar_on').addEventListener('click', () => {
+        localStorage.setItem('toolbar_on', true);
+        toolbar.style.display = "block";
+    });
+    document.querySelector('.toolbar_off').addEventListener('click', () => {
         localStorage.removeItem('toolbar_on');
-        toolbar.style.display = "none"
-    })
+        toolbar.style.display = "none";
+    });
 
-    document.querySelector('.filettext_backcolor_off').addEventListener('click', function (filettext_backcolor_off) {
-        localStorage.setItem('filettext_backcolor_off', filettext_backcolor_off);
-        filettext_backcolor()
-    })
-    document.querySelector('.filettext_backcolor_on').addEventListener('click', function () {
+    document.querySelector('.filettext_backcolor_off').addEventListener('click', () => {
+        localStorage.setItem('filettext_backcolor_off', true);
+        filettext_backcolor();
+    });
+    document.querySelector('.filettext_backcolor_on').addEventListener('click', () => {
         localStorage.removeItem('filettext_backcolor_off');
-        filettext_backcolor()
-    })
+        filettext_backcolor();
+    });
 
     document.querySelector('.saver_on').addEventListener('click', function (saver_on) {
         localStorage.setItem('saver_on', saver_on);
@@ -4307,24 +4183,24 @@ if (ua.includes("mobile")) {
         document.querySelector('.saver_mode').textContent = "OFF"
     })
 
-
-    document.querySelector('.display_old').addEventListener('click', function (display_old) {
-        localStorage.setItem('display_old', display_old);
+    document.querySelector('.display_old').addEventListener('click', () => {
+        localStorage.setItem('display_old', true);
         old_screen();
-    })
-    document.querySelector('.display_now').addEventListener('click', function () {
+    });
+    document.querySelector('.display_now').addEventListener('click', () => {
         localStorage.removeItem('display_old');
         old_screen_reset();
-    })
+    });
 
-    document.querySelector('.list_shadow_on').addEventListener('click', function (list_shadow_on) {
-        localStorage.setItem('list_shadow_on', list_shadow_on);
+    document.querySelector('.list_shadow_on').addEventListener('click', () => {
+        localStorage.setItem('list_shadow_on', true);
         list_shadow();
-    })
-    document.querySelector('.list_shadow_off').addEventListener('click', function () {
+    });
+    document.querySelector('.list_shadow_off').addEventListener('click', () => {
         localStorage.removeItem('list_shadow_on');
         list_shadow_reset();
-    })
+    });
+
 
     const KEY_COLOR = "COLOR";				// 文字色用キー
     const KEY_BKCOLOR = "BKCOLOR";			// 背景色用キー
@@ -4419,25 +4295,28 @@ if (ua.includes("mobile")) {
         }
     });
 
-    document.querySelectorAll('.color_btn').forEach(function (color_btn) {
-        color_btn.addEventListener('click', function () {
+    const colorBtns = document.querySelectorAll('.color_btn');
+    const titles = document.querySelectorAll('.title');
+    const navies = document.querySelectorAll('.navy');
+    const errorText = document.querySelector('.window_error_text');
+    const testAllWindow = document.querySelector('.test_allwindow');
+
+    colorBtns.forEach(color_btn => {
+        color_btn.addEventListener('click', () => {
             titlecolor_remove();
             if (localStorage.getItem('driver_color')) {
                 titlecolor_set();
             } else {
-                document.querySelector('.window_error_text').textContent = "カラードライバーがインストールされていません!"
-                error_windows.classList.remove('active')
-                document.querySelector('.test_allwindow').style.display = "block";
-                sound3()
+                errorText.textContent = "カラードライバーがインストールされていません!";
+                error_windows.classList.remove('active');
+                testAllWindow.style.display = "block";
+                sound3();
             }
-            document.querySelectorAll('.title').forEach(function (title) {
-                title.style.background = "";
-            });
-            document.querySelectorAll('.navy').forEach(function (navy) {
-                navy.style.background = "";
-            });
-        })
+            titles.forEach(title => title.style.background = "");
+            navies.forEach(navy => navy.style.background = "");
+        });
     });
+
 
     function titlecolor_remove() {
         document.querySelectorAll('.title, .navy').forEach(el => el.style.background = "");
@@ -4479,12 +4358,12 @@ if (ua.includes("mobile")) {
         }
     }
 
-    document.querySelectorAll('.pattern_btn').forEach(function (color_btn) {
-        color_btn.addEventListener('click', function () {
+    document.querySelectorAll('.pattern_btn').forEach(color_btn => {
+        color_btn.addEventListener('click', () => {
             back_pattern_remove();
-            wallpaper_allremove()
+            wallpaper_allremove();
         });
-    })
+    });
 
     function back_pattern_remove() {
         document.querySelector('.backgrounds1').style.display = "none";
@@ -6011,51 +5890,49 @@ if (ua.includes("mobile")) {
     }
 
     function backcolorfilter_clear() {
-        localStorage.removeItem("backcolor_blackwhite");
-        localStorage.removeItem("backcolor_invert");
-        localStorage.removeItem("backcolor_hue");
+        localStorage.removeItem("backcolor_filter");
         document.getElementById('nex').style.filter = "";
     }
-
-    function color_bw(backcolor_blackwhite) {
-        backcolorfilter_clear()
-        document.getElementById('nex').style.filter = "grayscale(100%)";
-        localStorage.setItem("backcolor_blackwhite", backcolor_blackwhite);
+    function applyFilter(filterType, filterValue) {
+        backcolorfilter_clear();
+        document.getElementById('nex').style.filter = filterValue;
+        localStorage.setItem("backcolor_filter", filterType);
     }
+    function color_bw() { applyFilter("blackwhite", "grayscale(100%)"); }
+    function color_invert() { applyFilter("invert", "invert(100%)"); }
+    function color_hue() { applyFilter("hue", "hue-rotate(100deg)"); }
+    window.onload = function () {
+        const filterType = localStorage.getItem("backcolor_filter");
+        const filters = {
+            "blackwhite": "grayscale(100%)",
+            "invert": "invert(100%)",
+            "hue": "hue-rotate(100deg)"
+        };
+        if (filterType && filters[filterType]) {
+            document.getElementById('nex').style.filter = filters[filterType];
+        }
+    };
 
-    function color_invert(backcolor_invert) {
-        backcolorfilter_clear()
-        document.getElementById('nex').style.filter = "invert(100%)";
-        localStorage.setItem("backcolor_invert", backcolor_invert);
+    function toggleShadow(action) {
+        document.querySelectorAll('.child_list, .sample_child_list').forEach(function (childlist_shadow) {
+            let childlist_shadow2 = childlist_shadow.lastElementChild;
+            if (action === 'add') {
+                childlist_shadow2.classList.add('shadow');
+            } else if (action === 'remove') {
+                childlist_shadow2.classList.remove('shadow');
+            }
+        });
     }
-
-    function color_hue(backcolor_hue) {
-        backcolorfilter_clear()
-        document.getElementById('nex').style.filter = "hue-rotate(100deg)";
-        localStorage.setItem("backcolor_hue", backcolor_hue);
-    }
-    // list_shadow()
 
     function list_shadow() {
-        document.querySelectorAll('.child_list').forEach(function (childlist_shadow) {
-            let childlist_shadow2 = childlist_shadow.lastElementChild;
-            childlist_shadow2.classList.add('shadow');
-        })
-        document.querySelectorAll('.sample_child_list').forEach(function (childlist_shadow) {
-            let childlist_shadow2 = childlist_shadow.lastElementChild;
-            childlist_shadow2.classList.add('shadow');
-        })
+        toggleShadow('add');
     }
+
     function list_shadow_reset() {
-        document.querySelectorAll('.child_list').forEach(function (childlist_shadow) {
-            let childlist_shadow2 = childlist_shadow.lastElementChild;
-            childlist_shadow2.classList.remove('shadow');
-        })
-        document.querySelectorAll('.sample_child_list').forEach(function (childlist_shadow) {
-            let childlist_shadow2 = childlist_shadow.lastElementChild;
-            childlist_shadow2.classList.remove('shadow');
-        })
+        toggleShadow('remove');
     }
+
+
 
     function taskheight_submit() {
         let taskvalue = document.getElementsByClassName('taskbar_height_value')[0].value;
