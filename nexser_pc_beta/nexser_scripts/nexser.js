@@ -145,6 +145,12 @@ if (ua.includes("mobile")) {
             document.querySelector('.sit_button').classList.remove('pressed');
         }
 
+        var isClickInsideStartButton7 = Array.from(document.querySelectorAll('.child_windows,.child')).some(button => button.contains(e.target));
+        if (!isClickInsideStartButton7) {
+            alltitle_navyreomve();
+            titlecolor_set();
+        }
+
         if (desktop.style.display == "block") {
             startX = e.clientX;
             startY = e.clientY;
@@ -640,55 +646,47 @@ if (ua.includes("mobile")) {
             document.querySelector('.battery_menu').style.display = "block";
         }
     })
-    document.getElementById('files').addEventListener('mousedown', function () {
-        alltitle_navyreomve();
-        titlecolor_set();
-    });
-    document.getElementById('files').addEventListener('click', function () {
-        titlecolor_set();
-    });
-    document.getElementById('taskbar').addEventListener('click', function () {
-        titlecolor_set();
-    });
-    document.getElementById('taskbar').addEventListener('mousedown', function () {
-        alltitle_navyreomve();
-        titlecolor_set();
-    });
     document.querySelector('.taskbar_buttons, .child').addEventListener('mousedown', function () {
         getLargestZIndex('.child_windows');
         z_index.textContent = getLargestZIndex('.child_windows');
     });
 
-    Array.from(document.getElementsByClassName('button')).forEach((button) => {
-        button.addEventListener('click', () => {
-            let tscbtn = button.firstChild;
-            tscbtn = button.classList.toggle('pressed');
-        });
-    });
 
-    Array.from(document.getElementsByClassName('button2')).forEach((button2) => {
-        button2.addEventListener('mousedown', () => {
-            button2.classList.add('pressed');
-        });
-        button2.addEventListener('mouseleave', () => {
-            button2.classList.remove('pressed');
-        });
-        button2.addEventListener('mouseup', () => {
-            button2.classList.remove('pressed');
+    function addButtonListeners(button_1) {
+        button_1.addEventListener('mousedown', () => button_1.classList.add('pressed'));
+        button_1.addEventListener('mouseleave', () => button_1.classList.remove('pressed'));
+        button_1.addEventListener('mouseup', () => button_1.classList.remove('pressed'));
+    }
+    const observer_btn1 = new MutationObserver(mutations_1 => {
+        mutations_1.forEach(mutation_1 => {
+            if (mutation_1.type === 'childList') {
+                mutation_1.addedNodes.forEach(node_1 => {
+                    if (node_1.nodeType === 1 && node_1.classList.contains('button2')) {
+                        addButtonListeners(node_1);
+                    }
+                });
+            }
         });
     });
+    observer_btn1.observe(document.body, { childList: true, subtree: true });
 
-    Array.from(document.getElementsByClassName('task_buttons')).forEach((button2) => {
-        button2.addEventListener('mousedown', () => {
-            button2.classList.add('pressed');
-        });
-        button2.addEventListener('mouseleave', () => {
-            button2.classList.remove('pressed');
-        });
-        button2.addEventListener('mouseup', () => {
-            button2.classList.remove('pressed');
+
+    function addButtonListeners2(button_2) {
+        button_2.addEventListener('click', () => button_2.classList.toggle('pressed'));
+    }
+    const observer_btn2 = new MutationObserver(mutations_2 => {
+        mutations_2.forEach(mutation_2 => {
+            if (mutation_2.type === 'childList') {
+                mutation_2.addedNodes.forEach(node_2 => {
+                    if (node_2.nodeType === 1 && node_2.classList.contains('button')) {
+                        addButtonListeners2(node_2);
+                    }
+                });
+            }
         });
     });
+    observer_btn2.observe(document.body, { childList: true, subtree: true });
+
 
     document.querySelector('.deskprompt').addEventListener('click', function (deskprompt) {
         localStorage.setItem('deskprompt', deskprompt);
@@ -3256,11 +3254,6 @@ if (ua.includes("mobile")) {
         })
     })
 
-    toolbar.addEventListener('mousedown', function () {
-        alltitle_navyreomve();
-        titlecolor_set();
-    })
-
 
     document.querySelectorAll('.clockdata_analog').forEach(function (clockdata_analog) {
         clockdata_analog.addEventListener('click', function () {
@@ -3935,6 +3928,11 @@ if (ua.includes("mobile")) {
             alltitle_navyreomve();
             assignClassToFrontmostElement('child_windows:not(.active)', 'navy');
             titlecolor_set();
+            document.querySelectorAll('.bigscreen_button').forEach(function (element) {
+                var newChild = document.createElement('div');
+                newChild.className = 'bigscreen_button_child';
+                element.appendChild(newChild);
+            });
         }, 0);
     }
 
@@ -5552,8 +5550,10 @@ if (ua.includes("mobile")) {
 
     Array.from(document.getElementsByClassName('window_files')).forEach((window_files) => {
         window_files.addEventListener('mousedown', function () {
-            document.querySelector('.file_border').classList.add('file_border2')
-            document.querySelector('.file_border2').classList.remove('file_border')
+            if (window_files.classList.contains('file_border')) {
+                document.querySelector('.file_border').classList.add('file_border2')
+                document.querySelector('.file_border2').classList.remove('file_border')
+            }
         })
         window_files.addEventListener('click', function () {
             Array.from(document.getElementsByClassName('window_files')).forEach((window_files2) => {
@@ -6995,19 +6995,6 @@ if (ua.includes("mobile")) {
         pass_signin_menu.style.transform = "translate(-50%, -50%)";
     }
 
-    document.querySelectorAll('.bigscreen_button').forEach(function (element) {
-        var newChild = document.createElement('div');
-        newChild.className = 'bigscreen_button_child';
-        element.appendChild(newChild);
-    });
-
-
-
-
-
-
-
-
     document.addEventListener('DOMContentLoaded', function () {
         // クラス名が "parent" の要素をすべて取得
         var parents = document.querySelectorAll('.parentss');
@@ -7069,16 +7056,6 @@ if (ua.includes("mobile")) {
             taskbar_b.appendChild(button);
 
             button.addEventListener('click', () => toggleWindow(windowElement));
-
-            button.addEventListener('mousedown', () => {
-                button.classList.add('pressed');
-            });
-            button.addEventListener('mouseleave', () => {
-                button.classList.remove('pressed');
-            });
-            button.addEventListener('mouseup', () => {
-                button.classList.remove('pressed');
-            });
         });
     };
 
@@ -7120,7 +7097,6 @@ if (ua.includes("mobile")) {
 
                     const newChild = document.createElement('div');
                     newChild.className = "title"
-                    newChild.classList.add('testwindow_title');
                     windowDiv.appendChild(newChild);
 
                     const newChild2 = document.createElement('span');
@@ -7138,7 +7114,7 @@ if (ua.includes("mobile")) {
 
                     const newChild4_4 = document.createElement('span');
                     newChild4_4.className = "drag_button"
-                    newChild4_4.innerHTML = "&emsp;"
+                    newChild4_4.innerHTML = "&nbsp;"
                     newChild3.appendChild(newChild4_4);
 
                     const newChild4 = document.createElement('span');
@@ -7169,7 +7145,6 @@ if (ua.includes("mobile")) {
                         windowDiv.classList.add('no_create_windows');
                     }, 100);
 
-
                     if (file.type.startsWith('image/')) {
                         windowDiv.classList.add('selectwindows');
                         const img = document.createElement('img');
@@ -7179,7 +7154,6 @@ if (ua.includes("mobile")) {
                         newChild6.appendChild(img);
                         setTimeout(() => {
                             test_windows_button()
-                            titlecolor_set()
                         }, 100);
                     } else if (file.type.startsWith('video/')) {
                         windowDiv.classList.add('selectwindows');
@@ -7190,7 +7164,6 @@ if (ua.includes("mobile")) {
                         newChild6.appendChild(video);
                         setTimeout(() => {
                             test_windows_button()
-                            titlecolor_set()
                         }, 1000);
                     } else if (file.type === 'application/pdf') {
                         windowDiv.classList.add('selectwindows');
@@ -7200,7 +7173,6 @@ if (ua.includes("mobile")) {
                         newChild6.appendChild(iframe);
                         setTimeout(() => {
                             test_windows_button()
-                            titlecolor_set()
                         }, 100);
                     } else if (file.type.startsWith('text/')) {
                         windowDiv.classList.add('selectwindows');
@@ -7210,7 +7182,6 @@ if (ua.includes("mobile")) {
                         newChild6.appendChild(text);
                         setTimeout(() => {
                             test_windows_button()
-                            titlecolor_set()
                         }, 100);
                     } else {
                         const unsupported = document.createElement('p');
@@ -7219,7 +7190,6 @@ if (ua.includes("mobile")) {
                         newChild6.appendChild(unsupported);
                         setTimeout(() => {
                             test_windows_button()
-                            titlecolor_set()
                         }, 100);
                     }
 
@@ -7234,32 +7204,12 @@ if (ua.includes("mobile")) {
                             testwindow2.style.height = "400px"
                         })
 
-                        Array.from(document.getElementsByClassName('button2')).forEach((button2) => {
-                            button2.addEventListener('mousedown', () => {
-                                button2.classList.add('pressed');
-                            });
-                            button2.addEventListener('mouseleave', () => {
-                                button2.classList.remove('pressed');
-                            });
-                            button2.addEventListener('mouseup', () => {
-                                button2.classList.remove('pressed');
-                            });
-                        });
-                        newChild4.addEventListener('mousedown', () => {
-                            newChild4.classList.add('pressed');
-                        });
-                        newChild4.addEventListener('mouseleave', () => {
-                            newChild4.classList.remove('pressed');
-                        });
-                        newChild4.addEventListener('mouseup', () => {
-                            newChild4.classList.remove('pressed');
-                        });
                         newChild4.addEventListener('click', () => {
                             setTimeout(() => {
                                 const newChild4_2 = newChild4.closest('.child_windows');
                                 newChild4_2.remove();
-                                titlecolor_set();
-                                test_windows_button()
+                                zindexwindow_addnavy();
+                                test_windows_button();
                             }, 100);
                         });
 
@@ -7290,14 +7240,6 @@ if (ua.includes("mobile")) {
                             });
                         })
 
-                        // クラス名が "target" の要素を全て取得
-                        document.querySelectorAll('.bigscreen_button').forEach(function (element) {
-                            var newChild = document.createElement('div');
-                            newChild.className = 'bigscreen_button_child';
-                            // 子要素を追加
-                            element.appendChild(newChild);
-                        });
-
                         document.querySelectorAll('.testwindow2').forEach(function (testwindow2) {
                             testwindow2.addEventListener('mousemove', function () {
                                 const testwindow2_1 = testwindow2.children[2];
@@ -7310,9 +7252,10 @@ if (ua.includes("mobile")) {
                             })
                         });
                     }, 0);
-
                     dropArea.appendChild(windowDiv);
                     zindexwindow_addnavy()
+                    Array.from(document.getElementsByClassName('button')).forEach(addButtonListeners2);
+                    Array.from(document.getElementsByClassName('button2')).forEach(addButtonListeners);
                     setTimeout(() => {
                         resolve();
                     }, 500);
@@ -7461,17 +7404,6 @@ if (ua.includes("mobile")) {
             document.getElementById('myUL').appendChild(button);
             button.appendChild(button_span_child);
             button.addEventListener('click', () => toggleWindow(windowElement));
-
-            button.addEventListener('mousedown', () => {
-                button.classList.add('pressed');
-            });
-            button.addEventListener('mouseleave', () => {
-                button.classList.remove('pressed');
-            });
-            button.addEventListener('mouseup', () => {
-                button.classList.remove('pressed');
-            });
-
         });
     };
     nexser_search_button()
@@ -7767,19 +7699,17 @@ if (ua.includes("mobile")) {
     const targetNodes = document.querySelectorAll('.child_windows');
     const config = { attributes: true, childList: true, subtree: true };
     let previousActiveCount = 0;
-
     const callback = function () {
         const currentActiveCount = Array.from(targetNodes).filter(node => node.classList.contains('active')).length;
         if (currentActiveCount !== previousActiveCount) {
             previousActiveCount = currentActiveCount;
             zindexwindow_addnavy();
+            titlecolor_set();
             startmenu_close();
         }
     };
-
     const observer = new MutationObserver(callback);
     targetNodes.forEach(node => observer.observe(node, config));
-
 
     navigator.getBattery().then((battery) => {
         function updateChargeInfo() {
@@ -7818,5 +7748,7 @@ if (ua.includes("mobile")) {
         battery.addEventListener('chargingchange', updateChargeInfo);
         updateChargeInfo()
     })
+    Array.from(document.getElementsByClassName('button')).forEach(addButtonListeners2);
+    Array.from(document.getElementsByClassName('button2')).forEach(addButtonListeners);
 
 };
