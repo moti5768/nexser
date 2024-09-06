@@ -2693,16 +2693,9 @@ if (ua.includes("mobile")) {
             document.querySelector('.drag_window').textContent = un2;
 
             document.getElementsByClassName('cpu_cores')[0].textContent = (navigator.hardwareConcurrency);
-
-            resize_background_image();
         }
     }, 100);
 
-    Array.from(document.getElementsByClassName('window_inline_list')).forEach((window_inline_list) => {
-        window_inline_list.addEventListener('click', function () {
-
-        });
-    })
     document.querySelectorAll('.close_button').forEach(function (close_button) {
         close_button.addEventListener('click', function () {
             setTimeout(() => {
@@ -3903,7 +3896,6 @@ if (ua.includes("mobile")) {
             background_image_child2[i].style.height = `${background_image_parent.clientHeight}px`;
         }
     };
-    resize_background_image();
 
     const nexser_nextversion_parent = document.querySelector('.nexser_nextversion_menu');
     const nexser_nextversion_child = document.querySelector('.nexser_nextframe');
@@ -7491,6 +7483,9 @@ if (ua.includes("mobile")) {
         new ResizeObserver(() => taskbar_resize()).observe(document.querySelector('.taskbar_rightgroup'));
     };
     setTimeout(taskbar_initResize, 100);
+
+    window.addEventListener('resize', resize_background_image);
+    setTimeout(resize_background_image, 100);
 
     function console_errortext_clear() {
         document.getElementById('console_error_text').innerHTML = "";
