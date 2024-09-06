@@ -555,8 +555,8 @@ if (ua.includes("mobile")) {
     setInterval(taskgroup_load, 1000);
 
 
-    function notice_closekeep(notice_closekeep) {
-        localStorage.setItem('notice_closekeep', notice_closekeep)
+    function notice_closekeep() {
+        localStorage.setItem('notice_closekeep', true)
     }
 
     function load_nexser() {
@@ -677,8 +677,8 @@ if (ua.includes("mobile")) {
     observer_btn2.observe(document.body, { childList: true, subtree: true });
 
 
-    document.querySelector('.deskprompt').addEventListener('click', function (deskprompt) {
-        localStorage.setItem('deskprompt', deskprompt);
+    document.querySelector('.deskprompt').addEventListener('click', function () {
+        localStorage.setItem('deskprompt', true);
     })
     document.querySelector('#shell').addEventListener('click', function () {
         document.getElementById('shell').blur()
@@ -746,118 +746,118 @@ if (ua.includes("mobile")) {
         }, 500);
     }
 
-    document.querySelector('.startup_note').addEventListener('click', function (startup_note) {
+    document.querySelector('.startup_note').addEventListener('click', function () {
         if (localStorage.getItem('startup_note')) {
             localStorage.removeItem('startup_note')
             document.querySelector('.startup_note').textContent = "OFF"
         } else {
-            localStorage.setItem('startup_note', startup_note);
+            localStorage.setItem('startup_note', true);
             document.querySelector('.startup_note').textContent = "ON"
         }
     })
-    document.querySelector('.startup_computer').addEventListener('click', function (startup_computer) {
+    document.querySelector('.startup_computer').addEventListener('click', function () {
         if (localStorage.getItem('startup_computer')) {
             localStorage.removeItem('startup_computer')
             document.querySelector('.startup_computer').textContent = "OFF"
         } else {
-            localStorage.setItem('startup_computer', startup_computer);
+            localStorage.setItem('startup_computer', true);
             document.querySelector('.startup_computer').textContent = "ON"
         }
     })
-    document.querySelector('.startup_color').addEventListener('click', function (startup_color) {
+    document.querySelector('.startup_color').addEventListener('click', function () {
         if (localStorage.getItem('startup_color')) {
             localStorage.removeItem('startup_color')
             document.querySelector('.startup_color').textContent = "OFF"
         } else {
-            localStorage.setItem('startup_color', startup_color);
+            localStorage.setItem('startup_color', true);
             document.querySelector('.startup_color').textContent = "ON"
         }
     })
-    document.querySelector('.startup_screen').addEventListener('click', function (startup_screen) {
+    document.querySelector('.startup_screen').addEventListener('click', function () {
         if (localStorage.getItem('startup_screen')) {
             localStorage.removeItem('startup_screen')
             document.querySelector('.startup_screen').textContent = "OFF"
         } else {
-            localStorage.setItem('startup_screen', startup_screen);
+            localStorage.setItem('startup_screen', true);
             document.querySelector('.startup_screen').textContent = "ON"
         }
     })
-    document.querySelector('.startup_htmlviewer_edit').addEventListener('click', function (startup_htmlviewer_edit) {
+    document.querySelector('.startup_htmlviewer_edit').addEventListener('click', function () {
         if (localStorage.getItem('startup_htmlviewer_edit')) {
             localStorage.removeItem('startup_htmlviewer_edit')
             document.querySelector('.startup_htmlviewer_edit').textContent = "OFF"
         } else {
-            localStorage.setItem('startup_htmlviewer_edit', startup_htmlviewer_edit);
+            localStorage.setItem('startup_htmlviewer_edit', true);
             document.querySelector('.startup_htmlviewer_edit').textContent = "ON"
         }
     })
-    document.querySelector('.startup_guidebook').addEventListener('click', function (startup_guidebook) {
+    document.querySelector('.startup_guidebook').addEventListener('click', function () {
         if (localStorage.getItem('startup_guidebook')) {
             localStorage.removeItem('startup_guidebook')
             document.querySelector('.startup_guidebook').textContent = "OFF"
         } else {
-            localStorage.setItem('startup_guidebook', startup_guidebook);
+            localStorage.setItem('startup_guidebook', true);
             document.querySelector('.startup_guidebook').textContent = "ON"
         }
     })
-    document.querySelector('.startup_objective').addEventListener('click', function (startup_objective) {
+    document.querySelector('.startup_objective').addEventListener('click', function () {
         if (localStorage.getItem('startup_objective')) {
             localStorage.removeItem('startup_objective')
             document.querySelector('.startup_objective').textContent = "OFF"
         } else {
-            localStorage.setItem('startup_objective', startup_objective);
+            localStorage.setItem('startup_objective', true);
             document.querySelector('.startup_objective').textContent = "ON"
         }
     })
-    document.querySelector('.startup_calendar').addEventListener('click', function (startup_calendar) {
+    document.querySelector('.startup_calendar').addEventListener('click', function () {
         if (localStorage.getItem('startup_calendar')) {
             localStorage.removeItem('startup_calendar')
             document.querySelector('.startup_calendar').textContent = "OFF"
         } else {
-            localStorage.setItem('startup_calendar', startup_calendar);
+            localStorage.setItem('startup_calendar', true);
             document.querySelector('.startup_calendar').textContent = "ON"
         }
     })
 
-    document.querySelector('.startup_speed').addEventListener('click', function (prompt_data2) {
+    document.querySelector('.startup_speed').addEventListener('click', function () {
         if (localStorage.getItem('prompt_data2')) {
             localStorage.removeItem('prompt_data2')
             document.querySelector('.startup_speed').textContent = "LOW"
         } else {
-            localStorage.setItem('prompt_data2', prompt_data2);
+            localStorage.setItem('prompt_data2', true);
             document.querySelector('.startup_speed').textContent = "HIGH"
         }
     })
 
-    document.querySelector('.auto_startup').addEventListener('click', function (auto_startup) {
+    document.querySelector('.auto_startup').addEventListener('click', function () {
         if (localStorage.getItem('auto_startup')) {
             localStorage.removeItem('auto_startup')
             document.querySelector('.auto_startup').textContent = "OFF"
         } else {
-            localStorage.setItem('auto_startup', auto_startup);
+            localStorage.setItem('auto_startup', true);
             document.querySelector('.auto_startup').textContent = "ON"
         }
     })
 
-    document.querySelector('.startup_sound').addEventListener('click', function (startup_sound) {
+    document.querySelector('.startup_sound').addEventListener('click', function () {
         if (localStorage.getItem('driver_sound')) {
             localStorage.removeItem('driver_sound')
             document.querySelector('.startup_sound').textContent = "INSTALL"
             document.querySelector('.installbutton_1').textContent = "install"
         } else {
-            localStorage.setItem('driver_sound', startup_sound);
+            localStorage.setItem('driver_sound', true);
             document.querySelector('.startup_sound').textContent = "UN INSTALL"
             document.querySelector('.installbutton_1').textContent = "uninstall"
         }
     })
 
-    document.querySelector('.startup_versiontext').addEventListener('click', function (startup_versiontext) {
+    document.querySelector('.startup_versiontext').addEventListener('click', function () {
         if (localStorage.getItem('startup_versiontext')) {
             localStorage.removeItem('startup_versiontext')
             document.querySelector('.startup_versiontext').textContent = "OFF"
             document.querySelector('.desktop_version_text').style.display = "none";
         } else {
-            localStorage.setItem('startup_versiontext', startup_versiontext);
+            localStorage.setItem('startup_versiontext', true);
             document.querySelector('.startup_versiontext').textContent = "ON";
             document.querySelector('.desktop_version_text').style.display = "block";
         }
@@ -871,32 +871,32 @@ if (ua.includes("mobile")) {
         localStorage.removeItem('font_monospace');
     }
 
-    document.querySelector('.font_default').addEventListener('click', function (font_default) {
+    document.querySelector('.font_default').addEventListener('click', function () {
         font_clear()
         document.querySelector("body").style.fontFamily = "serif";
     })
 
-    document.querySelector('.font_sans_serif').addEventListener('click', function (font_sans_serif) {
+    document.querySelector('.font_sans_serif').addEventListener('click', function () {
         font_clear()
-        localStorage.setItem('font_sans_serif', font_sans_serif);
+        localStorage.setItem('font_sans_serif', true);
         document.querySelector("body").style.fontFamily = "sans-serif";
     })
 
-    document.querySelector('.font_cursive').addEventListener('click', function (font_cursive) {
+    document.querySelector('.font_cursive').addEventListener('click', function () {
         font_clear()
-        localStorage.setItem('font_cursive', font_cursive);
+        localStorage.setItem('font_cursive', true);
         document.querySelector("body").style.fontFamily = "cursive";
     })
 
-    document.querySelector('.font_fantasy').addEventListener('click', function (font_fantasy) {
+    document.querySelector('.font_fantasy').addEventListener('click', function () {
         font_clear()
-        localStorage.setItem('font_fantasy', font_fantasy);
+        localStorage.setItem('font_fantasy', true);
         document.querySelector("body").style.fontFamily = "fantasy";
     })
 
-    document.querySelector('.font_monospace').addEventListener('click', function (font_monospace) {
+    document.querySelector('.font_monospace').addEventListener('click', function () {
         font_clear()
-        localStorage.setItem('font_monospace', font_monospace);
+        localStorage.setItem('font_monospace', true);
         document.querySelector("body").style.fontFamily = "monospace";
     })
 
@@ -915,19 +915,19 @@ if (ua.includes("mobile")) {
         }
     }
 
-    document.querySelector('.boot_sound').addEventListener('click', function (boot_sound) {
+    document.querySelector('.boot_sound').addEventListener('click', function () {
         if (localStorage.getItem('driver_sound')) {
             localStorage.removeItem('driver_sound')
             document.querySelector('.startup_sound').textContent = "INSTALL"
             document.querySelector('.installbutton_1').textContent = "install"
         } else {
-            localStorage.setItem('driver_sound', boot_sound);
+            localStorage.setItem('driver_sound', true);
             document.querySelector('.startup_sound').textContent = "UN INSTALL"
             document.querySelector('.installbutton_1').textContent = "uninstall"
         }
     })
 
-    function pass_submit(passlogin) {
+    function pass_submit() {
         if (document.querySelector('.password').value == "") {
             document.querySelector('.window_error_text').textContent = "パスワードが入力されていません!"
             error_windows.classList.remove('active')
@@ -944,7 +944,7 @@ if (ua.includes("mobile")) {
             );
 
             localStorage.setItem('password', password_lock);
-            localStorage.setItem('login', passlogin);
+            localStorage.setItem('login', true);
             document.getElementsByClassName('passcode')[0].textContent = "登録しました";
         }
     }
@@ -971,7 +971,7 @@ if (ua.includes("mobile")) {
         }
     }
 
-    function password_login(login) {
+    function password_login() {
         const password_unlock = localStorage.getItem('password');
         const password_unlock2 = (String(password_unlock)
             .replaceAll(".a+b.", "0").replaceAll(".c#d.", "1").replaceAll(".e*f.", "2")
@@ -983,7 +983,7 @@ if (ua.includes("mobile")) {
             document.querySelector('.pass_signin_menu').classList.add('active')
             document.querySelector('.pass_no').textContent = "";
             start_check();
-            localStorage.setItem('login', login);
+            localStorage.setItem('login', true);
             document.querySelector('#pass_form').value = "";
         } else {
             document.querySelector('.pass_no').textContent = "パスワードが違います!";
@@ -1188,11 +1188,11 @@ if (ua.includes("mobile")) {
         })
     })
 
-    function start_check(start_check_text) {
+    function start_check() {
         document.getElementsByClassName('pass_signin_menu')[0].classList.remove('selectwindows')
         test_windows_button()
         if (localStorage.getItem('login_welcome') && localStorage.getItem('password')) {
-            localStorage.setItem('no_shutdown', start_check_text)
+            localStorage.setItem('no_shutdown', true)
         };
         const t = localStorage.getItem('taskbar_height');
         document.getElementById('files').style.display = "none";
@@ -1316,8 +1316,8 @@ if (ua.includes("mobile")) {
         }, 100);
     })
 
-    document.querySelector('.login_welcome').addEventListener('click', function (login_welcome) {
-        localStorage.setItem('login_welcome', login_welcome);
+    document.querySelector('.login_welcome').addEventListener('click', function () {
+        localStorage.setItem('login_welcome', true);
     })
     document.querySelector('.nologin_welcome').addEventListener('click', function () {
         localStorage.removeItem('login_welcome');
@@ -1462,19 +1462,19 @@ if (ua.includes("mobile")) {
         }
     }
 
-    document.getElementById('sound_driver').addEventListener('click', function (sound_driver) {
+    document.getElementById('sound_driver').addEventListener('click', function () {
         if (localStorage.getItem('driver_sound')) {
             localStorage.removeItem('driver_sound')
             document.querySelector('.installbutton_1').textContent = "install"
             document.querySelector('.startup_sound').textContent = "INSTALL"
             sound_stop()
         } else {
-            localStorage.setItem('driver_sound', sound_driver);
+            localStorage.setItem('driver_sound', true);
             document.querySelector('.installbutton_1').textContent = "uninstall"
             document.querySelector('.startup_sound').textContent = "UN INSTALL"
         }
     })
-    document.getElementById('color_driver').addEventListener('click', function (color_driver) {
+    document.getElementById('color_driver').addEventListener('click', function () {
         if (localStorage.getItem('driver_color')) {
             localStorage.removeItem('driver_color')
             document.querySelector('.installbutton_2').textContent = "install"
@@ -1482,55 +1482,55 @@ if (ua.includes("mobile")) {
             titlecolor_remove();
             titlecolor_set();
         } else {
-            localStorage.setItem('driver_color', color_driver);
+            localStorage.setItem('driver_color', true);
             document.querySelector('.installbutton_2').textContent = "uninstall";
             titlecolor_remove();
             titlecolor_set();
         }
     })
 
-    document.querySelector('.startup_1').addEventListener('click', function (startup_1) {
+    document.querySelector('.startup_1').addEventListener('click', function () {
         startupsound_reset()
         if (localStorage.getItem('startup_1')) {
             document.querySelector('.startup_1').textContent = "no set"
         } else {
-            localStorage.setItem('startup_1', startup_1);
+            localStorage.setItem('startup_1', true);
             document.querySelector('.startup_1').textContent = "set!"
         }
     })
-    document.querySelector('.startup_2').addEventListener('click', function (startup_2) {
+    document.querySelector('.startup_2').addEventListener('click', function () {
         startupsound_reset()
         if (localStorage.getItem('startup_2')) {
             document.querySelector('.startup_2').textContent = "no set"
         } else {
-            localStorage.setItem('startup_2', startup_2);
+            localStorage.setItem('startup_2', true);
             document.querySelector('.startup_2').textContent = "set!"
         }
     })
-    document.querySelector('.startup_3').addEventListener('click', function (startup_3) {
+    document.querySelector('.startup_3').addEventListener('click', function () {
         startupsound_reset()
         if (localStorage.getItem('startup_3')) {
             document.querySelector('.startup_3').textContent = "no set"
         } else {
-            localStorage.setItem('startup_3', startup_3);
+            localStorage.setItem('startup_3', true);
             document.querySelector('.startup_3').textContent = "set!"
         }
     })
-    document.querySelector('.startup_4').addEventListener('click', function (startup_4) {
+    document.querySelector('.startup_4').addEventListener('click', function () {
         startupsound_reset()
         if (localStorage.getItem('startup_4')) {
             document.querySelector('.startup_4').textContent = "no set"
         } else {
-            localStorage.setItem('startup_4', startup_4);
+            localStorage.setItem('startup_4', true);
             document.querySelector('.startup_4').textContent = "set!"
         }
     })
-    document.querySelector('.startup_5').addEventListener('click', function (startup_5) {
+    document.querySelector('.startup_5').addEventListener('click', function () {
         startupsound_reset()
         if (localStorage.getItem('startup_5')) {
             document.querySelector('.startup_5').textContent = "no set"
         } else {
-            localStorage.setItem('startup_5', startup_5);
+            localStorage.setItem('startup_5', true);
             document.querySelector('.startup_5').textContent = "set!"
         }
     })
@@ -1558,48 +1558,48 @@ if (ua.includes("mobile")) {
         }
     }
 
-    document.querySelector('.shutdown_1').addEventListener('click', function (shutdown_1) {
+    document.querySelector('.shutdown_1').addEventListener('click', function () {
         shutdownsound_reset()
         if (localStorage.getItem('shutdown_1')) {
             document.querySelector('.shutdown_1').textContent = "no set"
         } else {
-            localStorage.setItem('shutdown_1', shutdown_1);
+            localStorage.setItem('shutdown_1', true);
             document.querySelector('.shutdown_1').textContent = "set!"
         }
     })
-    document.querySelector('.shutdown_2').addEventListener('click', function (shutdown_2) {
+    document.querySelector('.shutdown_2').addEventListener('click', function () {
         shutdownsound_reset()
         if (localStorage.getItem('shutdown_2')) {
             document.querySelector('.shutdown_2').textContent = "no set"
         } else {
-            localStorage.setItem('shutdown_2', shutdown_2);
+            localStorage.setItem('shutdown_2', true);
             document.querySelector('.shutdown_2').textContent = "set!"
         }
     })
-    document.querySelector('.shutdown_3').addEventListener('click', function (shutdown_3) {
+    document.querySelector('.shutdown_3').addEventListener('click', function () {
         shutdownsound_reset()
         if (localStorage.getItem('shutdown_3')) {
             document.querySelector('.shutdown_3').textContent = "no set"
         } else {
-            localStorage.setItem('shutdown_3', shutdown_3);
+            localStorage.setItem('shutdown_3', true);
             document.querySelector('.shutdown_3').textContent = "set!"
         }
     })
-    document.querySelector('.shutdown_4').addEventListener('click', function (shutdown_4) {
+    document.querySelector('.shutdown_4').addEventListener('click', function () {
         shutdownsound_reset()
         if (localStorage.getItem('shutdown_4')) {
             document.querySelector('.shutdown_4').textContent = "no set"
         } else {
-            localStorage.setItem('shutdown_4', shutdown_4);
+            localStorage.setItem('shutdown_4', true);
             document.querySelector('.shutdown_4').textContent = "set!"
         }
     })
-    document.querySelector('.shutdown_5').addEventListener('click', function (shutdown_5) {
+    document.querySelector('.shutdown_5').addEventListener('click', function () {
         shutdownsound_reset()
         if (localStorage.getItem('shutdown_5')) {
             document.querySelector('.shutdown_5').textContent = "no set"
         } else {
-            localStorage.setItem('shutdown_5', shutdown_5);
+            localStorage.setItem('shutdown_5', true);
             document.querySelector('.shutdown_5').textContent = "set!"
         }
     })
@@ -1633,29 +1633,29 @@ if (ua.includes("mobile")) {
         document.querySelector('.windowmode').textContent = "default"
     }
 
-    document.getElementById('window_invisible').addEventListener('click', function (window_invisible) {
+    document.getElementById('window_invisible').addEventListener('click', function () {
         if (localStorage.getItem('window_invisible')) {
             localStorage.removeItem('window_invisible');
             document.querySelector('.windowmode').textContent = "default"
         } else {
             windowmode_reset()
-            localStorage.setItem('window_invisible', window_invisible);
+            localStorage.setItem('window_invisible', true);
             document.querySelector('.windowmode').textContent = "invisible"
         }
     })
-    document.getElementById('window_borderblack').addEventListener('click', function (window_borderblack) {
+    document.getElementById('window_borderblack').addEventListener('click', function () {
         if (localStorage.getItem('window_borderblack')) {
             localStorage.removeItem('window_borderblack');
             document.querySelector('.windowmode').textContent = "default"
         } else {
             windowmode_reset()
-            localStorage.setItem('window_borderblack', window_borderblack);
+            localStorage.setItem('window_borderblack', true);
             document.querySelector('.windowmode').textContent = "border black"
         }
     })
 
-    document.getElementById('backtext_on').addEventListener('click', function (backtext) {
-        localStorage.setItem('backtext', backtext);
+    document.getElementById('backtext_on').addEventListener('click', function () {
+        localStorage.setItem('backtext', true);
         const backtext_data2 = localStorage.getItem('backtext_data');
         document.querySelector('#background_text').textContent = (backtext_data2);
         document.querySelector('#background_text').classList.add('block');
@@ -1668,23 +1668,23 @@ if (ua.includes("mobile")) {
     })
 
 
-    document.querySelector('.backtext_small').addEventListener('click', function (backtext_small) {
+    document.querySelector('.backtext_small').addEventListener('click', function () {
         backtextSize_clear();
-        localStorage.setItem('backtext_small', backtext_small);
+        localStorage.setItem('backtext_small', true);
         const backtext_data2 = localStorage.getItem('backtext_data');
         document.querySelector('#background_text').style.fontSize = "15px";
         document.querySelector('#background_text2').style.fontSize = "15px";
     })
-    document.querySelector('.backtext_medium').addEventListener('click', function (backtext_medium) {
+    document.querySelector('.backtext_medium').addEventListener('click', function () {
         backtextSize_clear();
-        localStorage.setItem('backtext_medium', backtext_medium);
+        localStorage.setItem('backtext_medium', true);
         const backtext_data2 = localStorage.getItem('backtext_data');
         document.querySelector('#background_text').style.fontSize = "30px";
         document.querySelector('#background_text2').style.fontSize = "30px";
     })
-    document.querySelector('.backtext_large').addEventListener('click', function (backtext_large) {
+    document.querySelector('.backtext_large').addEventListener('click', function () {
         backtextSize_clear();
-        localStorage.setItem('backtext_large', backtext_large);
+        localStorage.setItem('backtext_large', true);
         const backtext_data2 = localStorage.getItem('backtext_data');
         document.querySelector('#background_text').style.fontSize = "45px";
         document.querySelector('#background_text2').style.fontSize = "45px";
@@ -1776,9 +1776,9 @@ if (ua.includes("mobile")) {
     }
 
     function title_center() {
-        document.querySelectorAll('.title').forEach(function (title) {
+        document.querySelectorAll('.title').forEach(function () {
             title.classList.add('center')
-            localStorage.setItem('title_center', title)
+            localStorage.setItem('title_center', true)
         });
     }
 
@@ -1820,9 +1820,9 @@ if (ua.includes("mobile")) {
         })
     }
 
-    function taskbar_autohide(taskbar_autohide) {
+    function taskbar_autohide() {
         const t = localStorage.getItem('taskbar_height');
-        localStorage.setItem('taskbar_autohide', taskbar_autohide);
+        localStorage.setItem('taskbar_autohide', true);
         document.getElementById('taskbar').style.bottom = "-35px";
         if (localStorage.getItem('taskbar_height') && (localStorage.getItem('taskbar_autohide'))) {
             const t2 = t - 5;
@@ -4174,8 +4174,8 @@ if (ua.includes("mobile")) {
         filettext_backcolor();
     });
 
-    document.querySelector('.saver_on').addEventListener('click', function (saver_on) {
-        localStorage.setItem('saver_on', saver_on);
+    document.querySelector('.saver_on').addEventListener('click', function () {
+        localStorage.setItem('saver_on', true);
         document.querySelector('.saver_mode').textContent = "ON"
     })
     document.querySelector('.saver_off').addEventListener('click', function () {
@@ -4386,40 +4386,40 @@ if (ua.includes("mobile")) {
         localStorage.removeItem('back_pattern_9');
     }
 
-    document.querySelector('.back_pattern_1').addEventListener('click', function (back_pattern_1) {
-        localStorage.setItem('back_pattern_1', back_pattern_1);
+    document.querySelector('.back_pattern_1').addEventListener('click', function () {
+        localStorage.setItem('back_pattern_1', true);
         back_pattern_set()
     })
-    document.querySelector('.back_pattern_2').addEventListener('click', function (back_pattern_2) {
-        localStorage.setItem('back_pattern_2', back_pattern_2);
+    document.querySelector('.back_pattern_2').addEventListener('click', function () {
+        localStorage.setItem('back_pattern_2', true);
         back_pattern_set()
     })
-    document.querySelector('.back_pattern_3').addEventListener('click', function (back_pattern_3) {
-        localStorage.setItem('back_pattern_3', back_pattern_3);
+    document.querySelector('.back_pattern_3').addEventListener('click', function () {
+        localStorage.setItem('back_pattern_3', true);
         back_pattern_set()
     })
-    document.querySelector('.back_pattern_4').addEventListener('click', function (back_pattern_4) {
-        localStorage.setItem('back_pattern_4', back_pattern_4);
+    document.querySelector('.back_pattern_4').addEventListener('click', function () {
+        localStorage.setItem('back_pattern_4', true);
         back_pattern_set()
     })
-    document.querySelector('.back_pattern_5').addEventListener('click', function (back_pattern_5) {
-        localStorage.setItem('back_pattern_5', back_pattern_5);
+    document.querySelector('.back_pattern_5').addEventListener('click', function () {
+        localStorage.setItem('back_pattern_5', true);
         back_pattern_set()
     })
-    document.querySelector('.back_pattern_6').addEventListener('click', function (back_pattern_6) {
-        localStorage.setItem('back_pattern_6', back_pattern_6);
+    document.querySelector('.back_pattern_6').addEventListener('click', function () {
+        localStorage.setItem('back_pattern_6', true);
         back_pattern_set()
     })
-    document.querySelector('.back_pattern_7').addEventListener('click', function (back_pattern_7) {
-        localStorage.setItem('back_pattern_7', back_pattern_7);
+    document.querySelector('.back_pattern_7').addEventListener('click', function () {
+        localStorage.setItem('back_pattern_7', true);
         back_pattern_set()
     })
-    document.querySelector('.back_pattern_8').addEventListener('click', function (back_pattern_8) {
-        localStorage.setItem('back_pattern_8', back_pattern_8);
+    document.querySelector('.back_pattern_8').addEventListener('click', function () {
+        localStorage.setItem('back_pattern_8', true);
         back_pattern_set()
     })
-    document.querySelector('.back_pattern_9').addEventListener('click', function (back_pattern_9) {
-        localStorage.setItem('back_pattern_9', back_pattern_9);
+    document.querySelector('.back_pattern_9').addEventListener('click', function () {
+        localStorage.setItem('back_pattern_9', true);
         back_pattern_set()
     })
 
@@ -4637,8 +4637,7 @@ if (ua.includes("mobile")) {
 
     function notetext_all_bold() {
         var Note = document.querySelector('.note_area');
-        const note_text_bold = document.querySelector('.notetext_bold');
-        localStorage.setItem('note_text_bold', note_text_bold);
+        localStorage.setItem('note_text_bold', true);
         notetitle();
         if (localStorage.getItem('note_text_bold') && Note.style.fontWeight == "normal") {
             Note.style.fontWeight = "bold";
@@ -4655,8 +4654,7 @@ if (ua.includes("mobile")) {
 
     function notetext_all_oblique() {
         var Note = document.querySelector('.note_area');
-        const note_text_oblique = document.querySelector('.notetext_oblique');
-        localStorage.setItem('note_text_oblique', note_text_oblique);
+        localStorage.setItem('note_text_oblique', true);
         notetitle();
         if (localStorage.getItem('note_text_oblique') && Note.style.fontStyle == "normal") {
             Note.style.fontStyle = "oblique";
@@ -4672,8 +4670,7 @@ if (ua.includes("mobile")) {
     }
     function notetext_all_underline() {
         var Note = document.querySelector('.note_area');
-        const note_text_underline = document.querySelector('.notetext_underline');
-        localStorage.setItem('note_text_underline', note_text_underline);
+        localStorage.setItem('note_text_underline', true);
         notetitle();
         if (Note.style.textDecoration == "none" && localStorage.getItem('note_text_underline')) {
             Note.style.textDecoration = "underline";
@@ -4707,21 +4704,21 @@ if (ua.includes("mobile")) {
         }
     }
 
-    function notetext_small(notetext_small) {
+    function notetext_small() {
         notetext_reset();
-        localStorage.setItem('notetext_small', notetext_small);
+        localStorage.setItem('notetext_small', true);
         notetextsize_change()
         notetitle()
     }
-    function notetext_medium(notetext_medium) {
+    function notetext_medium() {
         notetext_reset();
-        localStorage.setItem('notetext_medium', notetext_medium);
+        localStorage.setItem('notetext_medium', true);
         notetextsize_change()
         notetitle()
     }
-    function notetext_large(notetext_large) {
+    function notetext_large() {
         notetext_reset();
-        localStorage.setItem('notetext_large', notetext_large);
+        localStorage.setItem('notetext_large', true);
         notetextsize_change()
         notetitle()
     }
@@ -4854,7 +4851,7 @@ if (ua.includes("mobile")) {
         objectiveData_clear();
         objective_resize();
         document.querySelector('.objective_title').textContent = "*objective sheet";
-        localStorage.setItem('objective_area', objective_menu);
+        localStorage.setItem('objective_area', true);
     }
 
     document.querySelector('.camera_close').addEventListener('mouseup', function () {
@@ -4984,24 +4981,24 @@ if (ua.includes("mobile")) {
         resizeTextarea()
     }
 
-    function note_lineheight(note_lineheight) {
+    function note_lineheight() {
         notetitle();
         if (localStorage.getItem('note_lineheight')) {
             localStorage.removeItem('note_lineheight')
             note_area.style.lineHeight = ""
         } else {
             note_area.style.lineHeight = "1.5"
-            localStorage.setItem('note_lineheight', note_lineheight)
+            localStorage.setItem('note_lineheight', true)
         }
     }
-    function note_textspacing(note_textspacing) {
+    function note_textspacing() {
         notetitle();
         if (localStorage.getItem('note_textspacing')) {
             localStorage.removeItem('note_textspacing')
             note_area.style.letterSpacing = ""
         } else {
             note_area.style.letterSpacing = "0.25em"
-            localStorage.setItem('note_textspacing', note_textspacing)
+            localStorage.setItem('note_textspacing', true)
         }
     }
     if (localStorage.getItem('note_lineheight')) {
@@ -5250,7 +5247,7 @@ if (ua.includes("mobile")) {
 
     Array.from(document.getElementsByClassName('windowfile1')).forEach((windowfile_1) => {
         windowfile_1.addEventListener('click', function () {
-            localStorage.setItem('windowfile_1', windowfile_1);
+            localStorage.setItem('windowfile_1', true);
             localStorage.removeItem('windowfile_2')
             localStorage.removeItem('windowfile_3')
             window_file_list_change()
@@ -5258,7 +5255,7 @@ if (ua.includes("mobile")) {
     })
     Array.from(document.getElementsByClassName('windowfile2')).forEach((windowfile_2) => {
         windowfile_2.addEventListener('click', function () {
-            localStorage.setItem('windowfile_2', windowfile_2);
+            localStorage.setItem('windowfile_2', true);
             localStorage.removeItem('windowfile_1')
             localStorage.removeItem('windowfile_3')
             window_file_list_reset()
@@ -5266,44 +5263,44 @@ if (ua.includes("mobile")) {
     })
     Array.from(document.getElementsByClassName('windowfile3')).forEach((windowfile_3) => {
         windowfile_3.addEventListener('click', function () {
-            localStorage.setItem('windowfile_3', windowfile_3);
+            localStorage.setItem('windowfile_3', true);
             localStorage.removeItem('windowfile_1')
             localStorage.removeItem('windowfile_2')
             window_file_list_change2()
         })
     })
 
-    document.querySelector('.clock_button').addEventListener('click', function (clock_button) {
+    document.querySelector('.clock_button').addEventListener('click', function () {
         if (localStorage.getItem('clock_button')) {
             localStorage.removeItem('clock_button')
             document.querySelector('.clock_button').textContent = "off"
             document.querySelector('.time').style.display = "block"
         } else {
-            localStorage.setItem('clock_button', clock_button);
+            localStorage.setItem('clock_button', true);
             document.querySelector('.clock_button').textContent = "on"
             document.querySelector('.time').style.display = "none";
         }
     })
 
-    document.querySelector('.battery_button').addEventListener('click', function (battery_button) {
+    document.querySelector('.battery_button').addEventListener('click', function () {
         if (localStorage.getItem('battery_button')) {
             localStorage.removeItem('battery_button')
             document.querySelector('.battery_button').textContent = "off"
             document.querySelector('.task_battery').style.display = "block"
         } else {
-            localStorage.setItem('battery_button', battery_button);
+            localStorage.setItem('battery_button', true);
             document.querySelector('.battery_button').textContent = "on"
             document.querySelector('.task_battery').style.display = "none";
         }
     })
 
-    document.querySelector('.taskbar_zindex_0').addEventListener('click', function (taskbar_zindex_0) {
+    document.querySelector('.taskbar_zindex_0').addEventListener('click', function () {
         if (localStorage.getItem('taskbar_zindex_0')) {
             localStorage.removeItem('taskbar_zindex_0')
             taskbar.style.zIndex = "";
             document.querySelector('.taskbar_zindex_0').textContent = "off"
         } else {
-            localStorage.setItem('taskbar_zindex_0', taskbar_zindex_0);
+            localStorage.setItem('taskbar_zindex_0', true);
             taskbar.style.zIndex = "0";
             document.querySelector('.taskbar_zindex_0').textContent = "on"
         }
@@ -5664,19 +5661,19 @@ if (ua.includes("mobile")) {
         localStorage.removeItem('saver3')
     }
 
-    function saver1(saver1) {
+    function saver1() {
         saver_clear();
-        localStorage.setItem('saver1', saver1);
+        localStorage.setItem('saver1', true);
         document.getElementsByClassName('screen_mode')[0].textContent = "1";
     }
-    function saver2(saver2) {
+    function saver2() {
         saver_clear();
-        localStorage.setItem('saver2', saver2);
+        localStorage.setItem('saver2', true);
         document.getElementsByClassName('screen_mode')[0].textContent = "2";
     }
-    function saver3(saver3) {
+    function saver3() {
         saver_clear();
-        localStorage.setItem('saver3', saver3);
+        localStorage.setItem('saver3', true);
         document.getElementsByClassName('screen_mode')[0].textContent = "3";
     }
     // ログアウト
@@ -6499,23 +6496,23 @@ if (ua.includes("mobile")) {
     }
 
 
-    document.querySelector('.wallpaper_95').addEventListener('click', function (wallpaper_95) {
+    document.querySelector('.wallpaper_95').addEventListener('click', function () {
         wallpaper_allremove()
-        localStorage.setItem('wallpaper_95', wallpaper_95);
+        localStorage.setItem('wallpaper_95', true);
         document.querySelector('.nexser_backgroundimage_1').style.display = "block";
         minidesk_backgroundresize1();
     })
 
-    document.querySelector('.wallpaper_95_2').addEventListener('click', function (wallpaper_95_2) {
+    document.querySelector('.wallpaper_95_2').addEventListener('click', function () {
         wallpaper_allremove()
-        localStorage.setItem('wallpaper_95_2', wallpaper_95_2);
+        localStorage.setItem('wallpaper_95_2', true);
         document.querySelector('.nexser_backgroundimage_2').style.display = "block";
         minidesk_backgroundresize2();
     })
 
-    document.querySelector('.wallpaper_xp').addEventListener('click', function (wallpaper_xp) {
+    document.querySelector('.wallpaper_xp').addEventListener('click', function () {
         wallpaper_allremove()
-        localStorage.setItem('wallpaper_xp', wallpaper_xp);
+        localStorage.setItem('wallpaper_xp', true);
         document.querySelector('.nexser_backgroundimage_3').style.display = "block";
         minidesk_backgroundresize3();
     })
