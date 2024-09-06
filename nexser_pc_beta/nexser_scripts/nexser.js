@@ -105,6 +105,16 @@ if (ua.includes("mobile")) {
     let startX, startY, isDrawing = false;
     let rectangle;
     document.addEventListener('mousedown', (e) => {
+        if (desktop.style.display == "block") {
+            startX = e.clientX;
+            startY = e.clientY;
+            isDrawing = true;
+            rectangle = document.createElement('div');
+            rectangle.className = 'rectangle';
+            rectangle.style.left = `${startX}px`;
+            rectangle.style.top = `${startY}px`;
+            document.body.appendChild(rectangle);
+        }
 
         var isClickInsideStartButton7 = Array.from(document.querySelectorAll('.window_files')).some(button => button.contains(e.target));
         if (!isClickInsideStartButton7) {
@@ -116,7 +126,6 @@ if (ua.includes("mobile")) {
                 }
             })
         }
-
 
         var isClickInsideStartButton = document.querySelector('.start_button').contains(e.target);
         var isClickInsideParentStartMenu2 = document.querySelector('.parentstartmenu2').contains(e.target);
@@ -149,17 +158,6 @@ if (ua.includes("mobile")) {
             alltitle_navyreomve();
             titlecolor_set();
         }
-
-        if (desktop.style.display == "block") {
-            startX = e.clientX;
-            startY = e.clientY;
-            isDrawing = true;
-            rectangle = document.createElement('div');
-            rectangle.className = 'rectangle';
-            rectangle.style.left = `${startX}px`;
-            rectangle.style.top = `${startY}px`;
-            document.body.appendChild(rectangle);
-        }
     });
     document.addEventListener('mousemove', (e) => {
         if (isDrawing && desktop.style.display == "block") {
@@ -175,9 +173,7 @@ if (ua.includes("mobile")) {
     });
     document.addEventListener('mouseup', () => {
         isDrawing = false;
-        if (rectangle) {
-            document.body.removeChild(rectangle);
-        }
+        rectangle_remove()
     });
 
     function lightchild() {
@@ -3336,12 +3332,9 @@ if (ua.includes("mobile")) {
             getLargestZIndex('.child_windows');
             z_index.textContent = getLargestZIndex('.child_windows');
             window_z_index = zindexchildwindows.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+            zindexwindow_addnavy();
             titlecolor_set();
-            const elements = document.querySelectorAll('.rectangle');
-            elements.forEach(element => {
-                element.classList.remove('rectangle');
-            });
+            rectangle_remove();
         });
         z_index_child_windows.addEventListener('click', function () {
 
@@ -3826,6 +3819,11 @@ if (ua.includes("mobile")) {
                 element.appendChild(newChild);
             });
         }, 0);
+        setTimeout(() => {
+            const taskheight_parent = document.querySelector('#taskbar');
+            const taskheight_child = document.querySelector('.taskbar_buttons');
+            taskheight_child.style.height = `${taskheight_parent.clientHeight - + 3}px`;
+        }, 100);
     }
 
     const note_parent = document.querySelector('.note_pad');
@@ -3986,11 +3984,7 @@ if (ua.includes("mobile")) {
         function mmove(e) {
             var drag = document.getElementsByClassName("drag")[0];
             var event = e.type === "mousemove" ? e : e.changedTouches[0];
-            const elements = document.querySelectorAll('.rectangle');
-            elements.forEach(element => {
-                element.classList.remove('rectangle');
-            });
-
+            rectangle_remove();
             drag.style.top = event.pageY - y + "px";
             drag.style.left = event.pageX - x + "px";
             drag.addEventListener("mouseup", mup, false);
@@ -4121,11 +4115,7 @@ if (ua.includes("mobile")) {
             } else {
                 var event = e.changedTouches[0];
             }
-            const elements = document.querySelectorAll('.rectangle');
-            // 各要素からクラスを削除
-            elements.forEach(element => {
-                element.classList.remove('rectangle');
-            });
+            rectangle_remove();
             //マウスが動いた場所に要素を動かす
             drag.style.top = event.pageY - y + "px";
             drag.style.left = event.pageX - x + "px";
@@ -6676,10 +6666,7 @@ if (ua.includes("mobile")) {
                         element.style.top = originalY + dy + 'px';
                     }
                 }
-                const elements = document.querySelectorAll('.rectangle');
-                elements.forEach(element => {
-                    element.classList.remove('rectangle');
-                });
+                rectangle_remove();
             }
             function stopResize() {
                 window.removeEventListener('mousemove', resize);
@@ -6726,17 +6713,6 @@ if (ua.includes("mobile")) {
         url_iframe.style.display = "none"
         dropzone.style.display = "block"
     }
-
-
-
-
-
-
-
-
-
-
-
 
 
     const cards = ['A', 'A', 'B', 'B', 'C', 'C', 'D', 'D', 'E', 'E', 'F', 'F'];
@@ -7106,11 +7082,7 @@ if (ua.includes("mobile")) {
                                     zindexwindow_addnavy()
                                     titlecolor_set()
                                 }, 0);
-
-                                const elements = document.querySelectorAll('.rectangle');
-                                elements.forEach(element => {
-                                    element.classList.remove('rectangle');
-                                });
+                                rectangle_remove();
                             });
                         })
 
@@ -7127,7 +7099,7 @@ if (ua.includes("mobile")) {
                         });
                     }, 0);
                     dropArea.appendChild(windowDiv);
-                    zindexwindow_addnavy()
+                    zindexwindow_addnavy();
                     Array.from(document.getElementsByClassName('button')).forEach(addButtonListeners2);
                     Array.from(document.getElementsByClassName('button2')).forEach(addButtonListeners);
                     setTimeout(() => {
@@ -7158,11 +7130,7 @@ if (ua.includes("mobile")) {
                 });
             }, i * 250);
         }
-
-        const elements = document.querySelectorAll('.rectangle');
-        elements.forEach(element => {
-            element.classList.remove('rectangle');
-        });
+        rectangle_remove();
     });
 
 
@@ -7307,9 +7275,7 @@ if (ua.includes("mobile")) {
                 element2.style.opacity = "";
                 element3.style.opacity = "";
             }, 0);
-            if (rectangle) {
-                document.body.removeChild(rectangle);
-            }
+            rectangle_remove()
         });
         element.addEventListener('dragend', (e) => {
             const x = e.clientX - offsetX;
@@ -7324,11 +7290,15 @@ if (ua.includes("mobile")) {
             element.style.opacity = "";
             element.style.border = "";
             localStorage.setItem(`draggable-${index}`, `${x},${y}`);
-            if (rectangle) {
-                document.body.removeChild(rectangle);
-            }
         });
     });
+
+    function rectangle_remove() {
+        const elements = document.querySelectorAll('.rectangle');
+        elements.forEach(element => {
+            element.classList.remove('rectangle');
+        });
+    }
 
     var background_img = document.createElement("img");
     function minidesk_backgroundresize1() {
@@ -7483,11 +7453,48 @@ if (ua.includes("mobile")) {
             エラーオブジェクト: ${error}
         `;
         errorLog.innerHTML += errorMessage + '\n' + '<br>';
+        test_alert()
+
         return false; // デフォルトのエラーハンドリングを行う
     };
 
+    function test_alert() {
+        document.querySelectorAll('.error_btn').forEach(btn => btn.remove());
+        const errorBtn = document.createElement('span');
+        errorBtn.className = "button2 error_btn bold";
+        errorBtn.textContent = "✕";
+        Object.assign(errorBtn.style, {
+            background: "red",
+            color: "white"
+        });
+        document.querySelector('.first_taskbar_buttons').appendChild(errorBtn);
+        errorBtn.addEventListener('click', () => {
+            console_error_menu.classList.toggle('active');
+            console_error_menu.style.zIndex = largestZIndex++;
+        });
+        taskbar_resize();
+    }
+
+    const taskbar_resize = () => {
+        const taskbar = document.querySelector('#taskbar');
+        const taskbtnParent = document.querySelector('.first_taskbar_buttons');
+        const taskbtnChild = document.querySelector('.taskbar_buttons');
+        const taskbtnRightGroup = document.querySelector('.taskbar_rightgroup');
+        taskbtnChild.style.position = "absolute";
+        taskbtnChild.style.left = `${taskbtnParent.clientWidth + 70}px`;
+        taskbtnChild.style.width = `${taskbar.clientWidth - taskbtnRightGroup.clientWidth - 150}px`;
+    };
+    const taskbar_initResize = () => {
+        taskbar_resize();
+        window.addEventListener('resize', taskbar_resize);
+        new ResizeObserver(() => taskbar_resize()).observe(document.querySelector('.taskbar_rightgroup'));
+    };
+    setTimeout(taskbar_initResize, 100);
+
     function console_errortext_clear() {
         document.getElementById('console_error_text').innerHTML = "";
+        document.querySelector('.error_btn').remove()
+        taskbar_resize()
     }
 
     function kakeibo_setCurrentDateTime() {

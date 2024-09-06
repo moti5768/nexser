@@ -593,15 +593,17 @@ input[type="file"] {
 }
 
 #taskbar .first_taskbar_buttons {
+    display: flex;
     position: absolute;
     left: 65px;
     top: 7px;
     break-inside: avoid;
     box-sizing: border-box;
     float: left;
-    width: 45px;
+    width: auto;
     border-left: solid 2px white;
     border-right: solid 2px white;
+    padding-right: 5.5px;
 }
 
 .first_taskbar_buttons>.button2 {
@@ -617,13 +619,11 @@ input[type="file"] {
 
 #taskbar .taskbar_buttons {
     position: absolute;
-    left: 115px;
     top: 0px;
     break-inside: avoid;
     box-sizing: border-box;
     float: left;
     display: flex;
-    width: 850px;
     overflow: auto;
     height: min-content;
 }
@@ -674,6 +674,7 @@ input[type="file"] {
     background: silver;
     position: absolute;
     bottom: 36px;
+    left: -85px;
 }
 
 .inport_icon {
