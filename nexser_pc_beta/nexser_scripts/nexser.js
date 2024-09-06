@@ -547,9 +547,7 @@ if (ua.includes("mobile")) {
             element.textContent = `${hours}:${minutes}:${seconds}`;
         }
     }
-
     setInterval(taskgroup_load, 1000);
-
 
     function notice_closekeep() {
         localStorage.setItem('notice_closekeep', true)
@@ -742,159 +740,46 @@ if (ua.includes("mobile")) {
         }, 500);
     }
 
-    document.querySelector('.startup_note').addEventListener('click', function () {
-        if (localStorage.getItem('startup_note')) {
-            localStorage.removeItem('startup_note')
-            document.querySelector('.startup_note').textContent = "OFF"
-        } else {
-            localStorage.setItem('startup_note', true);
-            document.querySelector('.startup_note').textContent = "ON"
-        }
-    })
-    document.querySelector('.startup_computer').addEventListener('click', function () {
-        if (localStorage.getItem('startup_computer')) {
-            localStorage.removeItem('startup_computer')
-            document.querySelector('.startup_computer').textContent = "OFF"
-        } else {
-            localStorage.setItem('startup_computer', true);
-            document.querySelector('.startup_computer').textContent = "ON"
-        }
-    })
-    document.querySelector('.startup_color').addEventListener('click', function () {
-        if (localStorage.getItem('startup_color')) {
-            localStorage.removeItem('startup_color')
-            document.querySelector('.startup_color').textContent = "OFF"
-        } else {
-            localStorage.setItem('startup_color', true);
-            document.querySelector('.startup_color').textContent = "ON"
-        }
-    })
-    document.querySelector('.startup_screen').addEventListener('click', function () {
-        if (localStorage.getItem('startup_screen')) {
-            localStorage.removeItem('startup_screen')
-            document.querySelector('.startup_screen').textContent = "OFF"
-        } else {
-            localStorage.setItem('startup_screen', true);
-            document.querySelector('.startup_screen').textContent = "ON"
-        }
-    })
-    document.querySelector('.startup_htmlviewer_edit').addEventListener('click', function () {
-        if (localStorage.getItem('startup_htmlviewer_edit')) {
-            localStorage.removeItem('startup_htmlviewer_edit')
-            document.querySelector('.startup_htmlviewer_edit').textContent = "OFF"
-        } else {
-            localStorage.setItem('startup_htmlviewer_edit', true);
-            document.querySelector('.startup_htmlviewer_edit').textContent = "ON"
-        }
-    })
-    document.querySelector('.startup_guidebook').addEventListener('click', function () {
-        if (localStorage.getItem('startup_guidebook')) {
-            localStorage.removeItem('startup_guidebook')
-            document.querySelector('.startup_guidebook').textContent = "OFF"
-        } else {
-            localStorage.setItem('startup_guidebook', true);
-            document.querySelector('.startup_guidebook').textContent = "ON"
-        }
-    })
-    document.querySelector('.startup_objective').addEventListener('click', function () {
-        if (localStorage.getItem('startup_objective')) {
-            localStorage.removeItem('startup_objective')
-            document.querySelector('.startup_objective').textContent = "OFF"
-        } else {
-            localStorage.setItem('startup_objective', true);
-            document.querySelector('.startup_objective').textContent = "ON"
-        }
-    })
-    document.querySelector('.startup_calendar').addEventListener('click', function () {
-        if (localStorage.getItem('startup_calendar')) {
-            localStorage.removeItem('startup_calendar')
-            document.querySelector('.startup_calendar').textContent = "OFF"
-        } else {
-            localStorage.setItem('startup_calendar', true);
-            document.querySelector('.startup_calendar').textContent = "ON"
-        }
-    })
+    const toggleSetting_program = (selector, key, onText, offText) => {
+        document.querySelector(selector).addEventListener('click', () => {
+            if (localStorage.getItem(key)) {
+                localStorage.removeItem(key);
+                document.querySelector(selector).textContent = offText;
+            } else {
+                localStorage.setItem(key, true);
+                document.querySelector(selector).textContent = onText;
+            }
+        });
+    };
+    toggleSetting_program('.startup_sound', 'driver_sound', 'UN INSTALL', 'INSTALL');
+    toggleSetting_program('.startup_versiontext', 'startup_versiontext', 'ON', 'OFF');
+    toggleSetting_program('.startup_note', 'startup_note', 'ON', 'OFF');
+    toggleSetting_program('.startup_computer', 'startup_computer', 'ON', 'OFF');
+    toggleSetting_program('.startup_color', 'startup_color', 'ON', 'OFF');
+    toggleSetting_program('.startup_screen', 'startup_screen', 'ON', 'OFF');
+    toggleSetting_program('.startup_htmlviewer_edit', 'startup_htmlviewer_edit', 'ON', 'OFF');
+    toggleSetting_program('.startup_guidebook', 'startup_guidebook', 'ON', 'OFF');
+    toggleSetting_program('.startup_objective', 'startup_objective', 'ON', 'OFF');
+    toggleSetting_program('.startup_calendar', 'startup_calendar', 'ON', 'OFF');
+    toggleSetting_program('.startup_speed', 'prompt_data2', 'HIGH', 'LOW');
+    toggleSetting_program('.auto_startup', 'auto_startup', 'ON', 'OFF');
 
-    document.querySelector('.startup_speed').addEventListener('click', function () {
-        if (localStorage.getItem('prompt_data2')) {
-            localStorage.removeItem('prompt_data2')
-            document.querySelector('.startup_speed').textContent = "LOW"
-        } else {
-            localStorage.setItem('prompt_data2', true);
-            document.querySelector('.startup_speed').textContent = "HIGH"
-        }
-    })
-
-    document.querySelector('.auto_startup').addEventListener('click', function () {
-        if (localStorage.getItem('auto_startup')) {
-            localStorage.removeItem('auto_startup')
-            document.querySelector('.auto_startup').textContent = "OFF"
-        } else {
-            localStorage.setItem('auto_startup', true);
-            document.querySelector('.auto_startup').textContent = "ON"
-        }
-    })
-
-    document.querySelector('.startup_sound').addEventListener('click', function () {
-        if (localStorage.getItem('driver_sound')) {
-            localStorage.removeItem('driver_sound')
-            document.querySelector('.startup_sound').textContent = "INSTALL"
-            document.querySelector('.installbutton_1').textContent = "install"
-        } else {
-            localStorage.setItem('driver_sound', true);
-            document.querySelector('.startup_sound').textContent = "UN INSTALL"
-            document.querySelector('.installbutton_1').textContent = "uninstall"
-        }
-    })
-
-    document.querySelector('.startup_versiontext').addEventListener('click', function () {
-        if (localStorage.getItem('startup_versiontext')) {
-            localStorage.removeItem('startup_versiontext')
-            document.querySelector('.startup_versiontext').textContent = "OFF"
-            document.querySelector('.desktop_version_text').style.display = "none";
-        } else {
-            localStorage.setItem('startup_versiontext', true);
-            document.querySelector('.startup_versiontext').textContent = "ON";
-            document.querySelector('.desktop_version_text').style.display = "block";
-        }
-    })
-
-    function font_clear() {
-        localStorage.removeItem('font_default');
-        localStorage.removeItem('font_sans_serif');
-        localStorage.removeItem('font_cursive');
-        localStorage.removeItem('font_fantasy');
-        localStorage.removeItem('font_monospace');
-    }
-
-    document.querySelector('.font_default').addEventListener('click', function () {
-        font_clear()
+    const font_clear = () => {
+        ['font_default', 'font_sans_serif', 'font_cursive', 'font_fantasy', 'font_monospace'].forEach(item => localStorage.removeItem(item));
+    };
+    const setFont = (font) => {
+        font_clear();
+        localStorage.setItem(`font_${font}`, true);
+        document.querySelector("body").style.fontFamily = font;
+    };
+    document.querySelector('.font_default').addEventListener('click', () => {
+        font_clear();
         document.querySelector("body").style.fontFamily = "serif";
-    })
-
-    document.querySelector('.font_sans_serif').addEventListener('click', function () {
-        font_clear()
-        localStorage.setItem('font_sans_serif', true);
-        document.querySelector("body").style.fontFamily = "sans-serif";
-    })
-
-    document.querySelector('.font_cursive').addEventListener('click', function () {
-        font_clear()
-        localStorage.setItem('font_cursive', true);
-        document.querySelector("body").style.fontFamily = "cursive";
-    })
-
-    document.querySelector('.font_fantasy').addEventListener('click', function () {
-        font_clear()
-        localStorage.setItem('font_fantasy', true);
-        document.querySelector("body").style.fontFamily = "fantasy";
-    })
-
-    document.querySelector('.font_monospace').addEventListener('click', function () {
-        font_clear()
-        localStorage.setItem('font_monospace', true);
-        document.querySelector("body").style.fontFamily = "monospace";
-    })
+    });
+    document.querySelector('.font_sans_serif').addEventListener('click', () => setFont('sans_serif'));
+    document.querySelector('.font_cursive').addEventListener('click', () => setFont('cursive'));
+    document.querySelector('.font_fantasy').addEventListener('click', () => setFont('fantasy'));
+    document.querySelector('.font_monospace').addEventListener('click', () => setFont('monospace'));
 
     function nexser_boot_check() {
         if (localStorage.getItem('driver_sound')) {
@@ -911,17 +796,17 @@ if (ua.includes("mobile")) {
         }
     }
 
-    document.querySelector('.boot_sound').addEventListener('click', function () {
+    document.querySelector('.boot_sound').addEventListener('click', () => {
         if (localStorage.getItem('driver_sound')) {
-            localStorage.removeItem('driver_sound')
-            document.querySelector('.startup_sound').textContent = "INSTALL"
-            document.querySelector('.installbutton_1').textContent = "install"
+            localStorage.removeItem('driver_sound');
+            document.querySelector('.startup_sound').textContent = "INSTALL";
+            document.querySelector('.installbutton_1').textContent = "install";
         } else {
             localStorage.setItem('driver_sound', true);
-            document.querySelector('.startup_sound').textContent = "UN INSTALL"
-            document.querySelector('.installbutton_1').textContent = "uninstall"
+            document.querySelector('.startup_sound').textContent = "UN INSTALL";
+            document.querySelector('.installbutton_1').textContent = "uninstall";
         }
-    })
+    });
 
     function pass_submit() {
         if (document.querySelector('.password').value == "") {
@@ -1301,7 +1186,6 @@ if (ua.includes("mobile")) {
             }, 1500);
             setTimeout(() => {
                 startup_window_open()
-
             }, 2000);
         }, 50);
     }
@@ -1312,65 +1196,59 @@ if (ua.includes("mobile")) {
         }, 100);
     })
 
-    document.querySelector('.login_welcome').addEventListener('click', function () {
+    document.querySelector('.login_welcome').addEventListener('click', () => {
         localStorage.setItem('login_welcome', true);
-    })
-    document.querySelector('.nologin_welcome').addEventListener('click', function () {
+    });
+    document.querySelector('.nologin_welcome').addEventListener('click', () => {
         localStorage.removeItem('login_welcome');
-    })
-
+    });
 
     function welcome_animation() {
         sound_stop();
         sound7();
-        document.getElementById('nex').style.cursor = 'none';
-        document.getElementsByClassName('start_nexser')[0].style.display = "none";
-        document.getElementsByClassName('startnexser_close')[0].style.display = "none";
-        document.getElementsByClassName('welcome_window_inline')[0].style.display = "none";
-        document.getElementsByClassName('welcome_text1')[0].style.position = "absolute";
-        document.getElementsByClassName('welcome_text1')[0].style.fontSize = "80px";
-        document.getElementsByClassName('welcome_text1')[0].style.marginTop = "125px";
-        document.getElementsByClassName('welcome_text1')[0].style.marginLeft = "50px";
-        document.getElementsByClassName('welcome_underline')[0].style.right = "0";
-        document.getElementsByClassName('welcome_underline')[0].style.width = "0%";
-        document.getElementsByClassName('welcome_text2')[0].style.display = "none";
-        document.getElementsByClassName('welcome_icons')[0].style.display = "none";
-
+        const nex = document.getElementById('nex');
+        const startNexser = document.getElementsByClassName('start_nexser')[0];
+        const startNexserClose = document.getElementsByClassName('startnexser_close')[0];
+        const welcomeWindowInline = document.getElementsByClassName('welcome_window_inline')[0];
+        const welcomeText1 = document.getElementsByClassName('welcome_text1')[0];
+        const welcomeUnderline = document.getElementsByClassName('welcome_underline')[0];
+        const welcomeText2 = document.getElementsByClassName('welcome_text2')[0];
+        const welcomeIcons = document.getElementsByClassName('welcome_icons')[0];
+        nex.style.cursor = 'none';
+        startNexser.style.display = "none";
+        startNexserClose.style.display = "none";
+        welcomeWindowInline.style.display = "none";
+        welcomeText1.style.position = "absolute";
+        welcomeText1.style.fontSize = "80px";
+        welcomeText1.style.marginTop = "125px";
+        welcomeText1.style.marginLeft = "50px";
+        welcomeUnderline.style.right = "0";
+        welcomeUnderline.style.width = "0%";
+        welcomeText2.style.display = "none";
+        welcomeIcons.style.display = "none";
         setTimeout(() => {
-
+            welcomeWindowInline.style.display = "block";
             setTimeout(() => {
-                document.getElementsByClassName('welcome_window_inline')[0].style.display = "block"
+                welcomeText1.style.transition = "0.25s cubic-bezier(0, 0, 1, 1)";
+                welcomeText1.style.fontSize = "40px";
+                welcomeText1.style.marginTop = "0px";
+                welcomeText1.style.marginLeft = "0px";
+            }, 500);
+            setTimeout(() => {
+                welcomeUnderline.style.transition = "0.25s cubic-bezier(0, 0, 1, 1)";
+                welcomeUnderline.style.width = "100%";
                 setTimeout(() => {
-                    document.getElementsByClassName('welcome_text1')[0].style.fontSize = "70px"
-                    document.getElementsByClassName('welcome_text1')[0].style.marginTop = "80px"
-                    document.getElementsByClassName('welcome_text1')[0].style.marginLeft = "25px"
-                    document.getElementsByClassName('welcome_text1')[0].style.transition = "0.25s cubic-bezier(0, 0, 1, 1)"
-                    document.getElementsByClassName('welcome_text1')[0].style.fontSize = "40px"
-                    document.getElementsByClassName('welcome_text1')[0].style.marginTop = "0px"
-                    document.getElementsByClassName('welcome_text1')[0].style.marginLeft = "0px"
-                }, 500);
-
-                setTimeout(() => {
-                    document.getElementsByClassName('welcome_underline')[0].style.width = "5%"
-                    document.getElementsByClassName('welcome_underline')[0].style.transition = "0.25s cubic-bezier(0, 0, 1, 1)"
-                    document.getElementsByClassName('welcome_underline')[0].style.width = "100%"
-                    setTimeout(() => {
-                        document.getElementsByClassName('welcome_text2')[0].style.display = "block";
-                        document.getElementsByClassName('welcome_icons')[0].style.display = "block";
-                        document.getElementById('nex').style.cursor = '';
-                        if (!localStorage.getItem('start_nexser')) {
-                            document.getElementsByClassName('start_nexser')[0].style.display = "block";
-                        } else {
-                            document.getElementsByClassName('start_nexser')[0].style.display = "none";
-                            document.getElementsByClassName('startnexser_close')[0].style.display = "block";
-                        }
-                    }, 300);
-                }, 1000);
-
-            }, 250);
-
-        });
-
+                    welcomeText2.style.display = "block";
+                    welcomeIcons.style.display = "block";
+                    nex.style.cursor = '';
+                    if (!localStorage.getItem('start_nexser')) {
+                        startNexser.style.display = "block";
+                    } else {
+                        startNexserClose.style.display = "block";
+                    }
+                }, 300);
+            }, 1000);
+        }, 250);
     }
 
     function welcome() {
@@ -1381,56 +1259,24 @@ if (ua.includes("mobile")) {
 
     startup_window_open()
     function startup_window_open() {
-        if (localStorage.getItem('startup_computer')) {
-            const element = document.querySelector('.my_computer');
-            element.closest('.child_windows');
-            element.classList.remove('active');
-
-        }
-        if (localStorage.getItem('startup_note')) {
-            const element = document.querySelector('.note_pad');
-            element.closest('.child_windows');
-            element.classList.remove('active');
-
-        }
-        if (localStorage.getItem('startup_color')) {
-            const element = document.querySelector('.color_menu');
-            element.classList.remove('active');
-
-        }
-        if (localStorage.getItem('startup_screen')) {
-            const element = document.querySelector('.screen_text_menu');
-            element.closest('.child_windows');
-            element.classList.remove('active');
-
-        }
-        if (localStorage.getItem('startup_htmlviewer_edit')) {
-            const element = document.querySelector('.htmlviewer_edit_menu');
-            element.closest('.child_windows');
-            element.classList.remove('active');
-
-        }
-        if (localStorage.getItem('startup_guidebook')) {
-            const element = document.querySelector('.nexser_guidebook_menu');
-            element.closest('.child_windows');
-            element.classList.remove('active');
-
-        }
-        if (localStorage.getItem('startup_objective')) {
-            const element = document.querySelector('.objective_menu');
-            element.closest('.child_windows');
-            element.classList.remove('active');
-
-        }
-        if (localStorage.getItem('startup_calendar')) {
-            const element = document.querySelector('.calendar_menu');
-            element.closest('.child_windows');
-            element.classList.remove('active');
-
-        }
-        titlecolor_set()
+        const elements = [
+            { key: 'startup_computer', selector: '.my_computer' },
+            { key: 'startup_note', selector: '.note_pad' },
+            { key: 'startup_color', selector: '.color_menu' },
+            { key: 'startup_screen', selector: '.screen_text_menu' },
+            { key: 'startup_htmlviewer_edit', selector: '.htmlviewer_edit_menu' },
+            { key: 'startup_guidebook', selector: '.nexser_guidebook_menu' },
+            { key: 'startup_objective', selector: '.objective_menu' },
+            { key: 'startup_calendar', selector: '.calendar_menu' }
+        ];
+        elements.forEach(item => {
+            if (localStorage.getItem(item.key)) {
+                const element = document.querySelector(item.selector);
+                element.classList.remove('active');
+            }
+        });
+        titlecolor_set();
     }
-
 
     function nexser_signout() {
         startmenu_close()
@@ -3806,6 +3652,7 @@ if (ua.includes("mobile")) {
             alltitle_navyreomve();
             assignClassToFrontmostElement('child_windows:not(.active)', 'navy');
             titlecolor_set();
+            resize_background_image();
             document.querySelectorAll('.bigscreen_button').forEach(element => {
                 const newChild = document.createElement('div');
                 newChild.className = 'bigscreen_button_child';
@@ -4347,63 +4194,27 @@ if (ua.includes("mobile")) {
         });
     });
 
-    function back_pattern_remove() {
-        document.querySelector('.backgrounds1').style.display = "none";
-        document.querySelector('.backgrounds2').style.display = "none";
-        document.querySelector('.backgrounds3').style.display = "none";
-        document.querySelector('.backgrounds4').style.display = "none";
-        document.querySelector('.backgrounds5').style.display = "none";
-        document.querySelector('.backgrounds6').style.display = "none";
-        document.querySelector('.backgrounds7').style.display = "none";
-        document.querySelector('.backgrounds8').style.display = "none";
-        document.querySelector('.backgrounds9').style.display = "none";
-        localStorage.removeItem('back_pattern_1');
-        localStorage.removeItem('back_pattern_2');
-        localStorage.removeItem('back_pattern_3');
-        localStorage.removeItem('back_pattern_4');
-        localStorage.removeItem('back_pattern_5');
-        localStorage.removeItem('back_pattern_6');
-        localStorage.removeItem('back_pattern_7');
-        localStorage.removeItem('back_pattern_8');
-        localStorage.removeItem('back_pattern_9');
-    }
+    const back_pattern_remove = () => {
+        for (let i = 1; i <= 9; i++) {
+            document.querySelector(`.backgrounds${i}`).style.display = "none";
+            localStorage.removeItem(`back_pattern_${i}`);
+        }
+    };
 
-    document.querySelector('.back_pattern_1').addEventListener('click', function () {
-        localStorage.setItem('back_pattern_1', true);
-        back_pattern_set()
-    })
-    document.querySelector('.back_pattern_2').addEventListener('click', function () {
-        localStorage.setItem('back_pattern_2', true);
-        back_pattern_set()
-    })
-    document.querySelector('.back_pattern_3').addEventListener('click', function () {
-        localStorage.setItem('back_pattern_3', true);
-        back_pattern_set()
-    })
-    document.querySelector('.back_pattern_4').addEventListener('click', function () {
-        localStorage.setItem('back_pattern_4', true);
-        back_pattern_set()
-    })
-    document.querySelector('.back_pattern_5').addEventListener('click', function () {
-        localStorage.setItem('back_pattern_5', true);
-        back_pattern_set()
-    })
-    document.querySelector('.back_pattern_6').addEventListener('click', function () {
-        localStorage.setItem('back_pattern_6', true);
-        back_pattern_set()
-    })
-    document.querySelector('.back_pattern_7').addEventListener('click', function () {
-        localStorage.setItem('back_pattern_7', true);
-        back_pattern_set()
-    })
-    document.querySelector('.back_pattern_8').addEventListener('click', function () {
-        localStorage.setItem('back_pattern_8', true);
-        back_pattern_set()
-    })
-    document.querySelector('.back_pattern_9').addEventListener('click', function () {
-        localStorage.setItem('back_pattern_9', true);
-        back_pattern_set()
-    })
+    const setBackPattern = (pattern) => {
+        localStorage.setItem(pattern, true);
+        back_pattern_set();
+    };
+
+    document.querySelector('.back_pattern_1').addEventListener('click', () => setBackPattern('back_pattern_1'));
+    document.querySelector('.back_pattern_2').addEventListener('click', () => setBackPattern('back_pattern_2'));
+    document.querySelector('.back_pattern_3').addEventListener('click', () => setBackPattern('back_pattern_3'));
+    document.querySelector('.back_pattern_4').addEventListener('click', () => setBackPattern('back_pattern_4'));
+    document.querySelector('.back_pattern_5').addEventListener('click', () => setBackPattern('back_pattern_5'));
+    document.querySelector('.back_pattern_6').addEventListener('click', () => setBackPattern('back_pattern_6'));
+    document.querySelector('.back_pattern_7').addEventListener('click', () => setBackPattern('back_pattern_7'));
+    document.querySelector('.back_pattern_8').addEventListener('click', () => setBackPattern('back_pattern_8'));
+    document.querySelector('.back_pattern_9').addEventListener('click', () => setBackPattern('back_pattern_9'));
 
     function back_pattern_set() {
         if (localStorage.getItem('back_pattern_1')) {
@@ -6467,38 +6278,23 @@ if (ua.includes("mobile")) {
         paint_ctx.fillRect(0, 0, paint_canvas.width, paint_canvas.height);
     }
 
-    function wallpaper_allremove() {
+    const wallpaper_allremove = () => {
         background_img.src = "";
         background_img.style.display = "none";
-        document.querySelector('.nexser_backgroundimage_1').style.display = "none"
-        document.querySelector('.nexser_backgroundimage_2').style.display = "none"
-        document.querySelector('.nexser_backgroundimage_3').style.display = "none"
-        localStorage.removeItem('wallpaper_95')
-        localStorage.removeItem('wallpaper_95_2')
-        localStorage.removeItem('wallpaper_xp')
-    }
-
-
-    document.querySelector('.wallpaper_95').addEventListener('click', function () {
-        wallpaper_allremove()
-        localStorage.setItem('wallpaper_95', true);
-        document.querySelector('.nexser_backgroundimage_1').style.display = "block";
-        minidesk_backgroundresize1();
-    })
-
-    document.querySelector('.wallpaper_95_2').addEventListener('click', function () {
-        wallpaper_allremove()
-        localStorage.setItem('wallpaper_95_2', true);
-        document.querySelector('.nexser_backgroundimage_2').style.display = "block";
-        minidesk_backgroundresize2();
-    })
-
-    document.querySelector('.wallpaper_xp').addEventListener('click', function () {
-        wallpaper_allremove()
-        localStorage.setItem('wallpaper_xp', true);
-        document.querySelector('.nexser_backgroundimage_3').style.display = "block";
-        minidesk_backgroundresize3();
-    })
+        ['.nexser_backgroundimage_1', '.nexser_backgroundimage_2', '.nexser_backgroundimage_3'].forEach(selector => {
+            document.querySelector(selector).style.display = "none";
+        });
+        ['wallpaper_95', 'wallpaper_95_2', 'wallpaper_xp'].forEach(item => localStorage.removeItem(item));
+    };
+    const setWallpaper = (key, imageClass, resizeFunction) => {
+        wallpaper_allremove();
+        localStorage.setItem(key, true);
+        document.querySelector(imageClass).style.display = "block";
+        resizeFunction();
+    };
+    document.querySelector('.wallpaper_95').addEventListener('click', () => setWallpaper('wallpaper_95', '.nexser_backgroundimage_1', minidesk_backgroundresize1));
+    document.querySelector('.wallpaper_95_2').addEventListener('click', () => setWallpaper('wallpaper_95_2', '.nexser_backgroundimage_2', minidesk_backgroundresize2));
+    document.querySelector('.wallpaper_xp').addEventListener('click', () => setWallpaper('wallpaper_xp', '.nexser_backgroundimage_3', minidesk_backgroundresize3));
 
     const othello_board = document.getElementById('othello_board');
     const size = 8;
@@ -6881,6 +6677,7 @@ if (ua.includes("mobile")) {
 
     const taskbar_b = document.querySelector('#task_buttons2');
     function test_windows_button() {
+        resize_background_image();
         document.querySelectorAll('.task_buttons').forEach(function (task_buttons) {
             task_buttons.remove()
         });
