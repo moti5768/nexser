@@ -6253,6 +6253,7 @@ if (ua.includes("mobile")) {
             }, totalDelay + 500);
         }
     }
+    document.querySelector('.local_memory').innerHTML = '&emsp;' + localStorage.getItem('maxSize') + "KB" + '&emsp;';
 
     function displayLocalStorageDetails() {
         document.querySelectorAll('.localstorage_key').forEach(function (localstorage_key) {
