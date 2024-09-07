@@ -134,6 +134,10 @@ li {
 
 /* text_size */
 
+.xx-small {
+    font-size: xx-small;
+}
+
 .x-small {
     font-size: x-small;
 }
@@ -152,6 +156,10 @@ li {
 
 .x-large {
     font-size: x-large;
+}
+
+.xx-large {
+    font-size: xx-large;
 }
 
 /* text_design */
@@ -1033,6 +1041,14 @@ input[type="file"] {
     width: 900px;
     height: 500px;
     min-width: 250px;
+}
+
+.alarm_menu {
+    width: 300px;
+}
+
+.delete_btn {
+    margin: 2px;
 }
 
 #v {
