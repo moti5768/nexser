@@ -4572,7 +4572,6 @@ if (ua.includes("mobile")) {
         } else if (!localStorage.getItem('objectiveData') && !localStorage.getItem('objectiveTitleData') && (!localStorage.getItem('objective_area'))) {
             document.getElementsByClassName('objective_title_area')[0].value = "";
             document.getElementsByClassName('objective_area')[0].value = "";
-        } else {
             objective_menu.classList.add('active');
             localStorage.removeItem('objective_area');
             objective_menu.classList.remove('selectwindows')
