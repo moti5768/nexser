@@ -4,6 +4,7 @@ try {
     window.addEventListener("testPassive", null, opts);
     window.removeEventListener("testPassive", null, opts);
 } catch (e) { }
+
 const ua = navigator.userAgent.toLowerCase();
 if (ua.includes("mobile")) {
     // Mobile (iPhone、iPad「Chrome、Edge」、Android)
