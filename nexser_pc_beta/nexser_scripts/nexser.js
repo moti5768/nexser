@@ -4,7 +4,6 @@ try {
     window.addEventListener("testPassive", null, opts);
     window.removeEventListener("testPassive", null, opts);
 } catch (e) { }
-
 const ua = navigator.userAgent.toLowerCase();
 if (ua.includes("mobile")) {
     // Mobile (iPhone、iPad「Chrome、Edge」、Android)
@@ -1877,6 +1876,21 @@ if (ua.includes("mobile")) {
         }, 0);
     }
 
+
+    function executeCommand2() {
+        const name = document.getElementsByClassName('focus2')[0].value;
+        document.querySelector('.name2').classList.add('pointer_none');
+        document.querySelector('.name2').classList.remove('name2');
+        document.querySelector('.focus2').classList.remove('focus2');
+        // 新しい入力フォームを生成
+        const newInputContainer = document.createElement('div');
+        newInputContainer.className = 'input_container';
+        newInputContainer.classList.add('prompt_hukusei2');
+        newInputContainer.innerHTML = `<textarea rows="1" class="command_input2 name2 focus2" style="color: red;" placeholder="|">${name} は操作可能なプログラムとして認識されていません。</textarea>`;
+        // 新しい入力フォームを追加
+        document.getElementById('form_container').appendChild(newInputContainer);
+    }
+
     function commandarea_resize() {
         const textarea = document.querySelector('.focus2');
         textarea.addEventListener('input', () => {
@@ -2424,7 +2438,8 @@ if (ua.includes("mobile")) {
                 prompt_text2.style.color = "";
                 break;
             default:
-                prompt_text2.style.color = "red";
+                prompt_text2.style.color = "";
+                executeCommand2()
                 break;
         }
         titlecolor_set()
@@ -2439,7 +2454,8 @@ if (ua.includes("mobile")) {
             prompt_shell_menu.closest('.child_windows');
             prompt_shell_menu.classList.remove('active');
             prompt_shell_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
+            shell_resize();
+            zindexwindow_addnavy();
         });
     }
     function shellmenu_close() {
