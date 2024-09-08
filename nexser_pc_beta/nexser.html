@@ -58,7 +58,7 @@
             <progress id="myProgress" value="0" max="100">0%</progress><br><br><br><br><br><br><br>
 
             <code>
-                    <textarea id="code_html" class="white_text" style="display: none; width: 99%; height: 65vh; background-color: black; resize: none; outline: none;">
+                    <textarea id="code_html" class="white_text" style="display: none; width: 99%; height: 65vh; background-color: black; resize: none;">
 
 
 
@@ -67,7 +67,7 @@
 
 
             <code>
-                    <textarea id="code_script" class="white_text" style="display: none; width: 99%; height: 65vh; background-color: black; resize: none; outline: none;">
+                    <textarea id="code_script" class="white_text" style="display: none; width: 99%; height: 65vh; background-color: black; resize: none;">
 
 
 
@@ -75,7 +75,7 @@
                 </code>
 
             <code>
-                    <textarea id="code_script2" class="white_text" style="display: none; width: 99%; height: 65vh; background-color: black; resize: none; outline: none;">
+                    <textarea id="code_script2" class="white_text" style="display: none; width: 99%; height: 65vh; background-color: black; resize: none;">
 
 
 
@@ -745,13 +745,13 @@
                             <form name="objective_title_form" onkeydown="if(event.keyCode == 13){return false;}">
                                 <textarea id="objective_title_text" name="objective_title_area"
                                     class="objective_title_area border2"
-                                    style="outline: none; resize: none; width: 700px; height: 20px; font-size: large;"
-                                    cols="1" rows="1"></textarea>
+                                    style="resize: none; width: 700px; height: 20px; font-size: large;" cols="1"
+                                    rows="1"></textarea>
                             </form>
                             <p style="display: inline;" class="border2">目標を記入:</p>
                             <form name="objective_form">
                                 <textarea id="objective_text" name="objective_area" class="objective_area border2"
-                                    style="overflow: scroll; outline: none;" cols="50" rows="15"></textarea>
+                                    style="overflow: scroll;" cols="50" rows="15"></textarea>
                             </form>
                         </div>
                     </div>
@@ -1928,7 +1928,7 @@
                                 onsubmit="return false; length" onkeydown="if(event.keyCode == 13){return false;}">
                                 <textarea type="text" name="back_text" class="back_text" id="back_text_input"
                                     maxlength="20"
-                                    style="border: none; outline: none; background: whitesmoke; resize: none; height: 16px; width: 100%; font-size: large;"></textarea>
+                                    style="border: none; background: whitesmoke; resize: none; height: 16px; width: 100%; font-size: large;"></textarea>
                             </form>
                             <input type="submit" class="button2" value="submit" onclick="backtext_check()">
                             <input type="submit" class="button2" value="clear" onclick="backtext_clear()"><br>
@@ -2328,7 +2328,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                 <form name="drop_form" action="" class="border2">
                                     <textarea name="drop_area" class="drop_area" id="drop" cols="50" rows="10"
                                         maxlength="0"
-                                        style="border: none; resize: none; outline: none; background: whitesmoke; color: black; height: 100vh; width: 100%;"></textarea>
+                                        style="border: none; resize: none; background: whitesmoke; color: black; height: 100vh; width: 100%;"></textarea>
                                 </form>
                             </div>
                         </div>
@@ -2768,7 +2768,8 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
 
                     <div class="child_windows cpu_bench_menu back_silver active">
                         <div class="title">
-                            <span class="title_icon"></span><span>cpu bench</span>
+                            <span class="title_icon"></span><span>cpu bench <span
+                                    class="nexser_title_text"></span></span>
                         </div>
 
                         <div class="title_buttons cpubuttons" style="display: none;">
@@ -2791,40 +2792,28 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
 
                         <div class="window_contents back_silver">
                             <div class="cpumenu_1"
-                                style="width: 700px; height: 400px; background: linear-gradient(45deg, silver, blue);">
-                                <div style="border: solid 2px black; height: 395px;">
-                                    <p style="font-size: 80px; text-align: center; padding-top: 125px;">
-                                        <span class="border2">CPU BENCH</span>
-                                        <span class="large white_text"
-                                            style="position: absolute; bottom: 10px; right: 10px;">version
-                                            0.1</span>
-                                    </p>
-                                    <p
-                                        style="font-size: 20px; padding-top: 25px; position: absolute; top: 25px; left: 5px;">
-                                        <span class="border2 nexser_title_text"></span>
-                                    </p>
+                                style="width: 600px; height: 300px; background: linear-gradient(45deg, silver, blue);">
+                                <div>
+                                    <p class="border2 content_center" style="font-size: 40px;">&nbsp;CPU BENCH&nbsp;</p>
+                                    <span class="large white_text"
+                                        style="position: absolute; bottom: 5px; right: 5px;">version 0.1</span>
                                 </div>
                             </div>
 
-                            <div class="cpumenu_2" style="width: 800px; height: 450px; display: none;">
+                            <div class="cpumenu_2" style="width: 700px; height: 370px; display: none;">
                                 <p class="x-large white_text" style="background-color: black;">cpu bench</p>
-
                                 <div style="display: flex;">
-                                    <canvas id="benchmarkCanvas" style="background: black;" width="800"
-                                        height="300"></canvas>
+                                    <canvas id="benchmarkCanvas" style="background: black;" width="700"
+                                        height="250"></canvas>
                                 </div>
-
                                 <button class="button2 cpurun_btn large apply_button2" style="width: 200px;"
                                     onclick="cpubench()">&emsp;CPU BENCH RUN&emsp;</button>
                                 <p class="cpu_run_text border"
                                     style="width: auto; height: 20px; background-color: white;">
                                 </p>
-
                                 <span class="button2 cpurun_btn_clear pointer_none" onclick="cpubench_clear()">&emsp;CPU
                                     BENCH CLEAR&emsp;</span>
-
                                 <div style="position: absolute; bottom: 0; width: 100%;">
-                                    <span class="nexser_title_text"></span>
                                     <p style="display: block; position: absolute; bottom: 0px; right: 0px;">
                                         cpu bench version: 0.1
                                     </p>
@@ -3501,7 +3490,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             <span class="x-large bold border2">家計簿</span>
                             <div class="input-group">
                                 <label for="type">タイプ:</label>
-                                <select id="type" class="border medium back_silver">
+                                <select id="type" class="button2 medium back_silver">
                                     <option value="収入">収入</option>
                                     <option value="支出">支出</option>
                                 </select>
@@ -3524,7 +3513,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                 <input type="time" id="time" class="border2 large">
                             </div>
                             <button onclick="kakeibo_addEntry()" class="button2 medium">追加</button>
-                            <div class="total" id="total"></div>
+                            <div class="x-large">合計:<span class="total" id="total"></span></div>
                             <div id="entries" class="border"></div><br>
                         </div>
                     </div>
@@ -3592,7 +3581,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         </div>
 
                         <div class="window_contents border2">
-                            <p class="underline" style="color: red; font-size: 40px; font-style: italic;">Welcome
+                            <p class="underline red_text xx-large" style="font-style: italic;">Welcome
                                 Nexser
                                 Guidebook
                             </p>

@@ -3,6 +3,7 @@
 * {
     margin: 0px;
     padding: 0px;
+    outline: none;
 }
 
 html,
@@ -178,7 +179,6 @@ li {
 
 .program_border {
     border: solid 1.5px white;
-    outline: none;
 }
 
 .border {
@@ -186,7 +186,6 @@ li {
     border-left: 1.5px #eee solid;
     border-bottom: 1.5px #333 solid;
     border-right: 1.5px #333 solid;
-    outline: none;
 }
 
 .border2 {
@@ -195,7 +194,6 @@ li {
     border-left: 1.5px #333 solid;
     border-bottom: 1.5px whitesmoke solid;
     border-right: 1.5px whitesmoke solid;
-    outline: none;
 }
 
 /* desktop */
@@ -276,7 +274,6 @@ li {
     width: 50%;
     background: black;
     border: none;
-    outline: none;
     color: white;
 }
 
@@ -314,7 +311,6 @@ li {
     width: 100%;
     height: 12.5px;
     border: none;
-    outline: none;
     color: white;
     background: black;
     resize: none;
@@ -378,7 +374,6 @@ li {
     box-shadow: 0 0 0 0.5px dimgray;
     color: black;
     background: silver;
-    outline: none;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
@@ -410,8 +405,6 @@ li {
     border-right-color: #808080;
     border-bottom-color: #808080;
     box-shadow: 0.5px 0.5px black;
-    cursor: pointer;
-    box-sizing: border-box;
 }
 
 .button.pressed {
@@ -441,7 +434,6 @@ li {
     border-right-color: #808080;
     border-bottom-color: #808080;
     box-shadow: 0.5px 0.5px black;
-    cursor: pointer;
 }
 
 .button2.pressed {
@@ -581,7 +573,6 @@ input[type="file"] {
     border-right-color: #808080;
     border-bottom-color: #808080;
     box-shadow: 0.5px 0.5px black;
-    cursor: pointer;
     box-sizing: border-box;
 }
 
@@ -2070,7 +2061,6 @@ body::-webkit-scrollbar {
 }
 
 .child_list li:hover {
-    outline: none;
     background: darkblue;
     color: white;
 }
@@ -2197,7 +2187,6 @@ body::-webkit-scrollbar {
 /* note */
 
 .note_area {
-    outline: none;
     width: min-content;
     background: white;
     overflow: scroll;
@@ -2213,7 +2202,6 @@ body::-webkit-scrollbar {
 textarea {
     display: block;
     border-radius: 0;
-    outline: none;
     padding: 2.5px;
 }
 
@@ -2267,7 +2255,6 @@ textarea {
     border-right: 1.5px #333 solid;
     color: black;
     background: silver;
-    outline: none;
     box-sizing: border-box;
 }
 
@@ -2283,7 +2270,8 @@ textarea {
 
 .htmlviewer_edit_menu {
     width: 800px;
-    height: 510px;
+    height: 500px;
+    min-width: 400px;
 }
 
 .prompt_shell_menu {
@@ -2574,7 +2562,6 @@ td {
     z-index: 0;
     position: absolute;
     top: 0px;
-
     font: 120% bold;
     padding: 0.6em;
     background:
@@ -2588,7 +2575,6 @@ td {
     z-index: 0;
     position: absolute;
     top: 0px;
-
     font: 120% bold;
     padding: 0.6em;
     background:
@@ -2602,7 +2588,6 @@ td {
     z-index: 0;
     position: absolute;
     top: 0px;
-
     background-image: linear-gradient(black 4px, transparent 4px), linear-gradient(90deg, black 4px, transparent 4px), linear-gradient(black 2px, transparent 2px), linear-gradient(90deg, black 2px, rgba(0, 0, 0, 0) 2px);
     background-size: 50px 50px, 50px 50px, 10px 10px, 10px 10px;
     background-position: -4px -4px, -4px -4px, -2px -2px, -2px -2px;
@@ -2615,7 +2600,6 @@ td {
     z-index: 0;
     position: absolute;
     top: 0px;
-
     background-image: linear-gradient(0deg, darkgray 25%, dimgray 50%, teal 75%);
     background-size: 20px 20px;
 }
@@ -2627,7 +2611,6 @@ td {
     z-index: 0;
     position: absolute;
     top: 0px;
-
     background-image: repeating-linear-gradient(45deg, white 25%, transparent 25%, transparent 75%, teal 75%, gray), repeating-linear-gradient(45deg, dimgray 25%, gray 25%, whitesmoke 75%, black 75%, dimgray);
     background-position: 0 0, 20px 20px;
     background-size: 40px 40px;
@@ -2640,7 +2623,6 @@ td {
     z-index: 0;
     position: absolute;
     top: 0px;
-
     background: linear-gradient(#3f96cd, hsl(171, 40%, 91%));
 }
 
@@ -2651,7 +2633,6 @@ td {
     z-index: 0;
     position: absolute;
     top: 0px;
-
     background: linear-gradient(-150deg, teal, steelblue);
 }
 
@@ -2874,7 +2855,6 @@ progress::-webkit-progress-value {
     width: 10px;
     height: 10px;
     position: absolute;
-    cursor: pointer;
     z-index: 1;
     margin: -2.5px;
 }
@@ -2977,14 +2957,12 @@ progress::-webkit-progress-value {
     box-shadow: 5px 5px black;
     background: white;
     color: black;
-    outline: none;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
     list-style: none;
     box-sizing: border-box;
-
     width: 80px;
     height: 100px;
     text-align: center;
@@ -3048,7 +3026,6 @@ progress::-webkit-progress-value {
     width: 100%;
     height: 8px;
     background: #ddd;
-    outline: none;
     transition: opacity .2s;
     border-top: 1.5px #eee solid;
     border-left: 1.5px #eee solid;
@@ -3066,7 +3043,6 @@ progress::-webkit-progress-value {
     border-left: 1.5px #eee solid;
     border-bottom: 1.5px #333 solid;
     border-right: 1.5px #333 solid;
-    cursor: pointer;
 }
 
 #opacitySlider::-moz-range-thumb {
@@ -3077,5 +3053,11 @@ progress::-webkit-progress-value {
     border-left: 1.5px #eee solid;
     border-bottom: 1.5px #333 solid;
     border-right: 1.5px #333 solid;
-    cursor: pointer;
+}
+
+.content_center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
 }

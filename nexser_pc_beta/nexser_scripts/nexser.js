@@ -242,9 +242,6 @@ if (ua.includes("mobile")) {
         }
         if (localStorage.getItem('objectiveData') || localStorage.getItem('objectiveTitleData')) {
             objective_load()
-            objective_resize()
-        } else {
-            objective_resize()
         }
         if (localStorage.getItem('startup_note')) {
             document.querySelector('.startup_note').textContent = "ON"
@@ -1873,7 +1870,7 @@ if (ua.includes("mobile")) {
         // 新しい入力フォームを追加
         document.getElementById('form_container').appendChild(newInputContainer);
         setTimeout(() => {
-            commandarea_resize()
+            document.getElementsByClassName('focus2')[0].focus()
         }, 0);
     }
 
@@ -1898,11 +1895,7 @@ if (ua.includes("mobile")) {
             textarea.style.height = 'auto';
             textarea.style.height = textarea.scrollHeight + 'px';
         });
-        document.getElementsByClassName('focus2')[0].focus()
     }
-
-    commandarea_resize()
-
 
     function nexser_prompt_reset() {
         setTimeout(() => {
@@ -1913,7 +1906,7 @@ if (ua.includes("mobile")) {
             document.querySelector('.command2').classList.add('focus2');
             document.querySelector('.command2').classList.remove('pointer_none');
             document.querySelector('.command2').disabled = false;
-            document.querySelector('.focus2').focus();
+            document.getElementsByClassName('focus2')[0].focus()
             document.querySelector('.focus2').style.height = "";
             prompt2_text_clear();
             prompt_text2.style.color = "";
@@ -2455,7 +2448,6 @@ if (ua.includes("mobile")) {
             prompt_shell_menu.closest('.child_windows');
             prompt_shell_menu.classList.remove('active');
             prompt_shell_menu.style.zIndex = largestZIndex++;
-            shell_resize();
             zindexwindow_addnavy();
         });
     }
@@ -3166,11 +3158,6 @@ if (ua.includes("mobile")) {
             zindexchildwindows.scrollTop = 0;
             zindexchildwindows.scrollLeft = 0;
             titlecolor_set()
-            resizeTextarea()
-            youtubeframe_resize()
-            cameraframe_resize()
-            url_drop_resize()
-            objective_resize()
         })
         z_index_child_windows.addEventListener('dblclick', function () {
             if (zindexchildwindows.classList.contains('minimization')) {
@@ -3379,7 +3366,6 @@ if (ua.includes("mobile")) {
         testbtn.addEventListener('click', () => {
             camera_menu.classList.toggle('active');
             camera_menu.style.zIndex = largestZIndex++;
-            cameraframe_resize()
         })
     );
     document.querySelectorAll('.test_button19').forEach(testbtn =>
@@ -3447,7 +3433,6 @@ if (ua.includes("mobile")) {
         testbtn.addEventListener('click', () => {
             objective_menu.classList.toggle('active');
             objective_menu.style.zIndex = largestZIndex++;
-            objective_resize()
         })
     );
     document.querySelectorAll('.test_button31').forEach(testbtn =>
@@ -3479,7 +3464,6 @@ if (ua.includes("mobile")) {
         testbtn.addEventListener('click', () => {
             youtubevideo_menu.classList.toggle('active');
             youtubevideo_menu.style.zIndex = largestZIndex++;
-            youtubeframe_resize()
         })
     );
     document.querySelectorAll('.test_button37').forEach(testbtn =>
@@ -3520,7 +3504,6 @@ if (ua.includes("mobile")) {
         testbtn.addEventListener('click', () => {
             url_drop_menu.classList.toggle('active');
             url_drop_menu.style.zIndex = largestZIndex++;
-            url_drop_resize()
         })
     );
     document.querySelectorAll('.test_button45').forEach(testbtn =>
@@ -3631,6 +3614,7 @@ if (ua.includes("mobile")) {
         assignClassToFrontmostElement('child_windows:not(.active)', 'navy');
         titlecolor_set();
         resize_background_image();
+        allwindow_resize();
         document.querySelectorAll('.bigscreen_button').forEach(element => {
             const newChild = document.createElement('div');
             newChild.className = 'bigscreen_button_child';
@@ -3641,6 +3625,8 @@ if (ua.includes("mobile")) {
             const taskheight_child = document.querySelector('.taskbar_buttons');
             taskheight_child.style.height = `${taskheight_parent.clientHeight - + 3}px`;
         }, 100);
+        Array.from(document.getElementsByClassName('button')).forEach(addButtonListeners2);
+        Array.from(document.getElementsByClassName('button2')).forEach(addButtonListeners);
     }
 
     const note_parent = document.querySelector('.note_pad');
@@ -3654,7 +3640,6 @@ if (ua.includes("mobile")) {
             displayCursorPos()
         }
     };
-    note_parent.addEventListener('mousemove', resizeTextarea);
 
     const youtubeframe_parent = document.querySelector('.youtubevideo_menu');
     const youtubeframe_child = document.getElementById('youtubeframe');
@@ -3662,7 +3647,6 @@ if (ua.includes("mobile")) {
         youtubeframe_child.style.width = `${youtubeframe_parent.clientWidth}px`;
         youtubeframe_child.style.height = `${youtubeframe_parent.clientHeight + - + 50}px`;
     };
-    youtubeframe_parent.addEventListener('mousemove', youtubeframe_resize);
 
     const cameraframe_parent = document.querySelector('.camera_menu');
     const cameraframe_child = document.getElementById('v');
@@ -3670,7 +3654,6 @@ if (ua.includes("mobile")) {
         cameraframe_child.style.width = `${cameraframe_parent.clientWidth}px`;
         cameraframe_child.style.height = `${cameraframe_parent.clientHeight + - + 85}px`;
     };
-    cameraframe_parent.addEventListener('mousemove', cameraframe_resize);
 
     const url_drop_parent = document.querySelector('.url_drop_menu');
     const url_drop_child = document.querySelector('.url_drop_area');
@@ -3678,7 +3661,6 @@ if (ua.includes("mobile")) {
         url_drop_child.style.width = `${url_drop_parent.clientWidth}px`;
         url_drop_child.style.height = `${url_drop_parent.clientHeight + - + 55}px`;
     };
-    url_drop_parent.addEventListener('mousemove', url_drop_resize);
 
     const objective_parent = document.querySelector('.objective_menu');
     const objective_child = document.querySelector('.objective_area');
@@ -3686,14 +3668,12 @@ if (ua.includes("mobile")) {
         objective_child.style.width = `${objective_parent.clientWidth + - + 5}px`;
         objective_child.style.height = `${objective_parent.clientHeight + - + 160}px`;
     };
-    objective_parent.addEventListener('mousemove', objective_resize);
 
     const window_prompt_content2 = document.querySelector('.window_prompt_content2');
     const window_prompt_resize = () => {
         window_prompt_content2.style.width = `${window_prompt.clientWidth}px`;
         window_prompt_content2.style.height = `${window_prompt.clientHeight + - + 50}px`;
     };
-    window_prompt.addEventListener('mousemove', window_prompt_resize);
 
     const shell_parent = document.querySelector('.prompt_shell_menu');
     const shell_child = document.querySelector('#shell');
@@ -3701,7 +3681,6 @@ if (ua.includes("mobile")) {
         shell_child.style.width = `${shell_parent.clientWidth}px`;
         shell_child.style.height = `${shell_parent.clientHeight + - + 30}px`;
     };
-    shell_parent.addEventListener('mousemove', shell_resize);
 
     const test_site_parent = document.querySelector('.test_site_menu');
     const test_site_child = document.querySelector('.site_frame');
@@ -3709,7 +3688,6 @@ if (ua.includes("mobile")) {
         test_site_child.style.width = `${test_site_parent.clientWidth}px`;
         test_site_child.style.height = `${test_site_parent.clientHeight + - + 30}px`;
     };
-    test_site_parent.addEventListener('mousemove', test_site_resize);
 
     const background_image_parent = document.getElementById('nexser');
     const background_image_child = document.querySelector('.nexser_background_image');
@@ -3731,7 +3709,6 @@ if (ua.includes("mobile")) {
             nexser_nextversion_child.style.height = `${nexser_nextversion_parent.clientHeight + - + 20}px`;
         }
     };
-    nexser_nextversion_parent.addEventListener('mousemove', nexser_nextversion_resize);
 
     const htmlview_parent = document.querySelector('.htmlviewer_run_menu');
     const htmlview_child = document.querySelector('.html_view');
@@ -3742,7 +3719,6 @@ if (ua.includes("mobile")) {
             htmlview_child.style.height = `${htmlview_parent.clientHeight + - + 20}px`;
         }
     };
-    htmlview_parent.addEventListener('mousemove', htmlview_resize);
 
     const htmlview_parent2 = document.querySelector('.htmlviewer_edit_menu');
     const htmlview_child2 = document.querySelector('#editor');
@@ -3753,8 +3729,6 @@ if (ua.includes("mobile")) {
             htmlview_child2.style.height = `${htmlview_parent2.clientHeight + - + 65}px`;
         }
     };
-    htmlview_parent2.addEventListener('mousemove', htmlview_resize2);
-
 
     function addDragButtonListeners(button) {
         button.addEventListener('mousedown', function () {
@@ -4596,7 +4570,6 @@ if (ua.includes("mobile")) {
     });
     function objective_title() {
         objectiveData_clear();
-        objective_resize();
         document.querySelector('.objective_title').textContent = "*objective sheet";
         localStorage.setItem('objective_area', true);
     }
@@ -5950,7 +5923,6 @@ if (ua.includes("mobile")) {
                 prompt_shell_menu.closest('.child_windows');
                 prompt_shell_menu.classList.remove('active');
                 prompt_shell_menu.style.zIndex = largestZIndex++;
-                shell_resize()
             });
 
             var testKey = 'testStorageKey';
@@ -7162,8 +7134,7 @@ if (ua.includes("mobile")) {
         `;
         errorLog.innerHTML += errorMessage + '\n' + '<br>';
         test_alert()
-
-        return false; // デフォルトのエラーハンドリングを行う
+        return false;
     };
 
     function test_alert() {
@@ -7193,8 +7164,7 @@ if (ua.includes("mobile")) {
         taskbtnChild.style.width = `${taskbar.clientWidth - taskbtnRightGroup.clientWidth - 150}px`;
     };
     const taskbar_initResize = () => {
-        taskbar_resize();
-        window.addEventListener('resize', taskbar_resize);
+        window.addEventListener('resize', allwindow_resize);
         new ResizeObserver(() => taskbar_resize()).observe(document.querySelector('.taskbar_rightgroup'));
     };
     setTimeout(taskbar_initResize, 100);
@@ -7202,10 +7172,36 @@ if (ua.includes("mobile")) {
     window.addEventListener('resize', resize_background_image);
     setTimeout(resize_background_image, 100);
 
+
+    const resizeObserver = new ResizeObserver(entries => {
+        for (let entry of entries) {
+            // console.log('Element resized:', entry.target);
+            // console.log('New size:', entry.contentRect.width, entry.contentRect.height);
+            allwindow_resize()
+        }
+    });
+    const allwindow_resizes = document.querySelectorAll('.child_windows');
+    allwindow_resizes.forEach(element => resizeObserver.observe(element));
+    function allwindow_resize() {
+        url_drop_resize()
+        resizeTextarea()
+        youtubeframe_resize()
+        cameraframe_resize()
+        url_drop_resize()
+        objective_resize()
+        window_prompt_resize()
+        commandarea_resize()
+        shell_resize()
+        test_site_resize()
+        nexser_nextversion_resize()
+        htmlview_resize()
+        htmlview_resize2()
+        taskbar_resize()
+    }
+
     function console_errortext_clear() {
         document.getElementById('console_error_text').innerHTML = "";
         document.querySelector('.error_btn').remove()
-        taskbar_resize()
     }
 
     function kakeibo_setCurrentDateTime() {
@@ -7267,7 +7263,7 @@ if (ua.includes("mobile")) {
                 total -= entry.amount;
             }
         });
-        document.getElementById('total').innerText = `合計: ¥${total}`;
+        document.getElementById('total').innerText = `¥${total}`;
     }
     kakeibo_loadEntries();
     kakeibo_setCurrentDateTime();
@@ -7372,8 +7368,5 @@ if (ua.includes("mobile")) {
             );
         }
     }
-
-    Array.from(document.getElementsByClassName('button')).forEach(addButtonListeners2);
-    Array.from(document.getElementsByClassName('button2')).forEach(addButtonListeners);
 
 };
