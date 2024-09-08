@@ -2448,7 +2448,6 @@ if (ua.includes("mobile")) {
             prompt_shell_menu.closest('.child_windows');
             prompt_shell_menu.classList.remove('active');
             prompt_shell_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy();
         });
     }
     function shellmenu_close() {
@@ -3516,7 +3515,6 @@ if (ua.includes("mobile")) {
     function cpubench_open() {
         const cpumenu1 = document.querySelector('.cpumenu_1');
         document.getElementsByClassName('cpu_bench_menu')[0].style.zIndex = largestZIndex++;
-        zindexwindow_addnavy()
         if (!cpu_bench_menu.classList.contains('active') || cpumenu1.style.display == "block") {
             setTimeout(() => {
                 document.querySelector('.cpumenu_1').style.display = "none";
@@ -3529,9 +3527,6 @@ if (ua.includes("mobile")) {
                 }, 0);
             }, 3000);
         }
-        setTimeout(() => {
-            document.getElementsByClassName('focus2')[0].blur()
-        }, 100);
     }
 
     function cpubench_reset() {
@@ -4124,7 +4119,7 @@ if (ua.includes("mobile")) {
             titlebar_purple: ["#5507FF", "purple"],
             titlebar_black: ["#555555", "black"],
             titlebar_teal: ["#483D8B", "teal"],
-            titlebar_new: ["linear-gradient(90deg, dimgray, gray, silver)", "linear-gradient(90deg, darkblue, blue, skyblue)"]
+            titlebar_new: ["linear-gradient(to right, #5b5b5b, #C0C0C0)", "linear-gradient(to right, #02175e, #A3C1E2)"]
         }
         const driverColor = localStorage.getItem('driver_color');
         if (driverColor) {
@@ -5196,7 +5191,6 @@ if (ua.includes("mobile")) {
             htmlviewer_run_menu.closest('.child_windows');
             htmlviewer_run_menu.classList.remove('active');
             htmlviewer_run_menu.style.zIndex = largestZIndex++;
-            zindexwindow_addnavy()
         });
         preview.srcdoc = editor.value;
     }
@@ -6608,7 +6602,6 @@ if (ua.includes("mobile")) {
     function toggleWindow(windowElement) {
         windowElement.classList.remove('active');
         windowElement.style.zIndex = largestZIndex++;
-        zindexwindow_addnavy()
     }
 
     const dropArea = document.querySelector('#files');
@@ -6786,7 +6779,6 @@ if (ua.includes("mobile")) {
                         resolve();
                     }, 0);
                     dropArea2.appendChild(windowDiv);
-                    zindexwindow_addnavy();
                     Array.from(document.getElementsByClassName('button')).forEach(addButtonListeners2);
                     Array.from(document.getElementsByClassName('button2')).forEach(addButtonListeners);
                 };
@@ -7284,20 +7276,32 @@ if (ua.includes("mobile")) {
         localStorage.setItem('divOpacity', 1 - opacityValue);
     });
 
+
     const targetNodes = document.querySelectorAll('.child_windows');
-    const config = { attributes: true, childList: true, subtree: true };
+    const config = { attributes: true, childList: true, subtree: true, attributeFilter: ['class', 'style'] };
     let previousActiveCount = 0;
-    const callback = function () {
+    let previousLargestZIndex = largestZIndex;
+
+    const callback = function (mutationsList) {
         const currentActiveCount = Array.from(targetNodes).filter(node => node.classList.contains('active')).length;
-        if (currentActiveCount !== previousActiveCount) {
+        let zIndexChanged = false;
+        if (previousLargestZIndex !== largestZIndex) {
+            previousLargestZIndex = largestZIndex;
+            zIndexChanged = true;
+        }
+        if (currentActiveCount !== previousActiveCount || zIndexChanged) {
             previousActiveCount = currentActiveCount;
             zindexwindow_addnavy();
-            titlecolor_set();
             startmenu_close();
+            setTimeout(() => {
+                document.getElementsByClassName('focus2')[0].blur();
+            }, 0);
+            console.log(currentActiveCount)
         }
     };
     const observer = new MutationObserver(callback);
     targetNodes.forEach(node => observer.observe(node, config));
+
 
     navigator.getBattery().then((battery) => {
         function updateChargeInfo() {
@@ -7320,7 +7324,6 @@ if (ua.includes("mobile")) {
                 notice_menu.classList.remove('active')
                 notice_menu.style.zIndex = largestZIndex++;
                 localStorage.removeItem('notice_closekeep')
-                zindexwindow_addnavy()
             } else {
                 notice_menu.classList.add('active')
             }
