@@ -7118,7 +7118,6 @@ if (ua.includes("mobile")) {
     window.addEventListener('resize', resize_background_image);
     setTimeout(resize_background_image, 100);
 
-
     const resizeObserver = new ResizeObserver(entries => {
         for (let entry of entries) {
             allwindow_resize()
@@ -7322,5 +7321,8 @@ if (ua.includes("mobile")) {
             );
         }
     }
+
+    Array.from(document.getElementsByClassName('button')).forEach(addButtonListeners2);
+    Array.from(document.getElementsByClassName('button2')).forEach(addButtonListeners);
 
 };
