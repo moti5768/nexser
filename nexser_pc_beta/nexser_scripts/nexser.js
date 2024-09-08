@@ -884,7 +884,6 @@ if (ua.includes("mobile")) {
         if (localStorage.getItem('prompt_data2')) {
             func2();
             setTimeout(function () {
-                console.log(largestZIndex)
                 screen_prompt.style.display = "none";
                 setTimeout(function () {
                     nexser.style.display = "block";
@@ -1985,11 +1984,10 @@ if (ua.includes("mobile")) {
         }
     }
 
-
     function prompt_text_check2() {
 
-        const prompt_text4 = document.querySelector('.focus2');
-        const prompt_text5 = prompt_text4.value;
+        const prompt_text4 = document.getElementsByClassName('focus2')[0].value;
+        const prompt_text5 = prompt_text4;
 
         const command_1 = "backgroundColor()=>";
         const a = prompt_text5.substring(19);
@@ -2938,7 +2936,6 @@ if (ua.includes("mobile")) {
             let shiftX = event.clientX - window_half_big.getBoundingClientRect().left;
             let shiftY = event.clientY - window_half_big.getBoundingClientRect().top;
             let top = document.querySelector('.top');
-            console.log(top)
             moveAt(event.pageX, event.pageY);
             function moveAt(pageX, pageY) {
                 window_half_big.style.left = pageX - shiftX + 'px';
@@ -4673,7 +4670,6 @@ if (ua.includes("mobile")) {
     });
     document.addEventListener('keyup', function (event) {
         if (event.key === 's' && event.getModifierState('Fn')) {
-            console.log('Function key + S key pressed');
             if (localStorage.getItem('note_texts')) {
                 save();
             }
@@ -7167,8 +7163,6 @@ if (ua.includes("mobile")) {
 
     const resizeObserver = new ResizeObserver(entries => {
         for (let entry of entries) {
-            // console.log('Element resized:', entry.target);
-            // console.log('New size:', entry.contentRect.width, entry.contentRect.height);
             allwindow_resize()
         }
     });
@@ -7296,7 +7290,6 @@ if (ua.includes("mobile")) {
             setTimeout(() => {
                 document.getElementsByClassName('focus2')[0].blur();
             }, 0);
-            console.log(currentActiveCount)
         }
     };
     const observer = new MutationObserver(callback);
