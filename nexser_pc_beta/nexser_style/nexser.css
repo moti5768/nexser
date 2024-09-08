@@ -1093,6 +1093,11 @@ body::-webkit-scrollbar {
     z-index: 1;
 }
 
+.scrollbar_none::-webkit-scrollbar {
+    display: none;
+    z-index: 1;
+}
+
 ::-webkit-resizer {
     background: rgba();
 }

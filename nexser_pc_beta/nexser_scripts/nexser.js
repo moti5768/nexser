@@ -5762,7 +5762,6 @@ if (ua.includes("mobile")) {
         drawHand(100, 6, 30 * (hours + minutes / 60));
     }
 
-
     document.querySelector('.youtubevideo_button').addEventListener('click', function () {
         const url = document.querySelector("#youtube").value;
         const id = url.replace("watch?v=", "embed/");
@@ -5771,7 +5770,6 @@ if (ua.includes("mobile")) {
             y_iframeController('unMute');
             y_iframeController('playVideo');
         }, 1000);
-
     });
 
     function url_save() {
@@ -6602,6 +6600,8 @@ if (ua.includes("mobile")) {
         event.preventDefault();
         dropArea.style.borderColor = '#ccc';
         const files = event.dataTransfer.files;
+        const files2 = event.dataTransfer;
+        const url = files2.getData('text/uri-list');
 
         // ファイルを1つずつ処理する関数
         const processFile = (file, x, y) => {
@@ -6675,7 +6675,7 @@ if (ua.includes("mobile")) {
                         windowDiv.classList.add('selectwindows');
                         const img = document.createElement('img');
                         img.src = result;
-                        img.classList.add('item_preview');
+                        img.className = "item_preview";
                         newChild6.appendChild(img);
                         setTimeout(() => {
                             test_windows_button()
@@ -6685,7 +6685,7 @@ if (ua.includes("mobile")) {
                         const video = document.createElement('video');
                         video.src = result;
                         video.controls = true;
-                        video.classList.add('item_preview');
+                        video.className = "item_preview";
                         newChild6.appendChild(video);
                         setTimeout(() => {
                             test_windows_button()
@@ -6694,7 +6694,7 @@ if (ua.includes("mobile")) {
                         windowDiv.classList.add('selectwindows');
                         const iframe = document.createElement('iframe');
                         iframe.src = result;
-                        iframe.classList.add('item_preview');
+                        iframe.className = "item_preview";
                         newChild6.appendChild(iframe);
                         setTimeout(() => {
                             test_windows_button()
@@ -6703,10 +6703,20 @@ if (ua.includes("mobile")) {
                         windowDiv.classList.add('selectwindows');
                         const text = document.createElement('p');
                         text.textContent = e.target.result;
-                        text.classList.add('item_preview');
+                        text.className = "item_preview";
                         newChild6.appendChild(text);
                         setTimeout(() => {
                             test_windows_button()
+                        }, 100);
+                    } else if (isYouTubeURL(url)) {
+                        windowDiv.classList.add('selectwindows');
+                        const iframe = document.createElement('iframe');
+                        iframe.src = `https://www.youtube.com/embed/${extractYouTubeID(url)}`;
+                        iframe.className = "item_preview";
+                        newChild6.classList.add('scrollbar_none')
+                        newChild6.appendChild(iframe);
+                        setTimeout(() => {
+                            test_windows_button();
                         }, 100);
                     } else {
                         const unsupported = document.createElement('p');
@@ -6716,6 +6726,14 @@ if (ua.includes("mobile")) {
                         setTimeout(() => {
                             test_windows_button()
                         }, 100);
+                    }
+
+                    function isYouTubeURL(url_youtube) {
+                        return /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/.test(url_youtube);
+                    }
+                    function extractYouTubeID(url_youtube) {
+                        const match = url_youtube.match(/(?:youtu\.be\/|youtube\.com\/(?:v\/|u\/\w\/|embed\/|watch\?v=|&v=))([^#&?]{11})/);
+                        return match ? match[1] : null;
                     }
 
                     setTimeout(() => {
