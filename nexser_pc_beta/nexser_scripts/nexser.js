@@ -6939,7 +6939,7 @@ if (ua.includes("mobile")) {
             offsetX = e.clientX - element.getBoundingClientRect().left;
             offsetY = e.clientY - element.getBoundingClientRect().top;
             e.dataTransfer.setData('text/plain', null);
-            element.style.border = "1.9px dotted orangered";
+            element.style.border = "1.95px dotted dimgray";
             element.style.opacity = "0.99";
             const element2 = element.firstElementChild;
             const element3 = element.children[1];
