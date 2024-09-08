@@ -2349,20 +2349,6 @@ if (ua.includes("mobile")) {
                 prompt_text2.style.color = "";
                 title_active()
                 break;
-            case 'window/font/large':
-                prompt_text2.style.color = "";
-                let test_window = document.getElementsByClassName('child_windows')
-                Array.from(test_window).forEach(element => {
-                    element.style.fontSize = "20px";
-                })
-                break;
-            case 'window/font/reset':
-                prompt_text2.style.color = "";
-                let test_window2 = document.getElementsByClassName('child_windows')
-                Array.from(test_window2).forEach(element => {
-                    element.style.fontSize = "";
-                })
-                break;
             case 'cpu/bench':
                 prompt_text2.style.color = "";
                 cpu_bench_menu.classList.remove('active');
@@ -6896,9 +6882,8 @@ if (ua.includes("mobile")) {
         reader.readAsText(file);
     });
 
-
     function nexser_search_button() {
-        const windows = document.querySelectorAll('.child_windows');
+        const windows = document.querySelectorAll('.child_windows:not(.window_nosearch)');
         windows.forEach((windowElement) => {
             // 1番目の子要素を取得
             const firstChild = windowElement.children[0];
