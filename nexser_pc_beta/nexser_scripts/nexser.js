@@ -3687,14 +3687,17 @@ if (ua.includes("mobile")) {
                 dragwindow.style.height = "55%";
                 dragwindow.style.width = "55%";
                 dragwindow.classList.remove('leftwindow');
+                if (localStorage.getItem('window_animation')) {
+                    dragwindow.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+                }
             }
             if (dragwindow.classList.contains('rightwindow')) {
                 dragwindow.style.height = "55%";
                 dragwindow.style.width = "55%";
                 dragwindow.classList.remove('rightwindow');
-            }
-            if (localStorage.getItem('window_animation')) {
-                dragwindow.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+                if (localStorage.getItem('window_animation')) {
+                    dragwindow.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+                }
             }
             setTimeout(() => {
                 dragwindow.style.transition = "";
