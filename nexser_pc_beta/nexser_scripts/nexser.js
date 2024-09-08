@@ -2582,34 +2582,25 @@ if (ua.includes("mobile")) {
                 bigscreenbutton.style.width = "";
                 bigscreenbutton.style.top = "0";
                 bigscreenbutton.style.left = "0";
-                if (localStorage.getItem('window_animation')) {
-                    bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
-                }
             } else if (localStorage.getItem('taskbar_position_button')) {
                 bigscreenbutton.style.height = "";
                 bigscreenbutton.style.width = "";
                 bigscreenbutton.style.top = "40px";
                 bigscreenbutton.style.left = "0";
                 bigscreenbutton.style.top = t + "px";
-                if (localStorage.getItem('window_animation')) {
-                    bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
-                }
             } else if (bigscreenbutton.classList.contains('rightwindow')) {
                 bigscreenbutton.style.height = "";
                 bigscreenbutton.style.width = "";
                 bigscreenbutton.style.top = "0";
                 bigscreenbutton.style.left = "";
-                if (localStorage.getItem('window_animation')) {
-                    bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
-                }
             } else {
                 bigscreenbutton.style.height = "";
                 bigscreenbutton.style.width = "";
                 bigscreenbutton.style.top = "0";
                 bigscreenbutton.style.left = "0";
-                if (localStorage.getItem('window_animation')) {
-                    bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
-                }
+            }
+            if (localStorage.getItem('window_animation')) {
+                bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
             }
             bigscreenbutton.classList.remove('rightwindow');
             bigscreenbutton.classList.remove('leftwindow');
@@ -2773,17 +2764,14 @@ if (ua.includes("mobile")) {
                 bigscreenbutton.style.width = ""
                 bigscreenbutton.style.top = "40px"
                 bigscreenbutton.style.left = "0"
-                if (localStorage.getItem('window_animation')) {
-                    bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
-                }
             } else {
                 bigscreenbutton.style.height = ""
                 bigscreenbutton.style.width = ""
                 bigscreenbutton.style.top = "0"
                 bigscreenbutton.style.left = "0"
-                if (localStorage.getItem('window_animation')) {
-                    bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
-                }
+            }
+            if (localStorage.getItem('window_animation')) {
+                bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)"
             }
             setTimeout(() => {
                 bigscreenbutton.style.transition = ""
@@ -2814,9 +2802,6 @@ if (ua.includes("mobile")) {
                 windowleft.style.left = "0";
                 windowleft.style.height = "100%";
                 windowleft.style.width = "49.9%";
-                if (localStorage.getItem('window_animation')) {
-                    windowleft.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
-                }
             } else if (localStorage.getItem('taskbar_position_button')) {
                 windowleft.style.right = "auto";
                 windowleft.style.top = "40px";
@@ -2824,18 +2809,15 @@ if (ua.includes("mobile")) {
                 windowleft.style.height = "100%";
                 windowleft.style.width = "49.9%";
                 windowleft.style.top = t + "px";
-                if (localStorage.getItem('window_animation')) {
-                    windowleft.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
-                }
             } else {
                 windowleft.style.right = "auto";
                 windowleft.style.top = "0";
                 windowleft.style.left = "0";
                 windowleft.style.height = "100%";
                 windowleft.style.width = "49.9%";
-                if (localStorage.getItem('window_animation')) {
-                    windowleft.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
-                }
+            }
+            if (localStorage.getItem('window_animation')) {
+                windowleft.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
             }
             setTimeout(() => {
                 windowleft.style.transition = "";
@@ -2866,9 +2848,6 @@ if (ua.includes("mobile")) {
                 windowright.style.right = "0px";
                 windowright.style.height = "100%";
                 windowright.style.width = "49.9%";
-                if (localStorage.getItem('window_animation')) {
-                    windowright.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
-                }
             } else if (localStorage.getItem('taskbar_position_button')) {
                 windowright.style.left = "";
                 windowright.style.top = "40px";
@@ -2876,18 +2855,15 @@ if (ua.includes("mobile")) {
                 windowright.style.height = "100%";
                 windowright.style.width = "49.9%";
                 windowright.style.top = t + "px";
-                if (localStorage.getItem('window_animation')) {
-                    windowright.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
-                }
             } else {
                 windowright.style.left = "";
                 windowright.style.top = "0";
                 windowright.style.right = "0px";
                 windowright.style.height = "100%";
                 windowright.style.width = "49.9%";
-                if (localStorage.getItem('window_animation')) {
-                    windowright.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
-                }
+            }
+            if (localStorage.getItem('window_animation')) {
+                windowright.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
             }
             setTimeout(() => {
                 windowright.style.transition = "";
@@ -2930,7 +2906,6 @@ if (ua.includes("mobile")) {
             function onMouseMove(event) {
                 moveAt(event.pageX, event.pageY);
             }
-
             windowhalfbig.style.height = "55%"
             windowhalfbig.style.width = "55%"
             if (localStorage.getItem('window_animation')) {
@@ -2946,10 +2921,6 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.windowsize_reset').forEach(function (windowsize_reset) {
         windowsize_reset.addEventListener('click', function () {
             const windowsizereset = windowsize_reset.closest('.child_windows');
-            if (localStorage.getItem('window_animation')) {
-                windowsizereset.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
-            }
-
             if (windowsizereset.classList.contains('rightwindow')) {
                 windowsizereset.style.height = "";
                 windowsizereset.style.width = "max-content";
@@ -2959,9 +2930,10 @@ if (ua.includes("mobile")) {
                 windowsizereset.style.width = "";
                 windowsizereset.style.right = "";
             }
-
             windowsizereset.classList.remove('big');
-
+            if (localStorage.getItem('window_animation')) {
+                windowsizereset.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+            }
             setTimeout(() => {
                 windowsizereset.style.transition = ""
             }, 150);
@@ -3715,24 +3687,18 @@ if (ua.includes("mobile")) {
                 dragwindow.style.height = "55%";
                 dragwindow.style.width = "55%";
                 dragwindow.classList.remove('leftwindow');
-                if (localStorage.getItem('window_animation')) {
-                    dragwindow.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
-                }
-                setTimeout(() => {
-                    dragwindow.style.transition = "";
-                }, 150);
             }
             if (dragwindow.classList.contains('rightwindow')) {
                 dragwindow.style.height = "55%";
                 dragwindow.style.width = "55%";
                 dragwindow.classList.remove('rightwindow');
-                if (localStorage.getItem('window_animation')) {
-                    dragwindow.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
-                }
-                setTimeout(() => {
-                    dragwindow.style.transition = "";
-                }, 150);
             }
+            if (localStorage.getItem('window_animation')) {
+                dragwindow.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+            }
+            setTimeout(() => {
+                dragwindow.style.transition = "";
+            }, 150);
         });
 
         let drag2 = button.closest('.child_windows');
@@ -5440,8 +5406,6 @@ if (ua.includes("mobile")) {
         stopTime = 0;
     }
 
-    // calendar
-
     const week = ["日", "月", "火", "水", "木", "金", "土"];
     const today = new Date();
     // 月末だとずれる可能性があるため、1日固定で取得
@@ -5451,44 +5415,32 @@ if (ua.includes("mobile")) {
     function caload() {
         showProcess(today, calendar);
     };
-    // 前の月表示
     function c_prev() {
         showDate.setMonth(showDate.getMonth() - 1);
         showProcess(showDate);
     }
-
-    // 次の月表示
     function c_next() {
         showDate.setMonth(showDate.getMonth() + 1);
         showProcess(showDate);
     }
-
-    // カレンダー表示
     function showProcess(date) {
         var year = date.getFullYear();
         var month = date.getMonth();
         document.querySelector('#header').innerHTML = year + "年 " + (month + 1) + "月";
-
         var calendar = createProcess(year, month);
         document.querySelector('#calendar').innerHTML = calendar;
     }
-
-    // カレンダー作成
     function createProcess(year, month) {
-        // 曜日
         var calendar = "<table><tr class='dayOfWeek'>";
         for (var i = 0; i < week.length; i++) {
             calendar += "<th>" + week[i] + "</th>";
         }
         calendar += "</tr>";
-
         var count = 0;
         var startDayOfWeek = new Date(year, month, 1).getDay();
         var endDate = new Date(year, month + 1, 0).getDate();
         var lastMonthEndDate = new Date(year, month, 0).getDate();
         var row = Math.ceil((startDayOfWeek + endDate) / week.length);
-
-        // 1行ずつ設定
         for (var i = 0; i < row; i++) {
             calendar += "<tr>";
             // 1colum単位で設定

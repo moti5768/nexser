@@ -2160,7 +2160,6 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                             <span class="button2 apply_button" onclick="window_animation_false()">
                                                 &emsp;OFF&emsp;</span>
                                         </div>
-
                                     </div>
                                 </div>
 
@@ -2728,9 +2727,8 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         </div>
                     </div>
 
-                    <!-- カレンダー -->
-                    <div class="child_windows calendar_menu active">
 
+                    <div class="child_windows calendar_menu active">
                         <div class="title">
                             <span class="title_icon"></span><span>calendar</span>
                         </div>
@@ -2751,6 +2749,17 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                     </ul>
                                 </div>
                             </div>
+                            <div class="medium" style="display: flex;">
+                                <ul>
+                                    <li class="button2 apply_button" style="width: 60px; height: 25px;"
+                                        onclick="c_prev()">
+                                        &emsp;old&emsp;</li>
+                                </ul>
+                                <ul>
+                                    <li class="button2 apply_button" style="width: 60px; height: 25px;"
+                                        onclick="c_next()">&emsp;next&emsp;</li>
+                                </ul>
+                            </div>
                         </div>
 
                         <div class="calendar_content border2 window_contents">
@@ -2758,15 +2767,10 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                 <!-- xxxx年xx月を表示 -->
                                 <h1 id="header"></h1>
                                 <!-- ボタンクリックで月移動 -->
-                                <div id="next-prev-button">
-                                    <button class="button2" id="c_prev" onclick="c_prev()">old</button>
-                                    <button class="button2" id="c_next" onclick="c_next()">next</button>
-                                </div>
                                 <div id="calendar"></div>
                             </div>
                         </div>
                     </div>
-                    <!-- !カレンダー -->
 
                     <div class="child_windows cpu_bench_menu back_silver active">
                         <div class="title">
