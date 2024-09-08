@@ -606,22 +606,26 @@ if (ua.includes("mobile")) {
     })
 
     function startmenu_close() {
-        parent_start_menu.style.display = "none";
-        document.querySelector('.start_button').classList.remove('pressed');
+        if (parent_start_menu.style.display == "block") {
+            parent_start_menu.style.display = "none";
+            document.querySelector('.start_button').classList.remove('pressed');
+        }
     }
-
     document.getElementById('startbtn').addEventListener('mousedown', function () {
+        setTimeout(() => {
+            if (parent_start_menu.style.display == "block") {
+                startmenu_close()
+            } else {
+                parent_start_menu.style.display = "block";
+                document.querySelector('.start_button').classList.add('pressed');
+            }
+        }, 0);
         Array.from(document.getElementsByClassName('desktop_files')).forEach((df1) => {
             const file10 = df1.firstElementChild;
             file10.classList.remove('file_select');
         })
-        if (parent_start_menu.style.display == "block") {
-            startmenu_close()
-        } else {
-            parent_start_menu.style.display = "block";
-            document.querySelector('.start_button').classList.add('pressed');
-        }
     })
+
     document.querySelector('.battery_child').addEventListener('click', function () {
         if (document.querySelector('.battery_menu').style.display == "block") {
             document.querySelector('.battery_menu').style.display = "none";
@@ -3560,6 +3564,7 @@ if (ua.includes("mobile")) {
     }
 
     function zindexwindow_addnavy() {
+        startmenu_close();
         title_navyreomve();
         assignClassToFrontmostElement('child_windows:not(.active)', 'navy');
         titlecolor_set();
@@ -6523,13 +6528,10 @@ if (ua.includes("mobile")) {
             // その子要素の中の2番目の子要素を取得
             const nestedChild = firstChild.children[1];
             const nestedChild2 = nestedChild.textContent;
-
             const button = document.createElement('span');
-            button.className = 'task_buttons';
-            button.classList.add('button2')
+            button.className = 'task_buttons button2';
             button.textContent = nestedChild2;
             taskbar_b.appendChild(button);
-
             button.addEventListener('click', () => toggleWindow(windowElement));
         });
     };
@@ -6714,8 +6716,6 @@ if (ua.includes("mobile")) {
                                         testwindow2_2.style.maxHeight = `${testwindow2.clientHeight + - + 25}px`;
                                     })
                                     zindexchildwindows.style.zIndex = largestZIndex++;
-                                    zindexwindow_addnavy()
-                                    titlecolor_set()
                                 }, 0);
                                 rectangle_remove();
                             });
@@ -6734,8 +6734,6 @@ if (ua.includes("mobile")) {
                         resolve();
                     }, 0);
                     dropArea2.appendChild(windowDiv);
-                    Array.from(document.getElementsByClassName('button')).forEach(addButtonListeners2);
-                    Array.from(document.getElementsByClassName('button2')).forEach(addButtonListeners);
                 };
                 reader.readAsDataURL(file);
             })
@@ -6856,19 +6854,15 @@ if (ua.includes("mobile")) {
     });
 
     function nexser_search_button() {
-        const windows = document.querySelectorAll('.child_windows:not(.window_nosearch)');
-        windows.forEach((windowElement) => {
+        const search_windows = document.querySelectorAll('.child_windows:not(.window_nosearch)');
+        search_windows.forEach((windowElement) => {
             // 1番目の子要素を取得
             const firstChild = windowElement.children[0];
             // その子要素の中の2番目の子要素を取得
             const nestedChild = firstChild.children[1];
             const nestedChild2 = nestedChild.textContent;
-
             const button = document.createElement('li');
-            button.className = 'borderinline_dotted';
-            button.classList.add('button2');
-            button.classList.add('search_button');
-
+            button.className = 'borderinline_dotted button2 search_button white_space_wrap';
             const button_span_child = document.createElement('span');
             button_span_child.textContent = "　" + nestedChild2 + "　";
             document.getElementById('myUL').appendChild(button);
@@ -7243,7 +7237,6 @@ if (ua.includes("mobile")) {
         if (currentActiveCount !== previousActiveCount || zIndexChanged) {
             previousActiveCount = currentActiveCount;
             zindexwindow_addnavy();
-            startmenu_close();
             setTimeout(() => {
                 document.getElementsByClassName('focus2')[0].blur();
             }, 0);

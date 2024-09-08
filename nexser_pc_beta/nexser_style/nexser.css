@@ -1722,7 +1722,8 @@ body::-webkit-scrollbar {
 }
 
 .nexser_search_menu {
-    width: 850px;
+    width: 900px;
+    height: 550px;
 }
 
 #myUL {
@@ -1730,11 +1731,9 @@ body::-webkit-scrollbar {
 }
 
 #myUL>li {
-    display: block;
     margin-top: 3px;
     margin-left: 3px;
     margin-right: 3px;
-    min-width: max-content;
     width: 200px;
     box-sizing: border-box;
     height: 30px;
