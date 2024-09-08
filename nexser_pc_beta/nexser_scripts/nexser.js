@@ -4103,10 +4103,10 @@ if (ua.includes("mobile")) {
 
     function titlecolor_remove() {
         document.querySelectorAll('.title, .navy').forEach(el => el.style.background = "");
-        ['titlebar_red', 'titlebar_blue', 'titlebar_green', 'titlebar_yellow', 'titlebar_orange', 'titlebar_pink', 'titlebar_purple', 'titlebar_black', 'titlebar_teal'].forEach(item => localStorage.removeItem(item));
+        ['titlebar_red', 'titlebar_blue', 'titlebar_green', 'titlebar_yellow', 'titlebar_orange', 'titlebar_pink', 'titlebar_purple', 'titlebar_black', 'titlebar_teal', 'titlebar_new'].forEach(item => localStorage.removeItem(item));
     }
 
-    ['red', 'blue', 'green', 'yellow', 'orange', 'pink', 'purple', 'black', 'teal'].forEach(color => {
+    ['red', 'blue', 'green', 'yellow', 'orange', 'pink', 'purple', 'black', 'teal', 'new'].forEach(color => {
         document.querySelector(`.titlebar_${color}`).addEventListener('click', () => {
             localStorage.setItem(`titlebar_${color}`, `titlebar_${color}`);
         });
@@ -4114,7 +4114,6 @@ if (ua.includes("mobile")) {
 
 
     function titlecolor_set() {
-        // 色の設定
         const colors = {
             titlebar_red: ["#440000", "red"],
             titlebar_blue: ["#000044", "blue"],
@@ -4124,7 +4123,8 @@ if (ua.includes("mobile")) {
             titlebar_pink: ["#FF00FF", "pink"],
             titlebar_purple: ["#5507FF", "purple"],
             titlebar_black: ["#555555", "black"],
-            titlebar_teal: ["#483D8B", "teal"]
+            titlebar_teal: ["#483D8B", "teal"],
+            titlebar_new: ["linear-gradient(90deg, dimgray, gray, silver)", "linear-gradient(90deg, darkblue, blue, skyblue)"]
         }
         const driverColor = localStorage.getItem('driver_color');
         if (driverColor) {
