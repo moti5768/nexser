@@ -1038,6 +1038,11 @@ input[type="file"] {
     width: 300px;
 }
 
+.command_help_menu {
+    width: 500px;
+    height: 300px;
+}
+
 .delete_btn {
     margin: 2px;
 }
