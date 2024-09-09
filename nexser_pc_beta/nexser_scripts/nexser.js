@@ -87,6 +87,7 @@ if (ua.includes("mobile")) {
     const console_error_menu = document.querySelector('.console_error_menu');
     const kakeibo_menu = document.querySelector('.kakeibo_menu');
     const nexser_nextversion_menu = document.querySelector('.nexser_nextversion_menu');
+    const mydocument_menu = document.querySelector('.mydocument_menu');
 
     const notice_menu = document.querySelector('.notice_menu');
 
@@ -636,14 +637,17 @@ if (ua.includes("mobile")) {
 
 
     function addButtonListeners(button_1) {
-        button_1.addEventListener('mousedown', () => button_1.classList.add('pressed'));
-        button_1.addEventListener('mouseleave', () => button_1.classList.remove('pressed'));
-        button_1.addEventListener('mouseup', () => button_1.classList.remove('pressed'));
+        if (!button_1.classList.contains('listener-added')) {
+            button_1.addEventListener('mousedown', () => button_1.classList.add('pressed'));
+            button_1.addEventListener('mouseleave', () => button_1.classList.remove('pressed'));
+            button_1.addEventListener('mouseup', () => button_1.classList.remove('pressed'));
+            button_1.classList.add('listener-added');
+        }
     }
-    const observer_btn1 = new MutationObserver(mutations_1 => {
-        mutations_1.forEach(mutation_1 => {
+    const observer_btn1 = new MutationObserver((mutations_1) => {
+        mutations_1.forEach((mutation_1) => {
             if (mutation_1.type === 'childList') {
-                mutation_1.addedNodes.forEach(node_1 => {
+                mutation_1.addedNodes.forEach((node_1) => {
                     if (node_1.nodeType === 1 && node_1.classList.contains('button2')) {
                         addButtonListeners(node_1);
                     }
@@ -655,12 +659,15 @@ if (ua.includes("mobile")) {
 
 
     function addButtonListeners2(button_2) {
-        button_2.addEventListener('click', () => button_2.classList.toggle('pressed'));
+        if (!button_2.classList.contains('listener-added')) {
+            button_2.addEventListener('click', () => button_2.classList.toggle('pressed'));
+            button_2.classList.add('listener-added');
+        }
     }
-    const observer_btn2 = new MutationObserver(mutations_2 => {
-        mutations_2.forEach(mutation_2 => {
+    const observer_btn2 = new MutationObserver((mutations_2) => {
+        mutations_2.forEach((mutation_2) => {
             if (mutation_2.type === 'childList') {
-                mutation_2.addedNodes.forEach(node_2 => {
+                mutation_2.addedNodes.forEach((node_2) => {
                     if (node_2.nodeType === 1 && node_2.classList.contains('button')) {
                         addButtonListeners2(node_2);
                     }
@@ -2558,74 +2565,79 @@ if (ua.includes("mobile")) {
         });
     })
 
+
+
     function addBigScreenButtonListeners(button) {
-        button.addEventListener('mousedown', function () {
-            const elements = document.querySelector('.navy');
-            const elements2 = elements.closest('.child_windows');
-            elements2.dataset.originalWidth = elements2.style.width;
-            elements2.dataset.originalHeight = elements2.style.height;
-            elements2.dataset.originalTop = elements2.style.top;
-            elements2.dataset.originalLeft = elements2.style.left;
-        });
-        button.addEventListener('click', function () {
-            const bigscreenbutton = button.closest('.child_windows');
-            bigscreenbutton.classList.remove('minimization');
-            const childElements = bigscreenbutton.children;
-            for (let child of childElements) {
-                child.style.display = 'none';
-                document.querySelectorAll('.title,.title_buttons').forEach(function (titles) {
-                    titles.style.display = "block";
-                });
-                document.querySelectorAll('.title2').forEach(function (window_title2) {
-                    window_title2.style.display = "flex";
-                });
-            }
-            const t = localStorage.getItem('taskbar_height');
-            if (localStorage.getItem('data_taskbar_none')) {
-                bigscreenbutton.style.height = "";
-                bigscreenbutton.style.width = "";
-                bigscreenbutton.style.top = "0";
-                bigscreenbutton.style.left = "0";
-            } else if (localStorage.getItem('taskbar_position_button')) {
-                bigscreenbutton.style.height = "";
-                bigscreenbutton.style.width = "";
-                bigscreenbutton.style.top = "40px";
-                bigscreenbutton.style.left = "0";
-                bigscreenbutton.style.top = t + "px";
-            } else if (bigscreenbutton.classList.contains('rightwindow')) {
-                bigscreenbutton.style.height = "";
-                bigscreenbutton.style.width = "";
-                bigscreenbutton.style.top = "0";
-                bigscreenbutton.style.left = "";
-            } else {
-                bigscreenbutton.style.height = "";
-                bigscreenbutton.style.width = "";
-                bigscreenbutton.style.top = "0";
-                bigscreenbutton.style.left = "0";
-            }
-            if (localStorage.getItem('window_animation')) {
-                bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
-            }
-            bigscreenbutton.classList.remove('rightwindow');
-            bigscreenbutton.classList.remove('leftwindow');
-            setTimeout(() => {
-                bigscreenbutton.style.transition = "";
+        if (!button.dataset.listenerAdded) {
+            button.addEventListener('mousedown', function () {
+                const elements = document.querySelector('.navy');
+                const elements2 = elements.closest('.child_windows');
+                elements2.dataset.originalWidth = elements2.style.width;
+                elements2.dataset.originalHeight = elements2.style.height;
+                elements2.dataset.originalTop = elements2.style.top;
+                elements2.dataset.originalLeft = elements2.style.left;
+            });
+            button.addEventListener('click', function () {
+                const bigscreenbutton = button.closest('.child_windows');
+                bigscreenbutton.classList.remove('minimization');
+                const childElements = bigscreenbutton.children;
                 for (let child of childElements) {
-                    child.style.display = '';
-                }
-                if (localStorage.getItem('allwindow_toolbar')) {
-                    document.querySelectorAll('.window_tool').forEach(function (window_tool) {
-                        window_tool.style.display = "block";
+                    child.style.display = 'none';
+                    document.querySelectorAll('.title,.title_buttons').forEach(function (titles) {
+                        titles.style.display = "block";
+                    });
+                    document.querySelectorAll('.title2').forEach(function (window_title2) {
+                        window_title2.style.display = "flex";
                     });
                 }
-            }, 150);
-            bigscreenbutton.classList.add('big');
-            setTimeout(() => {
-                const task = document.getElementById('taskbar').clientHeight;
-                const child_windows_big2 = bigscreenbutton.clientHeight;
-                bigscreenbutton.style.height = child_windows_big2 - task + "px";
-            }, 150);
-        });
+                const t = localStorage.getItem('taskbar_height');
+                if (localStorage.getItem('data_taskbar_none')) {
+                    bigscreenbutton.style.height = "";
+                    bigscreenbutton.style.width = "";
+                    bigscreenbutton.style.top = "0";
+                    bigscreenbutton.style.left = "0";
+                } else if (localStorage.getItem('taskbar_position_button')) {
+                    bigscreenbutton.style.height = "";
+                    bigscreenbutton.style.width = "";
+                    bigscreenbutton.style.top = "40px";
+                    bigscreenbutton.style.left = "0";
+                    bigscreenbutton.style.top = t + "px";
+                } else if (bigscreenbutton.classList.contains('rightwindow')) {
+                    bigscreenbutton.style.height = "";
+                    bigscreenbutton.style.width = "";
+                    bigscreenbutton.style.top = "0";
+                    bigscreenbutton.style.left = "";
+                } else {
+                    bigscreenbutton.style.height = "";
+                    bigscreenbutton.style.width = "";
+                    bigscreenbutton.style.top = "0";
+                    bigscreenbutton.style.left = "0";
+                }
+                if (localStorage.getItem('window_animation')) {
+                    bigscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+                }
+                bigscreenbutton.classList.remove('rightwindow');
+                bigscreenbutton.classList.remove('leftwindow');
+                setTimeout(() => {
+                    bigscreenbutton.style.transition = "";
+                    for (let child of childElements) {
+                        child.style.display = '';
+                    }
+                    if (localStorage.getItem('allwindow_toolbar')) {
+                        document.querySelectorAll('.window_tool').forEach(function (window_tool) {
+                            window_tool.style.display = "block";
+                        });
+                    }
+                }, 150);
+                bigscreenbutton.classList.add('big');
+                setTimeout(() => {
+                    const task = document.getElementById('taskbar').clientHeight;
+                    const child_windows_big2 = bigscreenbutton.clientHeight;
+                    bigscreenbutton.style.height = child_windows_big2 - task + "px";
+                }, 150);
+            });
+            button.dataset.listenerAdded = true;
+        }
     }
     function observeNewElements() {
         const observer = new MutationObserver(mutations => {
@@ -2649,49 +2661,55 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.bigscreen_button').forEach(addBigScreenButtonListeners);
     observeNewElements();
 
+
+
+
     function addMinScreenButtonListeners(button) {
-        button.addEventListener('click', function () {
-            const minscreenbutton = button.closest('.child_windows');
-            const childElements = minscreenbutton.children;
-            for (let child of childElements) {
-                child.style.display = 'none';
-                document.querySelectorAll('.title,.title_buttons').forEach(function (titles) {
-                    titles.style.display = "block";
-                });
-                document.querySelectorAll('.title2').forEach(function (window_title2) {
-                    window_title2.style.display = "flex";
-                });
-            }
-            minscreenbutton.classList.remove('rightwindow');
-            minscreenbutton.classList.remove('leftwindow');
-            minscreenbutton.classList.remove('big');
-            const elements = document.querySelector('.navy');
-            const elements2 = elements.closest('.child_windows');
-            elements2.style.width = elements2.dataset.originalWidth;
-            elements2.style.height = elements2.dataset.originalHeight;
-            elements2.style.top = elements2.dataset.originalTop;
-            elements2.style.left = elements2.dataset.originalLeft;
-            if (localStorage.getItem('window_animation')) {
-                minscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
-            }
-            setTimeout(() => {
-                minscreenbutton.style.transition = "";
-                setTimeout(() => {
-                    minscreenbutton.scrollTop = 0;
-                    minscreenbutton.scrollLeft = 0;
-                }, 100);
-            }, 150);
-            setTimeout(() => {
+        if (!button.dataset.listenerAdded) {
+            button.addEventListener('click', function () {
+                const minscreenbutton = button.closest('.child_windows');
+                const childElements = minscreenbutton.children;
                 for (let child of childElements) {
-                    child.style.display = '';
-                }
-                if (localStorage.getItem('allwindow_toolbar')) {
-                    document.querySelectorAll('.window_tool').forEach(function (window_tool) {
-                        window_tool.style.display = "block";
+                    child.style.display = 'none';
+                    document.querySelectorAll('.title,.title_buttons').forEach(function (titles) {
+                        titles.style.display = "block";
+                    });
+                    document.querySelectorAll('.title2').forEach(function (window_title2) {
+                        window_title2.style.display = "flex";
                     });
                 }
-            }, 150);
-        });
+                minscreenbutton.classList.remove('rightwindow');
+                minscreenbutton.classList.remove('leftwindow');
+                minscreenbutton.classList.remove('big');
+                const elements = document.querySelector('.navy');
+                const elements2 = elements.closest('.child_windows');
+                elements2.style.width = elements2.dataset.originalWidth;
+                elements2.style.height = elements2.dataset.originalHeight;
+                elements2.style.top = elements2.dataset.originalTop;
+                elements2.style.left = elements2.dataset.originalLeft;
+                if (localStorage.getItem('window_animation')) {
+                    minscreenbutton.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+                }
+                setTimeout(() => {
+                    minscreenbutton.style.transition = "";
+                    setTimeout(() => {
+                        minscreenbutton.scrollTop = 0;
+                        minscreenbutton.scrollLeft = 0;
+                    }, 100);
+                }, 150);
+                setTimeout(() => {
+                    for (let child of childElements) {
+                        child.style.display = '';
+                    }
+                    if (localStorage.getItem('allwindow_toolbar')) {
+                        document.querySelectorAll('.window_tool').forEach(function (window_tool) {
+                            window_tool.style.display = "block";
+                        });
+                    }
+                }, 150);
+            });
+            button.dataset.listenerAdded = true;
+        }
     }
     function observeNewElements2() {
         const observer = new MutationObserver(mutations => {
@@ -2714,6 +2732,9 @@ if (ua.includes("mobile")) {
     }
     document.querySelectorAll('.minscreen_button').forEach(addMinScreenButtonListeners);
     observeNewElements2();
+
+
+
 
     function window_animation_true() {
         localStorage.setItem('window_animation', true);
@@ -3217,6 +3238,13 @@ if (ua.includes("mobile")) {
         })
     );
 
+    document.querySelectorAll('.document_button').forEach(testbtn =>
+        testbtn.addEventListener('click', () => {
+            mydocument_menu.classList.toggle('active');
+            mydocument_menu.style.zIndex = largestZIndex++;
+        })
+    );
+
     document.querySelectorAll('.test_button').forEach(testbtn =>
         testbtn.addEventListener('click', () => {
             main.classList.toggle('active');
@@ -3568,18 +3596,14 @@ if (ua.includes("mobile")) {
         title_navyreomve();
         assignClassToFrontmostElement('child_windows:not(.active)', 'navy');
         titlecolor_set();
-        resize_background_image();
         allwindow_resize();
         document.querySelectorAll('.bigscreen_button').forEach(element => {
-            const newChild = document.createElement('div');
-            newChild.className = 'bigscreen_button_child';
-            element.appendChild(newChild);
+            if (!element.querySelector('.bigscreen_button_child')) {
+                const newChild = document.createElement('div');
+                newChild.className = 'bigscreen_button_child';
+                element.appendChild(newChild);
+            }
         });
-        setTimeout(() => {
-            const taskheight_parent = document.querySelector('#taskbar');
-            const taskheight_child = document.querySelector('.taskbar_buttons');
-            taskheight_child.style.height = `${taskheight_parent.clientHeight - + 3}px`;
-        }, 100);
         Array.from(document.getElementsByClassName('button')).forEach(addButtonListeners2);
         Array.from(document.getElementsByClassName('button2')).forEach(addButtonListeners);
     }
@@ -3685,107 +3709,99 @@ if (ua.includes("mobile")) {
         }
     };
 
+
+
     function addDragButtonListeners(button) {
-        button.addEventListener('mousedown', function () {
-            const dragwindow = button.closest('.child_windows');
-            if (dragwindow.classList.contains('leftwindow')) {
-                dragwindow.style.height = "55%";
-                dragwindow.style.width = "55%";
-                dragwindow.classList.remove('leftwindow');
-                if (localStorage.getItem('window_animation')) {
-                    dragwindow.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+        if (!button.dataset.listenerAdded) {
+            button.addEventListener('mousedown', function () {
+                const dragwindow = button.closest('.child_windows');
+                if (dragwindow.classList.contains('leftwindow')) {
+                    dragwindow.style.height = "55%";
+                    dragwindow.style.width = "55%";
+                    dragwindow.classList.remove('leftwindow');
+                    if (localStorage.getItem('window_animation')) {
+                        dragwindow.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+                    }
+                }
+                if (dragwindow.classList.contains('rightwindow')) {
+                    dragwindow.style.height = "55%";
+                    dragwindow.style.width = "55%";
+                    dragwindow.classList.remove('rightwindow');
+                    if (localStorage.getItem('window_animation')) {
+                        dragwindow.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+                    }
+                }
+                setTimeout(() => {
+                    dragwindow.style.transition = "";
+                }, 150);
+            });
+            let drag2 = button.closest('.child_windows');
+            var x, y;
+            button.addEventListener("mousedown", mdown, { passive: false }, false);
+            button.addEventListener("touchstart", mdown, { passive: false }, false);
+            function mdown(e) {
+                drag2.classList.add("drag");
+                var event = e.type === "mousedown" ? e : e.changedTouches[0];
+                x = event.pageX - drag2.offsetLeft;
+                y = event.pageY - drag2.offsetTop;
+                document.body.addEventListener("mousemove", mmove, { passive: false }, false);
+                document.body.addEventListener("touchmove", mmove, { passive: false }, false);
+            }
+            function mmove(e) {
+                var drag = document.getElementsByClassName("drag")[0];
+                var event = e.type === "mousemove" ? e : e.changedTouches[0];
+                rectangle_remove();
+                drag.style.top = event.pageY - y + "px";
+                drag.style.left = event.pageX - x + "px";
+                drag.addEventListener("mouseup", mup, false);
+                document.body.addEventListener("mouseleave", mup, false);
+                drag.addEventListener("touchend", mup, false);
+                document.body.addEventListener("touchleave", mup, false);
+                if (localStorage.getItem('window_invisible')) {
+                    document.querySelectorAll('.child_windows').forEach(function (title) {
+                        title.style.opacity = "0.5";
+                    });
+                }
+                if (localStorage.getItem('window_borderblack')) {
+                    document.querySelectorAll('.child_windows, .child').forEach(function (title) {
+                        document.querySelector('iframe').style.opacity = "0";
+                        title.style.background = "rgba(255, 255, 255, 0)";
+                        title.style.border = "solid 2px black";
+                    });
+                    document.querySelectorAll('.title,.title2,.title_buttons,.window_tool,.window_contents,.window_content,.window_bottom,.prompt_content').forEach(function (title) {
+                        title.style.opacity = "0";
+                    });
                 }
             }
-            if (dragwindow.classList.contains('rightwindow')) {
-                dragwindow.style.height = "55%";
-                dragwindow.style.width = "55%";
-                dragwindow.classList.remove('rightwindow');
-                if (localStorage.getItem('window_animation')) {
-                    dragwindow.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
-                }
-            }
-            setTimeout(() => {
-                dragwindow.style.transition = "";
-            }, 150);
-        });
-
-        let drag2 = button.closest('.child_windows');
-        var x, y;
-
-        button.addEventListener("mousedown", mdown, { passive: false }, false);
-        button.addEventListener("touchstart", mdown, { passive: false }, false);
-
-        function mdown(e) {
-            drag2.classList.add("drag");
-            var event = e.type === "mousedown" ? e : e.changedTouches[0];
-            x = event.pageX - drag2.offsetLeft;
-            y = event.pageY - drag2.offsetTop;
-            document.body.addEventListener("mousemove", mmove, { passive: false }, false);
-            document.body.addEventListener("touchmove", mmove, { passive: false }, false);
-        }
-
-        function mmove(e) {
-            var drag = document.getElementsByClassName("drag")[0];
-            var event = e.type === "mousemove" ? e : e.changedTouches[0];
-            rectangle_remove();
-            drag.style.top = event.pageY - y + "px";
-            drag.style.left = event.pageX - x + "px";
-            drag.addEventListener("mouseup", mup, false);
-            document.body.addEventListener("mouseleave", mup, false);
-            drag.addEventListener("touchend", mup, false);
-            document.body.addEventListener("touchleave", mup, false);
-
-            if (localStorage.getItem('window_invisible')) {
-                document.querySelectorAll('.child_windows').forEach(function (title) {
-                    title.style.opacity = "0.5";
+            function mup(e) {
+                document.querySelectorAll('.drag').forEach(function (drag_windows) {
+                    drag_windows.classList.remove("drag");
                 });
-            }
-
-            if (localStorage.getItem('window_borderblack')) {
+                document.body.removeEventListener("mousemove", mmove, false);
+                button.removeEventListener("mouseup", mup, false);
+                document.body.removeEventListener("touchmove", { passive: false }, mmove, false);
+                button.removeEventListener("touchend", { passive: false }, mup, false);
+                document.querySelectorAll('.child_windows').forEach(function (title) {
+                    title.style.opacity = "";
+                    window_prompt.style.background = "black";
+                    window_back_silver();
+                });
                 document.querySelectorAll('.child_windows, .child').forEach(function (title) {
-                    document.querySelector('iframe').style.opacity = "0";
-                    title.style.background = "rgba(255, 255, 255, 0)";
-                    title.style.border = "solid 2px black";
+                    title.style.background = "";
+                    title.style.border = "";
+                    document.querySelector('iframe').style.opacity = "";
+                    window_prompt.style.background = "black";
+                    window_back_silver();
                 });
                 document.querySelectorAll('.title,.title2,.title_buttons,.window_tool,.window_contents,.window_content,.window_bottom,.prompt_content').forEach(function (title) {
-                    title.style.opacity = "0";
+                    title.style.opacity = "";
+                    window_back_silver();
                 });
+                titlecolor_set();
             }
-        }
-
-        function mup(e) {
-            document.querySelectorAll('.drag').forEach(function (drag_windows) {
-                drag_windows.classList.remove("drag");
-            });
-
-            document.body.removeEventListener("mousemove", mmove, false);
-            button.removeEventListener("mouseup", mup, false);
-            document.body.removeEventListener("touchmove", { passive: false }, mmove, false);
-            button.removeEventListener("touchend", { passive: false }, mup, false);
-
-            document.querySelectorAll('.child_windows').forEach(function (title) {
-                title.style.opacity = "";
-                window_prompt.style.background = "black";
-                window_back_silver();
-            });
-
-            document.querySelectorAll('.child_windows, .child').forEach(function (title) {
-                title.style.background = "";
-                title.style.border = "";
-                document.querySelector('iframe').style.opacity = "";
-                window_prompt.style.background = "black";
-                window_back_silver();
-            });
-
-            document.querySelectorAll('.title,.title2,.title_buttons,.window_tool,.window_contents,.window_content,.window_bottom,.prompt_content').forEach(function (title) {
-                title.style.opacity = "";
-                window_back_silver();
-            });
-
-            titlecolor_set();
+            button.dataset.listenerAdded = true;
         }
     }
-
     function observeNewElements3() {
         const observer = new MutationObserver(mutations => {
             mutations.forEach(mutation => {
@@ -3807,6 +3823,7 @@ if (ua.includes("mobile")) {
     }
     document.querySelectorAll('.drag_button').forEach(addDragButtonListeners);
     observeNewElements3();
+
 
 
     function check(elm1, elm2) {
@@ -7102,6 +7119,12 @@ if (ua.includes("mobile")) {
         taskbtnChild.style.position = "absolute";
         taskbtnChild.style.left = `${taskbtnParent.clientWidth + 70}px`;
         taskbtnChild.style.width = `${taskbar.clientWidth - taskbtnRightGroup.clientWidth - 150}px`;
+
+        setTimeout(() => {
+            const taskheight_parent = document.querySelector('#taskbar');
+            const taskheight_child = document.querySelector('.taskbar_buttons');
+            taskheight_child.style.height = `${taskheight_parent.clientHeight - + 3}px`;
+        }, 0);
     };
     const taskbar_initResize = () => {
         window.addEventListener('resize', allwindow_resize);
@@ -7314,8 +7337,5 @@ if (ua.includes("mobile")) {
             );
         }
     }
-
-    Array.from(document.getElementsByClassName('button')).forEach(addButtonListeners2);
-    Array.from(document.getElementsByClassName('button2')).forEach(addButtonListeners);
 
 };
