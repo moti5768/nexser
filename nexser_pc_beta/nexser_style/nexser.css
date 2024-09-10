@@ -1116,12 +1116,12 @@ body::-webkit-scrollbar {
 
 /*Firefox用のベンダープレフィックス付き*/
 ::-moz-selection {
-    background-color: gray;
+    background-color: darkblue;
     color: white;
 }
 
 ::selection {
-    background-color: gray;
+    background-color: darkblue;
     color: white;
 }
 
