@@ -1043,6 +1043,11 @@ input[type="file"] {
     height: 300px;
 }
 
+.mydocument_menu {
+    width: 700px;
+    height: 400px;
+}
+
 .delete_btn {
     margin: 2px;
 }
@@ -1221,7 +1226,7 @@ body::-webkit-scrollbar {
 
 .mini_window_startmenu {
     width: 150px;
-    height: 240px;
+    height: 265px;
     background: silver;
     position: absolute;
     bottom: 30px;
