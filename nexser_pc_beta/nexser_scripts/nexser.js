@@ -3187,6 +3187,26 @@ if (ua.includes("mobile")) {
         document.getElementById('myInput').value = "";
     }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     document.querySelectorAll('.nexser_guidebook').forEach(nexser_guidebook =>
         nexser_guidebook.addEventListener('click', () => {
             nexser_guidebook_menu.classList.toggle('active');
@@ -3499,31 +3519,6 @@ if (ua.includes("mobile")) {
         })
     );
 
-    function cpubench_open() {
-        const cpumenu1 = document.querySelector('.cpumenu_1');
-        document.getElementsByClassName('cpu_bench_menu')[0].style.zIndex = largestZIndex++;
-        if (!cpu_bench_menu.classList.contains('active') || cpumenu1.style.display == "block") {
-            setTimeout(() => {
-                document.querySelector('.cpumenu_1').style.display = "none";
-                document.querySelector('.cpubuttons').style.display = "none";
-                document.querySelector('.cputitle').style.display = "none";
-                setTimeout(() => {
-                    document.querySelector('.cpumenu_2').style.display = "block";
-                    document.querySelector('.cpubuttons').style.display = "block";
-                    document.querySelector('.cputitle').style.display = "flex";
-                }, 0);
-            }, 3000);
-        }
-    }
-
-    function cpubench_reset() {
-        setTimeout(() => {
-            document.querySelector('.cpumenu_1').style.display = "block";
-            document.querySelector('.cpumenu_2').style.display = "none";
-            document.querySelector('.cpubuttons').style.display = "none";
-            document.querySelector('.cputitle').style.display = "none";
-        }, 100);
-    }
 
     // games
 
@@ -3551,6 +3546,38 @@ if (ua.includes("mobile")) {
             memory_game_menu.style.zIndex = largestZIndex++;
         })
     );
+
+
+
+
+
+    function cpubench_open() {
+        const cpumenu1 = document.querySelector('.cpumenu_1');
+        document.getElementsByClassName('cpu_bench_menu')[0].style.zIndex = largestZIndex++;
+        if (!cpu_bench_menu.classList.contains('active') || cpumenu1.style.display == "block") {
+            setTimeout(() => {
+                document.querySelector('.cpumenu_1').style.display = "none";
+                document.querySelector('.cpubuttons').style.display = "none";
+                document.querySelector('.cputitle').style.display = "none";
+                setTimeout(() => {
+                    document.querySelector('.cpumenu_2').style.display = "block";
+                    document.querySelector('.cpubuttons').style.display = "block";
+                    document.querySelector('.cputitle').style.display = "flex";
+                }, 0);
+            }, 3000);
+        }
+    }
+
+    function cpubench_reset() {
+        setTimeout(() => {
+            document.querySelector('.cpumenu_1').style.display = "block";
+            document.querySelector('.cpumenu_2').style.display = "none";
+            document.querySelector('.cpubuttons').style.display = "none";
+            document.querySelector('.cputitle').style.display = "none";
+        }, 100);
+    }
+
+
 
     // 最前面のz-indexを持つ要素に新しいクラス名を付与する関数
     function assignClassToFrontmostElement(className, newClassName) {
@@ -7112,19 +7139,18 @@ if (ua.includes("mobile")) {
     }
 
     const taskbar_resize = () => {
-        const taskbar = document.querySelector('#taskbar');
-        const taskbtnParent = document.querySelector('.first_taskbar_buttons');
-        const taskbtnChild = document.querySelector('.taskbar_buttons');
-        const taskbtnRightGroup = document.querySelector('.taskbar_rightgroup');
-        taskbtnChild.style.position = "absolute";
-        taskbtnChild.style.left = `${taskbtnParent.clientWidth + 70}px`;
-        taskbtnChild.style.width = `${taskbar.clientWidth - taskbtnRightGroup.clientWidth - 150}px`;
-
         setTimeout(() => {
+            const taskbar = document.querySelector('#taskbar');
+            const taskbtnParent = document.querySelector('.first_taskbar_buttons');
+            const taskbtnChild = document.querySelector('.taskbar_buttons');
+            const taskbtnRightGroup = document.querySelector('.taskbar_rightgroup');
+            taskbtnChild.style.position = "absolute";
+            taskbtnChild.style.left = `${taskbtnParent.clientWidth + 70}px`;
+            taskbtnChild.style.width = `${taskbar.clientWidth - taskbtnRightGroup.clientWidth - 150}px`;
             const taskheight_parent = document.querySelector('#taskbar');
             const taskheight_child = document.querySelector('.taskbar_buttons');
             taskheight_child.style.height = `${taskheight_parent.clientHeight - + 3}px`;
-        }, 0);
+        }, 100);
     };
     const taskbar_initResize = () => {
         window.addEventListener('resize', allwindow_resize);
@@ -7337,5 +7363,82 @@ if (ua.includes("mobile")) {
             );
         }
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    document.addEventListener('DOMContentLoaded', (event) => {
+        const draggables = document.querySelectorAll('.window_files');
+        const dropZone = document.getElementById('drop_zone');
+        const dropList = dropZone.querySelector('ul');
+
+        draggables.forEach(draggable => {
+            draggable.setAttribute('draggable', 'true');
+
+            draggable.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text/plain', e.target.outerHTML);
+            });
+        });
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const data = e.dataTransfer.getData('text/plain');
+            dropList.innerHTML += data;
+
+            // 再度ドロップされた要素もドラッグ可能にする
+            const newElement = dropList.lastElementChild;
+            newElement.setAttribute('draggable', 'true');
+            newElement.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('text/plain', e.target.outerHTML);
+            });
+
+            // Save to local storage
+            saveToLocalStorage();
+        });
+
+        // Load from local storage on page load
+        loadFromLocalStorage();
+    });
+
+    function saveToLocalStorage() {
+        const dropList = document.querySelector('#drop_zone ul');
+        localStorage.setItem('dropListContent', dropList.innerHTML);
+    }
+
+    function loadFromLocalStorage() {
+        const dropList = document.querySelector('#drop_zone ul');
+        const savedContent = localStorage.getItem('dropListContent');
+        if (savedContent) {
+            dropList.innerHTML = savedContent;
+
+            // Make loaded elements draggable
+            const loadedElements = dropList.children;
+            Array.from(loadedElements).forEach(element => {
+                element.setAttribute('draggable', 'true');
+                element.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', e.target.outerHTML);
+                });
+            });
+        }
+    }
+
+
 
 };
