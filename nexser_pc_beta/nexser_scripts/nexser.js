@@ -6986,18 +6986,29 @@ if (ua.includes("mobile")) {
     }
 
 
+
+
+
+
     const draggables = document.querySelectorAll('.window_files');
     const dropZone = document.getElementById('drop_zone');
     const dropList = dropZone.querySelector('ul');
+
     draggables.forEach(draggable => {
         draggable.setAttribute('draggable', 'true');
         draggable.addEventListener('dragstart', (e) => {
             e.dataTransfer.setData('text/plain', e.target.outerHTML);
         });
+        draggable.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            showContextMenu(e, draggable);
+        });
     });
+
     dropZone.addEventListener('dragover', (e) => {
         e.preventDefault();
     });
+
     dropZone.addEventListener('drop', (e) => {
         e.preventDefault();
         const data = e.dataTransfer.getData('text/plain');
@@ -7007,14 +7018,20 @@ if (ua.includes("mobile")) {
         newElement.addEventListener('dragstart', (e) => {
             e.dataTransfer.setData('text/plain', e.target.outerHTML);
         });
+        newElement.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            showContextMenu(e, newElement);
+        });
         saveToLocalStorage();
         loadFromLocalStorage();
     });
+
     loadFromLocalStorage();
+
     function saveToLocalStorage() {
         const dropList = document.querySelector('#drop_zone ul');
         localStorage.setItem('dropListContent', dropList.innerHTML);
-        rectangle_remove()
+        rectangle_remove();
     }
     function loadFromLocalStorage() {
         const dropList = document.querySelector('#drop_zone ul');
@@ -7026,6 +7043,12 @@ if (ua.includes("mobile")) {
                 element.setAttribute('draggable', 'true');
                 element.addEventListener('dragstart', (e) => {
                     e.dataTransfer.setData('text/plain', e.target.outerHTML);
+                });
+                element.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    showContextMenu(e, element);
+                    removefile_Border()
+                    applyBorder(e, element);
                 });
             });
         }
@@ -7111,5 +7134,60 @@ if (ua.includes("mobile")) {
         });
 
     }
+
+    function showContextMenu(event, element) {
+        const existingMenu = document.querySelector('.context-menu');
+        if (existingMenu) {
+            existingMenu.remove();
+        }
+        const contextMenu = document.createElement('span');
+        contextMenu.className = 'context-menu border back_silver';
+        contextMenu.style.position = 'absolute';
+        contextMenu.style.top = `${event.clientY}px`;
+        contextMenu.style.left = `${event.clientX}px`;
+        contextMenu.style.zIndex = '99999';
+        contextMenu.innerHTML = '<p id="delete" class="back_silver hover_blue" style="z-index: 99999;">&nbsp;Delete&nbsp;</p>';
+        document.body.appendChild(contextMenu);
+        // メニューの位置を調整
+        const menuHeight = contextMenu.offsetHeight;
+        const menuWidth = contextMenu.offsetWidth;
+        const windowHeight = window.innerHeight;
+        const windowWidth = window.innerWidth;
+
+        let top = event.clientY;
+        let left = event.clientX;
+
+        if (top + menuHeight > windowHeight) {
+            top = windowHeight - menuHeight;
+        }
+
+        if (left + menuWidth > windowWidth) {
+            left = windowWidth - menuWidth;
+        }
+
+        contextMenu.style.top = `${top}px`;
+        contextMenu.style.left = `${left}px`;
+
+        document.getElementById('delete').addEventListener('click', () => {
+            element.remove();
+            contextMenu.remove();
+            saveToLocalStorage();
+        });
+
+        document.addEventListener('click', () => {
+            contextMenu.remove();
+            removefile_Border()
+        }, { once: true });
+    }
+    function applyBorder(event, element) {
+        element.classList.add('file_border3')
+    }
+
+    function removefile_Border() {
+        document.querySelectorAll('.window_files').forEach((rf) => {
+            rf.classList.remove('file_border3')
+        })
+    }
+
 
 };

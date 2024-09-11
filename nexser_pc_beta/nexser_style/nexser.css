@@ -2155,6 +2155,11 @@ body::-webkit-scrollbar {
     outline-offset: -1.5px;
 }
 
+.window_files.file_border3 {
+    outline: 1.5px dotted red;
+    outline-offset: -1.5px;
+}
+
 .window_files>.windowfile_time {
     position: absolute;
     bottom: 0px;
