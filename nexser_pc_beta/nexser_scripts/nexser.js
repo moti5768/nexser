@@ -2713,8 +2713,9 @@ if (ua.includes("mobile")) {
                         window_tool.style.display = "block";
                     });
                 }
+                zindexwindow_addnavy();
                 titlecolor_set()
-                if (animation.classList.contains('big')) {
+                if (animation.classList.contains('big') || animation.classList.contains('leftwindow') || animation.classList.contains('rightwindow')) {
                     const task = document.getElementById('taskbar').clientHeight;
                     const child_windows_big2 = animation.clientHeight;
                     animation.style.height = child_windows_big2 - task + "px";
@@ -2722,7 +2723,7 @@ if (ua.includes("mobile")) {
             }, 150);
         } else {
             setTimeout(() => {
-                if (animation.classList.contains('big')) {
+                if (animation.classList.contains('big') || animation.classList.contains('leftwindow') || animation.classList.contains('rightwindow')) {
                     const task = document.getElementById('taskbar').clientHeight;
                     const child_windows_big2 = animation.clientHeight;
                     animation.style.height = child_windows_big2 - task + "px";
@@ -2777,79 +2778,44 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.window_fullleft').forEach(function (window_left) {
         window_left.addEventListener('click', function () {
             const windowleft = window_left.closest('.child_windows');
-
             windowleft.classList.remove('rightwindow');
             windowleft.classList.add('leftwindow');
-
             const t = localStorage.getItem('taskbar_height');
+            windowleft.style.right = "auto";
+            windowleft.style.left = "0";
+            windowleft.style.height = "100%";
+            windowleft.style.width = "49.9%";
             if (localStorage.getItem('data_taskbar_none')) {
-                windowleft.style.right = "auto";
                 windowleft.style.top = "0";
-                windowleft.style.left = "0";
-                windowleft.style.height = "100%";
-                windowleft.style.width = "49.9%";
             } else if (localStorage.getItem('taskbar_position_button')) {
-                windowleft.style.right = "auto";
                 windowleft.style.top = "40px";
-                windowleft.style.left = "0";
-                windowleft.style.height = "100%";
-                windowleft.style.width = "49.9%";
                 windowleft.style.top = t + "px";
             } else {
-                windowleft.style.right = "auto";
                 windowleft.style.top = "0";
-                windowleft.style.left = "0";
-                windowleft.style.height = "100%";
-                windowleft.style.width = "49.9%";
             }
             allwindow_animation(windowleft)
-
-
-            setTimeout(() => {
-                const task = document.getElementById('taskbar').clientHeight;
-                const child_windows_big2 = windowleft.clientHeight;
-                windowleft.style.height = child_windows_big2 + - + task + "px"
-            }, 150);
-
             windowleft.classList.remove('big');
         });
     })
     document.querySelectorAll('.window_fullright').forEach(function (window_right) {
         window_right.addEventListener('click', function () {
             const windowright = window_right.closest('.child_windows');
-
             windowright.classList.remove('leftwindow');
             windowright.classList.add('rightwindow');
-
             const t = localStorage.getItem('taskbar_height');
+            windowright.style.left = "";
+            windowright.style.right = "0px";
+            windowright.style.height = "100%";
+            windowright.style.width = "49.9%";
             if (localStorage.getItem('data_taskbar_none')) {
-                windowright.style.left = "";
                 windowright.style.top = "0";
-                windowright.style.right = "0px";
-                windowright.style.height = "100%";
-                windowright.style.width = "49.9%";
             } else if (localStorage.getItem('taskbar_position_button')) {
-                windowright.style.left = "";
                 windowright.style.top = "40px";
-                windowright.style.right = "0px";
-                windowright.style.height = "100%";
-                windowright.style.width = "49.9%";
                 windowright.style.top = t + "px";
             } else {
-                windowright.style.left = "";
                 windowright.style.top = "0";
-                windowright.style.right = "0px";
-                windowright.style.height = "100%";
-                windowright.style.width = "49.9%";
             }
             allwindow_animation(windowright)
-
-            setTimeout(() => {
-                const task = document.getElementById('taskbar').clientHeight;
-                const child_windows_big2 = windowright.clientHeight;
-                windowright.style.height = child_windows_big2 + - + task + "px"
-            }, 150);
-
             windowright.classList.remove('big');
         });
     })
@@ -3372,20 +3338,17 @@ if (ua.includes("mobile")) {
                 document.querySelectorAll('.child_windows').forEach(function (title) {
                     title.style.opacity = "";
                     window_prompt.style.background = "black";
-                    window_back_silver();
                 });
                 document.querySelectorAll('.child_windows, .child').forEach(function (title) {
                     title.style.background = "";
                     title.style.border = "";
                     document.querySelector('iframe').style.opacity = "";
                     window_prompt.style.background = "black";
-                    window_back_silver();
                 });
                 document.querySelectorAll('.title,.title2,.title_buttons,.window_tool,.window_contents,.window_content,.window_bottom,.prompt_content').forEach(function (title) {
                     title.style.opacity = "";
-                    window_back_silver();
                 });
-                titlecolor_set();
+                window_back_silver();
             }
             button.dataset.listenerAdded = true;
         }
