@@ -1048,6 +1048,12 @@ input[type="file"] {
     height: 400px;
 }
 
+.restriction_menu {
+    width: 300px;
+    min-width: 250px;
+    height: auto;
+}
+
 .delete_btn {
     margin: 2px;
 }

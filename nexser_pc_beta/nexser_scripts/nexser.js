@@ -88,6 +88,7 @@ if (ua.includes("mobile")) {
     const kakeibo_menu = document.querySelector('.kakeibo_menu');
     const nexser_nextversion_menu = document.querySelector('.nexser_nextversion_menu');
     const mydocument_menu = document.querySelector('.mydocument_menu');
+    const restriction_menu = document.querySelector('.restriction_menu');
 
     const notice_menu = document.querySelector('.notice_menu');
 
@@ -101,6 +102,37 @@ if (ua.includes("mobile")) {
     const othello_menu = document.querySelector('.othello_menu');
     const memory_game_menu = document.querySelector('.memory_game_menu');
 
+
+    document.addEventListener('click', () => {
+        if (localStorage.getItem('game')) {
+            document.querySelectorAll('.game_window:not(.active)').forEach((test) => {
+                const game = test;
+                console.log(game)
+                document.getElementById('nex').style.cursor = '';
+                document.querySelector('.window_error_text').textContent = "制限されているため、起動ができません"
+                error_windows.classList.remove('active')
+                document.querySelector('.test_allwindow').style.display = "block";
+                sound3()
+                setTimeout(() => {
+                    test.classList.add('active')
+                    test.classList.remove('selectwindows')
+                    test_windows_button()
+                }, 0);
+            })
+        }
+    })
+
+    function game_true() {
+        localStorage.setItem('game', true)
+        document.getElementsByClassName('game_text')[0].textContent = "ON"
+    }
+    function game_false() {
+        localStorage.removeItem('game')
+        document.getElementsByClassName('game_text')[0].textContent = "OFF"
+    }
+    if (localStorage.getItem('game')) {
+        document.getElementsByClassName('game_text')[0].textContent = "ON"
+    }
 
     // マウスドラッグで出てくる水色のエリアの描画
     let startX, startY, isDrawing = false;
@@ -1018,8 +1050,8 @@ if (ua.includes("mobile")) {
                     document.getElementById('nex').style.cursor = '';
                     document.querySelector('.window_error_text').textContent = "welcomeウィンドウが起動するまで再起動はできません!"
                     error_windows.classList.remove('active')
-                    sound3()
                     document.querySelector('.test_allwindow').style.display = "block";
+                    sound3()
                 } else if (gets == gets2 && gets3 === 0) {
                     sound_stop();
                     shutdown_sound();
@@ -1867,17 +1899,13 @@ if (ua.includes("mobile")) {
 
     function executeCommand(input) {
         prompt_text_check2()
-        // 入力フォームを無効化
         input.disabled = true;
         document.querySelector('.name2').classList.add('pointer_none');
         document.querySelector('.name2').classList.remove('name2');
         document.querySelector('.focus2').classList.remove('focus2');
-        // 新しい入力フォームを生成
         const newInputContainer = document.createElement('div');
-        newInputContainer.className = 'input_container';
-        newInputContainer.classList.add('prompt_hukusei2');
+        newInputContainer.className = 'input_container prompt_hukusei2';
         newInputContainer.innerHTML = `<span class="small">nexser/></span><textarea rows="1" class="command_input2 name2 focus2" placeholder="|" onkeydown="handleKeyDown(event, this)"></textarea>`;
-        // 新しい入力フォームを追加
         document.getElementById('form_container').appendChild(newInputContainer);
         setTimeout(() => {
             document.getElementsByClassName('focus2')[0].focus()
@@ -1890,12 +1918,9 @@ if (ua.includes("mobile")) {
         document.querySelector('.name2').classList.add('pointer_none');
         document.querySelector('.name2').classList.remove('name2');
         document.querySelector('.focus2').classList.remove('focus2');
-        // 新しい入力フォームを生成
         const newInputContainer = document.createElement('div');
-        newInputContainer.className = 'input_container';
-        newInputContainer.classList.add('prompt_hukusei2');
+        newInputContainer.className = 'input_container prompt_hukusei2';
         newInputContainer.innerHTML = `<textarea rows="1" class="command_input2 name2 focus2" style="color: red;" placeholder="|">${name} は操作可能なプログラムとして認識されていません。</textarea>`;
-        // 新しい入力フォームを追加
         document.getElementById('form_container').appendChild(newInputContainer);
     }
 
@@ -2581,27 +2606,19 @@ if (ua.includes("mobile")) {
                 const bigscreenbutton = button.closest('.child_windows');
                 bigscreenbutton.classList.remove('minimization');
                 const t = localStorage.getItem('taskbar_height');
+                bigscreenbutton.style.height = "";
+                bigscreenbutton.style.width = "";
+                bigscreenbutton.style.left = "0";
                 if (localStorage.getItem('data_taskbar_none')) {
-                    bigscreenbutton.style.height = "";
-                    bigscreenbutton.style.width = "";
                     bigscreenbutton.style.top = "0";
-                    bigscreenbutton.style.left = "0";
                 } else if (localStorage.getItem('taskbar_position_button')) {
-                    bigscreenbutton.style.height = "";
-                    bigscreenbutton.style.width = "";
                     bigscreenbutton.style.top = "40px";
-                    bigscreenbutton.style.left = "0";
                     bigscreenbutton.style.top = t + "px";
                 } else if (bigscreenbutton.classList.contains('rightwindow')) {
-                    bigscreenbutton.style.height = "";
-                    bigscreenbutton.style.width = "";
                     bigscreenbutton.style.top = "0";
                     bigscreenbutton.style.left = "";
                 } else {
-                    bigscreenbutton.style.height = "";
-                    bigscreenbutton.style.width = "";
                     bigscreenbutton.style.top = "0";
-                    bigscreenbutton.style.left = "0";
                 }
                 allwindow_animation(bigscreenbutton)
                 bigscreenbutton.classList.remove('rightwindow');
@@ -2757,16 +2774,13 @@ if (ua.includes("mobile")) {
             const bigscreenbutton = alliwindow_big.closest('.child_windows');
             bigscreenbutton.classList.remove('rightwindow');
             bigscreenbutton.classList.remove('leftwindow');
+            bigscreenbutton.style.height = "";
+            bigscreenbutton.style.width = "";
+            bigscreenbutton.style.left = "0";
             if (localStorage.getItem('taskbar_position_button')) {
-                bigscreenbutton.style.height = ""
-                bigscreenbutton.style.width = ""
                 bigscreenbutton.style.top = "40px"
-                bigscreenbutton.style.left = "0"
             } else {
-                bigscreenbutton.style.height = ""
-                bigscreenbutton.style.width = ""
                 bigscreenbutton.style.top = "0"
-                bigscreenbutton.style.left = "0"
             }
             allwindow_animation(bigscreenbutton)
             bigscreenbutton.classList.add('big');
@@ -2852,12 +2866,11 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.windowsize_reset').forEach(function (windowsize_reset) {
         windowsize_reset.addEventListener('click', function () {
             const windowsizereset = windowsize_reset.closest('.child_windows');
+            windowsizereset.style.height = "";
             if (windowsizereset.classList.contains('rightwindow')) {
-                windowsizereset.style.height = "";
                 windowsizereset.style.width = "max-content";
                 windowsizereset.style.right = "0";
             } else {
-                windowsizereset.style.height = "";
                 windowsizereset.style.width = "";
                 windowsizereset.style.right = "";
             }
@@ -4118,10 +4131,8 @@ if (ua.includes("mobile")) {
     }
 
     function error_windows_close() {
-        setTimeout(() => {
-            document.querySelector('.test_allwindow').style.display = "none";
-            error_windows.classList.add('active');
-        }, 100);
+        document.querySelector('.test_allwindow').style.display = "none";
+        error_windows.classList.add('active');
     }
 
     function notedata_clear() {
@@ -6217,8 +6228,7 @@ if (ua.includes("mobile")) {
                         windowDiv.classList.add('selectwindows');
                         const iframe = document.createElement('iframe');
                         iframe.src = `https://www.youtube.com/embed/${extractYouTubeID(url)}`;
-                        iframe.className = "item_preview";
-                        newChild6.classList.add('scrollbar_none')
+                        iframe.className = "item_preview scrollbar_none";
                         newChild6.appendChild(iframe);
                         setTimeout(() => {
                             test_windows_button();
@@ -6903,6 +6913,8 @@ if (ua.includes("mobile")) {
         document.querySelectorAll('.console_error_btn').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { console_error_menu.classList.toggle('active'); console_error_menu.style.zIndex = largestZIndex++; }; });
         document.querySelectorAll('.kakeibo_btn').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { kakeibo_menu.classList.toggle('active'); kakeibo_menu.style.zIndex = largestZIndex++; }; });
         document.querySelectorAll('.document_button').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { mydocument_menu.classList.toggle('active'); mydocument_menu.style.zIndex = largestZIndex++; }; });
+        document.querySelectorAll('.restriction_btn').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { restriction_menu.classList.toggle('active'); restriction_menu.style.zIndex = largestZIndex++; }; });
+
 
         document.querySelectorAll('.test_button').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { main.classList.toggle('active'); main.style.zIndex = largestZIndex++; }; });
         document.querySelectorAll('.test_button2').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { my_computer.classList.toggle('active'); my_computer.style.zIndex = largestZIndex++; }; });
