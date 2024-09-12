@@ -2755,10 +2755,8 @@ if (ua.includes("mobile")) {
     function allwindow_big() {
         document.querySelectorAll('.child_windows').forEach(function (alliwindow_big) {
             const bigscreenbutton = alliwindow_big.closest('.child_windows');
-
             bigscreenbutton.classList.remove('rightwindow');
             bigscreenbutton.classList.remove('leftwindow');
-
             if (localStorage.getItem('taskbar_position_button')) {
                 bigscreenbutton.style.height = ""
                 bigscreenbutton.style.width = ""
@@ -2829,12 +2827,10 @@ if (ua.includes("mobile")) {
             elements2.dataset.originalTop = elements2.style.top;
             elements2.dataset.originalLeft = elements2.style.left;
         })
-        window_half_big.addEventListener('click', function () {
+        window_half_big.addEventListener('click', function (event) {
             const windowhalfbig = window_half_big.closest('.child_windows');
-
             windowhalfbig.classList.remove('rightwindow');
             windowhalfbig.classList.remove('leftwindow');
-
             let shiftX = event.clientX - window_half_big.getBoundingClientRect().left;
             let shiftY = event.clientY - window_half_big.getBoundingClientRect().top;
             let top = document.querySelector('.top');
@@ -3088,6 +3084,7 @@ if (ua.includes("mobile")) {
 
     function search_clear() {
         document.getElementById('myInput').value = "";
+        nexser_search()
     }
 
     function cpubench_open() {
@@ -3108,12 +3105,10 @@ if (ua.includes("mobile")) {
     }
 
     function cpubench_reset() {
-        setTimeout(() => {
-            document.querySelector('.cpumenu_1').style.display = "block";
-            document.querySelector('.cpumenu_2').style.display = "none";
-            document.querySelector('.cpubuttons').style.display = "none";
-            document.querySelector('.cputitle').style.display = "none";
-        }, 100);
+        document.querySelector('.cpumenu_1').style.display = "block";
+        document.querySelector('.cpumenu_2').style.display = "none";
+        document.querySelector('.cpubuttons').style.display = "none";
+        document.querySelector('.cputitle').style.display = "none";
     }
 
 
