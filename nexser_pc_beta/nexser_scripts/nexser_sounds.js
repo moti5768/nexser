@@ -1,6 +1,5 @@
 const error_windows = document.querySelector('.error_windows');
 const warning_windows = document.querySelector('.warning_windows');
-const prompt_text2 = document.querySelector('.prompt_text2');
 
 const sound_play_button = document.getElementsByClassName('sound_play_button');
 const sound_stop_button = document.getElementsByClassName('sound_stop_button');
@@ -154,7 +153,6 @@ Array.from(sound_play_button).forEach((sound_play_buttons) => {
         if (!localStorage.getItem('driver_sound')) {
             document.querySelector('.window_error_text').textContent = "サウンドドライバー がインストールされていません!"
             error_windows.classList.remove('active')
-            prompt_text2.style.color = "";
             document.querySelector('.test_allwindow').style.display = "block";
             sound3()
             sound_play_buttons.textContent = "▶"

@@ -191,7 +191,7 @@
                     <input class="large border2" type="password" id="pass_form" maxlength="4" autocomplete="off"
                         style="height: 20px; margin-top: 10px; width: 290px;">
                 </form>
-                <button class="button2 borderinline_dotted" style="margin-top: 5px; height: 25px;"
+                <button class="button2 apply_button" style="margin-top: 5px; height: 25px;"
                     onclick="password_login()">&emsp;login&emsp;</button>
                 <span class="red_text pass_no"></span>
             </div>
@@ -1087,11 +1087,7 @@
                                 <div class="window_files restriction_btn">
                                     <li>restriction</li><span class="window_file_icon"></span>
                                 </div>
-                                <br>
                             </ul>
-                        </div>
-                        <div class="window_bottom border2">
-                            <p>&nbsp;13&nbsp;objects</p>
                         </div>
                     </div>
 
@@ -1731,17 +1727,16 @@
                                 <div class="child_list">
                                     <ul>
                                         <li onclick="prompt2_text_clear()">text clear</li>
+                                        <li onclick="nexser_prompt_reset()">reset</li>
                                     </ul>
                                 </div>
                             </div>
                         </div>
 
                         <div class="window_contents window_prompt_content2"
-                            style="background: black; position: absolute; top: 50px;">
+                            style="display: block; background: black; position: absolute; top: 50px;">
                             <div id="prompt2" class="prompt_content">
-                                <div class="prompt_text2">
-                                    <p>[nexser prompt beta version 1.7]</p>
-                                </div>
+                                <p>[nexser prompt beta version 1.7]</p>
                                 <div id="form_container">
                                     <div class="input_container">
                                         <span class="small">nexser/></span><textarea rows="1"
@@ -3015,9 +3010,14 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         </div><br>
 
                         <div class="window_contents back_silver">
-                            <input type="text" id="myInput" class="border large" style="width: 90%; margin-top: 10px;"
-                                autocomplete="off" onkeyup="nexser_search()" placeholder="検索したい言葉を入力">
-                            <span class="button2 apply_button" onclick="search_clear()">clear</span>
+                            <div style="display: flex;">
+                                <input type="text" id="myInput" class="border large"
+                                    style="width: 90%; margin-top: 10px;" autocomplete="off" onkeyup="nexser_search()"
+                                    placeholder="検索したい言葉を入力">
+                                <span class="button2 apply_button" style="margin-top: 10px;"
+                                    onclick="search_clear()">clear</span>
+                            </div>
+
                             <div class="window_content">
                                 <ul id="myUL">
                                 </ul>
@@ -3193,7 +3193,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         <div class="window_contents back_silver">
                             <p class="x-large bold">Local Storage Details</p>
                             <ul id="localStorageList"></ul>
-                            <p class="bold x-large" id="totalSize"></p><br>
+                            <p class="bold x-large" id="totalSize"></p>
                         </div>
                     </div>
 
@@ -3280,7 +3280,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         </div>
 
                         <div class="window_contents border2 back_silver">
-                            <div id="nexser_files_output"></div><br><br>
+                            <div id="nexser_files_output"></div>
                         </div>
                     </div>
 
@@ -3471,7 +3471,6 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         <div class="title">
                             <span class="title_icon"></span><span>console error</span>
                         </div>
-
                         <div class="title_buttons">
                             <span class="drag_button">&nbsp;</span>
                             <span class="close_button button2" onclick="console_errortext_clear()"></span>
@@ -3479,8 +3478,8 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             <span class="minscreen_button button2"></span>
                             <span class="minimization_button button2"></span><br>
                         </div>
-                        <div class="window_contents" style="background: black; color: white; height: 100%;">
-                            <p id="console_error_text"></p><br>
+                        <div class="window_contents" style="background: black; color: white;">
+                            <span id="console_error_text"></span>
                         </div>
                     </div>
 
@@ -3524,7 +3523,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             </div>
                             <button onclick="kakeibo_addEntry()" class="button2 medium">追加</button>
                             <div class="x-large">合計:<span class="total" id="total"></span></div>
-                            <div id="entries" class="border"></div><br>
+                            <div id="entries" class="border"></div>
                         </div>
                     </div>
 
@@ -3559,7 +3558,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             <span class="minimization_button button2"></span><br>
                         </div>
                         <div class="window_contents" id="drop_zone">
-                            <ul class="window_inline_list"></ul><br>
+                            <ul class="window_inline_list"></ul>
                         </div>
                     </div>
 
@@ -4157,7 +4156,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                     </div>
                 </div>
 
-                <div id="toolbar" class="border">
+                <div id="toolbar">
                     <div style="margin-top: 2px; margin-left: 1px;">
                         <div>
                             <span class="drag_button2 border2" style="cursor: all-scroll;">&emsp;&nbsp;</span>
