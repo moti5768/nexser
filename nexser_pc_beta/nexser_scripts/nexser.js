@@ -249,25 +249,24 @@ if (ua.includes("mobile")) {
         taskbar.style.height = t + "px";
 
         if (localStorage.getItem('driver_color')) {
-            document.querySelector('.installbutton_2').textContent = "uninstall"
+            document.querySelector('.installbutton_2').textContent = "uninstall";
         }
         if (localStorage.getItem('driver_sound')) {
-            document.querySelector('.installbutton_1').textContent = "uninstall"
+            document.querySelector('.installbutton_1').textContent = "uninstall";
         }
         if (localStorage.getItem('backtext')) {
-            const backtext_data2 = localStorage.getItem('backtext_data');
-            document.querySelector('#background_text').textContent = backtext_data2;
-            background_text.classList.add('block')
+            document.querySelector('#background_text').textContent = localStorage.getItem('backtext_data');
+            background_text.classList.add('block');
         }
         if (!localStorage.getItem('backtext')) {
-            background_text.classList.remove('block')
+            background_text.classList.remove('block');
         }
         if (localStorage.getItem('backtext')) {
-            document.querySelector('.backtext_mode').textContent = "ON"
+            document.querySelector('.backtext_mode').textContent = "ON";
         }
         if (localStorage.getItem('noteData')) {
             load()
-            document.querySelector('.note_title').textContent = "notepad(save keep)"
+            document.querySelector('.note_title').textContent = "notepad(save keep)";
         }
         if (localStorage.getItem('textdropdata')) {
             load2()
@@ -535,6 +534,13 @@ if (ua.includes("mobile")) {
         if (localStorage.getItem('taskbar_autohide')) {
             document.getElementById('taskbar').style.bottom = "-35px"
         }
+
+        if (localStorage.getItem('taskbar_height')) {
+            document.getElementsByClassName('taskbar_height_value')[0].value = localStorage.getItem('taskbar_height');
+        } else {
+            document.getElementsByClassName('taskbar_height_value')[0].value = "40";
+        }
+
         if (localStorage.getItem('taskbar_height') && (localStorage.getItem('taskbar_autohide'))) {
             const t2 = t - 5;
             document.getElementById('taskbar').style.bottom = "-" + t2 + "px";
@@ -1310,11 +1316,11 @@ if (ua.includes("mobile")) {
             document.getElementsByClassName('welcome_windows')[0].style.display = "none";
             localStorage.removeItem('login');
             document.getElementById('desktop').style.display = "none";
-            document.querySelector('#pass_form').focus();
             window_none();
             window_reset();
             document.querySelector('.pass_signin_menu').classList.remove('active')
-            sound_stop()
+            sound_stop();
+            document.querySelector('#pass_form').focus();
         } else if (localStorage.getItem('password') && gets != gets2) {
             document.getElementById('nex').style.cursor = '';
             document.querySelector('.window_error_text').textContent = "全てのウィンドウを終了してください!"
@@ -1524,8 +1530,7 @@ if (ua.includes("mobile")) {
 
     document.getElementById('backtext_on').addEventListener('click', function () {
         localStorage.setItem('backtext', true);
-        const backtext_data2 = localStorage.getItem('backtext_data');
-        document.querySelector('#background_text').textContent = backtext_data2;
+        document.querySelector('#background_text').textContent = localStorage.getItem('backtext_data');
         document.querySelector('#background_text').classList.add('block');
         document.querySelector('.backtext_mode').textContent = "ON"
     })
@@ -1895,40 +1900,35 @@ if (ua.includes("mobile")) {
         document.querySelector('.focus2').classList.remove('focus2');
         const newInputContainer = document.createElement('div');
         newInputContainer.className = 'input_container prompt_hukusei2';
-        newInputContainer.innerHTML = `<span class="small">nexser/></span><textarea rows="1" class="command_input2 name2 focus2" placeholder="|" onkeydown="handleKeyDown(event, this)"></textarea>`;
+        newInputContainer.innerHTML = `<span class="small">nexser/></span><textarea rows="1" class="command_input2 name2 focus2" style="height: auto; width: 100%;" placeholder="|" onkeydown="commandarea_resize(),handleKeyDown(event, this)"></textarea>`;
         document.getElementById('form_container').appendChild(newInputContainer);
         setTimeout(() => {
             document.getElementsByClassName('focus2')[0].focus()
         }, 0);
     }
 
-
     function executeCommand2() {
         const name = document.getElementsByClassName('focus2')[0].value;
-        document.querySelector('.name2').classList.add('pointer_none');
         document.querySelector('.name2').classList.remove('name2');
-        document.querySelector('.focus2').classList.remove('focus2');
         const newInputContainer = document.createElement('div');
-        newInputContainer.className = 'input_container prompt_hukusei2';
-        newInputContainer.innerHTML = `<textarea rows="1" class="command_input2 name2 focus2" style="color: red;" placeholder="|">${name} は操作可能なプログラムとして認識されていません。</textarea>`;
+        newInputContainer.className = 'input_container prompt_hukusei2　pointer_none';
+        newInputContainer.innerHTML = `<span class="command_input2 name2 miss" style="color: red; height: 100%; width: 100%;">'${name}' は操作可能なプログラムとして認識されていません。</span>`;
         document.getElementById('form_container').appendChild(newInputContainer);
     }
 
     function commandarea_resize() {
         const textarea = document.querySelector('.focus2');
         textarea.addEventListener('input', () => {
-            textarea.style.height = 'auto';
             textarea.style.height = textarea.scrollHeight + 'px';
         });
     }
 
     function nexser_prompt_reset() {
         setTimeout(() => {
-            document.querySelectorAll('.prompt_hukusei2').forEach(function (prompt_hukusei2) {
+            document.querySelectorAll('.prompt_hukusei2,.miss').forEach(function (prompt_hukusei2) {
                 prompt_hukusei2.remove()
             })
-            document.querySelector('.command2').classList.add('name2');
-            document.querySelector('.command2').classList.add('focus2');
+            document.querySelector('.command2').classList.add('name2', 'focus2');
             document.querySelector('.command2').classList.remove('pointer_none');
             document.querySelector('.command2').disabled = false;
             document.getElementsByClassName('focus2')[0].focus()
@@ -2452,15 +2452,13 @@ if (ua.includes("mobile")) {
     }
 
     function screen_backtextload() {
-        const backtext_data2 = localStorage.getItem('backtext_data');
-        document.getElementById('back_text_input').textContent = backtext_data2;
+        document.getElementById('back_text_input').textContent = localStorage.getItem('backtext_data');
     }
 
     function backtext_check() {
         let backtext_data = document.back_text_form.back_text.value;
         localStorage.setItem('backtext_data', backtext_data);
-        let backtext_data2 = localStorage.getItem('backtext_data');
-        document.querySelector('#background_text').textContent = backtext_data2;
+        document.querySelector('#background_text').textContent = localStorage.getItem('backtext_data');
     }
     function backtext_clear() {
         document.back_text_form.back_text.value = "";
@@ -2482,8 +2480,7 @@ if (ua.includes("mobile")) {
             const locallength = localStorage.length;
             document.getElementsByClassName('tests')[0].textContent = (locallength);
 
-            const backtext_data2 = localStorage.getItem('backtext_data');
-            document.getElementById('background_text2').textContent = backtext_data2;
+            document.getElementById('background_text2').textContent = localStorage.getItem('backtext_data');
 
             const get = document.getElementsByClassName('child_windows');
             const get2 = document.getElementsByClassName('active');
@@ -4254,11 +4251,10 @@ if (ua.includes("mobile")) {
     function win2000_load() {
         if (localStorage.getItem('MemoData_export')) {
             document.querySelector('.notice_text').textContent = "winodws2000からテキストデータを受け取りました!"
-            const old_windows_data = localStorage.getItem('MemoData_export');
             const a = document.querySelector('.note_area');
-            a.textContent = (old_windows_data);
+            a.textContent = localStorage.getItem('MemoData_export');
             localStorage.removeItem('MemoData_export');
-            notice_menu.classList.remove('active')
+            notice_menu.classList.remove('active');
         } else {
             document.querySelector('.window_error_text').textContent = "windows2000からテキストデータがエクスポートされていません!"
             error_windows.classList.remove('active')
@@ -5315,7 +5311,7 @@ if (ua.includes("mobile")) {
     navigator.mediaDevices.enumerateDevices()
         .then((devices) => {
             devices.forEach((device) => {
-                document.querySelector('.device_text').textContent = (device.kind + ": " + device.label +
+                document.querySelector('.device_text').innerHTML = (device.kind + ": " + device.label +
                     " id = " + device.deviceId);
             });
         })
@@ -5324,8 +5320,6 @@ if (ua.includes("mobile")) {
         });
 
     getOrientation()
-
-    // JavaScriptで画面の向きを判定
     function getOrientation() {
         var type = screen.orientation.type;
         var ori = "";
@@ -5340,15 +5334,11 @@ if (ua.includes("mobile")) {
         }
         document.getElementById("orientation").innerHTML = ori + "<br>" + screen.orientation.angle + "度";
     }
-    // デバイスの向き変更イベントを追跡
     window.addEventListener("orientationchange", getOrientation);
 
     function drawOmikuji() {
-        // おみくじの結果のリスト
         const omikuji_results = ['大吉', '中吉', '小吉', '末吉', '凶', '大凶', '超大凶'];
-        // ランダムなインデックスを生成
         const index = Math.floor(Math.random() * omikuji_results.length);
-        // 結果をアラートで表示
         document.querySelector('.omikuji_text').textContent = omikuji_results[index] + ' です！';
     }
 
@@ -6822,6 +6812,11 @@ if (ua.includes("mobile")) {
             e.preventDefault();
             showContextMenu(e, newElement);
         });
+        // Append "copy" to the first <li> element's text
+        const firstLi = newElement.querySelector('li');
+        if (firstLi) {
+            firstLi.textContent += ' copy';
+        }
         saveToLocalStorage();
         loadFromLocalStorage();
     });

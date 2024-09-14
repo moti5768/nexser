@@ -309,16 +309,11 @@ li {
     position: relative;
     font-size: small;
     width: 100%;
-    height: 12.5px;
     border: none;
     color: white;
     background: black;
     resize: none;
-}
-
-#form_container {
-    width: 100%;
-    height: 100%;
+    padding: 0px;
 }
 
 .input_container {
@@ -680,7 +675,7 @@ input[type="file"] {
 }
 
 .inport_icon {
-    background: silver;
+    background-color: #C3C7CB;
     border: 1.8px solid #808080;
     border-top-color: #fff;
     border-left-color: #fff;
@@ -2870,7 +2865,7 @@ progress::-webkit-progress-value {
     -ms-user-select: none;
     user-select: none;
     position: absolute;
-    border: 1px solid deepskyblue;
+    border: 1.5px dashed deepskyblue;
     background: skyblue;
     opacity: 0.5;
     pointer-events: none;
