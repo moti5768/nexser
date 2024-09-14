@@ -6163,7 +6163,8 @@ if (ua.includes("mobile")) {
                         windowDiv.classList.add('selectwindows');
                         const iframe = document.createElement('iframe');
                         iframe.src = `https://www.youtube.com/embed/${extractYouTubeID(url)}`;
-                        iframe.className = "item_preview scrollbar_none";
+                        newChild6.classList.add('scrollbar_none');
+                        iframe.className = "item_preview";
                         newChild6.appendChild(iframe);
                         setTimeout(() => {
                             test_windows_button();
