@@ -5146,12 +5146,11 @@ if (ua.includes("mobile")) {
     }
 
     function taskheight_clear() {
-        document.getElementsByClassName('taskbar_height_value')[0].value = "";
+        document.getElementsByClassName('taskbar_height_value')[0].value = "40";
         localStorage.removeItem('taskbar_height');
         taskbar.style.height = "";
         if (localStorage.getItem('taskbar_position_button')) {
             document.querySelector('.files_inline').style.top = "40px"
-
             const task = document.getElementById('taskbar').clientHeight;
             document.querySelector('.child_start_menu').style.top = task + "px"
             document.querySelector('.desktop_version_text').style.bottom = "0px";
