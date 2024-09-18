@@ -535,10 +535,6 @@ input[type="file"] {
     box-sizing: border-box;
 }
 
-.drag_button2 {
-    background: gray;
-}
-
 /* taskbar */
 #taskbar {
     -webkit-user-select: none;

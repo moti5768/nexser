@@ -2279,17 +2279,13 @@ if (ua.includes("mobile")) {
                 break;
 
             case 'local/memory':
-                new Promise((resolve) => {
-                    setTimeout(() => {
-                        localmemory_size(),
-                            resolve();
-                    }, 0)
+                setTimeout(() => {
+                    localmemory_size();
                     setTimeout(() => {
                         localstorage_details_menu.classList.remove('active');
                         localstorage_details_menu.style.zIndex = largestZIndex++;
-                        resolve()
-                    }, 2000);
-                })
+                    }, 500);
+                }, 0);
                 break;
 
             case 'help':
@@ -3283,7 +3279,7 @@ if (ua.includes("mobile")) {
                 }
                 rectangle_remove();
             }
-            function mup(e) {
+            function mup() {
                 dragwindow.classList.remove("drag");
                 document.body.removeEventListener("mousemove", mmove, false);
                 button.removeEventListener("mouseup", mup, false);
@@ -3341,66 +3337,42 @@ if (ua.includes("mobile")) {
             d1.left > d2.right
         )
     }
-
     const elm1 = document.getElementById('taskbar');
     const elm2 = document.getElementById('toolbar');
 
+
+
     document.querySelectorAll('.drag_button2').forEach(function (drag) {
         let drag2 = drag.closest('#toolbar');
-        //要素内のクリックされた位置を取得するグローバル（のような）変数
-        var x;
-        var y;
-        //マウスが要素内で押されたとき、又はタッチされたとき発火
-        drag.addEventListener("mousedown", mdown, { passive: false }, false);
-        drag.addEventListener("touchstart", mdown, { passive: false }, false);
-        //マウスが押された際の関数
-        function mdown(e) {
-            //クラス名に .drag を追加
-            drag2.classList.add("drag");
-            //タッチデイベントとマウスのイベントの差異を吸収
-            if (e.type === "mousedown") {
-                var event = e;
-            } else {
-                var event = e.changedTouches[0];
-            }
-            //要素内の相対座標を取得
+        var x, y;
+        drag.addEventListener("mousedown", mdown_2, { passive: false });
+        drag.addEventListener("touchstart", mdown_2, { passive: false });
+        function mdown_2(e) {
+            var event = e.type === "mousedown" ? e : e.changedTouches[0];
             x = event.pageX - drag2.offsetLeft;
             y = event.pageY - drag2.offsetTop;
-            //ムーブイベントにコールバック
-            document.body.addEventListener("mousemove", mmove, false);
-            document.body.addEventListener("touchmove", mmove, false);
+            document.addEventListener("mousemove", mmove_2, { passive: false });
+            document.addEventListener("touchmove", mmove_2, { passive: false });
+            document.addEventListener("mouseup", mup_2, { passive: false });
+            document.addEventListener("touchend", mup_2, { passive: false });
+            document.addEventListener("mouseleave", mup_2, { passive: false });
+            document.body.addEventListener("mouseleave", mup_2, { passive: false });
         }
-        //マウスカーソルが動いたときに発火
-        function mmove(e) {
-            //ドラッグしている要素を取得
-            var drag = document.getElementsByClassName("drag")[0];
-            //同様にマウスとタッチの差異を吸収
-            if (e.type === "mousemove") {
-                var event = e;
-            } else {
-                var event = e.changedTouches[0];
-            }
+        function mmove_2(e) {
+            var event = e.type === "mousemove" ? e : e.changedTouches[0];
+            requestAnimationFrame(() => {
+                drag2.style.top = event.pageY - y + "px";
+                drag2.style.left = event.pageX - x + "px";
+            });
             rectangle_remove();
-            //マウスが動いた場所に要素を動かす
-            drag.style.top = event.pageY - y + "px";
-            drag.style.left = event.pageX - x + "px";
-            //マウスボタンが離されたとき、またはカーソルが外れたとき発火
-            drag.addEventListener("mouseup", mup, false);
-            document.body.addEventListener("mouseleave", mup, false);
-            drag.addEventListener("touchend", mup, false);
-            document.body.addEventListener("touchleave", mup, false);
         }
-        //マウスボタンが上がったら発火
-        function mup(e) {
-            var drag = document.getElementsByClassName("drag")[0];
-            //ムーブベントハンドラの消去
-            document.body.removeEventListener("mousemove", mmove, false);
-            drag.removeEventListener("mouseup", mup, false);
-            document.body.removeEventListener("touchmove", mmove, false);
-            drag.removeEventListener("touchend", mup, false);
-            //クラス名 .drag も消す
-            drag.classList.remove("drag");
-
+        function mup_2() {
+            document.removeEventListener("mousemove", mmove_2);
+            document.removeEventListener("touchmove", mmove_2);
+            document.removeEventListener("mouseup", mup_2);
+            document.removeEventListener("touchend", mup_2);
+            document.removeEventListener("mouseleave", mup_2);
+            document.body.removeEventListener("mouseleave", mup_2);
             const task = document.getElementById('taskbar').clientHeight;
             if (check(elm1, elm2) && localStorage.getItem('taskbar_position_button')) {
                 toolbar.style.top = task + "px";
@@ -3409,7 +3381,9 @@ if (ua.includes("mobile")) {
                 toolbar.style.bottom = task + "px";
             }
         }
-    })
+    });
+
+
 
     document.querySelector('.toolbar_on').addEventListener('click', () => {
         localStorage.setItem('toolbar_on', true);
@@ -3600,8 +3574,7 @@ if (ua.includes("mobile")) {
             titlebar_teal: ["#483D8B", "teal"],
             titlebar_new: ["linear-gradient(to right, #5b5b5b, #C0C0C0)", "linear-gradient(to right, #02175e, #A3C1E2)"]
         }
-        const driverColor = localStorage.getItem('driver_color');
-        if (driverColor) {
+        if (localStorage.getItem('driver_color')) {
             Object.entries(colors).forEach(([key, [bgColor, navyColor]]) => {
                 if (localStorage.getItem(key)) {
                     document.querySelectorAll('.title').forEach(title => {
@@ -5673,21 +5646,17 @@ if (ua.includes("mobile")) {
     function nexser_files_windowload() {
         const parent = document.getElementById('nexser');
         const output = document.getElementById('nexser_files_output');
-
         function createTree(element) {
             const ul = document.createElement('ul');
             Array.from(element.children).forEach(child => {
                 const li = document.createElement('li');
                 const textContent = child.textContent.trim();
                 li.textContent = textContent;
-
-                // クラス名を生成して適用
                 if (textContent.includes('.')) {
                     li.classList.add('nexser_files_file');
                 } else {
                     li.classList.add('nexser_files_folder');
                 }
-
                 const childTree = createTree(child);
                 if (childTree) {
                     li.appendChild(childTree);
@@ -5696,19 +5665,18 @@ if (ua.includes("mobile")) {
             });
             return ul.children.length ? ul : null;
         }
-
         const tree = createTree(parent);
         if (tree) {
             output.appendChild(tree);
         }
     }
-
     function nexser_files_output_remove() {
         const parentElement = document.getElementById('nexser_files_output');
         while (parentElement.firstChild) {
             parentElement.removeChild(parentElement.firstChild);
         }
     }
+
 
     function addResizers(element) {
         const positions = ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'top', 'right', 'bottom', 'left'];
@@ -5718,14 +5686,12 @@ if (ua.includes("mobile")) {
             element.appendChild(resizer);
         });
     }
-
     function makeResizableDivs(className) {
         const elements = document.querySelectorAll(className);
         elements.forEach(element => {
             addResizers(element);
             attachResizeHandlers(element);
         });
-
         const observer = new MutationObserver(mutations => {
             mutations.forEach(mutation => {
                 if (mutation.type === 'childList') {
@@ -5738,15 +5704,12 @@ if (ua.includes("mobile")) {
                 }
             });
         });
-
         observer.observe(document.body, { childList: true, subtree: true });
     }
-
     function attachResizeHandlers(element) {
         const resizers = element.querySelectorAll('.resizer');
         const minSize = 20;
         let originalWidth, originalHeight, originalX, originalY, originalMouseX, originalMouseY;
-
         resizers.forEach(resizer => {
             resizer.addEventListener('mousedown', e => {
                 e.preventDefault();
@@ -5797,7 +5760,6 @@ if (ua.includes("mobile")) {
         });
     }
     makeResizableDivs('.resize');
-
 
 
     const dropzone = document.getElementById('dropzone');
@@ -6115,7 +6077,7 @@ if (ua.includes("mobile")) {
                     newChild3.appendChild(newChild4_5);
 
                     const newChild6 = document.createElement('div');
-                    newChild6.className = "window_contents"
+                    newChild6.className = "window_contents scrollbar_none"
                     windowDiv.appendChild(newChild6);
                     setTimeout(() => {
                         windowDiv.classList.add('no_create_windows');
@@ -6162,7 +6124,6 @@ if (ua.includes("mobile")) {
                         windowDiv.classList.add('selectwindows');
                         const iframe = document.createElement('iframe');
                         iframe.src = `https://www.youtube.com/embed/${extractYouTubeID(url)}`;
-                        newChild6.classList.add('scrollbar_none');
                         iframe.className = "item_preview";
                         newChild6.appendChild(iframe);
                         setTimeout(() => {
