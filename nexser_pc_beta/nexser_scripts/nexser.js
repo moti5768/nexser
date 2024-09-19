@@ -103,10 +103,8 @@ if (ua.includes("mobile")) {
 
 
     document.addEventListener('click', () => {
-        if (localStorage.getItem('game')) {
+        if (localStorage.getItem('game_none')) {
             document.querySelectorAll('.game_window:not(.active)').forEach((test) => {
-                const game = test;
-                console.log(game)
                 document.getElementById('nex').style.cursor = '';
                 document.querySelector('.window_error_text').textContent = "制限されているため、起動ができませんでした"
                 error_windows.classList.remove('active');
@@ -122,14 +120,14 @@ if (ua.includes("mobile")) {
     })
 
     function game_true() {
-        localStorage.setItem('game', true)
+        localStorage.setItem('game_none', true)
         document.getElementsByClassName('game_text')[0].textContent = "ON"
     }
     function game_false() {
-        localStorage.removeItem('game')
+        localStorage.removeItem('game_none')
         document.getElementsByClassName('game_text')[0].textContent = "OFF"
     }
-    if (localStorage.getItem('game')) {
+    if (localStorage.getItem('game_none')) {
         document.getElementsByClassName('game_text')[0].textContent = "ON"
     }
 
@@ -137,7 +135,7 @@ if (ua.includes("mobile")) {
     let startX, startY, isDrawing = false;
     let rectangle;
     document.addEventListener('mousedown', (e) => {
-        if (desktop.style.display == "block") {
+        if (desktop.style.display === "block") {
             startX = e.clientX;
             startY = e.clientY;
             isDrawing = true;
@@ -195,7 +193,7 @@ if (ua.includes("mobile")) {
         }
     });
     document.addEventListener('mousemove', (e) => {
-        if (isDrawing && desktop.style.display == "block") {
+        if (isDrawing && desktop.style.display === "block") {
             const currentX = e.clientX;
             const currentY = e.clientY;
             const width = currentX - startX;
@@ -213,7 +211,7 @@ if (ua.includes("mobile")) {
 
     function lightchild() {
         const screen_light_range_child = document.querySelector('.screen_light_range_child');
-        if (screen_light_range_child.style.display == "flex") {
+        if (screen_light_range_child.style.display === "flex") {
             screen_light_range_child.style.display = "none"
         } else {
             screen_light_range_child.style.display = "flex"
@@ -630,7 +628,7 @@ if (ua.includes("mobile")) {
             document.getElementsByClassName('pattern_backgrounds')[0].style.display = "block";
         }
 
-        if (screen_prompt.style.display == "block" && localStorage.getItem('auto_startup')) {
+        if (screen_prompt.style.display === "block" && localStorage.getItem('auto_startup')) {
             help_command()
             prompt_text_check()
         }
@@ -644,14 +642,14 @@ if (ua.includes("mobile")) {
     })
 
     function startmenu_close() {
-        if (parent_start_menu.style.display == "block") {
+        if (parent_start_menu.style.display === "block") {
             parent_start_menu.style.display = "none";
             document.querySelector('.start_button').classList.remove('pressed');
         }
     }
     document.getElementById('startbtn').addEventListener('mousedown', function () {
         setTimeout(() => {
-            if (parent_start_menu.style.display == "block") {
+            if (parent_start_menu.style.display === "block") {
                 startmenu_close()
             } else {
                 parent_start_menu.style.display = "block";
@@ -662,7 +660,7 @@ if (ua.includes("mobile")) {
     })
 
     document.querySelector('.battery_child').addEventListener('click', function () {
-        if (document.querySelector('.battery_menu').style.display == "block") {
+        if (document.querySelector('.battery_menu').style.display === "block") {
             document.querySelector('.battery_menu').style.display = "none";
         } else {
             document.querySelector('.battery_menu').style.display = "block";
@@ -848,14 +846,13 @@ if (ua.includes("mobile")) {
     });
 
     function pass_submit() {
-        if (document.querySelector('.password').value == "") {
+        if (document.querySelector('.password').value === "") {
             document.querySelector('.window_error_text').textContent = "パスワードが入力されていません!"
             error_windows.classList.remove('active')
             document.querySelector('.test_allwindow').style.display = "block";
             sound3()
         } else {
             const pass = document.querySelector('.password').value;
-
             const password_lock = (String(pass)
                 .replaceAll("0", ".a+b.").replaceAll("1", ".c#d.").replaceAll("2", ".e*f.")
                 .replaceAll("3", ".g|h.").replaceAll("4", ".i=j.").replaceAll("5", ".k[l.")
@@ -899,7 +896,7 @@ if (ua.includes("mobile")) {
             .replaceAll(".m]n.", "6").replaceAll(".o-p.", "7").replaceAll(".q>r.", "8")
             .replaceAll(".s<t.", "9")
         );
-        if (password_unlock2 == document.querySelector('#pass_form').value) {
+        if (password_unlock2 === document.querySelector('#pass_form').value) {
             document.querySelector('.pass_signin_menu').classList.add('active')
             document.querySelector('.pass_no').textContent = "";
             start_check();
@@ -984,7 +981,7 @@ if (ua.includes("mobile")) {
                     error_windows.classList.remove('active')
                     document.querySelector('.test_allwindow').style.display = "block";
                     sound3()
-                } else if (gets == gets2 && gets3 === 0) {
+                } else if (gets === gets2 && gets3 === 0) {
                     sound_stop();
                     shutdown_sound();
                     localStorage.removeItem('login');
@@ -1053,7 +1050,7 @@ if (ua.includes("mobile")) {
                     error_windows.classList.remove('active')
                     document.querySelector('.test_allwindow').style.display = "block";
                     sound3()
-                } else if (gets == gets2 && gets3 === 0) {
+                } else if (gets === gets2 && gets3 === 0) {
                     sound_stop();
                     shutdown_sound();
                     localStorage.removeItem('login');
@@ -1095,7 +1092,6 @@ if (ua.includes("mobile")) {
                     document.getElementById('nex').style.cursor = '';
                     document.querySelector('.window_error_text').textContent = "全てのウィンドウが閉じてないため、再起動できません!"
                     error_windows.classList.remove('active')
-
                     document.querySelector('.test_allwindow').style.display = "block";
                     sound3()
                 }
@@ -1114,7 +1110,7 @@ if (ua.includes("mobile")) {
         document.getElementById('nex').style.cursor = 'none';
         taskbar.style.display = "none";
         document.getElementById('files').style.display = "none";
-        if (!localStorage.getItem('start_nexser') || desktop.style.display == "block") {
+        if (!localStorage.getItem('start_nexser') || desktop.style.display === "block") {
             screen_prompt.style.display = "none";
             nexser_program.style.display = "none";
             nexser.style.display = "block";
@@ -1197,31 +1193,27 @@ if (ua.includes("mobile")) {
     }
 
     function nexser_on() {
+        localStorage.setItem('start_nexser', true);
+        document.querySelector('.welcome_windows').style.display = ""
         setTimeout(() => {
-            localStorage.setItem('start_nexser', true);
-            document.querySelector('.welcome_windows').style.display = ""
-            setTimeout(() => {
-                desktop.style.display = "block";
-                localmemory_size()
-                document.getElementById('files').style.display = "block";
-                document.getElementById('taskbar').style.display = "block";
-
-                const task = document.getElementById('taskbar').clientHeight;
-                toolbar.style.top = "";
-                toolbar.style.left = "";
-                toolbar.style.bottom = "40px";
-
-                document.querySelector('.child_start_menu').style.bottom = task + "px";
-                document.querySelector('.desktop_version_text').style.bottom = task + "px";
-            }, 500);
-            setTimeout(() => {
-                setColor()
-                document.getElementById('nex').style.cursor = '';
-            }, 1500);
-            setTimeout(() => {
-                startup_window_open()
-            }, 2000);
-        }, 50);
+            desktop.style.display = "block";
+            localmemory_size()
+            document.getElementById('files').style.display = "block";
+            document.getElementById('taskbar').style.display = "block";
+            const task = document.getElementById('taskbar').clientHeight;
+            toolbar.style.top = "";
+            toolbar.style.left = "";
+            toolbar.style.bottom = "40px";
+            document.querySelector('.child_start_menu').style.bottom = task + "px";
+            document.querySelector('.desktop_version_text').style.bottom = task + "px";
+        }, 500);
+        setTimeout(() => {
+            setColor()
+            document.getElementById('nex').style.cursor = '';
+        }, 1500);
+        setTimeout(() => {
+            startup_window_open()
+        }, 2000);
     }
 
     document.getElementsByClassName('startnexser_close')[0].addEventListener('click', function () {
@@ -1312,7 +1304,7 @@ if (ua.includes("mobile")) {
 
     function nexser_signout() {
         startmenu_close()
-        if (localStorage.getItem('password') && gets == gets2) {
+        if (localStorage.getItem('password') && gets === gets2) {
             document.getElementsByClassName('welcome_windows')[0].style.display = "none";
             localStorage.removeItem('login');
             document.getElementById('desktop').style.display = "none";
@@ -2463,7 +2455,7 @@ if (ua.includes("mobile")) {
     }
 
     setInterval(() => {
-        if (screen_prompt.style.display == "block") {
+        if (screen_prompt.style.display === "block") {
             navigator.getBattery().then((battery) => {
                 document.getElementsByClassName('level')[0].innerHTML = battery.level;
                 document.getElementsByClassName('charging')[0].innerHTML = battery.charging;
@@ -2876,7 +2868,7 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.allwindow_toolbar').forEach(function (allwindow_toolbar) {
         allwindow_toolbar.addEventListener('click', function () {
             document.querySelectorAll('.window_tool').forEach(function (window_tool) {
-                if (window_tool.style.display == "block") {
+                if (window_tool.style.display === "block") {
                     window_tool.style.display = "none"
                     localStorage.removeItem('allwindow_toolbar');
 
@@ -3052,7 +3044,7 @@ if (ua.includes("mobile")) {
     function cpubench_open() {
         const cpumenu1 = document.querySelector('.cpumenu_1');
         document.getElementsByClassName('cpu_bench_menu')[0].style.zIndex = largestZIndex++;
-        if (!cpu_bench_menu.classList.contains('active') || cpumenu1.style.display == "block") {
+        if (!cpu_bench_menu.classList.contains('active') || cpumenu1.style.display === "block") {
             setTimeout(() => {
                 document.querySelector('.cpumenu_1').style.display = "none";
                 document.querySelector('.cpubuttons').style.display = "none";
@@ -3488,7 +3480,7 @@ if (ua.includes("mobile")) {
                 document.querySelector("body").style.color = color;
                 document.getElementById("nexser").style.backgroundColor = bkcolor;
                 document.getElementsByClassName("mini_desktop")[0].style.backgroundColor = bkcolor;
-                if (bkcolor == "white" || bkcolor == "whitesmoke") {
+                if (bkcolor === "white" || bkcolor === "whitesmoke") {
                     background_text.style.color = "black"
                     document.getElementById('background_text2').style.color = "black"
                     Array.from(document.getElementsByClassName('desktop_files')).forEach((desktop_files) => {
@@ -3812,10 +3804,10 @@ if (ua.includes("mobile")) {
         var Note = document.querySelector('.note_area');
         localStorage.setItem('note_text_bold', true);
         notetitle();
-        if (localStorage.getItem('note_text_bold') && Note.style.fontWeight == "normal") {
+        if (localStorage.getItem('note_text_bold') && Note.style.fontWeight === "normal") {
             Note.style.fontWeight = "bold";
             document.querySelector('.test_notetext').style.fontWeight = "bold";
-        } else if (localStorage.getItem('note_text_bold') && Note.style.fontWeight == "bold") {
+        } else if (localStorage.getItem('note_text_bold') && Note.style.fontWeight === "bold") {
             Note.style.fontWeight = "normal";
             document.querySelector('.test_notetext').style.fontWeight = "normal";
             localStorage.removeItem('note_text_bold')
@@ -3829,10 +3821,10 @@ if (ua.includes("mobile")) {
         var Note = document.querySelector('.note_area');
         localStorage.setItem('note_text_oblique', true);
         notetitle();
-        if (localStorage.getItem('note_text_oblique') && Note.style.fontStyle == "normal") {
+        if (localStorage.getItem('note_text_oblique') && Note.style.fontStyle === "normal") {
             Note.style.fontStyle = "oblique";
             document.querySelector('.test_notetext').style.fontStyle = "oblique";
-        } else if (localStorage.getItem('note_text_oblique') && Note.style.fontStyle == "oblique") {
+        } else if (localStorage.getItem('note_text_oblique') && Note.style.fontStyle === "oblique") {
             Note.style.fontStyle = "normal";
             document.querySelector('.test_notetext').style.fontStyle = "normal";
             localStorage.removeItem('note_text_oblique')
@@ -3845,10 +3837,10 @@ if (ua.includes("mobile")) {
         var Note = document.querySelector('.note_area');
         localStorage.setItem('note_text_underline', true);
         notetitle();
-        if (Note.style.textDecoration == "none" && localStorage.getItem('note_text_underline')) {
+        if (Note.style.textDecoration === "none" && localStorage.getItem('note_text_underline')) {
             Note.style.textDecoration = "underline";
             document.querySelector('.test_notetext').style.textDecoration = "underline";
-        } else if (Note.style.textDecoration == "underline" && localStorage.getItem('note_text_underline')) {
+        } else if (Note.style.textDecoration === "underline" && localStorage.getItem('note_text_underline')) {
             Note.style.textDecoration = "none";
             document.querySelector('.test_notetext').style.textDecoration = "none";
             localStorage.removeItem('note_text_underline')
@@ -3898,7 +3890,7 @@ if (ua.includes("mobile")) {
 
     // 保存
     function save() {
-        if (note_form.note_area.value === "") {
+        if (note_form.note_area.value == "") {
             document.querySelector('.window_error_text').textContent = "テキストが無いため、保存できません!"
             error_windows.classList.remove('active')
             document.querySelector('.test_allwindow').style.display = "block";
@@ -3921,17 +3913,17 @@ if (ua.includes("mobile")) {
     }
 
     function objective_save() {
-        if (objective_form.objective_area.value === "" && objective_title_form.objective_title_area.value === "") {
+        if (objective_form.objective_area.value == "" && objective_title_form.objective_title_area.value == "") {
             document.querySelector('.window_error_text').textContent = "タイトルと内容が入力されていません!"
             error_windows.classList.remove('active')
             sound3()
             document.querySelector('.test_allwindow').style.display = "block";
-        } else if (objective_title_form.objective_title_area.value === "") {
+        } else if (objective_title_form.objective_title_area.value == "") {
             document.querySelector('.window_error_text').textContent = "タイトルが入力されていません!"
             error_windows.classList.remove('active')
             document.querySelector('.test_allwindow').style.display = "block";
             sound3()
-        } else if (objective_form.objective_area.value === "") {
+        } else if (objective_form.objective_area.value == "") {
             document.querySelector('.window_error_text').textContent = "内容が入力されていません!"
             error_windows.classList.remove('active')
             document.querySelector('.test_allwindow').style.display = "block";
@@ -4280,7 +4272,7 @@ if (ua.includes("mobile")) {
             child_graph.style.height = "100%"
             child_graph.style.background = "red";
         }
-        if (calc_result.value == 10000) {
+        if (calc_result.value === 10000) {
             child_graph.style.background = "blue";
         }
         if (calc_result.value < 0) {
@@ -4769,7 +4761,7 @@ if (ua.includes("mobile")) {
         if (localStorage.getItem('saver_on')) {
             document.querySelector('.saver_time').textContent = len++;
         }
-        if (screen_saver_group.style.display == "block") {
+        if (screen_saver_group.style.display === "block") {
             document.getElementById('nex').style.cursor = '';
             screen_saver_group.style.display = "none";
             document.querySelector('.screen_saver1').style.display = "none"
@@ -4808,7 +4800,7 @@ if (ua.includes("mobile")) {
     }
     // ログアウト
     function screen_saver() {
-        if (screen_saver_group.style.display == "none" && desktop.style.display == "block" && localStorage.getItem('saver_on') && localStorage.getItem('saver_time')) {
+        if (screen_saver_group.style.display === "none" && desktop.style.display === "block" && localStorage.getItem('saver_on') && localStorage.getItem('saver_time')) {
             screen_saver_group.style.display = "block";
             if (localStorage.getItem('saver1') && localStorage.getItem('saver_time')) {
                 document.querySelector('.screen_saver1').style.display = "block";
@@ -4986,7 +4978,7 @@ if (ua.includes("mobile")) {
         val += 20;
         document.getElementById("myProgress").value = val;
         document.getElementById("myProgress").innerText = val + "%";
-        if (val == 100) {
+        if (val === 100) {
             clearInterval(intervalID);
             setTimeout(() => {
                 document.getElementById("myProgress").style.display = "none";
@@ -5025,7 +5017,6 @@ if (ua.includes("mobile")) {
             document.getElementById('nex').style.filter = filters[filterType];
         }
     };
-
     function toggleShadow(action) {
         document.querySelectorAll('.child_list, .sample_child_list').forEach(function (childlist_shadow) {
             let childlist_shadow2 = childlist_shadow.lastElementChild;
@@ -5036,11 +5027,9 @@ if (ua.includes("mobile")) {
             }
         });
     }
-
     function list_shadow() {
         toggleShadow('add');
     }
-
     function list_shadow_reset() {
         toggleShadow('remove');
     }
@@ -5051,7 +5040,7 @@ if (ua.includes("mobile")) {
         let taskvalue = document.getElementsByClassName('taskbar_height_value')[0].value;
         const task = document.getElementById('taskbar').clientHeight;
 
-        if (taskvalue == "") {
+        if (taskvalue === "") {
             taskvalue = 40;
             const t = localStorage.setItem('taskbar_height', taskvalue);
             document.getElementById('taskbar').style.height = "40px"
@@ -5079,13 +5068,11 @@ if (ua.includes("mobile")) {
             taskbar.style.height = taskvalue + "px"
             document.querySelector('.desktop_version_text').style.bottom = "40px";
             document.querySelector('.desktop_version_text').style.bottom = taskvalue + "px";
-
             if (check(elm1, elm2) && !localStorage.getItem('taskbar_position_button')) {
                 toolbar.style.bottom = taskvalue + "px";
             } else if (check(elm1, elm2)) {
                 toolbar.style.bottom = "";
             }
-
             if (check(elm1, elm2) && localStorage.getItem('taskbar_position_button')) {
                 setTimeout(() => {
                     toolbar.style.bottom = "";
@@ -5094,22 +5081,17 @@ if (ua.includes("mobile")) {
             } else if (check(elm1, elm2)) {
                 toolbar.style.top = "";
             }
-
             if (localStorage.getItem('taskbar_position_button')) {
                 const t2 = localStorage.getItem('taskbar_height');
                 document.querySelector('.files_inline').style.top = t2 + "px"
-
                 const task = document.getElementById('taskbar').clientHeight;
-
                 document.querySelector('.child_start_menu').style.top = task + "px"
                 document.querySelector('.child_start_menu').style.top = t + "px"
             } else {
                 const task = document.getElementById('taskbar').clientHeight;
-
                 document.querySelector('.child_start_menu').style.bottom = task + "px"
                 document.querySelector('.child_start_menu').style.bottom = t + "px"
             }
-
         } else {
             document.querySelector('.window_error_text').textContent = "タスクバーの設定範囲を超えています!"
             error_windows.classList.remove('active')
@@ -5410,7 +5392,7 @@ if (ua.includes("mobile")) {
         }
         const sizeInKilobytes = getLocalStorageSize() / 1024;
         document.querySelector('.local_memory2').innerHTML = '&emsp;' + sizeInKilobytes + 'KB' + '&emsp;';
-        if (localStorage.getItem('maxSize') == 0) {
+        if (localStorage.getItem('maxSize') === 0) {
             document.querySelector('.window_error_text').textContent = "nexser の保存容量を超えています!"
             error_windows.classList.remove('active')
             document.querySelector('.test_allwindow').style.display = "block";

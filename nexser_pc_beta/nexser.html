@@ -191,9 +191,11 @@
                     <input class="large border2" type="password" id="pass_form" maxlength="4" autocomplete="off"
                         style="height: 20px; margin-top: 10px; width: 290px;">
                 </form>
-                <button class="button2 apply_button" style="margin-top: 5px; height: 25px;"
-                    onclick="password_login()">&emsp;login&emsp;</button>
-                <span class="red_text pass_no"></span>
+                <div style="display: flex;">
+                    <button class="button2 apply_button" style="margin-top: 5px; height: 25px;"
+                        onclick="password_login()">&emsp;login&emsp;</button>
+                    <span class="red_text pass_no" style="margin: 5px;"></span>
+                </div>
             </div>
 
 
@@ -1899,7 +1901,7 @@
                                             2</span>
                                         <button class="button2"
                                             style="height: 20px; font-size: large; float: right; position: absolute; left: 25px; top: 110px; transform: scale(2);">▼</button>
-                                        <span class="button2 close_button4" style="position: absolute; left: 75px; top:
+                                        <span class="button2 close_button4" style="width: 19px; height: 19px; position: absolute; left: 75px; top:
                                             105px; transform: scale(2);"></span>
                                     </div>
                                 </div>
@@ -4173,7 +4175,9 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                     <div class="error_title" style="background: navy; color: white;">
                         <span class="bold error_title_text">&nbsp;error</span>
                     </div>
-                    <span class="close_button2 button2"></span><br>
+                    <div class="title_buttons" style="position: absolute; top:0px;">
+                        <span class="close_button2 button2"></span>
+                    </div><br>
                     <p><span class="error_icon">✕</span><span>&emsp;&emsp;&nbsp;</span><span
                             class="window_error_text">test
                             window error</span>&emsp;</p>
@@ -4187,7 +4191,9 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                     <div class="warning_title" style="background: navy; color: white;">
                         <span>&nbsp;</span><span class="warning_title_text bold">warning</span>
                     </div>
-                    <span class="close_button3 button2"></span><br>
+                    <div class="title_buttons" style="position: absolute; top:0px;">
+                        <span class="close_button3 button2"></span>
+                    </div><br>
                     <p><span class="warning_icon bold">!</span>&emsp;&emsp;&nbsp;<span
                             class="window_warning_text"></span>
                     </p>

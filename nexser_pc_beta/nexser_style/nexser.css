@@ -1617,7 +1617,6 @@ body::-webkit-scrollbar {
     -ms-user-select: none;
     user-select: none;
     width: 100%;
-    /* background-color: navy; */
     background: gray;
     color: white;
     pointer-events: none;
@@ -1627,18 +1626,6 @@ body::-webkit-scrollbar {
 
 .title.navy {
     background: navy;
-}
-
-.title_buttons {
-    background-color: rgba();
-    position: relative;
-    bottom: 0px;
-    right: 0px;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-    z-index: 1;
 }
 
 .title2 {
@@ -1844,12 +1831,27 @@ body::-webkit-scrollbar {
     outline-offset: -5px;
 }
 
-/* title_buttons */
-.close_button {
-    display: inline-block;
+/* title_buttons child */
+
+.title_buttons {
+    background-color: rgba();
+    position: relative;
+    bottom: 0px;
+    right: 0px;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    z-index: 1;
+}
+
+.title_buttons>.button2 {
+    background-color: #C3C7CB;
     width: 19px;
     height: 19px;
-    background: #c0c0c0;
+}
+
+.close_button {
     position: absolute;
     top: 3px;
     right: 3.5px;
@@ -1869,10 +1871,6 @@ body::-webkit-scrollbar {
 }
 
 .close_button2 {
-    display: inline-block;
-    width: 19px;
-    height: 19px;
-    background: #c0c0c0;
     position: absolute;
     top: 3px;
     right: 3.5px;
@@ -1893,10 +1891,6 @@ body::-webkit-scrollbar {
 }
 
 .close_button3 {
-    display: inline-block;
-    width: 19px;
-    height: 19px;
-    background: #c0c0c0;
     position: absolute;
     top: 3px;
     right: 3.5px;
@@ -1918,10 +1912,6 @@ body::-webkit-scrollbar {
 
 /* 飾り */
 .close_button4 {
-    display: inline-block;
-    width: 19px;
-    height: 19px;
-    background: #c0c0c0;
     position: absolute;
     top: 3px;
     right: 3.5px;
@@ -1949,12 +1939,7 @@ body::-webkit-scrollbar {
     right: 0px;
 }
 
-.bigscreen_button,
-.bigscreen_button2 {
-    display: inline-block;
-    width: 19px;
-    height: 19px;
-    background: #c0c0c0;
+.bigscreen_button {
     position: absolute;
     top: 3px;
     right: 23px;
@@ -1991,9 +1976,6 @@ body::-webkit-scrollbar {
 
 .minscreen_button {
     display: none;
-    width: 19px;
-    height: 19px;
-    background: #c0c0c0;
     position: absolute;
     top: 3px;
     right: 23px;
@@ -2013,10 +1995,6 @@ body::-webkit-scrollbar {
 }
 
 .minimization_button {
-    display: inline-block;
-    width: 19px;
-    height: 19px;
-    background: #c0c0c0;
     position: absolute;
     top: 3px;
     right: 42.5px;
@@ -2064,10 +2042,7 @@ body::-webkit-scrollbar {
     outline: solid 1px dimgray;
 }
 
-.child_list ul.shadow {
-    box-shadow: 5px 5px black;
-}
-
+.child_list ul.shadow,
 .sample_child_list ul.shadow {
     box-shadow: 5px 5px black;
 }
