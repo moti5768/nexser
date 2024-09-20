@@ -28,6 +28,13 @@ body {
     background: darkblue;
 }
 
+code>textarea {
+    background: black;
+    color: white;
+    width: 100%;
+    height: 100%;
+}
+
 .screen_light {
     background: black;
     width: 100%;
