@@ -2438,6 +2438,7 @@ if (ua.includes("mobile")) {
     }
 
     setInterval(() => {
+        const localkey_length = localStorage.length;
         if (screen_prompt.style.display === "block") {
             navigator.getBattery().then((battery) => {
                 document.getElementsByClassName('level')[0].innerHTML = battery.level;
@@ -2445,10 +2446,9 @@ if (ua.includes("mobile")) {
                 document.getElementsByClassName('chargingTime')[0].innerHTML = battery.chargingTime;
                 document.getElementsByClassName('dischargingTime')[0].innerHTML = battery.dischargingTime;
             });
-            const locallength = localStorage.length;
-            document.getElementsByClassName('length_localStorage')[0].textContent = (locallength);
+            document.getElementsByClassName('length_localStorage')[0].textContent = localkey_length;
         } else {
-            document.getElementsByClassName('local_keylength')[0].textContent = localStorage.length;
+            document.getElementsByClassName('local_keylength')[0].textContent = localkey_length;
             document.getElementById('background_text2').textContent = localStorage.getItem('backtext_data');
             const get = document.getElementsByClassName('child_windows');
             const get2 = document.getElementsByClassName('active');
@@ -4244,7 +4244,7 @@ if (ua.includes("mobile")) {
             child_graph.style.height = "100%"
             child_graph.style.background = "red";
         }
-        if (calc_result.value === 10000) {
+        if (calc_result.value == 10000) {
             child_graph.style.background = "blue";
         }
         if (calc_result.value < 0) {
