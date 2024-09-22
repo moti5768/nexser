@@ -680,11 +680,7 @@ if (ua.includes("mobile")) {
     function addButtonListeners(button_1) {
         if (!button_1.classList.contains('listener-added')) {
             button_1.addEventListener('mousedown', () => button_1.classList.add('pressed'));
-            button_1.addEventListener('mouseleave', () => {
-                if (button_1.classList.contains('task_buttons')) {
-                    button_1.classList.remove('pressed');
-                }
-            });
+            button_1.addEventListener('mouseleave', () => button_1.classList.remove('pressed'));
             button_1.addEventListener('mouseup', () => button_1.classList.remove('pressed'));
             button_1.classList.add('listener-added');
         }
