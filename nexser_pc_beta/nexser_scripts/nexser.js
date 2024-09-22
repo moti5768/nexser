@@ -191,6 +191,15 @@ if (ua.includes("mobile")) {
             titlecolor_set();
         }
 
+        var isClickInsideStartButton8 = Array.from(document.querySelectorAll('.task_buttons')).some(button => button.contains(e.target));
+        if (!isClickInsideStartButton8) {
+            const buttons = document.querySelectorAll('.task_buttons');
+            buttons.forEach(button => {
+                button.classList.remove('tsk_pressed', 'pressed');
+            })
+            updateButtonClasses();
+        }
+
     });
     document.addEventListener('mousemove', (e) => {
         if (isDrawing && desktop.style.display === "block") {
@@ -207,11 +216,6 @@ if (ua.includes("mobile")) {
     document.addEventListener('mouseup', () => {
         isDrawing = false;
         rectangle_remove()
-        const buttons = document.querySelectorAll('.task_buttons');
-        buttons.forEach(button => {
-            button.classList.remove('tsk_pressed', 'pressed');
-        })
-        updateButtonClasses();
     });
 
     function lightchild() {
