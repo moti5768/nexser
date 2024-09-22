@@ -681,7 +681,7 @@ if (ua.includes("mobile")) {
         if (!button_1.classList.contains('listener-added')) {
             button_1.addEventListener('mousedown', () => button_1.classList.add('pressed'));
             button_1.addEventListener('mouseleave', () => {
-                if (!button_1.classList.contains('task_buttons')) {
+                if (button_1.classList.contains('task_buttons')) {
                     button_1.classList.remove('pressed');
                 }
             });
@@ -5971,10 +5971,14 @@ if (ua.includes("mobile")) {
         document.querySelectorAll('.task_buttons').forEach(task_buttons => task_buttons.remove());
         document.querySelectorAll('.child_windows.selectwindows').forEach(windowElement => {
             const nestedChild2 = windowElement.children[0].children[1].textContent;
-            const button = document.createElement('span');
+            const button = document.createElement('div');
             button.className = 'task_buttons button2';
-            button.textContent = nestedChild2;
+            button.style.position = "relative"
+            button.textContent = "　　" + nestedChild2;
             taskbar_b.appendChild(button);
+            const button_child = document.createElement('span');
+            button_child.className = 'title_icon';
+            button.appendChild(button_child);
             button.addEventListener('click', () => toggleWindow(windowElement));
         });
         updateButtonClasses();
