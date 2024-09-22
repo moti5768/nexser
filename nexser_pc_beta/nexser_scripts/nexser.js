@@ -113,8 +113,7 @@ if (ua.includes("mobile")) {
                 setTimeout(() => {
                     test.classList.add('active')
                     test.classList.remove('selectwindows')
-                    test_windows_button()
-                }, 0);
+                });
             })
         }
     })
@@ -1111,7 +1110,6 @@ if (ua.includes("mobile")) {
 
     function start_check() {
         document.getElementsByClassName('pass_signin_menu')[0].classList.remove('selectwindows')
-        test_windows_button()
         if (localStorage.getItem('login_welcome') && localStorage.getItem('password')) {
             localStorage.setItem('no_shutdown', true)
         };
@@ -1588,7 +1586,6 @@ if (ua.includes("mobile")) {
             document.querySelector('.minimization_button').style.visibility = "visible";
             allwindow.classList.remove('minimization');
             allwindow.classList.remove('selectwindows')
-            test_windows_button();
         });
 
         bom_reset();
@@ -2422,7 +2419,6 @@ if (ua.includes("mobile")) {
             prompt_shell_menu.classList.add('active');
             prompt_shell_menu.classList.remove('selectwindows');
             prompt_shell_menu.style.zIndex = largestZIndex++;
-            test_windows_button()
         });
     }
 
@@ -2491,7 +2487,6 @@ if (ua.includes("mobile")) {
             const closebutton_closest = close_button.closest('.child_windows');
             closebutton_closest.classList.add('active');
             closebutton_closest.classList.remove('selectwindows')
-            test_windows_button()
         });
     })
     document.querySelectorAll('.close_button2').forEach(function (close_button2) {
@@ -3077,7 +3072,6 @@ if (ua.includes("mobile")) {
                     task_butttons.remove()
                 })
                 ele2.classList.add('selectwindows')
-                test_windows_button()
             }
             const zIndex = parseInt(window.getComputedStyle(element).zIndex, 10) || 0;
             if (zIndex > highestZIndex) {
@@ -3101,7 +3095,7 @@ if (ua.includes("mobile")) {
         assignClassToFrontmostElement('child_windows:not(.active)', 'navy');
         titlecolor_set();
         allwindow_resize();
-        updateButtonClasses()
+        test_windows_button();
         document.querySelectorAll('.bigscreen_button').forEach(element => {
             if (!element.querySelector('.bigscreen_button_child')) {
                 const newChild = document.createElement('div');
@@ -3956,7 +3950,7 @@ if (ua.includes("mobile")) {
         if (!note_pad.classList.contains('active') && localStorage.getItem('noteData') && !localStorage.getItem('note_texts')) {
             note_pad.classList.add('active');
             note_pad.classList.remove('selectwindows')
-            test_windows_button()
+
         } else if (localStorage.getItem('note_texts')) {
             document.querySelector('.warning_title_text').textContent = "notepad"
             document.querySelector('.window_warning_text').textContent = "編集中です。ウィンドウを終了しますか?(内容は破棄されます)"
@@ -3970,7 +3964,7 @@ if (ua.includes("mobile")) {
             localStorage.removeItem('note_texts');
             note_pad.classList.add('active');
             note_pad.classList.remove('selectwindows')
-            test_windows_button()
+
         }
     })
 
@@ -3979,7 +3973,7 @@ if (ua.includes("mobile")) {
             objective_menu.classList.add('active');
             localStorage.removeItem('objective_area');
             objective_menu.classList.remove('selectwindows')
-            test_windows_button()
+
         } else if (localStorage.getItem('objective_area')) {
             document.querySelector('.warning_title_text').textContent = "objective sheet"
             document.querySelector('.window_warning_text').textContent = "タイトル と 内容を保存してから閉じてください";
@@ -3995,7 +3989,7 @@ if (ua.includes("mobile")) {
             objective_menu.classList.add('active');
             localStorage.removeItem('objective_area');
             objective_menu.classList.remove('selectwindows')
-            test_windows_button()
+
         }
     })
     localStorage.removeItem('objective_area')
@@ -4024,7 +4018,7 @@ if (ua.includes("mobile")) {
         if (!sessionStorage.getItem('start_camera')) {
             camera_menu.classList.add('active')
             camera_menu.classList.remove('selectwindows')
-            test_windows_button()
+
 
         } else if (sessionStorage.getItem('start_camera')) {
             document.querySelector('.window_error_text').textContent = "カメラが実行されているため、ウィンドウが閉じれません!"
@@ -4045,7 +4039,6 @@ if (ua.includes("mobile")) {
         localStorage.removeItem('note_texts');
         note_pad.classList.add('active');
         note_pad.classList.remove('selectwindows')
-        test_windows_button()
     }
 
     function error_windows_close() {
@@ -5988,17 +5981,15 @@ if (ua.includes("mobile")) {
         updateButtonClasses();
     }
     function updateButtonClasses() {
-        setTimeout(() => {
-            const windows = document.querySelectorAll('.child_windows.selectwindows');
-            const buttons = document.querySelectorAll('.task_buttons');
-            buttons.forEach(button => {
-                button.classList.remove('tsk_pressed');
-            })
-            windows.forEach((windowElement, index) => {
-                if (windowElement.querySelector('.title.navy')) {
-                    buttons[index].classList.add('tsk_pressed');
-                }
-            });
+        const windows = document.querySelectorAll('.child_windows.selectwindows');
+        const buttons = document.querySelectorAll('.task_buttons');
+        buttons.forEach(button => {
+            button.classList.remove('tsk_pressed');
+        })
+        windows.forEach((windowElement, index) => {
+            if (windowElement.querySelector('.title.navy')) {
+                buttons[index].classList.add('tsk_pressed');
+            }
         });
     }
 
@@ -6061,7 +6052,6 @@ if (ua.includes("mobile")) {
                         if (newChild4_2) {
                             newChild4_2.remove();
                             zindexwindow_addnavy();
-                            test_windows_button();
                         }
                     });
 
@@ -6091,9 +6081,7 @@ if (ua.includes("mobile")) {
                         img.src = result;
                         img.className = "item_preview";
                         newChild6.appendChild(img);
-                        setTimeout(() => {
-                            test_windows_button()
-                        }, 100);
+
                     } else if (file.type.startsWith('video/')) {
                         windowDiv.classList.add('selectwindows');
                         const video = document.createElement('video');
@@ -6101,44 +6089,34 @@ if (ua.includes("mobile")) {
                         video.controls = true;
                         video.className = "item_preview";
                         newChild6.appendChild(video);
-                        setTimeout(() => {
-                            test_windows_button()
-                        }, 1000);
+
                     } else if (file.type === 'application/pdf') {
                         windowDiv.classList.add('selectwindows');
                         const iframe = document.createElement('iframe');
                         iframe.src = result;
                         iframe.className = "item_preview";
                         newChild6.appendChild(iframe);
-                        setTimeout(() => {
-                            test_windows_button()
-                        }, 100);
+
                     } else if (file.type.startsWith('text/')) {
                         windowDiv.classList.add('selectwindows');
                         const text = document.createElement('p');
                         text.textContent = e.target.result;
                         text.className = "item_preview";
                         newChild6.appendChild(text);
-                        setTimeout(() => {
-                            test_windows_button()
-                        }, 100);
+
                     } else if (isYouTubeURL(url)) {
                         windowDiv.classList.add('selectwindows');
                         const iframe = document.createElement('iframe');
                         iframe.src = `https://www.youtube.com/embed/${extractYouTubeID(url)}`;
                         iframe.className = "item_preview";
                         newChild6.appendChild(iframe);
-                        setTimeout(() => {
-                            test_windows_button();
-                        }, 100);
+
                     } else {
                         const unsupported = document.createElement('p');
                         unsupported.textContent = 'このファイル形式はサポートされていません。';
                         unsupported.classList.add('item_preview');
                         newChild6.appendChild(unsupported);
-                        setTimeout(() => {
-                            test_windows_button()
-                        }, 100);
+
                     }
 
                     function isYouTubeURL(url_youtube) {
