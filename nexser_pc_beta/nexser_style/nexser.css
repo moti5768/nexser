@@ -637,9 +637,9 @@ input[type="file"] {
     display: block;
     box-sizing: border-box;
     float: left;
-    margin-left: 2.5px;
-    margin-right: 2.5px;
-    width: 100px;
+    margin-left: 1px;
+    margin-right: 1px;
+    width: 150px;
     height: 26.5px;
     white-space: nowrap;
     overflow: hidden;
