@@ -218,7 +218,7 @@ if (ua.includes("mobile")) {
         }
     }
 
-    // nexser_load
+
     const tasks = [
         load_nexser,
         getStorage,
@@ -2953,27 +2953,43 @@ if (ua.includes("mobile")) {
         })
     }
 
+
     document.querySelectorAll('.child_windows, .child').forEach(function (z_index_child_windows) {
         const zindexchildwindows = z_index_child_windows.closest('.child_windows');
-        z_index_child_windows.addEventListener('mousedown', function () {
-            zindexchildwindows.scrollTop = 0;
-            zindexchildwindows.scrollLeft = 0;
-            window_z_index = zindexchildwindows.style.zIndex = largestZIndex++;
-            rectangle_remove();
+        const addEventListeners = (element) => {
+            element.addEventListener('mousedown', function () {
+                zindexchildwindows.scrollTop = 0;
+                zindexchildwindows.scrollLeft = 0;
+                window_z_index = zindexchildwindows.style.zIndex = largestZIndex++;
+            });
+            element.addEventListener('click', function () {
+                zindexchildwindows.scrollTop = 0;
+                zindexchildwindows.scrollLeft = 0;
+                titlecolor_set();
+            });
+            element.addEventListener('dblclick', function () {
+                if (zindexchildwindows.classList.contains('minimization')) {
+                    zindexchildwindows.classList.remove('minimization');
+                    zindexchildwindows.style.width = "";
+                    zindexchildwindows.style.height = "";
+                }
+            });
+        };
+        addEventListeners(z_index_child_windows);
+        const iframes = z_index_child_windows.querySelectorAll('iframe');
+        iframes.forEach(iframe => {
+            iframe.addEventListener('load', () => {
+                try {
+                    const iframeDocument = iframe.contentDocument || iframe.contentWindow.document;
+                    addEventListeners(iframeDocument);
+                    addEventListeners(iframeDocument.body);
+                } catch (e) {
+                    console.error('iframe no access:', e);
+                }
+            });
         });
-        z_index_child_windows.addEventListener('click', function () {
-            zindexchildwindows.scrollTop = 0;
-            zindexchildwindows.scrollLeft = 0;
-            titlecolor_set()
-        })
-        z_index_child_windows.addEventListener('dblclick', function () {
-            if (zindexchildwindows.classList.contains('minimization')) {
-                zindexchildwindows.classList.remove('minimization');
-                zindexchildwindows.style.width = ""
-                zindexchildwindows.style.height = ""
-            }
-        })
-    })
+    });
+
 
     document.querySelectorAll('.window_prompt, .child').forEach(window_prompt => {
         window_prompt.addEventListener('mouseup', () => {
@@ -3191,6 +3207,8 @@ if (ua.includes("mobile")) {
         }
     };
 
+
+
     function addDragButtonListeners(button) {
         if (!button.dataset.listenerAdded) {
             const dragwindow = button.closest('.child_windows');
@@ -3200,35 +3218,38 @@ if (ua.includes("mobile")) {
                     dragwindow.style.width = "55%";
                     dragwindow.classList.remove('leftwindow');
                     dragwindow.classList.remove('rightwindow');
-                    window_animation(dragwindow)
+                    window_animation(dragwindow);
                 }
                 dragwindow.classList.add("drag");
             });
             let drag2 = button.closest('.child_windows');
-            var x, y;
+            let x, y;
+            let overlay;
             button.addEventListener("mousedown", mdown, { passive: false }, false);
             button.addEventListener("touchstart", mdown, { passive: false }, false);
             function mdown(e) {
-                var event = e.type === "mousedown" ? e : e.changedTouches[0];
+                const event = e.type === "mousedown" ? e : e.changedTouches[0];
                 x = event.pageX - drag2.offsetLeft;
                 y = event.pageY - drag2.offsetTop;
+                overlay = document.createElement('div');
+                overlay.style.position = 'fixed';
+                overlay.style.top = 0;
+                overlay.style.left = 0;
+                overlay.style.width = '100%';
+                overlay.style.height = '100%';
+                overlay.style.zIndex = 9999;
+                document.body.appendChild(overlay);
                 document.body.addEventListener("mousemove", mmove, { passive: false }, false);
                 document.body.addEventListener("touchmove", mmove, { passive: false }, false);
-                var drag = document.getElementsByClassName("drag")[0];
-                drag.addEventListener("mouseup", mup, false);
-                document.body.addEventListener("mouseleave", mup, false);
-                drag.addEventListener("touchend", mup, false);
-                document.body.addEventListener("touchleave", mup, false);
+                document.addEventListener("mouseup", mup, false);
+                document.addEventListener("touchend", mup, false);
             }
             function mmove(e) {
-                var drag = document.getElementsByClassName("drag")[0];
-                var event = e.type === "mousemove" ? e : e.changedTouches[0];
+                const drag = document.getElementsByClassName("drag")[0];
+                const event = e.type === "mousemove" ? e : e.changedTouches[0];
                 drag.style.top = event.pageY - y + "px";
                 drag.style.left = event.pageX - x + "px";
-                drag.addEventListener("mouseup", mup, false);
-                document.body.addEventListener("mouseleave", mup, false);
-                drag.addEventListener("touchend", mup, false);
-                document.body.addEventListener("touchleave", mup, false);
+
                 if (localStorage.getItem('window_invisible')) {
                     document.querySelectorAll('.child_windows').forEach(function (title) {
                         title.style.opacity = "0.5";
@@ -3247,11 +3268,17 @@ if (ua.includes("mobile")) {
                 rectangle_remove();
             }
             function mup() {
-                dragwindow.classList.remove("drag");
+                const drag = document.getElementsByClassName("drag")[0];
+                if (drag) {
+                    drag.classList.remove("drag");
+                }
                 document.body.removeEventListener("mousemove", mmove, false);
-                button.removeEventListener("mouseup", mup, false);
-                document.body.removeEventListener("touchmove", { passive: false }, mmove, false);
-                button.removeEventListener("touchend", { passive: false }, mup, false);
+                document.body.removeEventListener("touchmove", mmove, false);
+                document.removeEventListener("mouseup", mup, false);
+                document.removeEventListener("touchend", mup, false);
+                if (overlay) {
+                    document.body.removeChild(overlay);
+                }
                 document.querySelectorAll('.child_windows').forEach(function (title) {
                     title.style.opacity = "";
                     window_prompt.style.background = "black";
@@ -3291,6 +3318,7 @@ if (ua.includes("mobile")) {
     }
     document.querySelectorAll('.drag_button').forEach(addDragButtonListeners);
     observeNewElements3();
+
 
 
     function check(elm1, elm2) {
@@ -5646,7 +5674,7 @@ if (ua.includes("mobile")) {
             addResizers(element);
             attachResizeHandlers(element);
         });
-        const observer = new MutationObserver(mutations => {
+        const observer_resizer = new MutationObserver(mutations => {
             mutations.forEach(mutation => {
                 if (mutation.type === 'childList') {
                     mutation.addedNodes.forEach(node => {
@@ -5658,12 +5686,13 @@ if (ua.includes("mobile")) {
                 }
             });
         });
-        observer.observe(document.body, { childList: true, subtree: true });
+        observer_resizer.observe(document.body, { childList: true, subtree: true });
     }
     function attachResizeHandlers(element) {
         const resizers = element.querySelectorAll('.resizer');
         const minSize = 20;
         let originalWidth, originalHeight, originalX, originalY, originalMouseX, originalMouseY;
+        let overlay;
         resizers.forEach(resizer => {
             resizer.addEventListener('mousedown', e => {
                 e.preventDefault();
@@ -5674,13 +5703,22 @@ if (ua.includes("mobile")) {
                 originalY = element.getBoundingClientRect().top;
                 originalMouseX = e.pageX;
                 originalMouseY = e.pageY;
+                overlay = document.createElement('div');
+                overlay.style.position = 'fixed';
+                overlay.style.top = 0;
+                overlay.style.left = 0;
+                overlay.style.width = '100%';
+                overlay.style.height = '100%';
+                overlay.style.zIndex = 9999;
+                overlay.style.cursor = getComputedStyle(resizer).cursor;
+                document.body.appendChild(overlay);
                 window.addEventListener('mousemove', resize);
                 window.addEventListener('mouseup', stopResize);
             });
             function resize(e) {
                 const dx = e.pageX - originalMouseX;
                 const dy = e.pageY - originalMouseY;
-                const resizer2 = resizer.closest('.child_windows')
+                const resizer2 = resizer.closest('.child_windows');
                 resizer2.classList.remove('leftwindow');
                 resizer2.classList.remove('rightwindow');
                 if (resizer.classList.contains('right') || resizer.classList.contains('bottom-right') || resizer.classList.contains('top-right')) {
@@ -5710,10 +5748,12 @@ if (ua.includes("mobile")) {
             function stopResize() {
                 window.removeEventListener('mousemove', resize);
                 window.removeEventListener('mouseup', stopResize);
+                document.body.removeChild(overlay);
             }
         });
     }
     makeResizableDivs('.resize');
+
 
 
     const dropzone = document.getElementById('dropzone');
@@ -5884,13 +5924,10 @@ if (ua.includes("mobile")) {
     }
 
     document.addEventListener('DOMContentLoaded', function () {
-        // クラス名が "parent" の要素をすべて取得
         var parents = document.querySelectorAll('.parentss');
-
         parents.forEach(function (parent, parentIndex) {
             // 親要素内のクラス名が "editable" の子要素をすべて取得
             var elements = parent.querySelectorAll('.editable');
-
             // ローカルストレージから保存された名前を読み込む
             elements.forEach(function (element, index) {
                 var savedName = localStorage.getItem('editable-' + parentIndex + '-' + index);
@@ -5898,7 +5935,6 @@ if (ua.includes("mobile")) {
                     element.textContent = savedName;
                 }
             });
-
             parent.addEventListener('contextmenu', function (event) {
                 event.preventDefault();
                 if (event.target === parent) {
@@ -5924,6 +5960,7 @@ if (ua.includes("mobile")) {
         });
     });
 
+
     const taskbar_b = document.querySelector('#task_buttons2');
     function test_windows_button() {
         resize_background_image();
@@ -5944,32 +5981,27 @@ if (ua.includes("mobile")) {
             button.addEventListener('click', () => toggleWindow(windowElement));
         });
     };
-
     function toggleWindow(windowElement) {
         windowElement.classList.remove('active');
         windowElement.style.zIndex = largestZIndex++;
     }
 
+
     const dropArea = document.querySelector('#files');
     const dropArea2 = document.querySelector('#soft_windows');
-
     dropArea.addEventListener('dragover', (event) => {
         event.preventDefault();
         dropArea.style.borderColor = '#000';
     });
-
     dropArea.addEventListener('dragleave', () => {
         dropArea.style.borderColor = '#ccc';
     });
-
     dropArea.addEventListener('drop', (event) => {
         event.preventDefault();
         dropArea.style.borderColor = '#ccc';
         const files = event.dataTransfer.files;
         const files2 = event.dataTransfer;
         const url = files2.getData('text/uri-list');
-
-        // ファイルを1つずつ処理する関数
         const processFile = (file, x, y) => {
             return new Promise((resolve) => {
                 const reader = new FileReader();
@@ -6146,8 +6178,6 @@ if (ua.includes("mobile")) {
                 reader.readAsDataURL(file);
             })
         }
-
-        // 各ファイルを1つずつ処理
         for (let i = 0; i < files.length; i++) {
             const file = files[i];
             setTimeout(() => {
@@ -6171,17 +6201,14 @@ if (ua.includes("mobile")) {
 
     document.getElementById('exportButton').addEventListener('click', function () {
         const localStorageData = JSON.stringify(localStorage);
-
         // Base64エンコード関数
         function base64Encode(str) {
             return btoa(unescape(encodeURIComponent(str)));
         }
-
         // Base64デコード関数
         function base64Decode(str) {
             return decodeURIComponent(escape(atob(str)));
         }
-
         // XOR暗号化関数
         function xorEncrypt(data, key) {
             let encrypted = '';
@@ -6190,15 +6217,11 @@ if (ua.includes("mobile")) {
             }
             return encrypted;
         }
-
         const key = 'your-encryption-key'; // 暗号化キーを設定
-
         // データをエンコードして圧縮
         const encodedData = base64Encode(localStorageData);
-
         // 圧縮データを暗号化
         const encryptedData = xorEncrypt(encodedData, key);
-
         // 暗号化データをBlobに変換してダウンロード
         const blob = new Blob([encryptedData], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -6219,7 +6242,6 @@ if (ua.includes("mobile")) {
             function base64Decode(str) {
                 return decodeURIComponent(escape(atob(str)));
             }
-
             // XOR復号化関数
             function xorDecrypt(data, key) {
                 let decrypted = '';
@@ -6228,27 +6250,20 @@ if (ua.includes("mobile")) {
                 }
                 return decrypted;
             }
-
             const key = 'your-encryption-key'; // 暗号化キーを設定
             const encryptedData = event.target.result;
-
             // データを復号化
             const decryptedData = xorDecrypt(encryptedData, key);
-
             // データをデコード
             const decodedData = base64Decode(decryptedData);
-
             // JSON形式にパース
             const data = JSON.parse(decodedData);
-
             // ローカルストレージをクリアしてデータを復元
             localStorage.clear();
             sessionStorage.clear();
             for (const key in data) {
                 localStorage.setItem(key, data[key]);
             }
-
-            // UIの更新
             document.querySelector('.warning_title_text').textContent = "nexser";
             document.querySelector('.window_warning_text').textContent = "データが復元されました! ページを再読み込みしてください。";
             warning_windows.style.display = "block";
@@ -6727,7 +6742,6 @@ if (ua.includes("mobile")) {
             e.preventDefault();
             showContextMenu(e, newElement);
         });
-        // Append "copy" to the first <li> element's text
         const firstLi = newElement.querySelector('li');
         if (firstLi) {
             firstLi.textContent += ' copy';
