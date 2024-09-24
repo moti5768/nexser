@@ -1626,9 +1626,8 @@ if (ua.includes("mobile")) {
         error_windows.classList.add('active');
     }
     function window_active() {
-        document.querySelectorAll('.child_windows').forEach(function (allwindow_active) {
+        document.querySelectorAll('.child_windows:not(.window_nosearch)').forEach(function (allwindow_active) {
             allwindow_active.classList.remove('active');
-            notice_menu.style.display = "block"
         });
     }
 
@@ -2507,21 +2506,6 @@ if (ua.includes("mobile")) {
         });
     })
 
-    document.querySelectorAll('.minimization_button').forEach(function (minimizationbutton) {
-        const minimization_button = minimizationbutton.closest('.child_windows');
-        minimizationbutton.addEventListener('mousedown', function () {
-            if (minimization_button.classList.contains('minimization')) {
-                minimization_button.classList.remove('minimization');
-            }
-        })
-        minimizationbutton.addEventListener('click', function () {
-            minimization_button.classList.remove('big');
-            minimization_button.classList.add('minimization');
-            minimization_button.scrollTop = 0;
-            minimization_button.scrollLeft = 0;
-        });
-    })
-
     function addBigScreenButtonListeners(button) {
         if (!button.dataset.listenerAdded) {
             button.addEventListener('mousedown', function () {
@@ -3060,19 +3044,18 @@ if (ua.includes("mobile")) {
 
 
 
-    // 最前面のz-indexを持つ要素に新しいクラス名を付与する関数
-    function assignClassToFrontmostElement(className, newClassName) {
-        const elements = document.querySelectorAll('.' + className);
+    function assignClassToFrontmostElement(selector, newClassName) {
+        const elements = document.querySelectorAll(selector);
         let highestZIndex = -Infinity;
         let frontmostElement = null;
 
         elements.forEach(function (element) {
-            const ele2 = element.closest('.child_windows')
+            const ele2 = element.closest('.child_windows');
             if (!ele2.classList.contains('selectwindows')) {
-                document.querySelectorAll('.task_buttons').forEach(function (task_butttons) {
-                    task_butttons.remove()
-                })
-                ele2.classList.add('selectwindows')
+                document.querySelectorAll('.task_buttons').forEach(function (task_buttons) {
+                    task_buttons.remove();
+                });
+                ele2.classList.add('selectwindows');
             }
             const zIndex = parseInt(window.getComputedStyle(element).zIndex, 10) || 0;
             if (zIndex > highestZIndex) {
@@ -3093,7 +3076,7 @@ if (ua.includes("mobile")) {
     function zindexwindow_addnavy() {
         startmenu_close();
         title_navyreomve();
-        assignClassToFrontmostElement('child_windows:not(.active)', 'navy');
+        assignClassToFrontmostElement('.child_windows:not(.active):not(.minimization)', 'navy');
         titlecolor_set();
         allwindow_resize();
         test_windows_button();
@@ -5962,6 +5945,32 @@ if (ua.includes("mobile")) {
     });
 
 
+    document.querySelectorAll('.minimization_button').forEach(function (minimizationbutton) {
+        const minimization_button = minimizationbutton.closest('.child_windows');
+        const minimization_button2 = minimization_button.firstElementChild;
+        minimizationbutton.addEventListener('click', function () {
+            if (minimization_button2.classList.contains('navy')) {
+                setTimeout(() => {
+                    const elements = document.querySelector('.navy');
+                    const elements2 = elements.closest('.child_windows');
+                    const computedStyle = getComputedStyle(elements2);
+                    elements2.dataset.originalWidth = computedStyle.width;
+                    elements2.dataset.originalHeight = computedStyle.height;
+                    elements2.dataset.originalTop = computedStyle.top;
+                    elements2.dataset.originalLeft = computedStyle.left;
+                    minimization_button.style.height = "20px";
+                    minimization_button.classList.add('minimization');
+                    minimization_button.scrollTop = 0;
+                    minimization_button.scrollLeft = 0;
+                    moveToTaskbarButton(minimization_button);
+                    setTimeout(() => {
+                        test_windows_button();
+                        minimization_button.style.zIndex = largestZIndex++;
+                    }, 200);
+                }, 0);
+            }
+        });
+    });
     const taskbar_b = document.querySelector('#task_buttons2');
     function test_windows_button() {
         resize_background_image();
@@ -5970,7 +5979,7 @@ if (ua.includes("mobile")) {
             const nestedChild2 = windowElement.children[0].children[1].textContent;
             const button = document.createElement('div');
             button.className = 'task_buttons button2';
-            button.style.position = "relative"
+            button.style.position = "relative";
             button.textContent = "　　" + nestedChild2;
             taskbar_b.appendChild(button);
             const button_child = document.createElement('span');
@@ -5979,18 +5988,63 @@ if (ua.includes("mobile")) {
             button.addEventListener('click', () => toggleWindow(windowElement));
         });
         updateButtonClasses();
+        document.querySelectorAll('.child_windows.minimization').forEach(minimization_button => {
+            moveToTaskbarButton(minimization_button);
+            minimization_button.style.opacity = "0"
+            if (!minimization_button.style.opacity == "0") {
+                minimization_button.style.opacity = "1"
+            }
+        });
     }
+    function moveToTaskbarButton(minimization_button) {
+        const task_buttons = Array.from(document.querySelectorAll('.task_buttons'));
+        const index = Array.from(document.querySelectorAll('.child_windows.selectwindows')).indexOf(minimization_button);
+        if (index !== -1) {
+            const button = task_buttons[index];
+            const rect = button.getBoundingClientRect();
+            minimization_button.style.position = 'absolute';
+            minimization_button.style.top = `${rect.top}px`;
+            minimization_button.style.left = `${rect.left}px`;
+            minimization_button.style.width = "150px";
+            minimization_button.style.height = "20px";
+            minimization_button.style.transition = "0.2s cubic-bezier(0, 0, 1, 1)";
+            setTimeout(() => {
+                minimization_button.style.transition = "";
+            }, 200);
+        }
+    }
+    let isAnimating = false;
     function toggleWindow(windowElement) {
+        if (isAnimating) return;
+        isAnimating = true;
         windowElement.classList.remove('active');
         windowElement.style.zIndex = largestZIndex++;
         updateButtonClasses();
+        if (windowElement.classList.contains('minimization')) {
+            windowElement.classList.remove('minimization');
+            setTimeout(() => {
+                const elements2 = windowElement.closest('.child_windows');
+                elements2.style.width = elements2.dataset.originalWidth;
+                elements2.style.top = elements2.dataset.originalTop;
+                elements2.style.left = elements2.dataset.originalLeft;
+                elements2.style.transition = "0.2s cubic-bezier(0, 0, 1, 1)";
+                setTimeout(() => {
+                    elements2.style.height = elements2.dataset.originalHeight;
+                    elements2.style.transition = "";
+                    elements2.style.zIndex = largestZIndex++;
+                    isAnimating = false;
+                }, 200);
+            }, 0);
+        } else {
+            isAnimating = false;
+        }
     }
     function updateButtonClasses() {
         const windows = document.querySelectorAll('.child_windows.selectwindows');
         const buttons = document.querySelectorAll('.task_buttons');
         buttons.forEach(button => {
             button.classList.remove('tsk_pressed');
-        })
+        });
         windows.forEach((windowElement, index) => {
             if (windowElement.querySelector('.title.navy')) {
                 buttons[index].classList.add('tsk_pressed');
@@ -6652,7 +6706,7 @@ if (ua.includes("mobile")) {
     let previousActiveCount = 0;
     let previousLargestZIndex = largestZIndex;
 
-    const callback = function (mutationsList) {
+    const callback = function () {
         const currentActiveCount = Array.from(targetNodes).filter(node => node.classList.contains('active')).length;
         let zIndexChanged = false;
         if (previousLargestZIndex !== largestZIndex) {
@@ -6780,7 +6834,6 @@ if (ua.includes("mobile")) {
         document.querySelectorAll('.kakeibo_btn').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { kakeibo_menu.classList.toggle('active'); kakeibo_menu.style.zIndex = largestZIndex++; }; });
         document.querySelectorAll('.document_button').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { mydocument_menu.classList.toggle('active'); mydocument_menu.style.zIndex = largestZIndex++; }; });
         document.querySelectorAll('.restriction_btn').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { restriction_menu.classList.toggle('active'); restriction_menu.style.zIndex = largestZIndex++; }; });
-
 
         document.querySelectorAll('.test_button').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { main.classList.toggle('active'); main.style.zIndex = largestZIndex++; }; });
         document.querySelectorAll('.test_button2').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { my_computer.classList.toggle('active'); my_computer.style.zIndex = largestZIndex++; }; });

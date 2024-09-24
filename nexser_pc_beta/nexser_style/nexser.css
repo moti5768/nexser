@@ -820,17 +820,14 @@ input[type="file"] {
     font-size: 15px;
     width: auto;
     height: auto;
-    border: solid 3px #c0c0c0;
-    outline: 1px solid gray;
-    outline-offset: 0.4px;
-    box-shadow: 0 0 0 1.5px dimgray,
-        0 0 0 3px white,
-        0 0 0 4px #000000;
     background: whitesmoke;
+    color: black;
+    border: 3.5px solid #c0c0c0;
+    box-shadow: 1.3px 1.3px #333333, -1.3px -1.3px whitesmoke;
     position: absolute;
     z-index: 1;
     min-width: min-content;
-    min-height: 22.5px;
+    min-height: 22px;
     overflow: hidden;
 }
 
@@ -1183,7 +1180,7 @@ body::-webkit-scrollbar {
     font-size: 15px;
     width: 100%;
     height: 30px;
-    background-color: silver;
+    background-color: #C3C7CB;
     border-top: solid 1.5px whitesmoke;
     border-bottom: 1.5px #333 solid;
     position: absolute;
@@ -1194,7 +1191,7 @@ body::-webkit-scrollbar {
 .mini_window_startmenu {
     width: 150px;
     height: 265px;
-    background: silver;
+    background-color: #C3C7CB;
     position: absolute;
     bottom: 30px;
     outline: solid 1px dimgray;
@@ -1404,9 +1401,15 @@ body::-webkit-scrollbar {
 }
 
 .child_windows.minimization {
-    border: solid 3px red;
-    max-height: 0px;
-    max-width: 0px;
+    min-height: 0px;
+    min-width: 0px;
+    max-height: auto;
+    max-width: auto;
+    z-index: 999999;
+}
+
+.child_windows_invisible {
+    opacity: 0;
 }
 
 .child_windows.big {
