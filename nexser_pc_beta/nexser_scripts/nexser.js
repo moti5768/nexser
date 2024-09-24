@@ -591,6 +591,7 @@ if (ua.includes("mobile")) {
         for (let element of clockElements) {
             element.textContent = `${hours}:${minutes}:${seconds}`;
         }
+        updateCurrentTime();
     }
     setInterval(taskgroup_load, 1000);
 
@@ -6467,22 +6468,18 @@ if (ua.includes("mobile")) {
         }
     }
     function updateCurrentTime() {
-        setTimeout(function () {
-            currentDate = new Date();
-            alarm_hours = adjustDigit(currentDate.getHours());
-            alarm_minutes = adjustDigit(currentDate.getMinutes());
-            alarm_seconds = adjustDigit(currentDate.getSeconds());
-            timerText.innerHTML = `${alarm_hours}:${alarm_minutes}:${alarm_seconds}`;
-            for (var i = 0, len = record.length; i < len; i++) {
-                if (record[i].sethour == currentDate.getHours() && record[i].setminute == currentDate.getMinutes() && alarm_seconds == 0) {
-                    alert('お時間です!');
-                };
+        currentDate = new Date();
+        alarm_hours = adjustDigit(currentDate.getHours());
+        alarm_minutes = adjustDigit(currentDate.getMinutes());
+        alarm_seconds = adjustDigit(currentDate.getSeconds());
+        timerText.innerHTML = `${alarm_hours}:${alarm_minutes}:${alarm_seconds}`;
+        for (var i = 0, len = record.length; i < len; i++) {
+            if (record[i].sethour == currentDate.getHours() && record[i].setminute == currentDate.getMinutes() && alarm_seconds == 0) {
+                alert('お時間です!');
             };
-            updateCurrentTime();
-        }, 500);
+        };
     }
     loadAlarms();
-    updateCurrentTime();
 
     window.onerror = function (message, source, lineno, colno, error) {
         const errorLog = document.getElementById('console_error_text');

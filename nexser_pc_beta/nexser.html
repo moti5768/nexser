@@ -495,9 +495,9 @@
                         
                                                     &lt;div class=&quot;windowtool_buttons&quot;&gt;
                                                         &lt;div class=&quot;windowtool_buttons_child&quot;&gt;
-                                                            &lt;span class=&quot;button2 windowfile2&quot;&gt;&lt;span class=&quot;button_file_icon2&quot;&gt;&lt;/span&gt;&lt;/span&gt;
-                                                            &lt;span class=&quot;button2 windowfile1&quot;&gt;&lt;span class=&quot;button_file_icon&quot;&gt;&lt;/span&gt;&lt;/span&gt;
-                                                            &lt;span class=&quot;button2 windowfile3&quot;&gt;&lt;span class=&quot;button_file_icon3&quot;&gt;&lt;/span&gt;&lt;/span&gt;
+                                                            &lt;button class=&quot;button2 windowfile2&quot; style=&quot;width: 20px;&quot;&gt;*&lt;/button&gt;
+                                                            &lt;button class=&quot;button2 windowfile1&quot; style=&quot;width: 20px;&quot;&gt;*2&lt;/button&gt;
+                                                            &lt;button class=&quot;button2 windowfile3&quot; style=&quot;width: 20px;&quot;&gt;*3&lt;/button&gt;
                                                         &lt;/div&gt;
                                                     &lt;/div&gt;
                         
@@ -617,9 +617,9 @@
                         
                                                     &lt;div class=&quot;windowtool_buttons&quot;&gt;
                                                         &lt;div class=&quot;windowtool_buttons_child&quot;&gt;
-                                                            &lt;span class=&quot;button2 windowfile2&quot;&gt;&lt;span class=&quot;button_file_icon2&quot;&gt;&lt;/span&gt;&lt;/span&gt;
-                                                            &lt;span class=&quot;button2 windowfile1&quot;&gt;&lt;span class=&quot;button_file_icon&quot;&gt;&lt;/span&gt;&lt;/span&gt;
-                                                            &lt;span class=&quot;button2 windowfile3&quot;&gt;&lt;span class=&quot;button_file_icon3&quot;&gt;&lt;/span&gt;&lt;/span&gt;
+                                                            &lt;button class=&quot;button2 windowfile2&quot; style=&quot;width: 20px;&quot;&gt;*&lt;/button&gt;
+                                                            &lt;button class=&quot;button2 windowfile1&quot; style=&quot;width: 20px;&quot;&gt;*2&lt;/button&gt;
+                                                            &lt;button class=&quot;button2 windowfile3&quot; style=&quot;width: 20px;&quot;&gt;*3&lt;/button&gt;
                                                         &lt;/div&gt;
                                                     &lt;/div&gt;
                         
@@ -941,9 +941,9 @@
                         
                                                     &lt;div class=&quot;windowtool_buttons&quot;&gt;
                                                         &lt;div class=&quot;windowtool_buttons_child&quot;&gt;
-                                                            &lt;span class=&quot;button2 windowfile2&quot;&gt;&lt;span class=&quot;button_file_icon2&quot;&gt;&lt;/span&gt;&lt;/span&gt;
-                                                            &lt;span class=&quot;button2 windowfile1&quot;&gt;&lt;span class=&quot;button_file_icon&quot;&gt;&lt;/span&gt;&lt;/span&gt;
-                                                            &lt;span class=&quot;button2 windowfile3&quot;&gt;&lt;span class=&quot;button_file_icon3&quot;&gt;&lt;/span&gt;&lt;/span&gt;
+                                                            &lt;button class=&quot;button2 windowfile2&quot; style=&quot;width: 20px;&quot;&gt;*&lt;/button&gt;
+                                                            &lt;button class=&quot;button2 windowfile1&quot; style=&quot;width: 20px;&quot;&gt;*2&lt;/button&gt;
+                                                            &lt;button class=&quot;button2 windowfile3&quot; style=&quot;width: 20px;&quot;&gt;*3&lt;/button&gt;
                                                         &lt;/div&gt;
                                                     &lt;/div&gt;
                         
@@ -1103,9 +1103,9 @@
                         
                                                     &lt;div class=&quot;windowtool_buttons&quot;&gt;
                                                         &lt;div class=&quot;windowtool_buttons_child&quot;&gt;
-                                                            &lt;span class=&quot;button2 windowfile2&quot;&gt;&lt;span class=&quot;button_file_icon2&quot;&gt;&lt;/span&gt;&lt;/span&gt;
-                                                            &lt;span class=&quot;button2 windowfile1&quot;&gt;&lt;span class=&quot;button_file_icon&quot;&gt;&lt;/span&gt;&lt;/span&gt;
-                                                            &lt;span class=&quot;button2 windowfile3&quot;&gt;&lt;span class=&quot;button_file_icon3&quot;&gt;&lt;/span&gt;&lt;/span&gt;
+                                                            &lt;button class=&quot;button2 windowfile2&quot; style=&quot;width: 20px;&quot;&gt;*&lt;/button&gt;
+                                                            &lt;button class=&quot;button2 windowfile1&quot; style=&quot;width: 20px;&quot;&gt;*2&lt;/button&gt;
+                                                            &lt;button class=&quot;button2 windowfile3&quot; style=&quot;width: 20px;&quot;&gt;*3&lt;/button&gt;
                                                         &lt;/div&gt;
                                                     &lt;/div&gt;
                         
@@ -4901,6 +4901,7 @@
                                 for (let element of clockElements) {
                                     element.textContent = `${hours}:${minutes}:${seconds}`;
                                 }
+                                updateCurrentTime();
                             }
                             setInterval(taskgroup_load, 1000);
                         
@@ -10777,22 +10778,18 @@
                                 }
                             }
                             function updateCurrentTime() {
-                                setTimeout(function () {
-                                    currentDate = new Date();
-                                    alarm_hours = adjustDigit(currentDate.getHours());
-                                    alarm_minutes = adjustDigit(currentDate.getMinutes());
-                                    alarm_seconds = adjustDigit(currentDate.getSeconds());
-                                    timerText.innerHTML = `${alarm_hours}:${alarm_minutes}:${alarm_seconds}`;
-                                    for (var i = 0, len = record.length; i &lt; len; i++) {
-                                        if (record[i].sethour == currentDate.getHours() &amp;&amp; record[i].setminute == currentDate.getMinutes() &amp;&amp; alarm_seconds == 0) {
-                                            alert(&#039;お時間です!&#039;);
-                                        };
+                                currentDate = new Date();
+                                alarm_hours = adjustDigit(currentDate.getHours());
+                                alarm_minutes = adjustDigit(currentDate.getMinutes());
+                                alarm_seconds = adjustDigit(currentDate.getSeconds());
+                                timerText.innerHTML = `${alarm_hours}:${alarm_minutes}:${alarm_seconds}`;
+                                for (var i = 0, len = record.length; i &lt; len; i++) {
+                                    if (record[i].sethour == currentDate.getHours() &amp;&amp; record[i].setminute == currentDate.getMinutes() &amp;&amp; alarm_seconds == 0) {
+                                        alert(&#039;お時間です!&#039;);
                                     };
-                                    updateCurrentTime();
-                                }, 500);
+                                };
                             }
                             loadAlarms();
-                            updateCurrentTime();
                         
                             window.onerror = function (message, source, lineno, colno, error) {
                                 const errorLog = document.getElementById(&#039;console_error_text&#039;);
@@ -11802,9 +11799,9 @@
 
                             <div class="windowtool_buttons">
                                 <div class="windowtool_buttons_child">
-                                    <span class="button2 windowfile2"><span class="button_file_icon2"></span></span>
-                                    <span class="button2 windowfile1"><span class="button_file_icon"></span></span>
-                                    <span class="button2 windowfile3"><span class="button_file_icon3"></span></span>
+                                    <button class="button2 windowfile2" style="width: 20px;">*</button>
+                                    <button class="button2 windowfile1" style="width: 20px;">*2</button>
+                                    <button class="button2 windowfile3" style="width: 20px;">*3</button>
                                 </div>
                             </div>
 
@@ -11924,9 +11921,9 @@
 
                             <div class="windowtool_buttons">
                                 <div class="windowtool_buttons_child">
-                                    <span class="button2 windowfile2"><span class="button_file_icon2"></span></span>
-                                    <span class="button2 windowfile1"><span class="button_file_icon"></span></span>
-                                    <span class="button2 windowfile3"><span class="button_file_icon3"></span></span>
+                                    <button class="button2 windowfile2" style="width: 20px;">*</button>
+                                    <button class="button2 windowfile1" style="width: 20px;">*2</button>
+                                    <button class="button2 windowfile3" style="width: 20px;">*3</button>
                                 </div>
                             </div>
 
@@ -12248,9 +12245,9 @@
 
                             <div class="windowtool_buttons">
                                 <div class="windowtool_buttons_child">
-                                    <span class="button2 windowfile2"><span class="button_file_icon2"></span></span>
-                                    <span class="button2 windowfile1"><span class="button_file_icon"></span></span>
-                                    <span class="button2 windowfile3"><span class="button_file_icon3"></span></span>
+                                    <button class="button2 windowfile2" style="width: 20px;">*</button>
+                                    <button class="button2 windowfile1" style="width: 20px;">*2</button>
+                                    <button class="button2 windowfile3" style="width: 20px;">*3</button>
                                 </div>
                             </div>
 
@@ -12410,9 +12407,9 @@
 
                             <div class="windowtool_buttons">
                                 <div class="windowtool_buttons_child">
-                                    <span class="button2 windowfile2"><span class="button_file_icon2"></span></span>
-                                    <span class="button2 windowfile1"><span class="button_file_icon"></span></span>
-                                    <span class="button2 windowfile3"><span class="button_file_icon3"></span></span>
+                                    <button class="button2 windowfile2" style="width: 20px;">*</button>
+                                    <button class="button2 windowfile1" style="width: 20px;">*2</button>
+                                    <button class="button2 windowfile3" style="width: 20px;">*3</button>
                                 </div>
                             </div>
 
