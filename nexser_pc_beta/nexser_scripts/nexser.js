@@ -2404,7 +2404,6 @@ if (ua.includes("mobile")) {
             document.getElementById('shell').innerHTML = "";
             prompt_shell_menu.classList.add('active');
             prompt_shell_menu.classList.remove('selectwindows');
-            prompt_shell_menu.style.zIndex = largestZIndex++;
         });
     }
 
@@ -2977,8 +2976,7 @@ if (ua.includes("mobile")) {
 
     document.querySelectorAll('.nexser_search').forEach(nexser_search => {
         nexser_search.addEventListener('click', () => {
-            nexser_search_menu.classList.toggle('active');
-            nexser_search_menu.style.zIndex = largestZIndex++;
+            toggleWindow(nexser_search_menu)
         })
     });
 
@@ -6002,6 +6000,8 @@ if (ua.includes("mobile")) {
                 window_animation(elements2);
                 setTimeout(() => {
                     elements2.style.height = elements2.dataset.originalHeight;
+                    elements2.scrollTop = 0;
+                    elements2.scrollLeft = 0;
                     isAnimating = false;
                 }, 150);
             }, 0);
@@ -6534,7 +6534,6 @@ if (ua.includes("mobile")) {
             document.querySelector('.first_taskbar_buttons').appendChild(errorBtn);
             errorBtn.addEventListener('click', () => {
                 toggleWindow(console_error_menu);
-                console_error_menu.style.zIndex = largestZIndex++;
             });
             taskbar_resize();
         }
@@ -6796,67 +6795,67 @@ if (ua.includes("mobile")) {
             });
         }
 
-        document.querySelectorAll('.nexser_guidebook').forEach(nexser_guidebook => { nexser_guidebook.onclick = null; nexser_guidebook.onclick = () => { nexser_guidebook_menu.style.zIndex = largestZIndex++; toggleWindow(nexser_guidebook_menu); }; });
-        document.querySelectorAll('.guidebook_window').forEach(guidebook_window => { guidebook_window.onclick = null; guidebook_window.onclick = () => { guidebook_window_menu.style.zIndex = largestZIndex++; toggleWindow(guidebook_window_menu); }; });
-        document.querySelectorAll('.guidebook_file').forEach(guidebook_file => { guidebook_file.onclick = null; guidebook_file.onclick = () => { guidebook_file_menu.style.zIndex = largestZIndex++; toggleWindow(guidebook_file_menu); }; });
-        document.querySelectorAll('.guidebook_taskbar').forEach(guidebook_taskbar => { guidebook_taskbar.onclick = null; guidebook_taskbar.onclick = () => { guidebook_taskbar_menu.style.zIndex = largestZIndex++; toggleWindow(guidebook_taskbar_menu); }; });
-        document.querySelectorAll('.passmenu_button').forEach(passmenu_button => { passmenu_button.onclick = null; passmenu_button.onclick = () => { password_menu.style.zIndex = largestZIndex++; toggleWindow(password_menu); }; });
-        document.querySelectorAll('.localstorage_details').forEach(localstorage_details => { localstorage_details.onclick = null; localstorage_details.onclick = () => { localstorage_details_menu.style.zIndex = largestZIndex++; toggleWindow(localstorage_details_menu); }; });
-        document.querySelectorAll('.console_error_btn').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { console_error_menu.style.zIndex = largestZIndex++; toggleWindow(console_error_menu); }; });
-        document.querySelectorAll('.kakeibo_btn').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { kakeibo_menu.style.zIndex = largestZIndex++; toggleWindow(kakeibo_menu); }; });
-        document.querySelectorAll('.document_button').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { mydocument_menu.style.zIndex = largestZIndex++; toggleWindow(mydocument_menu); }; });
-        document.querySelectorAll('.restriction_btn').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { restriction_menu.style.zIndex = largestZIndex++; toggleWindow(restriction_menu); }; });
+        document.querySelectorAll('.nexser_guidebook').forEach(nexser_guidebook => { nexser_guidebook.onclick = null; nexser_guidebook.onclick = () => { toggleWindow(nexser_guidebook_menu); }; });
+        document.querySelectorAll('.guidebook_window').forEach(guidebook_window => { guidebook_window.onclick = null; guidebook_window.onclick = () => { toggleWindow(guidebook_window_menu); }; });
+        document.querySelectorAll('.guidebook_file').forEach(guidebook_file => { guidebook_file.onclick = null; guidebook_file.onclick = () => { toggleWindow(guidebook_file_menu); }; });
+        document.querySelectorAll('.guidebook_taskbar').forEach(guidebook_taskbar => { guidebook_taskbar.onclick = null; guidebook_taskbar.onclick = () => { toggleWindow(guidebook_taskbar_menu); }; });
+        document.querySelectorAll('.passmenu_button').forEach(passmenu_button => { passmenu_button.onclick = null; passmenu_button.onclick = () => { toggleWindow(password_menu); }; });
+        document.querySelectorAll('.localstorage_details').forEach(localstorage_details => { localstorage_details.onclick = null; localstorage_details.onclick = () => { toggleWindow(localstorage_details_menu); }; });
+        document.querySelectorAll('.console_error_btn').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(console_error_menu); }; });
+        document.querySelectorAll('.kakeibo_btn').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(kakeibo_menu); }; });
+        document.querySelectorAll('.document_button').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(mydocument_menu); }; });
+        document.querySelectorAll('.restriction_btn').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(restriction_menu); }; });
 
-        document.querySelectorAll('.test_button').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { main.style.zIndex = largestZIndex++; toggleWindow(main); }; });
-        document.querySelectorAll('.test_button2').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { my_computer.style.zIndex = largestZIndex++; toggleWindow(my_computer); }; });
-        document.querySelectorAll('.test_button3').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { control.style.zIndex = largestZIndex++; toggleWindow(control); }; });
-        document.querySelectorAll('.test_button4').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { color_menu.style.zIndex = largestZIndex++; toggleWindow(color_menu); }; });
-        document.querySelectorAll('.test_button5').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { system_menu.style.zIndex = largestZIndex++; toggleWindow(system_menu); }; });
-        document.querySelectorAll('.test_button6').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { window_prompt.style.zIndex = largestZIndex++; toggleWindow(window_prompt); }; });
-        document.querySelectorAll('.test_button7').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { clock_menu.style.zIndex = largestZIndex++; toggleWindow(clock_menu); }; });
-        document.querySelectorAll('.test_button8').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { sound_menu.style.zIndex = largestZIndex++; toggleWindow(sound_menu); }; });
-        document.querySelectorAll('.test_button9').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { driver_menu.style.zIndex = largestZIndex++; toggleWindow(driver_menu); }; });
-        document.querySelectorAll('.test_button10').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { mouse_menu.style.zIndex = largestZIndex++; toggleWindow(mouse_menu); }; });
-        document.querySelectorAll('.test_button11').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { screen_text_menu.style.zIndex = largestZIndex++; toggleWindow(screen_text_menu); }; });
-        document.querySelectorAll('.test_button12').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { note_pad.style.zIndex = largestZIndex++; toggleWindow(note_pad); }; });
-        document.querySelectorAll('.test_button13').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { text_drop_menu.style.zIndex = largestZIndex++; toggleWindow(text_drop_menu); }; });
-        document.querySelectorAll('.test_button14').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { windowmode_menu.style.zIndex = largestZIndex++; toggleWindow(windowmode_menu); }; });
-        document.querySelectorAll('.test_button15').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { accessory_menu.style.zIndex = largestZIndex++; toggleWindow(accessory_menu); }; });
-        document.querySelectorAll('.test_button16').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { calc_menu.style.zIndex = largestZIndex++; toggleWindow(calc_menu); }; });
-        document.querySelectorAll('.test_button17').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { nexser_sound_menu.style.zIndex = largestZIndex++; toggleWindow(nexser_sound_menu); }; });
-        document.querySelectorAll('.test_button18').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { camera_menu.style.zIndex = largestZIndex++; toggleWindow(camera_menu); }; });
-        document.querySelectorAll('.test_button19').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { htmlviewer_edit_menu.style.zIndex = largestZIndex++; toggleWindow(htmlviewer_edit_menu); }; });
-        document.querySelectorAll('.test_button20').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { htmlviewer_run_menu.style.zIndex = largestZIndex++; toggleWindow(htmlviewer_run_menu); }; });
+        document.querySelectorAll('.test_button').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(main); }; });
+        document.querySelectorAll('.test_button2').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(my_computer); }; });
+        document.querySelectorAll('.test_button3').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(control); }; });
+        document.querySelectorAll('.test_button4').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(color_menu); }; });
+        document.querySelectorAll('.test_button5').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(system_menu); }; });
+        document.querySelectorAll('.test_button6').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(window_prompt); }; });
+        document.querySelectorAll('.test_button7').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(clock_menu); }; });
+        document.querySelectorAll('.test_button8').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(sound_menu); }; });
+        document.querySelectorAll('.test_button9').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(driver_menu); }; });
+        document.querySelectorAll('.test_button10').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(mouse_menu); }; });
+        document.querySelectorAll('.test_button11').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(screen_text_menu); }; });
+        document.querySelectorAll('.test_button12').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(note_pad); }; });
+        document.querySelectorAll('.test_button13').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(text_drop_menu); }; });
+        document.querySelectorAll('.test_button14').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(windowmode_menu); }; });
+        document.querySelectorAll('.test_button15').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(accessory_menu); }; });
+        document.querySelectorAll('.test_button16').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(calc_menu); }; });
+        document.querySelectorAll('.test_button17').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(nexser_sound_menu); }; });
+        document.querySelectorAll('.test_button18').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(camera_menu); }; });
+        document.querySelectorAll('.test_button19').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(htmlviewer_edit_menu); }; });
+        document.querySelectorAll('.test_button20').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(htmlviewer_run_menu); }; });
 
-        document.querySelectorAll('.test_button21').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { uploadvideo_menu.style.zIndex = largestZIndex++; toggleWindow(uploadvideo_menu); }; });
-        document.querySelectorAll('.test_button22').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { font_menu.style.zIndex = largestZIndex++; toggleWindow(font_menu); }; });
-        document.querySelectorAll('.test_button23').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { file_setting_menu.style.zIndex = largestZIndex++; toggleWindow(file_setting_menu); }; });
-        document.querySelectorAll('.test_button24').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { debug_menu.style.zIndex = largestZIndex++; toggleWindow(debug_menu); }; });
-        document.querySelectorAll('.test_button25').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { file_download_menu.style.zIndex = largestZIndex++; toggleWindow(file_download_menu); }; });
-        document.querySelectorAll('.test_button26').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { display_menu.style.zIndex = largestZIndex++; toggleWindow(display_menu); }; });
-        document.querySelectorAll('.test_button27').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { stopwatch_menu.style.zIndex = largestZIndex++; toggleWindow(stopwatch_menu); timerreset(); }; });
-        document.querySelectorAll('.test_button28').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { comment_menu.style.zIndex = largestZIndex++; toggleWindow(comment_menu); }; });
-        document.querySelectorAll('.test_button30').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { objective_menu.style.zIndex = largestZIndex++; toggleWindow(objective_menu); }; });
-        document.querySelectorAll('.test_button31').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { calendar_menu.style.zIndex = largestZIndex++; toggleWindow(calendar_menu); }; });
-        document.querySelectorAll('.test_button32').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { cpu_bench_menu.style.zIndex = largestZIndex++; toggleWindow(cpu_bench_menu); cpubench_open(); }; });
-        document.querySelectorAll('.test_button33').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { browser_menu.style.zIndex = largestZIndex++; toggleWindow(browser_menu); }; });
-        document.querySelectorAll('.test_button35').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { taskbar_setting_menu.style.zIndex = largestZIndex++; toggleWindow(taskbar_setting_menu); }; });
-        document.querySelectorAll('.test_button36').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { youtubevideo_menu.style.zIndex = largestZIndex++; toggleWindow(youtubevideo_menu); }; });
-        document.querySelectorAll('.test_button37').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { device_menu.style.zIndex = largestZIndex++; toggleWindow(device_menu); }; });
-        document.querySelectorAll('.test_button38').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { omikuji_menu.style.zIndex = largestZIndex++; toggleWindow(omikuji_menu); }; });
-        document.querySelectorAll('.test_button39').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { localstorage_monitor_menu.style.zIndex = largestZIndex++; toggleWindow(localstorage_monitor_menu); }; });
-        document.querySelectorAll('.test_button40').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { paint_menu.style.zIndex = largestZIndex++; toggleWindow(paint_menu); }; });
+        document.querySelectorAll('.test_button21').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(uploadvideo_menu); }; });
+        document.querySelectorAll('.test_button22').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(font_menu); }; });
+        document.querySelectorAll('.test_button23').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(file_setting_menu); }; });
+        document.querySelectorAll('.test_button24').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(debug_menu); }; });
+        document.querySelectorAll('.test_button25').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(file_download_menu); }; });
+        document.querySelectorAll('.test_button26').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(display_menu); }; });
+        document.querySelectorAll('.test_button27').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(stopwatch_menu); timerreset(); }; });
+        document.querySelectorAll('.test_button28').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(comment_menu); }; });
+        document.querySelectorAll('.test_button30').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(objective_menu); }; });
+        document.querySelectorAll('.test_button31').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(calendar_menu); }; });
+        document.querySelectorAll('.test_button32').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(cpu_bench_menu); cpubench_open(); }; });
+        document.querySelectorAll('.test_button33').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(browser_menu); }; });
+        document.querySelectorAll('.test_button35').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(taskbar_setting_menu); }; });
+        document.querySelectorAll('.test_button36').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(youtubevideo_menu); }; });
+        document.querySelectorAll('.test_button37').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(device_menu); }; });
+        document.querySelectorAll('.test_button38').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(omikuji_menu); }; });
+        document.querySelectorAll('.test_button39').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(localstorage_monitor_menu); }; });
+        document.querySelectorAll('.test_button40').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(paint_menu); }; });
 
-        document.querySelectorAll('.test_button42').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { nexser_files_menu.style.zIndex = largestZIndex++; toggleWindow(nexser_files_menu); setTimeout(() => { nexser_files_output_remove(); nexser_files_windowload(); }, 100); }; });
-        document.querySelectorAll('.test_button43').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { url_drop_menu.style.zIndex = largestZIndex++; toggleWindow(url_drop_menu); }; });
-        document.querySelectorAll('.test_button45').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { alarm_menu.style.zIndex = largestZIndex++; toggleWindow(alarm_menu); }; });
+        document.querySelectorAll('.test_button42').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(nexser_files_menu); setTimeout(() => { nexser_files_output_remove(); nexser_files_windowload(); }, 100); }; });
+        document.querySelectorAll('.test_button43').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(url_drop_menu); }; });
+        document.querySelectorAll('.test_button45').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(alarm_menu); }; });
 
         // games
 
-        document.querySelectorAll('.test_button29').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { tetris_mneu.style.zIndex = largestZIndex++; toggleWindow(tetris_mneu); }; });
-        document.querySelectorAll('.test_button34').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { bom_menu.style.zIndex = largestZIndex++; toggleWindow(bom_menu); }; });
-        document.querySelectorAll('.test_button41').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { othello_menu.style.zIndex = largestZIndex++; toggleWindow(othello_menu); }; });
-        document.querySelectorAll('.test_button44').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { memory_game_menu.style.zIndex = largestZIndex++; toggleWindow(memory_game_menu); }; });
+        document.querySelectorAll('.test_button29').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(tetris_mneu); }; });
+        document.querySelectorAll('.test_button34').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(bom_menu); }; });
+        document.querySelectorAll('.test_button41').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(othello_menu); }; });
+        document.querySelectorAll('.test_button44').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(memory_game_menu); }; });
 
         // fileclick
 
