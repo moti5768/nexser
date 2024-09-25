@@ -2639,21 +2639,27 @@ if (ua.includes("mobile")) {
                         window_tool.style.display = "block";
                     });
                 }
-                zindexwindow_addnavy();
-                titlecolor_set()
+                if (animation.classList.contains('minimization2')) {
+                    animation.classList.remove('minimization2')
+                }
                 if (animation.classList.contains('big') || animation.classList.contains('leftwindow') || animation.classList.contains('rightwindow')) {
                     const task = document.getElementById('taskbar').clientHeight;
                     const child_windows_big2 = animation.clientHeight;
                     animation.style.height = child_windows_big2 - task + "px";
                 }
+                animation.style.zIndex = largestZIndex++;
             }, 150);
         } else {
             setTimeout(() => {
+                if (animation.classList.contains('minimization2')) {
+                    animation.classList.remove('minimization2')
+                }
                 if (animation.classList.contains('big') || animation.classList.contains('leftwindow') || animation.classList.contains('rightwindow')) {
                     const task = document.getElementById('taskbar').clientHeight;
                     const child_windows_big2 = animation.clientHeight;
                     animation.style.height = child_windows_big2 - task + "px";
                 }
+                animation.style.zIndex = largestZIndex++;
             }, 0);
         }
     }
@@ -2987,6 +2993,7 @@ if (ua.includes("mobile")) {
         document.querySelectorAll('.navy').forEach(wt => {
             wt.classList.remove('navy');
         })
+        assignClassToFrontmostElement('.child_windows:not(.active):not(.minimization)', 'navy');
     }
 
     document.querySelectorAll('.nexser_search').forEach(nexser_search => {
@@ -3064,6 +3071,11 @@ if (ua.includes("mobile")) {
             }
         });
         if (frontmostElement) {
+            const ele2 = frontmostElement.closest('.child_windows');
+            if (ele2.classList.contains('minimization') && ele2.classList.contains('minimization2')) {
+                toggleWindow(ele2)
+                ele2.classList.remove('minimization2')
+            }
             const foo1 = frontmostElement.firstElementChild;
             foo1.classList.add(newClassName);
         }
@@ -3076,7 +3088,7 @@ if (ua.includes("mobile")) {
     function zindexwindow_addnavy() {
         startmenu_close();
         title_navyreomve();
-        assignClassToFrontmostElement('.child_windows:not(.active):not(.minimization)', 'navy');
+        assignClassToFrontmostElement('.child_windows:not(.active)', 'navy');
         titlecolor_set();
         allwindow_resize();
         test_windows_button();
@@ -5963,10 +5975,22 @@ if (ua.includes("mobile")) {
                     minimization_button.scrollTop = 0;
                     minimization_button.scrollLeft = 0;
                     moveToTaskbarButton(minimization_button);
-                    setTimeout(() => {
-                        test_windows_button();
-                        minimization_button.style.zIndex = largestZIndex++;
-                    }, 200);
+                    window_animation(minimization_button);
+                    if (localStorage.getItem('window_animation')) {
+                        setTimeout(() => {
+                            minimization_button.classList.add('minimization2');
+                            const elements22 = elements2.firstElementChild;
+                            elements22.classList.remove('navy')
+                            updateButtonClasses()
+                        }, 150);
+                    } else {
+                        minimization_button.classList.add('minimization2');
+                        const elements22 = elements2.firstElementChild;
+                        elements22.classList.remove('navy')
+                        updateButtonClasses()
+                        title_navyreomve()
+                    }
+                    minimization_button.style.zIndex = largestZIndex++;
                 }, 0);
             }
         });
@@ -6007,10 +6031,6 @@ if (ua.includes("mobile")) {
             minimization_button.style.left = `${rect.left}px`;
             minimization_button.style.width = "150px";
             minimization_button.style.height = "20px";
-            minimization_button.style.transition = "0.2s cubic-bezier(0, 0, 1, 1)";
-            setTimeout(() => {
-                minimization_button.style.transition = "";
-            }, 200);
         }
     }
     let isAnimating = false;
@@ -6027,13 +6047,11 @@ if (ua.includes("mobile")) {
                 elements2.style.width = elements2.dataset.originalWidth;
                 elements2.style.top = elements2.dataset.originalTop;
                 elements2.style.left = elements2.dataset.originalLeft;
-                elements2.style.transition = "0.2s cubic-bezier(0, 0, 1, 1)";
+                window_animation(elements2);
                 setTimeout(() => {
                     elements2.style.height = elements2.dataset.originalHeight;
-                    elements2.style.transition = "";
-                    elements2.style.zIndex = largestZIndex++;
                     isAnimating = false;
-                }, 200);
+                }, 150);
             }, 0);
         } else {
             isAnimating = false;
@@ -6046,9 +6064,11 @@ if (ua.includes("mobile")) {
             button.classList.remove('tsk_pressed');
         });
         windows.forEach((windowElement, index) => {
-            if (windowElement.querySelector('.title.navy')) {
-                buttons[index].classList.add('tsk_pressed');
-            }
+            setTimeout(() => {
+                if (windowElement.querySelector('.title.navy')) {
+                    buttons[index].classList.add('tsk_pressed');
+                }
+            }, 0);
         });
     }
 
