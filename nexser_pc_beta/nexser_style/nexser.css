@@ -1104,12 +1104,9 @@ body::-webkit-scrollbar {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    border: solid 3px #c0c0c0;
-    outline: 1px solid gray;
-    outline-offset: 0.4px;
-    box-shadow: 0 0 0 1.5px dimgray,
-        0 0 0 3px white,
-        0 0 0 4px #000000;
+    color: black;
+    border: 3.5px solid #c0c0c0;
+    box-shadow: 1.3px 1.3px #333333, -1.3px -1.3px whitesmoke;
     z-index: 99999;
 }
 
@@ -1234,13 +1231,10 @@ body::-webkit-scrollbar {
     font-size: 15px;
     width: auto;
     height: auto;
-    border: solid 3px #c0c0c0;
-    outline: 1px solid gray;
-    outline-offset: 0.4px;
-    box-shadow: 0 0 0 1.5px dimgray,
-        0 0 0 3px white,
-        0 0 0 4px #000000;
-    background: white;
+    background: whitesmoke;
+    color: black;
+    border: 3.5px solid #c0c0c0;
+    box-shadow: 1.3px 1.3px #333333, -1.3px -1.3px whitesmoke;
     position: absolute;
     top: 50%;
     left: 50%;
@@ -1379,13 +1373,10 @@ body::-webkit-scrollbar {
     font-size: 15px;
     width: auto;
     height: auto;
-    border: solid 3px #c0c0c0;
-    outline: 1px solid gray;
-    outline-offset: 0.4px;
-    box-shadow: 0 0 0 1.5px dimgray,
-        0 0 0 3px white,
-        0 0 0 4px #000000;
-    background: white;
+    background: whitesmoke;
+    color: black;
+    border: 3.5px solid #c0c0c0;
+    box-shadow: 1.3px 1.3px #333333, -1.3px -1.3px whitesmoke;
     position: absolute;
     top: 50%;
     left: 50%;
