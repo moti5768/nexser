@@ -938,6 +938,12 @@ input[type="file"] {
     top: 22.5px;
 }
 
+.uploadvideo_menu {
+    width: 600px;
+    height: 400px;
+    min-width: 250px;
+}
+
 .device_menu {
     width: 550px;
     height: auto;
@@ -2965,7 +2971,7 @@ progress::-webkit-progress-value {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    width: 75%;
+    width: 65%;
 }
 
 .test_site_menu {
