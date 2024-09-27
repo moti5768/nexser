@@ -823,7 +823,7 @@ input[type="file"] {
     background: whitesmoke;
     color: black;
     border: 3.5px solid #c0c0c0;
-    box-shadow: 1.3px 1.3px #333333, -1.3px -1.3px whitesmoke;
+    box-shadow: 1.5px 1.5px #333333, -1.5px -1.5px whitesmoke;
     position: absolute;
     z-index: 1;
     min-width: min-content;
@@ -1112,7 +1112,7 @@ body::-webkit-scrollbar {
     transform: translate(-50%, -50%);
     color: black;
     border: 3.5px solid #c0c0c0;
-    box-shadow: 1.3px 1.3px #333333, -1.3px -1.3px whitesmoke;
+    box-shadow: 1.5px 1.5px #333333, -1.5px -1.5px whitesmoke;
     z-index: 99999;
 }
 
@@ -1240,7 +1240,7 @@ body::-webkit-scrollbar {
     background: whitesmoke;
     color: black;
     border: 3.5px solid #c0c0c0;
-    box-shadow: 1.3px 1.3px #333333, -1.3px -1.3px whitesmoke;
+    box-shadow: 1.5px 1.5px #333333, -1.5px -1.5px whitesmoke;
     position: absolute;
     top: 50%;
     left: 50%;
@@ -1382,7 +1382,7 @@ body::-webkit-scrollbar {
     background: whitesmoke;
     color: black;
     border: 3.5px solid #c0c0c0;
-    box-shadow: 1.3px 1.3px #333333, -1.3px -1.3px whitesmoke;
+    box-shadow: 1.5px 1.5px #333333, -1.5px -1.5px whitesmoke;
     position: absolute;
     top: 50%;
     left: 50%;
