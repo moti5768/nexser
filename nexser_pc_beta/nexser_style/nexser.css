@@ -1603,8 +1603,8 @@ body::-webkit-scrollbar {
 }
 
 .title2 li:hover {
-    outline: 1.5px dotted black;
-    outline-offset: -3px;
+    background: darkblue;
+    color: white;
 }
 
 .window_tool {
@@ -2032,11 +2032,6 @@ body::-webkit-scrollbar {
 .child_list li {
     padding-left: 15px;
     padding-right: 15px;
-}
-
-.child_list li:hover {
-    background: darkblue;
-    color: white;
 }
 
 .sample_child_list {
