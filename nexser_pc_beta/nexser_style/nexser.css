@@ -1095,9 +1095,7 @@ body::-webkit-scrollbar {
     color: white;
 }
 
-
-.welcome_windows {
-    display: none;
+.welcome_menu {
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
@@ -1106,14 +1104,6 @@ body::-webkit-scrollbar {
     font-size: 15px;
     width: 700px;
     height: 400px;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    color: black;
-    border: 3.5px solid #c0c0c0;
-    box-shadow: 1.5px 1.5px #333333, -1.5px -1.5px whitesmoke;
-    z-index: 99999;
 }
 
 .welicon_1 {

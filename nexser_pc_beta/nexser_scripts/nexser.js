@@ -13,8 +13,13 @@ if (ua.includes("mobile")) {
     // Mobile (iPad「Safari」)
     alert("この端末は対応していません!")
 } else {
+
+    const nex = document.getElementById('nex');
+
     const logoff = document.getElementsByClassName('logoff');
     const restart = document.getElementsByClassName('restart');
+
+    const welcome_menu = document.querySelector('.welcome_menu');
 
     const nexser_guidebook_menu = document.querySelector('.nexser_guidebook_menu');
     const guidebook_window_menu = document.querySelector('.guidebook_window_menu');
@@ -105,7 +110,7 @@ if (ua.includes("mobile")) {
     document.addEventListener('click', () => {
         if (localStorage.getItem('game_none')) {
             document.querySelectorAll('.game_window:not(.active)').forEach((test) => {
-                document.getElementById('nex').style.cursor = '';
+                nex.style.cursor = '';
                 document.querySelector('.window_error_text').textContent = "制限されているため、起動ができませんでした"
                 error_windows.classList.remove('active');
                 document.querySelector('.test_allwindow').style.display = "block";
@@ -614,13 +619,13 @@ if (ua.includes("mobile")) {
             nexser_program.style.display = "none";
             nexser.style.display = "block";
             desktop.style.display = "block"
-            document.querySelector('.welcome_windows').style.display = "none";
+            welcome_menu.classList.add('active');
         } else if (localStorage.getItem('prompt_data3')) {
             screen_prompt.style.display = "none";
             nexser_program.style.display = "block";
             nexser.style.display = "none";
             desktop.style.display = "none";
-            document.getElementById('nex').style.cursor = 'crosshair';
+            nex.style.cursor = 'crosshair';
         } else {
             screen_prompt.style.display = "block";
             nexser_program.style.display = "none";
@@ -632,7 +637,7 @@ if (ua.includes("mobile")) {
             nexser_program.style.display = "block";
             desktop.style.display = "none";
             document.getElementsByClassName('pattern_backgrounds')[0].style.display = "none";
-            document.getElementById('nex').style.cursor = 'crosshair';
+            nex.style.cursor = 'crosshair';
         } else {
             document.getElementsByClassName('pattern_backgrounds')[0].style.display = "block";
         }
@@ -737,10 +742,10 @@ if (ua.includes("mobile")) {
         func2();
         desktop.style.display = "none";
         document.getElementsByClassName('pattern_backgrounds')[0].style.display = "none";
-        document.getElementsByClassName('welcome_windows')[0].style.display = "none";
+        welcome_menu.classList.add('active');
         sound_stop();
         document.querySelector('.prompt_error_text').textContent = "";
-        document.getElementById('nex').style.cursor = 'crosshair';
+        nex.style.cursor = 'crosshair';
         document.querySelector('.test_allwindow').style.display = "none";
         setTimeout(function () {
             screen_prompt.style.display = "none";
@@ -752,7 +757,7 @@ if (ua.includes("mobile")) {
     }
 
     function nexser_program_close() {
-        document.getElementById('nex').style.cursor = '';
+        nex.style.cursor = '';
         document.querySelector('.test_allwindow').style.display = "none";
         if (!localStorage.getItem('deskprompt')) {
             setTimeout(function () {
@@ -830,7 +835,7 @@ if (ua.includes("mobile")) {
     function nexser_boot_check() {
         if (localStorage.getItem('driver_sound')) {
             nexser_start()
-            document.getElementById('nex').style.cursor = 'none';
+            nex.style.cursor = 'none';
         } else if (!localStorage.getItem('driver_sound') && !localStorage.getItem('start_nexser')) {
             screen_prompt.style.display = "none";
             document.querySelector('.nexser_boot_menu').style.display = "block";
@@ -838,7 +843,7 @@ if (ua.includes("mobile")) {
             document.querySelector('.nexser_bootmenu_text2').textContent = "インストールして nexser を起動しますか?";
         } else {
             nexser_start()
-            document.getElementById('nex').style.cursor = 'none';
+            nex.style.cursor = 'none';
         }
     }
 
@@ -891,7 +896,7 @@ if (ua.includes("mobile")) {
         if (localStorage.getItem('password') && !localStorage.getItem('login')) {
             document.querySelector('.pass_signin_menu').classList.remove('active')
             document.getElementById('pass_form').focus();
-            document.getElementById('nex').style.cursor = '';
+            nex.style.cursor = '';
         } else {
             start_check()
         }
@@ -923,14 +928,14 @@ if (ua.includes("mobile")) {
         localStorage.setItem('prompt_data', true);
         document.querySelector("#nexser").style.backgroundColor = "";
         document.querySelector('.test_allwindow').style.display = "none";
-        document.querySelector('.welcome_windows').style.display = "none";
+        welcome_menu.classList.add('active');
         document.querySelector('#code_html').style.display = "none";
         document.querySelector('#code_script').style.display = "none";
         document.querySelector('#code_script2').style.display = "none";
         document.querySelector('.focus').blur();
         window_none();
         startmenu_close();
-        document.getElementById('nex').style.cursor = 'none';
+        nex.style.cursor = 'none';
         if (localStorage.getItem('prompt_data2')) {
             func2();
             setTimeout(function () {
@@ -947,7 +952,7 @@ if (ua.includes("mobile")) {
                 }, 100);
             }, 100)
             setTimeout(() => {
-                document.getElementById('nex').style.cursor = 'progress';
+                nex.style.cursor = 'progress';
                 document.querySelector('.pattern_backgrounds').style.display = "block";
             }, 100);
         } else {
@@ -966,7 +971,7 @@ if (ua.includes("mobile")) {
                 }, 1500)
             }, 1500);
             setTimeout(() => {
-                document.getElementById('nex').style.cursor = 'progress';
+                nex.style.cursor = 'progress';
                 document.querySelector('.pattern_backgrounds').style.display = "block";
             }, 2000);
         }
@@ -974,19 +979,19 @@ if (ua.includes("mobile")) {
 
     Array.from(logoff).forEach(element => {
         element.addEventListener('click', event => {
-            document.getElementById('nex').style.cursor = 'progress';
+            nex.style.cursor = 'progress';
             startmenu_close()
             setTimeout(() => {
                 document.querySelector('.test_allwindow').style.display = "block";
                 if (sessionStorage.getItem('start_camera')) {
-                    document.getElementById('nex').style.cursor = '';
+                    nex.style.cursor = '';
                     document.querySelector('.window_error_text').textContent = "カメラが実行されているため、ログオフできません!"
                     error_windows.classList.remove('active');
                     document.querySelector('.test_allwindow').style.display = "block";
                     sound3()
                 } else if (localStorage.getItem('no_shutdown')) {
-                    document.getElementById('nex').style.cursor = '';
-                    document.querySelector('.window_error_text').textContent = "welcomeウィンドウが起動するまでシャットダウンはできません!"
+                    nex.style.cursor = '';
+                    document.querySelector('.window_error_text').textContent = "welcomeウィンドウが起動するまでログオフできません!"
                     error_windows.classList.remove('active')
                     document.querySelector('.test_allwindow').style.display = "block";
                     sound3()
@@ -994,8 +999,8 @@ if (ua.includes("mobile")) {
                     sound_stop();
                     shutdown_sound();
                     localStorage.removeItem('login');
-                    document.querySelector('.welcome_windows').style.display = "none";
-                    document.getElementById('nex').style.cursor = 'none';
+                    welcome_menu.classList.add('active');
+                    nex.style.cursor = 'none';
                     if (!localStorage.getItem('noteData')) {
                         document.note_form.note_area.value = "";
                         resetShowLength();
@@ -1024,7 +1029,7 @@ if (ua.includes("mobile")) {
                             nexser.style.display = "none";
                             screen_prompt.style.display = "block";
                             document.getElementsByClassName('focus')[0].focus();
-                            document.getElementById('nex').style.cursor = '';
+                            nex.style.cursor = '';
                         }, 500);
                     }, 1000);
                 } else {
@@ -1035,7 +1040,7 @@ if (ua.includes("mobile")) {
                     document.querySelector('.warning_title_text').textContent = "warning"
                     document.querySelector('.window_warning_text').textContent = "実行されているウィンドウがあります! ログオフしますか?"
                     sound5()
-                    document.getElementById('nex').style.cursor = '';
+                    nex.style.cursor = '';
                 }
             }, 100);
         })
@@ -1043,18 +1048,18 @@ if (ua.includes("mobile")) {
 
     Array.from(restart).forEach(element => {
         element.addEventListener('click', event => {
-            document.getElementById('nex').style.cursor = 'progress';
+            nex.style.cursor = 'progress';
             startmenu_close()
             setTimeout(() => {
                 document.querySelector('.test_allwindow').style.display = "block";
                 if (sessionStorage.getItem('start_camera')) {
-                    document.getElementById('nex').style.cursor = '';
+                    nex.style.cursor = '';
                     document.querySelector('.window_error_text').textContent = "カメラが実行されているため、再起動はできません!"
                     error_windows.classList.remove('active')
                     sound3()
                     document.querySelector('.test_allwindow').style.display = "block";
                 } else if (localStorage.getItem('no_shutdown')) {
-                    document.getElementById('nex').style.cursor = '';
+                    nex.style.cursor = '';
                     document.querySelector('.window_error_text').textContent = "welcomeウィンドウが起動するまで再起動はできません!"
                     error_windows.classList.remove('active')
                     document.querySelector('.test_allwindow').style.display = "block";
@@ -1063,8 +1068,8 @@ if (ua.includes("mobile")) {
                     sound_stop();
                     shutdown_sound();
                     localStorage.removeItem('login');
-                    document.querySelector('.welcome_windows').style.display = "none";
-                    document.getElementById('nex').style.cursor = 'none';
+                    welcome_menu.classList.add('active');
+                    nex.style.cursor = 'none';
                     if (!localStorage.getItem('noteData')) {
                         document.note_form.note_area.value = "";
                         resetShowLength();
@@ -1098,7 +1103,7 @@ if (ua.includes("mobile")) {
                         }, 3500);
                     }, 1500);
                 } else {
-                    document.getElementById('nex').style.cursor = '';
+                    nex.style.cursor = '';
                     document.querySelector('.window_error_text').textContent = "全てのウィンドウが閉じてないため、再起動できません!"
                     error_windows.classList.remove('active')
                     document.querySelector('.test_allwindow').style.display = "block";
@@ -1115,7 +1120,7 @@ if (ua.includes("mobile")) {
         };
         const t = localStorage.getItem('taskbar_height');
         document.getElementById('files').style.display = "none";
-        document.getElementById('nex').style.cursor = 'none';
+        nex.style.cursor = 'none';
         taskbar.style.display = "none";
         document.getElementById('files').style.display = "none";
         if (!localStorage.getItem('start_nexser') || desktop.style.display === "block") {
@@ -1123,14 +1128,14 @@ if (ua.includes("mobile")) {
             nexser_program.style.display = "none";
             nexser.style.display = "block";
             desktop.style.display = "none";
-            document.querySelector('.welcome_windows').style.display = "block";
+            welcome_menu.classList.remove('active');
             welcome_animation()
         } else {
             startup_sound();
             screen_prompt.style.display = "none";
             nexser_program.style.display = "none";
             nexser.style.display = "block";
-            document.querySelector('.welcome_windows').style.display = "none";
+            welcome_menu.classList.add('active');
             setTimeout(() => {
                 desktop.style.display = "block";
                 toolbar.style.display = "block";
@@ -1140,7 +1145,7 @@ if (ua.includes("mobile")) {
             }, 500);
             setTimeout(() => {
                 setColor();
-                document.getElementById('nex').style.cursor = '';
+                nex.style.cursor = '';
                 toolbar.style.display = "none";
             }, 1500);
             setTimeout(() => {
@@ -1202,7 +1207,8 @@ if (ua.includes("mobile")) {
 
     function nexser_on() {
         localStorage.setItem('start_nexser', true);
-        document.querySelector('.welcome_windows').style.display = ""
+        welcome_menu.classList.remove('selectwindows');
+        welcome_menu.classList.add('active');
         setTimeout(() => {
             desktop.style.display = "block";
             localmemory_size()
@@ -1217,16 +1223,12 @@ if (ua.includes("mobile")) {
         }, 500);
         setTimeout(() => {
             setColor()
-            document.getElementById('nex').style.cursor = '';
+            nex.style.cursor = '';
         }, 1500);
         setTimeout(() => {
             startup_window_open()
         }, 2000);
     }
-
-    document.getElementsByClassName('startnexser_close')[0].addEventListener('click', function () {
-        document.getElementsByClassName('welcome_windows')[0].style.display = "none"
-    })
 
     document.querySelector('.login_welcome').addEventListener('click', () => {
         localStorage.setItem('login_welcome', true);
@@ -1238,10 +1240,9 @@ if (ua.includes("mobile")) {
     function welcome_animation() {
         sound_stop();
         sound7();
-        const nex = document.getElementById('nex');
+        welcome_menu.style.zIndex = largestZIndex++;
         const startNexser = document.getElementsByClassName('start_nexser')[0];
         const startNexserClose = document.getElementsByClassName('startnexser_close')[0];
-        const welcomeWindowInline = document.getElementsByClassName('welcome_window_inline')[0];
         const welcomeText1 = document.getElementsByClassName('welcome_text1')[0];
         const welcomeUnderline = document.getElementsByClassName('welcome_underline')[0];
         const welcomeText2 = document.getElementsByClassName('welcome_text2')[0];
@@ -1249,7 +1250,6 @@ if (ua.includes("mobile")) {
         nex.style.cursor = 'none';
         startNexser.style.display = "none";
         startNexserClose.style.display = "none";
-        welcomeWindowInline.style.display = "none";
         welcomeText1.style.position = "absolute";
         welcomeText1.style.fontSize = "80px";
         welcomeText1.style.marginTop = "125px";
@@ -1259,32 +1259,29 @@ if (ua.includes("mobile")) {
         welcomeText2.style.display = "none";
         welcomeIcons.style.display = "none";
         setTimeout(() => {
-            welcomeWindowInline.style.display = "block";
+            welcomeText1.style.transition = "0.25s cubic-bezier(0, 0, 1, 1)";
+            welcomeText1.style.fontSize = "40px";
+            welcomeText1.style.marginTop = "20px";
+            welcomeText1.style.marginLeft = "0px";
+        }, 500);
+        setTimeout(() => {
+            welcomeUnderline.style.transition = "0.25s cubic-bezier(0, 0, 1, 1)";
+            welcomeUnderline.style.width = "100%";
             setTimeout(() => {
-                welcomeText1.style.transition = "0.25s cubic-bezier(0, 0, 1, 1)";
-                welcomeText1.style.fontSize = "40px";
-                welcomeText1.style.marginTop = "0px";
-                welcomeText1.style.marginLeft = "0px";
-            }, 500);
-            setTimeout(() => {
-                welcomeUnderline.style.transition = "0.25s cubic-bezier(0, 0, 1, 1)";
-                welcomeUnderline.style.width = "100%";
-                setTimeout(() => {
-                    welcomeText2.style.display = "block";
-                    welcomeIcons.style.display = "block";
-                    nex.style.cursor = '';
-                    if (!localStorage.getItem('start_nexser')) {
-                        startNexser.style.display = "block";
-                    } else {
-                        startNexserClose.style.display = "block";
-                    }
-                }, 300);
-            }, 1000);
-        }, 250);
+                welcomeText2.style.display = "block";
+                welcomeIcons.style.display = "block";
+                nex.style.cursor = '';
+                if (!localStorage.getItem('start_nexser')) {
+                    startNexser.style.display = "block";
+                } else {
+                    startNexserClose.style.display = "block";
+                }
+            }, 300);
+        }, 1000);
     }
 
     function welcome() {
-        document.querySelector('.welcome_windows').style.display = "block"
+        welcome_menu.classList.remove('active');
         welcome_animation();
         startmenu_close();
     }
@@ -1313,7 +1310,7 @@ if (ua.includes("mobile")) {
     function nexser_signout() {
         startmenu_close()
         if (localStorage.getItem('password') && gets === gets2) {
-            document.getElementsByClassName('welcome_windows')[0].style.display = "none";
+            welcome_menu.classList.add('active');
             localStorage.removeItem('login');
             document.getElementById('desktop').style.display = "none";
             window_none();
@@ -1322,13 +1319,13 @@ if (ua.includes("mobile")) {
             sound_stop();
             document.querySelector('#pass_form').focus();
         } else if (localStorage.getItem('password') && gets != gets2) {
-            document.getElementById('nex').style.cursor = '';
+            nex.style.cursor = '';
             document.querySelector('.window_error_text').textContent = "全てのウィンドウを終了してください!"
             error_windows.classList.remove('active')
             document.querySelector('.test_allwindow').style.display = "block";
             sound3()
         } else {
-            document.getElementById('nex').style.cursor = '';
+            nex.style.cursor = '';
             document.querySelector('.window_error_text').textContent = "パスワードを登録していないため、サインアウトができません!"
             error_windows.classList.remove('active')
             document.querySelector('.test_allwindow').style.display = "block";
@@ -3468,7 +3465,9 @@ if (ua.includes("mobile")) {
         color_btn.addEventListener('click', () => {
             titlecolor_remove();
             if (localStorage.getItem('driver_color')) {
-                titlecolor_set();
+                setTimeout(() => {
+                    titlecolor_set();
+                });
             } else {
                 errorText.textContent = "カラードライバーがインストールされていません!";
                 error_windows.classList.remove('active');
@@ -4699,7 +4698,7 @@ if (ua.includes("mobile")) {
             document.querySelector('.saver_time').textContent = len++;
         }
         if (screen_saver_group.style.display === "block") {
-            document.getElementById('nex').style.cursor = '';
+            nex.style.cursor = '';
             screen_saver_group.style.display = "none";
             document.querySelector('.screen_saver1').style.display = "none"
             document.querySelector('.screen_saver2').style.display = "none"
@@ -4748,7 +4747,7 @@ if (ua.includes("mobile")) {
             } else if (localStorage.getItem('saver_time')) {
                 document.querySelector('.screen_saver1').style.display = "block";
             }
-            document.getElementById('nex').style.cursor = 'none';
+            nex.style.cursor = 'none';
         }
         setTimeout(() => {
             clearTimeout(timeoutId);
@@ -4925,19 +4924,19 @@ if (ua.includes("mobile")) {
     }
 
     function old_screen() {
-        document.getElementById('nex').classList.add('old');
+        nex.classList.add('old');
     }
     function old_screen_reset() {
-        document.getElementById('nex').classList.remove('old');
+        nex.classList.remove('old');
     }
 
     function backcolorfilter_clear() {
         localStorage.removeItem("backcolor_filter");
-        document.getElementById('nex').style.filter = "";
+        nex.style.filter = "";
     }
     function applyFilter(filterType, filterValue) {
         backcolorfilter_clear();
-        document.getElementById('nex').style.filter = filterValue;
+        nex.style.filter = filterValue;
         localStorage.setItem("backcolor_filter", filterType);
     }
     function color_bw() { applyFilter("blackwhite", "grayscale(100%)"); }
@@ -4951,7 +4950,7 @@ if (ua.includes("mobile")) {
             "hue": "hue-rotate(100deg)"
         };
         if (filterType && filters[filterType]) {
-            document.getElementById('nex').style.filter = filters[filterType];
+            nex.style.filter = filters[filterType];
         }
     };
     function toggleShadow(action) {
@@ -5710,7 +5709,7 @@ if (ua.includes("mobile")) {
             url_iframe.style.display = "block"
             dropzone.style.display = "none"
         } else {
-            document.getElementById('nex').style.cursor = '';
+            nex.style.cursor = '';
             document.querySelector('.window_error_text').textContent = "有効なURLをドロップしてください。"
             error_windows.classList.remove('active')
             document.querySelector('.test_allwindow').style.display = "block";
@@ -5853,6 +5852,10 @@ if (ua.includes("mobile")) {
         pass_signin_menu.style.top = "50%";
         pass_signin_menu.style.left = "50%";
         pass_signin_menu.style.transform = "translate(-50%, -50%)";
+
+        welcome_menu.style.top = "50%";
+        welcome_menu.style.left = "50%";
+        welcome_menu.style.transform = "translate(-50%, -50%)";
     }
 
     var parents = document.querySelectorAll('.parentss');
@@ -5876,7 +5879,7 @@ if (ua.includes("mobile")) {
                         element.textContent = newName;
                         localStorage.setItem('editable-' + parentIndex + '-' + index, newName);
                     } else if (newName) {
-                        document.getElementById('nex').style.cursor = '';
+                        nex.style.cursor = '';
                         document.querySelector('.window_error_text').textContent = "名前は20文字以内で入力してください!"
                         error_windows.classList.remove('active');
                         document.querySelector('.test_allwindow').style.display = "block";

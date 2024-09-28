@@ -17,7 +17,6 @@ function init() {
     w = Number(document.getElementById("w").value); // 横のマスの数
     bomb = Number(document.getElementById("b").value); // 爆弾の数
     if (h * w - 9 < bomb) {
-
         document.getElementById('nex').style.cursor = '';
         document.querySelector('.window_error_text').textContent = "エラー：爆弾の数が正しく入力されていません。"
         document.getElementsByClassName('error_title_text')[0].textContent = "main sweeper"
@@ -129,7 +128,6 @@ function leftClicked() {
             }
         }
         board.style.pointerEvents = "none";
-
         document.getElementById('nex').style.cursor = '';
         document.querySelector('.window_error_text').textContent = "　　CLEAR　　　　"
         document.getElementsByClassName('error_title_text')[0].textContent = "main sweeper"
@@ -139,7 +137,6 @@ function leftClicked() {
         const bom_time = document.getElementById('bom_time').textContent;
         document.querySelector('.bom_clear_time').textContent = bom_time;
         localStorage.setItem('bom_time', bom_time)
-
         clearTimeout(timeoutId);
         return;
     }
