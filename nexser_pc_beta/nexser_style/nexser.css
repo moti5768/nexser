@@ -1418,7 +1418,7 @@ body::-webkit-scrollbar {
     user-select: none;
 }
 
-.child_windows .title.center {
+.child_windows .title.text_center {
     text-align: center;
 }
 
@@ -1809,33 +1809,14 @@ body::-webkit-scrollbar {
     height: 19px;
 }
 
-.close_button,
-.close_button2,
-.close_button3,
-.close_button4 {
+.allclose_button {
     position: absolute;
     top: 3px;
     right: 3.5px;
-    text-align: center;
-    justify-content: center;
-    font-size: 11px;
     box-sizing: border-box;
-    text-shadow:
-        0.35px 0.35px 0,
-        0.35px -0.35px 0px,
-        -0.35px 0.35px 0,
-        -0.35px -0.35px 0px,
-        0.35px 0px 0px,
-        0px 0.35px 0px,
-        -0.35px 0px 0px,
-        0px -0.35px 0px;
 }
 
-
-.close_button::before,
-.close_button2::before,
-.close_button3::before,
-.close_button4::before {
+.allclose_button::before {
     content: "";
     position: absolute;
     left: 7px;
@@ -1846,10 +1827,7 @@ body::-webkit-scrollbar {
     background-color: black;
 }
 
-.close_button::after,
-.close_button2::after,
-.close_button3::after,
-.close_button4::after {
+.allclose_button::after {
     content: "";
     position: absolute;
     left: 7px;

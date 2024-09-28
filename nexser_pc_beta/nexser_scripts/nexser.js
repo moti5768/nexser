@@ -106,6 +106,7 @@ if (ua.includes("mobile")) {
     const othello_menu = document.querySelector('.othello_menu');
     const memory_game_menu = document.querySelector('.memory_game_menu');
 
+    const titles = document.querySelectorAll('.title');
 
     document.addEventListener('click', () => {
         if (localStorage.getItem('game_none')) {
@@ -236,7 +237,6 @@ if (ua.includes("mobile")) {
         load_nexser,
         getStorage,
         taskbar_none,
-        title_none,
         screen_backtextload,
         notecolor_change,
         notetextsize_change,
@@ -1627,22 +1627,9 @@ if (ua.includes("mobile")) {
         });
     }
 
-    function title_none() {
-        if (localStorage.getItem('data_title_none')) {
-            document.querySelectorAll('.title').forEach(function (title) {
-                title.style.display = "none"
-            })
-        }
-    }
-    function title_active() {
-        document.querySelectorAll('.title').forEach(function (title) {
-            title.style.display = "block"
-        });
-    }
-
     function title_center() {
-        document.querySelectorAll('.title').forEach(function () {
-            title.classList.add('center')
+        titles.forEach(function (title) {
+            title.classList.add('text_center')
             localStorage.setItem('title_center', true)
         });
     }
@@ -2287,16 +2274,6 @@ if (ua.includes("mobile")) {
                 allwindow_big();
                 break;
 
-            case 'title/none':
-                localStorage.setItem('data_title_none', true);
-                title_none();
-
-                break;
-            case 'title/active':
-                localStorage.removeItem('data_title_none');
-                title_active();
-                break;
-
             case 'cpu/bench':
                 toggleWindow(cpu_bench_menu)
                 cpubench_open();
@@ -2929,9 +2906,7 @@ if (ua.includes("mobile")) {
     });
 
     function title_navyremove() {
-        document.querySelectorAll('.navy').forEach(wt => {
-            wt.classList.remove('navy');
-        })
+        document.querySelectorAll('.navy').forEach(navy1 => navy1.classList.remove('navy'));
     }
 
     document.querySelectorAll('.nexser_search').forEach(nexser_search => {
@@ -3449,8 +3424,6 @@ if (ua.includes("mobile")) {
     });
 
     const colorBtns = document.querySelectorAll('.color_btn');
-    const titles = document.querySelectorAll('.title');
-    const navies = document.querySelectorAll('.navy');
     const errorText = document.querySelector('.window_error_text');
     const testAllWindow = document.querySelector('.test_allwindow');
 
@@ -3468,7 +3441,7 @@ if (ua.includes("mobile")) {
                 sound3();
             }
             titles.forEach(title => title.style.background = "");
-            navies.forEach(navy => navy.style.background = "");
+            document.querySelectorAll('.navy').forEach(navy2 => navy2.style.background = "");
         });
     });
 
@@ -3501,11 +3474,11 @@ if (ua.includes("mobile")) {
         if (localStorage.getItem('driver_color')) {
             Object.entries(colors).forEach(([key, [bgColor, navyColor]]) => {
                 if (localStorage.getItem(key)) {
-                    document.querySelectorAll('.title').forEach(title => {
+                    titles.forEach(title => {
                         title.style.background = bgColor;
                     });
-                    document.querySelectorAll('.navy').forEach(navy => {
-                        navy.style.background = navyColor;
+                    document.querySelectorAll('.navy').forEach(title => {
+                        title.style.background = navyColor;
                     });
                 }
             });
@@ -5179,7 +5152,7 @@ if (ua.includes("mobile")) {
     };
 
     document.querySelectorAll('.close_button,.close_button2,.close_button3,.close_button4').forEach(function (close_buttons) {
-        close_buttons.classList.add('allclose_button')
+        close_buttons.classList.add('allclose_button');
     })
 
     navigator.mediaDevices.enumerateDevices()
