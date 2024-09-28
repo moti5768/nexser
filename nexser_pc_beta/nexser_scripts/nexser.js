@@ -5154,6 +5154,9 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.close_button,.close_button2,.close_button3,.close_button4').forEach(function (close_buttons) {
         close_buttons.classList.add('allclose_button');
     })
+    document.querySelectorAll('.pointer_none *').forEach(function (element) {
+        element.classList.add('pointer_none');
+    });
 
     navigator.mediaDevices.enumerateDevices()
         .then((devices) => {
@@ -6669,11 +6672,12 @@ if (ua.includes("mobile")) {
             }
             if (0 <= battery.level && battery.level < 0.21 && battery.charging == false && !localStorage.getItem('notice_closekeep')) {
                 document.querySelector('.notice_text').textContent = "バッテリー残量が少なくなっています!"
-                notice_menu.classList.remove('active')
+                notice_menu.classList.remove('active');
                 notice_menu.style.zIndex = largestZIndex++;
-                localStorage.removeItem('notice_closekeep')
+                localStorage.removeItem('notice_closekeep');
             } else {
-                notice_menu.classList.add('active')
+                notice_menu.classList.add('active');
+                notice_menu.classList.remove('selectwindows');
             }
             if (battery.charging == true) {
                 document.getElementsByClassName('battery_time')[0].textContent = (`${battery.dischargingTime}`);

@@ -1971,6 +1971,11 @@ body::-webkit-scrollbar {
     margin-left: 1.5px;
 }
 
+.pointer_none::before,
+.pointer_none::after {
+    opacity: 0.3;
+}
+
 /*list */
 
 .parent_list {
