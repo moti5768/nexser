@@ -3024,13 +3024,6 @@ if (ua.includes("mobile")) {
         test_windows_button();
         titlecolor_set();
         allwindow_resize();
-        document.querySelectorAll('.bigscreen_button').forEach(element => {
-            if (!element.querySelector('.bigscreen_button_child')) {
-                const newChild = document.createElement('div');
-                newChild.className = 'bigscreen_button_child';
-                element.appendChild(newChild);
-            }
-        });
         Array.from(document.getElementsByClassName('button')).forEach(addButtonListeners2);
         Array.from(document.getElementsByClassName('button2')).forEach(addButtonListeners);
     }
@@ -5186,16 +5179,7 @@ if (ua.includes("mobile")) {
     };
 
     document.querySelectorAll('.close_button,.close_button2,.close_button3,.close_button4').forEach(function (close_buttons) {
-        close_buttons.textContent = "✕"
-    })
-    document.querySelectorAll('.minimization_button').forEach(function (minimization_buttons) {
-        minimization_buttons.textContent = "_"
-    })
-    document.querySelectorAll('.bigscreen_button').forEach(function (bigscreen_buttons) {
-        bigscreen_buttons.textContent = "☐"
-    })
-    document.querySelectorAll('.minscreen_button').forEach(function (minscreen_buttons) {
-        minscreen_buttons.textContent = "❒"
+        close_buttons.classList.add('allclose_button')
     })
 
     navigator.mediaDevices.enumerateDevices()
@@ -6072,8 +6056,7 @@ if (ua.includes("mobile")) {
                     newChild3.appendChild(newChild4_4);
 
                     const newChild4 = document.createElement('span');
-                    newChild4.className = "close_button button2"
-                    newChild4.textContent = "✕"
+                    newChild4.className = "close_button button2 allclose_button"
                     newChild3.appendChild(newChild4);
 
                     newChild4.addEventListener('click', () => {
@@ -6086,12 +6069,10 @@ if (ua.includes("mobile")) {
 
                     const newChild4_1 = document.createElement('span');
                     newChild4_1.className = "bigscreen_button button2"
-                    newChild4_1.textContent = "☐"
                     newChild3.appendChild(newChild4_1);
 
                     const newChild4_2 = document.createElement('span');
                     newChild4_2.className = "minscreen_button button2"
-                    newChild4_2.textContent = "❒"
                     newChild3.appendChild(newChild4_2);
 
                     const newChild4_3 = document.createElement('span');

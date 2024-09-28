@@ -1809,66 +1809,9 @@ body::-webkit-scrollbar {
     height: 19px;
 }
 
-.close_button {
-    position: absolute;
-    top: 3px;
-    right: 3.5px;
-    text-align: center;
-    justify-content: center;
-    font-size: 11px;
-    box-sizing: border-box;
-    text-shadow:
-        0.35px 0.35px 0,
-        0.35px -0.35px 0px,
-        -0.35px 0.35px 0,
-        -0.35px -0.35px 0px,
-        0.35px 0px 0px,
-        0px 0.35px 0px,
-        -0.35px 0px 0px,
-        0px -0.35px 0px;
-}
-
-.close_button2 {
-    position: absolute;
-    top: 3px;
-    right: 3.5px;
-    text-align: center;
-    justify-content: center;
-    font-size: 11px;
-    box-sizing: border-box;
-    z-index: 1;
-    text-shadow:
-        0.35px 0.35px 0,
-        0.35px -0.35px 0px,
-        -0.35px 0.35px 0,
-        -0.35px -0.35px 0px,
-        0.35px 0px 0px,
-        0px 0.35px 0px,
-        -0.35px 0px 0px,
-        0px -0.35px 0px;
-}
-
-.close_button3 {
-    position: absolute;
-    top: 3px;
-    right: 3.5px;
-    text-align: center;
-    justify-content: center;
-    font-size: 11px;
-    box-sizing: border-box;
-    z-index: 1;
-    text-shadow:
-        0.35px 0.35px 0,
-        0.35px -0.35px 0px,
-        -0.35px 0.35px 0,
-        -0.35px -0.35px 0px,
-        0.35px 0px 0px,
-        0px 0.35px 0px,
-        -0.35px 0px 0px,
-        0px -0.35px 0px;
-}
-
-/* 飾り */
+.close_button,
+.close_button2,
+.close_button3,
 .close_button4 {
     position: absolute;
     top: 3px;
@@ -1886,6 +1829,45 @@ body::-webkit-scrollbar {
         0px 0.35px 0px,
         -0.35px 0px 0px,
         0px -0.35px 0px;
+}
+
+
+.close_button::before,
+.close_button2::before,
+.close_button3::before,
+.close_button4::before {
+    content: "";
+    position: absolute;
+    left: 7px;
+    top: 2px;
+    transform: rotate(45deg);
+    height: 12px;
+    width: 2px;
+    background-color: black;
+}
+
+.close_button::after,
+.close_button2::after,
+.close_button3::after,
+.close_button4::after {
+    content: "";
+    position: absolute;
+    left: 7px;
+    top: 2px;
+    transform: rotate(-45deg);
+    height: 12px;
+    width: 2px;
+    background-color: black;
+}
+
+.pressed.allclose_button::before {
+    margin-top: 1.5px;
+    margin-left: 1.5px;
+}
+
+.pressed.allclose_button::after {
+    margin-top: 1.5px;
+    margin-left: 1.5px;
 }
 
 /* 飾り */
@@ -1916,20 +1898,22 @@ body::-webkit-scrollbar {
         0px -0.3px 0px;
 }
 
-.bigscreen_button_child {
-    border-top: solid 2px black;
+.bigscreen_button::before {
+    content: "";
+    display: block;
+    margin-right: 8px;
     position: absolute;
-    top: 3.5px;
-    left: 4px;
-    width: 8.5px;
+    display: block;
+    left: 2px;
+    top: 2px;
+    box-shadow: black 0px 3px inset, black 0px 0px 0px 1px inset;
+    height: 12px;
+    width: 12px;
 }
 
-.pressed .bigscreen_button_child {
-    border-top: solid 2px black;
-    position: absolute;
-    top: 4.5px;
-    left: 4.5px;
-    width: 8.5px;
+.pressed.bigscreen_button::before {
+    margin-top: 1.5px;
+    margin-left: 1.5px;
 }
 
 .minscreen_button {
@@ -1941,15 +1925,28 @@ body::-webkit-scrollbar {
     justify-content: center;
     font-size: 11px;
     box-sizing: border-box;
-    text-shadow:
-        0.3px 0.3px 0,
-        0.3px -0.3px 0px,
-        -0.3px 0.3px 0,
-        -0.3px -0.3px 0px,
-        0.3px 0px 0px,
-        0px 0.3px 0px,
-        -0.3px 0px 0px,
-        0px -0.3px 0px;
+}
+
+.minscreen_button::before {
+    content: "";
+    position: absolute;
+    display: block;
+    left: 6px;
+    top: 2px;
+    box-shadow: black 0px 3px inset, black 0px 0px 0px 1px inset;
+    height: 8px;
+    width: 8px;
+}
+
+.minscreen_button::after {
+    content: "";
+    position: absolute;
+    display: block;
+    left: 3px;
+    top: 7px;
+    box-shadow: black 0px 3px inset, black 0px 0px 0px 1px inset;
+    height: 8px;
+    width: 8px;
 }
 
 .minimization_button {
@@ -1969,6 +1966,31 @@ body::-webkit-scrollbar {
         0px 0.35px 0px,
         -0.35px 0px 0px,
         0px -0.35px 0px;
+}
+
+.minimization_button::before {
+    content: "";
+    position: absolute;
+    left: 3px;
+    top: 12px;
+    height: 2px;
+    width: 8px;
+    background-color: black;
+}
+
+.pressed.minimization_button::before {
+    margin-top: 1.5px;
+    margin-left: 1.5px;
+}
+
+.pressed.minscreen_button::before {
+    margin-top: 1.5px;
+    margin-left: 1.5px;
+}
+
+.pressed.minscreen_button::after {
+    margin-top: 1.5px;
+    margin-left: 1.5px;
 }
 
 /*list */
