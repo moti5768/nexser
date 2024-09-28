@@ -93,6 +93,7 @@ if (ua.includes("mobile")) {
     const nexser_nextversion_menu = document.querySelector('.nexser_nextversion_menu');
     const mydocument_menu = document.querySelector('.mydocument_menu');
     const restriction_menu = document.querySelector('.restriction_menu');
+    const location_menu = document.querySelector('.location_menu');
 
     const notice_menu = document.querySelector('.notice_menu');
 
@@ -6808,6 +6809,7 @@ if (ua.includes("mobile")) {
         document.querySelectorAll('.test_button42').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(nexser_files_menu); setTimeout(() => { nexser_files_output_remove(); nexser_files_windowload(); }, 100); }; });
         document.querySelectorAll('.test_button43').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(url_drop_menu); }; });
         document.querySelectorAll('.test_button45').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(alarm_menu); }; });
+        document.querySelectorAll('.test_button46').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(location_menu); }; });
 
         // games
 
@@ -6936,6 +6938,30 @@ if (ua.includes("mobile")) {
         document.querySelectorAll('.window_files').forEach((rf) => {
             rf.classList.remove('file_border3')
         })
+    }
+
+    function showPosition(position) {
+        const { latitude, longitude, accuracy } = position.coords;
+        document.getElementById('location').innerHTML =
+            `緯度: ${latitude} <br> 経度: ${longitude} <br> 精度: ${accuracy} メートル`;
+    }
+    function showError(error) {
+        const messages = {
+            1: "ユーザーが位置情報の取得を拒否しました。",
+            2: "位置情報が利用できません。",
+            3: "位置情報の取得がタイムアウトしました。",
+            0: "不明なエラーが発生しました。"
+        };
+        alert(messages[error.code] || messages[0]);
+    }
+    if (navigator.geolocation) {
+        navigator.geolocation.watchPosition(showPosition, showError, {
+            enableHighAccuracy: true,
+            timeout: 5000,
+            maximumAge: 0
+        });
+    } else {
+        document.getElementById('location').innerHTML = "このブラウザでは位置情報がサポートされていません。";
     }
 
 };
