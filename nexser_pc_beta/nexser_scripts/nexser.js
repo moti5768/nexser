@@ -3156,7 +3156,6 @@ if (ua.includes("mobile")) {
                 const event = e.type === "mousemove" ? e : e.changedTouches[0];
                 drag.style.top = event.pageY - y + "px";
                 drag.style.left = event.pageX - x + "px";
-
                 if (localStorage.getItem('window_invisible')) {
                     document.querySelectorAll('.child_windows').forEach(function (title) {
                         title.style.opacity = "0.5";
@@ -3166,13 +3165,19 @@ if (ua.includes("mobile")) {
                     document.querySelectorAll('.child_windows, .child').forEach(function (title) {
                         document.querySelector('iframe').style.opacity = "0";
                         title.style.background = "rgba(255, 255, 255, 0)";
-                        title.style.border = "solid 2px black";
+                        title.style.border = "solid 1.5px black";
+                        title.style.boxShadow = "0 0 0";
                     });
                     document.querySelectorAll('.title,.title2,.title_buttons,.window_tool,.window_contents,.window_content,.window_bottom,.prompt_content').forEach(function (title) {
                         title.style.opacity = "0";
                     });
                 }
-                rectangle_remove();
+                const taskover = document.getElementById('taskbar')
+                taskover.addEventListener('mouseover', function () {
+                    document.body.removeEventListener("mousemove", mmove, false);
+                    document.body.removeEventListener("touchmove", mmove, false);
+                })
+                rectangle_remove()
             }
             function mup() {
                 const drag = document.getElementsByClassName("drag")[0];
@@ -3193,6 +3198,7 @@ if (ua.includes("mobile")) {
                 document.querySelectorAll('.child_windows, .child').forEach(function (title) {
                     title.style.background = "";
                     title.style.border = "";
+                    title.style.boxShadow = "";
                     document.querySelector('iframe').style.opacity = "";
                     window_prompt.style.background = "black";
                 });
