@@ -14,6 +14,9 @@ if (ua.includes("mobile")) {
     alert("この端末は対応していません!")
 } else {
 
+    window.errortitle_msg = "&nbsp;error";
+    window.errortitle_text = "test sample text";
+
     const nex = document.getElementById('nex');
 
     const logoff = document.getElementsByClassName('logoff');
@@ -99,7 +102,6 @@ if (ua.includes("mobile")) {
 
     const nexser_search_menu = document.querySelector('.nexser_search_menu');
 
-    const error_windows = document.querySelector('.error_windows');
     const warning_windows = document.querySelector('.warning_windows');
 
     const tetris_mneu = document.querySelector('.tetris_menu');
@@ -113,11 +115,8 @@ if (ua.includes("mobile")) {
     document.addEventListener('click', () => {
         if (localStorage.getItem('game_none')) {
             document.querySelectorAll('.game_window:not(.active)').forEach((test) => {
-                nex.style.cursor = '';
-                document.querySelector('.window_error_text').textContent = "制限されているため、起動ができませんでした"
-                error_windows.classList.remove('active');
-                document.querySelector('.test_allwindow').style.display = "block";
-                sound3()
+                errortitle_text = "制限されているため、起動ができませんでした";
+                error_windows_create();
                 setTimeout(() => {
                     test.classList.add('active')
                     test.classList.remove('selectwindows')
@@ -152,7 +151,6 @@ if (ua.includes("mobile")) {
             rectangle.style.top = `${startY}px`;
             document.body.appendChild(rectangle);
         }
-
         getLargestZIndex('.child_windows');
 
         var isClickInsideStartButton7 = Array.from(document.querySelectorAll('.window_files')).some(button => button.contains(e.target));
@@ -234,7 +232,6 @@ if (ua.includes("mobile")) {
         }
     }
 
-
     const tasks = [
         load_nexser,
         getStorage,
@@ -251,7 +248,6 @@ if (ua.includes("mobile")) {
         pageLoad,
         nexser_savedata_load
     ];
-
     Promise.all(tasks.map(task => new Promise(resolve => setTimeout(() => resolve(task()), 50))))
         .then(() => {
             console.log('すべてのタスクが完了しました');
@@ -748,7 +744,6 @@ if (ua.includes("mobile")) {
         sound_stop();
         document.querySelector('.prompt_error_text').textContent = "";
         nex.style.cursor = 'crosshair';
-        document.querySelector('.test_allwindow').style.display = "none";
         setTimeout(function () {
             screen_prompt.style.display = "none";
             setTimeout(function () {
@@ -760,7 +755,6 @@ if (ua.includes("mobile")) {
 
     function nexser_program_close() {
         nex.style.cursor = '';
-        document.querySelector('.test_allwindow').style.display = "none";
         if (!localStorage.getItem('deskprompt')) {
             setTimeout(function () {
                 localStorage.removeItem('prompt_data3')
@@ -863,10 +857,8 @@ if (ua.includes("mobile")) {
 
     function pass_submit() {
         if (document.querySelector('.password').value === "") {
-            document.querySelector('.window_error_text').textContent = "パスワードが入力されていません!"
-            error_windows.classList.remove('active')
-            document.querySelector('.test_allwindow').style.display = "block";
-            sound3()
+            errortitle_text = "パスワードが入力されていません!";
+            error_windows_create();
         } else {
             const pass = document.querySelector('.password').value;
             const password_lock = (String(pass)
@@ -929,8 +921,6 @@ if (ua.includes("mobile")) {
         document.querySelector('.nexser_boot_menu').style.display = "none";
         localStorage.setItem('prompt_data', true);
         document.querySelector("#nexser").style.backgroundColor = "";
-        document.querySelector('.test_allwindow').style.display = "none";
-        welcome_menu.classList.add('active');
         document.querySelector('#code_html').style.display = "none";
         document.querySelector('#code_script').style.display = "none";
         document.querySelector('#code_script2').style.display = "none";
@@ -984,25 +974,18 @@ if (ua.includes("mobile")) {
             nex.style.cursor = 'progress';
             startmenu_close()
             setTimeout(() => {
-                document.querySelector('.test_allwindow').style.display = "block";
                 if (sessionStorage.getItem('start_camera')) {
-                    nex.style.cursor = '';
-                    document.querySelector('.window_error_text').textContent = "カメラが実行されているため、ログオフできません!"
-                    error_windows.classList.remove('active');
-                    document.querySelector('.test_allwindow').style.display = "block";
-                    sound3()
+                    errortitle_text = "カメラが実行されているため、ログオフできません!";
+                    error_windows_create();
                 } else if (localStorage.getItem('no_shutdown')) {
-                    nex.style.cursor = '';
-                    document.querySelector('.window_error_text').textContent = "welcomeウィンドウが起動するまでログオフできません!"
-                    error_windows.classList.remove('active')
-                    document.querySelector('.test_allwindow').style.display = "block";
-                    sound3()
+                    errortitle_text = "welcomeウィンドウが起動するまでログオフできません!";
+                    error_windows_create();
                 } else if (gets === gets2 && gets3 === 0) {
                     sound_stop();
                     shutdown_sound();
                     localStorage.removeItem('login');
-                    welcome_menu.classList.add('active');
                     nex.style.cursor = 'none';
+                    desktop.style.display = "none";
                     if (!localStorage.getItem('noteData')) {
                         document.note_form.note_area.value = "";
                         resetShowLength();
@@ -1012,8 +995,10 @@ if (ua.includes("mobile")) {
                         document.querySelectorAll('.testwindow2').forEach(function (testwindow2) {
                             testwindow2.remove();
                         })
+                        document.querySelectorAll('.error_windows').forEach(function (errorwindow) {
+                            errorwindow.remove();
+                        })
                         window_none();
-                        desktop.style.display = "none";
                         localStorage.removeItem('prompt_data');
                         window_reset();
                         document.querySelector('#code_html').style.display = "none";
@@ -1041,7 +1026,7 @@ if (ua.includes("mobile")) {
                     document.querySelector('.warningclose_button').style.display = "none";
                     document.querySelector('.warning_title_text').textContent = "warning"
                     document.querySelector('.window_warning_text').textContent = "実行されているウィンドウがあります! ログオフしますか?"
-                    sound5()
+                    sound(4)
                     nex.style.cursor = '';
                 }
             }, 100);
@@ -1053,25 +1038,18 @@ if (ua.includes("mobile")) {
             nex.style.cursor = 'progress';
             startmenu_close()
             setTimeout(() => {
-                document.querySelector('.test_allwindow').style.display = "block";
                 if (sessionStorage.getItem('start_camera')) {
-                    nex.style.cursor = '';
-                    document.querySelector('.window_error_text').textContent = "カメラが実行されているため、再起動はできません!"
-                    error_windows.classList.remove('active')
-                    sound3()
-                    document.querySelector('.test_allwindow').style.display = "block";
+                    errortitle_text = "カメラが実行されているため、再起動はできません!";
+                    error_windows_create();
                 } else if (localStorage.getItem('no_shutdown')) {
-                    nex.style.cursor = '';
-                    document.querySelector('.window_error_text').textContent = "welcomeウィンドウが起動するまで再起動はできません!"
-                    error_windows.classList.remove('active')
-                    document.querySelector('.test_allwindow').style.display = "block";
-                    sound3()
+                    errortitle_text = "welcomeウィンドウが起動するまで再起動はできません!";
+                    error_windows_create();
                 } else if (gets === gets2 && gets3 === 0) {
                     sound_stop();
                     shutdown_sound();
                     localStorage.removeItem('login');
-                    welcome_menu.classList.add('active');
                     nex.style.cursor = 'none';
+                    desktop.style.display = "none";
                     if (!localStorage.getItem('noteData')) {
                         document.note_form.note_area.value = "";
                         resetShowLength();
@@ -1079,7 +1057,6 @@ if (ua.includes("mobile")) {
                     }
                     setTimeout(() => {
                         window_none();
-                        desktop.style.display = "none";
                         window_reset();
                         document.querySelector('#code_html').style.display = "none";
                         document.querySelector('#code_script').style.display = "none";
@@ -1105,11 +1082,8 @@ if (ua.includes("mobile")) {
                         }, 3500);
                     }, 1500);
                 } else {
-                    nex.style.cursor = '';
-                    document.querySelector('.window_error_text').textContent = "全てのウィンドウが閉じてないため、再起動できません!"
-                    error_windows.classList.remove('active')
-                    document.querySelector('.test_allwindow').style.display = "block";
-                    sound3()
+                    errortitle_text = "全てのウィンドウが閉じてないため、再起動できません!";
+                    error_windows_create();
                 }
             }, 100);
         })
@@ -1241,7 +1215,7 @@ if (ua.includes("mobile")) {
 
     function welcome_animation() {
         sound_stop();
-        sound7();
+        sound(6);
         welcome_menu.style.zIndex = largestZIndex++;
         const startNexser = document.getElementsByClassName('start_nexser')[0];
         const startNexserClose = document.getElementsByClassName('startnexser_close')[0];
@@ -1321,17 +1295,12 @@ if (ua.includes("mobile")) {
             sound_stop();
             document.querySelector('#pass_form').focus();
         } else if (localStorage.getItem('password') && gets != gets2) {
-            nex.style.cursor = '';
-            document.querySelector('.window_error_text').textContent = "全てのウィンドウを終了してください!"
-            error_windows.classList.remove('active')
-            document.querySelector('.test_allwindow').style.display = "block";
-            sound3()
+            errortitle_text = "全てのウィンドウを終了してください!";
+            error_windows_create();
         } else {
-            nex.style.cursor = '';
-            document.querySelector('.window_error_text').textContent = "パスワードを登録していないため、サインアウトができません!"
-            error_windows.classList.remove('active')
-            document.querySelector('.test_allwindow').style.display = "block";
-            sound3()
+
+            errortitle_text = "パスワードを登録していないため、サインアウトができません!";
+            error_windows_create();
         }
     }
 
@@ -1621,7 +1590,6 @@ if (ua.includes("mobile")) {
         notearea.style.height = "";
         notearea.style.width = "";
         warning_windows.style.display = "none";
-        error_windows.classList.add('active');
     }
     function window_active() {
         document.querySelectorAll('.child_windows:not(.window_nosearch)').forEach(function (allwindow_active) {
@@ -1650,7 +1618,7 @@ if (ua.includes("mobile")) {
             localStorage.clear();
             sessionStorage.clear();
             taskbar_active();
-            document.querySelector('.test_allwindow').style.display = "block";
+
             warning_windows.style.display = "block";
             document.querySelector('.shutdown_button').style.display = "block";
             document.querySelector('.warningclose_button').style.display = "none";
@@ -2254,10 +2222,8 @@ if (ua.includes("mobile")) {
 
             case 'allwindow/close':
                 if (localStorage.getItem('data_taskbar_none')) {
-                    document.querySelector('.window_error_text').textContent = "タスクバーが非表示のため、ウィンドウが閉じれません!"
-                    error_windows.classList.remove('active')
-                    document.querySelector('.test_allwindow').style.display = "block";
-                    sound3()
+                    errortitle_text = "タスクバーが非表示のため、ウィンドウが閉じれません!";
+                    error_windows_create();
                 } else {
                     window_none()
                 }
@@ -2399,7 +2365,7 @@ if (ua.includes("mobile")) {
             const get2 = document.getElementsByClassName('active');
             const get3 = document.getElementsByClassName('task_buttons');
             gets = get.length;
-            gets2 = get2.length - 1;
+            gets2 = get2.length;
             gets3 = get3.length;
             document.getElementsByClassName('child_windows_length')[0].textContent = gets;
             document.getElementsByClassName('active_length')[0].textContent = gets2;
@@ -2428,20 +2394,10 @@ if (ua.includes("mobile")) {
             closebutton_closest.classList.remove('selectwindows')
         });
     })
-    document.querySelectorAll('.close_button2').forEach(function (close_button2) {
-        close_button2.addEventListener('click', function () {
-            const closebutton2 = close_button2.closest('.error_windows');
-            closebutton2.classList.add('active');
-            document.querySelector('.test_allwindow').style.display = "none";
-            document.getElementsByClassName('error_title_text')[0].textContent = "error";
-            document.getElementsByClassName('error_icon')[0].style.display = "";
-        });
-    })
     document.querySelectorAll('.close_button3').forEach(function (close_button3) {
         close_button3.addEventListener('click', function () {
             const closebutton3 = close_button3.closest('.warning_windows');
             closebutton3.style.display = "none"
-            document.querySelector('.test_allwindow').style.display = "none";
         });
     })
 
@@ -2878,7 +2834,7 @@ if (ua.includes("mobile")) {
             element.addEventListener('mousedown', function () {
                 zindexchildwindows.scrollTop = 0;
                 zindexchildwindows.scrollLeft = 0;
-                window_z_index = zindexchildwindows.style.zIndex = largestZIndex++;
+                zindexchildwindows.style.zIndex = largestZIndex++;
             });
             element.addEventListener('click', function () {
                 zindexchildwindows.scrollTop = 0;
@@ -2886,6 +2842,7 @@ if (ua.includes("mobile")) {
             });
         };
         addEventListeners(z_index_child_windows);
+
         const iframes = z_index_child_windows.querySelectorAll('iframe');
         iframes.forEach(iframe => {
             iframe.addEventListener('load', () => {
@@ -2899,7 +2856,6 @@ if (ua.includes("mobile")) {
             });
         });
     });
-
 
     document.querySelectorAll('.window_prompt, .child').forEach(window_prompt => {
         window_prompt.addEventListener('mouseup', () => {
@@ -3376,11 +3332,8 @@ if (ua.includes("mobile")) {
             localStorage.setItem(KEY_COLOR, select4);
             getStorage()
         } else {
-            document.querySelector('.window_error_text').textContent = "カラードライバーがインストールされていません!"
-            error_windows.classList.remove('active')
-
-            document.querySelector('.test_allwindow').style.display = "block";
-            sound3()
+            errortitle_text = "カラードライバーがインストールされていません!";
+            error_windows_create();
         }
     }
 
@@ -3423,17 +3376,13 @@ if (ua.includes("mobile")) {
             // 変更した色名をストレージに保存
             setStorage();
         } else {
-            document.querySelector('.window_error_text').textContent = "カラードライバーがインストールされていません!"
-            error_windows.classList.remove('active')
-
-            document.querySelector('.test_allwindow').style.display = "block";
-            sound3()
+            errortitle_text = "カラードライバーがインストールされていません!";
+            error_windows_create();
         }
     });
 
     const colorBtns = document.querySelectorAll('.color_btn');
     const errorText = document.querySelector('.window_error_text');
-    const testAllWindow = document.querySelector('.test_allwindow');
 
     colorBtns.forEach(color_btn => {
         color_btn.addEventListener('click', () => {
@@ -3443,10 +3392,8 @@ if (ua.includes("mobile")) {
                     titlecolor_set();
                 });
             } else {
-                errorText.textContent = "カラードライバーがインストールされていません!";
-                error_windows.classList.remove('active');
-                testAllWindow.style.display = "block";
-                sound3();
+                errortitle_text = "カラードライバーがインストールされていません!";
+                error_windows_create();
             }
             titles.forEach(title => title.style.background = "");
             navys.forEach(navys => navys.style.background = "");
@@ -3582,19 +3529,19 @@ if (ua.includes("mobile")) {
     function startup_sound() {
         if (localStorage.getItem('driver_sound')) {
             if (localStorage.getItem('startup_1')) {
-                sound()
+                sound(0)
             }
             if (localStorage.getItem('startup_2')) {
-                sound6()
+                sound(5)
             }
             if (localStorage.getItem('startup_3')) {
-                sound8()
+                sound(7)
             }
             if (localStorage.getItem('startup_4')) {
-                sound10()
+                sound(9)
             }
             if (localStorage.getItem('startup_5')) {
-                sound12()
+                sound(11)
             }
         }
     }
@@ -3602,19 +3549,19 @@ if (ua.includes("mobile")) {
     function shutdown_sound() {
         if (localStorage.getItem('driver_sound')) {
             if (localStorage.getItem('shutdown_1')) {
-                sound2()
+                sound(1)
             }
             if (localStorage.getItem('shutdown_2')) {
-                sound4()
+                sound(3)
             }
             if (localStorage.getItem('shutdown_3')) {
-                sound9()
+                sound(8)
             }
             if (localStorage.getItem('shutdown_4')) {
-                sound11()
+                sound(10)
             }
             if (localStorage.getItem('shutdown_5')) {
-                sound13()
+                sound(12)
             }
         }
     }
@@ -3804,10 +3751,9 @@ if (ua.includes("mobile")) {
     // 保存
     function save() {
         if (note_form.note_area.value == "") {
-            document.querySelector('.window_error_text').textContent = "テキストが無いため、保存できません!"
-            error_windows.classList.remove('active')
-            document.querySelector('.test_allwindow').style.display = "block";
-            sound3()
+            errortitle_msg = "&nbsp;notepad"
+            errortitle_text = "テキストが無いため、保存できません!";
+            error_windows_create();
         } else {
             let noteData = document.note_form.note_area.value;
             localStorage.setItem('noteData', noteData);
@@ -3827,20 +3773,17 @@ if (ua.includes("mobile")) {
 
     function objective_save() {
         if (objective_form.objective_area.value == "" && objective_title_form.objective_title_area.value == "") {
-            document.querySelector('.window_error_text').textContent = "タイトルと内容が入力されていません!"
-            error_windows.classList.remove('active')
-            sound3()
-            document.querySelector('.test_allwindow').style.display = "block";
+            errortitle_msg = "&nbsp;objective sheet"
+            errortitle_text = "タイトルと内容が入力されていません!";
+            error_windows_create();
         } else if (objective_title_form.objective_title_area.value == "") {
-            document.querySelector('.window_error_text').textContent = "タイトルが入力されていません!"
-            error_windows.classList.remove('active')
-            document.querySelector('.test_allwindow').style.display = "block";
-            sound3()
+            errortitle_msg = "&nbsp;objective sheet"
+            errortitle_text = "タイトルが入力されていません!";
+            error_windows_create();
         } else if (objective_form.objective_area.value == "") {
-            document.querySelector('.window_error_text').textContent = "内容が入力されていません!"
-            error_windows.classList.remove('active')
-            document.querySelector('.test_allwindow').style.display = "block";
-            sound3()
+            errortitle_msg = "&nbsp;objective sheet"
+            errortitle_text = "内容が入力されていません!";
+            error_windows_create();
         }
         if (!objective_title_form.objective_title_area.value == "" && !objective_form.objective_area.value == "") {
             let objectiveTitleData = document.objective_title_form.objective_title_area.value;
@@ -3868,8 +3811,8 @@ if (ua.includes("mobile")) {
             document.querySelector('.window_warning_text').textContent = "編集中です。ウィンドウを終了しますか?(内容は破棄されます)"
             warning_windows.style.display = "block"
             document.querySelector('.close_button3').style.display = "block"
-            sound5()
-            document.querySelector('.test_allwindow').style.display = "block";
+            sound(4)
+
             document.querySelector('.shutdown_button').style.display = "none";
             document.querySelector('.warningclose_button').style.display = "block";
         } else {
@@ -3891,8 +3834,8 @@ if (ua.includes("mobile")) {
             document.querySelector('.window_warning_text').textContent = "タイトル と 内容を保存してから閉じてください";
             warning_windows.style.display = "block"
             document.querySelector('.close_button3').style.display = "block"
-            sound5()
-            document.querySelector('.test_allwindow').style.display = "block";
+            sound(4)
+
             document.querySelector('.shutdown_button').style.display = "none";
             document.querySelector('.warningclose_button').style.display = "none";
         } else if (!localStorage.getItem('objectiveData') && !localStorage.getItem('objectiveTitleData') && (!localStorage.getItem('objective_area'))) {
@@ -3930,19 +3873,14 @@ if (ua.includes("mobile")) {
         if (!sessionStorage.getItem('start_camera')) {
             camera_menu.classList.add('active')
             camera_menu.classList.remove('selectwindows')
-
-
         } else if (sessionStorage.getItem('start_camera')) {
-            document.querySelector('.window_error_text').textContent = "カメラが実行されているため、ウィンドウが閉じれません!"
-            error_windows.classList.remove('active')
-            sound3()
-            document.querySelector('.test_allwindow').style.display = "block";
+            errortitle_text = "カメラが実行されているため、ウィンドウが閉じれません!";
+            error_windows_create();
         }
     })
 
     function warning_windows_close() {
-        warning_windows.style.display = "none";
-        document.querySelector('.test_allwindow').style.display = "none";
+        warning_windows.classList.add('active')
         document.querySelector('.shutdown_button').style.display = "block";
         document.querySelector('.warningclose_button').style.display = "none";
         document.querySelector('.close_button3').style.display = "block"
@@ -3953,9 +3891,11 @@ if (ua.includes("mobile")) {
         note_pad.classList.remove('selectwindows')
     }
 
-    function error_windows_close() {
-        document.querySelector('.test_allwindow').style.display = "none";
-        error_windows.classList.add('active');
+    function error_windows_close(event) {
+        const clickedElement = event.target;
+        const parentElement = clickedElement.closest('.child_windows');
+        parentElement.remove();
+        zindexwindow_addnavy();
     }
 
     function notedata_clear() {
@@ -4133,10 +4073,8 @@ if (ua.includes("mobile")) {
             localStorage.removeItem('MemoData_export');
             notice_menu.classList.remove('active');
         } else {
-            document.querySelector('.window_error_text').textContent = "windows2000からテキストデータがエクスポートされていません!"
-            error_windows.classList.remove('active')
-            document.querySelector('.test_allwindow').style.display = "block";
-            sound3();
+            errortitle_text = "windows2000からテキストデータがエクスポートされていません!";
+            error_windows_create();
         }
     }
 
@@ -4162,12 +4100,10 @@ if (ua.includes("mobile")) {
     dr.addEventListener('drop', function (evt) {
         evt.preventDefault();
         if (!localStorage.getItem('textdropdata')) {
-            evt.target.textContent += evt.dataTransfer.getData('text'); // 新しいテキストを追加
+            evt.target.textContent += evt.dataTransfer.getData('text');
         } else {
-            document.querySelector('.window_error_text').textContent = "テキストが保存されているため、ドラッグした文字をドロップできません!";
-            error_windows.classList.remove('active');
-            document.querySelector('.test_allwindow').style.display = "block";
-            sound3();
+            errortitle_text = "テキストが保存されているため、ドラッグした文字をドロップできません!";
+            error_windows_create();
         }
     });
 
@@ -4620,10 +4556,8 @@ if (ua.includes("mobile")) {
             setEvents(resetTimer);
             document.getElementsByClassName('screensaver_text')[0].textContent = stime;
         } else {
-            document.querySelector('.window_error_text').textContent = "指定時間の範囲内ではありません!"
-            error_windows.classList.remove('active')
-            document.querySelector('.test_allwindow').style.display = "block";
-            sound3();
+            errortitle_text = "指定時間の範囲内ではありません!";
+            error_windows_create();
         }
     }
 
@@ -4969,10 +4903,8 @@ if (ua.includes("mobile")) {
             }
 
         } else if (0 <= taskvalue && taskvalue < 40) {
-            document.querySelector('.window_error_text').textContent = "タスクバーの設定範囲以下に設定されています!"
-            error_windows.classList.remove('active')
-            document.querySelector('.test_allwindow').style.display = "block";
-            sound3();
+            errortitle_text = "タスクバーの設定範囲以下に設定されています!";
+            error_windows_create();
         } else if (40 <= taskvalue && taskvalue < 151) {
             const t = localStorage.setItem('taskbar_height', taskvalue);
             taskbar.style.height = taskvalue + "px"
@@ -5003,10 +4935,8 @@ if (ua.includes("mobile")) {
                 document.querySelector('.child_start_menu').style.bottom = t + "px"
             }
         } else {
-            document.querySelector('.window_error_text').textContent = "タスクバーの設定範囲を超えています!"
-            error_windows.classList.remove('active')
-            document.querySelector('.test_allwindow').style.display = "block";
-            sound3();
+            errortitle_text = "タスクバーの設定範囲を超えています!";
+            error_windows_create();
         }
     }
 
@@ -5292,10 +5222,8 @@ if (ua.includes("mobile")) {
         const sizeInKilobytes = getLocalStorageSize() / 1024;
         document.querySelector('.local_memory2').innerHTML = '&emsp;' + sizeInKilobytes + 'KB' + '&emsp;';
         if (localStorage.getItem('maxSize') === 0) {
-            document.querySelector('.window_error_text').textContent = "nexser の保存容量を超えています!"
-            error_windows.classList.remove('active')
-            document.querySelector('.test_allwindow').style.display = "block";
-            sound3()
+            errortitle_text = "nexser の保存容量を超えています!";
+            error_windows_create();
         }
     }, 1000);
     const paint_canvas = document.getElementById('paint_canvas');
@@ -5677,11 +5605,8 @@ if (ua.includes("mobile")) {
             url_iframe.style.display = "block"
             dropzone.style.display = "none"
         } else {
-            nex.style.cursor = '';
-            document.querySelector('.window_error_text').textContent = "有効なURLをドロップしてください。"
-            error_windows.classList.remove('active')
-            document.querySelector('.test_allwindow').style.display = "block";
-            sound3()
+            errortitle_text = "有効なURLをドロップしてください。";
+            error_windows_create();
         }
     });
 
@@ -5848,10 +5773,8 @@ if (ua.includes("mobile")) {
                         localStorage.setItem('editable-' + parentIndex + '-' + index, newName);
                     } else if (newName) {
                         nex.style.cursor = '';
-                        document.querySelector('.window_error_text').textContent = "名前は20文字以内で入力してください!"
-                        error_windows.classList.remove('active');
-                        document.querySelector('.test_allwindow').style.display = "block";
-                        sound3()
+                        errortitle_text = "名前は20文字以内で入力してください!";
+                        error_windows_create();
                         element.textContent = originalName;
                     } else {
                         element.textContent = originalName;
@@ -5915,7 +5838,7 @@ if (ua.includes("mobile")) {
     function test_windows_button() {
         resize_background_image();
         document.querySelectorAll('.task_buttons').forEach(task_buttons => task_buttons.remove());
-        document.querySelectorAll('.child_windows.selectwindows').forEach(windowElement => {
+        document.querySelectorAll('.child_windows.selectwindows:not(.no_window)').forEach(windowElement => {
             const nestedChild2 = windowElement.children[0].children[1].textContent;
             let button = document.createElement('div');
             button.className = 'task_buttons button2';
@@ -5938,7 +5861,7 @@ if (ua.includes("mobile")) {
 
     function moveToTaskbarButton(minimization_button) {
         const task_buttons = Array.from(document.querySelectorAll('.task_buttons'));
-        const index = Array.from(document.querySelectorAll('.child_windows.selectwindows')).indexOf(minimization_button);
+        const index = Array.from(document.querySelectorAll('.child_windows.selectwindows:not(.no_window)')).indexOf(minimization_button);
         if (index !== -1) {
             const button = task_buttons[index];
             const rect = button.getBoundingClientRect();
@@ -5976,7 +5899,7 @@ if (ua.includes("mobile")) {
         }
     }
     function updateButtonClasses() {
-        const windows = document.querySelectorAll('.child_windows.selectwindows');
+        const windows = document.querySelectorAll('.child_windows.selectwindows:not(.no_window)');
         const buttons = document.querySelectorAll('.task_buttons');
         buttons.forEach(button => {
             button.classList.remove('tsk_pressed');
@@ -6250,8 +6173,8 @@ if (ua.includes("mobile")) {
             document.querySelector('.window_warning_text').textContent = "データが復元されました! ページを再読み込みしてください。";
             warning_windows.style.display = "block";
             document.querySelector('.close_button3').style.display = "block";
-            sound5();
-            document.querySelector('.test_allwindow').style.display = "block";
+            sound(4);
+
             document.querySelector('.shutdown_button').style.display = "none";
             document.querySelector('.warningclose_button').style.display = "none";
         };
@@ -6889,10 +6812,8 @@ if (ua.includes("mobile")) {
                 );
             }
         }
-
-
-
     }
+
     function showContextMenu(event, element) {
         const existingMenu = document.querySelector('.context-menu');
         if (existingMenu) {
@@ -6920,7 +6841,6 @@ if (ua.includes("mobile")) {
         }
         contextMenu.style.top = `${top}px`;
         contextMenu.style.left = `${left}px`;
-
         document.getElementById('delete').addEventListener('click', () => {
             element.remove();
             contextMenu.remove();
@@ -6938,6 +6858,74 @@ if (ua.includes("mobile")) {
         document.querySelectorAll('.window_files').forEach((rf) => {
             rf.classList.remove('file_border3')
         })
+    }
+
+    function error_windows_create() {
+        sound(2)
+        nex.style.cursor = '';
+        const windowDiv = document.createElement('div');
+        windowDiv.className = "child_windows error_windows back_silver no_window";
+        const newChild = document.createElement('div');
+        newChild.className = "title"
+        newChild.innerHTML = errortitle_msg;
+        windowDiv.appendChild(newChild);
+        const newChild2 = document.createElement('span');
+        newChild2.className = "bold error_title_text"
+        newChild.appendChild(newChild2);
+        const newChild3 = document.createElement('div');
+        newChild3.className = "title_buttons"
+        windowDiv.appendChild(newChild3);
+        const newChild4_4 = document.createElement('span');
+        newChild4_4.className = "drag_button"
+        newChild4_4.innerHTML = "&nbsp;"
+        newChild3.appendChild(newChild4_4);
+        const newChild4 = document.createElement('span');
+        newChild4.className = "close_button button2 allclose_button"
+        newChild3.appendChild(newChild4);
+        newChild4.addEventListener('click', () => {
+            const newChild4_2 = newChild4.closest('.child_windows');
+            if (newChild4_2) {
+                newChild4_2.remove();
+                zindexwindow_addnavy();
+            }
+        });
+        const newChild6 = document.createElement('div');
+        newChild6.className = "window_content"
+        windowDiv.appendChild(newChild6);
+        const newChild7 = document.createElement('br');
+        newChild6.appendChild(newChild7);
+        const newChild8 = document.createElement('p');
+        newChild6.appendChild(newChild8);
+        const newChild9 = document.createElement('span');
+        newChild9.className = "error_icon"
+        newChild9.textContent = "✕"
+        newChild8.appendChild(newChild9);
+        const newChild10 = document.createElement('span');
+        newChild10.className = "window_error_text";
+        newChild10.textContent = errortitle_text;
+        newChild8.appendChild(newChild10);
+        const newChild11 = document.createElement('br');
+        windowDiv.appendChild(newChild11);
+        const newChild12 = document.createElement('span');
+        newChild12.className = "button2 borderinline_dotted"
+        newChild12.innerHTML = "&emsp;OK&emsp;"
+        newChild12.style = "position: absolute; top: 86%; left: 50%; transform: translate(-50%, -50%);"
+        newChild12.onclick = function (event) {
+            error_windows_close(event);
+        };
+        newChild6.appendChild(newChild12);
+        resetEventListener();
+        function resetEventListener() {
+            windowDiv.removeEventListener('mousedown', onMouseDown);
+            windowDiv.addEventListener('mousedown', onMouseDown);
+        }
+        function onMouseDown() {
+            windowDiv.style.zIndex = largestZIndex++;
+            resetEventListener();
+        }
+        dropArea2.appendChild(windowDiv);
+        window_back_silver();
+        windowDiv.style.zIndex = largestZIndex++;
     }
 
     function showPosition(position) {

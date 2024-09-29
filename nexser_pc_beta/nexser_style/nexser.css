@@ -1266,15 +1266,10 @@ body::-webkit-scrollbar {
     width: 250px;
 }
 
-.test_allwindow {
-    display: none;
-    height: 100%;
-    width: 100%;
-    background: black;
-    opacity: 0.5;
-    position: absolute;
-    top: 0;
-    z-index: 999998;
+.window_error_text {
+    display: inline-block;
+    margin-top: 25px;
+    margin-left: 35px;
 }
 
 /* screensaver */
