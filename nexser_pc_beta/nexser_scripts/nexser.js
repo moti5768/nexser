@@ -108,6 +108,7 @@ if (ua.includes("mobile")) {
     const memory_game_menu = document.querySelector('.memory_game_menu');
 
     const titles = document.querySelectorAll('.title');
+    const navys = document.querySelectorAll('.navy');
 
     document.addEventListener('click', () => {
         if (localStorage.getItem('game_none')) {
@@ -1009,7 +1010,7 @@ if (ua.includes("mobile")) {
                     }
                     setTimeout(() => {
                         document.querySelectorAll('.testwindow2').forEach(function (testwindow2) {
-                            testwindow2.remove()
+                            testwindow2.remove();
                         })
                         window_none();
                         desktop.style.display = "none";
@@ -2907,7 +2908,7 @@ if (ua.includes("mobile")) {
     });
 
     function title_navyremove() {
-        document.querySelectorAll('.navy').forEach(navy1 => navy1.classList.remove('navy'));
+        document.querySelectorAll('.navy').forEach(navys => navys.classList.remove('navy'));
     }
 
     document.querySelectorAll('.nexser_search').forEach(nexser_search => {
@@ -3442,7 +3443,7 @@ if (ua.includes("mobile")) {
                 sound3();
             }
             titles.forEach(title => title.style.background = "");
-            document.querySelectorAll('.navy').forEach(navy2 => navy2.style.background = "");
+            navys.forEach(navys => navys.style.background = "");
         });
     });
 
@@ -3475,11 +3476,11 @@ if (ua.includes("mobile")) {
         if (localStorage.getItem('driver_color')) {
             Object.entries(colors).forEach(([key, [bgColor, navyColor]]) => {
                 if (localStorage.getItem(key)) {
-                    titles.forEach(title => {
+                    document.querySelectorAll('.title').forEach(title => {
                         title.style.background = bgColor;
                     });
-                    document.querySelectorAll('.navy').forEach(title => {
-                        title.style.background = navyColor;
+                    document.querySelectorAll('.navy').forEach(navys => {
+                        navys.style.background = navyColor;
                     });
                 }
             });
@@ -4247,8 +4248,8 @@ if (ua.includes("mobile")) {
             window_files.style.paddingTop = "10px";
             window_files.style.width = "100%";
             let sss = window_files.firstElementChild;
-            var sss2 = sss.style.paddingLeft = "50px";
-            var sss2 = sss.style.width = "auto";
+            sss.style.paddingLeft = "50px";
+            sss.style.width = "auto";
         });
 
         Array.from(document.getElementsByClassName('windowfile_time')).forEach((windowfile_time) => {
@@ -6061,7 +6062,7 @@ if (ua.includes("mobile")) {
                     newChild3.appendChild(newChild4_5);
 
                     const newChild6 = document.createElement('div');
-                    newChild6.className = "window_contents scrollbar_none"
+                    newChild6.className = "window_contents"
                     windowDiv.appendChild(newChild6);
                     setTimeout(() => {
                         windowDiv.classList.add('no_create_windows');
@@ -6072,43 +6073,45 @@ if (ua.includes("mobile")) {
                         const img = document.createElement('img');
                         img.src = result;
                         img.className = "item_preview";
+                        newChild6.classList.add("scrollbar_none");
                         newChild6.appendChild(img);
-
                     } else if (file.type.startsWith('video/')) {
                         windowDiv.classList.add('selectwindows');
                         const video = document.createElement('video');
                         video.src = result;
                         video.controls = true;
                         video.className = "item_preview";
+                        newChild6.classList.add("scrollbar_none");
                         newChild6.appendChild(video);
-
                     } else if (file.type === 'application/pdf') {
                         windowDiv.classList.add('selectwindows');
                         const iframe = document.createElement('iframe');
                         iframe.src = result;
                         iframe.className = "item_preview";
+                        iframe.style.width = "100%";
+                        iframe.style.height = "100%";
+                        newChild6.classList.add("scrollbar_none");
                         newChild6.appendChild(iframe);
-
                     } else if (file.type.startsWith('text/')) {
                         windowDiv.classList.add('selectwindows');
                         const text = document.createElement('p');
                         text.textContent = e.target.result;
                         text.className = "item_preview";
                         newChild6.appendChild(text);
-
                     } else if (isYouTubeURL(url)) {
                         windowDiv.classList.add('selectwindows');
                         const iframe = document.createElement('iframe');
                         iframe.src = `https://www.youtube.com/embed/${extractYouTubeID(url)}`;
                         iframe.className = "item_preview";
+                        iframe.style.width = "100%";
+                        iframe.style.height = "100%";
+                        newChild6.classList.add("scrollbar_none");
                         newChild6.appendChild(iframe);
-
                     } else {
                         const unsupported = document.createElement('p');
                         unsupported.textContent = 'このファイル形式はサポートされていません。';
                         unsupported.classList.add('item_preview');
                         newChild6.appendChild(unsupported);
-
                     }
 
                     function isYouTubeURL(url_youtube) {
@@ -6126,32 +6129,23 @@ if (ua.includes("mobile")) {
                         })
                         document.querySelectorAll('.testwindow2, .child').forEach(function (z_index_child_windows) {
                             const zindexchildwindows = z_index_child_windows.closest('.testwindow2');
-                            z_index_child_windows.removeEventListener('mousedown', handleMouseDown);
-                            function handleMouseDown() {
-                                zindexchildwindows.scrollTop = 0;
-                                zindexchildwindows.scrollLeft = 0;
-                                document.querySelectorAll('.testwindow2').forEach(function (testwindow2) {
-                                    const testwindow2_1 = testwindow2.children[2];
-                                    const testwindow2_2 = testwindow2_1.firstElementChild;
-                                    testwindow2_2.style.maxWidth = `${testwindow2.clientWidth}px`;
-                                    testwindow2_2.style.maxHeight = `${testwindow2.clientHeight - 25}px`;
-                                });
-                                zindexchildwindows.style.zIndex = largestZIndex++;
+                            z_index_child_windows.removeEventListener('mousedown', handleMouseMove_scrollreset);
+                            z_index_child_windows.addEventListener('mousedown', handleMouseMove_scrollreset);
+                            document.removeEventListener('mousemove', handleMouseDown_resize);
+                            document.addEventListener('mousemove', handleMouseDown_resize);
+                            function handleMouseDown_resize() {
+                                const testwindow2_1 = z_index_child_windows.children[2];
+                                const testwindow2_2 = testwindow2_1.firstElementChild;
+                                testwindow2_2.classList.add('center');
+                                testwindow2_2.style.maxWidth = `${z_index_child_windows.clientWidth}px`;
+                                testwindow2_2.style.maxHeight = `${z_index_child_windows.clientHeight - 25}px`;
                                 rectangle_remove();
                             }
-                            z_index_child_windows.addEventListener('mousedown', handleMouseDown);
-                        });
-                        document.querySelectorAll('.testwindow2, .child').forEach(function (testwindow2) {
-                            testwindow2.removeEventListener('mousemove', handleMouseMove);
-                            function handleMouseMove() {
-                                const testwindow2_1 = testwindow2.children[2];
-                                const testwindow2_2 = testwindow2_1.firstElementChild;
-                                testwindow2_2.style.width = "100%";
-                                testwindow2_2.style.height = "100%";
-                                testwindow2_2.style.maxWidth = `${testwindow2.clientWidth}px`;
-                                testwindow2_2.style.maxHeight = `${testwindow2.clientHeight - 25}px`;
+                            function handleMouseMove_scrollreset() {
+                                zindexchildwindows.style.zIndex = largestZIndex++;
+                                zindexchildwindows.scrollTop = 0;
+                                zindexchildwindows.scrollLeft = 0;
                             }
-                            document.addEventListener('mousemove', handleMouseMove);
                         });
                         resolve();
                     });
@@ -6952,7 +6946,7 @@ if (ua.includes("mobile")) {
             3: "位置情報の取得がタイムアウトしました。",
             0: "不明なエラーが発生しました。"
         };
-        alert(messages[error.code] || messages[0]);
+        document.getElementById('location').innerHTML = (messages[error.code] || messages[0]);
     }
     if (navigator.geolocation) {
         navigator.geolocation.watchPosition(showPosition, showError, {
