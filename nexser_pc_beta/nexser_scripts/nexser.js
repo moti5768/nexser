@@ -2875,12 +2875,6 @@ if (ua.includes("mobile")) {
         document.querySelectorAll('.navy').forEach(navys => navys.classList.remove('navy'));
     }
 
-    document.querySelectorAll('.nexser_search').forEach(nexser_search => {
-        nexser_search.addEventListener('click', () => {
-            toggleWindow(nexser_search_menu)
-        })
-    });
-
     function nexser_search() {
         var input, filter, ul, li, a, i, txtValue;
         input = document.getElementById('myInput');
@@ -4246,31 +4240,6 @@ if (ua.includes("mobile")) {
             }
         }
     }
-
-    Array.from(document.getElementsByClassName('windowfile1')).forEach((windowfile_1) => {
-        windowfile_1.addEventListener('click', function () {
-            localStorage.setItem('windowfile_1', true);
-            localStorage.removeItem('windowfile_2')
-            localStorage.removeItem('windowfile_3')
-            window_file_list_change()
-        })
-    })
-    Array.from(document.getElementsByClassName('windowfile2')).forEach((windowfile_2) => {
-        windowfile_2.addEventListener('click', function () {
-            localStorage.setItem('windowfile_2', true);
-            localStorage.removeItem('windowfile_1')
-            localStorage.removeItem('windowfile_3')
-            window_file_list_reset()
-        })
-    })
-    Array.from(document.getElementsByClassName('windowfile3')).forEach((windowfile_3) => {
-        windowfile_3.addEventListener('click', function () {
-            localStorage.setItem('windowfile_3', true);
-            localStorage.removeItem('windowfile_1')
-            localStorage.removeItem('windowfile_2')
-            window_file_list_change2()
-        })
-    })
 
     document.querySelector('.clock_button').addEventListener('click', function () {
         if (localStorage.getItem('clock_button')) {
@@ -6700,6 +6669,7 @@ if (ua.includes("mobile")) {
         document.querySelectorAll('.guidebook_window').forEach(guidebook_window => { guidebook_window.onclick = null; guidebook_window.onclick = () => { toggleWindow(guidebook_window_menu); }; });
         document.querySelectorAll('.guidebook_file').forEach(guidebook_file => { guidebook_file.onclick = null; guidebook_file.onclick = () => { toggleWindow(guidebook_file_menu); }; });
         document.querySelectorAll('.guidebook_taskbar').forEach(guidebook_taskbar => { guidebook_taskbar.onclick = null; guidebook_taskbar.onclick = () => { toggleWindow(guidebook_taskbar_menu); }; });
+
         document.querySelectorAll('.passmenu_button').forEach(passmenu_button => { passmenu_button.onclick = null; passmenu_button.onclick = () => { toggleWindow(password_menu); }; });
         document.querySelectorAll('.localstorage_details').forEach(localstorage_details => { localstorage_details.onclick = null; localstorage_details.onclick = () => { toggleWindow(localstorage_details_menu); }; });
         document.querySelectorAll('.console_error_btn').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(console_error_menu); }; });
@@ -6877,6 +6847,41 @@ if (ua.includes("mobile")) {
             rf.classList.remove('file_border3')
         })
     }
+
+    document.querySelectorAll('.windowtool_buttons_child').forEach(windowtool_buttons_child => {
+        const windowtool_childbtns = document.createElement('div');
+        windowtool_childbtns.style.display = "flex"
+        windowtool_childbtns.innerHTML = `<button class="button2 windowfile2" style="width: 20px;">*</button>
+        <button class="button2 windowfile1" style="width: 20px;">*2</button>
+        <button class="button2 windowfile3" style="width: 20px;">*3</button>
+        <button class="button2 nexser_search" style="height: 20px;">&nbsp;<span class="magnifying_glass"></span></button>`
+        Array.from(document.getElementsByClassName('windowfile1')).forEach((windowfile_1) => {
+            windowfile_1.addEventListener('click', function () {
+                localStorage.setItem('windowfile_1', true);
+                localStorage.removeItem('windowfile_2')
+                localStorage.removeItem('windowfile_3')
+                window_file_list_change()
+            })
+        })
+        Array.from(document.getElementsByClassName('windowfile2')).forEach((windowfile_2) => {
+            windowfile_2.addEventListener('click', function () {
+                localStorage.setItem('windowfile_2', true);
+                localStorage.removeItem('windowfile_1')
+                localStorage.removeItem('windowfile_3')
+                window_file_list_reset()
+            })
+        })
+        Array.from(document.getElementsByClassName('windowfile3')).forEach((windowfile_3) => {
+            windowfile_3.addEventListener('click', function () {
+                localStorage.setItem('windowfile_3', true);
+                localStorage.removeItem('windowfile_1')
+                localStorage.removeItem('windowfile_2')
+                window_file_list_change2()
+            })
+        })
+        document.querySelectorAll('.nexser_search').forEach(nexser_search => { nexser_search.onclick = null; nexser_search.onclick = () => { toggleWindow(nexser_search_menu); }; });
+        windowtool_buttons_child.appendChild(windowtool_childbtns)
+    });
 
     function error_windows_create() {
         sound(2)
