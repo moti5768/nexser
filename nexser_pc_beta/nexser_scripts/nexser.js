@@ -5801,12 +5801,12 @@ if (ua.includes("mobile")) {
                 if (minimization_button2.classList.contains('navy')) {
                     setTimeout(() => {
                         const elements = document.querySelector('.navy');
-                        const elements2 = elements.closest('.child_windows');
-                        const computedStyle = getComputedStyle(elements2);
-                        elements2.dataset.originalWidth = computedStyle.width;
-                        elements2.dataset.originalHeight = computedStyle.height;
-                        elements2.dataset.originalTop = computedStyle.top;
-                        elements2.dataset.originalLeft = computedStyle.left;
+                        const elements22 = elements.closest('.child_windows');
+                        const computedStyle = getComputedStyle(elements22);
+                        elements22.dataset.originalWidths = computedStyle.width;
+                        elements22.dataset.originalHeights = computedStyle.height;
+                        elements22.dataset.originalTops = computedStyle.top;
+                        elements22.dataset.originalLefts = computedStyle.left;
                         minimization_button.style.height = "20px";
                         minimization_button.classList.add('minimization');
                         minimization_button.scrollTop = 0;
@@ -5897,15 +5897,17 @@ if (ua.includes("mobile")) {
             windowElement.style.minWidth = "0px";
             windowElement.style.minHeight = "0px";
             setTimeout(() => {
-                const elements2 = windowElement.closest('.child_windows');
-                window_animation(elements2);
-                elements2.style.top = elements2.dataset.originalTop;
-                elements2.style.left = elements2.dataset.originalLeft;
-                elements2.style.width = elements2.dataset.originalWidth;
+                const elements22 = windowElement.closest('.child_windows');
+                window_animation(elements22);
+                elements22.style.top = elements22.dataset.originalTops;
+                elements22.style.left = elements22.dataset.originalLefts;
+                elements22.style.width = elements22.dataset.originalWidths;
                 setTimeout(() => {
-                    elements2.style.height = elements2.dataset.originalHeight;
-                    elements2.scrollTop = 0;
-                    elements2.scrollLeft = 0;
+                    elements22.style.height = elements22.dataset.originalHeights;
+                    elements22.scrollTop = 0;
+                    elements22.scrollLeft = 0;
+                    windowElement.style.minWidth = "";
+                    windowElement.style.minHeight = "";
                     isAnimating = false;
                 }, 150);
             }, 0);
