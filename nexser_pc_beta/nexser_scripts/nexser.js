@@ -2512,20 +2512,16 @@ if (ua.includes("mobile")) {
         localStorage.removeItem('window_animation');
     }
     function window_animation(animation) {
-        if (animation.classList.contains('minimization')) {
-            animation.style.zIndex = "9999999";
-        }
         const taskHeight = () => document.getElementById('taskbar').clientHeight;
         console.log(animation.style.zIndex)
         const adjustHeight = () => {
             if (['big', 'leftwindow', 'rightwindow'].some(cls => animation.classList.contains(cls))) {
                 animation.style.height = (animation.clientHeight - taskHeight()) + "px";
             }
-            animation.style.zIndex = "0";
-            animation.style.zIndex = largestZIndex++;
             if (animation.classList.contains('minimization')) {
                 animation.classList.add('child_windows_invisible')
             }
+            animation.style.zIndex = largestZIndex++;
         };
         if (localStorage.getItem('window_animation')) {
             animation.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
@@ -5853,9 +5849,9 @@ if (ua.includes("mobile")) {
     }
     let isAnimating = false;
     function toggleWindow(windowElement) {
-        windowElement.style.zIndex = "9999999";
         if (isAnimating) return;
         isAnimating = true;
+        windowElement.style.zIndex = largestZIndex++;
         windowElement.classList.remove('active');
         if (windowElement.classList.contains('minimization')) {
             windowElement.classList.remove('child_windows_invisible')
@@ -5881,8 +5877,6 @@ if (ua.includes("mobile")) {
                 }, 150);
             }, 0);
         } else {
-            windowElement.style.zIndex = "0";
-            windowElement.style.zIndex = largestZIndex++;
             isAnimating = false;
         }
     }
