@@ -1386,14 +1386,11 @@ body::-webkit-scrollbar {
 }
 
 .child_windows.minimization {
-    min-height: 0px;
-    min-width: 0px;
     pointer-events: none;
 }
 
 .child_windows_invisible {
     opacity: 0;
-    z-index: 9999999;
 }
 
 .child_windows.big {

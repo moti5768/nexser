@@ -5878,6 +5878,8 @@ if (ua.includes("mobile")) {
             minimization_button.style.left = `${rect.left}px`;
             minimization_button.style.width = `${rect.width}px`;
             minimization_button.style.height = `${rect.height}px`;
+            minimization_button.style.minWidth = "0px";
+            minimization_button.style.minHeight = "0px";
         }
     }
     let isAnimating = false;
@@ -5892,6 +5894,8 @@ if (ua.includes("mobile")) {
         updateButtonClasses();
         if (windowElement.classList.contains('minimization')) {
             windowElement.classList.remove('minimization');
+            windowElement.style.minWidth = "0px";
+            windowElement.style.minHeight = "0px";
             setTimeout(() => {
                 const elements2 = windowElement.closest('.child_windows');
                 window_animation(elements2);
