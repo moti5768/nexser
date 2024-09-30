@@ -6850,11 +6850,14 @@ if (ua.includes("mobile")) {
 
     document.querySelectorAll('.windowtool_buttons_child').forEach(windowtool_buttons_child => {
         const windowtool_childbtns = document.createElement('div');
-        windowtool_childbtns.style.display = "flex"
+
         windowtool_childbtns.innerHTML = `<button class="button2 windowfile2" style="width: 20px;">*</button>
         <button class="button2 windowfile1" style="width: 20px;">*2</button>
         <button class="button2 windowfile3" style="width: 20px;">*3</button>
-        <button class="button2 nexser_search" style="height: 20px;">&nbsp;<span class="magnifying_glass"></span></button>`
+        <button class="button2 nexser_search">&nbsp;<span class="magnifying_glass"></span></button>`;
+
+        windowtool_childbtns.style = "display: flex; height: 20px;";
+
         Array.from(document.getElementsByClassName('windowfile1')).forEach((windowfile_1) => {
             windowfile_1.addEventListener('click', function () {
                 localStorage.setItem('windowfile_1', true);
