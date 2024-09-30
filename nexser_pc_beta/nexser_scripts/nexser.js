@@ -2512,12 +2512,20 @@ if (ua.includes("mobile")) {
         localStorage.removeItem('window_animation');
     }
     function window_animation(animation) {
+        if (animation.classList.contains('minimization')) {
+            animation.style.zIndex = "9999999";
+        }
         const taskHeight = () => document.getElementById('taskbar').clientHeight;
+        console.log(animation.style.zIndex)
         const adjustHeight = () => {
             if (['big', 'leftwindow', 'rightwindow'].some(cls => animation.classList.contains(cls))) {
                 animation.style.height = (animation.clientHeight - taskHeight()) + "px";
             }
+            animation.style.zIndex = "0";
             animation.style.zIndex = largestZIndex++;
+            if (animation.classList.contains('minimization')) {
+                animation.classList.add('child_windows_invisible')
+            }
         };
         if (localStorage.getItem('window_animation')) {
             animation.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
@@ -5868,25 +5876,28 @@ if (ua.includes("mobile")) {
             minimization_button.style.position = 'absolute';
             minimization_button.style.top = `${rect.top}px`;
             minimization_button.style.left = `${rect.left}px`;
-            minimization_button.style.width = "150px";
-            minimization_button.style.height = "20px";
+            minimization_button.style.width = `${rect.width}px`;
+            minimization_button.style.height = `${rect.height}px`;
         }
     }
     let isAnimating = false;
     function toggleWindow(windowElement) {
+        windowElement.style.zIndex = "9999999";
         if (isAnimating) return;
         isAnimating = true;
         windowElement.classList.remove('active');
-        windowElement.style.zIndex = largestZIndex++;
+        if (windowElement.classList.contains('minimization')) {
+            windowElement.classList.remove('child_windows_invisible')
+        }
         updateButtonClasses();
         if (windowElement.classList.contains('minimization')) {
             windowElement.classList.remove('minimization');
             setTimeout(() => {
                 const elements2 = windowElement.closest('.child_windows');
-                elements2.style.width = elements2.dataset.originalWidth;
+                window_animation(elements2);
                 elements2.style.top = elements2.dataset.originalTop;
                 elements2.style.left = elements2.dataset.originalLeft;
-                window_animation(elements2);
+                elements2.style.width = elements2.dataset.originalWidth;
                 setTimeout(() => {
                     elements2.style.height = elements2.dataset.originalHeight;
                     elements2.scrollTop = 0;
@@ -5895,6 +5906,8 @@ if (ua.includes("mobile")) {
                 }, 150);
             }, 0);
         } else {
+            windowElement.style.zIndex = "0";
+            windowElement.style.zIndex = largestZIndex++;
             isAnimating = false;
         }
     }
@@ -5984,7 +5997,6 @@ if (ua.includes("mobile")) {
 
                     const newChild4_3 = document.createElement('span');
                     newChild4_3.className = "minimization_button button2"
-                    newChild4_3.textContent = "_"
                     newChild3.appendChild(newChild4_3);
 
                     const newChild4_5 = document.createElement('br');
@@ -6942,14 +6954,18 @@ if (ua.includes("mobile")) {
         };
         document.getElementById('location').innerHTML = (messages[error.code] || messages[0]);
     }
-    if (navigator.geolocation) {
-        navigator.geolocation.watchPosition(showPosition, showError, {
-            enableHighAccuracy: true,
-            timeout: 5000,
-            maximumAge: 0
-        });
-    } else {
-        document.getElementById('location').innerHTML = "このブラウザでは位置情報がサポートされていません。";
+    function poti_btn() {
+        if (navigator.geolocation) {
+            document.getElementById('location').innerHTML = "loading..."
+            navigator.geolocation.watchPosition(showPosition, showError, {
+                enableHighAccuracy: true,
+                timeout: 5000,
+                maximumAge: 0
+            });
+        } else {
+            document.getElementById('location').innerHTML = "このブラウザでは位置情報がサポートされていません。";
+        }
     }
+
 
 };

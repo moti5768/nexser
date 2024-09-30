@@ -1018,6 +1018,12 @@ input[type="file"] {
     height: auto;
 }
 
+.location_menu {
+    width: 300px;
+    min-width: 250px;
+    height: auto;
+}
+
 .delete_btn {
     margin: 2px;
 }
@@ -1195,13 +1201,10 @@ body::-webkit-scrollbar {
     font-size: 15px;
     width: auto;
     height: 300px;
-    border: solid 3px #c0c0c0;
-    outline: 1px solid gray;
-    outline-offset: 0.4px;
-    box-shadow: 0 0 0 1.5px whitesmoke,
-        0 0 0 2px dimgray,
-        0 0 0 2.5px #000000;
     background: whitesmoke;
+    color: black;
+    border: 3.5px solid #c0c0c0;
+    box-shadow: 1.5px 1.5px #333333, -1.5px -1.5px whitesmoke;
     position: absolute;
     top: 50px;
     left: 20px;
@@ -1385,13 +1388,12 @@ body::-webkit-scrollbar {
 .child_windows.minimization {
     min-height: 0px;
     min-width: 0px;
-    max-height: auto;
-    max-width: auto;
-    z-index: 999999;
+    pointer-events: none;
 }
 
 .child_windows_invisible {
     opacity: 0;
+    z-index: 9999999;
 }
 
 .child_windows.big {
