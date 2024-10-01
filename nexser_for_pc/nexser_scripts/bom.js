@@ -17,13 +17,10 @@ function init() {
     w = Number(document.getElementById("w").value); // 横のマスの数
     bomb = Number(document.getElementById("b").value); // 爆弾の数
     if (h * w - 9 < bomb) {
-
         document.getElementById('nex').style.cursor = '';
-        document.querySelector('.window_error_text').textContent = "エラー：爆弾の数が正しく入力されていません。"
-        document.getElementsByClassName('error_title_text')[0].textContent = "main sweeper"
-        document.getElementsByClassName('error_windows')[0].classList.remove('active')
-        document.querySelector('.test_allwindow').style.display = "block";
-        sound3()
+        // document.querySelector('.window_error_text').textContent = "エラー：爆弾の数が正しく入力されていません。"
+        // document.getElementsByClassName('error_title_text')[0].textContent = "main sweeper"
+        // document.getElementsByClassName('error_windows')[0].classList.remove('active')
         return;
     }
     data = [];
@@ -101,12 +98,10 @@ function leftClicked() {
         board.style.pointerEvents = "none";
 
         document.getElementById('nex').style.cursor = '';
-        document.querySelector('.window_error_text').textContent = "　　GAMEOVER　　　　"
-        document.getElementsByClassName('error_title_text')[0].textContent = "main sweeper"
-        document.getElementsByClassName('error_icon')[0].style.display = "none"
-        document.getElementsByClassName('error_windows')[0].classList.remove('active')
-        document.querySelector('.test_allwindow').style.display = "block";
-
+        // document.querySelector('.window_error_text').textContent = "　　GAMEOVER　　　　"
+        // document.getElementsByClassName('error_title_text')[0].textContent = "main sweeper"
+        // document.getElementsByClassName('error_icon')[0].style.display = "none"
+        // document.getElementsByClassName('error_windows')[0].classList.remove('active')
         clearTimeout(timeoutId);
         return;
     }
@@ -129,17 +124,14 @@ function leftClicked() {
             }
         }
         board.style.pointerEvents = "none";
-
         document.getElementById('nex').style.cursor = '';
-        document.querySelector('.window_error_text').textContent = "　　CLEAR　　　　"
-        document.getElementsByClassName('error_title_text')[0].textContent = "main sweeper"
-        document.getElementsByClassName('error_icon')[0].style.display = "none"
-        document.getElementsByClassName('error_windows')[0].classList.remove('active')
-        document.querySelector('.test_allwindow').style.display = "block";
+        // document.querySelector('.window_error_text').textContent = "　　CLEAR　　　　"
+        // document.getElementsByClassName('error_title_text')[0].textContent = "main sweeper"
+        // document.getElementsByClassName('error_icon')[0].style.display = "none"
+        // document.getElementsByClassName('error_windows')[0].classList.remove('active')
         const bom_time = document.getElementById('bom_time').textContent;
         document.querySelector('.bom_clear_time').textContent = bom_time;
         localStorage.setItem('bom_time', bom_time)
-
         clearTimeout(timeoutId);
         return;
     }

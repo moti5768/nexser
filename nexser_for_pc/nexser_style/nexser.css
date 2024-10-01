@@ -3,6 +3,7 @@
 * {
     margin: 0px;
     padding: 0px;
+    outline: none;
 }
 
 html,
@@ -25,6 +26,13 @@ body {
     width: 100%;
     color: darkblue;
     background: darkblue;
+}
+
+code>textarea {
+    background: black;
+    color: white;
+    width: 100%;
+    height: 100%;
 }
 
 .screen_light {
@@ -134,6 +142,10 @@ li {
 
 /* text_size */
 
+.xx-small {
+    font-size: xx-small;
+}
+
 .x-small {
     font-size: x-small;
 }
@@ -154,6 +166,10 @@ li {
     font-size: x-large;
 }
 
+.xx-large {
+    font-size: xx-large;
+}
+
 /* text_design */
 
 .bold {
@@ -170,7 +186,6 @@ li {
 
 .program_border {
     border: solid 1.5px white;
-    outline: none;
 }
 
 .border {
@@ -178,7 +193,6 @@ li {
     border-left: 1.5px #eee solid;
     border-bottom: 1.5px #333 solid;
     border-right: 1.5px #333 solid;
-    outline: none;
 }
 
 .border2 {
@@ -187,7 +201,6 @@ li {
     border-left: 1.5px #333 solid;
     border-bottom: 1.5px whitesmoke solid;
     border-right: 1.5px whitesmoke solid;
-    outline: none;
 }
 
 /* desktop */
@@ -268,7 +281,6 @@ li {
     width: 50%;
     background: black;
     border: none;
-    outline: none;
     color: white;
 }
 
@@ -304,17 +316,11 @@ li {
     position: relative;
     font-size: small;
     width: 100%;
-    height: 12.5px;
     border: none;
-    outline: none;
     color: white;
     background: black;
     resize: none;
-}
-
-#form_container {
-    width: 100%;
-    height: 100%;
+    padding: 0px;
 }
 
 .input_container {
@@ -370,7 +376,6 @@ li {
     box-shadow: 0 0 0 0.5px dimgray;
     color: black;
     background: silver;
-    outline: none;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
@@ -381,10 +386,6 @@ li {
 
 .task_buttons.pressed {
     background: darkgray;
-    border-bottom: 1.8px #eee solid;
-    border-right: 1.8px #eee solid;
-    border-top: 1.8px #333 solid;
-    border-left: 1.8px #333 solid;
     padding-top: 1px;
     padding-left: 1px;
     box-sizing: border-box;
@@ -392,28 +393,29 @@ li {
 
 .button {
     display: inline-block;
-    border-top: 1.8px #eee solid;
-    border-left: 1.8px #eee solid;
-    border-bottom: 1.8px #333 solid;
-    border-right: 1.8px #333 solid;
-    box-shadow: 0 0 0 0.5px dimgray;
-    color: black;
-    background: silver;
-    outline: none;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
     list-style: none;
     box-sizing: border-box;
+    background-color: #C3C7CB;
+    color: black;
+    border: 1.8px solid #808080;
+    border-top-color: #fff;
+    border-left-color: #fff;
+    border-right-color: #808080;
+    border-bottom-color: #808080;
+    box-shadow: 0.5px 0.5px black;
 }
 
 .button.pressed {
-    background: darkgray;
-    border-bottom: 1.8px #eee solid;
-    border-right: 1.8px #eee solid;
-    border-top: 1.8px #333 solid;
-    border-left: 1.8px #333 solid;
+    background-color: darkgray;
+    border-top-color: #7a7a7a;
+    border-left-color: #7a7a7a;
+    border-right-color: #fff;
+    border-bottom-color: #fff;
+    box-shadow: 0.5px 0.5px 0 #000 inset;
     padding-top: 1px;
     padding-left: 1px;
     box-sizing: border-box;
@@ -421,27 +423,28 @@ li {
 
 .button2 {
     display: inline-block;
-    border-top: 1.8px #eee solid;
-    border-left: 1.8px #eee solid;
-    border-bottom: 1.8px #333 solid;
-    border-right: 1.8px #333 solid;
-    box-shadow: 0 0 0 0.5px dimgray;
-    color: black;
-    background: silver;
-    outline: none;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
     list-style: none;
+    background-color: #C3C7CB;
+    color: black;
+    border: 1.8px solid #808080;
+    border-top-color: #fff;
+    border-left-color: #fff;
+    border-right-color: #808080;
+    border-bottom-color: #808080;
+    box-shadow: 0.5px 0.5px black;
 }
 
 .button2.pressed {
-    background: darkgray;
-    border-bottom: 1.8px #eee solid;
-    border-right: 1.8px #eee solid;
-    border-top: 1.8px #333 solid;
-    border-left: 1.8px #333 solid;
+    background-color: darkgray;
+    border-top-color: #7a7a7a;
+    border-left-color: #7a7a7a;
+    border-right-color: #fff;
+    border-bottom-color: #fff;
+    box-shadow: 0.5px 0.5px 0 #000 inset;
     padding-top: 1px;
     padding-left: 1px;
     box-sizing: border-box;
@@ -473,24 +476,6 @@ li {
     transform: translate(-50%, -50%);
 }
 
-.windowfile1 {
-    width: 25px;
-    height: 20px;
-    box-sizing: border-box;
-}
-
-.windowfile2 {
-    width: 30px;
-    height: 22.5px;
-    box-sizing: border-box;
-}
-
-.windowfile3 {
-    width: 25px;
-    height: 20px;
-    box-sizing: border-box;
-}
-
 /* files */
 
 #files {
@@ -517,10 +502,13 @@ input[type="file"] {
     font-size: 15px;
     width: 175px;
     height: 30px;
-    background-color: #DDDDDD;
-    outline: 1px solid gray;
-    outline-offset: 0.4px;
-    box-shadow: 0 0 0 0.5px whitesmoke, 0 0 0 1.5px dimgray;
+    border: 1.8px solid #808080;
+    border-top-color: #fff;
+    border-left-color: #fff;
+    border-right-color: #808080;
+    border-bottom-color: #808080;
+    box-shadow: 0.5px 0.5px black;
+    background: #DDDDDD;
     position: absolute;
     right: 0px;
     bottom: 40px;
@@ -536,10 +524,6 @@ input[type="file"] {
     box-sizing: border-box;
 }
 
-.drag_button2 {
-    background: gray;
-}
-
 /* taskbar */
 #taskbar {
     -webkit-user-select: none;
@@ -549,7 +533,7 @@ input[type="file"] {
     font-size: 15px;
     width: 100%;
     height: 40px;
-    background-color: silver;
+    background-color: #C3C7CB;
     border-top: solid 1.5px whitesmoke;
     border-bottom: 1.5px #333 solid;
     position: absolute;
@@ -559,22 +543,31 @@ input[type="file"] {
 
 .start_button {
     display: inline-block;
-    background: silver;
     position: relative;
     bottom: 0px;
     left: 10px;
     top: 7px;
     width: 45px;
     height: 26.5px;
-    box-shadow: 0 0 0 0.5px dimgray;
+    background-color: #C3C7CB;
+    border: 1.8px solid #808080;
+    border-top-color: #fff;
+    border-left-color: #fff;
+    border-right-color: #808080;
+    border-bottom-color: #808080;
+    box-shadow: 0.5px 0.5px black;
     box-sizing: border-box;
 }
 
 .start_button.pressed {
-    border-bottom: 1.5px #eee solid;
-    border-right: 1.5px #eee solid;
-    border-top: 1.5px #333 solid;
-    border-left: 1.5px #333 solid;
+    border-top-color: #7a7a7a;
+    border-left-color: #7a7a7a;
+    border-right-color: #fff;
+    border-bottom-color: #fff;
+    box-shadow: 0.5px 0.5px 0 #000 inset;
+    padding-top: 1px;
+    padding-left: 1px;
+    box-sizing: border-box;
     outline: 1.5px dotted black;
     outline-offset: -5px;
     padding-top: 1px;
@@ -582,15 +575,17 @@ input[type="file"] {
 }
 
 #taskbar .first_taskbar_buttons {
+    display: flex;
     position: absolute;
     left: 65px;
     top: 7px;
     break-inside: avoid;
     box-sizing: border-box;
     float: left;
-    width: 45px;
+    width: auto;
     border-left: solid 2px white;
     border-right: solid 2px white;
+    padding-right: 5.5px;
 }
 
 .first_taskbar_buttons>.button2 {
@@ -606,13 +601,11 @@ input[type="file"] {
 
 #taskbar .taskbar_buttons {
     position: absolute;
-    left: 115px;
     top: 0px;
     break-inside: avoid;
     box-sizing: border-box;
     float: left;
     display: flex;
-    width: 850px;
     overflow: auto;
     height: min-content;
 }
@@ -626,26 +619,36 @@ input[type="file"] {
     display: block;
     box-sizing: border-box;
     float: left;
-    margin-left: 2.5px;
-    margin-right: 2.5px;
-    width: 100px;
+    margin-left: 1px;
+    margin-right: 1px;
+    width: 150px;
     height: 26.5px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-.task_icons .task_buttons.pressed {
+.task_icons .task_buttons.tsk_pressed {
+    background-color: darkgray;
+    border-top-color: #7a7a7a;
+    border-left-color: #7a7a7a;
+    border-right-color: #fff;
+    border-bottom-color: #fff;
+    box-shadow: 0.5px 0.5px 0 #000 inset;
+    padding-top: 1px;
+    padding-left: 1px;
+    box-sizing: border-box;
     background: #DDDDDD;
+    font-weight: 800;
     text-shadow:
-        0.1px 0.1px 0,
-        0.1px -0.1px 0px,
-        -0.1px 0.1px 0,
-        -0.1px -0.1px 0px,
-        0.1px 0px 0px,
-        0px 0.1px 0px,
-        -0.1px 0px 0px,
-        0px -0.1px 0px;
+        0.3px 0.3px 0,
+        0.3px -0.3px 0px,
+        -0.3px 0.3px 0,
+        -0.3px -0.3px 0px,
+        0.3px 0px 0px,
+        0px 0.3px 0px,
+        -0.3px 0px 0px,
+        0px -0.3px 0px;
 }
 
 .taskbar_rightgroup {
@@ -663,10 +666,17 @@ input[type="file"] {
     background: silver;
     position: absolute;
     bottom: 36px;
+    left: -85px;
 }
 
 .inport_icon {
-    background: silver;
+    background-color: #C3C7CB;
+    border: 1.8px solid #808080;
+    border-top-color: #fff;
+    border-left-color: #fff;
+    border-right-color: #808080;
+    border-bottom-color: #808080;
+    box-shadow: 0.5px 0.5px black;
     text-align: center;
     margin-left: 10px;
     margin-right: 5px;
@@ -709,11 +719,17 @@ input[type="file"] {
 
 .child_start_menu {
     width: 150px;
-    background: silver;
     position: absolute;
     bottom: 40px;
     z-index: 999998;
-    outline: solid 1px dimgray;
+    background-color: #C3C7CB;
+    color: black;
+    border: 1.8px solid #808080;
+    border-top-color: #fff;
+    border-left-color: #fff;
+    border-right-color: #808080;
+    border-bottom-color: #808080;
+    box-shadow: 0.5px 0.5px black;
 }
 
 .parent_start_menu_lists {
@@ -725,30 +741,45 @@ input[type="file"] {
     display: none;
     position: absolute;
     width: 170px;
-    background-color: silver;
     left: 125px;
     top: 0px;
-    outline: solid 1px dimgray;
+    background-color: #C3C7CB;
+    border: 1.8px solid #808080;
+    border-top-color: #fff;
+    border-left-color: #fff;
+    border-right-color: #808080;
+    border-bottom-color: #808080;
+    box-shadow: 0.5px 0.5px black;
 }
 
 .child_start_menu_lists2 {
     display: none;
     position: absolute;
     width: 170px;
-    background-color: silver;
     left: 170px;
     top: -1.5px;
-    outline: solid 1px dimgray;
+    background-color: #C3C7CB;
+    border: 1.8px solid #808080;
+    border-top-color: #fff;
+    border-left-color: #fff;
+    border-right-color: #808080;
+    border-bottom-color: #808080;
+    box-shadow: 0.5px 0.5px black;
 }
 
 .child_start_menu_lists3 {
     display: none;
     position: absolute;
     width: 170px;
-    background-color: silver;
     left: 170px;
     top: -1px;
-    outline: solid 1px dimgray;
+    background-color: #C3C7CB;
+    border: 1.8px solid #808080;
+    border-top-color: #fff;
+    border-left-color: #fff;
+    border-right-color: #808080;
+    border-bottom-color: #808080;
+    box-shadow: 0.5px 0.5px black;
 }
 
 .list_right_text {
@@ -773,60 +804,6 @@ input[type="file"] {
     pointer-events: none;
 }
 
-.button_file_icon {
-    display: block;
-    width: 15px;
-    height: 9.5px;
-    background-image: radial-gradient(dimgray 1px, silver 1px);
-    background-size: 3px 3px;
-    margin-top: 2px;
-    margin-bottom: 2px;
-    margin-left: 3px;
-    margin-right: 3px;
-    border-top: 1.5px #eee solid;
-    border-left: 1.5px #eee solid;
-    border-bottom: 1.5px #000 solid;
-    border-right: 1.5px #000 solid;
-    outline: 1px solid dimgray;
-    pointer-events: none;
-}
-
-.button_file_icon2 {
-    display: block;
-    width: 18px;
-    height: 12.5px;
-    background-image: radial-gradient(#FFFFBB 1px, #CCCC66 1px);
-    background-size: 3px 3px;
-    margin-top: 2px;
-    margin-bottom: 2px;
-    margin-left: 3px;
-    margin-right: 3px;
-    border-top: 1.5px #eee solid;
-    border-left: 1.5px #eee solid;
-    border-bottom: 1.5px #000 solid;
-    border-right: 1.5px #000 solid;
-    outline: 1px solid gray;
-    pointer-events: none;
-}
-
-.button_file_icon3 {
-    display: block;
-    width: 15px;
-    height: 9.5px;
-    background-image: radial-gradient(white 1px, gray 1px);
-    background-size: 3px 3px;
-    margin-top: 2px;
-    margin-bottom: 2px;
-    margin-left: 3px;
-    margin-right: 3px;
-    border-top: 1.5px #eee solid;
-    border-left: 1.5px #eee solid;
-    border-bottom: 1.5px #000 solid;
-    border-right: 1.5px #000 solid;
-    outline: 1px solid gray;
-    pointer-events: none;
-}
-
 /* window */
 .back_silver {
     background: silver;
@@ -838,21 +815,19 @@ input[type="file"] {
 }
 
 .child_windows {
-    display: block;
+    display: flex;
+    flex-direction: column;
     font-size: 15px;
     width: auto;
     height: auto;
-    border: solid 3px #c0c0c0;
-    outline: 1px solid gray;
-    outline-offset: 0.4px;
-    box-shadow: 0 0 0 1.5px dimgray,
-        0 0 0 3px white,
-        0 0 0 4px #000000;
     background: whitesmoke;
+    color: black;
+    border: 3.5px solid #c0c0c0;
+    box-shadow: 1.5px 1.5px #333333, -1.5px -1.5px whitesmoke;
     position: absolute;
     z-index: 1;
     min-width: min-content;
-    min-height: 22.5px;
+    min-height: 22px;
     overflow: hidden;
 }
 
@@ -963,6 +938,12 @@ input[type="file"] {
     top: 22.5px;
 }
 
+.uploadvideo_menu {
+    width: 600px;
+    height: 400px;
+    min-width: 250px;
+}
+
 .device_menu {
     width: 550px;
     height: auto;
@@ -1009,6 +990,42 @@ input[type="file"] {
 .kakeibo_menu {
     width: 800px;
     height: 500px;
+}
+
+.nexser_nextversion_menu {
+    width: 900px;
+    height: 500px;
+    min-width: 250px;
+}
+
+.alarm_menu {
+    width: 300px;
+}
+
+.command_help_menu {
+    width: 500px;
+    height: 300px;
+}
+
+.mydocument_menu {
+    width: 700px;
+    height: 400px;
+}
+
+.restriction_menu {
+    width: 300px;
+    min-width: 250px;
+    height: auto;
+}
+
+.location_menu {
+    width: 300px;
+    min-width: 250px;
+    height: auto;
+}
+
+.delete_btn {
+    margin: 2px;
 }
 
 #v {
@@ -1062,6 +1079,11 @@ body::-webkit-scrollbar {
     z-index: 1;
 }
 
+.scrollbar_none::-webkit-scrollbar {
+    display: none;
+    z-index: 1;
+}
+
 ::-webkit-resizer {
     background: rgba();
 }
@@ -1070,18 +1092,16 @@ body::-webkit-scrollbar {
 
 /*Firefox用のベンダープレフィックス付き*/
 ::-moz-selection {
-    background-color: gray;
+    background-color: darkblue;
     color: white;
 }
 
 ::selection {
-    background-color: gray;
+    background-color: darkblue;
     color: white;
 }
 
-
-.welcome_windows {
-    display: none;
+.welcome_menu {
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
@@ -1090,17 +1110,6 @@ body::-webkit-scrollbar {
     font-size: 15px;
     width: 700px;
     height: 400px;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    border: solid 3px #c0c0c0;
-    outline: 1px solid gray;
-    outline-offset: 0.4px;
-    box-shadow: 0 0 0 1.5px dimgray,
-        0 0 0 3px white,
-        0 0 0 4px #000000;
-    z-index: 99999;
 }
 
 .welicon_1 {
@@ -1170,7 +1179,7 @@ body::-webkit-scrollbar {
     font-size: 15px;
     width: 100%;
     height: 30px;
-    background-color: silver;
+    background-color: #C3C7CB;
     border-top: solid 1.5px whitesmoke;
     border-bottom: 1.5px #333 solid;
     position: absolute;
@@ -1180,8 +1189,8 @@ body::-webkit-scrollbar {
 
 .mini_window_startmenu {
     width: 150px;
-    height: 240px;
-    background: silver;
+    height: 265px;
+    background-color: #C3C7CB;
     position: absolute;
     bottom: 30px;
     outline: solid 1px dimgray;
@@ -1192,13 +1201,10 @@ body::-webkit-scrollbar {
     font-size: 15px;
     width: auto;
     height: 300px;
-    border: solid 3px #c0c0c0;
-    outline: 1px solid gray;
-    outline-offset: 0.4px;
-    box-shadow: 0 0 0 1.5px whitesmoke,
-        0 0 0 2px dimgray,
-        0 0 0 2.5px #000000;
     background: whitesmoke;
+    color: black;
+    border: 3.5px solid #c0c0c0;
+    box-shadow: 1.5px 1.5px #333333, -1.5px -1.5px whitesmoke;
     position: absolute;
     top: 50px;
     left: 20px;
@@ -1224,13 +1230,10 @@ body::-webkit-scrollbar {
     font-size: 15px;
     width: auto;
     height: auto;
-    border: solid 3px #c0c0c0;
-    outline: 1px solid gray;
-    outline-offset: 0.4px;
-    box-shadow: 0 0 0 1.5px dimgray,
-        0 0 0 3px white,
-        0 0 0 4px #000000;
-    background: white;
+    background: whitesmoke;
+    color: black;
+    border: 3.5px solid #c0c0c0;
+    box-shadow: 1.5px 1.5px #333333, -1.5px -1.5px whitesmoke;
     position: absolute;
     top: 50%;
     left: 50%;
@@ -1243,59 +1246,33 @@ body::-webkit-scrollbar {
     -ms-user-select: none;
     user-select: none;
     list-style: none;
-    display: none;
     font-size: 15px;
     width: auto;
     height: auto;
-    border: solid 3px #c0c0c0;
-    outline: 1px solid gray;
-    outline-offset: 0.4px;
-    box-shadow: 0 0 0 1.5px dimgray,
-        0 0 0 3px white,
-        0 0 0 4px #000000;
     background: white;
     position: absolute;
-    top: 45%;
-    left: 50%;
-    transform: translate(-50%, -50%);
 }
 
-.pass_windows {
+.pass_signin_menu {
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
     list-style: none;
-    display: block;
     font-size: 15px;
+    height: 90px;
     width: 300px;
-    height: auto;
-    border: solid 3px #c0c0c0;
-    outline: 1px solid gray;
-    outline-offset: 0.4px;
-    box-shadow: 0 0 0 1.5px dimgray,
-        0 0 0 3px white,
-        0 0 0 4px #000000;
-    background: white;
     position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
 }
 
 .password_menu {
     width: 250px;
 }
 
-.test_allwindow {
-    display: none;
-    height: 100%;
-    width: 100%;
-    background: black;
-    opacity: 0.5;
-    position: absolute;
-    top: 0;
-    z-index: 999998;
+.window_error_text {
+    display: inline-block;
+    margin-top: 25px;
+    margin-left: 35px;
 }
 
 /* screensaver */
@@ -1390,13 +1367,10 @@ body::-webkit-scrollbar {
     font-size: 15px;
     width: auto;
     height: auto;
-    border: solid 3px #c0c0c0;
-    outline: 1px solid gray;
-    outline-offset: 0.4px;
-    box-shadow: 0 0 0 1.5px dimgray,
-        0 0 0 3px white,
-        0 0 0 4px #000000;
-    background: white;
+    background: whitesmoke;
+    color: black;
+    border: 3.5px solid #c0c0c0;
+    box-shadow: 1.5px 1.5px #333333, -1.5px -1.5px whitesmoke;
     position: absolute;
     top: 50%;
     left: 50%;
@@ -1412,7 +1386,11 @@ body::-webkit-scrollbar {
 }
 
 .child_windows.minimization {
-    border: solid 3px red;
+    pointer-events: none;
+}
+
+.child_windows_invisible {
+    opacity: 0;
 }
 
 .child_windows.big {
@@ -1434,7 +1412,7 @@ body::-webkit-scrollbar {
     user-select: none;
 }
 
-.child_windows .title.center {
+.child_windows .title.text_center {
     text-align: center;
 }
 
@@ -1591,7 +1569,6 @@ body::-webkit-scrollbar {
     -ms-user-select: none;
     user-select: none;
     width: 100%;
-    /* background-color: navy; */
     background: gray;
     color: white;
     pointer-events: none;
@@ -1603,23 +1580,12 @@ body::-webkit-scrollbar {
     background: navy;
 }
 
-.title_buttons {
-    background-color: rgba();
-    position: relative;
-    bottom: 0px;
-    right: 0px;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-    z-index: 1;
-}
-
 .title2 {
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
+    flex: 0 0 auto;
     white-space: nowrap;
     display: flex;
     background: #c0c0c0;
@@ -1631,8 +1597,8 @@ body::-webkit-scrollbar {
 }
 
 .title2 li:hover {
-    outline: 1.5px dotted black;
-    outline-offset: -3px;
+    background: darkblue;
+    color: white;
 }
 
 .window_tool {
@@ -1644,6 +1610,7 @@ body::-webkit-scrollbar {
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
+    flex: 0 0 auto;
 }
 
 .windowtool_buttons {
@@ -1707,7 +1674,8 @@ body::-webkit-scrollbar {
 }
 
 .nexser_search_menu {
-    width: 850px;
+    width: 900px;
+    height: 550px;
 }
 
 #myUL {
@@ -1715,11 +1683,9 @@ body::-webkit-scrollbar {
 }
 
 #myUL>li {
-    display: block;
     margin-top: 3px;
     margin-left: 3px;
     margin-right: 3px;
-    min-width: max-content;
     width: 200px;
     box-sizing: border-box;
     height: 30px;
@@ -1817,100 +1783,63 @@ body::-webkit-scrollbar {
     outline-offset: -5px;
 }
 
-/* title_buttons */
-.close_button {
-    display: inline-block;
-    width: 19px;
-    height: 19px;
-    background: #c0c0c0;
-    position: absolute;
-    top: 3px;
-    right: 3.5px;
-    text-align: center;
-    justify-content: center;
-    font-size: 11px;
-    box-sizing: border-box;
-    text-shadow:
-        0.35px 0.35px 0,
-        0.35px -0.35px 0px,
-        -0.35px 0.35px 0,
-        -0.35px -0.35px 0px,
-        0.35px 0px 0px,
-        0px 0.35px 0px,
-        -0.35px 0px 0px,
-        0px -0.35px 0px;
-}
+/* title_buttons child */
 
-.close_button2 {
-    display: inline-block;
-    width: 19px;
-    height: 19px;
-    background: #c0c0c0;
-    position: absolute;
-    top: 3px;
-    right: 3.5px;
-    text-align: center;
-    justify-content: center;
-    font-size: 11px;
-    box-sizing: border-box;
+.title_buttons {
+    background-color: rgba();
+    position: relative;
+    bottom: 0px;
+    right: 0px;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
     z-index: 1;
-    text-shadow:
-        0.35px 0.35px 0,
-        0.35px -0.35px 0px,
-        -0.35px 0.35px 0,
-        -0.35px -0.35px 0px,
-        0.35px 0px 0px,
-        0px 0.35px 0px,
-        -0.35px 0px 0px,
-        0px -0.35px 0px;
 }
 
-.close_button3 {
-    display: inline-block;
+.title_buttons>.button2 {
+    background-color: #C3C7CB;
     width: 19px;
     height: 19px;
-    background: #c0c0c0;
+}
+
+.allclose_button {
     position: absolute;
     top: 3px;
     right: 3.5px;
-    text-align: center;
-    justify-content: center;
-    font-size: 11px;
     box-sizing: border-box;
-    z-index: 1;
-    text-shadow:
-        0.35px 0.35px 0,
-        0.35px -0.35px 0px,
-        -0.35px 0.35px 0,
-        -0.35px -0.35px 0px,
-        0.35px 0px 0px,
-        0px 0.35px 0px,
-        -0.35px 0px 0px,
-        0px -0.35px 0px;
 }
 
-/* 飾り */
-.close_button4 {
-    display: inline-block;
-    width: 19px;
-    height: 19px;
-    background: #c0c0c0;
+.allclose_button::before {
+    content: "";
     position: absolute;
-    top: 3px;
-    right: 3.5px;
-    text-align: center;
-    justify-content: center;
-    font-size: 11px;
-    box-sizing: border-box;
-    text-shadow:
-        0.35px 0.35px 0,
-        0.35px -0.35px 0px,
-        -0.35px 0.35px 0,
-        -0.35px -0.35px 0px,
-        0.35px 0px 0px,
-        0px 0.35px 0px,
-        -0.35px 0px 0px,
-        0px -0.35px 0px;
+    left: 7px;
+    top: 2px;
+    transform: rotate(45deg);
+    height: 12px;
+    width: 2px;
+    background-color: black;
+}
+
+.allclose_button::after {
+    content: "";
+    position: absolute;
+    left: 7px;
+    top: 2px;
+    transform: rotate(-45deg);
+    height: 12px;
+    width: 2px;
+    background-color: black;
+}
+
+.pressed.allclose_button::before {
+    margin-top: 1.5px;
+    margin-left: 1.5px;
+}
+
+.pressed.allclose_button::after {
+    margin-top: 1.5px;
+    margin-left: 1.5px;
 }
 
 /* 飾り */
@@ -1922,12 +1851,7 @@ body::-webkit-scrollbar {
     right: 0px;
 }
 
-.bigscreen_button,
-.bigscreen_button2 {
-    display: inline-block;
-    width: 19px;
-    height: 19px;
-    background: #c0c0c0;
+.bigscreen_button {
     position: absolute;
     top: 3px;
     right: 23px;
@@ -1946,27 +1870,26 @@ body::-webkit-scrollbar {
         0px -0.3px 0px;
 }
 
-.bigscreen_button_child {
-    border-top: solid 2px black;
+.bigscreen_button::before {
+    content: "";
+    display: block;
+    margin-right: 8px;
     position: absolute;
-    top: 3.5px;
-    left: 4px;
-    width: 8.5px;
+    display: block;
+    left: 2px;
+    top: 2px;
+    box-shadow: black 0px 3px inset, black 0px 0px 0px 1px inset;
+    height: 12px;
+    width: 12px;
 }
 
-.pressed .bigscreen_button_child {
-    border-top: solid 2px black;
-    position: absolute;
-    top: 4.5px;
-    left: 4.5px;
-    width: 8.5px;
+.pressed.bigscreen_button::before {
+    margin-top: 1.5px;
+    margin-left: 1.5px;
 }
 
 .minscreen_button {
     display: none;
-    width: 19px;
-    height: 19px;
-    background: #c0c0c0;
     position: absolute;
     top: 3px;
     right: 23px;
@@ -1974,22 +1897,31 @@ body::-webkit-scrollbar {
     justify-content: center;
     font-size: 11px;
     box-sizing: border-box;
-    text-shadow:
-        0.3px 0.3px 0,
-        0.3px -0.3px 0px,
-        -0.3px 0.3px 0,
-        -0.3px -0.3px 0px,
-        0.3px 0px 0px,
-        0px 0.3px 0px,
-        -0.3px 0px 0px,
-        0px -0.3px 0px;
+}
+
+.minscreen_button::before {
+    content: "";
+    position: absolute;
+    display: block;
+    left: 6px;
+    top: 2px;
+    box-shadow: black 0px 3px inset, black 0px 0px 0px 1px inset;
+    height: 8px;
+    width: 8px;
+}
+
+.minscreen_button::after {
+    content: "";
+    position: absolute;
+    display: block;
+    left: 3px;
+    top: 7px;
+    box-shadow: black 0px 3px inset, black 0px 0px 0px 1px inset;
+    height: 8px;
+    width: 8px;
 }
 
 .minimization_button {
-    display: inline-block;
-    width: 19px;
-    height: 19px;
-    background: #c0c0c0;
     position: absolute;
     top: 3px;
     right: 42.5px;
@@ -2006,6 +1938,36 @@ body::-webkit-scrollbar {
         0px 0.35px 0px,
         -0.35px 0px 0px,
         0px -0.35px 0px;
+}
+
+.minimization_button::before {
+    content: "";
+    position: absolute;
+    left: 3px;
+    top: 12px;
+    height: 2px;
+    width: 8px;
+    background-color: black;
+}
+
+.pressed.minimization_button::before {
+    margin-top: 1.5px;
+    margin-left: 1.5px;
+}
+
+.pressed.minscreen_button::before {
+    margin-top: 1.5px;
+    margin-left: 1.5px;
+}
+
+.pressed.minscreen_button::after {
+    margin-top: 1.5px;
+    margin-left: 1.5px;
+}
+
+.pointer_none::before,
+.pointer_none::after {
+    opacity: 0.3;
 }
 
 /*list */
@@ -2029,18 +1991,17 @@ body::-webkit-scrollbar {
     position: absolute;
     top: 20px;
     width: auto;
-    background-color: lightgray;
-    border-right: solid 1.5px black;
-    border-left: solid 1.5px whitesmoke;
-    border-bottom: solid 1.5px black;
-    border-top: solid 1.5px whitesmoke;
-    outline: solid 1px dimgray;
+    background-color: #C3C7CB;
+    color: black;
+    border: 1.8px solid #808080;
+    border-top-color: #fff;
+    border-left-color: #fff;
+    border-right-color: #808080;
+    border-bottom-color: #808080;
+    box-shadow: 0.5px 0.5px black;
 }
 
-.child_list ul.shadow {
-    box-shadow: 5px 5px black;
-}
-
+.child_list ul.shadow,
 .sample_child_list ul.shadow {
     box-shadow: 5px 5px black;
 }
@@ -2048,12 +2009,6 @@ body::-webkit-scrollbar {
 .child_list li {
     padding-left: 15px;
     padding-right: 15px;
-}
-
-.child_list li:hover {
-    outline: none;
-    background: darkblue;
-    color: white;
 }
 
 .sample_child_list {
@@ -2132,6 +2087,11 @@ body::-webkit-scrollbar {
     outline-offset: -1.5px;
 }
 
+.window_files.file_border3 {
+    outline: 1.5px dotted red;
+    outline-offset: -1.5px;
+}
+
 .window_files>.windowfile_time {
     position: absolute;
     bottom: 0px;
@@ -2178,7 +2138,6 @@ body::-webkit-scrollbar {
 /* note */
 
 .note_area {
-    outline: none;
     width: min-content;
     background: white;
     overflow: scroll;
@@ -2194,7 +2153,6 @@ body::-webkit-scrollbar {
 textarea {
     display: block;
     border-radius: 0;
-    outline: none;
     padding: 2.5px;
 }
 
@@ -2248,7 +2206,6 @@ textarea {
     border-right: 1.5px #333 solid;
     color: black;
     background: silver;
-    outline: none;
     box-sizing: border-box;
 }
 
@@ -2264,7 +2221,8 @@ textarea {
 
 .htmlviewer_edit_menu {
     width: 800px;
-    height: 510px;
+    height: 500px;
+    min-width: 400px;
 }
 
 .prompt_shell_menu {
@@ -2555,7 +2513,6 @@ td {
     z-index: 0;
     position: absolute;
     top: 0px;
-
     font: 120% bold;
     padding: 0.6em;
     background:
@@ -2569,7 +2526,6 @@ td {
     z-index: 0;
     position: absolute;
     top: 0px;
-
     font: 120% bold;
     padding: 0.6em;
     background:
@@ -2583,7 +2539,6 @@ td {
     z-index: 0;
     position: absolute;
     top: 0px;
-
     background-image: linear-gradient(black 4px, transparent 4px), linear-gradient(90deg, black 4px, transparent 4px), linear-gradient(black 2px, transparent 2px), linear-gradient(90deg, black 2px, rgba(0, 0, 0, 0) 2px);
     background-size: 50px 50px, 50px 50px, 10px 10px, 10px 10px;
     background-position: -4px -4px, -4px -4px, -2px -2px, -2px -2px;
@@ -2596,7 +2551,6 @@ td {
     z-index: 0;
     position: absolute;
     top: 0px;
-
     background-image: linear-gradient(0deg, darkgray 25%, dimgray 50%, teal 75%);
     background-size: 20px 20px;
 }
@@ -2608,7 +2562,6 @@ td {
     z-index: 0;
     position: absolute;
     top: 0px;
-
     background-image: repeating-linear-gradient(45deg, white 25%, transparent 25%, transparent 75%, teal 75%, gray), repeating-linear-gradient(45deg, dimgray 25%, gray 25%, whitesmoke 75%, black 75%, dimgray);
     background-position: 0 0, 20px 20px;
     background-size: 40px 40px;
@@ -2621,7 +2574,6 @@ td {
     z-index: 0;
     position: absolute;
     top: 0px;
-
     background: linear-gradient(#3f96cd, hsl(171, 40%, 91%));
 }
 
@@ -2632,7 +2584,6 @@ td {
     z-index: 0;
     position: absolute;
     top: 0px;
-
     background: linear-gradient(-150deg, teal, steelblue);
 }
 
@@ -2839,7 +2790,7 @@ progress::-webkit-progress-value {
     -ms-user-select: none;
     user-select: none;
     position: absolute;
-    border: 1px solid deepskyblue;
+    border: 1.5px dashed deepskyblue;
     background: skyblue;
     opacity: 0.5;
     pointer-events: none;
@@ -2855,7 +2806,6 @@ progress::-webkit-progress-value {
     width: 10px;
     height: 10px;
     position: absolute;
-    cursor: pointer;
     z-index: 1;
     margin: -2.5px;
 }
@@ -2958,14 +2908,12 @@ progress::-webkit-progress-value {
     box-shadow: 5px 5px black;
     background: white;
     color: black;
-    outline: none;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
     list-style: none;
     box-sizing: border-box;
-
     width: 80px;
     height: 100px;
     text-align: center;
@@ -3007,7 +2955,7 @@ progress::-webkit-progress-value {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    width: 75%;
+    width: 65%;
 }
 
 .test_site_menu {
@@ -3021,16 +2969,14 @@ progress::-webkit-progress-value {
     height: 100%;
 }
 
-
 #opacitySlider {
     margin-top: 10px;
     margin-left: 5px;
     margin-right: 40px;
-    -webkit-appearance: none;
+    appearance: none;
     width: 100%;
     height: 8px;
     background: #ddd;
-    outline: none;
     transition: opacity .2s;
     border-top: 1.5px #eee solid;
     border-left: 1.5px #eee solid;
@@ -3048,7 +2994,6 @@ progress::-webkit-progress-value {
     border-left: 1.5px #eee solid;
     border-bottom: 1.5px #333 solid;
     border-right: 1.5px #333 solid;
-    cursor: pointer;
 }
 
 #opacitySlider::-moz-range-thumb {
@@ -3059,5 +3004,11 @@ progress::-webkit-progress-value {
     border-left: 1.5px #eee solid;
     border-bottom: 1.5px #333 solid;
     border-right: 1.5px #333 solid;
-    cursor: pointer;
+}
+
+.content_center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
 }
