@@ -169,15 +169,18 @@
             <div class="nexser_background_image">
                 <div class="nexser_backgroundimage_1" style="display: none;">
                     <img class="nexser_backgroundimage_1_child" src="nexser_image/Windows95_wallpaper.jpg"
-                        loading="lazy" style="width: 100%; height: 100%;">
+                        loading="lazy">
                 </div>
                 <div class="nexser_backgroundimage_2" style="display: none;">
                     <img class="nexser_backgroundimage_2_child" src="nexser_image/Windows95_wallpaper_2.png"
-                        loading="lazy" style="width: 100%; height: 100%;">
+                        loading="lazy">
                 </div>
                 <div class="nexser_backgroundimage_3" style="display: none;">
                     <img class="nexser_backgroundimage_3_child" src="nexser_image/Windowsxp_wallpaper.jpg"
-                        loading="lazy" style="width: 100%; height: 100%;">
+                        loading="lazy">
+                </div>
+                <div class="nexser_backgroundimage_4" style="display: none;">
+                    <img class="nexser_backgroundimage_4_child" src="nexser_image/space_wallpaper.png" loading="lazy">
                 </div>
             </div>
 
@@ -544,8 +547,7 @@
                                         <li class="test_button9"><span class="startmenu_file_icon"></span>driver</li>
                                         <li class="test_button12"><span class="startmenu_file_icon"></span>notepad</li>
                                         <li class="test_button30"><span class="startmenu_file_icon"></span>objective
-                                            sheet
-                                        </li>
+                                            sheet</li>
                                     </ul>
                                 </div>
                             </div>
@@ -865,8 +867,7 @@
                                         <li class="test_button9"><span class="startmenu_file_icon"></span>driver</li>
                                         <li class="test_button12"><span class="startmenu_file_icon"></span>notepad</li>
                                         <li class="test_button30"><span class="startmenu_file_icon"></span>objective
-                                            sheet
-                                        </li>
+                                            sheet</li>
                                     </ul>
                                 </div>
                             </div>
@@ -1024,8 +1025,7 @@
                                         <li class="test_button9"><span class="startmenu_file_icon"></span>driver</li>
                                         <li class="test_button12"><span class="startmenu_file_icon"></span>notepad</li>
                                         <li class="test_button30"><span class="startmenu_file_icon"></span>objective
-                                            sheet
-                                        </li>
+                                            sheet</li>
                                     </ul>
                                 </div>
                             </div>
@@ -1637,11 +1637,11 @@
                             <p><input type="text" id="bkcolor" size="40" class="large border2" autocomplete="off"
                                     placeholder="background">
                             </p>
-                            <span class="border">例: red, skyblue, #ffcc00 ...</span>
+                            <span>例: red, skyblue, #ffcc00 ...</span>
                             <p><input type="text" id="color" size="40" class="large border2" autocomplete="off"
                                     placeholder="text">
                             </p>
-                            <span class="border">例: red, skyblue, #ffcc00 ...</span>
+                            <span>例: red, skyblue, #ffcc00 ...</span>
                             <p><button class="button2" id="changeBtn">color set</button></p>
                             <button class="button2" onclick="colordata_clear()">colors data
                                 clear</button>
@@ -1742,7 +1742,7 @@
                         </div>
                     </div>
 
-                    <div class="child_windows window_nosearch prompt_shell_menu active resize">
+                    <div class="child_windows window_nosearch prompt_shell_menu resize active">
                         <div class="title">
                             <span class="title_icon"></span><span>nexser shell</span>
                         </div>
@@ -2158,15 +2158,17 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                     </ul>
                                     <div class="window_inline_menus_child">
                                         <p class="window_menus_title">Wallpaper</p>
-                                        <div style="display: flex; top: 40px; position: absolute;">
+                                        <div style="display: inline-flex; flex-wrap: wrap; margin-top: 40px;">
                                             <button class="button2 apply_button2 wallpaper_95"
-                                                style="margin-left: 2.5px; margin-right: 2.5px;">&emsp;Windows95&emsp;</button>
+                                                style="margin: 2.5px;">&emsp;Windows95&emsp;</button>
                                             <button class="button2 apply_button2 wallpaper_95_2"
-                                                style="margin-left: 2.5px; margin-right: 2.5px;">&emsp;Windows95(2)&emsp;</button>
+                                                style="margin: 2.5px;">&emsp;Windows95(2)&emsp;</button>
                                             <button class="button2 apply_button2 wallpaper_xp"
-                                                style="margin-left: 2.5px; margin-right: 2.5px;">&emsp;WindowsXP&emsp;</button>
+                                                style="margin: 2.5px;">&emsp;WindowsXP&emsp;</button>
+                                            <button class="button2 apply_button2 wallpaper_space"
+                                                style="margin: 2.5px;">&emsp;Space&emsp;</button>
                                             <button class="button2 apply_button2 wallpaper_allremove_btn"
-                                                style="position: absolute; top: 35px; margin-left: 2.5px; margin-right: 2.5px;">&emsp;CLEAR&emsp;</button>
+                                                style="margin: 2.5px;">&emsp;CLEAR&emsp;</button>
                                         </div>
                                     </div>
                                 </div>
@@ -2295,7 +2297,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         </div>
                     </div>
 
-                    <div class="child_windows text_drop_menu resize active back_silver">
+                    <div class="child_windows text_drop_menu resize back_silver active">
                         <div class="title">
                             <span class="title_icon"></span><span>text drop</span>
                         </div>
@@ -2466,7 +2468,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         </div>
                     </div>
 
-                    <div class="child_windows htmlviewer_run_menu active resize">
+                    <div class="child_windows htmlviewer_run_menu resize active">
                         <div class="title">
                             <span class="title_icon"></span><span>html viewer run</span>
                         </div>
@@ -2750,7 +2752,8 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                 </ul>
                                 <ul>
                                     <li class="button2 apply_button" style="width: 60px; height: 25px;"
-                                        onclick="c_next()">&emsp;next&emsp;</li>
+                                        onclick="c_next()">
+                                        &emsp;next&emsp;</li>
                                 </ul>
                             </div>
                         </div>

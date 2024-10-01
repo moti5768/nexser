@@ -189,18 +189,14 @@ li {
 }
 
 .border {
-    border-top: 1.5px #eee solid;
-    border-left: 1.5px #eee solid;
-    border-bottom: 1.5px #333 solid;
-    border-right: 1.5px #333 solid;
+    border: 1.5px solid;
+    border-color: #eee #333 #333 #eee;
 }
 
 .border2 {
     background: darkgray;
-    border-top: 1.5px #333 solid;
-    border-left: 1.5px #333 solid;
-    border-bottom: 1.5px whitesmoke solid;
-    border-right: 1.5px whitesmoke solid;
+    border: 1.5px solid;
+    border-color: #333 #eee #eee #333;
 }
 
 /* desktop */
@@ -367,23 +363,6 @@ li {
 
 /* buttons */
 
-.task_buttons {
-    display: inline-block;
-    border-top: 1.8px #eee solid;
-    border-left: 1.8px #eee solid;
-    border-bottom: 1.8px #333 solid;
-    border-right: 1.8px #333 solid;
-    box-shadow: 0 0 0 0.5px dimgray;
-    color: black;
-    background: silver;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-    list-style: none;
-    box-sizing: border-box;
-}
-
 .task_buttons.pressed {
     background: darkgray;
     padding-top: 1px;
@@ -391,63 +370,31 @@ li {
     box-sizing: border-box;
 }
 
-.button {
-    display: inline-block;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-    list-style: none;
-    box-sizing: border-box;
-    background-color: #C3C7CB;
-    color: black;
-    border: 1.8px solid #808080;
-    border-top-color: #fff;
-    border-left-color: #fff;
-    border-right-color: #808080;
-    border-bottom-color: #808080;
-    box-shadow: 0.5px 0.5px black;
-}
-
-.button.pressed {
-    background-color: darkgray;
-    border-top-color: #7a7a7a;
-    border-left-color: #7a7a7a;
-    border-right-color: #fff;
-    border-bottom-color: #fff;
-    box-shadow: 0.5px 0.5px 0 #000 inset;
-    padding-top: 1px;
-    padding-left: 1px;
-    box-sizing: border-box;
-}
-
+.button,
 .button2 {
-    display: inline-block;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
     list-style: none;
-    background-color: #C3C7CB;
+    display: inline-block;
+    box-sizing: border-box;
     color: black;
+    background-color: #C3C7CB;
     border: 1.8px solid #808080;
-    border-top-color: #fff;
-    border-left-color: #fff;
-    border-right-color: #808080;
-    border-bottom-color: #808080;
+    border-color: #fff #808080 #808080 #fff;
     box-shadow: 0.5px 0.5px black;
 }
 
+.button.pressed,
 .button2.pressed {
-    background-color: darkgray;
-    border-top-color: #7a7a7a;
-    border-left-color: #7a7a7a;
-    border-right-color: #fff;
-    border-bottom-color: #fff;
-    box-shadow: 0.5px 0.5px 0 #000 inset;
     padding-top: 1px;
     padding-left: 1px;
     box-sizing: border-box;
+    background-color: darkgray;
+    border: 1.5px solid;
+    border-color: #7a7a7a #fff #fff #7a7a7a;
+    box-shadow: 0.5px 0.5px 0 #000 inset;
 }
 
 .apply_button {
@@ -461,6 +408,7 @@ li {
 }
 
 .apply_button2 {
+    display: inline-block;
     width: 150px;
     height: 30px;
     box-sizing: border-box;
@@ -503,10 +451,7 @@ input[type="file"] {
     width: 175px;
     height: 30px;
     border: 1.8px solid #808080;
-    border-top-color: #fff;
-    border-left-color: #fff;
-    border-right-color: #808080;
-    border-bottom-color: #808080;
+    border-color: #fff #808080 #808080 #fff;
     box-shadow: 0.5px 0.5px black;
     background: #DDDDDD;
     position: absolute;
@@ -543,6 +488,7 @@ input[type="file"] {
 
 .start_button {
     display: inline-block;
+    box-sizing: border-box;
     position: relative;
     bottom: 0px;
     left: 10px;
@@ -551,27 +497,20 @@ input[type="file"] {
     height: 26.5px;
     background-color: #C3C7CB;
     border: 1.8px solid #808080;
-    border-top-color: #fff;
-    border-left-color: #fff;
-    border-right-color: #808080;
-    border-bottom-color: #808080;
+    border-color: #fff #808080 #808080 #fff;
     box-shadow: 0.5px 0.5px black;
-    box-sizing: border-box;
+
 }
 
 .start_button.pressed {
-    border-top-color: #7a7a7a;
-    border-left-color: #7a7a7a;
-    border-right-color: #fff;
-    border-bottom-color: #fff;
-    box-shadow: 0.5px 0.5px 0 #000 inset;
     padding-top: 1px;
     padding-left: 1px;
     box-sizing: border-box;
+    border: 1.5px solid;
+    border-color: #7a7a7a #fff #fff #7a7a7a;
+    box-shadow: 0.5px 0.5px 0 #000 inset;
     outline: 1.5px dotted black;
     outline-offset: -5px;
-    padding-top: 1px;
-    padding-left: 1px;
 }
 
 #taskbar .first_taskbar_buttons {
@@ -717,19 +656,21 @@ input[type="file"] {
     display: none;
 }
 
+.child_start_menu,
+.child_start_menu_lists,
+.child_start_menu_lists2,
+.child_start_menu_lists3 {
+    position: absolute;
+    background-color: #C3C7CB;
+    border: 1.8px solid #808080;
+    border-color: #fff #808080 #808080 #fff;
+    box-shadow: 0.5px 0.5px black;
+}
+
 .child_start_menu {
     width: 150px;
-    position: absolute;
     bottom: 40px;
     z-index: 999998;
-    background-color: #C3C7CB;
-    color: black;
-    border: 1.8px solid #808080;
-    border-top-color: #fff;
-    border-left-color: #fff;
-    border-right-color: #808080;
-    border-bottom-color: #808080;
-    box-shadow: 0.5px 0.5px black;
 }
 
 .parent_start_menu_lists {
@@ -739,47 +680,23 @@ input[type="file"] {
 
 .child_start_menu_lists {
     display: none;
-    position: absolute;
     width: 170px;
     left: 125px;
     top: 0px;
-    background-color: #C3C7CB;
-    border: 1.8px solid #808080;
-    border-top-color: #fff;
-    border-left-color: #fff;
-    border-right-color: #808080;
-    border-bottom-color: #808080;
-    box-shadow: 0.5px 0.5px black;
 }
 
 .child_start_menu_lists2 {
     display: none;
-    position: absolute;
     width: 170px;
     left: 170px;
     top: -1.5px;
-    background-color: #C3C7CB;
-    border: 1.8px solid #808080;
-    border-top-color: #fff;
-    border-left-color: #fff;
-    border-right-color: #808080;
-    border-bottom-color: #808080;
-    box-shadow: 0.5px 0.5px black;
 }
 
 .child_start_menu_lists3 {
     display: none;
-    position: absolute;
     width: 170px;
     left: 170px;
     top: -1px;
-    background-color: #C3C7CB;
-    border: 1.8px solid #808080;
-    border-top-color: #fff;
-    border-left-color: #fff;
-    border-right-color: #808080;
-    border-bottom-color: #808080;
-    box-shadow: 0.5px 0.5px black;
 }
 
 .list_right_text {
@@ -953,6 +870,10 @@ input[type="file"] {
 .text_drop_menu {
     height: 300px;
     width: 500px;
+}
+
+#drop {
+    position: absolute;
 }
 
 .nexser_files_menu {
@@ -2780,8 +2701,11 @@ progress::-webkit-progress-value {
     display: block;
     position: absolute;
     z-index: 0;
+}
+
+.nexser_background_image * {
     width: 100%;
-    height: 100vh;
+    height: 100%;
 }
 
 .rectangle {

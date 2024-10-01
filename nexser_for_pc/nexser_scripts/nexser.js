@@ -573,6 +573,12 @@ if (ua.includes("mobile")) {
             background_img.style.width = "100%"
             background_img.style.height = "100%"
         }
+        if (localStorage.getItem('wallpaper_space')) {
+            document.querySelector('.nexser_backgroundimage_4').style.display = "block";
+            minidesk_backgroundresize4();
+            background_img.style.width = "100%"
+            background_img.style.height = "100%"
+        }
     }
 
 
@@ -2965,8 +2971,8 @@ if (ua.includes("mobile")) {
     const resizeTextarea = () => {
         const hehehe1 = note_parent.firstElementChild;
         if (hehehe1.classList.contains('navy')) {
-            note_child.style.width = `${note_parent.clientWidth + - + 5}px`;
-            note_child.style.height = `${note_parent.clientHeight + - + 105}px`;
+            note_child.style.width = `${note_parent.clientWidth - 5}px`;
+            note_child.style.height = `${note_parent.clientHeight - 105}px`;
             document.querySelector('.note_area').focus()
             displayCursorPos()
         }
@@ -2976,21 +2982,21 @@ if (ua.includes("mobile")) {
     const youtubeframe_child = document.getElementById('youtubeframe');
     const youtubeframe_resize = () => {
         youtubeframe_child.style.width = `${youtubeframe_parent.clientWidth}px`;
-        youtubeframe_child.style.height = `${youtubeframe_parent.clientHeight + - + 50}px`;
+        youtubeframe_child.style.height = `${youtubeframe_parent.clientHeight - 50}px`;
     };
 
     const cameraframe_parent = document.querySelector('.camera_menu');
     const cameraframe_child = document.getElementById('v');
     const cameraframe_resize = () => {
         cameraframe_child.style.width = `${cameraframe_parent.clientWidth}px`;
-        cameraframe_child.style.height = `${cameraframe_parent.clientHeight + - + 85}px`;
+        cameraframe_child.style.height = `${cameraframe_parent.clientHeight - 85}px`;
     };
 
     const video_parent = document.querySelector('.uploadvideo_menu');
     const video_child = document.getElementById('previewVideo2');
     const video_resize = () => {
         video_child.style.width = `${video_parent.clientWidth}px`;
-        video_child.style.height = `${video_parent.clientHeight + - + 60}px`;
+        video_child.style.height = `${video_parent.clientHeight - 60}px`;
     };
 
 
@@ -2998,34 +3004,41 @@ if (ua.includes("mobile")) {
     const url_drop_child = document.querySelector('.url_drop_area');
     const url_drop_resize = () => {
         url_drop_child.style.width = `${url_drop_parent.clientWidth}px`;
-        url_drop_child.style.height = `${url_drop_parent.clientHeight + - + 55}px`;
+        url_drop_child.style.height = `${url_drop_parent.clientHeight - 55}px`;
     };
 
     const objective_parent = document.querySelector('.objective_menu');
     const objective_child = document.querySelector('.objective_area');
     const objective_resize = () => {
-        objective_child.style.width = `${objective_parent.clientWidth + - + 5}px`;
-        objective_child.style.height = `${objective_parent.clientHeight + - + 160}px`;
+        objective_child.style.width = `${objective_parent.clientWidth - 5}px`;
+        objective_child.style.height = `${objective_parent.clientHeight - 155}px`;
     };
 
     const window_prompt_content2 = document.querySelector('.window_prompt_content2');
     const window_prompt_resize = () => {
         window_prompt_content2.style.width = `${window_prompt.clientWidth}px`;
-        window_prompt_content2.style.height = `${window_prompt.clientHeight + - + 50}px`;
+        window_prompt_content2.style.height = `${window_prompt.clientHeight - 50}px`;
     };
 
     const shell_parent = document.querySelector('.prompt_shell_menu');
     const shell_child = document.querySelector('#shell');
     const shell_resize = () => {
-        shell_child.style.width = `${shell_parent.clientWidth + - + 5}px`;
-        shell_child.style.height = `${shell_parent.clientHeight + - + 30}px`;
+        shell_child.style.width = `${shell_parent.clientWidth - 5}px`;
+        shell_child.style.height = `${shell_parent.clientHeight - 15}px`;
+    };
+
+    const textdrop_parent = document.querySelector('.text_drop_menu');
+    const textdrop_child = document.querySelector('#drop');
+    const textdrop_resize = () => {
+        textdrop_child.style.width = `${textdrop_parent.clientWidth - 5}px`;
+        textdrop_child.style.height = `${textdrop_parent.clientHeight - 80}px`;
     };
 
     const test_site_parent = document.querySelector('.test_site_menu');
     const test_site_child = document.querySelector('.site_frame');
     const test_site_resize = () => {
         test_site_child.style.width = `${test_site_parent.clientWidth}px`;
-        test_site_child.style.height = `${test_site_parent.clientHeight + - + 30}px`;
+        test_site_child.style.height = `${test_site_parent.clientHeight - 30}px`;
     };
 
     const background_image_parent = document.getElementById('nexser');
@@ -3044,8 +3057,8 @@ if (ua.includes("mobile")) {
     const nexser_nextversion_resize = () => {
         const hehehe1 = nexser_nextversion_parent.firstElementChild;
         if (hehehe1.classList.contains('navy')) {
-            nexser_nextversion_child.style.width = `${nexser_nextversion_parent.clientWidth + - + 0}px`;
-            nexser_nextversion_child.style.height = `${nexser_nextversion_parent.clientHeight + - + 20}px`;
+            nexser_nextversion_child.style.width = `${nexser_nextversion_parent.clientWidth}px`;
+            nexser_nextversion_child.style.height = `${nexser_nextversion_parent.clientHeight - 20}px`;
         }
     };
 
@@ -3054,8 +3067,8 @@ if (ua.includes("mobile")) {
     const htmlview_resize = () => {
         const hehehe1 = htmlview_parent.firstElementChild;
         if (hehehe1.classList.contains('navy')) {
-            htmlview_child.style.width = `${htmlview_parent.clientWidth + - + 0}px`;
-            htmlview_child.style.height = `${htmlview_parent.clientHeight + - + 20}px`;
+            htmlview_child.style.width = `${htmlview_parent.clientWidth}px`;
+            htmlview_child.style.height = `${htmlview_parent.clientHeight - 20}px`;
         }
     };
 
@@ -3064,8 +3077,8 @@ if (ua.includes("mobile")) {
     const htmlview_resize2 = () => {
         const hehehe1 = htmlview_parent2.firstElementChild;
         if (hehehe1.classList.contains('navy')) {
-            htmlview_child2.style.width = `${htmlview_parent2.clientWidth + - + 5}px`;
-            htmlview_child2.style.height = `${htmlview_parent2.clientHeight + - + 65}px`;
+            htmlview_child2.style.width = `${htmlview_parent2.clientWidth - 5}px`;
+            htmlview_child2.style.height = `${htmlview_parent2.clientHeight - 65}px`;
         }
     };
 
@@ -5370,10 +5383,10 @@ if (ua.includes("mobile")) {
     const wallpaper_allremove = () => {
         background_img.src = "";
         background_img.style.display = "none";
-        ['.nexser_backgroundimage_1', '.nexser_backgroundimage_2', '.nexser_backgroundimage_3'].forEach(selector => {
+        ['.nexser_backgroundimage_1', '.nexser_backgroundimage_2', '.nexser_backgroundimage_3', '.nexser_backgroundimage_4'].forEach(selector => {
             document.querySelector(selector).style.display = "none";
         });
-        ['wallpaper_95', 'wallpaper_95_2', 'wallpaper_xp'].forEach(item => localStorage.removeItem(item));
+        ['wallpaper_95', 'wallpaper_95_2', 'wallpaper_xp', 'wallpaper_space'].forEach(item => localStorage.removeItem(item));
     };
     const setWallpaper = (key, imageClass, resizeFunction) => {
         wallpaper_allremove();
@@ -5384,6 +5397,7 @@ if (ua.includes("mobile")) {
     document.querySelector('.wallpaper_95').addEventListener('click', () => setWallpaper('wallpaper_95', '.nexser_backgroundimage_1', minidesk_backgroundresize1));
     document.querySelector('.wallpaper_95_2').addEventListener('click', () => setWallpaper('wallpaper_95_2', '.nexser_backgroundimage_2', minidesk_backgroundresize2));
     document.querySelector('.wallpaper_xp').addEventListener('click', () => setWallpaper('wallpaper_xp', '.nexser_backgroundimage_3', minidesk_backgroundresize3));
+    document.querySelector('.wallpaper_space').addEventListener('click', () => setWallpaper('wallpaper_space', '.nexser_backgroundimage_4', minidesk_backgroundresize4));
 
     const othello_board = document.getElementById('othello_board');
     const size = 8;
@@ -6266,6 +6280,17 @@ if (ua.includes("mobile")) {
         minidesk_child.style.width = `${minidesk_parent.clientWidth}px`;
         minidesk_child.style.height = `${minidesk_parent.clientHeight}px`;
     }
+    function minidesk_backgroundresize4() {
+        background_img.style.display = "block";
+        background_img.src = "nexser_image/space_wallpaper.png.jpg"; // 画像のパスを指定
+        // 特定のクラスを持つ要素を取得
+        var targetElement = document.querySelector(".mini_desktop");
+        targetElement.appendChild(background_img);
+        const minidesk_parent = document.querySelector('.mini_desktop');
+        const minidesk_child = background_img
+        minidesk_child.style.width = `${minidesk_parent.clientWidth}px`;
+        minidesk_child.style.height = `${minidesk_parent.clientHeight}px`;
+    }
 
     document.querySelectorAll('.search_button').forEach(search_button =>
         search_button.addEventListener('click', () => {
@@ -6442,6 +6467,7 @@ if (ua.includes("mobile")) {
         window_prompt_resize()
         commandarea_resize()
         shell_resize()
+        textdrop_resize()
         test_site_resize()
         nexser_nextversion_resize()
         htmlview_resize()
@@ -6853,32 +6879,35 @@ if (ua.includes("mobile")) {
 
         windowtool_childbtns.style = "display: flex; height: 20px;";
 
-        Array.from(document.getElementsByClassName('windowfile1')).forEach((windowfile_1) => {
-            windowfile_1.addEventListener('click', function () {
-                localStorage.setItem('windowfile_1', true);
-                localStorage.removeItem('windowfile_2')
-                localStorage.removeItem('windowfile_3')
-                window_file_list_change()
+        setTimeout(() => {
+            Array.from(document.getElementsByClassName('windowfile1')).forEach((windowfile_1) => {
+                windowfile_1.addEventListener('click', function () {
+                    localStorage.setItem('windowfile_1', true);
+                    localStorage.removeItem('windowfile_2')
+                    localStorage.removeItem('windowfile_3')
+                    window_file_list_change()
+                })
             })
-        })
-        Array.from(document.getElementsByClassName('windowfile2')).forEach((windowfile_2) => {
-            windowfile_2.addEventListener('click', function () {
-                localStorage.setItem('windowfile_2', true);
-                localStorage.removeItem('windowfile_1')
-                localStorage.removeItem('windowfile_3')
-                window_file_list_reset()
+            Array.from(document.getElementsByClassName('windowfile2')).forEach((windowfile_2) => {
+                windowfile_2.addEventListener('click', function () {
+                    localStorage.setItem('windowfile_2', true);
+                    localStorage.removeItem('windowfile_1')
+                    localStorage.removeItem('windowfile_3')
+                    window_file_list_reset()
+                })
             })
-        })
-        Array.from(document.getElementsByClassName('windowfile3')).forEach((windowfile_3) => {
-            windowfile_3.addEventListener('click', function () {
-                localStorage.setItem('windowfile_3', true);
-                localStorage.removeItem('windowfile_1')
-                localStorage.removeItem('windowfile_2')
-                window_file_list_change2()
+            Array.from(document.getElementsByClassName('windowfile3')).forEach((windowfile_3) => {
+                windowfile_3.addEventListener('click', function () {
+                    localStorage.setItem('windowfile_3', true);
+                    localStorage.removeItem('windowfile_1')
+                    localStorage.removeItem('windowfile_2')
+                    window_file_list_change2()
+                })
             })
-        })
-        document.querySelectorAll('.nexser_search').forEach(nexser_search => { nexser_search.onclick = null; nexser_search.onclick = () => { toggleWindow(nexser_search_menu); }; });
+            document.querySelectorAll('.nexser_search').forEach(nexser_search => { nexser_search.onclick = null; nexser_search.onclick = () => { toggleWindow(nexser_search_menu); }; });
+        }, 10);
         windowtool_buttons_child.appendChild(windowtool_childbtns)
+
     });
 
     function error_windows_create() {
