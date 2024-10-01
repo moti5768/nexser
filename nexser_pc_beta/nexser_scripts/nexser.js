@@ -741,6 +741,7 @@ if (ua.includes("mobile")) {
         desktop.style.display = "none";
         document.getElementsByClassName('pattern_backgrounds')[0].style.display = "none";
         welcome_menu.classList.add('active');
+        welcome_menu.classList.remove('selectwindows');
         sound_stop();
         document.querySelector('.prompt_error_text').textContent = "";
         nex.style.cursor = 'crosshair';
