@@ -6295,7 +6295,7 @@ if (ua.includes("mobile")) {
     }
     function minidesk_backgroundresize4() {
         background_img.style.display = "block";
-        background_img.src = "nexser_image/space_wallpaper.png.jpg"; // 画像のパスを指定
+        background_img.src = "nexser_image/space_wallpaper.png"; // 画像のパスを指定
         // 特定のクラスを持つ要素を取得
         var targetElement = document.querySelector(".mini_desktop");
         targetElement.appendChild(background_img);
