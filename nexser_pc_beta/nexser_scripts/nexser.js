@@ -6888,7 +6888,7 @@ if (ua.includes("mobile")) {
         windowtool_childbtns.innerHTML = `<button class="button2 windowfile2" style="width: 25px;">・</button>
         <button class="button2 windowfile1" style="width: 25px;">ー</button>
         <button class="button2 windowfile3" style="width: 25px;">=</button>
-        <button class="button2 nexser_search">&nbsp;<span class="magnifying_glass"></span></button>
+        <button class="button2 nexser_search" style="width: 25px;">&nbsp;<span class="magnifying_glass"></span></button>
         <button class="button2" onclick="filetimes_test()" style="width: 25px; margin-left: 10px;">TR</button>
          <button class="button2" onclick="filetimes_test2()" style="width: 25px;">TF</button>`;
 
