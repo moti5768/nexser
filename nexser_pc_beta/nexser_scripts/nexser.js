@@ -4192,10 +4192,11 @@ if (ua.includes("mobile")) {
             sss.style.paddingLeft = "50px";
             sss.style.width = "auto";
         });
-
-        Array.from(document.getElementsByClassName('windowfile_time')).forEach((windowfile_time) => {
-            windowfile_time.style.display = "block"
-        })
+        if (!localStorage.getItem('filetimes')) {
+            Array.from(document.getElementsByClassName('windowfile_time')).forEach((windowfile_time) => {
+                windowfile_time.style.display = "block"
+            })
+        }
     }
 
     function window_file_list_change2() {
@@ -4216,10 +4217,11 @@ if (ua.includes("mobile")) {
             sss.style.paddingLeft = "50px";
             sss.style.width = "auto";
         });
-
-        Array.from(document.getElementsByClassName('windowfile_time')).forEach((windowfile_time) => {
-            windowfile_time.style.display = "block"
-        })
+        if (!localStorage.getItem('filetimes')) {
+            Array.from(document.getElementsByClassName('windowfile_time')).forEach((windowfile_time) => {
+                windowfile_time.style.display = "block"
+            })
+        }
     }
 
     function window_file_list_reset() {
@@ -6883,13 +6885,14 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.windowtool_buttons_child').forEach(windowtool_buttons_child => {
         const windowtool_childbtns = document.createElement('div');
 
-        windowtool_childbtns.innerHTML = `<button class="button2 windowfile2" style="width: 20px;">*</button>
-        <button class="button2 windowfile1" style="width: 20px;">*2</button>
-        <button class="button2 windowfile3" style="width: 20px;">*3</button>
-        <button class="button2 nexser_search">&nbsp;<span class="magnifying_glass"></span></button>`;
+        windowtool_childbtns.innerHTML = `<button class="button2 windowfile2" style="width: 25px;">・</button>
+        <button class="button2 windowfile1" style="width: 25px;">ー</button>
+        <button class="button2 windowfile3" style="width: 25px;">=</button>
+        <button class="button2 nexser_search">&nbsp;<span class="magnifying_glass"></span></button>
+        <button class="button2" onclick="filetimes_test()" style="width: 25px; margin-left: 10px;">TR</button>
+         <button class="button2" onclick="filetimes_test2()" style="width: 25px;">TF</button>`;
 
-        windowtool_childbtns.style = "display: flex; height: 20px;";
-
+        windowtool_childbtns.style = "display: flex; height: 25px;";
         setTimeout(() => {
             Array.from(document.getElementsByClassName('windowfile1')).forEach((windowfile_1) => {
                 windowfile_1.addEventListener('click', function () {
@@ -6916,10 +6919,36 @@ if (ua.includes("mobile")) {
                 })
             })
             document.querySelectorAll('.nexser_search').forEach(nexser_search => { nexser_search.onclick = null; nexser_search.onclick = () => { toggleWindow(nexser_search_menu); }; });
-        }, 10);
+            if (localStorage.getItem('filetimes')) {
+                Array.from(document.getElementsByClassName('windowfile_time')).forEach((windowfile_time) => {
+                    windowfile_time.style.display = "none"
+                })
+            }
+        }, 100);
         windowtool_buttons_child.appendChild(windowtool_childbtns)
 
     });
+
+
+
+    function filetimes_test() {
+        localStorage.removeItem('filetimes')
+        if (localStorage.getItem('windowfile_1') || localStorage.getItem('windowfile_3')) {
+            Array.from(document.getElementsByClassName('windowfile_time')).forEach((windowfile_time) => {
+                windowfile_time.style.display = "block"
+            })
+        }
+    }
+
+    function filetimes_test2() {
+        localStorage.setItem('filetimes', true)
+        if (localStorage.getItem('filetimes')) {
+            Array.from(document.getElementsByClassName('windowfile_time')).forEach((windowfile_time) => {
+                windowfile_time.style.display = "none"
+            })
+        }
+    }
+
 
     function error_windows_create() {
         sound(2)
@@ -7016,5 +7045,25 @@ if (ua.includes("mobile")) {
         }
     }
 
+    document.querySelectorAll('.frame_fullbutton').forEach(button => {
+        button.addEventListener('click', function () {
+            let parent = button.closest('.child_windows');
+            console.log(parent)
+            if (parent) {
+                let iframeOrVideo = parent.querySelector('iframe, video');
+                if (iframeOrVideo) {
+                    if (iframeOrVideo.requestFullscreen) {
+                        iframeOrVideo.requestFullscreen();
+                    } else if (iframeOrVideo.mozRequestFullScreen) {
+                        iframeOrVideo.mozRequestFullScreen();
+                    } else if (iframeOrVideo.webkitRequestFullscreen) {
+                        iframeOrVideo.webkitRequestFullscreen();
+                    } else if (iframeOrVideo.msRequestFullscreen) {
+                        iframeOrVideo.msRequestFullscreen();
+                    }
+                }
+            }
+        });
+    });
 
 };
