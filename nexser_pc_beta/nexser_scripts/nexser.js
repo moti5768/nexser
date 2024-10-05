@@ -7086,6 +7086,10 @@ if (ua.includes("mobile")) {
         });
     });
 
+
+
+    let selectedImage = null;
+
     function execCmd(command, value = null) {
         document.execCommand(command, false, value);
     }
@@ -7344,16 +7348,7 @@ if (ua.includes("mobile")) {
         event.stopPropagation(); // 親要素のクリックイベントが発火しないようにする
     });
 
-
-
-
-
-
-    let selectedImage = null;
-
     setTimeout(() => {
-
-
 
 
         document.querySelectorAll('#editor_2 img').forEach(img => {
@@ -7411,13 +7406,7 @@ if (ua.includes("mobile")) {
         });
 
 
-
-
-
-
-
-
-    }, 500);
+    }, 800);
 
 
 };
