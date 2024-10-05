@@ -108,6 +108,7 @@ if (ua.includes("mobile")) {
     const mydocument_menu = document.querySelector('.mydocument_menu');
     const restriction_menu = document.querySelector('.restriction_menu');
     const location_menu = document.querySelector('.location_menu');
+    const editor_menu = document.querySelector('.editor_menu');
 
     const notice_menu = document.querySelector('.notice_menu');
 
@@ -3093,6 +3094,17 @@ if (ua.includes("mobile")) {
         }
     };
 
+    const editor2_parent = document.querySelector('.editor_menu');
+    const editor2_child = document.getElementById('editor_2');
+    const editor2_resize = () => {
+        const hehehe1 = editor2_parent.firstElementChild;
+        if (hehehe1.classList.contains('navy')) {
+            editor2_child.style.width = `${editor2_parent.clientWidth - 6}px`;
+            editor2_child.style.height = `${editor2_parent.clientHeight - 85}px`;
+            // editor2_child.style.width = "100vh"
+            // editor2_child.style.height = "100vh"
+        }
+    };
 
 
     function addDragButtonListeners(button) {
@@ -3903,7 +3915,7 @@ if (ua.includes("mobile")) {
     })
 
     function warning_windows_close() {
-        warning_windows.classList.add('active')
+        warning_windows.style.display = "none";
         document.querySelector('.shutdown_button').style.display = "block";
         document.querySelector('.warningclose_button').style.display = "none";
         document.querySelector('.close_button3').style.display = "block"
@@ -3931,6 +3943,12 @@ if (ua.includes("mobile")) {
 
     function notearea_allselect() {
         document.querySelector('.note_area').select();
+    }
+
+    function notearea_time() {
+        const note = document.querySelector('.note_area');
+        const note_time = new Date();
+        note.value = note.value + note_time.toLocaleString();
     }
     document.getElementById('cleartextbtn').addEventListener('click', function () {
         document.getElementsByClassName("note_area")[0].value = '';
@@ -6141,7 +6159,7 @@ if (ua.includes("mobile")) {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'nexser_storageData_encrypted.json';
+        a.download = 'nexser_storageData_locked.json';
         a.click();
         URL.revokeObjectURL(url);
     });
@@ -6486,6 +6504,7 @@ if (ua.includes("mobile")) {
         htmlview_resize()
         htmlview_resize2()
         taskbar_resize()
+        editor2_resize()
     }
 
     function console_errortext_clear() {
@@ -6755,6 +6774,7 @@ if (ua.includes("mobile")) {
         document.querySelectorAll('.test_button43').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(url_drop_menu); }; });
         document.querySelectorAll('.test_button45').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(alarm_menu); }; });
         document.querySelectorAll('.test_button46').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(location_menu); }; });
+        document.querySelectorAll('.test_button47').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(editor_menu); }; });
 
         // games
 
@@ -7065,5 +7085,99 @@ if (ua.includes("mobile")) {
             }
         });
     });
+
+    function execCmd(command, value = null) {
+        document.execCommand(command, false, value);
+    }
+
+    document.getElementById('editor_2').addEventListener('input', function () {
+        console.log(this.innerHTML);
+    });
+
+    function saveContent() {
+        const content = document.getElementById('editor_2').innerHTML;
+        const compressedContent = btoa(unescape(encodeURIComponent(content)));
+        localStorage.setItem('editorContent', compressedContent);
+        alert('保存しました!');
+    }
+
+    // Load content from localStorage on page load
+    window.addEventListener('load', function () {
+        const savedContent = localStorage.getItem('editorContent');
+        if (savedContent) {
+            const decompressedContent = decodeURIComponent(escape(atob(savedContent)));
+            document.getElementById('editor_2').innerHTML = decompressedContent;
+        }
+    });
+
+    function changeFontSize(size) {
+        document.execCommand('fontSize', false, size);
+    }
+
+    function setNormal() {
+        const selectElement = document.getElementById('fontSizeSelect');
+        selectElement.value = '5'; // Set to 'Normal'
+        changeFontSize(selectElement.value);
+        console.log(selectElement.value)
+    }
+
+    function resetStyles() {
+        document.execCommand('removeFormat', false, null);
+        document.execCommand('foreColor', false, 'black');
+        document.execCommand('hiliteColor', false, 'whitesmoke');
+    }
+
+    document.getElementById('editor_2').addEventListener('keydown', function (event) {
+        if (event.key === 'Enter') {
+            setTimeout(() => {
+                resetStyles()
+                setNormal();
+                const selectElement = document.getElementById('fontSizeSelect');
+                changeFontSize(selectElement.value);
+            }, 0);
+        } else {
+            setNormal();
+        }
+    });
+
+    function exportToHTML() {
+        const content = document.getElementById('editor_2').innerHTML;
+        const blob = new Blob([content], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'editor_content.html';
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function printDiv() {
+        var printContents = document.getElementById('editor_2').innerHTML;
+        var originalContents = document.body.innerHTML;
+        document.body.style.background = "white";
+        document.body.style.height = "100vh";
+        // 印刷する内容を一時的に格納するコンテナを作成
+        var printContainer = document.createElement('div');
+        printContainer.innerHTML = printContents;
+        // 他の要素を非表示にする
+        var bodyChildren = document.body.children;
+        for (var i = 0; i < bodyChildren.length; i++) {
+            if (bodyChildren[i] !== printContainer) {
+                bodyChildren[i].style.display = 'none';
+            }
+        }
+        // 印刷コンテナをボディに追加
+        document.body.appendChild(printContainer);
+        // スタイルが適用されるのを待ってから印刷を実行
+        window.print();
+        setTimeout(() => {
+            // 元の内容を復元
+            for (var i = 0; i < bodyChildren.length; i++) {
+                bodyChildren[i].style.display = '';
+            }
+            document.body.removeChild(printContainer);
+        }, 500);
+    }
+
 
 };
