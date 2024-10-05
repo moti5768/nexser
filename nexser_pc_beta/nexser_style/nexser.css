@@ -2986,3 +2986,7 @@ progress::-webkit-progress-value {
     display: flex;
     flex-direction: column;
 }
+
+.img_border {
+    border: solid 2px black;
+}

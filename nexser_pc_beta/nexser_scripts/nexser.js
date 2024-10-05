@@ -7090,8 +7090,12 @@ if (ua.includes("mobile")) {
         document.execCommand(command, false, value);
     }
 
-    document.getElementById('editor_2').addEventListener('input', function () {
-        console.log(this.innerHTML);
+    document.getElementById('editor_2').addEventListener('mousedown', function () {
+        document.querySelectorAll('#editor_2 img').forEach(img => {
+            if (img) {
+                img.style.border = ''; // 以前の選択を解除
+            }
+        })
     });
 
     function saveContent() {
@@ -7137,9 +7141,16 @@ if (ua.includes("mobile")) {
                 }
             }
         }
+        if (selectedImage) {
+            if (selectedImage.classList.contains('img_border')) {
+                selectedImage.classList.remove('img_border')
+            } else {
+                selectedImage.classList.add('img_border')
+            }
+        }
     }
 
-    function toggleShadow() {
+    function toggleShadows() {
         const selection = window.getSelection();
         if (selection.rangeCount > 0) {
             const range = selection.getRangeAt(0);
@@ -7175,6 +7186,13 @@ if (ua.includes("mobile")) {
                 span.textContent = range.toString();
                 range.deleteContents();
                 range.insertNode(span);
+            }
+        }
+        if (selectedImage) {
+            if (selectedImage.style.boxShadow) {
+                selectedImage.style.boxShadow = '';
+            } else {
+                selectedImage.style.boxShadow = '5px 5px 15px rgba(0, 0, 0, 0.5)'; // 影を追加
             }
         }
     }
@@ -7331,7 +7349,7 @@ if (ua.includes("mobile")) {
 
 
 
-
+    let selectedImage = null;
 
     setTimeout(() => {
 
@@ -7341,6 +7359,15 @@ if (ua.includes("mobile")) {
         document.querySelectorAll('#editor_2 img').forEach(img => {
             img.style.position = 'absolute';
             img.style.cursor = 'pointer';
+
+            img.addEventListener('click', function (event) {
+                event.stopPropagation(); // クリックイベントのバブリングを防止
+                if (selectedImage) {
+                    selectedImage.style.border = ''; // 以前の選択を解除
+                }
+                selectedImage = img;
+                img.style.border = '2px solid blue'; // 選択された画像を強調表示
+            });
 
             img.addEventListener('mousedown', function (event) {
                 img.setAttribute('contenteditable', 'false'); // 画像を一時的に編集不可に設定
@@ -7387,11 +7414,9 @@ if (ua.includes("mobile")) {
 
 
 
-    }, 1000);
 
 
-
-
+    }, 500);
 
 
 };

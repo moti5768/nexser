@@ -3585,7 +3585,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         </div>
                     </div>
 
-                    <div class="child_windows editor_menu resize active">
+                    <div class="child_windows editor_menu resize">
                         <div class="title">
                             <span class="title_icon"></span><span>editor</span>
                         </div>
@@ -3641,7 +3641,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                     class="underline">U</span>&nbsp;</button>
                             <button class="button2" onclick="toggleDecoration()">&nbsp;<span
                                     style="border: solid 2px black;">&nbsp;A&nbsp;</span>&nbsp;</button>
-                            <button class="button2" onclick="toggleShadow()"
+                            <button class="button2" onclick="toggleShadows()"
                                 style="text-shadow: 3px 3px 0px dimgray;">&emsp;A&emsp;</button>
                             <button class="button2" onclick="toggleBoxShadow()">&emsp;<span
                                     style="border: solid 1px black; box-shadow: 3px 3px dimgray;">&nbsp;&nbsp;&nbsp;</span>&emsp;</button>
@@ -3671,6 +3671,8 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                 onclick="execCmd('insertImage', prompt('Enter image URL:', 'http://'))">Image</button>
                             <button class="button2" onclick="printDiv('editor_2')">Print</button>
                             <button class="button2" onclick="exportToHTML()">Export HTML</button>
+
+                            <button onclick="toggleSelectedImageShadow()">kie</button>
 
                             <div class="color_panel_parent border" style="background-color: #C3C7CB;">
                                 <p class="cpc2">最近使用した色</p>
