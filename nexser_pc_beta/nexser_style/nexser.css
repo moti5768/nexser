@@ -2945,3 +2945,33 @@ progress::-webkit-progress-value {
     left: 50%;
     transform: translate(-50%, -50%);
 }
+
+.color_panel_parent {
+    z-index: 1;
+    position: absolute;
+    background: silver;
+    top: 90px;
+}
+
+.color_panel_child {
+    display: flex;
+    gap: 10px;
+}
+
+.recent-colors {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin: 5px;
+}
+
+.color-box {
+    width: 25px;
+    height: 25px;
+    cursor: pointer;
+}
+
+.recent-colors-section {
+    display: flex;
+    flex-direction: column;
+}

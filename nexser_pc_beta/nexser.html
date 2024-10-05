@@ -3645,9 +3645,11 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             <button class="button2 large" onclick="execCmd('undo')">&nbsp;&#8634;&nbsp;</button>
                             <button class="button2 large" onclick="execCmd('redo')">&nbsp;&#8635;&nbsp;</button>
                             <button class="button2" onclick="execCmd('cut')">Cut</button>
-                            <button class="button2" onclick="execCmd('bold')">Bold</button>
-                            <button class="button2" onclick="execCmd('italic')">Italic</button>
-                            <button class="button2" onclick="execCmd('underline')">Underline</button>
+                            <button class="button2 bold" onclick="execCmd('bold')">&nbsp;B&nbsp;</button>
+                            <button class="button2" style="font-style: italic;"
+                                onclick="execCmd('italic')">&nbsp;A&nbsp;</button>
+                            <button class="button2" onclick="execCmd('underline')">&nbsp;<span
+                                    class="underline">U</span>&nbsp;</button>
                             <button class="button2" onclick="toggleDecoration()">&nbsp;<span
                                     style="border: solid 2px black;">&nbsp;A&nbsp;</span>&nbsp;</button>
                             <button class="button2" onclick="toggleShadow()"
@@ -3670,16 +3672,33 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             </select>
                             <input class="button2" style="width: 25px;" type="color"
                                 onchange="execCmd('foreColor', this.value)" onclick="execCmd('foreColor', this.value)"
-                                title="Text Color"><span style="color: red;">A</span>
+                                id="editor_textColor" title="Text Color"><span style="color: red;">A</span>
                             <input class="button2" style="width: 25px;" type="color"
-                                onclick="execCmd('hiliteColor', this.value)" title="Background Color"><span
-                                style="background: red; color: white;">A</span>
+                                onclick="execCmd('hiliteColor', this.value)" id="editor_bgColor"
+                                title="Background Color"><span style="background: red; color: white;">A</span>
                             <button class="button2"
                                 onclick="execCmd('createLink', prompt('Enter URL:', 'http://'))">Link</button>
                             <button class="button2"
                                 onclick="execCmd('insertImage', prompt('Enter image URL:', 'http://'))">Image</button>
                             <button class="button2" onclick="printDiv('editor_2')">Print</button>
                             <button class="button2" onclick="exportToHTML()">Export HTML</button>
+
+                            <div class="color_panel_parent border" style="background-color: #C3C7CB;">
+                                <p class="cpc2">最近使用した色</p>
+                                <div class="color_panel_child">
+                                    <div class="recent-colors-section">
+                                        <span class="label small">文字色</span>
+                                        <div class="recent-colors" id="recentTextColors"></div>
+                                    </div>
+                                    <div class="recent-colors-section">
+                                        <span class="label small">背景色</span>
+                                        <div class="recent-colors" id="recentBgColors"></div>
+                                    </div>
+                                </div>
+                                <div class="button2" style="position: absolute; left: 105px; top: -1.5px;">
+                                    <p style="transform: rotate(90deg);">&nbsp;&#x25BC;&nbsp;</p>
+                                </div>
+                            </div>
                         </div>
                         <div class="window_content border2" style="background-color: white;">
                             <div id="editor_2" contenteditable="true"></div>

@@ -7249,4 +7249,82 @@ if (ua.includes("mobile")) {
     }
 
 
+    const maxRecentColors = 15; // 最近使用した色の最大数
+
+    // ローカルストレージから色を取得
+    const recentTextColors = JSON.parse(localStorage.getItem('recentTextColors')) || [];
+    const recentBgColors = JSON.parse(localStorage.getItem('recentBgColors')) || [];
+
+    document.getElementById('editor_textColor').addEventListener('change', function () {
+        addRecentColor(this.value, recentTextColors, 'recentTextColors');
+        applyTextColor(this.value);
+    });
+
+    document.getElementById('editor_bgColor').addEventListener('change', function () {
+        addRecentColor(this.value, recentBgColors, 'recentBgColors');
+        applyBgColor(this.value);
+    });
+
+    function addRecentColor(color, colorArray, storageKey) {
+        if (!colorArray.includes(color)) {
+            if (colorArray.length >= maxRecentColors) {
+                colorArray.shift(); // 古い色を削除
+            }
+            colorArray.push(color);
+            localStorage.setItem(storageKey, JSON.stringify(colorArray));
+            updateRecentColors(colorArray, storageKey);
+        }
+    }
+
+    function updateRecentColors(colorArray, elementId) {
+        const recentColorsDiv = document.getElementById(elementId);
+        recentColorsDiv.innerHTML = '';
+        colorArray.forEach(color => {
+            const colorBox = document.createElement('div');
+            colorBox.className = 'color-box border2';
+            colorBox.style.backgroundColor = color;
+            colorBox.addEventListener('click', function () {
+                if (elementId === 'recentTextColors') {
+                    applyTextColor(color);
+                } else if (elementId === 'recentBgColors') {
+                    applyBgColor(color);
+                }
+            });
+            recentColorsDiv.appendChild(colorBox);
+        });
+    }
+
+    function applyTextColor(color) {
+        document.execCommand('foreColor', false, color);
+    }
+
+    function applyBgColor(color) {
+        document.execCommand('hiliteColor', false, color);
+    }
+
+    // ページロード時に最近使用した色を表示
+    updateRecentColors(recentTextColors, 'recentTextColors');
+    updateRecentColors(recentBgColors, 'recentBgColors');
+
+    const color_panel_parent = document.querySelector('.color_panel_parent');
+    const color_panel_child = document.querySelector('.color_panel_child');
+
+    color_panel_parent.style.left = "-110px";
+
+    color_panel_parent.addEventListener('click', function () {
+        if (color_panel_parent.style.left === "-110px") {
+            color_panel_parent.style.left = "";
+        } else {
+            color_panel_parent.style.left = "-110px";
+        }
+    });
+
+    color_panel_child.addEventListener('click', function (event) {
+        event.stopPropagation(); // 親要素のクリックイベントが発火しないようにする
+    });
+    document.querySelector('.cpc2').addEventListener('click', function (event) {
+        event.stopPropagation(); // 親要素のクリックイベントが発火しないようにする
+    });
+
+
 };
