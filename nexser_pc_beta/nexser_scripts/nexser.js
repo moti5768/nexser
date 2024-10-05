@@ -7396,6 +7396,13 @@ if (ua.includes("mobile")) {
                 // テキスト選択を防止
                 event.preventDefault();
             });
+
+            img.addEventListener('contextmenu', function (event) {
+                event.preventDefault(); // 右クリックメニューを無効化
+                if (confirm('この画像を削除しますか？')) {
+                    img.remove();
+                }
+            });
         }
 
         // 初期画像にハンドラを適用
@@ -7409,7 +7416,7 @@ if (ua.includes("mobile")) {
         });
 
         // MutationObserverを使用して新しい画像にハンドラを適用
-        const observer = new MutationObserver(function (mutationsList) {
+        const observer_imgs = new MutationObserver(function (mutationsList) {
             for (let mutation of mutationsList) {
                 if (mutation.type === 'childList') {
                     mutation.addedNodes.forEach(node => {
@@ -7421,8 +7428,7 @@ if (ua.includes("mobile")) {
             }
         });
 
-        observer.observe(document.getElementById('editor_2'), { childList: true, subtree: true });
-
+        observer_imgs.observe(document.getElementById('editor_2'), { childList: true, subtree: true });
 
 
     }, 1000);
