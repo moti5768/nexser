@@ -7327,4 +7327,71 @@ if (ua.includes("mobile")) {
     });
 
 
+
+
+
+
+
+
+    setTimeout(() => {
+
+
+
+
+        document.querySelectorAll('#editor_2 img').forEach(img => {
+            img.style.position = 'absolute';
+            img.style.cursor = 'pointer';
+
+            img.addEventListener('mousedown', function (event) {
+                img.setAttribute('contenteditable', 'false'); // 画像を一時的に編集不可に設定
+
+                const editor = document.getElementById('editor_2');
+                const editorRect = editor.getBoundingClientRect();
+                let shiftX = event.clientX - img.getBoundingClientRect().left;
+                let shiftY = event.clientY - img.getBoundingClientRect().top;
+
+                function moveAt(pageX, pageY) {
+                    img.style.left = pageX - shiftX - editorRect.left + 'px';
+                    img.style.top = pageY - shiftY - editorRect.top + 'px';
+                }
+
+                function onMouseMove(event) {
+                    moveAt(event.pageX, event.pageY);
+                }
+
+                document.addEventListener('mousemove', onMouseMove);
+
+                document.addEventListener('mouseup', function () {
+                    document.removeEventListener('mousemove', onMouseMove);
+                    img.setAttribute('contenteditable', 'true'); // ドラッグ終了後に再度編集可能に設定
+                }, { once: true });
+
+                img.addEventListener('dragstart', function () {
+                    return false;
+                });
+
+                // テキスト選択を防止
+                event.preventDefault();
+            });
+        });
+
+        // ドラッグ中のテキスト選択を防止
+        document.addEventListener('selectstart', function (event) {
+            if (event.target.tagName === 'IMG') {
+                event.preventDefault();
+            }
+        });
+
+
+
+
+
+
+    }, 1000);
+
+
+
+
+
+
 };
