@@ -7351,7 +7351,7 @@ if (ua.includes("mobile")) {
     setTimeout(() => {
 
 
-        document.querySelectorAll('#editor_2 img').forEach(img => {
+        function applyImageHandlers(img) {
             img.style.position = 'absolute';
             img.style.cursor = 'pointer';
 
@@ -7379,7 +7379,7 @@ if (ua.includes("mobile")) {
 
                 function onMouseMove(event) {
                     moveAt(event.pageX, event.pageY);
-                    img.style.border = '2.5px dashed red'
+                    img.style.border = '2.5px dashed red';
                 }
 
                 document.addEventListener('mousemove', onMouseMove);
@@ -7396,7 +7396,10 @@ if (ua.includes("mobile")) {
                 // テキスト選択を防止
                 event.preventDefault();
             });
-        });
+        }
+
+        // 初期画像にハンドラを適用
+        document.querySelectorAll('#editor_2 img').forEach(applyImageHandlers);
 
         // ドラッグ中のテキスト選択を防止
         document.addEventListener('selectstart', function (event) {
@@ -7405,8 +7408,24 @@ if (ua.includes("mobile")) {
             }
         });
 
+        // MutationObserverを使用して新しい画像にハンドラを適用
+        const observer = new MutationObserver(function (mutationsList) {
+            for (let mutation of mutationsList) {
+                if (mutation.type === 'childList') {
+                    mutation.addedNodes.forEach(node => {
+                        if (node.tagName === 'IMG') {
+                            applyImageHandlers(node);
+                        }
+                    });
+                }
+            }
+        });
 
-    }, 800);
+        observer.observe(document.getElementById('editor_2'), { childList: true, subtree: true });
+
+
+
+    }, 1000);
 
 
 };
