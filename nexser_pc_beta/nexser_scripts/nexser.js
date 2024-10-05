@@ -7124,21 +7124,22 @@ if (ua.includes("mobile")) {
     function resetStyles() {
         document.execCommand('removeFormat', false, null);
         document.execCommand('foreColor', false, 'black');
-        document.execCommand('hiliteColor', false, 'whitesmoke');
+        document.execCommand('hiliteColor', false, 'white');
     }
 
     document.getElementById('editor_2').addEventListener('keydown', function (event) {
         if (event.key === 'Enter') {
             setTimeout(() => {
-                resetStyles()
+                resetStyles();
                 setNormal();
                 const selectElement = document.getElementById('fontSizeSelect');
                 changeFontSize(selectElement.value);
             }, 0);
-        } else {
+        } else if (!event.ctrlKey) {
             setNormal();
         }
     });
+
 
     function exportToHTML() {
         const content = document.getElementById('editor_2').innerHTML;
