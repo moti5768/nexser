@@ -1512,6 +1512,17 @@ body::-webkit-scrollbar {
     flex: 0 0 auto;
 }
 
+.window_tool_2 {
+    background: silver;
+    border-top: solid 1.5px gray;
+    height: 30px;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    flex: 0 0 auto;
+}
+
 .windowtool_buttons {
     display: inline;
     width: 100%;
