@@ -7114,6 +7114,71 @@ if (ua.includes("mobile")) {
         document.execCommand('fontSize', false, size);
     }
 
+    function toggleDecoration() {
+        const selection = window.getSelection();
+        if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            const parentElement = range.commonAncestorContainer.parentElement;
+
+            if (parentElement && parentElement.style.border) {
+                // 装飾を解除
+                const textNode = document.createTextNode(parentElement.textContent);
+                parentElement.parentNode.replaceChild(textNode, parentElement);
+            } else {
+                const selectedText = range.toString().trim();
+                if (selectedText) {
+                    // 装飾を追加
+                    const span = document.createElement('span');
+                    span.style.border = '2px solid black'; // テキストの周りに黒い枠線を追加
+                    span.style.display = 'inline';
+                    span.textContent = selectedText;
+                    range.deleteContents();
+                    range.insertNode(span);
+                }
+            }
+        }
+    }
+
+    function toggleShadow() {
+        const selection = window.getSelection();
+        if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            const parentElement = range.commonAncestorContainer.parentElement;
+
+            if (parentElement && parentElement.style.textShadow) {
+                // 影を解除
+                parentElement.style.textShadow = '';
+            } else {
+                // 影を追加
+                const span = document.createElement('span');
+                span.style.textShadow = '3px 3px 6px dimgray'; // テキストに影を追加
+                span.textContent = range.toString();
+                range.deleteContents();
+                range.insertNode(span);
+            }
+        }
+    }
+
+    function toggleBoxShadow() {
+        const selection = window.getSelection();
+        if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            const parentElement = range.commonAncestorContainer.parentElement;
+
+            if (parentElement && parentElement.style.boxShadow) {
+                // 影を解除
+                parentElement.style.boxShadow = '';
+            } else {
+                // 影を追加
+                const span = document.createElement('span');
+                span.style.boxShadow = '3px 3px 6px dimgray'; // オブジェクトに影を追加
+                span.textContent = range.toString();
+                range.deleteContents();
+                range.insertNode(span);
+            }
+        }
+    }
+
     function setNormal() {
         const selectElement = document.getElementById('fontSizeSelect');
         selectElement.value = '5'; // Set to 'Normal'
@@ -7125,6 +7190,9 @@ if (ua.includes("mobile")) {
         document.execCommand('removeFormat', false, null);
         document.execCommand('foreColor', false, 'black');
         document.execCommand('hiliteColor', false, 'white');
+        document.execCommand('underline', false, null)
+        document.execCommand('italic', false, null)
+        document.execCommand('bold', false, null)
     }
 
     document.getElementById('editor_2').addEventListener('keydown', function (event) {
