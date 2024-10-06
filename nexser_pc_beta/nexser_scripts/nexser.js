@@ -7296,20 +7296,32 @@ if (ua.includes("mobile")) {
             elements[i].setAttribute('contenteditable', 'false');
         }
         const content = editor.innerHTML;
-        console.log(content); // Log the content to the console
-        const blob = new Blob([content], { type: 'text/html' });
+
+        // 新しいドキュメントを作成してコンテンツを保持
+        const doc = document.implementation.createHTMLDocument('Exported Content');
+        doc.body.innerHTML = content;
+
+        // 元のドキュメントからスタイルをコピー
+        const styles = document.querySelectorAll('style, link[rel="stylesheet"]');
+        styles.forEach(style => {
+            doc.head.appendChild(style.cloneNode(true));
+        });
+
+        const blob = new Blob([doc.documentElement.outerHTML], { type: 'text/html' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
         a.download = 'editor_content.html';
         a.click();
         URL.revokeObjectURL(url);
+
         setTimeout(() => {
             for (let i = 0; i < elements.length; i++) {
                 elements[i].setAttribute('contenteditable', 'true');
             }
         }, 1000);
     }
+
 
     function printDiv() {
         var printContents = document.getElementById('editor_2').innerHTML;
@@ -7550,8 +7562,11 @@ if (ua.includes("mobile")) {
                         if (node.tagName === 'IMG') {
                             applyImageHandlers(node);
                         } else if (node.tagName === 'A') {
+                            const spanTag = document.createElement('span');
+                            spanTag.textContent = node.href;
+                            node.textContent = '';
+                            node.appendChild(spanTag);
                             applyAnchorHandlers(node);
-                            node.classList.add('button2');
                         }
                     });
                 }
@@ -7559,7 +7574,6 @@ if (ua.includes("mobile")) {
         });
 
         observer.observe(document.getElementById('editor_2'), { childList: true, subtree: true });
-
 
 
 
