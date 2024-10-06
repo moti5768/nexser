@@ -1217,8 +1217,11 @@ if (ua.includes("mobile")) {
             document.querySelector('.desktop_version_text').style.bottom = task + "px";
         }, 500);
         setTimeout(() => {
-            setColor()
+            setColor();
             nex.style.cursor = '';
+            if (!localStorage.getItem('editorContent')) {
+                localStorage.setItem('editorContent', "PGJyPg==")
+            }
         }, 1500);
         setTimeout(() => {
             startup_window_open()
@@ -7089,6 +7092,7 @@ if (ua.includes("mobile")) {
 
 
     let selectedImage = null;
+    let selectedAnchor = null;
 
     function execCmd(command, value = null) {
         document.execCommand(command, false, value);
@@ -7348,8 +7352,11 @@ if (ua.includes("mobile")) {
         event.stopPropagation(); // 親要素のクリックイベントが発火しないようにする
     });
 
-    setTimeout(() => {
+    if (!localStorage.getItem('editorContent') && localStorage.getItem('start_nexser')) {
+        localStorage.setItem('editorContent', "PGJyPg==")
+    }
 
+    setTimeout(() => {
 
         function applyImageHandlers(img) {
             img.style.position = 'absolute';
@@ -7405,30 +7412,89 @@ if (ua.includes("mobile")) {
             });
         }
 
-        // 初期画像にハンドラを適用
+        function applyAnchorHandlers(anchor) {
+            anchor.style.position = 'absolute';
+            anchor.style.cursor = 'pointer';
+
+            anchor.addEventListener('click', function (event) {
+                event.stopPropagation(); // クリックイベントのバブリングを防止
+                selectedAnchor = anchor;
+                anchor.style.border = ''; // 選択されたリンクを強調表示
+            });
+
+            anchor.addEventListener('mousedown', function (event) {
+                anchor.setAttribute('contenteditable', 'false'); // リンクを一時的に編集不可に設定
+
+                const editor = document.getElementById('editor_2');
+                const editorRect = editor.getBoundingClientRect();
+                let shiftX = event.clientX - anchor.getBoundingClientRect().left;
+                let shiftY = event.clientY - anchor.getBoundingClientRect().top;
+
+                function moveAt(pageX, pageY) {
+                    anchor.style.left = pageX - shiftX - editorRect.left + 'px';
+                    anchor.style.top = pageY - shiftY - editorRect.top + 'px';
+                }
+
+                function onMouseMove(event) {
+                    moveAt(event.pageX, event.pageY);
+                    anchor.style.border = '2.5px dashed red';
+                }
+
+                document.addEventListener('mousemove', onMouseMove);
+
+                document.addEventListener('mouseup', function () {
+                    anchor.setAttribute('contenteditable', 'true');
+                    document.removeEventListener('mousemove', onMouseMove);
+                    setTimeout(() => {
+                        anchor.setAttribute('contenteditable', 'false'); // ドラッグ終了後に再度編集可能に設定
+                    }, 0);
+                }, { once: true });
+
+                anchor.addEventListener('dragstart', function () {
+                    return false;
+                });
+
+                // テキスト選択を防止
+                event.preventDefault();
+            });
+
+            anchor.addEventListener('contextmenu', function (event) {
+                event.preventDefault(); // 右クリックメニューを無効化
+                if (confirm('このリンクを削除しますか？')) {
+                    anchor.remove();
+                }
+            });
+        }
+
+        // 初期画像とリンクにハンドラを適用
         document.querySelectorAll('#editor_2 img').forEach(applyImageHandlers);
+        document.querySelectorAll('#editor_2 a').forEach(applyAnchorHandlers);
 
         // ドラッグ中のテキスト選択を防止
         document.addEventListener('selectstart', function (event) {
-            if (event.target.tagName === 'IMG') {
+            if (event.target.tagName === 'IMG' || event.target.tagName === 'A') {
                 event.preventDefault();
             }
         });
 
-        // MutationObserverを使用して新しい画像にハンドラを適用
-        const observer_imgs = new MutationObserver(function (mutationsList) {
+        // MutationObserverを使用して新しい画像とリンクにハンドラを適用
+        const observer = new MutationObserver(function (mutationsList) {
             for (let mutation of mutationsList) {
                 if (mutation.type === 'childList') {
                     mutation.addedNodes.forEach(node => {
                         if (node.tagName === 'IMG') {
                             applyImageHandlers(node);
+                        } else if (node.tagName === 'A') {
+                            applyAnchorHandlers(node);
+                            node.classList.add('button2')
                         }
                     });
                 }
             }
         });
 
-        observer_imgs.observe(document.getElementById('editor_2'), { childList: true, subtree: true });
+        observer.observe(document.getElementById('editor_2'), { childList: true, subtree: true });
+
 
 
     }, 1000);
