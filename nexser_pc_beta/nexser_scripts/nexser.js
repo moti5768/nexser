@@ -7204,13 +7204,7 @@ if (ua.includes("mobile")) {
     document.getElementById('editor_2').addEventListener('keydown', function (event) {
         if (event.key === 'Enter') {
             setTimeout(() => {
-                resetStyles();
                 setNormal();
-                const selectElement = document.getElementById('fontSizeSelect').value;
-                changeFontSize(selectElement);
-                setTimeout(() => {
-                    handleCursorStyles()
-                }, 0);
             }, 0);
         }
     });
@@ -7222,67 +7216,34 @@ if (ua.includes("mobile")) {
         changeFontSize(selectElement.value);
     }
 
-    function resetStyles() {
-        document.execCommand('foreColor', false, 'black');
-        document.execCommand('hiliteColor', false, 'white');
-        document.execCommand('underline', false, null);
-        document.execCommand('italic', false, null);
-        document.execCommand('bold', false, null);
-        document.execCommand('removeFormat', false, null);
-    }
-
-
-    function handleCursorStyles() {
-        const selection = window.getSelection();
-        if (selection.rangeCount > 0) {
+    document.getElementById('editor_2').addEventListener('input', function (event) {
+        if (event.inputType === 'insertParagraph') {
+            const selection = window.getSelection();
             const range = selection.getRangeAt(0);
-            let container = range.startContainer;
+            const newNode = document.createElement('span');
 
-            // テキストノードの場合は親要素を取得
-            if (container.nodeType === Node.TEXT_NODE) {
-                container = container.parentNode;
+            // 最も外側のdivタグまで遡る
+            let rootParent = range.startContainer;
+            while (rootParent.parentNode && rootParent.nodeName !== 'DIV') {
+                rootParent = rootParent.parentNode;
             }
 
-            // 一番目の親div要素を取得
-            while (container && container.nodeName !== 'DIV') {
-                container = container.parentNode;
-            }
-
-            if (container && container.nodeName === 'DIV') {
-                console.log('Resetting styles for:', container);
-                removeAllTargetTagsAndStyles(container);
-            }
-        }
-    }
-
-    function removeAllTargetTagsAndStyles(element) {
-        const tagsToRemove = ['SPAN', 'I', 'U', 'B'];
-        tagsToRemove.forEach(tag => {
-            let elements = element.getElementsByTagName(tag);
-            while (elements.length > 0) {
-                const childElement = elements[0];
-                console.log(`Removing <${tag.toLowerCase()}> tag:`, childElement);
-                const parent = childElement.parentNode;
-                while (childElement.firstChild) {
-                    parent.insertBefore(childElement.firstChild, childElement);
+            // 最も外側のdivタグの子要素をすべて削除
+            if (rootParent.nodeName === 'DIV') {
+                console.log('Clearing all children of:', rootParent);
+                while (rootParent.firstChild) {
+                    rootParent.removeChild(rootParent.firstChild);
                 }
-                parent.removeChild(childElement);
-                elements = element.getElementsByTagName(tag);
             }
-        });
-
-        // 子要素のスタイルもリセット
-        const allElements = element.getElementsByTagName('*');
-        for (let i = 0; i < allElements.length; i++) {
-            const el = allElements[i];
-            if (el.style) {
-                el.style.border = '';
-                el.style.boxShadow = '';
-                el.style.textShadow = '';
-            }
+            // 新しいspanを挿入
+            newNode.appendChild(document.createTextNode('\u200B')); // ゼロ幅スペースを追加してspanを保持
+            rootParent.appendChild(newNode);
+            range.setStart(newNode, 0);
+            range.setEnd(newNode, 0);
+            selection.removeAllRanges();
+            selection.addRange(range);
         }
-    }
-
+    });
 
 
     function changeFontSize(size) {
