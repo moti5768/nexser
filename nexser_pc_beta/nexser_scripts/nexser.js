@@ -7304,6 +7304,11 @@ if (ua.includes("mobile")) {
         a.download = 'editor_content.html';
         a.click();
         URL.revokeObjectURL(url);
+        setTimeout(() => {
+            for (let i = 0; i < elements.length; i++) {
+                elements[i].setAttribute('contenteditable', 'true');
+            }
+        }, 1000);
     }
 
     function printDiv() {
