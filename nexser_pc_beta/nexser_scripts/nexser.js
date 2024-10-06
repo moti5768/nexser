@@ -7122,10 +7122,6 @@ if (ua.includes("mobile")) {
         }
     });
 
-    function changeFontSize(size) {
-        document.execCommand('fontSize', false, size);
-    }
-
     function toggleDecoration() {
         const selection = window.getSelection();
         if (selection.rangeCount > 0) {
@@ -7205,38 +7201,102 @@ if (ua.includes("mobile")) {
         }
     }
 
-    function setNormal() {
-        const selectElement = document.getElementById('fontSizeSelect');
-        selectElement.value = '5'; // Set to 'Normal'
-        changeFontSize(selectElement.value);
-        console.log(selectElement.value)
-    }
-
-    function resetStyles() {
-        document.execCommand('removeFormat', false, null);
-        document.execCommand('foreColor', false, 'black');
-        document.execCommand('hiliteColor', false, 'white');
-        document.execCommand('underline', false, null)
-        document.execCommand('italic', false, null)
-        document.execCommand('bold', false, null)
-    }
-
     document.getElementById('editor_2').addEventListener('keydown', function (event) {
         if (event.key === 'Enter') {
             setTimeout(() => {
                 resetStyles();
                 setNormal();
-                const selectElement = document.getElementById('fontSizeSelect');
-                changeFontSize(selectElement.value);
+                const selectElement = document.getElementById('fontSizeSelect').value;
+                changeFontSize(selectElement);
+                setTimeout(() => {
+                    handleCursorStyles()
+                }, 0);
             }, 0);
-        } else if (!event.ctrlKey) {
-            setNormal();
         }
     });
 
 
+    function setNormal() {
+        const selectElement = document.getElementById('fontSizeSelect');
+        selectElement.value = '5';
+        changeFontSize(selectElement.value);
+    }
+
+    function resetStyles() {
+        document.execCommand('foreColor', false, 'black');
+        document.execCommand('hiliteColor', false, 'white');
+        document.execCommand('underline', false, null);
+        document.execCommand('italic', false, null);
+        document.execCommand('bold', false, null);
+        document.execCommand('removeFormat', false, null);
+    }
+
+
+    function handleCursorStyles() {
+        const selection = window.getSelection();
+        if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            let container = range.startContainer;
+
+            // テキストノードの場合は親要素を取得
+            if (container.nodeType === Node.TEXT_NODE) {
+                container = container.parentNode;
+            }
+
+            // 一番目の親div要素を取得
+            while (container && container.nodeName !== 'DIV') {
+                container = container.parentNode;
+            }
+
+            if (container && container.nodeName === 'DIV') {
+                console.log('Resetting styles for:', container);
+                removeAllTargetTagsAndStyles(container);
+            }
+        }
+    }
+
+    function removeAllTargetTagsAndStyles(element) {
+        const tagsToRemove = ['SPAN', 'I', 'U', 'B'];
+        tagsToRemove.forEach(tag => {
+            let elements = element.getElementsByTagName(tag);
+            while (elements.length > 0) {
+                const childElement = elements[0];
+                console.log(`Removing <${tag.toLowerCase()}> tag:`, childElement);
+                const parent = childElement.parentNode;
+                while (childElement.firstChild) {
+                    parent.insertBefore(childElement.firstChild, childElement);
+                }
+                parent.removeChild(childElement);
+                elements = element.getElementsByTagName(tag);
+            }
+        });
+
+        // 子要素のスタイルもリセット
+        const allElements = element.getElementsByTagName('*');
+        for (let i = 0; i < allElements.length; i++) {
+            const el = allElements[i];
+            if (el.style) {
+                el.style.border = '';
+                el.style.boxShadow = '';
+                el.style.textShadow = '';
+            }
+        }
+    }
+
+
+
+    function changeFontSize(size) {
+        document.execCommand('fontSize', false, size);
+    }
+
     function exportToHTML() {
-        const content = document.getElementById('editor_2').innerHTML;
+        const editor = document.getElementById('editor_2');
+        const elements = editor.getElementsByTagName('*');
+        for (let i = 0; i < elements.length; i++) {
+            elements[i].setAttribute('contenteditable', 'false');
+        }
+        const content = editor.innerHTML;
+        console.log(content); // Log the content to the console
         const blob = new Blob([content], { type: 'text/html' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -7380,8 +7440,8 @@ if (ua.includes("mobile")) {
                 let shiftY = event.clientY - img.getBoundingClientRect().top;
 
                 function moveAt(pageX, pageY) {
-                    img.style.left = pageX - shiftX - editorRect.left + 'px';
-                    img.style.top = pageY - shiftY - editorRect.top + 'px';
+                    img.style.left = pageX - shiftX - editorRect.left + editor.scrollLeft + 'px';
+                    img.style.top = pageY - shiftY - editorRect.top + editor.scrollTop + 'px';
                 }
 
                 function onMouseMove(event) {
@@ -7431,8 +7491,8 @@ if (ua.includes("mobile")) {
                 let shiftY = event.clientY - anchor.getBoundingClientRect().top;
 
                 function moveAt(pageX, pageY) {
-                    anchor.style.left = pageX - shiftX - editorRect.left + 'px';
-                    anchor.style.top = pageY - shiftY - editorRect.top + 'px';
+                    anchor.style.left = pageX - shiftX - editorRect.left + editor.scrollLeft + 'px';
+                    anchor.style.top = pageY - shiftY - editorRect.top + editor.scrollTop + 'px';
                 }
 
                 function onMouseMove(event) {
@@ -7486,7 +7546,7 @@ if (ua.includes("mobile")) {
                             applyImageHandlers(node);
                         } else if (node.tagName === 'A') {
                             applyAnchorHandlers(node);
-                            node.classList.add('button2')
+                            node.classList.add('button2');
                         }
                     });
                 }
@@ -7494,6 +7554,7 @@ if (ua.includes("mobile")) {
         });
 
         observer.observe(document.getElementById('editor_2'), { childList: true, subtree: true });
+
 
 
 
