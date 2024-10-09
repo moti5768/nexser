@@ -127,12 +127,9 @@ if (ua.includes("mobile")) {
     document.addEventListener('click', () => {
         if (localStorage.getItem('game_none')) {
             document.querySelectorAll('.game_window:not(.active)').forEach((test) => {
-                errortitle_text = "制限されているため、起動ができませんでした";
-                error_windows_create();
-                setTimeout(() => {
-                    test.classList.add('active')
-                    test.classList.remove('selectwindows')
-                });
+                error_windows_create("制限されているため、起動ができませんでした");
+                test.classList.add('active')
+                test.classList.remove('selectwindows')
             })
         }
     })
@@ -176,12 +173,12 @@ if (ua.includes("mobile")) {
             })
         }
 
-        var isClickInsideStartButton = document.querySelector('.start_button').contains(e.target);
+        var isClickInsideStartButton = document.getElementById('startbtn').contains(e.target);
         var isClickInsideParentStartMenu2 = document.querySelector('.parentstartmenu2').contains(e.target);
         if (!isClickInsideStartButton && !isClickInsideParentStartMenu2) {
             startmenu_close()
         }
-        var isClickInsideStartButton3 = Array.from(document.querySelectorAll('.windowtool_child ,.windowtool_parent')).some(button => button.contains(e.target));
+        var isClickInsideStartButton3 = Array.from(document.querySelectorAll('.windowtool_parent,.windowtool_child')).some(button => button.contains(e.target));
         if (!isClickInsideStartButton3) {
             document.querySelectorAll('.windowtool_child').forEach(button => {
                 button.style.display = "none";
@@ -260,10 +257,16 @@ if (ua.includes("mobile")) {
         pageLoad,
         nexser_savedata_load
     ];
-    Promise.all(tasks.map(task => new Promise(resolve => setTimeout(() => resolve(task()), 50))))
+    Promise.all(tasks.map(task => new Promise(resolve => {
+        function runTask() {
+            resolve(task());
+        }
+        requestAnimationFrame(runTask);
+    })))
         .then(() => {
             console.log('すべてのタスクが完了しました');
         });
+
 
     function nexser_savedata_load() {
         const t = localStorage.getItem('taskbar_height');
@@ -278,11 +281,6 @@ if (ua.includes("mobile")) {
         if (localStorage.getItem('backtext')) {
             document.querySelector('#background_text').textContent = localStorage.getItem('backtext_data');
             background_text.classList.add('block');
-        }
-        if (!localStorage.getItem('backtext')) {
-            background_text.classList.remove('block');
-        }
-        if (localStorage.getItem('backtext')) {
             document.querySelector('.backtext_mode').textContent = "ON";
         }
         if (localStorage.getItem('noteData')) {
@@ -295,30 +293,21 @@ if (ua.includes("mobile")) {
         if (localStorage.getItem('objectiveData') || localStorage.getItem('objectiveTitleData')) {
             objective_load()
         }
-        if (localStorage.getItem('startup_note')) {
-            document.querySelector('.startup_note').textContent = "ON"
-        }
-        if (localStorage.getItem('startup_computer')) {
-            document.querySelector('.startup_computer').textContent = "ON"
-        }
-        if (localStorage.getItem('startup_color')) {
-            document.querySelector('.startup_color').textContent = "ON"
-        }
-        if (localStorage.getItem('startup_screen')) {
-            document.querySelector('.startup_screen').textContent = "ON"
-        }
-        if (localStorage.getItem('startup_htmlviewer_edit')) {
-            document.querySelector('.startup_htmlviewer_edit').textContent = "ON"
-        }
-        if (localStorage.getItem('startup_guidebook')) {
-            document.querySelector('.startup_guidebook').textContent = "ON"
-        }
-        if (localStorage.getItem('startup_objective')) {
-            document.querySelector('.startup_objective').textContent = "ON"
-        }
-        if (localStorage.getItem('startup_calendar')) {
-            document.querySelector('.startup_calendar').textContent = "ON"
-        }
+        const startupElements = [
+            { key: 'startup_note', selector: '.startup_note' },
+            { key: 'startup_computer', selector: '.startup_computer' },
+            { key: 'startup_color', selector: '.startup_color' },
+            { key: 'startup_screen', selector: '.startup_screen' },
+            { key: 'startup_htmlviewer_edit', selector: '.startup_htmlviewer_edit' },
+            { key: 'startup_guidebook', selector: '.startup_guidebook' },
+            { key: 'startup_objective', selector: '.startup_objective' },
+            { key: 'startup_calendar', selector: '.startup_calendar' }
+        ];
+        startupElements.forEach(({ key, selector }) => {
+            if (localStorage.getItem(key)) {
+                document.querySelector(selector).textContent = "ON";
+            }
+        });
         if (localStorage.getItem('prompt_data2')) {
             document.querySelector('.startup_speed').textContent = "HIGH"
         }
@@ -334,57 +323,18 @@ if (ua.includes("mobile")) {
         } else {
             document.querySelector('.desktop_version_text').style.display = "none";
         }
-        if (localStorage.getItem('startup_1')) {
-            document.querySelector('.startup_1').textContent = "set!"
-        } else {
-            document.querySelector('.startup_1').textContent = "no set"
-        }
-        if (localStorage.getItem('startup_2')) {
-            document.querySelector('.startup_2').textContent = "set!"
-        } else {
-            document.querySelector('.startup_2').textContent = "no set"
-        }
-        if (localStorage.getItem('startup_3')) {
-            document.querySelector('.startup_3').textContent = "set!"
-        } else {
-            document.querySelector('.startup_3').textContent = "no set"
-        }
-        if (localStorage.getItem('startup_4')) {
-            document.querySelector('.startup_4').textContent = "set!"
-        } else {
-            document.querySelector('.startup_4').textContent = "no set"
-        }
-        if (localStorage.getItem('startup_5')) {
-            document.querySelector('.startup_5').textContent = "set!"
-        } else {
-            document.querySelector('.startup_5').textContent = "no set"
-        }
 
-        if (localStorage.getItem('shutdown_1')) {
-            document.querySelector('.shutdown_1').textContent = "set!"
-        } else {
-            document.querySelector('.shutdown_1').textContent = "no set"
-        }
-        if (localStorage.getItem('shutdown_2')) {
-            document.querySelector('.shutdown_2').textContent = "set!"
-        } else {
-            document.querySelector('.shutdown_2').textContent = "no set"
-        }
-        if (localStorage.getItem('shutdown_3')) {
-            document.querySelector('.shutdown_3').textContent = "set!"
-        } else {
-            document.querySelector('.shutdown_3').textContent = "no set"
-        }
-        if (localStorage.getItem('shutdown_4')) {
-            document.querySelector('.shutdown_4').textContent = "set!"
-        } else {
-            document.querySelector('.shutdown_4').textContent = "no set"
-        }
-        if (localStorage.getItem('shutdown_5')) {
-            document.querySelector('.shutdown_5').textContent = "set!"
-        } else {
-            document.querySelector('.shutdown_5').textContent = "no set"
-        }
+        const startupKeys = ['startup_1', 'startup_2', 'startup_3', 'startup_4', 'startup_5'];
+        startupKeys.forEach(key => {
+            const element = document.querySelector(`.${key}`);
+            element.textContent = localStorage.getItem(key) ? 'set!' : 'no set';
+        });
+
+        const shutdownElements = ['shutdown_1', 'shutdown_2', 'shutdown_3', 'shutdown_4', 'shutdown_5'];
+        shutdownElements.forEach(element => {
+            const isSet = localStorage.getItem(`${element}`);
+            document.querySelector(`.${element}`).textContent = isSet ? "set!" : "no set";
+        });
 
         if (localStorage.getItem('note_text_bold')) {
             document.querySelector('.note_area').style.fontWeight = "bold";
@@ -567,30 +517,18 @@ if (ua.includes("mobile")) {
             document.getElementById('taskbar').style.bottom = "-" + t2 + "px";
         }
 
-        if (localStorage.getItem('wallpaper_95')) {
-            document.querySelector('.nexser_backgroundimage_1').style.display = "block";
-            minidesk_backgroundresize1();
-            background_img.style.width = "100%"
-            background_img.style.height = "100%"
+        function setBackgroundImage(key, className, resizeFunction) {
+            if (localStorage.getItem(key)) {
+                document.querySelector(className).style.display = "block";
+                resizeFunction();
+                background_img.style.width = "100%";
+                background_img.style.height = "100%";
+            }
         }
-        if (localStorage.getItem('wallpaper_95_2')) {
-            document.querySelector('.nexser_backgroundimage_2').style.display = "block";
-            minidesk_backgroundresize2();
-            background_img.style.width = "100%"
-            background_img.style.height = "100%"
-        }
-        if (localStorage.getItem('wallpaper_xp')) {
-            document.querySelector('.nexser_backgroundimage_3').style.display = "block";
-            minidesk_backgroundresize3();
-            background_img.style.width = "100%"
-            background_img.style.height = "100%"
-        }
-        if (localStorage.getItem('wallpaper_space')) {
-            document.querySelector('.nexser_backgroundimage_4').style.display = "block";
-            minidesk_backgroundresize4();
-            background_img.style.width = "100%"
-            background_img.style.height = "100%"
-        }
+        setBackgroundImage('wallpaper_95', '.nexser_backgroundimage_1', minidesk_backgroundresize1);
+        setBackgroundImage('wallpaper_95_2', '.nexser_backgroundimage_2', minidesk_backgroundresize2);
+        setBackgroundImage('wallpaper_xp', '.nexser_backgroundimage_3', minidesk_backgroundresize3);
+        setBackgroundImage('wallpaper_space', '.nexser_backgroundimage_4', minidesk_backgroundresize4);
     }
 
 
@@ -674,18 +612,16 @@ if (ua.includes("mobile")) {
     function startmenu_close() {
         if (parent_start_menu.style.display === "block") {
             parent_start_menu.style.display = "none";
-            document.querySelector('.start_button').classList.remove('pressed');
+            document.getElementById('startbtn').classList.remove('pressed');
         }
     }
     document.getElementById('startbtn').addEventListener('mousedown', function () {
-        setTimeout(() => {
-            if (parent_start_menu.style.display === "block") {
-                startmenu_close()
-            } else {
-                parent_start_menu.style.display = "block";
-                document.querySelector('.start_button').classList.add('pressed');
-            }
-        }, 0);
+        if (parent_start_menu.style.display === "block") {
+            startmenu_close()
+        } else {
+            parent_start_menu.style.display = "block";
+            document.getElementById('startbtn').classList.add('pressed');
+        }
         fileborder_reset()
     })
 
@@ -706,16 +642,16 @@ if (ua.includes("mobile")) {
             button_1.classList.add('listener-added');
         }
     }
-    const observer_btn1 = new MutationObserver((mutations_1) => {
-        mutations_1.forEach((mutation_1) => {
-            if (mutation_1.type === 'childList') {
-                mutation_1.addedNodes.forEach((node_1) => {
-                    if (node_1.nodeType === 1 && node_1.classList.contains('button2')) {
-                        addButtonListeners(node_1);
+    const observer_btn1 = new MutationObserver((mutations) => {
+        for (const mutation of mutations) {
+            if (mutation.type === 'childList') {
+                for (const node of mutation.addedNodes) {
+                    if (node.nodeType === Node.ELEMENT_NODE && node.classList.contains('button2')) {
+                        addButtonListeners(node);
                     }
-                });
+                }
             }
-        });
+        }
     });
     observer_btn1.observe(document.body, { childList: true, subtree: true });
 
@@ -726,18 +662,18 @@ if (ua.includes("mobile")) {
             button_2.classList.add('listener-added');
         }
     }
-    const observer_btn2 = new MutationObserver((mutations_2) => {
-        mutations_2.forEach((mutation_2) => {
-            if (mutation_2.type === 'childList') {
-                mutation_2.addedNodes.forEach((node_2) => {
-                    if (node_2.nodeType === 1 && node_2.classList.contains('button')) {
-                        addButtonListeners2(node_2);
+    const observer_btn2 = new MutationObserver((mutations) => {
+        for (const mutation of mutations) {
+            if (mutation.type === 'childList') {
+                for (const node of mutation.addedNodes) {
+                    if (node.nodeType === Node.ELEMENT_NODE && node.classList.contains('button')) {
+                        addButtonListeners2(node);
                     }
-                });
+                }
             }
-        });
+        }
     });
-    observer_btn2.observe(document.body, { childList: true, subtree: true });
+    observer_btn2.observe(document.body, { childList: true, subtree: true })
 
 
     document.querySelector('.deskprompt').addEventListener('click', function () {
@@ -765,11 +701,9 @@ if (ua.includes("mobile")) {
         nex.style.cursor = 'crosshair';
         setTimeout(function () {
             screen_prompt.style.display = "none";
-            setTimeout(function () {
-                taskbar_none();
-                nexser_program.style.display = "block";
-            }, 50);
-        }, 50);
+            taskbar_none();
+            nexser_program.style.display = "block";
+        }, 100);
     }
 
     function nexser_program_close() {
@@ -876,8 +810,7 @@ if (ua.includes("mobile")) {
 
     function pass_submit() {
         if (document.querySelector('.password').value === "") {
-            errortitle_text = "パスワードが入力されていません!";
-            error_windows_create();
+            error_windows_create("パスワードが入力されていません!");
         } else {
             const pass = document.querySelector('.password').value;
             const password_lock = (String(pass)
@@ -994,11 +927,9 @@ if (ua.includes("mobile")) {
             startmenu_close()
             setTimeout(() => {
                 if (sessionStorage.getItem('start_camera')) {
-                    errortitle_text = "カメラが実行されているため、ログオフできません!";
-                    error_windows_create();
+                    error_windows_create("カメラが実行されているため、ログオフできません!");
                 } else if (localStorage.getItem('no_shutdown')) {
-                    errortitle_text = "welcomeウィンドウが起動するまでログオフできません!";
-                    error_windows_create();
+                    error_windows_create("welcomeウィンドウが起動するまでログオフできません!");
                 } else if (gets === gets2 && gets3 === 0) {
                     sound_stop();
                     shutdown_sound();
@@ -1058,11 +989,9 @@ if (ua.includes("mobile")) {
             startmenu_close()
             setTimeout(() => {
                 if (sessionStorage.getItem('start_camera')) {
-                    errortitle_text = "カメラが実行されているため、再起動はできません!";
-                    error_windows_create();
+                    error_windows_create("カメラが実行されているため、再起動はできません!");
                 } else if (localStorage.getItem('no_shutdown')) {
-                    errortitle_text = "welcomeウィンドウが起動するまで再起動はできません!";
-                    error_windows_create();
+                    error_windows_create("welcomeウィンドウが起動するまで再起動はできません!");
                 } else if (gets === gets2 && gets3 === 0) {
                     sound_stop();
                     shutdown_sound();
@@ -1101,8 +1030,7 @@ if (ua.includes("mobile")) {
                         }, 3500);
                     }, 1500);
                 } else {
-                    errortitle_text = "全てのウィンドウが閉じてないため、再起動できません!";
-                    error_windows_create();
+                    error_windows_create("全てのウィンドウが閉じてないため、再起動できません!");
                 }
             }, 100);
         })
@@ -1317,12 +1245,9 @@ if (ua.includes("mobile")) {
             sound_stop();
             document.querySelector('#pass_form').focus();
         } else if (localStorage.getItem('password') && gets != gets2) {
-            errortitle_text = "全てのウィンドウを終了してください!";
-            error_windows_create();
+            error_windows_create("全てのウィンドウを終了してください!");
         } else {
-
-            errortitle_text = "パスワードを登録していないため、サインアウトができません!";
-            error_windows_create();
+            error_windows_create("パスワードを登録していないため、サインアウトができません!");
         }
     }
 
@@ -1843,7 +1768,6 @@ if (ua.includes("mobile")) {
     function pageLoad() {
         let textbox = document.querySelector('.name');
         textbox.addEventListener('keydown', enterKeyPress);
-
         function enterKeyPress(event) {
             if (event.key === 'Enter') {
                 butotnClick()
@@ -1904,7 +1828,7 @@ if (ua.includes("mobile")) {
             document.getElementsByClassName('focus2')[0].focus()
             document.querySelector('.focus2').style.height = "";
             prompt2_text_clear();
-        }, 10);
+        }, 0);
     }
 
     function prompt_text_check() {
@@ -2208,12 +2132,10 @@ if (ua.includes("mobile")) {
                 break;
 
             case 'local/memory':
+                localmemory_size();
                 setTimeout(() => {
-                    localmemory_size();
-                    setTimeout(() => {
-                        toggleWindow(localstorage_details_menu)
-                    }, 500);
-                }, 0);
+                    toggleWindow(localstorage_details_menu)
+                }, 500);
                 break;
 
             case 'help':
@@ -2244,8 +2166,7 @@ if (ua.includes("mobile")) {
 
             case 'allwindow/close':
                 if (localStorage.getItem('data_taskbar_none')) {
-                    errortitle_text = "タスクバーが非表示のため、ウィンドウが閉じれません!";
-                    error_windows_create();
+                    error_windows_create("タスクバーが非表示のため、ウィンドウが閉じれません!");
                 } else {
                     window_none()
                 }
@@ -2733,13 +2654,6 @@ if (ua.includes("mobile")) {
         });
     });
 
-    document.querySelectorAll('.windowtool_parent').forEach(windowtool_parent => {
-        windowtool_parent.addEventListener('click', () => {
-            const parentlist = windowtool_parent.lastElementChild;
-            parentlist.style.display = (parentlist.style.display === "block") ? "none" : "block";
-        });
-    });
-
     document.querySelectorAll('.allwindow_toolbar').forEach(function (allwindow_toolbar) {
         allwindow_toolbar.addEventListener('click', function () {
             document.querySelectorAll('.window_tool').forEach(function (window_tool) {
@@ -2943,31 +2857,24 @@ if (ua.includes("mobile")) {
 
     function assignClassToFrontmostElement(selector, newClassName) {
         const elements = document.querySelectorAll(selector);
-        let highestZIndex = -Infinity;
         let frontmostElement = null;
-
-        elements.forEach(function (element) {
-            const ele2 = element.closest('.child_windows');
-            if (!ele2.classList.contains('selectwindows')) {
-                document.querySelectorAll('.task_buttons').forEach(function (task_buttons) {
-                    task_buttons.remove();
-                });
-                ele2.classList.add('selectwindows');
+        let highestZIndex = -Infinity;
+        for (const element of elements) {
+            const childWindow = element.closest('.child_windows');
+            if (!childWindow.classList.contains('selectwindows')) {
+                document.querySelectorAll('.task_buttons').forEach((taskButton) => taskButton.remove());
+                childWindow.classList.add('selectwindows');
             }
             const zIndex = parseInt(window.getComputedStyle(element).zIndex, 10) || 0;
             if (zIndex > highestZIndex) {
                 highestZIndex = zIndex;
-                frontmostElement = ele2;
+                frontmostElement = childWindow;
             }
-        });
-        if (frontmostElement) {
-            const foo1 = frontmostElement.firstElementChild;
-            foo1.classList.add(newClassName);
         }
-        return {
-            element: frontmostElement,
-            zIndex: highestZIndex
-        };
+        if (frontmostElement) {
+            frontmostElement.firstElementChild.classList.add(newClassName);
+        }
+        return { element: frontmostElement, zIndex: highestZIndex };
     }
 
     function zindexwindow_addnavy() {
@@ -3370,8 +3277,7 @@ if (ua.includes("mobile")) {
             localStorage.setItem(KEY_COLOR, select4);
             getStorage()
         } else {
-            errortitle_text = "カラードライバーがインストールされていません!";
-            error_windows_create();
+            error_windows_create("カラードライバーがインストールされていません!");
         }
     }
 
@@ -3414,8 +3320,7 @@ if (ua.includes("mobile")) {
             // 変更した色名をストレージに保存
             setStorage();
         } else {
-            errortitle_text = "カラードライバーがインストールされていません!";
-            error_windows_create();
+            error_windows_create("カラードライバーがインストールされていません!");
         }
     });
 
@@ -3430,8 +3335,7 @@ if (ua.includes("mobile")) {
                     titlecolor_set();
                 });
             } else {
-                errortitle_text = "カラードライバーがインストールされていません!";
-                error_windows_create();
+                error_windows_create("カラードライバーがインストールされていません!");
             }
             titles.forEach(title => title.style.background = "");
             navys.forEach(navys => navys.style.background = "");
@@ -3483,26 +3387,22 @@ if (ua.includes("mobile")) {
             wallpaper_allremove();
         });
     });
-
     document.querySelectorAll('.pattern_btn').forEach(color_btn => {
         color_btn.addEventListener('click', () => {
             back_pattern_remove();
             wallpaper_allremove();
         });
     });
-
     const back_pattern_remove = () => {
         for (let i = 1; i <= 9; i++) {
             document.querySelector(`.backgrounds${i}`).style.display = "none";
             localStorage.removeItem(`back_pattern_${i}`);
         }
     };
-
     const setBackPattern = (pattern) => {
         localStorage.setItem(pattern, true);
         back_pattern_set();
     };
-
     document.querySelector('.back_pattern_1').addEventListener('click', () => setBackPattern('back_pattern_1'));
     document.querySelector('.back_pattern_2').addEventListener('click', () => setBackPattern('back_pattern_2'));
     document.querySelector('.back_pattern_3').addEventListener('click', () => setBackPattern('back_pattern_3'));
@@ -3512,35 +3412,14 @@ if (ua.includes("mobile")) {
     document.querySelector('.back_pattern_7').addEventListener('click', () => setBackPattern('back_pattern_7'));
     document.querySelector('.back_pattern_8').addEventListener('click', () => setBackPattern('back_pattern_8'));
     document.querySelector('.back_pattern_9').addEventListener('click', () => setBackPattern('back_pattern_9'));
-
     function back_pattern_set() {
-        if (localStorage.getItem('back_pattern_1')) {
-            document.getElementsByClassName('backgrounds1')[0].style.display = "block";
-        }
-        if (localStorage.getItem('back_pattern_2')) {
-            document.getElementsByClassName('backgrounds2')[0].style.display = "block";
-        }
-        if (localStorage.getItem('back_pattern_3')) {
-            document.getElementsByClassName('backgrounds3')[0].style.display = "block";
-        }
-        if (localStorage.getItem('back_pattern_4')) {
-            document.getElementsByClassName('backgrounds4')[0].style.display = "block";
-        }
-        if (localStorage.getItem('back_pattern_5')) {
-            document.getElementsByClassName('backgrounds5')[0].style.display = "block";
-        }
-        if (localStorage.getItem('back_pattern_6')) {
-            document.getElementsByClassName('backgrounds6')[0].style.display = "block";
-        }
-        if (localStorage.getItem('back_pattern_7')) {
-            document.getElementsByClassName('backgrounds7')[0].style.display = "block";
-        }
-        if (localStorage.getItem('back_pattern_8')) {
-            document.getElementsByClassName('backgrounds8')[0].style.display = "block";
-        }
-        if (localStorage.getItem('back_pattern_9')) {
-            document.getElementsByClassName('backgrounds9')[0].style.display = "block";
-        }
+        const backgroundClasses = ['backgrounds1', 'backgrounds2', 'backgrounds3', 'backgrounds4', 'backgrounds5', 'backgrounds6', 'backgrounds7', 'backgrounds8', 'backgrounds9'];
+        backgroundClasses.forEach(className => {
+            const key = `back_pattern_${backgroundClasses.indexOf(className) + 1}`;
+            if (localStorage.getItem(key)) {
+                document.getElementsByClassName(className)[0].style.display = "block";
+            }
+        });
     }
 
     var largestZIndex = 0;
@@ -3755,15 +3634,15 @@ if (ua.includes("mobile")) {
     }
 
     function notetextsize_change() {
-        let noteData = document.getElementsByClassName('note_area')
+        let noteData = document.getElementsByClassName('note_area')[0];
         if (localStorage.getItem('notetext_small')) {
-            noteData[0].style.fontSize = "small";
+            noteData.style.fontSize = "small";
         }
         if (localStorage.getItem('notetext_medium')) {
-            noteData[0].style.fontSize = "medium";
+            noteData.style.fontSize = "medium";
         }
         if (localStorage.getItem('notetext_large')) {
-            noteData[0].style.fontSize = "large";
+            noteData.style.fontSize = "large";
         }
     }
 
@@ -3790,8 +3669,7 @@ if (ua.includes("mobile")) {
     function save() {
         if (note_form.note_area.value == "") {
             errortitle_msg = "&nbsp;notepad"
-            errortitle_text = "テキストが無いため、保存できません!";
-            error_windows_create();
+            error_windows_create("テキストが無いため、保存できません!");
         } else {
             let noteData = document.note_form.note_area.value;
             localStorage.setItem('noteData', noteData);
@@ -3812,16 +3690,13 @@ if (ua.includes("mobile")) {
     function objective_save() {
         if (objective_form.objective_area.value == "" && objective_title_form.objective_title_area.value == "") {
             errortitle_msg = "&nbsp;objective sheet"
-            errortitle_text = "タイトルと内容が入力されていません!";
-            error_windows_create();
+            error_windows_create("タイトルと内容が入力されていません!");
         } else if (objective_title_form.objective_title_area.value == "") {
             errortitle_msg = "&nbsp;objective sheet"
-            errortitle_text = "タイトルが入力されていません!";
-            error_windows_create();
+            error_windows_create("タイトルが入力されていません!");
         } else if (objective_form.objective_area.value == "") {
             errortitle_msg = "&nbsp;objective sheet"
-            errortitle_text = "内容が入力されていません!";
-            error_windows_create();
+            error_windows_create("内容が入力されていません!");
         }
         if (!objective_title_form.objective_title_area.value == "" && !objective_form.objective_area.value == "") {
             let objectiveTitleData = document.objective_title_form.objective_title_area.value;
@@ -3912,8 +3787,7 @@ if (ua.includes("mobile")) {
             camera_menu.classList.add('active')
             camera_menu.classList.remove('selectwindows')
         } else if (sessionStorage.getItem('start_camera')) {
-            errortitle_text = "カメラが実行されているため、ウィンドウが閉じれません!";
-            error_windows_create();
+            error_windows_create("カメラが実行されているため、ウィンドウが閉じれません!");
         }
     })
 
@@ -4071,41 +3945,17 @@ if (ua.includes("mobile")) {
     }
 
     function load() {
-        let noteData = "";
-        if (!localStorage.getItem('noteData')) {
-            noteData = "メモは登録されていません。";
-            setTimeout(() => {
-                onChange()
-            }, 100);
-        }
-        else {
-            noteData = localStorage.getItem('noteData');
-            setTimeout(() => {
-                onChange()
-            }, 100);
-        }
+        const noteData = localStorage.getItem('noteData') || "メモは登録されていません。";
         document.note_form.note_area.value = noteData;
-        const memo_save = document.getElementById('memo_save_text');
-        memo_save.textContent = "";
+        document.getElementById('memo_save_text').textContent = "";
+        setTimeout(onChange, 100);
     }
 
     function objective_load() {
-        let objectiveTitleData = "";
-        let objectiveData = "";
-        if (!localStorage.getItem('objectiveTitleData')) {
-            objectiveTitleData = "";
-        }
-        else {
-            objectiveTitleData = localStorage.getItem('objectiveTitleData');
-        }
-        document.objective_title_form.objective_title_area.value = objectiveTitleData;
+        const objectiveTitleData = localStorage.getItem('objectiveTitleData') || '';
+        const objectiveData = localStorage.getItem('objectiveData') || '';
 
-        if (!localStorage.getItem('objectiveData')) {
-            objectiveData = "";
-        }
-        else {
-            objectiveData = localStorage.getItem('objectiveData');
-        }
+        document.objective_title_form.objective_title_area.value = objectiveTitleData;
         document.objective_form.objective_area.value = objectiveData;
     }
 
@@ -4117,22 +3967,14 @@ if (ua.includes("mobile")) {
             localStorage.removeItem('MemoData_export');
             notice_menu.classList.remove('active');
         } else {
-            errortitle_text = "windows2000からテキストデータがエクスポートされていません!";
-            error_windows_create();
+            error_windows_create("windows2000からテキストデータがエクスポートされていません!");
         }
     }
 
     function load2() {
-        let textdropdata = "";
-        if (!localStorage.getItem('textdropdata')) {
-            textdropdata = "";
-            const memo_save2 = document.getElementById('drop_save_text');
-            memo_save2.textContent = "";
-        } else {
-            textdropdata = localStorage.getItem('textdropdata');
-            const memo_save2 = document.getElementById('drop_save_text');
-            memo_save2.textContent = "text data save keep";
-        }
+        const textdropdata = localStorage.getItem('textdropdata') || '';
+        const memo_save2 = document.getElementById('drop_save_text');
+        memo_save2.textContent = textdropdata ? 'text data save keep' : '';
         document.drop_form.drop_area.value = textdropdata;
     }
 
@@ -4146,8 +3988,7 @@ if (ua.includes("mobile")) {
         if (!localStorage.getItem('textdropdata')) {
             evt.target.textContent += evt.dataTransfer.getData('text');
         } else {
-            errortitle_text = "テキストが保存されているため、ドラッグした文字をドロップできません!";
-            error_windows_create();
+            error_windows_create("テキストが保存されているため、ドラッグした文字をドロップできません!");
         }
     });
 
@@ -4577,8 +4418,7 @@ if (ua.includes("mobile")) {
             setEvents(resetTimer);
             document.getElementsByClassName('screensaver_text')[0].textContent = stime;
         } else {
-            errortitle_text = "指定時間の範囲内ではありません!";
-            error_windows_create();
+            error_windows_create("指定時間の範囲内ではありません!");
         }
     }
 
@@ -4924,8 +4764,7 @@ if (ua.includes("mobile")) {
             }
 
         } else if (0 <= taskvalue && taskvalue < 40) {
-            errortitle_text = "タスクバーの設定範囲以下に設定されています!";
-            error_windows_create();
+            error_windows_create("タスクバーの設定範囲以下に設定されています!");
         } else if (40 <= taskvalue && taskvalue < 151) {
             const t = localStorage.setItem('taskbar_height', taskvalue);
             taskbar.style.height = taskvalue + "px"
@@ -4956,8 +4795,7 @@ if (ua.includes("mobile")) {
                 document.querySelector('.child_start_menu').style.bottom = t + "px"
             }
         } else {
-            errortitle_text = "タスクバーの設定範囲を超えています!";
-            error_windows_create();
+            error_windows_create("タスクバーの設定範囲を超えています!");
         }
     }
 
@@ -5065,11 +4903,11 @@ if (ua.includes("mobile")) {
     }
 
     function load_videourl() {
-        if (localStorage.getItem('video_url')) {
-            const youtubeurl = localStorage.getItem('video_url');
-            document.querySelector('#youtube').value = youtubeurl;
-            const url = document.querySelector("#youtube").value;
-            document.querySelector("#youtubeframe").src = url;
+        const videoUrl = localStorage.getItem('video_url');
+        if (videoUrl) {
+            const youtubeInput = document.getElementById('youtube');
+            youtubeInput.value = videoUrl;
+            document.getElementById('youtubeframe').src = videoUrl;
         }
     }
 
@@ -5181,7 +5019,7 @@ if (ua.includes("mobile")) {
                     const value = localStorage.getItem(key);
                     const valueType = typeof value;
                     const valueLength = value.length;
-                    const valueSize = new Blob([value]).size; // バイト数を計算
+                    const valueSize = new Blob([value]).size;
                     document.getElementById('shell').value = (`Key: ${key}, Value: ${value}, Type: ${valueType}, Length: ${valueLength}, Size: ${valueSize} bytes`);
                 }, i * delay);
             }
@@ -5243,8 +5081,7 @@ if (ua.includes("mobile")) {
         const sizeInKilobytes = getLocalStorageSize() / 1024;
         document.querySelector('.local_memory2').innerHTML = '&emsp;' + sizeInKilobytes + 'KB' + '&emsp;';
         if (localStorage.getItem('maxSize') === 0) {
-            errortitle_text = "nexser の保存容量を超えています!";
-            error_windows_create();
+            error_windows_create("nexser の保存容量を超えています!");
         }
     }, 1000);
     const paint_canvas = document.getElementById('paint_canvas');
@@ -5475,37 +5312,30 @@ if (ua.includes("mobile")) {
 
 
     function nexser_files_windowload() {
-        const parent = document.getElementById('nexser');
         const output = document.getElementById('nexser_files_output');
         function createTree(element) {
             const ul = document.createElement('ul');
-            Array.from(element.children).forEach(child => {
+            for (const child of element.children) {
                 const li = document.createElement('li');
                 const textContent = child.textContent.trim();
                 li.textContent = textContent;
-                if (textContent.includes('.')) {
-                    li.classList.add('nexser_files_file');
-                } else {
-                    li.classList.add('nexser_files_folder');
-                }
+                li.classList.add(textContent.includes('.') ? 'nexser_files_file' : 'nexser_files_folder');
                 const childTree = createTree(child);
                 if (childTree) {
                     li.appendChild(childTree);
                 }
                 ul.appendChild(li);
-            });
+            }
             return ul.children.length ? ul : null;
         }
-        const tree = createTree(parent);
+        const tree = createTree(nexser);
         if (tree) {
             output.appendChild(tree);
         }
     }
     function nexser_files_output_remove() {
         const parentElement = document.getElementById('nexser_files_output');
-        while (parentElement.firstChild) {
-            parentElement.removeChild(parentElement.firstChild);
-        }
+        parentElement.innerHTML = '';
     }
 
 
@@ -5627,8 +5457,7 @@ if (ua.includes("mobile")) {
             url_iframe.style.display = "block"
             dropzone.style.display = "none"
         } else {
-            errortitle_text = "有効なURLをドロップしてください。";
-            error_windows_create();
+            error_windows_create("有効なURLをドロップしてください。");
         }
     });
 
@@ -5795,8 +5624,7 @@ if (ua.includes("mobile")) {
                         localStorage.setItem('editable-' + parentIndex + '-' + index, newName);
                     } else if (newName) {
                         nex.style.cursor = '';
-                        errortitle_text = "名前は20文字以内で入力してください!";
-                        error_windows_create();
+                        error_windows_create("名前は20文字以内で入力してください!");
                         element.textContent = originalName;
                     } else {
                         element.textContent = originalName;
@@ -5936,11 +5764,9 @@ if (ua.includes("mobile")) {
             button.classList.remove('tsk_pressed');
         });
         windows.forEach((windowElement, index) => {
-            setTimeout(() => {
-                if (windowElement.querySelector('.title.navy')) {
-                    buttons[index].classList.add('tsk_pressed');
-                }
-            }, 0);
+            if (windowElement.querySelector('.title.navy')) {
+                buttons[index].classList.add('tsk_pressed');
+            }
         });
     }
 
@@ -6659,6 +6485,654 @@ if (ua.includes("mobile")) {
         updateChargeInfo()
     })
 
+    document.querySelectorAll('.window_tool').forEach(windowtool_files => {
+        const windowtool_files_parent = document.createElement('div');
+
+        windowtool_files_parent.innerHTML = `<span class="winchild_border"></span><div class="windowtool_parent">
+                                <button class="button2" style="height: 20px; font-size: large; float: right;">&#x25BC;</button>
+                                      <span class="windowtool_child_filenames"></span>
+                                <div class="windowtool_child">
+                                    <ul>
+                                        <li class="test_button"><span class="startmenu_file_icon"></span>main</li>
+                                        <li class="test_button2"><span class="startmenu_file_icon"></span>my computer
+                                        </li>
+                                        <li class="test_button33"><span class="startmenu_file_icon"></span>browser
+                                        </li>
+                                        <li class="test_button3"><span class="startmenu_file_icon"></span>control
+                                            panel
+                                        </li>
+                                        <li class="test_button15"><span class="startmenu_file_icon"></span>accessory
+                                        </li>
+                                        <li class="test_button8"><span class="startmenu_file_icon"></span>sound</li>
+                                        <li class="test_button6"><span class="startmenu_file_icon"></span>nexser
+                                            prompt
+                                        </li>
+                                        <li class="test_button9"><span class="startmenu_file_icon"></span>driver
+                                        </li>
+                                        <li class="test_button12"><span class="startmenu_file_icon"></span>notepad
+                                        </li>
+                                        <li class="test_button30"><span class="startmenu_file_icon"></span>objective
+                                            sheet</li>
+                                    </ul>
+                                </div>
+                            </div>`;
+        windowtool_files.appendChild(windowtool_files_parent)
+
+        setTimeout(() => {
+
+            document.querySelectorAll('.windowtool_parent').forEach(parent => {
+                parent.addEventListener('mousedown', event => {
+                    const child = parent.lastElementChild;
+                    if (!event.target.closest('.windowtool_child')) {
+                        child.style.display = (child.style.display === "block") ? "none" : "block";
+                    }
+                });
+                parent.querySelectorAll('.windowtool_child').forEach(child => {
+                    child.addEventListener('click', event => {
+                        event.stopPropagation();
+                        child.style.display = "none";
+                    });
+                });
+            });
+
+
+            document.querySelectorAll('.windowtool_child_filenames').forEach(windowtool_child_filenames => {
+                const windowtool_child_filenames_parent = windowtool_child_filenames.closest('.child_windows');
+                const windowtool_child_filenames_parent2 = windowtool_child_filenames_parent.children[0];
+                let windowtool_child_filenames3 = windowtool_child_filenames_parent2.lastElementChild;
+                const windowtool_child_filenames4 = windowtool_child_filenames3.textContent;
+                windowtool_child_filenames.textContent = windowtool_child_filenames4
+            })
+        }, 100);
+
+    });
+
+
+
+
+
+
+
+
+
+    document.querySelectorAll('.windowtool_buttons_child').forEach(windowtool_buttons_child => {
+        const windowtool_childbtns = document.createElement('div');
+        windowtool_childbtns.innerHTML = `<button class="button2 windowfile2" style="width: 25px;">・</button>
+        <button class="button2 windowfile1" style="width: 25px;">ー</button>
+        <button class="button2 windowfile3" style="width: 25px;">=</button>
+        <button class="button2 nexser_search" style="width: 25px;">&nbsp;<span class="magnifying_glass"></span></button>
+        <button class="button2" onclick="filetimes_test()" style="width: 25px; margin-left: 10px;">TR</button>
+         <button class="button2" onclick="filetimes_test2()" style="width: 25px;">TF</button>`;
+        windowtool_childbtns.style = "display: flex; height: 25px;";
+        setTimeout(() => {
+            Array.from(document.getElementsByClassName('windowfile1')).forEach((windowfile_1) => {
+                windowfile_1.addEventListener('click', function () {
+                    localStorage.setItem('windowfile_1', true);
+                    localStorage.removeItem('windowfile_2')
+                    localStorage.removeItem('windowfile_3')
+                    window_file_list_change()
+                })
+            })
+            Array.from(document.getElementsByClassName('windowfile2')).forEach((windowfile_2) => {
+                windowfile_2.addEventListener('click', function () {
+                    localStorage.setItem('windowfile_2', true);
+                    localStorage.removeItem('windowfile_1')
+                    localStorage.removeItem('windowfile_3')
+                    window_file_list_reset()
+                })
+            })
+            Array.from(document.getElementsByClassName('windowfile3')).forEach((windowfile_3) => {
+                windowfile_3.addEventListener('click', function () {
+                    localStorage.setItem('windowfile_3', true);
+                    localStorage.removeItem('windowfile_1')
+                    localStorage.removeItem('windowfile_2')
+                    window_file_list_change2()
+                })
+            })
+            document.querySelectorAll('.nexser_search').forEach(nexser_search => { nexser_search.onclick = null; nexser_search.onclick = () => { toggleWindow(nexser_search_menu); }; });
+            if (localStorage.getItem('filetimes')) {
+                Array.from(document.getElementsByClassName('windowfile_time')).forEach((windowfile_time) => {
+                    windowfile_time.style.display = "none"
+                })
+            }
+        }, 100);
+        windowtool_buttons_child.appendChild(windowtool_childbtns)
+
+    });
+
+
+
+    function filetimes_test() {
+        localStorage.removeItem('filetimes')
+        if (localStorage.getItem('windowfile_1') || localStorage.getItem('windowfile_3')) {
+            Array.from(document.getElementsByClassName('windowfile_time')).forEach((windowfile_time) => {
+                windowfile_time.style.display = "block"
+            })
+        }
+    }
+
+    function filetimes_test2() {
+        localStorage.setItem('filetimes', true)
+        if (localStorage.getItem('filetimes')) {
+            Array.from(document.getElementsByClassName('windowfile_time')).forEach((windowfile_time) => {
+                windowfile_time.style.display = "none"
+            })
+        }
+    }
+
+
+    function error_windows_create(errortitle_text) {
+        sound(2)
+        nex.style.cursor = '';
+        const entryDiv = document.createElement('div');
+        entryDiv.className = "child_windows error_windows back_silver no_window";
+        entryDiv.innerHTML = `<div class="title">
+                            ${errortitle_msg}<span class="bold error_title_text"></span></div>
+                        <div class="title_buttons"><span class="drag_button">&nbsp;</span><span
+                                class="close_button button2 allclose_button" onclick="error_windows_close(event)"></span></div>
+                        <div class="window_content"><br>
+                            <p><span class="error_icon">✕</span><span
+                                    class="window_error_text">${errortitle_text}</span></p><span
+                                class="button2 borderinline_dotted"
+                                style="position: absolute; top: 86%; left: 50%; transform: translate(-50%, -50%);" onclick="error_windows_close(event)">&emsp;OK&emsp;</span>
+                        </div><br>`;
+        resetEventListener();
+        function resetEventListener() {
+            entryDiv.removeEventListener('mousedown', onMouseDown);
+            entryDiv.addEventListener('mousedown', onMouseDown);
+        }
+        function onMouseDown() {
+            entryDiv.style.zIndex = largestZIndex++;
+            resetEventListener();
+        }
+        dropArea2.appendChild(entryDiv);
+        window_back_silver();
+        entryDiv.style.zIndex = largestZIndex++;
+    }
+
+    function showPosition(position) {
+        const { latitude, longitude, accuracy } = position.coords;
+        document.getElementById('location').innerHTML =
+            `緯度: ${latitude} <br> 経度: ${longitude} <br> 精度: ${accuracy} メートル`;
+    }
+    function showError(error) {
+        const messages = {
+            1: "ユーザーが位置情報の取得を拒否しました。",
+            2: "位置情報が利用できません。",
+            3: "位置情報の取得がタイムアウトしました。",
+            0: "不明なエラーが発生しました。"
+        };
+        document.getElementById('location').innerHTML = (messages[error.code] || messages[0]);
+    }
+    function poti_btn() {
+        if (navigator.geolocation) {
+            document.getElementById('location').innerHTML = "loading..."
+            navigator.geolocation.watchPosition(showPosition, showError, {
+                enableHighAccuracy: true,
+                timeout: 5000,
+                maximumAge: 0
+            });
+        } else {
+            document.getElementById('location').innerHTML = "このブラウザでは位置情報がサポートされていません。";
+        }
+    }
+
+    document.querySelectorAll('.frame_fullbutton').forEach(button => {
+        button.addEventListener('click', function () {
+            let parent = button.closest('.child_windows');
+            console.log(parent)
+            if (parent) {
+                let iframeOrVideo = parent.querySelector('iframe, video');
+                if (iframeOrVideo) {
+                    if (iframeOrVideo.requestFullscreen) {
+                        iframeOrVideo.requestFullscreen();
+                    } else if (iframeOrVideo.mozRequestFullScreen) {
+                        iframeOrVideo.mozRequestFullScreen();
+                    } else if (iframeOrVideo.webkitRequestFullscreen) {
+                        iframeOrVideo.webkitRequestFullscreen();
+                    } else if (iframeOrVideo.msRequestFullscreen) {
+                        iframeOrVideo.msRequestFullscreen();
+                    }
+                }
+            }
+        });
+    });
+
+
+    let selectedImage = null;
+    let selectedAnchor = null;
+
+    function execCmd(command, value = null) {
+        document.execCommand(command, false, value);
+    }
+
+    document.getElementById('editor_2').addEventListener('mousedown', function () {
+        document.querySelectorAll('#editor_2 img').forEach(img => {
+            if (img) {
+                img.style.border = '';
+            }
+        })
+    });
+
+    function saveContent() {
+        const content = document.getElementById('editor_2').innerHTML;
+        const compressedContent = btoa(unescape(encodeURIComponent(content)));
+        localStorage.setItem('editorContent', compressedContent);
+        alert('保存しました!');
+    }
+
+    // Load content from localStorage on page load
+    window.addEventListener('load', function () {
+        const savedContent = localStorage.getItem('editorContent');
+        if (savedContent) {
+            const decompressedContent = decodeURIComponent(escape(atob(savedContent)));
+            document.getElementById('editor_2').innerHTML = decompressedContent;
+        }
+    });
+
+    function toggleDecoration() {
+        const selection = window.getSelection();
+        if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            const parentElement = range.commonAncestorContainer.parentElement;
+
+            if (parentElement && parentElement.style.border) {
+                // 装飾を解除
+                const textNode = document.createTextNode(parentElement.textContent);
+                parentElement.parentNode.replaceChild(textNode, parentElement);
+            } else {
+                const selectedText = range.toString().trim();
+                if (selectedText) {
+                    // 装飾を追加
+                    const span = document.createElement('span');
+                    span.style.border = '2px solid black';
+                    span.style.display = 'inline';
+                    span.textContent = selectedText;
+                    range.deleteContents();
+                    range.insertNode(span);
+                }
+            }
+        }
+        if (selectedImage) {
+            if (selectedImage.classList.contains('img_border')) {
+                selectedImage.classList.remove('img_border')
+            } else {
+                selectedImage.classList.add('img_border')
+            }
+        }
+    }
+
+    function toggleShadows() {
+        const selection = window.getSelection();
+        if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            const parentElement = range.commonAncestorContainer.parentElement;
+            if (parentElement && parentElement.style.textShadow) {
+                parentElement.style.textShadow = '';
+            } else {
+                const span = document.createElement('span');
+                span.style.textShadow = '3px 3px 6px dimgray';
+                span.textContent = range.toString();
+                range.deleteContents();
+                range.insertNode(span);
+            }
+        }
+    }
+
+    function toggleBoxShadow() {
+        const selection = window.getSelection();
+        if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            const parentElement = range.commonAncestorContainer.parentElement;
+            if (parentElement && parentElement.style.boxShadow) {
+                parentElement.style.boxShadow = '';
+            } else {
+                const span = document.createElement('span');
+                span.style.boxShadow = '3px 3px 6px dimgray';
+                span.textContent = range.toString();
+                range.deleteContents();
+                range.insertNode(span);
+            }
+        }
+        if (selectedImage) {
+            if (selectedImage.style.boxShadow) {
+                selectedImage.style.boxShadow = '';
+            } else {
+                selectedImage.style.boxShadow = '5px 5px 15px rgba(0, 0, 0, 0.5)'; // 影を追加
+            }
+        }
+    }
+
+    document.getElementById('editor_2').addEventListener('keydown', function (event) {
+        if (event.key === 'Enter') {
+            setTimeout(() => {
+                setNormal();
+            }, 0);
+        }
+    });
+
+
+    function setNormal() {
+        const selectElement = document.getElementById('fontSizeSelect');
+        selectElement.value = '5';
+        changeFontSize(selectElement.value);
+    }
+
+    document.getElementById('editor_2').addEventListener('input', function (event) {
+        if (event.inputType === 'insertParagraph') {
+            const selection = window.getSelection();
+            const range = selection.getRangeAt(0);
+            const newNode = document.createElement('span');
+            let rootParent = range.startContainer;
+            while (rootParent.parentNode && rootParent.nodeName !== 'DIV') {
+                rootParent = rootParent.parentNode;
+            }
+            if (rootParent.nodeName === 'DIV') {
+                console.log('Clearing all children of:', rootParent);
+                while (rootParent.firstChild) {
+                    rootParent.removeChild(rootParent.firstChild);
+                }
+            }
+            newNode.appendChild(document.createTextNode('\u200B'));
+            rootParent.appendChild(newNode);
+            range.setStart(newNode, 0);
+            range.setEnd(newNode, 0);
+            selection.removeAllRanges();
+            selection.addRange(range);
+        }
+    });
+
+    function changeFontSize(size) {
+        document.execCommand('fontSize', false, size);
+    }
+
+    function exportToHTML() {
+        const editor = document.getElementById('editor_2');
+        const elements = editor.getElementsByTagName('*');
+        for (let i = 0; i < elements.length; i++) {
+            elements[i].setAttribute('contenteditable', 'false');
+        }
+        const content = editor.innerHTML;
+        // 新しいドキュメントを作成してコンテンツを保持
+        const doc = document.implementation.createHTMLDocument('Exported Content');
+        doc.body.innerHTML = content;
+        // 元のドキュメントからスタイルをコピー
+        const styles = document.querySelectorAll('style, link[rel="stylesheet"]');
+        styles.forEach(style => {
+            doc.head.appendChild(style.cloneNode(true));
+        });
+        const blob = new Blob([doc.documentElement.outerHTML], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'editor_content.html';
+        a.click();
+        URL.revokeObjectURL(url);
+        setTimeout(() => {
+            for (let i = 0; i < elements.length; i++) {
+                elements[i].setAttribute('contenteditable', 'true');
+            }
+        }, 1000);
+    }
+
+    function printDiv() {
+        var printContents = document.getElementById('editor_2').innerHTML;
+        var originalContents = document.body.innerHTML;
+        document.body.style.backgroundColor = "white";
+        document.body.style.height = "100vh";
+        var printContainer = document.createElement('div');
+        printContainer.innerHTML = printContents;
+        var bodyChildren = document.body.children;
+        for (var i = 0; i < bodyChildren.length; i++) {
+            if (bodyChildren[i] !== printContainer) {
+                bodyChildren[i].style.display = 'none';
+            }
+        }
+        document.body.appendChild(printContainer);
+        window.print();
+        setTimeout(() => {
+            for (var i = 0; i < bodyChildren.length; i++) {
+                bodyChildren[i].style.display = '';
+            }
+            document.body.removeChild(printContainer);
+        }, 500);
+    }
+
+
+    const maxRecentColors = 15; // 最近使用した色の最大数
+
+    // ローカルストレージから色を取得
+    const recentTextColors = JSON.parse(localStorage.getItem('recentTextColors')) || [];
+    const recentBgColors = JSON.parse(localStorage.getItem('recentBgColors')) || [];
+
+    document.getElementById('editor_textColor').addEventListener('change', function () {
+        addRecentColor(this.value, recentTextColors, 'recentTextColors');
+        applyTextColor(this.value);
+    });
+
+    document.getElementById('editor_bgColor').addEventListener('change', function () {
+        addRecentColor(this.value, recentBgColors, 'recentBgColors');
+        applyBgColor(this.value);
+    });
+
+    function addRecentColor(color, colorArray, storageKey) {
+        if (!colorArray.includes(color)) {
+            if (colorArray.length >= maxRecentColors) {
+                colorArray.shift(); // 古い色を削除
+            }
+            colorArray.push(color);
+            localStorage.setItem(storageKey, JSON.stringify(colorArray));
+            updateRecentColors(colorArray, storageKey);
+        }
+    }
+
+    function updateRecentColors(colorArray, elementId) {
+        const recentColorsDiv = document.getElementById(elementId);
+        recentColorsDiv.innerHTML = '';
+        colorArray.forEach(color => {
+            const colorBox = document.createElement('div');
+            colorBox.className = 'color-box border2';
+            colorBox.style.backgroundColor = color;
+            colorBox.addEventListener('click', function () {
+                if (elementId === 'recentTextColors') {
+                    applyTextColor(color);
+                } else if (elementId === 'recentBgColors') {
+                    applyBgColor(color);
+                }
+            });
+            recentColorsDiv.appendChild(colorBox);
+        });
+    }
+
+    function applyTextColor(color) {
+        document.execCommand('foreColor', false, color);
+    }
+
+    function applyBgColor(color) {
+        document.execCommand('hiliteColor', false, color);
+    }
+
+    document.getElementById('colorPickerButton').addEventListener('click', function () {
+        const selection = window.getSelection();
+        if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            const selectedText = range.startContainer.parentElement;
+            const color = window.getComputedStyle(selectedText).color;
+            console.log(color)
+            const colorPanelContainer = document.getElementById('colorPanelContainer');
+            colorPanelContainer.style.backgroundColor = color;
+            colorPanelContainer.addEventListener('click', function () {
+                document.execCommand('foreColor', false, color);
+            });
+        }
+    });
+
+    // ページロード時に最近使用した色を表示
+    updateRecentColors(recentTextColors, 'recentTextColors');
+    updateRecentColors(recentBgColors, 'recentBgColors');
+
+    const color_panel_parent = document.querySelector('.color_panel_parent');
+    const color_panel_child = document.querySelector('.color_panel_child');
+
+    color_panel_parent.style.left = "-110px";
+
+    color_panel_parent.addEventListener('click', function () {
+        if (color_panel_parent.style.left === "-110px") {
+            color_panel_parent.style.left = "";
+        } else {
+            color_panel_parent.style.left = "-110px";
+        }
+    });
+
+    color_panel_child.addEventListener('click', function (event) {
+        event.stopPropagation(); // 親要素のクリックイベントが発火しないようにする
+    });
+    document.querySelector('.cpc2').addEventListener('click', function (event) {
+        event.stopPropagation(); // 親要素のクリックイベントが発火しないようにする
+    });
+
+    if (!localStorage.getItem('editorContent') && localStorage.getItem('start_nexser')) {
+        localStorage.setItem('editorContent', "PGJyPg==")
+    }
+
+    setTimeout(() => {
+
+        function applyImageHandlers(img) {
+            img.style.position = 'absolute';
+            img.style.cursor = 'pointer';
+            img.setAttribute('draggable', 'false'); // 画像のデフォルトのドラッグを無効化
+
+            img.addEventListener('click', function (event) {
+                event.stopPropagation(); // クリックイベントのバブリングを防止
+                if (selectedImage) {
+                    selectedImage.style.border = ''; // 以前の選択を解除
+                }
+                selectedImage = img;
+                img.style.border = '2px solid blue'; // 選択された画像を強調表示
+            });
+
+            img.addEventListener('mousedown', function (event) {
+                img.setAttribute('contenteditable', 'false'); // 画像を一時的に編集不可に設定
+
+                const editor = document.getElementById('editor_2');
+                const editorRect = editor.getBoundingClientRect();
+                let shiftX = event.clientX - img.getBoundingClientRect().left;
+                let shiftY = event.clientY - img.getBoundingClientRect().top;
+
+                function moveAt(pageX, pageY) {
+                    img.style.left = pageX - shiftX - editorRect.left + editor.scrollLeft + 'px';
+                    img.style.top = pageY - shiftY - editorRect.top + editor.scrollTop + 'px';
+                }
+
+                function onMouseMove(event) {
+                    moveAt(event.pageX, event.pageY);
+                    img.style.border = '2.5px dashed red';
+                }
+
+                document.addEventListener('mousemove', onMouseMove);
+
+                document.addEventListener('mouseup', function () {
+                    document.removeEventListener('mousemove', onMouseMove);
+                    img.setAttribute('contenteditable', 'true'); // ドラッグ終了後に再度編集可能に設定
+                }, { once: true });
+
+                img.addEventListener('dragstart', function (event) {
+                    event.preventDefault(); // デフォルトのドラッグアンドドロップを無効化
+                });
+
+                // テキスト選択を防止
+                event.preventDefault();
+            });
+
+            // contextmenu イベントリスナーを一度だけ設定
+            if (!img.hasAttribute('contextmenu-listener')) {
+                img.addEventListener('contextmenu', function (event) {
+                    event.preventDefault(); // 右クリックメニューを無効化
+                    if (confirm('この画像を削除しますか？')) {
+                        img.remove();
+                    }
+                });
+                img.setAttribute('contextmenu-listener', 'true');
+            }
+        }
+
+        // 初期画像にハンドラを適用
+        document.querySelectorAll('#editor_2 img').forEach(applyImageHandlers);
+
+        // ドラッグ中のテキスト選択を防止
+        document.addEventListener('selectstart', function (event) {
+            if (event.target.tagName === 'IMG') {
+                event.preventDefault();
+            }
+        });
+
+        // MutationObserverを使用して新しい画像にハンドラを適用
+        const observer = new MutationObserver(function (mutationsList) {
+            for (let mutation of mutationsList) {
+                if (mutation.type === 'childList') {
+                    mutation.addedNodes.forEach(node => {
+                        if (node.tagName === 'IMG') {
+                            applyImageHandlers(node);
+                        }
+                    });
+                }
+            }
+        });
+
+        observer.observe(document.getElementById('editor_2'), { childList: true, subtree: true });
+
+        const editor = document.getElementById('editor_2');
+
+        editor.addEventListener('dragenter', function (event) {
+            if (event.dataTransfer.types.includes('Files')) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+        });
+
+        editor.addEventListener('dragover', function (event) {
+            if (event.dataTransfer.types.includes('Files')) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+        });
+
+        editor.addEventListener('dragleave', function (event) {
+            if (event.dataTransfer.types.includes('Files')) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+        });
+
+        editor.addEventListener('drop', function (event) {
+            if (event.dataTransfer.types.includes('Files')) {
+                event.preventDefault();
+                event.stopPropagation();
+
+                const files = event.dataTransfer.files;
+                for (let file of files) {
+                    if (file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        reader.onload = function (e) {
+                            const img = document.createElement('img');
+                            img.src = e.target.result;
+                            img.style.position = 'absolute';
+                            img.onload = function () {
+                                img.style.left = event.clientX - editor.getBoundingClientRect().left + editor.scrollLeft - img.width / 2 + 'px';
+                                img.style.top = event.clientY - editor.getBoundingClientRect().top + editor.scrollTop - img.height / 2 + 'px';
+                            };
+                            editor.appendChild(img);
+                            applyImageHandlers(img);
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                }
+            }
+        });
+
+    }, 500);
+
+
     const draggables = document.querySelectorAll('.window_files');
     const dropZone = document.getElementById('drop_zone');
     const dropList = dropZone.querySelector('ul');
@@ -6904,632 +7378,5 @@ if (ua.includes("mobile")) {
             rf.classList.remove('file_border3')
         })
     }
-
-    document.querySelectorAll('.windowtool_buttons_child').forEach(windowtool_buttons_child => {
-        const windowtool_childbtns = document.createElement('div');
-
-        windowtool_childbtns.innerHTML = `<button class="button2 windowfile2" style="width: 25px;">・</button>
-        <button class="button2 windowfile1" style="width: 25px;">ー</button>
-        <button class="button2 windowfile3" style="width: 25px;">=</button>
-        <button class="button2 nexser_search" style="width: 25px;">&nbsp;<span class="magnifying_glass"></span></button>
-        <button class="button2" onclick="filetimes_test()" style="width: 25px; margin-left: 10px;">TR</button>
-         <button class="button2" onclick="filetimes_test2()" style="width: 25px;">TF</button>`;
-
-        windowtool_childbtns.style = "display: flex; height: 25px;";
-        setTimeout(() => {
-            Array.from(document.getElementsByClassName('windowfile1')).forEach((windowfile_1) => {
-                windowfile_1.addEventListener('click', function () {
-                    localStorage.setItem('windowfile_1', true);
-                    localStorage.removeItem('windowfile_2')
-                    localStorage.removeItem('windowfile_3')
-                    window_file_list_change()
-                })
-            })
-            Array.from(document.getElementsByClassName('windowfile2')).forEach((windowfile_2) => {
-                windowfile_2.addEventListener('click', function () {
-                    localStorage.setItem('windowfile_2', true);
-                    localStorage.removeItem('windowfile_1')
-                    localStorage.removeItem('windowfile_3')
-                    window_file_list_reset()
-                })
-            })
-            Array.from(document.getElementsByClassName('windowfile3')).forEach((windowfile_3) => {
-                windowfile_3.addEventListener('click', function () {
-                    localStorage.setItem('windowfile_3', true);
-                    localStorage.removeItem('windowfile_1')
-                    localStorage.removeItem('windowfile_2')
-                    window_file_list_change2()
-                })
-            })
-            document.querySelectorAll('.nexser_search').forEach(nexser_search => { nexser_search.onclick = null; nexser_search.onclick = () => { toggleWindow(nexser_search_menu); }; });
-            if (localStorage.getItem('filetimes')) {
-                Array.from(document.getElementsByClassName('windowfile_time')).forEach((windowfile_time) => {
-                    windowfile_time.style.display = "none"
-                })
-            }
-        }, 100);
-        windowtool_buttons_child.appendChild(windowtool_childbtns)
-
-    });
-
-
-
-    function filetimes_test() {
-        localStorage.removeItem('filetimes')
-        if (localStorage.getItem('windowfile_1') || localStorage.getItem('windowfile_3')) {
-            Array.from(document.getElementsByClassName('windowfile_time')).forEach((windowfile_time) => {
-                windowfile_time.style.display = "block"
-            })
-        }
-    }
-
-    function filetimes_test2() {
-        localStorage.setItem('filetimes', true)
-        if (localStorage.getItem('filetimes')) {
-            Array.from(document.getElementsByClassName('windowfile_time')).forEach((windowfile_time) => {
-                windowfile_time.style.display = "none"
-            })
-        }
-    }
-
-
-    function error_windows_create() {
-        sound(2)
-        nex.style.cursor = '';
-        const windowDiv = document.createElement('div');
-        windowDiv.className = "child_windows error_windows back_silver no_window";
-        const newChild = document.createElement('div');
-        newChild.className = "title"
-        newChild.innerHTML = errortitle_msg;
-        windowDiv.appendChild(newChild);
-        const newChild2 = document.createElement('span');
-        newChild2.className = "bold error_title_text"
-        newChild.appendChild(newChild2);
-        const newChild3 = document.createElement('div');
-        newChild3.className = "title_buttons"
-        windowDiv.appendChild(newChild3);
-        const newChild4_4 = document.createElement('span');
-        newChild4_4.className = "drag_button"
-        newChild4_4.innerHTML = "&nbsp;"
-        newChild3.appendChild(newChild4_4);
-        const newChild4 = document.createElement('span');
-        newChild4.className = "close_button button2 allclose_button"
-        newChild3.appendChild(newChild4);
-        newChild4.addEventListener('click', () => {
-            const newChild4_2 = newChild4.closest('.child_windows');
-            if (newChild4_2) {
-                newChild4_2.remove();
-                zindexwindow_addnavy();
-            }
-        });
-        const newChild6 = document.createElement('div');
-        newChild6.className = "window_content"
-        windowDiv.appendChild(newChild6);
-        const newChild7 = document.createElement('br');
-        newChild6.appendChild(newChild7);
-        const newChild8 = document.createElement('p');
-        newChild6.appendChild(newChild8);
-        const newChild9 = document.createElement('span');
-        newChild9.className = "error_icon"
-        newChild9.textContent = "✕"
-        newChild8.appendChild(newChild9);
-        const newChild10 = document.createElement('span');
-        newChild10.className = "window_error_text";
-        newChild10.textContent = errortitle_text;
-        newChild8.appendChild(newChild10);
-        const newChild11 = document.createElement('br');
-        windowDiv.appendChild(newChild11);
-        const newChild12 = document.createElement('span');
-        newChild12.className = "button2 borderinline_dotted"
-        newChild12.innerHTML = "&emsp;OK&emsp;"
-        newChild12.style = "position: absolute; top: 86%; left: 50%; transform: translate(-50%, -50%);"
-        newChild12.onclick = function (event) {
-            error_windows_close(event);
-        };
-        newChild6.appendChild(newChild12);
-        resetEventListener();
-        function resetEventListener() {
-            windowDiv.removeEventListener('mousedown', onMouseDown);
-            windowDiv.addEventListener('mousedown', onMouseDown);
-        }
-        function onMouseDown() {
-            windowDiv.style.zIndex = largestZIndex++;
-            resetEventListener();
-        }
-        dropArea2.appendChild(windowDiv);
-        window_back_silver();
-        windowDiv.style.zIndex = largestZIndex++;
-    }
-
-    function showPosition(position) {
-        const { latitude, longitude, accuracy } = position.coords;
-        document.getElementById('location').innerHTML =
-            `緯度: ${latitude} <br> 経度: ${longitude} <br> 精度: ${accuracy} メートル`;
-    }
-    function showError(error) {
-        const messages = {
-            1: "ユーザーが位置情報の取得を拒否しました。",
-            2: "位置情報が利用できません。",
-            3: "位置情報の取得がタイムアウトしました。",
-            0: "不明なエラーが発生しました。"
-        };
-        document.getElementById('location').innerHTML = (messages[error.code] || messages[0]);
-    }
-    function poti_btn() {
-        if (navigator.geolocation) {
-            document.getElementById('location').innerHTML = "loading..."
-            navigator.geolocation.watchPosition(showPosition, showError, {
-                enableHighAccuracy: true,
-                timeout: 5000,
-                maximumAge: 0
-            });
-        } else {
-            document.getElementById('location').innerHTML = "このブラウザでは位置情報がサポートされていません。";
-        }
-    }
-
-    document.querySelectorAll('.frame_fullbutton').forEach(button => {
-        button.addEventListener('click', function () {
-            let parent = button.closest('.child_windows');
-            console.log(parent)
-            if (parent) {
-                let iframeOrVideo = parent.querySelector('iframe, video');
-                if (iframeOrVideo) {
-                    if (iframeOrVideo.requestFullscreen) {
-                        iframeOrVideo.requestFullscreen();
-                    } else if (iframeOrVideo.mozRequestFullScreen) {
-                        iframeOrVideo.mozRequestFullScreen();
-                    } else if (iframeOrVideo.webkitRequestFullscreen) {
-                        iframeOrVideo.webkitRequestFullscreen();
-                    } else if (iframeOrVideo.msRequestFullscreen) {
-                        iframeOrVideo.msRequestFullscreen();
-                    }
-                }
-            }
-        });
-    });
-
-
-
-    let selectedImage = null;
-    let selectedAnchor = null;
-
-    function execCmd(command, value = null) {
-        document.execCommand(command, false, value);
-    }
-
-    document.getElementById('editor_2').addEventListener('mousedown', function () {
-        document.querySelectorAll('#editor_2 img').forEach(img => {
-            if (img) {
-                img.style.border = ''; // 以前の選択を解除
-            }
-        })
-    });
-
-    function saveContent() {
-        const content = document.getElementById('editor_2').innerHTML;
-        const compressedContent = btoa(unescape(encodeURIComponent(content)));
-        localStorage.setItem('editorContent', compressedContent);
-        alert('保存しました!');
-    }
-
-    // Load content from localStorage on page load
-    window.addEventListener('load', function () {
-        const savedContent = localStorage.getItem('editorContent');
-        if (savedContent) {
-            const decompressedContent = decodeURIComponent(escape(atob(savedContent)));
-            document.getElementById('editor_2').innerHTML = decompressedContent;
-        }
-    });
-
-    function toggleDecoration() {
-        const selection = window.getSelection();
-        if (selection.rangeCount > 0) {
-            const range = selection.getRangeAt(0);
-            const parentElement = range.commonAncestorContainer.parentElement;
-
-            if (parentElement && parentElement.style.border) {
-                // 装飾を解除
-                const textNode = document.createTextNode(parentElement.textContent);
-                parentElement.parentNode.replaceChild(textNode, parentElement);
-            } else {
-                const selectedText = range.toString().trim();
-                if (selectedText) {
-                    // 装飾を追加
-                    const span = document.createElement('span');
-                    span.style.border = '2px solid black'; // テキストの周りに黒い枠線を追加
-                    span.style.display = 'inline';
-                    span.textContent = selectedText;
-                    range.deleteContents();
-                    range.insertNode(span);
-                }
-            }
-        }
-        if (selectedImage) {
-            if (selectedImage.classList.contains('img_border')) {
-                selectedImage.classList.remove('img_border')
-            } else {
-                selectedImage.classList.add('img_border')
-            }
-        }
-    }
-
-    function toggleShadows() {
-        const selection = window.getSelection();
-        if (selection.rangeCount > 0) {
-            const range = selection.getRangeAt(0);
-            const parentElement = range.commonAncestorContainer.parentElement;
-
-            if (parentElement && parentElement.style.textShadow) {
-                // 影を解除
-                parentElement.style.textShadow = '';
-            } else {
-                // 影を追加
-                const span = document.createElement('span');
-                span.style.textShadow = '3px 3px 6px dimgray'; // テキストに影を追加
-                span.textContent = range.toString();
-                range.deleteContents();
-                range.insertNode(span);
-            }
-        }
-    }
-
-    function toggleBoxShadow() {
-        const selection = window.getSelection();
-        if (selection.rangeCount > 0) {
-            const range = selection.getRangeAt(0);
-            const parentElement = range.commonAncestorContainer.parentElement;
-
-            if (parentElement && parentElement.style.boxShadow) {
-                // 影を解除
-                parentElement.style.boxShadow = '';
-            } else {
-                // 影を追加
-                const span = document.createElement('span');
-                span.style.boxShadow = '3px 3px 6px dimgray'; // オブジェクトに影を追加
-                span.textContent = range.toString();
-                range.deleteContents();
-                range.insertNode(span);
-            }
-        }
-        if (selectedImage) {
-            if (selectedImage.style.boxShadow) {
-                selectedImage.style.boxShadow = '';
-            } else {
-                selectedImage.style.boxShadow = '5px 5px 15px rgba(0, 0, 0, 0.5)'; // 影を追加
-            }
-        }
-    }
-
-    document.getElementById('editor_2').addEventListener('keydown', function (event) {
-        if (event.key === 'Enter') {
-            setTimeout(() => {
-                setNormal();
-            }, 0);
-        }
-    });
-
-
-    function setNormal() {
-        const selectElement = document.getElementById('fontSizeSelect');
-        selectElement.value = '5';
-        changeFontSize(selectElement.value);
-    }
-
-    document.getElementById('editor_2').addEventListener('input', function (event) {
-        if (event.inputType === 'insertParagraph') {
-            const selection = window.getSelection();
-            const range = selection.getRangeAt(0);
-            const newNode = document.createElement('span');
-
-            // 最も外側のdivタグまで遡る
-            let rootParent = range.startContainer;
-            while (rootParent.parentNode && rootParent.nodeName !== 'DIV') {
-                rootParent = rootParent.parentNode;
-            }
-
-            // 最も外側のdivタグの子要素をすべて削除
-            if (rootParent.nodeName === 'DIV') {
-                console.log('Clearing all children of:', rootParent);
-                while (rootParent.firstChild) {
-                    rootParent.removeChild(rootParent.firstChild);
-                }
-            }
-            // 新しいspanを挿入
-            newNode.appendChild(document.createTextNode('\u200B')); // ゼロ幅スペースを追加してspanを保持
-            rootParent.appendChild(newNode);
-            range.setStart(newNode, 0);
-            range.setEnd(newNode, 0);
-            selection.removeAllRanges();
-            selection.addRange(range);
-        }
-    });
-
-
-    function changeFontSize(size) {
-        document.execCommand('fontSize', false, size);
-    }
-
-    function exportToHTML() {
-        const editor = document.getElementById('editor_2');
-        const elements = editor.getElementsByTagName('*');
-        for (let i = 0; i < elements.length; i++) {
-            elements[i].setAttribute('contenteditable', 'false');
-        }
-        const content = editor.innerHTML;
-
-        // 新しいドキュメントを作成してコンテンツを保持
-        const doc = document.implementation.createHTMLDocument('Exported Content');
-        doc.body.innerHTML = content;
-
-        // 元のドキュメントからスタイルをコピー
-        const styles = document.querySelectorAll('style, link[rel="stylesheet"]');
-        styles.forEach(style => {
-            doc.head.appendChild(style.cloneNode(true));
-        });
-
-        const blob = new Blob([doc.documentElement.outerHTML], { type: 'text/html' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'editor_content.html';
-        a.click();
-        URL.revokeObjectURL(url);
-
-        setTimeout(() => {
-            for (let i = 0; i < elements.length; i++) {
-                elements[i].setAttribute('contenteditable', 'true');
-            }
-        }, 1000);
-    }
-
-
-    function printDiv() {
-        var printContents = document.getElementById('editor_2').innerHTML;
-        var originalContents = document.body.innerHTML;
-        document.body.style.background = "white";
-        document.body.style.height = "100vh";
-        // 印刷する内容を一時的に格納するコンテナを作成
-        var printContainer = document.createElement('div');
-        printContainer.innerHTML = printContents;
-        // 他の要素を非表示にする
-        var bodyChildren = document.body.children;
-        for (var i = 0; i < bodyChildren.length; i++) {
-            if (bodyChildren[i] !== printContainer) {
-                bodyChildren[i].style.display = 'none';
-            }
-        }
-        // 印刷コンテナをボディに追加
-        document.body.appendChild(printContainer);
-        // スタイルが適用されるのを待ってから印刷を実行
-        window.print();
-        setTimeout(() => {
-            // 元の内容を復元
-            for (var i = 0; i < bodyChildren.length; i++) {
-                bodyChildren[i].style.display = '';
-            }
-            document.body.removeChild(printContainer);
-        }, 500);
-    }
-
-
-    const maxRecentColors = 15; // 最近使用した色の最大数
-
-    // ローカルストレージから色を取得
-    const recentTextColors = JSON.parse(localStorage.getItem('recentTextColors')) || [];
-    const recentBgColors = JSON.parse(localStorage.getItem('recentBgColors')) || [];
-
-    document.getElementById('editor_textColor').addEventListener('change', function () {
-        addRecentColor(this.value, recentTextColors, 'recentTextColors');
-        applyTextColor(this.value);
-    });
-
-    document.getElementById('editor_bgColor').addEventListener('change', function () {
-        addRecentColor(this.value, recentBgColors, 'recentBgColors');
-        applyBgColor(this.value);
-    });
-
-    function addRecentColor(color, colorArray, storageKey) {
-        if (!colorArray.includes(color)) {
-            if (colorArray.length >= maxRecentColors) {
-                colorArray.shift(); // 古い色を削除
-            }
-            colorArray.push(color);
-            localStorage.setItem(storageKey, JSON.stringify(colorArray));
-            updateRecentColors(colorArray, storageKey);
-        }
-    }
-
-    function updateRecentColors(colorArray, elementId) {
-        const recentColorsDiv = document.getElementById(elementId);
-        recentColorsDiv.innerHTML = '';
-        colorArray.forEach(color => {
-            const colorBox = document.createElement('div');
-            colorBox.className = 'color-box border2';
-            colorBox.style.backgroundColor = color;
-            colorBox.addEventListener('click', function () {
-                if (elementId === 'recentTextColors') {
-                    applyTextColor(color);
-                } else if (elementId === 'recentBgColors') {
-                    applyBgColor(color);
-                }
-            });
-            recentColorsDiv.appendChild(colorBox);
-        });
-    }
-
-    function applyTextColor(color) {
-        document.execCommand('foreColor', false, color);
-    }
-
-    function applyBgColor(color) {
-        document.execCommand('hiliteColor', false, color);
-    }
-
-    // ページロード時に最近使用した色を表示
-    updateRecentColors(recentTextColors, 'recentTextColors');
-    updateRecentColors(recentBgColors, 'recentBgColors');
-
-    const color_panel_parent = document.querySelector('.color_panel_parent');
-    const color_panel_child = document.querySelector('.color_panel_child');
-
-    color_panel_parent.style.left = "-110px";
-
-    color_panel_parent.addEventListener('click', function () {
-        if (color_panel_parent.style.left === "-110px") {
-            color_panel_parent.style.left = "";
-        } else {
-            color_panel_parent.style.left = "-110px";
-        }
-    });
-
-    color_panel_child.addEventListener('click', function (event) {
-        event.stopPropagation(); // 親要素のクリックイベントが発火しないようにする
-    });
-    document.querySelector('.cpc2').addEventListener('click', function (event) {
-        event.stopPropagation(); // 親要素のクリックイベントが発火しないようにする
-    });
-
-    if (!localStorage.getItem('editorContent') && localStorage.getItem('start_nexser')) {
-        localStorage.setItem('editorContent', "PGJyPg==")
-    }
-
-    setTimeout(() => {
-
-        function applyImageHandlers(img) {
-            img.style.position = 'absolute';
-            img.style.cursor = 'pointer';
-            img.setAttribute('draggable', 'false'); // 画像のデフォルトのドラッグを無効化
-
-            img.addEventListener('click', function (event) {
-                event.stopPropagation(); // クリックイベントのバブリングを防止
-                if (selectedImage) {
-                    selectedImage.style.border = ''; // 以前の選択を解除
-                }
-                selectedImage = img;
-                img.style.border = '2px solid blue'; // 選択された画像を強調表示
-            });
-
-            img.addEventListener('mousedown', function (event) {
-                img.setAttribute('contenteditable', 'false'); // 画像を一時的に編集不可に設定
-
-                const editor = document.getElementById('editor_2');
-                const editorRect = editor.getBoundingClientRect();
-                let shiftX = event.clientX - img.getBoundingClientRect().left;
-                let shiftY = event.clientY - img.getBoundingClientRect().top;
-
-                function moveAt(pageX, pageY) {
-                    img.style.left = pageX - shiftX - editorRect.left + editor.scrollLeft + 'px';
-                    img.style.top = pageY - shiftY - editorRect.top + editor.scrollTop + 'px';
-                }
-
-                function onMouseMove(event) {
-                    moveAt(event.pageX, event.pageY);
-                    img.style.border = '2.5px dashed red';
-                }
-
-                document.addEventListener('mousemove', onMouseMove);
-
-                document.addEventListener('mouseup', function () {
-                    document.removeEventListener('mousemove', onMouseMove);
-                    img.setAttribute('contenteditable', 'true'); // ドラッグ終了後に再度編集可能に設定
-                }, { once: true });
-
-                img.addEventListener('dragstart', function (event) {
-                    event.preventDefault(); // デフォルトのドラッグアンドドロップを無効化
-                });
-
-                // テキスト選択を防止
-                event.preventDefault();
-            });
-
-            // contextmenu イベントリスナーを一度だけ設定
-            if (!img.hasAttribute('contextmenu-listener')) {
-                img.addEventListener('contextmenu', function (event) {
-                    event.preventDefault(); // 右クリックメニューを無効化
-                    if (confirm('この画像を削除しますか？')) {
-                        img.remove();
-                    }
-                });
-                img.setAttribute('contextmenu-listener', 'true');
-            }
-        }
-
-        // 初期画像にハンドラを適用
-        document.querySelectorAll('#editor_2 img').forEach(applyImageHandlers);
-
-        // ドラッグ中のテキスト選択を防止
-        document.addEventListener('selectstart', function (event) {
-            if (event.target.tagName === 'IMG') {
-                event.preventDefault();
-            }
-        });
-
-        // MutationObserverを使用して新しい画像にハンドラを適用
-        const observer = new MutationObserver(function (mutationsList) {
-            for (let mutation of mutationsList) {
-                if (mutation.type === 'childList') {
-                    mutation.addedNodes.forEach(node => {
-                        if (node.tagName === 'IMG') {
-                            applyImageHandlers(node);
-                        }
-                    });
-                }
-            }
-        });
-
-        observer.observe(document.getElementById('editor_2'), { childList: true, subtree: true });
-
-        const editor = document.getElementById('editor_2');
-
-        editor.addEventListener('dragenter', function (event) {
-            if (event.dataTransfer.types.includes('Files')) {
-                event.preventDefault();
-                event.stopPropagation();
-            }
-        });
-
-        editor.addEventListener('dragover', function (event) {
-            if (event.dataTransfer.types.includes('Files')) {
-                event.preventDefault();
-                event.stopPropagation();
-            }
-        });
-
-        editor.addEventListener('dragleave', function (event) {
-            if (event.dataTransfer.types.includes('Files')) {
-                event.preventDefault();
-                event.stopPropagation();
-            }
-        });
-
-        editor.addEventListener('drop', function (event) {
-            if (event.dataTransfer.types.includes('Files')) {
-                event.preventDefault();
-                event.stopPropagation();
-
-                const files = event.dataTransfer.files;
-                for (let file of files) {
-                    if (file.type.startsWith('image/')) {
-                        const reader = new FileReader();
-                        reader.onload = function (e) {
-                            const img = document.createElement('img');
-                            img.src = e.target.result;
-                            img.style.position = 'absolute';
-                            img.onload = function () {
-                                img.style.left = event.clientX - editor.getBoundingClientRect().left + editor.scrollLeft - img.width / 2 + 'px';
-                                img.style.top = event.clientY - editor.getBoundingClientRect().top + editor.scrollTop - img.height / 2 + 'px';
-                            };
-                            editor.appendChild(img);
-                            applyImageHandlers(img);
-                        };
-                        reader.readAsDataURL(file);
-                    }
-                }
-            }
-        });
-
-    }, 500);
-
 
 };

@@ -1534,7 +1534,6 @@ body::-webkit-scrollbar {
 }
 
 .windowtool_buttons_child {
-    /* width: auto; */
     height: 100%;
 }
 
@@ -2963,6 +2962,7 @@ progress::-webkit-progress-value {
     position: absolute;
     background: silver;
     top: 90px;
+    z-index: 99999;
 }
 
 .color_panel_child {
