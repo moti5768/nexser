@@ -697,7 +697,6 @@ if (ua.includes("mobile")) {
         welcome_menu.classList.add('active');
         welcome_menu.classList.remove('selectwindows');
         sound_stop();
-        document.querySelector('.prompt_error_text').textContent = "";
         nex.style.cursor = 'crosshair';
         setTimeout(function () {
             screen_prompt.style.display = "none";
@@ -869,6 +868,7 @@ if (ua.includes("mobile")) {
     }
 
     function nexser_start() {
+        console.log("test text")
         load_videourl();
         document.querySelector('.nexser_boot_menu').style.display = "none";
         localStorage.setItem('prompt_data', true);
@@ -960,7 +960,7 @@ if (ua.includes("mobile")) {
                                 button.classList.remove('pressed');
                             });
                             document.getElementsByClassName('name')[0].value = "";
-                            document.querySelector('.prompt_error_text').textContent = "";
+
                             msg.innerText = "";
                             prompt_text.style.color = "";
                             nexser.style.display = "none";
@@ -1016,7 +1016,7 @@ if (ua.includes("mobile")) {
                                 button.classList.remove('pressed');
                             });
                             document.getElementsByClassName('name')[0].value = "";
-                            document.querySelector('.prompt_error_text').textContent = "";
+
                             msg.innerText = "";
                             prompt_text.style.color = "";
                             nexser.style.display = "none";
@@ -1026,7 +1026,7 @@ if (ua.includes("mobile")) {
                             document.querySelector('.restart_text').style.display = "none";
                         }, 2500);
                         setTimeout(() => {
-                            nexser_start()
+                            nexser_start();
                         }, 3500);
                     }, 1500);
                 } else {
@@ -1052,7 +1052,7 @@ if (ua.includes("mobile")) {
             nexser.style.display = "block";
             desktop.style.display = "none";
             welcome_menu.classList.remove('active');
-            welcome_animation()
+            welcome_animation();
         } else {
             startup_sound();
             screen_prompt.style.display = "none";
@@ -1836,47 +1836,40 @@ if (ua.includes("mobile")) {
         const prompt_text_value2 = prompt_text_value.value;
         switch (prompt_text_value2) {
             case '':
-                document.querySelector('.prompt_error_text').textContent = "";
+
                 msg.innerText = "";
                 prompt_text.style.color = "";
                 break;
             case 'nexser/open':
                 prompt_text.style.color = "yellow";
                 document.getElementsByClassName('name')[0].value = "nexser boot...";
-                document.querySelector('.prompt_error_text').textContent = "success";
                 nexser_boot_check();
                 break;
             case 'nexser/program':
                 localStorage.setItem('prompt_data3', true);
                 prompt_text.style.color = "";
-                document.querySelector('.prompt_error_text').textContent = "success";
                 nexser_program_open()
                 break;
 
             case 'nexser/code/html':
-                document.querySelector('.prompt_error_text').textContent = "connect";
                 prompt_text.style.color = "";
                 document.querySelector('#code_html').style.display = "block";
                 document.querySelector('#code_script').style.display = "none";
                 document.querySelector('#code_script2').style.display = "none";
                 break;
             case 'nexser/code/script':
-                document.querySelector('.prompt_error_text').textContent = "connect";
                 prompt_text.style.color = "";
                 document.querySelector('#code_html').style.display = "none";
                 document.querySelector('#code_script').style.display = "block";
                 document.querySelector('#code_script2').style.display = "none";
                 break;
             case 'nexser/code/script2':
-                document.querySelector('.prompt_error_text').textContent = "connect";
                 prompt_text.style.color = "";
                 document.querySelector('#code_html').style.display = "none";
                 document.querySelector('#code_script').style.display = "none";
                 document.querySelector('#code_script2').style.display = "block";
                 break;
-
             default:
-                document.querySelector('.prompt_error_text').textContent = "コマンドが違います!";
                 msg.innerText = "";
                 prompt_text.style.color = "red";
                 break;
@@ -2608,7 +2601,7 @@ if (ua.includes("mobile")) {
             const windowsizereset = windowsize_reset.closest('.child_windows');
             windowsizereset.style.height = "";
             if (windowsizereset.classList.contains('rightwindow')) {
-                windowsizereset.style.width = "max-content";
+                windowsizereset.style.width = "";
                 windowsizereset.style.right = "0";
             } else {
                 windowsizereset.style.width = "";
@@ -5708,7 +5701,6 @@ if (ua.includes("mobile")) {
         });
     }
 
-
     function moveToTaskbarButton(minimization_button) {
         const task_buttons = Array.from(document.querySelectorAll('.task_buttons'));
         const index = Array.from(document.querySelectorAll('.child_windows.selectwindows:not(.no_window)')).indexOf(minimization_button);
@@ -5760,16 +5752,13 @@ if (ua.includes("mobile")) {
     function updateButtonClasses() {
         const windows = document.querySelectorAll('.child_windows.selectwindows:not(.no_window)');
         const buttons = document.querySelectorAll('.task_buttons');
-        buttons.forEach(button => {
-            button.classList.remove('tsk_pressed');
-        });
+        buttons.forEach(button => button.classList.remove('tsk_pressed'));
         windows.forEach((windowElement, index) => {
             if (windowElement.querySelector('.title.navy')) {
                 buttons[index].classList.add('tsk_pressed');
             }
         });
     }
-
 
     const dropArea = document.querySelector('#files');
     const dropArea2 = document.querySelector('#soft_windows');
@@ -5908,32 +5897,36 @@ if (ua.includes("mobile")) {
                     }
 
                     setTimeout(() => {
-                        document.querySelectorAll('.testwindow2:not(.no_create_windows)').forEach(function (testwindow2) {
-                            testwindow2.style.width = "500px"
-                            testwindow2.style.height = "400px"
-                        })
-                        document.querySelectorAll('.testwindow2, .child').forEach(function (z_index_child_windows) {
-                            const zindexchildwindows = z_index_child_windows.closest('.testwindow2');
-                            z_index_child_windows.removeEventListener('mousedown', handleMouseMove_scrollreset);
-                            z_index_child_windows.addEventListener('mousedown', handleMouseMove_scrollreset);
-                            document.removeEventListener('mousemove', handleMouseDown_resize);
-                            document.addEventListener('mousemove', handleMouseDown_resize);
-                            function handleMouseDown_resize() {
-                                const testwindow2_1 = z_index_child_windows.children[2];
+                        const testWindows = document.querySelectorAll('.testwindow2:not(.no_create_windows)');
+                        testWindows.forEach((testWindow) => {
+                            testWindow.style.width = '500px';
+                            testWindow.style.height = '400px';
+                            const centerElement = testWindow.querySelector('.testwindow2 > *:nth-child(3) > *');
+                            centerElement.classList.add('center');
+                        });
+                        const childWindows = document.querySelectorAll('.testwindow2, .child');
+                        childWindows.forEach((childWindow) => {
+                            const zindexChildWindow = childWindow.closest('.testwindow2');
+                            const handleMouseMove_scrollreset = () => {
+                                childWindow.removeEventListener('mousedown', handleMouseMove_scrollreset);
+                                document.removeEventListener('mouseup', handleMouseDown_resize);
+                                document.addEventListener('mousemove', handleMouseDown_resize);
+                                zindexChildWindow.style.zIndex = largestZIndex++;
+                                zindexChildWindow.scrollTop = 0;
+                                zindexChildWindow.scrollLeft = 0;
+                            };
+                            const handleMouseDown_resize = () => {
+                                const testwindow2_1 = childWindow.children[2];
                                 const testwindow2_2 = testwindow2_1.firstElementChild;
-                                testwindow2_2.classList.add('center');
-                                testwindow2_2.style.maxWidth = `${z_index_child_windows.clientWidth}px`;
-                                testwindow2_2.style.maxHeight = `${z_index_child_windows.clientHeight - 25}px`;
+                                testwindow2_2.style.maxWidth = `${zindexChildWindow.clientWidth}px`;
+                                testwindow2_2.style.maxHeight = `${zindexChildWindow.clientHeight - 25}px`;
                                 rectangle_remove();
-                            }
-                            function handleMouseMove_scrollreset() {
-                                zindexchildwindows.style.zIndex = largestZIndex++;
-                                zindexchildwindows.scrollTop = 0;
-                                zindexchildwindows.scrollLeft = 0;
-                            }
+                            };
+                            childWindow.addEventListener('mousedown', handleMouseMove_scrollreset);
+                            handleMouseDown_resize();
                         });
                         resolve();
-                    });
+                    }, 0);
                     dropArea2.appendChild(windowDiv);
                 };
                 reader.readAsDataURL(file);
