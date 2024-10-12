@@ -928,7 +928,7 @@ input[type="file"] {
 .restriction_menu {
     width: 300px;
     min-width: 250px;
-    height: auto;
+    height: 110px;
 }
 
 .location_menu {
@@ -1581,8 +1581,8 @@ body::-webkit-scrollbar {
 }
 
 .nexser_search_menu {
-    width: 900px;
-    height: 550px;
+    width: 850px;
+    height: 450px;
 }
 
 #myUL {
@@ -2076,16 +2076,19 @@ textarea {
 /* objective */
 
 .objective_menu {
+    min-width: 300px;
     width: 800px;
-    height: 500px;
+    height: 550px;
 }
 
 .objective_title_area {
+    position: absolute;
     background: white;
     white-space: nowrap;
 }
 
 .objective_area {
+    margin-top: 60px;
     background: whitesmoke;
     white-space: nowrap;
     resize: none;

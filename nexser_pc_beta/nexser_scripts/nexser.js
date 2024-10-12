@@ -1550,6 +1550,15 @@ if (ua.includes("mobile")) {
             localStorage.setItem('title_center', true)
         });
     }
+    function title_center_reset() {
+        titles.forEach(function (title) {
+            title.classList.remove('text_center')
+            localStorage.removeItem('title_center', true)
+        });
+    }
+    if (localStorage.getItem('title_center')) {
+        title_center()
+    }
 
     Array.from(document.getElementsByClassName('nexser_title_text')).forEach((nexser_title_text) => {
         const nexserTitle = document.querySelector('.nexser_title').textContent;
@@ -2222,6 +2231,14 @@ if (ua.includes("mobile")) {
                 document.querySelector('.console_list').style.display = "none";
                 break;
 
+            case 'title/center':
+                title_center()
+                break;
+
+            case 'title/center/reset':
+                title_center_reset()
+                break;
+
             case 'reset':
                 nexser_prompt_reset()
                 break;
@@ -2449,7 +2466,6 @@ if (ua.includes("mobile")) {
     }
     function window_animation(animation) {
         const taskHeight = () => document.getElementById('taskbar').clientHeight;
-        console.log(animation.style.zIndex)
         const adjustHeight = () => {
             if (['big', 'leftwindow', 'rightwindow'].some(cls => animation.classList.contains(cls))) {
                 animation.style.height = (animation.clientHeight - taskHeight()) + "px";
@@ -2824,7 +2840,6 @@ if (ua.includes("mobile")) {
 
     function cpubench_open() {
         const cpumenu1 = document.querySelector('.cpumenu_1');
-        document.getElementsByClassName('cpu_bench_menu')[0].style.zIndex = largestZIndex++;
         if (!cpu_bench_menu.classList.contains('active') || cpumenu1.style.display === "block") {
             setTimeout(() => {
                 document.querySelector('.cpumenu_1').style.display = "none";
@@ -2926,7 +2941,7 @@ if (ua.includes("mobile")) {
     const objective_child = document.querySelector('.objective_area');
     const objective_resize = () => {
         objective_child.style.width = `${objective_parent.clientWidth - 5}px`;
-        objective_child.style.height = `${objective_parent.clientHeight - 155}px`;
+        objective_child.style.height = `${objective_parent.clientHeight - 165}px`;
     };
 
     const window_prompt_content2 = document.querySelector('.window_prompt_content2');
@@ -4361,17 +4376,17 @@ if (ua.includes("mobile")) {
         const cpu_canvas = document.getElementById('benchmarkCanvas');
         const cpu_ctx = cpu_canvas.getContext('2d');
         const numRectangles = 10000;
-        const batchSize = 10; // 一度に描画する四角形の数
+        const batchSize = 10;
         let i = 0;
-        cpubench_clear()
-        isStopped = false;
-        const startTime = performance.now();
-        document.querySelector('.cpurun_btn').classList.add('pointer_none')
-        document.querySelector('.cpu_run_text').textContent = "描画中...";
-
+        let startTime;
+        let isStopped = false;
         function drawBatch() {
-            if (isStopped) return; // ストップフラグが立っている場合は描画を中止
-
+            if (isStopped) return;
+            if (i === 0) {
+                startTime = performance.now();
+                document.querySelector('.cpurun_btn').classList.add('pointer_none');
+                document.querySelector('.cpu_run_text').textContent = "描画中...";
+            }
             for (let j = 0; j < batchSize && i < numRectangles; j++, i++) {
                 cpu_ctx.fillStyle = `rgb(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255})`;
                 cpu_ctx.fillRect(Math.random() * cpu_canvas.width, Math.random() * cpu_canvas.height, 50, 50);
@@ -4380,12 +4395,13 @@ if (ua.includes("mobile")) {
                 requestAnimationFrame(drawBatch);
             } else {
                 const endTime = performance.now();
-                const timeTaken = Math.floor((endTime - startTime) / 1000); // ミリ秒を秒に変換し、少数を切り捨て
+                const timeTaken = Math.floor((endTime - startTime) / 1000);
                 document.querySelector('.cpu_run_text').textContent = `四角形を${numRectangles}個描画するのにかかった時間: ${timeTaken}秒`;
-                document.querySelector('.cpurun_btn').classList.remove('pointer_none')
-                document.querySelector('.cpurun_btn_clear').classList.remove('pointer_none')
+                document.querySelector('.cpurun_btn').classList.remove('pointer_none');
+                document.querySelector('.cpurun_btn_clear').classList.remove('pointer_none');
             }
         }
+        cpubench_clear();
         drawBatch();
     }
 
@@ -4732,8 +4748,6 @@ if (ua.includes("mobile")) {
         toggleShadow('remove');
     }
 
-
-
     function taskheight_submit() {
         let taskvalue = document.getElementsByClassName('taskbar_height_value')[0].value;
         const task = document.getElementById('taskbar').clientHeight;
@@ -4758,7 +4772,7 @@ if (ua.includes("mobile")) {
 
         } else if (0 <= taskvalue && taskvalue < 40) {
             error_windows_create("タスクバーの設定範囲以下に設定されています!");
-        } else if (40 <= taskvalue && taskvalue < 151) {
+        } else if (40 <= taskvalue && taskvalue < 201) {
             const t = localStorage.setItem('taskbar_height', taskvalue);
             taskbar.style.height = taskvalue + "px"
             document.querySelector('.desktop_version_text').style.bottom = "40px";
@@ -4782,11 +4796,14 @@ if (ua.includes("mobile")) {
                 const task = document.getElementById('taskbar').clientHeight;
                 document.querySelector('.child_start_menu').style.top = task + "px"
                 document.querySelector('.child_start_menu').style.top = t + "px"
+            } else if (localStorage.getItem('taskbar_autohide')) {
+                taskbar_autohide()
             } else {
                 const task = document.getElementById('taskbar').clientHeight;
                 document.querySelector('.child_start_menu').style.bottom = task + "px"
                 document.querySelector('.child_start_menu').style.bottom = t + "px"
             }
+
         } else {
             error_windows_create("タスクバーの設定範囲を超えています!");
         }
@@ -4801,11 +4818,14 @@ if (ua.includes("mobile")) {
             const task = document.getElementById('taskbar').clientHeight;
             document.querySelector('.child_start_menu').style.top = task + "px"
             document.querySelector('.desktop_version_text').style.bottom = "0px";
+        } else if (localStorage.getItem('taskbar_autohide')) {
+            taskbar_autohide()
         } else {
             const task = document.getElementById('taskbar').clientHeight;
             document.querySelector('.child_start_menu').style.bottom = task + "px"
             document.querySelector('.desktop_version_text').style.bottom = "40px";
         }
+
     }
 
     const clock_canvas = document.getElementById("analog_clock");
@@ -4986,78 +5006,62 @@ if (ua.includes("mobile")) {
         if (desktop.style.display === "block") {
             document.getElementById('shell').value = "";
             document.querySelector('.local_memory_button').classList.add('pointer_none');
-            shellmenu_open()
-
-            var testKey = 'testStorageKey';
-            var testData = new Array(1024).join('a'); // 1KBのデータを作成
-            var success = true;
-            var maxSize = 0; try {
-                // ローカルストレージに1KBずつデータを追加していく
-                while (success) {
+            shellmenu_open();
+            const testKey = 'testStorageKey';
+            const testData = new Array(1024).join('a');
+            let maxSize = 0;
+            try {
+                while (true) {
                     localStorage.setItem(testKey + maxSize, testData);
                     maxSize++;
                 }
             } catch (e) {
-                success = false;
+                // エラー
+            } finally {
+                for (let i = 0; i < maxSize; i++) {
+                    localStorage.removeItem(testKey + i);
+                }
             }
-            for (var i = 0; i < maxSize; i++) {
-                localStorage.removeItem(testKey + i);
-            }
-            document.querySelector('.local_memory').innerHTML = ""
-            const delay = 25;
-            const totalDelay = localStorage.length * delay;
+            document.querySelector('.local_memory').innerHTML = "";
+            const totalDelay = localStorage.length * 25;
             for (let i = 0; i < localStorage.length; i++) {
                 setTimeout(() => {
                     const key = localStorage.key(i);
                     const value = localStorage.getItem(key);
-                    const valueType = typeof value;
-                    const valueLength = value.length;
                     const valueSize = new Blob([value]).size;
-                    document.getElementById('shell').value = (`Key: ${key}, Value: ${value}, Type: ${valueType}, Length: ${valueLength}, Size: ${valueSize} bytes`);
-                }, i * delay);
+                    document.getElementById('shell').value = (`Key: ${key}, Value: ${value}, Size: ${valueSize} bytes`);
+                }, i * 25);
             }
             setTimeout(() => {
                 shellmenu_close();
-                document.querySelector('.local_memory').innerHTML = '&emsp;' + maxSize + 'KB' + '&emsp;';
+                document.querySelector('.local_memory').innerHTML = `&emsp;${maxSize}KB&emsp;`;
                 localStorage.setItem('maxSize', maxSize);
                 displayLocalStorageDetails();
                 document.querySelector('.local_memory_button').classList.remove('pointer_none');
             }, totalDelay + 500);
         }
     }
-    document.querySelector('.local_memory').innerHTML = '&emsp;' + localStorage.getItem('maxSize') + "KB" + '&emsp;';
 
+    document.querySelector('.local_memory').innerHTML = `&emsp;${localStorage.getItem('maxSize')}KB&emsp;`;
     function displayLocalStorageDetails() {
-        document.querySelectorAll('.localstorage_key').forEach(function (localstorage_key) {
-            localstorage_key.remove();
-        });
+        document.querySelectorAll('.localstorage_key').forEach(localstorage_key => localstorage_key.remove());
         const list = document.getElementById('localStorageList');
         let totalSize = 0;
-        // すべてのキーを取得してアルファベット順にソート
-        const keys = [];
-        for (let i = 0; i < localStorage.length; i++) {
-            keys.push(localStorage.key(i));
-        }
-        keys.sort(); // キーをアルファベット順にソート
-
-        // ソートされたキーを使ってループ
-        keys.forEach(function (key) {
+        const keys = Array.from({ length: localStorage.length }, (_, i) => localStorage.key(i)).sort();
+        keys.forEach(key => {
             const value = localStorage.getItem(key);
-            const valueSize = new Blob([value]).size; // バイト数を計算
+            const valueSize = new Blob([value]).size;
             totalSize += valueSize;
             const listItem = document.createElement('li');
-            listItem.classList.add('border');
-            listItem.classList.add('localstorage_key');
+            listItem.classList.add('border', 'localstorage_key');
             listItem.style.width = "max-content";
             listItem.style.marginTop = "5px";
             listItem.textContent = `Keyname: ${key}, Size: ${valueSize} Byte`;
             list.appendChild(listItem);
         });
-
-        // 合計サイズを表示
-        const totalSizeElement = document.getElementById('totalSize');
-        totalSizeElement.textContent = `Total Size: ${totalSize} Byte`;
+        document.getElementById('totalSize').textContent = `Total Size: ${totalSize} Byte`;
     }
+
 
 
 

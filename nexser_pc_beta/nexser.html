@@ -665,6 +665,22 @@
                                 </div>
                             </div>
 
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;window&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="window_fullleft">window full left</li>
+                                        <li class="window_fullright">
+                                            window full right</li>
+                                        <li class="window_half_big">window half big</li>
+                                        <li class="windowsize_reset">window size reset
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+
                         </div>
 
                         <div class="window_contents back_silver" style="height: 100%;">
@@ -678,13 +694,15 @@
                                     onclick="objectiveData_clear()">
                             </div>
                             <p style="display: inline;" class="border2">タイトルを入力:</p>
-                            <form name="objective_title_form" onkeydown="if(event.keyCode == 13){return false;}">
+                            <form name="objective_title_form" style="display: inline;"
+                                onkeydown="if(event.keyCode == 13){return false;}">
                                 <textarea id="objective_title_text" name="objective_title_area"
                                     class="objective_title_area border2"
-                                    style="resize: none; width: 700px; height: 20px; font-size: large;" cols="1"
+                                    style="resize: none; width: 500px; height: 20px; font-size: large;" cols="1"
                                     rows="1"></textarea>
                             </form>
-                            <p style="display: inline;" class="border2">目標を記入:</p>
+                            <p class="border2" style="display: inline; position: absolute; top: 130px; left: 0px;">
+                                目標を記入:</p>
                             <form name="objective_form">
                                 <textarea id="objective_text" name="objective_area" class="objective_area border2"
                                     style="overflow: scroll;" cols="50" rows="15"></textarea>
@@ -732,7 +750,6 @@
                         <div class="title">
                             <span class="title_icon"></span><span>accessory</span>
                         </div>
-
 
                         <div class="title_buttons">
                             <span class="drag_button">&nbsp;</span>
@@ -2666,7 +2683,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
 
                         <div class="window_content">
                             <div class="mini_window" style="height: 100px;">
-                                <p class="bold">taskbar height(40 ~ 150)</p>
+                                <p class="bold">taskbar height(40 ~ 200)</p>
                                 <div class="border2" style="background: whitesmoke;">
                                     <textarea class="taskbar_height_value large resize_none"
                                         style="height: 20px; width: 300px;" maxlength="3" autocomplete="off"
@@ -2813,7 +2830,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         </div>
                     </div>
 
-                    <div class="child_windows window_nosearch nexser_search_menu resize active back_silver">
+                    <div class="child_windows window_nosearch nexser_search_menu resize back_silver active">
                         <div class="title">
                             <span class="title_icon"></span><span>nexser search</span>
                         </div>
@@ -2826,7 +2843,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         </div><br>
 
                         <div class="window_contents back_silver">
-                            <div style="display: flex;">
+                            <div style="display: flex; position: sticky; top: 0px; background-color: silver;">
                                 <input type="text" id="myInput" class="border large"
                                     style="width: 90%; margin-top: 10px;" autocomplete="off" onkeyup="nexser_search()"
                                     placeholder="検索したい言葉を入力">
@@ -2835,7 +2852,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             </div>
 
                             <div class="window_content">
-                                <ul id="myUL">
+                                <ul id="myUL" style="height: 100%;">
                                 </ul>
                             </div>
                         </div>
@@ -3388,12 +3405,15 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             <span class="close_button button2"></span><br>
                         </div>
                         <div class="window_contents back_silver">
-                            <p class="border2">ゲームの制限</p>
-                            <div style="display: flex;">
+                            <p class=" border2">ゲームの制限</p>
+                            <div style="display: inline-flex;" style="margin-top: 10px;">
                                 <span class="button2 apply_button" onclick="game_true()">ON</span>
                                 <span class="button2 apply_button" onclick="game_false()">OFF</span>
                             </div>
-                            <p class="border">MODE:<span class="game_text">OFF</span></p>
+                            <div class="window_bottom">
+                                <p class="border" style="margin-top: 10px; display: inline;">MODE:<span
+                                        class="game_text">OFF</span></p>
+                            </div>
                         </div>
                     </div>
 
@@ -3524,7 +3544,6 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             <div id="editor_2" contenteditable="true"></div>
                         </div>
                     </div>
-
 
                     <div class="child_windows nexser_guidebook_menu resize active">
                         <div class="title">
