@@ -614,7 +614,7 @@
                         </div>
 
                         <div class="window_content">
-                            <div>
+                            <div class="back_silver">
                                 <input type="button" class="button2" value="&emsp;save&emsp;" onclick="save()">
                                 <input type="button" class="button2" value="&emsp;load&emsp;" onclick="load()">
                                 <input type="button" class="button2" value="&emsp;windows2000 text load&emsp;"
@@ -715,7 +715,6 @@
                             <span class="title_icon"></span><span>window mode</span>
                         </div>
 
-
                         <div class="title_buttons">
                             <span class="drag_button">&nbsp;</span>
                             <span class="close_button button2"></span><br>
@@ -742,7 +741,9 @@
                                 <li class="hover_blue" id="window_borderblack">border black</li>
                                 <li class="hover_blue" onclick="windowmode_reset()">default</li>
                             </ul>
-                            <p class="border2">MODE:<span class="windowmode">default</span></p>
+                            <p class="red_text back_silver">window afterimageが有効の場合は使えません</p>
+                            <p class="border2">After image: <span class="windowafter">ON</span></p>
+                            <p class="border2">Mode: <span class="windowmode">default</span></p>
                         </div>
                     </div>
 
@@ -1313,8 +1314,8 @@
                         </div>
                     </div>
 
-                    <div class="child_windows system_menu active back_silver" style="background-color: silver;">
-                        <div class="title">
+                    <div class="child_windows system_menu active">
+                        <div class=" title">
                             <span class="title_icon"></span><span>system properties</span>
                         </div>
 
@@ -1324,7 +1325,7 @@
                             <span class="close_button button2"></span><br>
                         </div>
 
-                        <div class="window_content">
+                        <div class="window_content back_silver" style="height: 100%;">
                             <div class="window_inline_menus">
 
                                 <div class="window_inline_menus_parent menuparent1">
@@ -1642,7 +1643,7 @@
 
                     </div>
 
-                    <div class="child_windows driver_menu active back_silver">
+                    <div class="child_windows driver_menu active">
                         <div class="title">
                             <span class="title_icon"></span><span>driver</span>
                         </div>
@@ -1652,7 +1653,7 @@
                             <span class="close_button button2"></span><br>
                         </div>
 
-                        <div class="window_content">
+                        <div class="window_content back_silver">
                             <p style="display: inline;" class="border2">nexser default driver</p>
                             <div class="mini_window border2" style="background: whitesmoke;">
                                 <p>sound&emsp;<button class="installbutton_1 button2" id="sound_driver">install</button>
@@ -1727,7 +1728,7 @@
                         </div>
                     </div>
 
-                    <div class="child_windows screen_text_menu back_silver active">
+                    <div class="child_windows screen_text_menu active">
                         <div class="title">
                             <span class="title_icon"></span><span>screen text</span>
                         </div>
@@ -1737,7 +1738,7 @@
                             <span class="close_button button2"></span><br>
                         </div>
 
-                        <div class="window_content">
+                        <div class="window_content back_silver">
                             <p>background text</p>
                             <form autocomplete="off" method="get" name="back_text_form" class="border2"
                                 onsubmit="return false; length" onkeydown="if(event.keyCode == 13){return false;}">
@@ -1776,7 +1777,7 @@
                         </div>
                     </div>
 
-                    <div class="child_windows display_menu back_silver active">
+                    <div class="child_windows display_menu active">
 
                         <div class="title">
                             <span class="title_icon"></span><span>display</span>
@@ -1786,7 +1787,7 @@
                             <span class="close_button button2"></span><br>
                         </div>
 
-                        <div class="window_content">
+                        <div class="window_content back_silver" style="height: 100%;">
                             <div class="window_inline_menus">
 
                                 <div class="window_inline_menus_parent menuparent1">
@@ -2131,7 +2132,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         </div>
                     </div>
 
-                    <div class="child_windows text_drop_menu resize back_silver active">
+                    <div class="child_windows text_drop_menu resize active">
                         <div class="title">
                             <span class="title_icon"></span><span>text drop</span>
                         </div>
@@ -2144,7 +2145,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             <span class="minimization_button button2"></span><br>
                         </div>
 
-                        <div class="window_content">
+                        <div class="window_content back_silver">
                             <div>
                                 <input type="button" class="button2" value="&emsp;save&emsp;" onclick="save2()">
                                 <input type="button" class="button2" value="&emsp;load&emsp;" onclick="load2()">
@@ -2321,7 +2322,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         </div>
                     </div>
 
-                    <div class="child_windows uploadvideo_menu resize back_silver active">
+                    <div class="child_windows uploadvideo_menu resize active">
                         <div class="title">
                             <span class="title_icon"></span><span>video upload</span>
                         </div>
@@ -2333,7 +2334,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             <span class="minimization_button button2"></span>
                             <span class="frame_fullbutton button2"></span><br>
                         </div>
-                        <div class="window_content">
+                        <div class="window_contents back_silver">
                             <video class="preview2" id="previewVideo2" controls="controls" width="560px"
                                 playsinline></video>
                             <div style="display: flex; position: absolute; bottom: 0px;">
@@ -2384,7 +2385,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         </div>
                     </div>
 
-                    <div class="child_windows file_setting_menu active back_silver" style="width: 350px;">
+                    <div class="child_windows file_setting_menu active" style="width: 350px;">
                         <div class="title">
                             <span class="title_icon"></span><span>file setting</span>
                         </div>
@@ -2408,7 +2409,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
 
                         </div>
 
-                        <div class="window_content">
+                        <div class="window_content back_silver">
                             <p class="bold large">files</p>
                             <div class="mini_window">
                                 <button class="button2 windowfile1" style="height: 20px; width: 150px;">window file
@@ -2658,7 +2659,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         </div>
                     </div>
 
-                    <div class="child_windows taskbar_setting_menu back_silver active">
+                    <div class="child_windows taskbar_setting_menu active">
 
                         <div class="title">
                             <span class="title_icon"></span><span>taskbar properties</span>
@@ -2680,7 +2681,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             </div>
                         </div>
 
-                        <div class="window_content">
+                        <div class="window_content back_silver">
                             <div class="mini_window" style="height: 100px;">
                                 <p class="bold">taskbar height(40 ~ 200)</p>
                                 <div class="border2" style="background: whitesmoke;">
@@ -2885,7 +2886,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         </div>
                     </div>
 
-                    <div class="child_windows youtubevideo_menu resize back_silver active">
+                    <div class="child_windows youtubevideo_menu resize active">
                         <div class="title">
                             <span class="title_icon"></span><span>youtube video url</span>
                         </div>
@@ -2898,7 +2899,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             <span class="frame_fullbutton button2"></span><br>
                         </div>
 
-                        <div class="window_content">
+                        <div class="window_content back_silver">
                             <iframe id="youtubeframe" frameborder="0"
                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                                 referrerpolicy="strict-origin-when-cross-origin" allowfullscreen
@@ -2946,7 +2947,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         </div>
                     </div>
 
-                    <div class="child_windows password_menu back_silver active">
+                    <div class="child_windows password_menu active">
                         <div class="title">
                             <span class="title_icon"></span><span>password set</span>
                         </div>
@@ -2956,8 +2957,8 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             <span class="close_button button2"></span><br>
                         </div>
 
-                        <div class="window_contents back_silver" style="margin-top: 10px;">
-                            <form>
+                        <div class="window_contents back_silver">
+                            <form style="margin-top: 10px;">
                                 <input type="password" class="border2 password medium" maxlength="4" autocomplete="off"
                                     placeholder="4 textcount" style="width: 245px;">
                             </form>
@@ -3173,7 +3174,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         </div>
                     </div>
 
-                    <div class="child_windows alarm_menu back_silver active">
+                    <div class="child_windows alarm_menu active">
                         <div class="title">
                             <span class="title_icon"></span><span>alarm</span>
                         </div>
@@ -3182,7 +3183,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             <span class="close_button button2"></span><br>
                         </div>
 
-                        <div class="window_content">
+                        <div class="window_content back_silver">
                             <div id="timerText" class="xx-large">00:00:00</div>
                             <form name="alarm_form">
                                 <p class="time_text large">アラーム: <select name="option_hours" class="border medium">
