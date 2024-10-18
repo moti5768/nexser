@@ -3089,14 +3089,15 @@ if (ua.includes("mobile")) {
                     drag.style.boxShadow = "";
                     drag.style.opacity = "";
                     Array.from(drag.children).forEach(child => child.style.opacity = "");
+                    window_back_silver();
                 }, 0);
                 if (clones && !localStorage.getItem('window_afterimage_false')) {
                     document.querySelector('.clones').remove();
                 }
                 clones = false;
-                window_back_silver();
             }
             button.dataset.listenerAdded = true;
+
         }
     }
     function observeNewElements3() {

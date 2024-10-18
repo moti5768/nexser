@@ -6,7 +6,6 @@
     outline: none;
 }
 
-
 html,
 body {
     touch-action: manipulation;
@@ -761,7 +760,7 @@ input[type="file"] {
 }
 
 .windowmode_menu {
-    width: 200px;
+    width: 300px;
 }
 
 .font_menu {
