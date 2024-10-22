@@ -1299,10 +1299,9 @@ body::-webkit-scrollbar {
     position: absolute;
     left: 5px;
     bottom: 26px;
-    border: 1.5px solid;
-    border-color: #eee #000 #000 #eee;
-    box-shadow: 2.5px 2.5px dimgray;
-    outline: 1px solid gray;
+    border-right: solid 1.5px black;
+    border-bottom: solid 1.5px black;
+    box-shadow: 2px 2px dimgray;
     pointer-events: none;
 }
 
@@ -1624,7 +1623,7 @@ body::-webkit-scrollbar {
 .title_buttons {
     background-color: rgba();
     position: relative;
-    bottom: 0px;
+    bottom: 0.5px;
     right: 0px;
     -webkit-user-select: none;
     -moz-user-select: none;

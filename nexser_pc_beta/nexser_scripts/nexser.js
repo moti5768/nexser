@@ -2761,10 +2761,6 @@ if (ua.includes("mobile")) {
                 zindexchildwindows.scrollLeft = 0;
                 zindexchildwindows.style.zIndex = largestZIndex++;
             });
-            element.addEventListener('click', function () {
-                zindexchildwindows.scrollTop = 0;
-                zindexchildwindows.scrollLeft = 0;
-            });
         };
         addEventListeners(z_index_child_windows);
 
@@ -3803,15 +3799,15 @@ if (ua.includes("mobile")) {
         localStorage.removeItem('noteData');
         const memo_save = document.getElementById('memo_save_text');
         memo_save.textContent = "";
-        localStorage.setItem('note_texts', true);
-        document.querySelector('.note_title').textContent = "notepad"
     }
 
     function notearea_allselect() {
+        notetitle();
         document.querySelector('.note_area').select();
     }
 
     function notearea_time() {
+        notetitle();
         const note = document.querySelector('.note_area');
         const note_time = new Date();
         note.value = note.value + note_time.toLocaleString();
@@ -3821,7 +3817,7 @@ if (ua.includes("mobile")) {
         const memo_save = document.getElementById('memo_save_text');
         memo_save.textContent = "";
         resetShowLength();
-        localStorage.setItem('note_texts', true);
+        notetitle()
     });
     document.getElementById('cleartextbtn2').addEventListener('click', function () {
         localStorage.removeItem('textdropdata');
@@ -3884,6 +3880,7 @@ if (ua.includes("mobile")) {
     function notetitle() {
         notedata_clear();
         resizeTextarea();
+        localStorage.setItem('note_texts', true);
         document.querySelector('.note_title').textContent = "*notepad";
     }
 
