@@ -2480,11 +2480,11 @@ if (ua.includes("mobile")) {
     function window_animation(animation) {
         const taskHeight = () => document.getElementById('taskbar').clientHeight;
         const adjustHeight = () => {
-            if (['big', 'leftwindow', 'rightwindow'].some(cls => animation.classList.contains(cls))) {
-                animation.style.height = (animation.clientHeight - taskHeight()) + "px";
-            }
             if (animation.classList.contains('minimization')) {
                 animation.classList.add('child_windows_invisible');
+            }
+            if (['big', 'leftwindow', 'rightwindow'].some(cls => animation.classList.contains(cls))) {
+                animation.style.height = (animation.clientHeight - taskHeight()) + "px";
             }
             animation.style.zIndex = largestZIndex++;
         };
@@ -2998,8 +2998,6 @@ if (ua.includes("mobile")) {
         if (hehehe1.classList.contains('navy')) {
             editor2_child.style.width = `${editor2_parent.clientWidth - 6}px`;
             editor2_child.style.height = `${editor2_parent.clientHeight - 85}px`;
-            // editor2_child.style.width = "100vh"
-            // editor2_child.style.height = "100vh"
         }
     };
 
@@ -3013,7 +3011,6 @@ if (ua.includes("mobile")) {
                     dragwindow.style.width = "55%";
                     dragwindow.classList.remove('leftwindow');
                     dragwindow.classList.remove('rightwindow');
-                    window_animation(dragwindow);
                 }
                 dragwindow.classList.add("drag");
             });
