@@ -3062,9 +3062,8 @@ if (ua.includes("mobile")) {
                 if (!clones && !localStorage.getItem('window_afterimage_false')) {
                     const clone = dragwindow.cloneNode(true);
                     dragwindow.parentNode.appendChild(clone);
-                    clone.classList.add('clones')
-                    clone.style.zIndex = largestZIndex++;
-                    drag.style.zIndex = largestZIndex++;
+                    clone.classList.add('clones');
+                    [clone, dragwindow].forEach(el => el.style.zIndex = largestZIndex++);
                     clones = true;
                 }
                 const taskover = document.getElementById('taskbar')
@@ -5407,9 +5406,8 @@ if (ua.includes("mobile")) {
                 if (!clones && !localStorage.getItem('window_afterimage_false')) {
                     const clone = resizer2.cloneNode(true);
                     resizer2.parentNode.appendChild(clone);
-                    clone.classList.add('clones')
-                    clone.style.zIndex = largestZIndex++;
-                    resizer2.style.zIndex = largestZIndex++;
+                    clone.classList.add('clones');
+                    [clone, resizer2].forEach(el => el.style.zIndex = largestZIndex++);
                     clones = true;
                     setTimeout(() => {
                         resizer2.style.background = "rgba(255, 255, 255, 0)";
