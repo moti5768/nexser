@@ -2484,7 +2484,7 @@ if (ua.includes("mobile")) {
                 animation.style.height = (animation.clientHeight - taskHeight()) + "px";
             }
             if (animation.classList.contains('minimization')) {
-                animation.classList.add('child_windows_invisible')
+                animation.classList.add('child_windows_invisible');
             }
             animation.style.zIndex = largestZIndex++;
         };
@@ -2854,6 +2854,13 @@ if (ua.includes("mobile")) {
         if (frontmostElement) {
             frontmostElement.firstElementChild.classList.add(newClassName);
         }
+        elements.forEach(window => {
+            const computedStyle = getComputedStyle(window);
+            const width = computedStyle.width;
+            const height = computedStyle.height;
+            window.style.width = width;
+            window.style.height = height;
+        });
         return { element: frontmostElement, zIndex: highestZIndex };
     }
 
