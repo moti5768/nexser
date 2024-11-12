@@ -2182,14 +2182,6 @@ if (ua.includes("mobile")) {
                 cpubench_open();
                 break;
 
-            case 'allwindow/min':
-                allwindow_min();
-                break;
-
-            case 'allwindow/big':
-                allwindow_big();
-                break;
-
             case 'window/afterimage/false':
                 localStorage.setItem('window_afterimage_false', true);
                 document.querySelector('.windowafter').textContent = "OFF";
@@ -2478,6 +2470,7 @@ if (ua.includes("mobile")) {
         localStorage.removeItem('window_animation');
     }
     function window_animation(animation) {
+        animation.style.pointerEvents = "none";
         const taskHeight = () => document.getElementById('taskbar').clientHeight;
         const adjustHeight = () => {
             if (animation.classList.contains('minimization')) {
@@ -2486,6 +2479,7 @@ if (ua.includes("mobile")) {
             if (['big', 'leftwindow', 'rightwindow'].some(cls => animation.classList.contains(cls))) {
                 animation.style.height = (animation.clientHeight - taskHeight()) + "px";
             }
+            animation.style.pointerEvents = "";
             animation.style.zIndex = largestZIndex++;
         };
         if (localStorage.getItem('window_animation')) {
@@ -2505,40 +2499,6 @@ if (ua.includes("mobile")) {
         } else {
             setTimeout(adjustHeight, 0);
         }
-    }
-
-    function allwindow_min() {
-        document.querySelectorAll('.resize').forEach(alliwindow_mins => {
-            const minscreenbutton = alliwindow_mins.closest('.child_windows');
-            Object.assign(minscreenbutton.style, {
-                top: "",
-                left: "",
-                height: "",
-                width: "0"
-            });
-            Object.assign(document.querySelector('.note_area').style, {
-                height: "",
-                width: ""
-            });
-            window_animation(minscreenbutton);
-            minscreenbutton.classList.remove('leftwindow', 'rightwindow');
-            minscreenbutton.classList.remove('big');
-        });
-    }
-
-    function allwindow_big() {
-        document.querySelectorAll('.resize').forEach(alliwindow_big => {
-            const bigscreenbutton = alliwindow_big.closest('.child_windows');
-            Object.assign(bigscreenbutton.style, {
-                height: "",
-                width: "",
-                left: "0",
-                top: localStorage.getItem('taskbar_position_button') ? "40px" : "0"
-            });
-            window_animation(bigscreenbutton);
-            bigscreenbutton.classList.remove('rightwindow', 'leftwindow');
-            bigscreenbutton.classList.add('big');
-        });
     }
 
     document.querySelectorAll('.window_fullleft').forEach(function (window_left) {
@@ -2854,13 +2814,11 @@ if (ua.includes("mobile")) {
         if (frontmostElement) {
             frontmostElement.firstElementChild.classList.add(newClassName);
         }
-        elements.forEach(window => {
-            const computedStyle = getComputedStyle(window);
-            const width = computedStyle.width;
-            const height = computedStyle.height;
-            window.style.width = width;
-            window.style.height = height;
-        });
+        for (const element of elements) {
+            const { width, height } = getComputedStyle(element);
+            element.style.width = width;
+            element.style.height = height;
+        }
         return { element: frontmostElement, zIndex: highestZIndex };
     }
 
@@ -3045,15 +3003,9 @@ if (ua.includes("mobile")) {
                     if (localStorage.getItem('window_invisible') && localStorage.getItem('window_afterimage_false')) {
                         drag.style.opacity = "0.5"
                     } else if (localStorage.getItem('window_borderblack') && localStorage.getItem('window_afterimage_false')) {
-                        drag.style.background = "rgba(255, 255, 255, 0)";
-                        drag.style.border = "dashed 2px black";
-                        drag.style.boxShadow = "none";
-                        Array.from(drag.children).forEach(child => child.style.opacity = "0");
+                        applyStyles(drag);
                     } else if (!localStorage.getItem('window_afterimage_false')) {
-                        drag.style.background = "rgba(255, 255, 255, 0)";
-                        drag.style.border = "dashed 2px black";
-                        drag.style.boxShadow = "none";
-                        Array.from(drag.children).forEach(child => child.style.opacity = "0");
+                        applyStyles(drag);
                     }
                 }, 0);
                 if (!clones && !localStorage.getItem('window_afterimage_false')) {
@@ -3121,7 +3073,11 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.drag_button').forEach(addDragButtonListeners);
     observeNewElements3();
 
-
+    const applyStyles = element => {
+        const [r, g, b] = getComputedStyle(element).backgroundColor.match(/\d+/g).map(Number);
+        Object.assign(element.style, { background: "rgba(255, 255, 255, 0)", border: `dashed 2px rgb(${255 - r}, ${255 - g}, ${255 - b})`, boxShadow: "none" });
+        [...element.children].forEach(child => child.style.opacity = "0");
+    };
 
     function check(elm1, elm2) {
         const d1 = elm1.getBoundingClientRect();
@@ -3656,8 +3612,7 @@ if (ua.includes("mobile")) {
     // 保存
     function save() {
         if (note_form.note_area.value == "") {
-            errortitle_msg = "&nbsp;notepad"
-            error_windows_create("テキストが無いため、保存できません!");
+            error_windows_create("テキストが無いため、保存できません!", "&nbsp;notepad");
         } else {
             let noteData = document.note_form.note_area.value;
             localStorage.setItem('noteData', noteData);
@@ -3677,14 +3632,11 @@ if (ua.includes("mobile")) {
 
     function objective_save() {
         if (objective_form.objective_area.value == "" && objective_title_form.objective_title_area.value == "") {
-            errortitle_msg = "&nbsp;objective sheet"
-            error_windows_create("タイトルと内容が入力されていません!");
+            error_windows_create("タイトルと内容が入力されていません!", "&nbsp;objective sheet");
         } else if (objective_title_form.objective_title_area.value == "") {
-            errortitle_msg = "&nbsp;objective sheet"
-            error_windows_create("タイトルが入力されていません!");
+            error_windows_create("タイトルが入力されていません!", "&nbsp;objective sheet");
         } else if (objective_form.objective_area.value == "") {
-            errortitle_msg = "&nbsp;objective sheet"
-            error_windows_create("内容が入力されていません!");
+            error_windows_create("内容が入力されていません!", "&nbsp;objective sheet");
         }
         if (!objective_title_form.objective_title_area.value == "" && !objective_form.objective_area.value == "") {
             let objectiveTitleData = document.objective_title_form.objective_title_area.value;
@@ -5407,10 +5359,7 @@ if (ua.includes("mobile")) {
                     [clone, resizer2].forEach(el => el.style.zIndex = largestZIndex++);
                     clones = true;
                     setTimeout(() => {
-                        resizer2.style.background = "rgba(255, 255, 255, 0)";
-                        resizer2.style.border = "dashed 2px black";
-                        resizer2.style.boxShadow = "none";
-                        Array.from(resizer2.children).forEach(child => child.style.opacity = "0");
+                        applyStyles(resizer2)
                     }, 0);
                 }
                 rectangle_remove();
@@ -6489,9 +6438,9 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.window_tool').forEach(windowtool_files => {
         const windowtool_files_parent = document.createElement('div');
 
-        windowtool_files_parent.innerHTML = `<span class="winchild_border"></span><div class="windowtool_parent">
+        windowtool_files_parent.innerHTML = `<span class="winchild_border"></span><div class="windowtool_parent"><span class="startmenu_file_icon"></span>
                                 <button class="button2" style="height: 20px; font-size: large; float: right;">&#x25BC;</button>
-                                      <span class="windowtool_child_filenames"></span>
+                                      &emsp;&emsp;<span class="windowtool_child_filenames"></span>
                                 <div class="windowtool_child">
                                     <ul>
                                         <li class="test_button"><span class="startmenu_file_icon"></span>main</li>
@@ -6622,7 +6571,10 @@ if (ua.includes("mobile")) {
     }
 
 
-    function error_windows_create(errortitle_text) {
+    function error_windows_create(errortitle_text, errortitle_msg) {
+        if (errortitle_msg == null) {
+            errortitle_msg = "&nbsp;error";
+        }
         sound(2)
         nex.style.cursor = '';
         const entryDiv = document.createElement('div');
