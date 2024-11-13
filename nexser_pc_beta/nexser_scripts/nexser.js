@@ -1496,8 +1496,7 @@ if (ua.includes("mobile")) {
             notearea.style.height = "";
             notearea.style.width = "";
             windowposition_reset();
-            allwindow.classList.remove('leftwindow');
-            allwindow.classList.remove('rightwindow');
+            allwindow.classList.remove('leftwindow', 'rightwindow', 'child_windows_invisible');
             allwindow.style.transition = "";
             document.querySelector('.bigscreen_button').style.visibility = "visible";
             document.querySelector('.minscreen_button').style.visibility = "visible";
