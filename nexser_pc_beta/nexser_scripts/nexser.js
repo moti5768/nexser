@@ -2792,8 +2792,6 @@ if (ua.includes("mobile")) {
         document.querySelector('.cputitle').style.display = "none";
     }
 
-
-
     function assignClassToFrontmostElement(selector, newClassName) {
         const elements = document.querySelectorAll(selector);
         let frontmostElement = null;

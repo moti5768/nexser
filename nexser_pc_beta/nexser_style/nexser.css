@@ -755,6 +755,9 @@ input[type="file"] {
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
+    max-width: 700px;
+    max-height: 445px;
+    min-width: 300px;
 }
 
 .windowmode_menu {
