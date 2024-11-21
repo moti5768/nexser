@@ -2992,10 +2992,6 @@ if (ua.includes("mobile")) {
                 document.addEventListener("touchend", mup, false);
             }
             function mmove(e) {
-                const drag = document.getElementsByClassName("drag")[0];
-                const event = e.type === "mousemove" ? e : e.changedTouches[0];
-                drag.style.top = event.pageY - y + "px";
-                drag.style.left = event.pageX - x + "px";
                 setTimeout(() => {
                     if (localStorage.getItem('window_invisible') && localStorage.getItem('window_afterimage_false')) {
                         drag.style.opacity = "0.5"
@@ -3007,11 +3003,15 @@ if (ua.includes("mobile")) {
                 }, 0);
                 if (!clones && !localStorage.getItem('window_afterimage_false')) {
                     const clone = dragwindow.cloneNode(true);
-                    dragwindow.parentNode.appendChild(clone);
                     clone.classList.add('clones');
+                    dragwindow.parentNode.appendChild(clone);
                     [clone, dragwindow].forEach(el => el.style.zIndex = largestZIndex++);
                     clones = true;
                 }
+                const drag = document.getElementsByClassName("drag")[0];
+                const event = e.type === "mousemove" ? e : e.changedTouches[0];
+                drag.style.top = event.pageY - y + "px";
+                drag.style.left = event.pageX - x + "px";
                 const taskover = document.getElementById('taskbar')
                 taskover.addEventListener('mouseover', function () {
                     document.body.removeEventListener("mousemove", mmove, false);
@@ -6048,9 +6048,7 @@ if (ua.includes("mobile")) {
 
     function rectangle_remove() {
         const elements = document.querySelectorAll('.rectangle');
-        elements.forEach(element => {
-            element.remove('rectangle');
-        });
+        elements.forEach(element => element.remove());
     }
 
     var background_img = document.createElement("img");
