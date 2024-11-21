@@ -1878,7 +1878,6 @@ body::-webkit-scrollbar {
     border-left: solid 1.5px whitesmoke;
     border-bottom: solid 1.5px black;
     border-top: solid 1.5px whitesmoke;
-    outline: solid 1px dimgray;
 }
 
 .window_contents {
@@ -2777,6 +2776,7 @@ progress::-webkit-progress-value {
     z-index: 2;
     width: 12.5px;
     height: 12.5px;
+    z-index: 2;
 }
 
 .resizer.top-right {
@@ -2786,6 +2786,7 @@ progress::-webkit-progress-value {
     z-index: 2;
     width: 12.5px;
     height: 12.5px;
+    z-index: 2;
 }
 
 .resizer.bottom-left {
@@ -2795,6 +2796,7 @@ progress::-webkit-progress-value {
     z-index: 2;
     width: 12.5px;
     height: 12.5px;
+    z-index: 2;
 }
 
 .resizer.bottom-right {
@@ -2802,8 +2804,9 @@ progress::-webkit-progress-value {
     right: -5px;
     cursor: nwse-resize;
     z-index: 2;
-    width: 20px;
-    height: 20px;
+    width: 15px;
+    height: 15px;
+    z-index: 2;
 }
 
 .resizer.top {
@@ -2841,7 +2844,6 @@ progress::-webkit-progress-value {
     height: 100%;
     z-index: 1;
 }
-
 
 /* memory_game */
 
