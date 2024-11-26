@@ -215,30 +215,27 @@ if (ua.includes("mobile")) {
         }
 
     });
-    document.addEventListener('mousemove', (e) => {
-        if (isDrawing && desktop.style.display === "block") {
-            const currentX = e.clientX;
-            const currentY = e.clientY;
-            const width = currentX - startX;
-            const height = currentY - startY;
-            rectangle.style.width = `${Math.abs(width)}px`;
-            rectangle.style.height = `${Math.abs(height)}px`;
-            rectangle.style.left = `${Math.min(startX, currentX)}px`;
-            rectangle.style.top = `${Math.min(startY, currentY)}px`;
-        }
-    });
-    document.addEventListener('mouseup', () => {
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    function handleMouseMove(e) {
+        if (!isDrawing || desktop.style.display !== "block") return;
+        const currentX = e.clientX;
+        const currentY = e.clientY;
+        const width = currentX - startX;
+        const height = currentY - startY;
+        rectangle.style.setProperty('width', `${Math.abs(width)}px`);
+        rectangle.style.setProperty('height', `${Math.abs(height)}px`);
+        rectangle.style.setProperty('left', `${Math.min(startX, currentX)}px`);
+        rectangle.style.setProperty('top', `${Math.min(startY, currentY)}px`);
+    }
+    function handleMouseUp() {
         isDrawing = false;
-        rectangle_remove()
-    });
+        rectangle_remove();
+    }
 
     function lightchild() {
-        const screen_light_range_child = document.querySelector('.screen_light_range_child');
-        if (screen_light_range_child.style.display === "flex") {
-            screen_light_range_child.style.display = "none"
-        } else {
-            screen_light_range_child.style.display = "flex"
-        }
+        const screenLightRangeChild = document.querySelector('.screen_light_range_child');
+        screenLightRangeChild.style.display = (screenLightRangeChild.style.display === "flex") ? "none" : "flex";
     }
 
     const tasks = [
@@ -533,8 +530,6 @@ if (ua.includes("mobile")) {
         setBackgroundImage('wallpaper_xp', '.nexser_backgroundimage_3', minidesk_backgroundresize3);
         setBackgroundImage('wallpaper_space', '.nexser_backgroundimage_4', minidesk_backgroundresize4);
     }
-
-
 
     function taskgroup_load() {
         drawClock();
@@ -1524,17 +1519,13 @@ if (ua.includes("mobile")) {
         document.querySelectorAll('.task_buttons').forEach(function (task_buttons) {
             task_buttons.remove()
         })
-
         document.querySelectorAll('.child_windows').forEach(function (allwindow_none) {
             allwindow_none.classList.add('active');
-            allwindow_none.classList.remove('big');
-            allwindow_none.classList.remove('rightwindow');
-            allwindow_none.classList.remove('leftwindow');
-            allwindow_none.classList.remove('selectwindows');
+            allwindow_none.classList.remove('big', 'rightwindow', 'leftwindow', 'selectwindows');
             allwindow_none.style.right = "";
-            windowposition_reset()
             allwindow_none.style.transition = "";
         });
+        windowposition_reset();
         const notearea = document.querySelector('.note_area');
         notearea.style.height = "";
         notearea.style.width = "";
@@ -5708,7 +5699,7 @@ if (ua.includes("mobile")) {
         buttons.forEach(button => button.classList.remove('tsk_pressed'));
         windows.forEach((windowElement, index) => {
             if (windowElement.querySelector('.title.navy')) {
-                buttons[index].classList.add('tsk_pressed');
+                buttons[index]?.classList.add('tsk_pressed');
             }
         });
     }
@@ -5733,112 +5724,70 @@ if (ua.includes("mobile")) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     const result = e.target.result;
-                    const windowDiv = document.createElement('div');
-                    windowDiv.className = "child_windows testwindow2 resize"
+                    const createElement = (tag, className, parent, innerHTML) => {
+                        const element = document.createElement(tag);
+                        if (className) element.className = className;
+                        if (innerHTML) element.innerHTML = innerHTML;
+                        if (parent) parent.appendChild(element);
+                        return element;
+                    };
+
+                    const windowDiv = createElement('div', "child_windows testwindow2 resize", null);
                     windowDiv.style.left = `${event.clientX}px`;
                     windowDiv.style.top = `${event.clientY}px`;
                     windowDiv.style.zIndex = largestZIndex++;
 
-                    const newChild = document.createElement('div');
-                    newChild.className = "title"
-                    windowDiv.appendChild(newChild);
+                    const titleDiv = createElement('div', "title", windowDiv);
+                    const titleIcon = createElement('span', "title_icon", titleDiv);
+                    const titleText = createElement('span', "white_space_wrap", titleDiv, file.name);
 
-                    const newChild2 = document.createElement('span');
-                    newChild2.className = "title_icon"
-                    newChild.appendChild(newChild2);
+                    const titleButtons = createElement('div', "title_buttons", windowDiv);
+                    const dragButton = createElement('span', "drag_button", titleButtons, "&nbsp;");
+                    const closeButton = createElement('span', "close_button button2 allclose_button", titleButtons);
+                    const bigScreenButton = createElement('span', "bigscreen_button button2", titleButtons);
+                    const minScreenButton = createElement('span', "minscreen_button button2", titleButtons);
+                    const minimizationButton = createElement('span', "minimization_button button2", titleButtons);
+                    createElement('br', null, titleButtons);
 
-                    const newChild22 = document.createElement('span');
-                    newChild22.textContent = `${file.name}`;
-                    newChild22.className = "white_space_wrap";
-                    newChild.appendChild(newChild22);
-
-                    const newChild3 = document.createElement('div');
-                    newChild3.className = "title_buttons"
-                    windowDiv.appendChild(newChild3);
-
-                    const newChild4_4 = document.createElement('span');
-                    newChild4_4.className = "drag_button"
-                    newChild4_4.innerHTML = "&nbsp;"
-                    newChild3.appendChild(newChild4_4);
-
-                    const newChild4 = document.createElement('span');
-                    newChild4.className = "close_button button2 allclose_button"
-                    newChild3.appendChild(newChild4);
-
-                    newChild4.addEventListener('click', () => {
-                        const newChild4_2 = newChild4.closest('.child_windows');
-                        if (newChild4_2) {
-                            newChild4_2.remove();
+                    closeButton.addEventListener('click', () => {
+                        const parentWindow = closeButton.closest('.child_windows');
+                        if (parentWindow) {
+                            parentWindow.remove();
                             zindexwindow_addnavy();
                         }
                     });
 
-                    const newChild4_1 = document.createElement('span');
-                    newChild4_1.className = "bigscreen_button button2"
-                    newChild3.appendChild(newChild4_1);
-
-                    const newChild4_2 = document.createElement('span');
-                    newChild4_2.className = "minscreen_button button2"
-                    newChild3.appendChild(newChild4_2);
-
-                    const newChild4_3 = document.createElement('span');
-                    newChild4_3.className = "minimization_button button2"
-                    newChild3.appendChild(newChild4_3);
-
-                    const newChild4_5 = document.createElement('br');
-                    newChild3.appendChild(newChild4_5);
-
-                    const newChild6 = document.createElement('div');
-                    newChild6.className = "window_contents"
-                    windowDiv.appendChild(newChild6);
+                    const windowContents = createElement('div', "window_contents", windowDiv);
                     setTimeout(() => {
                         windowDiv.classList.add('no_create_windows');
                     }, 100);
 
+                    const addMediaContent = (mediaTag, mediaSrc) => {
+                        const mediaElement = createElement(mediaTag, "item_preview", windowContents);
+                        mediaElement.src = mediaSrc;
+                        if (mediaTag === 'video') mediaElement.controls = true;
+                        windowContents.classList.add("scrollbar_none");
+                    };
+                    const addIframe = (src) => {
+                        const iframe = createElement('iframe', "item_preview", windowContents);
+                        iframe.src = src;
+                        iframe.style.width = "100%";
+                        iframe.style.height = "100%";
+                        windowContents.classList.add("scrollbar_none");
+                    };
+                    windowDiv.classList.add('selectwindows');
                     if (file.type.startsWith('image/')) {
-                        windowDiv.classList.add('selectwindows');
-                        const img = document.createElement('img');
-                        img.src = result;
-                        img.className = "item_preview";
-                        newChild6.classList.add("scrollbar_none");
-                        newChild6.appendChild(img);
+                        addMediaContent('img', result);
                     } else if (file.type.startsWith('video/')) {
-                        windowDiv.classList.add('selectwindows');
-                        const video = document.createElement('video');
-                        video.src = result;
-                        video.controls = true;
-                        video.className = "item_preview";
-                        newChild6.classList.add("scrollbar_none");
-                        newChild6.appendChild(video);
+                        addMediaContent('video', result);
                     } else if (file.type === 'application/pdf') {
-                        windowDiv.classList.add('selectwindows');
-                        const iframe = document.createElement('iframe');
-                        iframe.src = result;
-                        iframe.className = "item_preview";
-                        iframe.style.width = "100%";
-                        iframe.style.height = "100%";
-                        newChild6.classList.add("scrollbar_none");
-                        newChild6.appendChild(iframe);
+                        addIframe(result);
                     } else if (file.type.startsWith('text/')) {
-                        windowDiv.classList.add('selectwindows');
-                        const text = document.createElement('p');
-                        text.textContent = e.target.result;
-                        text.className = "item_preview";
-                        newChild6.appendChild(text);
+                        createElement('p', "item_preview", windowContents, e.target.result);
                     } else if (isYouTubeURL(url)) {
-                        windowDiv.classList.add('selectwindows');
-                        const iframe = document.createElement('iframe');
-                        iframe.src = `https://www.youtube.com/embed/${extractYouTubeID(url)}`;
-                        iframe.className = "item_preview";
-                        iframe.style.width = "100%";
-                        iframe.style.height = "100%";
-                        newChild6.classList.add("scrollbar_none");
-                        newChild6.appendChild(iframe);
+                        addIframe(`https://www.youtube.com/embed/${extractYouTubeID(url)}`);
                     } else {
-                        const unsupported = document.createElement('p');
-                        unsupported.textContent = 'このファイル形式はサポートされていません。';
-                        unsupported.classList.add('item_preview');
-                        newChild6.appendChild(unsupported);
+                        createElement('p', 'item_preview', windowContents, 'このファイル形式はサポートされていません。');
                     }
 
                     function isYouTubeURL(url_youtube) {
@@ -5940,8 +5889,6 @@ if (ua.includes("mobile")) {
         URL.revokeObjectURL(url);
     });
 
-
-
     document.getElementById('fileInput').addEventListener('change', function (event) {
         const file = event.target.files[0];
         const reader = new FileReader();
@@ -5977,7 +5924,6 @@ if (ua.includes("mobile")) {
             warning_windows.style.display = "block";
             document.querySelector('.close_button3').style.display = "block";
             sound(4);
-
             document.querySelector('.shutdown_button').style.display = "none";
             document.querySelector('.warningclose_button').style.display = "none";
         };
@@ -5985,21 +5931,22 @@ if (ua.includes("mobile")) {
     });
 
     function nexser_search_button() {
-        const search_windows = document.querySelectorAll('.child_windows:not(.window_nosearch)');
-        search_windows.forEach((windowElement) => {
-            // 1番目の子要素を取得
-            const firstChild = windowElement.children[0];
-            // その子要素の中の2番目の子要素を取得
-            const nestedChild = firstChild.children[1];
-            const nestedChild2 = nestedChild.textContent;
-            const button = document.createElement('li');
-            button.className = 'borderinline_dotted button2 search_button white_space_wrap';
-            const button_span_child = document.createElement('span');
-            button_span_child.textContent = "　" + nestedChild2 + "　";
-            document.getElementById('myUL').appendChild(button);
-            button.appendChild(button_span_child);
-            button.addEventListener('click', () => toggleWindow(windowElement));
+        const searchWindows = document.querySelectorAll('.child_windows:not(.window_nosearch)');
+        const myUL = document.getElementById('myUL');
+        const fragment = document.createDocumentFragment();
+        searchWindows.forEach(windowElement => {
+            const nestedChildText = windowElement.children[0]?.children[1]?.textContent;
+            if (nestedChildText) {
+                const button = document.createElement('li');
+                button.className = 'borderinline_dotted button2 search_button white_space_wrap';
+                const buttonSpanChild = document.createElement('span');
+                buttonSpanChild.textContent = `　${nestedChildText}　`;
+                button.appendChild(buttonSpanChild);
+                button.addEventListener('click', () => toggleWindow(windowElement));
+                fragment.appendChild(button);
+            }
         });
+        myUL.appendChild(fragment);
     };
     nexser_search_button()
 
@@ -6233,7 +6180,6 @@ if (ua.includes("mobile")) {
 
     const taskbar_resize = () => {
         setTimeout(() => {
-            const taskbar = document.querySelector('#taskbar');
             const taskbtnParent = document.querySelector('.first_taskbar_buttons');
             const taskbtnChild = document.querySelector('.taskbar_buttons');
             const taskbtnRightGroup = document.querySelector('.taskbar_rightgroup');
@@ -6242,7 +6188,7 @@ if (ua.includes("mobile")) {
             taskbtnChild.style.width = `${taskbar.clientWidth - taskbtnRightGroup.clientWidth - 150}px`;
             const taskheight_parent = document.querySelector('#taskbar');
             const taskheight_child = document.querySelector('.taskbar_buttons');
-            taskheight_child.style.height = `${taskheight_parent.clientHeight - + 3}px`;
+            taskheight_child.style.height = `${taskheight_parent.clientHeight - 3}px`;
         }, 100);
     };
     const taskbar_initResize = () => {
@@ -6366,21 +6312,16 @@ if (ua.includes("mobile")) {
         localStorage.setItem('divOpacity', 1 - opacityValue);
     });
 
-
     const targetNodes = document.querySelectorAll('.child_windows');
     const config = { attributes: true, childList: true, subtree: true, attributeFilter: ['class', 'style'] };
     let previousActiveCount = 0;
     let previousLargestZIndex = largestZIndex;
-
-    const callback = function () {
+    const callback = () => {
         const currentActiveCount = Array.from(targetNodes).filter(node => node.classList.contains('active')).length;
-        let zIndexChanged = false;
-        if (previousLargestZIndex !== largestZIndex) {
-            previousLargestZIndex = largestZIndex;
-            zIndexChanged = true;
-        }
+        const zIndexChanged = previousLargestZIndex !== largestZIndex;
         if (currentActiveCount !== previousActiveCount || zIndexChanged) {
             previousActiveCount = currentActiveCount;
+            previousLargestZIndex = zIndexChanged ? largestZIndex : previousLargestZIndex;
             z_index.textContent = getLargestZIndex('.child_windows');
             zindexwindow_addnavy();
             setTimeout(() => {
@@ -6390,7 +6331,6 @@ if (ua.includes("mobile")) {
     };
     const observer = new MutationObserver(callback);
     targetNodes.forEach(node => observer.observe(node, config));
-
 
     navigator.getBattery().then((battery) => {
         function updateChargeInfo() {

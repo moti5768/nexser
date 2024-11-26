@@ -4433,30 +4433,27 @@
                                 }
                         
                             });
-                            document.addEventListener(&#039;mousemove&#039;, (e) =&gt; {
-                                if (isDrawing &amp;&amp; desktop.style.display === &quot;block&quot;) {
-                                    const currentX = e.clientX;
-                                    const currentY = e.clientY;
-                                    const width = currentX - startX;
-                                    const height = currentY - startY;
-                                    rectangle.style.width = `${Math.abs(width)}px`;
-                                    rectangle.style.height = `${Math.abs(height)}px`;
-                                    rectangle.style.left = `${Math.min(startX, currentX)}px`;
-                                    rectangle.style.top = `${Math.min(startY, currentY)}px`;
-                                }
-                            });
-                            document.addEventListener(&#039;mouseup&#039;, () =&gt; {
+                            document.addEventListener(&#039;mousemove&#039;, handleMouseMove);
+                            document.addEventListener(&#039;mouseup&#039;, handleMouseUp);
+                            function handleMouseMove(e) {
+                                if (!isDrawing || desktop.style.display !== &quot;block&quot;) return;
+                                const currentX = e.clientX;
+                                const currentY = e.clientY;
+                                const width = currentX - startX;
+                                const height = currentY - startY;
+                                rectangle.style.setProperty(&#039;width&#039;, `${Math.abs(width)}px`);
+                                rectangle.style.setProperty(&#039;height&#039;, `${Math.abs(height)}px`);
+                                rectangle.style.setProperty(&#039;left&#039;, `${Math.min(startX, currentX)}px`);
+                                rectangle.style.setProperty(&#039;top&#039;, `${Math.min(startY, currentY)}px`);
+                            }
+                            function handleMouseUp() {
                                 isDrawing = false;
-                                rectangle_remove()
-                            });
+                                rectangle_remove();
+                            }
                         
                             function lightchild() {
-                                const screen_light_range_child = document.querySelector(&#039;.screen_light_range_child&#039;);
-                                if (screen_light_range_child.style.display === &quot;flex&quot;) {
-                                    screen_light_range_child.style.display = &quot;none&quot;
-                                } else {
-                                    screen_light_range_child.style.display = &quot;flex&quot;
-                                }
+                                const screenLightRangeChild = document.querySelector(&#039;.screen_light_range_child&#039;);
+                                screenLightRangeChild.style.display = (screenLightRangeChild.style.display === &quot;flex&quot;) ? &quot;none&quot; : &quot;flex&quot;;
                             }
                         
                             const tasks = [
@@ -4751,8 +4748,6 @@
                                 setBackgroundImage(&#039;wallpaper_xp&#039;, &#039;.nexser_backgroundimage_3&#039;, minidesk_backgroundresize3);
                                 setBackgroundImage(&#039;wallpaper_space&#039;, &#039;.nexser_backgroundimage_4&#039;, minidesk_backgroundresize4);
                             }
-                        
-                        
                         
                             function taskgroup_load() {
                                 drawClock();
@@ -5742,17 +5737,13 @@
                                 document.querySelectorAll(&#039;.task_buttons&#039;).forEach(function (task_buttons) {
                                     task_buttons.remove()
                                 })
-                        
                                 document.querySelectorAll(&#039;.child_windows&#039;).forEach(function (allwindow_none) {
                                     allwindow_none.classList.add(&#039;active&#039;);
-                                    allwindow_none.classList.remove(&#039;big&#039;);
-                                    allwindow_none.classList.remove(&#039;rightwindow&#039;);
-                                    allwindow_none.classList.remove(&#039;leftwindow&#039;);
-                                    allwindow_none.classList.remove(&#039;selectwindows&#039;);
+                                    allwindow_none.classList.remove(&#039;big&#039;, &#039;rightwindow&#039;, &#039;leftwindow&#039;, &#039;selectwindows&#039;);
                                     allwindow_none.style.right = &quot;&quot;;
-                                    windowposition_reset()
                                     allwindow_none.style.transition = &quot;&quot;;
                                 });
+                                windowposition_reset();
                                 const notearea = document.querySelector(&#039;.note_area&#039;);
                                 notearea.style.height = &quot;&quot;;
                                 notearea.style.width = &quot;&quot;;
@@ -9926,7 +9917,7 @@
                                 buttons.forEach(button =&gt; button.classList.remove(&#039;tsk_pressed&#039;));
                                 windows.forEach((windowElement, index) =&gt; {
                                     if (windowElement.querySelector(&#039;.title.navy&#039;)) {
-                                        buttons[index].classList.add(&#039;tsk_pressed&#039;);
+                                        buttons[index]?.classList.add(&#039;tsk_pressed&#039;);
                                     }
                                 });
                             }
@@ -9951,112 +9942,70 @@
                                         const reader = new FileReader();
                                         reader.onload = (e) =&gt; {
                                             const result = e.target.result;
-                                            const windowDiv = document.createElement(&#039;div&#039;);
-                                            windowDiv.className = &quot;child_windows testwindow2 resize&quot;
+                                            const createElement = (tag, className, parent, innerHTML) =&gt; {
+                                                const element = document.createElement(tag);
+                                                if (className) element.className = className;
+                                                if (innerHTML) element.innerHTML = innerHTML;
+                                                if (parent) parent.appendChild(element);
+                                                return element;
+                                            };
+                        
+                                            const windowDiv = createElement(&#039;div&#039;, &quot;child_windows testwindow2 resize&quot;, null);
                                             windowDiv.style.left = `${event.clientX}px`;
                                             windowDiv.style.top = `${event.clientY}px`;
                                             windowDiv.style.zIndex = largestZIndex++;
                         
-                                            const newChild = document.createElement(&#039;div&#039;);
-                                            newChild.className = &quot;title&quot;
-                                            windowDiv.appendChild(newChild);
+                                            const titleDiv = createElement(&#039;div&#039;, &quot;title&quot;, windowDiv);
+                                            const titleIcon = createElement(&#039;span&#039;, &quot;title_icon&quot;, titleDiv);
+                                            const titleText = createElement(&#039;span&#039;, &quot;white_space_wrap&quot;, titleDiv, file.name);
                         
-                                            const newChild2 = document.createElement(&#039;span&#039;);
-                                            newChild2.className = &quot;title_icon&quot;
-                                            newChild.appendChild(newChild2);
+                                            const titleButtons = createElement(&#039;div&#039;, &quot;title_buttons&quot;, windowDiv);
+                                            const dragButton = createElement(&#039;span&#039;, &quot;drag_button&quot;, titleButtons, &quot;&amp;nbsp;&quot;);
+                                            const closeButton = createElement(&#039;span&#039;, &quot;close_button button2 allclose_button&quot;, titleButtons);
+                                            const bigScreenButton = createElement(&#039;span&#039;, &quot;bigscreen_button button2&quot;, titleButtons);
+                                            const minScreenButton = createElement(&#039;span&#039;, &quot;minscreen_button button2&quot;, titleButtons);
+                                            const minimizationButton = createElement(&#039;span&#039;, &quot;minimization_button button2&quot;, titleButtons);
+                                            createElement(&#039;br&#039;, null, titleButtons);
                         
-                                            const newChild22 = document.createElement(&#039;span&#039;);
-                                            newChild22.textContent = `${file.name}`;
-                                            newChild22.className = &quot;white_space_wrap&quot;;
-                                            newChild.appendChild(newChild22);
-                        
-                                            const newChild3 = document.createElement(&#039;div&#039;);
-                                            newChild3.className = &quot;title_buttons&quot;
-                                            windowDiv.appendChild(newChild3);
-                        
-                                            const newChild4_4 = document.createElement(&#039;span&#039;);
-                                            newChild4_4.className = &quot;drag_button&quot;
-                                            newChild4_4.innerHTML = &quot;&amp;nbsp;&quot;
-                                            newChild3.appendChild(newChild4_4);
-                        
-                                            const newChild4 = document.createElement(&#039;span&#039;);
-                                            newChild4.className = &quot;close_button button2 allclose_button&quot;
-                                            newChild3.appendChild(newChild4);
-                        
-                                            newChild4.addEventListener(&#039;click&#039;, () =&gt; {
-                                                const newChild4_2 = newChild4.closest(&#039;.child_windows&#039;);
-                                                if (newChild4_2) {
-                                                    newChild4_2.remove();
+                                            closeButton.addEventListener(&#039;click&#039;, () =&gt; {
+                                                const parentWindow = closeButton.closest(&#039;.child_windows&#039;);
+                                                if (parentWindow) {
+                                                    parentWindow.remove();
                                                     zindexwindow_addnavy();
                                                 }
                                             });
                         
-                                            const newChild4_1 = document.createElement(&#039;span&#039;);
-                                            newChild4_1.className = &quot;bigscreen_button button2&quot;
-                                            newChild3.appendChild(newChild4_1);
-                        
-                                            const newChild4_2 = document.createElement(&#039;span&#039;);
-                                            newChild4_2.className = &quot;minscreen_button button2&quot;
-                                            newChild3.appendChild(newChild4_2);
-                        
-                                            const newChild4_3 = document.createElement(&#039;span&#039;);
-                                            newChild4_3.className = &quot;minimization_button button2&quot;
-                                            newChild3.appendChild(newChild4_3);
-                        
-                                            const newChild4_5 = document.createElement(&#039;br&#039;);
-                                            newChild3.appendChild(newChild4_5);
-                        
-                                            const newChild6 = document.createElement(&#039;div&#039;);
-                                            newChild6.className = &quot;window_contents&quot;
-                                            windowDiv.appendChild(newChild6);
+                                            const windowContents = createElement(&#039;div&#039;, &quot;window_contents&quot;, windowDiv);
                                             setTimeout(() =&gt; {
                                                 windowDiv.classList.add(&#039;no_create_windows&#039;);
                                             }, 100);
                         
+                                            const addMediaContent = (mediaTag, mediaSrc) =&gt; {
+                                                const mediaElement = createElement(mediaTag, &quot;item_preview&quot;, windowContents);
+                                                mediaElement.src = mediaSrc;
+                                                if (mediaTag === &#039;video&#039;) mediaElement.controls = true;
+                                                windowContents.classList.add(&quot;scrollbar_none&quot;);
+                                            };
+                                            const addIframe = (src) =&gt; {
+                                                const iframe = createElement(&#039;iframe&#039;, &quot;item_preview&quot;, windowContents);
+                                                iframe.src = src;
+                                                iframe.style.width = &quot;100%&quot;;
+                                                iframe.style.height = &quot;100%&quot;;
+                                                windowContents.classList.add(&quot;scrollbar_none&quot;);
+                                            };
+                                            windowDiv.classList.add(&#039;selectwindows&#039;);
                                             if (file.type.startsWith(&#039;image/&#039;)) {
-                                                windowDiv.classList.add(&#039;selectwindows&#039;);
-                                                const img = document.createElement(&#039;img&#039;);
-                                                img.src = result;
-                                                img.className = &quot;item_preview&quot;;
-                                                newChild6.classList.add(&quot;scrollbar_none&quot;);
-                                                newChild6.appendChild(img);
+                                                addMediaContent(&#039;img&#039;, result);
                                             } else if (file.type.startsWith(&#039;video/&#039;)) {
-                                                windowDiv.classList.add(&#039;selectwindows&#039;);
-                                                const video = document.createElement(&#039;video&#039;);
-                                                video.src = result;
-                                                video.controls = true;
-                                                video.className = &quot;item_preview&quot;;
-                                                newChild6.classList.add(&quot;scrollbar_none&quot;);
-                                                newChild6.appendChild(video);
+                                                addMediaContent(&#039;video&#039;, result);
                                             } else if (file.type === &#039;application/pdf&#039;) {
-                                                windowDiv.classList.add(&#039;selectwindows&#039;);
-                                                const iframe = document.createElement(&#039;iframe&#039;);
-                                                iframe.src = result;
-                                                iframe.className = &quot;item_preview&quot;;
-                                                iframe.style.width = &quot;100%&quot;;
-                                                iframe.style.height = &quot;100%&quot;;
-                                                newChild6.classList.add(&quot;scrollbar_none&quot;);
-                                                newChild6.appendChild(iframe);
+                                                addIframe(result);
                                             } else if (file.type.startsWith(&#039;text/&#039;)) {
-                                                windowDiv.classList.add(&#039;selectwindows&#039;);
-                                                const text = document.createElement(&#039;p&#039;);
-                                                text.textContent = e.target.result;
-                                                text.className = &quot;item_preview&quot;;
-                                                newChild6.appendChild(text);
+                                                createElement(&#039;p&#039;, &quot;item_preview&quot;, windowContents, e.target.result);
                                             } else if (isYouTubeURL(url)) {
-                                                windowDiv.classList.add(&#039;selectwindows&#039;);
-                                                const iframe = document.createElement(&#039;iframe&#039;);
-                                                iframe.src = `https://www.youtube.com/embed/${extractYouTubeID(url)}`;
-                                                iframe.className = &quot;item_preview&quot;;
-                                                iframe.style.width = &quot;100%&quot;;
-                                                iframe.style.height = &quot;100%&quot;;
-                                                newChild6.classList.add(&quot;scrollbar_none&quot;);
-                                                newChild6.appendChild(iframe);
+                                                addIframe(`https://www.youtube.com/embed/${extractYouTubeID(url)}`);
                                             } else {
-                                                const unsupported = document.createElement(&#039;p&#039;);
-                                                unsupported.textContent = &#039;このファイル形式はサポートされていません。&#039;;
-                                                unsupported.classList.add(&#039;item_preview&#039;);
-                                                newChild6.appendChild(unsupported);
+                                                createElement(&#039;p&#039;, &#039;item_preview&#039;, windowContents, &#039;このファイル形式はサポートされていません。&#039;);
                                             }
                         
                                             function isYouTubeURL(url_youtube) {
@@ -10158,8 +10107,6 @@
                                 URL.revokeObjectURL(url);
                             });
                         
-                        
-                        
                             document.getElementById(&#039;fileInput&#039;).addEventListener(&#039;change&#039;, function (event) {
                                 const file = event.target.files[0];
                                 const reader = new FileReader();
@@ -10195,7 +10142,6 @@
                                     warning_windows.style.display = &quot;block&quot;;
                                     document.querySelector(&#039;.close_button3&#039;).style.display = &quot;block&quot;;
                                     sound(4);
-                        
                                     document.querySelector(&#039;.shutdown_button&#039;).style.display = &quot;none&quot;;
                                     document.querySelector(&#039;.warningclose_button&#039;).style.display = &quot;none&quot;;
                                 };
@@ -10203,21 +10149,22 @@
                             });
                         
                             function nexser_search_button() {
-                                const search_windows = document.querySelectorAll(&#039;.child_windows:not(.window_nosearch)&#039;);
-                                search_windows.forEach((windowElement) =&gt; {
-                                    // 1番目の子要素を取得
-                                    const firstChild = windowElement.children[0];
-                                    // その子要素の中の2番目の子要素を取得
-                                    const nestedChild = firstChild.children[1];
-                                    const nestedChild2 = nestedChild.textContent;
-                                    const button = document.createElement(&#039;li&#039;);
-                                    button.className = &#039;borderinline_dotted button2 search_button white_space_wrap&#039;;
-                                    const button_span_child = document.createElement(&#039;span&#039;);
-                                    button_span_child.textContent = &quot;　&quot; + nestedChild2 + &quot;　&quot;;
-                                    document.getElementById(&#039;myUL&#039;).appendChild(button);
-                                    button.appendChild(button_span_child);
-                                    button.addEventListener(&#039;click&#039;, () =&gt; toggleWindow(windowElement));
+                                const searchWindows = document.querySelectorAll(&#039;.child_windows:not(.window_nosearch)&#039;);
+                                const myUL = document.getElementById(&#039;myUL&#039;);
+                                const fragment = document.createDocumentFragment();
+                                searchWindows.forEach(windowElement =&gt; {
+                                    const nestedChildText = windowElement.children[0]?.children[1]?.textContent;
+                                    if (nestedChildText) {
+                                        const button = document.createElement(&#039;li&#039;);
+                                        button.className = &#039;borderinline_dotted button2 search_button white_space_wrap&#039;;
+                                        const buttonSpanChild = document.createElement(&#039;span&#039;);
+                                        buttonSpanChild.textContent = `　${nestedChildText}　`;
+                                        button.appendChild(buttonSpanChild);
+                                        button.addEventListener(&#039;click&#039;, () =&gt; toggleWindow(windowElement));
+                                        fragment.appendChild(button);
+                                    }
                                 });
+                                myUL.appendChild(fragment);
                             };
                             nexser_search_button()
                         
@@ -10451,7 +10398,6 @@
                         
                             const taskbar_resize = () =&gt; {
                                 setTimeout(() =&gt; {
-                                    const taskbar = document.querySelector(&#039;#taskbar&#039;);
                                     const taskbtnParent = document.querySelector(&#039;.first_taskbar_buttons&#039;);
                                     const taskbtnChild = document.querySelector(&#039;.taskbar_buttons&#039;);
                                     const taskbtnRightGroup = document.querySelector(&#039;.taskbar_rightgroup&#039;);
@@ -10460,7 +10406,7 @@
                                     taskbtnChild.style.width = `${taskbar.clientWidth - taskbtnRightGroup.clientWidth - 150}px`;
                                     const taskheight_parent = document.querySelector(&#039;#taskbar&#039;);
                                     const taskheight_child = document.querySelector(&#039;.taskbar_buttons&#039;);
-                                    taskheight_child.style.height = `${taskheight_parent.clientHeight - + 3}px`;
+                                    taskheight_child.style.height = `${taskheight_parent.clientHeight - 3}px`;
                                 }, 100);
                             };
                             const taskbar_initResize = () =&gt; {
@@ -10584,21 +10530,16 @@
                                 localStorage.setItem(&#039;divOpacity&#039;, 1 - opacityValue);
                             });
                         
-                        
                             const targetNodes = document.querySelectorAll(&#039;.child_windows&#039;);
                             const config = { attributes: true, childList: true, subtree: true, attributeFilter: [&#039;class&#039;, &#039;style&#039;] };
                             let previousActiveCount = 0;
                             let previousLargestZIndex = largestZIndex;
-                        
-                            const callback = function () {
+                            const callback = () =&gt; {
                                 const currentActiveCount = Array.from(targetNodes).filter(node =&gt; node.classList.contains(&#039;active&#039;)).length;
-                                let zIndexChanged = false;
-                                if (previousLargestZIndex !== largestZIndex) {
-                                    previousLargestZIndex = largestZIndex;
-                                    zIndexChanged = true;
-                                }
+                                const zIndexChanged = previousLargestZIndex !== largestZIndex;
                                 if (currentActiveCount !== previousActiveCount || zIndexChanged) {
                                     previousActiveCount = currentActiveCount;
+                                    previousLargestZIndex = zIndexChanged ? largestZIndex : previousLargestZIndex;
                                     z_index.textContent = getLargestZIndex(&#039;.child_windows&#039;);
                                     zindexwindow_addnavy();
                                     setTimeout(() =&gt; {
@@ -10608,7 +10549,6 @@
                             };
                             const observer = new MutationObserver(callback);
                             targetNodes.forEach(node =&gt; observer.observe(node, config));
-                        
                         
                             navigator.getBattery().then((battery) =&gt; {
                                 function updateChargeInfo() {
@@ -11551,79 +11491,7 @@
 
                 <code>
                     <textarea id="code_script2" class="white_text resize_none" style="display: none;">
-                        const warning_windows = document.querySelector(&#039;.warning_windows&#039;);
 
-                        const sound_play_button = document.getElementsByClassName(&#039;sound_play_button&#039;);
-                        const sound_stop_button = document.getElementsByClassName(&#039;sound_stop_button&#039;);
-                        
-                        const soundFiles = [
-                            &quot;nexser_sounds/The-Microsoft-Sound.mp3&quot;,
-                            &quot;nexser_sounds/tada.mp3&quot;,
-                            &quot;nexser_sounds/chord.mp3&quot;,
-                            &quot;nexser_sounds/chimes.mp3&quot;,
-                            &quot;nexser_sounds/ding.mp3&quot;,
-                            &quot;nexser_sounds/utopia.mp3&quot;,
-                            &quot;nexser_sounds/welcome.mp3&quot;,
-                            &quot;nexser_sounds/windows98.start.mp3&quot;,
-                            &quot;nexser_sounds/windows98.logoff.mp3&quot;,
-                            &quot;nexser_sounds/windows2000_startup.mp3&quot;,
-                            &quot;nexser_sounds/windows2000_shutdown.mp3&quot;,
-                            &quot;nexser_sounds/windowsxp_startup.mp3&quot;,
-                            &quot;nexser_sounds/windowsxp_shutdown.mp3&quot;,
-                            &quot;nexser_sounds/windowsxp_criticalstop.mp3&quot;
-                        ];
-                        
-                        const sounds = soundFiles.map(file =&gt; {
-                            let audio = new Audio(file);
-                            audio.preload = &#039;auto&#039;;
-                            audio.load();
-                            return audio;
-                        });
-                        
-                        function sound(index) {
-                            if (localStorage.getItem(&#039;driver_sound&#039;)) {
-                                sounds[index].currentTime = 0;
-                                sounds[index].play();
-                            }
-                        }
-                        
-                        function sound_stop() {
-                            sounds.forEach(sound =&gt; {
-                                sound.pause();
-                                sound.currentTime = 0;
-                            });
-                            Array.from(sound_play_button).forEach((sound_play_buttons) =&gt; {
-                                sound_play_buttons.textContent = &quot;▶&quot;;
-                            });
-                        }
-                        
-                        Array.from(sound_play_button).forEach((sound_play_buttons) =&gt; {
-                            sound_play_buttons.textContent = &quot;▶&quot;
-                        })
-                        Array.from(sound_play_button).forEach((sound_play_buttons) =&gt; {
-                            sound_play_buttons.addEventListener(&#039;mousedown&#039;, function () {
-                                sound_stop()
-                                Array.from(sound_play_button).forEach((sound_play_buttons) =&gt; {
-                                    sound_play_buttons.textContent = &quot;▶&quot;
-                                })
-                            })
-                            sound_play_buttons.addEventListener(&#039;click&#039;, function () {
-                                if (!localStorage.getItem(&#039;driver_sound&#039;)) {
-                                    sound_play_buttons.textContent = &quot;▶&quot;;
-                                    error_windows_create(&quot;サウンドドライバーがインストールされていません!&quot;);
-                                } else {
-                                    sound_play_buttons.textContent = &quot;||&quot;;
-                                }
-                            })
-                        })
-                        Array.from(sound_stop_button).forEach((sound_stop_buttons) =&gt; {
-                            sound_stop_buttons.addEventListener(&#039;mousedown&#039;, function () {
-                                sound_stop()
-                                Array.from(sound_play_button).forEach((sound_play_buttons) =&gt; {
-                                    sound_play_buttons.textContent = &quot;▶&quot;
-                                })
-                            })
-                        })
                 </textarea>
                 </code>
             </div>
