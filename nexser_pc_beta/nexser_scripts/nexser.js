@@ -3063,7 +3063,7 @@ if (ua.includes("mobile")) {
 
     const applyStyles = element => {
         const [r, g, b] = getComputedStyle(element).backgroundColor.match(/\d+/g).map(Number);
-        Object.assign(element.style, { background: "rgba(255, 255, 255, 0)", border: `dashed 2px rgb(${255 - r}, ${255 - g}, ${255 - b})`, boxShadow: "none" });
+        Object.assign(element.style, { background: "rgba(255, 255, 255, 0)", border: `dashed 1.5px rgb(${255 - r}, ${255 - g}, ${255 - b})`, boxShadow: "none" });
         [...element.children].forEach(child => child.style.opacity = "0");
     };
 
