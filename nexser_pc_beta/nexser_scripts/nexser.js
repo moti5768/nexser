@@ -3025,6 +3025,7 @@ if (ua.includes("mobile")) {
                 setTimeout(() => {
                     drag.style.background = "";
                     drag.style.border = "";
+                    drag.style.outline = "";
                     drag.style.boxShadow = "";
                     drag.style.opacity = "";
                     Array.from(drag.children).forEach(child => child.style.opacity = "");
@@ -3063,7 +3064,12 @@ if (ua.includes("mobile")) {
 
     const applyStyles = element => {
         const [r, g, b] = getComputedStyle(element).backgroundColor.match(/\d+/g).map(Number);
-        Object.assign(element.style, { background: "rgba(255, 255, 255, 0)", border: `dashed 1.5px rgb(${255 - r}, ${255 - g}, ${255 - b})`, boxShadow: "none" });
+        Object.assign(element.style, {
+            background: "rgba(255, 255, 255, 0)",
+            border: `dashed 1.5px rgb(${255 - r}, ${255 - g}, ${255 - b})`,
+            boxShadow: "none",
+            outline: "1.5px dashed silver"
+        });
         [...element.children].forEach(child => child.style.opacity = "0");
     };
 
@@ -3808,13 +3814,6 @@ if (ua.includes("mobile")) {
                 save()
             }
         })
-    });
-    document.addEventListener('keyup', function (event) {
-        if (event.key === 's' && event.getModifierState('Fn')) {
-            if (localStorage.getItem('note_texts')) {
-                save();
-            }
-        }
     });
     note_area.addEventListener("paste", () => {
         setTimeout(onChange, 10)
@@ -5360,6 +5359,7 @@ if (ua.includes("mobile")) {
                 if (clones && !localStorage.getItem('window_afterimage_false')) {
                     resizer2.style.background = "";
                     resizer2.style.border = "";
+                    resizer2.style.outline = "";
                     resizer2.style.boxShadow = "";
                     Array.from(resizer2.children).forEach(child => child.style.opacity = "");
                     document.querySelector('.clones').remove();
@@ -6568,7 +6568,6 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.frame_fullbutton').forEach(button => {
         button.addEventListener('click', function () {
             let parent = button.closest('.child_windows');
-            console.log(parent)
             if (parent) {
                 let iframeOrVideo = parent.querySelector('iframe, video');
                 if (iframeOrVideo) {
@@ -6588,16 +6587,24 @@ if (ua.includes("mobile")) {
 
 
     let selectedImage = null;
-    let selectedAnchor = null;
 
     function execCmd(command, value = null) {
         document.execCommand(command, false, value);
     }
 
-    document.getElementById('editor_2').addEventListener('mousedown', function () {
-        document.querySelectorAll('#editor_2 img').forEach(img => {
-            if (img) {
-                img.style.border = '';
+    editor2_child.addEventListener('mousedown', () => {
+        const images = editor2_child.querySelectorAll('img');
+        for (const img of images) {
+            img.style.border = '';
+        }
+    });
+    editor2_child.addEventListener("keydown", function (event) {
+        if (event.ctrlKey && event.key === 's') {
+            event.preventDefault();
+        }
+        editor2_child.addEventListener("keyup", function (event) {
+            if (event.ctrlKey && event.key === 's') {
+                saveContent()
             }
         })
     });
@@ -6609,7 +6616,6 @@ if (ua.includes("mobile")) {
         alert('保存しました!');
     }
 
-    // Load content from localStorage on page load
     window.addEventListener('load', function () {
         const savedContent = localStorage.getItem('editorContent');
         if (savedContent) {
@@ -6686,7 +6692,7 @@ if (ua.includes("mobile")) {
             if (selectedImage.style.boxShadow) {
                 selectedImage.style.boxShadow = '';
             } else {
-                selectedImage.style.boxShadow = '5px 5px 15px rgba(0, 0, 0, 0.5)'; // 影を追加
+                selectedImage.style.boxShadow = '5px 5px 15px rgba(0, 0, 0, 0.5)';
             }
         }
     }
@@ -6896,7 +6902,7 @@ if (ua.includes("mobile")) {
                     selectedImage.style.border = ''; // 以前の選択を解除
                 }
                 selectedImage = img;
-                img.style.border = '2px solid blue'; // 選択された画像を強調表示
+                img.style.border = '1.5px solid blue'; // 選択された画像を強調表示
             });
 
             img.addEventListener('mousedown', function (event) {
@@ -6914,7 +6920,7 @@ if (ua.includes("mobile")) {
 
                 function onMouseMove(event) {
                     moveAt(event.pageX, event.pageY);
-                    img.style.border = '2.5px dashed red';
+                    img.style.border = '2px dashed red';
                 }
 
                 document.addEventListener('mousemove', onMouseMove);
@@ -6927,21 +6933,18 @@ if (ua.includes("mobile")) {
                 img.addEventListener('dragstart', function (event) {
                     event.preventDefault(); // デフォルトのドラッグアンドドロップを無効化
                 });
-
-                // テキスト選択を防止
                 event.preventDefault();
             });
 
-            // contextmenu イベントリスナーを一度だけ設定
             if (!img.hasAttribute('contextmenu-listener')) {
-                img.addEventListener('contextmenu', function (event) {
-                    event.preventDefault(); // 右クリックメニューを無効化
-                    if (confirm('この画像を削除しますか？')) {
-                        img.remove();
-                    }
-                });
                 img.setAttribute('contextmenu-listener', 'true');
             }
+            img.addEventListener('contextmenu', (event) => {
+                event.preventDefault();
+                if (confirm('この画像を削除しますか？')) {
+                    img.remove();
+                }
+            });
         }
 
         // 初期画像にハンドラを適用
