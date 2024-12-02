@@ -1035,9 +1035,9 @@ if (ua.includes("mobile")) {
     })
 
     function start_check() {
-        document.getElementsByClassName('pass_signin_menu')[0].classList.remove('selectwindows')
+        document.getElementsByClassName('pass_signin_menu')[0].classList.remove('selectwindows');
         if (localStorage.getItem('login_welcome') && localStorage.getItem('password')) {
-            localStorage.setItem('no_shutdown', true)
+            localStorage.setItem('no_shutdown', true);
         };
         const t = localStorage.getItem('taskbar_height');
         document.getElementById('files').style.display = "none";
