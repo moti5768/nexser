@@ -3513,6 +3513,7 @@
                                                     &lt;span class=&quot;winchild_border&quot;&gt;&lt;/span&gt;
                                                     &lt;button class=&quot;button2&quot; onclick=&quot;saveContent()&quot;&gt;Save&lt;/button&gt;
                                                     &lt;button class=&quot;button2&quot; onclick=&quot;execCmd(&#039;selectAll&#039;)&quot;&gt;Select All&lt;/button&gt;
+                                                    &lt;button class=&quot;button2&quot; onclick=&quot;editorContent_load()&quot;&gt;Load Data&lt;/button&gt;
                                                     &lt;button class=&quot;button2 large&quot; onclick=&quot;execCmd(&#039;undo&#039;)&quot;&gt;&amp;nbsp;&amp;#8634;&amp;nbsp;&lt;/button&gt;
                                                     &lt;button class=&quot;button2 large&quot; onclick=&quot;execCmd(&#039;redo&#039;)&quot;&gt;&amp;nbsp;&amp;#8635;&amp;nbsp;&lt;/button&gt;
                                                     &lt;button class=&quot;button2&quot; onclick=&quot;execCmd(&#039;cut&#039;)&quot;&gt;Cut&lt;/button&gt;
@@ -3838,7 +3839,7 @@
                                                             &lt;span class=&quot;button border bold&quot;
                                                                 style=&quot;position: absolute; bottom: 2px; left: 2px; pointer-events: none;&quot;&gt;&amp;nbsp;Start&amp;nbsp;&lt;/span&gt;
                         
-                                                            &lt;div class=&quot;mini_window_startmenu border&quot;&gt;
+                                                            &lt;div class=&quot;mini_window_startmenu&quot;&gt;
                                                                 &lt;ul&gt;
                                                                     &lt;li
                                                                         style=&quot;font-size: 20px; background-color:dimgray; color:silver; font-weight: bold; writing-mode: vertical-rl; transform: rotate(180deg); height: 100%; width: 25px; position: absolute;&quot;&gt;
@@ -4747,6 +4748,7 @@
                                 setBackgroundImage(&#039;wallpaper_95_2&#039;, &#039;.nexser_backgroundimage_2&#039;, minidesk_backgroundresize2);
                                 setBackgroundImage(&#039;wallpaper_xp&#039;, &#039;.nexser_backgroundimage_3&#039;, minidesk_backgroundresize3);
                                 setBackgroundImage(&#039;wallpaper_space&#039;, &#039;.nexser_backgroundimage_4&#039;, minidesk_backgroundresize4);
+                                editorContent_load();
                             }
                         
                             function taskgroup_load() {
@@ -10834,13 +10836,13 @@
                                 alert(&#039;保存しました!&#039;);
                             }
                         
-                            window.addEventListener(&#039;load&#039;, function () {
+                            function editorContent_load() {
                                 const savedContent = localStorage.getItem(&#039;editorContent&#039;);
                                 if (savedContent) {
                                     const decompressedContent = decodeURIComponent(escape(atob(savedContent)));
                                     document.getElementById(&#039;editor_2&#039;).innerHTML = decompressedContent;
                                 }
-                            });
+                            }
                         
                             function toggleDecoration() {
                                 const selection = window.getSelection();
@@ -14905,6 +14907,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             <span class="winchild_border"></span>
                             <button class="button2" onclick="saveContent()">Save</button>
                             <button class="button2" onclick="execCmd('selectAll')">Select All</button>
+                            <button class="button2" onclick="editorContent_load()">Load Data</button>
                             <button class="button2 large" onclick="execCmd('undo')">&nbsp;&#8634;&nbsp;</button>
                             <button class="button2 large" onclick="execCmd('redo')">&nbsp;&#8635;&nbsp;</button>
                             <button class="button2" onclick="execCmd('cut')">Cut</button>
@@ -15230,7 +15233,7 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                     <span class="button border bold"
                                         style="position: absolute; bottom: 2px; left: 2px; pointer-events: none;">&nbsp;Start&nbsp;</span>
 
-                                    <div class="mini_window_startmenu border">
+                                    <div class="mini_window_startmenu">
                                         <ul>
                                             <li
                                                 style="font-size: 20px; background-color:dimgray; color:silver; font-weight: bold; writing-mode: vertical-rl; transform: rotate(180deg); height: 100%; width: 25px; position: absolute;">

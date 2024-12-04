@@ -529,6 +529,7 @@ if (ua.includes("mobile")) {
         setBackgroundImage('wallpaper_95_2', '.nexser_backgroundimage_2', minidesk_backgroundresize2);
         setBackgroundImage('wallpaper_xp', '.nexser_backgroundimage_3', minidesk_backgroundresize3);
         setBackgroundImage('wallpaper_space', '.nexser_backgroundimage_4', minidesk_backgroundresize4);
+        editorContent_load();
     }
 
     function taskgroup_load() {
@@ -6616,13 +6617,13 @@ if (ua.includes("mobile")) {
         alert('保存しました!');
     }
 
-    window.addEventListener('load', function () {
+    function editorContent_load() {
         const savedContent = localStorage.getItem('editorContent');
         if (savedContent) {
             const decompressedContent = decodeURIComponent(escape(atob(savedContent)));
             document.getElementById('editor_2').innerHTML = decompressedContent;
         }
-    });
+    }
 
     function toggleDecoration() {
         const selection = window.getSelection();

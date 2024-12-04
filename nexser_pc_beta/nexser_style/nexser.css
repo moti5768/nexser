@@ -1037,6 +1037,8 @@ body::-webkit-scrollbar {
     position: absolute;
     bottom: 30px;
     outline: solid 1px dimgray;
+    border: 1.5px solid;
+    border-color: #eee #333 #333 #eee;
 }
 
 .mini_windows_sample {
