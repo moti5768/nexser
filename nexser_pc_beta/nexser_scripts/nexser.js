@@ -41,6 +41,7 @@ if (ua.includes("mobile")) {
     const guidebook_taskbar_menu = document.querySelector('.guidebook_taskbar_menu');
 
     const parent_start_menu = document.getElementById('start_menu');
+    const child_start_menu = document.querySelector('.child_start_menu');
     const taskbar = document.getElementById('taskbar');
     const toolbar = document.getElementById('toolbar');
     const background_text = document.getElementById('background_text');
@@ -268,7 +269,7 @@ if (ua.includes("mobile")) {
     function nexser_savedata_load() {
         const t = localStorage.getItem('taskbar_height');
         taskbar.style.height = t + "px";
-
+        const task = taskbar.clientHeight;
         if (localStorage.getItem('driver_color')) {
             document.querySelector('.installbutton_2').textContent = "uninstall";
         }
@@ -398,9 +399,9 @@ if (ua.includes("mobile")) {
 
         if (localStorage.getItem('taskbar_position_button')) {
             document.querySelector('.taskbar_position_button').textContent = "bottom"
-            document.getElementById('taskbar').style.top = "0px"
-            document.querySelector('.child_start_menu').style.top = "40px"
-            document.querySelector('.child_start_menu').style.bottom = "auto"
+            taskbar.style.top = "0px"
+            child_start_menu.style.top = "40px"
+            child_start_menu.style.bottom = "auto"
             document.querySelector('.battery_menu').style.top = "35px"
             document.querySelector('.battery_menu').style.bottom = "auto"
         }
@@ -424,18 +425,16 @@ if (ua.includes("mobile")) {
             toolbar.style.bottom = "0px";
             document.querySelector('.desktop_version_text').style.bottom = "0px"
         } else if (localStorage.getItem('taskbar_position_button')) {
-            const task = document.getElementById('taskbar').clientHeight;
             toolbar.style.top = task + "px";
             toolbar.style.top = t + "px";
-            document.querySelector('.child_start_menu').style.top = task + "px"
-            document.querySelector('.child_start_menu').style.top = t + "px"
+            child_start_menu.style.top = task + "px"
+            child_start_menu.style.top = t + "px"
         } else {
-            const task = document.getElementById('taskbar').clientHeight;
             toolbar.style.bottom = task + "px";
             toolbar.style.bottom = t + "px";
             document.querySelector('.desktop_version_text').style.bottom = task + "px";
-            document.querySelector('.child_start_menu').style.bottom = task + "px"
-            document.querySelector('.child_start_menu').style.bottom = t + "px"
+            child_start_menu.style.bottom = task + "px"
+            child_start_menu.style.bottom = t + "px"
         }
 
         if (localStorage.getItem('toolbar_on')) {
@@ -503,7 +502,7 @@ if (ua.includes("mobile")) {
         }
 
         if (localStorage.getItem('taskbar_autohide')) {
-            document.getElementById('taskbar').style.bottom = "-35px"
+            taskbar.style.bottom = "-35px"
         }
 
         if (localStorage.getItem('taskbar_height')) {
@@ -514,7 +513,7 @@ if (ua.includes("mobile")) {
 
         if (localStorage.getItem('taskbar_height') && (localStorage.getItem('taskbar_autohide'))) {
             const t2 = t - 5;
-            document.getElementById('taskbar').style.bottom = "-" + t2 + "px";
+            taskbar.style.bottom = "-" + t2 + "px";
         }
 
         function setBackgroundImage(key, className, resizeFunction) {
@@ -726,14 +725,13 @@ if (ua.includes("mobile")) {
         }
 
         setTimeout(() => {
+            const task = taskbar.clientHeight;
             if (localStorage.getItem('taskbar_position_button')) {
-                const task = document.getElementById('taskbar').clientHeight;
                 toolbar.style.top = task + "px";
-                document.querySelector('.child_start_menu').style.top = task + "px"
+                child_start_menu.style.top = task + "px"
             } else {
-                const task = document.getElementById('taskbar').clientHeight;
                 toolbar.style.bottom = task + "px";
-                document.querySelector('.child_start_menu').style.bottom = task + "px"
+                child_start_menu.style.bottom = task + "px"
             }
         }, 500);
     }
@@ -1072,20 +1070,18 @@ if (ua.includes("mobile")) {
             }, 1500);
             setTimeout(() => {
                 startup_window_open();
+                const task = taskbar.clientHeight;
                 if (localStorage.getItem('toolbar_on')) {
                     toolbar.style.display = "block";
                 }
                 if (localStorage.getItem('taskbar_position_button')) {
                     taskbar.style.display = "block";
-                    const task = document.getElementById('taskbar').clientHeight;
                     toolbar.style.bottom = "";
                     toolbar.style.left = "";
                     toolbar.style.top = "40px";
                     toolbar.style.top = t + "px";
                     document.querySelector('.files_inline').style.top = t + "px"
-
-                    document.querySelector('.child_start_menu').style.top = task + "px"
-
+                    child_start_menu.style.top = task + "px"
                     if (localStorage.getItem('data_taskbar_none')) {
                         taskbar.style.display = "none";
                         toolbar.style.top = "0px";
@@ -1098,12 +1094,11 @@ if (ua.includes("mobile")) {
 
                 } else {
                     taskbar.style.display = "block";
-                    const task = document.getElementById('taskbar').clientHeight;
                     toolbar.style.top = "";
                     toolbar.style.left = "";
                     toolbar.style.bottom = "40px";
                     toolbar.style.bottom = t + "px";
-                    document.querySelector('.child_start_menu').style.bottom = task + "px"
+                    child_start_menu.style.bottom = task + "px"
                     if (localStorage.getItem('data_taskbar_none')) {
                         taskbar.style.display = "none";
                         toolbar.style.bottom = "0px";
@@ -1114,7 +1109,6 @@ if (ua.includes("mobile")) {
                         toolbar.style.bottom = t + "px";
                         document.querySelector('.desktop_version_text').style.bottom = task + "px"
                     }
-
                 }
                 document.getElementById('files').style.display = "block";
                 setTimeout(() => {
@@ -1135,12 +1129,12 @@ if (ua.includes("mobile")) {
             desktop.style.display = "block";
             localmemory_size()
             document.getElementById('files').style.display = "block";
-            document.getElementById('taskbar').style.display = "block";
-            const task = document.getElementById('taskbar').clientHeight;
+            taskbar.style.display = "block";
+            const task = taskbar.clientHeight;
             toolbar.style.top = "";
             toolbar.style.left = "";
             toolbar.style.bottom = "40px";
-            document.querySelector('.child_start_menu').style.bottom = task + "px";
+            child_start_menu.style.bottom = task + "px";
             document.querySelector('.desktop_version_text').style.bottom = task + "px";
         }, 500);
         setTimeout(() => {
@@ -1594,15 +1588,15 @@ if (ua.includes("mobile")) {
     function taskbar_autohide() {
         const t = localStorage.getItem('taskbar_height');
         localStorage.setItem('taskbar_autohide', true);
-        document.getElementById('taskbar').style.bottom = "-35px";
+        taskbar.style.bottom = "-35px";
         if (localStorage.getItem('taskbar_height') && (localStorage.getItem('taskbar_autohide'))) {
             const t2 = t - 5;
-            document.getElementById('taskbar').style.bottom = "-" + t2 + "px";
+            taskbar.style.bottom = "-" + t2 + "px";
         }
     }
     function taskbar_reset() {
         localStorage.removeItem('taskbar_autohide');
-        document.getElementById('taskbar').style.bottom = "";
+        taskbar.style.bottom = "";
     }
 
     document.querySelectorAll('#taskbar').forEach(function (taskbar) {
@@ -1610,9 +1604,9 @@ if (ua.includes("mobile")) {
             if (localStorage.getItem('taskbar_height') && (localStorage.getItem('taskbar_autohide'))) {
                 const t = localStorage.getItem('taskbar_height');
                 const t2 = t - 5;
-                document.getElementById('taskbar').style.bottom = "-" + t2 + "px";
+                taskbar.style.bottom = "-" + t2 + "px";
             } else if (!localStorage.getItem('taskbar_height') && localStorage.getItem('taskbar_autohide')) {
-                document.getElementById('taskbar').style.bottom = "-35px"
+                taskbar.style.bottom = "-35px"
             }
         });
         taskbar.addEventListener('mouseover', function () {
@@ -1625,7 +1619,7 @@ if (ua.includes("mobile")) {
             if (localStorage.getItem('taskbar_height') && (localStorage.getItem('taskbar_autohide'))) {
                 const t = localStorage.getItem('taskbar_height');
                 const t2 = t - 5;
-                document.getElementById('taskbar').style.bottom = "-" + t2 + "px";
+                taskbar.style.bottom = "-" + t2 + "px";
             } else if (localStorage.getItem('taskbar_autohide')) {
                 taskbar.style.bottom = "-35px"
             }
@@ -1690,7 +1684,7 @@ if (ua.includes("mobile")) {
 
     function taskbar_active() {
         localStorage.removeItem('data_taskbar_none');
-        const task = document.getElementById('taskbar').clientHeight;
+        const task = taskbar.clientHeight;
         const t = localStorage.getItem('taskbar_height');
         taskbar.style.height = t + "px";
 
@@ -2462,7 +2456,7 @@ if (ua.includes("mobile")) {
     }
     function window_animation(animation) {
         animation.style.pointerEvents = "none";
-        const taskHeight = () => document.getElementById('taskbar').clientHeight;
+        const taskHeight = () => taskbar.clientHeight;
         const adjustHeight = () => {
             if (animation.classList.contains('minimization')) {
                 animation.classList.add('child_windows_invisible');
@@ -3004,8 +2998,7 @@ if (ua.includes("mobile")) {
                 const event = e.type === "mousemove" ? e : e.changedTouches[0];
                 drag.style.top = event.pageY - y + "px";
                 drag.style.left = event.pageX - x + "px";
-                const taskover = document.getElementById('taskbar')
-                taskover.addEventListener('mouseover', function () {
+                taskbar.addEventListener('mouseover', function () {
                     document.body.removeEventListener("mousemove", mmove, false);
                     document.body.removeEventListener("touchmove", mmove, false);
                 })
@@ -3117,7 +3110,7 @@ if (ua.includes("mobile")) {
             document.removeEventListener("touchend", mup_2);
             document.removeEventListener("mouseleave", mup_2);
             document.body.removeEventListener("mouseleave", mup_2);
-            const task = document.getElementById('taskbar').clientHeight;
+            const task = taskbar.clientHeight;
             if (check(elm1, elm2) && localStorage.getItem('taskbar_position_button')) {
                 toolbar.style.top = task + "px";
             } else if (check(elm1, elm2)) {
@@ -4093,19 +4086,18 @@ if (ua.includes("mobile")) {
 
     document.querySelector('.taskbar_position_button').addEventListener('click', function () {
         const t = localStorage.getItem('taskbar_height');
+        const task = taskbar.clientHeight;
         if (localStorage.getItem('taskbar_position_button')) {
             const t = localStorage.getItem('taskbar_height');
             localStorage.removeItem('taskbar_position_button')
 
             document.querySelector('.taskbar_position_button').textContent = "top"
-            document.getElementById('taskbar').style.top = ""
-            document.querySelector('.child_start_menu').style.top = "auto"
-            document.querySelector('.child_start_menu').style.bottom = "";
+            taskbar.style.top = ""
+            child_start_menu.style.top = "auto"
+            child_start_menu.style.bottom = "";
 
-            const task = document.getElementById('taskbar').clientHeight;
-
-            document.querySelector('.child_start_menu').style.bottom = task + "px"
-            document.querySelector('.child_start_menu').style.bottom = t + "px"
+            child_start_menu.style.bottom = task + "px"
+            child_start_menu.style.bottom = t + "px"
 
             document.querySelector('.battery_menu').style.top = "auto"
             document.querySelector('.battery_menu').style.bottom = ""
@@ -4136,14 +4128,12 @@ if (ua.includes("mobile")) {
             localStorage.setItem('taskbar_position_button', true);
 
             document.querySelector('.taskbar_position_button').textContent = "bottom"
-            document.getElementById('taskbar').style.top = "0px"
-            document.querySelector('.child_start_menu').style.top = "40px"
-            document.querySelector('.child_start_menu').style.bottom = "auto"
+            taskbar.style.top = "0px"
+            child_start_menu.style.top = "40px"
+            child_start_menu.style.bottom = "auto"
 
-            const task = document.getElementById('taskbar').clientHeight;
-
-            document.querySelector('.child_start_menu').style.top = task + "px"
-            document.querySelector('.child_start_menu').style.top = t + "px"
+            child_start_menu.style.top = task + "px"
+            child_start_menu.style.top = t + "px"
 
             document.querySelector('.battery_menu').style.top = "35px"
             document.querySelector('.battery_menu').style.bottom = "auto"
@@ -4671,12 +4661,12 @@ if (ua.includes("mobile")) {
 
     function taskheight_submit() {
         let taskvalue = document.getElementsByClassName('taskbar_height_value')[0].value;
-        const task = document.getElementById('taskbar').clientHeight;
+        const task = taskbar.clientHeight;
 
         if (taskvalue === "") {
             taskvalue = 40;
             const t = localStorage.setItem('taskbar_height', taskvalue);
-            document.getElementById('taskbar').style.height = "40px"
+            taskbar.style.height = "40px"
             document.querySelector('.files_inline').style.top = ""
 
             if (check(elm1, elm2) && !localStorage.getItem('taskbar_position_button')) {
@@ -4714,17 +4704,18 @@ if (ua.includes("mobile")) {
             if (localStorage.getItem('taskbar_position_button')) {
                 const t2 = localStorage.getItem('taskbar_height');
                 document.querySelector('.files_inline').style.top = t2 + "px"
-                const task = document.getElementById('taskbar').clientHeight;
-                document.querySelector('.child_start_menu').style.top = task + "px"
-                document.querySelector('.child_start_menu').style.top = t + "px"
+                const task = taskbar.clientHeight;
+                child_start_menu.style.top = task + "px"
+                child_start_menu.style.top = t + "px"
             } else if (localStorage.getItem('taskbar_autohide')) {
-                taskbar_autohide()
+                taskbar_autohide();
+                const task = taskbar.clientHeight;
+                child_start_menu.style.bottom = task + "px"
             } else {
-                const task = document.getElementById('taskbar').clientHeight;
-                document.querySelector('.child_start_menu').style.bottom = task + "px"
-                document.querySelector('.child_start_menu').style.bottom = t + "px"
+                const task = taskbar.clientHeight;
+                child_start_menu.style.bottom = task + "px"
+                child_start_menu.style.bottom = t + "px"
             }
-
         } else {
             error_windows_create("タスクバーの設定範囲を超えています!");
         }
@@ -4734,19 +4725,20 @@ if (ua.includes("mobile")) {
         document.getElementsByClassName('taskbar_height_value')[0].value = "40";
         localStorage.removeItem('taskbar_height');
         taskbar.style.height = "";
+        child_start_menu.style.top = "";
+        child_start_menu.style.bottom = "";
         if (localStorage.getItem('taskbar_position_button')) {
-            document.querySelector('.files_inline').style.top = "40px"
-            const task = document.getElementById('taskbar').clientHeight;
-            document.querySelector('.child_start_menu').style.top = task + "px"
+            document.querySelector('.files_inline').style.top = "40px";
+            const task = taskbar.clientHeight;
+            child_start_menu.style.top = task + "px";
             document.querySelector('.desktop_version_text').style.bottom = "0px";
         } else if (localStorage.getItem('taskbar_autohide')) {
-            taskbar_autohide()
+            taskbar_autohide();
         } else {
-            const task = document.getElementById('taskbar').clientHeight;
-            document.querySelector('.child_start_menu').style.bottom = task + "px"
+            const task = taskbar.clientHeight;
+            child_start_menu.style.bottom = task + "px";
             document.querySelector('.desktop_version_text').style.bottom = "40px";
         }
-
     }
 
     const clock_canvas = document.getElementById("analog_clock");
@@ -5316,8 +5308,7 @@ if (ua.includes("mobile")) {
                 const dx = e.pageX - originalMouseX;
                 const dy = e.pageY - originalMouseY;
                 const resizer2 = resizer.closest('.child_windows');
-                resizer2.classList.remove('leftwindow');
-                resizer2.classList.remove('rightwindow');
+                resizer2.classList.remove('leftwindow', 'rightwindow');
                 if (resizer.classList.contains('right') || resizer.classList.contains('bottom-right') || resizer.classList.contains('top-right')) {
                     const newWidth = originalWidth + dx;
                     if (newWidth > minSize) element.style.width = newWidth + 'px';
@@ -5350,13 +5341,16 @@ if (ua.includes("mobile")) {
                         applyStyles(resizer2)
                     }, 0);
                 }
+                taskbar.addEventListener('mousemove', stopResize);
                 rectangle_remove();
             }
             function stopResize() {
                 const resizer2 = resizer.closest('.child_windows');
                 window.removeEventListener('mousemove', resize);
                 window.removeEventListener('mouseup', stopResize);
-                document.body.removeChild(overlay);
+                if (overlay.parentNode) {
+                    document.body.removeChild(overlay);
+                }
                 if (clones && !localStorage.getItem('window_afterimage_false')) {
                     resizer2.style.background = "";
                     resizer2.style.border = "";
@@ -5370,8 +5364,6 @@ if (ua.includes("mobile")) {
         });
     }
     makeResizableDivs('.resize');
-
-
 
     const dropzone = document.getElementById('dropzone');
     const url_iframe = document.getElementById('url_iframe');
