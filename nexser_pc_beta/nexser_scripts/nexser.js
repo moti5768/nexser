@@ -1070,7 +1070,6 @@ if (ua.includes("mobile")) {
             }, 1500);
             setTimeout(() => {
                 startup_window_open();
-                const task = taskbar.clientHeight;
                 if (localStorage.getItem('toolbar_on')) {
                     toolbar.style.display = "block";
                 }
@@ -1081,7 +1080,6 @@ if (ua.includes("mobile")) {
                     toolbar.style.top = "40px";
                     toolbar.style.top = t + "px";
                     document.querySelector('.files_inline').style.top = t + "px"
-                    child_start_menu.style.top = task + "px"
                     if (localStorage.getItem('data_taskbar_none')) {
                         taskbar.style.display = "none";
                         toolbar.style.top = "0px";
@@ -1090,14 +1088,16 @@ if (ua.includes("mobile")) {
                         taskbar.style.display = "block";
                         toolbar.style.top = "40px";
                         toolbar.style.top = t + "px";
+                        const task = taskbar.clientHeight;
+                        child_start_menu.style.top = task + "px"
                     }
-
                 } else {
                     taskbar.style.display = "block";
                     toolbar.style.top = "";
                     toolbar.style.left = "";
                     toolbar.style.bottom = "40px";
                     toolbar.style.bottom = t + "px";
+                    const task = taskbar.clientHeight;
                     child_start_menu.style.bottom = task + "px"
                     if (localStorage.getItem('data_taskbar_none')) {
                         taskbar.style.display = "none";
@@ -4745,7 +4745,6 @@ if (ua.includes("mobile")) {
     const clock_ctx = clock_canvas.getContext('2d');
     const dayArr = ["日", "月", "火", "水", "木", "金", "土"];
 
-    // 時計の針を描く関数
     function drawHand(length, width, angle) {
         clock_ctx.beginPath();
         clock_ctx.moveTo(150, 150);
@@ -4754,27 +4753,25 @@ if (ua.includes("mobile")) {
         clock_ctx.stroke();
     }
 
-    // 時計を描く関数
     function drawClock() {
         const d = new Date();
         const year = d.getFullYear();
         const month = d.getMonth() + 1;
         const date = d.getDate();
         const day = d.getDay();
-        const hours = d.getHours() % 12;
+        const hours24 = d.getHours();
+        const hours = hours24 % 12;
         const minutes = d.getMinutes();
         const seconds = d.getSeconds();
         const dateText = `${year}-${("0" + month).slice(-2)}-${("0" + date).slice(-2)} ${dayArr[day]}`;
-        const amPm = hours >= 12 ? "午後" : "午前";
+        const amPm = hours24 >= 12 ? "午後" : "午前";
 
-        // キャンバスをクリア
         clock_ctx.clearRect(0, 0, clock_canvas.width, clock_canvas.height);
         clock_ctx.beginPath();
         clock_ctx.arc(150, 150, 150, 0, Math.PI * 2);
         clock_ctx.lineWidth = 1.0;
         clock_ctx.stroke();
 
-        // 目盛りを描く
         for (let i = 0; i < 60; i++) {
             clock_ctx.beginPath();
             clock_ctx.moveTo(150 + 150 * Math.cos(Math.PI / 180 * (270 + i * 6)), 150 + 150 * Math.sin(Math.PI / 180 * (270 + i * 6)));
@@ -4783,7 +4780,6 @@ if (ua.includes("mobile")) {
             clock_ctx.stroke();
         }
 
-        // 数字と日付を描く
         clock_ctx.font = "20px 'ＭＳ ゴシック'";
         clock_ctx.textAlign = "center";
         const textArrX = [210, 255, 275, 260, 215, 150, 90, 45, 25, 45, 85, 150];
@@ -4795,11 +4791,11 @@ if (ua.includes("mobile")) {
         clock_ctx.fillText(dateText, 150, 80);
         clock_ctx.fillText(amPm, 150, 100);
 
-        // 針を描く
         drawHand(140, 1, seconds * 6);
         drawHand(130, 3, 6 * (minutes + seconds / 60));
         drawHand(100, 6, 30 * (hours + minutes / 60));
     }
+
 
     document.querySelector('.youtubevideo_button').addEventListener('click', function () {
         const url = document.querySelector("#youtube").value;
