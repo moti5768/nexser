@@ -394,7 +394,11 @@ if (ua.includes("mobile")) {
         }
         if (localStorage.getItem('taskbar_zindex_0')) {
             taskbar.style.zIndex = "0";
-            document.querySelector('.taskbar_zindex_0').textContent = "on"
+            document.querySelector('.taskbar_zindex_0').textContent = "on";
+        }
+        if (localStorage.getItem('taskbar_leftbtn')) {
+            document.querySelector('.taskbar_leftbtn').textContent = "on";
+            document.querySelector('.first_taskbar_buttons').style.display = "none";
         }
 
         if (localStorage.getItem('taskbar_position_button')) {
@@ -563,7 +567,7 @@ if (ua.includes("mobile")) {
             nexser.style.display = "block";
             desktop.style.display = "none";
             document.querySelector('.pass_signin_menu').classList.remove('active')
-            document.querySelector('#pass_form').focus();
+            document.getElementById('pass_form').focus();
         } else if (!localStorage.getItem('start_nexser') && localStorage.getItem('prompt_data')) {
             start_check()
         } else if (localStorage.getItem('prompt_data') && localStorage.getItem('start_nexser')) {
@@ -852,15 +856,15 @@ if (ua.includes("mobile")) {
             .replaceAll(".m]n.", "6").replaceAll(".o-p.", "7").replaceAll(".q>r.", "8")
             .replaceAll(".s<t.", "9")
         );
-        if (password_unlock2 === document.querySelector('#pass_form').value) {
+        if (password_unlock2 === document.getElementById('pass_form').value) {
             document.querySelector('.pass_signin_menu').classList.add('active')
             document.querySelector('.pass_no').textContent = "";
             start_check();
             localStorage.setItem('login', true);
-            document.querySelector('#pass_form').value = "";
+            document.getElementById('pass_form').value = "";
         } else {
             document.querySelector('.pass_no').textContent = "パスワードが違います!";
-            document.querySelector('#pass_form').focus();
+            document.getElementById('pass_form').focus();
         }
     }
 
@@ -1236,7 +1240,7 @@ if (ua.includes("mobile")) {
             window_reset();
             document.querySelector('.pass_signin_menu').classList.remove('active')
             sound_stop();
-            document.querySelector('#pass_form').focus();
+            document.getElementById('pass_form').focus();
         } else if (localStorage.getItem('password') && gets != gets2) {
             error_windows_create("全てのウィンドウを終了してください!");
         } else {
@@ -1491,10 +1495,8 @@ if (ua.includes("mobile")) {
             document.querySelector('.bigscreen_button').style.visibility = "visible";
             document.querySelector('.minscreen_button').style.visibility = "visible";
             document.querySelector('.minimization_button').style.visibility = "visible";
-            allwindow.classList.remove('minimization');
-            allwindow.classList.remove('selectwindows')
+            allwindow.classList.remove('minimization', 'selectwindows');
         });
-
         bom_reset();
         timerstop();
         timerreset();
@@ -1507,9 +1509,9 @@ if (ua.includes("mobile")) {
         resetGame();
         nexser_prompt_reset();
         document.querySelector('.password').value = "";
-        document.querySelector('#pass_form').value = "";
-
+        document.getElementById('pass_form').value = "";
     }
+
     function window_none() {
         document.querySelectorAll('.task_buttons').forEach(function (task_buttons) {
             task_buttons.remove()
@@ -2375,8 +2377,7 @@ if (ua.includes("mobile")) {
                     bigscreenbutton.style.top = "0";
                 }
                 window_animation(bigscreenbutton)
-                bigscreenbutton.classList.remove('rightwindow');
-                bigscreenbutton.classList.remove('leftwindow');
+                bigscreenbutton.classList.remove('rightwindow', 'leftwindow');
                 bigscreenbutton.classList.add('big');
             });
             button.dataset.listenerAdded = true;
@@ -2408,9 +2409,7 @@ if (ua.includes("mobile")) {
         if (!button.dataset.listenerAdded) {
             button.addEventListener('click', function () {
                 const minscreenbutton = button.closest('.child_windows');
-                minscreenbutton.classList.remove('rightwindow');
-                minscreenbutton.classList.remove('leftwindow');
-                minscreenbutton.classList.remove('big');
+                minscreenbutton.classList.remove('rightwindow', 'leftwindow', 'big');
                 const elements = document.querySelector('.navy');
                 const elements2 = elements.closest('.child_windows');
                 elements2.style.width = elements2.dataset.originalWidth;
@@ -2555,7 +2554,6 @@ if (ua.includes("mobile")) {
             window_animation(windowhalfbig);
         });
     });
-
 
     document.querySelectorAll('.windowsize_reset').forEach(windowsize_reset => {
         windowsize_reset.addEventListener('click', event => {
@@ -2950,8 +2948,7 @@ if (ua.includes("mobile")) {
                 if (dragwindow.classList.contains('leftwindow') || dragwindow.classList.contains('rightwindow')) {
                     dragwindow.style.height = "55%";
                     dragwindow.style.width = "55%";
-                    dragwindow.classList.remove('leftwindow');
-                    dragwindow.classList.remove('rightwindow');
+                    dragwindow.classList.remove('leftwindow', 'rightwindow');
                 }
                 dragwindow.classList.add("drag");
             });
@@ -3660,7 +3657,6 @@ if (ua.includes("mobile")) {
             localStorage.removeItem('note_texts');
             note_pad.classList.add('active');
             note_pad.classList.remove('selectwindows')
-
         }
     })
 
@@ -3676,7 +3672,6 @@ if (ua.includes("mobile")) {
             warning_windows.style.display = "block"
             document.querySelector('.close_button3').style.display = "block"
             sound(4)
-
             document.querySelector('.shutdown_button').style.display = "none";
             document.querySelector('.warningclose_button').style.display = "none";
         } else if (!localStorage.getItem('objectiveData') && !localStorage.getItem('objectiveTitleData') && (!localStorage.getItem('objective_area'))) {
@@ -3685,7 +3680,6 @@ if (ua.includes("mobile")) {
             objective_menu.classList.add('active');
             localStorage.removeItem('objective_area');
             objective_menu.classList.remove('selectwindows')
-
         }
     })
     localStorage.removeItem('objective_area')
@@ -3889,7 +3883,7 @@ if (ua.includes("mobile")) {
             localStorage.removeItem('MemoData_export');
             notice_menu.classList.remove('active');
         } else {
-            error_windows_create("windows2000からテキストデータがエクスポートされていません!");
+            error_windows_create("windows2000からテキストデータがエクスポートされていません!", "&nbsp;notepad");
         }
     }
 
@@ -4081,6 +4075,18 @@ if (ua.includes("mobile")) {
             localStorage.setItem('taskbar_zindex_0', true);
             taskbar.style.zIndex = "0";
             document.querySelector('.taskbar_zindex_0').textContent = "on"
+        }
+    })
+
+    document.querySelector('.taskbar_leftbtn').addEventListener('click', function () {
+        if (localStorage.getItem('taskbar_leftbtn')) {
+            localStorage.removeItem('taskbar_leftbtn')
+            document.querySelector('.taskbar_leftbtn').textContent = "off";
+            document.querySelector('.first_taskbar_buttons').style.display = "";
+        } else {
+            localStorage.setItem('taskbar_leftbtn', true);
+            document.querySelector('.taskbar_leftbtn').textContent = "on"
+            document.querySelector('.first_taskbar_buttons').style.display = "none";
         }
     })
 
@@ -6150,41 +6156,39 @@ if (ua.includes("mobile")) {
     };
 
     function console_error_btn() {
-        if (localStorage.getItem('startmenu_console')) {
-            document.querySelectorAll('.error_btn').forEach(btn => btn.remove());
-            const errorBtn = document.createElement('span');
-            errorBtn.className = "button2 error_btn bold";
-            errorBtn.textContent = "✕";
-            Object.assign(errorBtn.style, {
-                background: "red",
-                color: "white"
-            });
-            document.querySelector('.first_taskbar_buttons').appendChild(errorBtn);
-            errorBtn.addEventListener('click', () => {
-                toggleWindow(console_error_menu);
-            });
-            taskbar_resize();
-        }
+        if (!localStorage.getItem('startmenu_console')) return;
+        document.querySelectorAll('.error_btn').forEach(btn => btn.remove());
+        const errorBtn = document.createElement('span');
+        errorBtn.className = "button2 error_btn bold";
+        errorBtn.textContent = "✕";
+        errorBtn.style.background = "red";
+        errorBtn.style.color = "white";
+        document.querySelector('.first_taskbar_buttons').appendChild(errorBtn);
+        errorBtn.addEventListener('click', () => {
+            toggleWindow(console_error_menu);
+        });
+        taskbar_resize();
     }
 
     const taskbar_resize = () => {
         setTimeout(() => {
-            const taskbtnParent = document.querySelector('.first_taskbar_buttons');
-            const taskbtnChild = document.querySelector('.taskbar_buttons');
-            const taskbtnRightGroup = document.querySelector('.taskbar_rightgroup');
-            taskbtnChild.style.position = "absolute";
-            taskbtnChild.style.left = `${taskbtnParent.clientWidth + 70}px`;
-            taskbtnChild.style.width = `${taskbar.clientWidth - taskbtnRightGroup.clientWidth - 150}px`;
-            const taskheight_parent = document.querySelector('#taskbar');
-            const taskheight_child = document.querySelector('.taskbar_buttons');
-            taskheight_child.style.height = `${taskheight_parent.clientHeight - 3}px`;
-        }, 100);
+            const [parent, child, rightGroup, taskbar] = [
+                document.querySelector('.first_taskbar_buttons'),
+                document.querySelector('.taskbar_buttons'),
+                document.querySelector('.taskbar_rightgroup'),
+                document.querySelector('#taskbar')
+            ];
+            child.style.position = 'absolute';
+            child.style.left = `${parent.clientWidth + 70}px`;
+            child.style.width = `${taskbar.clientWidth - rightGroup.clientWidth - 182}px`;
+            child.style.height = `${taskbar.clientHeight - 3}px`;
+        }, 150);
     };
-    const taskbar_initResize = () => {
-        window.addEventListener('resize', allwindow_resize);
-        new ResizeObserver(() => taskbar_resize()).observe(document.querySelector('.taskbar_rightgroup'));
+    const taskbarInitResize = () => {
+        window.addEventListener('resize', taskbar_resize);
+        new ResizeObserver(taskbar_resize).observe(document.querySelector('.taskbar_rightgroup'));
     };
-    setTimeout(taskbar_initResize, 100);
+    setTimeout(taskbarInitResize, 100);
 
     window.addEventListener('resize', resize_background_image);
     setTimeout(resize_background_image, 100);
@@ -6494,37 +6498,33 @@ if (ua.includes("mobile")) {
         }
     }
 
-
-    function error_windows_create(errortitle_text, errortitle_msg) {
-        if (errortitle_msg == null) {
-            errortitle_msg = "&nbsp;error";
-        }
-        sound(2)
-        nex.style.cursor = '';
-        const entryDiv = document.createElement('div');
+    function error_windows_create(errorTitle, errorMessage = "Error") {
+        sound(2);
+        nex.style.cursor = "";
+        const entryDiv = document.createElement("div");
         entryDiv.className = "child_windows error_windows back_silver no_window";
-        entryDiv.innerHTML = `<div class="title">
-                            ${errortitle_msg}<span class="bold error_title_text"></span></div>
-                        <div class="title_buttons"><span class="drag_button">&nbsp;</span><span
-                                class="close_button button2 allclose_button" onclick="error_windows_close(event)"></span></div>
-                        <div class="window_content"><br>
-                            <p><span class="error_icon">✕</span><span
-                                    class="window_error_text">${errortitle_text}</span></p><span
-                                class="button2 borderinline_dotted"
-                                style="position: absolute; top: 86%; left: 50%; transform: translate(-50%, -50%);" onclick="error_windows_close(event)">&emsp;OK&emsp;</span>
-                        </div><br>`;
-        resetEventListener();
-        function resetEventListener() {
-            entryDiv.removeEventListener('mousedown', onMouseDown);
-            entryDiv.addEventListener('mousedown', onMouseDown);
-        }
-        function onMouseDown() {
-            entryDiv.style.zIndex = largestZIndex++;
-            resetEventListener();
-        }
+        entryDiv.innerHTML = `
+          <div class="title"><span class="bold error_title_text">${errorMessage}</span>
+          </div>
+          <div class="title_buttons">
+            <span class="drag_button">&nbsp;</span>
+            <span class="close_button button2 allclose_button" onclick="error_windows_close(event)"></span>
+          </div>
+          <div class="window_content">
+            <br>
+            <p>
+              <span class="error_icon">✕</span>
+              <span class="window_error_text">${errorTitle}</span>
+            </p>
+            <span class="button2 borderinline_dotted" style="position: absolute; top: 86%; left: 50%; transform: translate(-50%, -50%);" onclick="error_windows_close(event)">&emsp;OK&emsp;</span>
+          </div>
+          <br>`;
+        entryDiv.addEventListener("mousedown", event => {
+            event.currentTarget.style.zIndex = ++largestZIndex;
+        });
         dropArea2.appendChild(entryDiv);
         window_back_silver();
-        entryDiv.style.zIndex = largestZIndex++;
+        entryDiv.style.zIndex = ++largestZIndex;
     }
 
     function showPosition(position) {

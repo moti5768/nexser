@@ -18,9 +18,7 @@ function init() {
     bomb = Number(document.getElementById("b").value); // 爆弾の数
     if (h * w - 9 < bomb) {
         document.getElementById('nex').style.cursor = '';
-        // document.querySelector('.window_error_text').textContent = "エラー：爆弾の数が正しく入力されていません。"
-        // document.getElementsByClassName('error_title_text')[0].textContent = "main sweeper"
-        // document.getElementsByClassName('error_windows')[0].classList.remove('active')
+        error_windows_create("爆弾の数が正しく入力されていません!", "&nbsp;main sweeper")
         return;
     }
     data = [];
