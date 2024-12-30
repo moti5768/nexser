@@ -1165,14 +1165,12 @@ if (ua.includes("mobile")) {
         sound(6);
         welcome_menu.style.zIndex = largestZIndex++;
         const startNexser = document.getElementsByClassName('start_nexser')[0];
-        const startNexserClose = document.getElementsByClassName('startnexser_close')[0];
         const welcomeText1 = document.getElementsByClassName('welcome_text1')[0];
         const welcomeUnderline = document.getElementsByClassName('welcome_underline')[0];
         const welcomeText2 = document.getElementsByClassName('welcome_text2')[0];
         const welcomeIcons = document.getElementsByClassName('welcome_icons')[0];
         nex.style.cursor = 'none';
         startNexser.style.display = "none";
-        startNexserClose.style.display = "none";
         welcomeText1.style.position = "absolute";
         welcomeText1.style.fontSize = "80px";
         welcomeText1.style.marginTop = "125px";
@@ -1197,7 +1195,7 @@ if (ua.includes("mobile")) {
                 if (!localStorage.getItem('start_nexser')) {
                     startNexser.style.display = "block";
                 } else {
-                    startNexserClose.style.display = "block";
+                    document.getElementsByClassName('startnexser_close')[0].classList.remove('pointer_none')
                 }
             }, 300);
         }, 1000);
@@ -4243,9 +4241,7 @@ if (ua.includes("mobile")) {
     const preview = document.getElementById("preview");
 
     function run() {
-        document.querySelectorAll('.htmlviewer_run_menu').forEach(function (htmlviewer_run_menu) {
-            toggleWindow(htmlviewer_run_menu);
-        });
+        document.querySelectorAll('.htmlviewer_run_menu').forEach(htmlviewer_run_menu => toggleWindow(htmlviewer_run_menu));
         preview.srcdoc = editor.value;
     }
 
@@ -5372,11 +5368,6 @@ if (ua.includes("mobile")) {
 
     dropzone.addEventListener('dragover', (event) => {
         event.preventDefault();
-        dropzone.style.backgroundColor = '#f0f0f0';
-    });
-
-    dropzone.addEventListener('dragleave', (event) => {
-        dropzone.style.backgroundColor = '';
     });
 
     dropzone.addEventListener('drop', (event) => {
