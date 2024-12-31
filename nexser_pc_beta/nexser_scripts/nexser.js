@@ -6356,7 +6356,6 @@ if (ua.includes("mobile")) {
 
     document.querySelectorAll('.window_tool').forEach(windowtool_files => {
         const windowtool_files_parent = document.createElement('div');
-
         windowtool_files_parent.innerHTML = `<span class="winchild_border"></span><div class="windowtool_parent"><span class="startmenu_file_icon"></span>
                                 <button class="button2" style="height: 20px; font-size: large; float: right;">&#x25BC;</button>
                                       &emsp;&emsp;<span class="windowtool_child_filenames"></span>
@@ -6388,40 +6387,26 @@ if (ua.includes("mobile")) {
         windowtool_files.appendChild(windowtool_files_parent)
 
         setTimeout(() => {
-
             document.querySelectorAll('.windowtool_parent').forEach(parent => {
-                parent.addEventListener('mousedown', event => {
-                    const child = parent.lastElementChild;
+                const child = parent.lastElementChild;
+                parent.addEventListener('mousedown', (event) => {
                     if (!event.target.closest('.windowtool_child')) {
-                        child.style.display = (child.style.display === "block") ? "none" : "block";
+                        child.style.display = (child.style.display === 'block') ? 'none' : 'block';
                     }
                 });
-                parent.querySelectorAll('.windowtool_child').forEach(child => {
-                    child.addEventListener('click', event => {
-                        event.stopPropagation();
-                        child.style.display = "none";
-                    });
+                child.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    child.style.display = 'none';
                 });
             });
-
-
-            document.querySelectorAll('.windowtool_child_filenames').forEach(windowtool_child_filenames => {
-                const windowtool_child_filenames_parent = windowtool_child_filenames.closest('.child_windows');
-                const windowtool_child_filenames_parent2 = windowtool_child_filenames_parent.children[0];
-                let windowtool_child_filenames3 = windowtool_child_filenames_parent2.lastElementChild;
-                const windowtool_child_filenames4 = windowtool_child_filenames3.textContent;
-                windowtool_child_filenames.textContent = windowtool_child_filenames4
-            })
+            document.querySelectorAll('.windowtool_child_filenames').forEach(filename => {
+                const parent = filename.closest('.child_windows');
+                const parentFirstChild = parent.children[0];
+                const lastChildText = parentFirstChild.lastElementChild.textContent;
+                filename.textContent = lastChildText;
+            });
         }, 100);
-
     });
-
-
-
-
-
-
-
 
 
     document.querySelectorAll('.windowtool_buttons_child').forEach(windowtool_buttons_child => {
@@ -6434,39 +6419,38 @@ if (ua.includes("mobile")) {
          <button class="button2" onclick="filetimes_test2()" style="width: 25px;">TF</button>`;
         windowtool_childbtns.style = "display: flex; height: 25px;";
         setTimeout(() => {
-            Array.from(document.getElementsByClassName('windowfile1')).forEach((windowfile_1) => {
-                windowfile_1.addEventListener('click', function () {
+            document.querySelectorAll('.windowfile1').forEach((windowfile_1) => {
+                windowfile_1.addEventListener('click', () => {
                     localStorage.setItem('windowfile_1', true);
-                    localStorage.removeItem('windowfile_2')
-                    localStorage.removeItem('windowfile_3')
-                    window_file_list_change()
-                })
-            })
-            Array.from(document.getElementsByClassName('windowfile2')).forEach((windowfile_2) => {
-                windowfile_2.addEventListener('click', function () {
+                    localStorage.removeItem('windowfile_2');
+                    localStorage.removeItem('windowfile_3');
+                    window_file_list_change();
+                });
+            });
+            document.querySelectorAll('.windowfile2').forEach((windowfile_2) => {
+                windowfile_2.addEventListener('click', () => {
                     localStorage.setItem('windowfile_2', true);
-                    localStorage.removeItem('windowfile_1')
-                    localStorage.removeItem('windowfile_3')
-                    window_file_list_reset()
-                })
-            })
-            Array.from(document.getElementsByClassName('windowfile3')).forEach((windowfile_3) => {
-                windowfile_3.addEventListener('click', function () {
+                    localStorage.removeItem('windowfile_1');
+                    localStorage.removeItem('windowfile_3');
+                    window_file_list_reset();
+                });
+            });
+            document.querySelectorAll('.windowfile3').forEach((windowfile3) => {
+                windowfile3.addEventListener('click', () => {
                     localStorage.setItem('windowfile_3', true);
-                    localStorage.removeItem('windowfile_1')
-                    localStorage.removeItem('windowfile_2')
-                    window_file_list_change2()
-                })
-            })
+                    localStorage.removeItem('windowfile_1');
+                    localStorage.removeItem('windowfile_2');
+                    window_file_list_change2();
+                });
+            });
             document.querySelectorAll('.nexser_search').forEach(nexser_search => { nexser_search.onclick = null; nexser_search.onclick = () => { toggleWindow(nexser_search_menu); }; });
             if (localStorage.getItem('filetimes')) {
-                Array.from(document.getElementsByClassName('windowfile_time')).forEach((windowfile_time) => {
-                    windowfile_time.style.display = "none"
-                })
+                document.querySelectorAll('.windowfile_time').forEach(windowfileTime => {
+                    windowfileTime.style.display = 'none';
+                });
             }
         }, 100);
         windowtool_buttons_child.appendChild(windowtool_childbtns)
-
     });
 
 
