@@ -57,6 +57,10 @@ if (ua.includes("mobile")) {
     const desktop = document.getElementById('desktop');
     const z_index = document.querySelector('.z_index');
 
+    const mini_desktop = document.querySelector('.mini_desktop');
+
+    const desktop_version_text = document.querySelector('.desktop_version_text');
+
     // soft_windows
     const password_menu = document.querySelector('.password_menu');
     const main = document.querySelector('.main');
@@ -265,7 +269,6 @@ if (ua.includes("mobile")) {
             console.log('すべてのタスクが完了しました');
         });
 
-
     function nexser_savedata_load() {
         const t = localStorage.getItem('taskbar_height');
         taskbar.style.height = t + "px";
@@ -317,9 +320,9 @@ if (ua.includes("mobile")) {
         }
         if (localStorage.getItem('startup_versiontext')) {
             document.querySelector('.startup_versiontext').textContent = "ON"
-            document.querySelector('.desktop_version_text').style.display = "block";
+            desktop_version_text.style.display = "block";
         } else {
-            document.querySelector('.desktop_version_text').style.display = "none";
+            desktop_version_text.style.display = "none";
         }
 
         const startupKeys = ['startup_1', 'startup_2', 'startup_3', 'startup_4', 'startup_5'];
@@ -427,7 +430,7 @@ if (ua.includes("mobile")) {
             toolbar.style.top = "0px";
         } else if (localStorage.getItem('data_taskbar_none') && !localStorage.getItem('taskbar_position_button')) {
             toolbar.style.bottom = "0px";
-            document.querySelector('.desktop_version_text').style.bottom = "0px"
+            desktop_version_text.style.bottom = "0px"
         } else if (localStorage.getItem('taskbar_position_button')) {
             toolbar.style.top = task + "px";
             toolbar.style.top = t + "px";
@@ -436,7 +439,7 @@ if (ua.includes("mobile")) {
         } else {
             toolbar.style.bottom = task + "px";
             toolbar.style.bottom = t + "px";
-            document.querySelector('.desktop_version_text').style.bottom = task + "px";
+            desktop_version_text.style.bottom = task + "px";
             child_start_menu.style.bottom = task + "px"
             child_start_menu.style.bottom = t + "px"
         }
@@ -1106,12 +1109,12 @@ if (ua.includes("mobile")) {
                     if (localStorage.getItem('data_taskbar_none')) {
                         taskbar.style.display = "none";
                         toolbar.style.bottom = "0px";
-                        document.querySelector('.desktop_version_text').style.bottom = "0px"
+                        desktop_version_text.style.bottom = "0px"
                     } else {
                         taskbar.style.display = "block";
                         toolbar.style.bottom = "40px";
                         toolbar.style.bottom = t + "px";
-                        document.querySelector('.desktop_version_text').style.bottom = task + "px"
+                        desktop_version_text.style.bottom = task + "px"
                     }
                 }
                 document.getElementById('files').style.display = "block";
@@ -1139,18 +1142,18 @@ if (ua.includes("mobile")) {
             toolbar.style.left = "";
             toolbar.style.bottom = "40px";
             child_start_menu.style.bottom = task + "px";
-            document.querySelector('.desktop_version_text').style.bottom = task + "px";
-        }, 500);
+            desktop_version_text.style.bottom = task + "px";
+        }, 250);
         setTimeout(() => {
             setColor();
             nex.style.cursor = '';
             if (!localStorage.getItem('editorContent')) {
                 localStorage.setItem('editorContent', "PGJyPg==")
             }
-        }, 1500);
-        setTimeout(() => {
-            startup_window_open()
-        }, 2000);
+            setTimeout(() => {
+                startup_window_open()
+            }, 500);
+        }, 500);
     }
 
     document.querySelector('.login_welcome').addEventListener('click', () => {
@@ -1574,7 +1577,7 @@ if (ua.includes("mobile")) {
     function colordata_clear() {
         document.querySelector("body").style.color = "";
         document.querySelector("#nexser").style.backgroundColor = "";
-        document.querySelector(".mini_desktop").style.backgroundColor = "";
+        mini_desktop.style.backgroundColor = "";
         localStorage.removeItem(KEY_COLOR, color);
         localStorage.removeItem(KEY_BKCOLOR, bkcolor);
         background_text.style.color = ""
@@ -2314,7 +2317,7 @@ if (ua.includes("mobile")) {
             document.getElementsByClassName('child_windows_length')[0].textContent = gets;
             document.getElementsByClassName('active_length')[0].textContent = gets2;
             if (localStorage.getItem(KEY_BKCOLOR, bkcolor)) {
-                document.getElementsByClassName('mini_desktop')[0].style.backgroundColor = bkcolor;
+                mini_desktop.style.backgroundColor = bkcolor;
             }
             if (localStorage.getItem('MemoData_export')) {
                 document.getElementsByClassName('inport_icon')[0].style.color = "white"
@@ -3217,7 +3220,7 @@ if (ua.includes("mobile")) {
             if (localStorage.getItem('driver_color')) {
                 document.querySelector("body").style.color = color;
                 document.getElementById("nexser").style.backgroundColor = bkcolor;
-                document.getElementsByClassName("mini_desktop")[0].style.backgroundColor = bkcolor;
+                mini_desktop.style.backgroundColor = bkcolor;
                 if (bkcolor === "white" || bkcolor === "whitesmoke") {
                     background_text.style.color = "black"
                     document.getElementById('background_text2').style.color = "black"
@@ -4689,8 +4692,8 @@ if (ua.includes("mobile")) {
         } else if (40 <= taskvalue && taskvalue < 201) {
             const t = localStorage.setItem('taskbar_height', taskvalue);
             taskbar.style.height = taskvalue + "px"
-            document.querySelector('.desktop_version_text').style.bottom = "40px";
-            document.querySelector('.desktop_version_text').style.bottom = taskvalue + "px";
+            desktop_version_text.style.bottom = "40px";
+            desktop_version_text.style.bottom = taskvalue + "px";
             if (check(elm1, elm2) && !localStorage.getItem('taskbar_position_button')) {
                 toolbar.style.bottom = taskvalue + "px";
             } else if (check(elm1, elm2)) {
@@ -4734,13 +4737,13 @@ if (ua.includes("mobile")) {
             document.querySelector('.files_inline').style.top = "40px";
             const task = taskbar.clientHeight;
             child_start_menu.style.top = task + "px";
-            document.querySelector('.desktop_version_text').style.bottom = "0px";
+            desktop_version_text.style.bottom = "0px";
         } else if (localStorage.getItem('taskbar_autohide')) {
             taskbar_autohide();
         } else {
             const task = taskbar.clientHeight;
             child_start_menu.style.bottom = task + "px";
-            document.querySelector('.desktop_version_text').style.bottom = "40px";
+            desktop_version_text.style.bottom = "40px";
         }
     }
 
@@ -5987,48 +5990,32 @@ if (ua.includes("mobile")) {
 
     var background_img = document.createElement("img");
     function minidesk_backgroundresize1() {
+        background_img.src = "nexser_image/Windows95_wallpaper.jpg";
         background_img.style.display = "block";
-        background_img.src = "nexser_image/Windows95_wallpaper.jpg"; // 画像のパスを指定
-        // 特定のクラスを持つ要素を取得
-        var targetElement = document.querySelector(".mini_desktop");
-        targetElement.appendChild(background_img);
-        const minidesk_parent = document.querySelector('.mini_desktop');
-        const minidesk_child = background_img
-        minidesk_child.style.width = `${minidesk_parent.clientWidth}px`;
-        minidesk_child.style.height = `${minidesk_parent.clientHeight}px`;
+        background_img.style.width = `${mini_desktop.clientWidth}px`;
+        background_img.style.height = `${mini_desktop.clientHeight}px`;
+        mini_desktop.appendChild(background_img);
     }
     function minidesk_backgroundresize2() {
+        background_img.src = "nexser_image/Windows95_wallpaper_2.png";
         background_img.style.display = "block";
-        background_img.src = "nexser_image/Windows95_wallpaper_2.png"; // 画像のパスを指定
-        // 特定のクラスを持つ要素を取得
-        var targetElement = document.querySelector(".mini_desktop");
-        targetElement.appendChild(background_img);
-        const minidesk_parent = document.querySelector('.mini_desktop');
-        const minidesk_child = background_img
-        minidesk_child.style.width = `${minidesk_parent.clientWidth}px`;
-        minidesk_child.style.height = `${minidesk_parent.clientHeight}px`;
+        background_img.style.width = `${mini_desktop.clientWidth}px`;
+        background_img.style.height = `${mini_desktop.clientHeight}px`;
+        mini_desktop.appendChild(background_img);
     }
     function minidesk_backgroundresize3() {
+        background_img.src = "nexser_image/Windowsxp_wallpaper.jpg";
         background_img.style.display = "block";
-        background_img.src = "nexser_image/Windowsxp_wallpaper.jpg"; // 画像のパスを指定
-        // 特定のクラスを持つ要素を取得
-        var targetElement = document.querySelector(".mini_desktop");
-        targetElement.appendChild(background_img);
-        const minidesk_parent = document.querySelector('.mini_desktop');
-        const minidesk_child = background_img
-        minidesk_child.style.width = `${minidesk_parent.clientWidth}px`;
-        minidesk_child.style.height = `${minidesk_parent.clientHeight}px`;
+        background_img.style.width = `${mini_desktop.clientWidth}px`;
+        background_img.style.height = `${mini_desktop.clientHeight}px`;
+        mini_desktop.appendChild(background_img);
     }
     function minidesk_backgroundresize4() {
+        background_img.src = "nexser_image/space_wallpaper.png";
         background_img.style.display = "block";
-        background_img.src = "nexser_image/space_wallpaper.png"; // 画像のパスを指定
-        // 特定のクラスを持つ要素を取得
-        var targetElement = document.querySelector(".mini_desktop");
-        targetElement.appendChild(background_img);
-        const minidesk_parent = document.querySelector('.mini_desktop');
-        const minidesk_child = background_img
-        minidesk_child.style.width = `${minidesk_parent.clientWidth}px`;
-        minidesk_child.style.height = `${minidesk_parent.clientHeight}px`;
+        background_img.style.width = `${mini_desktop.clientWidth}px`;
+        background_img.style.height = `${mini_desktop.clientHeight}px`;
+        mini_desktop.appendChild(background_img);
     }
 
     document.querySelectorAll('.search_button').forEach(search_button =>
