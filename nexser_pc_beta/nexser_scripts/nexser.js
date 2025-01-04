@@ -1916,16 +1916,23 @@ if (ua.includes("mobile")) {
 
         switch (prompt_text_value4) {
 
-            // commands
             case command_1 + a:
-                document.querySelector('#nexser').style.background = a;
-                localStorage.setItem('BKCOLOR', a);
-                wallpaper_allremove()
+                if (localStorage.getItem('driver_color')) {
+                    document.querySelector('#nexser').style.background = a;
+                    localStorage.setItem('BKCOLOR', a);
+                    wallpaper_allremove()
+                } else {
+                    error_windows_create("カラードライバーがインストールされていません!")
+                }
                 break;
 
             case command_2 + b:
-                document.querySelector('body').style.color = b;
-                localStorage.setItem('COLOR', b);
+                if (localStorage.getItem('driver_color')) {
+                    document.querySelector('body').style.color = b;
+                    localStorage.setItem('COLOR', b);
+                } else {
+                    error_windows_create("カラードライバーがインストールされていません!")
+                }
                 break;
 
             case command_3 + c:
@@ -1969,13 +1976,11 @@ if (ua.includes("mobile")) {
                     .replaceAll("19|", "S").replaceAll("20|", "T").replaceAll("21|", "U").replaceAll("22|", "V").replaceAll("23|", "W").replaceAll("24|", "X")
                     .replaceAll("25|", "Y").replaceAll("26|", "Z")
 
-
                     .replaceAll("01^", "a").replaceAll("02^", "b").replaceAll("03^", "c").replaceAll("04^", "d").replaceAll("05^", "e").replaceAll("06^", "f")
                     .replaceAll("07^", "g").replaceAll("08^", "h").replaceAll("09^", "i").replaceAll("10^", "j").replaceAll("11^", "k").replaceAll("12^", "l")
                     .replaceAll("13^", "m").replaceAll("14^", "n").replaceAll("15^", "o").replaceAll("16^", "p").replaceAll("17^", "q").replaceAll("18^", "r")
                     .replaceAll("19^", "s").replaceAll("20^", "t").replaceAll("21^", "u").replaceAll("22^", "v").replaceAll("23^", "w").replaceAll("24^", "x")
                     .replaceAll("25^", "y").replaceAll("26^", "z")
-
                 );
 
                 document.querySelector('#shell').textContent = (String(newStr).replace(/[,]/gi, ""));
@@ -1999,7 +2004,6 @@ if (ua.includes("mobile")) {
                     .replaceAll("{class}", "class=")
                     .replaceAll("{id}", "id=")
 
-
                     .replaceAll("{sty}", "<style>").replaceAll("{/sty}", "</style>")
                     .replaceAll("{bgc}", "background-color")
                     .replaceAll("{bk}", "background")
@@ -2013,7 +2017,6 @@ if (ua.includes("mobile")) {
                     .replaceAll("{ftsze}", "font-size")
                     .replaceAll("{ftwigt}", "font-weight")
                     .replaceAll("{brdr}", "border")
-
 
                     .replaceAll("{s}", "<script>").replaceAll("{/s}", "</script>")
 
@@ -2031,7 +2034,6 @@ if (ua.includes("mobile")) {
                     .replaceAll("{onclk}", "onclick")
                     .replaceAll("{func}", "function")
 
-
                 );
                 document.querySelector('#shell').textContent = (String(newStr2));
 
@@ -2046,7 +2048,6 @@ if (ua.includes("mobile")) {
                     }, 500);
                 }, 100);
                 break;
-
 
 
             case command_11 + k:
