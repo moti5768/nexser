@@ -70,7 +70,6 @@ code>textarea {
     height: 100vh;
     width: 100%;
     color: white;
-    z-index: 999;
 }
 
 .parent_graph {
@@ -261,73 +260,6 @@ li {
     display: block;
 }
 
-#prompt {
-    display: none;
-    height: 100vh;
-    font-family: Courier;
-    color: white;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-}
-
-#prompt .name {
-    font-size: small;
-    width: 50%;
-    background: black;
-    border: none;
-    color: white;
-}
-
-.focus {
-    font-family: Courier;
-}
-
-.focus2 {
-    font-family: Courier;
-}
-
-#prompt2 {
-    font-family: Courier;
-    color: white;
-    background: black;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-    position: absolute;
-    width: 100%;
-    resize: none;
-}
-
-.window_prompt_content2 {
-    position: absolute;
-    display: block;
-    width: 100%;
-}
-
-.command_input2 {
-    font-family: Courier;
-    position: relative;
-    font-size: small;
-    width: 100%;
-    border: none;
-    color: white;
-    background: black;
-    resize: none;
-    padding: 0px;
-}
-
-.input_container {
-    display: flex;
-    font-size: small;
-}
-
-.input_container>textarea::-webkit-scrollbar {
-    display: none;
-}
-
 /* nexser */
 
 #nex {
@@ -378,19 +310,18 @@ li {
     user-select: none;
     list-style: none;
     display: inline-block;
-    box-sizing: border-box;
     color: black;
     background-color: #C3C7CB;
     border: 1.8px solid #808080;
     border-color: #fff #808080 #808080 #fff;
     box-shadow: 0.5px 0.5px black;
+    box-sizing: border-box;
 }
 
 .button.pressed,
 .button2.pressed {
     padding-top: 1px;
     padding-left: 1px;
-    box-sizing: border-box;
     background-color: darkgray;
     border: 1.5px solid;
     border-color: #7a7a7a #fff #fff #7a7a7a;
@@ -398,23 +329,23 @@ li {
 }
 
 .apply_button {
-    display: inline-block;
     width: 75px;
     height: 30px;
     box-sizing: border-box;
     outline: 1.5px dotted black;
     outline-offset: -5px;
     text-align: center;
+    box-sizing: border-box;
 }
 
 .apply_button2 {
-    display: inline-block;
     width: 150px;
     height: 30px;
     box-sizing: border-box;
     outline: 1.5px dotted black;
     outline-offset: -5px;
     text-align: center;
+    box-sizing: border-box;
 }
 
 .center {
@@ -479,8 +410,8 @@ input[type="file"] {
     width: 100%;
     height: 40px;
     background-color: #C3C7CB;
-    border-top: solid 1.5px whitesmoke;
-    border-bottom: 1.5px #333 solid;
+    border-top: 1.5px solid whitesmoke;
+    border-bottom: 1.5px solid #333;
     position: absolute;
     bottom: -1px;
     z-index: 999996;
@@ -560,7 +491,7 @@ input[type="file"] {
     float: left;
     margin-left: 1px;
     margin-right: 1px;
-    width: 150px;
+    width: 145px;
     height: 26.5px;
     white-space: nowrap;
     overflow: hidden;
@@ -568,15 +499,12 @@ input[type="file"] {
 }
 
 .task_icons .task_buttons.tsk_pressed {
-    background-color: darkgray;
-    border-top-color: #7a7a7a;
-    border-left-color: #7a7a7a;
-    border-right-color: #fff;
-    border-bottom-color: #fff;
-    box-shadow: 0.5px 0.5px 0 #000 inset;
     padding-top: 1px;
     padding-left: 1px;
     box-sizing: border-box;
+    border: 1.5px solid;
+    border-color: #7a7a7a #fff #fff #7a7a7a;
+    box-shadow: 0.5px 0.5px 0 #000 inset;
     background: #DDDDDD;
     font-weight: 800;
     text-shadow:
@@ -609,16 +537,13 @@ input[type="file"] {
 }
 
 .inport_icon {
-    background-color: #C3C7CB;
-    border: 1.8px solid #808080;
-    border-top-color: #fff;
-    border-left-color: #fff;
-    border-right-color: #808080;
-    border-bottom-color: #808080;
-    box-shadow: 0.5px 0.5px black;
     text-align: center;
     margin-left: 10px;
     margin-right: 5px;
+    background-color: #C3C7CB;
+    border: 1.8px solid;
+    border-color: #fff #808080 #808080 #fff;
+    box-shadow: 0.5px 0.5px black;
 }
 
 .time {
@@ -662,7 +587,7 @@ input[type="file"] {
 .child_start_menu_lists3 {
     position: absolute;
     background-color: #C3C7CB;
-    border: 1.8px solid #808080;
+    border: 1.8px solid;
     border-color: #fff #808080 #808080 #fff;
     box-shadow: 0.5px 0.5px black;
 }
@@ -712,12 +637,9 @@ input[type="file"] {
     position: absolute;
     margin-top: 3px;
     left: 5px;
-    border-top: 1.5px #eee solid;
-    border-left: 1.5px #eee solid;
-    border-bottom: 1.5px #000 solid;
-    border-right: 1.5px #000 solid;
-    box-shadow: 3px 3px dimgray;
-    outline: 1px solid gray;
+    border: 1.5px solid;
+    border-color: #eee #000 #000 #eee;
+    box-shadow: 1.5px 1.5px dimgray;
     pointer-events: none;
 }
 
@@ -790,6 +712,7 @@ input[type="file"] {
 .window_prompt {
     width: 600px;
     height: 300px;
+    background-color: black;
 }
 
 .nexser_sound_menu {
@@ -832,10 +755,13 @@ input[type="file"] {
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
+    max-width: 700px;
+    max-height: 445px;
+    min-width: 300px;
 }
 
 .windowmode_menu {
-    width: 200px;
+    width: 300px;
 }
 
 .font_menu {
@@ -936,7 +862,7 @@ input[type="file"] {
 .restriction_menu {
     width: 300px;
     min-width: 250px;
-    height: auto;
+    height: 110px;
 }
 
 .location_menu {
@@ -977,18 +903,14 @@ input[type="file"] {
 
 ::-webkit-scrollbar-thumb {
     background: silver;
-    border-top: 1.5px #eee solid;
-    border-left: 1.5px #eee solid;
-    border-bottom: 1.5px #333 solid;
-    border-right: 1.5px #333 solid;
+    border: 1.5px solid;
+    border-color: #eee #333 #333 #eee;
 }
 
 ::-webkit-scrollbar-button {
     background: silver;
-    border-top: 1.5px #eee solid;
-    border-left: 1.5px #eee solid;
-    border-bottom: 1.5px #333 solid;
-    border-right: 1.5px #333 solid;
+    border: 1.5px solid;
+    border-color: #eee #333 #333 #eee;
 }
 
 ::-webkit-scrollbar-corner {
@@ -1115,6 +1037,8 @@ body::-webkit-scrollbar {
     position: absolute;
     bottom: 30px;
     outline: solid 1px dimgray;
+    border: 1.5px solid;
+    border-color: #eee #333 #333 #eee;
 }
 
 .mini_windows_sample {
@@ -1298,10 +1222,6 @@ body::-webkit-scrollbar {
     transform: translate(-50%, -50%);
 }
 
-.error_windows.active {
-    display: none;
-}
-
 .child_windows.active {
     display: none;
 }
@@ -1345,10 +1265,8 @@ body::-webkit-scrollbar {
     position: absolute;
     margin-top: 5px;
     left: 5px;
-    border-top: 1.5px #eee solid;
-    border-left: 1.5px #eee solid;
-    border-bottom: 1.5px #000 solid;
-    border-right: 1.5px #000 solid;
+    border: 1.5px solid;
+    border-color: #eee #000 #000 #eee;
     outline: 1px solid gray;
 }
 
@@ -1384,12 +1302,9 @@ body::-webkit-scrollbar {
     position: absolute;
     left: 5px;
     bottom: 26px;
-    border-top: 1.5px #eee solid;
-    border-left: 1.5px #eee solid;
-    border-bottom: 1.5px #000 solid;
-    border-right: 1.5px #000 solid;
-    box-shadow: 2.5px 2.5px dimgray;
-    outline: 1px solid gray;
+    border-right: solid 1.5px black;
+    border-bottom: solid 1.5px black;
+    box-shadow: 2px 2px dimgray;
     pointer-events: none;
 }
 
@@ -1409,7 +1324,7 @@ body::-webkit-scrollbar {
 .desktop_files {
     display: block;
     position: relative;
-    padding-top: 40px;
+    padding-top: 45px;
     width: 110px;
     color: white;
     left: 5px;
@@ -1437,14 +1352,12 @@ body::-webkit-scrollbar {
     vertical-align: middle;
     line-height: 1;
     position: relative;
-    top: -30px;
+    top: -32.5px;
     left: 5px;
     width: 4.20em;
     height: 2.90em;
-    border-left: 0.1em solid whitesmoke;
-    border-top: 0.1em solid whitesmoke;
-    border-right: 0.1em solid black;
-    border-bottom: 0.1em solid black;
+    border: 0.1em solid;
+    border-color: whitesmoke black black whitesmoke;
     border-radius: 0 0.1em 0.1em 0.1em;
     background-image: radial-gradient(#FFFFBB 1px, #CCCC66 1px);
     background-size: 3px 3px;
@@ -1534,18 +1447,28 @@ body::-webkit-scrollbar {
     flex: 0 0 auto;
 }
 
+.window_tool_2 {
+    background: silver;
+    border-top: solid 1.5px gray;
+    height: 30px;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    flex: 0 0 auto;
+}
+
 .windowtool_buttons {
     display: inline;
     width: 100%;
     height: 25px;
     position: absolute;
-    top: 54px;
+    top: 53px;
     left: 210px;
 }
 
 .windowtool_buttons_child {
-    width: auto;
-    height: 25px;
+    height: 100%;
 }
 
 .windowtool_parent {
@@ -1553,10 +1476,8 @@ body::-webkit-scrollbar {
     background: whitesmoke;
     width: 200px;
     height: 20px;
-    border-top: solid 1.5px black;
-    border-left: solid 1.5px black;
-    border-right: solid 1.5px black;
-    border-bottom: solid 1.5px dimgray;
+    border: 1.5px solid;
+    border-color: black black dimgray black;
     outline: solid 0.5px gray;
     margin-top: 4px;
 }
@@ -1595,8 +1516,8 @@ body::-webkit-scrollbar {
 }
 
 .nexser_search_menu {
-    width: 900px;
-    height: 550px;
+    width: 850px;
+    height: 450px;
 }
 
 #myUL {
@@ -1643,10 +1564,8 @@ body::-webkit-scrollbar {
     height: 20px;
     font-size: 12.5px;
     background-color: #c0c0c0;
-    border-right: solid 1.5px black;
-    border-left: solid 1.5px whitesmoke;
-    border-top: solid 1.5px whitesmoke;
-    border-bottom: solid 1.5px black;
+    border: 1.5px solid;
+    border-color: whitesmoke black black whitesmoke;
     border-radius: 1.5px;
     z-index: 2;
 }
@@ -1671,10 +1590,8 @@ body::-webkit-scrollbar {
     height: 250px;
     display: none;
     background-color: #c0c0c0;
-    border-right: solid 1.5px black;
-    border-left: solid 1.5px whitesmoke;
-    border-bottom: solid 1.5px black;
-    border-top: solid 1.5px whitesmoke;
+    border: 1.5px solid;
+    border-color: whitesmoke black black whitesmoke;
     position: absolute;
     top: 20px;
     left: 0px;
@@ -1709,7 +1626,7 @@ body::-webkit-scrollbar {
 .title_buttons {
     background-color: rgba();
     position: relative;
-    bottom: 0px;
+    bottom: 0.5px;
     right: 0px;
     -webkit-user-select: none;
     -moz-user-select: none;
@@ -1891,6 +1808,20 @@ body::-webkit-scrollbar {
     opacity: 0.3;
 }
 
+.frame_fullbutton {
+    position: absolute;
+    top: 3px;
+    right: 62.5px;
+    text-align: center;
+    justify-content: center;
+    font-size: 11px;
+    box-sizing: border-box;
+}
+
+.frame_fullbutton::before {
+    content: "FL";
+}
+
 /*list */
 
 .parent_list {
@@ -1949,7 +1880,6 @@ body::-webkit-scrollbar {
     border-left: solid 1.5px whitesmoke;
     border-bottom: solid 1.5px black;
     border-top: solid 1.5px whitesmoke;
-    outline: solid 1px dimgray;
 }
 
 .window_contents {
@@ -2080,16 +2010,19 @@ textarea {
 /* objective */
 
 .objective_menu {
+    min-width: 300px;
     width: 800px;
-    height: 500px;
+    height: 550px;
 }
 
 .objective_title_area {
+    position: absolute;
     background: white;
     white-space: nowrap;
 }
 
 .objective_area {
+    margin-top: 60px;
     background: whitesmoke;
     white-space: nowrap;
     resize: none;
@@ -2128,6 +2061,27 @@ textarea {
     color: black;
     background: silver;
     box-sizing: border-box;
+}
+
+
+#editor_2 {
+    position: absolute;
+    margin: 2.5px;
+    background-color: white;
+    width: 100%;
+    height: 100%;
+    white-space: nowrap;
+    overflow: auto;
+}
+
+.editor_tool>button {
+    margin-bottom: 100px;
+    height: 25px;
+    display: inline;
+}
+
+#print-area {
+    display: none;
 }
 
 /* htmlviewer */
@@ -2176,6 +2130,14 @@ textarea {
     min-width: 200px;
     min-height: 22.5px;
 }
+
+.editor_menu {
+    width: 850px;
+    height: 500px;
+    min-width: 200px;
+    min-height: 22.5px;
+}
+
 
 /* power_icon */
 .power_supply {
@@ -2543,6 +2505,73 @@ progress::-webkit-progress-value {
     background-color: gray;
 }
 
+#prompt {
+    display: none;
+    height: 100vh;
+    font-family: Courier;
+    color: white;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+#prompt .name {
+    font-size: small;
+    width: 50%;
+    background: black;
+    border: none;
+    color: white;
+}
+
+.focus {
+    font-family: Courier;
+}
+
+.focus2 {
+    font-family: Courier;
+}
+
+#prompt2 {
+    font-family: Courier;
+    color: white;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+
+.window_prompt_content2 {
+    background-color: black;
+    position: absolute;
+    top: 50px;
+}
+
+.command_input2 {
+    font-family: Courier;
+    position: relative;
+    font-size: small;
+    width: 100%;
+    border: none;
+    color: white;
+    background-color: black;
+    resize: none;
+    padding: 0px;
+}
+
+.input_container {
+    display: flex;
+    font-size: small;
+}
+
+.input_container>textarea::-webkit-scrollbar {
+    display: none;
+}
+
+
 .bom_menu {
     -webkit-user-select: none;
     -moz-user-select: none;
@@ -2749,6 +2778,7 @@ progress::-webkit-progress-value {
     z-index: 2;
     width: 12.5px;
     height: 12.5px;
+    z-index: 2;
 }
 
 .resizer.top-right {
@@ -2758,6 +2788,7 @@ progress::-webkit-progress-value {
     z-index: 2;
     width: 12.5px;
     height: 12.5px;
+    z-index: 2;
 }
 
 .resizer.bottom-left {
@@ -2767,6 +2798,7 @@ progress::-webkit-progress-value {
     z-index: 2;
     width: 12.5px;
     height: 12.5px;
+    z-index: 2;
 }
 
 .resizer.bottom-right {
@@ -2774,8 +2806,9 @@ progress::-webkit-progress-value {
     right: -5px;
     cursor: nwse-resize;
     z-index: 2;
-    width: 20px;
-    height: 20px;
+    width: 15px;
+    height: 15px;
+    z-index: 2;
 }
 
 .resizer.top {
@@ -2813,7 +2846,6 @@ progress::-webkit-progress-value {
     height: 100%;
     z-index: 1;
 }
-
 
 /* memory_game */
 
@@ -2902,10 +2934,8 @@ progress::-webkit-progress-value {
     height: 8px;
     background: #ddd;
     transition: opacity .2s;
-    border-top: 1.5px #eee solid;
-    border-left: 1.5px #eee solid;
-    border-bottom: 1.5px #333 solid;
-    border-right: 1.5px #333 solid;
+    border: 1.5px solid;
+    border-color: #eee #333 #333 #eee;
 }
 
 #opacitySlider::-webkit-slider-thumb {
@@ -2914,20 +2944,16 @@ progress::-webkit-progress-value {
     width: 20px;
     height: 20px;
     background: silver;
-    border-top: 1.5px #eee solid;
-    border-left: 1.5px #eee solid;
-    border-bottom: 1.5px #333 solid;
-    border-right: 1.5px #333 solid;
+    border: 1.5px solid;
+    border-color: #eee #333 #333 #eee;
 }
 
 #opacitySlider::-moz-range-thumb {
     width: 15px;
     height: 15px;
     background: silver;
-    border-top: 1.5px #eee solid;
-    border-left: 1.5px #eee solid;
-    border-bottom: 1.5px #333 solid;
-    border-right: 1.5px #333 solid;
+    border: 1.5px solid;
+    border-color: #eee #333 #333 #eee;
 }
 
 .content_center {
@@ -2935,4 +2961,39 @@ progress::-webkit-progress-value {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
+}
+
+.color_panel_parent {
+    z-index: 1;
+    position: absolute;
+    background: silver;
+    top: 90px;
+    z-index: 99999;
+}
+
+.color_panel_child {
+    display: flex;
+    gap: 10px;
+}
+
+.recent-colors {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin: 5px;
+}
+
+.color-box {
+    width: 25px;
+    height: 25px;
+    cursor: pointer;
+}
+
+.recent-colors-section {
+    display: flex;
+    flex-direction: column;
+}
+
+.img_border {
+    border: solid 2px black;
 }

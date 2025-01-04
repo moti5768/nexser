@@ -5,6 +5,17 @@ try {
     window.removeEventListener("testPassive", null, opts);
 } catch (e) { }
 
+document.addEventListener('wheel', function (e) {
+    if (e.ctrlKey) {
+        e.preventDefault();
+    }
+}, { passive: false });
+document.addEventListener('touchmove', function (e) {
+    if (e.touches.length > 1) {
+        e.preventDefault();
+    }
+}, { passive: false });
+
 const ua = navigator.userAgent.toLowerCase();
 if (ua.includes("mobile")) {
     // Mobile (iPhone、iPad「Chrome、Edge」、Android)
@@ -30,6 +41,7 @@ if (ua.includes("mobile")) {
     const guidebook_taskbar_menu = document.querySelector('.guidebook_taskbar_menu');
 
     const parent_start_menu = document.getElementById('start_menu');
+    const child_start_menu = document.querySelector('.child_start_menu');
     const taskbar = document.getElementById('taskbar');
     const toolbar = document.getElementById('toolbar');
     const background_text = document.getElementById('background_text');
@@ -97,6 +109,7 @@ if (ua.includes("mobile")) {
     const mydocument_menu = document.querySelector('.mydocument_menu');
     const restriction_menu = document.querySelector('.restriction_menu');
     const location_menu = document.querySelector('.location_menu');
+    const editor_menu = document.querySelector('.editor_menu');
 
     const notice_menu = document.querySelector('.notice_menu');
 
@@ -115,12 +128,9 @@ if (ua.includes("mobile")) {
     document.addEventListener('click', () => {
         if (localStorage.getItem('game_none')) {
             document.querySelectorAll('.game_window:not(.active)').forEach((test) => {
-                errortitle_text = "制限されているため、起動ができませんでした";
-                error_windows_create();
-                setTimeout(() => {
-                    test.classList.add('active')
-                    test.classList.remove('selectwindows')
-                });
+                error_windows_create("制限されているため、起動ができませんでした");
+                test.classList.add('active')
+                test.classList.remove('selectwindows')
             })
         }
     })
@@ -164,12 +174,12 @@ if (ua.includes("mobile")) {
             })
         }
 
-        var isClickInsideStartButton = document.querySelector('.start_button').contains(e.target);
+        var isClickInsideStartButton = document.getElementById('startbtn').contains(e.target);
         var isClickInsideParentStartMenu2 = document.querySelector('.parentstartmenu2').contains(e.target);
         if (!isClickInsideStartButton && !isClickInsideParentStartMenu2) {
             startmenu_close()
         }
-        var isClickInsideStartButton3 = Array.from(document.querySelectorAll('.windowtool_child ,.windowtool_parent')).some(button => button.contains(e.target));
+        var isClickInsideStartButton3 = Array.from(document.querySelectorAll('.windowtool_parent,.windowtool_child')).some(button => button.contains(e.target));
         if (!isClickInsideStartButton3) {
             document.querySelectorAll('.windowtool_child').forEach(button => {
                 button.style.display = "none";
@@ -183,11 +193,11 @@ if (ua.includes("mobile")) {
             document.querySelector('.battery_child').classList.remove('pressed');
         }
 
-        var isClickInsideStartButton5 = document.querySelector('.sit_button').contains(e.target);
+        var isClickInsideStartButton5 = document.querySelector('.lit_button').contains(e.target);
         var isClickInsideStartButton6 = document.querySelector('.screen_light_range_child').contains(e.target);
         if (!isClickInsideStartButton5 && !isClickInsideStartButton6) {
             document.querySelector('.screen_light_range_child').style.display = "none";
-            document.querySelector('.sit_button').classList.remove('pressed');
+            document.querySelector('.lit_button').classList.remove('pressed');
         }
 
         var isClickInsideStartButton7 = Array.from(document.querySelectorAll('.child_windows, .child')).some(button => button.contains(e.target));
@@ -206,30 +216,27 @@ if (ua.includes("mobile")) {
         }
 
     });
-    document.addEventListener('mousemove', (e) => {
-        if (isDrawing && desktop.style.display === "block") {
-            const currentX = e.clientX;
-            const currentY = e.clientY;
-            const width = currentX - startX;
-            const height = currentY - startY;
-            rectangle.style.width = `${Math.abs(width)}px`;
-            rectangle.style.height = `${Math.abs(height)}px`;
-            rectangle.style.left = `${Math.min(startX, currentX)}px`;
-            rectangle.style.top = `${Math.min(startY, currentY)}px`;
-        }
-    });
-    document.addEventListener('mouseup', () => {
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    function handleMouseMove(e) {
+        if (!isDrawing || desktop.style.display !== "block") return;
+        const currentX = e.clientX;
+        const currentY = e.clientY;
+        const width = currentX - startX;
+        const height = currentY - startY;
+        rectangle.style.setProperty('width', `${Math.abs(width)}px`);
+        rectangle.style.setProperty('height', `${Math.abs(height)}px`);
+        rectangle.style.setProperty('left', `${Math.min(startX, currentX)}px`);
+        rectangle.style.setProperty('top', `${Math.min(startY, currentY)}px`);
+    }
+    function handleMouseUp() {
         isDrawing = false;
-        rectangle_remove()
-    });
+        rectangle_remove();
+    }
 
     function lightchild() {
-        const screen_light_range_child = document.querySelector('.screen_light_range_child');
-        if (screen_light_range_child.style.display === "flex") {
-            screen_light_range_child.style.display = "none"
-        } else {
-            screen_light_range_child.style.display = "flex"
-        }
+        const screenLightRangeChild = document.querySelector('.screen_light_range_child');
+        screenLightRangeChild.style.display = (screenLightRangeChild.style.display === "flex") ? "none" : "flex";
     }
 
     const tasks = [
@@ -248,15 +255,21 @@ if (ua.includes("mobile")) {
         pageLoad,
         nexser_savedata_load
     ];
-    Promise.all(tasks.map(task => new Promise(resolve => setTimeout(() => resolve(task()), 50))))
+    Promise.all(tasks.map(task => new Promise(resolve => {
+        function runTask() {
+            resolve(task());
+        }
+        requestAnimationFrame(runTask);
+    })))
         .then(() => {
             console.log('すべてのタスクが完了しました');
         });
 
+
     function nexser_savedata_load() {
         const t = localStorage.getItem('taskbar_height');
         taskbar.style.height = t + "px";
-
+        const task = taskbar.clientHeight;
         if (localStorage.getItem('driver_color')) {
             document.querySelector('.installbutton_2').textContent = "uninstall";
         }
@@ -266,11 +279,6 @@ if (ua.includes("mobile")) {
         if (localStorage.getItem('backtext')) {
             document.querySelector('#background_text').textContent = localStorage.getItem('backtext_data');
             background_text.classList.add('block');
-        }
-        if (!localStorage.getItem('backtext')) {
-            background_text.classList.remove('block');
-        }
-        if (localStorage.getItem('backtext')) {
             document.querySelector('.backtext_mode').textContent = "ON";
         }
         if (localStorage.getItem('noteData')) {
@@ -283,30 +291,21 @@ if (ua.includes("mobile")) {
         if (localStorage.getItem('objectiveData') || localStorage.getItem('objectiveTitleData')) {
             objective_load()
         }
-        if (localStorage.getItem('startup_note')) {
-            document.querySelector('.startup_note').textContent = "ON"
-        }
-        if (localStorage.getItem('startup_computer')) {
-            document.querySelector('.startup_computer').textContent = "ON"
-        }
-        if (localStorage.getItem('startup_color')) {
-            document.querySelector('.startup_color').textContent = "ON"
-        }
-        if (localStorage.getItem('startup_screen')) {
-            document.querySelector('.startup_screen').textContent = "ON"
-        }
-        if (localStorage.getItem('startup_htmlviewer_edit')) {
-            document.querySelector('.startup_htmlviewer_edit').textContent = "ON"
-        }
-        if (localStorage.getItem('startup_guidebook')) {
-            document.querySelector('.startup_guidebook').textContent = "ON"
-        }
-        if (localStorage.getItem('startup_objective')) {
-            document.querySelector('.startup_objective').textContent = "ON"
-        }
-        if (localStorage.getItem('startup_calendar')) {
-            document.querySelector('.startup_calendar').textContent = "ON"
-        }
+        const startupElements = [
+            { key: 'startup_note', selector: '.startup_note' },
+            { key: 'startup_computer', selector: '.startup_computer' },
+            { key: 'startup_color', selector: '.startup_color' },
+            { key: 'startup_screen', selector: '.startup_screen' },
+            { key: 'startup_htmlviewer_edit', selector: '.startup_htmlviewer_edit' },
+            { key: 'startup_guidebook', selector: '.startup_guidebook' },
+            { key: 'startup_objective', selector: '.startup_objective' },
+            { key: 'startup_calendar', selector: '.startup_calendar' }
+        ];
+        startupElements.forEach(({ key, selector }) => {
+            if (localStorage.getItem(key)) {
+                document.querySelector(selector).textContent = "ON";
+            }
+        });
         if (localStorage.getItem('prompt_data2')) {
             document.querySelector('.startup_speed').textContent = "HIGH"
         }
@@ -322,57 +321,18 @@ if (ua.includes("mobile")) {
         } else {
             document.querySelector('.desktop_version_text').style.display = "none";
         }
-        if (localStorage.getItem('startup_1')) {
-            document.querySelector('.startup_1').textContent = "set!"
-        } else {
-            document.querySelector('.startup_1').textContent = "no set"
-        }
-        if (localStorage.getItem('startup_2')) {
-            document.querySelector('.startup_2').textContent = "set!"
-        } else {
-            document.querySelector('.startup_2').textContent = "no set"
-        }
-        if (localStorage.getItem('startup_3')) {
-            document.querySelector('.startup_3').textContent = "set!"
-        } else {
-            document.querySelector('.startup_3').textContent = "no set"
-        }
-        if (localStorage.getItem('startup_4')) {
-            document.querySelector('.startup_4').textContent = "set!"
-        } else {
-            document.querySelector('.startup_4').textContent = "no set"
-        }
-        if (localStorage.getItem('startup_5')) {
-            document.querySelector('.startup_5').textContent = "set!"
-        } else {
-            document.querySelector('.startup_5').textContent = "no set"
-        }
 
-        if (localStorage.getItem('shutdown_1')) {
-            document.querySelector('.shutdown_1').textContent = "set!"
-        } else {
-            document.querySelector('.shutdown_1').textContent = "no set"
-        }
-        if (localStorage.getItem('shutdown_2')) {
-            document.querySelector('.shutdown_2').textContent = "set!"
-        } else {
-            document.querySelector('.shutdown_2').textContent = "no set"
-        }
-        if (localStorage.getItem('shutdown_3')) {
-            document.querySelector('.shutdown_3').textContent = "set!"
-        } else {
-            document.querySelector('.shutdown_3').textContent = "no set"
-        }
-        if (localStorage.getItem('shutdown_4')) {
-            document.querySelector('.shutdown_4').textContent = "set!"
-        } else {
-            document.querySelector('.shutdown_4').textContent = "no set"
-        }
-        if (localStorage.getItem('shutdown_5')) {
-            document.querySelector('.shutdown_5').textContent = "set!"
-        } else {
-            document.querySelector('.shutdown_5').textContent = "no set"
-        }
+        const startupKeys = ['startup_1', 'startup_2', 'startup_3', 'startup_4', 'startup_5'];
+        startupKeys.forEach(key => {
+            const element = document.querySelector(`.${key}`);
+            element.textContent = localStorage.getItem(key) ? 'set!' : 'no set';
+        });
+
+        const shutdownElements = ['shutdown_1', 'shutdown_2', 'shutdown_3', 'shutdown_4', 'shutdown_5'];
+        shutdownElements.forEach(element => {
+            const isSet = localStorage.getItem(`${element}`);
+            document.querySelector(`.${element}`).textContent = isSet ? "set!" : "no set";
+        });
 
         if (localStorage.getItem('note_text_bold')) {
             document.querySelector('.note_area').style.fontWeight = "bold";
@@ -392,6 +352,9 @@ if (ua.includes("mobile")) {
         }
         if (localStorage.getItem('window_borderblack')) {
             document.querySelector('.windowmode').textContent = "border black"
+        }
+        if (localStorage.getItem('window_afterimage_false')) {
+            document.querySelector('.windowafter').textContent = "OFF"
         }
 
         if (localStorage.getItem('font_default')) {
@@ -431,14 +394,18 @@ if (ua.includes("mobile")) {
         }
         if (localStorage.getItem('taskbar_zindex_0')) {
             taskbar.style.zIndex = "0";
-            document.querySelector('.taskbar_zindex_0').textContent = "on"
+            document.querySelector('.taskbar_zindex_0').textContent = "on";
+        }
+        if (localStorage.getItem('taskbar_leftbtn')) {
+            document.querySelector('.taskbar_leftbtn').textContent = "on";
+            document.querySelector('.first_taskbar_buttons').style.display = "none";
         }
 
         if (localStorage.getItem('taskbar_position_button')) {
             document.querySelector('.taskbar_position_button').textContent = "bottom"
-            document.getElementById('taskbar').style.top = "0px"
-            document.querySelector('.child_start_menu').style.top = "40px"
-            document.querySelector('.child_start_menu').style.bottom = "auto"
+            taskbar.style.top = "0px"
+            child_start_menu.style.top = "40px"
+            child_start_menu.style.bottom = "auto"
             document.querySelector('.battery_menu').style.top = "35px"
             document.querySelector('.battery_menu').style.bottom = "auto"
         }
@@ -462,18 +429,16 @@ if (ua.includes("mobile")) {
             toolbar.style.bottom = "0px";
             document.querySelector('.desktop_version_text').style.bottom = "0px"
         } else if (localStorage.getItem('taskbar_position_button')) {
-            const task = document.getElementById('taskbar').clientHeight;
             toolbar.style.top = task + "px";
             toolbar.style.top = t + "px";
-            document.querySelector('.child_start_menu').style.top = task + "px"
-            document.querySelector('.child_start_menu').style.top = t + "px"
+            child_start_menu.style.top = task + "px"
+            child_start_menu.style.top = t + "px"
         } else {
-            const task = document.getElementById('taskbar').clientHeight;
             toolbar.style.bottom = task + "px";
             toolbar.style.bottom = t + "px";
             document.querySelector('.desktop_version_text').style.bottom = task + "px";
-            document.querySelector('.child_start_menu').style.bottom = task + "px"
-            document.querySelector('.child_start_menu').style.bottom = t + "px"
+            child_start_menu.style.bottom = task + "px"
+            child_start_menu.style.bottom = t + "px"
         }
 
         if (localStorage.getItem('toolbar_on')) {
@@ -541,7 +506,7 @@ if (ua.includes("mobile")) {
         }
 
         if (localStorage.getItem('taskbar_autohide')) {
-            document.getElementById('taskbar').style.bottom = "-35px"
+            taskbar.style.bottom = "-35px"
         }
 
         if (localStorage.getItem('taskbar_height')) {
@@ -552,36 +517,23 @@ if (ua.includes("mobile")) {
 
         if (localStorage.getItem('taskbar_height') && (localStorage.getItem('taskbar_autohide'))) {
             const t2 = t - 5;
-            document.getElementById('taskbar').style.bottom = "-" + t2 + "px";
+            taskbar.style.bottom = "-" + t2 + "px";
         }
 
-        if (localStorage.getItem('wallpaper_95')) {
-            document.querySelector('.nexser_backgroundimage_1').style.display = "block";
-            minidesk_backgroundresize1();
-            background_img.style.width = "100%"
-            background_img.style.height = "100%"
+        function setBackgroundImage(key, className, resizeFunction) {
+            if (localStorage.getItem(key)) {
+                document.querySelector(className).style.display = "block";
+                resizeFunction();
+                background_img.style.width = "100%";
+                background_img.style.height = "100%";
+            }
         }
-        if (localStorage.getItem('wallpaper_95_2')) {
-            document.querySelector('.nexser_backgroundimage_2').style.display = "block";
-            minidesk_backgroundresize2();
-            background_img.style.width = "100%"
-            background_img.style.height = "100%"
-        }
-        if (localStorage.getItem('wallpaper_xp')) {
-            document.querySelector('.nexser_backgroundimage_3').style.display = "block";
-            minidesk_backgroundresize3();
-            background_img.style.width = "100%"
-            background_img.style.height = "100%"
-        }
-        if (localStorage.getItem('wallpaper_space')) {
-            document.querySelector('.nexser_backgroundimage_4').style.display = "block";
-            minidesk_backgroundresize4();
-            background_img.style.width = "100%"
-            background_img.style.height = "100%"
-        }
+        setBackgroundImage('wallpaper_95', '.nexser_backgroundimage_1', minidesk_backgroundresize1);
+        setBackgroundImage('wallpaper_95_2', '.nexser_backgroundimage_2', minidesk_backgroundresize2);
+        setBackgroundImage('wallpaper_xp', '.nexser_backgroundimage_3', minidesk_backgroundresize3);
+        setBackgroundImage('wallpaper_space', '.nexser_backgroundimage_4', minidesk_backgroundresize4);
+        editorContent_load();
     }
-
-
 
     function taskgroup_load() {
         drawClock();
@@ -615,7 +567,7 @@ if (ua.includes("mobile")) {
             nexser.style.display = "block";
             desktop.style.display = "none";
             document.querySelector('.pass_signin_menu').classList.remove('active')
-            document.querySelector('#pass_form').focus();
+            document.getElementById('pass_form').focus();
         } else if (!localStorage.getItem('start_nexser') && localStorage.getItem('prompt_data')) {
             start_check()
         } else if (localStorage.getItem('prompt_data') && localStorage.getItem('start_nexser')) {
@@ -662,18 +614,16 @@ if (ua.includes("mobile")) {
     function startmenu_close() {
         if (parent_start_menu.style.display === "block") {
             parent_start_menu.style.display = "none";
-            document.querySelector('.start_button').classList.remove('pressed');
+            document.getElementById('startbtn').classList.remove('pressed');
         }
     }
     document.getElementById('startbtn').addEventListener('mousedown', function () {
-        setTimeout(() => {
-            if (parent_start_menu.style.display === "block") {
-                startmenu_close()
-            } else {
-                parent_start_menu.style.display = "block";
-                document.querySelector('.start_button').classList.add('pressed');
-            }
-        }, 0);
+        if (parent_start_menu.style.display === "block") {
+            startmenu_close()
+        } else {
+            parent_start_menu.style.display = "block";
+            document.getElementById('startbtn').classList.add('pressed');
+        }
         fileborder_reset()
     })
 
@@ -694,16 +644,16 @@ if (ua.includes("mobile")) {
             button_1.classList.add('listener-added');
         }
     }
-    const observer_btn1 = new MutationObserver((mutations_1) => {
-        mutations_1.forEach((mutation_1) => {
-            if (mutation_1.type === 'childList') {
-                mutation_1.addedNodes.forEach((node_1) => {
-                    if (node_1.nodeType === 1 && node_1.classList.contains('button2')) {
-                        addButtonListeners(node_1);
+    const observer_btn1 = new MutationObserver((mutations) => {
+        for (const mutation of mutations) {
+            if (mutation.type === 'childList') {
+                for (const node of mutation.addedNodes) {
+                    if (node.nodeType === Node.ELEMENT_NODE && node.classList.contains('button2')) {
+                        addButtonListeners(node);
                     }
-                });
+                }
             }
-        });
+        }
     });
     observer_btn1.observe(document.body, { childList: true, subtree: true });
 
@@ -714,18 +664,18 @@ if (ua.includes("mobile")) {
             button_2.classList.add('listener-added');
         }
     }
-    const observer_btn2 = new MutationObserver((mutations_2) => {
-        mutations_2.forEach((mutation_2) => {
-            if (mutation_2.type === 'childList') {
-                mutation_2.addedNodes.forEach((node_2) => {
-                    if (node_2.nodeType === 1 && node_2.classList.contains('button')) {
-                        addButtonListeners2(node_2);
+    const observer_btn2 = new MutationObserver((mutations) => {
+        for (const mutation of mutations) {
+            if (mutation.type === 'childList') {
+                for (const node of mutation.addedNodes) {
+                    if (node.nodeType === Node.ELEMENT_NODE && node.classList.contains('button')) {
+                        addButtonListeners2(node);
                     }
-                });
+                }
             }
-        });
+        }
     });
-    observer_btn2.observe(document.body, { childList: true, subtree: true });
+    observer_btn2.observe(document.body, { childList: true, subtree: true })
 
 
     document.querySelector('.deskprompt').addEventListener('click', function () {
@@ -749,15 +699,12 @@ if (ua.includes("mobile")) {
         welcome_menu.classList.add('active');
         welcome_menu.classList.remove('selectwindows');
         sound_stop();
-        document.querySelector('.prompt_error_text').textContent = "";
         nex.style.cursor = 'crosshair';
         setTimeout(function () {
             screen_prompt.style.display = "none";
-            setTimeout(function () {
-                taskbar_none();
-                nexser_program.style.display = "block";
-            }, 50);
-        }, 50);
+            taskbar_none();
+            nexser_program.style.display = "block";
+        }, 100);
     }
 
     function nexser_program_close() {
@@ -782,14 +729,13 @@ if (ua.includes("mobile")) {
         }
 
         setTimeout(() => {
+            const task = taskbar.clientHeight;
             if (localStorage.getItem('taskbar_position_button')) {
-                const task = document.getElementById('taskbar').clientHeight;
                 toolbar.style.top = task + "px";
-                document.querySelector('.child_start_menu').style.top = task + "px"
+                child_start_menu.style.top = task + "px"
             } else {
-                const task = document.getElementById('taskbar').clientHeight;
                 toolbar.style.bottom = task + "px";
-                document.querySelector('.child_start_menu').style.bottom = task + "px"
+                child_start_menu.style.bottom = task + "px"
             }
         }, 500);
     }
@@ -864,8 +810,7 @@ if (ua.includes("mobile")) {
 
     function pass_submit() {
         if (document.querySelector('.password').value === "") {
-            errortitle_text = "パスワードが入力されていません!";
-            error_windows_create();
+            error_windows_create("パスワードが入力されていません!");
         } else {
             const pass = document.querySelector('.password').value;
             const password_lock = (String(pass)
@@ -911,19 +856,20 @@ if (ua.includes("mobile")) {
             .replaceAll(".m]n.", "6").replaceAll(".o-p.", "7").replaceAll(".q>r.", "8")
             .replaceAll(".s<t.", "9")
         );
-        if (password_unlock2 === document.querySelector('#pass_form').value) {
+        if (password_unlock2 === document.getElementById('pass_form').value) {
             document.querySelector('.pass_signin_menu').classList.add('active')
             document.querySelector('.pass_no').textContent = "";
             start_check();
             localStorage.setItem('login', true);
-            document.querySelector('#pass_form').value = "";
+            document.getElementById('pass_form').value = "";
         } else {
             document.querySelector('.pass_no').textContent = "パスワードが違います!";
-            document.querySelector('#pass_form').focus();
+            document.getElementById('pass_form').focus();
         }
     }
 
     function nexser_start() {
+        console.log("test text")
         load_videourl();
         document.querySelector('.nexser_boot_menu').style.display = "none";
         localStorage.setItem('prompt_data', true);
@@ -982,11 +928,9 @@ if (ua.includes("mobile")) {
             startmenu_close()
             setTimeout(() => {
                 if (sessionStorage.getItem('start_camera')) {
-                    errortitle_text = "カメラが実行されているため、ログオフできません!";
-                    error_windows_create();
+                    error_windows_create("カメラが実行されているため、ログオフできません!");
                 } else if (localStorage.getItem('no_shutdown')) {
-                    errortitle_text = "welcomeウィンドウが起動するまでログオフできません!";
-                    error_windows_create();
+                    error_windows_create("welcomeウィンドウが起動するまでログオフできません!");
                 } else if (gets === gets2 && gets3 === 0) {
                     sound_stop();
                     shutdown_sound();
@@ -1017,7 +961,7 @@ if (ua.includes("mobile")) {
                                 button.classList.remove('pressed');
                             });
                             document.getElementsByClassName('name')[0].value = "";
-                            document.querySelector('.prompt_error_text').textContent = "";
+
                             msg.innerText = "";
                             prompt_text.style.color = "";
                             nexser.style.display = "none";
@@ -1046,11 +990,9 @@ if (ua.includes("mobile")) {
             startmenu_close()
             setTimeout(() => {
                 if (sessionStorage.getItem('start_camera')) {
-                    errortitle_text = "カメラが実行されているため、再起動はできません!";
-                    error_windows_create();
+                    error_windows_create("カメラが実行されているため、再起動はできません!");
                 } else if (localStorage.getItem('no_shutdown')) {
-                    errortitle_text = "welcomeウィンドウが起動するまで再起動はできません!";
-                    error_windows_create();
+                    error_windows_create("welcomeウィンドウが起動するまで再起動はできません!");
                 } else if (gets === gets2 && gets3 === 0) {
                     sound_stop();
                     shutdown_sound();
@@ -1075,7 +1017,7 @@ if (ua.includes("mobile")) {
                                 button.classList.remove('pressed');
                             });
                             document.getElementsByClassName('name')[0].value = "";
-                            document.querySelector('.prompt_error_text').textContent = "";
+
                             msg.innerText = "";
                             prompt_text.style.color = "";
                             nexser.style.display = "none";
@@ -1085,21 +1027,20 @@ if (ua.includes("mobile")) {
                             document.querySelector('.restart_text').style.display = "none";
                         }, 2500);
                         setTimeout(() => {
-                            nexser_start()
+                            nexser_start();
                         }, 3500);
                     }, 1500);
                 } else {
-                    errortitle_text = "全てのウィンドウが閉じてないため、再起動できません!";
-                    error_windows_create();
+                    error_windows_create("全てのウィンドウが閉じてないため、再起動できません!");
                 }
             }, 100);
         })
     })
 
     function start_check() {
-        document.getElementsByClassName('pass_signin_menu')[0].classList.remove('selectwindows')
+        document.getElementsByClassName('pass_signin_menu')[0].classList.remove('selectwindows');
         if (localStorage.getItem('login_welcome') && localStorage.getItem('password')) {
-            localStorage.setItem('no_shutdown', true)
+            localStorage.setItem('no_shutdown', true);
         };
         const t = localStorage.getItem('taskbar_height');
         document.getElementById('files').style.display = "none";
@@ -1112,7 +1053,7 @@ if (ua.includes("mobile")) {
             nexser.style.display = "block";
             desktop.style.display = "none";
             welcome_menu.classList.remove('active');
-            welcome_animation()
+            welcome_animation();
         } else {
             startup_sound();
             screen_prompt.style.display = "none";
@@ -1138,15 +1079,11 @@ if (ua.includes("mobile")) {
                 }
                 if (localStorage.getItem('taskbar_position_button')) {
                     taskbar.style.display = "block";
-                    const task = document.getElementById('taskbar').clientHeight;
                     toolbar.style.bottom = "";
                     toolbar.style.left = "";
                     toolbar.style.top = "40px";
                     toolbar.style.top = t + "px";
                     document.querySelector('.files_inline').style.top = t + "px"
-
-                    document.querySelector('.child_start_menu').style.top = task + "px"
-
                     if (localStorage.getItem('data_taskbar_none')) {
                         taskbar.style.display = "none";
                         toolbar.style.top = "0px";
@@ -1155,16 +1092,17 @@ if (ua.includes("mobile")) {
                         taskbar.style.display = "block";
                         toolbar.style.top = "40px";
                         toolbar.style.top = t + "px";
+                        const task = taskbar.clientHeight;
+                        child_start_menu.style.top = task + "px"
                     }
-
                 } else {
                     taskbar.style.display = "block";
-                    const task = document.getElementById('taskbar').clientHeight;
                     toolbar.style.top = "";
                     toolbar.style.left = "";
                     toolbar.style.bottom = "40px";
                     toolbar.style.bottom = t + "px";
-                    document.querySelector('.child_start_menu').style.bottom = task + "px"
+                    const task = taskbar.clientHeight;
+                    child_start_menu.style.bottom = task + "px"
                     if (localStorage.getItem('data_taskbar_none')) {
                         taskbar.style.display = "none";
                         toolbar.style.bottom = "0px";
@@ -1175,7 +1113,6 @@ if (ua.includes("mobile")) {
                         toolbar.style.bottom = t + "px";
                         document.querySelector('.desktop_version_text').style.bottom = task + "px"
                     }
-
                 }
                 document.getElementById('files').style.display = "block";
                 setTimeout(() => {
@@ -1196,17 +1133,20 @@ if (ua.includes("mobile")) {
             desktop.style.display = "block";
             localmemory_size()
             document.getElementById('files').style.display = "block";
-            document.getElementById('taskbar').style.display = "block";
-            const task = document.getElementById('taskbar').clientHeight;
+            taskbar.style.display = "block";
+            const task = taskbar.clientHeight;
             toolbar.style.top = "";
             toolbar.style.left = "";
             toolbar.style.bottom = "40px";
-            document.querySelector('.child_start_menu').style.bottom = task + "px";
+            child_start_menu.style.bottom = task + "px";
             document.querySelector('.desktop_version_text').style.bottom = task + "px";
         }, 500);
         setTimeout(() => {
-            setColor()
+            setColor();
             nex.style.cursor = '';
+            if (!localStorage.getItem('editorContent')) {
+                localStorage.setItem('editorContent', "PGJyPg==")
+            }
         }, 1500);
         setTimeout(() => {
             startup_window_open()
@@ -1225,14 +1165,12 @@ if (ua.includes("mobile")) {
         sound(6);
         welcome_menu.style.zIndex = largestZIndex++;
         const startNexser = document.getElementsByClassName('start_nexser')[0];
-        const startNexserClose = document.getElementsByClassName('startnexser_close')[0];
         const welcomeText1 = document.getElementsByClassName('welcome_text1')[0];
         const welcomeUnderline = document.getElementsByClassName('welcome_underline')[0];
         const welcomeText2 = document.getElementsByClassName('welcome_text2')[0];
         const welcomeIcons = document.getElementsByClassName('welcome_icons')[0];
         nex.style.cursor = 'none';
         startNexser.style.display = "none";
-        startNexserClose.style.display = "none";
         welcomeText1.style.position = "absolute";
         welcomeText1.style.fontSize = "80px";
         welcomeText1.style.marginTop = "125px";
@@ -1257,7 +1195,7 @@ if (ua.includes("mobile")) {
                 if (!localStorage.getItem('start_nexser')) {
                     startNexser.style.display = "block";
                 } else {
-                    startNexserClose.style.display = "block";
+                    document.getElementsByClassName('startnexser_close')[0].classList.remove('pointer_none')
                 }
             }, 300);
         }, 1000);
@@ -1300,14 +1238,11 @@ if (ua.includes("mobile")) {
             window_reset();
             document.querySelector('.pass_signin_menu').classList.remove('active')
             sound_stop();
-            document.querySelector('#pass_form').focus();
+            document.getElementById('pass_form').focus();
         } else if (localStorage.getItem('password') && gets != gets2) {
-            errortitle_text = "全てのウィンドウを終了してください!";
-            error_windows_create();
+            error_windows_create("全てのウィンドウを終了してください!");
         } else {
-
-            errortitle_text = "パスワードを登録していないため、サインアウトができません!";
-            error_windows_create();
+            error_windows_create("パスワードを登録していないため、サインアウトができません!");
         }
     }
 
@@ -1553,16 +1488,13 @@ if (ua.includes("mobile")) {
             notearea.style.height = "";
             notearea.style.width = "";
             windowposition_reset();
-            allwindow.classList.remove('leftwindow');
-            allwindow.classList.remove('rightwindow');
+            allwindow.classList.remove('leftwindow', 'rightwindow', 'child_windows_invisible');
             allwindow.style.transition = "";
             document.querySelector('.bigscreen_button').style.visibility = "visible";
             document.querySelector('.minscreen_button').style.visibility = "visible";
             document.querySelector('.minimization_button').style.visibility = "visible";
-            allwindow.classList.remove('minimization');
-            allwindow.classList.remove('selectwindows')
+            allwindow.classList.remove('minimization', 'selectwindows');
         });
-
         bom_reset();
         timerstop();
         timerreset();
@@ -1575,24 +1507,20 @@ if (ua.includes("mobile")) {
         resetGame();
         nexser_prompt_reset();
         document.querySelector('.password').value = "";
-        document.querySelector('#pass_form').value = "";
-
+        document.getElementById('pass_form').value = "";
     }
+
     function window_none() {
         document.querySelectorAll('.task_buttons').forEach(function (task_buttons) {
             task_buttons.remove()
         })
-
         document.querySelectorAll('.child_windows').forEach(function (allwindow_none) {
             allwindow_none.classList.add('active');
-            allwindow_none.classList.remove('big');
-            allwindow_none.classList.remove('rightwindow');
-            allwindow_none.classList.remove('leftwindow');
-            allwindow_none.classList.remove('selectwindows');
+            allwindow_none.classList.remove('big', 'rightwindow', 'leftwindow', 'selectwindows');
             allwindow_none.style.right = "";
-            windowposition_reset()
             allwindow_none.style.transition = "";
         });
+        windowposition_reset();
         const notearea = document.querySelector('.note_area');
         notearea.style.height = "";
         notearea.style.width = "";
@@ -1609,6 +1537,15 @@ if (ua.includes("mobile")) {
             title.classList.add('text_center')
             localStorage.setItem('title_center', true)
         });
+    }
+    function title_center_reset() {
+        titles.forEach(function (title) {
+            title.classList.remove('text_center')
+            localStorage.removeItem('title_center', true)
+        });
+    }
+    if (localStorage.getItem('title_center')) {
+        title_center()
     }
 
     Array.from(document.getElementsByClassName('nexser_title_text')).forEach((nexser_title_text) => {
@@ -1651,15 +1588,15 @@ if (ua.includes("mobile")) {
     function taskbar_autohide() {
         const t = localStorage.getItem('taskbar_height');
         localStorage.setItem('taskbar_autohide', true);
-        document.getElementById('taskbar').style.bottom = "-35px";
+        taskbar.style.bottom = "-35px";
         if (localStorage.getItem('taskbar_height') && (localStorage.getItem('taskbar_autohide'))) {
             const t2 = t - 5;
-            document.getElementById('taskbar').style.bottom = "-" + t2 + "px";
+            taskbar.style.bottom = "-" + t2 + "px";
         }
     }
     function taskbar_reset() {
         localStorage.removeItem('taskbar_autohide');
-        document.getElementById('taskbar').style.bottom = "";
+        taskbar.style.bottom = "";
     }
 
     document.querySelectorAll('#taskbar').forEach(function (taskbar) {
@@ -1667,9 +1604,9 @@ if (ua.includes("mobile")) {
             if (localStorage.getItem('taskbar_height') && (localStorage.getItem('taskbar_autohide'))) {
                 const t = localStorage.getItem('taskbar_height');
                 const t2 = t - 5;
-                document.getElementById('taskbar').style.bottom = "-" + t2 + "px";
+                taskbar.style.bottom = "-" + t2 + "px";
             } else if (!localStorage.getItem('taskbar_height') && localStorage.getItem('taskbar_autohide')) {
-                document.getElementById('taskbar').style.bottom = "-35px"
+                taskbar.style.bottom = "-35px"
             }
         });
         taskbar.addEventListener('mouseover', function () {
@@ -1682,7 +1619,7 @@ if (ua.includes("mobile")) {
             if (localStorage.getItem('taskbar_height') && (localStorage.getItem('taskbar_autohide'))) {
                 const t = localStorage.getItem('taskbar_height');
                 const t2 = t - 5;
-                document.getElementById('taskbar').style.bottom = "-" + t2 + "px";
+                taskbar.style.bottom = "-" + t2 + "px";
             } else if (localStorage.getItem('taskbar_autohide')) {
                 taskbar.style.bottom = "-35px"
             }
@@ -1747,7 +1684,7 @@ if (ua.includes("mobile")) {
 
     function taskbar_active() {
         localStorage.removeItem('data_taskbar_none');
-        const task = document.getElementById('taskbar').clientHeight;
+        const task = taskbar.clientHeight;
         const t = localStorage.getItem('taskbar_height');
         taskbar.style.height = t + "px";
 
@@ -1828,7 +1765,6 @@ if (ua.includes("mobile")) {
     function pageLoad() {
         let textbox = document.querySelector('.name');
         textbox.addEventListener('keydown', enterKeyPress);
-
         function enterKeyPress(event) {
             if (event.key === 'Enter') {
                 butotnClick()
@@ -1889,7 +1825,7 @@ if (ua.includes("mobile")) {
             document.getElementsByClassName('focus2')[0].focus()
             document.querySelector('.focus2').style.height = "";
             prompt2_text_clear();
-        }, 10);
+        }, 0);
     }
 
     function prompt_text_check() {
@@ -1897,47 +1833,40 @@ if (ua.includes("mobile")) {
         const prompt_text_value2 = prompt_text_value.value;
         switch (prompt_text_value2) {
             case '':
-                document.querySelector('.prompt_error_text').textContent = "";
+
                 msg.innerText = "";
                 prompt_text.style.color = "";
                 break;
             case 'nexser/open':
                 prompt_text.style.color = "yellow";
                 document.getElementsByClassName('name')[0].value = "nexser boot...";
-                document.querySelector('.prompt_error_text').textContent = "success";
                 nexser_boot_check();
                 break;
             case 'nexser/program':
                 localStorage.setItem('prompt_data3', true);
                 prompt_text.style.color = "";
-                document.querySelector('.prompt_error_text').textContent = "success";
                 nexser_program_open()
                 break;
 
             case 'nexser/code/html':
-                document.querySelector('.prompt_error_text').textContent = "connect";
                 prompt_text.style.color = "";
                 document.querySelector('#code_html').style.display = "block";
                 document.querySelector('#code_script').style.display = "none";
                 document.querySelector('#code_script2').style.display = "none";
                 break;
             case 'nexser/code/script':
-                document.querySelector('.prompt_error_text').textContent = "connect";
                 prompt_text.style.color = "";
                 document.querySelector('#code_html').style.display = "none";
                 document.querySelector('#code_script').style.display = "block";
                 document.querySelector('#code_script2').style.display = "none";
                 break;
             case 'nexser/code/script2':
-                document.querySelector('.prompt_error_text').textContent = "connect";
                 prompt_text.style.color = "";
                 document.querySelector('#code_html').style.display = "none";
                 document.querySelector('#code_script').style.display = "none";
                 document.querySelector('#code_script2').style.display = "block";
                 break;
-
             default:
-                document.querySelector('.prompt_error_text').textContent = "コマンドが違います!";
                 msg.innerText = "";
                 prompt_text.style.color = "red";
                 break;
@@ -1987,16 +1916,23 @@ if (ua.includes("mobile")) {
 
         switch (prompt_text_value4) {
 
-            // commands
             case command_1 + a:
-                document.querySelector('#nexser').style.background = a;
-                localStorage.setItem('BKCOLOR', a);
-                wallpaper_allremove()
+                if (localStorage.getItem('driver_color')) {
+                    document.querySelector('#nexser').style.background = a;
+                    localStorage.setItem('BKCOLOR', a);
+                    wallpaper_allremove()
+                } else {
+                    error_windows_create("カラードライバーがインストールされていません!")
+                }
                 break;
 
             case command_2 + b:
-                document.querySelector('body').style.color = b;
-                localStorage.setItem('COLOR', b);
+                if (localStorage.getItem('driver_color')) {
+                    document.querySelector('body').style.color = b;
+                    localStorage.setItem('COLOR', b);
+                } else {
+                    error_windows_create("カラードライバーがインストールされていません!")
+                }
                 break;
 
             case command_3 + c:
@@ -2040,13 +1976,11 @@ if (ua.includes("mobile")) {
                     .replaceAll("19|", "S").replaceAll("20|", "T").replaceAll("21|", "U").replaceAll("22|", "V").replaceAll("23|", "W").replaceAll("24|", "X")
                     .replaceAll("25|", "Y").replaceAll("26|", "Z")
 
-
                     .replaceAll("01^", "a").replaceAll("02^", "b").replaceAll("03^", "c").replaceAll("04^", "d").replaceAll("05^", "e").replaceAll("06^", "f")
                     .replaceAll("07^", "g").replaceAll("08^", "h").replaceAll("09^", "i").replaceAll("10^", "j").replaceAll("11^", "k").replaceAll("12^", "l")
                     .replaceAll("13^", "m").replaceAll("14^", "n").replaceAll("15^", "o").replaceAll("16^", "p").replaceAll("17^", "q").replaceAll("18^", "r")
                     .replaceAll("19^", "s").replaceAll("20^", "t").replaceAll("21^", "u").replaceAll("22^", "v").replaceAll("23^", "w").replaceAll("24^", "x")
                     .replaceAll("25^", "y").replaceAll("26^", "z")
-
                 );
 
                 document.querySelector('#shell').textContent = (String(newStr).replace(/[,]/gi, ""));
@@ -2070,7 +2004,6 @@ if (ua.includes("mobile")) {
                     .replaceAll("{class}", "class=")
                     .replaceAll("{id}", "id=")
 
-
                     .replaceAll("{sty}", "<style>").replaceAll("{/sty}", "</style>")
                     .replaceAll("{bgc}", "background-color")
                     .replaceAll("{bk}", "background")
@@ -2084,7 +2017,6 @@ if (ua.includes("mobile")) {
                     .replaceAll("{ftsze}", "font-size")
                     .replaceAll("{ftwigt}", "font-weight")
                     .replaceAll("{brdr}", "border")
-
 
                     .replaceAll("{s}", "<script>").replaceAll("{/s}", "</script>")
 
@@ -2102,7 +2034,6 @@ if (ua.includes("mobile")) {
                     .replaceAll("{onclk}", "onclick")
                     .replaceAll("{func}", "function")
 
-
                 );
                 document.querySelector('#shell').textContent = (String(newStr2));
 
@@ -2117,7 +2048,6 @@ if (ua.includes("mobile")) {
                     }, 500);
                 }, 100);
                 break;
-
 
 
             case command_11 + k:
@@ -2193,12 +2123,10 @@ if (ua.includes("mobile")) {
                 break;
 
             case 'local/memory':
+                localmemory_size();
                 setTimeout(() => {
-                    localmemory_size();
-                    setTimeout(() => {
-                        toggleWindow(localstorage_details_menu)
-                    }, 500);
-                }, 0);
+                    toggleWindow(localstorage_details_menu)
+                }, 500);
                 break;
 
             case 'help':
@@ -2229,8 +2157,7 @@ if (ua.includes("mobile")) {
 
             case 'allwindow/close':
                 if (localStorage.getItem('data_taskbar_none')) {
-                    errortitle_text = "タスクバーが非表示のため、ウィンドウが閉じれません!";
-                    error_windows_create();
+                    error_windows_create("タスクバーが非表示のため、ウィンドウが閉じれません!");
                 } else {
                     window_none()
                 }
@@ -2241,12 +2168,14 @@ if (ua.includes("mobile")) {
                 cpubench_open();
                 break;
 
-            case 'allwindow/min':
-                allwindow_min();
+            case 'window/afterimage/false':
+                localStorage.setItem('window_afterimage_false', true);
+                document.querySelector('.windowafter').textContent = "OFF";
                 break;
 
-            case 'allwindow/big':
-                allwindow_big();
+            case 'window/afterimage/true':
+                localStorage.removeItem('window_afterimage_false');
+                document.querySelector('.windowafter').textContent = "ON";
                 break;
 
             case 'cpu/bench':
@@ -2291,6 +2220,14 @@ if (ua.includes("mobile")) {
             case 'startmenu(console(error))=>false':
                 localStorage.removeItem('startmenu_console');
                 document.querySelector('.console_list').style.display = "none";
+                break;
+
+            case 'title/center':
+                title_center()
+                break;
+
+            case 'title/center/reset':
+                title_center_reset()
                 break;
 
             case 'reset':
@@ -2439,8 +2376,7 @@ if (ua.includes("mobile")) {
                     bigscreenbutton.style.top = "0";
                 }
                 window_animation(bigscreenbutton)
-                bigscreenbutton.classList.remove('rightwindow');
-                bigscreenbutton.classList.remove('leftwindow');
+                bigscreenbutton.classList.remove('rightwindow', 'leftwindow');
                 bigscreenbutton.classList.add('big');
             });
             button.dataset.listenerAdded = true;
@@ -2472,9 +2408,7 @@ if (ua.includes("mobile")) {
         if (!button.dataset.listenerAdded) {
             button.addEventListener('click', function () {
                 const minscreenbutton = button.closest('.child_windows');
-                minscreenbutton.classList.remove('rightwindow');
-                minscreenbutton.classList.remove('leftwindow');
-                minscreenbutton.classList.remove('big');
+                minscreenbutton.classList.remove('rightwindow', 'leftwindow', 'big');
                 const elements = document.querySelector('.navy');
                 const elements2 = elements.closest('.child_windows');
                 elements2.style.width = elements2.dataset.originalWidth;
@@ -2519,15 +2453,16 @@ if (ua.includes("mobile")) {
         localStorage.removeItem('window_animation');
     }
     function window_animation(animation) {
-        const taskHeight = () => document.getElementById('taskbar').clientHeight;
-        console.log(animation.style.zIndex)
+        animation.style.pointerEvents = "none";
+        const taskHeight = () => taskbar.clientHeight;
         const adjustHeight = () => {
+            if (animation.classList.contains('minimization')) {
+                animation.classList.add('child_windows_invisible');
+            }
             if (['big', 'leftwindow', 'rightwindow'].some(cls => animation.classList.contains(cls))) {
                 animation.style.height = (animation.clientHeight - taskHeight()) + "px";
             }
-            if (animation.classList.contains('minimization')) {
-                animation.classList.add('child_windows_invisible')
-            }
+            animation.style.pointerEvents = "";
             animation.style.zIndex = largestZIndex++;
         };
         if (localStorage.getItem('window_animation')) {
@@ -2547,44 +2482,6 @@ if (ua.includes("mobile")) {
         } else {
             setTimeout(adjustHeight, 0);
         }
-    }
-
-
-    function allwindow_min() {
-        document.querySelectorAll('.resize').forEach(function (alliwindow_mins) {
-            const minscreenbutton = alliwindow_mins.closest('.child_windows');
-            minscreenbutton.style.top = "";
-            minscreenbutton.style.left = "";
-            minscreenbutton.style.height = "";
-            minscreenbutton.style.width = "0";
-            const notearea = document.querySelector('.note_area');
-            notearea.style.height = "";
-            notearea.style.width = "";
-            minscreenbutton.classList.remove('leftwindow');
-            minscreenbutton.classList.remove('rightwindow');
-            window_animation(minscreenbutton);
-            setTimeout(() => {
-                minscreenbutton.classList.remove('big');
-            }, 150);
-        });
-    }
-
-    function allwindow_big() {
-        document.querySelectorAll('.resize').forEach(function (alliwindow_big) {
-            const bigscreenbutton = alliwindow_big.closest('.child_windows');
-            bigscreenbutton.style.height = "";
-            bigscreenbutton.style.width = "";
-            bigscreenbutton.style.left = "0";
-            if (localStorage.getItem('taskbar_position_button')) {
-                bigscreenbutton.style.top = "40px"
-            } else {
-                bigscreenbutton.style.top = "0"
-            }
-            window_animation(bigscreenbutton)
-            bigscreenbutton.classList.remove('rightwindow');
-            bigscreenbutton.classList.remove('leftwindow');
-            bigscreenbutton.classList.add('big');
-        });
     }
 
     document.querySelectorAll('.window_fullleft').forEach(function (window_left) {
@@ -2636,70 +2533,40 @@ if (ua.includes("mobile")) {
         });
     })
 
-    document.querySelectorAll('.window_half_big').forEach(function (window_half_big) {
-        window_half_big.addEventListener('mousedown', function () {
-            const elements = document.querySelector('.title.navy');
-            const elements2 = elements.closest('.child_windows');
-            elements2.dataset.originalWidth = elements2.style.width;
-            elements2.dataset.originalHeight = elements2.style.height;
-            elements2.dataset.originalTop = elements2.style.top;
-            elements2.dataset.originalLeft = elements2.style.left;
-        })
-        window_half_big.addEventListener('click', function (event) {
+    document.querySelectorAll('.window_half_big').forEach(window_half_big => {
+        window_half_big.addEventListener('mousedown', () => {
+            const elements2 = document.querySelector('.title.navy').closest('.child_windows');
+            ['width', 'height', 'top', 'left'].forEach(attr => elements2.dataset[`original${attr.charAt(0).toUpperCase() + attr.slice(1)}`] = elements2.style[attr]);
+        });
+        window_half_big.addEventListener('click', event => {
             const windowhalfbig = window_half_big.closest('.child_windows');
-            windowhalfbig.classList.remove('rightwindow');
-            windowhalfbig.classList.remove('leftwindow');
-            let shiftX = event.clientX - window_half_big.getBoundingClientRect().left;
-            let shiftY = event.clientY - window_half_big.getBoundingClientRect().top;
-            let top = document.querySelector('.top');
-            moveAt(event.pageX, event.pageY);
-            function moveAt(pageX, pageY) {
+            windowhalfbig.classList.remove('rightwindow', 'leftwindow', 'big');
+            const shiftX = event.clientX - window_half_big.getBoundingClientRect().left;
+            const shiftY = event.clientY - window_half_big.getBoundingClientRect().top;
+            const moveAt = (pageX, pageY) => {
                 window_half_big.style.left = pageX - shiftX + 'px';
                 window_half_big.style.top = pageY - shiftY + 'px';
-            }
-            function onMouseMove(event) {
-                moveAt(event.pageX, event.pageY);
-            }
-            windowhalfbig.style.height = "55%"
-            windowhalfbig.style.width = "55%"
-            window_animation(windowhalfbig)
-            windowhalfbig.classList.remove('big')
-        })
-    })
-
-    document.querySelectorAll('.windowsize_reset').forEach(function (windowsize_reset) {
-        windowsize_reset.addEventListener('click', function (event) {
-            const windowsizereset = windowsize_reset.closest('.child_windows');
-            windowsizereset.style.height = "";
-            if (windowsizereset.classList.contains('rightwindow')) {
-                windowsizereset.style.width = "max-content";
-                windowsizereset.style.right = "0";
-            } else {
-                windowsizereset.style.width = "";
-                windowsizereset.style.right = "";
-            }
-            windowsizereset.classList.remove('big');
-            window_animation(windowsizereset)
-
-            windowsizereset.classList.remove('leftwindow');
-            windowsizereset.classList.remove('rightwindow');
-
-            let shiftX = event.clientX - windowsize_reset.getBoundingClientRect().left;
-            let shiftY = event.clientY - windowsize_reset.getBoundingClientRect().top;
-            let top = document.querySelector('.top');
+            };
             moveAt(event.pageX, event.pageY);
-            // ボールを（pageX、pageY）座標の中心に置く
-            function moveAt(pageX, pageY) {
-                windowsize_reset.style.left = pageX - shiftX + 'px';
-                windowsize_reset.style.top = pageY - shiftY + 'px';
-            }
-            function onMouseMove(event) {
-                moveAt(event.pageX, event.pageY);
-            }
-            windowsizereset.style.left = shiftX;
-            windowsizereset.style.top = shiftY;
+            windowhalfbig.style.height = "55%";
+            windowhalfbig.style.width = "55%";
+            window_animation(windowhalfbig);
         });
-    })
+    });
+
+    document.querySelectorAll('.windowsize_reset').forEach(windowsize_reset => {
+        windowsize_reset.addEventListener('click', event => {
+            const windowsizereset = windowsize_reset.closest('.child_windows');
+            windowsizereset.style.height = windowsizereset.style.width = "";
+            windowsizereset.style.right = windowsizereset.classList.contains('rightwindow') ? "0" : "";
+            windowsizereset.classList.remove('big', 'leftwindow', 'rightwindow');
+            window_animation(windowsizereset);
+            const shiftX = event.clientX - windowsize_reset.getBoundingClientRect().left;
+            const shiftY = event.clientY - windowsize_reset.getBoundingClientRect().top;
+            windowsize_reset.style.left = `${event.pageX - shiftX}px`;
+            windowsize_reset.style.top = `${event.pageY - shiftY}px`;
+        });
+    });
 
     document.querySelectorAll('.parent_list').forEach(parent_list => {
         parent_list.addEventListener('mouseover', () => {
@@ -2715,13 +2582,6 @@ if (ua.includes("mobile")) {
                     });
                 });
             });
-        });
-    });
-
-    document.querySelectorAll('.windowtool_parent').forEach(windowtool_parent => {
-        windowtool_parent.addEventListener('click', () => {
-            const parentlist = windowtool_parent.lastElementChild;
-            parentlist.style.display = (parentlist.style.display === "block") ? "none" : "block";
         });
     });
 
@@ -2815,7 +2675,6 @@ if (ua.includes("mobile")) {
                 parent_list2.classList.remove('select');
             });
             parent_list.classList.add('select');
-
             document.querySelectorAll('.window_inline_menus_parent').forEach(parent_list3 => {
                 const menus_child = parent_list3.lastElementChild;
                 menus_child.style.display = "none";
@@ -2833,11 +2692,8 @@ if (ua.includes("mobile")) {
     });
 
     function window_back_silver() {
-        Array.from(document.getElementsByClassName('back_silver')).forEach((back_silver) => {
-            back_silver.style.background = "silver"
-        })
+        [...document.getElementsByClassName('back_silver')].forEach(back_silver => back_silver.style.background = "silver");
     }
-
 
     document.querySelectorAll('.child_windows, .child').forEach(function (z_index_child_windows) {
         const zindexchildwindows = z_index_child_windows.closest('.child_windows');
@@ -2846,10 +2702,6 @@ if (ua.includes("mobile")) {
                 zindexchildwindows.scrollTop = 0;
                 zindexchildwindows.scrollLeft = 0;
                 zindexchildwindows.style.zIndex = largestZIndex++;
-            });
-            element.addEventListener('click', function () {
-                zindexchildwindows.scrollTop = 0;
-                zindexchildwindows.scrollLeft = 0;
             });
         };
         addEventListeners(z_index_child_windows);
@@ -2902,7 +2754,6 @@ if (ua.includes("mobile")) {
 
     function cpubench_open() {
         const cpumenu1 = document.querySelector('.cpumenu_1');
-        document.getElementsByClassName('cpu_bench_menu')[0].style.zIndex = largestZIndex++;
         if (!cpu_bench_menu.classList.contains('active') || cpumenu1.style.display === "block") {
             setTimeout(() => {
                 document.querySelector('.cpumenu_1').style.display = "none";
@@ -2924,35 +2775,31 @@ if (ua.includes("mobile")) {
         document.querySelector('.cputitle').style.display = "none";
     }
 
-
-
     function assignClassToFrontmostElement(selector, newClassName) {
         const elements = document.querySelectorAll(selector);
-        let highestZIndex = -Infinity;
         let frontmostElement = null;
-
-        elements.forEach(function (element) {
-            const ele2 = element.closest('.child_windows');
-            if (!ele2.classList.contains('selectwindows')) {
-                document.querySelectorAll('.task_buttons').forEach(function (task_buttons) {
-                    task_buttons.remove();
-                });
-                ele2.classList.add('selectwindows');
+        let highestZIndex = -Infinity;
+        for (const element of elements) {
+            const childWindow = element.closest('.child_windows');
+            if (!childWindow.classList.contains('selectwindows')) {
+                document.querySelectorAll('.task_buttons').forEach((taskButton) => taskButton.remove());
+                childWindow.classList.add('selectwindows');
             }
             const zIndex = parseInt(window.getComputedStyle(element).zIndex, 10) || 0;
             if (zIndex > highestZIndex) {
                 highestZIndex = zIndex;
-                frontmostElement = ele2;
+                frontmostElement = childWindow;
             }
-        });
-        if (frontmostElement) {
-            const foo1 = frontmostElement.firstElementChild;
-            foo1.classList.add(newClassName);
         }
-        return {
-            element: frontmostElement,
-            zIndex: highestZIndex
-        };
+        if (frontmostElement) {
+            frontmostElement.firstElementChild.classList.add(newClassName);
+        }
+        for (const element of elements) {
+            const { width, height } = getComputedStyle(element);
+            element.style.width = width;
+            element.style.height = height;
+        }
+        return { element: frontmostElement, zIndex: highestZIndex };
     }
 
     function zindexwindow_addnavy() {
@@ -3011,7 +2858,7 @@ if (ua.includes("mobile")) {
     const objective_child = document.querySelector('.objective_area');
     const objective_resize = () => {
         objective_child.style.width = `${objective_parent.clientWidth - 5}px`;
-        objective_child.style.height = `${objective_parent.clientHeight - 155}px`;
+        objective_child.style.height = `${objective_parent.clientHeight - 165}px`;
     };
 
     const window_prompt_content2 = document.querySelector('.window_prompt_content2');
@@ -3082,8 +2929,17 @@ if (ua.includes("mobile")) {
         }
     };
 
+    const editor2_parent = document.querySelector('.editor_menu');
+    const editor2_child = document.getElementById('editor_2');
+    const editor2_resize = () => {
+        const hehehe1 = editor2_parent.firstElementChild;
+        if (hehehe1.classList.contains('navy')) {
+            editor2_child.style.width = `${editor2_parent.clientWidth - 6}px`;
+            editor2_child.style.height = `${editor2_parent.clientHeight - 85}px`;
+        }
+    };
 
-
+    let clones = false;
     function addDragButtonListeners(button) {
         if (!button.dataset.listenerAdded) {
             const dragwindow = button.closest('.child_windows');
@@ -3091,9 +2947,7 @@ if (ua.includes("mobile")) {
                 if (dragwindow.classList.contains('leftwindow') || dragwindow.classList.contains('rightwindow')) {
                     dragwindow.style.height = "55%";
                     dragwindow.style.width = "55%";
-                    dragwindow.classList.remove('leftwindow');
-                    dragwindow.classList.remove('rightwindow');
-                    window_animation(dragwindow);
+                    dragwindow.classList.remove('leftwindow', 'rightwindow');
                 }
                 dragwindow.classList.add("drag");
             });
@@ -3120,28 +2974,27 @@ if (ua.includes("mobile")) {
                 document.addEventListener("touchend", mup, false);
             }
             function mmove(e) {
+                setTimeout(() => {
+                    if (localStorage.getItem('window_invisible') && localStorage.getItem('window_afterimage_false')) {
+                        drag.style.opacity = "0.5"
+                    } else if (localStorage.getItem('window_borderblack') && localStorage.getItem('window_afterimage_false')) {
+                        applyStyles(drag);
+                    } else if (!localStorage.getItem('window_afterimage_false')) {
+                        applyStyles(drag);
+                    }
+                }, 0);
+                if (!clones && !localStorage.getItem('window_afterimage_false')) {
+                    const clone = dragwindow.cloneNode(true);
+                    clone.classList.add('clones');
+                    dragwindow.parentNode.appendChild(clone);
+                    [clone, dragwindow].forEach(el => el.style.zIndex = largestZIndex++);
+                    clones = true;
+                }
                 const drag = document.getElementsByClassName("drag")[0];
                 const event = e.type === "mousemove" ? e : e.changedTouches[0];
                 drag.style.top = event.pageY - y + "px";
                 drag.style.left = event.pageX - x + "px";
-                if (localStorage.getItem('window_invisible')) {
-                    document.querySelectorAll('.child_windows').forEach(function (title) {
-                        title.style.opacity = "0.5";
-                    });
-                }
-                if (localStorage.getItem('window_borderblack')) {
-                    document.querySelectorAll('.child_windows, .child').forEach(function (title) {
-                        document.querySelector('iframe').style.opacity = "0";
-                        title.style.background = "rgba(255, 255, 255, 0)";
-                        title.style.border = "solid 1.5px black";
-                        title.style.boxShadow = "0 0 0";
-                    });
-                    document.querySelectorAll('.title,.title2,.title_buttons,.window_tool,.window_contents,.window_content,.window_bottom,.prompt_content').forEach(function (title) {
-                        title.style.opacity = "0";
-                    });
-                }
-                const taskover = document.getElementById('taskbar')
-                taskover.addEventListener('mouseover', function () {
+                taskbar.addEventListener('mouseover', function () {
                     document.body.removeEventListener("mousemove", mmove, false);
                     document.body.removeEventListener("touchmove", mmove, false);
                 })
@@ -3159,23 +3012,22 @@ if (ua.includes("mobile")) {
                 if (overlay) {
                     document.body.removeChild(overlay);
                 }
-                document.querySelectorAll('.child_windows').forEach(function (title) {
-                    title.style.opacity = "";
-                    window_prompt.style.background = "black";
-                });
-                document.querySelectorAll('.child_windows, .child').forEach(function (title) {
-                    title.style.background = "";
-                    title.style.border = "";
-                    title.style.boxShadow = "";
-                    document.querySelector('iframe').style.opacity = "";
-                    window_prompt.style.background = "black";
-                });
-                document.querySelectorAll('.title,.title2,.title_buttons,.window_tool,.window_contents,.window_content,.window_bottom,.prompt_content').forEach(function (title) {
-                    title.style.opacity = "";
-                });
-                window_back_silver();
+                setTimeout(() => {
+                    drag.style.background = "";
+                    drag.style.border = "";
+                    drag.style.outline = "";
+                    drag.style.boxShadow = "";
+                    drag.style.opacity = "";
+                    Array.from(drag.children).forEach(child => child.style.opacity = "");
+                    window_back_silver();
+                }, 0);
+                if (clones && !localStorage.getItem('window_afterimage_false')) {
+                    document.querySelector('.clones').remove();
+                }
+                clones = false;
             }
             button.dataset.listenerAdded = true;
+
         }
     }
     function observeNewElements3() {
@@ -3200,7 +3052,16 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.drag_button').forEach(addDragButtonListeners);
     observeNewElements3();
 
-
+    const applyStyles = element => {
+        const [r, g, b] = getComputedStyle(element).backgroundColor.match(/\d+/g).map(Number);
+        Object.assign(element.style, {
+            background: "rgba(255, 255, 255, 0)",
+            border: `dashed 1.5px rgb(${255 - r}, ${255 - g}, ${255 - b})`,
+            boxShadow: "none",
+            outline: "1.5px dashed silver"
+        });
+        [...element.children].forEach(child => child.style.opacity = "0");
+    };
 
     function check(elm1, elm2) {
         const d1 = elm1.getBoundingClientRect();
@@ -3245,7 +3106,7 @@ if (ua.includes("mobile")) {
             document.removeEventListener("touchend", mup_2);
             document.removeEventListener("mouseleave", mup_2);
             document.body.removeEventListener("mouseleave", mup_2);
-            const task = document.getElementById('taskbar').clientHeight;
+            const task = taskbar.clientHeight;
             if (check(elm1, elm2) && localStorage.getItem('taskbar_position_button')) {
                 toolbar.style.top = task + "px";
             } else if (check(elm1, elm2)) {
@@ -3344,8 +3205,7 @@ if (ua.includes("mobile")) {
             localStorage.setItem(KEY_COLOR, select4);
             getStorage()
         } else {
-            errortitle_text = "カラードライバーがインストールされていません!";
-            error_windows_create();
+            error_windows_create("カラードライバーがインストールされていません!");
         }
     }
 
@@ -3388,8 +3248,7 @@ if (ua.includes("mobile")) {
             // 変更した色名をストレージに保存
             setStorage();
         } else {
-            errortitle_text = "カラードライバーがインストールされていません!";
-            error_windows_create();
+            error_windows_create("カラードライバーがインストールされていません!");
         }
     });
 
@@ -3404,8 +3263,7 @@ if (ua.includes("mobile")) {
                     titlecolor_set();
                 });
             } else {
-                errortitle_text = "カラードライバーがインストールされていません!";
-                error_windows_create();
+                error_windows_create("カラードライバーがインストールされていません!");
             }
             titles.forEach(title => title.style.background = "");
             navys.forEach(navys => navys.style.background = "");
@@ -3457,26 +3315,22 @@ if (ua.includes("mobile")) {
             wallpaper_allremove();
         });
     });
-
     document.querySelectorAll('.pattern_btn').forEach(color_btn => {
         color_btn.addEventListener('click', () => {
             back_pattern_remove();
             wallpaper_allremove();
         });
     });
-
     const back_pattern_remove = () => {
         for (let i = 1; i <= 9; i++) {
             document.querySelector(`.backgrounds${i}`).style.display = "none";
             localStorage.removeItem(`back_pattern_${i}`);
         }
     };
-
     const setBackPattern = (pattern) => {
         localStorage.setItem(pattern, true);
         back_pattern_set();
     };
-
     document.querySelector('.back_pattern_1').addEventListener('click', () => setBackPattern('back_pattern_1'));
     document.querySelector('.back_pattern_2').addEventListener('click', () => setBackPattern('back_pattern_2'));
     document.querySelector('.back_pattern_3').addEventListener('click', () => setBackPattern('back_pattern_3'));
@@ -3486,35 +3340,14 @@ if (ua.includes("mobile")) {
     document.querySelector('.back_pattern_7').addEventListener('click', () => setBackPattern('back_pattern_7'));
     document.querySelector('.back_pattern_8').addEventListener('click', () => setBackPattern('back_pattern_8'));
     document.querySelector('.back_pattern_9').addEventListener('click', () => setBackPattern('back_pattern_9'));
-
     function back_pattern_set() {
-        if (localStorage.getItem('back_pattern_1')) {
-            document.getElementsByClassName('backgrounds1')[0].style.display = "block";
-        }
-        if (localStorage.getItem('back_pattern_2')) {
-            document.getElementsByClassName('backgrounds2')[0].style.display = "block";
-        }
-        if (localStorage.getItem('back_pattern_3')) {
-            document.getElementsByClassName('backgrounds3')[0].style.display = "block";
-        }
-        if (localStorage.getItem('back_pattern_4')) {
-            document.getElementsByClassName('backgrounds4')[0].style.display = "block";
-        }
-        if (localStorage.getItem('back_pattern_5')) {
-            document.getElementsByClassName('backgrounds5')[0].style.display = "block";
-        }
-        if (localStorage.getItem('back_pattern_6')) {
-            document.getElementsByClassName('backgrounds6')[0].style.display = "block";
-        }
-        if (localStorage.getItem('back_pattern_7')) {
-            document.getElementsByClassName('backgrounds7')[0].style.display = "block";
-        }
-        if (localStorage.getItem('back_pattern_8')) {
-            document.getElementsByClassName('backgrounds8')[0].style.display = "block";
-        }
-        if (localStorage.getItem('back_pattern_9')) {
-            document.getElementsByClassName('backgrounds9')[0].style.display = "block";
-        }
+        const backgroundClasses = ['backgrounds1', 'backgrounds2', 'backgrounds3', 'backgrounds4', 'backgrounds5', 'backgrounds6', 'backgrounds7', 'backgrounds8', 'backgrounds9'];
+        backgroundClasses.forEach(className => {
+            const key = `back_pattern_${backgroundClasses.indexOf(className) + 1}`;
+            if (localStorage.getItem(key)) {
+                document.getElementsByClassName(className)[0].style.display = "block";
+            }
+        });
     }
 
     var largestZIndex = 0;
@@ -3729,15 +3562,15 @@ if (ua.includes("mobile")) {
     }
 
     function notetextsize_change() {
-        let noteData = document.getElementsByClassName('note_area')
+        let noteData = document.getElementsByClassName('note_area')[0];
         if (localStorage.getItem('notetext_small')) {
-            noteData[0].style.fontSize = "small";
+            noteData.style.fontSize = "small";
         }
         if (localStorage.getItem('notetext_medium')) {
-            noteData[0].style.fontSize = "medium";
+            noteData.style.fontSize = "medium";
         }
         if (localStorage.getItem('notetext_large')) {
-            noteData[0].style.fontSize = "large";
+            noteData.style.fontSize = "large";
         }
     }
 
@@ -3763,9 +3596,7 @@ if (ua.includes("mobile")) {
     // 保存
     function save() {
         if (note_form.note_area.value == "") {
-            errortitle_msg = "&nbsp;notepad"
-            errortitle_text = "テキストが無いため、保存できません!";
-            error_windows_create();
+            error_windows_create("テキストが無いため、保存できません!", "&nbsp;notepad");
         } else {
             let noteData = document.note_form.note_area.value;
             localStorage.setItem('noteData', noteData);
@@ -3785,17 +3616,11 @@ if (ua.includes("mobile")) {
 
     function objective_save() {
         if (objective_form.objective_area.value == "" && objective_title_form.objective_title_area.value == "") {
-            errortitle_msg = "&nbsp;objective sheet"
-            errortitle_text = "タイトルと内容が入力されていません!";
-            error_windows_create();
+            error_windows_create("タイトルと内容が入力されていません!", "&nbsp;objective sheet");
         } else if (objective_title_form.objective_title_area.value == "") {
-            errortitle_msg = "&nbsp;objective sheet"
-            errortitle_text = "タイトルが入力されていません!";
-            error_windows_create();
+            error_windows_create("タイトルが入力されていません!", "&nbsp;objective sheet");
         } else if (objective_form.objective_area.value == "") {
-            errortitle_msg = "&nbsp;objective sheet"
-            errortitle_text = "内容が入力されていません!";
-            error_windows_create();
+            error_windows_create("内容が入力されていません!", "&nbsp;objective sheet");
         }
         if (!objective_title_form.objective_title_area.value == "" && !objective_form.objective_area.value == "") {
             let objectiveTitleData = document.objective_title_form.objective_title_area.value;
@@ -3831,7 +3656,6 @@ if (ua.includes("mobile")) {
             localStorage.removeItem('note_texts');
             note_pad.classList.add('active');
             note_pad.classList.remove('selectwindows')
-
         }
     })
 
@@ -3847,7 +3671,6 @@ if (ua.includes("mobile")) {
             warning_windows.style.display = "block"
             document.querySelector('.close_button3').style.display = "block"
             sound(4)
-
             document.querySelector('.shutdown_button').style.display = "none";
             document.querySelector('.warningclose_button').style.display = "none";
         } else if (!localStorage.getItem('objectiveData') && !localStorage.getItem('objectiveTitleData') && (!localStorage.getItem('objective_area'))) {
@@ -3856,7 +3679,6 @@ if (ua.includes("mobile")) {
             objective_menu.classList.add('active');
             localStorage.removeItem('objective_area');
             objective_menu.classList.remove('selectwindows')
-
         }
     })
     localStorage.removeItem('objective_area')
@@ -3886,13 +3708,12 @@ if (ua.includes("mobile")) {
             camera_menu.classList.add('active')
             camera_menu.classList.remove('selectwindows')
         } else if (sessionStorage.getItem('start_camera')) {
-            errortitle_text = "カメラが実行されているため、ウィンドウが閉じれません!";
-            error_windows_create();
+            error_windows_create("カメラが実行されているため、ウィンドウが閉じれません!");
         }
     })
 
     function warning_windows_close() {
-        warning_windows.classList.add('active')
+        warning_windows.style.display = "none";
         document.querySelector('.shutdown_button').style.display = "block";
         document.querySelector('.warningclose_button').style.display = "none";
         document.querySelector('.close_button3').style.display = "block"
@@ -3914,19 +3735,25 @@ if (ua.includes("mobile")) {
         localStorage.removeItem('noteData');
         const memo_save = document.getElementById('memo_save_text');
         memo_save.textContent = "";
-        localStorage.setItem('note_texts', true);
-        document.querySelector('.note_title').textContent = "notepad"
     }
 
     function notearea_allselect() {
+        notetitle();
         document.querySelector('.note_area').select();
+    }
+
+    function notearea_time() {
+        notetitle();
+        const note = document.querySelector('.note_area');
+        const note_time = new Date();
+        note.value = note.value + note_time.toLocaleString();
     }
     document.getElementById('cleartextbtn').addEventListener('click', function () {
         document.getElementsByClassName("note_area")[0].value = '';
         const memo_save = document.getElementById('memo_save_text');
         memo_save.textContent = "";
         resetShowLength();
-        localStorage.setItem('note_texts', true);
+        notetitle()
     });
     document.getElementById('cleartextbtn2').addEventListener('click', function () {
         localStorage.removeItem('textdropdata');
@@ -3975,13 +3802,6 @@ if (ua.includes("mobile")) {
             }
         })
     });
-    document.addEventListener('keyup', function (event) {
-        if (event.key === 's' && event.getModifierState('Fn')) {
-            if (localStorage.getItem('note_texts')) {
-                save();
-            }
-        }
-    });
     note_area.addEventListener("paste", () => {
         setTimeout(onChange, 10)
     });
@@ -3989,6 +3809,7 @@ if (ua.includes("mobile")) {
     function notetitle() {
         notedata_clear();
         resizeTextarea();
+        localStorage.setItem('note_texts', true);
         document.querySelector('.note_title').textContent = "*notepad";
     }
 
@@ -4039,41 +3860,17 @@ if (ua.includes("mobile")) {
     }
 
     function load() {
-        let noteData = "";
-        if (!localStorage.getItem('noteData')) {
-            noteData = "メモは登録されていません。";
-            setTimeout(() => {
-                onChange()
-            }, 100);
-        }
-        else {
-            noteData = localStorage.getItem('noteData');
-            setTimeout(() => {
-                onChange()
-            }, 100);
-        }
+        const noteData = localStorage.getItem('noteData') || "メモは登録されていません。";
         document.note_form.note_area.value = noteData;
-        const memo_save = document.getElementById('memo_save_text');
-        memo_save.textContent = "";
+        document.getElementById('memo_save_text').textContent = "";
+        setTimeout(onChange, 100);
     }
 
     function objective_load() {
-        let objectiveTitleData = "";
-        let objectiveData = "";
-        if (!localStorage.getItem('objectiveTitleData')) {
-            objectiveTitleData = "";
-        }
-        else {
-            objectiveTitleData = localStorage.getItem('objectiveTitleData');
-        }
-        document.objective_title_form.objective_title_area.value = objectiveTitleData;
+        const objectiveTitleData = localStorage.getItem('objectiveTitleData') || '';
+        const objectiveData = localStorage.getItem('objectiveData') || '';
 
-        if (!localStorage.getItem('objectiveData')) {
-            objectiveData = "";
-        }
-        else {
-            objectiveData = localStorage.getItem('objectiveData');
-        }
+        document.objective_title_form.objective_title_area.value = objectiveTitleData;
         document.objective_form.objective_area.value = objectiveData;
     }
 
@@ -4085,22 +3882,14 @@ if (ua.includes("mobile")) {
             localStorage.removeItem('MemoData_export');
             notice_menu.classList.remove('active');
         } else {
-            errortitle_text = "windows2000からテキストデータがエクスポートされていません!";
-            error_windows_create();
+            error_windows_create("windows2000からテキストデータがエクスポートされていません!", "&nbsp;notepad");
         }
     }
 
     function load2() {
-        let textdropdata = "";
-        if (!localStorage.getItem('textdropdata')) {
-            textdropdata = "";
-            const memo_save2 = document.getElementById('drop_save_text');
-            memo_save2.textContent = "";
-        } else {
-            textdropdata = localStorage.getItem('textdropdata');
-            const memo_save2 = document.getElementById('drop_save_text');
-            memo_save2.textContent = "text data save keep";
-        }
+        const textdropdata = localStorage.getItem('textdropdata') || '';
+        const memo_save2 = document.getElementById('drop_save_text');
+        memo_save2.textContent = textdropdata ? 'text data save keep' : '';
         document.drop_form.drop_area.value = textdropdata;
     }
 
@@ -4114,8 +3903,7 @@ if (ua.includes("mobile")) {
         if (!localStorage.getItem('textdropdata')) {
             evt.target.textContent += evt.dataTransfer.getData('text');
         } else {
-            errortitle_text = "テキストが保存されているため、ドラッグした文字をドロップできません!";
-            error_windows_create();
+            error_windows_create("テキストが保存されているため、ドラッグした文字をドロップできません!");
         }
     });
 
@@ -4181,10 +3969,11 @@ if (ua.includes("mobile")) {
             sss.style.paddingLeft = "50px";
             sss.style.width = "auto";
         });
-
-        Array.from(document.getElementsByClassName('windowfile_time')).forEach((windowfile_time) => {
-            windowfile_time.style.display = "block"
-        })
+        if (!localStorage.getItem('filetimes')) {
+            Array.from(document.getElementsByClassName('windowfile_time')).forEach((windowfile_time) => {
+                windowfile_time.style.display = "block"
+            })
+        }
     }
 
     function window_file_list_change2() {
@@ -4205,10 +3994,11 @@ if (ua.includes("mobile")) {
             sss.style.paddingLeft = "50px";
             sss.style.width = "auto";
         });
-
-        Array.from(document.getElementsByClassName('windowfile_time')).forEach((windowfile_time) => {
-            windowfile_time.style.display = "block"
-        })
+        if (!localStorage.getItem('filetimes')) {
+            Array.from(document.getElementsByClassName('windowfile_time')).forEach((windowfile_time) => {
+                windowfile_time.style.display = "block"
+            })
+        }
     }
 
     function window_file_list_reset() {
@@ -4287,21 +4077,32 @@ if (ua.includes("mobile")) {
         }
     })
 
+    document.querySelector('.taskbar_leftbtn').addEventListener('click', function () {
+        if (localStorage.getItem('taskbar_leftbtn')) {
+            localStorage.removeItem('taskbar_leftbtn')
+            document.querySelector('.taskbar_leftbtn').textContent = "off";
+            document.querySelector('.first_taskbar_buttons').style.display = "";
+        } else {
+            localStorage.setItem('taskbar_leftbtn', true);
+            document.querySelector('.taskbar_leftbtn').textContent = "on"
+            document.querySelector('.first_taskbar_buttons').style.display = "none";
+        }
+    })
+
     document.querySelector('.taskbar_position_button').addEventListener('click', function () {
         const t = localStorage.getItem('taskbar_height');
+        const task = taskbar.clientHeight;
         if (localStorage.getItem('taskbar_position_button')) {
             const t = localStorage.getItem('taskbar_height');
             localStorage.removeItem('taskbar_position_button')
 
             document.querySelector('.taskbar_position_button').textContent = "top"
-            document.getElementById('taskbar').style.top = ""
-            document.querySelector('.child_start_menu').style.top = "auto"
-            document.querySelector('.child_start_menu').style.bottom = "";
+            taskbar.style.top = ""
+            child_start_menu.style.top = "auto"
+            child_start_menu.style.bottom = "";
 
-            const task = document.getElementById('taskbar').clientHeight;
-
-            document.querySelector('.child_start_menu').style.bottom = task + "px"
-            document.querySelector('.child_start_menu').style.bottom = t + "px"
+            child_start_menu.style.bottom = task + "px"
+            child_start_menu.style.bottom = t + "px"
 
             document.querySelector('.battery_menu').style.top = "auto"
             document.querySelector('.battery_menu').style.bottom = ""
@@ -4332,14 +4133,12 @@ if (ua.includes("mobile")) {
             localStorage.setItem('taskbar_position_button', true);
 
             document.querySelector('.taskbar_position_button').textContent = "bottom"
-            document.getElementById('taskbar').style.top = "0px"
-            document.querySelector('.child_start_menu').style.top = "40px"
-            document.querySelector('.child_start_menu').style.bottom = "auto"
+            taskbar.style.top = "0px"
+            child_start_menu.style.top = "40px"
+            child_start_menu.style.bottom = "auto"
 
-            const task = document.getElementById('taskbar').clientHeight;
-
-            document.querySelector('.child_start_menu').style.top = task + "px"
-            document.querySelector('.child_start_menu').style.top = t + "px"
+            child_start_menu.style.top = task + "px"
+            child_start_menu.style.top = t + "px"
 
             document.querySelector('.battery_menu').style.top = "35px"
             document.querySelector('.battery_menu').style.bottom = "auto"
@@ -4443,9 +4242,7 @@ if (ua.includes("mobile")) {
     const preview = document.getElementById("preview");
 
     function run() {
-        document.querySelectorAll('.htmlviewer_run_menu').forEach(function (htmlviewer_run_menu) {
-            toggleWindow(htmlviewer_run_menu);
-        });
+        document.querySelectorAll('.htmlviewer_run_menu').forEach(htmlviewer_run_menu => toggleWindow(htmlviewer_run_menu));
         preview.srcdoc = editor.value;
     }
 
@@ -4493,17 +4290,17 @@ if (ua.includes("mobile")) {
         const cpu_canvas = document.getElementById('benchmarkCanvas');
         const cpu_ctx = cpu_canvas.getContext('2d');
         const numRectangles = 10000;
-        const batchSize = 10; // 一度に描画する四角形の数
+        const batchSize = 10;
         let i = 0;
-        cpubench_clear()
-        isStopped = false;
-        const startTime = performance.now();
-        document.querySelector('.cpurun_btn').classList.add('pointer_none')
-        document.querySelector('.cpu_run_text').textContent = "描画中...";
-
+        let startTime;
+        let isStopped = false;
         function drawBatch() {
-            if (isStopped) return; // ストップフラグが立っている場合は描画を中止
-
+            if (isStopped) return;
+            if (i === 0) {
+                startTime = performance.now();
+                document.querySelector('.cpurun_btn').classList.add('pointer_none');
+                document.querySelector('.cpu_run_text').textContent = "描画中...";
+            }
             for (let j = 0; j < batchSize && i < numRectangles; j++, i++) {
                 cpu_ctx.fillStyle = `rgb(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255})`;
                 cpu_ctx.fillRect(Math.random() * cpu_canvas.width, Math.random() * cpu_canvas.height, 50, 50);
@@ -4512,12 +4309,13 @@ if (ua.includes("mobile")) {
                 requestAnimationFrame(drawBatch);
             } else {
                 const endTime = performance.now();
-                const timeTaken = Math.floor((endTime - startTime) / 1000); // ミリ秒を秒に変換し、少数を切り捨て
+                const timeTaken = Math.floor((endTime - startTime) / 1000);
                 document.querySelector('.cpu_run_text').textContent = `四角形を${numRectangles}個描画するのにかかった時間: ${timeTaken}秒`;
-                document.querySelector('.cpurun_btn').classList.remove('pointer_none')
-                document.querySelector('.cpurun_btn_clear').classList.remove('pointer_none')
+                document.querySelector('.cpurun_btn').classList.remove('pointer_none');
+                document.querySelector('.cpurun_btn_clear').classList.remove('pointer_none');
             }
         }
+        cpubench_clear();
         drawBatch();
     }
 
@@ -4543,8 +4341,7 @@ if (ua.includes("mobile")) {
             setEvents(resetTimer);
             document.getElementsByClassName('screensaver_text')[0].textContent = stime;
         } else {
-            errortitle_text = "指定時間の範囲内ではありません!";
-            error_windows_create();
+            error_windows_create("指定時間の範囲内ではありません!");
         }
     }
 
@@ -4865,16 +4662,14 @@ if (ua.includes("mobile")) {
         toggleShadow('remove');
     }
 
-
-
     function taskheight_submit() {
         let taskvalue = document.getElementsByClassName('taskbar_height_value')[0].value;
-        const task = document.getElementById('taskbar').clientHeight;
+        const task = taskbar.clientHeight;
 
         if (taskvalue === "") {
             taskvalue = 40;
             const t = localStorage.setItem('taskbar_height', taskvalue);
-            document.getElementById('taskbar').style.height = "40px"
+            taskbar.style.height = "40px"
             document.querySelector('.files_inline').style.top = ""
 
             if (check(elm1, elm2) && !localStorage.getItem('taskbar_position_button')) {
@@ -4890,9 +4685,8 @@ if (ua.includes("mobile")) {
             }
 
         } else if (0 <= taskvalue && taskvalue < 40) {
-            errortitle_text = "タスクバーの設定範囲以下に設定されています!";
-            error_windows_create();
-        } else if (40 <= taskvalue && taskvalue < 151) {
+            error_windows_create("タスクバーの設定範囲以下に設定されています!");
+        } else if (40 <= taskvalue && taskvalue < 201) {
             const t = localStorage.setItem('taskbar_height', taskvalue);
             taskbar.style.height = taskvalue + "px"
             document.querySelector('.desktop_version_text').style.bottom = "40px";
@@ -4913,17 +4707,20 @@ if (ua.includes("mobile")) {
             if (localStorage.getItem('taskbar_position_button')) {
                 const t2 = localStorage.getItem('taskbar_height');
                 document.querySelector('.files_inline').style.top = t2 + "px"
-                const task = document.getElementById('taskbar').clientHeight;
-                document.querySelector('.child_start_menu').style.top = task + "px"
-                document.querySelector('.child_start_menu').style.top = t + "px"
+                const task = taskbar.clientHeight;
+                child_start_menu.style.top = task + "px"
+                child_start_menu.style.top = t + "px"
+            } else if (localStorage.getItem('taskbar_autohide')) {
+                taskbar_autohide();
+                const task = taskbar.clientHeight;
+                child_start_menu.style.bottom = task + "px"
             } else {
-                const task = document.getElementById('taskbar').clientHeight;
-                document.querySelector('.child_start_menu').style.bottom = task + "px"
-                document.querySelector('.child_start_menu').style.bottom = t + "px"
+                const task = taskbar.clientHeight;
+                child_start_menu.style.bottom = task + "px"
+                child_start_menu.style.bottom = t + "px"
             }
         } else {
-            errortitle_text = "タスクバーの設定範囲を超えています!";
-            error_windows_create();
+            error_windows_create("タスクバーの設定範囲を超えています!");
         }
     }
 
@@ -4931,14 +4728,18 @@ if (ua.includes("mobile")) {
         document.getElementsByClassName('taskbar_height_value')[0].value = "40";
         localStorage.removeItem('taskbar_height');
         taskbar.style.height = "";
+        child_start_menu.style.top = "";
+        child_start_menu.style.bottom = "";
         if (localStorage.getItem('taskbar_position_button')) {
-            document.querySelector('.files_inline').style.top = "40px"
-            const task = document.getElementById('taskbar').clientHeight;
-            document.querySelector('.child_start_menu').style.top = task + "px"
+            document.querySelector('.files_inline').style.top = "40px";
+            const task = taskbar.clientHeight;
+            child_start_menu.style.top = task + "px";
             document.querySelector('.desktop_version_text').style.bottom = "0px";
+        } else if (localStorage.getItem('taskbar_autohide')) {
+            taskbar_autohide();
         } else {
-            const task = document.getElementById('taskbar').clientHeight;
-            document.querySelector('.child_start_menu').style.bottom = task + "px"
+            const task = taskbar.clientHeight;
+            child_start_menu.style.bottom = task + "px";
             document.querySelector('.desktop_version_text').style.bottom = "40px";
         }
     }
@@ -4947,7 +4748,6 @@ if (ua.includes("mobile")) {
     const clock_ctx = clock_canvas.getContext('2d');
     const dayArr = ["日", "月", "火", "水", "木", "金", "土"];
 
-    // 時計の針を描く関数
     function drawHand(length, width, angle) {
         clock_ctx.beginPath();
         clock_ctx.moveTo(150, 150);
@@ -4956,27 +4756,25 @@ if (ua.includes("mobile")) {
         clock_ctx.stroke();
     }
 
-    // 時計を描く関数
     function drawClock() {
         const d = new Date();
         const year = d.getFullYear();
         const month = d.getMonth() + 1;
         const date = d.getDate();
         const day = d.getDay();
-        const hours = d.getHours() % 12;
+        const hours24 = d.getHours();
+        const hours = hours24 % 12;
         const minutes = d.getMinutes();
         const seconds = d.getSeconds();
         const dateText = `${year}-${("0" + month).slice(-2)}-${("0" + date).slice(-2)} ${dayArr[day]}`;
-        const amPm = hours >= 12 ? "午後" : "午前";
+        const amPm = hours24 >= 12 ? "午後" : "午前";
 
-        // キャンバスをクリア
         clock_ctx.clearRect(0, 0, clock_canvas.width, clock_canvas.height);
         clock_ctx.beginPath();
         clock_ctx.arc(150, 150, 150, 0, Math.PI * 2);
         clock_ctx.lineWidth = 1.0;
         clock_ctx.stroke();
 
-        // 目盛りを描く
         for (let i = 0; i < 60; i++) {
             clock_ctx.beginPath();
             clock_ctx.moveTo(150 + 150 * Math.cos(Math.PI / 180 * (270 + i * 6)), 150 + 150 * Math.sin(Math.PI / 180 * (270 + i * 6)));
@@ -4985,7 +4783,6 @@ if (ua.includes("mobile")) {
             clock_ctx.stroke();
         }
 
-        // 数字と日付を描く
         clock_ctx.font = "20px 'ＭＳ ゴシック'";
         clock_ctx.textAlign = "center";
         const textArrX = [210, 255, 275, 260, 215, 150, 90, 45, 25, 45, 85, 150];
@@ -4997,11 +4794,11 @@ if (ua.includes("mobile")) {
         clock_ctx.fillText(dateText, 150, 80);
         clock_ctx.fillText(amPm, 150, 100);
 
-        // 針を描く
         drawHand(140, 1, seconds * 6);
         drawHand(130, 3, 6 * (minutes + seconds / 60));
         drawHand(100, 6, 30 * (hours + minutes / 60));
     }
+
 
     document.querySelector('.youtubevideo_button').addEventListener('click', function () {
         const url = document.querySelector("#youtube").value;
@@ -5031,11 +4828,11 @@ if (ua.includes("mobile")) {
     }
 
     function load_videourl() {
-        if (localStorage.getItem('video_url')) {
-            const youtubeurl = localStorage.getItem('video_url');
-            document.querySelector('#youtube').value = youtubeurl;
-            const url = document.querySelector("#youtube").value;
-            document.querySelector("#youtubeframe").src = url;
+        const videoUrl = localStorage.getItem('video_url');
+        if (videoUrl) {
+            const youtubeInput = document.getElementById('youtube');
+            youtubeInput.value = videoUrl;
+            document.getElementById('youtubeframe').src = videoUrl;
         }
     }
 
@@ -5118,81 +4915,65 @@ if (ua.includes("mobile")) {
     }
 
     function localmemory_size() {
-        if (desktop.style.display == "block") {
+        if (desktop.style.display === "block") {
             document.getElementById('shell').value = "";
             document.querySelector('.local_memory_button').classList.add('pointer_none');
-            shellmenu_open()
-
-            var testKey = 'testStorageKey';
-            var testData = new Array(1024).join('a'); // 1KBのデータを作成
-            var success = true;
-            var maxSize = 0; try {
-                // ローカルストレージに1KBずつデータを追加していく
-                while (success) {
+            shellmenu_open();
+            const testKey = 'testStorageKey';
+            const testData = new Array(1024).join('a');
+            let maxSize = 0;
+            try {
+                while (true) {
                     localStorage.setItem(testKey + maxSize, testData);
                     maxSize++;
                 }
             } catch (e) {
-                success = false;
+                // エラー
+            } finally {
+                for (let i = 0; i < maxSize; i++) {
+                    localStorage.removeItem(testKey + i);
+                }
             }
-            for (var i = 0; i < maxSize; i++) {
-                localStorage.removeItem(testKey + i);
-            }
-            document.querySelector('.local_memory').innerHTML = ""
-            const delay = 25;
-            const totalDelay = localStorage.length * delay;
+            document.querySelector('.local_memory').innerHTML = "";
+            const totalDelay = localStorage.length * 25;
             for (let i = 0; i < localStorage.length; i++) {
                 setTimeout(() => {
                     const key = localStorage.key(i);
                     const value = localStorage.getItem(key);
-                    const valueType = typeof value;
-                    const valueLength = value.length;
-                    const valueSize = new Blob([value]).size; // バイト数を計算
-                    document.getElementById('shell').value = (`Key: ${key}, Value: ${value}, Type: ${valueType}, Length: ${valueLength}, Size: ${valueSize} bytes`);
-                }, i * delay);
+                    const valueSize = new Blob([value]).size;
+                    document.getElementById('shell').value = (`Key: ${key}, Value: ${value}, Size: ${valueSize} bytes`);
+                }, i * 25);
             }
             setTimeout(() => {
                 shellmenu_close();
-                document.querySelector('.local_memory').innerHTML = '&emsp;' + maxSize + 'KB' + '&emsp;';
+                document.querySelector('.local_memory').innerHTML = `&emsp;${maxSize}KB&emsp;`;
                 localStorage.setItem('maxSize', maxSize);
                 displayLocalStorageDetails();
                 document.querySelector('.local_memory_button').classList.remove('pointer_none');
             }, totalDelay + 500);
         }
     }
-    document.querySelector('.local_memory').innerHTML = '&emsp;' + localStorage.getItem('maxSize') + "KB" + '&emsp;';
 
+    document.querySelector('.local_memory').innerHTML = `&emsp;${localStorage.getItem('maxSize')}KB&emsp;`;
     function displayLocalStorageDetails() {
-        document.querySelectorAll('.localstorage_key').forEach(function (localstorage_key) {
-            localstorage_key.remove();
-        });
+        document.querySelectorAll('.localstorage_key').forEach(localstorage_key => localstorage_key.remove());
         const list = document.getElementById('localStorageList');
         let totalSize = 0;
-        // すべてのキーを取得してアルファベット順にソート
-        const keys = [];
-        for (let i = 0; i < localStorage.length; i++) {
-            keys.push(localStorage.key(i));
-        }
-        keys.sort(); // キーをアルファベット順にソート
-
-        // ソートされたキーを使ってループ
-        keys.forEach(function (key) {
+        const keys = Array.from({ length: localStorage.length }, (_, i) => localStorage.key(i)).sort();
+        keys.forEach(key => {
             const value = localStorage.getItem(key);
-            const valueSize = new Blob([value]).size; // バイト数を計算
+            const valueSize = new Blob([value]).size;
             totalSize += valueSize;
             const listItem = document.createElement('li');
-            listItem.classList.add('border');
-            listItem.classList.add('localstorage_key');
+            listItem.classList.add('border', 'localstorage_key');
             listItem.style.width = "max-content";
             listItem.style.marginTop = "5px";
             listItem.textContent = `Keyname: ${key}, Size: ${valueSize} Byte`;
             list.appendChild(listItem);
         });
-
-        // 合計サイズを表示
-        const totalSizeElement = document.getElementById('totalSize');
-        totalSizeElement.textContent = `Total Size: ${totalSize} Byte`;
+        document.getElementById('totalSize').textContent = `Total Size: ${totalSize} Byte`;
     }
+
 
 
 
@@ -5209,8 +4990,7 @@ if (ua.includes("mobile")) {
         const sizeInKilobytes = getLocalStorageSize() / 1024;
         document.querySelector('.local_memory2').innerHTML = '&emsp;' + sizeInKilobytes + 'KB' + '&emsp;';
         if (localStorage.getItem('maxSize') === 0) {
-            errortitle_text = "nexser の保存容量を超えています!";
-            error_windows_create();
+            error_windows_create("nexser の保存容量を超えています!");
         }
     }, 1000);
     const paint_canvas = document.getElementById('paint_canvas');
@@ -5441,37 +5221,30 @@ if (ua.includes("mobile")) {
 
 
     function nexser_files_windowload() {
-        const parent = document.getElementById('nexser');
         const output = document.getElementById('nexser_files_output');
         function createTree(element) {
             const ul = document.createElement('ul');
-            Array.from(element.children).forEach(child => {
+            for (const child of element.children) {
                 const li = document.createElement('li');
                 const textContent = child.textContent.trim();
                 li.textContent = textContent;
-                if (textContent.includes('.')) {
-                    li.classList.add('nexser_files_file');
-                } else {
-                    li.classList.add('nexser_files_folder');
-                }
+                li.classList.add(textContent.includes('.') ? 'nexser_files_file' : 'nexser_files_folder');
                 const childTree = createTree(child);
                 if (childTree) {
                     li.appendChild(childTree);
                 }
                 ul.appendChild(li);
-            });
+            }
             return ul.children.length ? ul : null;
         }
-        const tree = createTree(parent);
+        const tree = createTree(nexser);
         if (tree) {
             output.appendChild(tree);
         }
     }
     function nexser_files_output_remove() {
         const parentElement = document.getElementById('nexser_files_output');
-        while (parentElement.firstChild) {
-            parentElement.removeChild(parentElement.firstChild);
-        }
+        parentElement.innerHTML = '';
     }
 
 
@@ -5534,8 +5307,7 @@ if (ua.includes("mobile")) {
                 const dx = e.pageX - originalMouseX;
                 const dy = e.pageY - originalMouseY;
                 const resizer2 = resizer.closest('.child_windows');
-                resizer2.classList.remove('leftwindow');
-                resizer2.classList.remove('rightwindow');
+                resizer2.classList.remove('leftwindow', 'rightwindow');
                 if (resizer.classList.contains('right') || resizer.classList.contains('bottom-right') || resizer.classList.contains('top-right')) {
                     const newWidth = originalWidth + dx;
                     if (newWidth > minSize) element.style.width = newWidth + 'px';
@@ -5558,29 +5330,45 @@ if (ua.includes("mobile")) {
                         element.style.top = originalY + dy + 'px';
                     }
                 }
+                if (!clones && !localStorage.getItem('window_afterimage_false')) {
+                    const clone = resizer2.cloneNode(true);
+                    resizer2.parentNode.appendChild(clone);
+                    clone.classList.add('clones');
+                    [clone, resizer2].forEach(el => el.style.zIndex = largestZIndex++);
+                    clones = true;
+                    setTimeout(() => {
+                        applyStyles(resizer2)
+                    }, 0);
+                }
+                taskbar.addEventListener('mousemove', stopResize);
                 rectangle_remove();
             }
             function stopResize() {
+                const resizer2 = resizer.closest('.child_windows');
                 window.removeEventListener('mousemove', resize);
                 window.removeEventListener('mouseup', stopResize);
-                document.body.removeChild(overlay);
+                if (overlay.parentNode) {
+                    document.body.removeChild(overlay);
+                }
+                if (clones && !localStorage.getItem('window_afterimage_false')) {
+                    resizer2.style.background = "";
+                    resizer2.style.border = "";
+                    resizer2.style.outline = "";
+                    resizer2.style.boxShadow = "";
+                    Array.from(resizer2.children).forEach(child => child.style.opacity = "");
+                    document.querySelector('.clones').remove();
+                }
+                clones = false;
             }
         });
     }
     makeResizableDivs('.resize');
-
-
 
     const dropzone = document.getElementById('dropzone');
     const url_iframe = document.getElementById('url_iframe');
 
     dropzone.addEventListener('dragover', (event) => {
         event.preventDefault();
-        dropzone.style.backgroundColor = '#f0f0f0';
-    });
-
-    dropzone.addEventListener('dragleave', (event) => {
-        dropzone.style.backgroundColor = '';
     });
 
     dropzone.addEventListener('drop', (event) => {
@@ -5593,8 +5381,7 @@ if (ua.includes("mobile")) {
             url_iframe.style.display = "block"
             dropzone.style.display = "none"
         } else {
-            errortitle_text = "有効なURLをドロップしてください。";
-            error_windows_create();
+            error_windows_create("有効なURLをドロップしてください。");
         }
     });
 
@@ -5761,8 +5548,7 @@ if (ua.includes("mobile")) {
                         localStorage.setItem('editable-' + parentIndex + '-' + index, newName);
                     } else if (newName) {
                         nex.style.cursor = '';
-                        errortitle_text = "名前は20文字以内で入力してください!";
-                        error_windows_create();
+                        error_windows_create("名前は20文字以内で入力してください!");
                         element.textContent = originalName;
                     } else {
                         element.textContent = originalName;
@@ -5826,7 +5612,7 @@ if (ua.includes("mobile")) {
     function test_windows_button() {
         resize_background_image();
         document.querySelectorAll('.task_buttons').forEach(task_buttons => task_buttons.remove());
-        document.querySelectorAll('.child_windows.selectwindows:not(.no_window)').forEach(windowElement => {
+        document.querySelectorAll('.child_windows.selectwindows:not(.no_window).child_windows:not(.clones)').forEach(windowElement => {
             const nestedChild2 = windowElement.children[0].children[1].textContent;
             let button = document.createElement('div');
             button.className = 'task_buttons button2';
@@ -5845,7 +5631,6 @@ if (ua.includes("mobile")) {
             moveToTaskbarButton(minimization_button);
         });
     }
-
 
     function moveToTaskbarButton(minimization_button) {
         const task_buttons = Array.from(document.querySelectorAll('.task_buttons'));
@@ -5898,18 +5683,13 @@ if (ua.includes("mobile")) {
     function updateButtonClasses() {
         const windows = document.querySelectorAll('.child_windows.selectwindows:not(.no_window)');
         const buttons = document.querySelectorAll('.task_buttons');
-        buttons.forEach(button => {
-            button.classList.remove('tsk_pressed');
-        });
+        buttons.forEach(button => button.classList.remove('tsk_pressed'));
         windows.forEach((windowElement, index) => {
-            setTimeout(() => {
-                if (windowElement.querySelector('.title.navy')) {
-                    buttons[index].classList.add('tsk_pressed');
-                }
-            }, 0);
+            if (windowElement.querySelector('.title.navy')) {
+                buttons[index]?.classList.add('tsk_pressed');
+            }
         });
     }
-
 
     const dropArea = document.querySelector('#files');
     const dropArea2 = document.querySelector('#soft_windows');
@@ -5931,112 +5711,70 @@ if (ua.includes("mobile")) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     const result = e.target.result;
-                    const windowDiv = document.createElement('div');
-                    windowDiv.className = "child_windows testwindow2 resize"
+                    const createElement = (tag, className, parent, innerHTML) => {
+                        const element = document.createElement(tag);
+                        if (className) element.className = className;
+                        if (innerHTML) element.innerHTML = innerHTML;
+                        if (parent) parent.appendChild(element);
+                        return element;
+                    };
+
+                    const windowDiv = createElement('div', "child_windows testwindow2 resize", null);
                     windowDiv.style.left = `${event.clientX}px`;
                     windowDiv.style.top = `${event.clientY}px`;
                     windowDiv.style.zIndex = largestZIndex++;
 
-                    const newChild = document.createElement('div');
-                    newChild.className = "title"
-                    windowDiv.appendChild(newChild);
+                    const titleDiv = createElement('div', "title", windowDiv);
+                    const titleIcon = createElement('span', "title_icon", titleDiv);
+                    const titleText = createElement('span', "white_space_wrap", titleDiv, file.name);
 
-                    const newChild2 = document.createElement('span');
-                    newChild2.className = "title_icon"
-                    newChild.appendChild(newChild2);
+                    const titleButtons = createElement('div', "title_buttons", windowDiv);
+                    const dragButton = createElement('span', "drag_button", titleButtons, "&nbsp;");
+                    const closeButton = createElement('span', "close_button button2 allclose_button", titleButtons);
+                    const bigScreenButton = createElement('span', "bigscreen_button button2", titleButtons);
+                    const minScreenButton = createElement('span', "minscreen_button button2", titleButtons);
+                    const minimizationButton = createElement('span', "minimization_button button2", titleButtons);
+                    createElement('br', null, titleButtons);
 
-                    const newChild22 = document.createElement('span');
-                    newChild22.textContent = `${file.name}`;
-                    newChild22.className = "white_space_wrap";
-                    newChild.appendChild(newChild22);
-
-                    const newChild3 = document.createElement('div');
-                    newChild3.className = "title_buttons"
-                    windowDiv.appendChild(newChild3);
-
-                    const newChild4_4 = document.createElement('span');
-                    newChild4_4.className = "drag_button"
-                    newChild4_4.innerHTML = "&nbsp;"
-                    newChild3.appendChild(newChild4_4);
-
-                    const newChild4 = document.createElement('span');
-                    newChild4.className = "close_button button2 allclose_button"
-                    newChild3.appendChild(newChild4);
-
-                    newChild4.addEventListener('click', () => {
-                        const newChild4_2 = newChild4.closest('.child_windows');
-                        if (newChild4_2) {
-                            newChild4_2.remove();
+                    closeButton.addEventListener('click', () => {
+                        const parentWindow = closeButton.closest('.child_windows');
+                        if (parentWindow) {
+                            parentWindow.remove();
                             zindexwindow_addnavy();
                         }
                     });
 
-                    const newChild4_1 = document.createElement('span');
-                    newChild4_1.className = "bigscreen_button button2"
-                    newChild3.appendChild(newChild4_1);
-
-                    const newChild4_2 = document.createElement('span');
-                    newChild4_2.className = "minscreen_button button2"
-                    newChild3.appendChild(newChild4_2);
-
-                    const newChild4_3 = document.createElement('span');
-                    newChild4_3.className = "minimization_button button2"
-                    newChild3.appendChild(newChild4_3);
-
-                    const newChild4_5 = document.createElement('br');
-                    newChild3.appendChild(newChild4_5);
-
-                    const newChild6 = document.createElement('div');
-                    newChild6.className = "window_contents"
-                    windowDiv.appendChild(newChild6);
+                    const windowContents = createElement('div', "window_contents", windowDiv);
                     setTimeout(() => {
                         windowDiv.classList.add('no_create_windows');
                     }, 100);
 
+                    const addMediaContent = (mediaTag, mediaSrc) => {
+                        const mediaElement = createElement(mediaTag, "item_preview", windowContents);
+                        mediaElement.src = mediaSrc;
+                        if (mediaTag === 'video') mediaElement.controls = true;
+                        windowContents.classList.add("scrollbar_none");
+                    };
+                    const addIframe = (src) => {
+                        const iframe = createElement('iframe', "item_preview", windowContents);
+                        iframe.src = src;
+                        iframe.style.width = "100%";
+                        iframe.style.height = "100%";
+                        windowContents.classList.add("scrollbar_none");
+                    };
+                    windowDiv.classList.add('selectwindows');
                     if (file.type.startsWith('image/')) {
-                        windowDiv.classList.add('selectwindows');
-                        const img = document.createElement('img');
-                        img.src = result;
-                        img.className = "item_preview";
-                        newChild6.classList.add("scrollbar_none");
-                        newChild6.appendChild(img);
+                        addMediaContent('img', result);
                     } else if (file.type.startsWith('video/')) {
-                        windowDiv.classList.add('selectwindows');
-                        const video = document.createElement('video');
-                        video.src = result;
-                        video.controls = true;
-                        video.className = "item_preview";
-                        newChild6.classList.add("scrollbar_none");
-                        newChild6.appendChild(video);
+                        addMediaContent('video', result);
                     } else if (file.type === 'application/pdf') {
-                        windowDiv.classList.add('selectwindows');
-                        const iframe = document.createElement('iframe');
-                        iframe.src = result;
-                        iframe.className = "item_preview";
-                        iframe.style.width = "100%";
-                        iframe.style.height = "100%";
-                        newChild6.classList.add("scrollbar_none");
-                        newChild6.appendChild(iframe);
+                        addIframe(result);
                     } else if (file.type.startsWith('text/')) {
-                        windowDiv.classList.add('selectwindows');
-                        const text = document.createElement('p');
-                        text.textContent = e.target.result;
-                        text.className = "item_preview";
-                        newChild6.appendChild(text);
+                        createElement('p', "item_preview", windowContents, e.target.result);
                     } else if (isYouTubeURL(url)) {
-                        windowDiv.classList.add('selectwindows');
-                        const iframe = document.createElement('iframe');
-                        iframe.src = `https://www.youtube.com/embed/${extractYouTubeID(url)}`;
-                        iframe.className = "item_preview";
-                        iframe.style.width = "100%";
-                        iframe.style.height = "100%";
-                        newChild6.classList.add("scrollbar_none");
-                        newChild6.appendChild(iframe);
+                        addIframe(`https://www.youtube.com/embed/${extractYouTubeID(url)}`);
                     } else {
-                        const unsupported = document.createElement('p');
-                        unsupported.textContent = 'このファイル形式はサポートされていません。';
-                        unsupported.classList.add('item_preview');
-                        newChild6.appendChild(unsupported);
+                        createElement('p', 'item_preview', windowContents, 'このファイル形式はサポートされていません。');
                     }
 
                     function isYouTubeURL(url_youtube) {
@@ -6048,32 +5786,37 @@ if (ua.includes("mobile")) {
                     }
 
                     setTimeout(() => {
-                        document.querySelectorAll('.testwindow2:not(.no_create_windows)').forEach(function (testwindow2) {
-                            testwindow2.style.width = "500px"
-                            testwindow2.style.height = "400px"
-                        })
-                        document.querySelectorAll('.testwindow2, .child').forEach(function (z_index_child_windows) {
-                            const zindexchildwindows = z_index_child_windows.closest('.testwindow2');
-                            z_index_child_windows.removeEventListener('mousedown', handleMouseMove_scrollreset);
-                            z_index_child_windows.addEventListener('mousedown', handleMouseMove_scrollreset);
-                            document.removeEventListener('mousemove', handleMouseDown_resize);
-                            document.addEventListener('mousemove', handleMouseDown_resize);
-                            function handleMouseDown_resize() {
-                                const testwindow2_1 = z_index_child_windows.children[2];
+                        const testWindows = document.querySelectorAll('.testwindow2:not(.no_create_windows)');
+                        testWindows.forEach((testWindow) => {
+                            testWindow.style.width = '500px';
+                            testWindow.style.height = '400px';
+                            const centerElement = testWindow.querySelector('.testwindow2 > *:nth-child(3) > *');
+                            centerElement.classList.add('center');
+                        });
+                        const childWindows = document.querySelectorAll('.testwindow2, .child');
+                        childWindows.forEach(childWindow => {
+                            const zindexChildWindow = childWindow.closest('.testwindow2');
+                            const handleMouseMoveScrollReset = () => {
+                                document.removeEventListener('mouseup', handleMouseDownResize);
+                                document.addEventListener('mousemove', handleMouseDownResize);
+                                zindexChildWindow.scrollTop = 0;
+                                zindexChildWindow.scrollLeft = 0;
+                                zindexChildWindow.style.zIndex = largestZIndex++;
+                            };
+                            const handleMouseDownResize = () => {
+                                const testwindow2_1 = childWindow.children[2];
                                 const testwindow2_2 = testwindow2_1.firstElementChild;
-                                testwindow2_2.classList.add('center');
-                                testwindow2_2.style.maxWidth = `${z_index_child_windows.clientWidth}px`;
-                                testwindow2_2.style.maxHeight = `${z_index_child_windows.clientHeight - 25}px`;
+                                testwindow2_2.style.maxWidth = `${zindexChildWindow.clientWidth}px`;
+                                testwindow2_2.style.maxHeight = `${zindexChildWindow.clientHeight - 25}px`;
                                 rectangle_remove();
-                            }
-                            function handleMouseMove_scrollreset() {
-                                zindexchildwindows.style.zIndex = largestZIndex++;
-                                zindexchildwindows.scrollTop = 0;
-                                zindexchildwindows.scrollLeft = 0;
-                            }
+                            };
+                            childWindow.addEventListener('mousedown', () => {
+                                handleMouseMoveScrollReset();
+                                handleMouseDownResize();
+                            });
                         });
                         resolve();
-                    });
+                    }, 0);
                     dropArea2.appendChild(windowDiv);
                 };
                 reader.readAsDataURL(file);
@@ -6128,12 +5871,10 @@ if (ua.includes("mobile")) {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'nexser_storageData_encrypted.json';
+        a.download = 'nexser_storageData_locked.json';
         a.click();
         URL.revokeObjectURL(url);
     });
-
-
 
     document.getElementById('fileInput').addEventListener('change', function (event) {
         const file = event.target.files[0];
@@ -6170,7 +5911,6 @@ if (ua.includes("mobile")) {
             warning_windows.style.display = "block";
             document.querySelector('.close_button3').style.display = "block";
             sound(4);
-
             document.querySelector('.shutdown_button').style.display = "none";
             document.querySelector('.warningclose_button').style.display = "none";
         };
@@ -6178,21 +5918,22 @@ if (ua.includes("mobile")) {
     });
 
     function nexser_search_button() {
-        const search_windows = document.querySelectorAll('.child_windows:not(.window_nosearch)');
-        search_windows.forEach((windowElement) => {
-            // 1番目の子要素を取得
-            const firstChild = windowElement.children[0];
-            // その子要素の中の2番目の子要素を取得
-            const nestedChild = firstChild.children[1];
-            const nestedChild2 = nestedChild.textContent;
-            const button = document.createElement('li');
-            button.className = 'borderinline_dotted button2 search_button white_space_wrap';
-            const button_span_child = document.createElement('span');
-            button_span_child.textContent = "　" + nestedChild2 + "　";
-            document.getElementById('myUL').appendChild(button);
-            button.appendChild(button_span_child);
-            button.addEventListener('click', () => toggleWindow(windowElement));
+        const searchWindows = document.querySelectorAll('.child_windows:not(.window_nosearch)');
+        const myUL = document.getElementById('myUL');
+        const fragment = document.createDocumentFragment();
+        searchWindows.forEach(windowElement => {
+            const nestedChildText = windowElement.children[0]?.children[1]?.textContent;
+            if (nestedChildText) {
+                const button = document.createElement('li');
+                button.className = 'borderinline_dotted button2 search_button white_space_wrap';
+                const buttonSpanChild = document.createElement('span');
+                buttonSpanChild.textContent = `　${nestedChildText}　`;
+                button.appendChild(buttonSpanChild);
+                button.addEventListener('click', () => toggleWindow(windowElement));
+                fragment.appendChild(button);
+            }
         });
+        myUL.appendChild(fragment);
     };
     nexser_search_button()
 
@@ -6241,9 +5982,7 @@ if (ua.includes("mobile")) {
 
     function rectangle_remove() {
         const elements = document.querySelectorAll('.rectangle');
-        elements.forEach(element => {
-            element.remove('rectangle');
-        });
+        elements.forEach(element => element.remove());
     }
 
     var background_img = document.createElement("img");
@@ -6282,7 +6021,7 @@ if (ua.includes("mobile")) {
     }
     function minidesk_backgroundresize4() {
         background_img.style.display = "block";
-        background_img.src = "nexser_image/space_wallpaper.png.jpg"; // 画像のパスを指定
+        background_img.src = "nexser_image/space_wallpaper.png"; // 画像のパスを指定
         // 特定のクラスを持つ要素を取得
         var targetElement = document.querySelector(".mini_desktop");
         targetElement.appendChild(background_img);
@@ -6409,42 +6148,39 @@ if (ua.includes("mobile")) {
     };
 
     function console_error_btn() {
-        if (localStorage.getItem('startmenu_console')) {
-            document.querySelectorAll('.error_btn').forEach(btn => btn.remove());
-            const errorBtn = document.createElement('span');
-            errorBtn.className = "button2 error_btn bold";
-            errorBtn.textContent = "✕";
-            Object.assign(errorBtn.style, {
-                background: "red",
-                color: "white"
-            });
-            document.querySelector('.first_taskbar_buttons').appendChild(errorBtn);
-            errorBtn.addEventListener('click', () => {
-                toggleWindow(console_error_menu);
-            });
-            taskbar_resize();
-        }
+        if (!localStorage.getItem('startmenu_console')) return;
+        document.querySelectorAll('.error_btn').forEach(btn => btn.remove());
+        const errorBtn = document.createElement('span');
+        errorBtn.className = "button2 error_btn bold";
+        errorBtn.textContent = "✕";
+        errorBtn.style.background = "red";
+        errorBtn.style.color = "white";
+        document.querySelector('.first_taskbar_buttons').appendChild(errorBtn);
+        errorBtn.addEventListener('click', () => {
+            toggleWindow(console_error_menu);
+        });
+        taskbar_resize();
     }
 
     const taskbar_resize = () => {
         setTimeout(() => {
-            const taskbar = document.querySelector('#taskbar');
-            const taskbtnParent = document.querySelector('.first_taskbar_buttons');
-            const taskbtnChild = document.querySelector('.taskbar_buttons');
-            const taskbtnRightGroup = document.querySelector('.taskbar_rightgroup');
-            taskbtnChild.style.position = "absolute";
-            taskbtnChild.style.left = `${taskbtnParent.clientWidth + 70}px`;
-            taskbtnChild.style.width = `${taskbar.clientWidth - taskbtnRightGroup.clientWidth - 150}px`;
-            const taskheight_parent = document.querySelector('#taskbar');
-            const taskheight_child = document.querySelector('.taskbar_buttons');
-            taskheight_child.style.height = `${taskheight_parent.clientHeight - + 3}px`;
-        }, 100);
+            const [parent, child, rightGroup, taskbar] = [
+                document.querySelector('.first_taskbar_buttons'),
+                document.querySelector('.taskbar_buttons'),
+                document.querySelector('.taskbar_rightgroup'),
+                document.querySelector('#taskbar')
+            ];
+            child.style.position = 'absolute';
+            child.style.left = `${parent.clientWidth + 70}px`;
+            child.style.width = `${taskbar.clientWidth - rightGroup.clientWidth - 182}px`;
+            child.style.height = `${taskbar.clientHeight - 3}px`;
+        }, 150);
     };
-    const taskbar_initResize = () => {
-        window.addEventListener('resize', allwindow_resize);
-        new ResizeObserver(() => taskbar_resize()).observe(document.querySelector('.taskbar_rightgroup'));
+    const taskbarInitResize = () => {
+        window.addEventListener('resize', taskbar_resize);
+        new ResizeObserver(taskbar_resize).observe(document.querySelector('.taskbar_rightgroup'));
     };
-    setTimeout(taskbar_initResize, 100);
+    setTimeout(taskbarInitResize, 100);
 
     window.addEventListener('resize', resize_background_image);
     setTimeout(resize_background_image, 100);
@@ -6473,6 +6209,7 @@ if (ua.includes("mobile")) {
         htmlview_resize()
         htmlview_resize2()
         taskbar_resize()
+        editor2_resize()
     }
 
     function console_errortext_clear() {
@@ -6560,21 +6297,16 @@ if (ua.includes("mobile")) {
         localStorage.setItem('divOpacity', 1 - opacityValue);
     });
 
-
     const targetNodes = document.querySelectorAll('.child_windows');
     const config = { attributes: true, childList: true, subtree: true, attributeFilter: ['class', 'style'] };
     let previousActiveCount = 0;
     let previousLargestZIndex = largestZIndex;
-
-    const callback = function () {
+    const callback = () => {
         const currentActiveCount = Array.from(targetNodes).filter(node => node.classList.contains('active')).length;
-        let zIndexChanged = false;
-        if (previousLargestZIndex !== largestZIndex) {
-            previousLargestZIndex = largestZIndex;
-            zIndexChanged = true;
-        }
+        const zIndexChanged = previousLargestZIndex !== largestZIndex;
         if (currentActiveCount !== previousActiveCount || zIndexChanged) {
             previousActiveCount = currentActiveCount;
+            previousLargestZIndex = zIndexChanged ? largestZIndex : previousLargestZIndex;
             z_index.textContent = getLargestZIndex('.child_windows');
             zindexwindow_addnavy();
             setTimeout(() => {
@@ -6584,7 +6316,6 @@ if (ua.includes("mobile")) {
     };
     const observer = new MutationObserver(callback);
     targetNodes.forEach(node => observer.observe(node, config));
-
 
     navigator.getBattery().then((battery) => {
         function updateChargeInfo() {
@@ -6623,6 +6354,640 @@ if (ua.includes("mobile")) {
         battery.addEventListener('chargingchange', updateChargeInfo);
         updateChargeInfo()
     })
+
+    document.querySelectorAll('.window_tool').forEach(windowtool_files => {
+        const windowtool_files_parent = document.createElement('div');
+        windowtool_files_parent.innerHTML = `<span class="winchild_border"></span><div class="windowtool_parent"><span class="startmenu_file_icon"></span>
+                                <button class="button2" style="height: 20px; font-size: large; float: right;">&#x25BC;</button>
+                                      &emsp;&emsp;<span class="windowtool_child_filenames"></span>
+                                <div class="windowtool_child">
+                                    <ul>
+                                        <li class="test_button"><span class="startmenu_file_icon"></span>main</li>
+                                        <li class="test_button2"><span class="startmenu_file_icon"></span>my computer
+                                        </li>
+                                        <li class="test_button33"><span class="startmenu_file_icon"></span>browser
+                                        </li>
+                                        <li class="test_button3"><span class="startmenu_file_icon"></span>control
+                                            panel
+                                        </li>
+                                        <li class="test_button15"><span class="startmenu_file_icon"></span>accessory
+                                        </li>
+                                        <li class="test_button8"><span class="startmenu_file_icon"></span>sound</li>
+                                        <li class="test_button6"><span class="startmenu_file_icon"></span>nexser
+                                            prompt
+                                        </li>
+                                        <li class="test_button9"><span class="startmenu_file_icon"></span>driver
+                                        </li>
+                                        <li class="test_button12"><span class="startmenu_file_icon"></span>notepad
+                                        </li>
+                                        <li class="test_button30"><span class="startmenu_file_icon"></span>objective
+                                            sheet</li>
+                                    </ul>
+                                </div>
+                            </div>`;
+        windowtool_files.appendChild(windowtool_files_parent)
+
+        setTimeout(() => {
+            document.querySelectorAll('.windowtool_parent').forEach(parent => {
+                const child = parent.lastElementChild;
+                parent.addEventListener('mousedown', (event) => {
+                    if (!event.target.closest('.windowtool_child')) {
+                        child.style.display = (child.style.display === 'block') ? 'none' : 'block';
+                    }
+                });
+                child.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    child.style.display = 'none';
+                });
+            });
+            document.querySelectorAll('.windowtool_child_filenames').forEach(filename => {
+                const parent = filename.closest('.child_windows');
+                const parentFirstChild = parent.children[0];
+                const lastChildText = parentFirstChild.lastElementChild.textContent;
+                filename.textContent = lastChildText;
+            });
+        }, 100);
+    });
+
+
+    document.querySelectorAll('.windowtool_buttons_child').forEach(windowtool_buttons_child => {
+        const windowtool_childbtns = document.createElement('div');
+        windowtool_childbtns.innerHTML = `<button class="button2 windowfile2" style="width: 25px;">・</button>
+        <button class="button2 windowfile1" style="width: 25px;">ー</button>
+        <button class="button2 windowfile3" style="width: 25px;">=</button>
+        <button class="button2 nexser_search" style="width: 25px;">&nbsp;<span class="magnifying_glass"></span></button>
+        <button class="button2" onclick="filetimes_test()" style="width: 25px; margin-left: 10px;">TR</button>
+         <button class="button2" onclick="filetimes_test2()" style="width: 25px;">TF</button>`;
+        windowtool_childbtns.style = "display: flex; height: 25px;";
+        setTimeout(() => {
+            document.querySelectorAll('.windowfile1').forEach((windowfile_1) => {
+                windowfile_1.addEventListener('click', () => {
+                    localStorage.setItem('windowfile_1', true);
+                    localStorage.removeItem('windowfile_2');
+                    localStorage.removeItem('windowfile_3');
+                    window_file_list_change();
+                });
+            });
+            document.querySelectorAll('.windowfile2').forEach((windowfile_2) => {
+                windowfile_2.addEventListener('click', () => {
+                    localStorage.setItem('windowfile_2', true);
+                    localStorage.removeItem('windowfile_1');
+                    localStorage.removeItem('windowfile_3');
+                    window_file_list_reset();
+                });
+            });
+            document.querySelectorAll('.windowfile3').forEach((windowfile3) => {
+                windowfile3.addEventListener('click', () => {
+                    localStorage.setItem('windowfile_3', true);
+                    localStorage.removeItem('windowfile_1');
+                    localStorage.removeItem('windowfile_2');
+                    window_file_list_change2();
+                });
+            });
+            document.querySelectorAll('.nexser_search').forEach(nexser_search => { nexser_search.onclick = null; nexser_search.onclick = () => { toggleWindow(nexser_search_menu); }; });
+            if (localStorage.getItem('filetimes')) {
+                document.querySelectorAll('.windowfile_time').forEach(windowfileTime => {
+                    windowfileTime.style.display = 'none';
+                });
+            }
+        }, 100);
+        windowtool_buttons_child.appendChild(windowtool_childbtns)
+    });
+
+
+
+    function filetimes_test() {
+        localStorage.removeItem('filetimes')
+        if (localStorage.getItem('windowfile_1') || localStorage.getItem('windowfile_3')) {
+            Array.from(document.getElementsByClassName('windowfile_time')).forEach((windowfile_time) => {
+                windowfile_time.style.display = "block"
+            })
+        }
+    }
+
+    function filetimes_test2() {
+        localStorage.setItem('filetimes', true)
+        if (localStorage.getItem('filetimes')) {
+            Array.from(document.getElementsByClassName('windowfile_time')).forEach((windowfile_time) => {
+                windowfile_time.style.display = "none"
+            })
+        }
+    }
+
+    function error_windows_create(errorTitle, errorMessage = "Error") {
+        sound(2);
+        nex.style.cursor = "";
+        const entryDiv = document.createElement("div");
+        entryDiv.className = "child_windows error_windows back_silver no_window";
+        entryDiv.innerHTML = `
+          <div class="title"><span class="bold error_title_text">${errorMessage}</span>
+          </div>
+          <div class="title_buttons">
+            <span class="drag_button">&nbsp;</span>
+            <span class="close_button button2 allclose_button" onclick="error_windows_close(event)"></span>
+          </div>
+          <div class="window_content">
+            <br>
+            <p>
+              <span class="error_icon">✕</span>
+              <span class="window_error_text">${errorTitle}</span>
+            </p>
+            <span class="button2 borderinline_dotted" style="position: absolute; top: 86%; left: 50%; transform: translate(-50%, -50%);" onclick="error_windows_close(event)">&emsp;OK&emsp;</span>
+          </div>
+          <br>`;
+        entryDiv.addEventListener("mousedown", event => {
+            event.currentTarget.style.zIndex = ++largestZIndex;
+        });
+        dropArea2.appendChild(entryDiv);
+        window_back_silver();
+        entryDiv.style.zIndex = ++largestZIndex;
+    }
+
+    function showPosition(position) {
+        const { latitude, longitude, accuracy } = position.coords;
+        document.getElementById('location').innerHTML =
+            `緯度: ${latitude} <br> 経度: ${longitude} <br> 精度: ${accuracy} メートル`;
+    }
+    function showError(error) {
+        const messages = {
+            1: "ユーザーが位置情報の取得を拒否しました。",
+            2: "位置情報が利用できません。",
+            3: "位置情報の取得がタイムアウトしました。",
+            0: "不明なエラーが発生しました。"
+        };
+        document.getElementById('location').innerHTML = (messages[error.code] || messages[0]);
+    }
+    function poti_btn() {
+        if (navigator.geolocation) {
+            document.getElementById('location').innerHTML = "loading..."
+            navigator.geolocation.watchPosition(showPosition, showError, {
+                enableHighAccuracy: true,
+                timeout: 5000,
+                maximumAge: 0
+            });
+        } else {
+            document.getElementById('location').innerHTML = "このブラウザでは位置情報がサポートされていません。";
+        }
+    }
+
+    document.querySelectorAll('.frame_fullbutton').forEach(button => {
+        button.addEventListener('click', function () {
+            let parent = button.closest('.child_windows');
+            if (parent) {
+                let iframeOrVideo = parent.querySelector('iframe, video');
+                if (iframeOrVideo) {
+                    if (iframeOrVideo.requestFullscreen) {
+                        iframeOrVideo.requestFullscreen();
+                    } else if (iframeOrVideo.mozRequestFullScreen) {
+                        iframeOrVideo.mozRequestFullScreen();
+                    } else if (iframeOrVideo.webkitRequestFullscreen) {
+                        iframeOrVideo.webkitRequestFullscreen();
+                    } else if (iframeOrVideo.msRequestFullscreen) {
+                        iframeOrVideo.msRequestFullscreen();
+                    }
+                }
+            }
+        });
+    });
+
+
+    let selectedImage = null;
+
+    function execCmd(command, value = null) {
+        document.execCommand(command, false, value);
+    }
+
+    editor2_child.addEventListener('mousedown', () => {
+        const images = editor2_child.querySelectorAll('img');
+        for (const img of images) {
+            img.style.border = '';
+        }
+    });
+    editor2_child.addEventListener("keydown", function (event) {
+        if (event.ctrlKey && event.key === 's') {
+            event.preventDefault();
+        }
+        editor2_child.addEventListener("keyup", function (event) {
+            if (event.ctrlKey && event.key === 's') {
+                saveContent()
+            }
+        })
+    });
+
+    function saveContent() {
+        const content = document.getElementById('editor_2').innerHTML;
+        const compressedContent = btoa(unescape(encodeURIComponent(content)));
+        localStorage.setItem('editorContent', compressedContent);
+        alert('保存しました!');
+    }
+
+    function editorContent_load() {
+        const savedContent = localStorage.getItem('editorContent');
+        if (savedContent) {
+            const decompressedContent = decodeURIComponent(escape(atob(savedContent)));
+            document.getElementById('editor_2').innerHTML = decompressedContent;
+        }
+    }
+
+    function toggleDecoration() {
+        const selection = window.getSelection();
+        if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            const parentElement = range.commonAncestorContainer.parentElement;
+
+            if (parentElement && parentElement.style.border) {
+                // 装飾を解除
+                const textNode = document.createTextNode(parentElement.textContent);
+                parentElement.parentNode.replaceChild(textNode, parentElement);
+            } else {
+                const selectedText = range.toString().trim();
+                if (selectedText) {
+                    // 装飾を追加
+                    const span = document.createElement('span');
+                    span.style.border = '2px solid black';
+                    span.style.display = 'inline';
+                    span.textContent = selectedText;
+                    range.deleteContents();
+                    range.insertNode(span);
+                }
+            }
+        }
+        if (selectedImage) {
+            if (selectedImage.classList.contains('img_border')) {
+                selectedImage.classList.remove('img_border')
+            } else {
+                selectedImage.classList.add('img_border')
+            }
+        }
+    }
+
+    function toggleShadows() {
+        const selection = window.getSelection();
+        if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            const parentElement = range.commonAncestorContainer.parentElement;
+            if (parentElement && parentElement.style.textShadow) {
+                parentElement.style.textShadow = '';
+            } else {
+                const span = document.createElement('span');
+                span.style.textShadow = '3px 3px 6px dimgray';
+                span.textContent = range.toString();
+                range.deleteContents();
+                range.insertNode(span);
+            }
+        }
+    }
+
+    function toggleBoxShadow() {
+        const selection = window.getSelection();
+        if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            const parentElement = range.commonAncestorContainer.parentElement;
+            if (parentElement && parentElement.style.boxShadow) {
+                parentElement.style.boxShadow = '';
+            } else {
+                const span = document.createElement('span');
+                span.style.boxShadow = '3px 3px 6px dimgray';
+                span.textContent = range.toString();
+                range.deleteContents();
+                range.insertNode(span);
+            }
+        }
+        if (selectedImage) {
+            if (selectedImage.style.boxShadow) {
+                selectedImage.style.boxShadow = '';
+            } else {
+                selectedImage.style.boxShadow = '5px 5px 15px rgba(0, 0, 0, 0.5)';
+            }
+        }
+    }
+
+    document.getElementById('editor_2').addEventListener('keydown', function (event) {
+        if (event.key === 'Enter') {
+            setTimeout(() => {
+                setNormal();
+            }, 0);
+        }
+    });
+
+
+    function setNormal() {
+        const selectElement = document.getElementById('fontSizeSelect');
+        selectElement.value = '5';
+        changeFontSize(selectElement.value);
+    }
+
+    document.getElementById('editor_2').addEventListener('input', function (event) {
+        if (event.inputType === 'insertParagraph') {
+            const selection = window.getSelection();
+            const range = selection.getRangeAt(0);
+            const newNode = document.createElement('span');
+            let rootParent = range.startContainer;
+            while (rootParent.parentNode && rootParent.nodeName !== 'DIV') {
+                rootParent = rootParent.parentNode;
+            }
+            if (rootParent.nodeName === 'DIV') {
+                console.log('Clearing all children of:', rootParent);
+                while (rootParent.firstChild) {
+                    rootParent.removeChild(rootParent.firstChild);
+                }
+            }
+            newNode.appendChild(document.createTextNode('\u200B'));
+            rootParent.appendChild(newNode);
+            range.setStart(newNode, 0);
+            range.setEnd(newNode, 0);
+            selection.removeAllRanges();
+            selection.addRange(range);
+        }
+    });
+
+    function changeFontSize(size) {
+        document.execCommand('fontSize', false, size);
+    }
+
+    function exportToHTML() {
+        const editor = document.getElementById('editor_2');
+        const elements = editor.getElementsByTagName('*');
+        for (let i = 0; i < elements.length; i++) {
+            elements[i].setAttribute('contenteditable', 'false');
+        }
+        const content = editor.innerHTML;
+        // 新しいドキュメントを作成してコンテンツを保持
+        const doc = document.implementation.createHTMLDocument('Exported Content');
+        doc.body.innerHTML = content;
+        // 元のドキュメントからスタイルをコピー
+        const styles = document.querySelectorAll('style, link[rel="stylesheet"]');
+        styles.forEach(style => {
+            doc.head.appendChild(style.cloneNode(true));
+        });
+        const blob = new Blob([doc.documentElement.outerHTML], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'editor_content.html';
+        a.click();
+        URL.revokeObjectURL(url);
+        setTimeout(() => {
+            for (let i = 0; i < elements.length; i++) {
+                elements[i].setAttribute('contenteditable', 'true');
+            }
+        }, 1000);
+    }
+
+    function printDiv() {
+        var printContents = document.getElementById('editor_2').innerHTML;
+        var originalContents = document.body.innerHTML;
+        document.body.style.backgroundColor = "white";
+        document.body.style.height = "100vh";
+        var printContainer = document.createElement('div');
+        printContainer.innerHTML = printContents;
+        var bodyChildren = document.body.children;
+        for (var i = 0; i < bodyChildren.length; i++) {
+            if (bodyChildren[i] !== printContainer) {
+                bodyChildren[i].style.display = 'none';
+            }
+        }
+        document.body.appendChild(printContainer);
+        window.print();
+        setTimeout(() => {
+            for (var i = 0; i < bodyChildren.length; i++) {
+                bodyChildren[i].style.display = '';
+            }
+            document.body.removeChild(printContainer);
+        }, 500);
+    }
+
+
+    const maxRecentColors = 15; // 最近使用した色の最大数
+
+    // ローカルストレージから色を取得
+    const recentTextColors = JSON.parse(localStorage.getItem('recentTextColors')) || [];
+    const recentBgColors = JSON.parse(localStorage.getItem('recentBgColors')) || [];
+
+    document.getElementById('editor_textColor').addEventListener('change', function () {
+        addRecentColor(this.value, recentTextColors, 'recentTextColors');
+        applyTextColor(this.value);
+    });
+
+    document.getElementById('editor_bgColor').addEventListener('change', function () {
+        addRecentColor(this.value, recentBgColors, 'recentBgColors');
+        applyBgColor(this.value);
+    });
+
+    function addRecentColor(color, colorArray, storageKey) {
+        if (!colorArray.includes(color)) {
+            if (colorArray.length >= maxRecentColors) {
+                colorArray.shift(); // 古い色を削除
+            }
+            colorArray.push(color);
+            localStorage.setItem(storageKey, JSON.stringify(colorArray));
+            updateRecentColors(colorArray, storageKey);
+        }
+    }
+
+    function updateRecentColors(colorArray, elementId) {
+        const recentColorsDiv = document.getElementById(elementId);
+        recentColorsDiv.innerHTML = '';
+        colorArray.forEach(color => {
+            const colorBox = document.createElement('div');
+            colorBox.className = 'color-box border2';
+            colorBox.style.backgroundColor = color;
+            colorBox.addEventListener('click', function () {
+                if (elementId === 'recentTextColors') {
+                    applyTextColor(color);
+                } else if (elementId === 'recentBgColors') {
+                    applyBgColor(color);
+                }
+            });
+            recentColorsDiv.appendChild(colorBox);
+        });
+    }
+
+    function applyTextColor(color) {
+        document.execCommand('foreColor', false, color);
+    }
+
+    function applyBgColor(color) {
+        document.execCommand('hiliteColor', false, color);
+    }
+
+    document.getElementById('colorPickerButton').addEventListener('click', function () {
+        const selection = window.getSelection();
+        if (selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            const selectedText = range.startContainer.parentElement;
+            const color = window.getComputedStyle(selectedText).color;
+            console.log(color)
+            const colorPanelContainer = document.getElementById('colorPanelContainer');
+            colorPanelContainer.style.backgroundColor = color;
+            colorPanelContainer.addEventListener('click', function () {
+                document.execCommand('foreColor', false, color);
+            });
+        }
+    });
+
+    // ページロード時に最近使用した色を表示
+    updateRecentColors(recentTextColors, 'recentTextColors');
+    updateRecentColors(recentBgColors, 'recentBgColors');
+
+    const color_panel_parent = document.querySelector('.color_panel_parent');
+    const color_panel_child = document.querySelector('.color_panel_child');
+
+    color_panel_parent.style.left = "-110px";
+
+    color_panel_parent.addEventListener('click', function () {
+        if (color_panel_parent.style.left === "-110px") {
+            color_panel_parent.style.left = "";
+        } else {
+            color_panel_parent.style.left = "-110px";
+        }
+    });
+
+    color_panel_child.addEventListener('click', function (event) {
+        event.stopPropagation(); // 親要素のクリックイベントが発火しないようにする
+    });
+    document.querySelector('.cpc2').addEventListener('click', function (event) {
+        event.stopPropagation(); // 親要素のクリックイベントが発火しないようにする
+    });
+
+    if (!localStorage.getItem('editorContent') && localStorage.getItem('start_nexser')) {
+        localStorage.setItem('editorContent', "PGJyPg==")
+    }
+
+    setTimeout(() => {
+
+        function applyImageHandlers(img) {
+            img.style.position = 'absolute';
+            img.style.cursor = 'pointer';
+            img.setAttribute('draggable', 'false'); // 画像のデフォルトのドラッグを無効化
+
+            img.addEventListener('click', function (event) {
+                event.stopPropagation(); // クリックイベントのバブリングを防止
+                if (selectedImage) {
+                    selectedImage.style.border = ''; // 以前の選択を解除
+                }
+                selectedImage = img;
+                img.style.border = '1.5px solid blue'; // 選択された画像を強調表示
+            });
+
+            img.addEventListener('mousedown', function (event) {
+                img.setAttribute('contenteditable', 'false'); // 画像を一時的に編集不可に設定
+
+                const editor = document.getElementById('editor_2');
+                const editorRect = editor.getBoundingClientRect();
+                let shiftX = event.clientX - img.getBoundingClientRect().left;
+                let shiftY = event.clientY - img.getBoundingClientRect().top;
+
+                function moveAt(pageX, pageY) {
+                    img.style.left = pageX - shiftX - editorRect.left + editor.scrollLeft + 'px';
+                    img.style.top = pageY - shiftY - editorRect.top + editor.scrollTop + 'px';
+                }
+
+                function onMouseMove(event) {
+                    moveAt(event.pageX, event.pageY);
+                    img.style.border = '2px dashed red';
+                }
+
+                document.addEventListener('mousemove', onMouseMove);
+
+                document.addEventListener('mouseup', function () {
+                    document.removeEventListener('mousemove', onMouseMove);
+                    img.setAttribute('contenteditable', 'true'); // ドラッグ終了後に再度編集可能に設定
+                }, { once: true });
+
+                img.addEventListener('dragstart', function (event) {
+                    event.preventDefault(); // デフォルトのドラッグアンドドロップを無効化
+                });
+                event.preventDefault();
+            });
+
+            if (!img.hasAttribute('contextmenu-listener')) {
+                img.setAttribute('contextmenu-listener', 'true');
+            }
+            img.addEventListener('contextmenu', (event) => {
+                event.preventDefault();
+                if (confirm('この画像を削除しますか？')) {
+                    img.remove();
+                }
+            });
+        }
+
+        // 初期画像にハンドラを適用
+        document.querySelectorAll('#editor_2 img').forEach(applyImageHandlers);
+
+        // ドラッグ中のテキスト選択を防止
+        document.addEventListener('selectstart', function (event) {
+            if (event.target.tagName === 'IMG') {
+                event.preventDefault();
+            }
+        });
+
+        // MutationObserverを使用して新しい画像にハンドラを適用
+        const observer = new MutationObserver(function (mutationsList) {
+            for (let mutation of mutationsList) {
+                if (mutation.type === 'childList') {
+                    mutation.addedNodes.forEach(node => {
+                        if (node.tagName === 'IMG') {
+                            applyImageHandlers(node);
+                        }
+                    });
+                }
+            }
+        });
+
+        observer.observe(document.getElementById('editor_2'), { childList: true, subtree: true });
+
+        const editor = document.getElementById('editor_2');
+
+        editor.addEventListener('dragenter', function (event) {
+            if (event.dataTransfer.types.includes('Files')) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+        });
+
+        editor.addEventListener('dragover', function (event) {
+            if (event.dataTransfer.types.includes('Files')) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+        });
+
+        editor.addEventListener('dragleave', function (event) {
+            if (event.dataTransfer.types.includes('Files')) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+        });
+
+        editor.addEventListener('drop', function (event) {
+            if (event.dataTransfer.types.includes('Files')) {
+                event.preventDefault();
+                event.stopPropagation();
+
+                const files = event.dataTransfer.files;
+                for (let file of files) {
+                    if (file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        reader.onload = function (e) {
+                            const img = document.createElement('img');
+                            img.src = e.target.result;
+                            img.style.position = 'absolute';
+                            img.onload = function () {
+                                img.style.left = event.clientX - editor.getBoundingClientRect().left + editor.scrollLeft - img.width / 2 + 'px';
+                                img.style.top = event.clientY - editor.getBoundingClientRect().top + editor.scrollTop - img.height / 2 + 'px';
+                            };
+                            editor.appendChild(img);
+                            applyImageHandlers(img);
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                }
+            }
+        });
+
+    }, 500);
+
 
     const draggables = document.querySelectorAll('.window_files');
     const dropZone = document.getElementById('drop_zone');
@@ -6742,6 +7107,7 @@ if (ua.includes("mobile")) {
         document.querySelectorAll('.test_button43').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(url_drop_menu); }; });
         document.querySelectorAll('.test_button45').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(alarm_menu); }; });
         document.querySelectorAll('.test_button46').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(location_menu); }; });
+        document.querySelectorAll('.test_button47').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(editor_menu); }; });
 
         // games
 
@@ -6868,142 +7234,5 @@ if (ua.includes("mobile")) {
             rf.classList.remove('file_border3')
         })
     }
-
-    document.querySelectorAll('.windowtool_buttons_child').forEach(windowtool_buttons_child => {
-        const windowtool_childbtns = document.createElement('div');
-
-        windowtool_childbtns.innerHTML = `<button class="button2 windowfile2" style="width: 20px;">*</button>
-        <button class="button2 windowfile1" style="width: 20px;">*2</button>
-        <button class="button2 windowfile3" style="width: 20px;">*3</button>
-        <button class="button2 nexser_search">&nbsp;<span class="magnifying_glass"></span></button>`;
-
-        windowtool_childbtns.style = "display: flex; height: 20px;";
-
-        setTimeout(() => {
-            Array.from(document.getElementsByClassName('windowfile1')).forEach((windowfile_1) => {
-                windowfile_1.addEventListener('click', function () {
-                    localStorage.setItem('windowfile_1', true);
-                    localStorage.removeItem('windowfile_2')
-                    localStorage.removeItem('windowfile_3')
-                    window_file_list_change()
-                })
-            })
-            Array.from(document.getElementsByClassName('windowfile2')).forEach((windowfile_2) => {
-                windowfile_2.addEventListener('click', function () {
-                    localStorage.setItem('windowfile_2', true);
-                    localStorage.removeItem('windowfile_1')
-                    localStorage.removeItem('windowfile_3')
-                    window_file_list_reset()
-                })
-            })
-            Array.from(document.getElementsByClassName('windowfile3')).forEach((windowfile_3) => {
-                windowfile_3.addEventListener('click', function () {
-                    localStorage.setItem('windowfile_3', true);
-                    localStorage.removeItem('windowfile_1')
-                    localStorage.removeItem('windowfile_2')
-                    window_file_list_change2()
-                })
-            })
-            document.querySelectorAll('.nexser_search').forEach(nexser_search => { nexser_search.onclick = null; nexser_search.onclick = () => { toggleWindow(nexser_search_menu); }; });
-        }, 10);
-        windowtool_buttons_child.appendChild(windowtool_childbtns)
-
-    });
-
-    function error_windows_create() {
-        sound(2)
-        nex.style.cursor = '';
-        const windowDiv = document.createElement('div');
-        windowDiv.className = "child_windows error_windows back_silver no_window";
-        const newChild = document.createElement('div');
-        newChild.className = "title"
-        newChild.innerHTML = errortitle_msg;
-        windowDiv.appendChild(newChild);
-        const newChild2 = document.createElement('span');
-        newChild2.className = "bold error_title_text"
-        newChild.appendChild(newChild2);
-        const newChild3 = document.createElement('div');
-        newChild3.className = "title_buttons"
-        windowDiv.appendChild(newChild3);
-        const newChild4_4 = document.createElement('span');
-        newChild4_4.className = "drag_button"
-        newChild4_4.innerHTML = "&nbsp;"
-        newChild3.appendChild(newChild4_4);
-        const newChild4 = document.createElement('span');
-        newChild4.className = "close_button button2 allclose_button"
-        newChild3.appendChild(newChild4);
-        newChild4.addEventListener('click', () => {
-            const newChild4_2 = newChild4.closest('.child_windows');
-            if (newChild4_2) {
-                newChild4_2.remove();
-                zindexwindow_addnavy();
-            }
-        });
-        const newChild6 = document.createElement('div');
-        newChild6.className = "window_content"
-        windowDiv.appendChild(newChild6);
-        const newChild7 = document.createElement('br');
-        newChild6.appendChild(newChild7);
-        const newChild8 = document.createElement('p');
-        newChild6.appendChild(newChild8);
-        const newChild9 = document.createElement('span');
-        newChild9.className = "error_icon"
-        newChild9.textContent = "✕"
-        newChild8.appendChild(newChild9);
-        const newChild10 = document.createElement('span');
-        newChild10.className = "window_error_text";
-        newChild10.textContent = errortitle_text;
-        newChild8.appendChild(newChild10);
-        const newChild11 = document.createElement('br');
-        windowDiv.appendChild(newChild11);
-        const newChild12 = document.createElement('span');
-        newChild12.className = "button2 borderinline_dotted"
-        newChild12.innerHTML = "&emsp;OK&emsp;"
-        newChild12.style = "position: absolute; top: 86%; left: 50%; transform: translate(-50%, -50%);"
-        newChild12.onclick = function (event) {
-            error_windows_close(event);
-        };
-        newChild6.appendChild(newChild12);
-        resetEventListener();
-        function resetEventListener() {
-            windowDiv.removeEventListener('mousedown', onMouseDown);
-            windowDiv.addEventListener('mousedown', onMouseDown);
-        }
-        function onMouseDown() {
-            windowDiv.style.zIndex = largestZIndex++;
-            resetEventListener();
-        }
-        dropArea2.appendChild(windowDiv);
-        window_back_silver();
-        windowDiv.style.zIndex = largestZIndex++;
-    }
-
-    function showPosition(position) {
-        const { latitude, longitude, accuracy } = position.coords;
-        document.getElementById('location').innerHTML =
-            `緯度: ${latitude} <br> 経度: ${longitude} <br> 精度: ${accuracy} メートル`;
-    }
-    function showError(error) {
-        const messages = {
-            1: "ユーザーが位置情報の取得を拒否しました。",
-            2: "位置情報が利用できません。",
-            3: "位置情報の取得がタイムアウトしました。",
-            0: "不明なエラーが発生しました。"
-        };
-        document.getElementById('location').innerHTML = (messages[error.code] || messages[0]);
-    }
-    function poti_btn() {
-        if (navigator.geolocation) {
-            document.getElementById('location').innerHTML = "loading..."
-            navigator.geolocation.watchPosition(showPosition, showError, {
-                enableHighAccuracy: true,
-                timeout: 5000,
-                maximumAge: 0
-            });
-        } else {
-            document.getElementById('location').innerHTML = "このブラウザでは位置情報がサポートされていません。";
-        }
-    }
-
 
 };
