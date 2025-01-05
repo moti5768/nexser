@@ -3879,7 +3879,7 @@ if (ua.includes("mobile")) {
 
     function win2000_load() {
         if (localStorage.getItem('MemoData_export')) {
-            document.querySelector('.notice_text').textContent = "winodws2000からテキストデータを受け取りました!"
+            document.querySelector('.notice_text').textContent = "windows2000からテキストデータを受け取りました!"
             const a = document.querySelector('.note_area');
             a.textContent = localStorage.getItem('MemoData_export');
             localStorage.removeItem('MemoData_export');
