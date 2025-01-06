@@ -115,8 +115,6 @@ if (ua.includes("mobile")) {
     const location_menu = document.querySelector('.location_menu');
     const editor_menu = document.querySelector('.editor_menu');
 
-    const notice_menu = document.querySelector('.notice_menu');
-
     const nexser_search_menu = document.querySelector('.nexser_search_menu');
 
     const warning_windows = document.querySelector('.warning_windows');
@@ -132,7 +130,7 @@ if (ua.includes("mobile")) {
     document.addEventListener('click', () => {
         if (localStorage.getItem('game_none')) {
             document.querySelectorAll('.game_window:not(.active)').forEach((test) => {
-                error_windows_create("制限されているため、起動ができませんでした");
+                noticewindow_create("error", "制限されているため、起動ができませんでした");
                 test.classList.add('active')
                 test.classList.remove('selectwindows')
             })
@@ -558,10 +556,6 @@ if (ua.includes("mobile")) {
     }
     setInterval(taskgroup_load, 1000);
 
-    function notice_closekeep() {
-        localStorage.setItem('notice_closekeep', true)
-    }
-
     function load_nexser() {
         localStorage.removeItem('no_shutdown')
         if (localStorage.getItem('password') && !localStorage.getItem('login') && !localStorage.getItem('prompt_data3') && localStorage.getItem('prompt_data')) {
@@ -813,7 +807,7 @@ if (ua.includes("mobile")) {
 
     function pass_submit() {
         if (document.querySelector('.password').value === "") {
-            error_windows_create("パスワードが入力されていません!");
+            noticewindow_create("warning", "パスワードが入力されていません!", "warning");
         } else {
             const pass = document.querySelector('.password').value;
             const password_lock = (String(pass)
@@ -931,9 +925,9 @@ if (ua.includes("mobile")) {
             startmenu_close()
             setTimeout(() => {
                 if (sessionStorage.getItem('start_camera')) {
-                    error_windows_create("カメラが実行されているため、ログオフできません!");
+                    noticewindow_create("error", "カメラが実行されているため、ログオフできません!");
                 } else if (localStorage.getItem('no_shutdown')) {
-                    error_windows_create("welcomeウィンドウが起動するまでログオフできません!");
+                    noticewindow_create("error", "welcomeウィンドウが起動するまでログオフできません!");
                 } else if (gets === gets2 && gets3 === 0) {
                     sound_stop();
                     shutdown_sound();
@@ -993,9 +987,9 @@ if (ua.includes("mobile")) {
             startmenu_close()
             setTimeout(() => {
                 if (sessionStorage.getItem('start_camera')) {
-                    error_windows_create("カメラが実行されているため、再起動はできません!");
+                    noticewindow_create("error", "カメラが実行されているため、再起動はできません!");
                 } else if (localStorage.getItem('no_shutdown')) {
-                    error_windows_create("welcomeウィンドウが起動するまで再起動はできません!");
+                    noticewindow_create("error", "welcomeウィンドウが起動するまで再起動はできません!");
                 } else if (gets === gets2 && gets3 === 0) {
                     sound_stop();
                     shutdown_sound();
@@ -1034,7 +1028,7 @@ if (ua.includes("mobile")) {
                         }, 3500);
                     }, 1500);
                 } else {
-                    error_windows_create("全てのウィンドウが閉じてないため、再起動できません!");
+                    noticewindow_create("error", "全てのウィンドウが閉じてないため、再起動できません!");
                 }
             }, 100);
         })
@@ -1243,9 +1237,9 @@ if (ua.includes("mobile")) {
             sound_stop();
             document.getElementById('pass_form').focus();
         } else if (localStorage.getItem('password') && gets != gets2) {
-            error_windows_create("全てのウィンドウを終了してください!");
+            noticewindow_create("error", "全てのウィンドウを終了してください!");
         } else {
-            error_windows_create("パスワードを登録していないため、サインアウトができません!");
+            noticewindow_create("error", "パスワードを登録していないため、サインアウトができません!");
         }
     }
 
@@ -1925,7 +1919,7 @@ if (ua.includes("mobile")) {
                     localStorage.setItem('BKCOLOR', a);
                     wallpaper_allremove()
                 } else {
-                    error_windows_create("カラードライバーがインストールされていません!")
+                    noticewindow_create("error", "カラードライバーがインストールされていません!")
                 }
                 break;
 
@@ -1934,7 +1928,7 @@ if (ua.includes("mobile")) {
                     document.querySelector('body').style.color = b;
                     localStorage.setItem('COLOR', b);
                 } else {
-                    error_windows_create("カラードライバーがインストールされていません!")
+                    noticewindow_create("error", "カラードライバーがインストールされていません!")
                 }
                 break;
 
@@ -2160,7 +2154,7 @@ if (ua.includes("mobile")) {
 
             case 'allwindow/close':
                 if (localStorage.getItem('data_taskbar_none')) {
-                    error_windows_create("タスクバーが非表示のため、ウィンドウが閉じれません!");
+                    noticewindow_create("error", "タスクバーが非表示のため、ウィンドウが閉じれません!");
                 } else {
                     window_none()
                 }
@@ -3208,7 +3202,7 @@ if (ua.includes("mobile")) {
             localStorage.setItem(KEY_COLOR, select4);
             getStorage()
         } else {
-            error_windows_create("カラードライバーがインストールされていません!");
+            noticewindow_create("error", "カラードライバーがインストールされていません!");
         }
     }
 
@@ -3251,7 +3245,7 @@ if (ua.includes("mobile")) {
             // 変更した色名をストレージに保存
             setStorage();
         } else {
-            error_windows_create("カラードライバーがインストールされていません!");
+            noticewindow_create("error", "カラードライバーがインストールされていません!");
         }
     });
 
@@ -3266,7 +3260,7 @@ if (ua.includes("mobile")) {
                     titlecolor_set();
                 });
             } else {
-                error_windows_create("カラードライバーがインストールされていません!");
+                noticewindow_create("error", "カラードライバーがインストールされていません!");
             }
             titles.forEach(title => title.style.background = "");
             navys.forEach(navys => navys.style.background = "");
@@ -3599,7 +3593,7 @@ if (ua.includes("mobile")) {
     // 保存
     function save() {
         if (note_form.note_area.value == "") {
-            error_windows_create("テキストが無いため、保存できません!", "&nbsp;notepad");
+            noticewindow_create("error", "テキストが無いため、保存できません!", "&nbsp;notepad");
         } else {
             let noteData = document.note_form.note_area.value;
             localStorage.setItem('noteData', noteData);
@@ -3619,11 +3613,11 @@ if (ua.includes("mobile")) {
 
     function objective_save() {
         if (objective_form.objective_area.value == "" && objective_title_form.objective_title_area.value == "") {
-            error_windows_create("タイトルと内容が入力されていません!", "&nbsp;objective sheet");
+            noticewindow_create("error", "タイトルと内容が入力されていません!", "&nbsp;objective sheet");
         } else if (objective_title_form.objective_title_area.value == "") {
-            error_windows_create("タイトルが入力されていません!", "&nbsp;objective sheet");
+            noticewindow_create("error", "タイトルが入力されていません!", "&nbsp;objective sheet");
         } else if (objective_form.objective_area.value == "") {
-            error_windows_create("内容が入力されていません!", "&nbsp;objective sheet");
+            noticewindow_create("error", "内容が入力されていません!", "&nbsp;objective sheet");
         }
         if (!objective_title_form.objective_title_area.value == "" && !objective_form.objective_area.value == "") {
             let objectiveTitleData = document.objective_title_form.objective_title_area.value;
@@ -3711,7 +3705,7 @@ if (ua.includes("mobile")) {
             camera_menu.classList.add('active')
             camera_menu.classList.remove('selectwindows')
         } else if (sessionStorage.getItem('start_camera')) {
-            error_windows_create("カメラが実行されているため、ウィンドウが閉じれません!");
+            noticewindow_create("error", "カメラが実行されているため、ウィンドウが閉じれません!");
         }
     })
 
@@ -3879,13 +3873,12 @@ if (ua.includes("mobile")) {
 
     function win2000_load() {
         if (localStorage.getItem('MemoData_export')) {
-            document.querySelector('.notice_text').textContent = "windows2000からテキストデータを受け取りました!"
+            noticewindow_create("warning", "windows2000からテキストデータを受け取りました!", "warning");
             const a = document.querySelector('.note_area');
             a.textContent = localStorage.getItem('MemoData_export');
             localStorage.removeItem('MemoData_export');
-            notice_menu.classList.remove('active');
         } else {
-            error_windows_create("windows2000からテキストデータがエクスポートされていません!", "&nbsp;notepad");
+            noticewindow_create("error", "windows2000からテキストデータがエクスポートされていません!", "&nbsp;notepad");
         }
     }
 
@@ -3906,7 +3899,7 @@ if (ua.includes("mobile")) {
         if (!localStorage.getItem('textdropdata')) {
             evt.target.textContent += evt.dataTransfer.getData('text');
         } else {
-            error_windows_create("テキストが保存されているため、ドラッグした文字をドロップできません!");
+            noticewindow_create("error", "テキストが保存されているため、ドラッグした文字をドロップできません!");
         }
     });
 
@@ -4344,7 +4337,7 @@ if (ua.includes("mobile")) {
             setEvents(resetTimer);
             document.getElementsByClassName('screensaver_text')[0].textContent = stime;
         } else {
-            error_windows_create("指定時間の範囲内ではありません!");
+            noticewindow_create("error", "指定時間の範囲内ではありません!");
         }
     }
 
@@ -4688,7 +4681,7 @@ if (ua.includes("mobile")) {
             }
 
         } else if (0 <= taskvalue && taskvalue < 40) {
-            error_windows_create("タスクバーの設定範囲以下に設定されています!");
+            noticewindow_create("error", "タスクバーの設定範囲以下に設定されています!");
         } else if (40 <= taskvalue && taskvalue < 201) {
             const t = localStorage.setItem('taskbar_height', taskvalue);
             taskbar.style.height = taskvalue + "px"
@@ -4723,7 +4716,7 @@ if (ua.includes("mobile")) {
                 child_start_menu.style.bottom = t + "px"
             }
         } else {
-            error_windows_create("タスクバーの設定範囲を超えています!");
+            noticewindow_create("error", "タスクバーの設定範囲を超えています!");
         }
     }
 
@@ -4993,7 +4986,7 @@ if (ua.includes("mobile")) {
         const sizeInKilobytes = getLocalStorageSize() / 1024;
         document.querySelector('.local_memory2').innerHTML = '&emsp;' + sizeInKilobytes + 'KB' + '&emsp;';
         if (localStorage.getItem('maxSize') === 0) {
-            error_windows_create("nexser の保存容量を超えています!");
+            noticewindow_create("error", "nexser の保存容量を超えています!");
         }
     }, 1000);
     const paint_canvas = document.getElementById('paint_canvas');
@@ -5384,7 +5377,7 @@ if (ua.includes("mobile")) {
             url_iframe.style.display = "block"
             dropzone.style.display = "none"
         } else {
-            error_windows_create("有効なURLをドロップしてください。");
+            noticewindow_create("error", "有効なURLをドロップしてください。");
         }
     });
 
@@ -5514,10 +5507,6 @@ if (ua.includes("mobile")) {
             element.style.left = "130px";
             element.style.top = "130px";
         });
-        const noticewindow = document.querySelector('.notice_menu');
-        noticewindow.style.top = "45%";
-        noticewindow.style.left = "50%";
-        noticewindow.style.transform = "translate(-50%, -50%)";
 
         const pass_signin_menu = document.querySelector('.pass_signin_menu');
         pass_signin_menu.style.top = "50%";
@@ -5551,7 +5540,7 @@ if (ua.includes("mobile")) {
                         localStorage.setItem('editable-' + parentIndex + '-' + index, newName);
                     } else if (newName) {
                         nex.style.cursor = '';
-                        error_windows_create("名前は20文字以内で入力してください!");
+                        noticewindow_create("warning", "名前は20文字以内で入力してください!", "File rename");
                         element.textContent = originalName;
                     } else {
                         element.textContent = originalName;
@@ -6307,27 +6296,17 @@ if (ua.includes("mobile")) {
     navigator.getBattery().then((battery) => {
         function updateChargeInfo() {
             if (battery.level == 1 && battery.charging == true) {
-                document.querySelector('.battery_child').style.color = "lime"
-                document.querySelector('.battery_child').style.background = "black"
+                document.querySelector('.battery_child').style.color = "lime";
+                document.querySelector('.battery_child').style.background = "black";
             } else if (battery.charging == false) {
-                document.querySelector('.battery_child').style.color = "black"
-                document.querySelector('.battery_child').style.background = ""
+                document.querySelector('.battery_child').style.color = "black";
+                document.querySelector('.battery_child').style.background = "";
             } else {
-                document.querySelector('.battery_child').style.color = "#FF9900"
-                document.querySelector('.battery_child').style.background = "black"
-                localStorage.setItem('notice_closekeep', battery)
+                document.querySelector('.battery_child').style.color = "#FF9900";
+                document.querySelector('.battery_child').style.background = "black";
             }
-            if (!battery.charging && 0 <= battery.level && battery.level < 0.21) {
-                localStorage.removeItem('notice_closekeep')
-            }
-            if (0 <= battery.level && battery.level < 0.21 && battery.charging == false && !localStorage.getItem('notice_closekeep')) {
-                document.querySelector('.notice_text').textContent = "バッテリー残量が少なくなっています!"
-                notice_menu.classList.remove('active');
-                notice_menu.style.zIndex = largestZIndex++;
-                localStorage.removeItem('notice_closekeep');
-            } else {
-                notice_menu.classList.add('active');
-                notice_menu.classList.remove('selectwindows');
+            if (0 <= battery.level && battery.level < 0.21 && battery.charging == false) {
+                noticewindow_create("warning", "バッテリー残量が少なくなっています!", "warning");
             }
             if (battery.charging == true) {
                 document.getElementsByClassName('battery_time')[0].textContent = (`${battery.dischargingTime}`);
@@ -6461,27 +6440,42 @@ if (ua.includes("mobile")) {
         }
     }
 
-    function error_windows_create(errorTitle, errorMessage = "Error") {
-        sound(2);
+    function noticewindow_create(window_icon, errorTitle, errorMessage = "Error") {
         nex.style.cursor = "";
         const entryDiv = document.createElement("div");
+        const isWarning = window_icon === "warning";
+        const isError = window_icon === "error";
+
+        if (isWarning) {
+            sound(4);
+            errorMessage = errorMessage || "warning";
+        } else if (isError) {
+            sound(2);
+        } else {
+            errorMessage = window_icon;
+        }
+
         entryDiv.className = "child_windows error_windows back_silver no_window";
+
+        const icon = isWarning ? '<span class="warning_icon bold" style="position: absolute; top: 45px;">!</span>' :
+            isError ? '<span class="error_icon">✕</span>' : '';
+
         entryDiv.innerHTML = `
-          <div class="title"><span class="bold error_title_text">${errorMessage}</span>
-          </div>
-          <div class="title_buttons">
-            <span class="drag_button">&nbsp;</span>
-            <span class="close_button button2 allclose_button" onclick="error_windows_close(event)"></span>
-          </div>
-          <div class="window_content">
-            <br>
-            <p>
-              <span class="error_icon">✕</span>
-              <span class="window_error_text">${errorTitle}</span>
-            </p>
-            <span class="button2 borderinline_dotted" style="position: absolute; top: 86%; left: 50%; transform: translate(-50%, -50%);" onclick="error_windows_close(event)">&emsp;OK&emsp;</span>
-          </div>
-          <br>`;
+            <div class="title"><span class="bold error_title_text">${errorMessage}</span></div>
+            <div class="title_buttons">
+                <span class="drag_button">&nbsp;</span>
+                <span class="close_button button2 allclose_button" onclick="error_windows_close(event)"></span>
+            </div>
+            <div class="window_content">
+                <br>
+                <p>
+                    ${icon}
+                    <span class="window_error_text">${errorTitle}</span>
+                </p>
+                <span class="button2 borderinline_dotted" style="position: absolute; top: 86%; left: 50%; transform: translate(-50%, -50%);" onclick="error_windows_close(event)">&emsp;OK&emsp;</span>
+            </div>
+            <br>`;
+
         entryDiv.addEventListener("mousedown", event => {
             event.currentTarget.style.zIndex = ++largestZIndex;
         });

@@ -57,7 +57,7 @@ Array.from(sound_play_button).forEach((sound_play_buttons) => {
     sound_play_buttons.addEventListener('click', function () {
         if (!localStorage.getItem('driver_sound')) {
             sound_play_buttons.textContent = "▶";
-            error_windows_create("サウンドドライバーがインストールされていません!");
+            noticewindow_create("error", "サウンドドライバーがインストールされていません!");
         } else {
             sound_play_buttons.textContent = "||";
         }
