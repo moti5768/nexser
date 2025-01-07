@@ -5550,45 +5550,42 @@ if (ua.includes("mobile")) {
         });
     });
 
-
     function addMinimizationButtonListeners(button) {
         if (!button.dataset.listenerAdded) {
-            button.addEventListener('click', function () {
-                const minimization_button = button.closest('.child_windows');
-                const minimization_button2 = minimization_button.firstElementChild;
-                if (minimization_button2.classList.contains('navy')) {
-                    setTimeout(() => {
-                        const elements = document.querySelector('.navy');
-                        const elements22 = elements.closest('.child_windows');
-                        const computedStyle = getComputedStyle(elements22);
-                        elements22.dataset.originalWidths = computedStyle.width;
-                        elements22.dataset.originalHeights = computedStyle.height;
-                        elements22.dataset.originalTops = computedStyle.top;
-                        elements22.dataset.originalLefts = computedStyle.left;
-                        minimization_button.style.height = "20px";
-                        minimization_button.classList.add('minimization');
-                        minimization_button.scrollTop = 0;
-                        minimization_button.scrollLeft = 0;
-                        moveToTaskbarButton(minimization_button);
-                        window_animation(minimization_button);
-                    }, 0);
-                }
-            });
+            button.addEventListener('click', handleMinimizationButtonClick);
             button.dataset.listenerAdded = true;
         }
     }
+    function handleMinimizationButtonClick() {
+        const minimizationButton = this.closest('.child_windows');
+        const minimizationButtonIcon = minimizationButton.firstElementChild;
+        if (minimizationButtonIcon.classList.contains('navy')) {
+            minimizeWindow(minimizationButton);
+        }
+    }
+    function minimizeWindow(window) {
+        const elements = document.querySelector('.navy');
+        const windowElement = elements.closest('.child_windows');
+        windowElement.dataset.originalWidths = getComputedStyle(windowElement).width;
+        windowElement.dataset.originalHeights = getComputedStyle(windowElement).height;
+        windowElement.dataset.originalTops = getComputedStyle(windowElement).top;
+        windowElement.dataset.originalLefts = getComputedStyle(windowElement).left;
+        window.style.height = '20px';
+        window.classList.add('minimization');
+        window.scrollTop = 0;
+        window.scrollLeft = 0;
+        moveToTaskbarButton(window);
+        window_animation(window);
+    }
     function observeNewElements4() {
-        const observer = new MutationObserver(mutations => {
-            mutations.forEach(mutation => {
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
                 if (mutation.type === 'childList') {
-                    mutation.addedNodes.forEach(node => {
-                        if (node.nodeType === 1) {
-                            if (node.matches('.minimization_button')) {
-                                addMinimizationButtonListeners(node);
-                            }
-                            if (node.matches('.child_windows')) {
-                                node.querySelectorAll('.minimization_button').forEach(addMinimizationButtonListeners);
-                            }
+                    mutation.addedNodes.forEach((node) => {
+                        if (node.nodeType === 1 && node.matches('.minimization_button')) {
+                            addMinimizationButtonListeners(node);
+                        } else if (node.nodeType === 1 && node.matches('.child_windows')) {
+                            node.querySelectorAll('.minimization_button').forEach(addMinimizationButtonListeners);
                         }
                     });
                 }
@@ -5598,7 +5595,6 @@ if (ua.includes("mobile")) {
     }
     document.querySelectorAll('.minimization_button').forEach(addMinimizationButtonListeners);
     observeNewElements4();
-
 
     const taskbar_b = document.querySelector('#task_buttons2');
     function test_windows_button() {
