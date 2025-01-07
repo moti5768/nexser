@@ -1118,6 +1118,8 @@ if (ua.includes("mobile")) {
                         localStorage.removeItem('no_shutdown')
                     };
                 }, 5000);
+                noticewindow_create("Nexser", "読み込んでいます...");
+                document.querySelector('.error_windows').remove();
             }, 2000);
         }
     }
