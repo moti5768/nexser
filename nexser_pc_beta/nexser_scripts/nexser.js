@@ -1119,7 +1119,7 @@ if (ua.includes("mobile")) {
                     };
                 }, 5000);
                 noticewindow_create("Nexser", "読み込んでいます...");
-                document.querySelector('.error_windows').remove();
+                document.querySelectorAll('.error_windows').forEach(errorwin => errorwin.remove());
             }, 2000);
         }
     }
