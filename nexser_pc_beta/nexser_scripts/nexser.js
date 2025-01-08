@@ -6964,7 +6964,6 @@ if (ua.includes("mobile")) {
                 }
             }
         });
-
     }, 500);
 
 
@@ -7097,23 +7096,25 @@ if (ua.includes("mobile")) {
 
         // fileclick
 
-        function handleMouseDown_f(event) {
-            const window_files = event.currentTarget;
-            if (window_files.classList.contains('file_border')) {
-                document.querySelector('.file_border').classList.replace('file_border', 'file_border2');
+        function handleMouseDown(event) {
+            const target = event.currentTarget;
+            if (target.classList.contains('file_border')) {
+                const fileBorder = document.querySelector('.file_border');
+                if (fileBorder) {
+                    fileBorder.classList.replace('file_border', 'file_border2');
+                }
             }
         }
-        function handleClick_f(event) {
-            document.querySelectorAll('.window_files').forEach((el) => {
-                el.classList.remove('file_border', 'file_border2');
-            });
-            event.currentTarget.classList.add('file_border');
+        function handleClick(event) {
+            const target = event.currentTarget;
+            const fileElements = document.querySelectorAll('.window_files');
+            fileElements.forEach((el) => el.classList.remove('file_border', 'file_border2'));
+            target.classList.add('file_border');
         }
-        document.querySelectorAll('.window_files').forEach((window_files) => {
-            window_files.removeEventListener('mousedown', handleMouseDown_f);
-            window_files.removeEventListener('click', handleClick_f);
-            window_files.addEventListener('mousedown', handleMouseDown_f);
-            window_files.addEventListener('click', handleClick_f);
+        const fileElements = document.querySelectorAll('.window_files');
+        fileElements.forEach((el) => {
+            el.addEventListener('mousedown', handleMouseDown);
+            el.addEventListener('click', handleClick);
         });
 
         document.querySelectorAll('.window_files').forEach((element, index) => {
