@@ -6184,8 +6184,14 @@ if (ua.includes("mobile")) {
         htmlview_resize2();
         taskbar_resize();
         editor2_resize();
-        document.querySelectorAll('.big').forEach(allbig => {
-            allbig.style.width = allbig.style.height = "";
+        const task = taskbar.clientHeight;
+        document.querySelectorAll('.big:not(.minimization)').forEach(allbig => {
+            if (isAnimating == false) {
+                setTimeout(() => {
+                    allbig.style.width = "";
+                    allbig.style.height = `calc(100% - ${task}px)`;
+                }, 0);
+            }
         });
     }
 
