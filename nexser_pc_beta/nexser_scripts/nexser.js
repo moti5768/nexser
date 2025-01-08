@@ -6167,23 +6167,26 @@ if (ua.includes("mobile")) {
     const allwindow_resizes = document.querySelectorAll('.child_windows');
     allwindow_resizes.forEach(element => resizeObserver.observe(element));
     function allwindow_resize() {
-        url_drop_resize()
-        resizeTextarea()
-        youtubeframe_resize()
-        cameraframe_resize()
-        video_resize()
-        url_drop_resize()
-        objective_resize()
-        window_prompt_resize()
-        commandarea_resize()
-        shell_resize()
-        textdrop_resize()
-        test_site_resize()
-        nexser_nextversion_resize()
-        htmlview_resize()
-        htmlview_resize2()
-        taskbar_resize()
-        editor2_resize()
+        url_drop_resize();
+        resizeTextarea();
+        youtubeframe_resize();
+        cameraframe_resize();
+        video_resize();
+        url_drop_resize();
+        objective_resize();
+        window_prompt_resize();
+        commandarea_resize();
+        shell_resize();
+        textdrop_resize();
+        test_site_resize();
+        nexser_nextversion_resize();
+        htmlview_resize();
+        htmlview_resize2();
+        taskbar_resize();
+        editor2_resize();
+        document.querySelectorAll('.big').forEach(allbig => {
+            allbig.style.width = allbig.style.height = "";
+        });
     }
 
     function console_errortext_clear() {
