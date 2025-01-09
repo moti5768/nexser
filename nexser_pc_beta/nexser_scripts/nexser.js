@@ -135,6 +135,7 @@ if (ua.includes("mobile")) {
                 test.classList.remove('selectwindows')
             })
         }
+        bigwindow_resize();
     })
 
     function game_true() {
@@ -2453,13 +2454,9 @@ if (ua.includes("mobile")) {
     }
     function window_animation(animation) {
         animation.style.pointerEvents = "none";
-        const taskHeight = () => taskbar.clientHeight;
         const adjustHeight = () => {
             if (animation.classList.contains('minimization')) {
                 animation.classList.add('child_windows_invisible');
-            }
-            if (['big', 'leftwindow', 'rightwindow'].some(cls => animation.classList.contains(cls))) {
-                animation.style.height = (animation.clientHeight - taskHeight()) + "px";
             }
             animation.style.pointerEvents = "";
             animation.style.zIndex = largestZIndex++;
@@ -6184,12 +6181,15 @@ if (ua.includes("mobile")) {
         htmlview_resize2();
         taskbar_resize();
         editor2_resize();
-        const task = taskbar.clientHeight;
-        document.querySelectorAll('.big:not(.minimization)').forEach(allbig => {
+        bigwindow_resize();
+    }
+
+    function bigwindow_resize() {
+        document.querySelectorAll('.big:not(.minimization),.leftwindow,.rightwindow').forEach(allbig => {
             if (isAnimating == false) {
                 setTimeout(() => {
                     allbig.style.width = "";
-                    allbig.style.height = `calc(100% - ${task}px)`;
+                    allbig.style.height = `calc(100% - ${taskbar.clientHeight}px)`;
                 }, 0);
             }
         });
@@ -7222,6 +7222,13 @@ if (ua.includes("mobile")) {
         document.querySelectorAll('.window_files').forEach((rf) => {
             rf.classList.remove('file_border3')
         })
+    }
+
+    function filepositon_reset() {
+        document.querySelectorAll('.desktop_files').forEach((desktop_file, index) => {
+            ['left', 'top', 'position'].forEach(style => desktop_file.style[style] = "");
+            localStorage.removeItem(`draggable-${index}`);
+        });
     }
 
 };
