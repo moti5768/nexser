@@ -17,7 +17,9 @@ const soundFiles = [
     "nexser_sounds/windows2000_shutdown.mp3",
     "nexser_sounds/windowsxp_startup.mp3",
     "nexser_sounds/windowsxp_shutdown.mp3",
-    "nexser_sounds/windowsxp_criticalstop.mp3"
+    "nexser_sounds/windowsxp_criticalstop.mp3",
+    "nexser_sounds/windowsNT_logon.mp3",
+    "nexser_sounds/windowsNT_logoff.mp3"
 ];
 
 const sounds = soundFiles.map(file => {

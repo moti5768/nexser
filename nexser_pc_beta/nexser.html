@@ -177,7 +177,7 @@
                 </form>
             </div>
 
-            <div class="child_windows welcome_menu active">
+            <div class="child_windows welcome_menu active window_nosearch">
                 <div class="title">
                     <span class="title_icon"></span><span>welcome nexser beta</span>
                 </div>
@@ -1053,13 +1053,15 @@
                                 <li class="hover_blue">Ding</li>
                                 <li class="hover_blue">Utopia</li>
                                 <li class="hover_blue">Welcome</li>
-                                <li class="hover_blue">Windows98 start</li>
+                                <li class="hover_blue">Windows98 logon</li>
                                 <li class="hover_blue">Windows98 logoff</li>
-                                <li class="hover_blue">Windows2000 start</li>
+                                <li class="hover_blue">Windows2000 logon</li>
                                 <li class="hover_blue">Windows2000 logoff</li>
-                                <li class="hover_blue">WindowsXP start</li>
+                                <li class="hover_blue">WindowsXP logon</li>
                                 <li class="hover_blue">WindowsXP logoff</li>
                                 <li class="hover_blue">WindowsXP criticalstop</li>
+                                <li class="hover_blue">WindowsNT logon</li>
+                                <li class="hover_blue">WindowsNT logoff</li>
                             </ul>
 
                             <div class="window_inline_side" style="font-size: 13.7px;">
@@ -1115,6 +1117,12 @@
                                     </li>
                                     <li class="button2 sound_stop_button" style="width: 30px;">stop</li>
                                     <li class="button2 sound_play_button" style="width: 60px;" onclick="sound(13)">
+                                    </li>
+                                    <li class="button2 sound_stop_button" style="width: 30px;">stop</li>
+                                    <li class="button2 sound_play_button" style="width: 60px;" onclick="sound(14)">
+                                    </li>
+                                    <li class="button2 sound_stop_button" style="width: 30px;">stop</li>
+                                    <li class="button2 sound_play_button" style="width: 60px;" onclick="sound(15)">
                                     </li>
                                     <li class="button2 sound_stop_button" style="width: 30px;">stop</li>
                                 </ul>
@@ -1209,18 +1217,23 @@
                                     </li>
 
                                     <li class="hover_blue" style="margin-top: 5px; width: 75%;">Windows98
-                                        Start
+                                        logon
                                         <span class="button2 startup_3" style="position: absolute; right: 80px;"></span>
                                     </li>
 
                                     <li class="hover_blue" style="margin-top: 5px; width: 75%;">Windows2000
-                                        Start
+                                        logon
                                         <span class="button2 startup_4" style="position: absolute; right: 80px;"></span>
                                     </li>
 
                                     <li class="hover_blue" style="margin-top: 5px; width: 75%;">WindowsXP
-                                        Start
+                                        logon
                                         <span class="button2 startup_5" style="position: absolute; right: 80px;"></span>
+                                    </li>
+
+                                    <li class="hover_blue" style="margin-top: 5px; width: 75%;">WindowsNT
+                                        logon
+                                        <span class="button2 startup_6" style="position: absolute; right: 80px;"></span>
                                     </li>
 
                                     <li class="button2" style="margin-top: 5px; position: absolute; right: 80px;"
@@ -1260,6 +1273,12 @@
                                             style="position: absolute; right: 80px;"></span>
                                     </li>
 
+                                    <li class="hover_blue" style="margin-top: 5px; width: 75%;">WindowsNT
+                                        logoff
+                                        <span class="button2 shutdown_6"
+                                            style="position: absolute; right: 80px;"></span>
+                                    </li>
+
                                     <li class="button2" style="margin-top: 5px; position: absolute; right: 80px;"
                                         onclick="shutdownsound_reset()">Logoff sound reset</li><br><br>
                                 </ul>
@@ -1278,6 +1297,8 @@
                                         onclick="sound(9)"></li>
                                     <li class="button2 sound_play_button" style="width: 60px; margin-top: 5px;"
                                         onclick="sound(11)"></li>
+                                    <li class="button2 sound_play_button" style="width: 60px; margin-top: 5px;"
+                                        onclick="sound(14)"></li>
 
 
                                     <li class="button2 sound_play_button" style="width: 60px; margin-top: 79px;"
@@ -1290,6 +1311,8 @@
                                         onclick="sound(10)"></li>
                                     <li class="button2 sound_play_button" style="width: 60px; margin-top: 5px;"
                                         onclick="sound(12)"></li>
+                                    <li class="button2 sound_play_button" style="width: 60px; margin-top: 5px;"
+                                        onclick="sound(15)"></li>
                                 </ul>
                             </div>
 
