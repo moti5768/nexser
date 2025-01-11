@@ -6807,7 +6807,7 @@ if (ua.includes("mobile")) {
 
                 function onMouseMove(event) {
                     moveAt(event.pageX, event.pageY);
-                    img.style.border = '2px dashed red';
+                    img.style.border = '1.5px dashed red';
                 }
 
                 document.addEventListener('mousemove', onMouseMove);
