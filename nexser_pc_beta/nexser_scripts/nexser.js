@@ -990,56 +990,60 @@ if (ua.includes("mobile")) {
 
     Array.from(restart).forEach(element => {
         element.addEventListener('click', event => {
-            nex.style.cursor = 'progress';
-            startmenu_close()
-            setTimeout(() => {
-                if (sessionStorage.getItem('start_camera')) {
-                    noticewindow_create("error", "カメラが実行されているため、再起動はできません!");
-                } else if (localStorage.getItem('no_shutdown')) {
-                    noticewindow_create("error", "welcomeウィンドウが起動するまで再起動はできません!");
-                } else if (gets === gets2 && gets3 === 0) {
-                    sound_stop();
-                    shutdown_sound();
-                    localStorage.removeItem('login');
-                    nex.style.cursor = 'none';
-                    desktop.style.display = "none";
-                    if (!localStorage.getItem('noteData')) {
-                        document.note_form.note_area.value = "";
-                        resetShowLength();
-                        document.querySelector('.note_title').textContent = "notepad"
-                    }
-                    setTimeout(() => {
-                        window_none();
-                        window_reset();
-                        document.querySelector('#code_html').style.display = "none";
-                        document.querySelector('#code_script').style.display = "none";
-                        document.querySelector('#code_script2').style.display = "none";
-                        fileborder_reset();
-                        document.querySelector('.focus2').textContent = "";
-                        setTimeout(() => {
-                            document.querySelectorAll('.button').forEach(function (button) {
-                                button.classList.remove('pressed');
-                            });
-                            document.getElementsByClassName('name')[0].value = "";
-
-                            msg.innerText = "";
-                            prompt_text.style.color = "";
-                            nexser.style.display = "none";
-                            document.querySelector('.restart_text').style.display = "block";
-                        }, 500);
-                        setTimeout(() => {
-                            document.querySelector('.restart_text').style.display = "none";
-                        }, 2500);
-                        setTimeout(() => {
-                            nexser_start();
-                        }, 3500);
-                    }, 1500);
-                } else {
-                    noticewindow_create("error", "全てのウィンドウが閉じてないため、再起動できません!");
-                }
-            }, 100);
+            nexser_restart()
         })
     })
+
+    function nexser_restart() {
+        nex.style.cursor = 'progress';
+        startmenu_close()
+        setTimeout(() => {
+            if (sessionStorage.getItem('start_camera')) {
+                noticewindow_create("error", "カメラが実行されているため、再起動はできません!");
+            } else if (localStorage.getItem('no_shutdown')) {
+                noticewindow_create("error", "welcomeウィンドウが起動するまで再起動はできません!");
+            } else if (gets === gets2 && gets3 === 0) {
+                sound_stop();
+                shutdown_sound();
+                localStorage.removeItem('login');
+                nex.style.cursor = 'none';
+                desktop.style.display = "none";
+                if (!localStorage.getItem('noteData')) {
+                    document.note_form.note_area.value = "";
+                    resetShowLength();
+                    document.querySelector('.note_title').textContent = "notepad"
+                }
+                setTimeout(() => {
+                    window_none();
+                    window_reset();
+                    document.querySelector('#code_html').style.display = "none";
+                    document.querySelector('#code_script').style.display = "none";
+                    document.querySelector('#code_script2').style.display = "none";
+                    fileborder_reset();
+                    document.querySelector('.focus2').textContent = "";
+                    setTimeout(() => {
+                        document.querySelectorAll('.button').forEach(function (button) {
+                            button.classList.remove('pressed');
+                        });
+                        document.getElementsByClassName('name')[0].value = "";
+
+                        msg.innerText = "";
+                        prompt_text.style.color = "";
+                        nexser.style.display = "none";
+                        document.querySelector('.restart_text').style.display = "block";
+                    }, 500);
+                    setTimeout(() => {
+                        document.querySelector('.restart_text').style.display = "none";
+                    }, 2500);
+                    setTimeout(() => {
+                        nexser_start();
+                    }, 3500);
+                }, 1500);
+            } else {
+                noticewindow_create("error", "全てのウィンドウが閉じてないため、再起動できません!");
+            }
+        }, 100);
+    }
 
     function start_check() {
         document.getElementsByClassName('pass_signin_menu')[0].classList.remove('selectwindows');
@@ -2155,6 +2159,11 @@ if (ua.includes("mobile")) {
 
             case 'reset':
                 nexser_prompt_reset()
+                break;
+
+            case 'nexser/restart':
+                window_none()
+                nexser_restart()
                 break;
 
             case 'windows95/open':
