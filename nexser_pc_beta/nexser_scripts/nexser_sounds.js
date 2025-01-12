@@ -1,5 +1,3 @@
-const warning_windows = document.querySelector('.warning_windows');
-
 const sound_play_button = document.getElementsByClassName('sound_play_button');
 const sound_stop_button = document.getElementsByClassName('sound_stop_button');
 

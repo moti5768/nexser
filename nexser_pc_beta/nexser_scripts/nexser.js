@@ -28,6 +28,8 @@ if (ua.includes("mobile")) {
     window.errortitle_msg = "&nbsp;error";
     window.errortitle_text = "test sample text";
 
+    const body = document.querySelector('body');
+
     const nex = document.getElementById('nex');
 
     const logoff = document.getElementsByClassName('logoff');
@@ -47,6 +49,7 @@ if (ua.includes("mobile")) {
     const battery_menu = document.querySelector('.battery_menu');
     const battery_child = document.querySelector('.battery_child');
     const background_text = document.getElementById('background_text');
+    const background_text2 = document.getElementById('background_text2');
 
     const screen_saver_group = document.getElementById('screen_saver_group');
 
@@ -287,7 +290,7 @@ if (ua.includes("mobile")) {
             document.querySelector('.installbutton_1').textContent = "uninstall";
         }
         if (localStorage.getItem('backtext')) {
-            document.querySelector('#background_text').textContent = localStorage.getItem('backtext_data');
+            background_text.textContent = localStorage.getItem('backtext_data');
             background_text.classList.add('block');
             document.querySelector('.backtext_mode').textContent = "ON";
         }
@@ -368,19 +371,19 @@ if (ua.includes("mobile")) {
         }
 
         if (localStorage.getItem('font_default')) {
-            document.querySelector("body").style.fontFamily = "serif";
+            body.style.fontFamily = "serif";
         }
         if (localStorage.getItem('font_sans_serif')) {
-            document.querySelector("body").style.fontFamily = "sans-serif";
+            body.style.fontFamily = "sans-serif";
         }
         if (localStorage.getItem('font_cursive')) {
-            document.querySelector("body").style.fontFamily = "cursive";
+            body.style.fontFamily = "cursive";
         }
         if (localStorage.getItem('font_fantasy')) {
-            document.querySelector("body").style.fontFamily = "fantasy";
+            body.style.fontFamily = "fantasy";
         }
         if (localStorage.getItem('font_monospace')) {
-            document.querySelector("body").style.fontFamily = "monospace";
+            body.style.fontFamily = "monospace";
         }
 
         if (localStorage.getItem('windowfile_1')) {
@@ -463,16 +466,16 @@ if (ua.includes("mobile")) {
         }
 
         if (localStorage.getItem('backtext_small')) {
-            document.querySelector('#background_text').style.fontSize = "15px";
-            document.querySelector('#background_text2').style.fontSize = "15px"
+            background_text.style.fontSize = "15px";
+            background_text2.style.fontSize = "15px"
         }
         if (localStorage.getItem('backtext_medium')) {
-            document.querySelector('#background_text').style.fontSize = "30px";
-            document.querySelector('#background_text2').style.fontSize = "30px"
+            background_text.style.fontSize = "30px";
+            background_text2.style.fontSize = "30px"
         }
         if (localStorage.getItem('backtext_large')) {
-            document.querySelector('#background_text').style.fontSize = "45px";
-            document.querySelector('#background_text2').style.fontSize = "45px"
+            background_text.style.fontSize = "45px";
+            background_text2.style.fontSize = "45px"
         }
         if (localStorage.getItem('allwindow_toolbar')) {
             document.querySelectorAll('.window_tool').forEach(function (window_tool) {
@@ -774,11 +777,11 @@ if (ua.includes("mobile")) {
     const setFont = (font) => {
         font_clear();
         localStorage.setItem(`font_${font}`, true);
-        document.querySelector("body").style.fontFamily = font;
+        body.style.fontFamily = font;
     };
     document.querySelector('.font_default').addEventListener('click', () => {
         font_clear();
-        document.querySelector("body").style.fontFamily = "serif";
+        body.style.fontFamily = "serif";
     });
     document.querySelector('.font_sans_serif').addEventListener('click', () => setFont('sans_serif'));
     document.querySelector('.font_cursive').addEventListener('click', () => setFont('cursive'));
@@ -1366,13 +1369,13 @@ if (ua.includes("mobile")) {
 
     document.getElementById('backtext_on').addEventListener('click', function () {
         localStorage.setItem('backtext', true);
-        document.querySelector('#background_text').textContent = localStorage.getItem('backtext_data');
-        document.querySelector('#background_text').classList.add('block');
+        background_text.textContent = localStorage.getItem('backtext_data');
+        background_text.classList.add('block');
         document.querySelector('.backtext_mode').textContent = "ON"
     })
     document.getElementById('backtext_off').addEventListener('click', function () {
         localStorage.removeItem('backtext');
-        document.querySelector('#background_text').classList.remove('block');
+        background_text.classList.remove('block');
         document.querySelector('.backtext_mode').textContent = "OFF"
     })
 
@@ -1380,25 +1383,25 @@ if (ua.includes("mobile")) {
     document.querySelector('.backtext_small').addEventListener('click', function () {
         backtextSize_clear();
         localStorage.setItem('backtext_small', true);
-        document.querySelector('#background_text').style.fontSize = "15px";
-        document.querySelector('#background_text2').style.fontSize = "15px";
+        background_text.style.fontSize = "15px";
+        background_text2.style.fontSize = "15px";
     })
     document.querySelector('.backtext_medium').addEventListener('click', function () {
         backtextSize_clear();
         localStorage.setItem('backtext_medium', true);
-        document.querySelector('#background_text').style.fontSize = "30px";
-        document.querySelector('#background_text2').style.fontSize = "30px";
+        background_text.style.fontSize = "30px";
+        background_text2.style.fontSize = "30px";
     })
     document.querySelector('.backtext_large').addEventListener('click', function () {
         backtextSize_clear();
         localStorage.setItem('backtext_large', true);
-        document.querySelector('#background_text').style.fontSize = "45px";
-        document.querySelector('#background_text2').style.fontSize = "45px";
+        background_text.style.fontSize = "45px";
+        background_text2.style.fontSize = "45px";
     })
 
     function backtextSize_clear() {
-        document.querySelector('#background_text').style.fontSize = "";
-        document.querySelector('#background_text2').style.fontSize = "";
+        background_text.style.fontSize = "";
+        background_text2.style.fontSize = "";
         localStorage.removeItem('backtext_small');
         localStorage.removeItem('backtext_medium');
         localStorage.removeItem('backtext_large');
@@ -1497,13 +1500,13 @@ if (ua.includes("mobile")) {
     }
 
     function colordata_clear() {
-        document.querySelector("body").style.color = "";
+        body.style.color = "";
         document.querySelector("#nexser").style.backgroundColor = "";
         mini_desktop.style.backgroundColor = "";
         localStorage.removeItem(KEY_COLOR, color);
         localStorage.removeItem(KEY_BKCOLOR, bkcolor);
         background_text.style.color = ""
-        document.getElementById('background_text2').style.color = ""
+        background_text2.style.color = ""
         Array.from(document.getElementsByClassName('desktop_files')).forEach((desktop_files) => {
             const deskfile_text = desktop_files.firstElementChild;
             deskfile_text.style.color = ""
@@ -1855,7 +1858,7 @@ if (ua.includes("mobile")) {
 
             case command_2 + b:
                 if (localStorage.getItem('driver_color')) {
-                    document.querySelector('body').style.color = b;
+                    body.style.color = b;
                     localStorage.setItem('COLOR', b);
                 } else {
                     noticewindow_create("error", "カラードライバーがインストールされていません!")
@@ -2216,12 +2219,12 @@ if (ua.includes("mobile")) {
     function backtext_check() {
         let backtext_data = document.back_text_form.back_text.value;
         localStorage.setItem('backtext_data', backtext_data);
-        document.querySelector('#background_text').textContent = localStorage.getItem('backtext_data');
+        background_text.textContent = localStorage.getItem('backtext_data');
     }
     function backtext_clear() {
         document.back_text_form.back_text.value = "";
         localStorage.removeItem('backtext_data');
-        document.querySelector('#background_text').textContent = "";
+        background_text.textContent = "";
     }
 
     setInterval(() => {
@@ -2236,7 +2239,7 @@ if (ua.includes("mobile")) {
             document.getElementsByClassName('length_localStorage')[0].textContent = localkey_length;
         } else {
             document.getElementsByClassName('local_keylength')[0].textContent = localkey_length;
-            document.getElementById('background_text2').textContent = localStorage.getItem('backtext_data');
+            background_text2.textContent = localStorage.getItem('backtext_data');
             const get = document.getElementsByClassName('child_windows');
             const get2 = document.getElementsByClassName('active');
             const get3 = document.getElementsByClassName('task_buttons');
@@ -2819,15 +2822,16 @@ if (ua.includes("mobile")) {
         test_site_child.style.height = `${test_site_parent.clientHeight - 30}px`;
     };
 
-    const background_image_parent = document.getElementById('nexser');
-    const background_image_child = document.querySelector('.nexser_background_image');
-    const background_image_child2 = background_image_child.children;
+    const backgroundImageParent = document.getElementById('nexser');
+    const backgroundImageChildren = backgroundImageParent.getElementsByClassName('nexser_background_image');
 
-    const resize_background_image = () => {
-        for (let i = 0; i < background_image_child2.length; i++) {
-            background_image_child2[i].style.width = `${background_image_parent.clientWidth}px`;
-            background_image_child2[i].style.height = `${background_image_parent.clientHeight}px`;
-        }
+    const resizeBackgroundImage = () => {
+        requestAnimationFrame(() => {
+            for (const child of backgroundImageChildren) {
+                child.style.width = `${backgroundImageParent.clientWidth}px`;
+                child.style.height = `${backgroundImageParent.clientHeight}px`;
+            }
+        });
     };
 
     const nexser_nextversion_parent = document.querySelector('.nexser_nextversion_menu');
@@ -3080,12 +3084,12 @@ if (ua.includes("mobile")) {
     document.querySelector('.display_old').addEventListener('click', () => {
         localStorage.setItem('display_old', true);
         old_screen();
-        resize_background_image();
+        resizeBackgroundImage();
     });
     document.querySelector('.display_now').addEventListener('click', () => {
         localStorage.removeItem('display_old');
         old_screen_reset();
-        resize_background_image();
+        resizeBackgroundImage();
     });
 
     document.querySelector('.list_shadow_on').addEventListener('click', () => {
@@ -3146,19 +3150,19 @@ if (ua.includes("mobile")) {
     function setColor() {
         setTimeout(() => {
             if (localStorage.getItem('driver_color')) {
-                document.querySelector("body").style.color = color;
+                body.style.color = color;
                 document.getElementById("nexser").style.backgroundColor = bkcolor;
                 mini_desktop.style.backgroundColor = bkcolor;
                 if (bkcolor === "white" || bkcolor === "whitesmoke") {
                     background_text.style.color = "black"
-                    document.getElementById('background_text2').style.color = "black"
+                    background_text2.style.color = "black"
                     Array.from(document.getElementsByClassName('desktop_files')).forEach((desktop_files) => {
                         const deskfile_text = desktop_files.firstElementChild;
                         deskfile_text.style.color = "black"
                     })
                 } else {
                     background_text.style.color = ""
-                    document.getElementById('background_text2').style.color = ""
+                    background_text2.style.color = ""
                     Array.from(document.getElementsByClassName('desktop_files')).forEach((desktop_files) => {
                         const deskfile_text = desktop_files.firstElementChild;
                         deskfile_text.style.color = ""
@@ -5528,23 +5532,21 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.minimization_button').forEach(addMinimizationButtonListeners);
     observeNewElements4();
 
-    const taskbar_b = document.querySelector('#task_buttons2');
+    const taskbar_b = document.getElementById('task_buttons2');
     function test_windows_button() {
-        resize_background_image();
+        resizeBackgroundImage();
         document.querySelectorAll('.task_buttons').forEach(task_buttons => task_buttons.remove());
         document.querySelectorAll('.child_windows.selectwindows:not(.no_window).child_windows:not(.clones)').forEach(windowElement => {
             const nestedChild2 = windowElement.children[0].children[1].textContent;
-            let button = document.createElement('div');
+            const button = document.createElement('div');
             button.className = 'task_buttons button2';
             button.style.position = "relative";
-            button.textContent = "　　" + nestedChild2;
-            taskbar_b.appendChild(button);
+            button.textContent = `　　${nestedChild2}`;
             const button_child = document.createElement('span');
             button_child.className = 'title_icon';
             button.appendChild(button_child);
-            button.replaceWith(button.cloneNode(true));
-            button = taskbar_b.lastChild;
             button.addEventListener('click', () => toggleWindow(windowElement), { once: true });
+            taskbar_b.appendChild(button);
         });
         updateButtonClasses();
         document.querySelectorAll('.child_windows.minimization').forEach(minimization_button => {
@@ -6080,14 +6082,12 @@ if (ua.includes("mobile")) {
         window.addEventListener('resize', taskbar_resize);
         new ResizeObserver(taskbar_resize).observe(document.querySelector('.taskbar_rightgroup'));
     };
-    setTimeout(taskbarInitResize, 100);
-
-    window.addEventListener('resize', resize_background_image);
-    setTimeout(resize_background_image, 100);
+    window.addEventListener('resize', resizeBackgroundImage);
 
     const resizeObserver = new ResizeObserver(entries => {
         for (let entry of entries) {
             allwindow_resize()
+            taskbarInitResize()
         }
     });
     const allwindow_resizes = document.querySelectorAll('.child_windows');
