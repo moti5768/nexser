@@ -478,17 +478,11 @@ if (ua.includes("mobile")) {
             background_text2.style.fontSize = "45px"
         }
         if (localStorage.getItem('allwindow_toolbar')) {
-            document.querySelectorAll('.window_tool').forEach(function (window_tool) {
-                window_tool.style.display = "block"
-            })
-            document.querySelectorAll('.window_inline_side').forEach(function (window_inline_side) {
-                window_inline_side.style.top = "31px"
-            })
+            document.querySelectorAll('.window_tool').forEach(window_tool => window_tool.style.display = "block");
+            document.querySelectorAll('.window_inline_side').forEach(window_inline_side => window_inline_side.style.top = "31px");
         } else {
             clock_menu.style.height = "355px"
-            document.querySelectorAll('.window_tool').forEach(function (window_tool) {
-                window_tool.style.display = "none"
-            })
+            document.querySelectorAll('.window_tool').forEach(window_tool => window_tool.style.display = "none");
         }
         if (localStorage.getItem('clockdata_analog')) {
             document.getElementsByClassName('digital_clock_area')[0].style.display = "none";
@@ -535,8 +529,6 @@ if (ua.includes("mobile")) {
             if (localStorage.getItem(key)) {
                 document.querySelector(className).style.display = "block";
                 resizeFunction();
-                background_img.style.width = "100%";
-                background_img.style.height = "100%";
             }
         }
         setBackgroundImage('wallpaper_95', '.nexser_backgroundimage_1', minidesk_backgroundresize1);
@@ -950,12 +942,8 @@ if (ua.includes("mobile")) {
                         document.querySelector('.note_title').textContent = "notepad"
                     }
                     setTimeout(() => {
-                        document.querySelectorAll('.testwindow2').forEach(function (testwindow2) {
-                            testwindow2.remove();
-                        })
-                        document.querySelectorAll('.error_windows').forEach(function (errorwindow) {
-                            errorwindow.remove();
-                        })
+                        document.querySelectorAll('.testwindow2').forEach(testwindow2 => testwindow2.remove());
+                        document.querySelectorAll('.error_windows').forEach(errorwindow => errorwindow.remove());
                         window_none();
                         localStorage.removeItem('prompt_data');
                         window_reset();
@@ -964,11 +952,8 @@ if (ua.includes("mobile")) {
                         document.querySelector('#code_script2').style.display = "none";
                         fileborder_reset();
                         setTimeout(() => {
-                            document.querySelectorAll('.button').forEach(function (button) {
-                                button.classList.remove('pressed');
-                            });
+                            document.querySelectorAll('.button').forEach(button => button.classList.remove('pressed'));
                             document.getElementsByClassName('name')[0].value = "";
-
                             msg.innerText = "";
                             prompt_text.style.color = "";
                             nexser.style.display = "none";
@@ -1025,11 +1010,8 @@ if (ua.includes("mobile")) {
                     fileborder_reset();
                     document.querySelector('.focus2').textContent = "";
                     setTimeout(() => {
-                        document.querySelectorAll('.button').forEach(function (button) {
-                            button.classList.remove('pressed');
-                        });
+                        document.querySelectorAll('.button').forEach(button => button.classList.remove('pressed'));
                         document.getElementsByClassName('name')[0].value = "";
-
                         msg.innerText = "";
                         prompt_text.style.color = "";
                         nexser.style.display = "none";
@@ -1177,38 +1159,40 @@ if (ua.includes("mobile")) {
         sound_stop();
         sound(6);
         welcome_menu.style.zIndex = largestZIndex++;
-        const startNexser = document.getElementsByClassName('start_nexser')[0];
-        const welcomeText1 = document.getElementsByClassName('welcome_text1')[0];
-        const welcomeUnderline = document.getElementsByClassName('welcome_underline')[0];
-        const welcomeText2 = document.getElementsByClassName('welcome_text2')[0];
-        const welcomeIcons = document.getElementsByClassName('welcome_icons')[0];
+        const [startNexser, welcomeText1, welcomeUnderline, welcomeText2, welcomeIcons] = [
+            document.getElementsByClassName('start_nexser')[0],
+            document.getElementsByClassName('welcome_text1')[0],
+            document.getElementsByClassName('welcome_underline')[0],
+            document.getElementsByClassName('welcome_text2')[0],
+            document.getElementsByClassName('welcome_icons')[0],
+        ];
         nex.style.cursor = 'none';
-        startNexser.style.display = "none";
-        welcomeText1.style.position = "absolute";
-        welcomeText1.style.fontSize = "80px";
-        welcomeText1.style.marginTop = "125px";
-        welcomeText1.style.marginLeft = "50px";
-        welcomeUnderline.style.right = "0";
-        welcomeUnderline.style.width = "0%";
-        welcomeText2.style.display = "none";
-        welcomeIcons.style.display = "none";
+        startNexser.style.display = 'none';
+        welcomeText1.style.position = 'absolute';
+        welcomeText1.style.fontSize = '80px';
+        welcomeText1.style.marginTop = '125px';
+        welcomeText1.style.marginLeft = '50px';
+        welcomeUnderline.style.right = '0';
+        welcomeUnderline.style.width = '0';
+        welcomeText2.style.display = 'none';
+        welcomeIcons.style.display = 'none';
         setTimeout(() => {
-            welcomeText1.style.transition = "0.25s cubic-bezier(0, 0, 1, 1)";
-            welcomeText1.style.fontSize = "40px";
-            welcomeText1.style.marginTop = "20px";
-            welcomeText1.style.marginLeft = "0px";
+            welcomeText1.style.transition = '0.25s cubic-bezier(0, 0, 1, 1)';
+            welcomeText1.style.fontSize = '40px';
+            welcomeText1.style.marginTop = '20px';
+            welcomeText1.style.marginLeft = '0px';
         }, 500);
         setTimeout(() => {
-            welcomeUnderline.style.transition = "0.25s cubic-bezier(0, 0, 1, 1)";
-            welcomeUnderline.style.width = "100%";
+            welcomeUnderline.style.transition = '0.25s cubic-bezier(0, 0, 1, 1)';
+            welcomeUnderline.style.width = '100%';
             setTimeout(() => {
-                welcomeText2.style.display = "block";
-                welcomeIcons.style.display = "block";
+                welcomeText2.style.display = 'block';
+                welcomeIcons.style.display = 'block';
                 nex.style.cursor = '';
                 if (!localStorage.getItem('start_nexser')) {
-                    startNexser.style.display = "block";
+                    startNexser.style.display = 'block';
                 } else {
-                    document.getElementsByClassName('startnexser_close')[0].classList.remove('pointer_none')
+                    document.getElementsByClassName('startnexser_close')[0].classList.remove('pointer_none');
                 }
             }, 300);
         }, 1000);
@@ -1217,7 +1201,6 @@ if (ua.includes("mobile")) {
     function welcome() {
         welcome_menu.classList.remove('active');
         welcome_animation();
-        startmenu_close();
     }
 
     startup_window_open()
@@ -1408,7 +1391,7 @@ if (ua.includes("mobile")) {
     }
 
     function window_reset() {
-        document.querySelectorAll('.child_windows').forEach(function (allwindow) {
+        document.querySelectorAll('.child_windows').forEach(allwindow => {
             allwindow.style.left = "";
             allwindow.style.top = "";
             allwindow.style.height = "";
@@ -1440,10 +1423,8 @@ if (ua.includes("mobile")) {
     }
 
     function window_none() {
-        document.querySelectorAll('.task_buttons').forEach(function (task_buttons) {
-            task_buttons.remove()
-        })
-        document.querySelectorAll('.child_windows').forEach(function (allwindow_none) {
+        document.querySelectorAll('.task_buttons').forEach(task_buttons => task_buttons.remove());
+        document.querySelectorAll('.child_windows').forEach(allwindow_none => {
             allwindow_none.classList.add('active');
             allwindow_none.classList.remove('big', 'rightwindow', 'leftwindow', 'selectwindows');
             allwindow_none.style.right = "";
@@ -1455,23 +1436,23 @@ if (ua.includes("mobile")) {
         warning_windows.style.display = "none";
     }
     function window_active() {
-        document.querySelectorAll('.child_windows:not(.window_nosearch)').forEach(function (allwindow_active) {
-            allwindow_active.classList.remove('active');
-        });
+        document.querySelectorAll('.child_windows:not(.window_nosearch)').forEach(allwindow_active => allwindow_active.classList.remove('active'));
     }
 
     function title_center() {
-        titles.forEach(function (title) {
-            title.classList.add('text_center')
-            localStorage.setItem('title_center', true)
+        titles.forEach(title => {
+            title.classList.add('text_center');
+            localStorage.setItem('title_center', true);
         });
     }
+
     function title_center_reset() {
-        titles.forEach(function (title) {
-            title.classList.remove('text_center')
-            localStorage.removeItem('title_center', true)
+        titles.forEach(title => {
+            title.classList.remove('text_center');
+            localStorage.removeItem('title_center');
         });
     }
+
     if (localStorage.getItem('title_center')) {
         title_center()
     }
@@ -1484,12 +1465,12 @@ if (ua.includes("mobile")) {
     function allStorage_clear() {
         const alllength = localStorage.length;
         if (alllength > 0) {
+            noticewindow_create("warning", "nexserのデータを全削除しました。3秒後に再ロードします", "nexser");
             if (sessionStorage.getItem('start_camera')) {
                 stopCamera()
             }
-            localStorage.clear();
             sessionStorage.clear();
-            noticewindow_create("warning", "nexserのデータを全削除しました。　3秒後に再ロードします", "nexser")
+            localStorage.clear();
         }
     }
 
@@ -1521,46 +1502,45 @@ if (ua.includes("mobile")) {
         taskbar.style.bottom = "";
     }
 
-    document.querySelectorAll('#taskbar').forEach(function (taskbar) {
-        taskbar.addEventListener('mouseleave', function () {
-            if (localStorage.getItem('taskbar_height') && (localStorage.getItem('taskbar_autohide'))) {
+    document.querySelectorAll('#taskbar').forEach(taskbar => {
+        taskbar.addEventListener('mouseleave', () => {
+            if (localStorage.getItem('taskbar_height') && localStorage.getItem('taskbar_autohide')) {
                 const t = localStorage.getItem('taskbar_height');
                 const t2 = t - 5;
-                taskbar.style.bottom = "-" + t2 + "px";
+                taskbar.style.bottom = `-${t2}px`;
             } else if (!localStorage.getItem('taskbar_height') && localStorage.getItem('taskbar_autohide')) {
-                taskbar.style.bottom = "-35px"
+                taskbar.style.bottom = "-35px";
             }
-            bigwindow_resize()
+            bigwindow_resize();
         });
-        taskbar.addEventListener('mouseover', function () {
-            taskbar.style.bottom = ""
-            bigwindow_resize()
+        taskbar.addEventListener('mouseover', () => {
+            taskbar.style.bottom = "";
+            bigwindow_resize();
         });
-    })
+    });
 
-    document.querySelectorAll('.child_start_menu').forEach(function (child_start_menu) {
-        child_start_menu.addEventListener('mouseleave', function () {
-            if (localStorage.getItem('taskbar_height') && (localStorage.getItem('taskbar_autohide'))) {
+    document.querySelectorAll('.child_start_menu').forEach(child_start_menu => {
+        child_start_menu.addEventListener('mouseleave', () => {
+            if (localStorage.getItem('taskbar_height') && localStorage.getItem('taskbar_autohide')) {
                 const t = localStorage.getItem('taskbar_height');
                 const t2 = t - 5;
-                taskbar.style.bottom = "-" + t2 + "px";
+                taskbar.style.bottom = `-${t2}px`;
             } else if (localStorage.getItem('taskbar_autohide')) {
-                taskbar.style.bottom = "-35px"
+                taskbar.style.bottom = "-35px";
             }
         });
-        child_start_menu.addEventListener('mouseover', function () {
-            taskbar.style.bottom = ""
+        child_start_menu.addEventListener('mouseover', () => {
+            taskbar.style.bottom = "";
         });
-        child_start_menu.addEventListener('click', function () {
-            titlecolor_set()
+        child_start_menu.addEventListener('click', () => {
+            titlecolor_set();
         });
-    })
+    });
 
     function taskbar_none() {
         if (localStorage.getItem('data_taskbar_none')) {
             taskbar.style.display = "none";
             toggleWindow(my_computer);
-
             if (localStorage.getItem('taskbar_position_button')) {
                 toolbar.style.top = "0px";
             } else {
@@ -1580,28 +1560,16 @@ if (ua.includes("mobile")) {
         }
 
         if (localStorage.getItem('data_taskbar_none')) {
-            document.querySelectorAll('.big').forEach(function (child_win_posi) {
-                child_win_posi.style.top = "auto"
-            })
-            document.querySelectorAll('.leftwindow').forEach(function (child_win_posi2) {
-                child_win_posi2.style.top = "auto"
-            })
-            document.querySelectorAll('.rightwindow').forEach(function (child_win_posi3) {
-                child_win_posi3.style.top = "auto"
-            })
+            ['.big', '.leftwindow', '.rightwindow'].forEach(selector => {
+                document.querySelectorAll(selector).forEach(element => element.style.top = "auto");
+            });
         } else if (localStorage.getItem('taskbar_position_button')) {
-            document.querySelectorAll('.big').forEach(function (child_win_posi) {
-                child_win_posi.style.transition = "";
-                child_win_posi.style.top = "40px";
-            })
-            document.querySelectorAll('.leftwindow').forEach(function (child_win_posi2) {
-                child_win_posi2.style.transition = "";
-                child_win_posi2.style.top = "40px";
-            })
-            document.querySelectorAll('.rightwindow').forEach(function (child_win_posi3) {
-                child_win_posi3.style.transition = "";
-                child_win_posi3.style.top = "40px";
-            })
+            ['.big', '.leftwindow', '.rightwindow'].forEach(selector => {
+                document.querySelectorAll(selector).forEach(element => {
+                    element.style.transition = "";
+                    element.style.top = "40px";
+                });
+            });
         }
 
     }
@@ -1632,31 +1600,17 @@ if (ua.includes("mobile")) {
             }
 
             if (localStorage.getItem('data_taskbar_none')) {
-                document.querySelectorAll('.big').forEach(function (child_win_posi) {
-                    child_win_posi.style.top = "auto"
-                })
-                document.querySelectorAll('.leftwindow').forEach(function (child_win_posi2) {
-                    child_win_posi2.style.top = "auto"
-                })
-                document.querySelectorAll('.rightwindow').forEach(function (child_win_posi3) {
-                    child_win_posi3.style.top = "auto"
-                })
+                ['.big', '.leftwindow', '.rightwindow'].forEach(selector => {
+                    document.querySelectorAll(selector).forEach(element => element.style.top = "auto");
+                });
             } else if (localStorage.getItem('taskbar_position_button')) {
-                document.querySelectorAll('.big').forEach(function (child_win_posi) {
-                    child_win_posi.style.transition = "";
-                    child_win_posi.style.top = "40px";
-                    child_win_posi.style.top = t + "px";
-                })
-                document.querySelectorAll('.leftwindow').forEach(function (child_win_posi2) {
-                    child_win_posi2.style.transition = "";
-                    child_win_posi2.style.top = "40px";
-                    child_win_posi2.style.top = t + "px";
-                })
-                document.querySelectorAll('.rightwindow').forEach(function (child_win_posi3) {
-                    child_win_posi3.style.transition = "";
-                    child_win_posi3.style.top = "40px";
-                    child_win_posi3.style.top = t + "px";
-                })
+                ['.big', '.leftwindow', '.rightwindow'].forEach(selector => {
+                    document.querySelectorAll(selector).forEach(element => {
+                        element.style.transition = "";
+                        element.style.top = "40px";
+                        element.style.top = `${t}px`;
+                    });
+                });
             }
 
         }
@@ -1740,20 +1694,19 @@ if (ua.includes("mobile")) {
 
     function nexser_prompt_reset() {
         setTimeout(() => {
-            document.querySelectorAll('.prompt_hukusei2,.miss').forEach(function (prompt_hukusei2) {
-                prompt_hukusei2.remove()
-            })
+            document.querySelectorAll('.prompt_hukusei2, .miss').forEach(prompt_hukusei2 => {
+                prompt_hukusei2.remove();
+            });
             document.querySelector('.command2').classList.add('name2', 'focus2');
             document.querySelector('.command2').classList.remove('pointer_none');
             document.querySelector('.command2').disabled = false;
-            document.getElementsByClassName('focus2')[0].focus()
+            document.getElementsByClassName('focus2')[0].focus();
             document.querySelector('.focus2').style.height = "";
             prompt2_text_clear();
         }, 0);
     }
 
     function prompt_text_check() {
-
         const prompt_text_value2 = prompt_text_value.value;
         switch (prompt_text_value2) {
             case '':
@@ -2185,12 +2138,12 @@ if (ua.includes("mobile")) {
     }
 
     function shellmenu_open() {
-        document.querySelectorAll('.prompt_shell_menu').forEach(function (prompt_shell_menu) {
-            toggleWindow(prompt_shell_menu)
+        document.querySelectorAll('.prompt_shell_menu').forEach(prompt_shell_menu => {
+            toggleWindow(prompt_shell_menu);
         });
     }
     function shellmenu_close() {
-        document.querySelectorAll('.prompt_shell_menu').forEach(function (prompt_shell_menu) {
+        document.querySelectorAll('.prompt_shell_menu').forEach(prompt_shell_menu => {
             prompt_shell_menu.closest('.child_windows');
             document.getElementById('shell').value = "";
             document.getElementById('shell').textContent = "";
@@ -2201,9 +2154,9 @@ if (ua.includes("mobile")) {
     }
 
     function prompt2_text_clear() {
-        document.querySelectorAll('.focus2').forEach(function (focus2) {
+        document.querySelectorAll('.focus2').forEach(focus2 => {
             focus2.value = "";
-        })
+        });
     }
 
     function screen_backtextload() {
@@ -2260,19 +2213,19 @@ if (ua.includes("mobile")) {
         }
     }, 100);
 
-    document.querySelectorAll('.close_button').forEach(function (close_button) {
-        close_button.addEventListener('click', function () {
+    document.querySelectorAll('.close_button').forEach(close_button => {
+        close_button.addEventListener('click', () => {
             const closebutton_closest = close_button.closest('.child_windows');
             closebutton_closest.classList.add('active');
-            closebutton_closest.classList.remove('selectwindows')
+            closebutton_closest.classList.remove('selectwindows');
         });
-    })
-    document.querySelectorAll('.close_button3').forEach(function (close_button3) {
-        close_button3.addEventListener('click', function () {
+    });
+    document.querySelectorAll('.close_button3').forEach(close_button3 => {
+        close_button3.addEventListener('click', () => {
             const closebutton3 = close_button3.closest('.warning_windows');
-            closebutton3.style.display = "none"
+            closebutton3.style.display = "none";
         });
-    })
+    });
 
     function addBigScreenButtonListeners(button) {
         if (!button.dataset.listenerAdded) {
@@ -2409,8 +2362,8 @@ if (ua.includes("mobile")) {
         }
     }
 
-    document.querySelectorAll('.window_fullleft').forEach(function (window_left) {
-        window_left.addEventListener('click', function () {
+    document.querySelectorAll('.window_fullleft').forEach(window_left => {
+        window_left.addEventListener('click', () => {
             const windowleft = window_left.closest('.child_windows');
             windowleft.classList.add('leftwindow');
             const t = localStorage.getItem('taskbar_height');
@@ -2422,21 +2375,21 @@ if (ua.includes("mobile")) {
                 windowleft.style.top = "0";
             } else if (localStorage.getItem('taskbar_position_button')) {
                 windowleft.style.top = "40px";
-                windowleft.style.top = t + "px";
+                windowleft.style.top = `${t}px`;
             } else {
                 windowleft.style.top = "0";
             }
-            window_animation(windowleft)
+            window_animation(windowleft);
             if (windowleft.classList.contains('rightwindow')) {
                 document.querySelector('.rightwindow').classList.replace('rightwindow', 'leftwindow');
             }
             windowleft.classList.remove('big');
         });
-    })
-    document.querySelectorAll('.window_fullright').forEach(function (window_right) {
-        window_right.addEventListener('click', function () {
+    });
+    document.querySelectorAll('.window_fullright').forEach(window_right => {
+        window_right.addEventListener('click', () => {
             const windowright = window_right.closest('.child_windows');
-            windowright.classList.add('rightwindow')
+            windowright.classList.add('rightwindow');
             const t = localStorage.getItem('taskbar_height');
             windowright.style.left = "";
             windowright.style.right = "0px";
@@ -2446,17 +2399,17 @@ if (ua.includes("mobile")) {
                 windowright.style.top = "0";
             } else if (localStorage.getItem('taskbar_position_button')) {
                 windowright.style.top = "40px";
-                windowright.style.top = t + "px";
+                windowright.style.top = `${t}px`;
             } else {
                 windowright.style.top = "0";
             }
-            window_animation(windowright)
+            window_animation(windowright);
             if (windowright.classList.contains('leftwindow')) {
                 document.querySelector('.leftwindow').classList.replace('leftwindow', 'rightwindow');
             }
             windowright.classList.remove('big');
         });
-    })
+    });
 
     document.querySelectorAll('.window_half_big').forEach(window_half_big => {
         window_half_big.addEventListener('mousedown', () => {
@@ -2510,28 +2463,27 @@ if (ua.includes("mobile")) {
         });
     });
 
-    document.querySelectorAll('.allwindow_toolbar').forEach(function (allwindow_toolbar) {
-        allwindow_toolbar.addEventListener('click', function () {
-            document.querySelectorAll('.window_tool').forEach(function (window_tool) {
+    document.querySelectorAll('.allwindow_toolbar').forEach(allwindow_toolbar => {
+        allwindow_toolbar.addEventListener('click', () => {
+            document.querySelectorAll('.window_tool').forEach(window_tool => {
                 if (window_tool.style.display === "block") {
-                    window_tool.style.display = "none"
+                    window_tool.style.display = "none";
                     localStorage.removeItem('allwindow_toolbar');
-
-                    document.querySelectorAll('.window_inline_side').forEach(function (window_inline_side) {
-                        window_inline_side.style.top = ""
-                    })
-                    clock_menu.style.height = "355px"
+                    document.querySelectorAll('.window_inline_side').forEach(window_inline_side => {
+                        window_inline_side.style.top = "";
+                    });
+                    clock_menu.style.height = "355px";
                 } else {
-                    window_tool.style.display = "block"
+                    window_tool.style.display = "block";
                     localStorage.setItem('allwindow_toolbar', true);
-                    document.querySelectorAll('.window_inline_side').forEach(function (window_inline_side) {
-                        window_inline_side.style.top = "31px"
-                    })
-                    clock_menu.style.height = ""
+                    document.querySelectorAll('.window_inline_side').forEach(window_inline_side => {
+                        window_inline_side.style.top = "31px";
+                    });
+                    clock_menu.style.height = "";
                 }
-            })
-        })
-    })
+            });
+        });
+    });
 
     const digital_clock_area = document.getElementsByClassName('digital_clock_area');
     const analog_clock_area = document.getElementsByClassName('analog_clock_area')
@@ -2623,17 +2575,16 @@ if (ua.includes("mobile")) {
         [...document.getElementsByClassName('back_silver')].forEach(back_silver => back_silver.style.background = "silver");
     }
 
-    document.querySelectorAll('.child_windows, .child').forEach(function (z_index_child_windows) {
+    document.querySelectorAll('.child_windows, .child').forEach(z_index_child_windows => {
         const zindexchildwindows = z_index_child_windows.closest('.child_windows');
-        const addEventListeners = (element) => {
-            element.addEventListener('mousedown', function () {
+        const addEventListeners = element => {
+            element.addEventListener('mousedown', () => {
                 zindexchildwindows.scrollTop = 0;
                 zindexchildwindows.scrollLeft = 0;
                 zindexchildwindows.style.zIndex = largestZIndex++;
             });
         };
         addEventListeners(z_index_child_windows);
-
         const iframes = z_index_child_windows.querySelectorAll('iframe');
         iframes.forEach(iframe => {
             iframe.addEventListener('load', () => {
@@ -3224,19 +3175,14 @@ if (ua.includes("mobile")) {
             titlebar_black: ["#555555", "black"],
             titlebar_teal: ["#483D8B", "teal"],
             titlebar_new: ["linear-gradient(to right, #5b5b5b, #C0C0C0)", "linear-gradient(to right, #02175e, #A3C1E2)"]
-        }
-        if (localStorage.getItem('driver_color')) {
-            Object.entries(colors).forEach(([key, [bgColor, navyColor]]) => {
-                if (localStorage.getItem(key)) {
-                    document.querySelectorAll('.title').forEach(title => {
-                        title.style.background = bgColor;
-                    });
-                    document.querySelectorAll('.navy').forEach(navys => {
-                        navys.style.background = navyColor;
-                    });
-                }
-            });
-        }
+        };
+        if (!localStorage.getItem('driver_color')) return;
+        Object.entries(colors).forEach(([key, [bgColor, navyColor]]) => {
+            if (localStorage.getItem(key)) {
+                document.querySelectorAll('.title').forEach(title => title.style.background = bgColor);
+                document.querySelectorAll('.navy').forEach(navy => navy.style.background = navyColor);
+            }
+        });
     }
 
     document.querySelectorAll('.wallpaper_allremove_btn').forEach(wallpaper_allremove_btn => {
@@ -3615,18 +3561,18 @@ if (ua.includes("mobile")) {
     })
     localStorage.removeItem('objective_area')
 
-    document.querySelectorAll('.objective_title_area,.objective_area').forEach(function (objectives_area) {
-        objectives_area.addEventListener("keydown", function (event) {
+    document.querySelectorAll('.objective_title_area, .objective_area').forEach(objectives_area => {
+        objectives_area.addEventListener("keydown", event => {
             if (event.ctrlKey && event.key === 's') {
                 event.preventDefault();
             } else {
-                objective_title(event);
+                objective_title();
             }
-            objectives_area.addEventListener("keyup", function (event) {
+            objectives_area.addEventListener("keyup", event => {
                 if (event.ctrlKey && event.key === 's') {
-                    objective_save()
+                    objective_save();
                 }
-            })
+            });
         });
     });
     function objective_title() {
@@ -3884,7 +3830,7 @@ if (ua.includes("mobile")) {
             window_inline_list.style.columnCount = "1";
             window_inline_list.style.display = "block";
         });
-        document.querySelectorAll('.window_file_icon, .window_file_icon2').forEach(function (window_file_icon) {
+        document.querySelectorAll('.window_file_icon, .window_file_icon2').forEach(window_file_icon => {
             window_file_icon.style.width = "28px";
             window_file_icon.style.height = "18px";
             window_file_icon.style.marginBottom = "-20px";
@@ -3909,7 +3855,7 @@ if (ua.includes("mobile")) {
             window_inline_list.style.columnCount = "2";
             window_inline_list.style.display = "block";
         });
-        document.querySelectorAll('.window_file_icon, .window_file_icon2').forEach(function (window_file_icon) {
+        document.querySelectorAll('.window_file_icon, .window_file_icon2').forEach(window_file_icon => {
             window_file_icon.style.width = "28px";
             window_file_icon.style.height = "18px";
             window_file_icon.style.marginBottom = "-20px";
@@ -3930,28 +3876,28 @@ if (ua.includes("mobile")) {
     }
 
     function window_file_list_reset() {
-        Array.from(document.getElementsByClassName('window_inline_list')).forEach((window_inline_list) => {
+        Array.from(document.getElementsByClassName('window_inline_list')).forEach(window_inline_list => {
             window_inline_list.style.columnCount = "";
             window_inline_list.style.display = "flex";
         });
-        document.querySelectorAll('.window_file_icon, .window_file_icon2').forEach(function (window_file_icon) {
+        document.querySelectorAll('.window_file_icon, .window_file_icon2').forEach(window_file_icon => {
             window_file_icon.style.width = "";
             window_file_icon.style.height = "";
             window_file_icon.style.marginBottom = "";
         });
-        Array.from(document.getElementsByClassName('window_files')).forEach((window_files) => {
+        Array.from(document.getElementsByClassName('window_files')).forEach(window_files => {
             window_files.style.margin = "";
             window_files.style.paddingTop = "";
             window_files.style.width = "";
             let sss = window_files.firstElementChild;
-            sss2 = sss.style.paddingLeft = "";
-            sss2 = sss.style.width = "";
+            sss.style.paddingLeft = "";
+            sss.style.width = "";
         });
-
-        Array.from(document.getElementsByClassName('windowfile_time')).forEach((windowfile_time) => {
-            windowfile_time.style.display = "none"
-        })
+        Array.from(document.getElementsByClassName('windowfile_time')).forEach(windowfile_time => {
+            windowfile_time.style.display = "none";
+        });
     }
+
 
     filettext_backcolor()
 
@@ -4038,15 +3984,9 @@ if (ua.includes("mobile")) {
             files_inline.style.top = "auto"
             files_inline.style.bottom = ""
 
-            document.querySelectorAll('.big').forEach(function (child_win_posi) {
-                child_win_posi.style.top = "auto"
-            })
-            document.querySelectorAll('.leftwindow').forEach(function (child_win_posi2) {
-                child_win_posi2.style.top = "auto"
-            })
-            document.querySelectorAll('.rightwindow').forEach(function (child_win_posi3) {
-                child_win_posi3.style.top = "auto"
-            })
+            ['.big', '.leftwindow', '.rightwindow'].forEach(selector => {
+                document.querySelectorAll(selector).forEach(element => element.style.top = "auto");
+            });
 
             if (check(elm1, elm2) && localStorage.getItem('taskbar_position_button')) {
                 toolbar.style.top = "40px";
@@ -4083,34 +4023,17 @@ if (ua.includes("mobile")) {
             }
 
             if (localStorage.getItem('data_taskbar_none')) {
-                document.querySelectorAll('.big').forEach(function (child_win_posi) {
-                    child_win_posi.style.top = "auto"
-                })
-                document.querySelectorAll('.leftwindow').forEach(function (child_win_posi2) {
-                    child_win_posi2.style.top = "auto"
-                })
-                document.querySelectorAll('.rightwindow').forEach(function (child_win_posi3) {
-                    child_win_posi3.style.top = "auto"
-                })
+                ['.big', '.leftwindow', '.rightwindow'].forEach(selector => {
+                    document.querySelectorAll(selector).forEach(element => element.style.top = "auto");
+                });
             } else {
-                document.querySelectorAll('.big').forEach(function (child_win_posi) {
-                    child_win_posi.style.transition = "";
-                    child_win_posi.style.top = "40px";
-
-                    child_win_posi.style.top = t + "px";
-                })
-                document.querySelectorAll('.leftwindow').forEach(function (child_win_posi2) {
-                    child_win_posi2.style.transition = "";
-                    child_win_posi2.style.top = "40px";
-
-                    child_win_posi2.style.top = t + "px";
-                })
-                document.querySelectorAll('.rightwindow').forEach(function (child_win_posi3) {
-                    child_win_posi3.style.transition = "";
-                    child_win_posi3.style.top = "40px";
-
-                    child_win_posi3.style.top = t + "px";
-                })
+                ['.big', '.leftwindow', '.rightwindow'].forEach(selector => {
+                    document.querySelectorAll(selector).forEach(element => {
+                        element.style.transition = "";
+                        element.style.top = "40px";
+                        element.style.top = `${t}px`;
+                    });
+                });
             }
 
             if (check(elm1, elm2) && localStorage.getItem('taskbar_position_button')) {
@@ -4572,7 +4495,7 @@ if (ua.includes("mobile")) {
         }
     };
     function toggleShadow(action) {
-        document.querySelectorAll('.child_list, .sample_child_list').forEach(function (childlist_shadow) {
+        document.querySelectorAll('.child_list, .sample_child_list').forEach(childlist_shadow => {
             let childlist_shadow2 = childlist_shadow.lastElementChild;
             if (action === 'add') {
                 childlist_shadow2.classList.add('shadow');
@@ -4581,6 +4504,7 @@ if (ua.includes("mobile")) {
             }
         });
     }
+
     function list_shadow() {
         toggleShadow('add');
     }
@@ -4799,12 +4723,13 @@ if (ua.includes("mobile")) {
         youtubeWindow.postMessage('{"event":"command", "func":"' + action + '", "args":' + arg + '}', '*');
     };
 
-    document.querySelectorAll('.close_button,.close_button2,.close_button3,.close_button4').forEach(function (close_buttons) {
+    document.querySelectorAll('.close_button, .close_button2, .close_button3, .close_button4').forEach(close_buttons => {
         close_buttons.classList.add('allclose_button');
-    })
-    document.querySelectorAll('.pointer_none *').forEach(function (element) {
+    });
+    document.querySelectorAll('.pointer_none *').forEach(element => {
         element.classList.add('pointer_none');
     });
+
 
     navigator.mediaDevices.enumerateDevices()
         .then((devices) => {
