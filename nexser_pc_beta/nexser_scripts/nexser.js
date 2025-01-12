@@ -1489,13 +1489,7 @@ if (ua.includes("mobile")) {
             }
             localStorage.clear();
             sessionStorage.clear();
-            taskbar_active();
-
-            warning_windows.style.display = "block";
-            document.querySelector('.shutdown_button').style.display = "block";
-            document.querySelector('.warningclose_button').style.display = "none";
-            document.querySelector('.warning_title_text').textContent = "nexser";
-            document.querySelector('.window_warning_text').textContent = "nexserのデータを全削除しました!　5秒後に再ロードします!";
+            noticewindow_create("warning", "nexserのデータを全削除しました。　3秒後に再ロードします", "nexser")
         }
     }
 
@@ -2117,7 +2111,7 @@ if (ua.includes("mobile")) {
                 allStorage_clear()
                 setTimeout(() => {
                     window.location = '';
-                }, 5000);
+                }, 3000);
                 break;
 
             case 'welcome':
