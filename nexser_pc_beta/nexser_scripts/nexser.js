@@ -5800,13 +5800,7 @@ if (ua.includes("mobile")) {
             offsetY = e.clientY - element.getBoundingClientRect().top;
             e.dataTransfer.setData('text/plain', null);
             element.style.border = '1.95px dotted dimgray';
-            element.style.opacity = '0.99';
-            element.firstElementChild.style.opacity = '0';
-            element.children[1].style.opacity = '0';
-            setTimeout(() => {
-                element.firstElementChild.style.opacity = '';
-                element.children[1].style.opacity = '';
-            }, 0);
+            element.style.opacity = '0.9';
             rectangle_remove();
         });
         element.addEventListener('dragend', (e) => {
@@ -6875,7 +6869,7 @@ if (ua.includes("mobile")) {
         });
         const firstLi = newElement.querySelector('li');
         if (firstLi) {
-            firstLi.textContent += ' copy';
+            firstLi.textContent += ' shortcut';
         }
         saveToLocalStorage();
         loadFromLocalStorage();
