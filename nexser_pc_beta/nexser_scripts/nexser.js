@@ -134,6 +134,8 @@ if (ua.includes("mobile")) {
     const titles = document.querySelectorAll('.title');
     const navys = document.querySelectorAll('.navy');
 
+    const window_selectors = ['.big', '.leftwindow', '.rightwindow'];
+
     // app
     // note
     const note_area = document.querySelector('.note_area');
@@ -1559,11 +1561,11 @@ if (ua.includes("mobile")) {
         }
 
         if (localStorage.getItem('data_taskbar_none')) {
-            ['.big', '.leftwindow', '.rightwindow'].forEach(selector => {
+            window_selectors.forEach(selector => {
                 document.querySelectorAll(selector).forEach(element => element.style.top = "auto");
             });
         } else if (localStorage.getItem('taskbar_position_button')) {
-            ['.big', '.leftwindow', '.rightwindow'].forEach(selector => {
+            window_selectors.forEach(selector => {
                 document.querySelectorAll(selector).forEach(element => {
                     element.style.transition = "";
                     element.style.top = "40px";
@@ -1599,11 +1601,11 @@ if (ua.includes("mobile")) {
             }
 
             if (localStorage.getItem('data_taskbar_none')) {
-                ['.big', '.leftwindow', '.rightwindow'].forEach(selector => {
+                window_selectors.forEach(selector => {
                     document.querySelectorAll(selector).forEach(element => element.style.top = "auto");
                 });
             } else if (localStorage.getItem('taskbar_position_button')) {
-                ['.big', '.leftwindow', '.rightwindow'].forEach(selector => {
+                window_selectors.forEach(selector => {
                     document.querySelectorAll(selector).forEach(element => {
                         element.style.transition = "";
                         element.style.top = "40px";
@@ -3983,7 +3985,8 @@ if (ua.includes("mobile")) {
             files_inline.style.top = "auto"
             files_inline.style.bottom = ""
 
-            ['.big', '.leftwindow', '.rightwindow'].forEach(selector => {
+
+            window_selectors.forEach(selector => {
                 document.querySelectorAll(selector).forEach(element => element.style.top = "auto");
             });
 
@@ -4022,11 +4025,11 @@ if (ua.includes("mobile")) {
             }
 
             if (localStorage.getItem('data_taskbar_none')) {
-                ['.big', '.leftwindow', '.rightwindow'].forEach(selector => {
+                window_selectors.forEach(selector => {
                     document.querySelectorAll(selector).forEach(element => element.style.top = "auto");
                 });
             } else {
-                ['.big', '.leftwindow', '.rightwindow'].forEach(selector => {
+                window_selectors.forEach(selector => {
                     document.querySelectorAll(selector).forEach(element => {
                         element.style.transition = "";
                         element.style.top = "40px";
@@ -4573,6 +4576,7 @@ if (ua.includes("mobile")) {
         }
     }
 
+    document.querySelector('.taskbar_height_value').addEventListener('input', function () { if (this.value.length > 3) this.value = this.value.slice(0, 3); });
     function taskheight_clear() {
         document.getElementsByClassName('taskbar_height_value')[0].value = "40";
         localStorage.removeItem('taskbar_height');
