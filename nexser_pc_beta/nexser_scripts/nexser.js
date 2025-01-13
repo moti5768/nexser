@@ -1126,7 +1126,6 @@ if (ua.includes("mobile")) {
         welcome_menu.classList.add('active');
         setTimeout(() => {
             desktop.style.display = "block";
-            localmemory_size()
             document.getElementById('files').style.display = "block";
             taskbar.style.display = "block";
             const task = taskbar.clientHeight;
@@ -4765,11 +4764,11 @@ if (ua.includes("mobile")) {
         document.querySelector('.omikuji_text').textContent = omikuji_results[index] + ' です！';
     }
 
+
     function localmemory_size() {
         if (desktop.style.display === "block") {
-            document.getElementById('shell').value = "";
+            noticewindow_create("load", "データを読み込み中...", "loading");
             document.querySelector('.local_memory_button').classList.add('pointer_none');
-            shellmenu_open();
             const testKey = 'testStorageKey';
             const testData = new Array(1024).join('a');
             let maxSize = 0;
@@ -4779,31 +4778,57 @@ if (ua.includes("mobile")) {
                     maxSize++;
                 }
             } catch (e) {
-                // エラー
+                // error
             } finally {
                 for (let i = 0; i < maxSize; i++) {
                     localStorage.removeItem(testKey + i);
                 }
             }
             document.querySelector('.local_memory').innerHTML = "";
-            const totalDelay = localStorage.length * 25;
             for (let i = 0; i < localStorage.length; i++) {
-                setTimeout(() => {
-                    const key = localStorage.key(i);
-                    const value = localStorage.getItem(key);
-                    const valueSize = new Blob([value]).size;
-                    document.getElementById('shell').value = (`Key: ${key}, Value: ${value}, Size: ${valueSize} bytes`);
-                }, i * 25);
+                const key = localStorage.key(i);
+                const value = localStorage.getItem(key);
+                const valueSize = new Blob([value]).size;
             }
             setTimeout(() => {
-                shellmenu_close();
                 document.querySelector('.local_memory').innerHTML = `&emsp;${maxSize}KB&emsp;`;
                 localStorage.setItem('maxSize', maxSize);
-                displayLocalStorageDetails();
                 document.querySelector('.local_memory_button').classList.remove('pointer_none');
-            }, totalDelay + 500);
+                if (localStorage.getItem('memoryOver')) {
+                    localStorage.removeItem('memoryOver');
+                }
+                addwindow_remove();
+                displayLocalStorageDetails();
+            }, 0);
         }
     }
+
+    let lastKeys = getLocalStorageKeysAndValues();
+    function checkStorageChange() {
+        const currentKeys = getLocalStorageKeysAndValues();
+        if (Object.keys(currentKeys).length !== Object.keys(lastKeys).length || Object.keys(currentKeys).some(key => currentKeys[key] !== lastKeys[key])) {
+            lastKeys = currentKeys;
+            localmemory_size();
+        }
+        document.querySelector('.local_memory2').innerHTML = `&emsp;${(calculateLocalStorageSize() / 1024).toFixed(2)}KB&emsp;`;
+        const maxSize = localStorage.getItem('maxSize');
+        if (maxSize === '0' && !localStorage.getItem('memoryOver')) {
+            noticewindow_create("warning", "nexser の保存容量を超えています!", "nexser");
+            localStorage.setItem('memoryOver', true);
+        } else if (localStorage.getItem('memoryOver') && maxSize !== '0') {
+            localStorage.removeItem('memoryOver');
+        }
+    }
+    function getLocalStorageKeysAndValues() {
+        return Object.keys(localStorage).reduce((storage, key) => {
+            if (!key.startsWith('windowfile_time')) storage[key] = localStorage[key];
+            return storage;
+        }, {});
+    }
+    function calculateLocalStorageSize() {
+        return Object.entries(localStorage).reduce((total, [key, value]) => key.startsWith('windowfile_time') ? total : total + key.length + value.length, 0);
+    }
+    setInterval(checkStorageChange, 0);
 
     document.querySelector('.local_memory').innerHTML = `&emsp;${localStorage.getItem('maxSize')}KB&emsp;`;
     function displayLocalStorageDetails() {
@@ -4825,25 +4850,6 @@ if (ua.includes("mobile")) {
         document.getElementById('totalSize').textContent = `Total Size: ${totalSize} Byte`;
     }
 
-
-
-
-    setInterval(() => {
-        function getLocalStorageSize() {
-            let total = 0;
-            for (let key in localStorage) {
-                if (localStorage.hasOwnProperty(key)) {
-                    total += key.length + localStorage[key].length;
-                }
-            }
-            return total;
-        }
-        const sizeInKilobytes = getLocalStorageSize() / 1024;
-        document.querySelector('.local_memory2').innerHTML = '&emsp;' + sizeInKilobytes + 'KB' + '&emsp;';
-        if (localStorage.getItem('maxSize') === 0) {
-            noticewindow_create("error", "nexser の保存容量を超えています!");
-        }
-    }, 1000);
     const paint_canvas = document.getElementById('paint_canvas');
     const paint_ctx = paint_canvas.getContext('2d');
     paint_ctx.fillStyle = '#ffffff';
@@ -5779,7 +5785,7 @@ if (ua.includes("mobile")) {
         const savedPosition = localStorage.getItem(`draggable-${index}`);
         if (savedPosition) {
             const [x, y] = savedPosition.split(',');
-            element.style.position = "absolute";
+            element.style.position = 'absolute';
             element.style.left = `${x}px`;
             element.style.top = `${y}px`;
         }
@@ -5789,30 +5795,26 @@ if (ua.includes("mobile")) {
             offsetX = e.clientX - element.getBoundingClientRect().left;
             offsetY = e.clientY - element.getBoundingClientRect().top;
             e.dataTransfer.setData('text/plain', null);
-            element.style.border = "1.95px dotted dimgray";
-            element.style.opacity = "0.99";
-            const element2 = element.firstElementChild;
-            const element3 = element.children[1];
-            element2.style.opacity = "0";
-            element3.style.opacity = "0";
+            element.style.border = '1.95px dotted dimgray';
+            element.style.opacity = '0.99';
+            element.firstElementChild.style.opacity = '0';
+            element.children[1].style.opacity = '0';
             setTimeout(() => {
-                element2.style.opacity = "";
-                element3.style.opacity = "";
+                element.firstElementChild.style.opacity = '';
+                element.children[1].style.opacity = '';
             }, 0);
-            rectangle_remove()
+            rectangle_remove();
         });
         element.addEventListener('dragend', (e) => {
             const x = e.clientX - offsetX;
             const y = e.clientY - offsetY;
-            element.style.position = "absolute";
+            element.style.position = 'absolute';
             element.style.left = `${x}px`;
             element.style.top = `${y}px`;
-            const element2 = element.firstElementChild;
-            const element3 = element.children[1];
-            element2.style.opacity = "";
-            element3.style.opacity = "";
-            element.style.opacity = "";
-            element.style.border = "";
+            element.firstElementChild.style.opacity = '';
+            element.children[1].style.opacity = '';
+            element.style.opacity = '';
+            element.style.border = '';
             localStorage.setItem(`draggable-${index}`, `${x},${y}`);
         });
     });
@@ -6285,8 +6287,6 @@ if (ua.includes("mobile")) {
         windowtool_buttons_child.appendChild(windowtool_childbtns)
     });
 
-
-
     function filetimes_test() {
         localStorage.removeItem('filetimes')
         if (localStorage.getItem('windowfile_1') || localStorage.getItem('windowfile_3')) {
@@ -6315,12 +6315,16 @@ if (ua.includes("mobile")) {
         const entryDiv = document.createElement("div");
         const isWarning = window_icon === "warning";
         const isError = window_icon === "error";
+        const isLoad = window_icon === "load";
         entryDiv.className = "child_windows error_windows back_silver no_window";
         if (isWarning) {
             sound(4);
             errorMessage = errorMessage || "warning";
         } else if (isError) {
             sound(2);
+        } else if (isLoad) {
+            errorMessage = errorMessage || "load";
+            entryDiv.classList.add('add_create_windows')
         } else {
             errorMessage = window_icon;
             entryDiv.classList.add('add_create_windows')
