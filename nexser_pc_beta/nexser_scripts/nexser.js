@@ -4799,6 +4799,7 @@ if (ua.includes("mobile")) {
                     localStorage.removeItem('memoryOver');
                 }
                 document.querySelector('.add_create_load_windows').remove();
+                zindexwindow_addnavy();
                 displayLocalStorageDetails();
             }, 0);
         }
