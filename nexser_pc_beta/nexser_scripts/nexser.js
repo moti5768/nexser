@@ -2691,6 +2691,7 @@ if (ua.includes("mobile")) {
         allwindow_resize();
         Array.from(document.getElementsByClassName('button')).forEach(addButtonListeners2);
         Array.from(document.getElementsByClassName('button2')).forEach(addButtonListeners);
+        window.scrollTo(0, 0);
     }
 
     const note_parent = document.querySelector('.note_pad');
@@ -4801,6 +4802,7 @@ if (ua.includes("mobile")) {
                 document.querySelector('.add_create_load_windows').remove();
                 zindexwindow_addnavy();
                 displayLocalStorageDetails();
+                window.scrollTo(0, 0);
             }, 0);
         }
     }
