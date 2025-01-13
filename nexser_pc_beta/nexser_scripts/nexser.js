@@ -3048,15 +3048,12 @@ if (ua.includes("mobile")) {
     });
 
 
-    const KEY_COLOR = "COLOR";				// 文字色用キー
-    const KEY_BKCOLOR = "BKCOLOR";			// 背景色用キー
+    const KEY_COLOR = "COLOR";
+    const KEY_BKCOLOR = "BKCOLOR";
 
-    let color = null;						// 文字色
-    let bkcolor = null;						// 背景色
+    let color = null;
+    let bkcolor = null;
 
-    /*
-     * ローカルストレージのデータチェック
-     */
     function getStorage() {
         // ローカルストレージに保存された内容を取得
         color = localStorage.getItem(KEY_COLOR);
@@ -3302,7 +3299,7 @@ if (ua.includes("mobile")) {
         } else if (ele.requestFullscreen) {
             ele.requestFullscreen() // HTML5 Fullscreen API
         } else {
-            alert('未対応')
+            noticewindow_create("warning", "未対応")
             return
         }
     }
@@ -4771,7 +4768,7 @@ if (ua.includes("mobile")) {
 
     function localmemory_size() {
         if (desktop.style.display === "block") {
-            noticewindow_create("load", "データを読み込み中...", "loading");
+            noticewindow_create("load", "データを読み込み中...");
             document.querySelector('.local_memory_button').classList.add('pointer_none');
             const testKey = 'testStorageKey';
             const testData = new Array(1024).join('a');
@@ -4801,7 +4798,7 @@ if (ua.includes("mobile")) {
                 if (localStorage.getItem('memoryOver')) {
                     localStorage.removeItem('memoryOver');
                 }
-                addwindow_remove();
+                document.querySelector('.add_create_load_windows').remove();
                 displayLocalStorageDetails();
             }, 0);
         }
@@ -5954,7 +5951,7 @@ if (ua.includes("mobile")) {
         timerText.innerHTML = `${alarm_hours}:${alarm_minutes}:${alarm_seconds}`;
         for (var i = 0, len = record.length; i < len; i++) {
             if (record[i].sethour == currentDate.getHours() && record[i].setminute == currentDate.getMinutes() && alarm_seconds == 0) {
-                alert('お時間です!');
+                noticewindow_create("alarm", "お時間です!　");
             };
         };
     }
@@ -6311,7 +6308,6 @@ if (ua.includes("mobile")) {
 
     function addwindow_remove() {
         document.querySelector('.add_create_windows').remove();
-        zindexwindow_addnavy();
     }
 
     function noticewindow_create(window_icon, errorTitle, errorMessage = "Error") {
@@ -6323,12 +6319,12 @@ if (ua.includes("mobile")) {
         entryDiv.className = "child_windows error_windows back_silver no_window";
         if (isWarning) {
             sound(4);
-            errorMessage = errorMessage || "warning";
+            errorMessage = "warning";
         } else if (isError) {
             sound(2);
         } else if (isLoad) {
-            errorMessage = errorMessage || "load";
-            entryDiv.classList.add('add_create_windows')
+            errorMessage = "loading";
+            entryDiv.classList.add('add_create_load_windows')
         } else {
             errorMessage = window_icon;
             entryDiv.classList.add('add_create_windows')
@@ -6436,7 +6432,6 @@ if (ua.includes("mobile")) {
         const content = document.getElementById('editor_2').innerHTML;
         const compressedContent = btoa(unescape(encodeURIComponent(content)));
         localStorage.setItem('editorContent', compressedContent);
-        alert('保存しました!');
     }
 
     function editorContent_load() {

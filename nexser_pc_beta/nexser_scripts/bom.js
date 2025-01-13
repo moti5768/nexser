@@ -51,7 +51,6 @@ function putBomb() {
             const x = Math.floor(Math.random() * w);
             if (data[y][x] === 0) {
                 data[y][x] = 1;
-                // board.rows[y].cells[x].classList.add("bomb");
                 break;
             }
         }
@@ -123,7 +122,9 @@ function leftClicked() {
         noticewindow_create("main sweeper", "GAME　CLEAR　");
         const bom_time = document.getElementById('bom_time').textContent;
         document.querySelector('.bom_clear_time').textContent = bom_time;
-        localStorage.setItem('bom_time', bom_time)
+        setTimeout(() => {
+            localStorage.setItem('bom_time', bom_time)
+        }, 3000);
         clearTimeout(timeoutId);
         return;
     }
