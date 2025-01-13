@@ -2890,7 +2890,7 @@ progress::-webkit-progress-value {
 .testwindow2 {
     position: absolute;
     min-width: 250px;
-    min-height: 250px;
+    min-height: 22px;
 }
 
 .white_space_wrap {

@@ -149,6 +149,7 @@ if (ua.includes("mobile")) {
             })
         }
         bigwindow_resize();
+        document.querySelector('.local_memory2').innerHTML = `&emsp;${(calculateLocalStorageSize() / 1024).toFixed(2)}KB&emsp;`;
     })
 
     function game_true() {
@@ -4814,7 +4815,6 @@ if (ua.includes("mobile")) {
             lastKeys = currentKeys;
             localmemory_size();
         }
-        document.querySelector('.local_memory2').innerHTML = `&emsp;${(calculateLocalStorageSize() / 1024).toFixed(2)}KB&emsp;`;
         const maxSize = localStorage.getItem('maxSize');
         if (maxSize === '0' && !localStorage.getItem('memoryOver')) {
             noticewindow_create("warning", "nexser の保存容量を超えています!", "nexser");
@@ -4832,7 +4832,6 @@ if (ua.includes("mobile")) {
     function calculateLocalStorageSize() {
         return Object.entries(localStorage).reduce((total, [key, value]) => key.startsWith('windowfile_time') ? total : total + key.length + value.length, 0);
     }
-    setInterval(checkStorageChange, 0);
 
     document.querySelector('.local_memory').innerHTML = `&emsp;${localStorage.getItem('maxSize')}KB&emsp;`;
     function displayLocalStorageDetails() {
@@ -5546,14 +5545,9 @@ if (ua.includes("mobile")) {
     const dropArea2 = document.querySelector('#soft_windows');
     dropArea.addEventListener('dragover', (event) => {
         event.preventDefault();
-        dropArea.style.borderColor = '#000';
-    });
-    dropArea.addEventListener('dragleave', () => {
-        dropArea.style.borderColor = '#ccc';
     });
     dropArea.addEventListener('drop', (event) => {
         event.preventDefault();
-        dropArea.style.borderColor = '#ccc';
         const files = event.dataTransfer.files;
         const files2 = event.dataTransfer;
         const url = files2.getData('text/uri-list');
@@ -5569,24 +5563,20 @@ if (ua.includes("mobile")) {
                         if (parent) parent.appendChild(element);
                         return element;
                     };
-
                     const windowDiv = createElement('div', "child_windows testwindow2 resize", null);
                     windowDiv.style.left = `${event.clientX}px`;
                     windowDiv.style.top = `${event.clientY}px`;
                     windowDiv.style.zIndex = largestZIndex++;
-
                     const titleDiv = createElement('div', "title", windowDiv);
-                    const titleIcon = createElement('span', "title_icon", titleDiv);
-                    const titleText = createElement('span', "white_space_wrap", titleDiv, file.name);
-
+                    createElement('span', "title_icon", titleDiv);
+                    createElement('span', "white_space_wrap", titleDiv, file.name);
                     const titleButtons = createElement('div', "title_buttons", windowDiv);
-                    const dragButton = createElement('span', "drag_button", titleButtons, "&nbsp;");
+                    createElement('span', "drag_button", titleButtons, "&nbsp;");
                     const closeButton = createElement('span', "close_button button2 allclose_button", titleButtons);
-                    const bigScreenButton = createElement('span', "bigscreen_button button2", titleButtons);
-                    const minScreenButton = createElement('span', "minscreen_button button2", titleButtons);
-                    const minimizationButton = createElement('span', "minimization_button button2", titleButtons);
+                    createElement('span', "bigscreen_button button2", titleButtons);
+                    createElement('span', "minscreen_button button2", titleButtons);
+                    createElement('span', "minimization_button button2", titleButtons);
                     createElement('br', null, titleButtons);
-
                     closeButton.addEventListener('click', () => {
                         const parentWindow = closeButton.closest('.child_windows');
                         if (parentWindow) {
@@ -5596,10 +5586,6 @@ if (ua.includes("mobile")) {
                     });
 
                     const windowContents = createElement('div', "window_contents", windowDiv);
-                    setTimeout(() => {
-                        windowDiv.classList.add('no_create_windows');
-                    }, 100);
-
                     const addMediaContent = (mediaTag, mediaSrc) => {
                         const mediaElement = createElement(mediaTag, "item_preview", windowContents);
                         mediaElement.src = mediaSrc;
@@ -5637,10 +5623,11 @@ if (ua.includes("mobile")) {
                     }
 
                     setTimeout(() => {
-                        const testWindows = document.querySelectorAll('.testwindow2:not(.no_create_windows)');
+                        const testWindows = document.querySelectorAll('.testwindow2:not(.nocreatewindow)');
                         testWindows.forEach((testWindow) => {
                             testWindow.style.width = '500px';
                             testWindow.style.height = '400px';
+                            testWindow.classList.add("nocreatewindow");
                             const centerElement = testWindow.querySelector('.testwindow2 > *:nth-child(3) > *');
                             centerElement.classList.add('center');
                         });
@@ -5655,10 +5642,11 @@ if (ua.includes("mobile")) {
                                 zindexChildWindow.style.zIndex = largestZIndex++;
                             };
                             const handleMouseDownResize = () => {
-                                const testwindow2_1 = childWindow.children[2];
-                                const testwindow2_2 = testwindow2_1.firstElementChild;
-                                testwindow2_2.style.maxWidth = `${zindexChildWindow.clientWidth}px`;
-                                testwindow2_2.style.maxHeight = `${zindexChildWindow.clientHeight - 25}px`;
+                                const { clientWidth: width, clientHeight: height } = zindexChildWindow;
+                                Object.assign(childWindow.children[2].firstElementChild.style, {
+                                    maxWidth: `${width}px`,
+                                    maxHeight: `${height - 25}px`
+                                });
                                 rectangle_remove();
                             };
                             childWindow.addEventListener('mousedown', () => {
@@ -5964,7 +5952,8 @@ if (ua.includes("mobile")) {
             エラーオブジェクト: ${error}
         `;
         errorLog.innerHTML += errorMessage + '\n' + '<br>';
-        console_error_btn()
+        console_error_btn();
+        checkStorageChange();
         return false;
     };
 
