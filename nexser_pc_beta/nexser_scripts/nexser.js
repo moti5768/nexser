@@ -136,9 +136,14 @@ if (ua.includes("mobile")) {
 
     const window_selectors = ['.big', '.leftwindow', '.rightwindow'];
 
+    const windowanimation = 0.2;
+
     // app
     // note
     const note_area = document.querySelector('.note_area');
+    // cpubench
+    const cpumenu1 = document.querySelector('.cpumenu_1');
+    const cpumenu2 = document.querySelector('.cpumenu_2');
 
     document.addEventListener('click', () => {
         if (localStorage.getItem('game_none')) {
@@ -2346,11 +2351,10 @@ if (ua.includes("mobile")) {
             animation.style.zIndex = largestZIndex++;
         };
         if (localStorage.getItem('window_animation')) {
-            animation.style.transition = "0.15s cubic-bezier(0, 0, 1, 1)";
+            animation.style.transition = `${windowanimation}s cubic-bezier(0, 0, 1, 1)`;
             [...animation.children].forEach(child => child.style.display = 'none');
             document.querySelectorAll('.title,.title_buttons').forEach(el => el.style.display = "block");
             document.querySelectorAll('.title2').forEach(el => el.style.display = "flex");
-
             setTimeout(() => {
                 animation.style.transition = "";
                 [...animation.children].forEach(child => child.style.display = '');
@@ -2358,9 +2362,9 @@ if (ua.includes("mobile")) {
                     document.querySelectorAll('.window_tool').forEach(el => el.style.display = "block");
                 }
                 adjustHeight();
-            }, 150);
+            }, windowanimation * 1000);
         } else {
-            setTimeout(adjustHeight, 0);
+            adjustHeight()
         }
     }
 
@@ -2612,20 +2616,16 @@ if (ua.includes("mobile")) {
     }
 
     function nexser_search() {
-        var input, filter, ul, li, a, i, txtValue;
-        input = document.getElementById('myInput');
-        filter = input.value.toUpperCase();
-        ul = document.getElementById("myUL");
-        li = ul.getElementsByTagName('li');
-        for (i = 0; i < li.length; i++) {
-            a = li[i].getElementsByTagName("span")[0];
-            txtValue = a.textContent || a.innerText;
-            if (txtValue.toUpperCase().indexOf(filter) > -1) {
-                li[i].style.display = "";
-            } else {
-                li[i].style.display = "none";
-            }
-        }
+        const input = document.getElementById('myInput');
+        const filter = input.value.toUpperCase();
+        const ul = document.getElementById("myUL");
+        const liElements = ul.getElementsByTagName('li');
+        const liArray = Array.from(liElements);
+
+        liArray.forEach(li => {
+            const textContent = li.getElementsByTagName("span")[0].textContent.toUpperCase();
+            li.style.display = textContent.includes(filter) ? "" : "none";
+        });
     }
 
     function search_clear() {
@@ -2634,26 +2634,25 @@ if (ua.includes("mobile")) {
     }
 
     function cpubench_open() {
-        const cpumenu1 = document.querySelector('.cpumenu_1');
         if (!cpu_bench_menu.classList.contains('active') || cpumenu1.style.display === "block") {
             setTimeout(() => {
-                document.querySelector('.cpumenu_1').style.display = "none";
+                cpumenu1.style.display = "none";
                 document.querySelector('.cpubuttons').style.display = "none";
                 document.querySelector('.cputitle').style.display = "none";
-                setTimeout(() => {
-                    document.querySelector('.cpumenu_2').style.display = "block";
-                    document.querySelector('.cpubuttons').style.display = "block";
-                    document.querySelector('.cputitle').style.display = "flex";
-                }, 0);
+                cpumenu2.style.display = "block";
+                document.querySelector('.cpubuttons').style.display = "block";
+                document.querySelector('.cputitle').style.display = "flex";
             }, 3000);
         }
     }
 
     function cpubench_reset() {
-        document.querySelector('.cpumenu_1').style.display = "block";
-        document.querySelector('.cpumenu_2').style.display = "none";
+        cpumenu1.style.display = "block";
+        cpumenu2.style.display = "none";
         document.querySelector('.cpubuttons').style.display = "none";
         document.querySelector('.cputitle').style.display = "none";
+        cpu_bench_menu.style.height = "";
+        cpu_bench_menu.style.width = "";
     }
 
     function assignClassToFrontmostElement(selector, newClassName) {
@@ -2935,16 +2934,18 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.drag_button').forEach(addDragButtonListeners);
     observeNewElements3();
 
-    const applyStyles = element => {
-        const [r, g, b] = getComputedStyle(element).backgroundColor.match(/\d+/g).map(Number);
-        Object.assign(element.style, {
-            background: "rgba(255, 255, 255, 0)",
-            border: `dashed 1.5px rgb(${255 - r}, ${255 - g}, ${255 - b})`,
-            boxShadow: "none",
-            outline: "1.5px dashed silver"
-        });
-        [...element.children].forEach(child => child.style.opacity = "0");
-    };
+    function applyStyles(element) {
+        const { backgroundColor } = getComputedStyle(element);
+        const [r, g, b] = backgroundColor.match(/\d+/g).map(Number);
+        const borderColor = `rgb(${255 - r}, ${255 - g}, ${255 - b})`;
+        element.style.background = "rgba(255, 255, 255, 0)";
+        element.style.border = `dashed 1.5px ${borderColor}`;
+        element.style.boxShadow = "none";
+        element.style.outline = "1.5px dashed silver";
+        for (const child of element.children) {
+            child.style.opacity = "0";
+        }
+    }
 
     function check(elm1, elm2) {
         const d1 = elm1.getBoundingClientRect();
@@ -5428,12 +5429,12 @@ if (ua.includes("mobile")) {
         }
     }
     function minimizeWindow(window) {
-        const elements = document.querySelector('.navy');
-        const windowElement = elements.closest('.child_windows');
-        windowElement.dataset.originalWidths = getComputedStyle(windowElement).width;
-        windowElement.dataset.originalHeights = getComputedStyle(windowElement).height;
-        windowElement.dataset.originalTops = getComputedStyle(windowElement).top;
-        windowElement.dataset.originalLefts = getComputedStyle(windowElement).left;
+        const windowElement = window.closest('.child_windows');
+        if (!windowElement) return;
+        windowElement.dataset.originalWidths = windowElement.style.width;
+        windowElement.dataset.originalHeights = windowElement.style.height;
+        windowElement.dataset.originalTops = windowElement.style.top;
+        windowElement.dataset.originalLefts = windowElement.style.left;
         window.style.height = '20px';
         window.classList.add('minimization');
         window.scrollTop = 0;
@@ -5524,7 +5525,7 @@ if (ua.includes("mobile")) {
                     windowElement.style.minWidth = "";
                     windowElement.style.minHeight = "";
                     isAnimating = false;
-                }, 150);
+                }, windowanimation * 1000);
             }, 0);
         } else {
             isAnimating = false;
@@ -5753,24 +5754,20 @@ if (ua.includes("mobile")) {
     });
 
     function nexser_search_button() {
-        const searchWindows = document.querySelectorAll('.child_windows:not(.window_nosearch)');
-        const myUL = document.getElementById('myUL');
         const fragment = document.createDocumentFragment();
-        searchWindows.forEach(windowElement => {
+        document.querySelectorAll('.child_windows:not(.window_nosearch)').forEach(windowElement => {
             const nestedChildText = windowElement.children[0]?.children[1]?.textContent;
             if (nestedChildText) {
                 const button = document.createElement('li');
                 button.className = 'borderinline_dotted button2 search_button white_space_wrap';
-                const buttonSpanChild = document.createElement('span');
-                buttonSpanChild.textContent = `　${nestedChildText}　`;
-                button.appendChild(buttonSpanChild);
+                button.innerHTML = `<span>　${nestedChildText}　</span>`;
                 button.addEventListener('click', () => toggleWindow(windowElement));
                 fragment.appendChild(button);
             }
         });
-        myUL.appendChild(fragment);
-    };
-    nexser_search_button()
+        document.getElementById('myUL').appendChild(fragment);
+    }
+    nexser_search_button();
 
     const elements = document.querySelectorAll('.desktop_files');
     elements.forEach((element, index) => {
