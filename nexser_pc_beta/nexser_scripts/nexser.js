@@ -25,9 +25,6 @@ if (ua.includes("mobile")) {
     alert("この端末は対応していません!")
 } else {
 
-    window.errortitle_msg = "&nbsp;error";
-    window.errortitle_text = "test sample text";
-
     const body = document.querySelector('body');
 
     const nex = document.getElementById('nex');
@@ -62,6 +59,7 @@ if (ua.includes("mobile")) {
     const nexser_program = document.getElementById('nexser_program');
     const desktop = document.getElementById('desktop');
     const files_inline = document.querySelector('.files_inline');
+    const fileElements = document.querySelectorAll('.window_files');
     const z_index = document.querySelector('.z_index');
 
     const mini_desktop = document.querySelector('.mini_desktop');
@@ -183,9 +181,8 @@ if (ua.includes("mobile")) {
             rectangle.style.top = `${startY}px`;
             document.body.appendChild(rectangle);
         }
-        getLargestZIndex('.child_windows');
 
-        var isClickInsideStartButton7 = Array.from(document.querySelectorAll('.window_files')).some(button => button.contains(e.target));
+        var isClickInsideStartButton7 = Array.from(fileElements).some(button => button.contains(e.target));
         if (!isClickInsideStartButton7) {
             Array.from(document.getElementsByClassName('window_files')).forEach((window_files3) => {
                 window_files3.classList.remove('file_border2');
@@ -696,6 +693,7 @@ if (ua.includes("mobile")) {
     })
 
     function nexser_program_open() {
+        playBeep();
         startmenu_close();
         y_iframeController('pauseVideo');
         preview2_stop();
@@ -6823,11 +6821,9 @@ if (ua.includes("mobile")) {
         });
     }, 500);
 
-
-    const draggables = document.querySelectorAll('.window_files');
     const dropZone = document.getElementById('drop_zone');
     const dropList = dropZone.querySelector('ul');
-    draggables.forEach(draggable => {
+    fileElements.forEach(draggable => {
         draggable.setAttribute('draggable', 'true');
         draggable.addEventListener('dragstart', (e) => {
             e.dataTransfer.setData('text/plain', e.target.outerHTML);
@@ -6964,17 +6960,15 @@ if (ua.includes("mobile")) {
         }
         function handleClick(event) {
             const target = event.currentTarget;
-            const fileElements = document.querySelectorAll('.window_files');
             fileElements.forEach((el) => el.classList.remove('file_border', 'file_border2'));
             target.classList.add('file_border');
         }
-        const fileElements = document.querySelectorAll('.window_files');
         fileElements.forEach((el) => {
             el.addEventListener('mousedown', handleMouseDown);
             el.addEventListener('click', handleClick);
         });
 
-        document.querySelectorAll('.window_files').forEach((element, index) => {
+        fileElements.forEach((element, index) => {
             const uniqueKey = `windowfile_time_${index}`;
             element.addEventListener('click', () => {
                 let timeElements = element.querySelectorAll('.windowfile_time');
@@ -7018,7 +7012,8 @@ if (ua.includes("mobile")) {
             }
         });
         function filetime_display() {
-            if (!localStorage.getItem('windowfile_1') && !localStorage.getItem('windowfile_2') && !localStorage.getItem('windowfile_3')) {
+            if (!localStorage.getItem('windowfile_1') && !localStorage.getItem('windowfile_2') && !localStorage.getItem('windowfile_3') ||
+                !localStorage.getItem('windowfile_1') && localStorage.getItem('windowfile_2') && !localStorage.getItem('windowfile_3')) {
                 document.querySelectorAll('.windowfile_time').forEach(windowfile_time =>
                     windowfile_time.style.display = "none"
                 );
@@ -7067,7 +7062,7 @@ if (ua.includes("mobile")) {
         element.classList.add('file_border3')
     }
     function removefile_Border() {
-        document.querySelectorAll('.window_files').forEach((rf) => {
+        fileElements.forEach((rf) => {
             rf.classList.remove('file_border3')
         })
     }

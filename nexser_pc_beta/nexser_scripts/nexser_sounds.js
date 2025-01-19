@@ -31,6 +31,9 @@ function sound(index) {
     if (localStorage.getItem('driver_sound')) {
         sounds[index].currentTime = 0;
         sounds[index].play();
+        sounds[index].onended = () => {
+            sound_stop();
+        };
     }
 }
 
@@ -39,35 +42,40 @@ function sound_stop() {
         sound.pause();
         sound.currentTime = 0;
     });
-    Array.from(sound_play_button).forEach((sound_play_buttons) => {
-        sound_play_buttons.textContent = "▶";
-    });
+    [...sound_play_button].forEach(button => button.textContent = "▶");
 }
 
-Array.from(sound_play_button).forEach((sound_play_buttons) => {
-    sound_play_buttons.textContent = "▶"
-})
-Array.from(sound_play_button).forEach((sound_play_buttons) => {
-    sound_play_buttons.addEventListener('mousedown', function () {
-        sound_stop()
-        Array.from(sound_play_button).forEach((sound_play_buttons) => {
-            sound_play_buttons.textContent = "▶"
-        })
-    })
-    sound_play_buttons.addEventListener('click', function () {
+[...sound_play_button].forEach(button => button.textContent = "▶");
+[...sound_play_button].forEach(button => {
+    button.addEventListener('mousedown', () => {
+        sound_stop();
+        [...sound_play_button].forEach(btn => btn.textContent = "▶");
+    });
+    button.addEventListener('click', () => {
         if (!localStorage.getItem('driver_sound')) {
-            sound_play_buttons.textContent = "▶";
+            button.textContent = "▶";
             noticewindow_create("error", "サウンドドライバーがインストールされていません!");
         } else {
-            sound_play_buttons.textContent = "||";
+            button.textContent = "||";
         }
-    })
-})
-Array.from(sound_stop_button).forEach((sound_stop_buttons) => {
-    sound_stop_buttons.addEventListener('mousedown', function () {
-        sound_stop()
-        Array.from(sound_play_button).forEach((sound_play_buttons) => {
-            sound_play_buttons.textContent = "▶"
-        })
-    })
-})
+    });
+});
+
+[...sound_stop_button].forEach(button => {
+    button.addEventListener('mousedown', () => {
+        sound_stop();
+        [...sound_play_button].forEach(btn => btn.textContent = "▶");
+    });
+});
+
+function playBeep() {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.value = 1000;
+    gain.gain.value = 0.5;
+    osc.connect(gain).connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.1);
+}
