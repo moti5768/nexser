@@ -819,6 +819,12 @@ input[type="file"] {
     min-width: 200px;
 }
 
+.url_droplist_menu {
+    width: 400px;
+    height: 300px;
+    min-width: 200px;
+}
+
 .nexser_files_menu {
     min-width: 600px;
     min-width: 300px;

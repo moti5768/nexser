@@ -119,6 +119,7 @@ if (ua.includes("mobile")) {
     const restriction_menu = document.querySelector('.restriction_menu');
     const location_menu = document.querySelector('.location_menu');
     const editor_menu = document.querySelector('.editor_menu');
+    const url_droplist_menu = document.querySelector('.url_droplist_menu');
 
     const nexser_search_menu = document.querySelector('.nexser_search_menu');
 
@@ -2812,11 +2813,8 @@ if (ua.includes("mobile")) {
     const editor2_parent = document.querySelector('.editor_menu');
     const editor2_child = document.getElementById('editor_2');
     const editor2_resize = () => {
-        const hehehe1 = editor2_parent.firstElementChild;
-        if (hehehe1.classList.contains('navy')) {
-            editor2_child.style.width = `${editor2_parent.clientWidth - 6}px`;
-            editor2_child.style.height = `${editor2_parent.clientHeight - 85}px`;
-        }
+        editor2_child.style.width = `${editor2_parent.clientWidth - 6}px`;
+        editor2_child.style.height = `${editor2_parent.clientHeight - 85}px`;
     };
 
     let clones = false;
@@ -5540,6 +5538,128 @@ if (ua.includes("mobile")) {
         });
     }
 
+
+
+
+
+
+    function generateButtonsFromLocalStorage() {
+        const urlList = JSON.parse(localStorage.getItem('urlList')) || [];
+        urlList.forEach(url => {
+            createButton(url);
+        });
+    }
+    function createButton(url) {
+        const button = document.createElement('button');
+        button.className = 'button2';
+        button.textContent = url;
+        button.addEventListener('click', () => {
+            processUrl(url);
+        });
+        button.addEventListener('contextmenu', (event) => {
+            event.preventDefault();
+            removeButton(button, url);
+        });
+        document.getElementById('buttonContainer').appendChild(button);
+    }
+    function removeButton(button, url) {
+        document.getElementById('buttonContainer').removeChild(button);
+        let urlList = JSON.parse(localStorage.getItem('urlList')) || [];
+        urlList = urlList.filter(item => item !== url);
+        localStorage.setItem('urlList', JSON.stringify(urlList));
+    }
+    generateButtonsFromLocalStorage();
+    document.getElementById('urllist_dropzone').addEventListener('dragover', (event) => {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'copy';
+    });
+    document.getElementById('urllist_dropzone').addEventListener('drop', (event) => {
+        event.preventDefault();
+        const url = event.dataTransfer.getData('text/plain');
+        if (url) {
+            let urlList = JSON.parse(localStorage.getItem('urlList')) || [];
+            urlList.push(url);
+            localStorage.setItem('urlList', JSON.stringify(urlList));
+            createButton(url);
+        }
+    });
+    function processUrl(url) {
+        const processFile = (url, x, y) => {
+            return new Promise((resolve) => {
+                const createElement = (tag, className, parent, innerHTML) => {
+                    const element = document.createElement(tag);
+                    if (className) element.className = className;
+                    if (innerHTML) element.innerHTML = innerHTML;
+                    if (parent) parent.appendChild(element);
+                    return element;
+                };
+                const windowDiv = createElement('div', "child_windows testwindow2 resize", null);
+                windowDiv.style.left = `${x}px`;
+                windowDiv.style.top = `${y}px`;
+                windowDiv.style.zIndex = largestZIndex++;
+                const titleDiv = createElement('div', "title", windowDiv);
+                createElement('span', "title_icon", titleDiv);
+                createElement('span', "white_space_wrap", titleDiv, url);
+                const titleButtons = createElement('div', "title_buttons", windowDiv);
+                createElement('span', "drag_button", titleButtons, "&nbsp;");
+                const closeButton = createElement('span', "close_button button2 allclose_button", titleButtons);
+                createElement('span', "bigscreen_button button2", titleButtons);
+                createElement('span', "minscreen_button button2", titleButtons);
+                createElement('span', "minimization_button button2", titleButtons);
+                createElement('br', null, titleButtons);
+                closeButton.addEventListener('click', () => {
+                    const parentWindow = closeButton.closest('.child_windows');
+                    if (parentWindow) {
+                        parentWindow.remove();
+                        zindexwindow_addnavy();
+                    }
+                });
+                const windowContents = createElement('div', "window_contents", windowDiv);
+                const addIframe = (src) => {
+                    const iframe = createElement('iframe', "item_preview", windowContents);
+                    iframe.src = src;
+                    iframe.style.width = "100%";
+                    iframe.style.height = "100%";
+                    windowContents.classList.add("scrollbar_none");
+                };
+                windowDiv.classList.add('selectwindows');
+                if (isYouTubeURL(url)) {
+                    addIframe(`https://www.youtube.com/embed/${extractYouTubeID(url)}`);
+                } else if (isHtmlUrl(url)) {
+                    addIframe(url)
+                } else {
+                    createElement('p', 'item_preview', windowContents, 'このファイル形式はサポートされていません。');
+                }
+                function isHtmlUrl(url) { return /\.(html|htm)$/i.test(url); }
+                function isYouTubeURL(url_youtube) {
+                    return /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/.test(url_youtube);
+                }
+                function extractYouTubeID(url_youtube) {
+                    const match = url_youtube.match(/(?:youtu\.be\/|youtube\.com\/(?:v\/|u\/\w\/|embed\/|watch\?v=|&v=))([^#&?]{11})/);
+                    return match ? match[1] : null;
+                }
+                setTimeout(() => {
+                    const testWindows = document.querySelectorAll('.testwindow2:not(.nocreatewindow)');
+                    testWindows.forEach((testWindow) => {
+                        testWindow.style.width = '500px';
+                        testWindow.style.height = '400px';
+                        testWindow.classList.add("nocreatewindow");
+                        const centerElement = testWindow.querySelector('.testwindow2 > *:nth-child(3) > *');
+                        centerElement.classList.add('center');
+                    });
+                    resolve();
+                }, 0);
+                dropArea2.appendChild(windowDiv);
+            });
+        };
+        processFile(url, 0, 0); //URLを処理する
+    }
+
+
+
+
+
+
     const dropArea = document.querySelector('#files');
     const dropArea2 = document.querySelector('#soft_windows');
     dropArea.addEventListener('dragover', (event) => {
@@ -6939,6 +7059,7 @@ if (ua.includes("mobile")) {
         document.querySelectorAll('.test_button45').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(alarm_menu); }; });
         document.querySelectorAll('.test_button46').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(location_menu); }; });
         document.querySelectorAll('.test_button47').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(editor_menu); }; });
+        document.querySelectorAll('.test_button48').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(url_droplist_menu); }; });
 
         // games
 
@@ -6960,15 +7081,15 @@ if (ua.includes("mobile")) {
         }
         function handleClick(event) {
             const target = event.currentTarget;
-            fileElements.forEach((el) => el.classList.remove('file_border', 'file_border2'));
+            document.querySelectorAll('.window_files').forEach((el) => el.classList.remove('file_border', 'file_border2'));
             target.classList.add('file_border');
         }
-        fileElements.forEach((el) => {
+        document.querySelectorAll('.window_files').forEach((el) => {
             el.addEventListener('mousedown', handleMouseDown);
             el.addEventListener('click', handleClick);
         });
 
-        fileElements.forEach((element, index) => {
+        document.querySelectorAll('.window_files').forEach((element, index) => {
             const uniqueKey = `windowfile_time_${index}`;
             element.addEventListener('click', () => {
                 let timeElements = element.querySelectorAll('.windowfile_time');
@@ -7062,7 +7183,7 @@ if (ua.includes("mobile")) {
         element.classList.add('file_border3')
     }
     function removefile_Border() {
-        fileElements.forEach((rf) => {
+        document.querySelectorAll('.window_files').forEach((rf) => {
             rf.classList.remove('file_border3')
         })
     }
