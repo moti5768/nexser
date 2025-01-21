@@ -5546,11 +5546,12 @@ if (ua.includes("mobile")) {
         });
     }
     function createButton(url) {
-        const button = document.createElement('button');
-        button.className = 'button2';
+        const button = document.createElement('li');
+        button.className = 'button2 white_space_wrap large';
         button.textContent = url;
-        button.style.height = "30px";
-        button.style.margin = "2.5px";
+        button.style.height = "35px";
+        button.style.width = "440px";
+        button.style.margin = "3px";
         button.addEventListener('click', () => {
             processUrl(url);
         });
@@ -5584,13 +5585,6 @@ if (ua.includes("mobile")) {
     function processUrl(url) {
         const processFile = (url, x, y) => {
             return new Promise((resolve) => {
-                const createElement = (tag, className, parent, innerHTML) => {
-                    const element = document.createElement(tag);
-                    if (className) element.className = className;
-                    if (innerHTML) element.innerHTML = innerHTML;
-                    if (parent) parent.appendChild(element);
-                    return element;
-                };
                 const windowDiv = createElement('div', "child_windows testwindow2 resize", null);
                 windowDiv.style.left = `${x}px`;
                 windowDiv.style.top = `${y}px`;
@@ -5623,43 +5617,13 @@ if (ua.includes("mobile")) {
                 windowDiv.classList.add('selectwindows');
                 if (isYouTubeURL(url)) {
                     addIframe(`https://www.youtube.com/embed/${extractYouTubeID(url)}`);
-                } else if (isHtmlUrl(url)) {
+                } else if (isPageUrl(url)) {
                     addIframe(url)
                 } else {
-                    createElement('p', 'item_preview', windowContents, 'このファイル形式はサポートされていません。');
+                    noticewindow_create("error", "このファイル形式はサポートされていません。");
                 }
                 setTimeout(() => {
-                    const testWindows = document.querySelectorAll('.testwindow2:not(.nocreatewindow)');
-                    testWindows.forEach((testWindow) => {
-                        testWindow.style.width = '500px';
-                        testWindow.style.height = '400px';
-                        testWindow.classList.add("nocreatewindow");
-                        const centerElement = testWindow.querySelector('.testwindow2 > *:nth-child(3) > *');
-                        centerElement.classList.add('center');
-                    });
-                    const childWindows = document.querySelectorAll('.testwindow2, .child');
-                    childWindows.forEach(childWindow => {
-                        const zindexChildWindow = childWindow.closest('.testwindow2');
-                        const handleMouseMoveScrollReset = () => {
-                            document.removeEventListener('mouseup', handleMouseDownResize);
-                            document.addEventListener('mousemove', handleMouseDownResize);
-                            zindexChildWindow.scrollTop = 0;
-                            zindexChildWindow.scrollLeft = 0;
-                            zindexChildWindow.style.zIndex = largestZIndex++;
-                        };
-                        const handleMouseDownResize = () => {
-                            const { clientWidth: width, clientHeight: height } = zindexChildWindow;
-                            Object.assign(childWindow.children[2].firstElementChild.style, {
-                                maxWidth: `${width}px`,
-                                maxHeight: `${height - 25}px`
-                            });
-                            rectangle_remove();
-                        };
-                        childWindow.addEventListener('mousedown', () => {
-                            handleMouseMoveScrollReset();
-                            handleMouseDownResize();
-                        });
-                    });
+                    pagewindow();
                     resolve();
                 }, 0);
                 dropArea2.appendChild(windowDiv);
@@ -5667,7 +5631,6 @@ if (ua.includes("mobile")) {
         };
         processFile(url, 0, 0); //URLを処理する
     }
-
 
     const dropArea = document.querySelector('#files');
     const dropArea2 = document.querySelector('#soft_windows');
@@ -5684,13 +5647,6 @@ if (ua.includes("mobile")) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     const result = e.target.result;
-                    const createElement = (tag, className, parent, innerHTML) => {
-                        const element = document.createElement(tag);
-                        if (className) element.className = className;
-                        if (innerHTML) element.innerHTML = innerHTML;
-                        if (parent) parent.appendChild(element);
-                        return element;
-                    };
                     const windowDiv = createElement('div', "child_windows testwindow2 resize", null);
                     windowDiv.style.left = `${event.clientX}px`;
                     windowDiv.style.top = `${event.clientY}px`;
@@ -5712,7 +5668,6 @@ if (ua.includes("mobile")) {
                             zindexwindow_addnavy();
                         }
                     });
-
                     const windowContents = createElement('div', "window_contents", windowDiv);
                     const addMediaContent = (mediaTag, mediaSrc) => {
                         const mediaElement = createElement(mediaTag, "item_preview", windowContents);
@@ -5738,42 +5693,13 @@ if (ua.includes("mobile")) {
                         createElement('p', "item_preview", windowContents, e.target.result);
                     } else if (isYouTubeURL(url)) {
                         addIframe(`https://www.youtube.com/embed/${extractYouTubeID(url)}`);
+                    } else if (isPageUrl(url)) {
+                        addIframe(url)
                     } else {
-                        createElement('p', 'item_preview', windowContents, 'このファイル形式はサポートされていません。');
+                        noticewindow_create("error", "このファイル形式はサポートされていません。");
                     }
-
                     setTimeout(() => {
-                        const testWindows = document.querySelectorAll('.testwindow2:not(.nocreatewindow)');
-                        testWindows.forEach((testWindow) => {
-                            testWindow.style.width = '500px';
-                            testWindow.style.height = '400px';
-                            testWindow.classList.add("nocreatewindow");
-                            const centerElement = testWindow.querySelector('.testwindow2 > *:nth-child(3) > *');
-                            centerElement.classList.add('center');
-                        });
-                        const childWindows = document.querySelectorAll('.testwindow2, .child');
-                        childWindows.forEach(childWindow => {
-                            const zindexChildWindow = childWindow.closest('.testwindow2');
-                            const handleMouseMoveScrollReset = () => {
-                                document.removeEventListener('mouseup', handleMouseDownResize);
-                                document.addEventListener('mousemove', handleMouseDownResize);
-                                zindexChildWindow.scrollTop = 0;
-                                zindexChildWindow.scrollLeft = 0;
-                                zindexChildWindow.style.zIndex = largestZIndex++;
-                            };
-                            const handleMouseDownResize = () => {
-                                const { clientWidth: width, clientHeight: height } = zindexChildWindow;
-                                Object.assign(childWindow.children[2].firstElementChild.style, {
-                                    maxWidth: `${width}px`,
-                                    maxHeight: `${height - 25}px`
-                                });
-                                rectangle_remove();
-                            };
-                            childWindow.addEventListener('mousedown', () => {
-                                handleMouseMoveScrollReset();
-                                handleMouseDownResize();
-                            });
-                        });
+                        pagewindow();
                         resolve();
                     }, 0);
                     dropArea2.appendChild(windowDiv);
@@ -5794,11 +5720,18 @@ if (ua.includes("mobile")) {
                 });
             }, i * 250);
         }
-        rectangle_remove();
     });
 
-    function isHtmlUrl(url) {
-        return /\.(html|htm)$/i.test(url);
+    function createElement(tag, className, parent, innerHTML) {
+        const element = document.createElement(tag);
+        if (className) element.className = className;
+        if (innerHTML) element.innerHTML = innerHTML;
+        if (parent) parent.appendChild(element);
+        return element;
+    };
+
+    function isPageUrl(url) {
+        return /\.(html|htm|com|jp)$/i.test(url);
     }
     function isYouTubeURL(url_youtube) {
         return /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/.test(url_youtube);
@@ -5808,6 +5741,39 @@ if (ua.includes("mobile")) {
         return match ? match[1] : null;
     }
 
+    function pagewindow() {
+        const testWindows = document.querySelectorAll('.testwindow2:not(.nocreatewindow)');
+        testWindows.forEach((testWindow) => {
+            testWindow.style.width = '500px';
+            testWindow.style.height = '400px';
+            testWindow.classList.add("nocreatewindow");
+            const centerElement = testWindow.querySelector('.testwindow2 > *:nth-child(3) > *');
+            centerElement.classList.add('center');
+        });
+        const childWindows = document.querySelectorAll('.testwindow2, .child');
+        childWindows.forEach(childWindow => {
+            const zindexChildWindow = childWindow.closest('.testwindow2');
+            const handleMouseMoveScrollReset = () => {
+                document.removeEventListener('mouseup', handleMouseDownResize);
+                document.addEventListener('mousemove', handleMouseDownResize);
+                zindexChildWindow.scrollTop = 0;
+                zindexChildWindow.scrollLeft = 0;
+                zindexChildWindow.style.zIndex = largestZIndex++;
+            };
+            const handleMouseDownResize = () => {
+                const { clientWidth: width, clientHeight: height } = zindexChildWindow;
+                Object.assign(childWindow.children[2].firstElementChild.style, {
+                    maxWidth: `${width}px`,
+                    maxHeight: `${height - 25}px`
+                });
+                rectangle_remove();
+            };
+            childWindow.addEventListener('mousedown', () => {
+                handleMouseMoveScrollReset();
+                handleMouseDownResize();
+            });
+        });
+    }
 
     document.getElementById('exportButton').addEventListener('click', function () {
         const localStorageData = JSON.stringify(localStorage);
