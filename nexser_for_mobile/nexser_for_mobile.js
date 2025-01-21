@@ -1700,6 +1700,7 @@ function prompt_text_check2() {
             document.querySelector('.help2').textContent = "";
             msg2.innerText = "";
             prompt_text2.style.color = "red";
+            sounds2()
             break;
     }
 }
@@ -3441,4 +3442,17 @@ function timerreset() {
     resetButton.disabled = true;
     time.textContent = '00:00:00.000';
     stopTime = 0;
+}
+function sounds2(){
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+
+  osc.type = 'square';
+  osc.frequency.value = 900;
+  gain.gain.value = 1;
+
+  osc.connect(gain).connect(ctx.destination);
+  osc.start();
+  osc.stop(ctx.currentTime + 0.5);
 }
