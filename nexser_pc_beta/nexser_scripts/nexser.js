@@ -5539,10 +5539,6 @@ if (ua.includes("mobile")) {
     }
 
 
-
-
-
-
     function generateButtonsFromLocalStorage() {
         const urlList = JSON.parse(localStorage.getItem('urlList')) || [];
         urlList.forEach(url => {
@@ -5553,6 +5549,8 @@ if (ua.includes("mobile")) {
         const button = document.createElement('button');
         button.className = 'button2';
         button.textContent = url;
+        button.style.height = "30px";
+        button.style.margin = "2.5px";
         button.addEventListener('click', () => {
             processUrl(url);
         });
@@ -5630,14 +5628,6 @@ if (ua.includes("mobile")) {
                 } else {
                     createElement('p', 'item_preview', windowContents, 'このファイル形式はサポートされていません。');
                 }
-                function isHtmlUrl(url) { return /\.(html|htm)$/i.test(url); }
-                function isYouTubeURL(url_youtube) {
-                    return /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/.test(url_youtube);
-                }
-                function extractYouTubeID(url_youtube) {
-                    const match = url_youtube.match(/(?:youtu\.be\/|youtube\.com\/(?:v\/|u\/\w\/|embed\/|watch\?v=|&v=))([^#&?]{11})/);
-                    return match ? match[1] : null;
-                }
                 setTimeout(() => {
                     const testWindows = document.querySelectorAll('.testwindow2:not(.nocreatewindow)');
                     testWindows.forEach((testWindow) => {
@@ -5647,6 +5637,29 @@ if (ua.includes("mobile")) {
                         const centerElement = testWindow.querySelector('.testwindow2 > *:nth-child(3) > *');
                         centerElement.classList.add('center');
                     });
+                    const childWindows = document.querySelectorAll('.testwindow2, .child');
+                    childWindows.forEach(childWindow => {
+                        const zindexChildWindow = childWindow.closest('.testwindow2');
+                        const handleMouseMoveScrollReset = () => {
+                            document.removeEventListener('mouseup', handleMouseDownResize);
+                            document.addEventListener('mousemove', handleMouseDownResize);
+                            zindexChildWindow.scrollTop = 0;
+                            zindexChildWindow.scrollLeft = 0;
+                            zindexChildWindow.style.zIndex = largestZIndex++;
+                        };
+                        const handleMouseDownResize = () => {
+                            const { clientWidth: width, clientHeight: height } = zindexChildWindow;
+                            Object.assign(childWindow.children[2].firstElementChild.style, {
+                                maxWidth: `${width}px`,
+                                maxHeight: `${height - 25}px`
+                            });
+                            rectangle_remove();
+                        };
+                        childWindow.addEventListener('mousedown', () => {
+                            handleMouseMoveScrollReset();
+                            handleMouseDownResize();
+                        });
+                    });
                     resolve();
                 }, 0);
                 dropArea2.appendChild(windowDiv);
@@ -5654,10 +5667,6 @@ if (ua.includes("mobile")) {
         };
         processFile(url, 0, 0); //URLを処理する
     }
-
-
-
-
 
 
     const dropArea = document.querySelector('#files');
@@ -5733,14 +5742,6 @@ if (ua.includes("mobile")) {
                         createElement('p', 'item_preview', windowContents, 'このファイル形式はサポートされていません。');
                     }
 
-                    function isYouTubeURL(url_youtube) {
-                        return /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/.test(url_youtube);
-                    }
-                    function extractYouTubeID(url_youtube) {
-                        const match = url_youtube.match(/(?:youtu\.be\/|youtube\.com\/(?:v\/|u\/\w\/|embed\/|watch\?v=|&v=))([^#&?]{11})/);
-                        return match ? match[1] : null;
-                    }
-
                     setTimeout(() => {
                         const testWindows = document.querySelectorAll('.testwindow2:not(.nocreatewindow)');
                         testWindows.forEach((testWindow) => {
@@ -5795,6 +5796,17 @@ if (ua.includes("mobile")) {
         }
         rectangle_remove();
     });
+
+    function isHtmlUrl(url) {
+        return /\.(html|htm)$/i.test(url);
+    }
+    function isYouTubeURL(url_youtube) {
+        return /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/.test(url_youtube);
+    }
+    function extractYouTubeID(url_youtube) {
+        const match = url_youtube.match(/(?:youtu\.be\/|youtube\.com\/(?:v\/|u\/\w\/|embed\/|watch\?v=|&v=))([^#&?]{11})/);
+        return match ? match[1] : null;
+    }
 
 
     document.getElementById('exportButton').addEventListener('click', function () {

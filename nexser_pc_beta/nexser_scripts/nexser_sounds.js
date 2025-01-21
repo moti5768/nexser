@@ -73,7 +73,7 @@ function playBeep() {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = 'square';
-    osc.frequency.value = 1000;
+    osc.frequency.value = 900;
     gain.gain.value = 0.5;
     osc.connect(gain).connect(ctx.destination);
     osc.start();
