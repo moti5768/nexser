@@ -154,6 +154,7 @@ if (ua.includes("mobile")) {
         }
         bigwindow_resize();
         document.querySelector('.local_memory2').innerHTML = `&emsp;${(calculateLocalStorageSize() / 1024).toFixed(2)}KB&emsp;`;
+        removePopups()
     })
 
     function game_true() {
@@ -5817,9 +5818,8 @@ if (ua.includes("mobile")) {
             });
         });
     }
-
+    const removePopups = () => document.querySelectorAll('.popup').forEach(popup => popup.remove());
     function popups(popups, url, text) {
-        const removePopups = () => document.querySelectorAll('.popup').forEach(popup => popup.remove());
         document.querySelectorAll(`.${popups}`).forEach(button => {
             removePopups();
             const popup = document.createElement('div');
