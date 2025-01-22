@@ -5540,20 +5540,54 @@ if (ua.includes("mobile")) {
 
 
     function generateButtonsFromLocalStorage() {
-        const urlList = JSON.parse(localStorage.getItem('urlList')) || [];
-        urlList.forEach(url => {
-            createButton(url);
+        const fileData = JSON.parse(localStorage.getItem('fileData')) || [];
+        fileData.forEach(item => {
+            createButton(item.name, item.url);
         });
     }
-    function createButton(url) {
+    generateButtonsFromLocalStorage();
+    document.getElementById('urllist_dropzone').addEventListener('dragover', (event) => {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'copy';
+    });
+    document.getElementById('urllist_dropzone').addEventListener('drop', (event) => {
+        event.preventDefault();
+        const files = event.dataTransfer.files;
+        const url = event.dataTransfer.getData('text/plain');
+        const processFile = (file) => {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    console.log(file.name);
+                    let fileData = JSON.parse(localStorage.getItem('fileData')) || [];
+                    fileData.push({ name: file.name, url: url });
+                    localStorage.setItem('fileData', JSON.stringify(fileData));
+                    resolve(file.name);
+                };
+                reader.readAsDataURL(file);
+            });
+        };
+        if (url && files.length === 0) {
+            createButton(url, url);  // ファイルがない場合、URLをそのまま表示
+        }
+        Array.from(files).forEach(file => {
+            processFile(file).then((fileName) => {
+                createButton(fileName, url);
+                console.log(`Processed file: ${file.name}`);
+            });
+        });
+        let storedFileData = JSON.parse(localStorage.getItem('fileData')) || [];
+        console.log("Stored file data:", storedFileData);
+    });
+    function createButton(name, url) {
         const button = document.createElement('li');
         button.className = 'button2 white_space_wrap large';
-        button.textContent = url;
+        button.textContent = name;
         button.style.height = "35px";
         button.style.width = "440px";
         button.style.margin = "3px";
         button.addEventListener('click', () => {
-            processUrl(url);
+            processUrl(url, name);
         });
         button.addEventListener('contextmenu', (event) => {
             event.preventDefault();
@@ -5566,32 +5600,28 @@ if (ua.includes("mobile")) {
         let urlList = JSON.parse(localStorage.getItem('urlList')) || [];
         urlList = urlList.filter(item => item !== url);
         localStorage.setItem('urlList', JSON.stringify(urlList));
+
+        // ファイルデータも削除する
+        let fileData = JSON.parse(localStorage.getItem('fileData')) || [];
+        fileData = fileData.filter(item => item.url !== url);
+        localStorage.setItem('fileData', JSON.stringify(fileData));
+
+        console.log("Updated file data:", fileData);
     }
-    generateButtonsFromLocalStorage();
-    document.getElementById('urllist_dropzone').addEventListener('dragover', (event) => {
-        event.preventDefault();
-        event.dataTransfer.dropEffect = 'copy';
-    });
-    document.getElementById('urllist_dropzone').addEventListener('drop', (event) => {
-        event.preventDefault();
-        const url = event.dataTransfer.getData('text/plain');
-        if (url) {
-            let urlList = JSON.parse(localStorage.getItem('urlList')) || [];
-            urlList.push(url);
-            localStorage.setItem('urlList', JSON.stringify(urlList));
-            createButton(url);
-        }
-    });
-    function processUrl(url) {
+
+
+    function processUrl(url, name) {
         const processFile = (url, x, y) => {
             return new Promise((resolve) => {
                 const windowDiv = createElement('div', "child_windows testwindow2 resize", null);
                 windowDiv.style.left = `${x}px`;
                 windowDiv.style.top = `${y}px`;
                 windowDiv.style.zIndex = largestZIndex++;
+                let fileData = JSON.parse(localStorage.getItem('fileData')) || [];
+                fileData = fileData.filter(item => item.url !== url);
                 const titleDiv = createElement('div', "title", windowDiv);
                 createElement('span', "title_icon", titleDiv);
-                createElement('span', "white_space_wrap", titleDiv, url);
+                createElement('span', "white_space_wrap", titleDiv, name);
                 const titleButtons = createElement('div', "title_buttons", windowDiv);
                 createElement('span', "drag_button", titleButtons, "&nbsp;");
                 const closeButton = createElement('span', "close_button button2 allclose_button", titleButtons);
@@ -5774,6 +5804,30 @@ if (ua.includes("mobile")) {
             });
         });
     }
+
+    document.addEventListener('click', function () {
+        document.querySelectorAll('.popup').forEach(popup => popup.remove());
+        document.querySelectorAll('.task_buttons').forEach(button => {
+            button.addEventListener('contextmenu', function (event) {
+                event.preventDefault();
+                const text = this.textContent;
+                document.querySelectorAll('.popup').forEach(popup => popup.remove());
+                const popup = document.createElement('div');
+                popup.className = 'popup';
+                popup.textContent = text;
+                document.body.appendChild(popup);
+                popup.style.left = (event.pageX + 10) + 'px';
+                popup.style.top = (event.pageY - popup.offsetHeight - 10) + 'px';
+                popup.style.display = 'block'; document.querySelectorAll('.popup').forEach(popup => {
+                    popup.style.left = (event.pageX + 10) + 'px';
+                    popup.style.top = (event.pageY - popup.offsetHeight - 20) + 'px';
+                });
+            });
+            button.addEventListener('mouseleave', function () {
+                document.querySelectorAll('.popup').forEach(popup => popup.remove());
+            });
+        });
+    });
 
     document.getElementById('exportButton').addEventListener('click', function () {
         const localStorageData = JSON.stringify(localStorage);
