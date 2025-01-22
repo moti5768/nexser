@@ -5530,6 +5530,12 @@ if (ua.includes("mobile")) {
     function updateButtonClasses() {
         const windows = document.querySelectorAll('.child_windows.selectwindows:not(.no_window)');
         const buttons = document.querySelectorAll('.task_buttons');
+        buttons.forEach(button => {
+            button.addEventListener('contextmenu', function (event) {
+                event.preventDefault();
+                popups('task_buttons', null, this.textContent);
+            });
+        });
         buttons.forEach(button => button.classList.remove('tsk_pressed'));
         windows.forEach((windowElement, index) => {
             if (windowElement.querySelector('.title.navy')) {
@@ -5558,7 +5564,6 @@ if (ua.includes("mobile")) {
             return new Promise((resolve) => {
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    console.log(file.name);
                     let fileData = JSON.parse(localStorage.getItem('fileData')) || [];
                     fileData.push({ name: file.name, url: url });
                     localStorage.setItem('fileData', JSON.stringify(fileData));
@@ -5568,7 +5573,6 @@ if (ua.includes("mobile")) {
             });
         };
         if (url && files.length === 0) {
-            createButton(url, url);  // ファイルがない場合、URLをそのまま表示
         }
         Array.from(files).forEach(file => {
             processFile(file).then((fileName) => {
@@ -5581,34 +5585,43 @@ if (ua.includes("mobile")) {
     });
     function createButton(name, url) {
         const button = document.createElement('li');
-        button.className = 'button2 white_space_wrap large';
+        Object.assign(button.style, { height: "35px", width: "440px", margin: "3px" });
+        button.className = 'savebtn button2 white_space_wrap large';
         button.textContent = name;
-        button.style.height = "35px";
-        button.style.width = "440px";
-        button.style.margin = "3px";
         button.addEventListener('click', () => {
-            processUrl(url, name);
+            if (!sessionStorage.getItem('savebtn_delete')) {
+                processUrl(url, name)
+            } else {
+                removeButton(button, url);
+            };
         });
         button.addEventListener('contextmenu', (event) => {
             event.preventDefault();
-            removeButton(button, url);
+            popups('savebtn', url);
         });
         document.getElementById('buttonContainer').appendChild(button);
     }
+    function savebtn_deletemode() {
+        if (sessionStorage.getItem('savebtn_delete')) {
+            sessionStorage.removeItem('savebtn_delete');
+            document.getElementById('del_mode').textContent = "Off"
+        } else {
+            sessionStorage.setItem('savebtn_delete', true)
+            document.getElementById('del_mode').textContent = "On"
+        }
+    }
+    if (sessionStorage.getItem('savebtn_delete')) {
+        document.getElementById('del_mode').textContent = "On"
+    }
     function removeButton(button, url) {
         document.getElementById('buttonContainer').removeChild(button);
-        let urlList = JSON.parse(localStorage.getItem('urlList')) || [];
-        urlList = urlList.filter(item => item !== url);
-        localStorage.setItem('urlList', JSON.stringify(urlList));
-
-        // ファイルデータも削除する
-        let fileData = JSON.parse(localStorage.getItem('fileData')) || [];
-        fileData = fileData.filter(item => item.url !== url);
-        localStorage.setItem('fileData', JSON.stringify(fileData));
-
-        console.log("Updated file data:", fileData);
+        const updateLocalStorage = (key, filterFn) => {
+            const data = JSON.parse(localStorage.getItem(key)) || [];
+            const updatedData = data.filter(filterFn);
+            localStorage.setItem(key, JSON.stringify(updatedData));
+        };
+        updateLocalStorage('fileData', item => item.url !== url);
     }
-
 
     function processUrl(url, name) {
         const processFile = (url, x, y) => {
@@ -5659,7 +5672,7 @@ if (ua.includes("mobile")) {
                 dropArea2.appendChild(windowDiv);
             });
         };
-        processFile(url, 0, 0); //URLを処理する
+        processFile(url, 0, 0);
     }
 
     const dropArea = document.querySelector('#files');
@@ -5805,29 +5818,24 @@ if (ua.includes("mobile")) {
         });
     }
 
-    document.addEventListener('click', function () {
-        document.querySelectorAll('.popup').forEach(popup => popup.remove());
-        document.querySelectorAll('.task_buttons').forEach(button => {
-            button.addEventListener('contextmenu', function (event) {
-                event.preventDefault();
-                const text = this.textContent;
-                document.querySelectorAll('.popup').forEach(popup => popup.remove());
-                const popup = document.createElement('div');
-                popup.className = 'popup';
+    function popups(popups, url, text) {
+        const removePopups = () => document.querySelectorAll('.popup').forEach(popup => popup.remove());
+        document.querySelectorAll(`.${popups}`).forEach(button => {
+            removePopups();
+            const popup = document.createElement('div');
+            popup.className = 'popup';
+            if (url == null) {
                 popup.textContent = text;
-                document.body.appendChild(popup);
-                popup.style.left = (event.pageX + 10) + 'px';
-                popup.style.top = (event.pageY - popup.offsetHeight - 10) + 'px';
-                popup.style.display = 'block'; document.querySelectorAll('.popup').forEach(popup => {
-                    popup.style.left = (event.pageX + 10) + 'px';
-                    popup.style.top = (event.pageY - popup.offsetHeight - 20) + 'px';
-                });
-            });
-            button.addEventListener('mouseleave', function () {
-                document.querySelectorAll('.popup').forEach(popup => popup.remove());
-            });
+            } else {
+                popup.textContent = url;
+            }
+            popup.style.zIndex = "999996";
+            document.body.appendChild(popup);
+            popup.style.left = `${event.pageX}px`;
+            popup.style.top = `${event.pageY - popup.offsetHeight}px`;
+            button.addEventListener('mouseleave', removePopups);
         });
-    });
+    }
 
     document.getElementById('exportButton').addEventListener('click', function () {
         const localStorageData = JSON.stringify(localStorage);
