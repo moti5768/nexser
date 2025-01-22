@@ -5810,7 +5810,6 @@ if (ua.includes("mobile")) {
                     maxWidth: `${width}px`,
                     maxHeight: `${height - 25}px`
                 });
-                rectangle_remove();
             };
             childWindow.addEventListener('mousedown', () => {
                 handleMouseMoveScrollReset();
@@ -5963,6 +5962,7 @@ if (ua.includes("mobile")) {
     function rectangle_remove() {
         const elements = document.querySelectorAll('.rectangle');
         elements.forEach(element => element.remove());
+        console.log("aaa")
     }
 
     var background_img = document.createElement("img");
