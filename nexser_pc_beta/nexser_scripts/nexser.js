@@ -28,7 +28,7 @@ if (ua.includes("mobile")) {
     const body = document.querySelector('body');
 
     const nex = document.getElementById('nex');
-
+    const nex_files = document.getElementById('files');
     const logoff = document.getElementsByClassName('logoff');
     const restart = document.getElementsByClassName('restart');
 
@@ -170,20 +170,38 @@ if (ua.includes("mobile")) {
     }
 
     // マウスドラッグで出てくる水色のエリアの描画
-    let startX, startY, isDrawing = false;
-    let rectangle;
-    document.addEventListener('mousedown', (e) => {
-        if (desktop.style.display === "block") {
-            startX = e.clientX;
-            startY = e.clientY;
-            isDrawing = true;
-            rectangle = document.createElement('div');
-            rectangle.className = 'rectangle';
-            rectangle.style.left = `${startX}px`;
-            rectangle.style.top = `${startY}px`;
-            document.body.appendChild(rectangle);
-        }
+    let startX, startY, isDrawing = false, rectangle;
+    nex_files.addEventListener('mousedown', (e) => {
+        if (desktop.style.display !== "block") return;
+        [startX, startY, isDrawing] = [e.clientX, e.clientY, true];
+        rectangle = Object.assign(document.createElement('div'), {
+            className: 'rectangle',
+            style: {
+                left: `${startX}px`,
+                top: `${startY}px`
+            }
+        });
+        document.body.appendChild(rectangle);
+    });
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    function handleMouseMove(e) {
+        if (!isDrawing || desktop.style.display !== "block") return;
+        const [currentX, currentY] = [e.clientX, e.clientY];
+        const [width, height] = [Math.abs(currentX - startX), Math.abs(currentY - startY)];
+        Object.assign(rectangle.style, {
+            width: `${width}px`,
+            height: `${height}px`,
+            left: `${Math.min(startX, currentX)}px`,
+            top: `${Math.min(startY, currentY)}px`
+        });
+    }
+    function handleMouseUp() {
+        isDrawing = false;
+        rectangle_remove();
+    }
 
+    document.addEventListener('mousedown', (e) => {
         var isClickInsideStartButton7 = Array.from(fileElements).some(button => button.contains(e.target));
         if (!isClickInsideStartButton7) {
             Array.from(document.getElementsByClassName('window_files')).forEach((window_files3) => {
@@ -235,25 +253,7 @@ if (ua.includes("mobile")) {
             })
             updateButtonClasses();
         }
-
     });
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-    function handleMouseMove(e) {
-        if (!isDrawing || desktop.style.display !== "block") return;
-        const currentX = e.clientX;
-        const currentY = e.clientY;
-        const width = currentX - startX;
-        const height = currentY - startY;
-        rectangle.style.setProperty('width', `${Math.abs(width)}px`);
-        rectangle.style.setProperty('height', `${Math.abs(height)}px`);
-        rectangle.style.setProperty('left', `${Math.min(startX, currentX)}px`);
-        rectangle.style.setProperty('top', `${Math.min(startY, currentY)}px`);
-    }
-    function handleMouseUp() {
-        isDrawing = false;
-        rectangle_remove();
-    }
 
     function lightchild() {
         const screenLightRangeChild = document.querySelector('.screen_light_range_child');
@@ -265,7 +265,7 @@ if (ua.includes("mobile")) {
         getStorage,
         taskbar_none,
         screen_backtextload,
-        notecolor_change,
+        notecolor_update,
         notetextsize_change,
         taskgroup_load,
         window_back_silver,
@@ -1044,10 +1044,10 @@ if (ua.includes("mobile")) {
             localStorage.setItem('no_shutdown', true);
         };
         const t = localStorage.getItem('taskbar_height');
-        document.getElementById('files').style.display = "none";
+        nex_files.style.display = "none";
         nex.style.cursor = 'none';
         taskbar.style.display = "none";
-        document.getElementById('files').style.display = "none";
+        nex_files.style.display = "none";
         if (!localStorage.getItem('start_nexser') || desktop.style.display === "block") {
             screen_prompt.style.display = "none";
             nexser_program.style.display = "none";
@@ -1115,7 +1115,7 @@ if (ua.includes("mobile")) {
                         desktop_version_text.style.bottom = task + "px"
                     }
                 }
-                document.getElementById('files').style.display = "block";
+                nex_files.style.display = "block";
                 setTimeout(() => {
                     if (localStorage.getItem('login_welcome') && localStorage.getItem('password')) {
                         welcome()
@@ -1134,7 +1134,7 @@ if (ua.includes("mobile")) {
         welcome_menu.classList.add('active');
         setTimeout(() => {
             desktop.style.display = "block";
-            document.getElementById('files').style.display = "block";
+            nex_files.style.display = "block";
             taskbar.style.display = "block";
             const task = taskbar.clientHeight;
             toolbar.style.top = "";
@@ -1578,7 +1578,6 @@ if (ua.includes("mobile")) {
                 });
             });
         }
-
     }
 
     function taskbar_active() {
@@ -2659,10 +2658,10 @@ if (ua.includes("mobile")) {
         const elements = document.querySelectorAll(selector);
         let frontmostElement = null;
         let highestZIndex = -Infinity;
-        for (const element of elements) {
+        elements.forEach(element => {
             const childWindow = element.closest('.child_windows');
             if (!childWindow.classList.contains('selectwindows')) {
-                document.querySelectorAll('.task_buttons').forEach((taskButton) => taskButton.remove());
+                document.querySelectorAll('.task_buttons').forEach(taskButton => taskButton.remove());
                 childWindow.classList.add('selectwindows');
             }
             const zIndex = parseInt(window.getComputedStyle(element).zIndex, 10) || 0;
@@ -2670,15 +2669,14 @@ if (ua.includes("mobile")) {
                 highestZIndex = zIndex;
                 frontmostElement = childWindow;
             }
-        }
+        });
         if (frontmostElement) {
             frontmostElement.firstElementChild.classList.add(newClassName);
         }
-        for (const element of elements) {
+        elements.forEach(element => {
             const { width, height } = getComputedStyle(element);
-            element.style.width = width;
-            element.style.height = height;
-        }
+            Object.assign(element.style, { width, height });
+        });
         return { element: frontmostElement, zIndex: highestZIndex };
     }
 
@@ -2877,7 +2875,6 @@ if (ua.includes("mobile")) {
                     document.body.removeEventListener("mousemove", mmove, false);
                     document.body.removeEventListener("touchmove", mmove, false);
                 })
-                rectangle_remove()
             }
             function mup() {
                 const drag = document.getElementsByClassName("drag")[0];
@@ -2978,7 +2975,6 @@ if (ua.includes("mobile")) {
                 drag2.style.top = event.pageY - y + "px";
                 drag2.style.left = event.pageX - x + "px";
             });
-            rectangle_remove();
         };
         const mup_2 = () => {
             document.removeEventListener("mousemove", mmove_2);
@@ -3325,63 +3321,35 @@ if (ua.includes("mobile")) {
     } else {
         ampm = 'PM';
     }
-
     const outputdate = `${yeardate}/${monthdate + 1}/${dates}/${hourdate % 12}:${mindate}${ampm}`;
     document.getElementById('lastaccess_day').textContent = outputdate;
-    document.getElementById("button1").addEventListener("contextmenu", function (event) {
+
+    const button = document.getElementById("button1");
+    button.addEventListener("contextmenu", event => {
         event.preventDefault();
-        document.querySelector('.mouse_right').classList.add('active');
-        setTimeout(() => {
-            document.querySelector('.mouse_right').classList.remove('active');
-        }, 250);
+        toggleClass(".mouse_right");
     });
+    button.addEventListener("click", () => toggleClass(".mouse_left"));
+    function toggleClass(selector) {
+        const element = document.querySelector(selector);
+        element.classList.add("active");
+        setTimeout(() => element.classList.remove("active"), 250);
+    }
 
-    // 左クリックイベントの登録
-    document.getElementById("button1").addEventListener("click", function () {
-        document.querySelector('.mouse_left').classList.add('active');
-        setTimeout(() => {
-            document.querySelector('.mouse_left').classList.remove('active');
-        }, 250);
-    });
-
-    function notecolor_change_blue() {
-        notecolor_remove()
-        localStorage.setItem('note_textcolor_blue', true);
-        notecolor_change()
+    function notecolor_change(color) {
+        notecolor_remove();
+        localStorage.setItem('note_textcolor', color);
+        notecolor_update();
     }
-    function notecolor_change_green() {
-        notecolor_remove()
-        localStorage.setItem('note_textcolor_green', true);
-        notecolor_change()
-    }
-    function notecolor_change_red() {
-        notecolor_remove()
-        localStorage.setItem('note_textcolor_red', true);
-        notecolor_change()
-    }
-    function notecolor_change_orange() {
-        notecolor_remove()
-        localStorage.setItem('note_textcolor_orange', true);
-        notecolor_change()
-    }
-    function notecolor_change_yellow() {
-        notecolor_remove()
-        localStorage.setItem('note_textcolor_yellow', true);
-        notecolor_change()
-    }
-    function notecolor_change() {
-        const colors = ['blue', 'green', 'red', 'orange', 'yellow'];
-        colors.forEach(color => {
-            if (localStorage.getItem(`note_textcolor_${color}`)) {
-                document.querySelectorAll('.note_area, .test_notetext').forEach(el => el.style.color = color);
-            }
+    function notecolor_update() {
+        const storedColor = localStorage.getItem('note_textcolor');
+        document.querySelectorAll('.note_area, .test_notetext').forEach(el => {
+            el.style.color = storedColor || "";
         });
     }
     function notecolor_remove() {
-        const colors = ['blue', 'green', 'red', 'orange', 'yellow'];
-        colors.forEach(color => localStorage.removeItem(`note_textcolor_${color}`));
+        localStorage.removeItem('note_textcolor');
         document.querySelectorAll('.note_area, .test_notetext').forEach(el => el.style.color = "");
-        notetitle();
     }
 
     function notetext_all_bold() {
@@ -3432,41 +3400,21 @@ if (ua.includes("mobile")) {
     }
 
     function notetext_reset() {
-        localStorage.removeItem('notetext_small');
-        localStorage.removeItem('notetext_medium');
-        localStorage.removeItem('notetext_large');
+        ['notetext_small', 'notetext_medium', 'notetext_large', 'notetext_x-large'].forEach(item => localStorage.removeItem(item));
     }
-
+    function notetext_size(size) {
+        notetext_reset();
+        localStorage.setItem(size, true);
+        notetextsize_change();
+        notetitle();
+    }
     function notetextsize_change() {
         let noteData = document.getElementsByClassName('note_area')[0];
-        if (localStorage.getItem('notetext_small')) {
-            noteData.style.fontSize = "small";
-        }
-        if (localStorage.getItem('notetext_medium')) {
-            noteData.style.fontSize = "medium";
-        }
-        if (localStorage.getItem('notetext_large')) {
-            noteData.style.fontSize = "large";
-        }
-    }
-
-    function notetext_small() {
-        notetext_reset();
-        localStorage.setItem('notetext_small', true);
-        notetextsize_change()
-        notetitle()
-    }
-    function notetext_medium() {
-        notetext_reset();
-        localStorage.setItem('notetext_medium', true);
-        notetextsize_change()
-        notetitle()
-    }
-    function notetext_large() {
-        notetext_reset();
-        localStorage.setItem('notetext_large', true);
-        notetextsize_change()
-        notetitle()
+        ['small', 'medium', 'large', 'x-large'].forEach(size => {
+            if (localStorage.getItem(`notetext_${size}`)) {
+                noteData.style.fontSize = size;
+            }
+        });
     }
 
     // 保存
@@ -3518,14 +3466,12 @@ if (ua.includes("mobile")) {
         if (!note_pad.classList.contains('active') && localStorage.getItem('noteData') && !localStorage.getItem('note_texts')) {
             note_pad.classList.add('active');
             note_pad.classList.remove('selectwindows')
-
         } else if (localStorage.getItem('note_texts')) {
             document.querySelector('.warning_title_text').textContent = "notepad"
             document.querySelector('.window_warning_text').textContent = "編集中です。ウィンドウを終了しますか?(内容は破棄されます)"
             warning_windows.style.display = "block"
             document.querySelector('.close_button3').style.display = "block"
             sound(4)
-
             document.querySelector('.shutdown_button').style.display = "none";
             document.querySelector('.warningclose_button').style.display = "block";
         } else {
@@ -3540,7 +3486,6 @@ if (ua.includes("mobile")) {
             objective_menu.classList.add('active');
             localStorage.removeItem('objective_area');
             objective_menu.classList.remove('selectwindows')
-
         } else if (localStorage.getItem('objective_area')) {
             document.querySelector('.warning_title_text').textContent = "objective sheet"
             document.querySelector('.window_warning_text').textContent = "タイトル と 内容を保存してから閉じてください";
@@ -3566,11 +3511,11 @@ if (ua.includes("mobile")) {
             } else {
                 objective_title();
             }
-            objectives_area.addEventListener("keyup", event => {
-                if (event.ctrlKey && event.key === 's') {
-                    objective_save();
-                }
-            });
+        });
+        objectives_area.addEventListener("keyup", event => {
+            if (event.ctrlKey && event.key === 's') {
+                objective_save();
+            }
         });
     });
     function objective_title() {
@@ -3661,21 +3606,20 @@ if (ua.includes("mobile")) {
         const pos = getCursorPos();
         document.getElementsByClassName('notetext_lines')[0].textContent = `Line: ${pos.line}, Column: ${pos.column}`;
     };
-    note_area.addEventListener("keydown", function (event) {
+    note_area.addEventListener("keydown", event => {
         if (event.ctrlKey && event.key === 's') {
             event.preventDefault();
         } else {
             notetitle(event);
-            setTimeout(() => {
-                onChange()
-            }, 10);
+            setTimeout(onChange, 10);
         }
-        note_area.addEventListener("keyup", function (event) {
-            if (event.ctrlKey && event.key === 's') {
-                save()
-            }
-        })
     });
+    note_area.addEventListener("keyup", event => {
+        if (event.ctrlKey && event.key === 's') {
+            save();
+        }
+    });
+
     note_area.addEventListener("paste", () => {
         setTimeout(onChange, 10)
     });
@@ -5199,7 +5143,6 @@ if (ua.includes("mobile")) {
                     }, 0);
                 }
                 taskbar.addEventListener('mousemove', stopResize);
-                rectangle_remove();
             }
             function stopResize() {
                 const resizer2 = resizer.closest('.child_windows');
@@ -5545,7 +5488,6 @@ if (ua.includes("mobile")) {
         });
     }
 
-
     function generateButtonsFromLocalStorage() {
         const fileData = JSON.parse(localStorage.getItem('fileData')) || [];
         fileData.forEach(item => {
@@ -5775,7 +5717,7 @@ if (ua.includes("mobile")) {
     };
 
     function isPageUrl(url) {
-        return /\.(html|htm|com|jp)$/i.test(url);
+        return /\.(html|htm|com|jp|pdf|jpeg|png)$/i.test(url);
     }
     function isYouTubeURL(url_youtube) {
         return /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/.test(url_youtube);
@@ -5962,7 +5904,6 @@ if (ua.includes("mobile")) {
     function rectangle_remove() {
         const elements = document.querySelectorAll('.rectangle');
         elements.forEach(element => element.remove());
-        console.log("aaa")
     }
 
     var background_img = document.createElement("img");
@@ -6558,16 +6499,17 @@ if (ua.includes("mobile")) {
             img.style.border = '';
         }
     });
-    editor2_child.addEventListener("keydown", function (event) {
+    editor2_child.addEventListener("keydown", event => {
         if (event.ctrlKey && event.key === 's') {
             event.preventDefault();
         }
-        editor2_child.addEventListener("keyup", function (event) {
-            if (event.ctrlKey && event.key === 's') {
-                saveContent()
-            }
-        })
     });
+    editor2_child.addEventListener("keyup", event => {
+        if (event.ctrlKey && event.key === 's') {
+            saveContent();
+        }
+    });
+
 
     function saveContent() {
         const content = document.getElementById('editor_2').innerHTML;
@@ -7020,7 +6962,6 @@ if (ua.includes("mobile")) {
     function saveToLocalStorage() {
         const dropList = document.querySelector('#drop_zone ul');
         localStorage.setItem('dropListContent', dropList.innerHTML);
-        rectangle_remove();
     }
     function loadFromLocalStorage() {
         const dropList = document.querySelector('#drop_zone ul');
