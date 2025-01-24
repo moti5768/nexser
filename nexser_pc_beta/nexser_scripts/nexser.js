@@ -276,15 +276,13 @@ if (ua.includes("mobile")) {
         pageLoad,
         nexser_savedata_load
     ];
-    Promise.all(tasks.map(task => new Promise(resolve => {
-        function runTask() {
-            resolve(task());
-        }
-        requestAnimationFrame(runTask);
-    })))
-        .then(() => {
-            console.log('すべてのタスクが完了しました');
-        });
+    const runTasks = async () => {
+        await Promise.all(tasks.map(task => new Promise(resolve => {
+            requestAnimationFrame(() => resolve(task()));
+        })));
+        console.log('tasks completed');
+    };
+    runTasks();
 
     function nexser_savedata_load() {
         const t = localStorage.getItem('taskbar_height');
@@ -608,7 +606,6 @@ if (ua.includes("mobile")) {
             help_command()
             prompt_text_check()
         }
-
         sessionStorage.removeItem('start_camera');
         localStorage.removeItem('note_texts');
     }
@@ -642,47 +639,42 @@ if (ua.includes("mobile")) {
     })
 
 
-    function addButtonListeners(button_1) {
-        if (!button_1.classList.contains('listener-added')) {
-            button_1.addEventListener('mousedown', () => button_1.classList.add('pressed'));
-            button_1.addEventListener('mouseleave', () => button_1.classList.remove('pressed'));
-            button_1.addEventListener('mouseup', () => button_1.classList.remove('pressed'));
-            button_1.classList.add('listener-added');
+    function addButtonListeners(button) {
+        if (!button.classList.contains('listener-added')) {
+            const togglePressed = (pressed) => () => button.classList[pressed ? 'add' : 'remove']('pressed');
+            button.addEventListener('mousedown', togglePressed(true));
+            button.addEventListener('mouseleave', togglePressed(false));
+            button.addEventListener('mouseup', togglePressed(false));
+            button.classList.add('listener-added');
         }
     }
-    const observer_btn1 = new MutationObserver((mutations) => {
-        for (const mutation of mutations) {
-            if (mutation.type === 'childList') {
-                for (const node of mutation.addedNodes) {
-                    if (node.nodeType === Node.ELEMENT_NODE && node.classList.contains('button2')) {
-                        addButtonListeners(node);
-                    }
+    const observer_btn = new MutationObserver((mutations) => {
+        mutations.forEach(({ addedNodes }) => {
+            addedNodes.forEach((node) => {
+                if (node.nodeType === Node.ELEMENT_NODE && node.classList.contains('button2')) {
+                    addButtonListeners(node);
                 }
-            }
-        }
+            });
+        });
     });
-    observer_btn1.observe(document.body, { childList: true, subtree: true });
+    observer_btn.observe(document.body, { childList: true, subtree: true });
 
-
-    function addButtonListeners2(button_2) {
-        if (!button_2.classList.contains('listener-added')) {
-            button_2.addEventListener('click', () => button_2.classList.toggle('pressed'));
-            button_2.classList.add('listener-added');
+    function addButtonListeners2(button) {
+        if (!button.classList.contains('listener-added')) {
+            button.addEventListener('click', () => button.classList.toggle('pressed'));
+            button.classList.add('listener-added');
         }
     }
     const observer_btn2 = new MutationObserver((mutations) => {
-        for (const mutation of mutations) {
-            if (mutation.type === 'childList') {
-                for (const node of mutation.addedNodes) {
-                    if (node.nodeType === Node.ELEMENT_NODE && node.classList.contains('button')) {
-                        addButtonListeners2(node);
-                    }
+        mutations.forEach(({ addedNodes }) => {
+            addedNodes.forEach((node) => {
+                if (node.nodeType === Node.ELEMENT_NODE && node.classList.contains('button')) {
+                    addButtonListeners2(node);
                 }
-            }
-        }
+            });
+        });
     });
-    observer_btn2.observe(document.body, { childList: true, subtree: true })
-
+    observer_btn2.observe(document.body, { childList: true, subtree: true });
 
     document.querySelector('.deskprompt').addEventListener('click', function () {
         localStorage.setItem('deskprompt', true);
@@ -771,22 +763,18 @@ if (ua.includes("mobile")) {
     toggleSetting_program('.startup_speed', 'prompt_data2', 'HIGH', 'LOW');
     toggleSetting_program('.auto_startup', 'auto_startup', 'ON', 'OFF');
 
-    const font_clear = () => {
-        ['font_default', 'font_sans_serif', 'font_cursive', 'font_fantasy', 'font_monospace'].forEach(item => localStorage.removeItem(item));
-    };
-    const setFont = (font) => {
+    const font_clear = () =>
+        ['font_serif', 'font_sans_serif', 'font_cursive', 'font_fantasy', 'font_monospace'].forEach(item => localStorage.removeItem(item));
+
+    const setFont = font => {
         font_clear();
         localStorage.setItem(`font_${font}`, true);
-        body.style.fontFamily = font;
+        document.body.style.fontFamily = font;
     };
-    document.querySelector('.font_default').addEventListener('click', () => {
-        font_clear();
-        body.style.fontFamily = "serif";
-    });
-    document.querySelector('.font_sans_serif').addEventListener('click', () => setFont('sans_serif'));
-    document.querySelector('.font_cursive').addEventListener('click', () => setFont('cursive'));
-    document.querySelector('.font_fantasy').addEventListener('click', () => setFont('fantasy'));
-    document.querySelector('.font_monospace').addEventListener('click', () => setFont('monospace'));
+
+    ['sans_serif', 'cursive', 'fantasy', 'monospace', 'serif'].forEach(font =>
+        document.querySelector(`.font_${font}`).addEventListener('click', () => setFont(font))
+    );
 
     function nexser_boot_check() {
         if (localStorage.getItem('driver_sound')) {
@@ -1186,8 +1174,8 @@ if (ua.includes("mobile")) {
         setTimeout(() => {
             welcomeText1.style.transition = '0.25s cubic-bezier(0, 0, 1, 1)';
             welcomeText1.style.fontSize = '40px';
-            welcomeText1.style.marginTop = '20px';
-            welcomeText1.style.marginLeft = '0px';
+            welcomeText1.style.marginTop = '0';
+            welcomeText1.style.marginLeft = '0';
         }, 500);
         setTimeout(() => {
             welcomeUnderline.style.transition = '0.25s cubic-bezier(0, 0, 1, 1)';
@@ -2091,10 +2079,6 @@ if (ua.includes("mobile")) {
                 toggleWindow(test_site_menu)
                 break;
 
-            case 'next/version/nexser':
-                toggleWindow(nexser_nextversion_menu)
-                break;
-
             case 'startmenu(console(error))=>true':
                 localStorage.setItem('startmenu_console', true);
                 document.querySelector('.console_list').style.display = "block";
@@ -2690,6 +2674,7 @@ if (ua.includes("mobile")) {
         Array.from(document.getElementsByClassName('button')).forEach(addButtonListeners2);
         Array.from(document.getElementsByClassName('button2')).forEach(addButtonListeners);
         window.scrollTo(0, 0);
+        resizeBackgroundImage();
     }
 
     const note_parent = document.querySelector('.note_pad');
@@ -2768,18 +2753,18 @@ if (ua.includes("mobile")) {
     };
 
     const backgroundImageParent = document.getElementById('nexser');
-    const backgroundImageChildren = backgroundImageParent.getElementsByClassName('nexser_background_image');
-
+    const backgroundImageChildren = Array.from(backgroundImageParent.getElementsByClassName('nexser_background_image'));
     const resizeBackgroundImage = () => {
         requestAnimationFrame(() => {
-            for (const child of backgroundImageChildren) {
+            backgroundImageChildren.forEach(child => {
                 child.style.width = `${backgroundImageParent.clientWidth}px`;
                 child.style.height = `${backgroundImageParent.clientHeight}px`;
-            }
+            });
         });
     };
+    resizeBackgroundImage();
 
-    const nexser_nextversion_parent = document.querySelector('.nexser_nextversion_menu');
+    const nexser_nextversion_parent = nexser_nextversion_menu;
     const nexser_nextversion_child = document.querySelector('.nexser_nextframe');
     const nexser_nextversion_resize = () => {
         const hehehe1 = nexser_nextversion_parent.firstElementChild;
@@ -3026,12 +3011,10 @@ if (ua.includes("mobile")) {
     document.querySelector('.display_old').addEventListener('click', () => {
         localStorage.setItem('display_old', true);
         old_screen();
-        resizeBackgroundImage();
     });
     document.querySelector('.display_now').addEventListener('click', () => {
         localStorage.removeItem('display_old');
         old_screen_reset();
-        resizeBackgroundImage();
     });
 
     document.querySelector('.list_shadow_on').addEventListener('click', () => {
@@ -5403,7 +5386,6 @@ if (ua.includes("mobile")) {
 
     const taskbar_b = document.getElementById('task_buttons2');
     function test_windows_button() {
-        resizeBackgroundImage();
         document.querySelectorAll('.task_buttons').forEach(task_buttons => task_buttons.remove());
         document.querySelectorAll('.child_windows.selectwindows:not(.no_window).child_windows:not(.clones)').forEach(windowElement => {
             const nestedChild2 = windowElement.children[0].children[1].textContent;
@@ -5717,7 +5699,7 @@ if (ua.includes("mobile")) {
     };
 
     function isPageUrl(url) {
-        return /\.(html|htm|com|jp|pdf|jpeg|png)$/i.test(url);
+        return /\.(html|htm|com|jp|pdf|jpeg|jpg|png)$/i.test(url);
     }
     function isYouTubeURL(url_youtube) {
         return /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/.test(url_youtube);
@@ -6422,7 +6404,6 @@ if (ua.includes("mobile")) {
                 <span class="close_button button2 allclose_button" onclick="error_windows_close(event)"></span>
             </div>
             <div class="window_content">
-                <br>
                 <p>
                     ${icon}
                     <span class="window_error_text">${errorTitle}</span>
