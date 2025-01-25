@@ -1118,29 +1118,22 @@ if (ua.includes("mobile")) {
 
     function nexser_on() {
         localStorage.setItem('start_nexser', true);
-        welcome_menu.classList.remove('selectwindows');
-        welcome_menu.classList.add('active');
+        welcome_menu.classList.replace('selectwindows', 'active');
         setTimeout(() => {
-            desktop.style.display = "block";
-            nex_files.style.display = "block";
-            taskbar.style.display = "block";
+            [desktop, nex_files, taskbar].forEach(el => el.style.display = "block");
             const task = taskbar.clientHeight;
-            toolbar.style.top = "";
-            toolbar.style.left = "";
-            toolbar.style.bottom = "40px";
-            child_start_menu.style.bottom = task + "px";
-            desktop_version_text.style.bottom = task + "px";
-        }, 250);
-        setTimeout(() => {
-            setColor();
-            nex.style.cursor = '';
-            if (!localStorage.getItem('editorContent')) {
-                localStorage.setItem('editorContent', "PGJyPg==")
-            }
+            Object.assign(toolbar.style, { top: "", left: "", bottom: "40px" });
+            [child_start_menu, desktop_version_text].forEach(el => el.style.bottom = `${task}px`);
+            localmemory_size();
             setTimeout(() => {
-                startup_window_open()
+                setColor();
+                nex.style.cursor = '';
+                if (!localStorage.getItem('editorContent')) {
+                    localStorage.setItem('editorContent', "PGJyPg==");
+                }
+                startup_window_open();
             }, 500);
-        }, 500);
+        }, 250);
     }
 
     document.querySelector('.login_welcome').addEventListener('click', () => {
@@ -2168,12 +2161,15 @@ if (ua.includes("mobile")) {
         const localkey_length = localStorage.length;
         if (screen_prompt.style.display === "block") {
             navigator.getBattery().then((battery) => {
-                document.getElementsByClassName('level')[0].innerHTML = battery.level;
-                document.getElementsByClassName('charging')[0].innerHTML = battery.charging;
-                document.getElementsByClassName('chargingTime')[0].innerHTML = battery.chargingTime;
-                document.getElementsByClassName('dischargingTime')[0].innerHTML = battery.dischargingTime;
+                const updateInnerHTML = (className, value) => {
+                    document.querySelector(`.${className}`).textContent = value;
+                };
+                updateInnerHTML('level', battery.level);
+                updateInnerHTML('charging', battery.charging);
+                updateInnerHTML('chargingTime', battery.chargingTime);
+                updateInnerHTML('dischargingTime', battery.dischargingTime);
             });
-            document.getElementsByClassName('length_localStorage')[0].textContent = localkey_length;
+            document.querySelector('.length_localStorage').textContent = localkey_length;
         } else {
             document.getElementsByClassName('local_keylength')[0].textContent = localkey_length;
             background_text2.textContent = localStorage.getItem('backtext_data');
@@ -2188,32 +2184,27 @@ if (ua.includes("mobile")) {
             if (localStorage.getItem(KEY_BKCOLOR, bkcolor)) {
                 mini_desktop.style.backgroundColor = bkcolor;
             }
-            if (localStorage.getItem('MemoData_export')) {
-                document.getElementsByClassName('inport_icon')[0].style.color = "white"
-                document.getElementsByClassName('inport_icon')[0].style.background = "black"
-            } else {
-                document.getElementsByClassName('inport_icon')[0].style.color = ""
-                document.getElementsByClassName('inport_icon')[0].style.background = ""
-            }
-            const un = document.getElementsByClassName('navy').length;
-            document.querySelector('.title_navy').textContent = un;
-            const un2 = document.getElementsByClassName('drag').length;
-            document.querySelector('.drag_window').textContent = un2;
+            const updateStyle = (element, isExported) => {
+                element.style.color = isExported ? "white" : "";
+                element.style.background = isExported ? "black" : "";
+            };
+            const inportIcon = document.querySelector('.inport_icon');
+            updateStyle(inportIcon, localStorage.getItem('MemoData_export'));
+            const setTextContent = (selector, className) => {
+                document.querySelector(selector).textContent = document.getElementsByClassName(className).length;
+            };
+            setTextContent('.title_navy', 'navy');
+            setTextContent('.drag_window', 'drag');
             document.getElementsByClassName('cpu_cores')[0].textContent = navigator.hardwareConcurrency;
         }
     }, 100);
 
-    document.querySelectorAll('.close_button').forEach(close_button => {
-        close_button.addEventListener('click', () => {
-            const closebutton_closest = close_button.closest('.child_windows');
-            closebutton_closest.classList.add('active');
-            closebutton_closest.classList.remove('selectwindows');
-        });
-    });
-    document.querySelectorAll('.close_button3').forEach(close_button3 => {
-        close_button3.addEventListener('click', () => {
-            const closebutton3 = close_button3.closest('.warning_windows');
-            closebutton3.style.display = "none";
+    ['.close_button', '.close_button3'].forEach(cls => {
+        document.querySelectorAll(cls).forEach(btn => {
+            btn.addEventListener('click', () => {
+                const el = btn.closest(cls === '.close_button' ? '.child_windows' : '.warning_windows');
+                if (el) cls === '.close_button' ? (el.classList.add('active'), el.classList.remove('selectwindows')) : el.style.display = 'none';
+            });
         });
     });
 
@@ -3677,7 +3668,7 @@ if (ua.includes("mobile")) {
 
     function win2000_load() {
         if (localStorage.getItem('MemoData_export')) {
-            noticewindow_create("warning", "windows2000からテキストデータを受け取りました!", "warning");
+            noticewindow_create("notepad", "windows2000からテキストデータを受け取りました!");
             note_area.textContent = localStorage.getItem('MemoData_export');
             localStorage.removeItem('MemoData_export');
         } else {
@@ -5836,12 +5827,15 @@ if (ua.includes("mobile")) {
 
     function nexser_search_button() {
         const fragment = document.createDocumentFragment();
-        document.querySelectorAll('.child_windows:not(.window_nosearch)').forEach(windowElement => {
-            const nestedChildText = windowElement.children[0]?.children[1]?.textContent;
-            if (nestedChildText) {
+        const windowElements = document.querySelectorAll('.child_windows:not(.window_nosearch)');
+        windowElements.forEach(windowElement => {
+            const nestedChild = windowElement.children[0]?.children[1];
+            if (nestedChild && nestedChild.textContent) {
                 const button = document.createElement('li');
                 button.className = 'borderinline_dotted button2 search_button white_space_wrap';
-                button.innerHTML = `<span>　${nestedChildText}　</span>`;
+                const span = document.createElement('span');
+                span.textContent = `　${nestedChild.textContent}　`;
+                button.appendChild(span);
                 button.addEventListener('click', () => toggleWindow(windowElement));
                 fragment.appendChild(button);
             }
@@ -6100,7 +6094,7 @@ if (ua.includes("mobile")) {
     }
 
     function bigwindow_resize() {
-        document.querySelectorAll('.big:not(.minimization),.leftwindow,.rightwindow').forEach(allbig => {
+        document.querySelectorAll('.big:not(.minimization),.leftwindow:not(.minimization),.rightwindow:not(.minimization)').forEach(allbig => {
             if (isAnimating == false && localStorage.getItem('taskbar_autohide') && taskbar.style.bottom == "") {
                 setTimeout(() => {
                     allbig.style.width = "";
@@ -6129,15 +6123,15 @@ if (ua.includes("mobile")) {
         const now = new Date();
         const date = now.toISOString().split('T')[0];
         const time = now.toTimeString().split(' ')[0].slice(0, 5);
-        document.getElementById('date').value = date;
-        document.getElementById('time').value = time;
+        document.getElementById('kakeibo_date').value = date;
+        document.getElementById('kakeibo_time').value = time;
     }
     function kakeibo_addEntry() {
         const type = document.getElementById('type').value;
         const amount = parseFloat(document.getElementById('amount').value) || 0;
         const description = document.getElementById('description').value;
-        const date = document.getElementById('date').value;
-        const time = document.getElementById('time').value;
+        const date = document.getElementById('kakeibo_date').value;
+        const time = document.getElementById('kakeibo_time').value;
         const entry = { type, amount, description, date, time };
         kakeibo_saveEntry(entry);
         kakeibo_displayEntries();
