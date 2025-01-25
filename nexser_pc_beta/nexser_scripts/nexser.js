@@ -783,6 +783,7 @@ if (ua.includes("mobile")) {
             document.querySelector('.nexser_boot_menu').style.display = "block";
             document.querySelector('.nexser_bootmenu_text').textContent = "サウンドドライバー がインストールされていません!";
             document.querySelector('.nexser_bootmenu_text2').textContent = "インストールして nexser を起動しますか?";
+            document.querySelector('.nexser_bootmenu_text3').textContent = "(※インストールして起動する場合 'start nexser' を押すまで再読み込みしないでください)";
         } else {
             nexser_start()
             nex.style.cursor = 'none';
