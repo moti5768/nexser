@@ -197,13 +197,14 @@ class tetris {
     }
 
     checkBlockMove(x, y, type, angle) {
+        if (!this.blocks[type] || !this.blocks[type].shape) {
+            console.error("Invalid block or shape is undefined for type:", type);
+            return false;
+        }
         for (let i = 0; i < this.blocks[type].shape[angle].length; i++) {
             let cellX = x + this.blocks[type].shape[angle][i][0];
             let cellY = y + this.blocks[type].shape[angle][i][1];
-            if (cellX < 0 || cellX > this.stageWidth - 1) {
-                return false;
-            }
-            if (cellY > this.stageHeight - 1) {
+            if (cellX < 0 || cellX > this.stageWidth - 1 || cellY > this.stageHeight - 1) {
                 return false;
             }
             if (this.virtualStage[cellX][cellY] != null) {
