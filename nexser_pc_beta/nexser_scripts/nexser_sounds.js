@@ -69,13 +69,38 @@ function sound_stop() {
 });
 
 function playBeep() {
+    sound_stop();
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = 'square';
     osc.frequency.value = 900;
-    gain.gain.value = 0.5;
+    gain.gain.value = 0.1;
     osc.connect(gain).connect(ctx.destination);
     osc.start();
     osc.stop(ctx.currentTime + 0.1);
+}
+
+function playSadMacSound() {
+    sound_stop();
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    oscillator.type = 'sine';
+    gain.gain.value = 0.1;
+    const gainNode = audioCtx.createGain();
+    gainNode.gain.setValueAtTime(1, audioCtx.currentTime);
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    oscillator.start();
+    oscillator.frequency.setValueAtTime(550.00, audioCtx.currentTime);
+    setTimeout(() => {
+        oscillator.frequency.setValueAtTime(525.00, audioCtx.currentTime);
+    }, 500);
+    setTimeout(() => {
+        oscillator.frequency.setValueAtTime(500.00, audioCtx.currentTime);
+    }, 1000);
+    setTimeout(() => {
+        oscillator.stop();
+    }, 2000);
 }

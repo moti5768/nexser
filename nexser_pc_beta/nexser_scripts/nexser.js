@@ -112,7 +112,6 @@ if (ua.includes("mobile")) {
     const url_drop_menu = document.querySelector('.url_drop_menu');
     const alarm_menu = document.querySelector('.alarm_menu');
     const test_site_menu = document.querySelector('.test_site_menu');
-    const console_error_menu = document.querySelector('.console_error_menu');
     const kakeibo_menu = document.querySelector('.kakeibo_menu');
     const nexser_nextversion_menu = document.querySelector('.nexser_nextversion_menu');
     const mydocument_menu = document.querySelector('.mydocument_menu');
@@ -697,7 +696,6 @@ if (ua.includes("mobile")) {
         document.getElementsByClassName('pattern_backgrounds')[0].style.display = "none";
         welcome_menu.classList.add('active');
         welcome_menu.classList.remove('selectwindows');
-        sound_stop();
         nex.style.cursor = 'crosshair';
         setTimeout(function () {
             screen_prompt.style.display = "none";
@@ -864,7 +862,6 @@ if (ua.includes("mobile")) {
     }
 
     function nexser_start() {
-        console.log("test text")
         load_videourl();
         document.querySelector('.nexser_boot_menu').style.display = "none";
         localStorage.setItem('prompt_data', true);
@@ -2072,16 +2069,6 @@ if (ua.includes("mobile")) {
                 toggleWindow(test_site_menu)
                 break;
 
-            case 'startmenu(console(error))=>true':
-                localStorage.setItem('startmenu_console', true);
-                document.querySelector('.console_list').style.display = "block";
-                break;
-
-            case 'startmenu(console(error))=>false':
-                localStorage.removeItem('startmenu_console');
-                document.querySelector('.console_list').style.display = "none";
-                break;
-
             case 'title/center':
                 title_center()
                 break;
@@ -2114,10 +2101,6 @@ if (ua.includes("mobile")) {
                 executeCommand2()
                 break;
         }
-    }
-
-    if (localStorage.getItem('startmenu_console')) {
-        document.querySelector('.console_list').style.display = "block"
     }
 
     function shellmenu_open() {
@@ -6015,7 +5998,6 @@ if (ua.includes("mobile")) {
     loadAlarms();
 
     window.onerror = function (message, source, lineno, colno, error) {
-        const errorLog = document.getElementById('console_error_text');
         const errorMessage = `
             メッセージ: ${message}
             ソース: ${source}
@@ -6023,26 +6005,10 @@ if (ua.includes("mobile")) {
             列: ${colno}
             エラーオブジェクト: ${error}
         `;
-        errorLog.innerHTML += errorMessage + '\n' + '<br>';
-        console_error_btn();
+        console.log(errorMessage);
         checkStorageChange();
         return false;
     };
-
-    function console_error_btn() {
-        if (!localStorage.getItem('startmenu_console')) return;
-        document.querySelectorAll('.error_btn').forEach(btn => btn.remove());
-        const errorBtn = document.createElement('span');
-        errorBtn.className = "button2 error_btn bold";
-        errorBtn.textContent = "✕";
-        errorBtn.style.background = "red";
-        errorBtn.style.color = "white";
-        document.querySelector('.first_taskbar_buttons').appendChild(errorBtn);
-        errorBtn.addEventListener('click', () => {
-            toggleWindow(console_error_menu);
-        });
-        taskbar_resize();
-    }
 
     const taskbar_resize = () => {
         setTimeout(() => {
@@ -6112,11 +6078,6 @@ if (ua.includes("mobile")) {
                 }, 0);
             }
         });
-    }
-
-    function console_errortext_clear() {
-        document.getElementById('console_error_text').innerHTML = "";
-        document.querySelector('.error_btn').remove()
     }
 
     function kakeibo_setCurrentDateTime() {
@@ -6965,7 +6926,6 @@ if (ua.includes("mobile")) {
 
         document.querySelectorAll('.passmenu_button').forEach(passmenu_button => { passmenu_button.onclick = null; passmenu_button.onclick = () => { toggleWindow(password_menu); }; });
         document.querySelectorAll('.localstorage_details').forEach(localstorage_details => { localstorage_details.onclick = null; localstorage_details.onclick = () => { toggleWindow(localstorage_details_menu); }; });
-        document.querySelectorAll('.console_error_btn').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(console_error_menu); }; });
         document.querySelectorAll('.kakeibo_btn').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(kakeibo_menu); }; });
         document.querySelectorAll('.document_button').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(mydocument_menu); }; });
         document.querySelectorAll('.restriction_btn').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(restriction_menu); }; });
