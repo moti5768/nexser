@@ -2085,6 +2085,11 @@ if (ua.includes("mobile")) {
                 nexser_prompt_reset()
                 break;
 
+            case 'exit':
+                nexser_prompt_reset()
+                windowclose(".window_prompt")
+                break;
+
             case 'nexser/restart':
                 window_none()
                 nexser_restart()
@@ -2194,6 +2199,13 @@ if (ua.includes("mobile")) {
             });
         });
     });
+
+    function windowclose(cls) {
+        document.querySelectorAll(cls).forEach(btn => {
+            const el = btn.closest(cls === cls ? '.child_windows' : '.warning_windows');
+            if (el) cls === cls ? (el.classList.add('active'), el.classList.remove('selectwindows')) : el.style.display = 'none';
+        });
+    }
 
     function addBigScreenButtonListeners(button) {
         if (!button.dataset.listenerAdded) {
