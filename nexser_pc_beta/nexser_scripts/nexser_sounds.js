@@ -27,15 +27,20 @@ const sounds = soundFiles.map(file => {
     return audio;
 });
 
+let firstLoad = true;
 function sound(index) {
     if (localStorage.getItem('driver_sound')) {
         sounds[index].currentTime = 0;
-        sounds[index].play();
-        sounds[index].onended = () => {
-            sound_stop();
-        };
+        if (!firstLoad) {
+            sounds[index].play();
+            sounds[index].onended = () => {
+                sound_stop();
+                firstLoad = false;
+            };
+        }
     }
 }
+
 
 function sound_stop() {
     sounds.forEach(sound => {

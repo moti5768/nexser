@@ -153,7 +153,10 @@ if (ua.includes("mobile")) {
         }
         bigwindow_resize();
         document.querySelector('.local_memory2').innerHTML = `&emsp;${(calculateLocalStorageSize() / 1024).toFixed(2)}KB&emsp;`;
-        removePopups()
+        removePopups();
+        setTimeout(() => {
+            firstLoad = false;
+        }, 500);
     })
 
     function game_true() {
