@@ -2745,31 +2745,22 @@ if (ua.includes("mobile")) {
     const nexser_nextversion_parent = nexser_nextversion_menu;
     const nexser_nextversion_child = document.querySelector('.nexser_nextframe');
     const nexser_nextversion_resize = () => {
-        const hehehe1 = nexser_nextversion_parent.firstElementChild;
-        if (hehehe1.classList.contains('navy')) {
-            nexser_nextversion_child.style.width = `${nexser_nextversion_parent.clientWidth}px`;
-            nexser_nextversion_child.style.height = `${nexser_nextversion_parent.clientHeight - 20}px`;
-        }
+        nexser_nextversion_child.style.width = `${nexser_nextversion_parent.clientWidth}px`;
+        nexser_nextversion_child.style.height = `${nexser_nextversion_parent.clientHeight - 20}px`;
     };
 
     const htmlview_parent = document.querySelector('.htmlviewer_run_menu');
     const htmlview_child = document.querySelector('.html_view');
     const htmlview_resize = () => {
-        const hehehe1 = htmlview_parent.firstElementChild;
-        if (hehehe1.classList.contains('navy')) {
-            htmlview_child.style.width = `${htmlview_parent.clientWidth}px`;
-            htmlview_child.style.height = `${htmlview_parent.clientHeight - 20}px`;
-        }
+        htmlview_child.style.width = `${htmlview_parent.clientWidth}px`;
+        htmlview_child.style.height = `${htmlview_parent.clientHeight - 20}px`;
     };
 
     const htmlview_parent2 = document.querySelector('.htmlviewer_edit_menu');
     const htmlview_child2 = document.querySelector('#editor');
     const htmlview_resize2 = () => {
-        const hehehe1 = htmlview_parent2.firstElementChild;
-        if (hehehe1.classList.contains('navy')) {
-            htmlview_child2.style.width = `${htmlview_parent2.clientWidth - 5}px`;
-            htmlview_child2.style.height = `${htmlview_parent2.clientHeight - 65}px`;
-        }
+        htmlview_child2.style.width = `${htmlview_parent2.clientWidth - 5}px`;
+        htmlview_child2.style.height = `${htmlview_parent2.clientHeight - 65}px`;
     };
 
     const editor2_parent = document.querySelector('.editor_menu');
@@ -5677,7 +5668,7 @@ if (ua.includes("mobile")) {
     };
 
     function isPageUrl(url) {
-        return /\.(html|htm|com|jp|pdf|jpeg|jpg|png)$/i.test(url);
+        return /\.(html|htm|com|jp|pdf|jpeg|jpg|png|mp4|mp3)$/i.test(url);
     }
     function isYouTubeURL(url_youtube) {
         return /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\/.+$/.test(url_youtube);
@@ -6085,6 +6076,12 @@ if (ua.includes("mobile")) {
                     allbig.style.height = `calc(100% - ${taskbar.clientHeight}px)`;
                 }, 0);
             }
+        });
+        document.querySelectorAll('iframe,video,img').forEach(allbig => {
+            setTimeout(() => {
+                allbig.style.maxWidth = "100%";
+                allbig.style.maxHeight = "100%";
+            }, 50);
         });
     }
 
