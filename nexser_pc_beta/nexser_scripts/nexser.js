@@ -5694,7 +5694,11 @@ if (ua.includes("mobile")) {
             testWindow.style.height = '400px';
             testWindow.classList.add("nocreatewindow");
             const centerElement = testWindow.querySelector('.testwindow2 > *:nth-child(3) > *');
-            centerElement.classList.add('center');
+            if (centerElement) {
+                centerElement.classList.add('center');
+            } else {
+                testWindow.remove()
+            }
         });
         const childWindows = document.querySelectorAll('.testwindow2, .child');
         childWindows.forEach(childWindow => {
