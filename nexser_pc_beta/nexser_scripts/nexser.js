@@ -6881,8 +6881,22 @@ if (ua.includes("mobile")) {
     dropZone.addEventListener('drop', (e) => {
         e.preventDefault();
         const data = e.dataTransfer.getData('text/plain');
+        const tempElement = document.createElement('div');
+        tempElement.innerHTML = data;
+        if (tempElement.querySelector('.desktop_files')) {
+            return;
+        }
+        const tempChildren = tempElement.children;
+        if (tempChildren.length === 0) {
+            noticewindow_create("warning", '無効なデータです');
+            return;
+        }
         dropList.innerHTML += data;
         const newElement = dropList.lastElementChild;
+        if (!newElement) {
+            noticewindow_create("warning", '新しい要素が追加されていません。');
+            return;
+        }
         newElement.setAttribute('draggable', 'true');
         newElement.addEventListener('dragstart', (e) => {
             e.dataTransfer.setData('text/plain', e.target.outerHTML);
