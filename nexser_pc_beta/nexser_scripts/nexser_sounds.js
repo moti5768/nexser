@@ -98,14 +98,16 @@ function playbluescreen() {
     oscillator.connect(gainNode);
     gainNode.connect(audioCtx.destination);
     oscillator.start();
-    oscillator.frequency.setValueAtTime(550.00, audioCtx.currentTime);
     setTimeout(() => {
-        oscillator.frequency.setValueAtTime(525.00, audioCtx.currentTime);
+        oscillator.frequency.setValueAtTime(550.00, audioCtx.currentTime);
     }, 500);
     setTimeout(() => {
-        oscillator.frequency.setValueAtTime(500.00, audioCtx.currentTime);
+        oscillator.frequency.setValueAtTime(525.00, audioCtx.currentTime);
     }, 1000);
     setTimeout(() => {
+        oscillator.frequency.setValueAtTime(500.00, audioCtx.currentTime);
+    }, 1500);
+    setTimeout(() => {
         oscillator.stop();
-    }, 2000);
+    }, 2500);
 }
