@@ -86,7 +86,7 @@ function playBeep() {
     osc.stop(ctx.currentTime + 0.1);
 }
 
-function playSadMacSound() {
+function playbluescreen() {
     sound_stop();
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const oscillator = audioCtx.createOscillator();

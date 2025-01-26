@@ -18,7 +18,8 @@ function displayBlueScreen(message, source, lineno, colno, error) {
     `;
     document.querySelectorAll('.testwindow2').forEach(task_buttons => task_buttons.remove());
     document.body.appendChild(blueScreen);
-    playSadMacSound();
+    document.getElementById('nex').remove();
+    playbluescreen();
 }
 
 function handleError(event) {
