@@ -854,6 +854,7 @@ if (ua.includes("mobile")) {
             .replaceAll(".s<t.", "9")
         );
         if (password_unlock2 === document.getElementById('pass_form').value) {
+            firstLoad = false;
             document.querySelector('.pass_signin_menu').classList.add('active')
             document.querySelector('.pass_no').textContent = "";
             start_check();
@@ -1633,7 +1634,8 @@ if (ua.includes("mobile")) {
         textbox.addEventListener('keydown', enterKeyPress);
         function enterKeyPress(event) {
             if (event.key === 'Enter') {
-                butotnClick()
+                butotnClick();
+                firstLoad = false;
             }
         }
     }
