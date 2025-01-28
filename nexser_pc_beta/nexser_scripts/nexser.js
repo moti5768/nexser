@@ -2429,18 +2429,11 @@ if (ua.includes("mobile")) {
 
     document.querySelectorAll('.parent_list').forEach(parent_list => {
         parent_list.addEventListener('mouseover', () => {
-            const parentlist = parent_list.lastElementChild;
-            parentlist.style.display = "flex";
-            document.querySelectorAll('.windowtool_child').forEach(windowtool_child => {
-                windowtool_child.style.display = "none";
-            });
-            document.querySelectorAll('.parent_list').forEach(c_list => {
-                c_list.addEventListener('mouseleave', () => {
-                    document.querySelectorAll('.child_list').forEach(cb_list => {
-                        cb_list.style.display = "none";
-                    });
-                });
-            });
+            parent_list.lastElementChild.style.display = "flex";
+            document.querySelectorAll('.windowtool_child').forEach(el => el.style.display = "none");
+        });
+        parent_list.addEventListener('mouseleave', () => {
+            document.querySelectorAll('.child_list').forEach(el => el.style.display = "none");
         });
     });
 
@@ -2468,7 +2461,6 @@ if (ua.includes("mobile")) {
 
     const digital_clock_area = document.getElementsByClassName('digital_clock_area');
     const analog_clock_area = document.getElementsByClassName('analog_clock_area')
-
     document.querySelectorAll('.clockdata_analog').forEach(clockdata_analog => {
         clockdata_analog.addEventListener('click', () => {
             localStorage.setItem('clockdata_analog', true);
@@ -2493,34 +2485,14 @@ if (ua.includes("mobile")) {
         });
     });
 
-    document.querySelectorAll('.parent_start_menu_lists').forEach(parent_startmenu_lists => {
-        parent_startmenu_lists.addEventListener('mouseover', () => {
-            parent_startmenu_lists.lastElementChild.style.display = "block";
+    const menuLists = document.querySelectorAll('.parent_start_menu_lists, .child_start_menu_lists, .child_start_menu_lists2');
+    menuLists.forEach(menuList => {
+        menuList.addEventListener('mouseover', () => {
+            menuList.lastElementChild.style.display = "block";
         });
-        parent_startmenu_lists.addEventListener('mouseleave', () => {
-            document.querySelectorAll('.child_start_menu_lists, .child_start_menu_lists2, .child_start_menu_lists3').forEach(child_startmenu_lists => {
-                child_startmenu_lists.style.display = "none";
-            });
-        });
-    });
-    document.querySelectorAll('.child_start_menu_lists').forEach(child_startmenu_lists => {
-        child_startmenu_lists.addEventListener('mouseover', () => {
-            child_startmenu_lists.lastElementChild.style.display = "block";
-        });
-        child_startmenu_lists.addEventListener('mouseleave', () => {
-            document.querySelectorAll('.child_start_menu_lists, .child_start_menu_lists2').forEach(child_startmenu_lists2 => {
-                child_startmenu_lists2.style.display = "none";
-            });
-        });
-    });
-    document.querySelectorAll('.child_start_menu_lists2').forEach(child_startmenu_lists => {
-        child_startmenu_lists.addEventListener('mouseover', () => {
-            child_startmenu_lists.lastElementChild.style.display = "block";
-        });
-        child_startmenu_lists.addEventListener('mouseleave', () => {
-            document.querySelectorAll('.child_start_menu_lists, .child_start_menu_lists2, .child_start_menu_lists3').forEach(child_startmenu_lists2 => {
-                child_startmenu_lists2.style.display = "none";
-            });
+        menuList.addEventListener('mouseleave', () => {
+            document.querySelectorAll('.child_start_menu_lists, .child_start_menu_lists2, .child_start_menu_lists3')
+                .forEach(childMenuList => childMenuList.style.display = "none");
         });
     });
 
@@ -2553,26 +2525,25 @@ if (ua.includes("mobile")) {
     });
 
     function window_back_silver() {
-        [...document.getElementsByClassName('back_silver')].forEach(back_silver => back_silver.style.background = "silver");
+        Array.from(document.getElementsByClassName('back_silver')).forEach(el => el.style.background = "silver");
     }
 
-    document.querySelectorAll('.child_windows, .child').forEach(z_index_child_windows => {
-        const zindexchildwindows = z_index_child_windows.closest('.child_windows');
+    document.querySelectorAll('.child_windows, .child').forEach(windowElement => {
+        const parentWindow = windowElement.closest('.child_windows');
         const addEventListeners = element => {
             element.addEventListener('mousedown', () => {
-                zindexchildwindows.scrollTop = 0;
-                zindexchildwindows.scrollLeft = 0;
-                zindexchildwindows.style.zIndex = largestZIndex++;
+                parentWindow.scrollTop = 0;
+                parentWindow.scrollLeft = 0;
+                parentWindow.style.zIndex = largestZIndex++;
             });
         };
-        addEventListeners(z_index_child_windows);
-        const iframes = z_index_child_windows.querySelectorAll('iframe');
-        iframes.forEach(iframe => {
+        addEventListeners(windowElement);
+        windowElement.querySelectorAll('iframe').forEach(iframe => {
             iframe.addEventListener('load', () => {
                 try {
-                    const iframeDocument = iframe.contentDocument || iframe.contentWindow.document;
-                    addEventListeners(iframeDocument);
-                    addEventListeners(iframeDocument.body);
+                    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                    addEventListeners(iframeDoc);
+                    addEventListeners(iframeDoc.body);
                 } catch (e) {
                     console.error('iframe no access:', e);
                 }
@@ -2580,14 +2551,14 @@ if (ua.includes("mobile")) {
         });
     });
 
-    document.querySelectorAll('.window_prompt, .child').forEach(window_prompt => {
-        window_prompt.addEventListener('mouseup', () => {
-            document.querySelector('.focus2').focus();
-        });
-    });
+    document.querySelectorAll('.window_prompt, .child').forEach(el =>
+        el.addEventListener('mouseup', () =>
+            document.querySelector('.focus2').focus()
+        )
+    );
 
     function title_navyremove() {
-        document.querySelectorAll('.navy').forEach(navys => navys.classList.remove('navy'));
+        document.querySelectorAll('.navy').forEach(navy => navy.classList.remove('navy'));
     }
 
     function nexser_search() {
@@ -2830,10 +2801,10 @@ if (ua.includes("mobile")) {
                 }, 0);
                 if (!clones && !localStorage.getItem('window_afterimage_false')) {
                     const clone = dragwindow.cloneNode(true);
-                    clone.classList.add('clones');
-                    dragwindow.parentNode.appendChild(clone);
+                    dragwindow.parentNode.appendChild(clone).classList.add('clones');
                     [clone, dragwindow].forEach(el => el.style.zIndex = largestZIndex++);
                     clones = true;
+                    requestAnimationFrame(() => applyStyles(dragwindow));
                 }
                 const drag = document.getElementsByClassName("drag")[0];
                 const event = e.type === "mousemove" ? e : e.changedTouches[0];
@@ -2857,11 +2828,7 @@ if (ua.includes("mobile")) {
                     document.body.removeChild(overlay);
                 }
                 setTimeout(() => {
-                    drag.style.background = "";
-                    drag.style.border = "";
-                    drag.style.outline = "";
-                    drag.style.boxShadow = "";
-                    drag.style.opacity = "";
+                    ["background", "border", "outline", "boxShadow", "opacity"].forEach(style => drag.style[style] = "");
                     Array.from(drag.children).forEach(child => child.style.opacity = "");
                     window_back_silver();
                 }, 0);
@@ -2871,7 +2838,6 @@ if (ua.includes("mobile")) {
                 clones = false;
             }
             button.dataset.listenerAdded = true;
-
         }
     }
     function observeNewElements3() {
@@ -2922,7 +2888,6 @@ if (ua.includes("mobile")) {
     const elm1 = document.getElementById('taskbar');
     const elm2 = document.getElementById('toolbar');
 
-
     document.querySelectorAll('.drag_button2').forEach(drag => {
         let drag2 = drag.closest('#toolbar');
         let x, y;
@@ -2963,52 +2928,45 @@ if (ua.includes("mobile")) {
         drag.addEventListener("touchstart", mdown_2, { passive: false });
     });
 
-
-    document.querySelector('.toolbar_on').addEventListener('click', () => {
-        localStorage.setItem('toolbar_on', true);
-        toolbar.style.display = "block";
-    });
-    document.querySelector('.toolbar_off').addEventListener('click', () => {
-        localStorage.removeItem('toolbar_on');
-        toolbar.style.display = "none";
+    document.querySelectorAll('.toolbar_on, .toolbar_off').forEach((element) => {
+        element.addEventListener('click', () => {
+            const isOn = element.classList.contains('toolbar_on');
+            isOn ? localStorage.setItem('toolbar_on', true) : localStorage.removeItem('toolbar_on');
+            toolbar.style.display = isOn ? "block" : "none";
+        });
     });
 
-    document.querySelector('.filettext_backcolor_off').addEventListener('click', () => {
-        localStorage.setItem('filettext_backcolor_off', true);
-        filettext_backcolor();
-    });
-    document.querySelector('.filettext_backcolor_on').addEventListener('click', () => {
-        localStorage.removeItem('filettext_backcolor_off');
-        filettext_backcolor();
-    });
-
-    document.querySelector('.saver_on').addEventListener('click', function () {
-        localStorage.setItem('saver_on', true);
-        document.querySelector('.saver_mode').textContent = "ON"
-    })
-    document.querySelector('.saver_off').addEventListener('click', function () {
-        localStorage.removeItem('saver_on');
-        document.querySelector('.saver_mode').textContent = "OFF"
-    })
-
-    document.querySelector('.display_old').addEventListener('click', () => {
-        localStorage.setItem('display_old', true);
-        old_screen();
-    });
-    document.querySelector('.display_now').addEventListener('click', () => {
-        localStorage.removeItem('display_old');
-        old_screen_reset();
+    document.querySelectorAll('.filettext_backcolor_off, .filettext_backcolor_on').forEach((element) => {
+        element.addEventListener('click', () => {
+            const isOff = element.classList.contains('filettext_backcolor_off');
+            isOff ? localStorage.setItem('filettext_backcolor_off', true) : localStorage.removeItem('filettext_backcolor_off');
+            filettext_backcolor();
+        });
     });
 
-    document.querySelector('.list_shadow_on').addEventListener('click', () => {
-        localStorage.setItem('list_shadow_on', true);
-        list_shadow();
-    });
-    document.querySelector('.list_shadow_off').addEventListener('click', () => {
-        localStorage.removeItem('list_shadow_on');
-        list_shadow_reset();
+    document.querySelectorAll('.saver_on, .saver_off').forEach((element) => {
+        element.addEventListener('click', () => {
+            const isOn = element.classList.contains('saver_on');
+            isOn ? localStorage.setItem('saver_on', true) : localStorage.removeItem('saver_on');
+            document.querySelector('.saver_mode').textContent = isOn ? "ON" : "OFF";
+        });
     });
 
+    document.querySelectorAll('.display_old, .display_now').forEach((element) => {
+        element.addEventListener('click', () => {
+            const isOld = element.classList.contains('display_old');
+            isOld ? localStorage.setItem('display_old', true) : localStorage.removeItem('display_old');
+            isOld ? old_screen() : old_screen_reset();
+        });
+    });
+
+    document.querySelectorAll('.list_shadow_on, .list_shadow_off').forEach((element) => {
+        element.addEventListener('click', () => {
+            const isOn = element.classList.contains('list_shadow_on');
+            isOn ? localStorage.setItem('list_shadow_on', true) : localStorage.removeItem('list_shadow_on');
+            isOn ? list_shadow() : list_shadow_reset();
+        });
+    });
 
     const KEY_COLOR = "COLOR";
     const KEY_BKCOLOR = "BKCOLOR";
@@ -5100,13 +5058,10 @@ if (ua.includes("mobile")) {
                 }
                 if (!clones && !localStorage.getItem('window_afterimage_false')) {
                     const clone = resizer2.cloneNode(true);
-                    resizer2.parentNode.appendChild(clone);
-                    clone.classList.add('clones');
+                    resizer2.parentNode.appendChild(clone).classList.add('clones');
                     [clone, resizer2].forEach(el => el.style.zIndex = largestZIndex++);
                     clones = true;
-                    setTimeout(() => {
-                        applyStyles(resizer2)
-                    }, 0);
+                    requestAnimationFrame(() => applyStyles(resizer2));
                 }
                 taskbar.addEventListener('mousemove', stopResize);
             }
@@ -6284,9 +6239,9 @@ if (ua.includes("mobile")) {
 
     document.querySelectorAll('.windowtool_buttons_child').forEach(windowtool_buttons_child => {
         const windowtool_childbtns = document.createElement('div');
-        windowtool_childbtns.innerHTML = `<button class="button2 windowfile2" style="width: 25px;">・</button>
-        <button class="button2 windowfile1" style="width: 25px;">ー</button>
-        <button class="button2 windowfile3" style="width: 25px;">=</button>
+        windowtool_childbtns.innerHTML = `<button class="button2 windowfile2 bold" style="width: 25px;">・</button>
+        <button class="button2 windowfile1 bold" style="width: 25px;">ー</button>
+        <button class="button2 windowfile3 bold" style="width: 25px;">=&nbsp;=</button>
         <button class="button2 nexser_search" style="width: 25px;">&nbsp;<span class="magnifying_glass"></span></button>
         <button class="button2" onclick="filetimes_test()" style="width: 25px; margin-left: 10px;">TR</button>
          <button class="button2" onclick="filetimes_test2()" style="width: 25px;">TF</button>`;
