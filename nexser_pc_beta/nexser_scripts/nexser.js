@@ -3583,21 +3583,14 @@ if (ua.includes("mobile")) {
     }
 
     function onChange() {
-        resizeTextarea()
-        let spaceCount = 0;
-        const inputText = Array.from(note_area.value);
-        const textCount = inputText.length;
-        // 正規表現で空白を数をカウント
-        inputText.forEach(space => {
-            if (space.match(/\s/)) {
-                spaceCount++
-            }
-        });
+        resizeTextarea();
+        const noteAreaValue = note_area.value;
+        const spaceCount = (noteAreaValue.match(/\s/g) || []).length;
+        const textCount = noteAreaValue.length;
         document.getElementById('memo_save_text').textContent = "";
         if (!localStorage.getItem('noteData')) {
-            document.querySelector('.note_title').textContent = "*notepad"
+            document.querySelector('.note_title').textContent = "*notepad";
         }
-        // 文字数を表示
         textCountElement.innerHTML = textCount - spaceCount;
     }
 
@@ -6028,22 +6021,20 @@ if (ua.includes("mobile")) {
     }
 
     function bigwindow_resize() {
-        document.querySelectorAll('.big:not(.minimization),.leftwindow:not(.minimization),.rightwindow:not(.minimization)').forEach(allbig => {
-            if (isAnimating == false && localStorage.getItem('taskbar_autohide') && taskbar.style.bottom == "") {
-                setTimeout(() => {
+        const taskbarHeight = `calc(100% - ${taskbar.clientHeight}px)`;
+        const taskbarAutoHide = localStorage.getItem('taskbar_autohide');
+        const taskbarBottomEmpty = taskbar.style.bottom === "";
+        const elements = document.querySelectorAll('.big:not(.minimization),.leftwindow:not(.minimization),.rightwindow:not(.minimization)');
+        elements.forEach(allbig => {
+            if (!isAnimating) {
+                requestAnimationFrame(() => {
                     allbig.style.width = "";
-                    allbig.style.height = `calc(100% - ${taskbar.clientHeight}px)`;
-                }, 0);
-            } else if (isAnimating == false && localStorage.getItem('taskbar_autohide')) {
-                setTimeout(() => {
-                    allbig.style.width = "";
-                    allbig.style.height = "";
-                }, 0);
-            } else if (isAnimating == false) {
-                setTimeout(() => {
-                    allbig.style.width = "";
-                    allbig.style.height = `calc(100% - ${taskbar.clientHeight}px)`;
-                }, 0);
+                    if (taskbarAutoHide) {
+                        allbig.style.height = taskbarBottomEmpty ? taskbarHeight : "";
+                    } else {
+                        allbig.style.height = taskbarHeight;
+                    }
+                });
             }
         });
         document.querySelectorAll('iframe,video,img').forEach(allbig => {
