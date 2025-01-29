@@ -58,6 +58,7 @@ if (ua.includes("mobile")) {
     const nexser = document.getElementById('nexser');
     const nexser_program = document.getElementById('nexser_program');
     const desktop = document.getElementById('desktop');
+    const pattern_backgrounds = document.getElementsByClassName('pattern_backgrounds')[0];
     const files_inline = document.querySelector('.files_inline');
     const fileElements = document.querySelectorAll('.window_files');
     const z_index = document.querySelector('.z_index');
@@ -598,10 +599,10 @@ if (ua.includes("mobile")) {
         if (localStorage.getItem('deskprompt')) {
             nexser_program.style.display = "block";
             desktop.style.display = "none";
-            document.getElementsByClassName('pattern_backgrounds')[0].style.display = "none";
+            pattern_backgrounds.style.display = "none";
             nex.style.cursor = 'crosshair';
         } else {
-            document.getElementsByClassName('pattern_backgrounds')[0].style.display = "block";
+            pattern_backgrounds.style.display = "block";
         }
 
         if (screen_prompt.style.display === "block" && localStorage.getItem('auto_startup')) {
@@ -696,7 +697,7 @@ if (ua.includes("mobile")) {
         document.querySelectorAll('video').forEach(video => video.pause());
         func2();
         desktop.style.display = "none";
-        document.getElementsByClassName('pattern_backgrounds')[0].style.display = "none";
+        pattern_backgrounds.style.display = "none";
         welcome_menu.classList.add('active');
         welcome_menu.classList.remove('selectwindows');
         nex.style.cursor = 'crosshair';
@@ -724,7 +725,7 @@ if (ua.includes("mobile")) {
             localStorage.removeItem('deskprompt');
             setTimeout(() => {
                 desktop.style.display = "block";
-                document.getElementsByClassName('pattern_backgrounds')[0].style.display = "block";
+                pattern_backgrounds.style.display = "block";
             }, 500);
         }
 
@@ -895,7 +896,7 @@ if (ua.includes("mobile")) {
             }, 100)
             setTimeout(() => {
                 nex.style.cursor = 'progress';
-                document.querySelector('.pattern_backgrounds').style.display = "block";
+                pattern_backgrounds.style.display = "block";
             }, 100);
         } else {
             func1();
@@ -914,7 +915,7 @@ if (ua.includes("mobile")) {
             }, 1500);
             setTimeout(() => {
                 nex.style.cursor = 'progress';
-                document.querySelector('.pattern_backgrounds').style.display = "block";
+                pattern_backgrounds.style.display = "block";
             }, 2000);
         }
     }
@@ -956,7 +957,7 @@ if (ua.includes("mobile")) {
                             prompt_text.style.color = "";
                             nexser.style.display = "none";
                             screen_prompt.style.display = "block";
-                            document.getElementsByClassName('focus')[0].focus();
+                            prompt_text_value.focus();
                             nex.style.cursor = '';
                         }, 500);
                     }, 1000);
@@ -2647,8 +2648,8 @@ if (ua.includes("mobile")) {
         note_child.style.height = `${note_parent.clientHeight - 105}px`;
         const hehehe1 = note_parent.firstElementChild;
         if (hehehe1.classList.contains('navy')) {
-            note_area.focus()
-            displayCursorPos()
+            note_area.focus();
+            displayCursorPos();
         }
     };
 
@@ -3291,7 +3292,6 @@ if (ua.includes("mobile")) {
             document.querySelector('.test_notetext').style.fontWeight = "bold";
         }
     }
-
     function notetext_all_oblique() {
         localStorage.setItem('note_text_oblique', true);
         notetitle();
@@ -3356,25 +3356,22 @@ if (ua.includes("mobile")) {
     }
 
     function save2() {
-        let textdropdata = document.drop_form.drop_area.value;
-        localStorage.setItem('textdropdata', textdropdata);
-        const memo_save2 = document.getElementById('drop_save_text');
-        memo_save2.textContent = "drop text data save!";
+        localStorage.setItem('textdropdata', document.drop_form.drop_area.value);
+        document.getElementById('drop_save_text').textContent = "drop text data save!";
     }
 
     function objective_save() {
-        if (objective_form.objective_area.value == "" && objective_title_form.objective_title_area.value == "") {
+        const titleValue = objective_title_form.objective_title_area.value.trim();
+        const contentValue = objective_form.objective_area.value.trim();
+        if (titleValue === "" && contentValue === "") {
             noticewindow_create("error", "タイトルと内容が入力されていません!", "&nbsp;objective sheet");
-        } else if (objective_title_form.objective_title_area.value == "") {
+        } else if (titleValue === "") {
             noticewindow_create("error", "タイトルが入力されていません!", "&nbsp;objective sheet");
-        } else if (objective_form.objective_area.value == "") {
+        } else if (contentValue === "") {
             noticewindow_create("error", "内容が入力されていません!", "&nbsp;objective sheet");
-        }
-        if (!objective_title_form.objective_title_area.value == "" && !objective_form.objective_area.value == "") {
-            let objectiveTitleData = document.objective_title_form.objective_title_area.value;
-            localStorage.setItem('objectiveTitleData', objectiveTitleData);
-            let objectiveData = document.objective_form.objective_area.value;
-            localStorage.setItem('objectiveData', objectiveData);
+        } else {
+            localStorage.setItem('objectiveTitleData', titleValue);
+            localStorage.setItem('objectiveData', contentValue);
             localStorage.removeItem('objective_area');
             document.querySelector('.objective_title').textContent = "objective sheet(save)";
         }
@@ -3604,7 +3601,6 @@ if (ua.includes("mobile")) {
     function objective_load() {
         const objectiveTitleData = localStorage.getItem('objectiveTitleData') || '';
         const objectiveData = localStorage.getItem('objectiveData') || '';
-
         document.objective_title_form.objective_title_area.value = objectiveTitleData;
         document.objective_form.objective_area.value = objectiveData;
     }
@@ -3621,11 +3617,9 @@ if (ua.includes("mobile")) {
 
     function load2() {
         const textdropdata = localStorage.getItem('textdropdata') || '';
-        const memo_save2 = document.getElementById('drop_save_text');
-        memo_save2.textContent = textdropdata ? 'text data save keep' : '';
+        document.getElementById('drop_save_text').textContent = textdropdata ? 'text data save keep' : '';
         document.drop_form.drop_area.value = textdropdata;
     }
-
 
     let dr = document.querySelector('#drop');
     dr.addEventListener('dragover', supportsPassive ? { passive: true } : false, function (evt) {
@@ -3661,20 +3655,17 @@ if (ua.includes("mobile")) {
             child_graph.style.background = "black";
         }
     }
-
     function calc2() {
         calc_result.value = new Function("return " + calc_result.value)();
         calc_result.value = Math.round(calc_result.value);
         calc();
     }
-
     function calc_clear() {
         const child_graph = document.querySelector(".child_graph");
         child_graph.style.height = "0%"
         child_graph.style.background = "";
         calc_result.value = "";
     }
-
     function calc_oneremove() {
         const ca1 = calc_result.value;
         const result = ca1.slice(0, -1);
