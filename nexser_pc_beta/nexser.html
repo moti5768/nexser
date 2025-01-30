@@ -2294,14 +2294,62 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             <span class="minimization_button button2"></span><br>
                         </div>
 
+                        <div class="title2">
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;icon&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="logoff">Logoff</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;window&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="window_half_big">window half big</li>
+                                        <li class="windowsize_reset">window size reset</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                        </div>
+
                         <div class="window_content">
-
-                            <textarea id="editor" class="border2" style="background: whitesmoke;"></textarea>
-
+                            <textarea id="editor" class="border2" style="display: inline; width: 100%; background: whitesmoke; left:
+                            80px;"></textarea>
+                            <div style="position: absolute; left: 0px;">
+                                <ul style="position: absolute; top: 0px;">
+                                    <li class="button2 apply_button"
+                                        onclick="editor_loadFromLocalStorage('HTML1'); editor_setCurrentKey('HTML1')">
+                                        HTML 1</li>
+                                    <li class="button2 apply_button"
+                                        onclick="editor_loadFromLocalStorage('HTML2'); editor_setCurrentKey('HTML2')">
+                                        HTML 2</li>
+                                    <li class="button2 apply_button"
+                                        onclick="editor_loadFromLocalStorage('HTML3'); editor_setCurrentKey('HTML3')">
+                                        HTML 3</li>
+                                    <li class="button2 apply_button"
+                                        onclick="editor_loadFromLocalStorage('HTML4'); editor_setCurrentKey('HTML4')">
+                                        HTML 4</li>
+                                    <li class="button2 apply_button"
+                                        onclick="editor_loadFromLocalStorage('HTML5'); editor_setCurrentKey('HTML5')">
+                                        HTML 5</li>
+                                </ul>
+                                <p class="border2" style="margin: 5px; margin-top: 160px;">SELECT:<br><span
+                                        class="html_mode pointer_none button" style="color: black;">none</span>
+                                </p>
+                            </div>
                             <div class="window_bottom back_silver" style="height: 32.5px; padding-top: 2px;">
                                 <span class="button2 apply_button large bold" onclick="run()"
                                     style="position: absolute; left: 0px; text-align: center;">&nbsp;run&nbsp;</span>
-                                <span class="button2 apply_button large bold" onclick="testcode_save()"
+                                <span class="button2 apply_button large bold" onclick="editor_saveCurrentEditorValue()"
                                     style="position: absolute; left: 80px; text-align: center;">&nbsp;save&nbsp;</span>
                                 <span class="button2 apply_button2 large bold" onclick="testcode_html()"
                                     style="position: absolute; left: 160px; text-align: center;">&nbsp;sample

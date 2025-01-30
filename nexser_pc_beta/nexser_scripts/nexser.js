@@ -2745,7 +2745,7 @@ if (ua.includes("mobile")) {
     const htmlview_parent2 = document.querySelector('.htmlviewer_edit_menu');
     const htmlview_child2 = document.querySelector('#editor');
     const htmlview_resize2 = () => {
-        htmlview_child2.style.width = `${htmlview_parent2.clientWidth - 5}px`;
+        htmlview_child2.style.width = `${htmlview_parent2.clientWidth - 90}px`;
         htmlview_child2.style.height = `${htmlview_parent2.clientHeight - 65}px`;
     };
 
@@ -3940,26 +3940,45 @@ if (ua.includes("mobile")) {
 
     const editor = document.getElementById("editor");
     const preview = document.getElementById("preview");
-
-    function run() {
-        document.querySelectorAll('.htmlviewer_run_menu').forEach(htmlviewer_run_menu => toggleWindow(htmlviewer_run_menu));
-        preview.srcdoc = editor.value;
+    let currentKey = null;
+    function editor_setCurrentKey(key) {
+        currentKey = key;
     }
-
-    function testcode_save() {
-        localStorage.setItem('editor', editor.value);
+    function editor_saveToLocalStorage(key) {
+        const value = editor.value;
+        localStorage.setItem(key, value);
+        noticewindow_create("editor", `${key} をローカルストレージに保存しました!`);
     }
-    const editor2 = localStorage.getItem('editor');
-    editor.textContent = (editor2)
-
+    function editor_loadFromLocalStorage(key) {
+        editor.classList.remove('pointer_none');
+        document.querySelector('.html_mode').textContent = key
+        const value = localStorage.getItem(key);
+        if (value !== null) {
+            editor.value = '';
+            editor.value = value;
+        } else {
+            editor.value = '';
+        }
+    }
+    editor.classList.add('pointer_none');
+    function editor_saveCurrentEditorValue() {
+        if (currentKey !== null) {
+            const value = editor.value;
+            localStorage.setItem(currentKey, value);
+            noticewindow_create("editor", `${currentKey} をローカルストレージに保存しました!`);
+        }
+    }
     function testcode_html() {
         localStorage.removeItem('editor');
         editor.value = '<!DOCTYPE html>\n<html>\n<head>\n<title>document</title>\n</head>\n<body>\n<button onclick="test()">a</button>\n<script>\nfunction test(){\nalert("sample text")\n}\n</script>\n</body>\n</html>'
     }
-
     function testcode_clear() {
         localStorage.removeItem('editor');
         editor.value = '';
+    }
+    function run() {
+        document.querySelectorAll('.htmlviewer_run_menu').forEach(htmlviewer_run_menu => toggleWindow(htmlviewer_run_menu));
+        preview.srcdoc = editor.value;
     }
 
     function preview2(obj, previewId) {
@@ -5051,6 +5070,7 @@ if (ua.includes("mobile")) {
             }
             function stopResize() {
                 const resizer2 = resizer.closest('.child_windows');
+                taskbar.removeEventListener('mousemove', stopResize);
                 window.removeEventListener('mousemove', resize);
                 window.removeEventListener('mouseup', stopResize);
                 if (overlay.parentNode) {
@@ -5064,6 +5084,9 @@ if (ua.includes("mobile")) {
                     Array.from(resizer2.children).forEach(child => child.style.opacity = "");
                     document.querySelector('.clones').remove();
                 }
+                setTimeout(() => {
+                    window_back_silver();
+                }, 0);
                 clones = false;
             }
         });
