@@ -2746,7 +2746,7 @@ if (ua.includes("mobile")) {
     const htmlview_child2 = document.querySelector('#editor');
     const htmlview_resize2 = () => {
         htmlview_child2.style.width = `${htmlview_parent2.clientWidth - 90}px`;
-        htmlview_child2.style.height = `${htmlview_parent2.clientHeight - 65}px`;
+        htmlview_child2.style.height = `${htmlview_parent2.clientHeight - 90}px`;
     };
 
     const editor2_parent = document.querySelector('.editor_menu');
