@@ -6189,7 +6189,7 @@ if (ua.includes("mobile")) {
 
     document.querySelectorAll('.window_tool').forEach(windowtool_files => {
         const windowtool_files_parent = document.createElement('div');
-        windowtool_files_parent.innerHTML = `<span class="winchild_border"></span><div class="windowtool_parent"><span class="startmenu_file_icon"></span>
+        windowtool_files_parent.innerHTML = `<span class="bold" style="position: absolute; margin-top: 5px;">Address</span><span class="winchild_border"></span><div class="windowtool_parent"><span class="startmenu_file_icon"></span>
                                 <button class="button2" style="height: 20px; font-size: large; float: right;">&#x25BC;</button>
                                       &emsp;&emsp;<span class="windowtool_child_filenames"></span>
                                 <div class="windowtool_child">
@@ -6284,6 +6284,16 @@ if (ua.includes("mobile")) {
             }
         }, 100);
         windowtool_buttons_child.appendChild(windowtool_childbtns)
+    });
+
+    document.querySelectorAll('.file_windows').forEach(file_windows => {
+        const titleElement = file_windows.querySelector('.title');
+        const lastChildElement = titleElement.lastElementChild;
+        const test3 = file_windows.children[4];
+        const file_windows_parent = document.createElement('div');
+        file_windows_parent.innerHTML = `<div class="x-large bold" style="text-shadow: 4px 4px 2px dimgray;">${lastChildElement.textContent}</div>`;
+        test3.insertBefore(file_windows_parent, test3.firstChild);
+        console.log(lastChildElement)
     });
 
     function filetimes_test() {

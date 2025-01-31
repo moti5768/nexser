@@ -1453,7 +1453,7 @@ body::-webkit-scrollbar {
     height: 25px;
     position: absolute;
     top: 53px;
-    left: 210px;
+    left: 270px;
 }
 
 .windowtool_buttons_child {
@@ -1468,7 +1468,9 @@ body::-webkit-scrollbar {
     border: 1.5px solid;
     border-color: black black dimgray black;
     outline: solid 0.5px gray;
-    margin-top: 4px;
+    position: absolute;
+    top: 55px;
+    margin-left: 60px;
 }
 
 .windowtool_child {
@@ -1480,7 +1482,8 @@ body::-webkit-scrollbar {
     border: solid 1.5px dimgray;
     outline: solid 1px black;
     position: absolute;
-    top: 80px;
+    top: 20px;
+    left: -2px;
     font-size: medium;
     text-align: left;
     justify-content: center;
