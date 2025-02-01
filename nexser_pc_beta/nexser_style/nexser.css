@@ -485,13 +485,20 @@ input[type="file"] {
     height: 30px;
 }
 
+#taskbar .task_icons.flex {
+    margin-top: 7px;
+    height: 30px;
+    display: flex;
+    width: 100%;
+}
+
 .task_icons .task_buttons {
     display: block;
     box-sizing: border-box;
     float: left;
     margin-left: 1px;
     margin-right: 1px;
-    width: 145px;
+    width: 140px;
     height: 26.5px;
     white-space: nowrap;
     overflow: hidden;
@@ -742,8 +749,8 @@ input[type="file"] {
 }
 
 .note_pad {
-    width: 600px;
-    height: 400px;
+    width: 750px;
+    height: 450px;
 }
 
 .debug_menu {
@@ -1416,7 +1423,7 @@ body::-webkit-scrollbar {
     position: relative;
     top: 0px;
     line-height: 25px;
-    z-index: 1;
+    z-index: 2;
 }
 
 .title2 li:hover {
@@ -1434,6 +1441,7 @@ body::-webkit-scrollbar {
     -ms-user-select: none;
     user-select: none;
     flex: 0 0 auto;
+    z-index: 1;
 }
 
 .window_tool_2 {
