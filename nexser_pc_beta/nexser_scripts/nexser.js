@@ -4571,8 +4571,8 @@ if (ua.includes("mobile")) {
     navigator.mediaDevices.enumerateDevices()
         .then((devices) => {
             devices.forEach((device) => {
-                document.querySelector('.device_text').innerHTML = (device.kind + ": " + device.label +
-                    " id = " + device.deviceId);
+                document.querySelector('.device_text').innerHTML = (device.kind + ": " + device.label + "<br>" +
+                    " id = " + device.deviceId + "<br>" + "group = " + device.groupId);
             });
         })
         .catch((error) => {
