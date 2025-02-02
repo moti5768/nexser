@@ -6897,7 +6897,7 @@ if (ua.includes("mobile")) {
         const data = e.dataTransfer.getData('text/plain');
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = data;
-        const firstChild = tempDiv.firstChild;
+        const firstChild = tempDiv.firstElementChild;
         if (firstChild && firstChild.classList.contains('window_files')) {
             const droppedContent = firstChild.querySelector('li').innerHTML;
             const existingFile = Array.from(document.querySelectorAll('.desktop_files')).find(item => item.innerHTML.includes(droppedContent));
