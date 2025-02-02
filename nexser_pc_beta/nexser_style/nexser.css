@@ -775,25 +775,6 @@ input[type="file"] {
     width: 200px;
 }
 
-.youtubevideo_menu {
-    width: 800px;
-    height: 500px;
-    min-width: 250px;
-}
-
-#youtubeframe {
-    height: 400px;
-    width: 700px;
-    position: absolute;
-    top: 22.5px;
-}
-
-.uploadvideo_menu {
-    width: 600px;
-    height: 400px;
-    min-width: 250px;
-}
-
 .device_menu {
     width: 600px;
     height: auto;
@@ -803,6 +784,7 @@ input[type="file"] {
 .text_drop_menu {
     height: 300px;
     width: 500px;
+    min-width: 200px;
 }
 
 #drop {
@@ -818,12 +800,6 @@ input[type="file"] {
     width: 500px;
     height: 400px;
     min-width: 300px;
-}
-
-.url_drop_menu {
-    width: 400px;
-    height: 300px;
-    min-width: 200px;
 }
 
 .url_droplist_menu {
@@ -881,10 +857,6 @@ input[type="file"] {
 
 .delete_btn {
     margin: 2px;
-}
-
-#v {
-    position: absolute;
 }
 
 /* color_btn */
@@ -1888,6 +1860,7 @@ body::-webkit-scrollbar {
     width: 100%;
     height: 100%;
     background: whitesmoke;
+    box-sizing: border-box;
 }
 
 .window_inline_list {
@@ -1994,8 +1967,6 @@ body::-webkit-scrollbar {
     background: white;
     overflow: scroll;
     white-space: nowrap;
-    width: 100%;
-    height: 100%;
     resize: none;
     position: absolute;
 }
@@ -2008,6 +1979,12 @@ textarea {
     padding: 2.5px;
 }
 
+.no_over {
+    width: 100%;
+    height: calc(100% - 100px);
+    box-sizing: border-box;
+}
+
 /* objective */
 
 .objective_menu {
@@ -2017,18 +1994,16 @@ textarea {
 }
 
 .objective_title_area {
-    position: absolute;
     background: white;
     white-space: nowrap;
 }
 
 .objective_area {
-    margin-top: 60px;
     background: whitesmoke;
     white-space: nowrap;
     resize: none;
     font-size: large;
-    position: absolute;
+    height: 100%;
 }
 
 /* paint */
@@ -2546,8 +2521,7 @@ progress::-webkit-progress-value {
 
 .window_prompt_content2 {
     background-color: black;
-    position: absolute;
-    top: 50px;
+    position: relative;
 }
 
 .command_input2 {
@@ -2759,7 +2733,6 @@ progress::-webkit-progress-value {
     width: 10px;
     height: 10px;
     position: absolute;
-    z-index: 1;
     margin: -2.5px;
 }
 
@@ -2778,7 +2751,7 @@ progress::-webkit-progress-value {
     z-index: 2;
     width: 12.5px;
     height: 12.5px;
-    z-index: 2;
+    z-index: 3;
 }
 
 .resizer.top-right {
@@ -2788,7 +2761,7 @@ progress::-webkit-progress-value {
     z-index: 2;
     width: 12.5px;
     height: 12.5px;
-    z-index: 2;
+    z-index: 3;
 }
 
 .resizer.bottom-left {
@@ -2798,7 +2771,7 @@ progress::-webkit-progress-value {
     z-index: 2;
     width: 12.5px;
     height: 12.5px;
-    z-index: 2;
+    z-index: 3;
 }
 
 .resizer.bottom-right {
@@ -2808,7 +2781,7 @@ progress::-webkit-progress-value {
     z-index: 2;
     width: 15px;
     height: 15px;
-    z-index: 2;
+    z-index: 3;
 }
 
 .resizer.top {
@@ -2817,7 +2790,7 @@ progress::-webkit-progress-value {
     transform: translateX(-50%);
     cursor: ns-resize;
     width: 100%;
-    z-index: 1;
+    z-index: 2;
 }
 
 .resizer.right {
@@ -2826,7 +2799,7 @@ progress::-webkit-progress-value {
     transform: translateY(-50%);
     cursor: ew-resize;
     height: 100%;
-    z-index: 1;
+    z-index: 2;
 }
 
 .resizer.bottom {
@@ -2835,7 +2808,7 @@ progress::-webkit-progress-value {
     transform: translateX(-50%);
     cursor: ns-resize;
     width: 100%;
-    z-index: 1;
+    z-index: 2;
 }
 
 .resizer.left {
@@ -2844,7 +2817,7 @@ progress::-webkit-progress-value {
     transform: translateY(-50%);
     cursor: ew-resize;
     height: 100%;
-    z-index: 1;
+    z-index: 2;
 }
 
 /* memory_game */

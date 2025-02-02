@@ -654,7 +654,7 @@
                                 <input type="button" id="cleartextbtn" class="button2" value="&emsp;clear&emsp;">
                             </div>
                             <form name="note_form" class="note_forms">
-                                <textarea id="note_text" name="note_area" class="note_area border2" cols="50"
+                                <textarea id="note_text" name="note_area" class="note_area border2 no_over" cols="50"
                                     rows="15"></textarea>
                             </form>
                         </div>
@@ -714,7 +714,7 @@
 
                         </div>
 
-                        <div class="window_contents back_silver" style="height: 100%;">
+                        <div class="window_contents back_silver scrollbar_none">
                             <div>
                                 <input type="button" class="button2" value="&emsp;save&emsp;"
                                     onclick="objective_save()">
@@ -724,7 +724,7 @@
                                 <input type="button" class="button2" value="&emsp;Data clear&emsp;"
                                     onclick="objectiveData_clear()">
                             </div>
-                            <p style="display: inline;" class="border2">タイトルを入力:</p>
+                            <span class="border2">タイトルを入力:</span>
                             <form name="objective_title_form" style="display: inline;"
                                 onkeydown="if(event.keyCode == 13){return false;}">
                                 <textarea id="objective_title_text" name="objective_title_area"
@@ -732,11 +732,13 @@
                                     style="resize: none; width: 500px; height: 20px; font-size: large;" cols="1"
                                     rows="1"></textarea>
                             </form>
-                            <p class="border2" style="display: inline; position: absolute; top: 130px; left: 0px;">
-                                目標を記入:</p>
-                            <form name="objective_form">
-                                <textarea id="objective_text" name="objective_area" class="objective_area border2"
-                                    style="overflow: scroll;" cols="50" rows="15"></textarea>
+                            <span class="border2 medium">
+                                目標を記入:</span>
+                            <form name="objective_form" class="no_over">
+                                <textarea id=" objective_text" name="objective_area"
+                                    class="objective_area border2 no_over" style="overflow: scroll;" cols="50"
+                                    rows="15">
+                                </textarea>
                             </form>
                         </div>
                     </div>
@@ -857,9 +859,6 @@
                                 <div class="window_files test_button18">
                                     <li>camera</li><span class="window_file_icon"></span>
                                 </div>
-                                <div class="window_files test_button21">
-                                    <li>video upload</li><span class="window_file_icon"></span>
-                                </div>
                                 <div class="window_files test_button19">
                                     <li>htmlviewer edit</li><span class="window_file_icon"></span>
                                 </div>
@@ -884,9 +883,6 @@
                                 <div class="window_files test_button32">
                                     <li>cpu bench</li><span class="window_file_icon"></span>
                                 </div>
-                                <div class="window_files test_button36">
-                                    <li>youtube video url</li><span class="window_file_icon"></span>
-                                </div>
                                 <div class="window_files test_button38">
                                     <li>omikuji</li><span class="window_file_icon"></span>
                                 </div>
@@ -895,9 +891,6 @@
                                 </div>
                                 <div class="window_files test_button41">
                                     <li>othello</li><span class="window_file_icon"></span>
-                                </div>
-                                <div class="window_files test_button43">
-                                    <li>url drop</li><span class="window_file_icon"></span>
                                 </div>
                                 <div class="window_files test_button44">
                                     <li>memory game</li><span class="window_file_icon"></span>
@@ -1611,7 +1604,7 @@
                         </div>
 
                         <div class="window_contents window_prompt_content2">
-                            <div id="prompt2" class="prompt_content">
+                            <div id="prompt2" class="prompt_content no_over">
                                 <p>[nexser prompt beta version 1.8]</p>
                                 <div id="form_container">
                                     <div class="input_container">
@@ -1636,8 +1629,9 @@
                             <span class="minscreen_button button2"></span>
                             <span class="minimization_button button2"></span><br>
                         </div>
-                        <div class="window_content">
-                            <textarea id="shell"></textarea>
+                        <div class="window_contents" style="position: relative;">
+                            <textarea id="shell" class="no_over"
+                                style="resize: none; height: 100%; width: 100%;"></textarea>
                         </div>
                     </div>
 
@@ -2195,21 +2189,44 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                             <span class="minimization_button button2"></span><br>
                         </div>
 
-                        <div class="window_content back_silver">
-                            <div>
-                                <input type="button" class="button2" value="&emsp;save&emsp;" onclick="save2()">
-                                <input type="button" class="button2" value="&emsp;load&emsp;" onclick="load2()">
-                                <input type="button" id="cleartextbtn2" class="button2" value="&emsp;clear&emsp;">
+                        <div class="title2">
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;icon&emsp;</li>
+                                </ul>
+                                <div class="child_list" style="display: none;">
+                                    <ul>
+                                        <li class="logoff">Logoff</li>
+                                    </ul>
+                                </div>
                             </div>
-                            <div>
-                                <form name="drop_form" action="" class="border2">
-                                    <textarea name="drop_area" class="drop_area" id="drop" cols="50" rows="10"
-                                        maxlength="0"
-                                        style="border: none; resize: none; background: whitesmoke; color: black; height: 100vh; width: 100%;"></textarea>
-                                </form>
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;window&emsp;</li>
+                                </ul>
+                                <div class="child_list" style="display: none;">
+                                    <ul>
+                                        <li class="window_fullleft">window full left</li>
+                                        <li class="window_fullright">
+                                            window full right</li>
+                                        <li class="window_half_big">window half big</li>
+                                        <li class="windowsize_reset">window size reset</li>
+                                    </ul>
+                                </div>
                             </div>
                         </div>
-                        <div class="window_bottom">
+
+                        <div class="window_content back_silver">
+                            <input type="button" class="button2" value="&emsp;save&emsp;" onclick="save2()">
+                            <input type="button" class="button2" value="&emsp;load&emsp;" onclick="load2()">
+                            <input type="button" id="cleartextbtn2" class="button2" value="&emsp;clear&emsp;">
+                            <form name="drop_form" action="" class="border2" style="display: flex;">
+                                <textarea name="drop_area" class="drop_area no_over" id="drop" cols="50" rows="10"
+                                    maxlength="0"
+                                    style="border: none; resize: none; background: whitesmoke; color: black;"></textarea>
+                            </form>
+                        </div>
+                        <div class="window_bottom" style="position: absolute;">
                             <span id="drop_save_text" class="border2">no save</span>
                         </div>
                     </div>
@@ -2414,34 +2431,6 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         </div>
                         <div class="html_view">
                             <iframe id="preview" class="border2" loading="lazy"></iframe>
-                        </div>
-                    </div>
-
-                    <div class="child_windows uploadvideo_menu resize active">
-                        <div class="title">
-                            <span class="title_icon"></span><span>video upload</span>
-                        </div>
-                        <div class="title_buttons">
-                            <span class="drag_button">&nbsp;</span>
-                            <span class="close_button button2"></span>
-                            <span class="bigscreen_button button2"></span>
-                            <span class="minscreen_button button2"></span>
-                            <span class="minimization_button button2"></span>
-                            <span class="frame_fullbutton button2"></span><br>
-                        </div>
-                        <div class="window_contents back_silver">
-                            <video class="preview2" id="previewVideo2" controls="controls" width="560px"
-                                playsinline></video>
-                            <div style="display: flex; position: absolute; bottom: 0px;">
-                                <span class="button2 apply_button" style="width: 50px; height: 30px;"
-                                    onclick="preview2_play()">&nbsp;▶&nbsp;</span>
-                                <span class="button2 apply_button" style="width: 50px; height: 30px;"
-                                    onclick="preview2_stop()">&nbsp;||&nbsp;</span>
-                                <label class="button2 apply_button2">
-                                    <input type="file" accept='video/*' onchange="preview2(this, 'previewVideo2')"
-                                        placeholder="">動画のアップロード
-                                </label>
-                            </div>
                         </div>
                     </div>
 
@@ -2970,51 +2959,6 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                         </div>
                     </div>
 
-                    <div class="child_windows youtubevideo_menu resize active">
-                        <div class="title">
-                            <span class="title_icon"></span><span>youtube video url</span>
-                        </div>
-                        <div class="title_buttons">
-                            <span class="drag_button">&nbsp;</span>
-                            <span class="close_button button2" onclick="videourl_reset()"></span>
-                            <span class="bigscreen_button button2"></span>
-                            <span class="minscreen_button button2"></span>
-                            <span class="minimization_button button2"></span>
-                            <span class="frame_fullbutton button2"></span><br>
-                        </div>
-
-                        <div class="window_content back_silver">
-                            <iframe id="youtubeframe" frameborder="0"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                referrerpolicy="strict-origin-when-cross-origin" allowfullscreen
-                                loading="lazy"></iframe>
-
-                            <div style="float: left; display: flex; height: 25px;" class="window_bottom">
-                                <span style="display: block; height: auto; margin-left: 5px;"
-                                    class="button2 apply_button" id="youtube_play">再生</span>
-                                <span style="display: block; height: auto; margin-left: 5px;"
-                                    class="button2 apply_button" id="youtube_pause">ストップ</span>
-                                <span style="display: block; height: auto; margin-left: 5px;"
-                                    class="button2 apply_button" id="youtube_stop">最初から</span>
-                                <span style="display: block; height: auto; margin-left: 5px;"
-                                    class="button2 apply_button" id="youtube_seek">移動</span>
-                                <span style="display: block; height: auto; margin-left: 5px;"
-                                    class="button2 apply_button" id="youtube_mute">消音</span>
-                                <span style="display: block; height: auto; margin-left: 5px;"
-                                    class="button2 apply_button" id="youtube_unmute">解除</span>
-                                <span class="small border" style="text-align: center;">Youtube URL</span>
-                                <input type="text" id="youtube" autocomplete="off" class="border2" value=""
-                                    style="width: 40%;"></input>
-                                <button style="width: 30px; margin-left: 2.5px; margin-right: 2.5px;"
-                                    class="youtubevideo_button button2 small">見る</button>
-                                <button style="width: 75px; margin-left: 2.5px; margin-right: 2.5px;"
-                                    class="button2 small" onclick="url_save()">URLの保存</button>
-                                <button style="width: 75spx; margin-left: 2.5px; margin-right: 2.5px;"
-                                    class="button2 small" onclick="url_remove()">URLの削除</button>
-                            </div>
-                        </div>
-                    </div>
-
                     <div class="child_windows device_menu back_silver active">
                         <div class="title">
                             <span class="title_icon"></span><span>device</span>
@@ -3196,33 +3140,6 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
 
                         <div class="window_contents border2 back_silver">
                             <div id="nexser_files_output"></div>
-                        </div>
-                    </div>
-
-                    <div class="child_windows url_drop_menu resize active">
-                        <div class="title">
-                            <span class="title_icon"></span><span>url drop</span>
-                        </div>
-                        <div class="title_buttons">
-                            <span class="drag_button">&nbsp;</span>
-                            <span class="close_button button2" onclick="urldrop_reset()"></span>
-                            <span class="bigscreen_button button2"></span>
-                            <span class="minscreen_button button2"></span>
-                            <span class="minimization_button button2"></span>
-                            <span class="frame_fullbutton button2"></span><br>
-                        </div>
-                        <div class="window_contents">
-                            <div class="url_drop_area" style="position: absolute;">
-                                <div id="dropzone" style="width: 100%; height: 100%; border: 2px dashed #000;">
-                                    ドラッグしたURLをここにドロップ
-                                </div>
-                                <iframe id="url_iframe"
-                                    style="display: none; width: 100%; height: 100%; border: none; position: absolute; top: 0; left: 0;"
-                                    loading="lazy"></iframe>
-                            </div>
-                        </div>
-                        <div class="window_bottom">
-                            <span class="button2" onclick="urldrop_reset()">URL Reset</span>
                         </div>
                     </div>
 
@@ -4016,10 +3933,6 @@ conic-gradient(at 5% 45%, #ccaaaa 90deg, transparent 90deg) 0px 0px/20px 20px, c
                                             </div>
                                             <div class="test_button18 hover_blue">
                                                 <span>&emsp;&emsp;camera</span><span class="startmenu_file_icon"></span>
-                                            </div>
-                                            <div class="test_button21 hover_blue">
-                                                <span>&emsp;&emsp;video upload</span><span
-                                                    class="startmenu_file_icon"></span>
                                             </div>
                                             <div class="test_button19 hover_blue">
                                                 <span>&emsp;&emsp;htmlviewer edit</span><span
