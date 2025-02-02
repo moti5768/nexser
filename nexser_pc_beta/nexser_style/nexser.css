@@ -1289,23 +1289,37 @@ body::-webkit-scrollbar {
 
 /* desktop_icon */
 
+.files_inline {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    height: 95vh;
+    align-content: flex-start;
+    padding-top: 15px;
+}
+
 .desktop_files {
-    display: block;
+    display: flex;
+    flex-direction: column;
+    margin-left: 5px;
+    color: white;
     position: relative;
     padding-top: 45px;
     width: 110px;
-    color: white;
-    left: 5px;
-    top: 5px;
 }
 
 .desktop_files_text {
-    padding-left: 5px;
-    padding-right: 5px;
     background: #52adad;
     pointer-events: none;
-    position: absolute;
-    bottom: 0;
+    position: relative;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    padding-left: 2.5px;
+    padding-right: 2.5px;
+    max-width: max-content;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    white-space: pre-wrap;
 }
 
 .desktop_files_text.file_select {
@@ -1319,8 +1333,8 @@ body::-webkit-scrollbar {
     display: inline-block;
     vertical-align: middle;
     line-height: 1;
-    position: relative;
-    top: -32.5px;
+    position: absolute;
+    top: 0px;
     left: 5px;
     width: 4.20em;
     height: 2.90em;

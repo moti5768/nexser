@@ -2464,15 +2464,6 @@ if (ua.includes("mobile")) {
         });
     });
 
-    Array.from(document.getElementsByClassName('desktop_files')).forEach(desktop_files => {
-        desktop_files.addEventListener('mousedown', () => {
-            fileborder_reset()
-        });
-        desktop_files.addEventListener('click', () => {
-            desktop_files.firstElementChild.classList.add('file_select');
-        });
-    });
-
     const menuLists = document.querySelectorAll('.parent_start_menu_lists, .child_start_menu_lists, .child_start_menu_lists2');
     menuLists.forEach(menuList => {
         menuList.addEventListener('mouseover', () => {
@@ -3682,9 +3673,7 @@ if (ua.includes("mobile")) {
         });
     }
 
-
     filettext_backcolor()
-
     function filettext_backcolor() {
         if (localStorage.getItem('filettext_backcolor_off')) {
             var desktop_files_text = document.getElementsByClassName('desktop_files_text');
@@ -5579,39 +5568,49 @@ if (ua.includes("mobile")) {
     }
     nexser_search_button();
 
-    const elements = document.querySelectorAll('.desktop_files');
-    elements.forEach((element, index) => {
-        const savedPosition = localStorage.getItem(`draggable-${index}`);
-        if (savedPosition) {
-            const [x, y] = savedPosition.split(',');
-            element.style.position = 'absolute';
-            element.style.left = `${x}px`;
-            element.style.top = `${y}px`;
-        }
-        element.draggable = true;
-        let offsetX, offsetY;
-        element.addEventListener('dragstart', (e) => {
-            offsetX = e.clientX - element.getBoundingClientRect().left;
-            offsetY = e.clientY - element.getBoundingClientRect().top;
-            e.dataTransfer.setData('text/plain', null);
-            element.style.border = '1.95px dotted dimgray';
-            element.style.opacity = '0.9';
-            rectangle_remove();
+    function filesposition() {
+        Array.from(document.getElementsByClassName('desktop_files')).forEach(desktop_files => {
+            desktop_files.addEventListener('mousedown', () => {
+                fileborder_reset()
+            });
+            desktop_files.addEventListener('click', () => {
+                desktop_files.firstElementChild.classList.add('file_select');
+            });
         });
-        element.addEventListener('dragend', (e) => {
-            const x = e.clientX - offsetX;
-            const y = e.clientY - offsetY;
-            element.style.position = 'absolute';
-            element.style.left = `${x}px`;
-            element.style.top = `${y}px`;
-            element.firstElementChild.style.opacity = '';
-            element.children[1].style.opacity = '';
-            element.style.opacity = '';
-            element.style.border = '';
-            localStorage.setItem(`draggable-${index}`, `${x},${y}`);
+        const elements = document.querySelectorAll('.desktop_files');
+        elements.forEach((element, index) => {
+            const savedPosition = localStorage.getItem(`draggable-${index}`);
+            if (savedPosition) {
+                const [x, y] = savedPosition.split(',');
+                element.style.position = 'absolute';
+                element.style.left = `${x}px`;
+                element.style.top = `${y}px`;
+            }
+            element.draggable = true;
+            let offsetX, offsetY;
+            element.addEventListener('dragstart', (e) => {
+                offsetX = e.clientX - element.getBoundingClientRect().left;
+                offsetY = e.clientY - element.getBoundingClientRect().top;
+                e.dataTransfer.setData('text/plain', null);
+                element.style.border = '1.95px dotted dimgray';
+                element.style.opacity = '0.9';
+                rectangle_remove();
+            });
+            element.addEventListener('dragend', (e) => {
+                const x = e.clientX - offsetX;
+                const y = e.clientY - offsetY;
+                element.style.position = 'absolute';
+                element.style.left = `${x}px`;
+                element.style.top = `${y}px`;
+                element.firstElementChild.style.opacity = '';
+                element.children[1].style.opacity = '';
+                element.style.opacity = '';
+                element.style.border = '';
+                localStorage.setItem(`draggable-${index}`, `${x},${y}`);
+            });
         });
-    });
 
+    }
     function rectangle_remove() {
         const elements = document.querySelectorAll('.rectangle');
         elements.forEach(element => element.remove());
@@ -6675,7 +6674,6 @@ if (ua.includes("mobile")) {
         saveToLocalStorage();
         loadFromLocalStorage();
     });
-    loadFromLocalStorage();
     function saveToLocalStorage() {
         const dropList = document.querySelector('#drop_zone ul');
         localStorage.setItem('dropListContent', dropList.innerHTML);
@@ -6881,12 +6879,82 @@ if (ua.includes("mobile")) {
             rf.classList.remove('file_border3')
         })
     }
-
     function filepositon_reset() {
         document.querySelectorAll('.desktop_files').forEach((desktop_file, index) => {
             ['left', 'top', 'position'].forEach(style => desktop_file.style[style] = "");
             localStorage.removeItem(`draggable-${index}`);
         });
     }
+
+    document.querySelectorAll('.window_files').forEach(item => {
+        item.addEventListener('dragstart', e => {
+            e.dataTransfer.setData('text/plain', e.target.outerHTML);
+        });
+    });
+    document.querySelector('#files').addEventListener('dragover', e => e.preventDefault());
+    document.querySelector('#files').addEventListener('drop', e => {
+        e.preventDefault();
+        const data = e.dataTransfer.getData('text/plain');
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = data;
+        const firstChild = tempDiv.firstChild;
+        if (firstChild && firstChild.classList.contains('window_files')) {
+            const droppedContent = firstChild.querySelector('li').innerHTML;
+            const existingFile = Array.from(document.querySelectorAll('.desktop_files')).find(item => item.innerHTML.includes(droppedContent));
+            if (!existingFile) {
+                const newDesktopFile = document.createElement('div');
+                const originalClasses = firstChild.className.split(' ').filter(cn => cn !== 'window_files').join(' ');
+                newDesktopFile.className = `desktop_files ${originalClasses}`;
+                newDesktopFile.draggable = true;
+                newDesktopFile.innerHTML = `
+                    <li class="desktop_files_text editable">${droppedContent}</li>
+                    <span class="dli-folder"><span></span></span>
+                `;
+                document.querySelector('.files_inline').appendChild(newDesktopFile);
+                newDesktopFile.addEventListener('contextmenu', e => {
+                    e.preventDefault();
+                    newDesktopFile.remove();
+                    updateLocalStorage();
+                });
+                saveToLocalStorage_deskfiles(newDesktopFile);
+            }
+        }
+    });
+    function saveToLocalStorage_deskfiles(newFile) {
+        const savedFiles = JSON.parse(localStorage.getItem('desktopFiles')) || [];
+        savedFiles.push({ className: newFile.className, innerHTML: newFile.innerHTML });
+        localStorage.setItem('desktopFiles', JSON.stringify(savedFiles));
+        loadFromLocalStorage();
+        filesposition();
+    }
+    function updateLocalStorage() {
+        const savedFiles = JSON.parse(localStorage.getItem('desktopFiles')) || [];
+        const updatedFiles = Array.from(document.querySelectorAll('.files_inline .desktop_files')).filter(file =>
+            savedFiles.some(savedFile => savedFile.innerHTML === file.innerHTML)
+        ).map(file => ({
+            className: file.className,
+            innerHTML: file.innerHTML
+        }));
+        localStorage.setItem('desktopFiles', JSON.stringify(updatedFiles));
+    }
+    const savedData = localStorage.getItem('desktopFiles');
+    if (savedData) {
+        const dataToLoad = JSON.parse(savedData);
+        dataToLoad.forEach(fileData => {
+            const newFile = document.createElement('div');
+            newFile.className = fileData.className;
+            newFile.draggable = true;
+            newFile.innerHTML = fileData.innerHTML;
+            document.querySelector('.files_inline').appendChild(newFile);
+
+            newFile.addEventListener('contextmenu', e => {
+                e.preventDefault();
+                newFile.remove();
+                updateLocalStorage();
+            });
+        });
+    }
+    filesposition();
+    loadFromLocalStorage();
 
 };
