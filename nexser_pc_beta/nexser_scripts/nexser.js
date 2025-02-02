@@ -685,8 +685,6 @@ if (ua.includes("mobile")) {
     function nexser_program_open() {
         playBeep();
         startmenu_close();
-        y_iframeController('pauseVideo');
-        preview2_stop();
         document.querySelectorAll('video').forEach(video => video.pause());
         startProgress(20);
         desktop.style.display = "none";
@@ -1397,7 +1395,6 @@ if (ua.includes("mobile")) {
         cpubench_reset();
         prompt2_text_clear();
         calc_clear();
-        preview2_stop();
         resetGame();
         nexser_prompt_reset();
         document.querySelector('.password').value = "";
@@ -3928,28 +3925,6 @@ if (ua.includes("mobile")) {
     function run() {
         document.querySelectorAll('.htmlviewer_run_menu').forEach(htmlviewer_run_menu => toggleWindow(htmlviewer_run_menu));
         preview.srcdoc = editor.value;
-    }
-
-    function preview2(obj, previewId) {
-        let fileReader = new FileReader();
-        fileReader.onload = (function () {
-            document.getElementById(previewId).src = fileReader.result;
-        });
-        fileReader.readAsDataURL(obj.files[0]);
-    }
-
-    function preview2_play() {
-        const videoElement = document.querySelector('.preview2');
-        videoElement.play();
-    }
-    function preview2_stop() {
-        const videoElement = document.querySelector('.preview2');
-        videoElement.pause();
-    }
-
-    function video_stop() {
-        const playerWindow = document.querySelector('.video3').contentWindow;
-        playerWindow.postMessage('{"event":"command","func":"pauseVideo","args":""}', '*');
     }
 
     let isStopped = false; // ストップフラグ
