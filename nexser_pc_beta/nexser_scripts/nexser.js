@@ -203,6 +203,7 @@ if (ua.includes("mobile")) {
     }
 
     document.addEventListener('mousedown', (e) => {
+        fileborder_reset()
         var isClickInsideStartButton7 = Array.from(fileElements).some(button => button.contains(e.target));
         if (!isClickInsideStartButton7) {
             Array.from(document.getElementsByClassName('window_files')).forEach((window_files3) => {
