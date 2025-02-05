@@ -5235,6 +5235,7 @@ if (ua.includes("mobile")) {
         button.addEventListener('contextmenu', (event) => {
             event.preventDefault();
             popups('savebtn', url);
+            document.getElementById('saveurl').textContent = url;
         });
         document.getElementById('buttonContainer').appendChild(button);
     }
