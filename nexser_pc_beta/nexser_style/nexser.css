@@ -668,7 +668,7 @@ input[type="file"] {
     height: auto;
     background: whitesmoke;
     color: black;
-    border: 3.5px solid #c0c0c0;
+    border: 2px solid #c0c0c0;
     box-shadow: 1.5px 1.5px #333333, -1.5px -1.5px whitesmoke;
     position: absolute;
     z-index: 1;
