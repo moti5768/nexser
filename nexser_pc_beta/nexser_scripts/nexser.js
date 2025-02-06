@@ -1476,10 +1476,12 @@ if (ua.includes("mobile")) {
             const t2 = t - 5;
             taskbar.style.bottom = `-${t2}px`;
         }
+        desktopfile_resize()
     }
     function taskbar_reset() {
         localStorage.removeItem('taskbar_autohide');
         taskbar.style.bottom = "";
+        desktopfile_resize()
     }
 
     document.querySelectorAll('#taskbar').forEach(taskbar => {
@@ -6958,5 +6960,11 @@ if (ua.includes("mobile")) {
     }
     filesposition();
     loadFromLocalStorage();
+
+    function desktopfile_resize() {
+        files_inline.style.height = localStorage.getItem('taskbar_autohide') ? "" : `${window.innerHeight - taskbar.clientHeight}px`;
+    }
+    desktopfile_resize();
+    taskbar && new ResizeObserver(desktopfile_resize).observe(taskbar);
 
 };
