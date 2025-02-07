@@ -2731,6 +2731,9 @@ if (ua.includes("mobile")) {
                     const clone = dragwindow.cloneNode(true);
                     dragwindow.parentNode.appendChild(clone).classList.add('clones');
                     [clone, dragwindow].forEach(el => el.style.zIndex = largestZIndex++);
+                    setTimeout(() => {
+                        dragwindow.parentNode.appendChild(clone).children[0].classList.add('navy');
+                    }, 0);
                     clones = true;
                     requestAnimationFrame(() => applyStyles(dragwindow));
                 }
@@ -4859,6 +4862,9 @@ if (ua.includes("mobile")) {
                     const clone = resizer2.cloneNode(true);
                     resizer2.parentNode.appendChild(clone).classList.add('clones');
                     [clone, resizer2].forEach(el => el.style.zIndex = largestZIndex++);
+                    setTimeout(() => {
+                        clone.parentNode.appendChild(clone).children[0].classList.add('navy');
+                    }, 0);
                     clones = true;
                     requestAnimationFrame(() => applyStyles(resizer2));
                 }
