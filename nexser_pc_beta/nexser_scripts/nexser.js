@@ -2738,7 +2738,7 @@ if (ua.includes("mobile")) {
                         dragwindow.parentNode.appendChild(clone).children[0].classList.add('navy')
                     );
                     clones = true;
-                    requestAnimationFrame(() => applyStyles(dragwindow));
+                    requestAnimationFrame(() => applyStyles(dragwindow, titlecolor_set()));
                 }
                 const drag = document.getElementsByClassName("drag")[0];
                 const event = e.type === "mousemove" ? e : e.changedTouches[0];
@@ -4691,9 +4691,10 @@ if (ua.includes("mobile")) {
         paint_ctx.fillRect(0, 0, paint_canvas.width, paint_canvas.height);
     }
 
+    let bgImg = document.createElement("img");
     const wallpaper_allremove = () => {
-        background_img.src = "";
-        background_img.style.display = "none";
+        bgImg.src = "";
+        bgImg.style.display = "none";
         ['.nexser_backgroundimage_1', '.nexser_backgroundimage_2', '.nexser_backgroundimage_3', '.nexser_backgroundimage_4'].forEach(selector => {
             document.querySelector(selector).style.display = "none";
         });
@@ -4709,12 +4710,38 @@ if (ua.includes("mobile")) {
     document.querySelector('.wallpaper_95_2').addEventListener('click', () => setWallpaper('wallpaper_95_2', '.nexser_backgroundimage_2', minidesk_backgroundresize2));
     document.querySelector('.wallpaper_xp').addEventListener('click', () => setWallpaper('wallpaper_xp', '.nexser_backgroundimage_3', minidesk_backgroundresize3));
     document.querySelector('.wallpaper_space').addEventListener('click', () => setWallpaper('wallpaper_space', '.nexser_backgroundimage_4', minidesk_backgroundresize4));
+    function bk_applyStyles() {
+        if (!bgImg.src.includes("nexser_image") || !bgImg.src.includes("http")) {
+            bgImg.style.display = "none";
+        } else {
+            bgImg.style.display = "block";
+            bgImg.style.width = `${mini_desktop.clientWidth}px`;
+            bgImg.style.height = `${mini_desktop.clientHeight}px`;
+            mini_desktop.appendChild(bgImg);
+        }
+    }
+    function minidesk_backgroundresize1() {
+        bgImg.src = "nexser_image/Windows95_wallpaper.jpg";
+        bk_applyStyles();
+    }
+    function minidesk_backgroundresize2() {
+        bgImg.src = "nexser_image/Windows95_wallpaper_2.png";
+        bk_applyStyles();
+    }
+    function minidesk_backgroundresize3() {
+        bgImg.src = "nexser_image/Windowsxp_wallpaper.jpg";
+        bk_applyStyles();
+    }
+    function minidesk_backgroundresize4() {
+        bgImg.src = "nexser_image/space_wallpaper.png";
+        bk_applyStyles();
+    }
+
 
     const othello_board = document.getElementById('othello_board');
     const size = 8;
     let currentPlayer = 'othello_black';
 
-    // Initialize board
     for (let i = 0; i < size * size; i++) {
         const cell = document.createElement('div');
         cell.classList.add('cell');
@@ -4869,7 +4896,7 @@ if (ua.includes("mobile")) {
                         clone.parentNode.appendChild(clone).children[0].classList.add('navy')
                     );
                     clones = true;
-                    requestAnimationFrame(() => applyStyles(resizer2));
+                    requestAnimationFrame(() => applyStyles(resizer2, titlecolor_set()));
                 }
                 taskbar.addEventListener('mousemove', stopResize);
             }
@@ -5627,36 +5654,6 @@ if (ua.includes("mobile")) {
     function rectangle_remove() {
         const elements = document.querySelectorAll('.rectangle');
         elements.forEach(element => element.remove());
-    }
-
-    var background_img = document.createElement("img");
-    function minidesk_backgroundresize1() {
-        background_img.src = "nexser_image/Windows95_wallpaper.jpg";
-        background_img.style.display = "block";
-        background_img.style.width = `${mini_desktop.clientWidth}px`;
-        background_img.style.height = `${mini_desktop.clientHeight}px`;
-        mini_desktop.appendChild(background_img);
-    }
-    function minidesk_backgroundresize2() {
-        background_img.src = "nexser_image/Windows95_wallpaper_2.png";
-        background_img.style.display = "block";
-        background_img.style.width = `${mini_desktop.clientWidth}px`;
-        background_img.style.height = `${mini_desktop.clientHeight}px`;
-        mini_desktop.appendChild(background_img);
-    }
-    function minidesk_backgroundresize3() {
-        background_img.src = "nexser_image/Windowsxp_wallpaper.jpg";
-        background_img.style.display = "block";
-        background_img.style.width = `${mini_desktop.clientWidth}px`;
-        background_img.style.height = `${mini_desktop.clientHeight}px`;
-        mini_desktop.appendChild(background_img);
-    }
-    function minidesk_backgroundresize4() {
-        background_img.src = "nexser_image/space_wallpaper.png";
-        background_img.style.display = "block";
-        background_img.style.width = `${mini_desktop.clientWidth}px`;
-        background_img.style.height = `${mini_desktop.clientHeight}px`;
-        mini_desktop.appendChild(background_img);
     }
 
     document.querySelectorAll('.search_button').forEach(search_button =>
@@ -6732,7 +6729,7 @@ if (ua.includes("mobile")) {
         document.querySelectorAll('.test_button8').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(sound_menu); }; });
         document.querySelectorAll('.test_button9').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(driver_menu); }; });
         document.querySelectorAll('.test_button10').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(mouse_menu); }; });
-        document.querySelectorAll('.test_button11').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(screen_text_menu); }; });
+        document.querySelectorAll('.test_button11').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(screen_text_menu); bk_applyStyles(); }; });
         document.querySelectorAll('.test_button12').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(note_pad); notefocus(); }; });
         document.querySelectorAll('.test_button13').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(text_drop_menu); }; });
         document.querySelectorAll('.test_button14').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(windowmode_menu); }; });
