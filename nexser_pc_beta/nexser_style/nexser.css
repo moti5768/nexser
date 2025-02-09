@@ -1262,28 +1262,16 @@ body::-webkit-scrollbar {
 
 /* window_icon */
 
-.window_file_icon {
-    width: 60px;
-    height: 45px;
-    background-image: radial-gradient(#FFFFBB 1px, #CCCC66 1px);
-    background-size: 3px 3px;
-    position: absolute;
-    left: 5px;
-    bottom: 26px;
-    border-right: solid 1.5px black;
-    border-bottom: solid 1.5px black;
-    box-shadow: 2px 2px dimgray;
-    pointer-events: none;
-}
-
 .window_file_icon2 {
-    width: 60px;
-    height: 45px;
-    background: white;
     position: absolute;
+    top: 2.5px;
     left: 5px;
-    bottom: 26px;
+    width: 4.20em;
+    height: 2.90em;
     border: 1.5px dotted black;
+    border-radius: 0 0.1em 0.1em 0.1em;
+    background: white;
+    box-shadow: 3px 3px dimgray;
     pointer-events: none;
 }
 
@@ -1329,12 +1317,13 @@ body::-webkit-scrollbar {
     pointer-events: none;
 }
 
-.dli-folder {
+.dli-folder,
+.window_file_icon {
     display: inline-block;
     vertical-align: middle;
     line-height: 1;
     position: absolute;
-    top: 0px;
+    top: 2.5px;
     left: 5px;
     width: 4.20em;
     height: 2.90em;
@@ -1348,7 +1337,8 @@ body::-webkit-scrollbar {
     pointer-events: none;
 }
 
-.dli-folder>span {
+.dli-folder>span,
+.window_file_icon>span {
     position: absolute;
     left: -0.1em;
     bottom: 100%;
@@ -1362,6 +1352,10 @@ body::-webkit-scrollbar {
     background-image: radial-gradient(#FFFFBB 1px, #CCCC66 1px);
     background-size: 3px 3px;
     box-sizing: content-box;
+}
+
+.window_file_icon {
+    margin-top: 2.5px;
 }
 
 .dli-folder>span::before {

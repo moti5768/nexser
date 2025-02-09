@@ -3601,76 +3601,43 @@ if (ua.includes("mobile")) {
     }
 
     function window_file_list_change() {
-        Array.from(document.getElementsByClassName('window_inline_list')).forEach((window_inline_list) => {
-            window_inline_list.style.columnCount = "1";
-            window_inline_list.style.display = "block";
-        });
-        document.querySelectorAll('.window_file_icon, .window_file_icon2').forEach(window_file_icon => {
-            window_file_icon.style.width = "28px";
-            window_file_icon.style.height = "18px";
-            window_file_icon.style.marginBottom = "-20px";
-        });
-        Array.from(document.getElementsByClassName('window_files')).forEach((window_files) => {
-            window_files.style.margin = "0px";
-            window_files.style.paddingTop = "10px";
-            window_files.style.width = "100%";
-            let sss = window_files.firstElementChild;
-            sss.style.paddingLeft = "50px";
-            sss.style.width = "auto";
+        const setStyle = (elements, styles) => Array.from(elements).forEach(el => Object.assign(el.style, styles));
+        setStyle(document.getElementsByClassName('window_inline_list'), { columnCount: "1", display: "block" });
+        setStyle(document.querySelectorAll('.window_file_icon, .window_file_icon2'), { width: "28px", height: "18px", marginTop: "5px" });
+        setStyle(document.querySelectorAll('.window_file_icon > span'), { width: "10px", height: "2.5px" });
+        setStyle(document.getElementsByClassName('window_files'), { margin: "0px", paddingTop: "10px", width: "100%" });
+        Array.from(document.getElementsByClassName('window_files')).forEach(window_files => {
+            Object.assign(window_files.firstElementChild.style, { paddingLeft: "50px", width: "auto" });
         });
         if (!localStorage.getItem('filetimes')) {
-            Array.from(document.getElementsByClassName('windowfile_time')).forEach((windowfile_time) => {
-                windowfile_time.style.display = "block"
-            })
+            setStyle(document.getElementsByClassName('windowfile_time'), { display: "block" });
         }
     }
 
     function window_file_list_change2() {
-        Array.from(document.getElementsByClassName('window_inline_list')).forEach((window_inline_list) => {
-            window_inline_list.style.columnCount = "2";
-            window_inline_list.style.display = "block";
-        });
-        document.querySelectorAll('.window_file_icon, .window_file_icon2').forEach(window_file_icon => {
-            window_file_icon.style.width = "28px";
-            window_file_icon.style.height = "18px";
-            window_file_icon.style.marginBottom = "-20px";
-        });
-        Array.from(document.getElementsByClassName('window_files')).forEach((window_files) => {
-            window_files.style.margin = "0px";
-            window_files.style.paddingTop = "10px";
-            window_files.style.width = "100%";
-            let sss = window_files.firstElementChild;
-            sss.style.paddingLeft = "50px";
-            sss.style.width = "auto";
+        const setStyle = (elements, styles) => Array.from(elements).forEach(el => Object.assign(el.style, styles));
+        setStyle(document.getElementsByClassName('window_inline_list'), { columnCount: "2", display: "block" });
+        setStyle(document.querySelectorAll('.window_file_icon, .window_file_icon2'), { width: "28px", height: "18px", marginTop: "5px" });
+        setStyle(document.querySelectorAll('.window_file_icon > span'), { width: "10px", height: "2.5px" });
+        setStyle(document.getElementsByClassName('window_files'), { margin: "0px", paddingTop: "10px", width: "100%" });
+        Array.from(document.getElementsByClassName('window_files')).forEach(window_files => {
+            Object.assign(window_files.firstElementChild.style, { paddingLeft: "50px", width: "auto" });
         });
         if (!localStorage.getItem('filetimes')) {
-            Array.from(document.getElementsByClassName('windowfile_time')).forEach((windowfile_time) => {
-                windowfile_time.style.display = "block"
-            })
+            setStyle(document.getElementsByClassName('windowfile_time'), { display: "block" });
         }
     }
 
     function window_file_list_reset() {
-        Array.from(document.getElementsByClassName('window_inline_list')).forEach(window_inline_list => {
-            window_inline_list.style.columnCount = "";
-            window_inline_list.style.display = "flex";
-        });
-        document.querySelectorAll('.window_file_icon, .window_file_icon2').forEach(window_file_icon => {
-            window_file_icon.style.width = "";
-            window_file_icon.style.height = "";
-            window_file_icon.style.marginBottom = "";
-        });
+        const resetStyle = (elements, styles) => Array.from(elements).forEach(el => Object.assign(el.style, styles));
+        resetStyle(document.getElementsByClassName('window_inline_list'), { columnCount: "", display: "flex" });
+        resetStyle(document.querySelectorAll('.window_file_icon, .window_file_icon2'), { width: "", height: "", marginTop: "" });
+        resetStyle(document.querySelectorAll('.window_file_icon > span'), { width: "", height: "" });
+        resetStyle(document.getElementsByClassName('window_files'), { margin: "", paddingTop: "", width: "" });
         Array.from(document.getElementsByClassName('window_files')).forEach(window_files => {
-            window_files.style.margin = "";
-            window_files.style.paddingTop = "";
-            window_files.style.width = "";
-            let sss = window_files.firstElementChild;
-            sss.style.paddingLeft = "";
-            sss.style.width = "";
+            Object.assign(window_files.firstElementChild.style, { paddingLeft: "", width: "" });
         });
-        Array.from(document.getElementsByClassName('windowfile_time')).forEach(windowfile_time => {
-            windowfile_time.style.display = "none";
-        });
+        resetStyle(document.getElementsByClassName('windowfile_time'), { display: "none" });
     }
 
     filettext_backcolor()
@@ -6954,5 +6921,9 @@ if (ua.includes("mobile")) {
     }
     desktopfile_resize();
     taskbar && new ResizeObserver(desktopfile_resize).observe(taskbar);
+
+    document.querySelectorAll('.window_file_icon').forEach(icon =>
+        icon.appendChild(document.createElement('span'))
+    );
 
 };
