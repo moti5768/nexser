@@ -3279,7 +3279,7 @@ if (ua.includes("mobile")) {
     // 保存
     function save() {
         if (note_form.note_area.value == "") {
-            noticewindow_create("error", "テキストが無いため、保存できません!", "&nbsp;notepad");
+            noticewindow_create("warning", "テキストが無いため、保存できません!", "&nbsp;notepad");
         } else {
             let noteData = document.note_form.note_area.value;
             localStorage.setItem('noteData', noteData);
@@ -3299,11 +3299,11 @@ if (ua.includes("mobile")) {
         const titleValue = objective_title_form.objective_title_area.value.trim();
         const contentValue = objective_form.objective_area.value.trim();
         if (titleValue === "" && contentValue === "") {
-            noticewindow_create("error", "タイトルと内容が入力されていません!", "&nbsp;objective sheet");
+            noticewindow_create("warning", "タイトルと内容が入力されていません!", "&nbsp;objective sheet");
         } else if (titleValue === "") {
-            noticewindow_create("error", "タイトルが入力されていません!", "&nbsp;objective sheet");
+            noticewindow_create("warning", "タイトルが入力されていません!", "&nbsp;objective sheet");
         } else if (contentValue === "") {
-            noticewindow_create("error", "内容が入力されていません!", "&nbsp;objective sheet");
+            noticewindow_create("warning", "内容が入力されていません!", "&nbsp;objective sheet");
         } else {
             localStorage.setItem('objectiveTitleData', titleValue);
             localStorage.setItem('objectiveData', contentValue);
@@ -5552,42 +5552,45 @@ if (ua.includes("mobile")) {
         const file = event.target.files[0];
         const reader = new FileReader();
         reader.onload = function (event) {
-            // Base64デコード関数
-            function base64Decode(str) {
-                return decodeURIComponent(escape(atob(str)));
-            }
-            // XOR復号化関数
-            function xorDecrypt(data, key) {
-                let decrypted = '';
-                for (let i = 0; i < data.length; i++) {
-                    decrypted += String.fromCharCode(data.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+            try {
+                // Base64デコード関数
+                function base64Decode(str) {
+                    return decodeURIComponent(escape(atob(str)));
                 }
-                return decrypted;
+                // XOR復号化関数
+                function xorDecrypt(data, key) {
+                    let decrypted = '';
+                    for (let i = 0; i < data.length; i++) {
+                        decrypted += String.fromCharCode(data.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+                    }
+                    return decrypted;
+                }
+                const key = 'your-encryption-key'; // 暗号化キーを設定
+                const encryptedData = event.target.result;
+                // データを復号化
+                const decryptedData = xorDecrypt(encryptedData, key);
+                // データをデコード
+                const decodedData = base64Decode(decryptedData);
+                // JSON形式にパース
+                const data = JSON.parse(decodedData);
+                // ローカルストレージをクリアしてデータを復元
+                localStorage.clear();
+                sessionStorage.clear();
+                for (const key in data) {
+                    localStorage.setItem(key, data[key]);
+                }
+                noticewindow_create("nexser", "データが復元されました! ページを再読み込みしてください。");
+                sound(4);
+            } catch (error) {
+                noticewindow_create("error", error);
             }
-            const key = 'your-encryption-key'; // 暗号化キーを設定
-            const encryptedData = event.target.result;
-            // データを復号化
-            const decryptedData = xorDecrypt(encryptedData, key);
-            // データをデコード
-            const decodedData = base64Decode(decryptedData);
-            // JSON形式にパース
-            const data = JSON.parse(decodedData);
-            // ローカルストレージをクリアしてデータを復元
-            localStorage.clear();
-            sessionStorage.clear();
-            for (const key in data) {
-                localStorage.setItem(key, data[key]);
-            }
-            document.querySelector('.warning_title_text').textContent = "nexser";
-            document.querySelector('.window_warning_text').textContent = "データが復元されました! ページを再読み込みしてください。";
-            warning_windows.style.display = "block";
-            document.querySelector('.close_button3').style.display = "block";
-            sound(4);
-            document.querySelector('.shutdown_button').style.display = "none";
-            document.querySelector('.warningclose_button').style.display = "none";
+        };
+        reader.onerror = function (error) {
+            noticewindow_create("error", error, "File error");
         };
         reader.readAsText(file);
     });
+
 
     function nexser_search_button() {
         const fragment = document.createDocumentFragment();
@@ -6140,9 +6143,9 @@ if (ua.includes("mobile")) {
                     ${icon}
                     <span class="window_error_text">${errorTitle}</span>
                 </p>
-                <span class="button2 borderinline_dotted" style="position: absolute; top: 86%; left: 50%; transform: translate(-50%, -50%);" onclick="error_windows_close(event)">&emsp;OK&emsp;</span>
-            </div>
-            <br>`;
+                <span class="button2 borderinline_dotted" style="position: relative; left: 50%; 
+                transform: translateX(-50%);" onclick="error_windows_close(event)">&emsp;OK&emsp;</span>
+            </div>`;
         entryDiv.addEventListener("mousedown", event => {
             event.currentTarget.style.zIndex = ++largestZIndex;
         });
