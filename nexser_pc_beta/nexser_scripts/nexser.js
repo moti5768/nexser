@@ -5506,15 +5506,12 @@ if (ua.includes("mobile")) {
 
     document.getElementById('exportButton').addEventListener('click', function () {
         const localStorageData = JSON.stringify(localStorage);
-        // Base64エンコード関数
         function base64Encode(str) {
             return btoa(unescape(encodeURIComponent(str)));
         }
-        // Base64デコード関数
         function base64Decode(str) {
             return decodeURIComponent(escape(atob(str)));
         }
-        // XOR暗号化関数
         function xorEncrypt(data, key) {
             let encrypted = '';
             for (let i = 0; i < data.length; i++) {
@@ -5522,12 +5519,9 @@ if (ua.includes("mobile")) {
             }
             return encrypted;
         }
-        const key = 'your-encryption-key'; // 暗号化キーを設定
-        // データをエンコードして圧縮
+        const key = 'your-encryption-key';
         const encodedData = base64Encode(localStorageData);
-        // 圧縮データを暗号化
         const encryptedData = xorEncrypt(encodedData, key);
-        // 暗号化データをBlobに変換してダウンロード
         const blob = new Blob([encryptedData], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -5537,49 +5531,45 @@ if (ua.includes("mobile")) {
         URL.revokeObjectURL(url);
     });
 
-    document.getElementById('fileInput').addEventListener('change', function (event) {
+    document.getElementById('fileInput').addEventListener('change', async function (event) {
         const file = event.target.files[0];
-        const reader = new FileReader();
-        reader.onload = function (event) {
-            try {
-                // Base64デコード関数
-                function base64Decode(str) {
-                    return decodeURIComponent(escape(atob(str)));
+        const key = 'your-encryption-key';
+        const chunkSize = 1024 * 1024;
+        const processChunk = async (file, offset, chunkSize, key) => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const base64Decode = str => decodeURIComponent(escape(atob(str)));
+                    const xorDecrypt = (data, key) => data.split('').map((char, i) => String.fromCharCode(char.charCodeAt(0) ^ key.charCodeAt(i % key.length))).join('');
+                    resolve(JSON.parse(base64Decode(xorDecrypt(e.target.result, key))));
+                } catch (error) {
+                    reject(error);
                 }
-                // XOR復号化関数
-                function xorDecrypt(data, key) {
-                    let decrypted = '';
-                    for (let i = 0; i < data.length; i++) {
-                        decrypted += String.fromCharCode(data.charCodeAt(i) ^ key.charCodeAt(i % key.length));
-                    }
-                    return decrypted;
-                }
-                const key = 'your-encryption-key'; // 暗号化キーを設定
-                const encryptedData = event.target.result;
-                // データを復号化
-                const decryptedData = xorDecrypt(encryptedData, key);
-                // データをデコード
-                const decodedData = base64Decode(decryptedData);
-                // JSON形式にパース
-                const data = JSON.parse(decodedData);
-                // ローカルストレージをクリアしてデータを復元
-                localStorage.clear();
-                sessionStorage.clear();
-                for (const key in data) {
-                    localStorage.setItem(key, data[key]);
-                }
-                noticewindow_create("nexser", "データが復元されました! ページを再読み込みしてください。");
-                sound(4);
-            } catch (error) {
-                noticewindow_create("error", error);
+            };
+            reader.onerror = (error) => reject(error);
+            reader.readAsText(file.slice(offset, offset + chunkSize));
+        });
+        const processFileInChunks = async (file, key, chunkSize) => {
+            const totalChunks = Math.ceil(file.size / chunkSize);
+            let allData = {};
+            for (let offset = 0; offset < totalChunks * chunkSize; offset += chunkSize) {
+                const data = await processChunk(file, offset, chunkSize, key);
+                allData = { ...allData, ...data };
+                await new Promise(resolve => setTimeout(resolve, 0));
             }
+            return allData;
         };
-        reader.onerror = function (error) {
-            noticewindow_create("error", error, "File error");
-        };
-        reader.readAsText(file);
+        try {
+            const allData = await processFileInChunks(file, key, chunkSize);
+            localStorage.clear();
+            sessionStorage.clear();
+            Object.keys(allData).forEach(key => localStorage.setItem(key, allData[key]));
+            noticewindow_create("nexser", "データが復元されました! ページを再読み込みしてください。");
+            sound(4);
+        } catch (error) {
+            noticewindow_create("error", error.message);
+        }
     });
-
 
     function nexser_search_button() {
         const fragment = document.createDocumentFragment();
