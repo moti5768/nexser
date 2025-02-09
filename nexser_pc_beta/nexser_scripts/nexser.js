@@ -133,7 +133,7 @@ if (ua.includes("mobile")) {
 
     const window_selectors = ['.big', '.leftwindow', '.rightwindow'];
 
-    const windowanimation = 0.2;
+    const windowanimation = 0.25;
 
     // app
     // note
