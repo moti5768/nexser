@@ -3532,11 +3532,11 @@ if (ua.includes("mobile")) {
 
     function win2000_load() {
         if (localStorage.getItem('MemoData_export')) {
-            noticewindow_create("notepad", "windows2000からテキストデータを受け取りました!");
+            noticewindow_create("notepad", "テキストデータを受け取りました!");
             note_area.textContent = localStorage.getItem('MemoData_export');
             localStorage.removeItem('MemoData_export');
         } else {
-            noticewindow_create("error", "windows2000からテキストデータがエクスポートされていません!", "&nbsp;notepad");
+            noticewindow_create("error", "テキストデータがエクスポートされていません!", "&nbsp;notepad");
         }
     }
 
