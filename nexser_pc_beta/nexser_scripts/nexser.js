@@ -635,7 +635,6 @@ if (ua.includes("mobile")) {
         }
     })
 
-
     function addButtonListeners(button) {
         if (!button.classList.contains('listener-added')) {
             const togglePressed = (pressed) => () => button.classList[pressed ? 'add' : 'remove']('pressed');
@@ -2209,10 +2208,12 @@ if (ua.includes("mobile")) {
                 setTimeout(() => {
                     const elements = document.querySelector('.navy');
                     const elements2 = elements.closest('.child_windows');
-                    elements2.dataset.originalWidth = elements2.style.width;
-                    elements2.dataset.originalHeight = elements2.style.height;
-                    elements2.dataset.originalTop = elements2.style.top;
-                    elements2.dataset.originalLeft = elements2.style.left;
+                    Object.assign(elements2.dataset, {
+                        originalWidth: elements2.style.width,
+                        originalHeight: elements2.style.height,
+                        originalTop: elements2.style.top,
+                        originalLeft: elements2.style.left
+                    });
                 }, 0);
             });
             button.addEventListener('click', function () {
@@ -2269,10 +2270,12 @@ if (ua.includes("mobile")) {
                 minscreenbutton.classList.remove('rightwindow', 'leftwindow', 'big');
                 const elements = document.querySelector('.navy');
                 const elements2 = elements.closest('.child_windows');
-                elements2.style.width = elements2.dataset.originalWidth;
-                elements2.style.height = elements2.dataset.originalHeight;
-                elements2.style.top = elements2.dataset.originalTop;
-                elements2.style.left = elements2.dataset.originalLeft;
+                Object.assign(elements2.style, {
+                    width: elements2.dataset.originalWidth,
+                    height: elements2.dataset.originalHeight,
+                    top: elements2.dataset.originalTop,
+                    left: elements2.dataset.originalLeft
+                });
                 window_animation(minscreenbutton)
                 setTimeout(() => {
                     minscreenbutton.scrollTop = 0;
@@ -2481,32 +2484,22 @@ if (ua.includes("mobile")) {
         });
     });
 
-    document.querySelectorAll('.window_inline_menus_parent').forEach(parent_list => {
-        parent_list.addEventListener('mousedown', () => {
-            document.querySelectorAll('.menuparent1').forEach(menuparent1 => {
-                menuparent1.classList.remove('menuparent1');
-            });
-            document.querySelectorAll('.menuchild1').forEach(menuchild1 => {
-                menuchild1.classList.remove('menuchild1');
-            });
-            document.querySelectorAll('.window_inline_menus_parent').forEach(parent_list2 => {
-                parent_list2.classList.remove('select');
-            });
-            parent_list.classList.add('select');
-            document.querySelectorAll('.window_inline_menus_parent').forEach(parent_list3 => {
-                const menus_child = parent_list3.lastElementChild;
-                menus_child.style.display = "none";
+    document.querySelectorAll('.window_inline_menus').forEach(container => {
+        container.querySelectorAll('.window_inline_menus_parent').forEach(parent => {
+            parent.addEventListener('mousedown', () => {
+                container.querySelectorAll('.menuparent1, .menuchild1, .select').forEach(el => {
+                    el.classList.remove('menuparent1', 'menuchild1', 'select');
+                });
+                container.querySelectorAll('.window_inline_menus_parent').forEach(p => {
+                    p.lastElementChild.style.display = "none";
+                });
+                parent.classList.add('select');
+                parent.lastElementChild.style.display = "block";
             });
         });
     });
-    document.querySelectorAll('.window_inline_menus_parent').forEach(parent_list4 => {
-        parent_list4.addEventListener('mousedown', () => {
-            const menus_child2 = parent_list4.lastElementChild;
-            menus_child2.style.display = "block";
-        });
-    });
-    document.querySelectorAll('.menuchild1').forEach(menuchild1 => {
-        menuchild1.style.display = "block";
+    document.querySelectorAll('.window_inline_menus .menuchild1').forEach(child => {
+        child.style.display = "block";
     });
 
     function window_back_silver() {
@@ -2527,8 +2520,7 @@ if (ua.includes("mobile")) {
             iframe.addEventListener('load', () => {
                 try {
                     const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-                    addEventListeners(iframeDoc);
-                    addEventListeners(iframeDoc.body);
+                    [iframeDoc, iframeDoc.body].forEach(addEventListeners);
                 } catch (e) {
                     console.error('iframe no access:', e);
                 }
@@ -2552,7 +2544,6 @@ if (ua.includes("mobile")) {
         const ul = document.getElementById("myUL");
         const liElements = ul.getElementsByTagName('li');
         const liArray = Array.from(liElements);
-
         liArray.forEach(li => {
             const textContent = li.getElementsByTagName("span")[0].textContent.toUpperCase();
             li.style.display = textContent.includes(filter) ? "" : "none";
@@ -2734,11 +2725,11 @@ if (ua.includes("mobile")) {
                     const clone = dragwindow.cloneNode(true);
                     dragwindow.parentNode.appendChild(clone).classList.add('clones');
                     [clone, dragwindow].forEach(el => el.style.zIndex = largestZIndex++);
-                    requestAnimationFrame(() =>
-                        dragwindow.parentNode.appendChild(clone).children[0].classList.add('navy')
-                    );
+                    requestAnimationFrame(() => {
+                        dragwindow.parentNode.appendChild(clone).children[0].classList.add('navy');
+                        applyStyles(dragwindow, titlecolor_set());
+                    });
                     clones = true;
-                    requestAnimationFrame(() => applyStyles(dragwindow, titlecolor_set()));
                 }
                 const drag = document.getElementsByClassName("drag")[0];
                 const event = e.type === "mousemove" ? e : e.changedTouches[0];
@@ -4892,11 +4883,11 @@ if (ua.includes("mobile")) {
                     const clone = resizer2.cloneNode(true);
                     resizer2.parentNode.appendChild(clone).classList.add('clones');
                     [clone, resizer2].forEach(el => el.style.zIndex = largestZIndex++);
-                    requestAnimationFrame(() =>
-                        clone.parentNode.appendChild(clone).children[0].classList.add('navy')
-                    );
+                    requestAnimationFrame(() => {
+                        clone.parentNode.appendChild(clone).children[0].classList.add('navy');
+                        applyStyles(resizer2, titlecolor_set());
+                    });
                     clones = true;
-                    requestAnimationFrame(() => applyStyles(resizer2, titlecolor_set()));
                 }
                 taskbar.addEventListener('mousemove', stopResize);
             }
@@ -4958,18 +4949,14 @@ if (ua.includes("mobile")) {
     function flipCard() {
         if (lockBoard) return;
         if (this === firstCard) return;
-
         this.classList.remove('card_hidden');
         this.textContent = this.dataset.value;
-
         if (!firstCard) {
             firstCard = this;
             return;
         }
-
         secondCard = this;
         lockBoard = true;
-
         checkForMatch();
     }
 
@@ -5095,22 +5082,22 @@ if (ua.includes("mobile")) {
     }
     function handleMinimizationButtonClick() {
         const minimizationButton = this.closest('.child_windows');
-        const minimizationButtonIcon = minimizationButton.firstElementChild;
-        if (minimizationButtonIcon.classList.contains('navy')) {
+        if (minimizationButton?.firstElementChild?.classList.contains('navy')) {
             minimizeWindow(minimizationButton);
         }
     }
     function minimizeWindow(window) {
         const windowElement = window.closest('.child_windows');
         if (!windowElement) return;
-        windowElement.dataset.originalWidths = windowElement.style.width;
-        windowElement.dataset.originalHeights = windowElement.style.height;
-        windowElement.dataset.originalTops = windowElement.style.top;
-        windowElement.dataset.originalLefts = windowElement.style.left;
+        Object.assign(windowElement.dataset, {
+            originalWidths: windowElement.style.width,
+            originalHeights: windowElement.style.height,
+            originalTops: windowElement.style.top,
+            originalLefts: windowElement.style.left
+        });
         window.style.height = '20px';
         window.classList.add('minimization');
-        window.scrollTop = 0;
-        window.scrollLeft = 0;
+        window.scrollTo(0, 0);
         moveToTaskbarButton(window);
         window_animation(window);
     }
@@ -5136,40 +5123,38 @@ if (ua.includes("mobile")) {
     const taskbar_b = document.getElementById('task_buttons2');
     function test_windows_button() {
         document.querySelectorAll('.task_buttons').forEach(task_buttons => task_buttons.remove());
-        document.querySelectorAll('.child_windows.selectwindows:not(.no_window).child_windows:not(.clones)').forEach(windowElement => {
+        document.querySelectorAll('.child_windows.selectwindows:not(.no_window):not(.clones)').forEach(windowElement => {
             const nestedChild2 = windowElement.children[0].children[1].textContent;
             const button = document.createElement('div');
             button.className = 'task_buttons button2';
             button.style.position = "relative";
             button.textContent = `　　${nestedChild2}`;
-            const button_child = document.createElement('span');
-            button_child.className = 'title_icon';
-            button.appendChild(button_child);
+            button.innerHTML += '<span class="title_icon"></span>';
             button.addEventListener('click', () => toggleWindow(windowElement), { once: true });
             taskbar_b.appendChild(button);
         });
         updateButtonClasses();
-        document.querySelectorAll('.child_windows.minimization').forEach(minimization_button => {
-            moveToTaskbarButton(minimization_button);
-        });
-
+        document.querySelectorAll('.child_windows.minimization').forEach(moveToTaskbarButton);
     }
 
     function moveToTaskbarButton(minimization_button) {
-        const task_buttons = Array.from(document.querySelectorAll('.task_buttons'));
+        const task_buttons = document.querySelectorAll('.task_buttons');
         const index = Array.from(document.querySelectorAll('.child_windows.selectwindows:not(.no_window)')).indexOf(minimization_button);
         if (index !== -1) {
             const button = task_buttons[index];
             const rect = button.getBoundingClientRect();
-            minimization_button.style.position = 'absolute';
-            minimization_button.style.top = `${rect.top}px`;
-            minimization_button.style.left = `${rect.left}px`;
-            minimization_button.style.width = `${rect.width}px`;
-            minimization_button.style.height = `${rect.height}px`;
-            minimization_button.style.minWidth = "0px";
-            minimization_button.style.minHeight = "0px";
+            Object.assign(minimization_button.style, {
+                position: 'absolute',
+                top: `${rect.top}px`,
+                left: `${rect.left}px`,
+                width: `${rect.width}px`,
+                height: `${rect.height}px`,
+                minWidth: "0px",
+                minHeight: "0px"
+            });
         }
     }
+
     let isAnimating = false;
     function toggleWindow(windowElement) {
         if (isAnimating) return;
@@ -5187,13 +5172,17 @@ if (ua.includes("mobile")) {
             setTimeout(() => {
                 const elements22 = windowElement.closest('.child_windows');
                 window_animation(elements22);
-                elements22.style.top = elements22.dataset.originalTops;
-                elements22.style.left = elements22.dataset.originalLefts;
-                elements22.style.width = elements22.dataset.originalWidths;
+                Object.assign(elements22.style, {
+                    top: elements22.dataset.originalTops,
+                    left: elements22.dataset.originalLefts,
+                    width: elements22.dataset.originalWidths
+                });
                 setTimeout(() => {
-                    elements22.style.height = elements22.dataset.originalHeights;
-                    elements22.scrollTop = 0;
-                    elements22.scrollLeft = 0;
+                    Object.assign(elements22.style, {
+                        height: elements22.dataset.originalHeights,
+                        scrollTop: 0,
+                        scrollLeft: 0
+                    });
                     windowElement.style.minWidth = "";
                     windowElement.style.minHeight = "";
                     isAnimating = false;
@@ -5207,12 +5196,12 @@ if (ua.includes("mobile")) {
         const windows = document.querySelectorAll('.child_windows.selectwindows:not(.no_window)');
         const buttons = document.querySelectorAll('.task_buttons');
         buttons.forEach(button => {
-            button.addEventListener('contextmenu', function (event) {
+            button.classList.remove('tsk_pressed');
+            button.oncontextmenu = (event) => {
                 event.preventDefault();
-                popups('task_buttons', null, this.textContent);
-            });
+                popups('task_buttons', null, button.textContent);
+            };
         });
-        buttons.forEach(button => button.classList.remove('tsk_pressed'));
         windows.forEach((windowElement, index) => {
             if (windowElement.querySelector('.title.navy')) {
                 buttons[index]?.classList.add('tsk_pressed');
