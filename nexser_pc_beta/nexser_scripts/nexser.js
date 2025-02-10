@@ -141,6 +141,8 @@ if (ua.includes("mobile")) {
     // cpubench
     const cpumenu1 = document.querySelector('.cpumenu_1');
     const cpumenu2 = document.querySelector('.cpumenu_2');
+    // editor
+    const editor_2 = document.getElementById('editor_2');
 
     document.addEventListener('click', () => {
         if (localStorage.getItem('game_none')) {
@@ -2614,13 +2616,12 @@ if (ua.includes("mobile")) {
         Array.from(document.getElementsByClassName('button2')).forEach(addButtonListeners);
         window.scrollTo(0, 0);
         resizeBackgroundImage();
+        document.querySelectorAll('.child_windows').forEach(w => w.scrollTop = w.scrollLeft = 0);
     }
 
     const notefocus = () => {
-        if (!note_pad.classList.contains('active')) {
-            note_area.focus();
-            displayCursorPos();
-        }
+        note_area.focus();
+        displayCursorPos();
     };
 
     const cameraframe_parent = document.querySelector('.camera_menu');
@@ -2628,13 +2629,6 @@ if (ua.includes("mobile")) {
     const cameraframe_resize = () => {
         cameraframe_child.style.width = `${cameraframe_parent.clientWidth}px`;
         cameraframe_child.style.height = `${cameraframe_parent.clientHeight - 85}px`;
-    };
-
-    const test_site_parent = document.querySelector('.test_site_menu');
-    const test_site_child = document.querySelector('.site_frame');
-    const test_site_resize = () => {
-        test_site_child.style.width = `${test_site_parent.clientWidth}px`;
-        test_site_child.style.height = `${test_site_parent.clientHeight - 30}px`;
     };
 
     const backgroundImageParent = document.getElementById('nexser');
@@ -2648,34 +2642,6 @@ if (ua.includes("mobile")) {
         });
     };
     resizeBackgroundImage();
-
-    const nexser_nextversion_parent = nexser_nextversion_menu;
-    const nexser_nextversion_child = document.querySelector('.nexser_nextframe');
-    const nexser_nextversion_resize = () => {
-        nexser_nextversion_child.style.width = `${nexser_nextversion_parent.clientWidth}px`;
-        nexser_nextversion_child.style.height = `${nexser_nextversion_parent.clientHeight - 20}px`;
-    };
-
-    const htmlview_parent = document.querySelector('.htmlviewer_run_menu');
-    const htmlview_child = document.querySelector('.html_view');
-    const htmlview_resize = () => {
-        htmlview_child.style.width = `${htmlview_parent.clientWidth}px`;
-        htmlview_child.style.height = `${htmlview_parent.clientHeight - 20}px`;
-    };
-
-    const htmlview_parent2 = document.querySelector('.htmlviewer_edit_menu');
-    const htmlview_child2 = document.querySelector('#editor');
-    const htmlview_resize2 = () => {
-        htmlview_child2.style.width = `${htmlview_parent2.clientWidth - 90}px`;
-        htmlview_child2.style.height = `${htmlview_parent2.clientHeight - 90}px`;
-    };
-
-    const editor2_parent = document.querySelector('.editor_menu');
-    const editor2_child = document.getElementById('editor_2');
-    const editor2_resize = () => {
-        editor2_child.style.width = `${editor2_parent.clientWidth - 6}px`;
-        editor2_child.style.height = `${editor2_parent.clientHeight - 85}px`;
-    };
 
     let clones = false;
     function addDragButtonListeners(button) {
@@ -2978,7 +2944,6 @@ if (ua.includes("mobile")) {
     });
 
     const colorBtns = document.querySelectorAll('.color_btn');
-    const errorText = document.querySelector('.window_error_text');
 
     colorBtns.forEach(color_btn => {
         color_btn.addEventListener('click', () => {
@@ -2995,7 +2960,6 @@ if (ua.includes("mobile")) {
         });
     });
 
-
     function titlecolor_remove() {
         document.querySelectorAll('.title, .navy').forEach(el => el.style.background = "");
         ['titlebar_red', 'titlebar_blue', 'titlebar_green', 'titlebar_yellow', 'titlebar_orange', 'titlebar_pink', 'titlebar_purple', 'titlebar_black', 'titlebar_teal', 'titlebar_new'].forEach(item => localStorage.removeItem(item));
@@ -3006,7 +2970,6 @@ if (ua.includes("mobile")) {
             localStorage.setItem(`titlebar_${color}`, `titlebar_${color}`);
         });
     });
-
 
     function titlecolor_set() {
         const colors = {
@@ -5754,12 +5717,7 @@ if (ua.includes("mobile")) {
     function allwindow_resize() {
         cameraframe_resize();
         commandarea_resize();
-        test_site_resize();
-        nexser_nextversion_resize();
-        htmlview_resize();
-        htmlview_resize2();
         taskbar_resize();
-        editor2_resize();
         bigwindow_resize();
     }
 
@@ -5912,12 +5870,9 @@ if (ua.includes("mobile")) {
         updateChargeInfo()
     })
 
-
-
     document.querySelectorAll('.window_tool').forEach(windowtool_files => {
         const windowtool_files_parent = document.createElement('div');
-        windowtool_files_parent.innerHTML = `
-  <span class="bold" style="position: absolute; margin-top: 5px;">Address</span>
+        windowtool_files_parent.innerHTML = `<span class="bold" style="position: absolute; margin-top: 5px;">Address</span>
   <span class="winchild_border"></span>
   <div class="windowtool_parent">
     <span class="startmenu_file_icon"></span>
@@ -6085,10 +6040,7 @@ if (ua.includes("mobile")) {
                 <span class="close_button button2 allclose_button" onclick="error_windows_close(event)"></span>
             </div>
             <div class="window_content">
-                <p>
-                    ${icon}
-                    <span class="window_error_text">${errorTitle}</span>
-                </p>
+                <p>${icon}<span class="window_error_text">${errorTitle}</span></p>
                 <span class="button2 borderinline_dotted" style="position: relative; left: 50%; 
                 transform: translateX(-50%);" onclick="error_windows_close(event)">&emsp;OK&emsp;</span>
             </div>`;
@@ -6154,35 +6106,35 @@ if (ua.includes("mobile")) {
         document.execCommand(command, false, value);
     }
 
-    editor2_child.addEventListener('mousedown', () => {
-        const images = editor2_child.querySelectorAll('img');
+    editor_2.addEventListener('mousedown', () => {
+        const images = editor_2.querySelectorAll('img');
         for (const img of images) {
             img.style.border = '';
         }
     });
-    editor2_child.addEventListener("keydown", event => {
+    editor_2.addEventListener("keydown", event => {
         if (event.ctrlKey && event.key === 's') {
             event.preventDefault();
         }
     });
-    editor2_child.addEventListener("keyup", event => {
+    editor_2.addEventListener("keyup", event => {
         if (event.ctrlKey && event.key === 's') {
             saveContent();
         }
     });
 
-
     function saveContent() {
-        const content = document.getElementById('editor_2').innerHTML;
+        const content = editor_2.innerHTML;
         const compressedContent = btoa(unescape(encodeURIComponent(content)));
         localStorage.setItem('editorContent', compressedContent);
+        noticewindow_create("Editor", "保存しました!　");
     }
 
     function editorContent_load() {
         const savedContent = localStorage.getItem('editorContent');
         if (savedContent) {
             const decompressedContent = decodeURIComponent(escape(atob(savedContent)));
-            document.getElementById('editor_2').innerHTML = decompressedContent;
+            editor_2.innerHTML = decompressedContent;
         }
     }
 
@@ -6259,7 +6211,7 @@ if (ua.includes("mobile")) {
         }
     }
 
-    document.getElementById('editor_2').addEventListener('keydown', function (event) {
+    editor_2.addEventListener('keydown', function (event) {
         if (event.key === 'Enter') {
             setTimeout(() => {
                 setNormal();
@@ -6274,7 +6226,7 @@ if (ua.includes("mobile")) {
         changeFontSize(selectElement.value);
     }
 
-    document.getElementById('editor_2').addEventListener('input', function (event) {
+    editor_2.addEventListener('input', function (event) {
         if (event.inputType === 'insertParagraph') {
             const selection = window.getSelection();
             const range = selection.getRangeAt(0);
@@ -6303,12 +6255,11 @@ if (ua.includes("mobile")) {
     }
 
     function exportToHTML() {
-        const editor = document.getElementById('editor_2');
-        const elements = editor.getElementsByTagName('*');
+        const elements = editor_2.getElementsByTagName('*');
         for (let i = 0; i < elements.length; i++) {
             elements[i].setAttribute('contenteditable', 'false');
         }
-        const content = editor.innerHTML;
+        const content = editor_2.innerHTML;
         // 新しいドキュメントを作成してコンテンツを保持
         const doc = document.implementation.createHTMLDocument('Exported Content');
         doc.body.innerHTML = content;
@@ -6332,7 +6283,7 @@ if (ua.includes("mobile")) {
     }
 
     function printDiv() {
-        var printContents = document.getElementById('editor_2').innerHTML;
+        var printContents = editor_2.innerHTML;
         var originalContents = document.body.innerHTML;
         document.body.style.backgroundColor = "white";
         document.body.style.height = "100vh";
@@ -6470,14 +6421,13 @@ if (ua.includes("mobile")) {
             img.addEventListener('mousedown', function (event) {
                 img.setAttribute('contenteditable', 'false'); // 画像を一時的に編集不可に設定
 
-                const editor = document.getElementById('editor_2');
-                const editorRect = editor.getBoundingClientRect();
+                const editorRect = editor_2.getBoundingClientRect();
                 let shiftX = event.clientX - img.getBoundingClientRect().left;
                 let shiftY = event.clientY - img.getBoundingClientRect().top;
 
                 function moveAt(pageX, pageY) {
-                    img.style.left = pageX - shiftX - editorRect.left + editor.scrollLeft + 'px';
-                    img.style.top = pageY - shiftY - editorRect.top + editor.scrollTop + 'px';
+                    img.style.left = pageX - shiftX - editorRect.left + editor_2.scrollLeft + 'px';
+                    img.style.top = pageY - shiftY - editorRect.top + editor_2.scrollTop + 'px';
                 }
 
                 function onMouseMove(event) {
@@ -6532,9 +6482,7 @@ if (ua.includes("mobile")) {
             }
         });
 
-        observer.observe(document.getElementById('editor_2'), { childList: true, subtree: true });
-
-        const editor = document.getElementById('editor_2');
+        observer.observe(editor_2, { childList: true, subtree: true });
 
         editor.addEventListener('dragenter', function (event) {
             if (event.dataTransfer.types.includes('Files')) {
@@ -6867,7 +6815,7 @@ if (ua.includes("mobile")) {
                 newDesktopFile.draggable = true;
                 newDesktopFile.innerHTML = `
                     <li class="desktop_files_text editable">${droppedContent}</li>
-                    <span class="dli-folder"><span></span></span>
+                    <span class="dli-folder"></span>
                 `;
                 document.querySelector('.files_inline').appendChild(newDesktopFile);
                 newDesktopFile.addEventListener('contextmenu', e => {
@@ -6885,6 +6833,7 @@ if (ua.includes("mobile")) {
         localStorage.setItem('desktopFiles', JSON.stringify(savedFiles));
         loadFromLocalStorage();
         filesposition();
+        fileicon();
     }
     function updateLocalStorage() {
         const savedFiles = JSON.parse(localStorage.getItem('desktopFiles')) || [];
@@ -6915,6 +6864,7 @@ if (ua.includes("mobile")) {
     }
     filesposition();
     loadFromLocalStorage();
+    fileicon();
 
     function desktopfile_resize() {
         files_inline.style.height = localStorage.getItem('taskbar_autohide') ? "" : `${window.innerHeight - taskbar.clientHeight}px`;
@@ -6922,8 +6872,8 @@ if (ua.includes("mobile")) {
     desktopfile_resize();
     taskbar && new ResizeObserver(desktopfile_resize).observe(taskbar);
 
-    document.querySelectorAll('.window_file_icon').forEach(icon =>
-        icon.appendChild(document.createElement('span'))
-    );
+    function fileicon() {
+        document.querySelectorAll('.window_file_icon, .dli-folder').forEach(icon => !icon.querySelector('span') && icon.appendChild(document.createElement('span')));
+    }
 
 };
