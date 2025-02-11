@@ -5179,7 +5179,7 @@ if (ua.includes("mobile")) {
     });
     function createButton(name, url) {
         const button = document.createElement('li');
-        Object.assign(button.style, { height: "35px", width: "440px", margin: "3px" });
+        Object.assign(button.style, { height: "35px", width: "400px", margin: "3px" });
         button.className = 'savebtn button2 white_space_wrap large';
         button.textContent = name;
         button.addEventListener('click', () => {
