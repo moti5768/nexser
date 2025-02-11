@@ -1390,6 +1390,8 @@ if (ua.includes("mobile")) {
 
     function window_none() {
         document.querySelectorAll('.task_buttons').forEach(task_buttons => task_buttons.remove());
+        document.querySelectorAll('.testwindow2').forEach(task_buttons => task_buttons.remove());
+        document.querySelectorAll('.error_windows').forEach(task_buttons => task_buttons.remove());
         allwindows.forEach(allwindow_none => {
             allwindow_none.classList.add('active');
             allwindow_none.classList.remove('big', 'rightwindow', 'leftwindow', 'selectwindows');
