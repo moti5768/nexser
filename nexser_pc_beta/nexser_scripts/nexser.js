@@ -780,7 +780,6 @@ if (ua.includes("mobile")) {
             document.querySelector('.nexser_boot_menu').style.display = "block";
             document.querySelector('.nexser_bootmenu_text').textContent = "サウンドドライバー がインストールされていません!";
             document.querySelector('.nexser_bootmenu_text2').textContent = "インストールして nexser を起動しますか?";
-            document.querySelector('.nexser_bootmenu_text3').textContent = "(※インストールして起動する場合 'start nexser' を押すまで再読み込みしないでください)";
         } else {
             nexser_start()
             nex.style.cursor = 'none';
@@ -4152,17 +4151,16 @@ if (ua.includes("mobile")) {
     function color_bw() { applyFilter("blackwhite", "grayscale(100%)"); }
     function color_invert() { applyFilter("invert", "invert(100%)"); }
     function color_hue() { applyFilter("hue", "hue-rotate(100deg)"); }
-    window.onload = function () {
-        const filterType = localStorage.getItem("backcolor_filter");
-        const filters = {
-            "blackwhite": "grayscale(100%)",
-            "invert": "invert(100%)",
-            "hue": "hue-rotate(100deg)"
-        };
-        if (filterType && filters[filterType]) {
-            nex.style.filter = filters[filterType];
-        }
+    const filterType = localStorage.getItem("backcolor_filter");
+    const filters = {
+        "blackwhite": "grayscale(100%)",
+        "invert": "invert(100%)",
+        "hue": "hue-rotate(100deg)"
     };
+    if (filterType && filters[filterType]) {
+        nex.style.filter = filters[filterType];
+    }
+
     function toggleShadow(action) {
         document.querySelectorAll('.child_list, .sample_child_list').forEach(childlist_shadow => {
             let childlist_shadow2 = childlist_shadow.lastElementChild;

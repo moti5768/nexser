@@ -289,18 +289,11 @@ li {
 .start_nexser {
     font-size: x-large;
     position: absolute;
-    bottom: 0;
+    bottom: 0px;
     left: 250px;
 }
 
 /* buttons */
-
-.task_buttons.pressed {
-    background: darkgray;
-    padding-top: 1px;
-    padding-left: 1px;
-    box-sizing: border-box;
-}
 
 .button,
 .button2 {
@@ -315,8 +308,6 @@ li {
     border: 1.8px solid #808080;
     border-color: #fff #808080 #808080 #fff;
     box-shadow: 0.5px 0.5px black;
-    box-sizing: border-box;
-    position: relative;
 }
 
 .button.pressed,
@@ -434,9 +425,7 @@ input[type="file"] {
 }
 
 .start_button.pressed {
-    padding-top: 1px;
-    padding-left: 1px;
-    box-sizing: border-box;
+    transform: translate(0.6px, 0.6px);
     border: 1.5px solid;
     border-color: #7a7a7a #fff #fff #7a7a7a;
     box-shadow: 0.5px 0.5px 0 #000 inset;
@@ -506,23 +495,13 @@ input[type="file"] {
 }
 
 .task_icons .task_buttons.tsk_pressed {
-    padding-top: 1px;
-    padding-left: 1px;
-    box-sizing: border-box;
+    transform: translate(0.6px, 0.6px);
     border: 1.5px solid;
     border-color: #7a7a7a #fff #fff #7a7a7a;
     box-shadow: 0.5px 0.5px 0 #000 inset;
     background: #DDDDDD;
-    font-weight: 800;
-    text-shadow:
-        0.3px 0.3px 0,
-        0.3px -0.3px 0px,
-        -0.3px 0.3px 0,
-        -0.3px -0.3px 0px,
-        0.3px 0px 0px,
-        0px 0.3px 0px,
-        -0.3px 0px 0px,
-        0px -0.3px 0px;
+    text-shadow: 1px 0 #000;
+    letter-spacing: 0.5px;
 }
 
 .taskbar_rightgroup {
@@ -729,12 +708,14 @@ input[type="file"] {
 .sound_play_button {
     display: block;
     float: left;
+    width: 60px;
     height: 24px;
     box-sizing: border-box;
 }
 
 .sound_stop_button {
     display: inline-block;
+    width: 30px;
     height: 24px;
     box-sizing: border-box;
 }
@@ -1596,7 +1577,6 @@ body::-webkit-scrollbar {
 }
 
 .borderinline_dotted {
-    display: inline-block;
     outline: 1.5px dotted black;
     outline-offset: -5px;
 }
@@ -2348,106 +2328,57 @@ td {
 
 /* background_pattern */
 
-.backgrounds1 {
+.pattern_backgrounds>div {
     display: none;
     height: 100%;
     width: 100%;
     z-index: 0;
     position: absolute;
     top: 0px;
+}
+
+.backgrounds1 {
     background-image: radial-gradient(black 1.5px, rgba(0, 0, 0, 0) 1.5px);
     background-size: 4px 4px;
 }
 
 .backgrounds2 {
-    display: none;
-    height: 100%;
-    width: 100%;
-    z-index: 0;
-    position: absolute;
-    top: 0px;
     background-image: radial-gradient(black 2px, rgba(0, 0, 0, 0) 2px);
     background-size: 10px 10px;
 }
 
 .backgrounds3 {
-    display: none;
-    height: 100%;
-    width: 100%;
-    z-index: 0;
-    position: absolute;
-    top: 0px;
-    font: 120% bold;
-    padding: 0.6em;
     background:
         conic-gradient(at 5% 45%, #caa0a0 90deg, transparent 90deg) 0px 0px/20px 20px, conic-gradient(at 5% 45%, #caa0a0 90deg, transparent 90deg) 10px 10px/20px 20px, #eeeeee;
 }
 
 .backgrounds4 {
-    display: none;
-    height: 100%;
-    width: 100%;
-    z-index: 0;
-    position: absolute;
-    top: 0px;
-    font: 120% bold;
-    padding: 0.6em;
     background:
         conic-gradient(at 5% 45%, #EDFFBE 90deg, transparent 90deg) 0px 0px/20px 20px, conic-gradient(at 5% 45%, #FFFFBB 90deg, transparent 90deg) 10px 10px/20px 20px, gray;
 }
 
 .backgrounds5 {
-    display: none;
-    height: 100%;
-    width: 100%;
-    z-index: 0;
-    position: absolute;
-    top: 0px;
     background-image: linear-gradient(black 4px, transparent 4px), linear-gradient(90deg, black 4px, transparent 4px), linear-gradient(black 2px, transparent 2px), linear-gradient(90deg, black 2px, rgba(0, 0, 0, 0) 2px);
     background-size: 50px 50px, 50px 50px, 10px 10px, 10px 10px;
     background-position: -4px -4px, -4px -4px, -2px -2px, -2px -2px;
 }
 
 .backgrounds6 {
-    display: none;
-    height: 100%;
-    width: 100%;
-    z-index: 0;
-    position: absolute;
-    top: 0px;
     background-image: linear-gradient(0deg, darkgray 25%, dimgray 50%, teal 75%);
     background-size: 20px 20px;
 }
 
 .backgrounds7 {
-    display: none;
-    height: 100%;
-    width: 100%;
-    z-index: 0;
-    position: absolute;
-    top: 0px;
     background-image: repeating-linear-gradient(45deg, white 25%, transparent 25%, transparent 75%, teal 75%, gray), repeating-linear-gradient(45deg, dimgray 25%, gray 25%, whitesmoke 75%, black 75%, dimgray);
     background-position: 0 0, 20px 20px;
     background-size: 40px 40px;
 }
 
 .backgrounds8 {
-    display: none;
-    height: 100%;
-    width: 100%;
-    z-index: 0;
-    position: absolute;
-    top: 0px;
     background: linear-gradient(#3f96cd, hsl(171, 40%, 91%));
 }
 
 .backgrounds9 {
-    display: none;
-    height: 100%;
-    width: 100%;
-    z-index: 0;
-    position: absolute;
-    top: 0px;
     background: linear-gradient(-150deg, teal, steelblue);
 }
 
@@ -2455,14 +2386,17 @@ td {
     width: 30px;
     height: 30px;
     margin-right: 5px;
-    box-sizing: border-box;
+}
+
+.pattern_btn>span {
+    display: block;
+    height: 100%;
 }
 
 .display_pattern_btn {
     width: 30px;
     height: 30px;
     margin-right: 5px;
-    box-sizing: border-box;
 }
 
 /* progress */
