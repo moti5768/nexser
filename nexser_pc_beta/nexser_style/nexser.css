@@ -1179,7 +1179,7 @@ body::-webkit-scrollbar {
 }
 
 .child_windows_invisible {
-    opacity: 0;
+    display: none;
 }
 
 .child_windows.big {

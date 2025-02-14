@@ -251,10 +251,9 @@ if (ua.includes("mobile")) {
 
         var isClickInsideStartButton8 = Array.from(document.querySelectorAll('.task_buttons')).some(button => button.contains(e.target));
         if (!isClickInsideStartButton8) {
-            const buttons = document.querySelectorAll('.task_buttons');
-            buttons.forEach(button => {
-                button.classList.remove('tsk_pressed', 'pressed');
-            })
+            document.querySelectorAll('.task_buttons').forEach(button =>
+                button.classList.remove('tsk_pressed', 'pressed')
+            );
             updateButtonClasses();
         }
     });
@@ -2327,19 +2326,19 @@ if (ua.includes("mobile")) {
         };
         if (localStorage.getItem('window_animation')) {
             animation.style.transition = `${windowanimation}s cubic-bezier(0, 0, 1, 1)`;
-            [...animation.children].forEach(child => child.style.display = 'none');
-            document.querySelectorAll('.title,.title_buttons').forEach(el => el.style.display = "block");
+            Array.from(animation.children).forEach(child => child.style.display = 'none');
+            document.querySelectorAll('.title, .title_buttons').forEach(el => el.style.display = "block");
             document.querySelectorAll('.title2').forEach(el => el.style.display = "flex");
             setTimeout(() => {
                 animation.style.transition = "";
-                [...animation.children].forEach(child => child.style.display = '');
+                Array.from(animation.children).forEach(child => child.style.display = '');
                 if (localStorage.getItem('allwindow_toolbar')) {
                     document.querySelectorAll('.window_tool').forEach(el => el.style.display = "block");
                 }
                 adjustHeight();
             }, windowanimation * 1000);
         } else {
-            adjustHeight()
+            adjustHeight();
         }
     }
 
@@ -2581,29 +2580,24 @@ if (ua.includes("mobile")) {
     }
 
     function assignClassToFrontmostElement(selector, newClassName) {
-        const elements = document.querySelectorAll(selector);
-        let frontmostElement = null;
-        let highestZIndex = -Infinity;
-        elements.forEach(element => {
+        const elements = Array.from(document.querySelectorAll(selector));
+        const frontmostElement = elements.reduce((maxElement, element) => {
             const childWindow = element.closest('.child_windows');
             if (!childWindow.classList.contains('selectwindows')) {
                 document.querySelectorAll('.task_buttons').forEach(taskButton => taskButton.remove());
                 childWindow.classList.add('selectwindows');
             }
             const zIndex = parseInt(window.getComputedStyle(element).zIndex, 10) || 0;
-            if (zIndex > highestZIndex) {
-                highestZIndex = zIndex;
-                frontmostElement = childWindow;
-            }
-        });
+            return zIndex > (maxElement?.zIndex || -Infinity) ? { element: childWindow, zIndex } : maxElement;
+        }, null);
         if (frontmostElement) {
-            frontmostElement.firstElementChild.classList.add(newClassName);
+            frontmostElement.element.firstElementChild.classList.add(newClassName);
         }
         elements.forEach(element => {
             const { width, height } = getComputedStyle(element);
             Object.assign(element.style, { width, height });
         });
-        return { element: frontmostElement, zIndex: highestZIndex };
+        return frontmostElement;
     }
 
     function zindexwindow_addnavy() {
@@ -5028,8 +5022,8 @@ if (ua.includes("mobile")) {
         window.style.height = '20px';
         window.classList.add('minimization');
         window.scrollTo(0, 0);
-        moveToTaskbarButton(window);
         window_animation(window);
+        moveToTaskbarButton(window);
     }
     function observeNewElements4() {
         const observer = new MutationObserver((mutations) => {
@@ -5064,7 +5058,6 @@ if (ua.includes("mobile")) {
             taskbar_b.appendChild(button);
         });
         updateButtonClasses();
-        document.querySelectorAll('.child_windows.minimization').forEach(moveToTaskbarButton);
     }
 
     function moveToTaskbarButton(minimization_button) {
@@ -5122,18 +5115,18 @@ if (ua.includes("mobile")) {
             isAnimating = false;
         }
     }
+
     function updateButtonClasses() {
         const windows = document.querySelectorAll('.child_windows.selectwindows:not(.no_window)');
         const buttons = document.querySelectorAll('.task_buttons');
         buttons.forEach(button => {
-            button.classList.remove('tsk_pressed');
             button.oncontextmenu = (event) => {
                 event.preventDefault();
                 popups('task_buttons', null, button.textContent);
             };
         });
         windows.forEach((windowElement, index) => {
-            if (windowElement.querySelector('.title.navy')) {
+            if (windowElement.querySelector('.navy')) {
                 buttons[index]?.classList.add('tsk_pressed');
             }
         });
@@ -5564,8 +5557,7 @@ if (ua.includes("mobile")) {
 
     }
     function rectangle_remove() {
-        const elements = document.querySelectorAll('.rectangle');
-        elements.forEach(element => element.remove());
+        document.querySelectorAll('.rectangle').forEach(e => e.remove());
     }
 
     document.querySelectorAll('.search_button').forEach(search_button =>
@@ -5827,8 +5819,7 @@ if (ua.includes("mobile")) {
     });
 
     const config = { attributes: true, childList: true, subtree: true, attributeFilter: ['class', 'style'] };
-    let previousActiveCount = 0;
-    let previousLargestZIndex = largestZIndex;
+    let previousActiveCount = 0, previousLargestZIndex = largestZIndex;
     const callback = () => {
         const currentActiveCount = [...allwindows].filter(node => node.classList.contains('active')).length;
         if (currentActiveCount !== previousActiveCount || previousLargestZIndex !== largestZIndex) {
