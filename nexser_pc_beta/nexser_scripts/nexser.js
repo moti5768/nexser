@@ -1108,9 +1108,6 @@ if (ua.includes("mobile")) {
             setTimeout(() => {
                 setColor();
                 nex.style.cursor = '';
-                if (!localStorage.getItem('editorContent')) {
-                    localStorage.setItem('editorContent', "PGJyPg==");
-                }
                 startup_window_open();
             }, 500);
         }, 250);
@@ -6119,17 +6116,44 @@ if (ua.includes("mobile")) {
 
     function saveContent() {
         const content = editor_2.innerHTML;
-        const compressedContent = btoa(unescape(encodeURIComponent(content)));
-        localStorage.setItem('editorContent', compressedContent);
-        noticewindow_create("Editor", "保存しました!　");
+        const doc = new DOMParser().parseFromString(content, 'text/html');
+        const imageMap = {};
+        Array.from(doc.getElementsByTagName('img')).forEach(img => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const originalSrc = img.src;
+            const uniqueKey = generateUniqueKey();
+            canvas.width = img.width / 10;
+            canvas.height = img.height / 10;
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            img.src = canvas.toDataURL('image/jpeg', 0.0005);
+            imageMap[uniqueKey] = originalSrc;
+            img.setAttribute('data-url', uniqueKey);
+        });
+        const editorContent = {
+            htmlContent: btoa(unescape(encodeURIComponent(doc.body.innerHTML))),
+            imageMap: imageMap
+        };
+        localStorage.setItem('editorContent', JSON.stringify(editorContent));
+        noticewindow_create("Editor", "保存しました!");
     }
-
     function editorContent_load() {
-        const savedContent = localStorage.getItem('editorContent');
-        if (savedContent) {
-            const decompressedContent = decodeURIComponent(escape(atob(savedContent)));
-            editor_2.innerHTML = decompressedContent;
+        const savedEditorContent = localStorage.getItem('editorContent');
+        if (savedEditorContent) {
+            const parsedEditorContent = JSON.parse(savedEditorContent);
+            const doc = new DOMParser().parseFromString(decodeURIComponent(escape(atob(parsedEditorContent.htmlContent))), 'text/html');
+            const imageMap = parsedEditorContent.imageMap;
+            Array.from(doc.getElementsByTagName('img')).forEach(img => {
+                const uniqueKey = img.getAttribute('data-url');
+                if (imageMap[uniqueKey]) {
+                    img.src = imageMap[uniqueKey];
+                }
+            });
+            editor_2.innerHTML = doc.body.innerHTML;
         }
+    }
+    function generateUniqueKey() {
+        return 'img_' + Math.random().toString(36).substr(2, 9);
     }
 
     function toggleDecoration() {
@@ -6392,10 +6416,6 @@ if (ua.includes("mobile")) {
         event.stopPropagation(); // 親要素のクリックイベントが発火しないようにする
     });
 
-    if (!localStorage.getItem('editorContent') && localStorage.getItem('start_nexser')) {
-        localStorage.setItem('editorContent', "PGJyPg==")
-    }
-
     setTimeout(() => {
 
         function applyImageHandlers(img) {
@@ -6478,28 +6498,28 @@ if (ua.includes("mobile")) {
 
         observer.observe(editor_2, { childList: true, subtree: true });
 
-        editor.addEventListener('dragenter', function (event) {
+        editor_2.addEventListener('dragenter', function (event) {
             if (event.dataTransfer.types.includes('Files')) {
                 event.preventDefault();
                 event.stopPropagation();
             }
         });
 
-        editor.addEventListener('dragover', function (event) {
+        editor_2.addEventListener('dragover', function (event) {
             if (event.dataTransfer.types.includes('Files')) {
                 event.preventDefault();
                 event.stopPropagation();
             }
         });
 
-        editor.addEventListener('dragleave', function (event) {
+        editor_2.addEventListener('dragleave', function (event) {
             if (event.dataTransfer.types.includes('Files')) {
                 event.preventDefault();
                 event.stopPropagation();
             }
         });
 
-        editor.addEventListener('drop', function (event) {
+        editor_2.addEventListener('drop', function (event) {
             if (event.dataTransfer.types.includes('Files')) {
                 event.preventDefault();
                 event.stopPropagation();
@@ -6513,10 +6533,10 @@ if (ua.includes("mobile")) {
                             img.src = e.target.result;
                             img.style.position = 'absolute';
                             img.onload = function () {
-                                img.style.left = event.clientX - editor.getBoundingClientRect().left + editor.scrollLeft - img.width / 2 + 'px';
-                                img.style.top = event.clientY - editor.getBoundingClientRect().top + editor.scrollTop - img.height / 2 + 'px';
+                                img.style.left = event.clientX - editor_2.getBoundingClientRect().left + editor_2.scrollLeft - img.width / 4 + 'px';
+                                img.style.top = event.clientY - editor_2.getBoundingClientRect().top + editor_2.scrollTop - img.height / 4 + 'px';
                             };
-                            editor.appendChild(img);
+                            editor_2.appendChild(img);
                             applyImageHandlers(img);
                         };
                         reader.readAsDataURL(file);
