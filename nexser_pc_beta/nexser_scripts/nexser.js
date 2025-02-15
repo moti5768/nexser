@@ -919,12 +919,13 @@ if (ua.includes("mobile")) {
                         document.querySelectorAll('.testwindow2').forEach(testwindow2 => testwindow2.remove());
                         document.querySelectorAll('.error_windows').forEach(errorwindow => errorwindow.remove());
                         window_none();
-                        localStorage.removeItem('prompt_data');
                         window_reset();
+                        localStorage.removeItem('prompt_data');
                         document.querySelector('#code_html').style.display = "none";
                         document.querySelector('#code_script').style.display = "none";
                         document.querySelector('#code_script2').style.display = "none";
                         fileborder_reset();
+                        document.querySelector('.black_screen').style.display = "none";
                         setTimeout(() => {
                             document.querySelectorAll('.button').forEach(button => button.classList.remove('pressed'));
                             nameText.value = "";
@@ -941,9 +942,10 @@ if (ua.includes("mobile")) {
                     document.querySelector('.close_button3').style.display = "block"
                     document.querySelector('.shutdown_button').style.display = "block";
                     document.querySelector('.warningclose_button').style.display = "none";
-                    document.querySelector('.warning_title_text').textContent = "warning"
-                    document.querySelector('.window_warning_text').textContent = "実行されているウィンドウがあります! ログオフしますか?"
-                    sound(4)
+                    document.querySelector('.warning_title_text').textContent = "warning";
+                    document.querySelector('.window_warning_text').textContent = "実行されているウィンドウがあります! ログオフしますか?";
+                    document.querySelector('.black_screen').style.display = "block";
+                    sound(4);
                     nex.style.cursor = '';
                 }
             }, 100);
@@ -2193,6 +2195,7 @@ if (ua.includes("mobile")) {
             btn.addEventListener('click', () => {
                 const el = btn.closest(cls === '.close_button' ? '.child_windows' : '.warning_windows');
                 if (el) cls === '.close_button' ? (el.classList.add('active'), el.classList.remove('selectwindows')) : el.style.display = 'none';
+                document.querySelector('.black_screen').style.display = "none";
             });
         });
     });
@@ -3347,7 +3350,7 @@ if (ua.includes("mobile")) {
         resetShowLength();
         localStorage.removeItem('note_texts');
         note_pad.classList.add('active');
-        note_pad.classList.remove('selectwindows')
+        note_pad.classList.remove('selectwindows');
     }
 
     function error_windows_close(event) {

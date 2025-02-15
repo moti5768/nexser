@@ -1609,36 +1609,29 @@ body::-webkit-scrollbar {
     box-sizing: border-box;
 }
 
-.allclose_button::before {
-    content: "";
-    position: absolute;
-    left: 7px;
-    top: 2px;
-    transform: rotate(45deg);
-    height: 12px;
-    width: 2px;
-    background-color: black;
-}
-
+.allclose_button::before,
 .allclose_button::after {
     content: "";
     position: absolute;
     left: 7px;
     top: 2px;
-    transform: rotate(-45deg);
     height: 12px;
     width: 2px;
     background-color: black;
 }
 
-.pressed.allclose_button::before {
-    margin-top: 1.5px;
-    margin-left: 1.5px;
+.allclose_button::before {
+    transform: rotate(45deg);
 }
 
+.allclose_button::after {
+    transform: rotate(-45deg);
+}
+
+.pressed.allclose_button::before,
 .pressed.allclose_button::after {
-    margin-top: 1.5px;
-    margin-left: 1.5px;
+    margin-top: 1.25px;
+    margin-left: 1.25px;
 }
 
 /* 飾り */
@@ -1646,7 +1639,6 @@ body::-webkit-scrollbar {
 .drag_button {
     position: absolute;
     width: 100%;
-    right: 100px;
     right: 0px;
 }
 
@@ -1660,13 +1652,13 @@ body::-webkit-scrollbar {
     box-sizing: border-box;
     text-shadow:
         0.3px 0.3px 0,
-        0.3px -0.3px 0px,
+        0.3px -0.3px 0,
         -0.3px 0.3px 0,
-        -0.3px -0.3px 0px,
-        0.3px 0px 0px,
-        0px 0.3px 0px,
-        -0.3px 0px 0px,
-        0px -0.3px 0px;
+        -0.3px -0.3px 0,
+        0.3px 0 0,
+        0 0.3px 0,
+        -0.3px 0 0,
+        0 -0.3px 0;
 }
 
 .bigscreen_button::before {
@@ -1674,7 +1666,6 @@ body::-webkit-scrollbar {
     display: block;
     margin-right: 8px;
     position: absolute;
-    display: block;
     left: 2px;
     top: 2px;
     box-shadow: black 0px 3px inset, black 0px 0px 0px 1px inset;
@@ -1683,8 +1674,8 @@ body::-webkit-scrollbar {
 }
 
 .pressed.bigscreen_button::before {
-    margin-top: 1.5px;
-    margin-left: 1.5px;
+    margin-top: 1.25px;
+    margin-left: 1.25px;
 }
 
 .minscreen_button {
@@ -1698,26 +1689,30 @@ body::-webkit-scrollbar {
     box-sizing: border-box;
 }
 
-.minscreen_button::before {
-    content: "";
-    position: absolute;
-    display: block;
-    left: 6px;
-    top: 2px;
-    box-shadow: black 0px 3px inset, black 0px 0px 0px 1px inset;
-    height: 8px;
-    width: 8px;
-}
-
+.minscreen_button::before,
 .minscreen_button::after {
     content: "";
     position: absolute;
     display: block;
-    left: 3px;
-    top: 7px;
-    box-shadow: black 0px 3px inset, black 0px 0px 0px 1px inset;
     height: 8px;
     width: 8px;
+    box-shadow: black 0px 3px inset, black 0px 0px 0px 1px inset;
+}
+
+.minscreen_button::before {
+    left: 6px;
+    top: 2px;
+}
+
+.minscreen_button::after {
+    left: 3px;
+    top: 7px;
+}
+
+.pressed.minscreen_button::before,
+.pressed.minscreen_button::after {
+    margin-top: 1.25px;
+    margin-left: 1.25px;
 }
 
 .minimization_button {
@@ -1730,13 +1725,13 @@ body::-webkit-scrollbar {
     box-sizing: border-box;
     text-shadow:
         0.35px 0.35px 0,
-        0.35px -0.35px 0px,
+        0.35px -0.35px 0,
         -0.35px 0.35px 0,
-        -0.35px -0.35px 0px,
-        0.35px 0px 0px,
-        0px 0.35px 0px,
-        -0.35px 0px 0px,
-        0px -0.35px 0px;
+        -0.35px -0.35px 0,
+        0.35px 0 0,
+        0 0.35px 0,
+        -0.35px 0 0,
+        0 -0.35px 0;
 }
 
 .minimization_button::before {
@@ -1750,18 +1745,8 @@ body::-webkit-scrollbar {
 }
 
 .pressed.minimization_button::before {
-    margin-top: 1.5px;
-    margin-left: 1.5px;
-}
-
-.pressed.minscreen_button::before {
-    margin-top: 1.5px;
-    margin-left: 1.5px;
-}
-
-.pressed.minscreen_button::after {
-    margin-top: 1.5px;
-    margin-left: 1.5px;
+    margin-top: 1.25px;
+    margin-left: 1.25px;
 }
 
 .pointer_none::before,

@@ -4,8 +4,7 @@ function displayBlueScreen(message, source, lineno, colno, error) {
     }
     const blueScreen = document.createElement('div');
     blueScreen.className = 'blue-screen';
-    blueScreen.innerHTML = `
-        <div>
+    blueScreen.innerHTML = `<div>
             <p style="background: silver; display: inline; color: darkblue;">&nbsp;nexser&nbsp;</p>
             <p>エラーが発生しました。ページを再ロードしてください。</p>
             <p>エラー情報：</p>
@@ -14,8 +13,7 @@ function displayBlueScreen(message, source, lineno, colno, error) {
             <p>行番号：${lineno}</p>
             <p>列番号：${colno}</p>
             <p>${error ? error.stack : ''}</p>
-        </div>
-    `;
+        </div>`;
     document.querySelectorAll('.testwindow2').forEach(task_buttons => task_buttons.remove());
     document.body.appendChild(blueScreen);
     document.getElementById('nex').remove();
