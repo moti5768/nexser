@@ -2714,7 +2714,7 @@ if (ua.includes("mobile")) {
                     document.body.removeChild(overlay);
                 }
                 setTimeout(() => {
-                    ["background", "border", "outline", "boxShadow", "opacity"].forEach(style => drag.style[style] = "");
+                    ["background", "borderStyle", "borderColor", "borderWidth", "boxShadow", "mixBlendMode"].forEach(style => drag.style[style] = "");
                     Array.from(drag.children).forEach(child => child.style.opacity = "");
                     window_back_silver();
                 }, 0);
@@ -2749,13 +2749,12 @@ if (ua.includes("mobile")) {
     observeNewElements3();
 
     function applyStyles(element) {
-        const { backgroundColor } = getComputedStyle(element);
-        const [r, g, b] = backgroundColor.match(/\d+/g).map(Number);
-        const borderColor = `rgb(${255 - r}, ${255 - g}, ${255 - b})`;
-        element.style.background = "rgba(255, 255, 255, 0)";
-        element.style.border = `dashed 1.5px ${borderColor}`;
+        element.style.background = "rgba(0, 0, 0, 0)";
+        element.style.borderStyle = "solid";
+        element.style.borderColor = "#fff";
+        element.style.borderWidth = "3px";
         element.style.boxShadow = "none";
-        element.style.outline = "1.5px dashed silver";
+        element.style.mixBlendMode = "difference";
         for (const child of element.children) {
             child.style.opacity = "0";
         }
@@ -4825,9 +4824,11 @@ if (ua.includes("mobile")) {
                 }
                 if (clones && !localStorage.getItem('window_afterimage_false')) {
                     resizer2.style.background = "";
-                    resizer2.style.border = "";
-                    resizer2.style.outline = "";
+                    resizer2.style.borderStyle = "";
+                    resizer2.style.borderColor = "";
+                    resizer2.style.borderWidth = "";
                     resizer2.style.boxShadow = "";
+                    resizer2.style.mixBlendMode = "";
                     Array.from(resizer2.children).forEach(child => child.style.opacity = "");
                     document.querySelector('.clones').remove();
                 }
