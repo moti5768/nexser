@@ -271,7 +271,6 @@ if (ua.includes("mobile")) {
         notecolor_update,
         notetextsize_change,
         taskgroup_load,
-        window_back_silver,
         caload,
         titlecolor_set,
         back_pattern_set,
@@ -484,13 +483,7 @@ if (ua.includes("mobile")) {
                 background_text2.style.fontSize = fontSize;
             }
         });
-        if (localStorage.getItem('allwindow_toolbar')) {
-            document.querySelectorAll('.window_tool').forEach(window_tool => window_tool.style.display = "block");
-            document.querySelectorAll('.window_inline_side').forEach(window_inline_side => window_inline_side.style.top = "31px");
-        } else {
-            clock_menu.style.height = "355px"
-            document.querySelectorAll('.window_tool').forEach(window_tool => window_tool.style.display = "none");
-        }
+
         if (localStorage.getItem('clockdata_analog')) {
             document.getElementsByClassName('digital_clock_area')[0].style.display = "none";
             document.getElementsByClassName('analog_clock_area')[0].style.display = "block"
@@ -2328,13 +2321,10 @@ if (ua.includes("mobile")) {
             animation.style.transition = `${windowanimation}s cubic-bezier(0, 0, 1, 1)`;
             Array.from(animation.children).forEach(child => child.style.display = 'none');
             document.querySelectorAll('.title, .title_buttons').forEach(el => el.style.display = "block");
-            document.querySelectorAll('.title2').forEach(el => el.style.display = "flex");
             setTimeout(() => {
                 animation.style.transition = "";
                 Array.from(animation.children).forEach(child => child.style.display = '');
-                if (localStorage.getItem('allwindow_toolbar')) {
-                    document.querySelectorAll('.window_tool').forEach(el => el.style.display = "block");
-                }
+                windowtool();
                 adjustHeight();
             }, windowanimation * 1000);
         } else {
@@ -2458,6 +2448,14 @@ if (ua.includes("mobile")) {
         });
     });
 
+    function windowtool() {
+        const showTools = localStorage.getItem('allwindow_toolbar');
+        document.querySelectorAll('.window_tool').forEach(tool => tool.style.display = showTools ? "block" : "none");
+        document.querySelectorAll('.window_inline_side').forEach(side => side.style.top = showTools ? "31px" : "");
+        if (!showTools) clock_menu.style.height = "355px";
+    }
+    windowtool();
+
     const digital_clock_area = document.getElementsByClassName('digital_clock_area');
     const analog_clock_area = document.getElementsByClassName('analog_clock_area')
     document.querySelectorAll('.clockdata_analog').forEach(clockdata_analog => {
@@ -2503,10 +2501,6 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.window_inline_menus .menuchild1').forEach(child => {
         child.style.display = "block";
     });
-
-    function window_back_silver() {
-        Array.from(document.getElementsByClassName('back_silver')).forEach(el => el.style.background = "silver");
-    }
 
     document.querySelectorAll('.child_windows, .child').forEach(windowElement => {
         const parentWindow = windowElement.closest('.child_windows');
@@ -2673,26 +2667,23 @@ if (ua.includes("mobile")) {
                 document.addEventListener("touchend", mup, false);
             }
             function mmove(e) {
-                setTimeout(() => {
-                    if (localStorage.getItem('window_invisible') && localStorage.getItem('window_afterimage_false')) {
-                        drag.style.opacity = "0.5"
-                    } else if (localStorage.getItem('window_borderblack') && localStorage.getItem('window_afterimage_false')) {
-                        applyStyles(drag);
-                    } else if (!localStorage.getItem('window_afterimage_false')) {
-                        applyStyles(drag);
-                    }
-                }, 0);
+                const drag = document.getElementsByClassName("drag")[0];
                 if (!clones && !localStorage.getItem('window_afterimage_false')) {
                     const clone = dragwindow.cloneNode(true);
                     dragwindow.parentNode.appendChild(clone).classList.add('clones');
                     [clone, dragwindow].forEach(el => el.style.zIndex = largestZIndex++);
                     requestAnimationFrame(() => {
                         dragwindow.parentNode.appendChild(clone).children[0].classList.add('navy');
-                        applyStyles(dragwindow, titlecolor_set());
+                        applyStyles(dragwindow);
+                        titlecolor_set()
                     });
                     clones = true;
                 }
-                const drag = document.getElementsByClassName("drag")[0];
+                if (localStorage.getItem('window_invisible') && localStorage.getItem('window_afterimage_false')) {
+                    drag.style.opacity = "0.5"
+                } else if (localStorage.getItem('window_borderblack') && localStorage.getItem('window_afterimage_false')) {
+                    applyStyles(drag);
+                }
                 const event = e.type === "mousemove" ? e : e.changedTouches[0];
                 drag.style.top = event.pageY - y + "px";
                 drag.style.left = event.pageX - x + "px";
@@ -2713,11 +2704,9 @@ if (ua.includes("mobile")) {
                 if (overlay) {
                     document.body.removeChild(overlay);
                 }
-                setTimeout(() => {
-                    ["background", "borderStyle", "borderColor", "borderWidth", "boxShadow", "mixBlendMode"].forEach(style => drag.style[style] = "");
-                    Array.from(drag.children).forEach(child => child.style.opacity = "");
-                    window_back_silver();
-                }, 0);
+                ["background", "border", "boxShadow", "mixBlendMode"].forEach(style => drag.style[style] = "");
+                Array.from(drag.children).forEach(child => child.style.display = "");
+                windowtool();
                 if (clones && !localStorage.getItem('window_afterimage_false')) {
                     document.querySelector('.clones').remove();
                 }
@@ -2749,15 +2738,13 @@ if (ua.includes("mobile")) {
     observeNewElements3();
 
     function applyStyles(element) {
-        element.style.background = "rgba(0, 0, 0, 0)";
-        element.style.borderStyle = "solid";
-        element.style.borderColor = "#fff";
-        element.style.borderWidth = "3px";
-        element.style.boxShadow = "none";
-        element.style.mixBlendMode = "difference";
-        for (const child of element.children) {
-            child.style.opacity = "0";
-        }
+        Object.assign(element.style, {
+            background: "rgba(0, 0, 0, 0)",
+            border: "solid 3px #fff",
+            boxShadow: "none",
+            mixBlendMode: "difference"
+        });
+        Array.from(element.children).forEach(child => child.style.display = "none");
     }
 
     function check(elm1, elm2) {
@@ -2853,8 +2840,6 @@ if (ua.includes("mobile")) {
         });
     });
 
-
-
     const KEY_COLOR = "COLOR";
     const KEY_BKCOLOR = "BKCOLOR";
 
@@ -2862,19 +2847,13 @@ if (ua.includes("mobile")) {
     let bkcolor = null;
 
     function getStorage() {
-        // ローカルストレージに保存された内容を取得
         color = localStorage.getItem(KEY_COLOR);
         bkcolor = localStorage.getItem(KEY_BKCOLOR);
-
-        // ローカルストレージに文字色と背景色データが保存されていれば色変更
         if (color !== null && bkcolor != null) {
             setColor();
         }
     }
 
-    /*
-     * ローカルストレージに色名（文字色・背景色）を保存する
-     */
     function setStorage() {
         localStorage.setItem(KEY_COLOR, color);
         localStorage.setItem(KEY_BKCOLOR, bkcolor);
@@ -2894,9 +2873,6 @@ if (ua.includes("mobile")) {
         }
     }
 
-    /*
-     * 文字色と背景色を変更する
-     */
     function setColor() {
         setTimeout(() => {
             if (localStorage.getItem('driver_color')) {
@@ -2938,7 +2914,6 @@ if (ua.includes("mobile")) {
     });
 
     const colorBtns = document.querySelectorAll('.color_btn');
-
     colorBtns.forEach(color_btn => {
         color_btn.addEventListener('click', () => {
             titlecolor_remove();
@@ -4808,7 +4783,8 @@ if (ua.includes("mobile")) {
                     [clone, resizer2].forEach(el => el.style.zIndex = largestZIndex++);
                     requestAnimationFrame(() => {
                         clone.parentNode.appendChild(clone).children[0].classList.add('navy');
-                        applyStyles(resizer2, titlecolor_set());
+                        applyStyles(resizer2);
+                        titlecolor_set();
                     });
                     clones = true;
                 }
@@ -4829,12 +4805,10 @@ if (ua.includes("mobile")) {
                     resizer2.style.borderWidth = "";
                     resizer2.style.boxShadow = "";
                     resizer2.style.mixBlendMode = "";
-                    Array.from(resizer2.children).forEach(child => child.style.opacity = "");
+                    Array.from(resizer2.children).forEach(child => child.style.display = "");
                     document.querySelector('.clones').remove();
                 }
-                setTimeout(() => {
-                    window_back_silver();
-                }, 0);
+                windowtool();
                 clones = false;
             }
         });
@@ -5723,19 +5697,14 @@ if (ua.includes("mobile")) {
             if (!isAnimating) {
                 requestAnimationFrame(() => {
                     allbig.style.width = "";
-                    if (taskbarAutoHide) {
-                        allbig.style.height = taskbarBottomEmpty ? taskbarHeight : "";
-                    } else {
-                        allbig.style.height = taskbarHeight;
-                    }
+                    allbig.style.height = (taskbarAutoHide && taskbarBottomEmpty) ? taskbarHeight : (taskbarAutoHide ? "" : taskbarHeight);
                 });
             }
         });
-        document.querySelectorAll('iframe,video,img').forEach(allbig => {
-            setTimeout(() => {
-                allbig.style.maxWidth = "100%";
-                allbig.style.maxHeight = "100%";
-            }, 50);
+        const mediaElements = document.querySelectorAll('iframe,video,img');
+        mediaElements.forEach(allbig => {
+            allbig.style.maxWidth = "100%";
+            allbig.style.maxHeight = "100%";
         });
     }
 
@@ -6040,7 +6009,6 @@ if (ua.includes("mobile")) {
             event.currentTarget.style.zIndex = ++largestZIndex;
         });
         dropArea2.appendChild(entryDiv);
-        window_back_silver();
         entryDiv.style.zIndex = ++largestZIndex;
     }
 

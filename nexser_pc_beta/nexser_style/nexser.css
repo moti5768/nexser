@@ -630,8 +630,10 @@ input[type="file"] {
 }
 
 /* window */
-.back_silver {
-    background: silver;
+.back_silver,
+.back_silver .window_content,
+.back_silver .window_contents {
+    background-color: silver;
 }
 
 #soft_windows {
@@ -659,6 +661,7 @@ input[type="file"] {
 .file_windows {
     width: 605px;
     height: 450px;
+    min-width: 250px;
 }
 
 .child_windows::-webkit-scrollbar {
@@ -822,6 +825,7 @@ input[type="file"] {
 .mydocument_menu {
     width: 700px;
     height: 400px;
+    min-width: 250px;
 }
 
 .restriction_menu {
@@ -1003,11 +1007,9 @@ body::-webkit-scrollbar {
 }
 
 .mini_windows_sample {
-    display: block;
     font-size: 15px;
     width: auto;
     height: 300px;
-    background: whitesmoke;
     color: black;
     border: 3.5px solid #c0c0c0;
     box-shadow: 1.5px 1.5px #333333, -1.5px -1.5px whitesmoke;
@@ -1017,6 +1019,10 @@ body::-webkit-scrollbar {
     z-index: 0;
     min-width: max-content;
     min-height: 22.5px;
+}
+
+.mini_windows_sample>.window_contents {
+    background-color: whitesmoke;
 }
 
 /* guidebook */
@@ -1160,7 +1166,6 @@ body::-webkit-scrollbar {
     font-size: 15px;
     width: auto;
     height: auto;
-    background: whitesmoke;
     color: black;
     border: 3.5px solid #c0c0c0;
     box-shadow: 1.5px 1.5px #333333, -1.5px -1.5px whitesmoke;
@@ -1185,8 +1190,8 @@ body::-webkit-scrollbar {
 .child_windows.big {
     height: 100%;
     width: 100%;
-    border: none;
     background: whitesmoke;
+    border: none;
     resize: none;
 }
 
