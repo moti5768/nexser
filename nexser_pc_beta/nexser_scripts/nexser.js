@@ -5801,7 +5801,7 @@ if (ua.includes("mobile")) {
 
     document.querySelectorAll('.window_tool').forEach(windowtool_files => {
         const windowtool_files_parent = document.createElement('div');
-        windowtool_files_parent.innerHTML = `<span class="bold" style="position: absolute; margin-top: 5px;">Address</span>
+        windowtool_files_parent.innerHTML = `<span class="bold" style="position: absolute; margin-top: 5px;">Address:</span>
   <span class="winchild_border"></span>
   <div class="windowtool_parent">
     <span class="startmenu_file_icon"></span>
