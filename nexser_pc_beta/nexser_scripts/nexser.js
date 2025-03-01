@@ -1360,8 +1360,7 @@ if (ua.includes("mobile")) {
             windowposition_reset();
             allwindow.classList.remove('leftwindow', 'rightwindow', 'child_windows_invisible');
             allwindow.style.transition = "";
-            document.querySelector('.bigscreen_button').style.visibility = "visible";
-            document.querySelector('.minscreen_button').style.visibility = "visible";
+            document.querySelector('.bigminbtn').style.visibility = "visible";
             document.querySelector('.minimization_button').style.visibility = "visible";
             allwindow.classList.remove('minimization', 'selectwindows');
         });
@@ -2197,43 +2196,58 @@ if (ua.includes("mobile")) {
         });
     }
 
-    function addBigScreenButtonListeners(button) {
+    function addMinbigScreenButtonListeners(button) {
+        let isMaximized = false;
+        let originalSize = {};
+        let originalPosition = {};
         if (!button.dataset.listenerAdded) {
-            button.addEventListener('mousedown', function () {
-                setTimeout(() => {
-                    const elements = document.querySelector('.navy');
-                    const elements2 = elements.closest('.child_windows');
-                    Object.assign(elements2.dataset, {
-                        originalWidth: elements2.style.width,
-                        originalHeight: elements2.style.height,
-                        originalTop: elements2.style.top,
-                        originalLeft: elements2.style.left
-                    });
-                }, 0);
-            });
             button.addEventListener('click', function () {
-                const bigscreenbutton = button.closest('.child_windows');
-                bigscreenbutton.classList.remove('minimization');
-                const t = localStorage.getItem('taskbar_height');
-                bigscreenbutton.style.height = "";
-                bigscreenbutton.style.width = "";
-                bigscreenbutton.style.left = "0";
-                if (localStorage.getItem('data_taskbar_none')) {
-                    bigscreenbutton.style.top = "0";
-                } else if (localStorage.getItem('taskbar_position_button')) {
-                    bigscreenbutton.style.top = "40px";
-                    bigscreenbutton.style.top = `${t}px`;
-                } else if (bigscreenbutton.classList.contains('rightwindow')) {
-                    bigscreenbutton.style.top = "0";
-                    bigscreenbutton.style.left = "";
-                } else {
-                    bigscreenbutton.style.top = "0";
+                const win = button.closest('.child_windows');
+                if (win) {
+                    if (!originalSize[win]) {
+                        originalSize[win] = { width: win.style.width, height: win.style.height };
+                        originalPosition[win] = { top: win.style.top, left: win.style.left };
+                    }
+                    if (isMaximized) {
+                        window_animation(win)
+                        win.style.width = originalSize[win].width;
+                        win.style.height = originalSize[win].height;
+                        win.style.top = originalPosition[win].top;
+                        win.style.left = originalPosition[win].left;
+                        win.classList.remove('rightwindow', 'leftwindow');
+                        win.classList.remove('big');
+                        button.classList.replace('minbtn', 'bigminbtn');
+                        setTimeout(() => {
+                            win.scrollTop = 0;
+                            win.scrollLeft = 0;
+                        }, windowanimation * 1000);
+                        isMaximized = false;
+                    } else {
+                        window_animation(win);
+                        originalSize[win] = { width: win.style.width, height: win.style.height };
+                        originalPosition[win] = { top: win.style.top, left: win.style.left };
+                        win.classList.remove('minimization');
+                        const t = localStorage.getItem('taskbar_height');
+                        win.style.left = "0";
+                        if (localStorage.getItem('data_taskbar_none')) {
+                            win.style.top = "0";
+                        } else if (localStorage.getItem('taskbar_position_button')) {
+                            win.style.top = "40px";
+                            win.style.top = `${t}px`;
+                        } else if (win.classList.contains('rightwindow')) {
+                            win.style.top = "0";
+                            win.style.left = "";
+                        } else {
+                            win.style.top = "0";
+                        }
+                        win.classList.remove('rightwindow', 'leftwindow');
+                        win.classList.add('big');
+                        button.classList.replace('bigminbtn', 'minbtn');
+                        isMaximized = true;
+                    }
                 }
-                window_animation(bigscreenbutton)
-                bigscreenbutton.classList.remove('rightwindow', 'leftwindow');
-                bigscreenbutton.classList.add('big');
+                button.dataset.listenerAdded = true;
             });
-            button.dataset.listenerAdded = true;
         }
     }
     function observeNewElements() {
@@ -2242,11 +2256,11 @@ if (ua.includes("mobile")) {
                 if (mutation.type === 'childList') {
                     mutation.addedNodes.forEach(node => {
                         if (node.nodeType === 1) {
-                            if (node.matches('.bigscreen_button')) {
-                                addBigScreenButtonListeners(node);
+                            if (node.matches('.bigminbtn')) {
+                                addMinbigScreenButtonListeners(node);
                             }
                             if (node.matches('.child_windows')) {
-                                node.querySelectorAll('.bigscreen_button').forEach(addBigScreenButtonListeners);
+                                node.querySelectorAll('.bigminbtn').forEach(addMinbigScreenButtonListeners);
                             }
                         }
                     });
@@ -2255,52 +2269,8 @@ if (ua.includes("mobile")) {
         });
         observer.observe(document.body, { childList: true, subtree: true });
     }
-    document.querySelectorAll('.bigscreen_button').forEach(addBigScreenButtonListeners);
+    document.querySelectorAll('.bigminbtn').forEach(addMinbigScreenButtonListeners);
     observeNewElements();
-
-    function addMinScreenButtonListeners(button) {
-        if (!button.dataset.listenerAdded) {
-            button.addEventListener('click', function () {
-                const minscreenbutton = button.closest('.child_windows');
-                minscreenbutton.classList.remove('rightwindow', 'leftwindow', 'big');
-                const elements = document.querySelector('.navy');
-                const elements2 = elements.closest('.child_windows');
-                Object.assign(elements2.style, {
-                    width: elements2.dataset.originalWidth,
-                    height: elements2.dataset.originalHeight,
-                    top: elements2.dataset.originalTop,
-                    left: elements2.dataset.originalLeft
-                });
-                window_animation(minscreenbutton)
-                setTimeout(() => {
-                    minscreenbutton.scrollTop = 0;
-                    minscreenbutton.scrollLeft = 0;
-                }, 250);
-            });
-            button.dataset.listenerAdded = true;
-        }
-    }
-    function observeNewElements2() {
-        const observer = new MutationObserver(mutations => {
-            mutations.forEach(mutation => {
-                if (mutation.type === 'childList') {
-                    mutation.addedNodes.forEach(node => {
-                        if (node.nodeType === 1) {
-                            if (node.matches('.minscreen_button')) {
-                                addMinScreenButtonListeners(node);
-                            }
-                            if (node.matches('.child_windows')) {
-                                node.querySelectorAll('.minscreen_button').forEach(addMinScreenButtonListeners);
-                            }
-                        }
-                    });
-                }
-            });
-        });
-        observer.observe(document.body, { childList: true, subtree: true });
-    }
-    document.querySelectorAll('.minscreen_button').forEach(addMinScreenButtonListeners);
-    observeNewElements2();
 
     function window_animation_true() {
         localStorage.setItem('window_animation', true);
@@ -5201,8 +5171,7 @@ if (ua.includes("mobile")) {
                 const titleButtons = createElement('div', "title_buttons", windowDiv);
                 createElement('span', "drag_button", titleButtons, "&nbsp;");
                 const closeButton = createElement('span', "close_button button2 allclose_button", titleButtons);
-                createElement('span', "bigscreen_button button2", titleButtons);
-                createElement('span', "minscreen_button button2", titleButtons);
+                createElement('span', "bigminbtn button2", titleButtons);
                 createElement('span', "minimization_button button2", titleButtons);
                 createElement('br', null, titleButtons);
                 closeButton.addEventListener('click', () => {
@@ -5263,8 +5232,7 @@ if (ua.includes("mobile")) {
                     const titleButtons = createElement('div', "title_buttons", windowDiv);
                     createElement('span', "drag_button", titleButtons, "&nbsp;");
                     const closeButton = createElement('span', "close_button button2 allclose_button", titleButtons);
-                    createElement('span', "bigscreen_button button2", titleButtons);
-                    createElement('span', "minscreen_button button2", titleButtons);
+                    createElement('span', "bigminbtn button2", titleButtons);
                     createElement('span', "minimization_button button2", titleButtons);
                     createElement('br', null, titleButtons);
                     closeButton.addEventListener('click', () => {

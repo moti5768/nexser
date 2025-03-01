@@ -1228,14 +1228,6 @@ body::-webkit-scrollbar {
     margin-left: 30px;
 }
 
-.child_windows.big .minscreen_button {
-    display: block;
-}
-
-.child_windows.big .bigscreen_button {
-    display: none;
-}
-
 .child_windows.big .drag_button {
     display: none;
 }
@@ -1647,7 +1639,7 @@ body::-webkit-scrollbar {
     right: 0px;
 }
 
-.bigscreen_button {
+.bigminbtn {
     position: absolute;
     top: 3px;
     right: 23px;
@@ -1666,7 +1658,7 @@ body::-webkit-scrollbar {
         0 -0.3px 0;
 }
 
-.bigscreen_button::before {
+.bigminbtn::before {
     content: "";
     display: block;
     margin-right: 8px;
@@ -1678,13 +1670,12 @@ body::-webkit-scrollbar {
     width: 12px;
 }
 
-.pressed.bigscreen_button::before {
+.pressed.bigminbtn::before {
     margin-top: 1.25px;
     margin-left: 1.25px;
 }
 
-.minscreen_button {
-    display: none;
+.minbtn {
     position: absolute;
     top: 3px;
     right: 23px;
@@ -1694,8 +1685,8 @@ body::-webkit-scrollbar {
     box-sizing: border-box;
 }
 
-.minscreen_button::before,
-.minscreen_button::after {
+.minbtn::before,
+.minbtn::after {
     content: "";
     position: absolute;
     display: block;
@@ -1704,18 +1695,18 @@ body::-webkit-scrollbar {
     box-shadow: black 0px 3px inset, black 0px 0px 0px 1px inset;
 }
 
-.minscreen_button::before {
+.minbtn::before {
     left: 6px;
     top: 2px;
 }
 
-.minscreen_button::after {
+.minbtn::after {
     left: 3px;
     top: 7px;
 }
 
-.pressed.minscreen_button::before,
-.pressed.minscreen_button::after {
+.pressed.minbtn::before,
+.pressed.minbtn::after {
     margin-top: 1.25px;
     margin-left: 1.25px;
 }
