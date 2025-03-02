@@ -166,13 +166,15 @@
                 <div class="title_buttons">
                     <span class="close_button button2 pointer_none"></span><br>
                 </div>
-                <form autocomplete="off" method="get" onsubmit="return false;">
-                    <input class="large border2" type="password" id="pass_form" maxlength="4" autocomplete="off"
-                        style="height: 20px; margin-top: 10px; width: 290px;">
-                    <input type="submit" class="button2 apply_button" value="実行" style="margin-top: 5px; height: 25px;"
-                        onclick="password_login()">
-                    <span class="red_text pass_no" style="margin: 5px;"></span>
-                </form>
+                <div class="window_contents">
+                    <form autocomplete="off" method="get" onsubmit="return false;">
+                        <input class="large border2" type="password" id="pass_form" maxlength="4" autocomplete="off"
+                            style="height: 20px; margin-top: 10px; width: 290px;">
+                        <input type="submit" class="button2 apply_button" value="実行"
+                            style="margin-top: 5px; height: 25px;" onclick="password_login()">
+                        <span class="red_text pass_no" style="margin: 5px;"></span>
+                    </form>
+                </div>
             </div>
 
             <div class="child_windows welcome_menu back_silver active window_nosearch">
