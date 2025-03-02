@@ -16,7 +16,7 @@ function displayBlueScreen(message, source, lineno, colno, error) {
         </div>`;
     document.querySelectorAll('.testwindow2').forEach(task_buttons => task_buttons.remove());
     document.body.appendChild(blueScreen);
-    document.getElementById('nex').remove();
+    document.body.style.pointerEvents = "none";
     playbluescreen();
 }
 

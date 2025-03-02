@@ -5287,12 +5287,17 @@ if (ua.includes("mobile")) {
                 noticewindow_create("loading", `読み込み中... ${i + 1} of ${files.length}: ${file.name}`)
                 document.querySelector('.add_create_windows').style.zIndex = largestZIndex++;
                 processFile(file, event.clientX, event.clientY).then(() => {
-                    addwindow_remove()
+                    addwindow_remove();
                 }).catch(error => {
-                    console.error(`Error processing file ${i + 1}:`, error);
-                    processingMessage.innerText = `Error processing file ${i + 1} of ${files.length}: ${file.name}`;
+                    let processingMessage;
+                    if (processingMessage) {
+                        console.error(`Error processing file ${i + 1}:`, error);
+                        processingMessage.innerText = `Error processing file ${i + 1} of ${files.length}: ${file.name}`;
+                    } else {
+                        console.error("processingMessage element not found.");
+                    }
                 });
-            }, i * 250);
+            }, i * 200);
         }
     });
 
