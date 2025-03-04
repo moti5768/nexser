@@ -5854,7 +5854,7 @@ if (ua.includes("mobile")) {
   <button class="button2 nexser_search" style="width: 25px;">&nbsp;<span class="magnifying_glass"></span></button>
   <button class="button2" onclick="filetimes_test()" style="width: 25px; margin-left: 10px;">TR</button>
   <button class="button2" onclick="filetimes_test2()" style="width: 25px;">TF</button>
-  <button class="button2" onclick="window_subtitle()" style="width: 25px; margin-left: 10px; text-shadow: 4px 4px 2px dimgray;">title</button>`;
+  <button class="button2" onclick="window_subtitle()" style="width: 25px; margin-left: 10px; text-shadow: 2px 2px 1px dimgray;">title</button>`;
         const windowtool_childbtns = document.createElement('div');
         windowtool_childbtns.innerHTML = buttonsHTML;
         windowtool_childbtns.style = "display: flex; height: 25px;";
