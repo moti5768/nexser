@@ -5174,6 +5174,17 @@ if (ua.includes("mobile")) {
                 createElement('span', "bigminbtn button2", titleButtons);
                 createElement('span', "minimization_button button2", titleButtons);
                 createElement('br', null, titleButtons);
+
+                const title2Div = createElement('div', "title2", windowDiv);
+                title2Div.style.padding = "3px"
+                createElement("div", null, title2Div);
+                windowDiv.appendChild(title2Div);
+
+                const windowtool_files_parent = document.createElement('div');
+                windowtool_files_parent.innerHTML = `<p class="bold large" style="display: flex;">location:&emsp;<span class="medium border2 white_space_wrap" style="display: inline-block; background: white; overflow: hidden;
+    text-overflow: ellipsis;">${url}</span></p>`
+                title2Div.appendChild(windowtool_files_parent);
+
                 closeButton.addEventListener('click', () => {
                     const parentWindow = closeButton.closest('.child_windows');
                     if (parentWindow) {
@@ -5182,6 +5193,10 @@ if (ua.includes("mobile")) {
                     }
                 });
                 const windowContents = createElement('div', "window_contents", windowDiv);
+
+                const windowBottom = createElement('div', "window_bottom border2", windowDiv);
+                windowBottom.innerHTML = "Document:&nbsp;" + `${name}`
+                windowDiv.appendChild(windowBottom);
                 const addIframe = (src) => {
                     const iframe = createElement('iframe', "item_preview", windowContents);
                     iframe.src = src;
@@ -5192,19 +5207,42 @@ if (ua.includes("mobile")) {
                 windowDiv.classList.add('selectwindows');
                 if (isYouTubeURL(url)) {
                     addIframe(`https://www.youtube.com/embed/${extractYouTubeID(url)}`);
+                    windowContents.classList.add('window_resize');
                 } else if (isPageUrl(url)) {
-                    addIframe(url)
+                    addIframe(url);
+                    windowContents.classList.add('window_resize');
                 } else {
                     noticewindow_create("error", "このファイル形式はサポートされていません。");
                 }
                 setTimeout(() => {
                     pagewindow();
+                    optimizeWindows();
                     resolve();
                 }, 0);
                 dropArea2.appendChild(windowDiv);
             });
         };
         processFile(url, 0, 0);
+    }
+
+    function optimizeWindows() {
+        const adjust = (win) => requestAnimationFrame(() => {
+            const c = win.querySelector('.window_resize');
+            if (c) c.style.height = `${win.clientHeight - (win.querySelector('.window_bottom')?.offsetHeight || 0) - 60}px`;
+        });
+        new MutationObserver((m) =>
+            m.forEach(({ addedNodes }) =>
+                addedNodes.forEach((n) => n.classList?.contains('testwindow2') && !n.dataset.adjusted && (
+                    n.dataset.adjusted = "true", adjust(n),
+                    [n, n.querySelector('.window_bottom')].forEach((el) => el && new ResizeObserver(() => adjust(n)).observe(el))
+                ))
+            )
+        ).observe(document.body, { childList: true, subtree: true });
+        document.querySelectorAll('.testwindow2:not([data-adjusted])').forEach((n) => {
+            n.dataset.adjusted = "true";
+            adjust(n);
+            [n, n.querySelector('.window_bottom')].forEach((el) => el && new ResizeObserver(() => adjust(n)).observe(el));
+        });
     }
 
     const dropArea = document.querySelector('#files');
