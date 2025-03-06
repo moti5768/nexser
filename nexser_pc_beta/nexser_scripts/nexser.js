@@ -5236,7 +5236,7 @@ if (ua.includes("mobile")) {
     }
 
     function window2url_copy(event) {
-        const targetText = event.currentTarget.closest('p').firstElementChild?.textContent;
+        const targetText = event.currentTarget.closest('div').children[1].textContent;
         if (!navigator.clipboard) {
             return noticewindow_create("warning", "このブラウザには対応してません");
         }
