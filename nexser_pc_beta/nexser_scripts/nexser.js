@@ -5181,8 +5181,8 @@ if (ua.includes("mobile")) {
                 windowDiv.appendChild(title2Div);
 
                 const windowtool_files_parent = document.createElement('div');
-                windowtool_files_parent.innerHTML = `<p class="bold large" style="display: flex;">location:&emsp;<span class="medium border2 white_space_wrap" style="display: inline-block; background: white; overflow: hidden;
-    text-overflow: ellipsis;">${url}</span></p>`
+                windowtool_files_parent.innerHTML = `<p class="bold large" style="display: flex;">location:&nbsp;<span class="medium border2 white_space_wrap" style="display: inline-block; background: white; overflow: hidden;
+    text-overflow: ellipsis;">${url}</span><span class="button2 small" style="margin-left: 5px;" onclick="window2url_copy(event)">URLのコピー</span></p>`
                 title2Div.appendChild(windowtool_files_parent);
 
                 closeButton.addEventListener('click', () => {
@@ -5223,6 +5223,22 @@ if (ua.includes("mobile")) {
             });
         };
         processFile(url, 0, 0);
+    }
+
+    function window2url_copy(event) {
+        const target = event.currentTarget;
+        const target2 = target.closest('p');
+        const target3 = target2.firstElementChild;
+        if (!navigator.clipboard) {
+            noticewindow_create("warning", "このブラウザには対応してません")
+        }
+        navigator.clipboard.writeText(target3.textContent).then(() => {
+            noticewindow_create("clipboard", "コピーしました");
+        },
+            () => {
+                alert("コピー失敗");
+            }
+        )
     }
 
     function optimizeWindows() {
@@ -5714,8 +5730,10 @@ if (ua.includes("mobile")) {
         });
         const mediaElements = document.querySelectorAll('iframe,video,img');
         mediaElements.forEach(allbig => {
-            allbig.style.maxWidth = "100%";
-            allbig.style.maxHeight = "100%";
+            requestAnimationFrame(() => {
+                allbig.style.maxWidth = "100%";
+                allbig.style.maxHeight = "100%";
+            });
         });
     }
 
