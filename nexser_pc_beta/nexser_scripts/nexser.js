@@ -5159,7 +5159,7 @@ if (ua.includes("mobile")) {
     function processUrl(url, name) {
         const processFile = (url, x, y) => {
             return new Promise((resolve) => {
-                const windowDiv = createElement('div', "child_windows testwindow2 resize", null);
+                const windowDiv = createElement('div', "child_windows testwindow2 w3 resize", null);
                 windowDiv.style.left = `${x}px`;
                 windowDiv.style.top = `${y}px`;
                 windowDiv.style.zIndex = largestZIndex++;
@@ -5176,14 +5176,12 @@ if (ua.includes("mobile")) {
                 createElement('br', null, titleButtons);
 
                 const title2Div = createElement('div', "title2", windowDiv);
-                title2Div.style.padding = "3px"
-                createElement("div", null, title2Div);
+                title2Div.style.padding = "6px";
                 windowDiv.appendChild(title2Div);
 
-                const windowtool_files_parent = document.createElement('div');
-                windowtool_files_parent.innerHTML = `<p class="bold large" style="display: flex;">location:&nbsp;<span class="medium border2 white_space_wrap" style="display: inline-block; background: white; overflow: hidden;
-    text-overflow: ellipsis;">${url}</span><span class="button2 small" style="margin-left: 5px;" onclick="window2url_copy(event)">URLのコピー</span></p>`
-                title2Div.appendChild(windowtool_files_parent);
+                title2Div.innerHTML = `<div class="bold large" style="display: flex;"><button class="button2 bold large" onclick="iframe_reload(event)">&nbsp;↻&nbsp;</button>&nbsp;location:&nbsp;<span class="medium border2 white_space_wrap" style="display: inline-block; background: white; overflow: hidden;
+    text-overflow: ellipsis;">${url}</span><span class="button2 small" style="margin-left: 5px;" onclick="window2url_copy(event)">URLのコピー</span></div>`
+                title2Div.classList.remove('center')
 
                 closeButton.addEventListener('click', () => {
                     const parentWindow = closeButton.closest('.child_windows');
@@ -5193,10 +5191,22 @@ if (ua.includes("mobile")) {
                     }
                 });
                 const windowContents = createElement('div', "window_contents", windowDiv);
-
-                const windowBottom = createElement('div', "window_bottom border2", windowDiv);
-                windowBottom.innerHTML = "Document:&nbsp;" + `${name}`
+                const windowBottom = createElement('div', "window_bottom border2 bottom2", windowDiv);
+                windowBottom.innerHTML = `
+                    Document:&nbsp;<span class="white_space_wrap" style="width: 300%;">${name}</span>
+                    <span class="border">&nbsp;loading&nbsp;status:&nbsp;</span>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar"></div>
+                    </div>`;
+                const style = document.createElement('style');
+                style.textContent = `
+                    .bottom2 { display: flex; }
+                    .progress-bar-container { width: 100%; position: relative; }
+                    .progress-bar { width: 0%; height: 100%; background-color: #0000ff; }
+                `;
+                windowBottom.appendChild(style);
                 windowDiv.appendChild(windowBottom);
+
                 const addIframe = (src) => {
                     const iframe = createElement('iframe', "item_preview", windowContents);
                     iframe.src = src;
@@ -5226,34 +5236,58 @@ if (ua.includes("mobile")) {
     }
 
     function window2url_copy(event) {
-        const target = event.currentTarget;
-        const target2 = target.closest('p');
-        const target3 = target2.firstElementChild;
+        const targetText = event.currentTarget.closest('p').firstElementChild?.textContent;
         if (!navigator.clipboard) {
-            noticewindow_create("warning", "このブラウザには対応してません")
+            return noticewindow_create("warning", "このブラウザには対応してません");
         }
-        navigator.clipboard.writeText(target3.textContent).then(() => {
-            noticewindow_create("clipboard", "コピーしました");
-        },
-            () => {
-                alert("コピー失敗");
-            }
-        )
+        navigator.clipboard.writeText(targetText).then(
+            () => noticewindow_create("clipboard", "コピーしました"),
+            () => alert("コピー失敗")
+        );
+    }
+
+    function iframe_reload(event) {
+        const frameload = event.currentTarget.closest('.child_windows').children[3].firstElementChild;
+        frameload.src = frameload.src;
     }
 
     function optimizeWindows() {
         const adjust = (win) => requestAnimationFrame(() => {
             const c = win.querySelector('.window_resize');
             if (c) c.style.height = `${win.clientHeight - (win.querySelector('.window_bottom')?.offsetHeight || 0) - 60}px`;
+
+            const iframe = win.querySelector('iframe');
+            const progressBar = win.querySelector('.progress-bar-container .progress-bar');
+            if (!iframe || !progressBar) return;
+            const resetProgressBar = () => progressBar.style.width = '0%';
+            if (iframe._progressTimer) clearInterval(iframe._progressTimer);
+            iframe.addEventListener('load', () => {
+                clearInterval(iframe._progressTimer);
+                progressBar.style.width = '100%';
+                setTimeout(resetProgressBar, 100);
+            });
+            resetProgressBar();
+            progressBar.style.width = '10%';
+            let progress = 5;
+            iframe._progressTimer = setInterval(() => {
+                progressBar.style.width = `${progress = Math.min(progress + 50, 100)}%`;
+                if (progress === 100) {
+                    clearInterval(iframe._progressTimer);
+                    setTimeout(resetProgressBar, 100);
+                }
+            }, 100);
         });
+
         new MutationObserver((m) =>
             m.forEach(({ addedNodes }) =>
                 addedNodes.forEach((n) => n.classList?.contains('testwindow2') && !n.dataset.adjusted && (
-                    n.dataset.adjusted = "true", adjust(n),
+                    n.dataset.adjusted = "true",
+                    adjust(n),
                     [n, n.querySelector('.window_bottom')].forEach((el) => el && new ResizeObserver(() => adjust(n)).observe(el))
                 ))
             )
         ).observe(document.body, { childList: true, subtree: true });
+
         document.querySelectorAll('.testwindow2:not([data-adjusted])').forEach((n) => {
             n.dataset.adjusted = "true";
             adjust(n);
@@ -5375,17 +5409,13 @@ if (ua.includes("mobile")) {
     }
 
     function pagewindow() {
-        const testWindows = document.querySelectorAll('.testwindow2:not(.nocreatewindow)');
-        testWindows.forEach((testWindow) => {
+        document.querySelectorAll('.testwindow2:not(.nocreatewindow)').forEach(testWindow => {
             testWindow.style.width = '500px';
             testWindow.style.height = '400px';
-            testWindow.classList.add("nocreatewindow");
-            const centerElement = testWindow.querySelector('.testwindow2 > *:nth-child(3) > *');
-            if (centerElement) {
-                centerElement.classList.add('center');
-            } else {
-                testWindow.remove()
-            }
+            testWindow.classList.add('nocreatewindow');
+            const index = testWindow.classList.contains('w3') ? 4 : 3;
+            const centerElement = testWindow.querySelector(`.testwindow2 > *:nth-child(${index}) > *`);
+            centerElement ? centerElement.classList.add('center') : testWindow.remove();
         });
         const childWindows = document.querySelectorAll('.testwindow2, .child');
         childWindows.forEach(childWindow => {
