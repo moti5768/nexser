@@ -957,6 +957,7 @@ if (ua.includes("mobile")) {
         setTimeout(() => {
             if (sessionStorage.getItem('start_camera')) {
                 noticewindow_create("error", "カメラが実行されているため、再起動はできません!");
+                camera_menu.classList.remove('active');
             } else if (localStorage.getItem('no_shutdown')) {
                 noticewindow_create("error", "welcomeウィンドウが起動するまで再起動はできません!");
             } else if (gets === gets2 && gets3 === 0) {
