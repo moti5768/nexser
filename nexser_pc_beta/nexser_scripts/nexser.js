@@ -3184,7 +3184,7 @@ if (ua.includes("mobile")) {
         } else {
             localStorage.removeItem('note_texts');
             note_pad.classList.add('active');
-            note_pad.classList.remove('selectwindows')
+            note_pad.classList.remove('selectwindows');
         }
     })
 
@@ -3194,13 +3194,7 @@ if (ua.includes("mobile")) {
             localStorage.removeItem('objective_area');
             objective_menu.classList.remove('selectwindows')
         } else if (localStorage.getItem('objective_area')) {
-            document.querySelector('.warning_title_text').textContent = "objective sheet"
-            document.querySelector('.window_warning_text').textContent = "タイトル と 内容を保存してから閉じてください";
-            warning_windows.style.display = "block"
-            document.querySelector('.close_button3').style.display = "block"
-            sound(4)
-            document.querySelector('.shutdown_button').style.display = "none";
-            document.querySelector('.warningclose_button').style.display = "none";
+            noticewindow_create("warning", "タイトル と 内容を保存してから閉じてください", "&nbsp;objective sheet");
         } else if (!localStorage.getItem('objectiveData') && !localStorage.getItem('objectiveTitleData') && (!localStorage.getItem('objective_area'))) {
             document.getElementsByClassName('objective_title_area')[0].value = "";
             document.getElementsByClassName('objective_area')[0].value = "";
@@ -3692,12 +3686,14 @@ if (ua.includes("mobile")) {
     }
 
     function stopCamera() {
-        sessionStorage.removeItem('start_camera');
-        const tracks = document.getElementById('v').srcObject.getTracks();
-        tracks.forEach(track => {
-            track.stop();
-        });
-        document.getElementById('v').srcObject = null;
+        if (sessionStorage.getItem('start_camera')) {
+            sessionStorage.removeItem('start_camera');
+            const tracks = document.getElementById('v').srcObject.getTracks();
+            tracks.forEach(track => {
+                track.stop();
+            });
+            document.getElementById('v').srcObject = null;
+        }
     }
 
     const editor = document.getElementById("editor");
@@ -4594,61 +4590,39 @@ if (ua.includes("mobile")) {
         currentPlayer = currentPlayer === 'othello_black' ? 'othello_white' : 'othello_black';
     }
 
-
     function nexser_files_windowload() {
-        const output = document.getElementById('nexser_files_output');
-        function createTree(element) {
+        const createTree = (element) => {
             const ul = document.createElement('ul');
-            for (const child of element.children) {
+            Array.from(element.children).forEach((child) => {
                 const li = document.createElement('li');
-                const textContent = child.textContent.trim();
-                li.textContent = textContent;
-                li.classList.add(textContent.includes('.') ? 'nexser_files_file' : 'nexser_files_folder');
-                const childTree = createTree(child);
-                if (childTree) {
-                    li.appendChild(childTree);
-                }
+                li.textContent = child.textContent.trim();
+                li.className = li.textContent.includes('.') ? 'nexser_files_file' : 'nexser_files_folder';
+                if (child.children.length) li.appendChild(createTree(child));
                 ul.appendChild(li);
-            }
+            });
             return ul.children.length ? ul : null;
-        }
+        };
         const tree = createTree(nexser);
-        if (tree) {
-            output.appendChild(tree);
-        }
+        tree && document.getElementById('nexser_files_output').appendChild(tree);
     }
     function nexser_files_output_remove() {
-        const parentElement = document.getElementById('nexser_files_output');
-        parentElement.innerHTML = '';
+        document.getElementById('nexser_files_output').textContent = '';
     }
 
-
     function addResizers(element) {
-        const positions = ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'top', 'right', 'bottom', 'left'];
-        positions.forEach(pos => {
-            const resizer = document.createElement('div');
-            resizer.classList.add('resizer', pos);
-            element.appendChild(resizer);
+        ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'top', 'right', 'bottom', 'left'].forEach(pos => {
+            element.appendChild(Object.assign(document.createElement('div'), { className: `resizer ${pos}` }));
         });
     }
     function makeResizableDivs(className) {
-        const elements = document.querySelectorAll(className);
-        elements.forEach(element => {
-            addResizers(element);
-            attachResizeHandlers(element);
-        });
-        const observer_resizer = new MutationObserver(mutations => {
-            mutations.forEach(mutation => {
-                if (mutation.type === 'childList') {
-                    mutation.addedNodes.forEach(node => {
-                        if (node.nodeType === 1 && node.matches(className)) {
-                            addResizers(node);
-                            attachResizeHandlers(node);
-                        }
-                    });
-                }
-            });
-        });
+        const observer_resizer = new MutationObserver(mutations =>
+            mutations.forEach(({ type, addedNodes }) =>
+                type === 'childList' && addedNodes.forEach(node =>
+                    node.nodeType === 1 && node.matches(className) && (addResizers(node), attachResizeHandlers(node))
+                )
+            )
+        );
+        document.querySelectorAll(className).forEach(element => (addResizers(element), attachResizeHandlers(element)));
         observer_resizer.observe(document.body, { childList: true, subtree: true });
     }
     function attachResizeHandlers(element) {
@@ -5022,17 +4996,13 @@ if (ua.includes("mobile")) {
     function updateButtonClasses() {
         const windows = document.querySelectorAll('.child_windows.selectwindows:not(.no_window)');
         const buttons = document.querySelectorAll('.task_buttons');
-        buttons.forEach(button => {
-            button.oncontextmenu = (event) => {
-                event.preventDefault();
-                popups('task_buttons', null, button.textContent);
-            };
+        buttons.forEach(button => button.oncontextmenu = event => {
+            event.preventDefault();
+            popups('task_buttons', null, button.textContent);
         });
-        windows.forEach((windowElement, index) => {
-            if (windowElement.querySelector('.navy')) {
-                buttons[index]?.classList.add('tsk_pressed');
-            }
-        });
+        windows.forEach((windowElement, index) =>
+            windowElement.querySelector('.navy') && buttons[index]?.classList.add('tsk_pressed')
+        );
     }
 
     function generateButtonsFromLocalStorage() {
@@ -5821,32 +5791,22 @@ if (ua.includes("mobile")) {
     allwindows.forEach(node => observer.observe(node, config));
 
     navigator.getBattery().then((battery) => {
-        function updateChargeInfo() {
-            if (battery.level == 1 && battery.charging == true) {
-                battery_child.style.color = "lime";
-                battery_child.style.background = "black";
-            } else if (battery.charging == false) {
-                battery_child.style.color = "black";
-                battery_child.style.background = "";
-            } else {
-                battery_child.style.color = "#FF9900";
-                battery_child.style.background = "black";
-            }
-            if (0 <= battery.level && battery.level < 0.21 && battery.charging == false) {
+        const updateChargeInfo = () => {
+            const { level, charging, dischargingTime } = battery;
+            battery_child.style.color = charging ? (level === 1 ? "lime" : "#FF9900") : "black";
+            battery_child.style.background = (charging || level === 1) ? "black" : "";
+            if (!charging && level < 0.21) {
                 noticewindow_create("warning", "バッテリー残量が少なくなっています!", "warning");
             }
-            if (battery.charging == true) {
-                document.getElementsByClassName('battery_time')[0].textContent = (`${battery.dischargingTime}`);
-            } else {
-                document.getElementsByClassName('battery_time')[0].textContent = (`${battery.dischargingTime} second`);
-            }
-            const taskBatteryElements = document.getElementsByClassName('taskbattery');
-            taskBatteryElements[0].textContent = Math.floor(battery.level * 100);
-        }
+            document.querySelector('.battery_time').textContent = charging
+                ? `${dischargingTime}`
+                : `${dischargingTime} second`;
+            document.querySelector('.taskbattery').textContent = Math.floor(level * 100);
+        };
         battery.addEventListener('levelchange', updateChargeInfo);
         battery.addEventListener('chargingchange', updateChargeInfo);
-        updateChargeInfo()
-    })
+        updateChargeInfo();
+    });
 
     document.querySelectorAll('.window_tool').forEach(windowtool_files => {
         const windowtool_files_parent = document.createElement('div');
@@ -6595,6 +6555,7 @@ if (ua.includes("mobile")) {
                 element.setAttribute('draggable', 'true');
                 element.addEventListener('dragstart', (e) => {
                     e.dataTransfer.setData('text/plain', e.target.outerHTML);
+                    e.target.style.opacity = "0.9";
                 });
                 element.addEventListener('contextmenu', (e) => {
                     e.preventDefault();
@@ -6795,6 +6756,7 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.window_files').forEach(item => {
         item.addEventListener('dragstart', e => {
             e.dataTransfer.setData('text/plain', e.target.outerHTML);
+            e.target.style.opacity = "0.9";
         });
     });
     document.querySelector('#files').addEventListener('dragover', e => e.preventDefault());
