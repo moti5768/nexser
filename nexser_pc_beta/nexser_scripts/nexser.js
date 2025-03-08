@@ -96,7 +96,6 @@ if (ua.includes("mobile")) {
     const file_download_menu = document.querySelector('.file_download_menu');
     const display_menu = document.querySelector('.display_menu');
     const stopwatch_menu = document.querySelector('.stopwatch_menu');
-    const comment_menu = document.querySelector('.comment_menu');
     const objective_menu = document.querySelector('.objective_menu');
     const calendar_menu = document.querySelector('.calendar_menu');
     const browser_menu = document.querySelector('.browser_menu');
@@ -112,7 +111,6 @@ if (ua.includes("mobile")) {
     const alarm_menu = document.querySelector('.alarm_menu');
     const test_site_menu = document.querySelector('.test_site_menu');
     const kakeibo_menu = document.querySelector('.kakeibo_menu');
-    const nexser_nextversion_menu = document.querySelector('.nexser_nextversion_menu');
     const mydocument_menu = document.querySelector('.mydocument_menu');
     const restriction_menu = document.querySelector('.restriction_menu');
     const location_menu = document.querySelector('.location_menu');
@@ -606,28 +604,22 @@ if (ua.includes("mobile")) {
     })
 
     function startmenu_close() {
-        if (parent_start_menu.style.display === "block") {
-            parent_start_menu.style.display = "none";
-            document.getElementById('startbtn').classList.remove('pressed');
-        }
+        parent_start_menu.style.display = "none";
+        document.getElementById('startbtn').classList.remove('pressed');
     }
     document.getElementById('startbtn').addEventListener('mousedown', function () {
-        if (parent_start_menu.style.display === "block") {
-            startmenu_close()
-        } else {
+        const isOpen = parent_start_menu.style.display === "block";
+        if (isOpen) startmenu_close();
+        else {
             parent_start_menu.style.display = "block";
-            document.getElementById('startbtn').classList.add('pressed');
+            this.classList.add('pressed');
         }
-        fileborder_reset()
-    })
+        fileborder_reset();
+    });
 
-    battery_child.addEventListener('click', function () {
-        if (battery_menu.style.display === "block") {
-            battery_menu.style.display = "none";
-        } else {
-            battery_menu.style.display = "block";
-        }
-    })
+    battery_child.addEventListener('click', () => {
+        battery_menu.style.display = battery_menu.style.display === "block" ? "none" : "block";
+    });
 
     function addButtonListeners(button) {
         if (!button.classList.contains('listener-added')) {
@@ -678,7 +670,6 @@ if (ua.includes("mobile")) {
 
     function nexser_program_open() {
         playBeep();
-        startmenu_close();
         document.querySelectorAll('video').forEach(video => video.pause());
         startProgress(20);
         desktop.style.display = "none";
@@ -852,14 +843,12 @@ if (ua.includes("mobile")) {
     }
 
     function nexser_start() {
-        const nexser = document.querySelector("#nexser");
         document.querySelector('.nexser_boot_menu').style.display = "none";
         localStorage.setItem('prompt_data', true);
         nexser.style.backgroundColor = "";
         ['#code_html', '#code_script', '#code_script2'].forEach(id => document.querySelector(id).style.display = "none");
         prompt_text_value.blur();
         window_none();
-        startmenu_close();
         nex.style.cursor = 'none';
         const showNexser = (delay) => {
             setTimeout(() => {
@@ -891,7 +880,7 @@ if (ua.includes("mobile")) {
     Array.from(logoff).forEach(element => {
         element.addEventListener('click', event => {
             nex.style.cursor = 'progress';
-            startmenu_close()
+            startmenu_close();
             setTimeout(() => {
                 if (sessionStorage.getItem('start_camera')) {
                     noticewindow_create("error", "カメラが実行されているため、ログオフできません!");
@@ -953,7 +942,7 @@ if (ua.includes("mobile")) {
 
     function nexser_restart() {
         nex.style.cursor = 'progress';
-        startmenu_close()
+        startmenu_close();
         setTimeout(() => {
             if (sessionStorage.getItem('start_camera')) {
                 noticewindow_create("error", "カメラが実行されているため、再起動はできません!");
@@ -1184,7 +1173,6 @@ if (ua.includes("mobile")) {
     }
 
     function nexser_signout() {
-        startmenu_close()
         if (localStorage.getItem('password') && gets === gets2) {
             welcome_menu.classList.add('active');
             localStorage.removeItem('login');
@@ -1237,14 +1225,9 @@ if (ua.includes("mobile")) {
             localStorage.setItem(startupClass, true);
         }
     }
-
-    document.querySelector('.startup_1').addEventListener('click', () => handleStartupClick('startup_1'));
-    document.querySelector('.startup_2').addEventListener('click', () => handleStartupClick('startup_2'));
-    document.querySelector('.startup_3').addEventListener('click', () => handleStartupClick('startup_3'));
-    document.querySelector('.startup_4').addEventListener('click', () => handleStartupClick('startup_4'));
-    document.querySelector('.startup_5').addEventListener('click', () => handleStartupClick('startup_5'));
-    document.querySelector('.startup_6').addEventListener('click', () => handleStartupClick('startup_6'));
-
+    ['startup_1', 'startup_2', 'startup_3', 'startup_4', 'startup_5', 'startup_6'].forEach(startup => {
+        document.querySelector(`.${startup}`).addEventListener('click', () => handleStartupClick(startup));
+    });
     function startupsound_reset() {
         const keys = ['startup_1', 'startup_2', 'startup_3', 'startup_4', 'startup_5', 'startup_6'];
         keys.forEach(key => {
@@ -1264,14 +1247,9 @@ if (ua.includes("mobile")) {
             localStorage.setItem(shutdownClass, true);
         }
     }
-
-    document.querySelector('.shutdown_1').addEventListener('click', () => handleShutdownClick('shutdown_1'));
-    document.querySelector('.shutdown_2').addEventListener('click', () => handleShutdownClick('shutdown_2'));
-    document.querySelector('.shutdown_3').addEventListener('click', () => handleShutdownClick('shutdown_3'));
-    document.querySelector('.shutdown_4').addEventListener('click', () => handleShutdownClick('shutdown_4'));
-    document.querySelector('.shutdown_5').addEventListener('click', () => handleShutdownClick('shutdown_5'));
-    document.querySelector('.shutdown_6').addEventListener('click', () => handleShutdownClick('shutdown_6'));
-
+    ['shutdown_1', 'shutdown_2', 'shutdown_3', 'shutdown_4', 'shutdown_5', 'shutdown_6'].forEach(shutdown => {
+        document.querySelector(`.${shutdown}`).addEventListener('click', () => handleShutdownClick(shutdown));
+    });
     function shutdownsound_reset() {
         const shutdownKeys = ['shutdown_1', 'shutdown_2', 'shutdown_3', 'shutdown_4', 'shutdown_5', 'shutdown_6'];
         shutdownKeys.forEach(key => {
@@ -1287,60 +1265,39 @@ if (ua.includes("mobile")) {
         localStorage.removeItem('window_borderblack');
         document.querySelector('.windowmode').textContent = "default"
     }
-
-    document.getElementById('window_invisible').addEventListener('click', function () {
-        if (localStorage.getItem('window_invisible')) {
-            localStorage.removeItem('window_invisible');
-            document.querySelector('.windowmode').textContent = "default"
-        } else {
-            windowmode_reset()
-            localStorage.setItem('window_invisible', true);
-            document.querySelector('.windowmode').textContent = "invisible"
-        }
-    })
-    document.getElementById('window_borderblack').addEventListener('click', function () {
-        if (localStorage.getItem('window_borderblack')) {
-            localStorage.removeItem('window_borderblack');
-            document.querySelector('.windowmode').textContent = "default"
-        } else {
-            windowmode_reset()
-            localStorage.setItem('window_borderblack', true);
-            document.querySelector('.windowmode').textContent = "border black"
-        }
-    })
+    const modes = { window_invisible: "invisible", window_borderblack: "border black" };
+    Object.entries(modes).forEach(([id, textContent]) =>
+        document.getElementById(id).addEventListener('click', () => {
+            localStorage.getItem(id) ? localStorage.removeItem(id) : (windowmode_reset(), localStorage.setItem(id, true));
+            document.querySelector('.windowmode').textContent = localStorage.getItem(id) ? textContent : "default";
+        })
+    );
 
     document.getElementById('backtext_on').addEventListener('click', function () {
         localStorage.setItem('backtext', true);
         background_text.textContent = localStorage.getItem('backtext_data');
         background_text.classList.add('block');
-        document.querySelector('.backtext_mode').textContent = "ON"
+        document.querySelector('.backtext_mode').textContent = "ON";
     })
     document.getElementById('backtext_off').addEventListener('click', function () {
         localStorage.removeItem('backtext');
         background_text.classList.remove('block');
-        document.querySelector('.backtext_mode').textContent = "OFF"
+        document.querySelector('.backtext_mode').textContent = "OFF";
     })
 
-
-    document.querySelector('.backtext_small').addEventListener('click', function () {
-        backtextSize_clear();
-        localStorage.setItem('backtext_small', true);
-        background_text.style.fontSize = "15px";
-        background_text2.style.fontSize = "15px";
-    })
-    document.querySelector('.backtext_medium').addEventListener('click', function () {
-        backtextSize_clear();
-        localStorage.setItem('backtext_medium', true);
-        background_text.style.fontSize = "30px";
-        background_text2.style.fontSize = "30px";
-    })
-    document.querySelector('.backtext_large').addEventListener('click', function () {
-        backtextSize_clear();
-        localStorage.setItem('backtext_large', true);
-        background_text.style.fontSize = "45px";
-        background_text2.style.fontSize = "45px";
-    })
-
+    const sizes = {
+        backtext_small: "15px",
+        backtext_medium: "30px",
+        backtext_large: "45px"
+    };
+    Object.entries(sizes).forEach(([key, size]) => {
+        document.querySelector(`.${key}`).addEventListener('click', () => {
+            backtextSize_clear();
+            localStorage.setItem(key, true);
+            background_text.style.fontSize = size;
+            background_text2.style.fontSize = size;
+        });
+    });
     function backtextSize_clear() {
         background_text.style.fontSize = "";
         background_text2.style.fontSize = "";
@@ -1434,7 +1391,7 @@ if (ua.includes("mobile")) {
 
     function colordata_clear() {
         body.style.color = "";
-        document.querySelector("#nexser").style.backgroundColor = "";
+        nexser.style.backgroundColor = "";
         mini_desktop.style.backgroundColor = "";
         localStorage.removeItem(KEY_COLOR, color);
         localStorage.removeItem(KEY_BKCOLOR, bkcolor);
@@ -1747,7 +1704,7 @@ if (ua.includes("mobile")) {
 
             case command_1 + a:
                 if (localStorage.getItem('driver_color')) {
-                    document.querySelector('#nexser').style.background = a;
+                    nexser.style.background = a;
                     localStorage.setItem('BKCOLOR', a);
                     wallpaper_allremove()
                 } else {
@@ -2557,6 +2514,7 @@ if (ua.includes("mobile")) {
         }, null);
         if (frontmostElement) {
             frontmostElement.element.firstElementChild.classList.add(newClassName);
+            startmenu_close();
         }
         elements.forEach(element => {
             const { width, height } = getComputedStyle(element);
@@ -2566,7 +2524,6 @@ if (ua.includes("mobile")) {
     }
 
     function zindexwindow_addnavy() {
-        startmenu_close();
         title_navyremove();
         assignClassToFrontmostElement('.child_windows:not(.active):not(.minimization)', 'navy');
         test_windows_button();
@@ -2675,7 +2632,7 @@ if (ua.includes("mobile")) {
                 if (overlay) {
                     document.body.removeChild(overlay);
                 }
-                ["background", "border", "boxShadow", "mixBlendMode"].forEach(style => drag.style[style] = "");
+                ["background", "border", "boxShadow", "mixBlendMode", "opacity"].forEach(style => drag.style[style] = "");
                 Array.from(drag.children).forEach(child => child.style.display = "");
                 windowtool();
                 if (clones && !localStorage.getItem('window_afterimage_false')) {
@@ -6686,7 +6643,6 @@ if (ua.includes("mobile")) {
         document.querySelectorAll('.test_button25').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(file_download_menu); }; });
         document.querySelectorAll('.test_button26').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(display_menu); }; });
         document.querySelectorAll('.test_button27').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(stopwatch_menu); timerreset(); }; });
-        document.querySelectorAll('.test_button28').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(comment_menu); }; });
         document.querySelectorAll('.test_button30').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(objective_menu); }; });
         document.querySelectorAll('.test_button31').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(calendar_menu); }; });
         document.querySelectorAll('.test_button32').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(cpu_bench_menu); cpubench_open(); }; });
@@ -6897,7 +6853,6 @@ if (ua.includes("mobile")) {
             newFile.draggable = true;
             newFile.innerHTML = fileData.innerHTML;
             document.querySelector('.files_inline').appendChild(newFile);
-
             newFile.addEventListener('contextmenu', e => {
                 e.preventDefault();
                 newFile.remove();
