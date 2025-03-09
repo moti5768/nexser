@@ -218,7 +218,7 @@ if (ua.includes("mobile")) {
         var isClickInsideStartButton = document.getElementById('startbtn').contains(e.target);
         var isClickInsideParentStartMenu2 = document.querySelector('.parentstartmenu2').contains(e.target);
         if (!isClickInsideStartButton && !isClickInsideParentStartMenu2) {
-            startmenu_close()
+            startmenu_close();
         }
         var isClickInsideStartButton3 = Array.from(document.querySelectorAll('.windowtool_parent,.windowtool_child')).some(button => button.contains(e.target));
         if (!isClickInsideStartButton3) {
@@ -269,7 +269,6 @@ if (ua.includes("mobile")) {
         notecolor_update,
         notetextsize_change,
         taskgroup_load,
-        caload,
         titlecolor_set,
         back_pattern_set,
         pageLoad,
@@ -398,26 +397,20 @@ if (ua.includes("mobile")) {
                 windowfile_time.style.display = "none"
             })
         }
-        if (localStorage.getItem('clock_button')) {
-            document.querySelector('.clock_button').textContent = "on"
-            document.querySelector('.time').style.display = "none";
-        }
-        if (localStorage.getItem('battery_button')) {
-            document.querySelector('.battery_button').textContent = "on"
-            document.querySelector('.task_battery').style.display = "none";
-        }
-        if (localStorage.getItem('taskbar_zindex_0')) {
-            taskbar.style.zIndex = "0";
-            document.querySelector('.taskbar_zindex_0').textContent = "on";
-        }
-        if (localStorage.getItem('taskbar_leftbtn')) {
-            document.querySelector('.taskbar_leftbtn').textContent = "on";
-            document.querySelector('.first_taskbar_buttons').style.display = "none";
-        }
-        if (localStorage.getItem('taskbarbutton_autoadjustment')) {
-            document.querySelector('.taskbarbutton_autoadjustment').textContent = "on";
-            document.querySelector('.task_icons').classList.add('flex');
-        }
+
+        const actions = {
+            'clock_button': () => document.querySelector('.time').style.display = "none",
+            'battery_button': () => document.querySelector('.task_battery').style.display = "none",
+            'taskbar_zindex_0': () => taskbar.style.zIndex = "0",
+            'taskbar_leftbtn': () => document.querySelector('.first_taskbar_buttons').style.display = "none",
+            'taskbarbutton_autoadjustment': () => document.querySelector('.task_icons').classList.add('flex')
+        };
+        Object.keys(actions).forEach(key => {
+            if (localStorage.getItem(key)) {
+                document.querySelector(`.${key}`).textContent = "on";
+                actions[key]();
+            }
+        });
 
         if (localStorage.getItem('taskbar_position_button')) {
             document.querySelector('.taskbar_position_button').textContent = "bottom"
@@ -536,17 +529,21 @@ if (ua.includes("mobile")) {
     function taskgroup_load() {
         drawClock();
         const date = new Date();
-        const [year, month, day, hours, minutes, seconds] = [
+        const [year, month, day] = [
             date.getFullYear(),
             (date.getMonth() + 1).toString().padStart(2, '0'),
-            date.getDate().toString().padStart(2, '0'),
-            date.getHours().toString().padStart(2, '0'),
+            date.getDate().toString().padStart(2, '0')
+        ];
+        let [hours, minutes, seconds] = [
+            date.getHours(),
             date.getMinutes().toString().padStart(2, '0'),
             date.getSeconds().toString().padStart(2, '0')
         ];
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = (hours % 12 || 12).toString().padStart(2, '0');
         document.querySelector('.date_day').textContent = `${year}/${month}/${day}`;
-        [...document.getElementsByClassName('date_clock')].forEach(element => {
-            element.textContent = `${hours}:${minutes}:${seconds}`;
+        document.querySelectorAll('.date_clock').forEach(el => {
+            el.textContent = `\u00A0${hours}:${minutes}:${seconds}\u00A0${ampm}\u00A0`;
         });
         updateCurrentTime();
     }
@@ -599,7 +596,7 @@ if (ua.includes("mobile")) {
         localStorage.removeItem('note_texts');
     }
 
-    document.querySelector('#prompt').addEventListener('click', function () {
+    screen_prompt.addEventListener('click', function () {
         prompt_text_value.focus();
     })
 
@@ -1550,13 +1547,12 @@ if (ua.includes("mobile")) {
     }
 
     function pageLoad() {
-        nameText.addEventListener('keydown', enterKeyPress);
-        function enterKeyPress(event) {
+        nameText.addEventListener('keydown', (event) => {
             if (event.key === 'Enter') {
                 butotnClick();
                 firstLoad = false;
             }
-        }
+        });
     }
 
     function butotnClick() {
@@ -2826,7 +2822,6 @@ if (ua.includes("mobile")) {
         }, 0);
     }
 
-    // ボタンイベント設定
     document.getElementById("changeBtn").addEventListener("click", () => {
         if (localStorage.getItem('driver_color')) {
             // テキストボックスに入力された文字色と背景色を取得
@@ -3127,7 +3122,6 @@ if (ua.includes("mobile")) {
         });
     }
 
-    // 保存
     function save() {
         if (note_form.note_area.value == "") {
             noticewindow_create("warning", "テキストが無いため、保存できません!", "&nbsp;notepad");
@@ -3739,17 +3733,13 @@ if (ua.includes("mobile")) {
         preview.srcdoc = editor.value;
     }
 
-    let isStopped = false; // ストップフラグ
-
+    let isStopped = false;
     function cpubench() {
-        const cpu_canvas = document.getElementById('benchmarkCanvas');
-        const cpu_ctx = cpu_canvas.getContext('2d');
-        const numRectangles = 10000;
-        const batchSize = 10;
-        let i = 0;
-        let startTime;
-        let isStopped = false;
-        function drawBatch() {
+        const canvas = document.getElementById('benchmarkCanvas');
+        const ctx = canvas.getContext('2d');
+        const numRectangles = 10000, batchSize = 10;
+        let i = 0, startTime;
+        const drawBatch = () => {
             if (isStopped) return;
             if (i === 0) {
                 startTime = performance.now();
@@ -3757,32 +3747,30 @@ if (ua.includes("mobile")) {
                 document.querySelector('.cpu_run_text').textContent = "描画中...";
             }
             for (let j = 0; j < batchSize && i < numRectangles; j++, i++) {
-                cpu_ctx.fillStyle = `rgb(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255})`;
-                cpu_ctx.fillRect(Math.random() * cpu_canvas.width, Math.random() * cpu_canvas.height, 50, 50);
+                ctx.fillStyle = `rgb(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255})`;
+                ctx.fillRect(Math.random() * canvas.width, Math.random() * canvas.height, 50, 50);
             }
             if (i < numRectangles) {
                 requestAnimationFrame(drawBatch);
             } else {
-                const endTime = performance.now();
-                const timeTaken = Math.floor((endTime - startTime) / 1000);
-                document.querySelector('.cpu_run_text').textContent = `四角形を${numRectangles}個描画するのにかかった時間: ${timeTaken}秒`;
+                document.querySelector('.cpu_run_text').textContent =
+                    `四角形を${numRectangles}個描画するのにかかった時間: ${Math.floor((performance.now() - startTime) / 1000)}秒`;
                 document.querySelector('.cpurun_btn').classList.remove('pointer_none');
                 document.querySelector('.cpurun_btn_clear').classList.remove('pointer_none');
             }
-        }
+        };
         cpubench_clear();
+        isStopped = false;
         drawBatch();
     }
 
     function cpubench_clear() {
-        isStopped = true;
-        const cpu_canvas = document.getElementById('benchmarkCanvas');
-        const cpu_ctx = cpu_canvas.getContext('2d');
-        cpu_ctx.clearRect(0, 0, cpu_canvas.width, cpu_canvas.height);
-        i = 0;
+        const canvas = document.getElementById('benchmarkCanvas');
+        canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
         document.querySelector('.cpu_run_text').textContent = "";
-        document.querySelector('.cpurun_btn').classList.remove('pointer_none')
-        document.querySelector('.cpurun_btn_clear').classList.add('pointer_none')
+        isStopped = true;
+        document.querySelector('.cpurun_btn').classList.remove('pointer_none');
+        document.querySelector('.cpurun_btn_clear').classList.add('pointer_none');
     }
 
     function savertime() {
@@ -5157,7 +5145,7 @@ if (ua.includes("mobile")) {
                     optimizeWindows();
                     resolve();
                 }, 0);
-                dropArea2.appendChild(windowDiv);
+                dropArea.appendChild(windowDiv);
             });
         };
         processFile(url, 0, 0);
@@ -5223,12 +5211,11 @@ if (ua.includes("mobile")) {
         });
     }
 
-    const dropArea = document.querySelector('#files');
-    const dropArea2 = document.querySelector('#soft_windows');
-    dropArea.addEventListener('dragover', (event) => {
+    const dropArea = document.querySelector('#soft_windows');
+    nex_files.addEventListener('dragover', (event) => {
         event.preventDefault();
     });
-    dropArea.addEventListener('drop', (event) => {
+    nex_files.addEventListener('drop', (event) => {
         event.preventDefault();
         const files = event.dataTransfer.files;
         const files2 = event.dataTransfer;
@@ -5292,7 +5279,7 @@ if (ua.includes("mobile")) {
                         pagewindow();
                         resolve();
                     }, 0);
-                    dropArea2.appendChild(windowDiv);
+                    dropArea.appendChild(windowDiv);
                 };
                 reader.readAsDataURL(file);
             })
@@ -5978,7 +5965,7 @@ if (ua.includes("mobile")) {
         entryDiv.addEventListener("mousedown", event => {
             event.currentTarget.style.zIndex = ++largestZIndex;
         });
-        dropArea2.appendChild(entryDiv);
+        dropArea.appendChild(entryDiv);
         entryDiv.style.zIndex = ++largestZIndex;
     }
 
@@ -6175,8 +6162,6 @@ if (ua.includes("mobile")) {
             }, 0);
         }
     });
-
-
     function setNormal() {
         const selectElement = document.getElementById('fontSizeSelect');
         selectElement.value = '5';
@@ -6598,7 +6583,7 @@ if (ua.includes("mobile")) {
         document.querySelectorAll('.test_button26').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(display_menu); }; });
         document.querySelectorAll('.test_button27').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(stopwatch_menu); timerreset(); }; });
         document.querySelectorAll('.test_button30').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(objective_menu); }; });
-        document.querySelectorAll('.test_button31').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(calendar_menu); }; });
+        document.querySelectorAll('.test_button31').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(calendar_menu); caload() }; });
         document.querySelectorAll('.test_button32').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(cpu_bench_menu); cpubench_open(); }; });
         document.querySelectorAll('.test_button33').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(browser_menu); }; });
         document.querySelectorAll('.test_button35').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(taskbar_setting_menu); }; });
@@ -6752,8 +6737,8 @@ if (ua.includes("mobile")) {
             e.target.style.opacity = "0.9";
         });
     });
-    document.querySelector('#files').addEventListener('dragover', e => e.preventDefault());
-    document.querySelector('#files').addEventListener('drop', e => {
+    nex_files.addEventListener('dragover', e => e.preventDefault());
+    nex_files.addEventListener('drop', e => {
         e.preventDefault();
         const data = e.dataTransfer.getData('text/plain');
         const tempDiv = document.createElement('div');
