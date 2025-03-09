@@ -133,6 +133,9 @@ if (ua.includes("mobile")) {
 
     const windowanimation = 0.3;
 
+    let isAnimating = false;
+    let isAnimating_minimization = false;
+
     // app
     // note
     const note_area = document.querySelector('.note_area');
@@ -1334,8 +1337,10 @@ if (ua.includes("mobile")) {
 
     function window_none() {
         document.querySelectorAll('.task_buttons').forEach(task_buttons => task_buttons.remove());
-        document.querySelectorAll('.testwindow2').forEach(task_buttons => task_buttons.remove());
-        document.querySelectorAll('.error_windows').forEach(task_buttons => task_buttons.remove());
+        document.querySelectorAll('.testwindow2').forEach(win => win.remove());
+        document.querySelectorAll('.error_windows').forEach(win => win.remove());
+        document.querySelectorAll('.child_windows').forEach(win => win.style.zIndex = "0");
+        largestZIndex = 0;
         allwindows.forEach(allwindow_none => {
             allwindow_none.classList.add('active');
             allwindow_none.classList.remove('big', 'rightwindow', 'leftwindow', 'selectwindows');
@@ -2238,8 +2243,10 @@ if (ua.includes("mobile")) {
             if (animation.classList.contains('minimization')) {
                 animation.classList.add('child_windows_invisible');
             }
-            animation.style.pointerEvents = "";
-            animation.style.zIndex = largestZIndex++;
+            if (!animation.classList.contains('overzindex')) {
+                animation.style.pointerEvents = "";
+                animation.style.zIndex = largestZIndex++;
+            }
         };
         if (localStorage.getItem('window_animation')) {
             animation.style.transition = `${windowanimation}s cubic-bezier(0, 0, 1, 1)`;
@@ -2250,8 +2257,10 @@ if (ua.includes("mobile")) {
                 Array.from(animation.children).forEach(child => child.style.display = '');
                 windowtool();
                 adjustHeight();
+                isAnimating_minimization = false;
             }, windowanimation * 1000);
         } else {
+            isAnimating_minimization = false;
             adjustHeight();
         }
     }
@@ -2426,7 +2435,7 @@ if (ua.includes("mobile")) {
         child.style.display = "block";
     });
 
-    document.querySelectorAll('.child_windows, .child').forEach(windowElement => {
+    document.querySelectorAll('.child_windows:not(.overzindex), .child').forEach(windowElement => {
         const parentWindow = windowElement.closest('.child_windows');
         const addEventListeners = element => {
             element.addEventListener('mousedown', () => {
@@ -2929,7 +2938,7 @@ if (ua.includes("mobile")) {
     var defaultView = document.defaultView;
     var getLargestZIndex = function () {
         var func = function (queryselectorname) {
-            var elems = document.querySelectorAll(queryselectorname), len = elems.length;
+            var elems = document.querySelectorAll(queryselectorname + ":not(.overzindex)"), len = elems.length;
             for (var i = 0; i < len; i++) {
                 var elem = elems[i];
                 var zIndex = elem.style.zIndex;
@@ -2945,6 +2954,17 @@ if (ua.includes("mobile")) {
         else for (var i = 0; i < arguments.length; i++) func(arguments[i]);
         return largestZIndex;
     };
+
+    function indexover(windowElement) {
+        windowElement.classList.add('overzindex');
+        const wz2 = document.querySelector(".overzindex");
+        if (wz2) {
+            wz2.style.zIndex = "999999";
+        }
+        setTimeout(() => {
+            windowElement.classList.remove('overzindex');
+        }, windowanimation * 1000);
+    }
 
     function startup_sound() {
         if (localStorage.getItem('driver_sound')) {
@@ -4876,19 +4896,26 @@ if (ua.includes("mobile")) {
         }
     }
     function minimizeWindow(window) {
-        const windowElement = window.closest('.child_windows');
-        if (!windowElement) return;
-        Object.assign(windowElement.dataset, {
-            originalWidths: windowElement.style.width,
-            originalHeights: windowElement.style.height,
-            originalTops: windowElement.style.top,
-            originalLefts: windowElement.style.left
-        });
-        window.style.height = '20px';
-        window.classList.add('minimization');
-        window.scrollTo(0, 0);
-        window_animation(window);
-        moveToTaskbarButton(window);
+        if (!isAnimating_minimization) {
+            isAnimating_minimization = true;
+            const windowElement = window.closest('.child_windows');
+            if (!windowElement) return;
+            Object.assign(windowElement.dataset, {
+                originalWidths: windowElement.style.width,
+                originalHeights: windowElement.style.height,
+                originalTops: windowElement.style.top,
+                originalLefts: windowElement.style.left
+            });
+            window.style.height = '20px';
+            window.classList.add('minimization');
+            if (localStorage.getItem('window_animation')) {
+                indexover(window);
+            }
+            window.scrollTo(0, 0);
+            window_animation(window);
+            moveToTaskbarButton(window);
+        };
+
     }
     function observeNewElements4() {
         const observer = new MutationObserver((mutations) => {
@@ -4946,14 +4973,18 @@ if (ua.includes("mobile")) {
         }
     }
 
-    let isAnimating = false;
     function toggleWindow(windowElement) {
         if (isAnimating) return;
         isAnimating = true;
-        windowElement.style.zIndex = largestZIndex++;
+        if (!windowElement.classList.contains('overzindex')) {
+            windowElement.style.zIndex = largestZIndex++;
+        }
         windowElement.classList.remove('active');
         if (windowElement.classList.contains('minimization')) {
-            windowElement.classList.remove('child_windows_invisible')
+            windowElement.classList.remove('child_windows_invisible');
+            if (localStorage.getItem('window_animation')) {
+                indexover(windowElement);
+            }
         }
         updateButtonClasses();
         if (windowElement.classList.contains('minimization')) {
@@ -5333,12 +5364,14 @@ if (ua.includes("mobile")) {
             const centerElem = win.querySelector(`:scope > *:nth-child(${win.classList.contains('w3') ? 4 : 3}) > *`);
             centerElem ? centerElem.classList.add('center') : win.remove();
         });
-        document.querySelectorAll('.testwindow2, .child').forEach(child => {
+        document.querySelectorAll('.testwindow2:not(.overzindex), .child').forEach(child => {
             const parent = child.closest('.testwindow2');
             child.addEventListener('mousedown', () => {
                 document.addEventListener('mousemove', adjustSize);
                 parent.scrollTop = parent.scrollLeft = 0;
-                parent.style.zIndex = largestZIndex++;
+                if (!parent.classList.contains('overzindex')) {
+                    parent.style.zIndex = largestZIndex++;
+                }
                 adjustSize();
             });
             const adjustSize = () => {
