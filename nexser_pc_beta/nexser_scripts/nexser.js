@@ -131,7 +131,7 @@ if (ua.includes("mobile")) {
 
     const window_selectors = ['.big', '.leftwindow', '.rightwindow'];
 
-    const windowanimation = 0.25;
+    const windowanimation = 0.3;
 
     // app
     // note
@@ -5337,37 +5337,30 @@ if (ua.includes("mobile")) {
     }
 
     function pagewindow() {
-        document.querySelectorAll('.testwindow2:not(.nocreatewindow)').forEach(testWindow => {
-            testWindow.style.width = '500px';
-            testWindow.style.height = '400px';
-            testWindow.classList.add('nocreatewindow');
-            const index = testWindow.classList.contains('w3') ? 4 : 3;
-            const centerElement = testWindow.querySelector(`.testwindow2 > *:nth-child(${index}) > *`);
-            centerElement ? centerElement.classList.add('center') : testWindow.remove();
+        document.querySelectorAll('.testwindow2:not(.nocreatewindow)').forEach(win => {
+            Object.assign(win.style, { width: '600px', height: '400px' });
+            win.classList.add('nocreatewindow');
+            const centerElem = win.querySelector(`:scope > *:nth-child(${win.classList.contains('w3') ? 4 : 3}) > *`);
+            centerElem ? centerElem.classList.add('center') : win.remove();
         });
-        const childWindows = document.querySelectorAll('.testwindow2, .child');
-        childWindows.forEach(childWindow => {
-            const zindexChildWindow = childWindow.closest('.testwindow2');
-            const handleMouseMoveScrollReset = () => {
-                document.removeEventListener('mouseup', handleMouseDownResize);
-                document.addEventListener('mousemove', handleMouseDownResize);
-                zindexChildWindow.scrollTop = 0;
-                zindexChildWindow.scrollLeft = 0;
-                zindexChildWindow.style.zIndex = largestZIndex++;
-            };
-            const handleMouseDownResize = () => {
-                const { clientWidth: width, clientHeight: height } = zindexChildWindow;
-                Object.assign(childWindow.children[2].firstElementChild.style, {
+        document.querySelectorAll('.testwindow2, .child').forEach(child => {
+            const parent = child.closest('.testwindow2');
+            child.addEventListener('mousedown', () => {
+                document.addEventListener('mousemove', adjustSize);
+                parent.scrollTop = parent.scrollLeft = 0;
+                parent.style.zIndex = largestZIndex++;
+                adjustSize();
+            });
+            const adjustSize = () => {
+                const { clientWidth: width, clientHeight: height } = parent;
+                Object.assign(child.children[2]?.firstElementChild?.style || {}, {
                     maxWidth: `${width}px`,
                     maxHeight: `${height - 25}px`
                 });
             };
-            childWindow.addEventListener('mousedown', () => {
-                handleMouseMoveScrollReset();
-                handleMouseDownResize();
-            });
         });
     }
+
     const removePopups = () => document.querySelectorAll('.popup').forEach(popup => popup.remove());
     function popups(popups, url, text) {
         document.querySelectorAll(`.${popups}`).forEach(button => {
