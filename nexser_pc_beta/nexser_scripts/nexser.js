@@ -4923,6 +4923,9 @@ if (ua.includes("mobile")) {
             taskbar_b.appendChild(button);
         });
         updateButtonClasses();
+        document.querySelectorAll('.child_windows.minimization').forEach(minimization_button => {
+            moveToTaskbarButton(minimization_button);
+        });
     }
 
     function moveToTaskbarButton(minimization_button) {
