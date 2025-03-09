@@ -131,7 +131,7 @@ if (ua.includes("mobile")) {
 
     const window_selectors = ['.big', '.leftwindow', '.rightwindow'];
 
-    const windowanimation = 0.3;
+    const windowanimation = 0.28;
 
     let isAnimating = false;
     let isAnimating_minimization = false;
@@ -5131,7 +5131,6 @@ if (ua.includes("mobile")) {
 
                 title2Div.innerHTML = `<div class="bold large" style="display: flex;"><button class="button2 bold large" onclick="iframe_reload(event)">&nbsp;↻&nbsp;</button>&nbsp;location:&nbsp;<span class="medium border2 white_space_wrap" style="display: inline-block; background: white; overflow: hidden;
     text-overflow: ellipsis;">${url}</span><span class="button2 small" style="margin-left: 5px;" onclick="window2url_copy(event)">URLのコピー</span></div>`
-                title2Div.classList.remove('center')
 
                 closeButton.addEventListener('click', () => {
                     const parentWindow = closeButton.closest('.child_windows');
