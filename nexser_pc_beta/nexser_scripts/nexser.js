@@ -5787,7 +5787,7 @@ if (ua.includes("mobile")) {
         const updateChargeInfo = () => {
             const { level, charging, dischargingTime } = battery;
             battery_child.style.color = charging ? (level === 1 ? "lime" : "#FF9900") : "black";
-            battery_child.style.background = (charging || level === 1) ? "black" : "";
+            battery_child.style.background = charging ? (level === 1 ? "black" : "black") : "";
             if (!charging && level < 0.21) {
                 noticewindow_create("warning", "バッテリー残量が少なくなっています!", "warning");
             }
