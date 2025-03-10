@@ -1156,25 +1156,6 @@ body::-webkit-scrollbar {
     text-shadow: 0.2px 0.2px 0, 0.2px -0.2px 0px, -0.2px 0.2px 0, -0.2px -0.2px 0px, 0.2px 0px 0px, 0px 0.2px 0px, -0.2px 0px 0px, 0px -0.2px 0px;
 }
 
-.warning_windows {
-    display: none;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-    list-style: none;
-    font-size: 15px;
-    width: auto;
-    height: auto;
-    color: black;
-    border: 3.5px solid #c0c0c0;
-    box-shadow: 1.5px 1.5px #333333, -1.5px -1.5px whitesmoke;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-}
-
 .child_windows.active {
     display: none;
 }
@@ -2909,4 +2890,12 @@ progress::-webkit-progress-value {
     font-size: 20px;
     text-align: center;
     z-index: 2147483647;
+}
+
+.background_black {
+    background: #111111;
+    opacity: 0.5;
+    position: absolute;
+    width: 100%;
+    height: 100%;
 }

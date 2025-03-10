@@ -589,7 +589,7 @@
                         
                                                 &lt;div class=&quot;title_buttons&quot;&gt;
                                                     &lt;span class=&quot;drag_button&quot;&gt;&amp;nbsp;&lt;/span&gt;
-                                                    &lt;span class=&quot;close_button4 button2 note_close&quot;&gt;&lt;/span&gt;
+                                                    &lt;span class=&quot;close_button2 button2 note_close&quot;&gt;&lt;/span&gt;
                                                     &lt;span class=&quot;bigminbtn button2&quot;&gt;&lt;/span&gt;
                                                     &lt;span class=&quot;minimization_button button2&quot;&gt;&lt;/span&gt;&lt;br&gt;
                                                 &lt;/div&gt;
@@ -715,7 +715,7 @@
                         
                                                 &lt;div class=&quot;title_buttons&quot;&gt;
                                                     &lt;span class=&quot;drag_button&quot;&gt;&amp;nbsp;&lt;/span&gt;
-                                                    &lt;span class=&quot;close_button4 button2 objective_close&quot;&gt;&lt;/span&gt;
+                                                    &lt;span class=&quot;close_button2 button2 objective_close&quot;&gt;&lt;/span&gt;
                                                     &lt;span class=&quot;bigminbtn button2&quot;&gt;&lt;/span&gt;
                                                     &lt;span class=&quot;minimization_button button2&quot;&gt;&lt;/span&gt;&lt;br&gt;
                                                 &lt;/div&gt;
@@ -1773,7 +1773,7 @@
                                                                 &lt;span class=&quot;borderinline_dotted button2 apply_button2&quot;&gt;Button2&lt;/span&gt;
                                                                 &lt;button class=&quot;button2&quot;
                                                                     style=&quot;height: 20px; font-size: large; float: right; position: absolute; left: 25px; top: 110px; transform: scale(2);&quot;&gt;▼&lt;/button&gt;
-                                                                &lt;span class=&quot;button2 close_button4&quot; style=&quot;width: 19px; height: 19px; position: absolute; left: 75px; top:
+                                                                &lt;span class=&quot;button2 close_button2&quot; style=&quot;width: 19px; height: 19px; position: absolute; left: 75px; top:
                                                                     105px; transform: scale(2);&quot;&gt;&lt;/span&gt;
                                                             &lt;/div&gt;
                                                         &lt;/div&gt;
@@ -2283,7 +2283,7 @@
                         
                                                 &lt;div class=&quot;title_buttons&quot;&gt;
                                                     &lt;span class=&quot;drag_button&quot;&gt;&amp;nbsp;&lt;/span&gt;
-                                                    &lt;span class=&quot;close_button4 button2 camera_close&quot;&gt;&lt;/span&gt;
+                                                    &lt;span class=&quot;close_button2 button2 camera_close&quot;&gt;&lt;/span&gt;
                                                     &lt;span class=&quot;bigminbtn button2&quot;&gt;&lt;/span&gt;
                                                     &lt;span class=&quot;minimization_button button2&quot;&gt;&lt;/span&gt;
                                                     &lt;span class=&quot;frame_fullbutton button2&quot;&gt;&lt;/span&gt;&lt;br&gt;
@@ -4056,26 +4056,6 @@
                                             &lt;/div&gt;
                                         &lt;/div&gt;
                         
-                                        &lt;div class=&quot;warning_windows back_silver&quot; style=&quot;z-index: 999999;&quot;&gt;
-                                            &lt;div class=&quot;warning_title&quot; style=&quot;background: navy; color: white;&quot;&gt;
-                                                &lt;span&gt;&amp;nbsp;&lt;/span&gt;&lt;span class=&quot;warning_title_text bold&quot;&gt;warning&lt;/span&gt;
-                                            &lt;/div&gt;
-                                            &lt;div class=&quot;title_buttons&quot; style=&quot;position: absolute; top:0px;&quot;&gt;
-                                                &lt;span class=&quot;close_button3 button2&quot;&gt;&lt;/span&gt;
-                                            &lt;/div&gt;&lt;br&gt;
-                                            &lt;p&gt;&lt;span class=&quot;warning_icon bold&quot;&gt;!&lt;/span&gt;&amp;emsp;&amp;emsp;&amp;nbsp;&lt;span
-                                                    class=&quot;window_warning_text&quot;&gt;&lt;/span&gt;
-                                            &lt;/p&gt;
-                                            &lt;span class=&quot;shutdown_button button2 logoff borderinline_dotted&quot; onclick=&quot;window_none()&quot;
-                                                style=&quot;position: absolute; top: 85%; left: 50%; transform: translate(-50%, -50%);&quot;&gt;&amp;emsp;OK&amp;emsp;&lt;/span&gt;
-                                            &lt;span class=&quot;warningclose_button button2 borderinline_dotted&quot;
-                                                style=&quot;display: none; position: absolute; top: 85%; left: 50%; transform: translate(-50%, -50%);&quot;
-                                                onclick=&quot;warning_windows_close()&quot;&gt;&amp;emsp;OK&amp;emsp;&lt;/span&gt;&lt;br&gt;
-                                        &lt;/div&gt;
-                                        &lt;div class=&quot;black_screen&quot;
-                                            style=&quot;display: none; background: black; width: 100%; height: 100%; position: fixed; top: 0px; z-index: 999998; opacity: 0.5;&quot;&gt;
-                                        &lt;/div&gt;
-                        
                                         &lt;div id=&quot;screen_saver_group&quot;&gt;
                         
                                             &lt;div class=&quot;screen_saver1&quot;&gt;
@@ -4235,8 +4215,6 @@
                             const url_droplist_menu = document.querySelector(&#039;.url_droplist_menu&#039;);
                         
                             const nexser_search_menu = document.querySelector(&#039;.nexser_search_menu&#039;);
-                        
-                            const warning_windows = document.querySelector(&#039;.warning_windows&#039;);
                         
                             const tetris_mneu = document.querySelector(&#039;.tetris_menu&#039;);
                             const bom_menu = document.querySelector(&#039;.bom_menu&#039;);
@@ -4996,60 +4974,60 @@
                         
                             Array.from(logoff).forEach(element =&gt; {
                                 element.addEventListener(&#039;click&#039;, event =&gt; {
-                                    nex.style.cursor = &#039;progress&#039;;
-                                    startmenu_close();
-                                    setTimeout(() =&gt; {
-                                        if (sessionStorage.getItem(&#039;start_camera&#039;)) {
-                                            noticewindow_create(&quot;error&quot;, &quot;カメラが実行されているため、ログオフできません!&quot;);
-                                        } else if (localStorage.getItem(&#039;no_shutdown&#039;)) {
-                                            noticewindow_create(&quot;error&quot;, &quot;welcomeウィンドウが起動するまでログオフできません!&quot;);
-                                        } else if (gets === gets2 &amp;&amp; gets3 === 0) {
-                                            sound_stop();
-                                            shutdown_sound();
-                                            localStorage.removeItem(&#039;login&#039;);
-                                            nex.style.cursor = &#039;none&#039;;
-                                            desktop.style.display = &quot;none&quot;;
-                                            if (!localStorage.getItem(&#039;noteData&#039;)) {
-                                                document.note_form.note_area.value = &quot;&quot;;
-                                                resetShowLength();
-                                                document.querySelector(&#039;.note_title&#039;).textContent = &quot;notepad&quot;
-                                            }
-                                            setTimeout(() =&gt; {
-                                                document.querySelectorAll(&#039;.testwindow2&#039;).forEach(testwindow2 =&gt; testwindow2.remove());
-                                                document.querySelectorAll(&#039;.error_windows&#039;).forEach(errorwindow =&gt; errorwindow.remove());
-                                                window_none();
-                                                window_reset();
-                                                localStorage.removeItem(&#039;prompt_data&#039;);
-                                                document.querySelector(&#039;#code_html&#039;).style.display = &quot;none&quot;;
-                                                document.querySelector(&#039;#code_script&#039;).style.display = &quot;none&quot;;
-                                                document.querySelector(&#039;#code_script2&#039;).style.display = &quot;none&quot;;
-                                                fileborder_reset();
-                                                document.querySelector(&#039;.black_screen&#039;).style.display = &quot;none&quot;;
-                                                setTimeout(() =&gt; {
-                                                    document.querySelectorAll(&#039;.button&#039;).forEach(button =&gt; button.classList.remove(&#039;pressed&#039;));
-                                                    nameText.value = &quot;&quot;;
-                                                    msg.innerText = &quot;&quot;;
-                                                    prompt_text.style.color = &quot;&quot;;
-                                                    nexser.style.display = &quot;none&quot;;
-                                                    screen_prompt.style.display = &quot;block&quot;;
-                                                    prompt_text_value.focus();
-                                                    nex.style.cursor = &#039;&#039;;
-                                                }, 500);
-                                            }, 1000);
-                                        } else {
-                                            warning_windows.style.display = &quot;block&quot;;
-                                            document.querySelector(&#039;.close_button3&#039;).style.display = &quot;block&quot;
-                                            document.querySelector(&#039;.shutdown_button&#039;).style.display = &quot;block&quot;;
-                                            document.querySelector(&#039;.warningclose_button&#039;).style.display = &quot;none&quot;;
-                                            document.querySelector(&#039;.warning_title_text&#039;).textContent = &quot;warning&quot;;
-                                            document.querySelector(&#039;.window_warning_text&#039;).textContent = &quot;実行されているウィンドウがあります! ログオフしますか?&quot;;
-                                            document.querySelector(&#039;.black_screen&#039;).style.display = &quot;block&quot;;
-                                            sound(4);
-                                            nex.style.cursor = &#039;&#039;;
-                                        }
-                                    }, 100);
+                                    nexser_shutdown()
                                 })
                             })
+                        
+                            function nexser_shutdown() {
+                                nex.style.cursor = &#039;progress&#039;;
+                                startmenu_close();
+                                setTimeout(() =&gt; {
+                                    if (sessionStorage.getItem(&#039;start_camera&#039;)) {
+                                        noticewindow_create(&quot;error&quot;, &quot;カメラが実行されているため、ログオフできません!&quot;);
+                                    } else if (localStorage.getItem(&#039;no_shutdown&#039;)) {
+                                        noticewindow_create(&quot;error&quot;, &quot;welcomeウィンドウが起動するまでログオフできません!&quot;);
+                                    } else if (gets === gets2 &amp;&amp; gets3 === 0) {
+                                        window_none();
+                                        sound_stop();
+                                        shutdown_sound();
+                                        localStorage.removeItem(&#039;login&#039;);
+                                        nex.style.cursor = &#039;none&#039;;
+                                        desktop.style.display = &quot;none&quot;;
+                                        if (!localStorage.getItem(&#039;noteData&#039;)) {
+                                            note_clear();
+                                        }
+                                        setTimeout(() =&gt; {
+                                            document.querySelectorAll(&#039;.testwindow2&#039;).forEach(testwindow2 =&gt; testwindow2.remove());
+                                            document.querySelectorAll(&#039;.error_windows&#039;).forEach(errorwindow =&gt; errorwindow.remove());
+                                            window_none();
+                                            window_reset();
+                                            localStorage.removeItem(&#039;prompt_data&#039;);
+                                            document.querySelector(&#039;#code_html&#039;).style.display = &quot;none&quot;;
+                                            document.querySelector(&#039;#code_script&#039;).style.display = &quot;none&quot;;
+                                            document.querySelector(&#039;#code_script2&#039;).style.display = &quot;none&quot;;
+                                            fileborder_reset();
+                                            setTimeout(() =&gt; {
+                                                document.querySelectorAll(&#039;.button&#039;).forEach(button =&gt; button.classList.remove(&#039;pressed&#039;));
+                                                nameText.value = &quot;&quot;;
+                                                msg.innerText = &quot;&quot;;
+                                                prompt_text.style.color = &quot;&quot;;
+                                                nexser.style.display = &quot;none&quot;;
+                                                screen_prompt.style.display = &quot;block&quot;;
+                                                prompt_text_value.focus();
+                                                nex.style.cursor = &#039;&#039;;
+                                            }, 500);
+                                        }, 1000);
+                                    } else {
+                                        noticewindow_create(&quot;warning&quot;, &quot;実行されているウィンドウがあります! ログオフしますか?&quot;, null, nexser_shutdown_load)
+                                        nex.style.cursor = &#039;&#039;;
+                                    }
+                                }, 100);
+                            }
+                        
+                            function nexser_shutdown_load() {
+                                window_none();
+                                nexser_shutdown();
+                            }
                         
                             Array.from(restart).forEach(element =&gt; {
                                 element.addEventListener(&#039;click&#039;, event =&gt; {
@@ -5073,9 +5051,7 @@
                                         nex.style.cursor = &#039;none&#039;;
                                         desktop.style.display = &quot;none&quot;;
                                         if (!localStorage.getItem(&#039;noteData&#039;)) {
-                                            document.note_form.note_area.value = &quot;&quot;;
-                                            resetShowLength();
-                                            document.querySelector(&#039;.note_title&#039;).textContent = &quot;notepad&quot;
+                                            note_clear();
                                         }
                                         setTimeout(() =&gt; {
                                             window_none();
@@ -5429,9 +5405,6 @@
                                     allwindow.style.top = &quot;&quot;;
                                     allwindow.style.height = &quot;&quot;;
                                     allwindow.style.width = &quot;&quot;;
-                                    const notearea = note_area;
-                                    notearea.style.height = &quot;&quot;;
-                                    notearea.style.width = &quot;&quot;;
                                     windowposition_reset();
                                     allwindow.classList.remove(&#039;leftwindow&#039;, &#039;rightwindow&#039;, &#039;child_windows_invisible&#039;);
                                     allwindow.style.transition = &quot;&quot;;
@@ -5465,9 +5438,6 @@
                                     allwindow_none.style.transition = &quot;&quot;;
                                 });
                                 windowposition_reset();
-                                note_area.style.height = &quot;&quot;;
-                                note_area.style.width = &quot;&quot;;
-                                warning_windows.style.display = &quot;none&quot;;
                             }
                             function window_active() {
                                 document.querySelectorAll(&#039;.child_windows:not(.window_nosearch)&#039;).forEach(allwindow_active =&gt; allwindow_active.classList.remove(&#039;active&#039;));
@@ -6151,7 +6121,7 @@
                         
                                     case &#039;exit&#039;:
                                         nexser_prompt_reset()
-                                        windowclose(&quot;.window_prompt&quot;)
+                                        windowclose(window_prompt)
                                         break;
                         
                                     case &#039;nexser/restart&#039;:
@@ -6255,21 +6225,20 @@
                                 }
                             }, 100);
                         
-                            [&#039;.close_button&#039;, &#039;.close_button3&#039;].forEach(cls =&gt; {
+                            [&#039;.close_button&#039;].forEach(cls =&gt; {
                                 document.querySelectorAll(cls).forEach(btn =&gt; {
                                     btn.addEventListener(&#039;click&#039;, () =&gt; {
-                                        const el = btn.closest(cls === &#039;.close_button&#039; ? &#039;.child_windows&#039; : &#039;.warning_windows&#039;);
-                                        if (el) cls === &#039;.close_button&#039; ? (el.classList.add(&#039;active&#039;), el.classList.remove(&#039;selectwindows&#039;)) : el.style.display = &#039;none&#039;;
-                                        document.querySelector(&#039;.black_screen&#039;).style.display = &quot;none&quot;;
+                                        windowclose(btn);
                                     });
                                 });
                             });
                         
                             function windowclose(cls) {
-                                document.querySelectorAll(cls).forEach(btn =&gt; {
-                                    const el = btn.closest(cls === cls ? &#039;.child_windows&#039; : &#039;.warning_windows&#039;);
-                                    if (el) cls === cls ? (el.classList.add(&#039;active&#039;), el.classList.remove(&#039;selectwindows&#039;)) : el.style.display = &#039;none&#039;;
-                                });
+                                const el = cls.closest(&#039;.child_windows&#039;);
+                                if (el) {
+                                    el.classList.add(&#039;active&#039;);
+                                    el.classList.remove(&#039;selectwindows&#039;);
+                                }
                             }
                         
                             function addMinbigScreenButtonListeners(button) {
@@ -6721,7 +6690,9 @@
                                         if (!clones &amp;&amp; !localStorage.getItem(&#039;window_afterimage_false&#039;)) {
                                             const clone = dragwindow.cloneNode(true);
                                             dragwindow.parentNode.appendChild(clone).classList.add(&#039;clones&#039;);
-                                            [clone, dragwindow].forEach(el =&gt; el.style.zIndex = largestZIndex++);
+                                            if (!dragwindow.classList.contains(&#039;overzindex&#039;)) {
+                                                [clone, dragwindow].forEach(el =&gt; el.style.zIndex = largestZIndex++);
+                                            }
                                             requestAnimationFrame(() =&gt; {
                                                 dragwindow.parentNode.appendChild(clone).children[0].classList.add(&#039;navy&#039;);
                                                 applyStyles(dragwindow);
@@ -7298,26 +7269,25 @@
                             }
                         
                             document.querySelector(&#039;.note_close&#039;).addEventListener(&#039;click&#039;, function () {
-                                if (!localStorage.getItem(&#039;noteData&#039;)) {
-                                    document.querySelector(&#039;.note_title&#039;).textContent = &quot;notepad&quot;;
-                                }
                                 if (!note_pad.classList.contains(&#039;active&#039;) &amp;&amp; localStorage.getItem(&#039;noteData&#039;) &amp;&amp; !localStorage.getItem(&#039;note_texts&#039;)) {
                                     note_pad.classList.add(&#039;active&#039;);
-                                    note_pad.classList.remove(&#039;selectwindows&#039;)
+                                    note_pad.classList.remove(&#039;selectwindows&#039;);
                                 } else if (localStorage.getItem(&#039;note_texts&#039;)) {
-                                    document.querySelector(&#039;.warning_title_text&#039;).textContent = &quot;notepad&quot;
-                                    document.querySelector(&#039;.window_warning_text&#039;).textContent = &quot;編集中です。ウィンドウを終了しますか?(内容は破棄されます)&quot;
-                                    warning_windows.style.display = &quot;block&quot;
-                                    document.querySelector(&#039;.close_button3&#039;).style.display = &quot;block&quot;
-                                    sound(4)
-                                    document.querySelector(&#039;.shutdown_button&#039;).style.display = &quot;none&quot;;
-                                    document.querySelector(&#039;.warningclose_button&#039;).style.display = &quot;block&quot;;
+                                    noticewindow_create(&quot;warning&quot;, &quot;編集中です。メモ帳を終了しますか?(内容は破棄されます)&quot;, &quot;notepad&quot;, note_clear);
                                 } else {
-                                    localStorage.removeItem(&#039;note_texts&#039;);
                                     note_pad.classList.add(&#039;active&#039;);
                                     note_pad.classList.remove(&#039;selectwindows&#039;);
                                 }
                             })
+                        
+                            function note_clear() {
+                                document.note_form.note_area.value = &quot;&quot;;
+                                resetShowLength();
+                                localStorage.removeItem(&#039;note_texts&#039;);
+                                document.querySelector(&#039;.note_title&#039;).textContent = &quot;notepad&quot;;
+                                note_pad.classList.add(&#039;active&#039;);
+                                note_pad.classList.remove(&#039;selectwindows&#039;);
+                            }
                         
                             document.querySelector(&#039;.objective_close&#039;).addEventListener(&#039;click&#039;, function () {
                                 if (!objective_menu.classList.contains(&#039;active&#039;) &amp;&amp; localStorage.getItem(&#039;objectiveData&#039;) &amp;&amp; localStorage.getItem(&#039;objectiveTitleData&#039;) &amp;&amp; (!localStorage.getItem(&#039;objective_area&#039;))) {
@@ -7365,19 +7335,11 @@
                                 }
                             })
                         
-                            function warning_windows_close() {
-                                warning_windows.style.display = &quot;none&quot;;
-                                document.querySelector(&#039;.shutdown_button&#039;).style.display = &quot;block&quot;;
-                                document.querySelector(&#039;.warningclose_button&#039;).style.display = &quot;none&quot;;
-                                document.querySelector(&#039;.close_button3&#039;).style.display = &quot;block&quot;
-                                document.note_form.note_area.value = &quot;&quot;;
-                                resetShowLength();
-                                localStorage.removeItem(&#039;note_texts&#039;);
-                                note_pad.classList.add(&#039;active&#039;);
-                                note_pad.classList.remove(&#039;selectwindows&#039;);
-                            }
-                        
                             function error_windows_close(event) {
+                                const background_black = document.querySelector(&#039;.background_black&#039;);
+                                if (background_black) {
+                                    background_black.remove();
+                                }
                                 const clickedElement = event.target;
                                 const parentElement = clickedElement.closest(&#039;.child_windows&#039;);
                                 parentElement.remove();
@@ -8334,7 +8296,7 @@
                                 drawHand(100, 6, 30 * (hours + minutes / 60));
                             }
                         
-                            document.querySelectorAll(&#039;.close_button, .close_button2, .close_button3, .close_button4&#039;).forEach(close_buttons =&gt; {
+                            document.querySelectorAll(&#039;.close_button, .close_button2&#039;).forEach(close_buttons =&gt; {
                                 close_buttons.classList.add(&#039;allclose_button&#039;);
                             });
                             document.querySelectorAll(&#039;.pointer_none *&#039;).forEach(element =&gt; {
@@ -10082,43 +10044,78 @@
                                 document.querySelector(&#039;.add_create_windows&#039;).remove();
                             }
                         
-                            function noticewindow_create(window_icon, errorTitle, errorMessage = &quot;Error&quot;) {
+                            function noticewindow_create(window_icon, errorTitle, errorMessage = &quot;Error&quot;, func_command) {
                                 nex.style.cursor = &quot;&quot;;
-                                const entryDiv = document.createElement(&quot;div&quot;);
-                                const isWarning = window_icon === &quot;warning&quot;;
-                                const isError = window_icon === &quot;error&quot;;
-                                const isLoad = window_icon === &quot;load&quot;;
-                                entryDiv.className = &quot;child_windows error_windows back_silver no_window&quot;;
-                                if (isWarning) {
-                                    sound(4);
-                                    errorMessage = &quot;warning&quot;;
-                                } else if (isError) {
-                                    sound(2);
-                                } else if (isLoad) {
-                                    errorMessage = &quot;loading&quot;;
-                                    entryDiv.classList.add(&#039;add_create_load_windows&#039;)
-                                } else {
-                                    errorMessage = window_icon;
-                                    entryDiv.classList.add(&#039;add_create_windows&#039;)
+                                const entryDiv = document.createElement(&quot;div&quot;),
+                                    isWarning = window_icon === &quot;warning&quot;,
+                                    isError = window_icon === &quot;error&quot;,
+                                    isLoad = window_icon === &quot;load&quot;,
+                                    func_command2 = typeof func_command === &quot;function&quot;;
+                        
+                                entryDiv.className = `child_windows error_windows back_silver no_window ${isLoad ? &#039;add_create_load_windows&#039; : &#039;add_create_windows&#039;
+                                    }`;
+                                if (isWarning) sound(4);
+                                if (isError) sound(2);
+                                errorMessage = errorMessage &amp;&amp; errorMessage !== &quot;Error&quot; ? errorMessage :
+                                    isWarning ? &quot;warning&quot; : isError ? &quot;error&quot; :
+                                        isLoad ? &quot;loading&quot; : window_icon;
+                        
+                                const icon = isWarning
+                                    ? &#039;&lt;span class=&quot;warning_icon bold&quot; style=&quot;position: absolute; top: 45px;&quot;&gt;!&lt;/span&gt;&#039;
+                                    : isError
+                                        ? &#039;&lt;span class=&quot;error_icon&quot;&gt;✕&lt;/span&gt;&#039;
+                                        : &#039;&#039;;
+                                const buttonOk = document.createElement(&quot;span&quot;);
+                                buttonOk.className = &quot;button2 borderinline_dotted&quot;;
+                                buttonOk.style.position = &quot;relative&quot;;
+                                buttonOk.style.left = func_command2 ? &quot;40%&quot; : &quot;50%&quot;;
+                                buttonOk.style.transform = &quot;translateX(-50%)&quot;;
+                                buttonOk.innerHTML = &quot;&amp;emsp;OK&amp;emsp;&quot;;
+                                buttonOk.addEventListener(&quot;click&quot;, error_windows_close);
+                                if (func_command2) {
+                                    buttonOk.addEventListener(&quot;click&quot;, func_command);
+                                    const zIndex = window.getComputedStyle(taskbar).zIndex,
+                                        bgDiv = document.createElement(&quot;div&quot;);
+                                    bgDiv.className = &quot;background_black&quot;;
+                                    bgDiv.style.zIndex = +zIndex + 1;
+                                    body.appendChild(bgDiv);
+                                    entryDiv.classList.add(&quot;overzindex&quot;, &quot;overzindex2&quot;);
+                                    setTimeout(() =&gt; {
+                                        document.querySelector(&quot;.overzindex&quot;).style.zIndex =
+                                            +window.getComputedStyle(bgDiv).zIndex + 1;
+                                    }, 0);
                                 }
-                                const icon = isWarning ? &#039;&lt;span class=&quot;warning_icon bold&quot; style=&quot;position: absolute; top: 45px;&quot;&gt;!&lt;/span&gt;&#039; :
-                                    isError ? &#039;&lt;span class=&quot;error_icon&quot;&gt;✕&lt;/span&gt;&#039; : &#039;&#039;;
-                                entryDiv.innerHTML = `
-                                    &lt;div class=&quot;title&quot;&gt;&lt;span class=&quot;bold error_title_text&quot;&gt;${errorMessage}&lt;/span&gt;&lt;/div&gt;
+                        
+                                const buttonNo = func_command2 ? document.createElement(&quot;span&quot;) : null;
+                                if (buttonNo) {
+                                    buttonNo.className = &quot;button2 borderinline_dotted&quot;;
+                                    buttonNo.style.position = &quot;relative&quot;;
+                                    buttonNo.style.left = &quot;45%&quot;;
+                                    buttonNo.style.transform = &quot;translateX(-50%)&quot;;
+                                    buttonNo.innerHTML = &quot;&amp;emsp;NO&amp;emsp;&quot;;
+                                    buttonNo.addEventListener(&quot;click&quot;, error_windows_close);
+                                }
+                        
+                                const contentDiv = document.createElement(&quot;div&quot;);
+                                contentDiv.className = &quot;window_content&quot;;
+                                contentDiv.innerHTML = `&lt;p&gt;${icon}&lt;span class=&quot;window_error_text&quot;&gt;${errorTitle}&lt;/span&gt;&lt;/p&gt;`;
+                                contentDiv.appendChild(buttonOk);
+                                if (buttonNo) contentDiv.appendChild(buttonNo);
+                        
+                                entryDiv.innerHTML = `&lt;div class=&quot;title&quot;&gt;
+                                    &lt;span class=&quot;bold error_title_text&quot;&gt;${errorMessage}&lt;/span&gt;&lt;/div&gt;
                                     &lt;div class=&quot;title_buttons&quot;&gt;
-                                        &lt;span class=&quot;drag_button&quot;&gt;&amp;nbsp;&lt;/span&gt;
-                                        &lt;span class=&quot;close_button button2 allclose_button&quot; onclick=&quot;error_windows_close(event)&quot;&gt;&lt;/span&gt;
-                                    &lt;/div&gt;
-                                    &lt;div class=&quot;window_content&quot;&gt;
-                                        &lt;p&gt;${icon}&lt;span class=&quot;window_error_text&quot;&gt;${errorTitle}&lt;/span&gt;&lt;/p&gt;
-                                        &lt;span class=&quot;button2 borderinline_dotted&quot; style=&quot;position: relative; left: 50%; 
-                                        transform: translateX(-50%);&quot; onclick=&quot;error_windows_close(event)&quot;&gt;&amp;emsp;OK&amp;emsp;&lt;/span&gt;
-                                    &lt;/div&gt;`;
+                                    &lt;span class=&quot;drag_button&quot;&gt;&amp;nbsp;&lt;/span&gt;
+                                    &lt;span class=&quot;close_button button2 allclose_button&quot; onclick=&quot;error_windows_close(event)&quot;&gt;&lt;/span&gt;
+                                &lt;/div&gt;`;
+                                entryDiv.appendChild(contentDiv);
                                 entryDiv.addEventListener(&quot;mousedown&quot;, event =&gt; {
-                                    event.currentTarget.style.zIndex = ++largestZIndex;
+                                    if (!entryDiv.classList.contains(&#039;overzindex&#039;)) {
+                                        event.currentTarget.style.zIndex = largestZIndex++;
+                                    }
                                 });
                                 dropArea.appendChild(entryDiv);
-                                entryDiv.style.zIndex = ++largestZIndex;
+                                entryDiv.style.zIndex = largestZIndex++;
                             }
                         
                             function showPosition(position) {
@@ -10966,6 +10963,7 @@
                                 document.querySelectorAll(&#039;.window_file_icon, .dli-folder&#039;).forEach(icon =&gt; !icon.querySelector(&#039;span&#039;) &amp;&amp; icon.appendChild(document.createElement(&#039;span&#039;)));
                             }
                         
+                        
                         };
                 </textarea>
                 </code>
@@ -11461,7 +11459,7 @@
 
                         <div class="title_buttons">
                             <span class="drag_button">&nbsp;</span>
-                            <span class="close_button4 button2 note_close"></span>
+                            <span class="close_button2 button2 note_close"></span>
                             <span class="bigminbtn button2"></span>
                             <span class="minimization_button button2"></span><br>
                         </div>
@@ -11587,7 +11585,7 @@
 
                         <div class="title_buttons">
                             <span class="drag_button">&nbsp;</span>
-                            <span class="close_button4 button2 objective_close"></span>
+                            <span class="close_button2 button2 objective_close"></span>
                             <span class="bigminbtn button2"></span>
                             <span class="minimization_button button2"></span><br>
                         </div>
@@ -12645,7 +12643,7 @@
                                         <span class="borderinline_dotted button2 apply_button2">Button2</span>
                                         <button class="button2"
                                             style="height: 20px; font-size: large; float: right; position: absolute; left: 25px; top: 110px; transform: scale(2);">▼</button>
-                                        <span class="button2 close_button4" style="width: 19px; height: 19px; position: absolute; left: 75px; top:
+                                        <span class="button2 close_button2" style="width: 19px; height: 19px; position: absolute; left: 75px; top:
                                             105px; transform: scale(2);"></span>
                                     </div>
                                 </div>
@@ -13155,7 +13153,7 @@
 
                         <div class="title_buttons">
                             <span class="drag_button">&nbsp;</span>
-                            <span class="close_button4 button2 camera_close"></span>
+                            <span class="close_button2 button2 camera_close"></span>
                             <span class="bigminbtn button2"></span>
                             <span class="minimization_button button2"></span>
                             <span class="frame_fullbutton button2"></span><br>
@@ -14926,26 +14924,6 @@
                             <span class="button2">&nbsp;T&nbsp;</span>
                         </div>
                     </div>
-                </div>
-
-                <div class="warning_windows back_silver" style="z-index: 999999;">
-                    <div class="warning_title" style="background: navy; color: white;">
-                        <span>&nbsp;</span><span class="warning_title_text bold">warning</span>
-                    </div>
-                    <div class="title_buttons" style="position: absolute; top:0px;">
-                        <span class="close_button3 button2"></span>
-                    </div><br>
-                    <p><span class="warning_icon bold">!</span>&emsp;&emsp;&nbsp;<span
-                            class="window_warning_text"></span>
-                    </p>
-                    <span class="shutdown_button button2 logoff borderinline_dotted" onclick="window_none()"
-                        style="position: absolute; top: 85%; left: 50%; transform: translate(-50%, -50%);">&emsp;OK&emsp;</span>
-                    <span class="warningclose_button button2 borderinline_dotted"
-                        style="display: none; position: absolute; top: 85%; left: 50%; transform: translate(-50%, -50%);"
-                        onclick="warning_windows_close()">&emsp;OK&emsp;</span><br>
-                </div>
-                <div class="black_screen"
-                    style="display: none; background: black; width: 100%; height: 100%; position: fixed; top: 0px; z-index: 999998; opacity: 0.5;">
                 </div>
 
                 <div id="screen_saver_group">

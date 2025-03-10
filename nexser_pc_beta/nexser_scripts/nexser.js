@@ -119,8 +119,6 @@ if (ua.includes("mobile")) {
 
     const nexser_search_menu = document.querySelector('.nexser_search_menu');
 
-    const warning_windows = document.querySelector('.warning_windows');
-
     const tetris_mneu = document.querySelector('.tetris_menu');
     const bom_menu = document.querySelector('.bom_menu');
     const othello_menu = document.querySelector('.othello_menu');
@@ -879,60 +877,60 @@ if (ua.includes("mobile")) {
 
     Array.from(logoff).forEach(element => {
         element.addEventListener('click', event => {
-            nex.style.cursor = 'progress';
-            startmenu_close();
-            setTimeout(() => {
-                if (sessionStorage.getItem('start_camera')) {
-                    noticewindow_create("error", "カメラが実行されているため、ログオフできません!");
-                } else if (localStorage.getItem('no_shutdown')) {
-                    noticewindow_create("error", "welcomeウィンドウが起動するまでログオフできません!");
-                } else if (gets === gets2 && gets3 === 0) {
-                    sound_stop();
-                    shutdown_sound();
-                    localStorage.removeItem('login');
-                    nex.style.cursor = 'none';
-                    desktop.style.display = "none";
-                    if (!localStorage.getItem('noteData')) {
-                        document.note_form.note_area.value = "";
-                        resetShowLength();
-                        document.querySelector('.note_title').textContent = "notepad"
-                    }
-                    setTimeout(() => {
-                        document.querySelectorAll('.testwindow2').forEach(testwindow2 => testwindow2.remove());
-                        document.querySelectorAll('.error_windows').forEach(errorwindow => errorwindow.remove());
-                        window_none();
-                        window_reset();
-                        localStorage.removeItem('prompt_data');
-                        document.querySelector('#code_html').style.display = "none";
-                        document.querySelector('#code_script').style.display = "none";
-                        document.querySelector('#code_script2').style.display = "none";
-                        fileborder_reset();
-                        document.querySelector('.black_screen').style.display = "none";
-                        setTimeout(() => {
-                            document.querySelectorAll('.button').forEach(button => button.classList.remove('pressed'));
-                            nameText.value = "";
-                            msg.innerText = "";
-                            prompt_text.style.color = "";
-                            nexser.style.display = "none";
-                            screen_prompt.style.display = "block";
-                            prompt_text_value.focus();
-                            nex.style.cursor = '';
-                        }, 500);
-                    }, 1000);
-                } else {
-                    warning_windows.style.display = "block";
-                    document.querySelector('.close_button3').style.display = "block"
-                    document.querySelector('.shutdown_button').style.display = "block";
-                    document.querySelector('.warningclose_button').style.display = "none";
-                    document.querySelector('.warning_title_text').textContent = "warning";
-                    document.querySelector('.window_warning_text').textContent = "実行されているウィンドウがあります! ログオフしますか?";
-                    document.querySelector('.black_screen').style.display = "block";
-                    sound(4);
-                    nex.style.cursor = '';
-                }
-            }, 100);
+            nexser_shutdown()
         })
     })
+
+    function nexser_shutdown() {
+        nex.style.cursor = 'progress';
+        startmenu_close();
+        setTimeout(() => {
+            if (sessionStorage.getItem('start_camera')) {
+                noticewindow_create("error", "カメラが実行されているため、ログオフできません!");
+            } else if (localStorage.getItem('no_shutdown')) {
+                noticewindow_create("error", "welcomeウィンドウが起動するまでログオフできません!");
+            } else if (gets === gets2 && gets3 === 0) {
+                window_none();
+                sound_stop();
+                shutdown_sound();
+                localStorage.removeItem('login');
+                nex.style.cursor = 'none';
+                desktop.style.display = "none";
+                if (!localStorage.getItem('noteData')) {
+                    note_clear();
+                }
+                setTimeout(() => {
+                    document.querySelectorAll('.testwindow2').forEach(testwindow2 => testwindow2.remove());
+                    document.querySelectorAll('.error_windows').forEach(errorwindow => errorwindow.remove());
+                    window_none();
+                    window_reset();
+                    localStorage.removeItem('prompt_data');
+                    document.querySelector('#code_html').style.display = "none";
+                    document.querySelector('#code_script').style.display = "none";
+                    document.querySelector('#code_script2').style.display = "none";
+                    fileborder_reset();
+                    setTimeout(() => {
+                        document.querySelectorAll('.button').forEach(button => button.classList.remove('pressed'));
+                        nameText.value = "";
+                        msg.innerText = "";
+                        prompt_text.style.color = "";
+                        nexser.style.display = "none";
+                        screen_prompt.style.display = "block";
+                        prompt_text_value.focus();
+                        nex.style.cursor = '';
+                    }, 500);
+                }, 1000);
+            } else {
+                noticewindow_create("warning", "実行されているウィンドウがあります! ログオフしますか?", null, nexser_shutdown_load)
+                nex.style.cursor = '';
+            }
+        }, 100);
+    }
+
+    function nexser_shutdown_load() {
+        window_none();
+        nexser_shutdown();
+    }
 
     Array.from(restart).forEach(element => {
         element.addEventListener('click', event => {
@@ -956,9 +954,7 @@ if (ua.includes("mobile")) {
                 nex.style.cursor = 'none';
                 desktop.style.display = "none";
                 if (!localStorage.getItem('noteData')) {
-                    document.note_form.note_area.value = "";
-                    resetShowLength();
-                    document.querySelector('.note_title').textContent = "notepad"
+                    note_clear();
                 }
                 setTimeout(() => {
                     window_none();
@@ -1312,9 +1308,6 @@ if (ua.includes("mobile")) {
             allwindow.style.top = "";
             allwindow.style.height = "";
             allwindow.style.width = "";
-            const notearea = note_area;
-            notearea.style.height = "";
-            notearea.style.width = "";
             windowposition_reset();
             allwindow.classList.remove('leftwindow', 'rightwindow', 'child_windows_invisible');
             allwindow.style.transition = "";
@@ -1348,9 +1341,6 @@ if (ua.includes("mobile")) {
             allwindow_none.style.transition = "";
         });
         windowposition_reset();
-        note_area.style.height = "";
-        note_area.style.width = "";
-        warning_windows.style.display = "none";
     }
     function window_active() {
         document.querySelectorAll('.child_windows:not(.window_nosearch)').forEach(allwindow_active => allwindow_active.classList.remove('active'));
@@ -2034,7 +2024,7 @@ if (ua.includes("mobile")) {
 
             case 'exit':
                 nexser_prompt_reset()
-                windowclose(".window_prompt")
+                windowclose(window_prompt)
                 break;
 
             case 'nexser/restart':
@@ -2138,21 +2128,20 @@ if (ua.includes("mobile")) {
         }
     }, 100);
 
-    ['.close_button', '.close_button3'].forEach(cls => {
+    ['.close_button'].forEach(cls => {
         document.querySelectorAll(cls).forEach(btn => {
             btn.addEventListener('click', () => {
-                const el = btn.closest(cls === '.close_button' ? '.child_windows' : '.warning_windows');
-                if (el) cls === '.close_button' ? (el.classList.add('active'), el.classList.remove('selectwindows')) : el.style.display = 'none';
-                document.querySelector('.black_screen').style.display = "none";
+                windowclose(btn);
             });
         });
     });
 
     function windowclose(cls) {
-        document.querySelectorAll(cls).forEach(btn => {
-            const el = btn.closest(cls === cls ? '.child_windows' : '.warning_windows');
-            if (el) cls === cls ? (el.classList.add('active'), el.classList.remove('selectwindows')) : el.style.display = 'none';
-        });
+        const el = cls.closest('.child_windows');
+        if (el) {
+            el.classList.add('active');
+            el.classList.remove('selectwindows');
+        }
     }
 
     function addMinbigScreenButtonListeners(button) {
@@ -2604,7 +2593,9 @@ if (ua.includes("mobile")) {
                 if (!clones && !localStorage.getItem('window_afterimage_false')) {
                     const clone = dragwindow.cloneNode(true);
                     dragwindow.parentNode.appendChild(clone).classList.add('clones');
-                    [clone, dragwindow].forEach(el => el.style.zIndex = largestZIndex++);
+                    if (!dragwindow.classList.contains('overzindex')) {
+                        [clone, dragwindow].forEach(el => el.style.zIndex = largestZIndex++);
+                    }
                     requestAnimationFrame(() => {
                         dragwindow.parentNode.appendChild(clone).children[0].classList.add('navy');
                         applyStyles(dragwindow);
@@ -3181,26 +3172,25 @@ if (ua.includes("mobile")) {
     }
 
     document.querySelector('.note_close').addEventListener('click', function () {
-        if (!localStorage.getItem('noteData')) {
-            document.querySelector('.note_title').textContent = "notepad";
-        }
         if (!note_pad.classList.contains('active') && localStorage.getItem('noteData') && !localStorage.getItem('note_texts')) {
             note_pad.classList.add('active');
-            note_pad.classList.remove('selectwindows')
+            note_pad.classList.remove('selectwindows');
         } else if (localStorage.getItem('note_texts')) {
-            document.querySelector('.warning_title_text').textContent = "notepad"
-            document.querySelector('.window_warning_text').textContent = "編集中です。ウィンドウを終了しますか?(内容は破棄されます)"
-            warning_windows.style.display = "block"
-            document.querySelector('.close_button3').style.display = "block"
-            sound(4)
-            document.querySelector('.shutdown_button').style.display = "none";
-            document.querySelector('.warningclose_button').style.display = "block";
+            noticewindow_create("warning", "編集中です。メモ帳を終了しますか?(内容は破棄されます)", "notepad", note_clear);
         } else {
-            localStorage.removeItem('note_texts');
             note_pad.classList.add('active');
             note_pad.classList.remove('selectwindows');
         }
     })
+
+    function note_clear() {
+        document.note_form.note_area.value = "";
+        resetShowLength();
+        localStorage.removeItem('note_texts');
+        document.querySelector('.note_title').textContent = "notepad";
+        note_pad.classList.add('active');
+        note_pad.classList.remove('selectwindows');
+    }
 
     document.querySelector('.objective_close').addEventListener('click', function () {
         if (!objective_menu.classList.contains('active') && localStorage.getItem('objectiveData') && localStorage.getItem('objectiveTitleData') && (!localStorage.getItem('objective_area'))) {
@@ -3248,19 +3238,11 @@ if (ua.includes("mobile")) {
         }
     })
 
-    function warning_windows_close() {
-        warning_windows.style.display = "none";
-        document.querySelector('.shutdown_button').style.display = "block";
-        document.querySelector('.warningclose_button').style.display = "none";
-        document.querySelector('.close_button3').style.display = "block"
-        document.note_form.note_area.value = "";
-        resetShowLength();
-        localStorage.removeItem('note_texts');
-        note_pad.classList.add('active');
-        note_pad.classList.remove('selectwindows');
-    }
-
     function error_windows_close(event) {
+        const background_black = document.querySelector('.background_black');
+        if (background_black) {
+            background_black.remove();
+        }
         const clickedElement = event.target;
         const parentElement = clickedElement.closest('.child_windows');
         parentElement.remove();
@@ -4217,7 +4199,7 @@ if (ua.includes("mobile")) {
         drawHand(100, 6, 30 * (hours + minutes / 60));
     }
 
-    document.querySelectorAll('.close_button, .close_button2, .close_button3, .close_button4').forEach(close_buttons => {
+    document.querySelectorAll('.close_button, .close_button2').forEach(close_buttons => {
         close_buttons.classList.add('allclose_button');
     });
     document.querySelectorAll('.pointer_none *').forEach(element => {
@@ -5965,43 +5947,78 @@ if (ua.includes("mobile")) {
         document.querySelector('.add_create_windows').remove();
     }
 
-    function noticewindow_create(window_icon, errorTitle, errorMessage = "Error") {
+    function noticewindow_create(window_icon, errorTitle, errorMessage = "Error", func_command) {
         nex.style.cursor = "";
-        const entryDiv = document.createElement("div");
-        const isWarning = window_icon === "warning";
-        const isError = window_icon === "error";
-        const isLoad = window_icon === "load";
-        entryDiv.className = "child_windows error_windows back_silver no_window";
-        if (isWarning) {
-            sound(4);
-            errorMessage = "warning";
-        } else if (isError) {
-            sound(2);
-        } else if (isLoad) {
-            errorMessage = "loading";
-            entryDiv.classList.add('add_create_load_windows')
-        } else {
-            errorMessage = window_icon;
-            entryDiv.classList.add('add_create_windows')
+        const entryDiv = document.createElement("div"),
+            isWarning = window_icon === "warning",
+            isError = window_icon === "error",
+            isLoad = window_icon === "load",
+            func_command2 = typeof func_command === "function";
+
+        entryDiv.className = `child_windows error_windows back_silver no_window ${isLoad ? 'add_create_load_windows' : 'add_create_windows'
+            }`;
+        if (isWarning) sound(4);
+        if (isError) sound(2);
+        errorMessage = errorMessage && errorMessage !== "Error" ? errorMessage :
+            isWarning ? "warning" : isError ? "error" :
+                isLoad ? "loading" : window_icon;
+
+        const icon = isWarning
+            ? '<span class="warning_icon bold" style="position: absolute; top: 45px;">!</span>'
+            : isError
+                ? '<span class="error_icon">✕</span>'
+                : '';
+        const buttonOk = document.createElement("span");
+        buttonOk.className = "button2 borderinline_dotted";
+        buttonOk.style.position = "relative";
+        buttonOk.style.left = func_command2 ? "40%" : "50%";
+        buttonOk.style.transform = "translateX(-50%)";
+        buttonOk.innerHTML = "&emsp;OK&emsp;";
+        buttonOk.addEventListener("click", error_windows_close);
+        if (func_command2) {
+            buttonOk.addEventListener("click", func_command);
+            const zIndex = window.getComputedStyle(taskbar).zIndex,
+                bgDiv = document.createElement("div");
+            bgDiv.className = "background_black";
+            bgDiv.style.zIndex = +zIndex + 1;
+            body.appendChild(bgDiv);
+            entryDiv.classList.add("overzindex", "overzindex2");
+            setTimeout(() => {
+                document.querySelector(".overzindex").style.zIndex =
+                    +window.getComputedStyle(bgDiv).zIndex + 1;
+            }, 0);
         }
-        const icon = isWarning ? '<span class="warning_icon bold" style="position: absolute; top: 45px;">!</span>' :
-            isError ? '<span class="error_icon">✕</span>' : '';
-        entryDiv.innerHTML = `
-            <div class="title"><span class="bold error_title_text">${errorMessage}</span></div>
+
+        const buttonNo = func_command2 ? document.createElement("span") : null;
+        if (buttonNo) {
+            buttonNo.className = "button2 borderinline_dotted";
+            buttonNo.style.position = "relative";
+            buttonNo.style.left = "45%";
+            buttonNo.style.transform = "translateX(-50%)";
+            buttonNo.innerHTML = "&emsp;NO&emsp;";
+            buttonNo.addEventListener("click", error_windows_close);
+        }
+
+        const contentDiv = document.createElement("div");
+        contentDiv.className = "window_content";
+        contentDiv.innerHTML = `<p>${icon}<span class="window_error_text">${errorTitle}</span></p>`;
+        contentDiv.appendChild(buttonOk);
+        if (buttonNo) contentDiv.appendChild(buttonNo);
+
+        entryDiv.innerHTML = `<div class="title">
+            <span class="bold error_title_text">${errorMessage}</span></div>
             <div class="title_buttons">
-                <span class="drag_button">&nbsp;</span>
-                <span class="close_button button2 allclose_button" onclick="error_windows_close(event)"></span>
-            </div>
-            <div class="window_content">
-                <p>${icon}<span class="window_error_text">${errorTitle}</span></p>
-                <span class="button2 borderinline_dotted" style="position: relative; left: 50%; 
-                transform: translateX(-50%);" onclick="error_windows_close(event)">&emsp;OK&emsp;</span>
-            </div>`;
+            <span class="drag_button">&nbsp;</span>
+            <span class="close_button button2 allclose_button" onclick="error_windows_close(event)"></span>
+        </div>`;
+        entryDiv.appendChild(contentDiv);
         entryDiv.addEventListener("mousedown", event => {
-            event.currentTarget.style.zIndex = ++largestZIndex;
+            if (!entryDiv.classList.contains('overzindex')) {
+                event.currentTarget.style.zIndex = largestZIndex++;
+            }
         });
         dropArea.appendChild(entryDiv);
-        entryDiv.style.zIndex = ++largestZIndex;
+        entryDiv.style.zIndex = largestZIndex++;
     }
 
     function showPosition(position) {
@@ -6848,5 +6865,6 @@ if (ua.includes("mobile")) {
     function fileicon() {
         document.querySelectorAll('.window_file_icon, .dli-folder').forEach(icon => !icon.querySelector('span') && icon.appendChild(document.createElement('span')));
     }
+
 
 };
