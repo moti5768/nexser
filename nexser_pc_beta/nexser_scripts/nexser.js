@@ -2240,7 +2240,7 @@ if (ua.includes("mobile")) {
         if (localStorage.getItem('window_animation')) {
             animation.style.transition = `${windowanimation}s cubic-bezier(0, 0, 1, 1)`;
             Array.from(animation.children).forEach(child => child.style.display = 'none');
-            document.querySelectorAll('.title, .title_buttons').forEach(el => el.style.display = "block");
+            document.querySelectorAll('.title, .title_buttons').forEach(el => el.style.display = "flex");
             setTimeout(() => {
                 animation.style.transition = "";
                 Array.from(animation.children).forEach(child => child.style.display = '');
@@ -2509,12 +2509,28 @@ if (ua.includes("mobile")) {
         if (frontmostElement) {
             frontmostElement.element.firstElementChild.classList.add(newClassName);
             startmenu_close();
+            if (localStorage.getItem('titlebtn_left')) {
+                addLeftClass();
+            }
         }
         elements.forEach(element => {
             const { width, height } = getComputedStyle(element);
             Object.assign(element.style, { width, height });
         });
         return frontmostElement;
+    }
+
+    function titlebtn_left() {
+        if (localStorage.getItem('titlebtn_left')) {
+            localStorage.removeItem('titlebtn_left');
+            const elements = document.querySelectorAll('.title, .title_buttons');
+            elements.forEach(element => {
+                element.classList.remove('left');
+            });
+        } else {
+            localStorage.setItem('titlebtn_left', true);
+            addLeftClass();
+        }
     }
 
     function zindexwindow_addnavy() {
@@ -3409,24 +3425,24 @@ if (ua.includes("mobile")) {
         }
     });
 
-    var calc_result = document.getElementById("result");
+    let calc_result = document.getElementById("result");
+    const child_graph = document.querySelector(".child_graph");
     function edit(calc_elem) {
         calc_result.value = calc_result.value + calc_elem.value;
     }
     function calc() {
         calc_result.value = new Function("return " + calc_result.value)();
-        const child_graph = document.querySelector(".child_graph");
         child_graph.style.height = new Function("return " + calc_result.value)() / 100 + '%';
-        child_graph.style.background = "lime"
+        child_graph.style.background = "lime";
         if (calc_result.value > 10000) {
-            child_graph.style.height = "100%"
+            child_graph.style.height = "100%";
             child_graph.style.background = "red";
         }
         if (calc_result.value == 10000) {
             child_graph.style.background = "blue";
         }
         if (calc_result.value < 0) {
-            child_graph.style.height = "100%"
+            child_graph.style.height = "100%";
             child_graph.style.background = "black";
         }
     }
@@ -3436,17 +3452,18 @@ if (ua.includes("mobile")) {
         calc();
     }
     function calc_clear() {
-        const child_graph = document.querySelector(".child_graph");
-        child_graph.style.height = "0%"
+        child_graph.style.height = "0%";
         child_graph.style.background = "";
         calc_result.value = "";
     }
     function calc_oneremove() {
-        const ca1 = calc_result.value;
-        const result = ca1.slice(0, -1);
-        calc_result.value = result;
-        calc_result.value = new Function("return " + calc_result.value)();
-        calc_result.value = Math.round(calc_result.value);
+        const result = calc_result.value.slice(0, -1);
+        if (!result) return calc_clear(), calc_result.value = "";
+        try {
+            calc_result.value = Math.round(new Function("return " + result)()) || "";
+        } catch {
+            calc_result.value = "";
+        }
         calc();
     }
 
@@ -5186,7 +5203,6 @@ if (ua.includes("mobile")) {
         const adjust = (win) => requestAnimationFrame(() => {
             const c = win.querySelector('.window_resize');
             if (c) c.style.height = `${win.clientHeight - (win.querySelector('.window_bottom')?.offsetHeight || 0) - 60}px`;
-
             const iframe = win.querySelector('iframe');
             const progressBar = win.querySelector('.progress-bar-container .progress-bar');
             if (!iframe || !progressBar) return;
@@ -6865,6 +6881,15 @@ if (ua.includes("mobile")) {
     function fileicon() {
         document.querySelectorAll('.window_file_icon, .dli-folder').forEach(icon => !icon.querySelector('span') && icon.appendChild(document.createElement('span')));
     }
+
+    const addLeftClass = () => {
+        const elements = document.querySelectorAll('.title, .title_buttons');
+        elements.forEach(element => {
+            if (!element.classList.contains('left')) {
+                element.classList.add('left');
+            }
+        });
+    };
 
 
 };

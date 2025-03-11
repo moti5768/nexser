@@ -1932,8 +1932,13 @@
                                                                     &lt;li class=&quot;display_pattern_btn button2&quot; onclick=&quot;backcolorfilter_clear()&quot;&gt;
                                                                     &lt;/li&gt;
                                                                 &lt;/ul&gt;
-                        
+                                                                &lt;div&gt;
+                                                                    &lt;span class=&quot;button2&quot;
+                                                                        onclick=&quot;titlebtn_left()&quot;&gt;タイトルバーボタン配置左にする(もう一回クリックで右)&lt;/span&gt;
+                                                                &lt;/div&gt;
                                                             &lt;/div&gt;
+                        
+                        
                                                         &lt;/div&gt;
                         
                                                         &lt;div class=&quot;window_inline_menus_parent&quot;&gt;
@@ -3772,6 +3777,7 @@
                                                     &lt;/div&gt;
                                                 &lt;/div&gt;
                                             &lt;/div&gt;
+                        
                                         &lt;/div&gt;
                         
                                         &lt;div id=&quot;taskbar_group&quot;&gt;
@@ -6337,7 +6343,7 @@
                                 if (localStorage.getItem(&#039;window_animation&#039;)) {
                                     animation.style.transition = `${windowanimation}s cubic-bezier(0, 0, 1, 1)`;
                                     Array.from(animation.children).forEach(child =&gt; child.style.display = &#039;none&#039;);
-                                    document.querySelectorAll(&#039;.title, .title_buttons&#039;).forEach(el =&gt; el.style.display = &quot;block&quot;);
+                                    document.querySelectorAll(&#039;.title, .title_buttons&#039;).forEach(el =&gt; el.style.display = &quot;flex&quot;);
                                     setTimeout(() =&gt; {
                                         animation.style.transition = &quot;&quot;;
                                         Array.from(animation.children).forEach(child =&gt; child.style.display = &#039;&#039;);
@@ -6606,12 +6612,28 @@
                                 if (frontmostElement) {
                                     frontmostElement.element.firstElementChild.classList.add(newClassName);
                                     startmenu_close();
+                                    if (localStorage.getItem(&#039;titlebtn_left&#039;)) {
+                                        addLeftClass();
+                                    }
                                 }
                                 elements.forEach(element =&gt; {
                                     const { width, height } = getComputedStyle(element);
                                     Object.assign(element.style, { width, height });
                                 });
                                 return frontmostElement;
+                            }
+                        
+                            function titlebtn_left() {
+                                if (localStorage.getItem(&#039;titlebtn_left&#039;)) {
+                                    localStorage.removeItem(&#039;titlebtn_left&#039;);
+                                    const elements = document.querySelectorAll(&#039;.title, .title_buttons&#039;);
+                                    elements.forEach(element =&gt; {
+                                        element.classList.remove(&#039;left&#039;);
+                                    });
+                                } else {
+                                    localStorage.setItem(&#039;titlebtn_left&#039;, true);
+                                    addLeftClass();
+                                }
                             }
                         
                             function zindexwindow_addnavy() {
@@ -7506,24 +7528,24 @@
                                 }
                             });
                         
-                            var calc_result = document.getElementById(&quot;result&quot;);
+                            let calc_result = document.getElementById(&quot;result&quot;);
+                            const child_graph = document.querySelector(&quot;.child_graph&quot;);
                             function edit(calc_elem) {
                                 calc_result.value = calc_result.value + calc_elem.value;
                             }
                             function calc() {
                                 calc_result.value = new Function(&quot;return &quot; + calc_result.value)();
-                                const child_graph = document.querySelector(&quot;.child_graph&quot;);
                                 child_graph.style.height = new Function(&quot;return &quot; + calc_result.value)() / 100 + &#039;%&#039;;
-                                child_graph.style.background = &quot;lime&quot;
+                                child_graph.style.background = &quot;lime&quot;;
                                 if (calc_result.value &gt; 10000) {
-                                    child_graph.style.height = &quot;100%&quot;
+                                    child_graph.style.height = &quot;100%&quot;;
                                     child_graph.style.background = &quot;red&quot;;
                                 }
                                 if (calc_result.value == 10000) {
                                     child_graph.style.background = &quot;blue&quot;;
                                 }
                                 if (calc_result.value &lt; 0) {
-                                    child_graph.style.height = &quot;100%&quot;
+                                    child_graph.style.height = &quot;100%&quot;;
                                     child_graph.style.background = &quot;black&quot;;
                                 }
                             }
@@ -7533,17 +7555,18 @@
                                 calc();
                             }
                             function calc_clear() {
-                                const child_graph = document.querySelector(&quot;.child_graph&quot;);
-                                child_graph.style.height = &quot;0%&quot;
+                                child_graph.style.height = &quot;0%&quot;;
                                 child_graph.style.background = &quot;&quot;;
                                 calc_result.value = &quot;&quot;;
                             }
                             function calc_oneremove() {
-                                const ca1 = calc_result.value;
-                                const result = ca1.slice(0, -1);
-                                calc_result.value = result;
-                                calc_result.value = new Function(&quot;return &quot; + calc_result.value)();
-                                calc_result.value = Math.round(calc_result.value);
+                                const result = calc_result.value.slice(0, -1);
+                                if (!result) return calc_clear(), calc_result.value = &quot;&quot;;
+                                try {
+                                    calc_result.value = Math.round(new Function(&quot;return &quot; + result)()) || &quot;&quot;;
+                                } catch {
+                                    calc_result.value = &quot;&quot;;
+                                }
                                 calc();
                             }
                         
@@ -9283,7 +9306,6 @@
                                 const adjust = (win) =&gt; requestAnimationFrame(() =&gt; {
                                     const c = win.querySelector(&#039;.window_resize&#039;);
                                     if (c) c.style.height = `${win.clientHeight - (win.querySelector(&#039;.window_bottom&#039;)?.offsetHeight || 0) - 60}px`;
-                        
                                     const iframe = win.querySelector(&#039;iframe&#039;);
                                     const progressBar = win.querySelector(&#039;.progress-bar-container .progress-bar&#039;);
                                     if (!iframe || !progressBar) return;
@@ -10962,6 +10984,15 @@
                             function fileicon() {
                                 document.querySelectorAll(&#039;.window_file_icon, .dli-folder&#039;).forEach(icon =&gt; !icon.querySelector(&#039;span&#039;) &amp;&amp; icon.appendChild(document.createElement(&#039;span&#039;)));
                             }
+                        
+                            const addLeftClass = () =&gt; {
+                                const elements = document.querySelectorAll(&#039;.title, .title_buttons&#039;);
+                                elements.forEach(element =&gt; {
+                                    if (!element.classList.contains(&#039;left&#039;)) {
+                                        element.classList.add(&#039;left&#039;);
+                                    }
+                                });
+                            };
                         
                         
                         };
@@ -12802,8 +12833,13 @@
                                             <li class="display_pattern_btn button2" onclick="backcolorfilter_clear()">
                                             </li>
                                         </ul>
-
+                                        <div>
+                                            <span class="button2"
+                                                onclick="titlebtn_left()">タイトルバーボタン配置左にする(もう一回クリックで右)</span>
+                                        </div>
                                     </div>
+
+
                                 </div>
 
                                 <div class="window_inline_menus_parent">
@@ -14642,6 +14678,7 @@
                             </div>
                         </div>
                     </div>
+
                 </div>
 
                 <div id="taskbar_group">
