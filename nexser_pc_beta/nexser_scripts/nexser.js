@@ -5138,7 +5138,7 @@ if (ua.includes("mobile")) {
                         zindexwindow_addnavy();
                     }
                 });
-                const windowContents = createElement('div', "window_contents", windowDiv);
+                const windowContents = createElement('div', "window_contents border2", windowDiv);
                 const windowBottom = createElement('div', "window_bottom border2 bottom2", windowDiv);
                 windowBottom.innerHTML = `
                     Document:&nbsp;<span class="white_space_wrap" style="width: 300%;">${name}</span>
