@@ -3348,7 +3348,7 @@
                                                 &lt;/div&gt;
                                             &lt;/div&gt;
                         
-                                            &lt;div class=&quot;child_windows mydocument_menu resize active&quot;&gt;
+                                            &lt;div class=&quot;child_windows mydocument_menu file_windows resize active&quot;&gt;
                                                 &lt;div class=&quot;title&quot;&gt;
                                                     &lt;span class=&quot;title_icon&quot;&gt;&lt;/span&gt;&lt;span&gt;my document&lt;/span&gt;
                                                 &lt;/div&gt;
@@ -3357,6 +3357,66 @@
                                                     &lt;span class=&quot;close_button button2&quot;&gt;&lt;/span&gt;
                                                     &lt;span class=&quot;bigminbtn button2&quot;&gt;&lt;/span&gt;
                                                     &lt;span class=&quot;minimization_button button2&quot;&gt;&lt;/span&gt;&lt;br&gt;
+                                                &lt;/div&gt;
+                                                &lt;div class=&quot;title2&quot;&gt;
+                        
+                                                    &lt;div class=&quot;parent_list&quot;&gt;
+                                                        &lt;ul&gt;
+                                                            &lt;li&gt;&amp;emsp;icon&amp;emsp;&lt;/li&gt;
+                                                        &lt;/ul&gt;
+                                                        &lt;div class=&quot;child_list&quot;&gt;
+                                                            &lt;ul&gt;
+                                                                &lt;li class=&quot;logoff&quot;&gt;Logoff&lt;/li&gt;
+                                                            &lt;/ul&gt;
+                                                        &lt;/div&gt;
+                                                    &lt;/div&gt;
+                        
+                                                    &lt;div class=&quot;parent_list&quot;&gt;
+                                                        &lt;ul&gt;
+                                                            &lt;li&gt;&amp;emsp;window&amp;emsp;&lt;/li&gt;
+                                                        &lt;/ul&gt;
+                                                        &lt;div class=&quot;child_list&quot;&gt;
+                                                            &lt;ul&gt;
+                                                                &lt;li class=&quot;window_fullleft&quot;&gt;window full left&lt;/li&gt;
+                                                                &lt;li class=&quot;window_fullright&quot;&gt;
+                                                                    window full right&lt;/li&gt;
+                                                                &lt;li class=&quot;window_half_big&quot;&gt;window half big&lt;/li&gt;
+                                                                &lt;li class=&quot;windowsize_reset&quot;&gt;window size reset&lt;/li&gt;
+                                                            &lt;/ul&gt;
+                                                        &lt;/div&gt;
+                                                    &lt;/div&gt;
+                        
+                                                    &lt;div class=&quot;parent_list&quot;&gt;
+                                                        &lt;ul&gt;
+                                                            &lt;li&gt;&amp;emsp;view&amp;emsp;&lt;/li&gt;
+                                                        &lt;/ul&gt;
+                                                        &lt;div class=&quot;child_list&quot;&gt;
+                                                            &lt;ul&gt;
+                                                                &lt;li class=&quot;allwindow_toolbar&quot;&gt;allwindow toolbar&lt;/li&gt;
+                                                            &lt;/ul&gt;
+                                                        &lt;/div&gt;
+                                                    &lt;/div&gt;
+                        
+                                                    &lt;div class=&quot;parent_list&quot;&gt;
+                                                        &lt;ul&gt;
+                                                            &lt;li&gt;&amp;emsp;使い方&amp;emsp;&lt;/li&gt;
+                                                        &lt;/ul&gt;
+                                                        &lt;div class=&quot;child_list&quot;&gt;
+                                                            &lt;ul&gt;
+                                                                &lt;li&gt;他のウィンドウ内にあるファイルをドロップしてください。&lt;/li&gt;
+                                                            &lt;/ul&gt;
+                                                        &lt;/div&gt;
+                                                    &lt;/div&gt;
+                        
+                                                &lt;/div&gt;
+                        
+                                                &lt;div class=&quot;window_tool&quot;&gt;
+                        
+                                                    &lt;div class=&quot;windowtool_buttons&quot;&gt;
+                                                        &lt;div class=&quot;windowtool_buttons_child&quot;&gt;
+                                                        &lt;/div&gt;
+                                                    &lt;/div&gt;
+                        
                                                 &lt;/div&gt;
                                                 &lt;div class=&quot;window_contents&quot; id=&quot;drop_zone&quot;&gt;
                                                     &lt;ul class=&quot;window_inline_list&quot;&gt;&lt;/ul&gt;
@@ -10028,10 +10088,11 @@
                             }
                         
                             document.querySelectorAll(&#039;.file_windows&#039;).forEach(file_windows =&gt; {
-                                const lastChildElement = file_windows.querySelector(&#039;.title&#039;).lastElementChild;
+                                const lastChildText = file_windows.querySelector(&#039;.title&#039;).lastElementChild.textContent;
                                 const test3 = file_windows.children[4];
-                                const file_windows_parent_html = `&lt;div class=&quot;xx-large bold window_subtitles&quot; style=&quot;display: none; background: linear-gradient(225deg,rgb(216, 250, 250) 20%,rgb(210, 252, 210) 50%, whitesmoke,rgb(219, 219, 219)); text-shadow: 4px 4px 2px dimgray;&quot;&gt;
-                                        ${lastChildElement.textContent} 
+                                const file_windows_parent_html = `
+                                    &lt;div class=&quot;xx-large bold window_subtitles&quot; style=&quot;display: none; background: linear-gradient(225deg, rgb(216, 250, 250) 20%, rgb(210, 252, 210) 50%, whitesmoke, rgb(219, 219, 219)); text-shadow: 4px 4px 2px dimgray;&quot;&gt;
+                                        ${lastChildText}
                                         &lt;div class=&quot;welcome_icons&quot; style=&quot;opacity: 0.2; z-index: -1;&quot;&gt;
                                             &lt;span class=&quot;welicon_1&quot;&gt;&lt;/span&gt;
                                             &lt;span class=&quot;welicon_2&quot;&gt;&lt;/span&gt;
@@ -10041,8 +10102,8 @@
                             });
                             if (localStorage.getItem(&#039;window_subtitle&#039;)) {
                                 document.querySelectorAll(&#039;.window_subtitles&#039;).forEach(element =&gt; {
-                                    element.style.display = &quot;block&quot;
-                                })
+                                    element.style.display = &quot;block&quot;;
+                                });
                             }
                         
                             function filetimes_test() {
@@ -14249,7 +14310,7 @@
                         </div>
                     </div>
 
-                    <div class="child_windows mydocument_menu resize active">
+                    <div class="child_windows mydocument_menu file_windows resize active">
                         <div class="title">
                             <span class="title_icon"></span><span>my document</span>
                         </div>
@@ -14258,6 +14319,66 @@
                             <span class="close_button button2"></span>
                             <span class="bigminbtn button2"></span>
                             <span class="minimization_button button2"></span><br>
+                        </div>
+                        <div class="title2">
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;icon&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="logoff">Logoff</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;window&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="window_fullleft">window full left</li>
+                                        <li class="window_fullright">
+                                            window full right</li>
+                                        <li class="window_half_big">window half big</li>
+                                        <li class="windowsize_reset">window size reset</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;view&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li class="allwindow_toolbar">allwindow toolbar</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="parent_list">
+                                <ul>
+                                    <li>&emsp;使い方&emsp;</li>
+                                </ul>
+                                <div class="child_list">
+                                    <ul>
+                                        <li>他のウィンドウ内にあるファイルをドロップしてください。</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <div class="window_tool">
+
+                            <div class="windowtool_buttons">
+                                <div class="windowtool_buttons_child">
+                                </div>
+                            </div>
+
                         </div>
                         <div class="window_contents" id="drop_zone">
                             <ul class="window_inline_list"></ul>

@@ -5925,10 +5925,11 @@ if (ua.includes("mobile")) {
     }
 
     document.querySelectorAll('.file_windows').forEach(file_windows => {
-        const lastChildElement = file_windows.querySelector('.title').lastElementChild;
+        const lastChildText = file_windows.querySelector('.title').lastElementChild.textContent;
         const test3 = file_windows.children[4];
-        const file_windows_parent_html = `<div class="xx-large bold window_subtitles" style="display: none; background: linear-gradient(225deg,rgb(216, 250, 250) 20%,rgb(210, 252, 210) 50%, whitesmoke,rgb(219, 219, 219)); text-shadow: 4px 4px 2px dimgray;">
-                ${lastChildElement.textContent} 
+        const file_windows_parent_html = `
+            <div class="xx-large bold window_subtitles" style="display: none; background: linear-gradient(225deg, rgb(216, 250, 250) 20%, rgb(210, 252, 210) 50%, whitesmoke, rgb(219, 219, 219)); text-shadow: 4px 4px 2px dimgray;">
+                ${lastChildText}
                 <div class="welcome_icons" style="opacity: 0.2; z-index: -1;">
                     <span class="welicon_1"></span>
                     <span class="welicon_2"></span>
@@ -5938,8 +5939,8 @@ if (ua.includes("mobile")) {
     });
     if (localStorage.getItem('window_subtitle')) {
         document.querySelectorAll('.window_subtitles').forEach(element => {
-            element.style.display = "block"
-        })
+            element.style.display = "block";
+        });
     }
 
     function filetimes_test() {
