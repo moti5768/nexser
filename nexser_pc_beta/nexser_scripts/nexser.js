@@ -715,29 +715,38 @@ if (ua.includes("mobile")) {
         }, 500);
     }
 
-    const toggleSetting_program = (selector, key, onText, offText) => {
-        document.querySelector(selector).addEventListener('click', () => {
-            if (localStorage.getItem(key)) {
-                localStorage.removeItem(key);
-                document.querySelector(selector).textContent = offText;
-            } else {
-                localStorage.setItem(key, true);
-                document.querySelector(selector).textContent = onText;
-            }
+    const toggleSetting = ({ selector, key, onText, offText }) => {
+        const element = document.querySelector(selector);
+        element.addEventListener('click', () => {
+            const isSet = localStorage.getItem(key);
+            element.textContent = isSet ? offText : onText;
+            isSet ? localStorage.removeItem(key) : localStorage.setItem(key, 'true');
         });
     };
-    toggleSetting_program('.startup_sound', 'driver_sound', 'UN INSTALL', 'INSTALL');
-    toggleSetting_program('.startup_versiontext', 'startup_versiontext', 'ON', 'OFF');
-    toggleSetting_program('.startup_note', 'startup_note', 'ON', 'OFF');
-    toggleSetting_program('.startup_computer', 'startup_computer', 'ON', 'OFF');
-    toggleSetting_program('.startup_color', 'startup_color', 'ON', 'OFF');
-    toggleSetting_program('.startup_screen', 'startup_screen', 'ON', 'OFF');
-    toggleSetting_program('.startup_htmlviewer_edit', 'startup_htmlviewer_edit', 'ON', 'OFF');
-    toggleSetting_program('.startup_guidebook', 'startup_guidebook', 'ON', 'OFF');
-    toggleSetting_program('.startup_objective', 'startup_objective', 'ON', 'OFF');
-    toggleSetting_program('.startup_calendar', 'startup_calendar', 'ON', 'OFF');
-    toggleSetting_program('.startup_speed', 'prompt_data2', 'HIGH', 'LOW');
-    toggleSetting_program('.auto_startup', 'auto_startup', 'ON', 'OFF');
+    const settings = [
+        ['.startup_sound', 'driver_sound', 'UN INSTALL', 'INSTALL'],
+        ['.startup_note', 'startup_note', 'ON', 'OFF'],
+        ['.startup_computer', 'startup_computer', 'ON', 'OFF'],
+        ['.startup_color', 'startup_color', 'ON', 'OFF'],
+        ['.startup_screen', 'startup_screen', 'ON', 'OFF'],
+        ['.startup_htmlviewer_edit', 'startup_htmlviewer_edit', 'ON', 'OFF'],
+        ['.startup_guidebook', 'startup_guidebook', 'ON', 'OFF'],
+        ['.startup_objective', 'startup_objective', 'ON', 'OFF'],
+        ['.startup_calendar', 'startup_calendar', 'ON', 'OFF'],
+        ['.startup_speed', 'prompt_data2', 'HIGH', 'LOW'],
+        ['.auto_startup', 'auto_startup', 'ON', 'OFF']
+    ];
+    settings.forEach(([selector, key, onText, offText]) =>
+        toggleSetting({ selector, key, onText, offText })
+    );
+
+    document.querySelector('.startup_versiontext').addEventListener('click', () => {
+        const startupVersionText = document.querySelector('.startup_versiontext');
+        const isSet = localStorage.getItem('startup_versiontext');
+        startupVersionText.textContent = isSet ? "OFF" : "ON";
+        desktop_version_text.style.display = isSet ? "none" : "block";
+        isSet ? localStorage.removeItem('startup_versiontext') : localStorage.setItem('startup_versiontext', 'true');
+    });
 
     const font_clear = () =>
         ['font_serif', 'font_sans_serif', 'font_cursive', 'font_fantasy', 'font_monospace'].forEach(item => localStorage.removeItem(item));
