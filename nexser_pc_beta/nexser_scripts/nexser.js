@@ -2497,26 +2497,29 @@ if (ua.includes("mobile")) {
 
     function assignClassToFrontmostElement(selector, newClassName) {
         const elements = Array.from(document.querySelectorAll(selector));
-        const frontmostElement = elements.reduce((maxElement, element) => {
+        let frontmostElement = null;
+        let highestZIndex = -Infinity;
+        elements.forEach(element => {
             const childWindow = element.closest('.child_windows');
             if (!childWindow.classList.contains('selectwindows')) {
                 document.querySelectorAll('.task_buttons').forEach(taskButton => taskButton.remove());
                 childWindow.classList.add('selectwindows');
             }
             const zIndex = parseInt(window.getComputedStyle(element).zIndex, 10) || 0;
-            return zIndex > (maxElement?.zIndex || -Infinity) ? { element: childWindow, zIndex } : maxElement;
-        }, null);
+            if (zIndex > highestZIndex) {
+                highestZIndex = zIndex;
+                frontmostElement = childWindow;
+            }
+            const { width, height } = getComputedStyle(element);
+            Object.assign(element.style, { width, height });
+        });
         if (frontmostElement) {
-            frontmostElement.element.firstElementChild.classList.add(newClassName);
+            frontmostElement.firstElementChild.classList.add(newClassName);
             startmenu_close();
             if (localStorage.getItem('titlebtn_left')) {
                 addLeftClass();
             }
         }
-        elements.forEach(element => {
-            const { width, height } = getComputedStyle(element);
-            Object.assign(element.style, { width, height });
-        });
         return frontmostElement;
     }
 
@@ -6687,15 +6690,15 @@ if (ua.includes("mobile")) {
         }
         function handleClick(event) {
             const target = event.currentTarget;
-            document.querySelectorAll('.window_files').forEach((el) => el.classList.remove('file_border', 'file_border2'));
+            fileElements.forEach((el) => el.classList.remove('file_border', 'file_border2'));
             target.classList.add('file_border');
         }
-        document.querySelectorAll('.window_files').forEach((el) => {
+        fileElements.forEach((el) => {
             el.addEventListener('mousedown', handleMouseDown);
             el.addEventListener('click', handleClick);
         });
 
-        document.querySelectorAll('.window_files').forEach((element, index) => {
+        fileElements.forEach((element, index) => {
             const uniqueKey = `windowfile_time_${index}`;
             element.addEventListener('click', () => {
                 let timeElements = element.querySelectorAll('.windowfile_time');
@@ -6789,7 +6792,7 @@ if (ua.includes("mobile")) {
         element.classList.add('file_border3')
     }
     function removefile_Border() {
-        document.querySelectorAll('.window_files').forEach((rf) => {
+        fileElements.forEach((rf) => {
             rf.classList.remove('file_border3')
         })
     }
@@ -6800,7 +6803,7 @@ if (ua.includes("mobile")) {
         });
     }
 
-    document.querySelectorAll('.window_files').forEach(item => {
+    fileElements.forEach(item => {
         item.addEventListener('dragstart', e => {
             e.dataTransfer.setData('text/plain', e.target.outerHTML);
             e.target.style.opacity = "0.9";
