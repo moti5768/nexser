@@ -133,6 +133,7 @@ if (ua.includes("mobile")) {
 
     let isAnimating = false;
     let isAnimating_minimization = false;
+    let isMaximized = false;
 
     // app
     // note
@@ -2154,7 +2155,7 @@ if (ua.includes("mobile")) {
     }
 
     function addMinbigScreenButtonListeners(button) {
-        let isMaximized = false;
+
         let originalSize = {};
         let originalPosition = {};
         if (!button.dataset.listenerAdded) {
@@ -2272,6 +2273,9 @@ if (ua.includes("mobile")) {
             windowleft.style.left = "0";
             windowleft.style.height = "100%";
             windowleft.style.width = "49.9%";
+            const dragwindow2 = windowleft.children[1].children[2];
+            dragwindow2.classList.replace('minbtn', 'bigminbtn');
+            isMaximized = false;
             if (localStorage.getItem('data_taskbar_none')) {
                 windowleft.style.top = "0";
             } else if (localStorage.getItem('taskbar_position_button')) {
@@ -2296,6 +2300,9 @@ if (ua.includes("mobile")) {
             windowright.style.right = "0px";
             windowright.style.height = "100%";
             windowright.style.width = "49.9%";
+            const dragwindow2 = windowright.children[1].children[2];
+            dragwindow2.classList.replace('minbtn', 'bigminbtn');
+            isMaximized = false;
             if (localStorage.getItem('data_taskbar_none')) {
                 windowright.style.top = "0";
             } else if (localStorage.getItem('taskbar_position_button')) {
