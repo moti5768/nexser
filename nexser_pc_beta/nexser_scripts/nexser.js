@@ -2189,19 +2189,8 @@ if (ua.includes("mobile")) {
                         originalSize[win] = { width: win.style.width, height: win.style.height };
                         originalPosition[win] = { top: win.style.top, left: win.style.left };
                         win.classList.remove('minimization');
-                        const t = localStorage.getItem('taskbar_height');
                         win.style.left = "0";
-                        if (localStorage.getItem('data_taskbar_none')) {
-                            win.style.top = "0";
-                        } else if (localStorage.getItem('taskbar_position_button')) {
-                            win.style.top = "40px";
-                            win.style.top = `${t}px`;
-                        } else if (win.classList.contains('rightwindow')) {
-                            win.style.top = "0";
-                            win.style.left = "";
-                        } else {
-                            win.style.top = "0";
-                        }
+                        windowtop(win);
                         win.classList.remove('rightwindow', 'leftwindow');
                         win.classList.add('big');
                         button.classList.replace('bigminbtn', 'minbtn');
@@ -2604,14 +2593,14 @@ if (ua.includes("mobile")) {
                 const drag = document.getElementsByClassName("drag")[0];
                 if (drag.classList.contains('resize')) {
                     if (e.clientX <= 0) {
+                        windowtop(drag);
                         drag.style.width = "50%";
-                        drag.style.top = "0px";
                         drag.style.height = `${window.innerHeight - taskbar.clientHeight}px`;
                         drag.style.left = "0px";
                         drag.classList.add('leftwindow');
                     } else if (e.clientX >= window.innerWidth - 1) {
+                        windowtop(drag);
                         drag.style.width = "50%";
-                        drag.style.top = "0px";
                         drag.style.height = `${window.innerHeight - taskbar.clientHeight}px`;
                         drag.style.left = `${window.innerWidth - drag.offsetWidth}px`;
                         drag.classList.add('rightwindow');
@@ -2659,6 +2648,21 @@ if (ua.includes("mobile")) {
     }
     document.querySelectorAll('.drag_button').forEach(addDragButtonListeners);
     observeNewElements3();
+
+    function windowtop(win) {
+        const t = taskbar.clientHeight;
+        if (localStorage.getItem('data_taskbar_none')) {
+            win.style.top = "0";
+        } else if (localStorage.getItem('taskbar_position_button')) {
+            win.style.top = "40px";
+            win.style.top = `${t}px`;
+        } else if (win.classList.contains('rightwindow')) {
+            win.style.top = "0";
+            win.style.left = "";
+        } else {
+            win.style.top = "0";
+        }
+    }
 
     function applyStyles(element) {
         Object.assign(element.style, {
@@ -5679,7 +5683,7 @@ if (ua.includes("mobile")) {
                 });
             }
         });
-        const elements2 = document.querySelectorAll('.big');
+        const elements2 = document.querySelectorAll('.big:not(.minimization)');
         elements2.forEach(allbig => {
             if (!isAnimating) {
                 requestAnimationFrame(() => {
