@@ -5679,7 +5679,7 @@ if (ua.includes("mobile")) {
         elements.forEach(allbig => {
             if (!isAnimating) {
                 requestAnimationFrame(() => {
-                    allbig.style.height = (taskbarAutoHide && taskbarBottomEmpty) ? taskbarHeight : (taskbarAutoHide ? "" : taskbarHeight);
+                    allbig.style.height = (taskbarAutoHide && taskbarBottomEmpty) ? taskbarHeight : (taskbarAutoHide ? allbig.style.height = "100%" : taskbarHeight);
                 });
             }
         });
