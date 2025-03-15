@@ -5445,12 +5445,16 @@ if (ua.includes("mobile")) {
             localStorage.clear();
             sessionStorage.clear();
             Object.keys(allData).forEach(key => localStorage.setItem(key, allData[key]));
-            noticewindow_create("nexser", "データが復元されました! ページを再読み込みしてください。");
+            noticewindow_create("nexser", "データが復元されました! ページを再読み込みしますか?", null, reload);
             sound(4);
         } catch (error) {
             noticewindow_create("error", error.message);
         }
     });
+
+    function reload() {
+        location.reload();
+    }
 
     function nexser_search_button() {
         const fragment = document.createDocumentFragment();
