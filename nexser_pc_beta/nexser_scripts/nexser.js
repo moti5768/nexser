@@ -1064,8 +1064,8 @@ if (ua.includes("mobile")) {
                 nex_files.style.display = "block";
                 setTimeout(() => {
                     if (localStorage.getItem('login_welcome') && localStorage.getItem('password')) {
-                        welcome()
-                        localStorage.removeItem('no_shutdown')
+                        welcome();
+                        localStorage.removeItem('no_shutdown');
                     };
                 }, 5000);
                 noticewindow_create("Nexser", "読み込んでいます...");
@@ -1142,8 +1142,10 @@ if (ua.includes("mobile")) {
     }
 
     function welcome() {
-        welcome_menu.classList.remove('active');
-        welcome_animation();
+        if (!localStorage.getItem('deskprompt') && localStorage.getItem('login')) {
+            welcome_menu.classList.remove('active');
+            welcome_animation();
+        };
     }
 
     startup_window_open()
