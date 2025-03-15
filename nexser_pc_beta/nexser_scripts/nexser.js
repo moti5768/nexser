@@ -216,8 +216,8 @@ if (ua.includes("mobile")) {
         }
 
         var isClickInsideStartButton = document.getElementById('startbtn').contains(e.target);
-        var isClickInsideParentStartMenu2 = start_menu.contains(e.target);
-        if (!isClickInsideStartButton && !isClickInsideParentStartMenu2) {
+        var isClickInsideParentStartMenu = start_menu.contains(e.target);
+        if (!isClickInsideStartButton && !isClickInsideParentStartMenu) {
             startmenu_close();
         }
         var isClickInsideStartButton3 = Array.from(document.querySelectorAll('.windowtool_parent,.windowtool_child')).some(button => button.contains(e.target));
