@@ -559,70 +559,72 @@ input[type="file"] {
 }
 
 /* start_menu */
-.parent_start_menu {
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
+.start_menu {
     display: none;
-}
-
-.child_start_menu,
-.child_start_menu_lists,
-.child_start_menu_lists2,
-.child_start_menu_lists3 {
-    position: absolute;
-    background-color: #C3C7CB;
-    border: 1.8px solid;
-    border-color: #fff #808080 #808080 #fff;
-    box-shadow: 0.5px 0.5px black;
-}
-
-.child_start_menu {
-    width: 150px;
-    bottom: 40px;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 200px;
+    background: silver;
     z-index: 999998;
 }
 
-.parent_start_menu_lists {
+.start_menu ul {
+    background: #C3C7CB;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.start_menu li {
     position: relative;
-    margin-left: 25px;
+    padding-left: 30px;
+    margin: 0;
+    box-sizing: border-box;
+    height: 30px;
+    line-height: 30px;
+    color: black;
 }
 
-.child_start_menu_lists {
-    display: none;
-    width: 170px;
-    left: 125px;
-    top: 0px;
-}
-
-.child_start_menu_lists2 {
-    display: none;
-    width: 170px;
-    left: 170px;
-    top: -1.5px;
-}
-
-.child_start_menu_lists3 {
-    display: none;
-    width: 170px;
-    left: 170px;
-    top: -1px;
-}
-
-.list_right_text {
+.arrow {
     position: absolute;
-    right: 0;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #666;
+}
+
+.start_menu li:hover {
+    background: darkblue;
+    color: white;
+}
+
+.start_menu li:hover>.arrow {
+    color: white;
+}
+
+.start_menu .submenu {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 100%;
+    box-sizing: border-box;
+    width: 180px;
+    z-index: 1;
+}
+
+.start_menu li:hover>.submenu {
+    display: block;
 }
 
 .startmenu_file_icon {
-    width: 18px;
-    height: 12.5px;
+    width: 20px;
+    height: 14px;
     background-image: radial-gradient(#FFFFBB 1px, #CCCC66 1px);
     background-size: 3px 3px;
     position: absolute;
-    margin-top: 3px;
-    left: 5px;
+    margin-top: 5px;
+    left: 2px;
     border: 1.5px solid;
     border-color: #eee #000 #000 #eee;
     box-shadow: 1.5px 1.5px dimgray;
@@ -1879,11 +1881,6 @@ body::-webkit-scrollbar {
     width: auto;
     font-size: small;
     padding-left: 10px;
-}
-
-.child_start_menu li:hover {
-    color: white;
-    background: darkblue;
 }
 
 /* mouse */

@@ -40,8 +40,7 @@ if (ua.includes("mobile")) {
     const guidebook_file_menu = document.querySelector('.guidebook_file_menu');
     const guidebook_taskbar_menu = document.querySelector('.guidebook_taskbar_menu');
 
-    const parent_start_menu = document.getElementById('start_menu');
-    const child_start_menu = document.querySelector('.child_start_menu');
+    const start_menu = document.getElementById('start_menu');
     const taskbar = document.getElementById('taskbar');
     const toolbar = document.getElementById('toolbar');
     const battery_menu = document.querySelector('.battery_menu');
@@ -217,7 +216,7 @@ if (ua.includes("mobile")) {
         }
 
         var isClickInsideStartButton = document.getElementById('startbtn').contains(e.target);
-        var isClickInsideParentStartMenu2 = document.querySelector('.parentstartmenu2').contains(e.target);
+        var isClickInsideParentStartMenu2 = start_menu.contains(e.target);
         if (!isClickInsideStartButton && !isClickInsideParentStartMenu2) {
             startmenu_close();
         }
@@ -416,8 +415,6 @@ if (ua.includes("mobile")) {
         if (localStorage.getItem('taskbar_position_button')) {
             document.querySelector('.taskbar_position_button').textContent = "bottom"
             taskbar.style.top = "0px";
-            child_start_menu.style.top = "40px";
-            child_start_menu.style.bottom = "auto";
         }
 
         if (localStorage.getItem('taskbar_position_button') && localStorage.getItem('data_taskbar_none')) {
@@ -440,14 +437,10 @@ if (ua.includes("mobile")) {
         } else if (localStorage.getItem('taskbar_position_button')) {
             toolbar.style.top = `${task}px`;
             toolbar.style.top = `${t}px`;
-            child_start_menu.style.top = `${task}px`;
-            child_start_menu.style.top = `${t}px`;
         } else {
             toolbar.style.bottom = `${task}px`;
             toolbar.style.bottom = `${t}px`;
             desktop_version_text.style.bottom = `${task}px`;
-            child_start_menu.style.bottom = `${task}px`;
-            child_start_menu.style.bottom = `${t}px`;
         }
 
         if (localStorage.getItem('toolbar_on')) {
@@ -602,15 +595,16 @@ if (ua.includes("mobile")) {
     })
 
     function startmenu_close() {
-        parent_start_menu.style.display = "none";
+        start_menu.style.display = "none";
         document.getElementById('startbtn').classList.remove('pressed');
     }
     document.getElementById('startbtn').addEventListener('mousedown', function () {
-        const isOpen = parent_start_menu.style.display === "block";
+        const isOpen = start_menu.style.display === "block";
         if (isOpen) startmenu_close();
         else {
-            parent_start_menu.style.display = "block";
+            start_menu.style.display = "block";
             this.classList.add('pressed');
+            updateStartMenuPosition();
         }
         fileborder_reset();
     });
@@ -707,10 +701,8 @@ if (ua.includes("mobile")) {
             const task = taskbar.clientHeight;
             if (localStorage.getItem('taskbar_position_button')) {
                 toolbar.style.top = `${task}px`;
-                child_start_menu.style.top = `${task}px`
             } else {
                 toolbar.style.bottom = `${task}px`;
-                child_start_menu.style.bottom = `${task}px`
             }
         }, 500);
     }
@@ -1050,7 +1042,6 @@ if (ua.includes("mobile")) {
                         toolbar.style.top = "40px";
                         toolbar.style.top = `${t}px`;
                         const task = taskbar.clientHeight;
-                        child_start_menu.style.top = `${task}px`;
                     }
                 } else {
                     taskbar.style.display = "block";
@@ -1059,7 +1050,6 @@ if (ua.includes("mobile")) {
                     toolbar.style.bottom = "40px";
                     toolbar.style.bottom = `${t}px`;
                     const task = taskbar.clientHeight;
-                    child_start_menu.style.bottom = `${task}px`;
                     if (localStorage.getItem('data_taskbar_none')) {
                         taskbar.style.display = "none";
                         toolbar.style.bottom = "0px";
@@ -1091,7 +1081,7 @@ if (ua.includes("mobile")) {
             [desktop, nex_files, taskbar].forEach(el => el.style.display = "block");
             const task = taskbar.clientHeight;
             Object.assign(toolbar.style, { top: "", left: "", bottom: "40px" });
-            [child_start_menu, desktop_version_text].forEach(el => el.style.bottom = `${task}px`);
+            [desktop_version_text].forEach(el => el.style.bottom = `${task}px`);
             localmemory_size();
             setTimeout(() => {
                 setColor();
@@ -1445,8 +1435,8 @@ if (ua.includes("mobile")) {
         });
     });
 
-    document.querySelectorAll('.child_start_menu').forEach(child_start_menu => {
-        child_start_menu.addEventListener('mouseleave', () => {
+    document.querySelectorAll('.start_menu').forEach(child_startmenu => {
+        child_startmenu.addEventListener('mouseleave', () => {
             if (localStorage.getItem('taskbar_height') && localStorage.getItem('taskbar_autohide')) {
                 const t = localStorage.getItem('taskbar_height');
                 const t2 = t - 5;
@@ -1455,10 +1445,10 @@ if (ua.includes("mobile")) {
                 taskbar.style.bottom = "-35px";
             }
         });
-        child_start_menu.addEventListener('mouseover', () => {
+        child_startmenu.addEventListener('mouseover', () => {
             taskbar.style.bottom = "";
         });
-        child_start_menu.addEventListener('click', () => {
+        child_startmenu.addEventListener('click', () => {
             titlecolor_set();
         });
     });
@@ -2346,17 +2336,6 @@ if (ua.includes("mobile")) {
             localStorage.removeItem('clockdata_analog');
             digital_clock_area[0].style.display = "flex";
             analog_clock_area[0].style.display = "none";
-        });
-    });
-
-    const menuLists = document.querySelectorAll('.parent_start_menu_lists, .child_start_menu_lists, .child_start_menu_lists2');
-    menuLists.forEach(menuList => {
-        menuList.addEventListener('mouseover', () => {
-            menuList.lastElementChild.style.display = "block";
-        });
-        menuList.addEventListener('mouseleave', () => {
-            document.querySelectorAll('.child_start_menu_lists, .child_start_menu_lists2, .child_start_menu_lists3')
-                .forEach(childMenuList => childMenuList.style.display = "none");
         });
     });
 
@@ -3578,11 +3557,6 @@ if (ua.includes("mobile")) {
 
             document.querySelector('.taskbar_position_button').textContent = "top"
             taskbar.style.top = ""
-            child_start_menu.style.top = "auto"
-            child_start_menu.style.bottom = "";
-
-            child_start_menu.style.bottom = `${task}px`
-            child_start_menu.style.bottom = `${t}px`
 
             battery_menu.style.top = "auto"
             battery_menu.style.bottom = ""
@@ -3609,10 +3583,6 @@ if (ua.includes("mobile")) {
 
             document.querySelector('.taskbar_position_button').textContent = "bottom"
             taskbar.style.top = "0px"
-            child_start_menu.style.top = "40px"
-            child_start_menu.style.bottom = "auto"
-            child_start_menu.style.top = `${task}px`
-            child_start_menu.style.top = `${t}px`
             battery_menu.style.top = "35px"
             battery_menu.style.bottom = "auto"
 
@@ -4111,16 +4081,11 @@ if (ua.includes("mobile")) {
                 const t2 = localStorage.getItem('taskbar_height');
                 files_inline.style.marginTop = `${t2}px`
                 const task = taskbar.clientHeight;
-                child_start_menu.style.top = `${task}px`
-                child_start_menu.style.top = `${t}px`
             } else if (localStorage.getItem('taskbar_autohide')) {
                 taskbar_autohide();
                 const task = taskbar.clientHeight;
-                child_start_menu.style.bottom = `${task}px`
             } else {
                 const task = taskbar.clientHeight;
-                child_start_menu.style.bottom = `${task}px`
-                child_start_menu.style.bottom = `${t}px`
             }
         } else {
             noticewindow_create("error", "タスクバーの設定範囲を超えています!");
@@ -4132,18 +4097,14 @@ if (ua.includes("mobile")) {
         document.getElementsByClassName('taskbar_height_value')[0].value = "40";
         localStorage.removeItem('taskbar_height');
         taskbar.style.height = "";
-        child_start_menu.style.top = "";
-        child_start_menu.style.bottom = "";
         if (localStorage.getItem('taskbar_position_button')) {
             files_inline.style.marginTop = "40px";
             const task = taskbar.clientHeight;
-            child_start_menu.style.top = `${task}px`;
             desktop_version_text.style.bottom = "0px";
         } else if (localStorage.getItem('taskbar_autohide')) {
             taskbar_autohide();
         } else {
             const task = taskbar.clientHeight;
-            child_start_menu.style.bottom = `${task}px`;
             desktop_version_text.style.bottom = "40px";
         }
     }
@@ -6887,5 +6848,24 @@ if (ua.includes("mobile")) {
         });
     };
 
+    function updateStartMenuPosition() {
+        const { top, bottom } = taskbar.getBoundingClientRect();
+        const windowHeight = window.innerHeight;
+        const isBottom = top > windowHeight / 2;
+        Object.assign(start_menu.style, {
+            top: isBottom ? "auto" : `${bottom}px`,
+            bottom: isBottom ? `${windowHeight - top}px` : "auto",
+        });
+        document.querySelectorAll("#start_menu li").forEach(folder => {
+            folder.querySelector(".startmenu_file_icon") ||
+                folder.prepend(Object.assign(document.createElement("span"), { className: "startmenu_file_icon" }));
+            const submenu = folder.querySelector(".submenu");
+            if (submenu && !folder.querySelector(".arrow")) {
+                folder.prepend(Object.assign(document.createElement("span"), { className: "arrow", textContent: "➡" }));
+                folder.style.position = "relative";
+                submenu.classList.add("border");
+            }
+        });
+    }
 
 };
