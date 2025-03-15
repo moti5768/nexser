@@ -28,19 +28,26 @@ const sounds = soundFiles.map(file => {
 });
 
 let firstLoad = true;
+let currentSound = null;
+
 function sound(index) {
     if (localStorage.getItem('driver_sound')) {
-        sounds[index].currentTime = 0;
-        if (!firstLoad) {
-            sounds[index].play();
-            sounds[index].onended = () => {
+        if (currentSound && currentSound !== sounds[index]) {
+            currentSound.pause();
+            currentSound.currentTime = 0;
+        }
+        currentSound = sounds[index];
+        if (currentSound.paused) {
+            currentSound.play()
+                .catch(error => {
+                    console.error("Sound play error:", error);
+                });
+            currentSound.onended = () => {
                 sound_stop();
-                firstLoad = false;
             };
         }
     }
 }
-
 
 function sound_stop() {
     sounds.forEach(sound => {

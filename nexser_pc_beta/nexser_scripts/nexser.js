@@ -1142,7 +1142,7 @@ if (ua.includes("mobile")) {
     }
 
     function welcome() {
-        if (!localStorage.getItem('deskprompt') && localStorage.getItem('login')) {
+        if (!localStorage.getItem('deskprompt') && localStorage.getItem('prompt_data')) {
             welcome_menu.classList.remove('active');
             welcome_animation();
         };
@@ -1173,7 +1173,7 @@ if (ua.includes("mobile")) {
         if (localStorage.getItem('password') && gets === gets2) {
             welcome_menu.classList.add('active');
             localStorage.removeItem('login');
-            document.getElementById('desktop').style.display = "none";
+            desktop.style.display = "none";
             window_none();
             window_reset();
             document.querySelector('.pass_signin_menu').classList.remove('active')
