@@ -1393,6 +1393,9 @@ if (ua.includes("mobile")) {
             sessionStorage.clear();
             localStorage.clear();
         }
+        setTimeout(() => {
+            window.location = '';
+        }, 3000);
     }
 
     function colordata_clear() {
@@ -2000,10 +2003,7 @@ if (ua.includes("mobile")) {
                 break;
 
             case 'nexser/data/clear':
-                allStorage_clear()
-                setTimeout(() => {
-                    window.location = '';
-                }, 3000);
+                noticewindow_create("warning", "全てのデータが削除されます。実行しますか?", "nexser", allStorage_clear);
                 break;
 
             case 'welcome':
@@ -5453,7 +5453,7 @@ if (ua.includes("mobile")) {
     });
 
     function reload() {
-        location.reload();
+        window.location = '';
     }
 
     function nexser_search_button() {
