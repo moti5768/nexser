@@ -207,17 +207,21 @@ li {
 .mini_screen {
     width: 200px;
     height: 200px;
-    background: #555555;
+    background: #C3C7CB;
     position: relative;
+    border-radius: 5px;
+    margin: 10px;
+    border: 3px solid;
+    border-color: #eee #333 #333 #eee;
 }
 
 .mini_desktop {
-    width: 180px;
-    height: 180px;
+    width: 170px;
+    height: 170px;
     background: #52adad;
     position: absolute;
-    top: 10px;
-    left: 10px;
+    top: 15px;
+    left: 15px;
 }
 
 #background_text2 {
