@@ -6766,11 +6766,11 @@ if (ua.includes("mobile")) {
                     updateLocalStorageOnDelete(newFile.className);
                     newFile.remove();
                 });
-                saveToLocalStorage(newFile);
+                saveToLocalStorage_deskfiles(newFile);
             }
         }
     });
-    function saveToLocalStorage(file) {
+    function saveToLocalStorage_deskfiles(file) {
         const files = JSON.parse(localStorage.getItem('desktopFiles')) || [];
         files.push({ className: file.className, innerHTML: file.innerHTML });
         localStorage.setItem('desktopFiles', JSON.stringify(files));
