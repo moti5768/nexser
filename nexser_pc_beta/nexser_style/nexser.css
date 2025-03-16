@@ -1067,7 +1067,6 @@ body::-webkit-scrollbar {
     font-size: 15px;
     height: 90px;
     width: 300px;
-    position: absolute;
 }
 
 .password_menu {

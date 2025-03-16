@@ -69,6 +69,7 @@ if (ua.includes("mobile")) {
 
     // soft_windows
     const password_menu = document.querySelector('.password_menu');
+    const pass_signin_menu = document.querySelector('.pass_signin_menu');
     const main = document.querySelector('.main');
     const my_computer = document.querySelector('.my_computer');
     const control = document.querySelector('.control_panel');
@@ -146,8 +147,7 @@ if (ua.includes("mobile")) {
         if (localStorage.getItem('game_none')) {
             document.querySelectorAll('.game_window:not(.active)').forEach((test) => {
                 noticewindow_create("error", "制限されているため、起動ができませんでした");
-                test.classList.add('active')
-                test.classList.remove('selectwindows')
+                test.classList.add('active');
             })
         }
         bigwindow_resize();
@@ -541,7 +541,7 @@ if (ua.includes("mobile")) {
             nexser_program.style.display = "none";
             nexser.style.display = "block";
             desktop.style.display = "none";
-            document.querySelector('.pass_signin_menu').classList.remove('active')
+            pass_signin_menu.classList.remove('active')
             document.getElementById('pass_form').focus();
         } else if (!localStorage.getItem('start_nexser') && localStorage.getItem('prompt_data')) {
             start_check()
@@ -658,7 +658,6 @@ if (ua.includes("mobile")) {
         desktop.style.display = "none";
         pattern_backgrounds.style.display = "none";
         welcome_menu.classList.add('active');
-        welcome_menu.classList.remove('selectwindows');
         nex.style.cursor = 'crosshair';
         setTimeout(function () {
             screen_prompt.style.display = "none";
@@ -803,7 +802,7 @@ if (ua.includes("mobile")) {
     function pass_check() {
         setColor();
         if (localStorage.getItem('password') && !localStorage.getItem('login')) {
-            document.querySelector('.pass_signin_menu').classList.remove('active')
+            pass_signin_menu.classList.remove('active')
             document.getElementById('pass_form').focus();
             nex.style.cursor = '';
         } else {
@@ -821,7 +820,7 @@ if (ua.includes("mobile")) {
         );
         if (password_unlock2 === document.getElementById('pass_form').value) {
             firstLoad = false;
-            document.querySelector('.pass_signin_menu').classList.add('active')
+            pass_signin_menu.classList.add('active')
             document.querySelector('.pass_no').textContent = "";
             start_check();
             localStorage.setItem('login', true);
@@ -978,7 +977,6 @@ if (ua.includes("mobile")) {
     }
 
     function start_check() {
-        document.getElementsByClassName('pass_signin_menu')[0].classList.remove('selectwindows');
         if (localStorage.getItem('login_welcome') && localStorage.getItem('password')) {
             localStorage.setItem('no_shutdown', true);
         };
@@ -1067,7 +1065,7 @@ if (ua.includes("mobile")) {
 
     function nexser_on() {
         localStorage.setItem('start_nexser', true);
-        welcome_menu.classList.replace('selectwindows', 'active');
+        welcome_menu.classList.add('active');
         setTimeout(() => {
             [desktop, nex_files, taskbar].forEach(el => el.style.display = "block");
             const task = taskbar.clientHeight;
@@ -1167,7 +1165,7 @@ if (ua.includes("mobile")) {
             desktop.style.display = "none";
             window_none();
             window_reset();
-            document.querySelector('.pass_signin_menu').classList.remove('active')
+            pass_signin_menu.classList.remove('active');
             sound_stop();
             document.getElementById('pass_form').focus();
         } else if (localStorage.getItem('password') && gets != gets2) {
@@ -1305,7 +1303,7 @@ if (ua.includes("mobile")) {
             allwindow.style.transition = "";
             document.querySelector('.bigminbtn').style.visibility = "visible";
             document.querySelector('.minimization_button').style.visibility = "visible";
-            allwindow.classList.remove('minimization', 'selectwindows');
+            allwindow.classList.remove('minimization');
         });
         bom_reset();
         timerstop();
@@ -1333,7 +1331,7 @@ if (ua.includes("mobile")) {
         largestZIndex = 0;
         allwindows.forEach(allwindow_none => {
             allwindow_none.classList.add('active');
-            allwindow_none.classList.remove('big', 'rightwindow', 'leftwindow', 'selectwindows');
+            allwindow_none.classList.remove('big', 'rightwindow', 'leftwindow');
             allwindow_none.style.right = "";
             allwindow_none.style.transition = "";
         });
@@ -2058,7 +2056,6 @@ if (ua.includes("mobile")) {
             document.getElementById('shell').textContent = "";
             document.getElementById('shell').innerHTML = "";
             prompt_shell_menu.classList.add('active');
-            prompt_shell_menu.classList.remove('selectwindows');
         });
     }
 
@@ -2137,7 +2134,6 @@ if (ua.includes("mobile")) {
         const el = cls.closest('.child_windows');
         if (el) {
             el.classList.add('active');
-            el.classList.remove('selectwindows');
         }
     }
 
@@ -2427,10 +2423,7 @@ if (ua.includes("mobile")) {
         let highestZIndex = -Infinity;
         elements.forEach(element => {
             const childWindow = element.closest('.child_windows');
-            if (!childWindow.classList.contains('selectwindows')) {
-                document.querySelectorAll('.task_buttons').forEach(taskButton => taskButton.remove());
-                childWindow.classList.add('selectwindows');
-            }
+            document.querySelectorAll('.task_buttons').forEach(taskButton => taskButton.remove());
             const zIndex = parseInt(window.getComputedStyle(element).zIndex, 10) || 0;
             if (zIndex > highestZIndex) {
                 highestZIndex = zIndex;
@@ -2799,12 +2792,9 @@ if (ua.includes("mobile")) {
 
     document.getElementById("changeBtn").addEventListener("click", () => {
         if (localStorage.getItem('driver_color')) {
-            // テキストボックスに入力された文字色と背景色を取得
             color = document.getElementById("color").value;
             bkcolor = document.getElementById("bkcolor").value;
-            // 文字色・背景色変更
             setColor();
-            // 変更した色名をストレージに保存
             setStorage();
         } else {
             noticewindow_create("error", "カラードライバーがインストールされていません!");
@@ -3149,12 +3139,10 @@ if (ua.includes("mobile")) {
     document.querySelector('.note_close').addEventListener('click', function () {
         if (!note_pad.classList.contains('active') && localStorage.getItem('noteData') && !localStorage.getItem('note_texts')) {
             note_pad.classList.add('active');
-            note_pad.classList.remove('selectwindows');
         } else if (localStorage.getItem('note_texts')) {
             noticewindow_create("warning", "編集中です。メモ帳を終了しますか?(内容は破棄されます)", "notepad", note_clear);
         } else {
             note_pad.classList.add('active');
-            note_pad.classList.remove('selectwindows');
         }
     })
 
@@ -3164,14 +3152,12 @@ if (ua.includes("mobile")) {
         localStorage.removeItem('note_texts');
         document.querySelector('.note_title').textContent = "notepad";
         note_pad.classList.add('active');
-        note_pad.classList.remove('selectwindows');
     }
 
     document.querySelector('.objective_close').addEventListener('click', function () {
         if (!objective_menu.classList.contains('active') && localStorage.getItem('objectiveData') && localStorage.getItem('objectiveTitleData') && (!localStorage.getItem('objective_area'))) {
             objective_menu.classList.add('active');
             localStorage.removeItem('objective_area');
-            objective_menu.classList.remove('selectwindows')
         } else if (localStorage.getItem('objective_area')) {
             noticewindow_create("warning", "タイトル と 内容を保存してから閉じてください", "&nbsp;objective sheet");
         } else if (!localStorage.getItem('objectiveData') && !localStorage.getItem('objectiveTitleData') && (!localStorage.getItem('objective_area'))) {
@@ -3179,7 +3165,6 @@ if (ua.includes("mobile")) {
             document.getElementsByClassName('objective_area')[0].value = "";
             objective_menu.classList.add('active');
             localStorage.removeItem('objective_area');
-            objective_menu.classList.remove('selectwindows')
         }
     })
     localStorage.removeItem('objective_area')
@@ -3206,8 +3191,7 @@ if (ua.includes("mobile")) {
 
     document.querySelector('.camera_close').addEventListener('mouseup', function () {
         if (!sessionStorage.getItem('start_camera')) {
-            camera_menu.classList.add('active')
-            camera_menu.classList.remove('selectwindows')
+            camera_menu.classList.add('active');
         } else if (sessionStorage.getItem('start_camera')) {
             noticewindow_create("error", "カメラが実行されているため、ウィンドウが閉じれません!");
         }
@@ -4763,7 +4747,6 @@ if (ua.includes("mobile")) {
             element.style.left = "130px";
             element.style.top = "130px";
         });
-        const pass_signin_menu = document.querySelector('.pass_signin_menu');
         pass_signin_menu.style.top = "50%";
         pass_signin_menu.style.left = "50%";
         pass_signin_menu.style.transform = "translate(-50%, -50%)";
@@ -4860,7 +4843,7 @@ if (ua.includes("mobile")) {
     const taskbar_b = document.getElementById('task_buttons2');
     function test_windows_button() {
         document.querySelectorAll('.task_buttons').forEach(task_buttons => task_buttons.remove());
-        document.querySelectorAll('.child_windows.selectwindows:not(.no_window):not(.clones)').forEach(windowElement => {
+        document.querySelectorAll('.child_windows:not(.no_window):not(.clones):not(.active)').forEach(windowElement => {
             const nestedChild2 = windowElement.children[0].children[1].textContent;
             const button = document.createElement('div');
             button.className = 'task_buttons button2';
@@ -4878,7 +4861,7 @@ if (ua.includes("mobile")) {
 
     function moveToTaskbarButton(minimization_button) {
         const task_buttons = document.querySelectorAll('.task_buttons');
-        const index = Array.from(document.querySelectorAll('.child_windows.selectwindows:not(.no_window)')).indexOf(minimization_button);
+        const index = Array.from(document.querySelectorAll('.child_windows:not(.active):not(.no_window)')).indexOf(minimization_button);
         if (index !== -1) {
             const button = task_buttons[index];
             const rect = button.getBoundingClientRect();
@@ -4937,7 +4920,7 @@ if (ua.includes("mobile")) {
     }
 
     function updateButtonClasses() {
-        const windows = document.querySelectorAll('.child_windows.selectwindows:not(.no_window)');
+        const windows = document.querySelectorAll('.child_windows:not(.no_window):not(.active)');
         const buttons = document.querySelectorAll('.task_buttons');
         buttons.forEach(button => button.oncontextmenu = event => {
             event.preventDefault();
@@ -5084,7 +5067,6 @@ if (ua.includes("mobile")) {
                     iframe.style.height = "100%";
                     windowContents.classList.add("scrollbar_none");
                 };
-                windowDiv.classList.add('selectwindows');
                 if (isYouTubeURL(url)) {
                     addIframe(`https://www.youtube.com/embed/${extractYouTubeID(url)}`);
                     windowContents.classList.add('window_resize');
@@ -5212,7 +5194,6 @@ if (ua.includes("mobile")) {
                         iframe.style.height = "100%";
                         windowContents.classList.add("scrollbar_none");
                     };
-                    windowDiv.classList.add('selectwindows');
                     if (file.type.startsWith('image/')) {
                         addMediaContent('img', result);
                         const entryDiv = document.createElement('div');
@@ -5911,8 +5892,7 @@ if (ua.includes("mobile")) {
             isLoad = window_icon === "load",
             func_command2 = typeof func_command === "function";
 
-        entryDiv.className = `child_windows error_windows back_silver no_window ${isLoad ? 'add_create_load_windows' : 'add_create_windows'
-            }`;
+        entryDiv.className = `child_windows error_windows back_silver no_window ${isLoad ? 'add_create_load_windows' : 'add_create_windows'}`;
         if (isWarning) sound(4);
         if (isError) sound(2);
         errorMessage = errorMessage && errorMessage !== "Error" ? errorMessage :
@@ -6255,9 +6235,7 @@ if (ua.includes("mobile")) {
     }
 
 
-    const maxRecentColors = 15; // 最近使用した色の最大数
-
-    // ローカルストレージから色を取得
+    const maxRecentColors = 15;
     const recentTextColors = JSON.parse(localStorage.getItem('recentTextColors')) || [];
     const recentBgColors = JSON.parse(localStorage.getItem('recentBgColors')) || [];
 

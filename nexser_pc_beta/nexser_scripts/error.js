@@ -36,7 +36,7 @@ window.addEventListener('unhandledrejection', function (event) {
 });
 window.addEventListener('DOMContentLoaded', () => {
     try {
-        // ページ初期化
+        // pagereset
     } catch (e) {
         console.error('Initialization error: ', e);
         displayBlueScreen(e.message, 'Initialization code', 0, 0, e);
