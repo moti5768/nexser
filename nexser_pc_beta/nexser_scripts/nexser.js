@@ -507,16 +507,7 @@ if (ua.includes("mobile")) {
             document.getElementsByClassName('taskbar_height_value')[0].value = "40";
         }
 
-        function setBackgroundImage(key, className, resizeFunction) {
-            if (localStorage.getItem(key)) {
-                document.querySelector(className).style.display = "block";
-                resizeFunction();
-            }
-        }
-        setBackgroundImage('wallpaper_95', '.nexser_backgroundimage_1', minidesk_backgroundresize1);
-        setBackgroundImage('wallpaper_95_2', '.nexser_backgroundimage_2', minidesk_backgroundresize2);
-        setBackgroundImage('wallpaper_xp', '.nexser_backgroundimage_3', minidesk_backgroundresize3);
-        setBackgroundImage('wallpaper_space', '.nexser_backgroundimage_4', minidesk_backgroundresize4);
+
         editorContent_load();
     }
 
@@ -1706,7 +1697,7 @@ if (ua.includes("mobile")) {
                 if (localStorage.getItem('driver_color')) {
                     nexser.style.background = a;
                     localStorage.setItem('BKCOLOR', a);
-                    wallpaper_allremove()
+                    resetWallpaper()
                 } else {
                     noticewindow_create("error", "カラードライバーがインストールされていません!")
                 }
@@ -2871,13 +2862,13 @@ if (ua.includes("mobile")) {
 
     document.querySelectorAll('.wallpaper_allremove_btn').forEach(wallpaper_allremove_btn => {
         wallpaper_allremove_btn.addEventListener('click', () => {
-            wallpaper_allremove();
+            resetWallpaper();
         });
     });
     document.querySelectorAll('.pattern_btn').forEach(color_btn => {
         color_btn.addEventListener('click', () => {
             back_pattern_remove();
-            wallpaper_allremove();
+            resetWallpaper();
         });
     });
     const back_pattern_remove = () => {
@@ -4454,58 +4445,41 @@ if (ua.includes("mobile")) {
         // ファイルの内容をテキストとして読み込む
         reader.readAsText(file);
     }
-
     function paint_allclear() {
         paint_ctx.clearRect(0, 0, paint_canvas.width, paint_canvas.height);
         paint_ctx.fillStyle = '#ffffff';
         paint_ctx.fillRect(0, 0, paint_canvas.width, paint_canvas.height);
     }
 
-    let bgImg = document.createElement("img");
-    const wallpaper_allremove = () => {
-        bgImg.src = "";
-        bgImg.style.display = "none";
-        ['.nexser_backgroundimage_1', '.nexser_backgroundimage_2', '.nexser_backgroundimage_3', '.nexser_backgroundimage_4'].forEach(selector => {
-            document.querySelector(selector).style.display = "none";
-        });
-        ['wallpaper_95', 'wallpaper_95_2', 'wallpaper_xp', 'wallpaper_space'].forEach(item => localStorage.removeItem(item));
-    };
-    const setWallpaper = (key, imageClass, resizeFunction) => {
-        wallpaper_allremove();
-        localStorage.setItem(key, true);
-        document.querySelector(imageClass).style.display = "block";
-        resizeFunction();
-    };
-    document.querySelector('.wallpaper_95').addEventListener('click', () => setWallpaper('wallpaper_95', '.nexser_backgroundimage_1', minidesk_backgroundresize1));
-    document.querySelector('.wallpaper_95_2').addEventListener('click', () => setWallpaper('wallpaper_95_2', '.nexser_backgroundimage_2', minidesk_backgroundresize2));
-    document.querySelector('.wallpaper_xp').addEventListener('click', () => setWallpaper('wallpaper_xp', '.nexser_backgroundimage_3', minidesk_backgroundresize3));
-    document.querySelector('.wallpaper_space').addEventListener('click', () => setWallpaper('wallpaper_space', '.nexser_backgroundimage_4', minidesk_backgroundresize4));
-    function bk_applyStyles() {
-        if (!bgImg.src.includes("nexser_image") || !bgImg.src.includes("http")) {
-            bgImg.style.display = "none";
-        } else {
-            bgImg.style.display = "block";
-            bgImg.style.width = `${mini_desktop.clientWidth}px`;
-            bgImg.style.height = `${mini_desktop.clientHeight}px`;
-            mini_desktop.appendChild(bgImg);
+
+    const wallpapers = [
+        { key: 'wallpaper_95', src: 'nexser_image/Windows95_wallpaper.jpg' },
+        { key: 'wallpaper_95_2', src: 'nexser_image/Windows95_wallpaper_2.png' },
+        { key: 'wallpaper_xp', src: 'nexser_image/Windowsxp_wallpaper.jpg' },
+        { key: 'wallpaper_space', src: 'nexser_image/space_wallpaper.png' }
+    ];
+    const [bgImg2, bgContainer, miniDesktop] = [
+        document.querySelector(".nexser_backgroundimage_child"),
+        document.querySelector('.nexser_backgroundimage'),
+        document.querySelector('.mini_desktop')
+    ];
+    function updateWallpaper(src = "") {
+        localStorage.setItem('selectedWallpaper', src);
+        if (bgImg2 && bgContainer) {
+            bgImg2.src = src || "";
+            bgContainer.style.display = src ? "block" : "none";
         }
-    }
-    function minidesk_backgroundresize1() {
-        bgImg.src = "nexser_image/Windows95_wallpaper.jpg";
-        bk_applyStyles();
-    }
-    function minidesk_backgroundresize2() {
-        bgImg.src = "nexser_image/Windows95_wallpaper_2.png";
-        bk_applyStyles();
-    }
-    function minidesk_backgroundresize3() {
-        bgImg.src = "nexser_image/Windowsxp_wallpaper.jpg";
-        bk_applyStyles();
-    }
-    function minidesk_backgroundresize4() {
-        bgImg.src = "nexser_image/space_wallpaper.png";
-        bk_applyStyles();
-    }
+        miniDesktop.innerHTML = src ? `<img src="${src}" style="width: 100%; height: 100%;">` : "";
+    };
+    const applySavedWallpaper = () => updateWallpaper(localStorage.getItem('selectedWallpaper') || "");
+    wallpapers.forEach(({ key, src }) =>
+        document.querySelector(`.${key}`)?.addEventListener('click', () => updateWallpaper(src))
+    );
+    const resetWallpaper = () => {
+        localStorage.removeItem('selectedWallpaper');
+        updateWallpaper();
+    };
+    applySavedWallpaper();
 
 
     const othello_board = document.getElementById('othello_board');
@@ -5241,6 +5215,12 @@ if (ua.includes("mobile")) {
                     windowDiv.classList.add('selectwindows');
                     if (file.type.startsWith('image/')) {
                         addMediaContent('img', result);
+                        const entryDiv = document.createElement('div');
+                        entryDiv.innerHTML = `
+    <div class="window_bottom border2">
+        <span class="button2" onclick="updateWallpaper('${url}')">画像を背景に適用</span>
+    </div>`;
+                        windowDiv.appendChild(entryDiv);
                     } else if (file.type.startsWith('video/')) {
                         addMediaContent('video', result);
                     } else if (file.type === 'application/pdf') {
@@ -6592,7 +6572,7 @@ if (ua.includes("mobile")) {
         document.querySelectorAll('.test_button8').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(sound_menu); }; });
         document.querySelectorAll('.test_button9').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(driver_menu); }; });
         document.querySelectorAll('.test_button10').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(mouse_menu); }; });
-        document.querySelectorAll('.test_button11').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(screen_text_menu); bk_applyStyles(); }; });
+        document.querySelectorAll('.test_button11').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(screen_text_menu); }; });
         document.querySelectorAll('.test_button12').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(note_pad); notefocus(); }; });
         document.querySelectorAll('.test_button13').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(text_drop_menu); }; });
         document.querySelectorAll('.test_button14').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(windowmode_menu); }; });
