@@ -6767,63 +6767,52 @@ if (ua.includes("mobile")) {
     nex_files.addEventListener('dragover', e => e.preventDefault());
     nex_files.addEventListener('drop', e => {
         e.preventDefault();
-        const data = e.dataTransfer.getData('text/plain');
         const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = data;
+        tempDiv.innerHTML = e.dataTransfer.getData('text/plain');
         const firstChild = tempDiv.firstElementChild;
-        if (firstChild && firstChild.classList.contains('window_files')) {
+        if (firstChild?.classList.contains('window_files')) {
             const droppedContent = firstChild.querySelector('li').innerHTML;
-            const existingFile = Array.from(document.querySelectorAll('.desktop_files')).find(item => item.innerHTML.includes(droppedContent));
+            const existingFile = [...document.querySelectorAll('.desktop_files')].find(item => item.innerHTML.includes(droppedContent));
             if (!existingFile) {
-                const newDesktopFile = document.createElement('div');
-                const originalClasses = firstChild.className.split(' ').filter(cn => cn !== 'window_files').join(' ');
-                newDesktopFile.className = `desktop_files ${originalClasses}`;
-                newDesktopFile.draggable = true;
-                newDesktopFile.innerHTML = `
+                const newFile = document.createElement('div');
+                newFile.className = `desktop_files ${firstChild.className.replace('window_files', '').trim()}`;
+                newFile.draggable = true;
+                newFile.innerHTML = `
                     <li class="desktop_files_text editable">${droppedContent}</li>
-                    <span class="dli-folder"></span>
-                `;
-                document.querySelector('.files_inline').appendChild(newDesktopFile);
-                newDesktopFile.addEventListener('contextmenu', e => {
+                    <span class="dli-folder"></span>`;
+                document.querySelector('.files_inline').appendChild(newFile);
+                newFile.addEventListener('contextmenu', e => {
                     e.preventDefault();
-                    newDesktopFile.remove();
-                    updateLocalStorage();
+                    updateLocalStorageOnDelete(newFile.className);
+                    newFile.remove();
                 });
-                saveToLocalStorage_deskfiles(newDesktopFile);
+                saveToLocalStorage(newFile);
             }
         }
     });
-    function saveToLocalStorage_deskfiles(newFile) {
-        const savedFiles = JSON.parse(localStorage.getItem('desktopFiles')) || [];
-        savedFiles.push({ className: newFile.className, innerHTML: newFile.innerHTML });
-        localStorage.setItem('desktopFiles', JSON.stringify(savedFiles));
+    function saveToLocalStorage(file) {
+        const files = JSON.parse(localStorage.getItem('desktopFiles')) || [];
+        files.push({ className: file.className, innerHTML: file.innerHTML });
+        localStorage.setItem('desktopFiles', JSON.stringify(files));
         loadFromLocalStorage();
         filesposition();
         fileicon();
     }
-    function updateLocalStorage() {
-        const savedFiles = JSON.parse(localStorage.getItem('desktopFiles')) || [];
-        const updatedFiles = Array.from(document.querySelectorAll('.files_inline .desktop_files')).filter(file =>
-            savedFiles.some(savedFile => savedFile.innerHTML === file.innerHTML)
-        ).map(file => ({
-            className: file.className,
-            innerHTML: file.innerHTML
-        }));
-        localStorage.setItem('desktopFiles', JSON.stringify(updatedFiles));
+    function updateLocalStorageOnDelete(className) {
+        const files = (JSON.parse(localStorage.getItem('desktopFiles')) || []).filter(file => file.className !== className);
+        localStorage.setItem('desktopFiles', JSON.stringify(files));
     }
-    const savedData = localStorage.getItem('desktopFiles');
-    if (savedData) {
-        const dataToLoad = JSON.parse(savedData);
-        dataToLoad.forEach(fileData => {
-            const newFile = document.createElement('div');
-            newFile.className = fileData.className;
-            newFile.draggable = true;
-            newFile.innerHTML = fileData.innerHTML;
-            document.querySelector('.files_inline').appendChild(newFile);
-            newFile.addEventListener('contextmenu', e => {
+    if (localStorage.getItem('desktopFiles')) {
+        JSON.parse(localStorage.getItem('desktopFiles')).forEach(data => {
+            const file = document.createElement('div');
+            file.className = data.className;
+            file.draggable = true;
+            file.innerHTML = data.innerHTML;
+            document.querySelector('.files_inline').appendChild(file);
+            file.addEventListener('contextmenu', e => {
                 e.preventDefault();
-                newFile.remove();
-                updateLocalStorage();
+                updateLocalStorageOnDelete(file.className);
+                file.remove();
             });
         });
     }
