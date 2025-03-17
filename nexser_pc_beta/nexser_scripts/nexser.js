@@ -28,6 +28,9 @@ if (ua.includes("mobile")) {
     const body = document.querySelector('body');
 
     const nex = document.getElementById('nex');
+
+    const setup = document.querySelector('.setup');
+
     const nex_files = document.getElementById('files');
     const logoff = document.getElementsByClassName('logoff');
     const restart = document.getElementsByClassName('restart');
@@ -144,12 +147,20 @@ if (ua.includes("mobile")) {
     const editor_2 = document.getElementById('editor_2');
 
     document.addEventListener('click', () => {
-        if (localStorage.getItem('game_none')) {
+        if (localStorage.getItem('game_none') || localStorage.getItem('work_game_none')) {
             document.querySelectorAll('.game_window:not(.active)').forEach((test) => {
-                noticewindow_create("error", "制限されているため、起動ができませんでした");
+                noticewindow_create("error", "制限されているため、起動できませんでした");
                 test.classList.add('active');
             })
         }
+
+        if (localStorage.getItem('work_game_none')) {
+            document.querySelectorAll('.work_no:not(.active)').forEach((test) => {
+                noticewindow_create("error", "仕事用でセットアップされているため、起動できませんでした");
+                test.classList.add('active');
+            })
+        }
+
         bigwindow_resize();
         document.querySelector('.local_memory2').innerHTML = `&emsp;${(calculateLocalStorageSize() / 1024).toFixed(2)}KB&emsp;`;
         removePopups();
@@ -1612,15 +1623,24 @@ if (ua.includes("mobile")) {
                 msg.innerText = "";
                 prompt_text.style.color = "";
                 break;
+            case 'setup':
+                if (!localStorage.getItem('setup')) {
+                    nexser_setup()
+                }
+                break
             case 'nexser/open':
-                prompt_text.style.color = "yellow";
-                nameText.value = "nexser boot...";
-                nexser_boot_check();
+                if (localStorage.getItem('setup')) {
+                    prompt_text.style.color = "yellow";
+                    nameText.value = "nexser boot...";
+                    nexser_boot_check();
+                }
                 break;
             case 'nexser/program':
-                localStorage.setItem('prompt_data3', true);
-                prompt_text.style.color = "";
-                nexser_program_open()
+                if (localStorage.getItem('setup')) {
+                    localStorage.setItem('prompt_data3', true);
+                    prompt_text.style.color = "";
+                    nexser_program_open();
+                }
                 break;
 
             case 'nexser/code/html':
@@ -5884,13 +5904,14 @@ if (ua.includes("mobile")) {
         document.querySelector('.add_create_windows').remove();
     }
 
-    function noticewindow_create(window_icon, errorTitle, errorMessage = "Error", func_command) {
+    function noticewindow_create(window_icon, errorTitle, errorMessage = "Error", func_command, func_command_sub) {
         nex.style.cursor = "";
         const entryDiv = document.createElement("div"),
             isWarning = window_icon === "warning",
             isError = window_icon === "error",
             isLoad = window_icon === "load",
             func_command2 = typeof func_command === "function";
+        const func_command2_sub = typeof func_command_sub === "function";
 
         entryDiv.className = `child_windows error_windows back_silver no_window ${isLoad ? 'add_create_load_windows' : 'add_create_windows'}`;
         if (isWarning) sound(4);
@@ -5925,13 +5946,17 @@ if (ua.includes("mobile")) {
             }, 0);
         }
 
-        const buttonNo = func_command2 ? document.createElement("span") : null;
+        let buttonNo = func_command2 ? document.createElement("span") : null;
+
         if (buttonNo) {
             buttonNo.className = "button2 borderinline_dotted";
             buttonNo.style.position = "relative";
             buttonNo.style.left = "45%";
             buttonNo.style.transform = "translateX(-50%)";
             buttonNo.innerHTML = "&emsp;NO&emsp;";
+            if (func_command2_sub) {
+                buttonNo.addEventListener("click", func_command_sub);
+            }
             buttonNo.addEventListener("click", error_windows_close);
         }
 
@@ -5953,7 +5978,17 @@ if (ua.includes("mobile")) {
                 event.currentTarget.style.zIndex = largestZIndex++;
             }
         });
-        dropArea.appendChild(entryDiv);
+        if (localStorage.getItem('setup')) {
+            dropArea.appendChild(entryDiv);
+        } else {
+            document.querySelector('.setup_windows').appendChild(entryDiv);//setup
+            const background_black = document.querySelector('.background_black');
+            if (background_black) {
+                document.querySelector('.background_black').style.opacity = "0";
+            }
+            entryDiv.children[1].children[1].style.display = "none";
+            entryDiv.children[0].classList.add('text_center');
+        }
         entryDiv.style.zIndex = largestZIndex++;
     }
 
@@ -6815,6 +6850,52 @@ if (ua.includes("mobile")) {
                 submenu.classList.add("border");
             }
         });
+    }
+
+    if (localStorage.getItem('setup')) {
+        document.querySelector('.command_help').style.display = "block";
+        document.querySelector('.nosetup_command_help').style.display = "none";
+    } else {
+        document.querySelector('.command_help').style.display = "none";
+    }
+
+    function nexser_setup() {
+        setup.style.display = "block";
+        setTimeout(() => {
+            noticewindow_create('Nexser Setup', "Nexser のセットアップを行います。", null, setup1, setup_no);
+        }, 500);
+    }
+
+    function setup_no() {
+        noticewindow_create('warning', "セットアップを中止しました!\n再ロードして最初からやり直してください", "nexser");
+    }
+    function setup1() {
+        noticewindow_create('Nexser Setup', "どちらかをクリックしてください(YES: 個人向け NO: 仕事用)", null, setup_personal, setup_work);
+    }
+    function setup2() {
+        if (localStorage.getItem('work_game_none')) {
+            noticewindow_create('Nexser Setup', "仕事用　でセットアップをしています...");
+        } else {
+            noticewindow_create('Nexser Setup', "個人向け　でセットアップをしています...");
+        }
+        setTimeout(() => {
+            setup3()
+        }, 3000);
+    }
+    function setup3() {
+        noticewindow_create('Nexser Setup', "セットアップが完了しました! 5秒後に再ロードします...");
+        localStorage.setItem('setup', true)
+        setTimeout(() => {
+            window.location = '';
+        }, 5000);
+    }
+
+    function setup_work() {
+        localStorage.setItem('work_game_none', true)
+        setup2()
+    }
+    function setup_personal() {
+        setup2()
     }
 
 };
