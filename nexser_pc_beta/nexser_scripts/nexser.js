@@ -5981,13 +5981,12 @@ if (ua.includes("mobile")) {
         if (localStorage.getItem('setup')) {
             dropArea.appendChild(entryDiv);
         } else {
-            document.querySelector('.setup_windows').appendChild(entryDiv);//setup
+            document.querySelector('.setup_windows').appendChild(entryDiv);
             const background_black = document.querySelector('.background_black');
             if (background_black) {
                 document.querySelector('.background_black').style.opacity = "0";
             }
             entryDiv.children[1].children[1].style.display = "none";
-            entryDiv.children[0].classList.add('text_center');
         }
         entryDiv.style.zIndex = largestZIndex++;
     }
