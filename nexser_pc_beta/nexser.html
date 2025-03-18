@@ -1317,9 +1317,13 @@
                                                             &lt;div class=&quot;window_inline_menus_child menuchild1&quot;&gt;
                                                                 &lt;p class=&quot;window_menus_title&quot;&gt;system&lt;/p&gt;
                                                                 &lt;ul style=&quot;text-align: left; margin-left: 60px;&quot;&gt;
-                                                                    &lt;li class=&quot;bold&quot; style=&quot;margin-top: 60px;&quot;&gt;nexser beta&amp;copy;&lt;/li&gt;
-                                                                    &lt;li style=&quot;margin-top: 20px;&quot;&gt;version 1.8&lt;/li&gt;
+                                                                    &lt;li class=&quot;bold&quot; style=&quot;margin-top: 60px;&quot;&gt;nexser&amp;copy;&lt;/li&gt;
+                                                                    &lt;li style=&quot;margin-top: 20px;&quot;&gt;beta version 1.8&lt;/li&gt;
                                                                     &lt;li&gt;2024-2025&lt;/li&gt;
+                        
+                                                                    &lt;p class=&quot;window_menus_title&quot;&gt;Edition:&lt;/p&gt;&lt;br&gt;&lt;br&gt;
+                                                                    &lt;p class=&quot;edition_text bold&quot;&gt;Home Edition&lt;/p&gt;
+                        
                                                                 &lt;/ul&gt;
                         
                                                                 &lt;div class=&quot;window_menu_right_content border2&quot; style=&quot;background-color: black;&quot;&gt;
@@ -3294,7 +3298,7 @@
                                                 &lt;/div&gt;
                                             &lt;/div&gt;
                         
-                                            &lt;div class=&quot;child_windows location_menu active&quot;&gt;
+                                            &lt;div class=&quot;child_windows location_menu work_no active&quot;&gt;
                                                 &lt;div class=&quot;title&quot;&gt;
                                                     &lt;span class=&quot;title_icon&quot;&gt;&lt;/span&gt;&lt;span&gt;location&lt;/span&gt;
                                                 &lt;/div&gt;
@@ -4022,14 +4026,14 @@
                             const editor_2 = document.getElementById(&#039;editor_2&#039;);
                         
                             document.addEventListener(&#039;click&#039;, () =&gt; {
-                                if (localStorage.getItem(&#039;game_none&#039;) || localStorage.getItem(&#039;work_game_none&#039;)) {
+                                if (localStorage.getItem(&#039;game_none&#039;) || localStorage.getItem(&#039;work_deny&#039;)) {
                                     document.querySelectorAll(&#039;.game_window:not(.active)&#039;).forEach((test) =&gt; {
                                         noticewindow_create(&quot;error&quot;, &quot;制限されているため、起動できませんでした&quot;);
                                         test.classList.add(&#039;active&#039;);
                                     })
                                 }
                         
-                                if (localStorage.getItem(&#039;work_game_none&#039;)) {
+                                if (localStorage.getItem(&#039;work_deny&#039;)) {
                                     document.querySelectorAll(&#039;.work_no:not(.active)&#039;).forEach((test) =&gt; {
                                         noticewindow_create(&quot;error&quot;, &quot;仕事用でセットアップされているため、起動できませんでした&quot;);
                                         test.classList.add(&#039;active&#039;);
@@ -4043,6 +4047,10 @@
                                     firstLoad = false;
                                 }, 500);
                             })
+                        
+                            if (localStorage.getItem(&#039;work_deny&#039;)) {
+                                document.querySelector(&#039;.edition_text&#039;).textContent = &quot;Work Edition&quot;;
+                            }
                         
                             function game_true() {
                                 localStorage.setItem(&#039;game_none&#039;, true)
@@ -10744,10 +10752,10 @@
                                 noticewindow_create(&#039;warning&#039;, &quot;セットアップを中止しました!\n再ロードして最初からやり直してください&quot;, &quot;nexser&quot;);
                             }
                             function setup1() {
-                                noticewindow_create(&#039;Nexser Setup&#039;, &quot;どちらかをクリックしてください(YES: 個人向け NO: 仕事用)&quot;, null, setup_personal, setup_work);
+                                noticewindow_create(&#039;Nexser Setup&#039;, &quot;どちらかをクリックしてください( OK: 個人向け NO: 仕事用 )&quot;, null, setup_personal, setup_work);
                             }
                             function setup2() {
-                                if (localStorage.getItem(&#039;work_game_none&#039;)) {
+                                if (localStorage.getItem(&#039;work_deny&#039;)) {
                                     noticewindow_create(&#039;Nexser Setup&#039;, &quot;仕事用　でセットアップをしています...&quot;);
                                 } else {
                                     noticewindow_create(&#039;Nexser Setup&#039;, &quot;個人向け　でセットアップをしています...&quot;);
@@ -10765,7 +10773,7 @@
                             }
                         
                             function setup_work() {
-                                localStorage.setItem(&#039;work_game_none&#039;, true)
+                                localStorage.setItem(&#039;work_deny&#039;, true)
                                 setup2()
                             }
                             function setup_personal() {
@@ -12098,9 +12106,13 @@
                                     <div class="window_inline_menus_child menuchild1">
                                         <p class="window_menus_title">system</p>
                                         <ul style="text-align: left; margin-left: 60px;">
-                                            <li class="bold" style="margin-top: 60px;">nexser beta&copy;</li>
-                                            <li style="margin-top: 20px;">version 1.8</li>
+                                            <li class="bold" style="margin-top: 60px;">nexser&copy;</li>
+                                            <li style="margin-top: 20px;">beta version 1.8</li>
                                             <li>2024-2025</li>
+
+                                            <p class="window_menus_title">Edition:</p><br><br>
+                                            <p class="edition_text bold">Home Edition</p>
+
                                         </ul>
 
                                         <div class="window_menu_right_content border2" style="background-color: black;">
@@ -14075,7 +14087,7 @@
                         </div>
                     </div>
 
-                    <div class="child_windows location_menu active">
+                    <div class="child_windows location_menu work_no active">
                         <div class="title">
                             <span class="title_icon"></span><span>location</span>
                         </div>

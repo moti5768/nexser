@@ -147,14 +147,14 @@ if (ua.includes("mobile")) {
     const editor_2 = document.getElementById('editor_2');
 
     document.addEventListener('click', () => {
-        if (localStorage.getItem('game_none') || localStorage.getItem('work_game_none')) {
+        if (localStorage.getItem('game_none') || localStorage.getItem('work_deny')) {
             document.querySelectorAll('.game_window:not(.active)').forEach((test) => {
                 noticewindow_create("error", "制限されているため、起動できませんでした");
                 test.classList.add('active');
             })
         }
 
-        if (localStorage.getItem('work_game_none')) {
+        if (localStorage.getItem('work_deny')) {
             document.querySelectorAll('.work_no:not(.active)').forEach((test) => {
                 noticewindow_create("error", "仕事用でセットアップされているため、起動できませんでした");
                 test.classList.add('active');
@@ -168,6 +168,10 @@ if (ua.includes("mobile")) {
             firstLoad = false;
         }, 500);
     })
+
+    if (localStorage.getItem('work_deny')) {
+        document.querySelector('.edition_text').textContent = "Work Edition";
+    }
 
     function game_true() {
         localStorage.setItem('game_none', true)
@@ -6869,10 +6873,10 @@ if (ua.includes("mobile")) {
         noticewindow_create('warning', "セットアップを中止しました!\n再ロードして最初からやり直してください", "nexser");
     }
     function setup1() {
-        noticewindow_create('Nexser Setup', "どちらかをクリックしてください(YES: 個人向け NO: 仕事用)", null, setup_personal, setup_work);
+        noticewindow_create('Nexser Setup', "どちらかをクリックしてください( OK: 個人向け NO: 仕事用 )", null, setup_personal, setup_work);
     }
     function setup2() {
-        if (localStorage.getItem('work_game_none')) {
+        if (localStorage.getItem('work_deny')) {
             noticewindow_create('Nexser Setup', "仕事用　でセットアップをしています...");
         } else {
             noticewindow_create('Nexser Setup', "個人向け　でセットアップをしています...");
@@ -6890,7 +6894,7 @@ if (ua.includes("mobile")) {
     }
 
     function setup_work() {
-        localStorage.setItem('work_game_none', true)
+        localStorage.setItem('work_deny', true)
         setup2()
     }
     function setup_personal() {
