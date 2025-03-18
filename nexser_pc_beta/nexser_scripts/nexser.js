@@ -1207,14 +1207,12 @@ if (ua.includes("mobile")) {
             localStorage.removeItem('driver_color')
             document.querySelector('.installbutton_2').textContent = "install"
             colordata_clear();
-            titlecolor_remove();
-            titlecolor_set();
         } else {
             localStorage.setItem('driver_color', true);
             document.querySelector('.installbutton_2').textContent = "uninstall";
-            titlecolor_remove();
-            titlecolor_set();
         }
+        titlecolor_remove();
+        titlecolor_set();
     })
 
     function handleStartupClick(startupClass) {
@@ -1453,9 +1451,6 @@ if (ua.includes("mobile")) {
         });
         child_startmenu.addEventListener('mouseover', () => {
             taskbar.style.bottom = "";
-        });
-        child_startmenu.addEventListener('click', () => {
-            titlecolor_set();
         });
     });
 
@@ -6861,44 +6856,27 @@ if (ua.includes("mobile")) {
     } else {
         document.querySelector('.command_help').style.display = "none";
     }
-
     function nexser_setup() {
         setup.style.display = "block";
-        setTimeout(() => {
-            noticewindow_create('Nexser Setup', "Nexser のセットアップを行います。", null, setup1, setup_no);
-        }, 500);
+        setTimeout(() => noticewindow_create('Nexser Setup', "Nexser のセットアップを行います。", null, setup1, cancel_setup), 500);
     }
-
-    function setup_no() {
+    function cancel_setup() {
         noticewindow_create('warning', "セットアップを中止しました!\n再ロードして最初からやり直してください", "nexser");
     }
     function setup1() {
-        noticewindow_create('Nexser Setup', "どちらかをクリックしてください( OK: 個人向け NO: 仕事用 )", null, setup_personal, setup_work);
+        noticewindow_create('Nexser Setup', "どちらかをクリックしてください( OK: 個人向け NO: 仕事用 )", null, () => setup2(false), () => setup2(true));
     }
-    function setup2() {
-        if (localStorage.getItem('work_deny')) {
-            noticewindow_create('Nexser Setup', "仕事用　でセットアップをしています...");
-        } else {
-            noticewindow_create('Nexser Setup', "個人向け　でセットアップをしています...");
+    function setup2(workMode) {
+        if (workMode == true) {
+            localStorage.setItem('work_deny', true);
         }
-        setTimeout(() => {
-            setup3()
-        }, 3000);
+        noticewindow_create('Nexser Setup', workMode ? "仕事用　でセットアップをしています..." : "個人向け　でセットアップをしています...");
+        setTimeout(() => complete_setup(), 3000);
     }
-    function setup3() {
+    function complete_setup() {
         noticewindow_create('Nexser Setup', "セットアップが完了しました! 5秒後に再ロードします...");
-        localStorage.setItem('setup', true)
-        setTimeout(() => {
-            window.location = '';
-        }, 5000);
-    }
-
-    function setup_work() {
-        localStorage.setItem('work_deny', true)
-        setup2()
-    }
-    function setup_personal() {
-        setup2()
+        localStorage.setItem('setup', true);
+        setTimeout(() => window.location.reload(), 5000);
     }
 
 };
