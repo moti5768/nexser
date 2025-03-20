@@ -2397,11 +2397,12 @@ progress::-webkit-progress-value {
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
-    font-size: 15px;
+    font-size: 14px;
 }
 
 #output {
     white-space: pre-wrap;
+    font-size: 14px;
 }
 
 #input-container {
