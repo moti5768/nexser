@@ -2420,6 +2420,7 @@ progress::-webkit-progress-value {
     outline: none;
     border: none;
     color: white;
+    width: 80%;
 }
 
 
