@@ -1601,7 +1601,6 @@ if (ua.includes("mobile")) {
           - date: 現在の日付と時刻を表示\n
           - time: 現在の時刻を表示\n
           - echo [message]: メッセージを出力\n
-          - greet: 挨拶を表示\n
           - calc [expression]: 簡単な計算を実行 (例: calc 2+2)\n
           - setup: プロンプトが<nexser>の場合にセットアップを実行\n
           - reset: プロンプトを<user>に戻します\n
@@ -1633,9 +1632,6 @@ if (ua.includes("mobile")) {
             case 'time':
                 const timeNow = new Date();
                 output.innerText += `現在の時刻: ${timeNow.toTimeString().split(' ')[0]}\n`;
-                break;
-            case 'greet':
-                output.innerText += `こんにちは！コマンドプロンプトへようこそ！\n`;
                 break;
             case 'echo':
                 const message = args.slice(1).join(' ');
