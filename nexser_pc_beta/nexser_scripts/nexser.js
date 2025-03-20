@@ -1588,9 +1588,6 @@ if (ua.includes("mobile")) {
             command_input.value = '';
         }
     });
-    new IntersectionObserver(([entry]) => {
-        if (!entry.isIntersecting) entry.target.scrollIntoView({ block: 'center' });
-    }, { threshold: 1.0 }).observe(command_input);
     function handleCommand(command) {
         document.querySelector('.code_group').style.display = "none";
         const args = command.split(' ');
@@ -1766,10 +1763,12 @@ if (ua.includes("mobile")) {
         if (localStorage.getItem('auto_startup')) {
             output.innerText += `nexser の自動起動は有効になっています\n`;
         }
+        new IntersectionObserver(([entry]) => {
+            if (!entry.isIntersecting) entry.target.scrollIntoView({ block: 'center' });
+        }, { threshold: 1.0 }).observe(command_input);
     }
 
     function prompt_text_check2() {
-
         const prompt_text_value3 = document.getElementsByClassName('focus2')[0].value;
         const prompt_text_value4 = prompt_text_value3;
 
