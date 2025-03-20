@@ -1592,7 +1592,7 @@ if (ua.includes("mobile")) {
         document.querySelector('.code_group').style.display = "none";
         const args = command.split(' ');
         const cmd = args[0].toLowerCase();
-
+        const args2 = args.slice(1);
         switch (cmd) {
             case 'help':
                 output.innerText += `利用可能なコマンド:\n
@@ -1613,6 +1613,15 @@ if (ua.includes("mobile")) {
           - nexser: プロンプトを<nexser>に変更します\n
           - version: nexser のバージョンを表示します\n
           - reload: ページを再読み込みします\n`;
+                break;
+            case 'help_storage':
+                output.innerText += `利用可能なコマンド:\n
+              - storage: プロンプトを<storage>に変更します\n
+              - list - 全てのキーと値を表示\n
+              - get [キー名] - 指定されたキーの値を取得\n
+              - set [キー名] [値] - キーと値を設定\n
+              - remove [キー名] - 指定されたキーを削除\n
+              - maxsize 保存されている容量の一番大きいkey名のみを検出します\n`;
                 break;
             case 'clear':
                 output.innerText = '';
@@ -1719,6 +1728,71 @@ if (ua.includes("mobile")) {
                     });
                 }
                 break;
+            case "list":
+                if (prefix.innerText === '<storage>') {
+                    if (localStorage.length === 0) {
+                        output.innerText += `ローカルストレージは空です。\n`
+                    } else {
+                        output.innerText += `ローカルストレージの内容:\n`;
+                        for (let i = 0; i < localStorage.length; i++) {
+                            const key = localStorage.key(i);
+                            const value = localStorage.getItem(key);
+                            output.innerText += `${key}: ${value}\n`;
+                        }
+                    }
+                } else {
+                    output.innerText += `現在のプロンプトでは'${command}'は利用できません。\n`;
+                }
+                break;
+            case "get":
+                if (prefix.innerText === '<storage>') {
+                    if (args2.length < 1) {
+                        output.innerText += `キー名を指定してください。\n`;
+                    } else {
+                        const value = localStorage.getItem(args2[0]);
+                        if (value === null) {
+                            output.innerText += `キー '${args2[0]}' は存在しません。\n`;
+                        } else {
+                            output.innerText += `${args2[0]}: ${value}\n`;
+                        }
+                    }
+                } else {
+                    output.innerText += `現在のプロンプトでは'${command}'は利用できません。\n`;
+                }
+                break;
+            case "set":
+                if (prefix.innerText === '<storage>') {
+                    if (args2.length < 2) {
+                        output.innerText += `キー名と値を指定してください。\n`;
+                    } else {
+                        const key = args2[0];
+                        const value = args2.slice(1).join(" ");
+                        localStorage.setItem(key, value);
+                        output.innerText += `キー '${key}' に値 '${value}' を設定しました。\n`;
+                    }
+                } else {
+                    output.innerText += `現在のプロンプトでは'${command}'は利用できません。\n`;
+                }
+                break;
+            case "remove":
+                if (prefix.innerText === '<storage>') {
+                    if (args2.length < 1) {
+                        output.innerText += `キー名を指定してください。\n`;
+                    } else {
+                        localStorage.removeItem(args2[0]);
+                        output.innerText += `キー '${args2[0]}' を削除しました。\n`;
+                    }
+                } else {
+                    output.innerText += `現在のプロンプトでは'${command}'は利用できません。\n`;
+                }
+                break;
+            case "maxsize":
+                if (prefix.innerText === '<storage>') {
+                    findLargestValue();
+                } else {
+                    output.innerText += `現在のプロンプトでは'${command}'は利用できません。\n`;
+                }
+                break;
             case 'nexser/code/html':
                 document.querySelector('.code_group').style.display = "block";
                 document.querySelector('#code_html').style.display = "block";
@@ -1741,6 +1815,9 @@ if (ua.includes("mobile")) {
                 if (command === 'nexser') {
                     prefix.innerText = '<nexser>';
                     output.innerText += `プロンプトが<nexser>に変更されました。\n`;
+                } else if (command === 'storage') {
+                    prefix.innerText = '<storage>';
+                    output.innerText += `プロンプトが<storage>に変更されました。\n`;
                 } else {
                     output.innerText += `'${command}' は認識されないコマンドです。'help' を入力して使用可能なコマンドを確認してください。\n`;
                 }
@@ -1759,13 +1836,36 @@ if (ua.includes("mobile")) {
             - 1. nexser を入力 -\n
             - 2. setup を入力して実行してください -\n`;
         }
-        output.innerText += `- その他コマンドは help を入力してください -\n`;
+        output.innerText += `- その他コマンドは help を入力してください -\n(storage系は help_storage )\n`;
         if (localStorage.getItem('auto_startup')) {
             output.innerText += `nexser の自動起動は有効になっています\n`;
         }
         new IntersectionObserver(([entry]) => {
             if (!entry.isIntersecting) entry.target.scrollIntoView({ block: 'center' });
         }, { threshold: 1.0 }).observe(command_input);
+    }
+
+    function findLargestValue() {
+        if (localStorage.length === 0) {
+            output.innerText += `ローカルストレージは空です。\n`;
+            return;
+        }
+        let largestValueKey = null;
+        let largestValueSize = 0;
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            const value = localStorage.getItem(key);
+            const size = new Blob([value]).size;
+            if (size > largestValueSize) {
+                largestValueSize = size;
+                largestValueKey = key;
+            }
+        }
+        if (largestValueKey) {
+            output.innerText += `最大容量の値:\n`;
+            output.innerText += `Key: ${largestValueKey}\n`;
+            output.innerText += `Size: ${largestValueSize} bytes\n`;
+        }
     }
 
     function prompt_text_check2() {
