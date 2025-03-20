@@ -13,42 +13,16 @@
 <body>
     <div id="nex" class="nexser_group">
         <div id="prompt">
-            <div class="prompt_text">[<span class="nexser_title_text"></span><span class="test_name"></span>]</div>
-            <form autocomplete="off" method="get" name="prompt_text_form" onsubmit="return false;">
-                <span>nexser\></span><input type="text" class="name focus" name="prompt_text" placeholder="|">
-            </form>
-            <div class="lime_text">
-                <p>Batterylevel:&emsp;<span class="level"></span></p>
-                <p>Charging:&emsp;<span class="charging"></span></p>
-                <p>ChargingTime:&emsp;<span class="chargingTime"></span></p>
-                <p>DischargingTime:&emsp;<span class="dischargingTime"></span></p>
-                <p>Install local storage key:&emsp;<span class="length_localStorage">0</span></p>
-                </p>
-            </div>
-            <div class="command_help">
-                <ul>
-                    <li>以下のコマンドを入力して Enter</li>
-                    <li class="hover_blue"
-                        style="display: inline-block; border: solid 1px white; box-shadow: 5px 5px #888888;"
-                        onclick="help_command()">nexser open</li>
-                    <li class="hover_blue"
-                        style="margin-top: 50px; position: absolute; left: 0px; display: inline-block; border: solid 1px white; box-shadow: 5px 5px #888888;"
-                        onclick="help_command2()">nexser program</li>
-                    <li class="hover_red"
-                        style="margin-top: 100px; position: absolute; left: 0px; display: inline-block; border: solid 1px white; box-shadow: 5px 5px #888888;"
-                        onclick="help_command_clear()">command clear</li>
-                </ul>
+            <p>[<span class="nexser_title_text"></span>]</p>
+            <div id="output"></div>
+            <div id="input-container">
+                <span id="prefix">&lt;user&gt;</span>
+                <input autocomplete="off" type="text" id="command_input" class="name focus" name="prompt_text"
+                    placeholder="command">
             </div>
 
-
-            <div class="nosetup_command_help">
-                <ul>
-                    <li>以下のコマンドを入力して Enter</li>
-                    <li>setup</li>
-                </ul>
-            </div>
-
-            <div style="position: absolute; bottom: 10px; left: 10px; width: 97%; height: 45vh;">
+            <div class="code_group"
+                style="display: none; position: relative; top: 20px; left: 5px; width: 98%; height: 45vh;">
                 <code>
                     <textarea id="code_html" class="white_text resize_none" style="display: none;">
 
@@ -67,9 +41,8 @@
                 </textarea>
                 </code>
             </div>
-            <progress id="myProgress" value="0" max="100"></progress>
+            <progress id="myProgress" value="50" max="100"></progress>
         </div>
-
 
         <div class="setup" style="display: none; position: absolute; top: 0px; width: 100%; height: 100%;">
             <img src="nexser_image/Windows95_wallpaper.jpg"
@@ -79,7 +52,6 @@
                 </p>
             </div>
         </div>
-
 
         <div class="nexser_boot_menu"
             style="font-family: Courier; border: double 5px white; box-shadow: 7.5px 7.5px #888888; width: 500px; height: 30vh; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">

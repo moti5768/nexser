@@ -53,10 +53,7 @@ if (ua.includes("mobile")) {
 
     const screen_saver_group = document.getElementById('screen_saver_group');
 
-    const nameText = document.querySelector('.name');
-    const msg = document.querySelector('.test_name');
     const screen_prompt = document.getElementById('prompt');
-    const prompt_text = document.querySelector('.prompt_text');
     const prompt_text_value = document.querySelector('.focus');
     const nexser = document.getElementById('nexser');
     const nexser_program = document.getElementById('nexser_program');
@@ -286,7 +283,6 @@ if (ua.includes("mobile")) {
         taskgroup_load,
         titlecolor_set,
         back_pattern_set,
-        pageLoad,
         nexser_savedata_load
     ];
     const runTasks = async () => {
@@ -578,6 +574,7 @@ if (ua.includes("mobile")) {
             nexser.style.display = "none";
             desktop.style.display = "none";
             prompt_text_value.focus();
+            command_help();
         }
         if (localStorage.getItem('deskprompt')) {
             nexser_program.style.display = "block";
@@ -589,8 +586,8 @@ if (ua.includes("mobile")) {
         }
 
         if (screen_prompt.style.display === "block" && localStorage.getItem('auto_startup')) {
-            help_command()
-            prompt_text_check()
+            handleCommand("nexser");
+            handleCommand("open");
         }
         sessionStorage.removeItem('start_camera');
         localStorage.removeItem('note_texts');
@@ -691,6 +688,7 @@ if (ua.includes("mobile")) {
                     taskbar_none();
                     nexser_program.style.display = "none";
                     prompt_text_value.focus();
+                    command_help();
                 }, 100);
             }, 100);
         } else {
@@ -911,19 +909,14 @@ if (ua.includes("mobile")) {
                     window_none();
                     window_reset();
                     localStorage.removeItem('prompt_data');
-                    document.querySelector('#code_html').style.display = "none";
-                    document.querySelector('#code_script').style.display = "none";
-                    document.querySelector('#code_script2').style.display = "none";
                     fileborder_reset();
                     setTimeout(() => {
                         document.querySelectorAll('.button').forEach(button => button.classList.remove('pressed'));
-                        nameText.value = "";
-                        msg.innerText = "";
-                        prompt_text.style.color = "";
                         nexser.style.display = "none";
                         screen_prompt.style.display = "block";
                         prompt_text_value.focus();
                         nex.style.cursor = '';
+                        command_help();
                     }, 500);
                 }, 1000);
             } else {
@@ -965,16 +958,10 @@ if (ua.includes("mobile")) {
                 setTimeout(() => {
                     window_none();
                     window_reset();
-                    document.querySelector('#code_html').style.display = "none";
-                    document.querySelector('#code_script').style.display = "none";
-                    document.querySelector('#code_script2').style.display = "none";
                     fileborder_reset();
                     document.querySelector('.focus2').textContent = "";
                     setTimeout(() => {
                         document.querySelectorAll('.button').forEach(button => button.classList.remove('pressed'));
-                        nameText.value = "";
-                        msg.innerText = "";
-                        prompt_text.style.color = "";
                         nexser.style.display = "none";
                         document.querySelector('.restart_text').style.display = "block";
                     }, 500);
@@ -1537,32 +1524,6 @@ if (ua.includes("mobile")) {
         }
     }
 
-    function help_command() {
-        prompt_text_value.value = "nexser/open"
-    }
-
-    function help_command2() {
-        prompt_text_value.value = "nexser/program"
-    }
-
-    function help_command_clear() {
-        prompt_text_value.value = ""
-    }
-
-    function pageLoad() {
-        nameText.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter') {
-                butotnClick();
-                firstLoad = false;
-            }
-        });
-    }
-
-    function butotnClick() {
-        msg.innerText = '\b' + nameText.value + '';
-        prompt_text_check();
-    }
-
     function handleKeyDown(event, input) {
         if (event.key === 'Enter') {
             executeCommand(input);
@@ -1614,56 +1575,196 @@ if (ua.includes("mobile")) {
         }, 0);
     }
 
-    function prompt_text_check() {
-        const prompt_text_value2 = prompt_text_value.value;
-        switch (prompt_text_value2) {
-            case '':
+    const output = document.getElementById('output');
+    const command_input = document.getElementById('command_input');
+    const prefix = document.getElementById('prefix');
+    const commandHistory = [];
+    command_input.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            const command = command_input.value.trim();
+            output.innerText += `${prefix.innerText}${command}\n`;
+            commandHistory.push(command);
+            handleCommand(command);
+            command_input.value = '';
+        }
+    });
+    new IntersectionObserver(([entry]) => {
+        if (!entry.isIntersecting) entry.target.scrollIntoView({ block: 'center' });
+    }, { threshold: 1.0 }).observe(command_input);
+    function handleCommand(command) {
+        document.querySelector('.code_group').style.display = "none";
+        const args = command.split(' ');
+        const cmd = args[0].toLowerCase();
 
-                msg.innerText = "";
-                prompt_text.style.color = "";
+        switch (cmd) {
+            case 'help':
+                output.innerText += `利用可能なコマンド:\n
+          - help: このヘルプメッセージを表示\n
+          - clear: 画面をクリア\n
+          - date: 現在の日付と時刻を表示\n
+          - time: 現在の時刻を表示\n
+          - echo [message]: メッセージを出力\n
+          - greet: 挨拶を表示\n
+          - calc [expression]: 簡単な計算を実行 (例: calc 2+2)\n
+          - setup: プロンプトが<nexser>の場合にセットアップを実行\n
+          - reset: プロンプトを<user>に戻します\n
+          - info: メモリ、バッテリ、ローカルストレージの情報を表示\n
+          - whoami: 現在のプロンプト名を表示\n
+          - random: 1～100までのランダムな数字を生成\n
+          - reverse [message]: 入力文字列を反転\n
+          - history: コマンド履歴を表示\n
+          - nexser: プロンプトを<nexser>に変更します\n
+          - version: nexser のバージョンを表示します\n
+          - reload: ページを再読み込みします\n`;
+                break;
+            case 'clear':
+                output.innerText = '';
+                break;
+            case 'date':
+                const now = new Date();
+                output.innerText += `現在の日時: ${now.toLocaleString()}\n`;
+                break;
+            case 'time':
+                const timeNow = new Date();
+                output.innerText += `現在の時刻: ${timeNow.toTimeString().split(' ')[0]}\n`;
+                break;
+            case 'greet':
+                output.innerText += `こんにちは！コマンドプロンプトへようこそ！\n`;
+                break;
+            case 'echo':
+                const message = args.slice(1).join(' ');
+                output.innerText += `${message}\n`;
+                break;
+            case 'calc':
+                try {
+                    const expression = args.slice(1).join('');
+                    const result = eval(expression);
+                    output.innerText += `計算結果: ${result}\n`;
+                } catch (e) {
+                    output.innerText += `エラー: 無効な計算式です。\n`;
+                }
                 break;
             case 'setup':
                 if (!localStorage.getItem('setup')) {
-                    nexser_setup()
+                    if (prefix.innerText === '<nexser>') {
+                        output.innerText += `setup connect...\n`;
+                        command_input.blur();
+                        setTimeout(() => {
+                            nexser_setup();
+                            document.querySelector('#output').style.display = "none";
+                        }, 1000);
+                    } else {
+                        output.innerText += `現在のプロンプトでは'setup'は利用できません。\n`;
+                    }
+                } else {
+                    output.innerText += `'setup'は利用できません。\n`;
                 }
-                break
-            case 'nexser/open':
-                if (localStorage.getItem('setup')) {
-                    prompt_text.style.color = "yellow";
-                    nameText.value = "nexser boot...";
+                break;
+            case 'info':
+                const deviceMemory = navigator.deviceMemory || '不明';
+                output.innerText += `デバイスメモリ: ${deviceMemory} GB\n`;
+                if (navigator.getBattery) {
+                    navigator.getBattery().then(battery => {
+                        output.innerText += `バッテリ情報:\n  - 充電中: ${battery.charging ? 'はい' : 'いいえ'}\n  - 充電時間: ${battery.chargingTime} 秒\n  - 放電時間: ${battery.dischargingTime} 秒\n`;
+                    });
+                } else {
+                    output.innerText += `バッテリ情報はブラウザでサポートされていません。\n`;
+                }
+                const localStorageKeys = localStorage.length;
+                output.innerText += `ローカルストレージのキー数: ${localStorageKeys}\n`;
+                break;
+            case 'reset':
+                prefix.innerText = '<user>';
+                output.innerText += `プロンプトが<user>に戻されました。\n`;
+                break;
+            case 'whoami':
+                output.innerText += `現在のプロンプト: ${prefix.innerText}\n`;
+                break;
+            case 'random':
+                const randomNumber = Math.floor(Math.random() * 100) + 1;
+                output.innerText += `ランダムな数字: ${randomNumber}\n`;
+                break;
+            case 'reverse':
+                const reverseMessage = args.slice(1).join(' ').split('').reverse().join('');
+                output.innerText += `反転結果: ${reverseMessage}\n`;
+                break;
+            case 'version':
+                output.innerText += `nexser beta 1.8\n`;
+                break;
+            case 'reload':
+                output.innerText = '';
+                window.location = '';
+                break;
+            case 'open':
+                if (localStorage.getItem('setup') && prefix.innerText === '<nexser>') {
+                    output.innerText += `starting　nexser...\n`;
                     nexser_boot_check();
+                } else {
+                    output.innerText += `現在のプロンプトでは'${command}'は利用できません。\n`;
                 }
                 break;
-            case 'nexser/program':
-                if (localStorage.getItem('setup')) {
+            case 'program':
+                if (localStorage.getItem('setup') && prefix.innerText === '<nexser>') {
+                    output.innerText += `nexser program open...\n`;
                     localStorage.setItem('prompt_data3', true);
-                    prompt_text.style.color = "";
                     nexser_program_open();
+                } else {
+                    output.innerText += `現在のプロンプトでは'${command}'は利用できません。\n`;
                 }
                 break;
-
+            case 'history':
+                if (commandHistory.length === 0) {
+                    output.innerText += `コマンド履歴はまだありません。\n`;
+                } else {
+                    output.innerText += `コマンド履歴:\n`;
+                    commandHistory.forEach((cmd, index) => {
+                        output.innerText += `  ${index + 1}: ${cmd}\n`;
+                    });
+                }
+                break;
             case 'nexser/code/html':
-                prompt_text.style.color = "";
+                document.querySelector('.code_group').style.display = "block";
                 document.querySelector('#code_html').style.display = "block";
                 document.querySelector('#code_script').style.display = "none";
                 document.querySelector('#code_script2').style.display = "none";
                 break;
             case 'nexser/code/script':
-                prompt_text.style.color = "";
+                document.querySelector('.code_group').style.display = "block";
                 document.querySelector('#code_html').style.display = "none";
                 document.querySelector('#code_script').style.display = "block";
                 document.querySelector('#code_script2').style.display = "none";
                 break;
             case 'nexser/code/script2':
-                prompt_text.style.color = "";
+                document.querySelector('.code_group').style.display = "block";
                 document.querySelector('#code_html').style.display = "none";
                 document.querySelector('#code_script').style.display = "none";
                 document.querySelector('#code_script2').style.display = "block";
                 break;
             default:
-                msg.innerText = "";
-                prompt_text.style.color = "red";
-                break;
+                if (command === 'nexser') {
+                    prefix.innerText = '<nexser>';
+                    output.innerText += `プロンプトが<nexser>に変更されました。\n`;
+                } else {
+                    output.innerText += `'${command}' は認識されないコマンドです。'help' を入力して使用可能なコマンドを確認してください。\n`;
+                }
+        }
+        output.scrollTop = output.scrollHeight;
+    }
+    function command_help() {
+        if (localStorage.getItem('setup')) {
+            output.innerText += `以下のコマンドを入力して Enter を押してください:\n`
+            output.innerText += `- nexser 起動方法 -\n`
+            output.innerText += `- 1. nexser を入力 -\n`
+            output.innerText += `- 2. open を入力して実行してください -\n`;
+        } else {
+            output.innerText += `以下のコマンドを入力して Enter を押してください:\n
+            - setup 方法 -\n
+            - 1. nexser を入力 -\n
+            - 2. setup を入力して実行してください -\n`;
+        }
+        output.innerText += `- その他コマンドは help を入力してください -\n`;
+        if (localStorage.getItem('auto_startup')) {
+            output.innerText += `nexser の自動起動は有効になっています\n`;
         }
     }
 
@@ -2102,16 +2203,6 @@ if (ua.includes("mobile")) {
     setInterval(() => {
         const localkey_length = localStorage.length;
         if (screen_prompt.style.display === "block") {
-            navigator.getBattery().then((battery) => {
-                const updateInnerHTML = (className, value) => {
-                    document.querySelector(`.${className}`).textContent = value;
-                };
-                updateInnerHTML('level', battery.level);
-                updateInnerHTML('charging', battery.charging);
-                updateInnerHTML('chargingTime', battery.chargingTime);
-                updateInnerHTML('dischargingTime', battery.dischargingTime);
-            });
-            document.querySelector('.length_localStorage').textContent = localkey_length;
         } else {
             document.getElementsByClassName('local_keylength')[0].textContent = localkey_length;
             background_text2.textContent = localStorage.getItem('backtext_data');
@@ -6850,12 +6941,6 @@ if (ua.includes("mobile")) {
         });
     }
 
-    if (localStorage.getItem('setup')) {
-        document.querySelector('.command_help').style.display = "block";
-        document.querySelector('.nosetup_command_help').style.display = "none";
-    } else {
-        document.querySelector('.command_help').style.display = "none";
-    }
     function nexser_setup() {
         setup.style.display = "block";
         setTimeout(() => noticewindow_create('Nexser Setup', "Nexser のセットアップを行います。", null, setup1, cancel_setup), 500);
