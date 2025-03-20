@@ -1654,7 +1654,7 @@ if (ua.includes("mobile")) {
                         setTimeout(() => {
                             nexser_setup();
                             document.querySelector('#output').style.display = "none";
-                        }, 1000);
+                        }, 500);
                     } else {
                         output.innerText += `現在のプロンプトでは'setup'は利用できません。\n`;
                     }
