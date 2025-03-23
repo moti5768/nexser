@@ -127,7 +127,7 @@ if (ua.includes("mobile")) {
     const titles = document.querySelectorAll('.title');
     const navys = document.querySelectorAll('.navy');
 
-    const window_selectors = ['.big', '.leftwindow', '.rightwindow'];
+    const window_selectors = ['.big', '.w_left', '.w_right'];
 
     const windowanimation = 0.28;
 
@@ -426,6 +426,10 @@ if (ua.includes("mobile")) {
         if (localStorage.getItem('taskbar_position_button')) {
             document.querySelector('.taskbar_position_button').textContent = "bottom"
             taskbar.style.top = "0px";
+            document.getElementById('task_resizer').style.display = "none";
+        } else {
+            document.getElementById('task_resizer').style.display = "block";
+            document.getElementById('task_resizer2').style.display = "none";
         }
 
         if (localStorage.getItem('taskbar_position_button') && localStorage.getItem('data_taskbar_none')) {
@@ -438,6 +442,10 @@ if (ua.includes("mobile")) {
         } else {
             files_inline.style.marginTop = "auto";
             files_inline.style.bottom = "";
+        }
+
+        if (localStorage.getItem('taskbar_position_button') && localStorage.getItem('taskbar_autohide')) {
+            files_inline.style.marginTop = "40px";
         }
 
         if (localStorage.getItem('data_taskbar_none') && localStorage.getItem('taskbar_position_button')) {
@@ -506,19 +514,12 @@ if (ua.includes("mobile")) {
         });
 
         if (localStorage.getItem('taskbar_autohide')) {
-            taskbar.style.bottom = "-35px"
+            taskbar.style.bottom = "-35px";
         }
         if (localStorage.getItem('taskbar_height') && (localStorage.getItem('taskbar_autohide'))) {
             const t2 = t - 5;
             taskbar.style.bottom = `-${t2}px`;
         }
-        if (localStorage.getItem('taskbar_height')) {
-            document.getElementsByClassName('taskbar_height_value')[0].value = localStorage.getItem('taskbar_height');
-        } else {
-            document.getElementsByClassName('taskbar_height_value')[0].value = "40";
-        }
-
-
         editorContent_load();
     }
 
@@ -546,37 +547,29 @@ if (ua.includes("mobile")) {
     setInterval(taskgroup_load, 1000);
 
     function load_nexser() {
-        localStorage.removeItem('no_shutdown')
-        if (localStorage.getItem('password') && !localStorage.getItem('login') && !localStorage.getItem('prompt_data3') && localStorage.getItem('prompt_data')) {
-            screen_prompt.style.display = "none";
-            nexser_program.style.display = "none";
-            nexser.style.display = "block";
-            desktop.style.display = "none";
-            pass_signin_menu.classList.remove('active')
+        localStorage.removeItem('no_shutdown');
+        const hasPromptData = localStorage.getItem('prompt_data');
+        const hasPromptData3 = localStorage.getItem('prompt_data3');
+        const isAutoStartup = localStorage.getItem('auto_startup');
+        const isDeskPrompt = localStorage.getItem('deskprompt');
+        if (localStorage.getItem('password') && !localStorage.getItem('login') && !hasPromptData3 && hasPromptData) {
+            toggleDisplay(false, false, true, false);
+            pass_signin_menu.classList.remove('active');
             document.getElementById('pass_form').focus();
-        } else if (!localStorage.getItem('start_nexser') && localStorage.getItem('prompt_data')) {
-            start_check()
-        } else if (localStorage.getItem('prompt_data') && localStorage.getItem('start_nexser')) {
-            screen_prompt.style.display = "none";
-            nexser_program.style.display = "none";
-            nexser.style.display = "block";
-            desktop.style.display = "block"
+        } else if (!localStorage.getItem('start_nexser') && hasPromptData) {
+            start_check();
+        } else if (hasPromptData && localStorage.getItem('start_nexser')) {
+            toggleDisplay(false, false, true, true);
             welcome_menu.classList.add('active');
-        } else if (localStorage.getItem('prompt_data3')) {
-            screen_prompt.style.display = "none";
-            nexser_program.style.display = "block";
-            nexser.style.display = "none";
-            desktop.style.display = "none";
+        } else if (hasPromptData3) {
+            toggleDisplay(false, true, false, false);
             nex.style.cursor = 'crosshair';
         } else {
-            screen_prompt.style.display = "block";
-            nexser_program.style.display = "none";
-            nexser.style.display = "none";
-            desktop.style.display = "none";
+            toggleDisplay(true, false, false, false);
             prompt_text_value.focus();
             command_help();
         }
-        if (localStorage.getItem('deskprompt')) {
+        if (isDeskPrompt) {
             nexser_program.style.display = "block";
             desktop.style.display = "none";
             pattern_backgrounds.style.display = "none";
@@ -584,15 +577,19 @@ if (ua.includes("mobile")) {
         } else {
             pattern_backgrounds.style.display = "block";
         }
-
-        if (screen_prompt.style.display === "block" && localStorage.getItem('auto_startup')) {
+        if (screen_prompt.style.display === "block" && isAutoStartup) {
             handleCommand("nexser");
             handleCommand("open");
         }
         sessionStorage.removeItem('start_camera');
         localStorage.removeItem('note_texts');
     }
-
+    function toggleDisplay(prompt, program, nexserDisplay, desktopDisplay) {
+        screen_prompt.style.display = prompt ? "block" : "none";
+        nexser_program.style.display = program ? "block" : "none";
+        nexser.style.display = nexserDisplay ? "block" : "none";
+        desktop.style.display = desktopDisplay ? "block" : "none";
+    }
     screen_prompt.addEventListener('click', function () {
         prompt_text_value.focus();
     })
@@ -1299,7 +1296,7 @@ if (ua.includes("mobile")) {
             allwindow.style.height = "";
             allwindow.style.width = "";
             windowposition_reset();
-            allwindow.classList.remove('leftwindow', 'rightwindow', 'child_windows_invisible');
+            allwindow.classList.remove('w_left', 'w_right', 'child_windows_invisible');
             allwindow.style.transition = "";
             document.querySelector('.bigminbtn').style.visibility = "visible";
             document.querySelector('.minimization_button').style.visibility = "visible";
@@ -1331,10 +1328,12 @@ if (ua.includes("mobile")) {
         largestZIndex = 0;
         allwindows.forEach(allwindow_none => {
             allwindow_none.classList.add('active');
-            allwindow_none.classList.remove('big', 'rightwindow', 'leftwindow');
+            allwindow_none.classList.remove('big', 'w_right', 'w_left');
             allwindow_none.style.right = "";
             allwindow_none.style.transition = "";
         });
+        originalDragData = null;
+        isSnapped = false;
         windowposition_reset();
     }
     function window_active() {
@@ -1397,9 +1396,12 @@ if (ua.includes("mobile")) {
         const t = localStorage.getItem('taskbar_height');
         localStorage.setItem('taskbar_autohide', true);
         taskbar.style.bottom = "-35px";
-        if (localStorage.getItem('taskbar_height') && (localStorage.getItem('taskbar_autohide'))) {
+        if (localStorage.getItem('taskbar_height') && localStorage.getItem('taskbar_autohide')) {
             const t2 = t - 5;
             taskbar.style.bottom = `-${t2}px`;
+        }
+        if (localStorage.getItem('taskbar_height') && localStorage.getItem('taskbar_position_button')) {
+            files_inline.style.marginTop = "40px";
         }
         desktopfile_resize()
     }
@@ -1409,21 +1411,19 @@ if (ua.includes("mobile")) {
         desktopfile_resize()
     }
 
-    document.querySelectorAll('#taskbar').forEach(taskbar => {
-        taskbar.addEventListener('mouseleave', () => {
-            if (localStorage.getItem('taskbar_height') && localStorage.getItem('taskbar_autohide')) {
-                const t = localStorage.getItem('taskbar_height');
-                const t2 = t - 5;
-                taskbar.style.bottom = `-${t2}px`;
-            } else if (localStorage.getItem('taskbar_autohide')) {
-                taskbar.style.bottom = "-35px";
-            }
-            bigwindow_resize();
-        });
-        taskbar.addEventListener('mouseover', () => {
-            taskbar.style.bottom = "";
-            bigwindow_resize();
-        });
+    taskbar.addEventListener('mouseleave', () => {
+        if (localStorage.getItem('taskbar_height') && localStorage.getItem('taskbar_autohide')) {
+            const t = localStorage.getItem('taskbar_height');
+            const t2 = t - 5;
+            taskbar.style.bottom = `-${t2}px`;
+        } else if (localStorage.getItem('taskbar_autohide')) {
+            taskbar.style.bottom = "-35px";
+        }
+        bigwindow_resize();
+    });
+    taskbar.addEventListener('mouseover', () => {
+        taskbar.style.bottom = "";
+        bigwindow_resize();
     });
 
     document.querySelectorAll('.start_menu').forEach(child_startmenu => {
@@ -2360,7 +2360,7 @@ if (ua.includes("mobile")) {
                         win.style.height = originalSize[win].height;
                         win.style.top = originalPosition[win].top;
                         win.style.left = originalPosition[win].left;
-                        win.classList.remove('rightwindow', 'leftwindow');
+                        win.classList.remove('w_right', 'w_left');
                         win.classList.remove('big');
                         button.classList.replace('minbtn', 'bigminbtn');
                         setTimeout(() => {
@@ -2375,7 +2375,7 @@ if (ua.includes("mobile")) {
                         win.classList.remove('minimization');
                         win.style.left = "0";
                         windowtop(win);
-                        win.classList.remove('rightwindow', 'leftwindow');
+                        win.classList.remove('w_right', 'w_left');
                         win.classList.add('big');
                         button.classList.replace('bigminbtn', 'minbtn');
                         isMaximized = true;
@@ -2448,7 +2448,7 @@ if (ua.includes("mobile")) {
         });
         window_half_big.addEventListener('click', event => {
             const windowhalfbig = window_half_big.closest('.child_windows');
-            windowhalfbig.classList.remove('rightwindow', 'leftwindow', 'big');
+            windowhalfbig.classList.remove('w_right', 'w_left', 'big');
             const shiftX = event.clientX - window_half_big.getBoundingClientRect().left;
             const shiftY = event.clientY - window_half_big.getBoundingClientRect().top;
             const moveAt = (pageX, pageY) => {
@@ -2466,8 +2466,8 @@ if (ua.includes("mobile")) {
         windowsize_reset.addEventListener('click', event => {
             const windowsizereset = windowsize_reset.closest('.child_windows');
             windowsizereset.style.height = windowsizereset.style.width = "";
-            windowsizereset.style.right = windowsizereset.classList.contains('rightwindow') ? "0" : "";
-            windowsizereset.classList.remove('big', 'leftwindow', 'rightwindow');
+            windowsizereset.style.right = windowsizereset.classList.contains('w_right') ? "0" : "";
+            windowsizereset.classList.remove('big', 'w_left', 'w_right');
             window_animation(windowsizereset);
             const shiftX = event.clientX - windowsize_reset.getBoundingClientRect().left;
             const shiftY = event.clientY - windowsize_reset.getBoundingClientRect().top;
@@ -2702,11 +2702,6 @@ if (ua.includes("mobile")) {
         if (!button.dataset.listenerAdded) {
             const dragwindow = button.closest('.child_windows');
             button.addEventListener('mousedown', function () {
-                if (dragwindow.classList.contains('leftwindow') || dragwindow.classList.contains('rightwindow')) {
-                    dragwindow.style.height = "50%";
-                    dragwindow.style.width = "50%";
-                    dragwindow.classList.remove('leftwindow', 'rightwindow');
-                }
                 dragwindow.classList.add("drag");
             });
             let drag2 = button.closest('.child_windows');
@@ -2731,8 +2726,18 @@ if (ua.includes("mobile")) {
                 document.addEventListener("mouseup", mup, false);
                 document.addEventListener("touchend", mup, false);
             }
+
+            let originalDragData = null;
+            let isSnapped = false;
             function mmove(e) {
                 const drag = document.getElementsByClassName("drag")[0];
+                const screenWidth = window.innerWidth;
+                const screenHeight = window.innerHeight;
+                const event = e.type === "mousemove" ? e : e.changedTouches[0];
+                if (!isSnapped) {
+                    drag.style.top = event.pageY - y + "px";
+                    drag.style.left = event.pageX - x + "px";
+                }
                 if (!clones && !localStorage.getItem('window_afterimage_false')) {
                     const clone = dragwindow.cloneNode(true);
                     dragwindow.parentNode.appendChild(clone).classList.add('clones');
@@ -2742,40 +2747,76 @@ if (ua.includes("mobile")) {
                     requestAnimationFrame(() => {
                         dragwindow.parentNode.appendChild(clone).children[0].classList.add('navy');
                         applyStyles(dragwindow);
-                        titlecolor_set()
+                        titlecolor_set();
                     });
                     clones = true;
                 }
                 if (localStorage.getItem('window_invisible') && localStorage.getItem('window_afterimage_false')) {
-                    drag.style.opacity = "0.5"
+                    drag.style.opacity = "0.5";
                 } else if (localStorage.getItem('window_borderblack') && localStorage.getItem('window_afterimage_false')) {
                     applyStyles(drag);
                 }
-                const event = e.type === "mousemove" ? e : e.changedTouches[0];
-                drag.style.top = event.pageY - y + "px";
-                drag.style.left = event.pageX - x + "px";
+                if (e.clientX <= 0 && !isSnapped) {
+                    saveOriginalData(drag);
+                    snapWindow(drag, "left", screenWidth, screenHeight);
+                } else if (e.clientX >= screenWidth - 1 && !isSnapped) {
+                    saveOriginalData(drag);
+                    snapWindow(drag, "right", screenWidth, screenHeight);
+                } else if (isSnapped && e.clientX > 0 && e.clientX < screenWidth - 1) {
+                    setTimeout(() => {
+                        restoreOriginalData(drag);
+                        drag.classList.remove('w_left', 'w_right');
+                    }, 0);
+                }
                 taskbar.addEventListener('mouseover', function () {
                     document.body.removeEventListener("mousemove", mmove, false);
                     document.body.removeEventListener("touchmove", mmove, false);
-                })
+                });
             }
-            function mup(e) {
-                const drag = document.getElementsByClassName("drag")[0];
+            function saveOriginalData(drag) {
+                if (!originalDragData) {
+                    originalDragData = {
+                        top: drag.style.top,
+                        left: drag.style.left,
+                        width: drag.style.width,
+                        height: drag.style.height,
+                    };
+                }
+            }
+            function snapWindow(drag, position, screenWidth, screenHeight) {
                 if (drag.classList.contains('resize')) {
-                    if (e.clientX <= 0) {
-                        windowtop(drag);
-                        drag.style.width = "50%";
-                        drag.style.height = `${window.innerHeight - taskbar.clientHeight}px`;
+                    isSnapped = true;
+                    if (position === "left") {
+                        drag.style.width = `${screenWidth / 2}px`;
+                        drag.style.height = `${screenHeight - taskbar.clientHeight}px`;
+                        drag.style.top = "0px";
                         drag.style.left = "0px";
-                        drag.classList.add('leftwindow');
-                    } else if (e.clientX >= window.innerWidth - 1) {
-                        windowtop(drag);
-                        drag.style.width = "50%";
-                        drag.style.height = `${window.innerHeight - taskbar.clientHeight}px`;
-                        drag.style.left = `${window.innerWidth - drag.offsetWidth}px`;
-                        drag.classList.add('rightwindow');
+                        drag.classList.add('w_left');
+                    } else if (position === "right") {
+                        drag.style.width = `${screenWidth / 2}px`;
+                        drag.style.height = `${screenHeight - taskbar.clientHeight}px`;
+                        drag.style.top = "0px";
+                        drag.style.left = `${screenWidth / 2}px`;
+                        drag.classList.add('w_right');
+                    }
+                    if (localStorage.getItem('taskbar_autohide')) {
+                        drag.style.height = `${screenHeight}px`;
                     }
                 }
+            }
+            function restoreOriginalData(drag) {
+                if (originalDragData) {
+                    drag.style.top = originalDragData.top;
+                    drag.style.left = originalDragData.left;
+                    drag.style.width = originalDragData.width;
+                    drag.style.height = originalDragData.height;
+                    originalDragData = null;
+                    isSnapped = false;
+                }
+            }
+
+            function mup() {
+                const drag = document.getElementsByClassName("drag")[0];
                 if (drag) {
                     drag.classList.remove("drag");
                 }
@@ -2826,7 +2867,7 @@ if (ua.includes("mobile")) {
         } else if (localStorage.getItem('taskbar_position_button')) {
             win.style.top = "40px";
             win.style.top = `${t}px`;
-        } else if (win.classList.contains('rightwindow')) {
+        } else if (win.classList.contains('w_right')) {
             win.style.top = "0";
             win.style.left = "";
         } else {
@@ -3746,6 +3787,8 @@ if (ua.includes("mobile")) {
             files_inline.style.marginTop = "auto"
             files_inline.style.bottom = ""
 
+            document.getElementById('task_resizer').style.display = "block";
+            document.getElementById('task_resizer2').style.display = "none";
 
             window_selectors.forEach(selector => {
                 document.querySelectorAll(selector).forEach(element => element.style.top = "auto");
@@ -3780,6 +3823,9 @@ if (ua.includes("mobile")) {
                 files_inline.style.marginTop = "auto"
                 files_inline.style.bottom = ""
             }
+
+            document.getElementById('task_resizer').style.display = "none";
+            document.getElementById('task_resizer2').style.display = "block";
 
             if (localStorage.getItem('data_taskbar_none')) {
                 window_selectors.forEach(selector => {
@@ -4215,80 +4261,6 @@ if (ua.includes("mobile")) {
     }
     function list_shadow_reset() {
         toggleShadow('remove');
-    }
-
-    function taskheight_submit() {
-        let taskvalue = document.getElementsByClassName('taskbar_height_value')[0].value;
-        const task = taskbar.clientHeight;
-
-        if (taskvalue === "") {
-            taskvalue = 40;
-            const t = localStorage.setItem('taskbar_height', taskvalue);
-            taskbar.style.height = "40px"
-            files_inline.style.marginTop = ""
-
-            if (check(elm1, elm2) && !localStorage.getItem('taskbar_position_button')) {
-                toolbar.style.bottom = `${task}px`;
-            } else if (check(elm1, elm2)) {
-                toolbar.style.bottom = "";
-            }
-
-            if (check(elm1, elm2) && localStorage.getItem('taskbar_position_button')) {
-                toolbar.style.top = `${task}px`;
-            } else if (check(elm1, elm2)) {
-                toolbar.style.top = "";
-            }
-
-        } else if (0 <= taskvalue && taskvalue < 40) {
-            noticewindow_create("error", "タスクバーの設定範囲以下に設定されています!");
-        } else if (40 <= taskvalue && taskvalue < 251) {
-            const t = localStorage.setItem('taskbar_height', taskvalue);
-            taskbar.style.height = taskvalue + "px"
-            desktop_version_text.style.bottom = "40px";
-            desktop_version_text.style.bottom = taskvalue + "px";
-            if (check(elm1, elm2) && !localStorage.getItem('taskbar_position_button')) {
-                toolbar.style.bottom = taskvalue + "px";
-            } else if (check(elm1, elm2)) {
-                toolbar.style.bottom = "";
-            }
-            if (check(elm1, elm2) && localStorage.getItem('taskbar_position_button')) {
-                setTimeout(() => {
-                    toolbar.style.bottom = "";
-                    toolbar.style.top = taskvalue + "px";
-                }, 10);
-            } else if (check(elm1, elm2)) {
-                toolbar.style.top = "";
-            }
-            if (localStorage.getItem('taskbar_position_button')) {
-                const t2 = localStorage.getItem('taskbar_height');
-                files_inline.style.marginTop = `${t2}px`
-                const task = taskbar.clientHeight;
-            } else if (localStorage.getItem('taskbar_autohide')) {
-                taskbar_autohide();
-                const task = taskbar.clientHeight;
-            } else {
-                const task = taskbar.clientHeight;
-            }
-        } else {
-            noticewindow_create("error", "タスクバーの設定範囲を超えています!");
-        }
-    }
-
-    document.querySelector('.taskbar_height_value').addEventListener('input', function () { if (this.value.length > 3) this.value = this.value.slice(0, 3); });
-    function taskheight_clear() {
-        document.getElementsByClassName('taskbar_height_value')[0].value = "40";
-        localStorage.removeItem('taskbar_height');
-        taskbar.style.height = "";
-        if (localStorage.getItem('taskbar_position_button')) {
-            files_inline.style.marginTop = "40px";
-            const task = taskbar.clientHeight;
-            desktop_version_text.style.bottom = "0px";
-        } else if (localStorage.getItem('taskbar_autohide')) {
-            taskbar_autohide();
-        } else {
-            const task = taskbar.clientHeight;
-            desktop_version_text.style.bottom = "40px";
-        }
     }
 
     const clock_canvas = document.getElementById("analog_clock");
@@ -4766,7 +4738,7 @@ if (ua.includes("mobile")) {
                 overlay.style.left = 0;
                 overlay.style.width = '100%';
                 overlay.style.height = '100%';
-                overlay.style.zIndex = 9999;
+                overlay.style.zIndex = 100;
                 overlay.style.cursor = getComputedStyle(resizer).cursor;
                 document.body.appendChild(overlay);
                 window.addEventListener('mousemove', resize);
@@ -4776,7 +4748,7 @@ if (ua.includes("mobile")) {
                 const dx = e.pageX - originalMouseX;
                 const dy = e.pageY - originalMouseY;
                 const resizer2 = resizer.closest('.child_windows');
-                resizer2.classList.remove('leftwindow', 'rightwindow');
+                resizer2.classList.remove('w_left', 'w_right');
                 if (resizer.classList.contains('right') || resizer.classList.contains('bottom-right') || resizer.classList.contains('top-right')) {
                     const newWidth = originalWidth + dx;
                     if (newWidth > minSize) element.style.width = newWidth + 'px';
@@ -5808,11 +5780,18 @@ if (ua.includes("mobile")) {
         const taskbarHeight = `calc(100% - ${taskbar.clientHeight}px)`;
         const taskbarAutoHide = localStorage.getItem('taskbar_autohide');
         const taskbarBottomEmpty = taskbar.style.bottom === "";
-        const elements = document.querySelectorAll('.big:not(.minimization),.leftwindow:not(.minimization),.rightwindow:not(.minimization)');
+        const elements = document.querySelectorAll('.big:not(.minimization),.w_left:not(.minimization),.w_right:not(.minimization)');
         elements.forEach(allbig => {
             if (!isAnimating) {
                 requestAnimationFrame(() => {
                     allbig.style.height = (taskbarAutoHide && taskbarBottomEmpty) ? taskbarHeight : (taskbarAutoHide ? allbig.style.height = "100%" : taskbarHeight);
+                    if (localStorage.getItem('taskbar_position_button') && localStorage.getItem('taskbar_autohide')) {
+                        allbig.style.top = `${taskbar.clientHeight}px`;
+                        allbig.style.height = `${window.innerHeight - taskbar.clientHeight}px`;
+                    }
+                    if (localStorage.getItem('taskbar_position_button')) {
+                        allbig.style.top = `${taskbar.clientHeight}px`;
+                    }
                 });
             }
         });
@@ -7058,5 +7037,40 @@ if (ua.includes("mobile")) {
         localStorage.setItem('setup', true);
         setTimeout(() => window.location.reload(), 5000);
     }
+
+    let isResizing = false;
+    let isResizing2 = false;
+    const task_resizer = document.getElementById('task_resizer');
+    task_resizer.addEventListener('mousedown', () => {
+        isResizing = true;
+        document.body.style.cursor = 'ns-resize';
+    });
+    const task_resizer2 = document.getElementById('task_resizer2');
+    task_resizer2.addEventListener('mousedown', () => {
+        isResizing2 = true;
+        document.body.style.cursor = 'ns-resize';
+    });
+    document.addEventListener('mousemove', (e) => {
+        if (isResizing) {
+            const snappedHeight = Math.min(280, Math.max(40, Math.round((window.innerHeight - e.clientY) / 40) * 40));
+            taskbar.style.height = `${snappedHeight}px`;
+            toolbar.style.bottom = desktop_version_text.style.bottom = taskbar.style.height;
+            localStorage.setItem('taskbar_height', snappedHeight);
+            if (localStorage.getItem('taskbar_autohide')) taskbar.style.bottom = "";
+        }
+        if (isResizing2) {
+            const snappedHeight = Math.min(280, Math.max(40, Math.round(e.clientY / 40) * 40));
+            taskbar.style.height = `${snappedHeight}px`;
+            toolbar.style.top = desktop_version_text.style.top = taskbar.style.height;
+            localStorage.setItem('taskbar_height', snappedHeight);
+            if (localStorage.getItem('taskbar_autohide')) taskbar.style.bottom = "";
+            if (!localStorage.getItem('taskbar_autohide')) files_inline.style.marginTop = `${taskbar.clientHeight}px`;
+        }
+    });
+    document.addEventListener('mouseup', () => {
+        isResizing = false;
+        isResizing2 = false;
+        document.body.style.cursor = 'default';
+    });
 
 };
