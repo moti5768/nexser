@@ -1324,6 +1324,11 @@ if (ua.includes("mobile")) {
             win.style.zIndex = "0";["background", "border", "boxShadow", "mixBlendMode", "opacity"].forEach(style => win.style[style] = "");
             Array.from(win.children).forEach(child => child.style.display = "");
             windowtool();
+            const child2 = win.children[1]?.children[2];
+            if (child2) {
+                child2.dataset.isMaximized = 'false';
+                child2.classList.replace('minbtn', 'bigminbtn');
+            }
         });
         largestZIndex = 0;
         allwindows.forEach(allwindow_none => {
@@ -2343,19 +2348,18 @@ if (ua.includes("mobile")) {
     }
 
     function addMinbigScreenButtonListeners(button) {
-        let isMaximized = false;
         let originalSize = {};
         let originalPosition = {};
         if (!button.dataset.listenerAdded) {
             button.addEventListener('click', function () {
                 const win = button.closest('.child_windows');
                 if (win) {
-                    if (!originalSize[win]) {
-                        originalSize[win] = { width: win.style.width, height: win.style.height };
-                        originalPosition[win] = { top: win.style.top, left: win.style.left };
+                    if (typeof button.dataset.isMaximized === 'undefined') {
+                        button.dataset.isMaximized = 'false';
                     }
+                    const isMaximized = button.dataset.isMaximized === 'true';
                     if (isMaximized) {
-                        window_animation(win)
+                        window_animation(win);
                         win.style.width = originalSize[win].width;
                         win.style.height = originalSize[win].height;
                         win.style.top = originalPosition[win].top;
@@ -2367,7 +2371,7 @@ if (ua.includes("mobile")) {
                             win.scrollTop = 0;
                             win.scrollLeft = 0;
                         }, windowanimation * 1000);
-                        isMaximized = false;
+                        button.dataset.isMaximized = 'false';
                     } else {
                         window_animation(win);
                         originalSize[win] = { width: win.style.width, height: win.style.height };
@@ -2378,7 +2382,7 @@ if (ua.includes("mobile")) {
                         win.classList.remove('w_right', 'w_left');
                         win.classList.add('big');
                         button.classList.replace('bigminbtn', 'minbtn');
-                        isMaximized = true;
+                        button.dataset.isMaximized = 'true';
                     }
                 }
                 button.dataset.listenerAdded = true;
@@ -2441,38 +2445,38 @@ if (ua.includes("mobile")) {
         }
     }
 
-    document.querySelectorAll('.window_half_big').forEach(window_half_big => {
-        window_half_big.addEventListener('mousedown', () => {
-            const elements2 = document.querySelector('.title.navy').closest('.child_windows');
-            ['width', 'height', 'top', 'left'].forEach(attr => elements2.dataset[`original${attr.charAt(0).toUpperCase() + attr.slice(1)}`] = elements2.style[attr]);
-        });
-        window_half_big.addEventListener('click', event => {
-            const windowhalfbig = window_half_big.closest('.child_windows');
-            windowhalfbig.classList.remove('w_right', 'w_left', 'big');
-            const shiftX = event.clientX - window_half_big.getBoundingClientRect().left;
-            const shiftY = event.clientY - window_half_big.getBoundingClientRect().top;
-            const moveAt = (pageX, pageY) => {
-                window_half_big.style.left = pageX - shiftX + 'px';
-                window_half_big.style.top = pageY - shiftY + 'px';
-            };
-            moveAt(event.pageX, event.pageY);
-            windowhalfbig.style.height = "50%";
-            windowhalfbig.style.width = "50%";
-            window_animation(windowhalfbig);
+    document.querySelectorAll('.window_half_big').forEach(halfBig => {
+        halfBig.addEventListener('click', ({ clientX, clientY, pageX, pageY }) => {
+            const win = halfBig.closest('.child_windows');
+            win.classList.remove('w_right', 'w_left', 'big');
+            const { left, top } = halfBig.getBoundingClientRect();
+            Object.assign(halfBig.style, {
+                left: `${pageX - (clientX - left)}px`,
+                top: `${pageY - (clientY - top)}px`
+            });
+            Object.assign(win.style, { height: "50%", width: "50%" });
+            const child2 = win.children[1]?.children[2];
+            if (child2) Object.assign(child2.dataset, { isMaximized: 'false' }), child2.classList.replace('minbtn', 'bigminbtn');
+            window_animation(win);
         });
     });
 
-    document.querySelectorAll('.windowsize_reset').forEach(windowsize_reset => {
-        windowsize_reset.addEventListener('click', event => {
-            const windowsizereset = windowsize_reset.closest('.child_windows');
-            windowsizereset.style.height = windowsizereset.style.width = "";
-            windowsizereset.style.right = windowsizereset.classList.contains('w_right') ? "0" : "";
-            windowsizereset.classList.remove('big', 'w_left', 'w_right');
-            window_animation(windowsizereset);
-            const shiftX = event.clientX - windowsize_reset.getBoundingClientRect().left;
-            const shiftY = event.clientY - windowsize_reset.getBoundingClientRect().top;
-            windowsize_reset.style.left = `${event.pageX - shiftX}px`;
-            windowsize_reset.style.top = `${event.pageY - shiftY}px`;
+    document.querySelectorAll('.windowsize_reset').forEach(reset => {
+        reset.addEventListener('click', ({ clientX, clientY, pageX, pageY }) => {
+            const win = reset.closest('.child_windows');
+            Object.assign(win.style, {
+                height: "", width: "",
+                right: win.classList.contains('w_right') ? "0" : ""
+            });
+            win.classList.remove('big', 'w_left', 'w_right');
+            const child2 = win.children[1]?.children[2];
+            if (child2) Object.assign(child2.dataset, { isMaximized: 'false' }), child2.classList.replace('minbtn', 'bigminbtn');
+            window_animation(win);
+            const { left, top } = reset.getBoundingClientRect();
+            Object.assign(reset.style, {
+                left: `${pageX - (clientX - left)}px`,
+                top: `${pageY - (clientY - top)}px`
+            });
         });
     });
 
@@ -3237,20 +3241,10 @@ if (ua.includes("mobile")) {
         }
     }
 
-    const nowdate = new Date();
-    const yeardate = nowdate.getFullYear();
-    const monthdate = nowdate.getMonth();
-    const dates = nowdate.getDate();
-    const hourdate = nowdate.getHours();
-    const mindate = nowdate.getMinutes();
-    let ampm = '';
-    if (hourdate < 12) {
-        ampm = 'AM';
-    } else {
-        ampm = 'PM';
-    }
-    const outputdate = `${yeardate}/${monthdate + 1}/${dates}/${hourdate % 12}:${mindate}${ampm}`;
-    document.getElementById('lastaccess_day').textContent = outputdate;
+    const now = new Date();
+    const ampm = now.getHours() < 12 ? 'AM' : 'PM';
+    const output_d = `${now.getFullYear()}/${now.getMonth() + 1}/${now.getDate()}/${now.getHours() % 12 || 12}:${now.getMinutes().toString().padStart(2, '0')}${ampm}`;
+    document.getElementById('lastaccess_day').textContent = output_d;
 
     const button = document.getElementById("button1");
     button.addEventListener("contextmenu", event => {
@@ -7043,17 +7037,18 @@ if (ua.includes("mobile")) {
     const task_resizer = document.getElementById('task_resizer');
     task_resizer.addEventListener('mousedown', () => {
         isResizing = true;
-        document.body.style.cursor = 'ns-resize';
+        nex.style.cursor = 'ns-resize';
     });
     const task_resizer2 = document.getElementById('task_resizer2');
     task_resizer2.addEventListener('mousedown', () => {
         isResizing2 = true;
-        document.body.style.cursor = 'ns-resize';
+        nex.style.cursor = 'ns-resize';
     });
-    document.addEventListener('mousemove', (e) => {
+    nexser.addEventListener('mousemove', (e) => {
         if (isResizing) {
             const snappedHeight = Math.min(280, Math.max(40, Math.round((window.innerHeight - e.clientY) / 40) * 40));
             taskbar.style.height = `${snappedHeight}px`;
+            desktop_version_text.style.top = "";
             toolbar.style.bottom = desktop_version_text.style.bottom = taskbar.style.height;
             localStorage.setItem('taskbar_height', snappedHeight);
             if (localStorage.getItem('taskbar_autohide')) taskbar.style.bottom = "";
@@ -7066,11 +7061,12 @@ if (ua.includes("mobile")) {
             if (localStorage.getItem('taskbar_autohide')) taskbar.style.bottom = "";
             if (!localStorage.getItem('taskbar_autohide')) files_inline.style.marginTop = `${taskbar.clientHeight}px`;
         }
+        bigwindow_resize();
     });
-    document.addEventListener('mouseup', () => {
+    nexser.addEventListener('mouseup', () => {
         isResizing = false;
         isResizing2 = false;
-        document.body.style.cursor = 'default';
+        nex.style.cursor = '';
     });
 
 };
