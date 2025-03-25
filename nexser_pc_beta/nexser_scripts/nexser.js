@@ -275,7 +275,7 @@ if (ua.includes("mobile")) {
 
     const tasks = [
         load_nexser,
-        getStorage,
+        setColor,
         taskbar_none,
         screen_backtextload,
         notecolor_update,
@@ -2984,71 +2984,35 @@ if (ua.includes("mobile")) {
 
     const KEY_COLOR = "COLOR";
     const KEY_BKCOLOR = "BKCOLOR";
-
-    let color = null;
-    let bkcolor = null;
-
-    function getStorage() {
-        color = localStorage.getItem(KEY_COLOR);
-        bkcolor = localStorage.getItem(KEY_BKCOLOR);
-        if (color !== null && bkcolor != null) {
-            setColor();
-        }
-    }
-
-    function setStorage() {
-        localStorage.setItem(KEY_COLOR, color);
-        localStorage.setItem(KEY_BKCOLOR, bkcolor);
-    }
-
-    function setStorage2() {
-        if (localStorage.getItem('driver_color')) {
-            var select = document.getElementById("select_backcolor");
-            const select2 = (select.value);
-            var select3 = document.getElementById("select_textcolor");
-            const select4 = (select3.value);
-            localStorage.setItem(KEY_BKCOLOR, select2);
-            localStorage.setItem(KEY_COLOR, select4);
-            getStorage()
-        } else {
-            noticewindow_create("error", "カラードライバーがインストールされていません!");
-        }
-    }
-
+    const DEFAULT_COLOR = "";
+    const DEFAULT_BKCOLOR = "";
     function setColor() {
-        setTimeout(() => {
-            if (localStorage.getItem('driver_color')) {
-                body.style.color = color;
-                document.getElementById("nexser").style.backgroundColor = bkcolor;
-                mini_desktop.style.backgroundColor = bkcolor;
-                if (bkcolor === "white" || bkcolor === "whitesmoke") {
-                    background_text.style.color = "black"
-                    background_text2.style.color = "black"
-                    Array.from(document.getElementsByClassName('desktop_files')).forEach((desktop_files) => {
-                        const deskfile_text = desktop_files.firstElementChild;
-                        deskfile_text.style.color = "black"
-                    })
-                } else {
-                    background_text.style.color = ""
-                    background_text2.style.color = ""
-                    Array.from(document.getElementsByClassName('desktop_files')).forEach((desktop_files) => {
-                        const deskfile_text = desktop_files.firstElementChild;
-                        deskfile_text.style.color = ""
-                    })
-                }
-            }
-        }, 0);
-    }
-
-    document.getElementById("changeBtn").addEventListener("click", () => {
         if (localStorage.getItem('driver_color')) {
-            color = document.getElementById("color").value;
-            bkcolor = document.getElementById("bkcolor").value;
+            const color = localStorage.getItem(KEY_COLOR) || DEFAULT_COLOR;
+            const bkcolor = localStorage.getItem(KEY_BKCOLOR) || DEFAULT_BKCOLOR;
+            body.style.color = color;
+            const isLight = ["white", "whitesmoke"].includes(bkcolor);
+            nexser.style.backgroundColor = bkcolor;
+            mini_desktop.style.backgroundColor = bkcolor;
+            [background_text, background_text2].forEach(el => el.style.color = isLight ? "black" : "");
+            Array.from(document.getElementsByClassName('desktop_files')).forEach(el => {
+                el.firstElementChild.style.color = isLight ? "black" : "";
+            });
+        }
+    }
+    function setStorage(type) {
+        if (localStorage.getItem('driver_color')) {
+            const bkcolor = type === "manual" ? document.getElementById("bkcolor").value : document.getElementById("select_backcolor").value;
+            const color = type === "manual" ? document.getElementById("color").value : document.getElementById("select_textcolor").value;
+            localStorage.setItem(KEY_BKCOLOR, bkcolor);
+            localStorage.setItem(KEY_COLOR, color);
             setColor();
-            setStorage();
         } else {
             noticewindow_create("error", "カラードライバーがインストールされていません!");
         }
+    }
+    document.getElementById("changeBtn").addEventListener("click", () => {
+        setStorage("manual");
     });
 
     const colorBtns = document.querySelectorAll('.color_btn');

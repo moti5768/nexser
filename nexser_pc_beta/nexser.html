@@ -1433,7 +1433,7 @@
                                                             &lt;option value=&quot;pink&quot;&gt;pink&lt;/option&gt;
                                                             &lt;option value=&quot;orange&quot;&gt;orange&lt;/option&gt;
                                                         &lt;/select&gt;
-                                                        &lt;p&gt;&lt;button class=&quot;button2&quot; onclick=&quot;setStorage2()&quot;&gt;color set&lt;/button&gt;&lt;/p&gt;
+                                                        &lt;p&gt;&lt;button class=&quot;button2&quot; onclick=&quot;setStorage()&quot;&gt;color set&lt;/button&gt;&lt;/p&gt;
                                                         &lt;button class=&quot;button2&quot; onclick=&quot;colordata_clear()&quot;&gt;colors data clear&lt;/button&gt;
                                                     &lt;/div&gt;
                                                 &lt;/div&gt;
@@ -4092,7 +4092,7 @@
                         
                             const tasks = [
                                 load_nexser,
-                                getStorage,
+                                setColor,
                                 taskbar_none,
                                 screen_backtextload,
                                 notecolor_update,
@@ -6801,71 +6801,35 @@
                         
                             const KEY_COLOR = &quot;COLOR&quot;;
                             const KEY_BKCOLOR = &quot;BKCOLOR&quot;;
-                        
-                            let color = null;
-                            let bkcolor = null;
-                        
-                            function getStorage() {
-                                color = localStorage.getItem(KEY_COLOR);
-                                bkcolor = localStorage.getItem(KEY_BKCOLOR);
-                                if (color !== null &amp;&amp; bkcolor != null) {
-                                    setColor();
-                                }
-                            }
-                        
-                            function setStorage() {
-                                localStorage.setItem(KEY_COLOR, color);
-                                localStorage.setItem(KEY_BKCOLOR, bkcolor);
-                            }
-                        
-                            function setStorage2() {
-                                if (localStorage.getItem(&#039;driver_color&#039;)) {
-                                    var select = document.getElementById(&quot;select_backcolor&quot;);
-                                    const select2 = (select.value);
-                                    var select3 = document.getElementById(&quot;select_textcolor&quot;);
-                                    const select4 = (select3.value);
-                                    localStorage.setItem(KEY_BKCOLOR, select2);
-                                    localStorage.setItem(KEY_COLOR, select4);
-                                    getStorage()
-                                } else {
-                                    noticewindow_create(&quot;error&quot;, &quot;カラードライバーがインストールされていません!&quot;);
-                                }
-                            }
-                        
+                            const DEFAULT_COLOR = &quot;&quot;;
+                            const DEFAULT_BKCOLOR = &quot;&quot;;
                             function setColor() {
-                                setTimeout(() =&gt; {
-                                    if (localStorage.getItem(&#039;driver_color&#039;)) {
-                                        body.style.color = color;
-                                        document.getElementById(&quot;nexser&quot;).style.backgroundColor = bkcolor;
-                                        mini_desktop.style.backgroundColor = bkcolor;
-                                        if (bkcolor === &quot;white&quot; || bkcolor === &quot;whitesmoke&quot;) {
-                                            background_text.style.color = &quot;black&quot;
-                                            background_text2.style.color = &quot;black&quot;
-                                            Array.from(document.getElementsByClassName(&#039;desktop_files&#039;)).forEach((desktop_files) =&gt; {
-                                                const deskfile_text = desktop_files.firstElementChild;
-                                                deskfile_text.style.color = &quot;black&quot;
-                                            })
-                                        } else {
-                                            background_text.style.color = &quot;&quot;
-                                            background_text2.style.color = &quot;&quot;
-                                            Array.from(document.getElementsByClassName(&#039;desktop_files&#039;)).forEach((desktop_files) =&gt; {
-                                                const deskfile_text = desktop_files.firstElementChild;
-                                                deskfile_text.style.color = &quot;&quot;
-                                            })
-                                        }
-                                    }
-                                }, 0);
-                            }
-                        
-                            document.getElementById(&quot;changeBtn&quot;).addEventListener(&quot;click&quot;, () =&gt; {
                                 if (localStorage.getItem(&#039;driver_color&#039;)) {
-                                    color = document.getElementById(&quot;color&quot;).value;
-                                    bkcolor = document.getElementById(&quot;bkcolor&quot;).value;
+                                    const color = localStorage.getItem(KEY_COLOR) || DEFAULT_COLOR;
+                                    const bkcolor = localStorage.getItem(KEY_BKCOLOR) || DEFAULT_BKCOLOR;
+                                    body.style.color = color;
+                                    const isLight = [&quot;white&quot;, &quot;whitesmoke&quot;].includes(bkcolor);
+                                    nexser.style.backgroundColor = bkcolor;
+                                    mini_desktop.style.backgroundColor = bkcolor;
+                                    [background_text, background_text2].forEach(el =&gt; el.style.color = isLight ? &quot;black&quot; : &quot;&quot;);
+                                    Array.from(document.getElementsByClassName(&#039;desktop_files&#039;)).forEach(el =&gt; {
+                                        el.firstElementChild.style.color = isLight ? &quot;black&quot; : &quot;&quot;;
+                                    });
+                                }
+                            }
+                            function setStorage(type) {
+                                if (localStorage.getItem(&#039;driver_color&#039;)) {
+                                    const bkcolor = type === &quot;manual&quot; ? document.getElementById(&quot;bkcolor&quot;).value : document.getElementById(&quot;select_backcolor&quot;).value;
+                                    const color = type === &quot;manual&quot; ? document.getElementById(&quot;color&quot;).value : document.getElementById(&quot;select_textcolor&quot;).value;
+                                    localStorage.setItem(KEY_BKCOLOR, bkcolor);
+                                    localStorage.setItem(KEY_COLOR, color);
                                     setColor();
-                                    setStorage();
                                 } else {
                                     noticewindow_create(&quot;error&quot;, &quot;カラードライバーがインストールされていません!&quot;);
                                 }
+                            }
+                            document.getElementById(&quot;changeBtn&quot;).addEventListener(&quot;click&quot;, () =&gt; {
+                                setStorage(&quot;manual&quot;);
                             });
                         
                             const colorBtns = document.querySelectorAll(&#039;.color_btn&#039;);
@@ -12261,7 +12225,7 @@
                                     <option value="pink">pink</option>
                                     <option value="orange">orange</option>
                                 </select>
-                                <p><button class="button2" onclick="setStorage2()">color set</button></p>
+                                <p><button class="button2" onclick="setStorage()">color set</button></p>
                                 <button class="button2" onclick="colordata_clear()">colors data clear</button>
                             </div>
                         </div>
