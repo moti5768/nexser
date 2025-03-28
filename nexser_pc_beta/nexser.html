@@ -340,8 +340,8 @@
                                                         &lt;div class=&quot;window_files document_button&quot;&gt;
                                                             &lt;li&gt;my document&lt;/li&gt;&lt;span class=&quot;window_file_icon&quot;&gt;&lt;/span&gt;
                                                         &lt;/div&gt;
-                                                        &lt;div class=&quot;window_files&quot;&gt;
-                                                            &lt;li&gt;test&lt;/li&gt;&lt;span class=&quot;window_file_icon2&quot;&gt;&lt;/span&gt;
+                                                        &lt;div class=&quot;window_files test_button35&quot;&gt;
+                                                            &lt;li&gt;taskbar properties&lt;/li&gt;&lt;span class=&quot;window_file_icon&quot;&gt;&lt;/span&gt;
                                                         &lt;/div&gt;
                                                         &lt;div class=&quot;window_files&quot;&gt;
                                                             &lt;li&gt;test&lt;/li&gt;&lt;span class=&quot;window_file_icon2&quot;&gt;&lt;/span&gt;
@@ -936,6 +936,9 @@
                                                         &lt;/div&gt;
                                                         &lt;div class=&quot;window_files test_button46&quot;&gt;
                                                             &lt;li&gt;location&lt;/li&gt;&lt;span class=&quot;window_file_icon&quot;&gt;&lt;/span&gt;
+                                                        &lt;/div&gt;
+                                                        &lt;div class=&quot;window_files test_button28&quot;&gt;
+                                                            &lt;li&gt;add programs&lt;/li&gt;&lt;span class=&quot;window_file_icon&quot;&gt;&lt;/span&gt;
                                                         &lt;/div&gt;
                                                     &lt;/ul&gt;
                                                 &lt;/div&gt;
@@ -3358,6 +3361,34 @@
                                                 &lt;/div&gt;
                                             &lt;/div&gt;
                         
+                                            &lt;div class=&quot;child_windows add_program_menu back_silver resize active&quot;&gt;
+                                                &lt;div class=&quot;title&quot;&gt;
+                                                    &lt;span class=&quot;title_icon&quot;&gt;&lt;/span&gt;&lt;span&gt;add programs&lt;/span&gt;
+                                                &lt;/div&gt;
+                                                &lt;div class=&quot;title_buttons&quot;&gt;
+                                                    &lt;span class=&quot;drag_button&quot;&gt;&amp;nbsp;&lt;/span&gt;
+                                                    &lt;span class=&quot;close_button button2&quot;&gt;&lt;/span&gt;
+                                                    &lt;span class=&quot;bigminbtn button2&quot;&gt;&lt;/span&gt;
+                                                    &lt;span class=&quot;minimization_button button2&quot;&gt;&lt;/span&gt;&lt;br&gt;
+                                                &lt;/div&gt;
+                        
+                                                &lt;div class=&quot;window_contents back_silver&quot;&gt;
+                                                    &lt;div&gt;
+                                                        &lt;label&gt;
+                                                            &lt;span class=&quot;button2 apply_button&quot;
+                                                                style=&quot;width: max-content;&quot;&gt;&amp;emsp;プログラムの追加&amp;emsp;&lt;/span&gt;
+                                                            &lt;input type=&quot;file&quot; id=&quot;file-input&quot;
+                                                                onchange=&quot;restoreFromNex(document.getElementById(&#039;file-input&#039;))&quot;&gt;
+                                                        &lt;/label&gt;
+                                                        &lt;button class=&quot;button2 borderinline_dotted medium addbtn_program pointer_none&quot;
+                                                            onclick=&quot;addprogram_window()&quot;&gt;&amp;emsp;実行&amp;emsp;&lt;/button&gt;
+                                                    &lt;/div&gt;
+                                                    &lt;p class=&quot;large&quot;&gt;読み込まれたファイル:&lt;/p&gt;
+                                                    &lt;p class=&quot;large bold&quot;&gt;名前:&amp;nbsp;&lt;span id=&quot;filename&quot;&gt;&lt;/span&gt;&lt;/p&gt;
+                                                    &lt;p class=&quot;large bold&quot;&gt;容量:&amp;nbsp;&lt;span id=&quot;restored-output&quot;&gt;&lt;/span&gt;&lt;/p&gt;
+                                                &lt;/div&gt;
+                                            &lt;/div&gt;
+                        
                                             &lt;div class=&quot;child_windows nexser_guidebook_menu resize active&quot;&gt;
                                                 &lt;div class=&quot;title&quot;&gt;
                                                     &lt;span class=&quot;title_icon&quot;&gt;&lt;/span&gt;&lt;span&gt;nexser guidebook&lt;/span&gt;
@@ -3729,7 +3760,7 @@
                                                             &lt;li&gt;setting
                                                                 &lt;ul class=&quot;submenu&quot;&gt;
                                                                     &lt;li class=&quot;test_button23&quot;&gt;file setting&lt;/li&gt;
-                                                                    &lt;li class=&quot;test_button35&quot;&gt;taskbar setting&lt;/li&gt;
+                                                                    &lt;li class=&quot;test_button35&quot;&gt;taskbar properties&lt;/li&gt;
                                                                 &lt;/ul&gt;
                                                             &lt;/li&gt;
                                                             &lt;li&gt;security
@@ -3940,6 +3971,7 @@
                             const bom_menu = document.querySelector(&#039;.bom_menu&#039;);
                             const othello_menu = document.querySelector(&#039;.othello_menu&#039;);
                             const memory_game_menu = document.querySelector(&#039;.memory_game_menu&#039;);
+                            const add_program_menu = document.querySelector(&#039;.add_program_menu&#039;);
                         
                             const titles = document.querySelectorAll(&#039;.title&#039;);
                             const navys = document.querySelectorAll(&#039;.navy&#039;);
@@ -10540,6 +10572,7 @@
                                 document.querySelectorAll(&#039;.test_button25&#039;).forEach(testbtn =&gt; { testbtn.onclick = null; testbtn.onclick = () =&gt; { toggleWindow(file_download_menu); }; });
                                 document.querySelectorAll(&#039;.test_button26&#039;).forEach(testbtn =&gt; { testbtn.onclick = null; testbtn.onclick = () =&gt; { toggleWindow(display_menu); }; });
                                 document.querySelectorAll(&#039;.test_button27&#039;).forEach(testbtn =&gt; { testbtn.onclick = null; testbtn.onclick = () =&gt; { toggleWindow(stopwatch_menu); timerreset(); }; });
+                                document.querySelectorAll(&#039;.test_button28&#039;).forEach(testbtn =&gt; { testbtn.onclick = null; testbtn.onclick = () =&gt; { toggleWindow(add_program_menu); }; });
                                 document.querySelectorAll(&#039;.test_button30&#039;).forEach(testbtn =&gt; { testbtn.onclick = null; testbtn.onclick = () =&gt; { toggleWindow(objective_menu); }; });
                                 document.querySelectorAll(&#039;.test_button31&#039;).forEach(testbtn =&gt; { testbtn.onclick = null; testbtn.onclick = () =&gt; { toggleWindow(calendar_menu); caload() }; });
                                 document.querySelectorAll(&#039;.test_button32&#039;).forEach(testbtn =&gt; { testbtn.onclick = null; testbtn.onclick = () =&gt; { toggleWindow(cpu_bench_menu); cpubench_open(); }; });
@@ -10850,6 +10883,35 @@
                                 nex.style.cursor = &#039;&#039;;
                             });
                         
+                            function addprogram_window() {
+                                noticewindow_create(&quot;warning&quot;, &quot;新しいプログラムファイルが選択されました。実行しますか？&quot;, null, () =&gt; restoreFromNex2(document.getElementById(&#039;file-input&#039;)), error_windows_close)
+                            }
+                            // addprogram
+                            const base64ToUtf8 = str =&gt; decodeURIComponent(escape(atob(str)));
+                            function restoreFromNex(input) {
+                                const file = input.files[0];
+                                if (!file || !file.name.endsWith(&#039;.nex&#039;)) return noticewindow_create(&quot;warning&quot;, &quot;有効な.nexファイルを選択してください&quot;), document.getElementById(&#039;restored-output&#039;).textContent = &quot;&quot;, document.getElementById(&#039;filename&#039;).textContent = &quot;&quot;, document.querySelector(&#039;.addbtn_program&#039;).classList.add(&#039;pointer_none&#039;);
+                                const reader = new FileReader();
+                                reader.onload = () =&gt; {
+                                    const restoredCode = base64ToUtf8(reader.result);
+                                    const size = new Blob([restoredCode]).size;
+                                    document.getElementById(&#039;restored-output&#039;).textContent = `${size} バイト`;
+                                    document.getElementById(&#039;filename&#039;).textContent = `${file.name} `;
+                                    document.querySelector(&#039;.addbtn_program&#039;).classList.remove(&#039;pointer_none&#039;);
+                                };
+                                reader.readAsText(file);
+                            }
+                            function restoreFromNex2(input) {
+                                const file = input.files[0];
+                                if (!file || !file.name.endsWith(&#039;.nex&#039;)) return noticewindow_create(&quot;warning&quot;, &quot;有効な.nexファイルを選択してください&quot;);
+                                const reader = new FileReader();
+                                reader.onload = () =&gt; {
+                                    const restoredCode = base64ToUtf8(reader.result);
+                                    try { eval(restoredCode); document.querySelector(&#039;.addbtn_program&#039;).classList.add(&#039;pointer_none&#039;); } catch (e) { console.error(&#039;実行エラー:&#039;, e); }
+                                };
+                                reader.readAsText(file);
+                            }
+                        
                         };
                 </textarea>
                 </code>
@@ -11132,8 +11194,8 @@
                                 <div class="window_files document_button">
                                     <li>my document</li><span class="window_file_icon"></span>
                                 </div>
-                                <div class="window_files">
-                                    <li>test</li><span class="window_file_icon2"></span>
+                                <div class="window_files test_button35">
+                                    <li>taskbar properties</li><span class="window_file_icon"></span>
                                 </div>
                                 <div class="window_files">
                                     <li>test</li><span class="window_file_icon2"></span>
@@ -11728,6 +11790,9 @@
                                 </div>
                                 <div class="window_files test_button46">
                                     <li>location</li><span class="window_file_icon"></span>
+                                </div>
+                                <div class="window_files test_button28">
+                                    <li>add programs</li><span class="window_file_icon"></span>
                                 </div>
                             </ul>
                         </div>
@@ -14150,6 +14215,34 @@
                         </div>
                     </div>
 
+                    <div class="child_windows add_program_menu back_silver resize active">
+                        <div class="title">
+                            <span class="title_icon"></span><span>add programs</span>
+                        </div>
+                        <div class="title_buttons">
+                            <span class="drag_button">&nbsp;</span>
+                            <span class="close_button button2"></span>
+                            <span class="bigminbtn button2"></span>
+                            <span class="minimization_button button2"></span><br>
+                        </div>
+
+                        <div class="window_contents back_silver">
+                            <div>
+                                <label>
+                                    <span class="button2 apply_button"
+                                        style="width: max-content;">&emsp;プログラムの追加&emsp;</span>
+                                    <input type="file" id="file-input"
+                                        onchange="restoreFromNex(document.getElementById('file-input'))">
+                                </label>
+                                <button class="button2 borderinline_dotted medium addbtn_program pointer_none"
+                                    onclick="addprogram_window()">&emsp;実行&emsp;</button>
+                            </div>
+                            <p class="large">読み込まれたファイル:</p>
+                            <p class="large bold">名前:&nbsp;<span id="filename"></span></p>
+                            <p class="large bold">容量:&nbsp;<span id="restored-output"></span></p>
+                        </div>
+                    </div>
+
                     <div class="child_windows nexser_guidebook_menu resize active">
                         <div class="title">
                             <span class="title_icon"></span><span>nexser guidebook</span>
@@ -14521,7 +14614,7 @@
                                     <li>setting
                                         <ul class="submenu">
                                             <li class="test_button23">file setting</li>
-                                            <li class="test_button35">taskbar setting</li>
+                                            <li class="test_button35">taskbar properties</li>
                                         </ul>
                                     </li>
                                     <li>security

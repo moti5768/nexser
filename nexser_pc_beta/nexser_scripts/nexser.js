@@ -123,6 +123,7 @@ if (ua.includes("mobile")) {
     const bom_menu = document.querySelector('.bom_menu');
     const othello_menu = document.querySelector('.othello_menu');
     const memory_game_menu = document.querySelector('.memory_game_menu');
+    const add_program_menu = document.querySelector('.add_program_menu');
 
     const titles = document.querySelectorAll('.title');
     const navys = document.querySelectorAll('.navy');
@@ -6723,6 +6724,7 @@ if (ua.includes("mobile")) {
         document.querySelectorAll('.test_button25').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(file_download_menu); }; });
         document.querySelectorAll('.test_button26').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(display_menu); }; });
         document.querySelectorAll('.test_button27').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(stopwatch_menu); timerreset(); }; });
+        document.querySelectorAll('.test_button28').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(add_program_menu); }; });
         document.querySelectorAll('.test_button30').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(objective_menu); }; });
         document.querySelectorAll('.test_button31').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(calendar_menu); caload() }; });
         document.querySelectorAll('.test_button32').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(cpu_bench_menu); cpubench_open(); }; });
@@ -7032,5 +7034,34 @@ if (ua.includes("mobile")) {
         isResizing2 = false;
         nex.style.cursor = '';
     });
+
+    function addprogram_window() {
+        noticewindow_create("warning", "新しいプログラムファイルが選択されました。実行しますか？", null, () => restoreFromNex2(document.getElementById('file-input')), error_windows_close)
+    }
+    // addprogram
+    const base64ToUtf8 = str => decodeURIComponent(escape(atob(str)));
+    function restoreFromNex(input) {
+        const file = input.files[0];
+        if (!file || !file.name.endsWith('.nex')) return noticewindow_create("warning", "有効な.nexファイルを選択してください"), document.getElementById('restored-output').textContent = "", document.getElementById('filename').textContent = "", document.querySelector('.addbtn_program').classList.add('pointer_none');
+        const reader = new FileReader();
+        reader.onload = () => {
+            const restoredCode = base64ToUtf8(reader.result);
+            const size = new Blob([restoredCode]).size;
+            document.getElementById('restored-output').textContent = `${size} バイト`;
+            document.getElementById('filename').textContent = `${file.name} `;
+            document.querySelector('.addbtn_program').classList.remove('pointer_none');
+        };
+        reader.readAsText(file);
+    }
+    function restoreFromNex2(input) {
+        const file = input.files[0];
+        if (!file || !file.name.endsWith('.nex')) return noticewindow_create("warning", "有効な.nexファイルを選択してください");
+        const reader = new FileReader();
+        reader.onload = () => {
+            const restoredCode = base64ToUtf8(reader.result);
+            try { eval(restoredCode); document.querySelector('.addbtn_program').classList.add('pointer_none'); } catch (e) { console.error('実行エラー:', e); }
+        };
+        reader.readAsText(file);
+    }
 
 };

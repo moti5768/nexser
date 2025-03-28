@@ -848,6 +848,11 @@ input[type="file"] {
     height: auto;
 }
 
+.add_program_menu {
+    width: 300px;
+    height: 150px;
+}
+
 .delete_btn {
     margin: 2px;
 }
