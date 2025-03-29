@@ -1320,7 +1320,6 @@ if (ua.includes("mobile")) {
         document.querySelectorAll('.task_buttons').forEach(task_buttons => task_buttons.remove());
         document.querySelectorAll('.testwindow2').forEach(win => win.remove());
         document.querySelectorAll('.error_windows').forEach(win => win.remove());
-        document.querySelectorAll('.clones').forEach(win => win.remove());
         document.querySelectorAll('.child_windows').forEach(win => {
             win.style.zIndex = "0";["background", "border", "boxShadow", "mixBlendMode", "opacity"].forEach(style => win.style[style] = "");
             Array.from(win.children).forEach(child => child.style.display = "");
@@ -2644,6 +2643,7 @@ if (ua.includes("mobile")) {
         });
         if (frontmostElement) {
             frontmostElement.firstElementChild.classList.add(newClassName);
+            console.log(frontmostElement)
             startmenu_close();
             if (localStorage.getItem('titlebtn_left')) {
                 addLeftClass();
@@ -2702,7 +2702,6 @@ if (ua.includes("mobile")) {
     };
     resizeBackgroundImage();
 
-    let clones = false;
     function addDragButtonListeners(button) {
         if (!button.dataset.listenerAdded) {
             const dragwindow = button.closest('.child_windows');
@@ -2725,6 +2724,13 @@ if (ua.includes("mobile")) {
                 overlay.style.width = '100%';
                 overlay.style.height = '100%';
                 overlay.style.zIndex = 9999;
+                if (e.target.classList.contains("drag_button") && !localStorage.getItem('window_afterimage_false')) {
+                    const closestWindow = e.target.closest(".child_windows");
+                    const rect = closestWindow.getBoundingClientRect();
+                    draggingElement = closestWindow;
+                    offsetX = e.clientX - rect.left;
+                    offsetY = e.clientY - rect.top;
+                }
                 document.body.appendChild(overlay);
                 document.body.addEventListener("mousemove", mmove, { passive: false }, false);
                 document.body.addEventListener("touchmove", mmove, { passive: false }, false);
@@ -2734,45 +2740,60 @@ if (ua.includes("mobile")) {
 
             let originalDragData = null;
             let isSnapped = false;
+            let windowMoveElement = null;
+            let draggingElement = null;
             function mmove(e) {
                 const drag = document.getElementsByClassName("drag")[0];
                 const screenWidth = window.innerWidth;
                 const screenHeight = window.innerHeight;
                 const event = e.type === "mousemove" ? e : e.changedTouches[0];
-                if (!isSnapped) {
-                    drag.style.top = event.pageY - y + "px";
-                    drag.style.left = event.pageX - x + "px";
-                }
-                if (!clones && !localStorage.getItem('window_afterimage_false')) {
-                    const clone = dragwindow.cloneNode(true);
-                    dragwindow.parentNode.appendChild(clone).classList.add('clones');
-                    if (!dragwindow.classList.contains('overzindex')) {
-                        [clone, dragwindow].forEach(el => el.style.zIndex = largestZIndex++);
+
+                if (!windowMoveElement && !localStorage.getItem('window_afterimage_false')) {
+                    let width = drag.offsetWidth;
+                    let height = drag.offsetHeight;
+                    windowMoveElement = document.createElement("div");
+                    windowMoveElement.className = "window_move";
+                    if (drag.classList.contains('resize')) {
+                        windowMoveElement.classList.add('resize');
                     }
-                    requestAnimationFrame(() => {
-                        dragwindow.parentNode.appendChild(clone).children[0].classList.add('navy');
-                        applyStyles(dragwindow);
-                        titlecolor_set();
-                    });
-                    clones = true;
+                    windowMoveElement.style.width = `${width}px`;
+                    windowMoveElement.style.height = `${height}px`;
+                    windowMoveElement.style.position = "absolute";
+                    applyStyles(windowMoveElement);
+                    document.body.appendChild(windowMoveElement);
+                    windowMoveElement.style.zIndex = largestZIndex++;
                 }
+
+                if (!isSnapped && !localStorage.getItem('window_afterimage_false')) {
+                    windowMoveElement.style.top = `${event.pageY - y}px`;
+                    windowMoveElement.style.left = `${event.pageX - x}px`;
+                } else if (!isSnapped) {
+                    drag.style.top = `${event.pageY - y}px`;
+                    drag.style.left = `${event.pageX - x}px`;
+                }
+                const haha = document.querySelector('.window_move') || drag;
                 if (localStorage.getItem('window_invisible') && localStorage.getItem('window_afterimage_false')) {
-                    drag.style.opacity = "0.5";
+                    haha.style.opacity = "0.5";
                 } else if (localStorage.getItem('window_borderblack') && localStorage.getItem('window_afterimage_false')) {
-                    applyStyles(drag);
+                    applyStyles(haha);
                 }
+
                 if (e.clientX <= 0 && !isSnapped) {
-                    saveOriginalData(drag);
-                    snapWindow(drag, "left", screenWidth, screenHeight);
+                    saveOriginalData(haha);
+                    snapWindow(haha, "left", screenWidth, screenHeight);
                 } else if (e.clientX >= screenWidth - 1 && !isSnapped) {
-                    saveOriginalData(drag);
-                    snapWindow(drag, "right", screenWidth, screenHeight);
+                    saveOriginalData(haha);
+                    snapWindow(haha, "right", screenWidth, screenHeight);
                 } else if (isSnapped && e.clientX > 0 && e.clientX < screenWidth - 1) {
                     setTimeout(() => {
-                        restoreOriginalData(drag);
-                        drag.classList.remove('w_left', 'w_right');
+                        restoreOriginalData(haha);
+                        haha.classList.remove('w_left', 'w_right');
+                        if (draggingElement) {
+                            draggingElement.classList.remove('w_left', 'w_right');
+                        }
                     }, 0);
                 }
+
                 taskbar.addEventListener('mouseover', function () {
                     document.body.removeEventListener("mousemove", mmove, false);
                     document.body.removeEventListener("touchmove", mmove, false);
@@ -2797,12 +2818,18 @@ if (ua.includes("mobile")) {
                         drag.style.top = "0px";
                         drag.style.left = "0px";
                         drag.classList.add('w_left');
+                        if (draggingElement) {
+                            draggingElement.classList.add('w_left');
+                        }
                     } else if (position === "right") {
                         drag.style.width = `${screenWidth / 2}px`;
                         drag.style.height = `${screenHeight - taskbar.clientHeight}px`;
                         drag.style.top = "0px";
                         drag.style.left = `${screenWidth / 2}px`;
                         drag.classList.add('w_right');
+                        if (draggingElement) {
+                            draggingElement.classList.add('w_right');
+                        }
                     }
                     if (localStorage.getItem('taskbar_autohide')) {
                         drag.style.height = `${screenHeight}px`;
@@ -2822,6 +2849,7 @@ if (ua.includes("mobile")) {
 
             function mup() {
                 const drag = document.getElementsByClassName("drag")[0];
+                drag.style.opacity = "";
                 if (drag) {
                     drag.classList.remove("drag");
                 }
@@ -2832,13 +2860,18 @@ if (ua.includes("mobile")) {
                 if (overlay) {
                     document.body.removeChild(overlay);
                 }
-                ["background", "border", "boxShadow", "mixBlendMode", "opacity"].forEach(style => drag.style[style] = "");
-                Array.from(drag.children).forEach(child => child.style.display = "");
-                windowtool();
-                if (clones && !localStorage.getItem('window_afterimage_false')) {
-                    document.querySelector('.clones').remove();
+                if (windowMoveElement && draggingElement && !localStorage.getItem('window_afterimage_false')) {
+                    const rect = windowMoveElement.getBoundingClientRect();
+                    const width = windowMoveElement.clientWidth;
+                    const height = windowMoveElement.clientHeight;
+                    draggingElement.style.top = `${rect.top}px`;
+                    draggingElement.style.left = `${rect.left}px`;
+                    draggingElement.style.width = `${width}px`;
+                    draggingElement.style.height = `${height}px`;
+                    document.body.removeChild(windowMoveElement);
+                    windowMoveElement = null;
+                    draggingElement = null;
                 }
-                clones = false;
             }
             button.dataset.listenerAdded = true;
         }
@@ -2887,7 +2920,6 @@ if (ua.includes("mobile")) {
             boxShadow: "none",
             mixBlendMode: "difference"
         });
-        Array.from(element.children).forEach(child => child.style.display = "none");
     }
 
     function check(elm1, elm2) {
@@ -4677,93 +4709,91 @@ if (ua.includes("mobile")) {
         observer_resizer.observe(document.body, { childList: true, subtree: true });
     }
     function attachResizeHandlers(element) {
-        const resizers = element.querySelectorAll('.resizer');
-        const minSize = 20;
-        let originalWidth, originalHeight, originalX, originalY, originalMouseX, originalMouseY;
-        let overlay;
-        resizers.forEach(resizer => {
+        const minSize = parseFloat(getComputedStyle(element).minWidth) || 20;
+        const minHeight = parseFloat(getComputedStyle(element).minHeight) || 20;
+        const maxSize = parseFloat(getComputedStyle(element).maxWidth) || Infinity;
+        const maxHeight = parseFloat(getComputedStyle(element).maxHeight) || Infinity;
+        let resizing = false, overlay, tempElement, orig = {}, largestZIndex = 1000;
+        element.querySelectorAll('.resizer').forEach(resizer => {
             resizer.addEventListener('mousedown', e => {
                 e.preventDefault();
-                const styles = getComputedStyle(element);
-                originalWidth = parseFloat(styles.width);
-                originalHeight = parseFloat(styles.height);
-                originalX = element.getBoundingClientRect().left;
-                originalY = element.getBoundingClientRect().top;
-                originalMouseX = e.pageX;
-                originalMouseY = e.pageY;
-                overlay = document.createElement('div');
-                overlay.style.position = 'fixed';
-                overlay.style.top = 0;
-                overlay.style.left = 0;
-                overlay.style.width = '100%';
-                overlay.style.height = '100%';
-                overlay.style.zIndex = 100;
-                overlay.style.cursor = getComputedStyle(resizer).cursor;
-                document.body.appendChild(overlay);
+                if (tempElement && localStorage.getItem('window_afterimage_false')) {
+                    tempElement = null;
+                }
+                const rect = element.getBoundingClientRect(), styles = getComputedStyle(element);
+                Object.assign(orig, {
+                    w: parseFloat(styles.width), h: parseFloat(styles.height),
+                    x: rect.left, y: rect.top, mx: e.pageX, my: e.pageY
+                });
+                resizing = true;
+                if (!localStorage.getItem('window_afterimage_false')) {
+                    tempElement = document.createElement('div');
+                    tempElement.style.position = 'absolute';
+                    tempElement.style.left = `${orig.x}px`;
+                    tempElement.style.top = `${orig.y}px`;
+                    tempElement.style.width = `${orig.w}px`;
+                    tempElement.style.height = `${orig.h}px`;
+                    tempElement.style.zIndex = `${largestZIndex++}`;
+                    applyStyles(tempElement);
+                    document.body.appendChild(tempElement);
+
+                    overlay = document.createElement('div');
+                    overlay.style.position = 'fixed';
+                    overlay.style.top = '0';
+                    overlay.style.left = '0';
+                    overlay.style.width = '100%';
+                    overlay.style.height = '100%';
+                    overlay.style.cursor = getComputedStyle(resizer).cursor;
+                    document.body.appendChild(overlay);
+                    document.body.style.cursor = getComputedStyle(resizer).cursor;
+                }
+                const resize = e => {
+                    const dx = e.pageX - orig.mx, dy = e.pageY - orig.my, target = tempElement || element;
+                    if (/right/.test(resizer.className)) {
+                        target.style.width = `${Math.min(Math.max(orig.w + dx, minSize), maxSize)}px`;
+                    }
+                    if (/left/.test(resizer.className)) {
+                        const newWidth = orig.w - dx;
+                        target.style.width = `${Math.min(Math.max(newWidth, minSize), maxSize)}px`;
+                        if (newWidth >= minSize && newWidth <= maxSize) {
+                            target.style.left = `${orig.x + dx}px`;
+                        } else if (newWidth < minSize) {
+                            target.style.left = `${orig.x + (orig.w - minSize)}px`;
+                        }
+                    }
+                    if (/bottom/.test(resizer.className)) {
+                        target.style.height = `${Math.min(Math.max(orig.h + dy, minHeight), maxHeight)}px`;
+                    }
+                    if (/top/.test(resizer.className)) {
+                        const newHeight = orig.h - dy;
+                        target.style.height = `${Math.min(Math.max(newHeight, minHeight), maxHeight)}px`;
+                        if (newHeight >= minHeight && newHeight <= maxHeight) {
+                            target.style.top = `${orig.y + dy}px`;
+                        } else if (newHeight < minHeight) {
+                            target.style.top = `${orig.y + (orig.h - minHeight)}px`;
+                        }
+                    }
+                };
+                const stopResize = () => {
+                    if (resizing) {
+                        if (tempElement) {
+                            element.style.width = tempElement.style.width;
+                            element.style.height = tempElement.style.height;
+                            element.style.left = tempElement.style.left;
+                            element.style.top = tempElement.style.top;
+                            tempElement.remove();
+                            overlay.remove();
+                        }
+                        element.classList.remove('w_left', 'w_right');
+                        document.body.style.cursor = 'default';
+                        resizing = false;
+                        window.removeEventListener('mousemove', resize);
+                        window.removeEventListener('mouseup', stopResize);
+                    }
+                };
                 window.addEventListener('mousemove', resize);
                 window.addEventListener('mouseup', stopResize);
             });
-            function resize(e) {
-                const dx = e.pageX - originalMouseX;
-                const dy = e.pageY - originalMouseY;
-                const resizer2 = resizer.closest('.child_windows');
-                resizer2.classList.remove('w_left', 'w_right');
-                if (resizer.classList.contains('right') || resizer.classList.contains('bottom-right') || resizer.classList.contains('top-right')) {
-                    const newWidth = originalWidth + dx;
-                    if (newWidth > minSize) element.style.width = newWidth + 'px';
-                }
-                if (resizer.classList.contains('left') || resizer.classList.contains('bottom-left') || resizer.classList.contains('top-left')) {
-                    const newWidth = originalWidth - dx;
-                    if (newWidth > minSize) {
-                        element.style.width = newWidth + 'px';
-                        element.style.left = originalX + dx + 'px';
-                    }
-                }
-                if (resizer.classList.contains('bottom') || resizer.classList.contains('bottom-right') || resizer.classList.contains('bottom-left')) {
-                    const newHeight = originalHeight + dy;
-                    if (newHeight > minSize) element.style.height = newHeight + 'px';
-                }
-                if (resizer.classList.contains('top') || resizer.classList.contains('top-right') || resizer.classList.contains('top-left')) {
-                    const newHeight = originalHeight - dy;
-                    if (newHeight > minSize) {
-                        element.style.height = newHeight + 'px';
-                        element.style.top = originalY + dy + 'px';
-                    }
-                }
-                if (!clones && !localStorage.getItem('window_afterimage_false')) {
-                    const clone = resizer2.cloneNode(true);
-                    resizer2.parentNode.appendChild(clone).classList.add('clones');
-                    [clone, resizer2].forEach(el => el.style.zIndex = largestZIndex++);
-                    requestAnimationFrame(() => {
-                        clone.parentNode.appendChild(clone).children[0].classList.add('navy');
-                        applyStyles(resizer2);
-                        titlecolor_set();
-                    });
-                    clones = true;
-                }
-                taskbar.addEventListener('mousemove', stopResize);
-            }
-            function stopResize() {
-                const resizer2 = resizer.closest('.child_windows');
-                taskbar.removeEventListener('mousemove', stopResize);
-                window.removeEventListener('mousemove', resize);
-                window.removeEventListener('mouseup', stopResize);
-                if (overlay.parentNode) {
-                    document.body.removeChild(overlay);
-                }
-                if (clones && !localStorage.getItem('window_afterimage_false')) {
-                    resizer2.style.background = "";
-                    resizer2.style.borderStyle = "";
-                    resizer2.style.borderColor = "";
-                    resizer2.style.borderWidth = "";
-                    resizer2.style.boxShadow = "";
-                    resizer2.style.mixBlendMode = "";
-                    Array.from(resizer2.children).forEach(child => child.style.display = "");
-                    document.querySelector('.clones').remove();
-                }
-                windowtool();
-                clones = false;
-            }
         });
     }
     makeResizableDivs('.resize');
@@ -4979,7 +5009,7 @@ if (ua.includes("mobile")) {
     const taskbar_b = document.getElementById('task_buttons2');
     function test_windows_button() {
         document.querySelectorAll('.task_buttons').forEach(task_buttons => task_buttons.remove());
-        document.querySelectorAll('.child_windows:not(.no_window):not(.clones):not(.active)').forEach(windowElement => {
+        document.querySelectorAll('.child_windows:not(.no_window):not(.active)').forEach(windowElement => {
             const nestedChild2 = windowElement.children[0].children[1].textContent;
             const button = document.createElement('div');
             button.className = 'task_buttons button2';
@@ -5333,10 +5363,8 @@ if (ua.includes("mobile")) {
                     if (file.type.startsWith('image/')) {
                         addMediaContent('img', result);
                         const entryDiv = document.createElement('div');
-                        entryDiv.innerHTML = `
-    <div class="window_bottom border2">
-        <span class="button2" onclick="updateWallpaper('${url}')">画像を背景に適用</span>
-    </div>`;
+                        entryDiv.innerHTML = `<div class="window_bottom border2">
+        <span class="button2" onclick="updateWallpaper('${url}')">画像を背景に適用</span></div>`;
                         windowDiv.appendChild(entryDiv);
                     } else if (file.type.startsWith('video/')) {
                         addMediaContent('video', result);
@@ -6111,6 +6139,12 @@ if (ua.includes("mobile")) {
             }
             entryDiv.children[1].children[1].style.display = "none";
         }
+        entryDiv.style.maxHeight = "0px";
+        entryDiv.style.maxWidth = "0px";
+        const rect = entryDiv.getBoundingClientRect();
+        entryDiv.style.left = `${rect.left}px`;
+        entryDiv.style.top = `${rect.top}px`;
+        entryDiv.style.transform = "none";
         entryDiv.style.zIndex = largestZIndex++;
     }
 

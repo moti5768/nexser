@@ -1053,8 +1053,8 @@ body::-webkit-scrollbar {
     list-style: none;
     display: block;
     font-size: 15px;
-    width: auto;
-    height: auto;
+    min-width: max-content;
+    min-height: max-content;
     background: whitesmoke;
     color: black;
     border: 3.5px solid #c0c0c0;
@@ -2947,4 +2947,11 @@ progress::-webkit-progress-value {
     cursor: ns-resize;
     background-color: transparent;
     z-index: 1;
+}
+
+
+.window_move {
+    box-sizing: border-box;
+    position: relative;
+    transform: none;
 }
