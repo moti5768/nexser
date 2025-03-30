@@ -931,6 +931,7 @@ body::-webkit-scrollbar {
     font-size: 15px;
     width: 700px;
     height: 400px;
+    position: absolute;
 }
 
 .welicon_1 {

@@ -1108,6 +1108,7 @@ if (ua.includes("mobile")) {
         welcomeUnderline.style.width = '0';
         welcomeText2.style.display = 'none';
         welcomeIcons.style.display = 'none';
+        windowpos_fix(welcome_menu)
         setTimeout(() => {
             welcomeText1.style.transition = '0.25s cubic-bezier(0, 0, 1, 1)';
             welcomeText1.style.fontSize = '40px';
@@ -2611,7 +2612,7 @@ if (ua.includes("mobile")) {
                 document.querySelector('.cpubuttons').style.display = "none";
                 document.querySelector('.cputitle').style.display = "none";
                 cpumenu2.style.display = "block";
-                document.querySelector('.cpubuttons').style.display = "block";
+                document.querySelector('.cpubuttons').style.display = "flex";
                 document.querySelector('.cputitle').style.display = "flex";
             }, 3000);
         }
@@ -2763,7 +2764,6 @@ if (ua.includes("mobile")) {
                     document.body.appendChild(windowMoveElement);
                     windowMoveElement.style.zIndex = largestZIndex++;
                 }
-
                 if (!isSnapped && !localStorage.getItem('window_afterimage_false')) {
                     windowMoveElement.style.top = `${event.pageY - y}px`;
                     windowMoveElement.style.left = `${event.pageX - x}px`;
@@ -2777,7 +2777,6 @@ if (ua.includes("mobile")) {
                 } else if (localStorage.getItem('window_borderblack') && localStorage.getItem('window_afterimage_false')) {
                     applyStyles(haha);
                 }
-
                 if (e.clientX <= 0 && !isSnapped) {
                     saveOriginalData(haha);
                     snapWindow(haha, "left", screenWidth, screenHeight);
@@ -2793,7 +2792,6 @@ if (ua.includes("mobile")) {
                         }
                     }, 0);
                 }
-
                 taskbar.addEventListener('mouseover', function () {
                     document.body.removeEventListener("mousemove", mmove, false);
                     document.body.removeEventListener("touchmove", mmove, false);
@@ -2846,7 +2844,6 @@ if (ua.includes("mobile")) {
                     isSnapped = false;
                 }
             }
-
             function mup() {
                 const drag = document.getElementsByClassName("drag")[0];
                 drag.style.opacity = "";
@@ -4910,15 +4907,14 @@ if (ua.includes("mobile")) {
     windowposition_reset()
     function windowposition_reset() {
         allwindows.forEach(element => {
-            element.style.left = "130px";
-            element.style.top = "130px";
+            welcome_menu.style.left = "50%";
+            welcome_menu.style.top = "50%";
+            welcome_menu.style.transform = "translate(-50%, -50%)";
+            if (!element.classList.contains('content_center')) {
+                element.style.left = "130px";
+                element.style.top = "130px";
+            }
         });
-        pass_signin_menu.style.top = "50%";
-        pass_signin_menu.style.left = "50%";
-        pass_signin_menu.style.transform = "translate(-50%, -50%)";
-        welcome_menu.style.top = "50%";
-        welcome_menu.style.left = "50%";
-        welcome_menu.style.transform = "translate(-50%, -50%)";
     }
 
     var parents = document.querySelectorAll('.parentss');
@@ -6141,10 +6137,7 @@ if (ua.includes("mobile")) {
         }
         entryDiv.style.maxHeight = "0px";
         entryDiv.style.maxWidth = "0px";
-        const rect = entryDiv.getBoundingClientRect();
-        entryDiv.style.left = `${rect.left}px`;
-        entryDiv.style.top = `${rect.top}px`;
-        entryDiv.style.transform = "none";
+        windowpos_fix(entryDiv);
         entryDiv.style.zIndex = largestZIndex++;
     }
 
@@ -7096,6 +7089,13 @@ if (ua.includes("mobile")) {
             try { eval(restoredCode); document.querySelector('.addbtn_program').classList.add('pointer_none'); } catch (e) { console.error('実行エラー:', e); }
         };
         reader.readAsText(file);
+    }
+
+    function windowpos_fix(win) {
+        const rect = win.getBoundingClientRect();
+        win.style.left = `${rect.left}px`;
+        win.style.top = `${rect.top}px`;
+        win.style.transform = "none";
     }
 
 };
