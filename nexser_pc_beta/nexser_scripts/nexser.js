@@ -378,9 +378,6 @@ if (ua.includes("mobile")) {
         if (localStorage.getItem('window_invisible')) {
             document.querySelector('.windowmode').textContent = "invisible"
         }
-        if (localStorage.getItem('window_borderblack')) {
-            document.querySelector('.windowmode').textContent = "border black"
-        }
         if (localStorage.getItem('window_afterimage_false')) {
             document.querySelector('.windowafter').textContent = "OFF"
         }
@@ -1247,10 +1244,9 @@ if (ua.includes("mobile")) {
 
     function windowmode_reset() {
         localStorage.removeItem('window_invisible');
-        localStorage.removeItem('window_borderblack');
         document.querySelector('.windowmode').textContent = "default"
     }
-    const modes = { window_invisible: "invisible", window_borderblack: "border black" };
+    const modes = { window_invisible: "invisible" };
     Object.entries(modes).forEach(([id, textContent]) =>
         document.getElementById(id).addEventListener('click', () => {
             localStorage.getItem(id) ? localStorage.removeItem(id) : (windowmode_reset(), localStorage.setItem(id, true));
@@ -2774,8 +2770,6 @@ if (ua.includes("mobile")) {
                 const haha = document.querySelector('.window_move') || drag;
                 if (localStorage.getItem('window_invisible') && localStorage.getItem('window_afterimage_false')) {
                     haha.style.opacity = "0.5";
-                } else if (localStorage.getItem('window_borderblack') && localStorage.getItem('window_afterimage_false')) {
-                    applyStyles(haha);
                 }
                 if (e.clientX <= 0 && !isSnapped) {
                     saveOriginalData(haha);
