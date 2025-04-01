@@ -2120,8 +2120,8 @@ textarea {
     position: relative;
     width: 1em;
     height: 1em;
-    color: black;
-    font-size: 15px;
+    color: #555555;
+    font-size: 16px;
 }
 
 .magnifying_glass::before {
@@ -2133,7 +2133,7 @@ textarea {
     box-sizing: border-box;
     border: 0.15em solid currentColor;
     border-radius: 50%;
-    background-color: skyblue;
+    background: linear-gradient(-45deg, skyblue 30%, whitesmoke);
     content: "";
     z-index: 1;
 }
@@ -2144,12 +2144,13 @@ textarea {
     left: 50%;
     z-index: -1;
     transform: rotate(-45deg);
-    width: 0.15em;
+    width: 0.125em;
     height: 1em;
     box-sizing: border-box;
     background-color: currentColor;
     content: "";
     z-index: 0;
+    color: #555555;
 }
 
 /* tetris */
