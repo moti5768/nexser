@@ -657,7 +657,7 @@ input[type="file"] {
     height: auto;
     background: whitesmoke;
     color: black;
-    border: 2.8px solid #c0c0c0;
+    border: 2px solid #c0c0c0;
     box-shadow: 1.8px 1.8px #333333, -1.8px -1.8px whitesmoke;
     position: absolute;
     z-index: 1;
@@ -1058,7 +1058,7 @@ body::-webkit-scrollbar {
     min-height: max-content;
     background: whitesmoke;
     color: black;
-    border: 3.5px solid #c0c0c0;
+    border: 2px solid #c0c0c0;
     box-shadow: 1.5px 1.5px #333333, -1.5px -1.5px whitesmoke;
     position: absolute;
     top: 50%;
@@ -1591,7 +1591,6 @@ body::-webkit-scrollbar {
     align-items: center;
     height: 24px;
     position: relative;
-    bottom: 0.5px;
     user-select: none;
     padding-right: 2px;
     z-index: 1;
@@ -2120,7 +2119,7 @@ textarea {
     position: relative;
     width: 1em;
     height: 1em;
-    color: #555555;
+    color: #333333;
     font-size: 16px;
 }
 

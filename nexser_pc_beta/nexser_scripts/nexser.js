@@ -2907,7 +2907,7 @@ if (ua.includes("mobile")) {
     function applyStyles(element) {
         Object.assign(element.style, {
             background: "rgba(0, 0, 0, 0)",
-            border: "solid 3px #fff",
+            border: "solid 2px #fff",
             boxShadow: "none",
             mixBlendMode: "difference"
         });
