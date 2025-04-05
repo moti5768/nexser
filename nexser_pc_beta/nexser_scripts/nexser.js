@@ -3073,10 +3073,10 @@ if (ua.includes("mobile")) {
 
     function titlecolor_remove() {
         document.querySelectorAll('.title, .navy').forEach(el => el.style.background = "");
-        ['titlebar_red', 'titlebar_blue', 'titlebar_green', 'titlebar_yellow', 'titlebar_orange', 'titlebar_pink', 'titlebar_purple', 'titlebar_black', 'titlebar_teal', 'titlebar_new'].forEach(item => localStorage.removeItem(item));
+        ['titlebar_red', 'titlebar_blue', 'titlebar_green', 'titlebar_yellow', 'titlebar_orange', 'titlebar_pink', 'titlebar_purple', 'titlebar_black', 'titlebar_teal', 'titlebar_new', 'titlebar_new2'].forEach(item => localStorage.removeItem(item));
     }
 
-    ['red', 'blue', 'green', 'yellow', 'orange', 'pink', 'purple', 'black', 'teal', 'new'].forEach(color => {
+    ['red', 'blue', 'green', 'yellow', 'orange', 'pink', 'purple', 'black', 'teal', 'new', 'new2'].forEach(color => {
         document.querySelector(`.titlebar_${color}`).addEventListener('click', () => {
             localStorage.setItem(`titlebar_${color}`, `titlebar_${color}`);
         });
@@ -3093,7 +3093,8 @@ if (ua.includes("mobile")) {
             titlebar_purple: ["#5507FF", "purple"],
             titlebar_black: ["#555555", "black"],
             titlebar_teal: ["#483D8B", "teal"],
-            titlebar_new: ["linear-gradient(to right, #5b5b5b, #C0C0C0)", "linear-gradient(to right, #02175e, #A3C1E2)"]
+            titlebar_new: ["linear-gradient(to right, #5b5b5b, #C0C0C0)", "linear-gradient(to right, #02175e, #A3C1E2)"],
+            titlebar_new2: ["linear-gradient(to right, #5b5b5b, #C0C0C0)", "linear-gradient(to right, black, blue)"]
         };
         if (!localStorage.getItem('driver_color')) return;
         Object.entries(colors).forEach(([key, [bgColor, navyColor]]) => {
