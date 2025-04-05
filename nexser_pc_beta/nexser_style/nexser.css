@@ -1558,15 +1558,11 @@ body::-webkit-scrollbar {
     top: 20px;
     left: 0px;
     font-size: medium;
-    text-align: center;
-    justify-content: center;
 }
 
 .window_menus_title {
     font-size: x-large;
     font-weight: bold;
-    position: absolute;
-    left: 0px;
 }
 
 .window_menu_right_content {
@@ -2858,6 +2854,18 @@ progress::-webkit-progress-value {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
+}
+
+.content_left {
+    display: inline-block;
+    margin-left: 0;
+    width: auto;
+}
+
+.content_right {
+    display: inline-block;
+    margin-right: 0;
+    width: auto;
 }
 
 .color_panel_parent {

@@ -2640,10 +2640,12 @@ if (ua.includes("mobile")) {
         });
         if (frontmostElement) {
             frontmostElement.firstElementChild.classList.add(newClassName);
-            console.log(frontmostElement)
             startmenu_close();
             if (localStorage.getItem('titlebtn_left')) {
                 addLeftClass();
+            }
+            if (savedStyle) {
+                windowtitle_style(savedStyle);
             }
         }
         return frontmostElement;
@@ -2911,6 +2913,20 @@ if (ua.includes("mobile")) {
             boxShadow: "none",
             mixBlendMode: "difference"
         });
+    }
+
+    let savedStyle = localStorage.getItem("currentStyle");
+    function windowtitle_style(style) {
+        document.querySelectorAll('.title').forEach(title => {
+            title.style.fontStyle = style || "";
+        });
+        if (style === null) {
+            localStorage.removeItem("currentStyle");
+            savedStyle = null;
+        } else {
+            localStorage.setItem("currentStyle", style);
+            savedStyle = localStorage.getItem("currentStyle");
+        }
     }
 
     function check(elm1, elm2) {
@@ -4601,10 +4617,11 @@ if (ua.includes("mobile")) {
         { key: 'wallpaper_xp', src: 'nexser_image/Windowsxp_wallpaper.jpg' },
         { key: 'wallpaper_space', src: 'nexser_image/space_wallpaper.png' }
     ];
-    const [bgImg2, bgContainer, miniDesktop] = [
+    const [bgImg2, bgContainer, miniDesktop, deskimg] = [
         document.querySelector(".nexser_backgroundimage_child"),
         document.querySelector('.nexser_backgroundimage'),
-        document.querySelector('.mini_desktop')
+        document.querySelector('.mini_desktop'),
+        document.querySelector('.desk_img')
     ];
     function updateWallpaper(src = "") {
         localStorage.setItem('selectedWallpaper', src);
@@ -4613,11 +4630,24 @@ if (ua.includes("mobile")) {
             bgContainer.style.display = src ? "block" : "none";
         }
         miniDesktop.innerHTML = src ? `<img src="${src}" style="width: 100%; height: 100%;">` : "";
+        deskimg.innerHTML = src ? `<img src="${src}" style="width: 100%; height: 100%;">` : "";
     };
     const applySavedWallpaper = () => updateWallpaper(localStorage.getItem('selectedWallpaper') || "");
     wallpapers.forEach(({ key, src }) =>
         document.querySelector(`.${key}`)?.addEventListener('click', () => updateWallpaper(src))
     );
+    wallpapers.forEach(({ key, src }) => {
+        const element = document.querySelector(`.${key}`);
+        if (element) {
+            element.addEventListener('mouseover', () => {
+                deskimg.innerHTML = src ? `<img src="${src}" style="width: 100%; height: 100%;">` : "";
+            });
+            element.addEventListener('mouseleave', () => {
+                deskimg.innerHTML = "";
+            });
+        }
+    });
+
     const resetWallpaper = () => {
         localStorage.removeItem('selectedWallpaper');
         updateWallpaper();

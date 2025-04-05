@@ -1665,10 +1665,9 @@
                                         <li>&nbsp;window&nbsp;</li>
                                     </ul>
                                     <div class="window_inline_menus_child menuchild1">
-                                        <p style="display: block; text-align: left; width: 150px; margin-top: 5px; margin-left: 5px;"
-                                            class="border">
+                                        <p style="margin: 5px;" class="border bold content_left">
                                             window titlebar color</p>
-                                        <ul style="display: flex; margin-left: 10px; margin-top: 5px;">
+                                        <ul style="display: flex; margin-left: 10px;">
                                             <li class="color_btn button2 titlebar_red" style="background: red;">
                                             </li>
                                             <li class="color_btn button2 titlebar_blue" style="background: blue;">
@@ -1693,10 +1692,9 @@
                                             <li class="color_btn button2"></li>
                                         </ul>
 
-                                        <p style="display: block; text-align: left; width: 140px; margin-top: 5px; margin-left: 5px;"
-                                            class="border">
+                                        <p style="margin: 5px;" class="border bold content_left">
                                             background pattern</p>
-                                        <ul style="display: flex; margin-left: 10px; margin-top: 5px;">
+                                        <ul style="display: flex; margin-left: 10px;">
                                             <li class="pattern_btn button2 back_pattern_1">
                                                 <span class="backgrounds1"></span>
                                             </li>
@@ -1727,10 +1725,9 @@
                                             <li class="pattern_btn button2"></li>
                                         </ul>
 
-                                        <p style="display: block; text-align: left; width: 140px; margin-top: 5px; margin-left: 5px;"
-                                            class="border">
+                                        <p style="margin: 5px;" class="border bold content_left">
                                             display</p>
-                                        <ul style="display: flex; margin-left: 10px; margin-top: 5px;">
+                                        <ul style="display: flex; margin-left: 10px;">
                                             <li class="display_pattern_btn button2">
                                                 <span
                                                     style="display: block; height:100%; background: linear-gradient(45deg,black 50%,white 50%);"
@@ -1749,9 +1746,9 @@
                                             <li class="display_pattern_btn button2" onclick="backcolorfilter_clear()">
                                             </li>
                                         </ul>
-                                        <div>
+                                        <div style="margin: 5px;">
                                             <span class="button2"
-                                                onclick="titlebtn_left()">タイトルバーボタン配置左にする(もう一回クリックで右)</span>
+                                                onclick="titlebtn_left()">タイトルバーボタン配置左にする(再クリックで右)</span>
                                         </div>
                                     </div>
 
@@ -1816,30 +1813,50 @@
                                         <li>&nbsp;others&nbsp;</li>
                                     </ul>
                                     <div class="window_inline_menus_child">
-                                        <p class="window_menus_title">Full screen</p>
-                                        <div style="height: 35px;"><br>
-                                            <span class="button2 apply_button" onclick="full()">&emsp;ON&emsp;</span>
-                                            <span class="button2 apply_button" onclick="min()">&emsp;OFF&emsp;</span>
-                                        </div><br>
-                                        <p class="window_menus_title">toolbar</p>
-                                        <div class="mini_window" style="height: 35px;"><br>
-                                            <span class="button2 toolbar_on apply_button">&emsp;ON&emsp;</span>
-                                            <span class="button2 toolbar_off apply_button">&emsp;OFF&emsp;</span>
-                                        </div><br>
-                                        <p class="window_menus_title">filetext background</p>
-                                        <div class="mini_window" style="height: 35px;"><br>
-                                            <span
-                                                class="button2 filettext_backcolor_on apply_button">&emsp;ON&emsp;</span>
-                                            <span
-                                                class="button2 filettext_backcolor_off apply_button">&emsp;OFF&emsp;</span>
-                                        </div><br>
-                                        <p class="window_menus_title">window animation</p>
-                                        <div class="mini_window" style="height: 35px;"><br>
-                                            <span class="button2 apply_button" onclick="window_animation_true()">
-                                                &emsp;ON&emsp;</span>
-                                            <span class="button2 apply_button" onclick="window_animation_false()">
-                                                &emsp;OFF&emsp;</span>
-                                        </div>
+                                        <ul style="column-count: 3; margin: 5px;">
+
+                                            <div class="border" style="height: 70px;">
+                                                <p class="large bold">Full screen</p>
+                                                <span class="button2 apply_button"
+                                                    onclick="full()">&emsp;ON&emsp;</span>
+                                                <span class="button2 apply_button"
+                                                    onclick="min()">&emsp;OFF&emsp;</span>
+                                            </div>
+
+                                            <div class="border" style="height: 70px;">
+                                                <p class="large bold">toolbar</p>
+                                                <span class="button2 toolbar_on apply_button">&emsp;ON&emsp;</span>
+                                                <span class="button2 toolbar_off apply_button">&emsp;OFF&emsp;</span>
+                                            </div>
+
+                                            <div class="border" style="height: 70px;">
+                                                <p class="large bold">filetext background</p>
+                                                <span
+                                                    class="button2 filettext_backcolor_on apply_button">&emsp;ON&emsp;</span>
+                                                <span
+                                                    class="button2 filettext_backcolor_off apply_button">&emsp;OFF&emsp;</span>
+                                            </div>
+
+                                        </ul>
+                                        <ul style="column-count: 2; margin: 5px;">
+                                            <div class="border" style="height: 70px;">
+                                                <p class="large bold">window animation</p>
+                                                <span class="button2 apply_button" onclick="window_animation_true()">
+                                                    &emsp;ON&emsp;</span>
+                                                <span class="button2 apply_button" onclick="window_animation_false()">
+                                                    &emsp;OFF&emsp;</span>
+                                            </div>
+
+                                            <div class="border" style="height: 70px;">
+                                                <p class="large bold">title font</p>
+                                                <span class="button2 apply_button"
+                                                    onclick="windowtitle_style('italic')">
+                                                    &emsp;Italic&emsp;</span>
+                                                <span class="button2 apply_button" onclick="windowtitle_style()">
+                                                    &emsp;Reset&emsp;</span>
+                                            </div>
+
+                                        </ul>
                                     </div>
                                 </div>
 
@@ -1849,7 +1866,7 @@
                                     </ul>
                                     <div class="window_inline_menus_child">
                                         <p class="window_menus_title">Wallpaper</p>
-                                        <div style="display: inline-flex; flex-wrap: wrap; margin-top: 40px;">
+                                        <ul style="column-count: 0; width: 0; height: 100%;">
                                             <button class="button2 apply_button2 wallpaper_95"
                                                 style="margin: 2.5px;">&emsp;Windows95&emsp;</button>
                                             <button class="button2 apply_button2 wallpaper_95_2"
@@ -1859,11 +1876,14 @@
                                             <button class="button2 apply_button2 wallpaper_space"
                                                 style="margin: 2.5px;">&emsp;Space&emsp;</button>
                                             <button class="button2 apply_button2 wallpaper_allremove_btn"
-                                                style="margin: 2.5px;">&emsp;CLEAR&emsp;</button>
+                                                style="margin: 2.5px; margin-top: 20px;">&emsp;CLEAR&emsp;</button>
+                                        </ul>
+                                        <div class="window_menu_right_content border2 desk_img"
+                                            style="background-color: #52adad;">
+                                            <img loading="lazy">
                                         </div>
                                     </div>
                                 </div>
-
 
                                 <div class="window_inline_menus_parent">
                                     <ul>
