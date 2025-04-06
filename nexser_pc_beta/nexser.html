@@ -1780,9 +1780,9 @@
                                                 class="saver_mode">OFF</span>
                                         </p>
 
-                                        <div style="position: absolute; left: 200px; top: 30px; width: 120px;">
-                                            <span class="bold large border"
-                                                style="text-align: left;">SECOND:</span><span>(60~900)</span>
+                                        <div
+                                            style="position: absolute; left: 200px; top: 30px; width: 120px; text-align: center;">
+                                            <span class="bold large border">SECOND:</span><span>(60~900)</span>
                                             <input type="text" class="border2 saver_second large" style="width: 50px;"
                                                 placeholder="|" maxlength="3">
                                             <button class="button2 large apply_button"
@@ -2826,15 +2826,15 @@
                         </div>
 
                         <div class="window_contents back_silver">
-                            <canvas class="border2" id="paint_canvas" width="800" height="450">aaaaa</canvas>
+                            <canvas class="border2" id="paint_canvas" width="800" height="450"></canvas>
                         </div>
                         <div class="window_bottom large" style="width: 100%;">
                             <button class="button2 borderinline_dotted" onclick="downloadCanvasAsPng()">
                                 &nbsp;画像出力&nbsp;</button>
-                            <button class="button2 borderinline_dotted" onclick="eraser()">&nbsp;消しゴム&nbsp;</button>
+                            <button class="button2 borderinline_dotted"
+                                onclick="eraser()">&nbsp;消しゴム　/　描き&nbsp;</button>
                             <button class="button2 borderinline_dotted"
                                 onclick="paint_allclear(),paintcanvas_background()">&nbsp;全削除&nbsp;</button>
-
                             <span>&emsp;線の色:&nbsp;</span>
                             <select id="paint_selectcolor" class="button2">
                                 <option value="black">black</option>
@@ -2849,6 +2849,8 @@
                                 <option value="pink">pink</option>
                                 <option value="orange">orange</option>
                             </select>
+                            <span style="position: absolute; right: 25px;">モード:&emsp;<span
+                                    class="draw_mode">描き</span></span>
                             <div style="display: flex;">
                                 <p>線の太さ:&nbsp;</p>
                                 <textarea class="paint_width large border2"

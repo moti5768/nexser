@@ -4448,6 +4448,7 @@ if (ua.includes("mobile")) {
     const paint_canvas = document.getElementById('paint_canvas');
     const paint_ctx = paint_canvas.getContext('2d');
     paint_ctx.fillStyle = '#ffffff';
+    console.log(paint_ctx.getImageData(0, 0, 1, 1))
     paint_ctx.fillRect(0, 0, paint_canvas.width, paint_canvas.height);
     function paintcanvas_background() {
         const paintcanvas_backgroundcolor = document.querySelector('.paint_background').value;
@@ -4459,43 +4460,36 @@ if (ua.includes("mobile")) {
     let paint_lastX = 0;
     let paint_lastY = 0;
     let paint_lineWidth = 5;
-
     // マウス操作に対応
     paint_canvas.addEventListener('mousedown', startDrawing);
     paint_canvas.addEventListener('mousemove', paint_draw);
     paint_canvas.addEventListener('mouseup', stopDrawing);
     paint_canvas.addEventListener('mouseout', stopDrawing);
-
     // タッチ操作に対応（タッチデバイス用）
     paint_canvas.addEventListener('touchstart', startDrawing);
     paint_canvas.addEventListener('touchmove', paint_draw);
     paint_canvas.addEventListener('touchend', stopDrawing);
 
     document.getElementById('paint_selectcolor').addEventListener('change', function () {
-        localStorage.removeItem('eraser_color')
+        localStorage.removeItem('eraser_color');
+        document.querySelector('.draw_mode').textContent = "描き";
     });
-
-    // 描画開始
     function startDrawing(e) {
         paint_isDrawing = true;
         [paint_lastX, paint_lastY] = [e.offsetX || e.touches[0].clientX, e.offsetY || e.touches[0].clientY];
     }
-
-    // 描画停止
     function stopDrawing() {
         paint_isDrawing = false;
         paint_ctx.beginPath();
     }
-
-    // 描画
     function paint_draw(e) {
         if (!paint_isDrawing) return;
         if (localStorage.getItem('eraser_color')) {
-            paint_ctx.strokeStyle = "white";
+            paint_ctx.strokeStyle = paint_ctx.fillStyle;
+            document.querySelector('.draw_mode').textContent = "消しゴム";
         } else {
             paint_ctx.strokeStyle = document.getElementById('paint_selectcolor').value;
         }
-
         paint_ctx.lineWidth = paint_lineWidth;
         paint_ctx.lineCap = 'round';
         paint_ctx.lineJoin = 'round';
@@ -4513,19 +4507,22 @@ if (ua.includes("mobile")) {
         const paintwidth = document.querySelector('.paint_width').value;
         paint_lineWidth = paintwidth;
     }
-
     // 消しゴム
-    function eraser(eraser_color) {
+    function eraser() {
         var fillStyleColor = paint_ctx.fillStyle;
+        if (localStorage.getItem('eraser_color')) {
+            localStorage.removeItem('eraser_color');
+            paint_ctx.strokeStyle = "black";
+            document.querySelector('.draw_mode').textContent = "描き";
+        } else {
+            localStorage.setItem('eraser_color', true);
+            document.querySelector('.draw_mode').textContent = "消しゴム";
+        }
         strokeStyle = fillStyleColor;
-        localStorage.setItem('eraser_color', eraser_color)
     }
-
-    // 図形の描画
-    function drawShape(shape) {
-        // ここに図形を描画するコードを追加
+    if (localStorage.getItem('eraser_color')) {
+        document.querySelector('.draw_mode').textContent = "消しゴム";
     }
-
     // テキストのスタイルを設定
     paint_ctx.font = '48px serif';
     paint_ctx.textAlign = 'center';
@@ -4556,8 +4553,6 @@ if (ua.includes("mobile")) {
             reader.readAsDataURL(file);
         }
     });
-
-
 
     // キャンバスを画像として保存
     function downloadCanvasAsPng() {
