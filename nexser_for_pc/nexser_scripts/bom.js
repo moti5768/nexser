@@ -18,7 +18,7 @@ function init() {
     bomb = Number(document.getElementById("b").value); // 爆弾の数
     if (h * w - 9 < bomb) {
         document.getElementById('nex').style.cursor = '';
-        error_windows_create("爆弾の数が正しく入力されていません!", "&nbsp;main sweeper")
+        noticewindow_create("warning", "爆弾の数が正しく入力されていません!", "&nbsp;main sweeper");
         return;
     }
     data = [];
@@ -51,7 +51,6 @@ function putBomb() {
             const x = Math.floor(Math.random() * w);
             if (data[y][x] === 0) {
                 data[y][x] = 1;
-                // board.rows[y].cells[x].classList.add("bomb");
                 break;
             }
         }
@@ -96,10 +95,7 @@ function leftClicked() {
         board.style.pointerEvents = "none";
 
         document.getElementById('nex').style.cursor = '';
-        // document.querySelector('.window_error_text').textContent = "　　GAMEOVER　　　　"
-        // document.getElementsByClassName('error_title_text')[0].textContent = "main sweeper"
-        // document.getElementsByClassName('error_icon')[0].style.display = "none"
-        // document.getElementsByClassName('error_windows')[0].classList.remove('active')
+        noticewindow_create("main sweeper", "GAME　OVER　");
         clearTimeout(timeoutId);
         return;
     }
@@ -123,13 +119,12 @@ function leftClicked() {
         }
         board.style.pointerEvents = "none";
         document.getElementById('nex').style.cursor = '';
-        // document.querySelector('.window_error_text').textContent = "　　CLEAR　　　　"
-        // document.getElementsByClassName('error_title_text')[0].textContent = "main sweeper"
-        // document.getElementsByClassName('error_icon')[0].style.display = "none"
-        // document.getElementsByClassName('error_windows')[0].classList.remove('active')
+        noticewindow_create("main sweeper", "GAME　CLEAR　");
         const bom_time = document.getElementById('bom_time').textContent;
         document.querySelector('.bom_clear_time').textContent = bom_time;
-        localStorage.setItem('bom_time', bom_time)
+        setTimeout(() => {
+            localStorage.setItem('bom_time', bom_time)
+        }, 3000);
         clearTimeout(timeoutId);
         return;
     }

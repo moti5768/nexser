@@ -1,5 +1,3 @@
-const warning_windows = document.querySelector('.warning_windows');
-
 const sound_play_button = document.getElementsByClassName('sound_play_button');
 const sound_stop_button = document.getElementsByClassName('sound_stop_button');
 
@@ -17,7 +15,9 @@ const soundFiles = [
     "nexser_sounds/windows2000_shutdown.mp3",
     "nexser_sounds/windowsxp_startup.mp3",
     "nexser_sounds/windowsxp_shutdown.mp3",
-    "nexser_sounds/windowsxp_criticalstop.mp3"
+    "nexser_sounds/windowsxp_criticalstop.mp3",
+    "nexser_sounds/windowsNT_logon.mp3",
+    "nexser_sounds/windowsNT_logoff.mp3"
 ];
 
 const sounds = soundFiles.map(file => {
@@ -27,10 +27,25 @@ const sounds = soundFiles.map(file => {
     return audio;
 });
 
+let firstLoad = true;
+let currentSound = null;
+
 function sound(index) {
     if (localStorage.getItem('driver_sound')) {
-        sounds[index].currentTime = 0;
-        sounds[index].play();
+        if (currentSound && currentSound !== sounds[index]) {
+            currentSound.pause();
+            currentSound.currentTime = 0;
+        }
+        currentSound = sounds[index];
+        if (currentSound.paused) {
+            currentSound.play()
+                .catch(error => {
+                    console.error("Sound play error:", error);
+                });
+            currentSound.onended = () => {
+                sound_stop();
+            };
+        }
     }
 }
 
@@ -39,35 +54,67 @@ function sound_stop() {
         sound.pause();
         sound.currentTime = 0;
     });
-    Array.from(sound_play_button).forEach((sound_play_buttons) => {
-        sound_play_buttons.textContent = "▶";
-    });
+    [...sound_play_button].forEach(button => button.textContent = "▶");
 }
 
-Array.from(sound_play_button).forEach((sound_play_buttons) => {
-    sound_play_buttons.textContent = "▶"
-})
-Array.from(sound_play_button).forEach((sound_play_buttons) => {
-    sound_play_buttons.addEventListener('mousedown', function () {
-        sound_stop()
-        Array.from(sound_play_button).forEach((sound_play_buttons) => {
-            sound_play_buttons.textContent = "▶"
-        })
-    })
-    sound_play_buttons.addEventListener('click', function () {
+[...sound_play_button].forEach(button => button.textContent = "▶");
+[...sound_play_button].forEach(button => {
+    button.addEventListener('mousedown', () => {
+        sound_stop();
+        [...sound_play_button].forEach(btn => btn.textContent = "▶");
+    });
+    button.addEventListener('click', () => {
         if (!localStorage.getItem('driver_sound')) {
-            sound_play_buttons.textContent = "▶";
-            error_windows_create("サウンドドライバーがインストールされていません!");
+            button.textContent = "▶";
+            noticewindow_create("error", "サウンドドライバーがインストールされていません!");
         } else {
-            sound_play_buttons.textContent = "||";
+            button.textContent = "||";
         }
-    })
-})
-Array.from(sound_stop_button).forEach((sound_stop_buttons) => {
-    sound_stop_buttons.addEventListener('mousedown', function () {
-        sound_stop()
-        Array.from(sound_play_button).forEach((sound_play_buttons) => {
-            sound_play_buttons.textContent = "▶"
-        })
-    })
-})
+    });
+});
+
+[...sound_stop_button].forEach(button => {
+    button.addEventListener('mousedown', () => {
+        sound_stop();
+        [...sound_play_button].forEach(btn => btn.textContent = "▶");
+    });
+});
+
+function playBeep() {
+    sound_stop();
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.value = 900;
+    gain.gain.value = 0.1;
+    osc.connect(gain).connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.1);
+}
+
+function playbluescreen() {
+    sound_stop();
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    oscillator.type = 'sine';
+    gain.gain.value = 0.1;
+    const gainNode = audioCtx.createGain();
+    gainNode.gain.setValueAtTime(1, audioCtx.currentTime);
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    oscillator.start();
+    setTimeout(() => {
+        oscillator.frequency.setValueAtTime(550.00, audioCtx.currentTime);
+    }, 500);
+    setTimeout(() => {
+        oscillator.frequency.setValueAtTime(525.00, audioCtx.currentTime);
+    }, 1000);
+    setTimeout(() => {
+        oscillator.frequency.setValueAtTime(500.00, audioCtx.currentTime);
+    }, 1500);
+    setTimeout(() => {
+        oscillator.stop();
+    }, 2500);
+}
