@@ -1025,7 +1025,7 @@ body::-webkit-scrollbar {
     width: auto;
     height: 300px;
     color: black;
-    border: 3.5px solid #c0c0c0;
+    border: 2px solid #c0c0c0;
     box-shadow: 1.5px 1.5px #333333, -1.5px -1.5px whitesmoke;
     position: absolute;
     top: 50px;
@@ -2070,6 +2070,9 @@ textarea {
     min-height: 22.5px;
 }
 
+.taskbar_setting_menu {
+    width: 200px;
+}
 
 /* power_icon */
 .power_supply {
