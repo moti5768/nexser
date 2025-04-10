@@ -3696,19 +3696,12 @@ if (ua.includes("mobile")) {
         resetStyle(document.getElementsByClassName('windowfile_time'), { display: "none" });
     }
 
-    filettext_backcolor()
     function filettext_backcolor() {
-        if (localStorage.getItem('filettext_backcolor_off')) {
-            var desktop_files_text = document.getElementsByClassName('desktop_files_text');
-            for (var i = 0, len = desktop_files_text.length; i < len; i++) {
-                desktop_files_text[i].style.background = "rgba(0, 0, 0, 0)";
-            }
-        } else {
-            var desktop_files_text = document.getElementsByClassName('desktop_files_text');
-            for (var i = 0, len = desktop_files_text.length; i < len; i++) {
-                desktop_files_text[i].style.background = ""
-            }
-        }
+        var isOff = localStorage.getItem('filettext_backcolor_off');
+        var background = isOff ? "rgba(0, 0, 0, 0)" : "";
+        Array.from(document.getElementsByClassName('desktop_files_text')).forEach(element => {
+            element.style.background = background;
+        });
     }
 
     document.querySelector('.clock_button').addEventListener('click', function () {
@@ -4803,7 +4796,7 @@ if (ua.includes("mobile")) {
                             overlay.remove();
                         }
                         element.classList.remove('w_left', 'w_right');
-                        document.body.style.cursor = 'default';
+                        document.body.style.cursor = '';
                         resizing = false;
                         window.removeEventListener('mousemove', resize);
                         window.removeEventListener('mouseup', stopResize);
@@ -5916,7 +5909,7 @@ if (ua.includes("mobile")) {
             const { level, charging, dischargingTime } = battery;
             battery_child.style.color = charging ? (level === 1 ? "lime" : "#FF9900") : "black";
             battery_child.style.background = charging ? (level === 1 ? "black" : "black") : "";
-            if (!charging && level < 0.21) {
+            if (!charging && level < 0.21 && desktop.style.display == "block") {
                 noticewindow_create("warning", "バッテリー残量が少なくなっています!", "warning");
             }
             document.querySelector('.battery_time').textContent = charging
