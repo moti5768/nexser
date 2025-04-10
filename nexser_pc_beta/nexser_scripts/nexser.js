@@ -116,6 +116,7 @@ if (ua.includes("mobile")) {
     const location_menu = document.querySelector('.location_menu');
     const editor_menu = document.querySelector('.editor_menu');
     const url_droplist_menu = document.querySelector('.url_droplist_menu');
+    const trash_menu = document.querySelector('.trash_menu');
 
     const nexser_search_menu = document.querySelector('.nexser_search_menu');
 
@@ -1693,7 +1694,7 @@ if (ua.includes("mobile")) {
                 output.innerText += `反転結果: ${reverseMessage}\n`;
                 break;
             case 'version':
-                output.innerText += `nexser beta 1.8\n`;
+                output.innerText += `nexser beta 1.9\n`;
                 break;
             case 'reload':
                 output.innerText = '';
@@ -6713,6 +6714,7 @@ if (ua.includes("mobile")) {
         localStorage.setItem('dropListContent', dropList.innerHTML);
     }
     function loadFromLocalStorage() {
+        filettext_backcolor();
         const dropList = document.querySelector('#drop_zone ul');
         const savedContent = localStorage.getItem('dropListContent');
         if (savedContent) {
@@ -6787,6 +6789,7 @@ if (ua.includes("mobile")) {
         document.querySelectorAll('.test_button46').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(location_menu); }; });
         document.querySelectorAll('.test_button47').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(editor_menu); }; });
         document.querySelectorAll('.test_button48').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(url_droplist_menu); }; });
+        document.querySelectorAll('.trash_can').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(trash_menu); }; });
 
         // games
 
