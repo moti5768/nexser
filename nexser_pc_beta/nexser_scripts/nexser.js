@@ -60,7 +60,7 @@ if (ua.includes("mobile")) {
     const desktop = document.getElementById('desktop');
     const pattern_backgrounds = document.getElementsByClassName('pattern_backgrounds')[0];
     const files_inline = document.querySelector('.files_inline');
-    const fileElements = document.querySelectorAll('.window_files');
+    let fileElements = document.querySelectorAll('.window_files');
     const z_index = document.querySelector('.z_index');
 
     const mini_desktop = document.querySelector('.mini_desktop');
@@ -2537,9 +2537,9 @@ if (ua.includes("mobile")) {
 
     document.querySelectorAll('.window_inline_menus').forEach(container => {
         container.querySelectorAll('.window_inline_menus_parent').forEach(parent => {
-            parent.addEventListener('mousedown', () => {
-                container.querySelectorAll('.menuparent1, .menuchild1, .select').forEach(el => {
-                    el.classList.remove('menuparent1', 'menuchild1', 'select');
+            parent.addEventListener('mousedown', (e) => {
+                container.querySelectorAll('.select').forEach(el => {
+                    el.classList.remove('select');
                 });
                 container.querySelectorAll('.window_inline_menus_parent').forEach(p => {
                     p.lastElementChild.style.display = "none";
@@ -2549,8 +2549,9 @@ if (ua.includes("mobile")) {
             });
         });
     });
-    document.querySelectorAll('.window_inline_menus .menuchild1').forEach(child => {
-        child.style.display = "block";
+    document.querySelectorAll('.menuselect').forEach(child => {
+        child.children[1].style.display = "block";
+        child.classList.add('select');
     });
 
     document.querySelectorAll('.child_windows:not(.overzindex), .child').forEach(windowElement => {
@@ -6807,7 +6808,8 @@ if (ua.includes("mobile")) {
             fileElements.forEach((el) => el.classList.remove('file_border', 'file_border2'));
             target.classList.add('file_border');
         }
-        fileElements.forEach((el) => {
+
+        document.querySelectorAll('.window_files').forEach((el) => {
             el.addEventListener('mousedown', handleMouseDown);
             el.addEventListener('click', handleClick);
         });

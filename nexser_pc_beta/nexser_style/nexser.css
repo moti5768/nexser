@@ -1574,7 +1574,8 @@ body::-webkit-scrollbar {
     background-color: #c0c0c0;
     border: 1.5px solid;
     border-color: whitesmoke black black whitesmoke;
-    border-radius: 1.5px;
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
     z-index: 2;
 }
 
@@ -1584,13 +1585,6 @@ body::-webkit-scrollbar {
     outline: 1.5px dotted black;
     outline-offset: -5px;
     z-index: 1;
-}
-
-.menuparent1 {
-    margin-top: -2.5px;
-    border-bottom: solid 2px silver;
-    outline: 1.5px dotted black;
-    outline-offset: -5px;
 }
 
 .window_inline_menus_child {
