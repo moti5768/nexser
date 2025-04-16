@@ -1154,7 +1154,6 @@ if (ua.includes("mobile")) {
                 element.classList.remove('active');
             }
         });
-        titlecolor_set();
     }
 
     function nexser_signout() {
