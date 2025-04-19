@@ -105,7 +105,29 @@ function leftClicked() {
         open(y, x);
     } else {
         this.textContent = bombs;
+        this.style.fontWeight = "bold";
         this.classList.add("open");
+        if (this.textContent == 1) {
+            this.style.color = "blue";
+        }
+        if (this.textContent == 2) {
+            this.style.color = "green";
+        }
+        if (this.textContent == 3) {
+            this.style.color = "red";
+        }
+        if (this.textContent == 4) {
+            this.style.color = "#233B6C";
+        }
+        if (this.textContent == 5) {
+            this.style.color = "brown";
+        }
+        if (this.textContent == 6) {
+            this.style.color = "#00a1e9";
+        }
+        if (this.textContent == 8) {
+            this.style.color = "gray";
+        }
     }
 
     // クリア判定
@@ -135,8 +157,6 @@ let bom_time2 = localStorage.getItem('bom_time')
 if (localStorage.getItem('bom_time')) {
     document.querySelector('.bom_clear_time').textContent = bom_time2;
 }
-
-// 右クリック 旗を置く
 function rightClicked(e) {
     e.preventDefault();
     if (this.className === "open") {
@@ -185,6 +205,28 @@ function open(y, x) {
                 } else {
                     board.rows[i].cells[j].textContent = bombs;
                     board.rows[i].cells[j].classList.add("open");
+                    board.rows[i].cells[j].style.fontWeight = "bold";
+                    if (board.rows[i].cells[j].textContent == 1) {
+                        board.rows[i].cells[j].style.color = "blue";
+                    }
+                    if (board.rows[i].cells[j].textContent == 2) {
+                        board.rows[i].cells[j].style.color = "green";
+                    }
+                    if (board.rows[i].cells[j].textContent == 3) {
+                        board.rows[i].cells[j].style.color = "red";
+                    }
+                    if (board.rows[i].cells[j].textContent == 4) {
+                        board.rows[i].cells[j].style.color = "#233B6C";
+                    }
+                    if (board.rows[i].cells[j].textContent == 5) {
+                        board.rows[i].cells[j].style.color = "brown";
+                    }
+                    if (board.rows[i].cells[j].textContent == 6) {
+                        board.rows[i].cells[j].style.color = "#00a1e9";
+                    }
+                    if (board.rows[i].cells[j].textContent == 8) {
+                        board.rows[i].cells[j].style.color = "gray";
+                    }
                 }
             }
         }

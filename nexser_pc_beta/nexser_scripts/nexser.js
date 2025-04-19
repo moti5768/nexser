@@ -4318,7 +4318,6 @@ if (ua.includes("mobile")) {
         element.classList.add('pointer_none');
     });
 
-
     navigator.mediaDevices.enumerateDevices()
         .then((devices) => {
             devices.forEach((device) => {
@@ -4353,7 +4352,6 @@ if (ua.includes("mobile")) {
         document.querySelector('.omikuji_text').textContent = omikuji_results[index] + ' です！';
     }
 
-
     function localmemory_size() {
         if (desktop.style.display === "block") {
             noticewindow_create("load", "データを読み込み中...");
@@ -4367,7 +4365,7 @@ if (ua.includes("mobile")) {
                     maxSize++;
                 }
             } catch (e) {
-                // error
+                noticewindow_create("error", "nexser 使用量計算中にエラーが発生しました");
             } finally {
                 for (let i = 0; i < maxSize; i++) {
                     localStorage.removeItem(testKey + i);
@@ -4548,7 +4546,6 @@ if (ua.includes("mobile")) {
         }
     });
 
-    // キャンバスを画像として保存
     function downloadCanvasAsPng() {
         let canvas = document.getElementById('paint_canvas');
         let link = document.createElement('a');
@@ -4556,14 +4553,10 @@ if (ua.includes("mobile")) {
         link.download = 'canvas.png';
         link.click();
     }
-
-    // Canvasの内容をJSONに出力
     function canvasdata_file() {
         var canvas = document.getElementById('paint_canvas');
         var dataURL = canvas.toDataURL();
         var jsonData = JSON.stringify({ image: dataURL });
-
-        // JSONデータをBlobとして外部ファイルに保存
         var blob = new Blob([jsonData], { type: 'application/json' });
         var a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
@@ -4573,25 +4566,20 @@ if (ua.includes("mobile")) {
         document.body.removeChild(a);
     }
 
-    function testfiles(event) {
-        var file = event.files[0]; // 選択されたファイルを取得
+    function paintfiles(event) {
+        var file = event.files[0];
         var reader = new FileReader();
-        // ファイルの読み込みが完了したら実行されるイベント
         reader.onload = function (e) {
-            var jsonData = e.target.result; // 読み込んだファイルの内容
-            var data = JSON.parse(jsonData); // JSONデータをオブジェクトに変換
-            // Canvasに描画
+            var jsonData = e.target.result;
+            var data = JSON.parse(jsonData);
             var canvas = document.getElementById('paint_canvas');
             var ctx = canvas.getContext('2d');
             var image = new Image();
-            // 画像が読み込まれたらCanvasに描画
             image.onload = function () {
                 ctx.drawImage(image, 0, 0);
             };
-            // ImageオブジェクトのソースにデータURLを設定
             image.src = data.image;
         };
-        // ファイルの内容をテキストとして読み込む
         reader.readAsText(file);
     }
     function paint_allclear() {
@@ -4599,7 +4587,6 @@ if (ua.includes("mobile")) {
         paint_ctx.fillStyle = '#ffffff';
         paint_ctx.fillRect(0, 0, paint_canvas.width, paint_canvas.height);
     }
-
 
     const wallpapers = [
         { key: 'wallpaper_95', src: 'nexser_image/Windows95_wallpaper.jpg' },
@@ -4644,11 +4631,9 @@ if (ua.includes("mobile")) {
     };
     applySavedWallpaper();
 
-
     const othello_board = document.getElementById('othello_board');
     const size = 8;
     let currentPlayer = 'othello_black';
-
     for (let i = 0; i < size * size; i++) {
         const cell = document.createElement('div');
         cell.classList.add('cell');
@@ -4656,15 +4641,12 @@ if (ua.includes("mobile")) {
         cell.addEventListener('click', handleClick);
         othello_board.appendChild(cell);
     }
-
     othello_start()
-
     function othello_reset() {
         document.querySelectorAll('.othello_white,.othello_black').forEach(othello_board_child => {
             othello_board_child.remove()
         });
     }
-
     function othello_start() {
         othello_reset()
         const initialPositions = [27, 28, 35, 36];
@@ -4685,19 +4667,34 @@ if (ua.includes("mobile")) {
     }
 
     function nexser_files_windowload() {
-        const createTree = (element) => {
-            const ul = document.createElement('ul');
-            Array.from(element.children).forEach((child) => {
-                const li = document.createElement('li');
-                li.textContent = child.textContent.trim();
-                li.className = li.textContent.includes('.') ? 'nexser_files_file' : 'nexser_files_folder';
-                if (child.children.length) li.appendChild(createTree(child));
-                ul.appendChild(li);
-            });
-            return ul.children.length ? ul : null;
-        };
-        const tree = createTree(nexser);
-        tree && document.getElementById('nexser_files_output').appendChild(tree);
+        const ct = el => Array.from(el.children)
+            .filter(e => e.textContent.trim())
+            .reduce((u, c) => {
+                const li = document.createElement("li"),
+                    t = c.textContent.trim();
+                li.style.cssText = "padding:4px 2px;font-family:Arial,sans-serif;cursor:default;";
+                if (c.children.length) {
+                    li.innerHTML = `<span class="button2" style="cursor:pointer;margin-right:5px;">►</span>${t}`;
+                    const n = ct(c);
+                    n.style.display = "none";
+                    li.appendChild(n);
+                    li.firstElementChild.onclick = e => {
+                        e.stopPropagation();
+                        const isHidden = n.style.display === "none";
+                        n.style.display = isHidden ? "block" : "none";
+                        e.target.textContent = isHidden ? "▼" : "►";
+                    };
+                } else {
+                    li.innerHTML = `<span class="button2">${t}</span>`;
+                }
+                li.addEventListener("mouseenter", () => li.style.backgroundColor = "#eef");
+                li.addEventListener("mouseleave", () => li.style.backgroundColor = "transparent");
+                u.appendChild(li);
+                return u;
+            }, Object.assign(document.createElement("ul"), {
+                style: "list-style:none;padding-left:20px;margin:0;"
+            }));
+        document.getElementById("nexser_files_output").appendChild(ct(nexser));
     }
     function nexser_files_output_remove() {
         document.getElementById('nexser_files_output').textContent = '';
@@ -5357,10 +5354,10 @@ if (ua.includes("mobile")) {
                         }
                     });
                     const windowContents = createElement('div', "window_contents", windowDiv);
-                    const addMediaContent = (mediaTag, mediaSrc) => {
-                        const mediaElement = createElement(mediaTag, "item_preview", windowContents);
-                        mediaElement.src = mediaSrc;
-                        if (mediaTag === 'video') mediaElement.controls = true;
+                    const addMediaContent = (tag, src) => {
+                        const el = createElement(tag, "item_preview", windowContents);
+                        el.src = src;
+                        tag === 'video' && (el.controls = true);
                         windowContents.classList.add("scrollbar_none");
                     };
                     const addIframe = (src) => {
@@ -5439,7 +5436,7 @@ if (ua.includes("mobile")) {
 
     function pagewindow() {
         document.querySelectorAll('.testwindow2:not(.nocreatewindow)').forEach(win => {
-            Object.assign(win.style, { width: '600px', height: '400px' });
+            Object.assign(win.style, { width: '650px', height: '400px' });
             win.classList.add('nocreatewindow');
             const centerElem = win.querySelector(`:scope > *:nth-child(${win.classList.contains('w3') ? 4 : 3}) > *`);
             centerElem ? centerElem.classList.add('center') : win.remove();
@@ -5465,31 +5462,23 @@ if (ua.includes("mobile")) {
     }
 
     const removePopups = () => document.querySelectorAll('.popup').forEach(popup => popup.remove());
-    function popups(popups, url, text) {
-        document.querySelectorAll(`.${popups}`).forEach(button => {
+    const popups = (cls, url, text) =>
+        document.querySelectorAll(`.${cls}`).forEach(button => {
             removePopups();
             const popup = document.createElement('div');
             popup.className = 'popup';
-            if (url == null) {
-                popup.textContent = text;
-            } else {
-                popup.textContent = url;
-            }
+            popup.textContent = url ?? text;
             popup.style.zIndex = "999996";
             document.body.appendChild(popup);
             popup.style.left = `${event.pageX}px`;
             popup.style.top = `${event.pageY - popup.offsetHeight}px`;
             button.addEventListener('mouseleave', removePopups);
         });
-    }
 
     document.getElementById('exportButton').addEventListener('click', function () {
         const localStorageData = JSON.stringify(localStorage);
         function base64Encode(str) {
             return btoa(unescape(encodeURIComponent(str)));
-        }
-        function base64Decode(str) {
-            return decodeURIComponent(escape(atob(str)));
         }
         function xorEncrypt(data, key) {
             let encrypted = '';
@@ -5549,10 +5538,6 @@ if (ua.includes("mobile")) {
             noticewindow_create("error", error.message);
         }
     });
-
-    function reload() {
-        window.location = '';
-    }
 
     function nexser_search_button() {
         const fragment = document.createDocumentFragment();

@@ -2200,9 +2200,10 @@ textarea {
     user-select: none;
 }
 
-#next {
+#next,
+#next2 {
     position: relative;
-    left: 5px;
+    left: 2.5px;
     background: dimgray;
 }
 
@@ -2539,11 +2540,11 @@ progress::-webkit-progress-value {
 
 #board>tr>td {
     display: inline-block;
-    background: silver;
-    border-top: 1.5px #eee solid;
-    border-left: 1.5px #eee solid;
-    border-bottom: 1.5px #333 solid;
-    border-right: 1.5px #333 solid;
+    color: black;
+    background-color: #C3C7CB;
+    border: 1.8px solid #808080;
+    border-color: #fff #808080 #808080 #fff;
+    box-shadow: 0.5px 0.5px black;
     width: 20px;
     height: 20px;
     margin: 0.2px;
@@ -2555,10 +2556,9 @@ progress::-webkit-progress-value {
 }
 
 #board .open {
-    border-bottom: 1.5px #eee solid;
-    border-right: 1.5px #eee solid;
-    border-top: 1.5px #333 solid;
-    border-left: 1.5px #333 solid;
+    border: 1.5px solid;
+    border-color: #7a7a7a #fff #fff #7a7a7a;
+    box-shadow: 0.5px 0.5px 0 #000 inset;
     background: darkgray;
     color: black;
 }

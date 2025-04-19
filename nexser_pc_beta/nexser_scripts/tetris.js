@@ -1,6 +1,6 @@
 class tetris {
     constructor() {
-        this.stageWidth = 10; this.stageHeight = 20; this.stageCanvas = document.getElementById("stage"); this.nextCanvas = document.getElementById("next"); let cellWidth = this.stageCanvas.width / this.stageWidth; let cellHeight = this.stageCanvas.height / this.stageHeight; this.cellSize = cellWidth < cellHeight ? cellWidth : cellHeight;
+        this.stageWidth = 10; this.stageHeight = 20; this.stageCanvas = document.getElementById("stage"); this.nextCanvas = document.getElementById("next"); this.nextCanvas2 = document.getElementById("next2"); let cellWidth = this.stageCanvas.width / this.stageWidth; let cellHeight = this.stageCanvas.height / this.stageHeight; this.cellSize = cellWidth < cellHeight ? cellWidth : cellHeight;
         this.stageLeftPadding = (this.stageCanvas.width - this.cellSize * this.stageWidth) / 2;
         this.stageTopPadding = (this.stageCanvas.height - this.cellSize * this.stageHeight) / 2;
         this.blocks = this.createBlocks();
@@ -104,12 +104,15 @@ class tetris {
     drawBlock(x, y, type, angle, canvas) {
         let context = canvas.getContext("2d");
         let block = this.blocks[type];
-        for (let i = 0; i < block.shape[angle].length; i++) {
-            this.drawCell(context,
-                x + (block.shape[angle][i][0] * this.cellSize),
-                y + (block.shape[angle][i][1] * this.cellSize),
+        let validAngle = angle < 0 ? block.shape.length + angle : angle;
+        for (let i = 0; i < block.shape[validAngle].length; i++) {
+            this.drawCell(
+                context,
+                x + (block.shape[validAngle][i][0] * this.cellSize),
+                y + (block.shape[validAngle][i][1] * this.cellSize),
                 this.cellSize,
-                type);
+                type
+            );
         }
     }
 
@@ -134,7 +137,32 @@ class tetris {
         context.stroke();
     }
 
+    drawStageGrid() {
+        if (!this.gridVisible) return;
+        let context = this.stageCanvas.getContext("2d");
+        let cols = this.stageWidth;
+        let rows = this.stageCanvas.height / this.cellSize;
+        context.beginPath();
+        for (let i = 0; i <= cols; i++) {
+            context.moveTo(i * this.cellSize, 0);
+            context.lineTo(i * this.cellSize, this.stageCanvas.height);
+        }
+        for (let j = 0; j <= rows; j++) {
+            context.moveTo(0, j * this.cellSize);
+            context.lineTo(this.stageCanvas.width, j * this.cellSize);
+        }
+        context.strokeStyle = "whitesmoke";
+        context.lineWidth = 1;
+        context.stroke();
+    }
+    toggleGrid() {
+        this.gridVisible = !this.gridVisible;
+        this.drawStage2();
+    }
+
     startGame() {
+        clearTimeout(this.timerID);
+        this.timerID = null;
         let virtualStage = new Array(this.stageWidth);
         for (let i = 0; i < this.stageWidth; i++) {
             virtualStage[i] = new Array(this.stageHeight).fill(null);
@@ -142,6 +170,7 @@ class tetris {
         this.virtualStage = virtualStage;
         this.currentBlock = null;
         this.nextBlock = this.getRandomBlock();
+        this.nextnextBlock = this.getRandomBlock();
         this.mainLoop();
     }
 
@@ -159,12 +188,13 @@ class tetris {
                 this.stageTopPadding + this.blockY * this.cellSize,
                 this.currentBlock, this.blockAngle, this.stageCanvas);
         }
-        setTimeout(this.mainLoop.bind(this), 500);
+        this.timerID = setTimeout(this.mainLoop.bind(this), 500);
     }
 
     createNewBlock() {
         this.currentBlock = this.nextBlock;
-        this.nextBlock = this.getRandomBlock();
+        this.nextBlock = this.nextnextBlock;
+        this.nextnextBlock = this.getRandomBlock();
         this.blockX = Math.floor(this.stageWidth / 2 - 2);
         this.blockY = 0;
         this.blockAngle = 0;
@@ -179,8 +209,9 @@ class tetris {
 
     drawNextBlock() {
         this.clear(this.nextCanvas);
-        this.drawBlock(this.cellSize * 2, this.cellSize, this.nextBlock,
-            0, this.nextCanvas);
+        this.clear(this.nextCanvas2);
+        this.drawBlock(this.cellSize * 2, this.cellSize, this.nextBlock, 0, this.nextCanvas);
+        this.drawBlock(this.cellSize * 1, this.cellSize, this.nextnextBlock, 0, this.nextCanvas2);
     }
 
     getRandomBlock() {
@@ -250,7 +281,7 @@ class tetris {
 
     drawStage() {
         this.clear(this.stageCanvas);
-
+        this.drawStageGrid();
         let context = this.stageCanvas.getContext("2d");
         for (let x = 0; x < this.virtualStage.length; x++) {
             for (let y = 0; y < this.virtualStage[x].length; y++) {
@@ -263,6 +294,11 @@ class tetris {
                 }
             }
         }
+    }
+
+    drawStage2() {
+        this.clear(this.stageCanvas);
+        this.drawStageGrid();
     }
 
     moveLeft() {
@@ -312,15 +348,34 @@ class tetris {
         context.fillStyle = "rgb(0, 0, 0)";
         context.fillRect(0, 0, canvas.width, canvas.height);
     }
-}
 
-function mereset() {
-    const me = document.getElementById('message');
-    me.textContent = ""
+    tetris_allreset() {
+        clearTimeout(this.timerID);
+        this.timerID = null;
+        this.clear(this.stageCanvas);
+        this.clear(this.nextCanvas);
+        this.clear(this.nextCanvas2);
+        [this.nextCanvas, this.nextCanvas2].forEach(canvas => {
+            let context = canvas.getContext("2d");
+            context.fillStyle = "dimgray";
+            context.fillRect(0, 0, canvas.width, canvas.height);
+        });
+        this.drawStage2();
+        this.currentBlock = null;
+    }
 }
 
 tetris = new tetris();
+const me = document.getElementById('message');
 
 function tetris_start() {
     tetris.startGame();
+}
+function tetris_reset() {
+    tetris.tetris_allreset();
+    me.textContent = "";
+}
+
+function toline() {
+    tetris.toggleGrid();
 }
