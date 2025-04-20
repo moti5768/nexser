@@ -4365,7 +4365,7 @@ if (ua.includes("mobile")) {
                     maxSize++;
                 }
             } catch (e) {
-                noticewindow_create("error", "nexser 使用量計算中にエラーが発生しました");
+                // error
             } finally {
                 for (let i = 0; i < maxSize; i++) {
                     localStorage.removeItem(testKey + i);
@@ -5538,6 +5538,10 @@ if (ua.includes("mobile")) {
             noticewindow_create("error", error.message);
         }
     });
+
+    function reload() {
+        window.location = '';
+    }
 
     function nexser_search_button() {
         const fragment = document.createDocumentFragment();
