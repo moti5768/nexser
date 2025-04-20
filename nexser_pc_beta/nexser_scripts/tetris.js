@@ -1,3 +1,4 @@
+let tetris_loop = false;
 class tetris {
     constructor() {
         this.stageWidth = 10; this.stageHeight = 20; this.stageCanvas = document.getElementById("stage"); this.nextCanvas = document.getElementById("next"); this.nextCanvas2 = document.getElementById("next2"); let cellWidth = this.stageCanvas.width / this.stageWidth; let cellHeight = this.stageCanvas.height / this.stageHeight; this.cellSize = cellWidth < cellHeight ? cellWidth : cellHeight;
@@ -7,28 +8,38 @@ class tetris {
         this.deletedLines = 0;
 
         window.onkeydown = (e) => {
-            if (e.keyCode === 37) {
-                this.moveLeft();
-            } else if (e.keyCode === 38) {
-                this.rotate();
-            } else if (e.keyCode === 39) {
-                this.moveRight();
-            } else if (e.keyCode === 40) {
-                this.fall();
+            if (tetris_loop == false) {
+                if (e.keyCode === 37) {
+                    this.moveLeft();
+                } else if (e.keyCode === 38) {
+                    this.rotate();
+                } else if (e.keyCode === 39) {
+                    this.moveRight();
+                } else if (e.keyCode === 40) {
+                    this.fall();
+                }
             }
         }
 
         document.getElementById("tetris-move-left-button").onmousedown = (e) => {
-            this.moveLeft();
+            if (tetris_loop == false) {
+                this.moveLeft();
+            }
         }
         document.getElementById("tetris-rotate-button").onmousedown = (e) => {
-            this.rotate();
+            if (tetris_loop == false) {
+                this.rotate();
+            }
         }
         document.getElementById("tetris-move-right-button").onmousedown = (e) => {
-            this.moveRight();
+            if (tetris_loop == false) {
+                this.moveRight();
+            }
         }
         document.getElementById("tetris-fall-button").onmousedown = (e) => {
-            this.fall();
+            if (tetris_loop == false) {
+                this.fall();
+            }
         }
     }
 
@@ -161,6 +172,7 @@ class tetris {
     }
 
     startGame() {
+        tetris_loop = false;
         clearTimeout(this.timerID);
         this.timerID = null;
         let virtualStage = new Array(this.stageWidth);
@@ -175,18 +187,20 @@ class tetris {
     }
 
     mainLoop() {
-        if (this.currentBlock == null) {
-            if (!this.createNewBlock()) {
-                return;
+        if (tetris_loop == false) {
+            if (this.currentBlock == null) {
+                if (!this.createNewBlock()) {
+                    return;
+                }
+            } else {
+                this.fallBlock();
             }
-        } else {
-            this.fallBlock();
-        }
-        this.drawStage();
-        if (this.currentBlock != null) {
-            this.drawBlock(this.stageLeftPadding + this.blockX * this.cellSize,
-                this.stageTopPadding + this.blockY * this.cellSize,
-                this.currentBlock, this.blockAngle, this.stageCanvas);
+            this.drawStage();
+            if (this.currentBlock != null) {
+                this.drawBlock(this.stageLeftPadding + this.blockX * this.cellSize,
+                    this.stageTopPadding + this.blockY * this.cellSize,
+                    this.currentBlock, this.blockAngle, this.stageCanvas);
+            }
         }
         this.timerID = setTimeout(this.mainLoop.bind(this), 500);
     }
@@ -370,12 +384,24 @@ const me = document.getElementById('message');
 
 function tetris_start() {
     tetris.startGame();
+    document.querySelector('.tet_stopbtn').classList.remove('pointer_none');
 }
 function tetris_reset() {
     tetris.tetris_allreset();
     me.textContent = "";
+    document.querySelector('.tet_stopbtn').classList.add('pointer_none');
 }
 
 function toline() {
     tetris.toggleGrid();
+}
+
+function tetris_stop() {
+    if (tetris_loop == false) {
+        tetris_loop = true;
+        tetris.refreshStage();
+    } else {
+        tetris_loop = false;
+        tetris.refreshStage();
+    }
 }
