@@ -2477,15 +2477,36 @@ if (ua.includes("mobile")) {
         });
     });
 
-    document.querySelectorAll('.parent_list').forEach(parent_list => {
-        parent_list.addEventListener('mouseover', () => {
-            parent_list.lastElementChild.style.display = "flex";
-            document.querySelectorAll('.windowtool_child').forEach(el => el.style.display = "none");
+    if (!window._parentListListenersAdded) {
+        document.addEventListener('mouseover', e => {
+            const p = e.target.closest('.parent_list');
+            if (p) {
+                document.querySelectorAll('.windowtool_child').forEach(el => el.style.display = "none");
+                const c = p.lastElementChild;
+                if (c) c.style.display = "flex";
+            }
         });
-        parent_list.addEventListener('mouseleave', () => {
-            document.querySelectorAll('.child_list').forEach(el => el.style.display = "none");
-        });
-    });
+        const addLeave = el => {
+            if (!el._leave) {
+                el.addEventListener('mouseleave', () => {
+                    document.querySelectorAll('.child_list').forEach(c => c.style.display = "none");
+                });
+                el._leave = true;
+            }
+        };
+        document.querySelectorAll('.parent_list').forEach(addLeave);
+        new MutationObserver(muts => {
+            muts.forEach(m => {
+                m.addedNodes.forEach(n => {
+                    if (n.nodeType !== 1) return;
+                    if (n.classList?.contains('parent_list')) addLeave(n);
+                    else n.querySelectorAll?.('.parent_list')?.forEach(addLeave);
+                });
+            });
+        }).observe(document.body, { childList: true, subtree: true });
+
+        window._parentListListenersAdded = true;
+    }
 
     document.querySelectorAll('.allwindow_toolbar').forEach(allwindow_toolbar => {
         allwindow_toolbar.addEventListener('click', () => {
