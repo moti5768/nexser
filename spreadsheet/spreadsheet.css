@@ -122,7 +122,7 @@ body {
     height: 40px;
     padding: 8px;
     text-align: left;
-    overflow: hidden;
+    overflow: visible;
     white-space: nowrap;
     position: relative;
     /* 各セルを relative にして、選択オーバーレイを配置可能に */
@@ -267,4 +267,9 @@ td.selected:has(.fill-handle) {
 
 #spreadsheet td.selected[style*="background-color"]::after {
     background-color: transparent;
+}
+
+#spreadsheet td {
+    white-space: pre;
+    /* テキスト内の改行文字(\n)はそのまま表示（自動折り返しは行わない） */
 }

@@ -159,35 +159,33 @@ function handleCellDblClick(e) {
 
 function handleCellBlur(e) {
     const cell = e.target;
+    // textContent で取得すれば、挿入された "\n" がそのまま残ります
     const newText = cell.textContent.trim();
 
     if (newText.startsWith("=")) {
-        // 数式が入力されている場合は更新
+        // 数式の場合は数式情報を保持し、評価結果をセット
         cell.dataset.formula = newText;
         cell.textContent = evaluateFormula(newText);
     } else {
-        // 日付形式 (例："1/2" または "1/2/2020") であれば自動変換
+        // 日付形式（例："1/2" や "1/2/2020"）の場合の自動変換
         if (isDateFormat(newText)) {
             const parts = newText.split("/");
             let date;
             if (parts.length === 2) {
-                // 年が指定されていない場合は現在の年を利用
                 const currentYear = new Date().getFullYear();
                 date = new Date(currentYear, parseInt(parts[0], 10) - 1, parseInt(parts[1], 10));
             } else if (parts.length === 3) {
                 date = new Date(parseInt(parts[2], 10), parseInt(parts[0], 10) - 1, parseInt(parts[1], 10));
             }
             if (date && !isNaN(date.getTime())) {
-                // 日付として正しく認識できた場合
                 cell.dataset.valueType = "date";
-                cell.dataset.dateValue = date.getTime();  // タイムスタンプを保持
-                cell.textContent = formatDate(date);       // "yyyy/mm/dd" 形式などに整形
+                cell.dataset.dateValue = date.getTime();  // タイムスタンプを保存
+                cell.textContent = formatDate(date);        // formatDate はテキストを返すものとします
             } else {
-                // 変換に失敗した場合はそのままテキストとして扱う
                 cell.textContent = newText;
             }
         } else {
-            // 数式でも日付形式でもない場合は、既存の数式情報を削除してそのまま表示
+            // 数式でも日付形式でもない場合は、既存の数式情報を削除しそのまま表示
             if (cell.dataset.formula) {
                 delete cell.dataset.formula;
             }
@@ -196,15 +194,13 @@ function handleCellBlur(e) {
         updateAllFormulas();
     }
 
-    // 編集モードを解除する
+    // 編集モード解除
     cell.contentEditable = "false";
     delete cell.dataset.editBy;
-
-    // 編集解除時は計算範囲のハイライトなどをクリアする（必要に応じて）
     clearCalculationRangeHighlights();
-
     updateAllFormulas();
 }
+
 
 
 
@@ -229,19 +225,24 @@ function handleF2Key(e) {
 
 
 function handleCellKeyDown(e) {
-    if (e.key === "Enter") {
-        if (e.target.isContentEditable) {
+    if (e.key === "Enter" && e.target.isContentEditable) {
+        if (e.altKey) {
             e.preventDefault();
-            const row = parseInt(e.target.dataset.row, 10);
-            const col = parseInt(e.target.dataset.col, 10);
-            e.target.blur();
-            setTimeout(() => {
-                navigateToCell(row + 1, col, e);
-            }, 0);
+            // 改行文字 "\n" をテキストとして挿入する
+            document.execCommand('insertText', false, "\n");
+            return;
         }
+        // Alt なしの Enter キーの場合は編集終了して次のセルに移動
+        e.preventDefault();
+        const row = parseInt(e.target.dataset.row, 10);
+        const col = parseInt(e.target.dataset.col, 10);
+        e.target.blur();
+        setTimeout(() => {
+            navigateToCell(row + 1, col, e);
+        }, 0);
     }
-    // 矢印キーはグローバルリスナーで処理するため、ここでは特に何もしない
 }
+
 
 // ※ 自身のセル（数式セルの場合）をクリックした場合は、セル参照挿入せずにデフォルト動作（caret操作）を許容する
 function handleCellClick(e) {
@@ -641,6 +642,7 @@ function columnLettersToIndex(letters) {
 function updateAllFormulas() {
     const formulaCells = document.querySelectorAll("#spreadsheet tbody td[data-formula]");
     formulaCells.forEach(cell => {
+        // 編集中のセルは更新しない
         if (document.activeElement !== cell) {
             const formula = cell.dataset.formula;
             cell.textContent = evaluateFormula(formula);
@@ -652,8 +654,13 @@ function updateAllFormulas() {
 // =======================
 
 function handleCellMouseDown(e) {
-    if (e.button !== 0) return;
+    // もし対象が既に編集モードなら、何もしない（ネイティブなキャレット配置を許容）
+    if (e.target && e.target.isContentEditable) {
+        return;
+    }
 
+    // 通常の選択処理（例：選択の開始、activeCell の更新など）
+    if (e.button !== 0) return;
     isSelecting = true;
     clearSelection();
     selectionStart = {
@@ -667,7 +674,7 @@ function handleCellMouseDown(e) {
     if (document.activeElement === formulaBarInput) {
         return;
     }
-    if (isSelecting == true) {
+    if (isSelecting === true) {
         const cell = e.target;
         formulaBarInput.value = cell.dataset.formula ? cell.dataset.formula : cell.textContent;
     }
@@ -679,8 +686,8 @@ function handleCellMouseDown(e) {
         return;
     }
     activeCell = e.target;
-
 }
+
 
 container.addEventListener("mousemove", function (e) {
     if (!isSelecting) return;
@@ -771,7 +778,7 @@ document.addEventListener("mouseup", function (e) {
 // =======================
 
 function applyValueToCells(value) {
-    // 数式編集中の場合は、範囲選択に関わらず activeCell のみ更新
+    // 数式編集中の場合は activeCell のみ更新
     if (isInFormulaEdit()) {
         if (activeCell) {
             if (value.startsWith("=")) {
@@ -783,7 +790,7 @@ function applyValueToCells(value) {
             }
         }
     } else {
-        // 数式編集中でない場合は、通常の選択セル（selected クラスが付いたセル）を対象にする
+        // 数式編集中でない場合は、selected クラスが付いたセルを対象に更新
         let targetCells = document.querySelectorAll("#spreadsheet tbody td.selected");
         if (!targetCells || targetCells.length === 0) {
             if (activeCell) targetCells = [activeCell];
@@ -2180,23 +2187,24 @@ toggleTextWrapButton.addEventListener("click", function (e) {
     let cells = document.querySelectorAll("#spreadsheet tbody td.selected");
     if (cells.length > 0) {
         cells.forEach(cell => {
-            if (cell.style.whiteSpace === "normal") {
-                // オフ状態に戻す: 白空白を nowrap に戻し、word-break プロパティも解除
-                cell.style.whiteSpace = "nowrap";
-                cell.style.wordBreak = "";
-            } else {
-                // オン状態にする: 白空白を normal にして、半角文字も折り返すため word-break を break-all に設定
-                cell.style.whiteSpace = "normal";
+            // 初期状態は "pre"（折り返しOFF）
+            if (cell.style.whiteSpace === "pre") {
+                // 折り返しONに：改行はそのまま表示しつつ自動折り返し
+                cell.style.whiteSpace = "pre-wrap";
                 cell.style.wordBreak = "break-all";
+            } else {
+                // 折り返しOFFに：改行は保持されるが自動折り返しは行わない
+                cell.style.whiteSpace = "pre";
+                cell.style.wordBreak = "";
             }
         });
     } else if (activeCell) {
-        if (activeCell.style.whiteSpace === "normal") {
-            activeCell.style.whiteSpace = "nowrap";
-            activeCell.style.wordBreak = "";
-        } else {
-            activeCell.style.whiteSpace = "normal";
+        if (activeCell.style.whiteSpace === "pre") {
+            activeCell.style.whiteSpace = "pre-wrap";
             activeCell.style.wordBreak = "break-all";
+        } else {
+            activeCell.style.whiteSpace = "pre";
+            activeCell.style.wordBreak = "";
         }
     }
 });
@@ -2755,12 +2763,19 @@ function mergeSelectedCells() {
 
     // 範囲内を行優先、列優先で走査して、値が入力されているセル（空でないセル）の最初の内容を取得する
     let anchorValue = "";
+    let anchorFormula = ""; // 数式があれば保持するための変数
     let found = false;
     for (let r = minRow; r <= maxRow; r++) {
         for (let c = minCol; c <= maxCol; c++) {
             const cell = getCell(r, c);
             if (cell && cell.innerHTML.trim() !== "") {
-                anchorValue = cell.innerHTML;
+                if (cell.dataset.formula && cell.dataset.formula.trim() !== "") {
+                    // 数式が登録されている場合は、評価結果とともに数式そのものも保存する
+                    anchorValue = evaluateFormula(cell.dataset.formula);
+                    anchorFormula = cell.dataset.formula;
+                } else {
+                    anchorValue = cell.innerHTML;
+                }
                 found = true;
                 break;
             }
@@ -2772,6 +2787,10 @@ function mergeSelectedCells() {
     const anchor = getCell(minRow, minCol);
     // 取得した値をアンカーにセットする
     anchor.innerHTML = anchorValue;
+    // 数式が存在していた場合は、数式情報も保持する
+    if (anchorFormula) {
+        anchor.dataset.formula = anchorFormula;
+    }
     anchor.setAttribute("rowspan", maxRow - minRow + 1);
     anchor.setAttribute("colspan", maxCol - minCol + 1);
     anchor.classList.add("merged");
@@ -2808,6 +2827,7 @@ function mergeSelectedCells() {
         }
     }
 }
+
 
 
 
@@ -2895,45 +2915,47 @@ function unmergeSelectedCells() {
 // グローバル変数：コピーされたセル群の詳細情報を保持
 let clipboardData = null;
 
-// ===========================
-// 詳細コピー処理：連続範囲にも対応
-// ===========================
 function copySelectedCells() {
+    // 選択されたセルを取得
     const selectedCells = Array.from(document.querySelectorAll("#spreadsheet tbody td.selected"));
     if (selectedCells.length === 0) {
         console.log("コピー対象のセルがありません。");
         return;
     }
 
-    // 各セルの行・列番号を取得し、連続範囲か判定
+    // 各セルの行・列番号を取得
     const rows = selectedCells.map(cell => parseInt(cell.dataset.row, 10));
     const cols = selectedCells.map(cell => parseInt(cell.dataset.col, 10));
     const minRow = Math.min(...rows);
     const maxRow = Math.max(...rows);
     const minCol = Math.min(...cols);
     const maxCol = Math.max(...cols);
-    // 連続の場合、選択されるべきセル数はこの矩形のセル数になります
+
+    // 連続選択か判定（矩形のセル数と実際の選択セルの数が一致すれば連続）
     const expectedCount = (maxRow - minRow + 1) * (maxCol - minCol + 1);
     const isContiguous = (selectedCells.length === expectedCount);
 
+    // どちらの場合も、基準セルとして左上（minRow, minCol）を記録
+    let baselineRow = minRow, baselineCol = minCol;
+
+    // clipboardData というグローバル変数に保存
+    clipboardData = {
+        startRow: baselineRow,
+        startCol: baselineCol,
+        data: null  // ここから下で内容を作成
+    };
+
     if (isContiguous) {
-        // 連続（範囲指定）の場合、2次元配列形式で保存
-        clipboardData = {
-            startRow: minRow,  // コピーしたセル群の左上の行番号
-            startCol: minCol,  // コピーしたセル群の左上の列番号
-            data: []           // 行ごとにセルの詳細データを保持
-        };
+        // 連続の場合は、2次元配列形式にまとめる
+        clipboardData.data = [];
         for (let r = minRow; r <= maxRow; r++) {
             let rowData = [];
             for (let c = minCol; c <= maxCol; c++) {
                 const cell = getCell(r, c);
                 if (cell) {
                     rowData.push({
-                        // セルの表示値
                         value: cell.textContent,
-                        // セルに設定された数式（あれば）
                         formula: cell.dataset.formula || "",
-                        // インラインスタイルなどの詳細（文字のフォントサイズ・配置・背景色など）
                         cssText: cell.getAttribute("style") || ""
                     });
                 } else {
@@ -2943,12 +2965,8 @@ function copySelectedCells() {
             clipboardData.data.push(rowData);
         }
     } else {
-        // 非連続の場合は、各セルごとに個別の情報として保存
-        clipboardData = {
-            startRow: null,
-            startCol: null,
-            data: []    // 各セルの {row, col, value, formula, cssText} を保持
-        };
+        // 非連続の場合でも、左上を基準として保存する（貼り付け時に相対位置で処理できるように）
+        clipboardData.data = [];
         selectedCells.forEach(cell => {
             clipboardData.data.push({
                 row: parseInt(cell.dataset.row, 10),
@@ -2975,70 +2993,6 @@ function adjustFormulaReferences(formula, rowDelta, colDelta) {
         const newRow = parseInt(rowStr, 10) + rowDelta;
         return newColLetters + newRow;
     });
-}
-
-// コピー時の非連続の場合も最小行・列を計算して保存
-function copySelectedCells() {
-    const selectedCells = Array.from(document.querySelectorAll("#spreadsheet tbody td.selected"));
-    if (selectedCells.length === 0) {
-        console.log("コピー対象のセルがありません。");
-        return;
-    }
-
-    // 各セルの行番号および列番号を取得
-    const rows = selectedCells.map(cell => parseInt(cell.dataset.row, 10));
-    const cols = selectedCells.map(cell => parseInt(cell.dataset.col, 10));
-    const minRow = Math.min(...rows);
-    const maxRow = Math.max(...rows);
-    const minCol = Math.min(...cols);
-    const maxCol = Math.max(...cols);
-
-    const expectedCount = (maxRow - minRow + 1) * (maxCol - minCol + 1);
-    const isContiguous = (selectedCells.length === expectedCount);
-
-    // 非連続の場合も、基準セルは左上
-    let baselineRow = minRow, baselineCol = minCol;
-
-    if (isContiguous) {
-        clipboardData = {
-            startRow: baselineRow,
-            startCol: baselineCol,
-            data: []
-        };
-        for (let r = minRow; r <= maxRow; r++) {
-            let rowData = [];
-            for (let c = minCol; c <= maxCol; c++) {
-                const cell = getCell(r, c);
-                if (cell) {
-                    rowData.push({
-                        value: cell.textContent,
-                        formula: cell.dataset.formula || "",
-                        cssText: cell.getAttribute("style") || ""
-                    });
-                } else {
-                    rowData.push({ value: "", formula: "", cssText: "" });
-                }
-            }
-            clipboardData.data.push(rowData);
-        }
-    } else {
-        clipboardData = {
-            // 非連続の場合にも基準セルを保存しておく
-            startRow: baselineRow,
-            startCol: baselineCol,
-            data: []
-        };
-        selectedCells.forEach(cell => {
-            clipboardData.data.push({
-                row: parseInt(cell.dataset.row, 10),
-                col: parseInt(cell.dataset.col, 10),
-                value: cell.textContent,
-                formula: cell.dataset.formula || "",
-                cssText: cell.getAttribute("style") || ""
-            });
-        });
-    }
-    console.log("コピー完了:", clipboardData);
 }
 
 // 貼り付け処理の更新：数式中のセル参照を調整して貼り付ける
@@ -3230,16 +3184,23 @@ function loadState(stateJSON) {
     stateData.cells.forEach(cellData => {
         let targetCell = getCell(cellData.row, cellData.col);
         if (targetCell) {
-            // 反映する前に、念のため既存の結合属性があればリセットする処理も検討してください
+            // まずは保存された値を反映します
             targetCell.textContent = cellData.value;
 
-            if (cellData.formula && cellData.formula.trim() !== "") {
+            // 値が空の場合は、セルの数式情報もクリアする
+            if (cellData.value.trim() === "") {
+                delete targetCell.dataset.formula;
+            }
+            // もし値が空でなく、なおかつ数式情報があれば、数式を再評価して表示する
+            else if (cellData.formula && cellData.formula.trim() !== "") {
                 targetCell.dataset.formula = cellData.formula;
-                // 数式評価を取り入れる場合は、evaluateFormula(cellData.formula)で結果表示
                 targetCell.textContent = evaluateFormula(cellData.formula);
             }
+
+            // セルの style を適用
             targetCell.style.cssText = cellData.style;
 
+            // colspan, rowspan の反映（数値が1より大きければ属性をセット、そうでなければ属性を除去）
             if (cellData.colspan && parseInt(cellData.colspan, 10) > 1) {
                 targetCell.setAttribute("colspan", cellData.colspan);
             } else {
