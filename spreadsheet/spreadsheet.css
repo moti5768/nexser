@@ -250,3 +250,21 @@ td.fill-selected {
 td.selected:has(.fill-handle) {
     outline: 2px steelblue solid;
 }
+
+#spreadsheet td.selected[style*="background-color"] {
+    outline: 2px dashed black;
+    outline-offset: -2.5px;
+    box-sizing: border-box;
+    background-color: none;
+}
+
+#spreadsheet td.selected[style*="background-color: black"],
+#spreadsheet td.selected[style*="background-color: rgb(0, 0, 0)"] {
+    outline: 2px dashed whitesmoke;
+    outline-offset: -2.5px;
+    box-sizing: border-box;
+}
+
+#spreadsheet td.selected[style*="background-color"]::after {
+    background-color: transparent;
+}
