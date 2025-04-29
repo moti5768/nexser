@@ -1,0 +1,252 @@
+/* リセット */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* html, body の高さを100%に設定 */
+html,
+body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+/* ボディ自体を縦方向のFlexコンテナに設定 */
+body {
+    display: flex;
+    flex-direction: column;
+}
+
+/* ----- ツールバー全体 ----- */
+/* ツールバー全体をまとめるコンテナ（HTML側でラップする必要あり） */
+#toolbar-container {
+    display: flex;
+    flex-shrink: 0;
+    flex-direction: column;
+    margin: 2.5px;
+}
+
+/* ----- 上段：ボタン類＆カラーパレットを同じ一列に ----- */
+/* このコンテナは、ボタンやパレットを横に並べる */
+#controls-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2.5px;
+}
+
+/* フォーマットツールバー（ボタン群）のスタイル */
+#format-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 5px;
+}
+
+#format-toolbar label {
+    margin-right: 10px;
+    font-size: 14px;
+}
+
+#toggle-bold {
+    font-weight: bold;
+    margin-right: 10px;
+}
+
+/* カラーパレット：テキスト色・セル背景色を inline-flex にして一列に */
+#text-color-palette,
+#cell-color-palette {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 14px;
+}
+
+#text-color-palette span,
+#cell-color-palette span {
+    margin-right: 5px;
+}
+
+.color-swatch {
+    width: 20px;
+    height: 20px;
+    margin-right: 3px;
+    margin-bottom: 3px;
+    cursor: pointer;
+    border: 1px solid #ccc;
+}
+
+/* 自由色ピッカー */
+#text-color-picker,
+#cell-color-picker {
+    margin-left: 5px;
+}
+
+/* ----- 下段：数式バー ----- */
+#formula-bar-container {
+    display: flex;
+    width: 100%;
+}
+
+#formula-bar {
+    width: 100%;
+    height: 30px;
+    font-size: 16px;
+    padding: 5px;
+    outline: none;
+}
+
+/* ----- 以下、既存のスプレッドシート関連スタイル ----- */
+
+/* スプレッドシートコンテナ */
+#spreadsheet-container {
+    flex-grow: 1;
+    width: 100%;
+    border: 1px solid #ccc;
+    background-color: #fff;
+    overflow: auto;
+}
+
+/* テーブル全体 */
+#spreadsheet {
+    border-collapse: collapse;
+    width: 100%;
+    table-layout: fixed;
+}
+
+#spreadsheet th,
+#spreadsheet td {
+    width: 120px;
+    height: 40px;
+    padding: 8px;
+    text-align: left;
+    overflow: hidden;
+    white-space: nowrap;
+    position: relative;
+    /* 各セルを relative にして、選択オーバーレイを配置可能に */
+}
+
+#spreadsheet td {
+    cursor: cell;
+    border: 1px solid #ccc;
+}
+
+#spreadsheet td[style*="background-color"] {
+    border: none;
+}
+
+#spreadsheet thead th {
+    background-color: #e0e0e0;
+    font-weight: bold;
+    position: sticky;
+    top: 0;
+    z-index: 11;
+}
+
+#spreadsheet thead th:first-child {
+    left: 0;
+    z-index: 2;
+}
+
+#spreadsheet tbody th {
+    background-color: #f0f0f0;
+    position: sticky;
+    left: 0;
+    z-index: 11;
+}
+
+#spreadsheet td:focus {
+    outline: 2px solid #4a90e2;
+}
+
+/* 選択状態のオーバーレイ */
+#spreadsheet td.selected::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: blue;
+    opacity: 0.25;
+    pointer-events: none;
+    z-index: 3;
+}
+
+td[contenteditable="true"] {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+}
+
+#spreadsheet td[contenteditable="true"].selected::after {
+    opacity: 0;
+}
+
+#spreadsheet td[contenteditable="true"] {
+    cursor: text;
+}
+
+/* 行番号と列番号のカーソル */
+th.row_number {
+    cursor: e-resize;
+}
+
+th.col_number {
+    cursor: s-resize;
+}
+
+td.calc-range {
+    background-color: #ccffff;
+}
+
+/* ヘッダーの相対位置設定（ハンドル配置用） */
+th.row_number,
+th.col_number {
+    position: relative;
+}
+
+/* 行番号用ハンドル */
+.row-resize-handle {
+    position: absolute;
+    height: 5px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    cursor: ns-resize;
+    background: transparent;
+}
+
+/* 列番号用ハンドル */
+.col-resize-handle {
+    position: absolute;
+    width: 5px;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    cursor: ew-resize;
+    background: transparent;
+}
+
+/* フィルハンドル */
+.fill-handle {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background-color: steelblue;
+    bottom: 0;
+    right: 0;
+    cursor: crosshair;
+    z-index: 1;
+}
+
+/* フィルドラッグ中のハイライト */
+td.fill-selected {
+    outline: 1.5px blue dotted;
+}
+
+td.selected:has(.fill-handle) {
+    outline: 2px steelblue solid;
+}
