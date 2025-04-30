@@ -962,11 +962,14 @@ cellColorCustom.addEventListener("input", function (e) {
     if (cells.length > 0) {
         cells.forEach(cell => {
             cell.style.backgroundColor = color;
+            cell.classList.add('transparent');
         });
     } else if (activeCell) {
         activeCell.style.backgroundColor = color;
+        activeCell.classList.add('transparent');
     }
 });
+
 // =======================
 // Block 11: セル自動編集モード切替 (キーダウンイベント)
 // =======================
@@ -1184,6 +1187,11 @@ function doMove(e) {
             }
         }
     }
+
+    document.querySelectorAll('#spreadsheet tbody td').forEach(td => {
+        td.classList.remove('transparent');
+    });
+
 }
 
 
