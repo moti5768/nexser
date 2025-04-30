@@ -2854,17 +2854,11 @@ function unmergeSelectedCells() {
         return;
     }
 
-    // 複数の結合グループがある可能性があるので、処理済みのアンカーセルを保持する
-    const processedAnchors = new Set();
+    // 結合グループのアンカーを重複処理しないため、各アンカーの “row,col” キーを保持する Set
+    const processedAnchorKeys = new Set();
 
     selectedCells.forEach(cell => {
-        // すでに処理済みならスキップ
-        if (processedAnchors.has(cell)) {
-            return;
-        }
-
-        // まず、セルが結合セルか判定
-        // ここでは、rowspan/colspan が 1 より大きい、または merge 関連の情報がある場合を結合セルとみなす
+        // まず、セルが結合状態か判定
         const rowSpanAttr = cell.getAttribute("rowspan");
         const colSpanAttr = cell.getAttribute("colspan");
         const rowSpan = rowSpanAttr ? parseInt(rowSpanAttr, 10) : 1;
@@ -2872,49 +2866,52 @@ function unmergeSelectedCells() {
         const isMerged = (rowSpan > 1 || colSpan > 1) || (cell.dataset.mergeMinRow && cell.dataset.mergeMinCol);
 
         if (!isMerged) {
-            // 結合セルでなければスキップ
+            // 結合状態でなければスキップ
             return;
         }
 
-        // 結合セルの場合、cell がアンカーセルかどうか確認する。
-        // アンカーセルの場合は通常 merged クラスが付与されているか、
-        // もしくは mergeAnchorRow/mergeAnchorCol が設定されていないセルがアンカーとなる想定です。
+        // 結合セルの場合、まずアンカーセルを決定する。
+        // 通常はアンカーには merged クラスが付いている（または mergeAnchor* 属性が無い）ので、
+        // もし cell に mergeAnchorRow/mergeAnchorCol があれば、それはアンカー以外とみなしてアンカーを取得する
         let anchorCell = cell;
         if (!cell.classList.contains("merged") && cell.dataset.mergeAnchorRow && cell.dataset.mergeAnchorCol) {
-            // 既に結合されたセルの中で、アンカー以外のセルなら、
-            // アンカーセルを取得する
             anchorCell = getCell(
                 parseInt(cell.dataset.mergeAnchorRow, 10),
                 parseInt(cell.dataset.mergeAnchorCol, 10)
             );
         }
-        if (!anchorCell) {
-            return;
-        }
-        // すでにこのアンカーセルで処理済みならスキップ
-        if (processedAnchors.has(anchorCell)) {
-            return;
-        }
+        if (!anchorCell) return;
 
-        // 次に、結合範囲を取得する
+        // 重複処理を避けるため、キー（例: "5,3"）を使ってこのアンカーを一意に識別
+        const anchorKey = anchorCell.dataset.row + "," + anchorCell.dataset.col;
+        if (processedAnchorKeys.has(anchorKey)) {
+            return;
+        }
+        processedAnchorKeys.add(anchorKey);
+
+        // 結合範囲を取得する
         let minRow, maxRow, minCol, maxCol;
-        if (anchorCell.dataset.mergeMinRow && anchorCell.dataset.mergeMinCol) {
-            // mergeSelectedCells() で設定した情報があれば
+        if (
+            anchorCell.dataset.mergeMinRow &&
+            anchorCell.dataset.mergeMinCol &&
+            anchorCell.dataset.mergeMaxRow &&
+            anchorCell.dataset.mergeMaxCol
+        ) {
             minRow = parseInt(anchorCell.dataset.mergeMinRow, 10);
             maxRow = parseInt(anchorCell.dataset.mergeMaxRow, 10);
             minCol = parseInt(anchorCell.dataset.mergeMinCol, 10);
             maxCol = parseInt(anchorCell.dataset.mergeMaxCol, 10);
         } else {
-            // 属性が無い場合は、セルの位置と rowspan/colspan から計算
+            // もし merge 情報が無い場合は、HTML 属性の rowspan/colspan から計算
             const baseRow = parseInt(anchorCell.dataset.row, 10);
             const baseCol = parseInt(anchorCell.dataset.col, 10);
             minRow = baseRow;
             minCol = baseCol;
-            maxRow = baseRow + rowSpan - 1;
-            maxCol = baseCol + colSpan - 1;
+            maxRow = baseRow + (rowSpan - 1);
+            maxCol = baseCol + (colSpan - 1);
         }
 
-        // アンカーセルの結合属性と merge 関連の情報を解除
+        // アンカーセルの結合属性・データ・クラスを解除する
         anchorCell.removeAttribute("rowspan");
         anchorCell.removeAttribute("colspan");
         anchorCell.classList.remove("merged");
@@ -2925,16 +2922,16 @@ function unmergeSelectedCells() {
         delete anchorCell.dataset.mergeAnchorRow;
         delete anchorCell.dataset.mergeAnchorCol;
 
-        // 結合範囲内のアンカー以外のセルの状態を元に戻す
+        // 結合範囲内の、アンカーセル以外のセルに対しても解除処理を実施
         for (let r = minRow; r <= maxRow; r++) {
             for (let c = minCol; c <= maxCol; c++) {
                 // アンカーセルは除外
                 if (r === minRow && c === minCol) continue;
                 const otherCell = getCell(r, c);
                 if (otherCell) {
-                    otherCell.style.display = ""; // 非表示解除
+                    otherCell.style.display = ""; // 元の表示状態に戻す
                     otherCell.classList.remove("merged-hidden");
-                    // merge 関連の全ての data 属性を削除
+                    // merge 関連のすべての data 属性を削除
                     delete otherCell.dataset.mergeAnchorRow;
                     delete otherCell.dataset.mergeAnchorCol;
                     delete otherCell.dataset.mergeMinRow;
@@ -2944,15 +2941,11 @@ function unmergeSelectedCells() {
                 }
             }
         }
-
-        // マージ解除したアンカーセルは処理済みとして登録
-        processedAnchors.add(anchorCell);
     });
 
     updateSelectedCellsDisplay();
     updateVisibleCells();
 }
-
 
 
 // グローバル変数：コピーされたセル群の詳細情報を保持
