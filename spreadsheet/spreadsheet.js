@@ -156,7 +156,6 @@ function handleCellDblClick(e) {
 }
 
 
-
 function handleCellBlur(e) {
     const cell = e.target;
     // textContent で取得すれば、挿入された "\n" がそのまま残ります
