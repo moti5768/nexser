@@ -51,11 +51,6 @@ body {
     font-size: 14px;
 }
 
-#toggle-bold {
-    font-weight: bold;
-    margin-right: 10px;
-}
-
 /* カラーパレット：テキスト色・セル背景色を inline-flex にして一列に */
 #text-color-palette,
 #cell-color-palette {

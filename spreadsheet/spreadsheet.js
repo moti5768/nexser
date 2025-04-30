@@ -907,6 +907,21 @@ toggleBoldButton2.addEventListener("click", function (e) {
     }
 });
 
+let toggleBoldButton3 = document.getElementById("toggle-underline");
+toggleBoldButton3.addEventListener("click", function (e) {
+    if (activeCell) {
+        let cells = document.querySelectorAll("#spreadsheet tbody td.selected");
+        if (cells.length > 0) {
+            cells.forEach(cell => {
+                cell.style.textDecoration = (cell.style.textDecoration === "underline") ? "none" : "underline";
+            });
+        } else {
+            activeCell.style.textDecoration = (activeCell.style.textDecoration === "underline") ? "none" : "underline";
+        }
+    }
+});
+
+
 // 10-4. Text Color palette (固定カラー)
 let textColorSwatches = document.querySelectorAll("#text-color-palette .color-swatch");
 textColorSwatches.forEach(swatch => {
