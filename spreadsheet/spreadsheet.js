@@ -686,6 +686,7 @@ function handleCellMouseDown(e) {
         return;
     }
     activeCell = e.target;
+    removeMergedCellsHighlight();
 }
 
 
@@ -1597,7 +1598,38 @@ formulaBarInput.addEventListener("input", function () {
     } else {
         clearCalculationRangeHighlights();
     }
+    if (formulaText === '{"mergecell"}') {
+        highlightMergedCells();
+    } else {
+        removeMergedCellsHighlight();
+    }
+    const formulaText2 = formulaBarInput.value;
+    const selectedCells = document.querySelectorAll("#spreadsheet tbody td.selected");
+
+    selectedCells.forEach(cell => {
+        cell.textContent = formulaText2;
+    });
 });
+
+function highlightMergedCells() {
+    // シート内の全セルを取得
+    const cells = document.querySelectorAll("#spreadsheet tbody td");
+    cells.forEach(cell => {
+        // rowspan, colspan 属性の値を数値で取得（属性が無ければ 1 とする）
+        const rowSpan = cell.getAttribute("rowspan") ? parseInt(cell.getAttribute("rowspan"), 10) : 1;
+        const colSpan = cell.getAttribute("colspan") ? parseInt(cell.getAttribute("colspan"), 10) : 1;
+        // 結合セルとみなす条件
+        const isMerged = (rowSpan > 1 || colSpan > 1) || (cell.dataset.mergeMinRow && cell.dataset.mergeMinCol);
+        if (isMerged) {
+            cell.classList.add("merge-highlight");
+        }
+    });
+}
+
+function removeMergedCellsHighlight() {
+    const highlighted = document.querySelectorAll("#spreadsheet tbody td.merge-highlight");
+    highlighted.forEach(cell => cell.classList.remove("merge-highlight"));
+}
 
 document.addEventListener("input", function (e) {
     // 編集モードのセル（contenteditable が true の td 要素）で発生した input イベントを確認

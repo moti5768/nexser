@@ -261,22 +261,9 @@ td.selected:has(.fill-handle) {
     /* テキスト内の改行文字(\n)はそのまま表示（自動折り返しは行わない） */
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+.merge-highlight {
+    outline: 3px dashed red;
+}
 
 
 /* pulldown_menu */
