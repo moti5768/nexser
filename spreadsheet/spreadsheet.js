@@ -1276,16 +1276,16 @@ function applyOuterBorder() {
         const row = parseInt(cell.dataset.row, 10);
         const col = parseInt(cell.dataset.col, 10);
         if (row === minRow) {
-            cell.style.borderTop = "3px solid black";
+            cell.style.borderTop = "3.5px solid black";
         }
         if (row === maxRow) {
-            cell.style.borderBottom = "3px solid black";
+            cell.style.borderBottom = "3.5px solid black";
         }
         if (col === minCol) {
-            cell.style.borderLeft = "3px solid black";
+            cell.style.borderLeft = "3.5px solid black";
         }
         if (col === maxCol) {
-            cell.style.borderRight = "3px solid black";
+            cell.style.borderRight = "3.5px solid black";
         }
     });
 }
@@ -1305,7 +1305,7 @@ function applyTopBorder() {
     selectedCells.forEach(cell => {
         const row = parseInt(cell.dataset.row, 10);
         if (row === minRow) {
-            cell.style.borderTop = "3px solid black";
+            cell.style.borderTop = "3.5px solid black";
         }
     });
 }
@@ -1325,7 +1325,7 @@ function applyBottomBorder() {
     selectedCells.forEach(cell => {
         const row = parseInt(cell.dataset.row, 10);
         if (row === maxRow) {
-            cell.style.borderBottom = "3px solid black";
+            cell.style.borderBottom = "3.5px solid black";
         }
     });
 }
@@ -1345,7 +1345,7 @@ function applyLeftBorder() {
     selectedCells.forEach(cell => {
         const col = parseInt(cell.dataset.col, 10);
         if (col === minCol) {
-            cell.style.borderLeft = "3px solid black";
+            cell.style.borderLeft = "3.5px solid black";
         }
     });
 }
@@ -1365,7 +1365,7 @@ function applyRightBorder() {
     selectedCells.forEach(cell => {
         const col = parseInt(cell.dataset.col, 10);
         if (col === maxCol) {
-            cell.style.borderRight = "3px solid black";
+            cell.style.borderRight = "3.5px solid black";
         }
     });
 }
@@ -1377,10 +1377,10 @@ function applyCellBorder() {
     if (selectedCells.length === 0) return;
 
     selectedCells.forEach(cell => {
-        cell.style.borderTop = "3px solid black";
-        cell.style.borderBottom = "3px solid black";
-        cell.style.borderLeft = "3px solid black";
-        cell.style.borderRight = "3px solid black";
+        cell.style.borderTop = "3.5px solid black";
+        cell.style.borderBottom = "3.5px solid black";
+        cell.style.borderLeft = "3.5px solid black";
+        cell.style.borderRight = "3.5px solid black";
     });
 }
 
@@ -1459,6 +1459,7 @@ document.addEventListener("keydown", function (e) {
         updateFillHandle();
         // 標準の Backspace / Delete のブラウザ動作（ページ戻り等）を防止
         e.preventDefault();
+        formulaBarInput.value = "";
     }
 });
 
@@ -2614,14 +2615,16 @@ function cloneCellProperties(sourceCell, targetCell) {
     // 1. テキスト内容をコピー
     targetCell.textContent = sourceCell.textContent;
 
-    // 2. data-* 属性のコピー（セル番号を示す 'row' と 'col' は除外）
+    // 2. data-* 属性のコピー（コピー元の merge 関連の属性はコピーせず、row/col も除外）
     Object.keys(sourceCell.dataset).forEach(key => {
-        if (key !== 'row' && key !== 'col') {
+        // コピー元のデータを、'row', 'col'、および merge 関連（"merge" で始まる）のキーは除外する
+        if (key !== 'row' && key !== 'col' && !key.startsWith("merge")) {
             targetCell.dataset[key] = sourceCell.dataset[key];
         }
     });
+    // ※ここでは、もしコピー先が既に merge の情報を持っている場合は、何も上書きしないのでそのまま維持される
 
-    // 数式データが存在する場合は必ずコピーし、コピー先セルの位置に合わせて調整する
+    // 3. 数式データのコピーと調整
     if (sourceCell.dataset.formula && sourceCell.dataset.formula[0] === "=") {
         const srcRow = parseInt(sourceCell.dataset.row, 10);
         const srcCol = parseInt(sourceCell.dataset.col, 10);
@@ -2631,18 +2634,17 @@ function cloneCellProperties(sourceCell, targetCell) {
         const colOffset = tgtCol - srcCol;
         targetCell.dataset.formula = adjustFormula(sourceCell.dataset.formula, rowOffset, colOffset);
     } else {
-        // 数式データがない場合は、不要な formula データを削除
+        // 数式データがない場合、コピー先に formula 情報があれば削除する
         if (targetCell.dataset.formula) {
             delete targetCell.dataset.formula;
         }
     }
 
-    // 3. スタイル情報のコピー
+    // 4. スタイル情報のコピー
     const computed = window.getComputedStyle(sourceCell);
     const bgColor = computed.backgroundColor;
-    targetCell.style.backgroundColor = (bgColor === "rgba(0, 0, 0, 0)" || bgColor === "transparent")
-        ? "" : bgColor;
-
+    targetCell.style.backgroundColor =
+        (bgColor === "rgba(0, 0, 0, 0)" || bgColor === "transparent") ? "" : bgColor;
     targetCell.style.color = computed.color;
     targetCell.style.textAlign = computed.textAlign;
     targetCell.style.border = computed.border;
@@ -2652,12 +2654,13 @@ function cloneCellProperties(sourceCell, targetCell) {
     targetCell.style.fontWeight = computed.fontWeight;
     targetCell.style.verticalAlign = computed.verticalAlign;
 
-    // 4. contenteditable など、選択状態に関する属性・クラスはコピーしない
+    // 5. contenteditable など、選択状態に関する属性・クラスはコピーしない
     targetCell.removeAttribute("contenteditable");
     targetCell.classList.remove("selected", "fill-selected");
 
     updateAllFormulas();
 }
+
 
 
 
@@ -2844,79 +2847,111 @@ function mergeSelectedCells() {
  * ※ 結合セルのアンカーとなっているセルを対象にします
  */
 function unmergeSelectedCells() {
-    // activeCell を対象または、document.querySelector("#spreadsheet tbody td.selected") など
-    const cell = activeCell;
-    if (!cell) {
+    // 選択セル全体を取得
+    const selectedCells = Array.from(document.querySelectorAll("#spreadsheet tbody td.selected"));
+    if (selectedCells.length === 0) {
         alert("結合解除するセルを選択してください。");
         return;
     }
 
-    // rowspan, colspan 属性の値を取得（属性が無い場合は 1 とみなす）
-    const rowSpanAttr = cell.getAttribute("rowspan");
-    const colSpanAttr = cell.getAttribute("colspan");
-    const rowSpan = rowSpanAttr ? parseInt(rowSpanAttr, 10) : 1;
-    const colSpan = colSpanAttr ? parseInt(colSpanAttr, 10) : 1;
+    // 複数の結合グループがある可能性があるので、処理済みのアンカーセルを保持する
+    const processedAnchors = new Set();
 
-    // どちらかが 1 より大きければ結合セルとして判定
-    if (rowSpan === 1 && colSpan === 1) {
-        alert("結合解除するセルを選択してください。");
-        return;
-    }
+    selectedCells.forEach(cell => {
+        // すでに処理済みならスキップ
+        if (processedAnchors.has(cell)) {
+            return;
+        }
 
-    // 結合領域の範囲を取得
-    let minRow, maxRow, minCol, maxCol;
-    if (cell.dataset.mergeMinRow && cell.dataset.mergeMinCol) {
-        // mergeSelectedCells() で設定した情報がある場合
-        minRow = parseInt(cell.dataset.mergeMinRow, 10);
-        maxRow = parseInt(cell.dataset.mergeMaxRow, 10);
-        minCol = parseInt(cell.dataset.mergeMinCol, 10);
-        maxCol = parseInt(cell.dataset.mergeMaxCol, 10);
-    } else {
-        const baseRow = parseInt(cell.dataset.row, 10);
-        const baseCol = parseInt(cell.dataset.col, 10);
-        minRow = baseRow;
-        minCol = baseCol;
-        maxRow = baseRow + rowSpan - 1;
-        maxCol = baseCol + colSpan - 1;
-    }
+        // まず、セルが結合セルか判定
+        // ここでは、rowspan/colspan が 1 より大きい、または merge 関連の情報がある場合を結合セルとみなす
+        const rowSpanAttr = cell.getAttribute("rowspan");
+        const colSpanAttr = cell.getAttribute("colspan");
+        const rowSpan = rowSpanAttr ? parseInt(rowSpanAttr, 10) : 1;
+        const colSpan = colSpanAttr ? parseInt(colSpanAttr, 10) : 1;
+        const isMerged = (rowSpan > 1 || colSpan > 1) || (cell.dataset.mergeMinRow && cell.dataset.mergeMinCol);
 
-    // アンカーセル（結合表示されているセル）の結合属性と merge 関連のデータ・クラスを解除
-    cell.removeAttribute("rowspan");
-    cell.removeAttribute("colspan");
-    cell.classList.remove("merged");
-    delete cell.dataset.mergeMinRow;
-    delete cell.dataset.mergeMaxRow;
-    delete cell.dataset.mergeMinCol;
-    delete cell.dataset.mergeMaxCol;
-    delete cell.dataset.mergeAnchorRow;
-    delete cell.dataset.mergeAnchorCol;
+        if (!isMerged) {
+            // 結合セルでなければスキップ
+            return;
+        }
 
-    // 結合範囲内の、アンカーセル以外のセルは元の表示状態に戻し、merge 判定用の属性を完全削除
-    for (let r = minRow; r <= maxRow; r++) {
-        for (let c = minCol; c <= maxCol; c++) {
-            // アンカーセルは除外
-            if (r === minRow && c === minCol) continue;
-            const otherCell = getCell(r, c);
-            if (otherCell) {
-                // 元の表示状態に戻す（display の設定をリセット）
-                otherCell.style.display = "";
-                otherCell.classList.remove("merged-hidden");
-                // merge に関する全てのデータ属性を削除
-                delete otherCell.dataset.mergeAnchorRow;
-                delete otherCell.dataset.mergeAnchorCol;
-                delete otherCell.dataset.mergeMinRow;
-                delete otherCell.dataset.mergeMinCol;
-                delete otherCell.dataset.mergeMaxRow;
-                delete otherCell.dataset.mergeMaxCol;
+        // 結合セルの場合、cell がアンカーセルかどうか確認する。
+        // アンカーセルの場合は通常 merged クラスが付与されているか、
+        // もしくは mergeAnchorRow/mergeAnchorCol が設定されていないセルがアンカーとなる想定です。
+        let anchorCell = cell;
+        if (!cell.classList.contains("merged") && cell.dataset.mergeAnchorRow && cell.dataset.mergeAnchorCol) {
+            // 既に結合されたセルの中で、アンカー以外のセルなら、
+            // アンカーセルを取得する
+            anchorCell = getCell(
+                parseInt(cell.dataset.mergeAnchorRow, 10),
+                parseInt(cell.dataset.mergeAnchorCol, 10)
+            );
+        }
+        if (!anchorCell) {
+            return;
+        }
+        // すでにこのアンカーセルで処理済みならスキップ
+        if (processedAnchors.has(anchorCell)) {
+            return;
+        }
+
+        // 次に、結合範囲を取得する
+        let minRow, maxRow, minCol, maxCol;
+        if (anchorCell.dataset.mergeMinRow && anchorCell.dataset.mergeMinCol) {
+            // mergeSelectedCells() で設定した情報があれば
+            minRow = parseInt(anchorCell.dataset.mergeMinRow, 10);
+            maxRow = parseInt(anchorCell.dataset.mergeMaxRow, 10);
+            minCol = parseInt(anchorCell.dataset.mergeMinCol, 10);
+            maxCol = parseInt(anchorCell.dataset.mergeMaxCol, 10);
+        } else {
+            // 属性が無い場合は、セルの位置と rowspan/colspan から計算
+            const baseRow = parseInt(anchorCell.dataset.row, 10);
+            const baseCol = parseInt(anchorCell.dataset.col, 10);
+            minRow = baseRow;
+            minCol = baseCol;
+            maxRow = baseRow + rowSpan - 1;
+            maxCol = baseCol + colSpan - 1;
+        }
+
+        // アンカーセルの結合属性と merge 関連の情報を解除
+        anchorCell.removeAttribute("rowspan");
+        anchorCell.removeAttribute("colspan");
+        anchorCell.classList.remove("merged");
+        delete anchorCell.dataset.mergeMinRow;
+        delete anchorCell.dataset.mergeMaxRow;
+        delete anchorCell.dataset.mergeMinCol;
+        delete anchorCell.dataset.mergeMaxCol;
+        delete anchorCell.dataset.mergeAnchorRow;
+        delete anchorCell.dataset.mergeAnchorCol;
+
+        // 結合範囲内のアンカー以外のセルの状態を元に戻す
+        for (let r = minRow; r <= maxRow; r++) {
+            for (let c = minCol; c <= maxCol; c++) {
+                // アンカーセルは除外
+                if (r === minRow && c === minCol) continue;
+                const otherCell = getCell(r, c);
+                if (otherCell) {
+                    otherCell.style.display = ""; // 非表示解除
+                    otherCell.classList.remove("merged-hidden");
+                    // merge 関連の全ての data 属性を削除
+                    delete otherCell.dataset.mergeAnchorRow;
+                    delete otherCell.dataset.mergeAnchorCol;
+                    delete otherCell.dataset.mergeMinRow;
+                    delete otherCell.dataset.mergeMinCol;
+                    delete otherCell.dataset.mergeMaxRow;
+                    delete otherCell.dataset.mergeMaxCol;
+                }
             }
         }
-    }
 
-    // 必要に応じて、選択状態や可視状態の再描画などの更新処理を呼び出す
+        // マージ解除したアンカーセルは処理済みとして登録
+        processedAnchors.add(anchorCell);
+    });
+
     updateSelectedCellsDisplay();
     updateVisibleCells();
 }
-
 
 
 
@@ -3591,3 +3626,30 @@ window.addEventListener("load", function () {
 // -------------------------
 initializeColumns(INITIAL_COLUMNS);
 loadRows(INITIAL_ROWS);
+
+
+
+// プルダウンボタン
+
+document.querySelectorAll(".pulldown_btn").forEach(pulldown => {
+    pulldown.addEventListener("mousedown", function (e) {
+        document.querySelectorAll(".pulldown_menu").forEach(pulldown_menu => {
+            pulldown_menu.style.display = "none";
+        })
+        const pulldown_menu = pulldown.closest(".pulldown_menu_parent").children[1];
+        if (pulldown_menu.style.display == "block") {
+            pulldown_menu.style.display = "none";
+        } else {
+            pulldown_menu.style.display = "block";
+        }
+
+    })
+});
+document.addEventListener('mousedown', (e) => {
+    var isClickInsideStartButton = Array.from(document.querySelectorAll('.pulldown_btn,.pulldown_menu')).some(button => button.contains(e.target));
+    if (!isClickInsideStartButton) {
+        document.querySelectorAll(".pulldown_menu").forEach(pulldown_menu => {
+            pulldown_menu.style.display = "none";
+        })
+    }
+})

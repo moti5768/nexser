@@ -11,6 +11,7 @@ body {
     height: 100%;
     margin: 0;
     padding: 0;
+    font-family: '游ゴシック', 'Yu Gothic', 'Calibri', sans-serif;
 }
 
 /* ボディ自体を縦方向のFlexコンテナに設定 */
@@ -258,4 +259,46 @@ td.selected:has(.fill-handle) {
 #spreadsheet td {
     white-space: pre;
     /* テキスト内の改行文字(\n)はそのまま表示（自動折り返しは行わない） */
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* pulldown_menu */
+.pulldown_menu_parent {
+    display: flex;
+    flex-direction: column;
+}
+
+.pulldown_menu {
+    display: none;
+    position: absolute;
+    margin-top: 30px;
+    margin-left: 60px;
+    border: solid 2px black;
+    padding: 10px;
+    font-size: x-small;
+    z-index: 20;
+    background-color: whitesmoke;
+}
+
+.pulldown_menu>div,
+.pulldown_menu>button {
+    width: 100%;
+    margin: 2px;
 }

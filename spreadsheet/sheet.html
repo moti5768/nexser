@@ -15,17 +15,15 @@
     <!-- 上段：フォーマット操作ボタン、カラーパレット、関数ボタン、セル結合ボタンなどを同一行にまとめる -->
     <div id="controls-row">
 
-      <button onclick="copySelectedCells()">Copy</button>
-      <button onclick="pasteClipboardData()">Paste</button>
-      <button onclick="undo()">戻る</button>
-      <button onclick="redo()">進む</button>
-
+      <button onclick="undo()">&nbsp;↺&nbsp;</button>
+      <button onclick="redo()">&nbsp;↻&nbsp;</button>
       <button onclick="saveSpreadsheetData()">保存</button>
       <button onclick="loadSpreadsheetData()">読み込む</button>
+      <button onclick="copySelectedCells()">コピー</button>
+      <button onclick="pasteClipboardData()">貼り付け</button>
 
       <!-- フォーマットツールバー -->
-      <div id="format-toolbar">
-        Text Alignment:
+      <div id="format-toolbar" style="display: flex;">
         <div id="text-alignment-buttons">
           <button type="button" style="font-size: 18px;" data-align="left">=&nbsp;&nbsp;</button>
           <button type="button" style="font-size: 18px;" data-align="center">&nbsp;=&nbsp;</button>
@@ -65,92 +63,99 @@
         <button id="apply-outer-border" onclick="applyOuterBorder()">外枠適用</button>
         <button id="apply-cell-border" onclick="applyCellBorder()">セル枠適用</button>
         <button id="remove-all-borders" onclick="removeAllBorders()">枠線解除</button>
-      </div>
-
-      <!-- テキスト色パレット -->
-      <div id="text-color-palette" style="display:inline-flex; align-items:center; gap:5px;">
-        <span>Text Color:</span>
-        <div class="color-swatch" data-color="#000000" style="background-color: #000000;"></div>
-        <div class="color-swatch" data-color="#FF0000" style="background-color: #FF0000;"></div>
-        <div class="color-swatch" data-color="#00FF00" style="background-color: #00FF00;"></div>
-        <div class="color-swatch" data-color="#0000FF" style="background-color: #0000FF;"></div>
-        <div class="color-swatch" data-color="#FFFF00" style="background-color: #FFFF00;"></div>
-        <div class="color-swatch" data-color="#FF00FF" style="background-color: #FF00FF;"></div>
-        <div class="color-swatch" data-color="#00FFFF" style="background-color: #00FFFF;"></div>
-        <div class="color-swatch" data-color="#808080" style="background-color: #808080;"></div>
-        <div class="color-swatch" data-color="#800000" style="background-color: #800000;"></div>
-        <div class="color-swatch" data-color="#008000" style="background-color: #008000;"></div>
-        <div class="color-swatch" data-color="#000080" style="background-color: #000080;"></div>
-        <div class="color-swatch" data-color="#808000" style="background-color: #808000;"></div>
-        <div class="color-swatch" data-color="#800080" style="background-color: #800080;"></div>
-        <div class="color-swatch" data-color="#008080" style="background-color: #008080;"></div>
-        <div class="color-swatch" data-color="#C0C0C0" style="background-color: #C0C0C0;"></div>
-        <div class="color-swatch" data-color="#ffffff" style="background-color: #ffffff;"></div>
-        <div class="color-swatch" data-color="none"
-          style="background-color: transparent; border: 1px dashed #ccc; width: 50px;">No Fill</div>
-        <div id="text-color-picker">
-          <label>Custom: <input type="color" id="text-color-custom"></label>
-        </div>
-      </div>
-
-      <!-- セル背景色パレット -->
-      <div id="cell-color-palette" style="display:inline-flex; align-items:center; gap:5px;">
-        <span>Cell Color:</span>
-        <div class="color-swatch" data-color="#000000" style="background-color: #000000;"></div>
-        <div class="color-swatch" data-color="#FF0000" style="background-color: #FF0000;"></div>
-        <div class="color-swatch" data-color="#00FF00" style="background-color: #00FF00;"></div>
-        <div class="color-swatch" data-color="#0000FF" style="background-color: #0000FF;"></div>
-        <div class="color-swatch" data-color="#FFFF00" style="background-color: #FFFF00;"></div>
-        <div class="color-swatch" data-color="#FF00FF" style="background-color: #FF00FF;"></div>
-        <div class="color-swatch" data-color="#00FFFF" style="background-color: #00FFFF;"></div>
-        <div class="color-swatch" data-color="#808080" style="background-color: #808080;"></div>
-        <div class="color-swatch" data-color="#800000" style="background-color: #800000;"></div>
-        <div class="color-swatch" data-color="#008000" style="background-color: #008000;"></div>
-        <div class="color-swatch" data-color="#000080" style="background-color: #000080;"></div>
-        <div class="color-swatch" data-color="#808000" style="background-color: #808000;"></div>
-        <div class="color-swatch" data-color="#800080" style="background-color: #800080;"></div>
-        <div class="color-swatch" data-color="#008080" style="background-color: #008080;"></div>
-        <div class="color-swatch" data-color="#C0C0C0" style="background-color: #C0C0C0;"></div>
-        <div class="color-swatch" data-color="#ffffff" style="background-color: #ffffff;"></div>
-        <div class="color-swatch" data-color="none"
-          style="background-color: transparent; border: 1px dashed #ccc; width: 50px;">No Fill</div>
-        <div id="cell-color-picker">
-          <label>Custom: <input type="color" id="cell-color-custom"></label>
-        </div>
-      </div>
-
-      <!-- 関数ボタン群 -->
-      <div id="formula-buttons" style="display:inline-flex; gap:5px;">
-        <button onclick="applyFormula('=SUM()')">SUM</button>
-        <button onclick="applyFormula('=AVERAGE()')">AVERAGE</button>
-        <button onclick="applyFormula('=TODAY()')">TODAY</button>
-        <button onclick="applyFormula('=DATE(2025,4,26)')">DATE</button>
-        <button onclick="applyFormula('=DATEVALUE(\'1/2\')')">DATEVALUE</button>
-        <button onclick="applyFormula('=NOW()')">NOW</button>
-        <button onclick="applyFormula('=HOUR(NOW())')">HOUR</button>
-        <button onclick="applyFormula('=MINUTE(NOW())')">MINUTE</button>
-        <button onclick="applyFormula('=SECOND(NOW())')">SECOND</button>
-        <button onclick="applyFormula('=WEEKDAY(TODAY())')">WEEKDAY</button>
-        <button onclick="applyFormula('=EDATE(TODAY(), 1)')">EDATE(+1)</button>
-        <button onclick="applyFormula('=DATEDIF(DATE(2025,1,1), DATE(2025,4,26), \'D\')')">DATEDIF (D)</button>
-        <button onclick="applyFormula('=TIME(15,30,0)')">TIME</button>
-        <button onclick="applyFormula('=TIMEVALUE(\'14:30\')')">TIMEVALUE</button>
-      </div>
-
-      <!-- セル結合ボタン群 -->
-      <div id="merge-buttons" style="display:inline-flex; gap:5px;">
         <button id="merge-cells">セル結合</button>
         <button id="unmerge-cells">結合解除</button>
       </div>
 
-    </div> <!-- end #controls-row -->
+      <!-- テキスト色パレット -->
+      <div id="text-color-palette" class="pulldown_menu_parent"
+        style="display:inline-flex; align-items:center; gap:5px;">
+        <button class="pulldown_btn" style="font-size: medium;">&nbsp;A&nbsp;</button>
+        <ul class="pulldown_menu">
+          <div class="color-swatch" data-color="#000000" style="background-color: #000000;"></div>
+          <div class="color-swatch" data-color="#FF0000" style="background-color: #FF0000;"></div>
+          <div class="color-swatch" data-color="#00FF00" style="background-color: #00FF00;"></div>
+          <div class="color-swatch" data-color="#0000FF" style="background-color: #0000FF;"></div>
+          <div class="color-swatch" data-color="#FFFF00" style="background-color: #FFFF00;"></div>
+          <div class="color-swatch" data-color="#FF00FF" style="background-color: #FF00FF;"></div>
+          <div class="color-swatch" data-color="#00FFFF" style="background-color: #00FFFF;"></div>
+          <div class="color-swatch" data-color="#808080" style="background-color: #808080;"></div>
+          <div class="color-swatch" data-color="#800000" style="background-color: #800000;"></div>
+          <div class="color-swatch" data-color="#008000" style="background-color: #008000;"></div>
+          <div class="color-swatch" data-color="#000080" style="background-color: #000080;"></div>
+          <div class="color-swatch" data-color="#808000" style="background-color: #808000;"></div>
+          <div class="color-swatch" data-color="#800080" style="background-color: #800080;"></div>
+          <div class="color-swatch" data-color="#008080" style="background-color: #008080;"></div>
+          <div class="color-swatch" data-color="#C0C0C0" style="background-color: #C0C0C0;"></div>
+          <div class="color-swatch" data-color="#ffffff" style="background-color: #ffffff;"></div>
+          <div class="color-swatch" data-color="none"
+            style="background-color: transparent; border: 1px dashed #ccc; height: 30px;">塗りつぶしなし</div>
+          <div id="text-color-picker">
+            <label>Custom: <input type="color" id="text-color-custom"></label>
+          </div>
+        </ul>
 
-    <!-- 下段：数式バー -->
-    <div id="formula-bar-container">
-      <span id="selected-cells-display"
-        style="margin-right: 8px; font-weight: bold; width: 125px; border: solid 1px black; text-align: center; padding: 2px;"></span>
-      <input type="text" id="formula-bar" placeholder="数式または値を入力" autocomplete="off" />
+      </div>
+
+      <!-- セル背景色パレット -->
+      <div id="cell-color-palette" class="pulldown_menu_parent"
+        style="display:inline-flex; align-items:center; gap:5px;">
+        <button class="pulldown_btn"
+          style="background-color: black; color: whitesmoke; font-size: medium;">&nbsp;A&nbsp;</button>
+        <ul class="pulldown_menu">
+          <div class="color-swatch" data-color="#000000" style="background-color: #000000;"></div>
+          <div class="color-swatch" data-color="#FF0000" style="background-color: #FF0000;"></div>
+          <div class="color-swatch" data-color="#00FF00" style="background-color: #00FF00;"></div>
+          <div class="color-swatch" data-color="#0000FF" style="background-color: #0000FF;"></div>
+          <div class="color-swatch" data-color="#FFFF00" style="background-color: #FFFF00;"></div>
+          <div class="color-swatch" data-color="#FF00FF" style="background-color: #FF00FF;"></div>
+          <div class="color-swatch" data-color="#00FFFF" style="background-color: #00FFFF;"></div>
+          <div class="color-swatch" data-color="#808080" style="background-color: #808080;"></div>
+          <div class="color-swatch" data-color="#800000" style="background-color: #800000;"></div>
+          <div class="color-swatch" data-color="#008000" style="background-color: #008000;"></div>
+          <div class="color-swatch" data-color="#000080" style="background-color: #000080;"></div>
+          <div class="color-swatch" data-color="#808000" style="background-color: #808000;"></div>
+          <div class="color-swatch" data-color="#800080" style="background-color: #800080;"></div>
+          <div class="color-swatch" data-color="#008080" style="background-color: #008080;"></div>
+          <div class="color-swatch" data-color="#C0C0C0" style="background-color: #C0C0C0;"></div>
+          <div class="color-swatch" data-color="#ffffff" style="background-color: #ffffff;"></div>
+          <div class="color-swatch" data-color="none"
+            style="background-color: transparent; border: 1px dashed #ccc; height: 30px;">塗りつぶしなし</div>
+          <div id="cell-color-picker">
+            <label>Custom: <input type="color" id="cell-color-custom"></label>
+        </ul>
+      </div>
+
+      <!-- 関数ボタン群 -->
+      <div id="formula-buttons" class="pulldown_menu_parent" style="display:inline-flex; align-items:center; gap:5px;">
+        <button class="pulldown_btn">&nbsp;関数&nbsp;</button>
+        <ul class="pulldown_menu">
+          <button onclick="applyFormula('=SUM()')">SUM</button>
+          <button onclick="applyFormula('=AVERAGE()')">AVERAGE</button>
+          <button onclick="applyFormula('=TODAY()')">TODAY</button>
+          <button onclick="applyFormula('=DATE(2025,4,26)')">DATE</button>
+          <button onclick="applyFormula('=DATEVALUE(\'1/2\')')">DATEVALUE</button>
+          <button onclick="applyFormula('=NOW()')">NOW</button>
+          <button onclick="applyFormula('=HOUR(NOW())')">HOUR</button>
+          <button onclick="applyFormula('=MINUTE(NOW())')">MINUTE</button>
+          <button onclick="applyFormula('=SECOND(NOW())')">SECOND</button>
+          <button onclick="applyFormula('=WEEKDAY(TODAY())')">WEEKDAY</button>
+          <button onclick="applyFormula('=EDATE(TODAY(), 1)')">EDATE(+1)</button>
+          <button onclick="applyFormula('=DATEDIF(DATE(2025,1,1), DATE(2025,4,26), \'D\')')">DATEDIF (D)</button>
+          <button onclick="applyFormula('=TIME(15,30,0)')">TIME</button>
+          <button onclick="applyFormula('=TIMEVALUE(\'14:30\')')">TIMEVALUE</button>
+        </ul>
+      </div>
     </div>
+
+  </div> <!-- end #controls-row -->
+
+  <!-- 下段：数式バー -->
+  <div id="formula-bar-container">
+    <span id="selected-cells-display"
+      style="margin-right: 8px; font-weight: bold; width: 125px; border: solid 1px black; text-align: center; padding: 2px;"></span>
+    <input type="text" id="formula-bar" placeholder="数式または値を入力" autocomplete="off" />
+  </div>
   </div>
 
   <!-- スプレッドシート本体 -->
