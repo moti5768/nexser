@@ -11,7 +11,6 @@ body {
     height: 100%;
     margin: 0;
     padding: 0;
-    font-family: '游ゴシック', 'Yu Gothic', 'Calibri', sans-serif;
 }
 
 /* ボディ自体を縦方向のFlexコンテナに設定 */
@@ -27,6 +26,7 @@ body {
     flex-shrink: 0;
     flex-direction: column;
     margin: 2.5px;
+    font-family: '游ゴシック', 'Yu Gothic', 'Calibri', sans-serif;
 }
 
 /* ----- 上段：ボタン類＆カラーパレットを同じ一列に ----- */
@@ -84,6 +84,7 @@ body {
 #formula-bar-container {
     display: flex;
     width: 100%;
+    font-family: '游ゴシック', 'Yu Gothic', 'Calibri', sans-serif;
 }
 
 #formula-bar {
@@ -103,6 +104,7 @@ body {
     border: 1px solid #ccc;
     background-color: #fff;
     overflow: auto;
+    font-family: '游ゴシック', 'Yu Gothic', 'Calibri', sans-serif;
 }
 
 /* テーブル全体 */
@@ -116,12 +118,11 @@ body {
 #spreadsheet td {
     width: 140px;
     height: 40px;
-    padding: 8px;
+    padding: 2px;
     text-align: left;
     overflow: visible;
     white-space: nowrap;
     position: relative;
-    /* 各セルを relative にして、選択オーバーレイを配置可能に */
 }
 
 #spreadsheet td {

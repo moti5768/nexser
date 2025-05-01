@@ -907,20 +907,21 @@ toggleBoldButton2.addEventListener("click", function (e) {
     }
 });
 
-let toggleBoldButton3 = document.getElementById("toggle-underline");
-toggleBoldButton3.addEventListener("click", function (e) {
+let toggleUnderlineButton = document.getElementById("toggle-underline");
+toggleUnderlineButton.addEventListener("click", function (e) {
     if (activeCell) {
         let cells = document.querySelectorAll("#spreadsheet tbody td.selected");
         if (cells.length > 0) {
+            const allUnderlined = Array.from(cells).every(cell => cell.style.textDecoration === "underline");
+            const newDecoration = allUnderlined ? "none" : "underline";
             cells.forEach(cell => {
-                cell.style.textDecoration = (cell.style.textDecoration === "underline") ? "none" : "underline";
+                cell.style.textDecoration = newDecoration;
             });
         } else {
             activeCell.style.textDecoration = (activeCell.style.textDecoration === "underline") ? "none" : "underline";
         }
     }
 });
-
 
 // 10-4. Text Color palette (固定カラー)
 let textColorSwatches = document.querySelectorAll("#text-color-palette .color-swatch");
@@ -2699,6 +2700,7 @@ function cloneCellProperties(sourceCell, targetCell) {
     targetCell.style.fontStyle = computed.fontStyle;
     targetCell.style.fontWeight = computed.fontWeight;
     targetCell.style.verticalAlign = computed.verticalAlign;
+    targetCell.style.textDecoration = computed.textDecoration;
 
     // 5. contenteditable など、選択状態に関する属性・クラスはコピーしない
     targetCell.removeAttribute("contenteditable");
