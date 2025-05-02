@@ -11,6 +11,7 @@ const table = document.getElementById("spreadsheet");
 const theadRow = table.querySelector("thead tr");
 const tbody = table.querySelector("tbody");
 const formulaBarInput = document.getElementById("formula-bar");
+const loadingstate = document.getElementById("loadingstate")
 
 let currentColumns = 0; // 現在の列数 (0-index)
 let rowCount = 1;       // 次に生成する行番号 (1-index)
@@ -78,54 +79,119 @@ function initializeColumns(count) {
     loadColumns(count);
 }
 
+// 改善版 loadColumns(count)
+// ヘッダー行（thead）の更新と tbody の各行へのセル追加を DocumentFragment で一括追加
 function loadColumns(count) {
+    // ヘッダー領域に新規の<th>（列番号）を一括追加
+    const headerFragment = document.createDocumentFragment();
     for (let i = 0; i < count; i++) {
         const colIndex = currentColumns;
-        let th = document.createElement("th");
+        const th = document.createElement("th");
         th.textContent = getColumnName(colIndex);
         th.className = "col_number";
-        theadRow.appendChild(th);
+        headerFragment.appendChild(th);
         currentColumns++;
     }
-    const rows = tbody.rows;
-    for (let i = 0; i < rows.length; i++) {
-        const rowNumber = parseInt(rows[i].cells[0].textContent, 10);
+    theadRow.appendChild(headerFragment);
+
+    // tbody の各行（既存の行）に対して、新規セル（td）を一括追加
+    // ※ tbody.rows はライブコレクションなので Array.from() で固定した配列に変換
+    const rows = Array.from(tbody.rows);
+    rows.forEach((row) => {
+        // 行番号は先頭セル（th）に記載されているとする
+        const rowNumber = parseInt(row.cells[0].textContent, 10);
+        const cellFragment = document.createDocumentFragment();
+        // 今回追加すべきセルの列番号は currentColumns - count ～ currentColumns - 1
         for (let j = 0; j < count; j++) {
             const colIndex = currentColumns - count + j;
             const td = createCell(rowNumber, colIndex);
-            rows[i].appendChild(td);
+            cellFragment.appendChild(td);
         }
-    }
+        row.appendChild(cellFragment);
+    });
 }
 
+
+// 改善版 loadRows(count)
+// 新規行（tr）の生成も DocumentFragment を利用して一括で tbody に追加
 function loadRows(count) {
+    const rowFragment = document.createDocumentFragment();
     for (let i = 0; i < count; i++) {
-        let tr = document.createElement("tr");
-        let th = document.createElement("th");
+        const tr = document.createElement("tr");
+        // 先頭セルとして行番号を示す th を作成
+        const th = document.createElement("th");
         th.textContent = rowCount;
         th.className = "row_number";
         tr.appendChild(th);
+        // 現在の列数 (currentColumns) 分、各セル (td) を作成して追加
         for (let col = 0; col < currentColumns; col++) {
-            let td = createCell(rowCount, col);
+            const td = createCell(rowCount, col);
             tr.appendChild(td);
         }
-        tbody.appendChild(tr);
+        rowFragment.appendChild(tr);
         rowCount++;
     }
+    tbody.appendChild(rowFragment);
 }
 
+
+// 既存の createCell 関数（イベント登録部分は削除）
 function createCell(row, col) {
     const td = document.createElement("td");
     td.contentEditable = "false";
     td.dataset.row = row;
     td.dataset.col = col;
-    td.addEventListener("dblclick", handleCellDblClick);
-    td.addEventListener("keydown", handleCellKeyDown);
-    td.addEventListener("blur", handleCellBlur);
-    td.addEventListener("mousedown", handleCellMouseDown);
-    td.addEventListener("click", handleCellClick);
+    // 各セルへの個別イベント登録は削除
     return td;
 }
+
+// 以下、イベントデリゲーションを用いた処理例
+// ここではテーブル全体に対してイベントを一括で設定します
+const spreadsheetElem = document.getElementById("spreadsheet");
+
+// クリックイベントのデリゲーション
+spreadsheetElem.addEventListener("click", function (e) {
+    // もしクリック対象の上位に<td>があれば取得する
+    const cell = e.target.closest("td");
+    if (cell && spreadsheetElem.contains(cell)) {
+        handleCellClick(e);
+    }
+});
+
+// ダブルクリックイベントのデリゲーション
+spreadsheetElem.addEventListener("dblclick", function (e) {
+    const cell = e.target.closest("td");
+    if (cell && spreadsheetElem.contains(cell)) {
+        handleCellDblClick(e);
+    }
+});
+
+// マウスダウンイベントのデリゲーション
+spreadsheetElem.addEventListener("mousedown", function (e) {
+    const cell = e.target.closest("td");
+    if (cell && spreadsheetElem.contains(cell)) {
+        handleCellMouseDown(e);
+    }
+});
+
+// キーダウンイベントのデリゲーション
+spreadsheetElem.addEventListener("keydown", function (e) {
+    // キーボードイベントはフォーカスが当たっている要素でしか発生しないので、ここでは
+    // 適切にフォーカスが移るようにしておく必要があります
+    const cell = e.target.closest("td");
+    if (cell && spreadsheetElem.contains(cell)) {
+        handleCellKeyDown(e);
+    }
+});
+
+// 「blur」はバブルしないため、代わりに focusout イベントを使う
+spreadsheetElem.addEventListener("focusout", function (e) {
+    const cell = e.target.closest("td");
+    if (cell && spreadsheetElem.contains(cell)) {
+        handleCellBlur(e);
+    }
+});
+
 // =======================
 // Block 5: セル編集／イベント処理
 // =======================
@@ -2094,7 +2160,7 @@ window.onload = function () {
             // ツールチップに現在の高さ (px) を表示（マウス座標から表示）
             updateResizeTooltip(eMove.clientX, eMove.clientY, newHeight + "px");
             setTimeout(() => {
-                updateVisibleCells();
+                setupRowVisibilityObserver();
             }, 500);
         };
 
@@ -2133,7 +2199,7 @@ window.onload = function () {
             // ツールチップに現在の幅 (px) を表示
             updateResizeTooltip(eMove.clientX, eMove.clientY, newWidth + "px");
             setTimeout(() => {
-                updateVisibleCells();
+                setupRowVisibilityObserver();
             }, 500);
         };
 
@@ -3031,7 +3097,7 @@ function unmergeSelectedCells() {
     });
 
     updateSelectedCellsDisplay();
-    updateVisibleCells();
+    setupRowVisibilityObserver();
 }
 
 
@@ -3407,36 +3473,55 @@ document.addEventListener("blur", function (e) {
 // シート状態を localStorage に保存する関数
 // 保存時：テーブル全体の状態をクローンして選択状態だけを除去した上で localStorage に保存
 function saveSpreadsheetData() {
+    loadingstate.textContent = "保存中...";
     setTimeout(() => {
         const savedCells = [];
-        // すべてのセルではなく、実際に内容やスタイル、数式が設定されているセルのみを対象にする
+        // 定義：セルのスタイル・結合は、変更があった場合のみ保存する
+        const DEFAULT_CELL_STYLE = "";      // インラインスタイルが存在しなければ空文字
+        const DEFAULT_COLSPAN = "1";
+        const DEFAULT_ROWSPAN = "1";
+
+        // すべてのセルのうち、実際に値や数式、スタイル（非デフォルト）が設定されているセルを保存対象とする
         document.querySelectorAll("#spreadsheet tbody td").forEach(cell => {
-            // セルの内容取得：cell.hidden の場合は元の値（dataset.originalValue）を使い、そうでなければ textContent
+            // セルの内容取得
             const value = cell.hidden ? (cell.dataset.originalValue || "") : cell.textContent;
             const formula = cell.dataset.formula || "";
+            // inline style が設定されていなければ空文字を返す
             const styleStr = cell.getAttribute("style") || "";
+            // カスタムなスタイルがあるか判定（空文字またはデフォルトなら false）
+            const hasCustomStyle = styleStr.trim() !== "" && styleStr.trim() !== DEFAULT_CELL_STYLE;
 
-            // セルの値、数式、スタイルに変化があった場合のみ保存
-            if (value !== "" || formula.trim() !== "" || styleStr !== "") {
+            // セルの値、数式、またはカスタムなスタイルがある場合のみ保存する
+            if (value !== "" || formula.trim() !== "" || hasCustomStyle) {
                 let computedValue = "";
                 if (formula.trim() !== "") {
                     computedValue = evaluateFormula(formula);
                 }
 
-                // 保存するセルデータの基本情報
+                // セルデータ作成の基本情報
                 let cellData = {
                     row: parseInt(cell.dataset.row, 10),
                     col: parseInt(cell.dataset.col, 10),
                     value: value,
                     computedValue: computedValue,
-                    formula: formula,
-                    style: styleStr,
-                    colspan: cell.getAttribute("colspan") || "1",
-                    rowspan: cell.getAttribute("rowspan") || "1"
+                    formula: formula
                 };
 
-                // 結合セルの場合、保存前は内部セルに mergeAnchor 属性や merge 範囲情報が設定されている
-                // これらの属性が存在すれば、保存データに含める
+                // カスタムなスタイルがある場合のみ style を保存
+                if (hasCustomStyle) {
+                    cellData.style = styleStr;
+                }
+                // colspan, rowspan はデフォルト値 ("1") なら保存しない
+                const colspan = cell.getAttribute("colspan") || DEFAULT_COLSPAN;
+                if (colspan !== DEFAULT_COLSPAN) {
+                    cellData.colspan = colspan;
+                }
+                const rowspan = cell.getAttribute("rowspan") || DEFAULT_ROWSPAN;
+                if (rowspan !== DEFAULT_ROWSPAN) {
+                    cellData.rowspan = rowspan;
+                }
+
+                // 結合セルの場合、mergeAnchor や merge 範囲情報が設定されていれば保存
                 if (cell.dataset.mergeAnchorRow) {
                     cellData.mergeAnchorRow = cell.dataset.mergeAnchorRow;
                     cellData.mergeAnchorCol = cell.dataset.mergeAnchorCol;
@@ -3454,7 +3539,7 @@ function saveSpreadsheetData() {
             }
         });
 
-        // 行のリサイズ情報の保存
+        // 行（tr）のリサイズ情報の保存
         const savedRows = [];
         document.querySelectorAll("#spreadsheet tbody tr").forEach(tr => {
             const rowNum = tr.getAttribute("data-row");
@@ -3465,7 +3550,7 @@ function saveSpreadsheetData() {
             });
         });
 
-        // 列のリサイズ情報の保存
+        // 列（th）のリサイズ情報の保存
         const savedColumns = [];
         document.querySelectorAll("#spreadsheet thead th").forEach((th, index) => {
             const computedWidth = window.getComputedStyle(th).getPropertyValue("width");
@@ -3489,9 +3574,11 @@ function saveSpreadsheetData() {
 
         // localStorage に JSON 形式で保存
         localStorage.setItem("spreadsheetData", JSON.stringify(dataToSave));
-        console.log("Spreadsheet data saved:", dataToSave);
+        loadingstate.textContent = "保存しました。";
+        updateLocalStorageUsage();
     }, 300);
 }
+
 
 
 
@@ -3505,66 +3592,27 @@ function loadSpreadsheetData() {
     if (savedDataJson) {
         try {
             savedData = JSON.parse(savedDataJson);
+            loadingstate.textContent = "読み込み中..."
         } catch (err) {
             console.error("保存データのパースエラー:", err);
         }
     }
-
-    // -------------------------
-    // 保存されたセルデータの反映
-    // -------------------------
-    if (savedData && savedData.cells && savedData.cells.length > 0) {
-        savedData.cells.forEach(cellData => {
-            // 指定位置のセル要素を取得（getCell() は不足セルを自動生成するもの）
-            let targetCell = getCell(cellData.row, cellData.col);
-            if (targetCell) {
-                // セル結合の反映：colspan, rowspan（必要に応じて適用）
-                if (cellData.colspan && parseInt(cellData.colspan, 10) > 1) {
-                    targetCell.setAttribute("colspan", cellData.colspan);
-                }
-                if (cellData.rowspan && parseInt(cellData.rowspan, 10) > 1) {
-                    targetCell.setAttribute("rowspan", cellData.rowspan);
-                }
-                // 数式がある場合は、保存された computedValue を使うか、評価結果を反映する
-                if (cellData.formula && cellData.formula.trim() !== "") {
-                    targetCell.dataset.formula = cellData.formula;
-                    if (cellData.computedValue !== undefined && cellData.computedValue !== "") {
-                        targetCell.textContent = cellData.computedValue;
-                    } else {
-                        targetCell.textContent = evaluateFormula(cellData.formula);
-                    }
-                } else {
-                    // 結合したとき、非表示になったセルは通常 display: none になっているので、
-                    // savedData の値として (data-original-value のように保存されていた値) を優先して反映
-                    if (cellData.value !== undefined) {
-                        targetCell.textContent = cellData.value;
-                    }
-                }
-                // セルの inline style の反映
-                targetCell.style.cssText = cellData.style;
-
-                // ★ 結合セル情報の復元 ★
-                // 保存時に結合情報として保存していた属性が存在する場合、data 属性として再セット
-                if (cellData.mergeAnchorRow) {
-                    targetCell.dataset.mergeAnchorRow = cellData.mergeAnchorRow;
-                    targetCell.dataset.mergeAnchorCol = cellData.mergeAnchorCol;
-                }
-                if (cellData.mergeMinRow) {
-                    targetCell.dataset.mergeMinRow = cellData.mergeMinRow;
-                    targetCell.dataset.mergeMinCol = cellData.mergeMinCol;
-                }
-                if (cellData.mergeMaxRow) {
-                    targetCell.dataset.mergeMaxRow = cellData.mergeMaxRow;
-                    targetCell.dataset.mergeMaxCol = cellData.mergeMaxCol;
-                }
-            }
-        });
+    if (!savedData) {
+        loadingstate.textContent = "保存済みのスプレッドシートデータがありません。"
+        return;
     }
 
-    // -------------------------
-    // 保存された行のリサイズ情報の反映
-    // -------------------------
-    if (savedData && savedData.rows && savedData.rows.length > 0) {
+    // 1. 保存されたセルデータの中で最大の行番号を求め、足りなければ行を追加
+    if (savedData.cells && savedData.cells.length > 0) {
+        const maxSavedRow = Math.max(...savedData.cells.map(cellData => parseInt(cellData.row, 10)));
+        if (maxSavedRow >= rowCount) {
+            loadRows(maxSavedRow - rowCount + 1);
+        }
+    }
+
+    // 2. まず拡大率（ズーム）と行・列のリサイズ情報を反映する
+    // 行のリサイズ情報の反映
+    if (savedData.rows && savedData.rows.length > 0) {
         savedData.rows.forEach(rowData => {
             let targetRow = getRow(rowData.row);
             if (targetRow) {
@@ -3572,15 +3620,8 @@ function loadSpreadsheetData() {
             }
         });
     }
-
-    function getRow(rowNumber) {
-        return document.querySelector(`#spreadsheet tbody tr[data-row='${rowNumber}']`);
-    }
-
-    // -------------------------
-    // 保存された列のリサイズ情報の反映（ヘッダー部分）
-    // -------------------------
-    if (savedData && savedData.columns && savedData.columns.length > 0) {
+    // 列のリサイズ情報の反映（ヘッダー部分）
+    if (savedData.columns && savedData.columns.length > 0) {
         savedData.columns.forEach(colData => {
             let headerCells = document.querySelectorAll("#spreadsheet thead th");
             if (headerCells[colData.col]) {
@@ -3588,25 +3629,102 @@ function loadSpreadsheetData() {
             }
         });
     }
-
-    // -------------------------
-    // 保存された拡大率（ズーム）の反映
-    // -------------------------
-    if (savedData && savedData.zoom !== undefined) {
+    // 拡大率（ズーム）の反映
+    if (savedData.zoom !== undefined) {
         const zoomSlider = document.getElementById("zoom-slider");
         const zoomDisplay = document.getElementById("zoom-display");
         const spreadsheetContainer = document.getElementById("spreadsheet-container");
         zoomSlider.value = savedData.zoom;
         zoomDisplay.textContent = savedData.zoom + "%";
-        const zoomValue = Number(savedData.zoom);
-        const zoomFactor = zoomValue / 100;
+        const zoomFactor = Number(savedData.zoom) / 100;
         spreadsheetContainer.style.zoom = zoomFactor;
     }
 
-    // 必要な場合、非表示セルが再度生成されるように updateVisibleCells() 等を呼び出す
-    updateVisibleCells();
-    console.log("Spreadsheet data loaded and merged into existing sheet structure.");
+    // 3. 保存されたセルデータの反映（非同期バッチ処理）
+    if (savedData.cells && savedData.cells.length > 0) {
+        const cells = savedData.cells;
+        const batchSize = 500; // 一度に処理するセル数（環境に合わせて調整可能）
+        let index = 0;
+
+        function processCellBatch() {
+            const end = Math.min(index + batchSize, cells.length);
+            for (let i = index; i < end; i++) {
+                const cellData = cells[i];
+                // getCell() は、行／列が不足していれば自動生成する前提
+                let targetCell = getCell(cellData.row, cellData.col);
+                if (targetCell) {
+                    // セル結合（colspan, rowspan）の反映
+                    if (cellData.colspan && parseInt(cellData.colspan, 10) > 1) {
+                        targetCell.setAttribute("colspan", cellData.colspan);
+                    } else {
+                        targetCell.removeAttribute("colspan");
+                    }
+                    if (cellData.rowspan && parseInt(cellData.rowspan, 10) > 1) {
+                        targetCell.setAttribute("rowspan", cellData.rowspan);
+                    } else {
+                        targetCell.removeAttribute("rowspan");
+                    }
+
+                    // 数式またはセル値の反映
+                    if (cellData.formula && cellData.formula.trim() !== "") {
+                        targetCell.dataset.formula = cellData.formula;
+                        if (cellData.computedValue !== undefined && cellData.computedValue !== "") {
+                            targetCell.textContent = cellData.computedValue;
+                        } else {
+                            targetCell.textContent = evaluateFormula(cellData.formula);
+                        }
+                    } else if (cellData.value !== undefined) {
+                        targetCell.textContent = cellData.value;
+                    }
+
+                    // style の反映
+                    targetCell.style.cssText = cellData.style;
+
+                    // 結合セル情報の復元
+                    if (cellData.mergeAnchorRow) {
+                        targetCell.dataset.mergeAnchorRow = cellData.mergeAnchorRow;
+                        targetCell.dataset.mergeAnchorCol = cellData.mergeAnchorCol;
+                    }
+                    if (cellData.mergeMinRow) {
+                        targetCell.dataset.mergeMinRow = cellData.mergeMinRow;
+                        targetCell.dataset.mergeMinCol = cellData.mergeMinCol;
+                    }
+                    if (cellData.mergeMaxRow) {
+                        targetCell.dataset.mergeMaxRow = cellData.mergeMaxRow;
+                        targetCell.dataset.mergeMaxCol = cellData.mergeMaxCol;
+                    }
+
+                    // hidden 状態の復元
+                    if (cellData.hidden !== undefined) {
+                        targetCell.hidden = (cellData.hidden === true || cellData.hidden === "true");
+                    } else {
+                        targetCell.hidden = false;
+                    }
+                }
+            }
+            index += batchSize;
+            if (index < cells.length) {
+                requestAnimationFrame(processCellBatch);
+            } else {
+                // すべてのセル反映完了後、必要な更新処理を行う
+                setupRowVisibilityObserver();
+                loadingstate.textContent = "読み込み完了";
+            }
+        }
+        processCellBatch();
+    } else {
+        loadingstate.textContent = "読み込み完了";
+    }
+
+    // ヘルパー関数：指定された行番号を持つ行要素を取得
+    function getRow(rowNumber) {
+        return document.querySelector(`#spreadsheet tbody tr[data-row='${rowNumber}']`);
+    }
+
+    setupRowVisibilityObserver();
 }
+
+
 
 // 事前に container がグローバルで取得されている前提です
 // 例: const container = document.getElementById("spreadsheet-container");
@@ -3621,71 +3739,165 @@ function debounce(func, delay) {
 }
 
 /**
- * updateVisibleCells() 関数
  * ・スクロールコンテナのビューポートを取得し、各行・セルの位置から可視性を設定する
  * ・ただし、現在フォーカス中（編集中）のセルは更新をスキップして、編集状態を維持する
  */
-function updateVisibleCells() {
-    // コンテナのビューポート情報取得
-    const containerRect = container.getBoundingClientRect();
+// まずは、行ごとに表示状態を監視するための observer を設定する関数
+// ----- IntersectionObserver 部分：行の縦方向の監視とセルの横方向チェック ----- //
+// グローバル変数として observer インスタンスを保持
+// まず、全体の監視対象（スクロールコンテナ）を取得
+// IntersectionObserver を使って各行の縦方向の表示状態を監視する
+let rowObserver = null;
 
-    // #spreadsheet の tbody 内の全行を取得
-    const rows = document.querySelectorAll("#spreadsheet tbody tr");
-    rows.forEach(row => {
-        const rowRect = row.getBoundingClientRect();
-        const rowInView = rowRect.bottom >= containerRect.top && rowRect.top <= containerRect.bottom;
-        // ※ここで行そのものは更新
-        row.style.visibility = rowInView ? "visible" : "hidden";
+function setupRowVisibilityObserver() {
+    // 古い observer が存在している場合は解放
+    if (rowObserver) {
+        rowObserver.disconnect();
+    }
 
-        // 各セルの更新
-        const cells = row.querySelectorAll("td, th");
-        cells.forEach(cell => {
-            // もしこのセルが編集中なら（フォーカスを持っている場合）更新をスキップ
-            if (cell === document.activeElement) {
-                cell.style.visibility = "visible";
-                return;
-            }
-            if (rowInView) {
-                const cellRect = cell.getBoundingClientRect();
-                // 横方向の位置チェック
-                const cellInView = cellRect.right >= containerRect.left && cellRect.left <= containerRect.right;
-                cell.style.visibility = cellInView ? "visible" : "hidden";
+    const options = {
+        root: container,  // コンテナをルートとして使用
+        threshold: 0      // 少しでも交差すれば反応
+    };
+
+    rowObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            const row = entry.target;
+            if (entry.isIntersecting) {
+                // 行レベルの表示状態を更新し、横方向もチェック
+                row.style.visibility = "visible";
+                updateRowCellsVisibility(row);
             } else {
-                cell.style.visibility = "hidden";
+                row.style.visibility = "hidden";
+                row.querySelectorAll("td, th").forEach(cell => {
+                    cell.style.visibility = "hidden";
+                });
             }
         });
+    }, options);
+
+    // tbody のすべての行を監視
+    document.querySelectorAll("#spreadsheet tbody tr").forEach(row => {
+        rowObserver.observe(row);
     });
 }
 
-// Debounce を使ってスクロールイベントに連動（25ms で調整）
-container.addEventListener("scroll", debounce(updateVisibleCells, 25));
-// 初回実行
-updateVisibleCells();
+// 各行内のセルについて、コンテナの矩形と比較して横方向の表示状態をチェックする関数
+function updateRowCellsVisibility(row) {
+    const containerRect = container.getBoundingClientRect();
+    row.querySelectorAll("td, th").forEach(cell => {
+        // 編集中のセルは常に表示
+        if (cell === document.activeElement) {
+            cell.style.visibility = "visible";
+            return;
+        }
+        const cellRect = cell.getBoundingClientRect();
+        // セルがコンテナ内に「横方向」で重なっているかチェック
+        if (cellRect.right >= containerRect.left && cellRect.left <= containerRect.right) {
+            cell.style.visibility = "visible";
+        } else {
+            cell.style.visibility = "hidden";
+        }
+    });
+}
+// throttle 関数：scroll イベントの頻度制御用
+function throttle(callback, delay) {
+    let lastCall = 0;
+    return function (...args) {
+        const now = Date.now();
+        if (now - lastCall >= delay) {
+            lastCall = now;
+            callback.apply(this, args);
+        }
+    };
+}
+// 横方向のスクロール時も、各行の横方向の表示状態を再評価する
+container.addEventListener("scroll", throttle(() => {
+    // ここでは、既に visibility が "visible" とされている各行について横方向の再チェックを実行
+    document.querySelectorAll("#spreadsheet tbody tr").forEach(row => {
+        if (row.style.visibility === "visible") {
+            updateRowCellsVisibility(row);
+        }
+    });
+}, 100));
+// 初期設定：シートロード後やレイアウト変更時に observer をセットアップ
+setupRowVisibilityObserver();
 
 
-// 拡大率バーの要素取得
+// 拡大縮小バーの要素取得
 const zoomSlider = document.getElementById("zoom-slider");
 const zoomDisplay = document.getElementById("zoom-display");
 const spreadsheetContainer = document.getElementById("spreadsheet-container");
 
+// 拡大縮小イベント
 zoomSlider.addEventListener("input", function () {
-    // スライダーの値を取得（例：100 は 100%、150 は 150% など）
     const zoomValue = Number(this.value);
-
-    // CSS zoom プロパティは 1 を基本としているので、100% の場合は 1、150% の場合は 1.5、とする
     const zoomFactor = zoomValue / 100;
-
-    // zoom プロパティを設定
+    // CSS zoom を設定
     spreadsheetContainer.style.zoom = zoomFactor;
-
-    // 隣接する表示に現在の拡大率を表示
+    // 表示テキスト更新
     zoomDisplay.textContent = zoomValue + "%";
 
-    setTimeout(() => {
-        updateVisibleCells();
+    // 拡大縮小操作中は頻繁な observer 再設定を避けるためにデバウンス
+    clearTimeout(debounceTimeout);
+    debounceTimeout = setTimeout(() => {
+        setupRowVisibilityObserver();
     }, 500);
-
 });
+
+
+
+
+
+
+
+
+
+// localStorage の使用量（バイト単位）を計算する関数（UTF-16：1文字＝2バイトと概算）
+function getLocalStorageUsage() {
+    let total = 0;
+    for (let key in localStorage) {
+        if (localStorage.hasOwnProperty(key)) {
+            total += (key.length + localStorage.getItem(key).length) * 2;
+        }
+    }
+    return total;
+}
+
+// バイト数を分かりやすい単位に変換する関数
+function formatBytes(bytes) {
+    if (bytes < 1024) return bytes + " bytes";
+    else if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + " KB";
+    else return (bytes / (1024 * 1024)).toFixed(2) + " MB";
+}
+
+// localStorage の総容量・使用量・残り容量をそれぞれ更新する関数
+function updateLocalStorageUsage() {
+    const MAX_BYTES = 5 * 1024 * 1024; // 総容量 5MB (5 * 1024 * 1024 バイト)
+    const usedBytes = getLocalStorageUsage();
+    const remainingBytes = MAX_BYTES - usedBytes;
+
+    // 総容量（固定値）の表示
+    const totalElem = document.getElementById("localStorageTotal");
+    if (totalElem) {
+        totalElem.textContent = "全体容量: " + formatBytes(MAX_BYTES);
+    }
+
+    // 使用量の表示
+    const usedElem = document.getElementById("localStorageUsed");
+    if (usedElem) {
+        usedElem.textContent = "使用量: " + formatBytes(usedBytes);
+    }
+
+    // 残り容量の表示
+    const remainingElem = document.getElementById("localStorageRemaining");
+    if (remainingElem) {
+        remainingElem.textContent = "残り容量: " + formatBytes(remainingBytes);
+    }
+}
+
+// ページ読み込み時に更新（必要に応じて保存後にも呼び出してください）
+document.addEventListener("DOMContentLoaded", updateLocalStorageUsage);
 
 
 
