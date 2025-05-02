@@ -127,12 +127,45 @@
         </ul>
       </div>
 
-      <!-- 関数ボタン群 -->
+    </div> <!-- end #controls-row -->
+
+
+
+
+    <!-- 関数ボタン群 -->
+    <div style="display: inline-flex;">
       <div id="formula-buttons" class="pulldown_menu_parent" style="display:inline-flex; align-items:center; gap:5px;">
-        <button class="pulldown_btn">&nbsp;関数&nbsp;</button>
+        <button class="pulldown_btn">&nbsp;関数　数学・論理&nbsp;</button>
         <ul class="pulldown_menu">
           <button onclick="applyFormula('=SUM()')">SUM</button>
           <button onclick="applyFormula('=AVERAGE()')">AVERAGE</button>
+          <button onclick="applyFormula('=MIN()')">MIN</button>
+          <button onclick="applyFormula('=MAX()')">MAX</button>
+          <button onclick="applyFormula('=IF()')">IF</button>
+          <button onclick="applyFormula('=COUNT()')">COUNT</button>
+          <button onclick="applyFormula('=PRODUCT()')">PRODUCT</button>
+          <button onclick="applyFormula('=SUBTRACT()')">SUBTRACT</button>
+          <button onclick="applyFormula('=ADD()')">ADD</button>
+          <button onclick="applyFormula('=DIVIDE()')">DIVIDE</button>
+          <button onclick="applyFormula('=POWER()')">POWER</button>
+          <button onclick="applyFormula('=SQRT()')">SQRT</button>
+          <button onclick="applyFormula('=MOD()')">MOD</button>
+          <button onclick="applyFormula('=CONCAT()')">CONCAT</button>
+          <button onclick="applyFormula('=UPPER()')">UPPER</button>
+          <button onclick="applyFormula('=LOWER()')">LOWER</button>
+          <button onclick="applyFormula('=LEFT()')">LEFT</button>
+          <button onclick="applyFormula('=RIGHT()')">RIGHT</button>
+          <button onclick="applyFormula('=MID()')">MID</button>
+          <button onclick="applyFormula('=TRIM()')">TRIM</button>
+          <button onclick="applyFormula('=LEN()')">LEN</button>
+          <button onclick="applyFormula('=FIND()')">FIND</button>
+          <button onclick="applyFormula('=REPLACE()')">REPLACE</button>
+        </ul>
+      </div>
+
+      <div id="formula-buttons" class="pulldown_menu_parent" style="display:inline-flex; align-items:center; gap:5px;">
+        <button class="pulldown_btn">&nbsp;関数　日付&nbsp;</button>
+        <ul class="pulldown_menu">
           <button onclick="applyFormula('=TODAY()')">TODAY</button>
           <button onclick="applyFormula('=DATE(2025,4,26)')">DATE</button>
           <button onclick="applyFormula('=DATEVALUE(\'1/2\')')">DATEVALUE</button>
@@ -149,7 +182,7 @@
       </div>
     </div>
 
-  </div> <!-- end #controls-row -->
+  </div>
 
   <!-- 下段：数式バー -->
   <div id="formula-bar-container">

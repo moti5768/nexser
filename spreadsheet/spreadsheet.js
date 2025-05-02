@@ -295,19 +295,18 @@ function navigateToCell(row, col, event) {
 
 
 function getCell(row, col) {
-    // 参照する列が現在の列数を超えている場合は、足りない列を追加
     if (col >= currentColumns) {
         loadColumns(col - currentColumns + 1);
     }
-    // 参照する行が現在の行数を超えている場合は、足りない行を追加
-    if (row >= rowCount) {
-        loadRows(row - rowCount + 1);
+    if (row > rowCount) {
+        loadRows(row - rowCount);
     }
     const rowIndex = row - 1;
     if (rowIndex < 0 || rowIndex >= tbody.rows.length) return null;
     const cells = tbody.rows[rowIndex].cells;
     if (col < 0 || col >= currentColumns) return null;
-    return cells[col + 1]; // cells[0] は行番号セル
+    // cells[0] はヘッダーなので、実データセルは cells[col+1]
+    return cells[col + 1];
 }
 
 // =======================
@@ -320,102 +319,64 @@ function getCell(row, col) {
 
 // 以下の関数は、eval() 内で呼ばれるためグローバル関数（またはwindowオブジェクト上にある）として定義します。
 
-function SUM(...args) {
-    return args.reduce((acc, val) => acc + Number(val), 0);
+function flattenArray(arr) {
+    return arr.reduce((acc, val) => {
+        return acc.concat(Array.isArray(val) ? flattenArray(val) : val);
+    }, []);
 }
-
-function AVERAGE(...args) {
-    if (args.length === 0) return 0;
-    return args.reduce((acc, val) => acc + Number(val), 0) / args.length;
+function SUM() {
+    const flat = flattenArray(Array.from(arguments));
+    const nums = flat.map(v => parseFloat(v)).filter(v => !isNaN(v));
+    return nums.reduce((a, b) => a + b, 0);
 }
-
-function MIN(...args) {
-    return Math.min(...args.map(Number));
+function AVERAGE() {
+    const flat = flattenArray(Array.from(arguments));
+    const nums = flat.map(v => parseFloat(v)).filter(v => !isNaN(v));
+    if (nums.length === 0) return "#DIV/0!";
+    return nums.reduce((a, b) => a + b, 0) / nums.length;
 }
-
-function MAX(...args) {
-    return Math.max(...args.map(Number));
+function MIN() {
+    const flat = flattenArray(Array.from(arguments));
+    const nums = flat.map(v => parseFloat(v)).filter(v => !isNaN(v));
+    return Math.min(...nums);
 }
-
+function MAX() {
+    const flat = flattenArray(Array.from(arguments));
+    const nums = flat.map(v => parseFloat(v)).filter(v => !isNaN(v));
+    return Math.max(...nums);
+}
 function IF(condition, trueValue, falseValue) {
-    // condition が文字列の場合、"TRUE" と "FALSE" を判定する例
     if (typeof condition === "string") {
         condition = condition.trim().toUpperCase() === "TRUE";
     }
     return condition ? trueValue : falseValue;
 }
-
-function COUNT(...args) {
-    return args.filter(x => !isNaN(Number(x))).length;
+function COUNT() {
+    const flat = flattenArray(Array.from(arguments));
+    return flat.filter(x => !isNaN(Number(x))).length;
 }
-
-function PRODUCT(...args) {
-    return args.reduce((acc, val) => acc * Number(val), 1);
+function PRODUCT() {
+    const flat = flattenArray(Array.from(arguments));
+    return flat.reduce((acc, v) => acc * Number(v), 1);
 }
-
-function SUBTRACT(a, b) {
-    return Number(a) - Number(b);
-}
-
-function ADD(a, b) {
-    return Number(a) + Number(b);
-}
-
-function DIVIDE(a, b) {
-    return Number(b) !== 0 ? Number(a) / Number(b) : "#DIV/0!";
-}
-
-function POWER(a, b) {
-    return Math.pow(Number(a), Number(b));
-}
-
-function SQRT(a) {
-    return Math.sqrt(Number(a));
-}
-
-function MOD(a, b) {
-    return Number(a) % Number(b);
-}
-
-function CONCAT(...args) {
-    return args.join("");
-}
-
-function UPPER(text) {
-    return String(text).toUpperCase();
-}
-
-function LOWER(text) {
-    return String(text).toLowerCase();
-}
-
-function LEFT(text, count) {
-    return String(text).substring(0, Number(count));
-}
-
-function RIGHT(text, count) {
-    return String(text).slice(-Number(count));
-}
-
-function MID(text, start, count) {
-    return String(text).substr(Number(start) - 1, Number(count));
-}
-
-function TRIM(text) {
-    return String(text).trim();
-}
-
-function LEN(text) {
-    return String(text).length;
-}
-
-function FIND(findText, withinText) {
-    return String(withinText).indexOf(String(findText)) + 1;
-}
-
+function SUBTRACT(a, b) { return Number(a) - Number(b); }
+function ADD(a, b) { return Number(a) + Number(b); }
+function DIVIDE(a, b) { return Number(b) !== 0 ? Number(a) / Number(b) : "#DIV/0!"; }
+function POWER(a, b) { return Math.pow(Number(a), Number(b)); }
+function SQRT(a) { return Math.sqrt(Number(a)); }
+function MOD(a, b) { return Number(a) % Number(b); }
+function CONCAT() { return Array.from(arguments).join(""); }
+function UPPER(text) { return String(text).toUpperCase(); }
+function LOWER(text) { return String(text).toLowerCase(); }
+function LEFT(text, count) { return String(text).substring(0, Number(count)); }
+function RIGHT(text, count) { return String(text).slice(-Number(count)); }
+function MID(text, start, count) { return String(text).substr(Number(start) - 1, Number(count)); }
+function TRIM(text) { return String(text).trim(); }
+function LEN(text) { return String(text).length; }
+function FIND(findText, withinText) { return String(withinText).indexOf(String(findText)) + 1; }
 function REPLACE(text, start, count, newText) {
-    let before = String(text).substring(0, Number(start) - 1);
-    let after = String(text).substring(Number(start) - 1 + Number(count));
+    const before = String(text).substring(0, Number(start) - 1);
+    const after = String(text).substring(Number(start) - 1 + Number(count));
     return before + newText + after;
 }
 
@@ -572,6 +533,19 @@ function TIMEVALUE(timeStr) {
  * 数式の評価エンジン
  *********************/
 
+// ───── 数式評価関数 ─────
+// セル内のテキストが数式の場合は再評価して数値リテラルとして返すヘルパー関数
+function getCellEvaluatedValue(cell) {
+    let content = cell.textContent.trim();
+    if (content.charAt(0) === "=") {
+        // 再帰的に評価（無限再帰に注意。循環参照対策は別途必要）
+        let evaluated = evaluateFormula(content);
+        return Number(evaluated);
+    } else {
+        return parseFloat(content);
+    }
+}
+
 /**
  * 数式（文字列）が "=" から始まっている場合の評価関数
  * ・範囲参照 (例: "A1:B3") → 範囲内セルの数値の合計に置換
@@ -579,13 +553,10 @@ function TIMEVALUE(timeStr) {
  * ・評価には eval を利用（グローバルに定義された関数が呼ばれる）
  */
 function evaluateFormula(formula) {
-    // 数式でなければそのまま返す
-    if (formula[0] !== "=") return formula;
+    if (!formula || formula[0] !== "=") return formula;
+    let expr = formula.substring(1); // "=" を除去
 
-    // 先頭の "=" を除去
-    let expr = formula.substring(1);
-
-    // 範囲参照の置換（例: "A1:B3"）
+    // ① 範囲参照の置換（例："A1:B2" → 配列リテラル "[10,20,...]"）
     expr = expr.replace(/([A-Z]+\d+:[A-Z]+\d+)/g, function (match) {
         const parts = match.split(":");
         if (parts.length === 2) {
@@ -596,36 +567,46 @@ function evaluateFormula(formula) {
                 const startRow = parseInt(startMatch[2], 10);
                 const endCol = columnLettersToIndex(endMatch[1]);
                 const endRow = parseInt(endMatch[2], 10);
-                let sum = 0;
+                let values = [];
                 for (let r = startRow; r <= endRow; r++) {
                     for (let c = startCol; c <= endCol; c++) {
                         const cell = getCell(r, c);
                         if (cell) {
-                            let cellVal = parseFloat(cell.textContent);
+                            let cellVal = getCellEvaluatedValue(cell);
                             if (!isNaN(cellVal)) {
-                                sum += cellVal;
+                                values.push(cellVal);
                             }
                         }
                     }
                 }
-                return sum;
+                return "[" + values.join(",") + "]";
             }
         }
         return match;
     });
 
-    // 単一セル参照の置換（例: "A10"）
+    // ② 単一セル参照の置換（例："A1" → 数値リテラル）
     expr = expr.replace(/([A-Z]+)(\d+)/g, function (match, colLetters, rowStr) {
         const colIndex = columnLettersToIndex(colLetters);
         const rowNumber = parseInt(rowStr, 10);
         const refCell = getCell(rowNumber, colIndex);
-        return refCell ? (parseFloat(refCell.textContent) || 0) : 0;
+        if (refCell) {
+            let cellVal = getCellEvaluatedValue(refCell);
+            return (!isNaN(cellVal)) ? cellVal : 0;
+        }
+        return 0;
     });
 
     try {
-        return eval(expr);
-    } catch (err) {
-        return "Error";
+        let result = eval(expr);
+        // → ※ここで結果が関数オブジェクトの場合、直接文字列変換するとソースコードが返るのでチェックする
+        if (typeof result === "function") {
+            // 関数オブジェクトが返された場合は、空文字又は適切なエラーメッセージを返す
+            return "";
+        }
+        return result;
+    } catch (e) {
+        return "Error: " + e.message;
     }
 }
 
@@ -3191,20 +3172,17 @@ function pasteClipboardData() {
 // キーボードイベント（Ctrl+C / Ctrl+V）およびツールバーでのボタン操作
 // ===========================
 document.addEventListener("keydown", function (e) {
-    if (e.ctrlKey) {
+    const cell = e.target;
+    // cell.contentEditable が "true" でなければ条件成立する
+    if (e.ctrlKey && cell.contentEditable !== "true") {
         if (e.key.toLowerCase() === 'c') {
-            e.preventDefault();
-            e.stopImmediatePropagation();
             copySelectedCells();
             return;
         }
         if (e.key.toLowerCase() === 'v') {
-            e.preventDefault();
-            e.stopImmediatePropagation();
             pasteClipboardData();
             return;
         }
-        return;
     }
 });
 
