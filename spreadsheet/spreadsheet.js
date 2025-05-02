@@ -324,9 +324,14 @@ function flattenArray(arr) {
         return acc.concat(Array.isArray(val) ? flattenArray(val) : val);
     }, []);
 }
+
 function SUM() {
-    const flat = flattenArray(Array.from(arguments));
-    const nums = flat.map(v => parseFloat(v)).filter(v => !isNaN(v));
+    let args = Array.from(arguments);
+    if (args.length === 1 && Array.isArray(args[0])) {
+        args = args[0];
+    }
+    const flat = flattenArray(args);
+    const nums = flat.map(v => Number(v)).filter(v => !isNaN(v));
     return nums.reduce((a, b) => a + b, 0);
 }
 function AVERAGE() {
@@ -546,6 +551,41 @@ function getCellEvaluatedValue(cell) {
     }
 }
 
+// ────────── 前処理関数 ──────────
+// IF 関数の条件部（第1引数）の中の単独の "=" を "==" に変換する
+function preprocessIFFormula(expr) {
+    // expr は先頭の "=" を除いた後の文字列、例: "IF(A1 = B1, '〇', '')"
+    // ここでは IF( の直後から最初のカンマまでを条件部とみなす
+    let pos = 3; // "IF(" の後ろから開始
+    let parenCount = 0;
+    let inQuote = false;
+    let conditionPart = "";
+    for (; pos < expr.length; pos++) {
+        let ch = expr[pos];
+        if (ch === '"') {
+            inQuote = !inQuote;
+        } else if (!inQuote) {
+            if (ch === '(') {
+                parenCount++;
+            } else if (ch === ')') {
+                if (parenCount > 0) {
+                    parenCount--;
+                }
+            } else if (ch === ',' && parenCount === 0) {
+                break; // 条件部の終わり
+            }
+        }
+        conditionPart += ch;
+    }
+    // ここで conditionPart 内の、単独の "="（比較用）を "==" に変換します。
+    // できるだけ既に >=,<=,!=,== といった演算子には影響しないようにするため、正規表現で処理します。
+    // ※ 環境によっては negative lookbehind が使えない場合もあるので、ここでは modern な JS と仮定します。
+    let newCondition = conditionPart.replace(/(?<![<>=!])=(?![=])/g, "==");
+    // 結果の式を再構築: "IF(" + 修正済みの条件 + その後の部分
+    let newExpr = "IF(" + newCondition + expr.substring(pos);
+    return newExpr;
+}
+
 /**
  * 数式（文字列）が "=" から始まっている場合の評価関数
  * ・範囲参照 (例: "A1:B3") → 範囲内セルの数値の合計に置換
@@ -553,8 +593,20 @@ function getCellEvaluatedValue(cell) {
  * ・評価には eval を利用（グローバルに定義された関数が呼ばれる）
  */
 function evaluateFormula(formula) {
-    if (!formula || formula[0] !== "=") return formula;
-    let expr = formula.substring(1); // "=" を除去
+    if (!formula) return formula;
+    // 単体の "=" の場合は、そのまま "=" を返す
+    if (formula === "=") return "=";
+    // 数式は "=" で始まる必要がある
+    if (formula[0] !== "=") return formula;
+
+    // 先頭の "=" を除去
+    let expr = formula.substring(1).trim();
+    if (expr === "") return "=";
+
+    // IF 関数の場合、条件部の "=" を "==" に変換する前処理を行う
+    if (expr.toUpperCase().startsWith("IF(")) {
+        expr = preprocessIFFormula(expr);
+    }
 
     // ① 範囲参照の置換（例："A1:B2" → 配列リテラル "[10,20,...]"）
     expr = expr.replace(/([A-Z]+\d+:[A-Z]+\d+)/g, function (match) {
@@ -599,9 +651,8 @@ function evaluateFormula(formula) {
 
     try {
         let result = eval(expr);
-        // → ※ここで結果が関数オブジェクトの場合、直接文字列変換するとソースコードが返るのでチェックする
+        // 結果が関数オブジェクトの場合、ソースコードが表示されないよう空文字を返す
         if (typeof result === "function") {
-            // 関数オブジェクトが返された場合は、空文字又は適切なエラーメッセージを返す
             return "";
         }
         return result;
@@ -609,6 +660,7 @@ function evaluateFormula(formula) {
         return "Error: " + e.message;
     }
 }
+
 
 
 function columnLettersToIndex(letters) {
