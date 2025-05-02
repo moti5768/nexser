@@ -163,6 +163,7 @@ spreadsheetElem.addEventListener("dblclick", function (e) {
     const cell = e.target.closest("td");
     if (cell && spreadsheetElem.contains(cell)) {
         handleCellDblClick(e);
+        updateFillHandle();
     }
 });
 
