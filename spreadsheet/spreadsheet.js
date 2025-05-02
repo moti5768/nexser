@@ -2024,7 +2024,7 @@ window.onload = function () {
                 handle.style.top = "100%";
                 handle.style.transform = "translateY(-50%)";
                 // ハンドルの高さは細いバーとして指定（必要に応じて調整）
-                handle.style.height = "5px";
+                handle.style.height = "6px";
                 // カーソルは縦方向リサイズとする
                 handle.style.cursor = "row-resize";
                 // オーバーレイが邪魔にならないようにしておく（オプション）
@@ -2053,7 +2053,7 @@ window.onload = function () {
                 handle.style.position = "absolute";
                 handle.style.right = "0";
                 handle.style.top = "0";
-                handle.style.width = "5px";
+                handle.style.width = "6px";
                 handle.style.height = "100%";
                 handle.style.cursor = "col-resize";
                 th.style.textAlign = "center";
@@ -2417,6 +2417,12 @@ function updateFontSizeSelect() {
 document.addEventListener("mousedown", function (e) {
     if (e.target.tagName.toUpperCase() === "TD") {
         updateSelectedCellsDisplay();
+    }
+    var isClickInsideStartButton = Array.from(document.querySelectorAll('.pulldown_btn,.pulldown_menu')).some(button => button.contains(e.target));
+    if (!isClickInsideStartButton) {
+        document.querySelectorAll(".pulldown_menu").forEach(pulldown_menu => {
+            pulldown_menu.style.display = "none";
+        })
     }
 });
 
@@ -3716,11 +3722,3 @@ document.querySelectorAll(".pulldown_btn").forEach(pulldown => {
 
     })
 });
-document.addEventListener('mousedown', (e) => {
-    var isClickInsideStartButton = Array.from(document.querySelectorAll('.pulldown_btn,.pulldown_menu')).some(button => button.contains(e.target));
-    if (!isClickInsideStartButton) {
-        document.querySelectorAll(".pulldown_menu").forEach(pulldown_menu => {
-            pulldown_menu.style.display = "none";
-        })
-    }
-})

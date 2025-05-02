@@ -30,7 +30,6 @@
           <button type="button" style="font-size: 18px;" data-align="right">&nbsp;&nbsp;=</button>
         </div>
         <label>
-          Font Size:
           <select id="font-size">
             <option value="8px">8</option>
             <option value="9px">9</option>
@@ -57,13 +56,20 @@
         <button id="vertical-align-bottom">下揃え</button>
         <!-- 新規追加: 文字折り返し切替ボタン -->
         <button id="toggle-text-wrap">折り返し切替</button>
-        <button id="btnTopBorder" onclick="applyTopBorder()">上掛線</button>
-        <button id="btnBottomBorder" onclick="applyBottomBorder()">下掛線</button>
-        <button id="btnLeftBorder" onclick="applyLeftBorder()">左掛線</button>
-        <button id="btnRightBorder" onclick="applyRightBorder()">右掛線</button>
-        <button id="apply-outer-border" onclick="applyOuterBorder()">外枠適用</button>
-        <button id="apply-cell-border" onclick="applyCellBorder()">セル枠適用</button>
-        <button id="remove-all-borders" onclick="removeAllBorders()">枠線解除</button>
+
+        <div class="pulldown_menu_parent" style="display:inline-flex; align-items:center; gap:5px;">
+          <button class="pulldown_btn">&nbsp;枠線のプロパティ&nbsp;</button>
+          <ul class="pulldown_menu">
+            <button id="btnTopBorder" onclick="applyTopBorder()">上掛線</button>
+            <button id="btnBottomBorder" onclick="applyBottomBorder()">下掛線</button>
+            <button id="btnLeftBorder" onclick="applyLeftBorder()">左掛線</button>
+            <button id="btnRightBorder" onclick="applyRightBorder()">右掛線</button>
+            <button id="apply-outer-border" onclick="applyOuterBorder()">外枠適用</button>
+            <button id="apply-cell-border" onclick="applyCellBorder()">セル枠適用</button>
+            <button id="remove-all-borders" onclick="removeAllBorders()">枠線解除</button>
+          </ul>
+        </div>
+
         <button id="merge-cells">セル結合</button>
         <button id="unmerge-cells">結合解除</button>
       </div>
