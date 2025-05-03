@@ -1070,6 +1070,23 @@ toggleUnderlineButton.addEventListener("click", function (e) {
     }
 });
 
+
+let toggletextshadowButton = document.getElementById("toggle-textshadow");
+toggletextshadowButton.addEventListener("click", function (e) {
+    if (activeCell) {
+        let cells = document.querySelectorAll("#spreadsheet tbody td.selected");
+        if (cells.length > 0) {
+            const alltextshadow = Array.from(cells).every(cell => cell.style.textShadow === "black 3px 3px");
+            const newDecoration = alltextshadow ? "" : "black 3px 3px";
+            cells.forEach(cell => {
+                cell.style.textShadow = newDecoration;
+            });
+        } else {
+            activeCell.style.textShadow = (activeCell.style.textShadow === "black 3px 3px") ? "" : "black 3px 3px";
+        }
+    }
+});
+
 // 10-4. Text Color palette (固定カラー)
 let textColorSwatches = document.querySelectorAll("#text-color-palette .color-swatch");
 textColorSwatches.forEach(swatch => {
@@ -2856,6 +2873,7 @@ function cloneCellProperties(sourceCell, targetCell) {
     targetCell.style.fontWeight = computed.fontWeight;
     targetCell.style.verticalAlign = computed.verticalAlign;
     targetCell.style.textDecoration = computed.textDecoration;
+    targetCell.style.textShadow = computed.textShadow;
 
     // 5. contenteditable など、選択状態に関する属性・クラスはコピーしない
     targetCell.removeAttribute("contenteditable");
