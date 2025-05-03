@@ -1,3 +1,23 @@
+let supportsPassive = false;
+try {
+    const opts = { passive: false, get passive() { supportsPassive = true; return false; } };
+    window.addEventListener("testPassive", null, opts);
+    window.removeEventListener("testPassive", null, opts);
+} catch (e) { }
+
+document.addEventListener('wheel', function (e) {
+    if (e.ctrlKey) {
+        e.preventDefault();
+    }
+}, { passive: false });
+document.addEventListener('touchmove', function (e) {
+    if (e.touches.length > 1) {
+        e.preventDefault();
+    }
+}, { passive: false });
+
+
+
 // =======================
 // Block 1: 設定関連
 // =======================
@@ -659,24 +679,55 @@ function preprocessIFFormula(expr) {
  * ・単一セル参照 (例: "A10") → そのセルの内容（数値）があれば置換、なければ 0
  * ・評価には eval を利用（グローバルに定義された関数が呼ばれる）
  */
+// ---------------------------------------------
+// 1. 正規表現のプリコンパイル
+// ---------------------------------------------
+const RANGE_REF_REGEX = /([A-Z]+\d+:[A-Z]+\d+)/g; // 例："A1:B2"
+const SINGLE_REF_REGEX = /([A-Z]+)(\d+)/g;         // 例："A1", "B10", etc.
+
+// ---------------------------------------------
+// 2. 列変換のキャッシュ用 Map
+// ---------------------------------------------
+const colCache = new Map();
+
+function columnLettersToIndex(letters) {
+    // すでにキャッシュされているなら即返す
+    if (colCache.has(letters)) {
+        return colCache.get(letters);
+    }
+    let index = 0;
+    for (let i = 0; i < letters.length; i++) {
+        index = index * 26 + (letters.charCodeAt(i) - 64);
+    }
+    // 0始まりにする
+    let result = index - 1;
+    colCache.set(letters, result);
+    return result;
+}
+
+// ---------------------------------------------
+// 3. 数式評価関数
+// ---------------------------------------------
 function evaluateFormula(formula) {
     if (!formula) return formula;
-    // 単体の "=" の場合は、そのまま "=" を返す
+    // 単体の "=" はそのまま返す
     if (formula === "=") return "=";
-    // 数式は "=" で始まる必要がある
+    // 数式は "=" で始まらなければならない
     if (formula[0] !== "=") return formula;
 
-    // 先頭の "=" を除去
+    // 先頭の "=" を除去し、前後の空白をトリムする
     let expr = formula.substring(1).trim();
     if (expr === "") return "=";
 
-    // IF 関数の場合、条件部の "=" を "==" に変換する前処理を行う
+    // IF 関数の場合、条件部の "=" を "==" に変換する事前処理
     if (expr.toUpperCase().startsWith("IF(")) {
         expr = preprocessIFFormula(expr);
     }
 
-    // ① 範囲参照の置換（例："A1:B2" → 配列リテラル "[10,20,...]"）
-    expr = expr.replace(/([A-Z]+\d+:[A-Z]+\d+)/g, function (match) {
+    // ---------------------------------------------
+    // ① 範囲参照の置換処理（例："A1:B2" → 配列リテラル "[10,20,...]"）
+    // ---------------------------------------------
+    expr = expr.replace(RANGE_REF_REGEX, function (match) {
         const parts = match.split(":");
         if (parts.length === 2) {
             const startMatch = parts[0].match(/([A-Z]+)(\d+)/);
@@ -704,8 +755,10 @@ function evaluateFormula(formula) {
         return match;
     });
 
-    // ② 単一セル参照の置換（例："A1" → 数値リテラル）
-    expr = expr.replace(/([A-Z]+)(\d+)/g, function (match, colLetters, rowStr) {
+    // ---------------------------------------------
+    // ② 単一セル参照の置換処理（例："A1" → 数値リテラル）
+    // ---------------------------------------------
+    expr = expr.replace(SINGLE_REF_REGEX, function (match, colLetters, rowStr) {
         const colIndex = columnLettersToIndex(colLetters);
         const rowNumber = parseInt(rowStr, 10);
         const refCell = getCell(rowNumber, colIndex);
@@ -716,9 +769,12 @@ function evaluateFormula(formula) {
         return 0;
     });
 
+    // ---------------------------------------------
+    // ③ eval による評価
+    // ---------------------------------------------
     try {
         let result = eval(expr);
-        // 結果が関数オブジェクトの場合、ソースコードが表示されないよう空文字を返す
+        // 結果が関数型の場合は空文字を返す（ソースコードが表示されないようにするため）
         if (typeof result === "function") {
             return "";
         }
@@ -728,15 +784,6 @@ function evaluateFormula(formula) {
     }
 }
 
-
-
-function columnLettersToIndex(letters) {
-    let index = 0;
-    for (let i = 0; i < letters.length; i++) {
-        index = index * 26 + (letters.charCodeAt(i) - 64);
-    }
-    return index - 1;
-}
 
 function updateAllFormulas() {
     const formulaCells = document.querySelectorAll("#spreadsheet tbody td[data-formula]");
@@ -2713,17 +2760,19 @@ function fillHandleMouseUp(e) {
     });
 
     // ② currentFillRange (例: { minRow, maxRow, minCol, maxCol } ) 内の各セルを処理
+    // ドラッグ終了時などでセルコピー処理を実行（例）
     for (let r = currentFillRange.minRow; r <= currentFillRange.maxRow; r++) {
         for (let c = currentFillRange.minCol; c <= currentFillRange.maxCol; c++) {
-            const targetCell = getCell(r, c); // 既存の getCell(row, col) 関数
+            const targetCell = getCell(r, c);
             if (targetCell) {
-                // 完全な情報を複製する
                 cloneCellProperties(fillSource, targetCell);
-                // 複製先セルには改めて selected クラスを付与
                 targetCell.classList.add("selected");
             }
         }
     }
+
+    // すべてのセルへのコピーが完了した後に、数式の再計算を一括で実行
+    updateAllFormulas();
 
     // ③ 一時ハイライト（fill-selected）の解除
     document.querySelectorAll("#spreadsheet tbody td.fill-selected").forEach(cell => {
@@ -2811,8 +2860,6 @@ function cloneCellProperties(sourceCell, targetCell) {
     // 5. contenteditable など、選択状態に関する属性・クラスはコピーしない
     targetCell.removeAttribute("contenteditable");
     targetCell.classList.remove("selected", "fill-selected");
-
-    updateAllFormulas();
 }
 
 
@@ -3470,140 +3517,247 @@ document.addEventListener("blur", function (e) {
 // また、貼り付けやフォーマット変更など、操作終了時にも debouncedSaveState() を呼ぶようにしてください
 
 
-// --- シートデータ保存／再読み込み用の関数 ---
-// シート状態を localStorage に保存する関数
-// 保存時：テーブル全体の状態をクローンして選択状態だけを除去した上で localStorage に保存
+// ---------------------------------
+// 保存処理：セル・行・列・ズーム情報の保存＋圧縮して localStorage に保存
+// ---------------------------------
+/***************** LZW 圧縮／解凍 *****************/
+
+/***************** LZW 圧縮／解凍 *****************/
+// もともとの LZW 圧縮実装（各コードを 16 ビットの文字に変換）
+function compressLZW(uncompressed) {
+    const dictionary = {};
+    for (let i = 0; i < 256; i++) {
+        dictionary[String.fromCharCode(i)] = i;
+    }
+    let phrase = "";
+    const out = [];
+    let code = 256;
+    for (let i = 0; i < uncompressed.length; i++) {
+        const currChar = uncompressed[i];
+        const phrasePlusChar = phrase + currChar;
+        if (dictionary.hasOwnProperty(phrasePlusChar)) {
+            phrase = phrasePlusChar;
+        } else {
+            out.push(dictionary[phrase]);
+            dictionary[phrasePlusChar] = code;
+            code++;
+            phrase = currChar;
+        }
+    }
+    if (phrase !== "") {
+        out.push(dictionary[phrase]);
+    }
+    let result = "";
+    for (let i = 0; i < out.length; i++) {
+        result += String.fromCharCode(out[i]);
+    }
+    return result;
+}
+
+// もともとの LZW 解凍実装
+function decompressLZW(compressed) {
+    const dictionary = {};
+    for (let i = 0; i < 256; i++) {
+        dictionary[i] = String.fromCharCode(i);
+    }
+    const firstCharCode = compressed.charCodeAt(0);
+    let old = firstCharCode;
+    let phrase = dictionary[old];
+    let out = phrase;
+    let code = 256;
+    let currCode;
+    for (let i = 1; i < compressed.length; i++) {
+        currCode = compressed.charCodeAt(i);
+        let currPhrase;
+        if (dictionary[currCode] !== undefined) {
+            currPhrase = dictionary[currCode];
+        } else {
+            // 未登録の場合は、直前のフレーズに先頭文字を連結したもの
+            currPhrase = phrase + phrase[0];
+        }
+        out += currPhrase;
+        dictionary[code] = phrase + currPhrase[0];
+        code++;
+        phrase = currPhrase;
+    }
+    return out;
+}
+
+/***************** Unicode 対応ラッパー *****************/
+// JSON などの多バイト文字列を、まず URL エンコードして ASCII 化してから LZW 圧縮する
+function compressLZWUnicode(uncompressed) {
+    // unescape(encodeURIComponent(...)) により、uncompressed 内の日本語などが %XX 表記の ASCII に変換される
+    const encoded = unescape(encodeURIComponent(uncompressed));
+    return compressLZW(encoded);
+}
+
+// LZW 解凍後、escape/decodeURIComponent により元の Unicode 文字列に戻す
+function decompressLZWUnicode(compressed) {
+    const decompressed = decompressLZW(compressed);
+    return decodeURIComponent(escape(decompressed));
+}
+
+/***************** 不要なデータの除去 *****************/
+// オブジェクトや配列を再帰的に走査し、空文字・null・undefinedや、特定のデフォルト値と同じプロパティを削除する
+function cleanData(data) {
+    if (Array.isArray(data)) {
+        return data.map(item => cleanData(item));
+    } else if (data !== null && typeof data === 'object') {
+        for (let key in data) {
+            if (data.hasOwnProperty(key)) {
+                data[key] = cleanData(data[key]);
+                // 空文字、null、undefined の場合はキーを削除
+                if (data[key] === "" || data[key] === null || data[key] === undefined) {
+                    delete data[key];
+                }
+                // 例: colspan や rowspan がデフォルト値 "1" の場合は削除
+                if ((key === "colspan" || key === "rowspan") && data[key] === "1") {
+                    delete data[key];
+                }
+            }
+        }
+        return data;
+    } else {
+        return data;
+    }
+}
+
+/***************** 保存処理 *****************/
 function saveSpreadsheetData() {
     loadingstate.textContent = "保存中...";
     setTimeout(() => {
-        const savedCells = [];
-        // 定義：セルのスタイル・結合は、変更があった場合のみ保存する
-        const DEFAULT_CELL_STYLE = "";      // インラインスタイルが存在しなければ空文字
-        const DEFAULT_COLSPAN = "1";
-        const DEFAULT_ROWSPAN = "1";
+        try {
+            const savedCells = [];
+            const DEFAULT_CELL_STYLE = "";
+            const DEFAULT_COLSPAN = "1";
+            const DEFAULT_ROWSPAN = "1";
 
-        // すべてのセルのうち、実際に値や数式、スタイル（非デフォルト）が設定されているセルを保存対象とする
-        document.querySelectorAll("#spreadsheet tbody td").forEach(cell => {
-            // セルの内容取得
-            const value = cell.hidden ? (cell.dataset.originalValue || "") : cell.textContent;
-            const formula = cell.dataset.formula || "";
-            // inline style が設定されていなければ空文字を返す
-            const styleStr = cell.getAttribute("style") || "";
-            // カスタムなスタイルがあるか判定（空文字またはデフォルトなら false）
-            const hasCustomStyle = styleStr.trim() !== "" && styleStr.trim() !== DEFAULT_CELL_STYLE;
+            // セル情報の収集
+            document.querySelectorAll("#spreadsheet tbody td").forEach(cell => {
+                const value = cell.hidden ? (cell.dataset.originalValue || "") : cell.textContent;
+                const formula = cell.dataset.formula || "";
+                const styleStr = cell.getAttribute("style") || "";
+                const hasCustomStyle = styleStr.trim() !== "" && styleStr.trim() !== DEFAULT_CELL_STYLE;
 
-            // セルの値、数式、またはカスタムなスタイルがある場合のみ保存する
-            if (value !== "" || formula.trim() !== "" || hasCustomStyle) {
-                let computedValue = "";
-                if (formula.trim() !== "") {
-                    computedValue = evaluateFormula(formula);
+                // 値、数式、またはカスタムスタイルがある場合のみ保存対象とする
+                if (value !== "" || formula.trim() !== "" || hasCustomStyle) {
+                    let computedValue = "";
+                    if (formula.trim() !== "") {
+                        computedValue = evaluateFormula(formula);
+                    }
+                    let cellData = {
+                        row: parseInt(cell.dataset.row, 10),
+                        col: parseInt(cell.dataset.col, 10),
+                        value: value,
+                        computedValue: computedValue,
+                        formula: formula
+                    };
+                    if (hasCustomStyle) {
+                        cellData.style = styleStr;
+                    }
+                    const colspan = cell.getAttribute("colspan") || DEFAULT_COLSPAN;
+                    if (colspan !== DEFAULT_COLSPAN) {
+                        cellData.colspan = colspan;
+                    }
+                    const rowspan = cell.getAttribute("rowspan") || DEFAULT_ROWSPAN;
+                    if (rowspan !== DEFAULT_ROWSPAN) {
+                        cellData.rowspan = rowspan;
+                    }
+                    if (cell.dataset.mergeAnchorRow) {
+                        cellData.mergeAnchorRow = cell.dataset.mergeAnchorRow;
+                        cellData.mergeAnchorCol = cell.dataset.mergeAnchorCol;
+                    }
+                    if (cell.dataset.mergeMinRow) {
+                        cellData.mergeMinRow = cell.dataset.mergeMinRow;
+                        cellData.mergeMinCol = cell.dataset.mergeMinCol;
+                    }
+                    if (cell.dataset.mergeMaxRow) {
+                        cellData.mergeMaxRow = cell.dataset.mergeMaxRow;
+                        cellData.mergeMaxCol = cell.dataset.mergeMaxCol;
+                    }
+                    savedCells.push(cellData);
                 }
-
-                // セルデータ作成の基本情報
-                let cellData = {
-                    row: parseInt(cell.dataset.row, 10),
-                    col: parseInt(cell.dataset.col, 10),
-                    value: value,
-                    computedValue: computedValue,
-                    formula: formula
-                };
-
-                // カスタムなスタイルがある場合のみ style を保存
-                if (hasCustomStyle) {
-                    cellData.style = styleStr;
-                }
-                // colspan, rowspan はデフォルト値 ("1") なら保存しない
-                const colspan = cell.getAttribute("colspan") || DEFAULT_COLSPAN;
-                if (colspan !== DEFAULT_COLSPAN) {
-                    cellData.colspan = colspan;
-                }
-                const rowspan = cell.getAttribute("rowspan") || DEFAULT_ROWSPAN;
-                if (rowspan !== DEFAULT_ROWSPAN) {
-                    cellData.rowspan = rowspan;
-                }
-
-                // 結合セルの場合、mergeAnchor や merge 範囲情報が設定されていれば保存
-                if (cell.dataset.mergeAnchorRow) {
-                    cellData.mergeAnchorRow = cell.dataset.mergeAnchorRow;
-                    cellData.mergeAnchorCol = cell.dataset.mergeAnchorCol;
-                }
-                if (cell.dataset.mergeMinRow) {
-                    cellData.mergeMinRow = cell.dataset.mergeMinRow;
-                    cellData.mergeMinCol = cell.dataset.mergeMinCol;
-                }
-                if (cell.dataset.mergeMaxRow) {
-                    cellData.mergeMaxRow = cell.dataset.mergeMaxRow;
-                    cellData.mergeMaxCol = cell.dataset.mergeMaxCol;
-                }
-
-                savedCells.push(cellData);
-            }
-        });
-
-        // 行（tr）のリサイズ情報の保存
-        const savedRows = [];
-        document.querySelectorAll("#spreadsheet tbody tr").forEach(tr => {
-            const rowNum = tr.getAttribute("data-row");
-            const computedHeight = window.getComputedStyle(tr).getPropertyValue("height");
-            savedRows.push({
-                row: parseInt(rowNum, 10),
-                height: computedHeight
             });
-        });
 
-        // 列（th）のリサイズ情報の保存
-        const savedColumns = [];
-        document.querySelectorAll("#spreadsheet thead th").forEach((th, index) => {
-            const computedWidth = window.getComputedStyle(th).getPropertyValue("width");
-            savedColumns.push({
-                col: index,
-                width: computedWidth
+            // 行（tr）のリサイズ情報の収集
+            const savedRows = [];
+            document.querySelectorAll("#spreadsheet tbody tr").forEach(tr => {
+                const rowNum = tr.getAttribute("data-row");
+                const computedHeight = window.getComputedStyle(tr).getPropertyValue("height");
+                savedRows.push({
+                    row: parseInt(rowNum, 10),
+                    height: computedHeight
+                });
             });
-        });
 
-        // ズーム情報の取得
-        const zoomSlider = document.getElementById("zoom-slider");
-        const zoomValue = zoomSlider ? zoomSlider.value : "100";
+            // 列（th）のリサイズ情報の収集
+            const savedColumns = [];
+            document.querySelectorAll("#spreadsheet thead th").forEach((th, index) => {
+                const computedWidth = window.getComputedStyle(th).getPropertyValue("width");
+                savedColumns.push({
+                    col: index,
+                    width: computedWidth
+                });
+            });
 
-        // 保存するデータオブジェクトの構築
-        const dataToSave = {
-            cells: savedCells,
-            rows: savedRows,
-            columns: savedColumns,
-            zoom: zoomValue
-        };
+            // ズーム情報の取得
+            const zoomSlider = document.getElementById("zoom-slider");
+            const zoomValue = zoomSlider ? zoomSlider.value : "100";
 
-        // localStorage に JSON 形式で保存
-        localStorage.setItem("spreadsheetData", JSON.stringify(dataToSave));
-        loadingstate.textContent = "保存しました。";
-        updateLocalStorageUsage();
+            // 保存データオブジェクトの構築
+            const dataToSave = {
+                cells: savedCells,
+                rows: savedRows,
+                columns: savedColumns,
+                zoom: zoomValue
+            };
+
+            // 不要なデータを除去し、JSON 形式に変換
+            const cleanedData = cleanData(dataToSave);
+            const jsonStr = JSON.stringify(cleanedData);
+
+            // URL エンコード対応の LZW 圧縮を適用
+            const compressedData = compressLZWUnicode(jsonStr);
+            // 圧縮後の文字列が元の JSON より短ければ、圧縮版を保存
+            const dataToStore = (compressedData.length < jsonStr.length) ? compressedData : jsonStr;
+            localStorage.setItem("spreadsheetData", dataToStore);
+
+            loadingstate.textContent = "保存しました。";
+            updateLocalStorageUsage();
+        } catch (error) {
+            console.error("保存エラー:", error);
+            loadingstate.textContent = "保存エラーが発生しました。";
+        }
     }, 300);
 }
 
 
-
-
-
-
-// 読み込み時：保存されたテーブル全体の状態を localStorage から復元し、リサイズハンドルやイベントリスナーを再登録
+/***************** 読み込み処理 *****************/
 function loadSpreadsheetData() {
-    // 保存データの取得とパース
-    const savedDataJson = localStorage.getItem("spreadsheetData");
+    const savedDataStr = localStorage.getItem("spreadsheetData");
     let savedData = null;
-    if (savedDataJson) {
+    if (savedDataStr) {
         try {
+            // URL エンコード対応版の LZW 解凍を試みる
+            const savedDataJson = decompressLZWUnicode(savedDataStr);
             savedData = JSON.parse(savedDataJson);
-            loadingstate.textContent = "読み込み中..."
+            loadingstate.textContent = "読み込み中...";
         } catch (err) {
-            console.error("保存データのパースエラー:", err);
+            try {
+                // 解凍に失敗した場合は、圧縮されていなかったとみなしてそのままパース
+                savedData = JSON.parse(savedDataStr);
+                loadingstate.textContent = "読み込み中...";
+            } catch (err2) {
+                console.error("保存データのパースエラー:", err2);
+            }
         }
     }
     if (!savedData) {
-        loadingstate.textContent = "保存済みのスプレッドシートデータがありません。"
+        loadingstate.textContent = "保存済みのスプレッドシートデータがありません。";
         return;
     }
 
-    // 1. 保存されたセルデータの中で最大の行番号を求め、足りなければ行を追加
+    // 1. セルデータ中の最大行番号を取得し、不足分の行を追加
     if (savedData.cells && savedData.cells.length > 0) {
         const maxSavedRow = Math.max(...savedData.cells.map(cellData => parseInt(cellData.row, 10)));
         if (maxSavedRow >= rowCount) {
@@ -3611,8 +3765,7 @@ function loadSpreadsheetData() {
         }
     }
 
-    // 2. まず拡大率（ズーム）と行・列のリサイズ情報を反映する
-    // 行のリサイズ情報の反映
+    // 2. 行・列のリサイズ情報およびズーム情報の反映
     if (savedData.rows && savedData.rows.length > 0) {
         savedData.rows.forEach(rowData => {
             let targetRow = getRow(rowData.row);
@@ -3621,7 +3774,6 @@ function loadSpreadsheetData() {
             }
         });
     }
-    // 列のリサイズ情報の反映（ヘッダー部分）
     if (savedData.columns && savedData.columns.length > 0) {
         savedData.columns.forEach(colData => {
             let headerCells = document.querySelectorAll("#spreadsheet thead th");
@@ -3630,7 +3782,6 @@ function loadSpreadsheetData() {
             }
         });
     }
-    // 拡大率（ズーム）の反映
     if (savedData.zoom !== undefined) {
         const zoomSlider = document.getElementById("zoom-slider");
         const zoomDisplay = document.getElementById("zoom-display");
@@ -3641,20 +3792,17 @@ function loadSpreadsheetData() {
         spreadsheetContainer.style.zoom = zoomFactor;
     }
 
-    // 3. 保存されたセルデータの反映（非同期バッチ処理）
+    // 3. セルデータの反映（非同期バッチ処理）
     if (savedData.cells && savedData.cells.length > 0) {
         const cells = savedData.cells;
-        const batchSize = 500; // 一度に処理するセル数（環境に合わせて調整可能）
+        const batchSize = 500;
         let index = 0;
-
         function processCellBatch() {
             const end = Math.min(index + batchSize, cells.length);
             for (let i = index; i < end; i++) {
                 const cellData = cells[i];
-                // getCell() は、行／列が不足していれば自動生成する前提
                 let targetCell = getCell(cellData.row, cellData.col);
                 if (targetCell) {
-                    // セル結合（colspan, rowspan）の反映
                     if (cellData.colspan && parseInt(cellData.colspan, 10) > 1) {
                         targetCell.setAttribute("colspan", cellData.colspan);
                     } else {
@@ -3665,8 +3813,6 @@ function loadSpreadsheetData() {
                     } else {
                         targetCell.removeAttribute("rowspan");
                     }
-
-                    // 数式またはセル値の反映
                     if (cellData.formula && cellData.formula.trim() !== "") {
                         targetCell.dataset.formula = cellData.formula;
                         if (cellData.computedValue !== undefined && cellData.computedValue !== "") {
@@ -3677,11 +3823,7 @@ function loadSpreadsheetData() {
                     } else if (cellData.value !== undefined) {
                         targetCell.textContent = cellData.value;
                     }
-
-                    // style の反映
                     targetCell.style.cssText = cellData.style;
-
-                    // 結合セル情報の復元
                     if (cellData.mergeAnchorRow) {
                         targetCell.dataset.mergeAnchorRow = cellData.mergeAnchorRow;
                         targetCell.dataset.mergeAnchorCol = cellData.mergeAnchorCol;
@@ -3694,8 +3836,6 @@ function loadSpreadsheetData() {
                         targetCell.dataset.mergeMaxRow = cellData.mergeMaxRow;
                         targetCell.dataset.mergeMaxCol = cellData.mergeMaxCol;
                     }
-
-                    // hidden 状態の復元
                     if (cellData.hidden !== undefined) {
                         targetCell.hidden = (cellData.hidden === true || cellData.hidden === "true");
                     } else {
@@ -3707,7 +3847,6 @@ function loadSpreadsheetData() {
             if (index < cells.length) {
                 requestAnimationFrame(processCellBatch);
             } else {
-                // すべてのセル反映完了後、必要な更新処理を行う
                 setupRowVisibilityObserver();
                 loadingstate.textContent = "読み込み完了";
             }
@@ -3721,9 +3860,11 @@ function loadSpreadsheetData() {
     function getRow(rowNumber) {
         return document.querySelector(`#spreadsheet tbody tr[data-row='${rowNumber}']`);
     }
-
     setupRowVisibilityObserver();
 }
+
+
+
 
 
 
