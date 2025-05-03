@@ -3520,11 +3520,18 @@ document.addEventListener("blur", function (e) {
 // ---------------------------------
 // 保存処理：セル・行・列・ズーム情報の保存＋圧縮して localStorage に保存
 // ---------------------------------
-/***************** LZW 圧縮／解凍 *****************/
+/***************** 不要なデータの除去 *****************/
+// オブジェクトや配列を再帰的に走査し、空文字・null・undefinedや、特定のデフォルト値と同じプロパティを削除する
+/***************** ビット列変換用ユーティリティ *****************/
+// 指定した桁数で 2 進数表現に変換（左側を 0 でパディング）
+function toPaddedBin(num, length) {
+    const bin = num.toString(2);
+    return "0".repeat(length - bin.length) + bin;
+}
 
-/***************** LZW 圧縮／解凍 *****************/
-// もともとの LZW 圧縮実装（各コードを 16 ビットの文字に変換）
-function compressLZW(uncompressed) {
+/***************** LZW 圧縮／解凍（コード配列版） *****************/
+// 入力文字列を LZW で圧縮し、コードの配列を返す
+function lzw_compress_array(uncompressed) {
     const dictionary = {};
     for (let i = 0; i < 256; i++) {
         dictionary[String.fromCharCode(i)] = i;
@@ -3539,66 +3546,117 @@ function compressLZW(uncompressed) {
             phrase = phrasePlusChar;
         } else {
             out.push(dictionary[phrase]);
-            dictionary[phrasePlusChar] = code;
-            code++;
+            dictionary[phrasePlusChar] = code++;
             phrase = currChar;
         }
     }
     if (phrase !== "") {
         out.push(dictionary[phrase]);
     }
-    let result = "";
-    for (let i = 0; i < out.length; i++) {
-        result += String.fromCharCode(out[i]);
-    }
-    return result;
+    return out;
 }
 
-// もともとの LZW 解凍実装
-function decompressLZW(compressed) {
+// コード配列から元の文字列を LZW で復元
+function lzw_decompress_array(codes) {
     const dictionary = {};
     for (let i = 0; i < 256; i++) {
         dictionary[i] = String.fromCharCode(i);
     }
-    const firstCharCode = compressed.charCodeAt(0);
-    let old = firstCharCode;
+    let old = codes[0];
     let phrase = dictionary[old];
     let out = phrase;
     let code = 256;
-    let currCode;
-    for (let i = 1; i < compressed.length; i++) {
-        currCode = compressed.charCodeAt(i);
-        let currPhrase;
-        if (dictionary[currCode] !== undefined) {
-            currPhrase = dictionary[currCode];
+    for (let i = 1; i < codes.length; i++) {
+        const currCode = codes[i];
+        let curr;
+        if (dictionary.hasOwnProperty(currCode)) {
+            curr = dictionary[currCode];
         } else {
-            // 未登録の場合は、直前のフレーズに先頭文字を連結したもの
-            currPhrase = phrase + phrase[0];
+            curr = phrase + phrase[0];
         }
-        out += currPhrase;
-        dictionary[code] = phrase + currPhrase[0];
-        code++;
-        phrase = currPhrase;
+        out += curr;
+        dictionary[code++] = phrase + curr[0];
+        phrase = curr;
     }
     return out;
 }
 
-/***************** Unicode 対応ラッパー *****************/
-// JSON などの多バイト文字列を、まず URL エンコードして ASCII 化してから LZW 圧縮する
-function compressLZWUnicode(uncompressed) {
-    // unescape(encodeURIComponent(...)) により、uncompressed 内の日本語などが %XX 表記の ASCII に変換される
-    const encoded = unescape(encodeURIComponent(uncompressed));
-    return compressLZW(encoded);
+/***************** 高圧縮：LZW ＋ ビットパッキング *****************/
+// compressData: 入力文字列（例：JSON）を圧縮し、1 つの文字列として出力する
+function compressData(dataStr) {
+    // Unicode 対応：入力文字列をまず URL エンコード（unescape/encodeURIComponent）して ASCII 化する
+    const safeStr = unescape(encodeURIComponent(dataStr));
+
+    // 1. LZW 圧縮：文字列をコード配列に変換
+    const codes = lzw_compress_array(safeStr);
+
+    // 2. 最小必要ビット幅の算出（初期辞書は 8 ビット分とする）
+    let maxCode = 0;
+    for (let i = 0; i < codes.length; i++) {
+        if (codes[i] > maxCode) {
+            maxCode = codes[i];
+        }
+    }
+    const bitWidth = Math.max(8, Math.ceil(Math.log2(maxCode + 1)));
+    const codeCount = codes.length;
+
+    // 3. ヘッダー作成：先頭 8 ビットに bitWidth、次の 32 ビットにコード数 codeCount を記録
+    const header = toPaddedBin(bitWidth, 8) + toPaddedBin(codeCount, 32);
+
+    // 4. 各コードを固定ビット幅（bitWidth 桁）の 2 進数に変換し連結
+    let bits = "";
+    for (let i = 0; i < codes.length; i++) {
+        bits += toPaddedBin(codes[i], bitWidth);
+    }
+
+    // 5. ヘッダーとコード部ビット列を連結
+    const fullBitString = header + bits;
+
+    // 6. 【16 ビット単位に詰める】：最終ビット列の長さが 16 の倍数になるよう右側を 0 埋め
+    const padLength = (16 - (fullBitString.length % 16)) % 16;
+    const paddedBitString = fullBitString + "0".repeat(padLength);
+
+    // 7. 16 ビット毎に区切り、各 16 ビットを文字コードに変換して連結
+    let compressed = "";
+    for (let i = 0; i < paddedBitString.length; i += 16) {
+        const chunk = paddedBitString.substring(i, i + 16);
+        const charCode = parseInt(chunk, 2);
+        compressed += String.fromCharCode(charCode);
+    }
+    return compressed;
 }
 
-// LZW 解凍後、escape/decodeURIComponent により元の Unicode 文字列に戻す
-function decompressLZWUnicode(compressed) {
-    const decompressed = decompressLZW(compressed);
+
+// decompressData: 圧縮データ文字列を復元し、元の文字列（例：JSON）を返す
+function decompressData(compressedStr) {
+    let bitString = "";
+    // 1. 16 ビット単位の文字列を 16 ビットの 2 進数文字列に展開
+    for (let i = 0; i < compressedStr.length; i++) {
+        let bits = compressedStr.charCodeAt(i).toString(2);
+        bits = "0".repeat(16 - bits.length) + bits;
+        bitString += bits;
+    }
+
+    // 2. ヘッダーから bitWidth（最初の 8 ビット）とコード数（次の 32 ビット）を読み出す
+    const bitWidth = parseInt(bitString.substring(0, 8), 2);
+    const codeCount = parseInt(bitString.substring(8, 40), 2);
+    const codes = [];
+    let index = 40; // ヘッダー分読み飛ばす
+    for (let i = 0; i < codeCount; i++) {
+        const codeBits = bitString.substring(index, index + bitWidth);
+        const code = parseInt(codeBits, 2);
+        codes.push(code);
+        index += bitWidth;
+    }
+
+    // 3. LZW 復元：コード配列から元データの文字列を復元
+    const decompressed = lzw_decompress_array(codes);
+    // Unicode 対応：元の文字列に戻すため、escape/decodeURIComponent を適用
     return decodeURIComponent(escape(decompressed));
 }
 
 /***************** 不要なデータの除去 *****************/
-// オブジェクトや配列を再帰的に走査し、空文字・null・undefinedや、特定のデフォルト値と同じプロパティを削除する
+// オブジェクトや配列を再帰的に走査し、空文字／null／undefined や特定のデフォルト値と同じプロパティを削除する
 function cleanData(data) {
     if (Array.isArray(data)) {
         return data.map(item => cleanData(item));
@@ -3606,11 +3664,9 @@ function cleanData(data) {
         for (let key in data) {
             if (data.hasOwnProperty(key)) {
                 data[key] = cleanData(data[key]);
-                // 空文字、null、undefined の場合はキーを削除
                 if (data[key] === "" || data[key] === null || data[key] === undefined) {
                     delete data[key];
                 }
-                // 例: colspan や rowspan がデフォルト値 "1" の場合は削除
                 if ((key === "colspan" || key === "rowspan") && data[key] === "1") {
                     delete data[key];
                 }
@@ -3639,13 +3695,12 @@ function saveSpreadsheetData() {
                 const styleStr = cell.getAttribute("style") || "";
                 const hasCustomStyle = styleStr.trim() !== "" && styleStr.trim() !== DEFAULT_CELL_STYLE;
 
-                // 値、数式、またはカスタムスタイルがある場合のみ保存対象とする
                 if (value !== "" || formula.trim() !== "" || hasCustomStyle) {
                     let computedValue = "";
                     if (formula.trim() !== "") {
                         computedValue = evaluateFormula(formula);
                     }
-                    let cellData = {
+                    const cellData = {
                         row: parseInt(cell.dataset.row, 10),
                         col: parseInt(cell.dataset.col, 10),
                         value: value,
@@ -3712,15 +3767,11 @@ function saveSpreadsheetData() {
                 zoom: zoomValue
             };
 
-            // 不要なデータを除去し、JSON 形式に変換
+            // 不要なデータを除去し、JSON 化した後に高圧縮
             const cleanedData = cleanData(dataToSave);
             const jsonStr = JSON.stringify(cleanedData);
-
-            // URL エンコード対応の LZW 圧縮を適用
-            const compressedData = compressLZWUnicode(jsonStr);
-            // 圧縮後の文字列が元の JSON より短ければ、圧縮版を保存
-            const dataToStore = (compressedData.length < jsonStr.length) ? compressedData : jsonStr;
-            localStorage.setItem("spreadsheetData", dataToStore);
+            const compressedData = compressData(jsonStr);
+            localStorage.setItem("spreadsheetData", compressedData);
 
             loadingstate.textContent = "保存しました。";
             updateLocalStorageUsage();
@@ -3731,28 +3782,22 @@ function saveSpreadsheetData() {
     }, 300);
 }
 
-
 /***************** 読み込み処理 *****************/
 function loadSpreadsheetData() {
     const savedDataStr = localStorage.getItem("spreadsheetData");
     let savedData = null;
     if (savedDataStr) {
         try {
-            // URL エンコード対応版の LZW 解凍を試みる
-            const savedDataJson = decompressLZWUnicode(savedDataStr);
-            savedData = JSON.parse(savedDataJson);
+            // 圧縮データを解凍
+            const decompressedJson = decompressData(savedDataStr);
+            savedData = JSON.parse(decompressedJson);
             loadingstate.textContent = "読み込み中...";
         } catch (err) {
-            try {
-                // 解凍に失敗した場合は、圧縮されていなかったとみなしてそのままパース
-                savedData = JSON.parse(savedDataStr);
-                loadingstate.textContent = "読み込み中...";
-            } catch (err2) {
-                console.error("保存データのパースエラー:", err2);
-            }
+            console.error("保存データの解凍／パースエラー:", err);
+            loadingstate.textContent = "保存済みのスプレッドシートデータがありません。";
+            return;
         }
-    }
-    if (!savedData) {
+    } else {
         loadingstate.textContent = "保存済みのスプレッドシートデータがありません。";
         return;
     }
@@ -3863,15 +3908,7 @@ function loadSpreadsheetData() {
     setupRowVisibilityObserver();
 }
 
-
-
-
-
-
-// 事前に container がグローバルで取得されている前提です
-// 例: const container = document.getElementById("spreadsheet-container");
-
-// debounce 用の関数
+/***************** debounce 用の関数 *****************/
 function debounce(func, delay) {
     let timer;
     return function (...args) {
@@ -3880,61 +3917,53 @@ function debounce(func, delay) {
     };
 }
 
-/**
- * ・スクロールコンテナのビューポートを取得し、各行・セルの位置から可視性を設定する
- * ・ただし、現在フォーカス中（編集中）のセルは更新をスキップして、編集状態を維持する
- */
-// まずは、行ごとに表示状態を監視するための observer を設定する関数
-// ----- IntersectionObserver 部分：行の縦方向の監視とセルの横方向チェック ----- //
+/***************** IntersectionObserver とセルの表示制御 *****************/
 // グローバル変数として observer インスタンスを保持
-// まず、全体の監視対象（スクロールコンテナ）を取得
-// IntersectionObserver を使って各行の縦方向の表示状態を監視する
 let rowObserver = null;
 
 function setupRowVisibilityObserver() {
-    // 古い observer が存在している場合は解放
     if (rowObserver) {
         rowObserver.disconnect();
     }
 
     const options = {
-        root: container,  // コンテナをルートとして使用
-        threshold: 0      // 少しでも交差すれば反応
+        root: container,
+        threshold: 0
     };
 
     rowObserver = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             const row = entry.target;
-            if (entry.isIntersecting) {
-                // 行レベルの表示状態を更新し、横方向もチェック
+            // 行がビューポートに入っているか、または編集中のセルを含んでいる場合は visible にする
+            if (entry.isIntersecting || row.contains(document.activeElement)) {
                 row.style.visibility = "visible";
                 updateRowCellsVisibility(row);
             } else {
                 row.style.visibility = "hidden";
+                // ただし、各セルについても、編集中セルは非表示にしない
                 row.querySelectorAll("td, th").forEach(cell => {
-                    cell.style.visibility = "hidden";
+                    if (cell !== document.activeElement) {
+                        cell.style.visibility = "hidden";
+                    }
                 });
             }
         });
     }, options);
 
-    // tbody のすべての行を監視
     document.querySelectorAll("#spreadsheet tbody tr").forEach(row => {
         rowObserver.observe(row);
     });
 }
 
-// 各行内のセルについて、コンテナの矩形と比較して横方向の表示状態をチェックする関数
+// 各行内のセルの横方向の表示状態をチェック
 function updateRowCellsVisibility(row) {
     const containerRect = container.getBoundingClientRect();
     row.querySelectorAll("td, th").forEach(cell => {
-        // 編集中のセルは常に表示
         if (cell === document.activeElement) {
             cell.style.visibility = "visible";
             return;
         }
         const cellRect = cell.getBoundingClientRect();
-        // セルがコンテナ内に「横方向」で重なっているかチェック
         if (cellRect.right >= containerRect.left && cellRect.left <= containerRect.right) {
             cell.style.visibility = "visible";
         } else {
@@ -3942,7 +3971,8 @@ function updateRowCellsVisibility(row) {
         }
     });
 }
-// throttle 関数：scroll イベントの頻度制御用
+
+/***************** throttle 関数 *****************/
 function throttle(callback, delay) {
     let lastCall = 0;
     return function (...args) {
@@ -3953,17 +3983,18 @@ function throttle(callback, delay) {
         }
     };
 }
-// 横方向のスクロール時も、各行の横方向の表示状態を再評価する
+
 container.addEventListener("scroll", throttle(() => {
-    // ここでは、既に visibility が "visible" とされている各行について横方向の再チェックを実行
     document.querySelectorAll("#spreadsheet tbody tr").forEach(row => {
         if (row.style.visibility === "visible") {
             updateRowCellsVisibility(row);
         }
     });
 }, 100));
-// 初期設定：シートロード後やレイアウト変更時に observer をセットアップ
+
 setupRowVisibilityObserver();
+
+
 
 
 // 拡大縮小バーの要素取得
