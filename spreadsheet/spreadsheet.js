@@ -3801,42 +3801,18 @@ function saveSpreadsheetData() {
 }
 
 /***************** 読み込み処理 *****************/
-function loadSpreadsheetData() {
-    const savedDataStr = localStorage.getItem("spreadsheetData");
-    let savedData = null;
-    if (savedDataStr) {
-        try {
-            // 圧縮データを解凍
-            const decompressedJson = decompressData(savedDataStr);
-            savedData = JSON.parse(decompressedJson);
-            loadingstate.textContent = "読み込み中...";
-        } catch (err) {
-            console.error("保存データの解凍／パースエラー:", err);
-            loadingstate.textContent = "保存済みのスプレッドシートデータがありません。";
-            return;
-        }
-    } else {
-        loadingstate.textContent = "保存済みのスプレッドシートデータがありません。";
-        return;
-    }
-
-    // 1. セルデータ中の最大行番号を取得し、不足分の行を追加
-    if (savedData.cells && savedData.cells.length > 0) {
-        const maxSavedRow = Math.max(...savedData.cells.map(cellData => parseInt(cellData.row, 10)));
-        if (maxSavedRow >= rowCount) {
-            loadRows(maxSavedRow - rowCount + 1);
-        }
-    }
-
-    // 2. 行・列のリサイズ情報およびズーム情報の反映
+/***************** セル更新処理（コールバック用） *****************/
+function continueLoadingCells(savedData) {
+    // ① 行（tr）のリサイズ情報を反映
     if (savedData.rows && savedData.rows.length > 0) {
         savedData.rows.forEach(rowData => {
-            let targetRow = getRow(rowData.row);
+            let targetRow = document.querySelector(`#spreadsheet tbody tr[data-row='${rowData.row}']`);
             if (targetRow) {
                 targetRow.style.height = rowData.height;
             }
         });
     }
+    // ② 列（th）のリサイズ情報を反映
     if (savedData.columns && savedData.columns.length > 0) {
         savedData.columns.forEach(colData => {
             let headerCells = document.querySelectorAll("#spreadsheet thead th");
@@ -3845,17 +3821,16 @@ function loadSpreadsheetData() {
             }
         });
     }
+    // ③ ズーム情報の反映
     if (savedData.zoom !== undefined) {
         const zoomSlider = document.getElementById("zoom-slider");
         const zoomDisplay = document.getElementById("zoom-display");
         const spreadsheetContainer = document.getElementById("spreadsheet-container");
         zoomSlider.value = savedData.zoom;
         zoomDisplay.textContent = savedData.zoom + "%";
-        const zoomFactor = Number(savedData.zoom) / 100;
-        spreadsheetContainer.style.zoom = zoomFactor;
+        spreadsheetContainer.style.zoom = Number(savedData.zoom) / 100;
     }
-
-    // 3. セルデータの反映（非同期バッチ処理）
+    // ④ セルデータの反映（非同期バッチ処理）
     if (savedData.cells && savedData.cells.length > 0) {
         const cells = savedData.cells;
         const batchSize = 500;
@@ -3866,16 +3841,19 @@ function loadSpreadsheetData() {
                 const cellData = cells[i];
                 let targetCell = getCell(cellData.row, cellData.col);
                 if (targetCell) {
+                    // colspan の設定
                     if (cellData.colspan && parseInt(cellData.colspan, 10) > 1) {
                         targetCell.setAttribute("colspan", cellData.colspan);
                     } else {
                         targetCell.removeAttribute("colspan");
                     }
+                    // rowspan の設定
                     if (cellData.rowspan && parseInt(cellData.rowspan, 10) > 1) {
                         targetCell.setAttribute("rowspan", cellData.rowspan);
                     } else {
                         targetCell.removeAttribute("rowspan");
                     }
+                    // 数式または値の更新
                     if (cellData.formula && cellData.formula.trim() !== "") {
                         targetCell.dataset.formula = cellData.formula;
                         if (cellData.computedValue !== undefined && cellData.computedValue !== "") {
@@ -3886,7 +3864,9 @@ function loadSpreadsheetData() {
                     } else if (cellData.value !== undefined) {
                         targetCell.textContent = cellData.value;
                     }
+                    // スタイルの適用
                     targetCell.style.cssText = cellData.style;
+                    // マージ情報の更新
                     if (cellData.mergeAnchorRow) {
                         targetCell.dataset.mergeAnchorRow = cellData.mergeAnchorRow;
                         targetCell.dataset.mergeAnchorCol = cellData.mergeAnchorCol;
@@ -3899,6 +3879,7 @@ function loadSpreadsheetData() {
                         targetCell.dataset.mergeMaxRow = cellData.mergeMaxRow;
                         targetCell.dataset.mergeMaxCol = cellData.mergeMaxCol;
                     }
+                    // 非表示状態の反映
                     if (cellData.hidden !== undefined) {
                         targetCell.hidden = (cellData.hidden === true || cellData.hidden === "true");
                     } else {
@@ -3918,12 +3899,45 @@ function loadSpreadsheetData() {
     } else {
         loadingstate.textContent = "読み込み完了";
     }
+}
 
-    // ヘルパー関数：指定された行番号を持つ行要素を取得
-    function getRow(rowNumber) {
-        return document.querySelector(`#spreadsheet tbody tr[data-row='${rowNumber}']`);
+/***************** 読み込み処理 *****************/
+function loadSpreadsheetData() {
+    const savedDataStr = localStorage.getItem("spreadsheetData");
+    let savedData = null;
+    if (savedDataStr) {
+        try {
+            savedData = JSON.parse(savedDataStr);
+            loadingstate.textContent = "読み込み中...";
+        } catch (err) {
+            console.error("保存データのパースエラー:", err);
+            loadingstate.textContent = "保存済みのスプレッドシートデータがありません。";
+            return;
+        }
+    } else {
+        loadingstate.textContent = "保存済みのスプレッドシートデータがありません。";
+        return;
     }
-    setupRowVisibilityObserver();
+
+    // セルデータの中から最大行番号を求め、現在の行数 (rowCount) との比較
+    if (savedData.cells && savedData.cells.length > 0) {
+        let maxSavedRow = 0;
+        savedData.cells.forEach(cellData => {
+            const r = parseInt(cellData.row, 10);
+            if (r > maxSavedRow) {
+                maxSavedRow = r;
+            }
+        });
+        // 必要な行数が足りない場合は行追加（loadRows は追加完了後に callback を呼ぶように実装）
+        if (maxSavedRow >= rowCount) {
+            loadRows(maxSavedRow - rowCount + 1, function () {
+                continueLoadingCells(savedData);
+            });
+            return; // 行追加中はここで処理を中断
+        }
+    }
+    // 追加行が不要な場合はそのままセル更新処理へ
+    continueLoadingCells(savedData);
 }
 
 /***************** debounce 用の関数 *****************/
