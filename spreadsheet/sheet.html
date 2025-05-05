@@ -217,8 +217,14 @@
   <div id="zoom-toolbar" style="margin: 10px; display: flex; align-items: center;">
     <label for="zoom-slider">拡大率:</label>
     <input type="range" id="zoom-slider" min="50" max="200" value="100" step="10" style="margin: 0 10px;">
-    <span id="zoom-display">100%</span><span>&emsp;&emsp;State:&emsp;<span
-        id="loadingstate">読み込み中...</span>&emsp;</span>
+    <span id="zoom-display">100%</span>
+    <span>&emsp;&emsp;State:&emsp;<span id="loadingstate">読み込み中...</span>&emsp;</span>
+    <!-- プログレスバーのコンテナ -->
+    <div id="loading-progress-container"
+      style="display:inline-block; vertical-align:middle; width:200px; height:20px; border:1px solid #ccc; background:#f0f0f0; margin-left:10px;">
+      <!-- プログレスバー（初期状態は 0%） -->
+      <div id="loading-progress-bar" style="height:100%; width:0%; background:#4caf50;"></div>
+    </div>&emsp;
 
     <div id="localStorageTotal"></div><span>&emsp;</span>
     <div id="localStorageUsed"></div><span>&emsp;</span>

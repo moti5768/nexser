@@ -381,6 +381,13 @@ function navigateToCell(row, col, event) {
 }
 
 
+/**
+ * 指定された行番号と列番号に対応するセル (td 要素) を取得する
+ * ※ tbody 内の各行では、cells[0] が行番号セルなので、実データは cells[col+1]
+ * @param {number} row - 1始まりの行番号
+ * @param {number} col - 0始まりの列番号
+ * @returns {HTMLElement|null} 対象セルが存在すればその要素、なければ null
+ */
 function getCell(row, col) {
     if (col >= currentColumns) {
         loadColumns(col - currentColumns + 1);
@@ -3801,59 +3808,101 @@ function saveSpreadsheetData() {
 }
 
 /***************** 読み込み処理 *****************/
-/***************** セル更新処理（コールバック用） *****************/
-function continueLoadingCells(savedData) {
-    // ① 行（tr）のリサイズ情報を反映
+function loadSpreadsheetData() {
+    console.time("loadSpreadsheetData");
+
+    // ① 保存データの取得、解凍、パース
+    const savedDataStr = localStorage.getItem("spreadsheetData");
+    if (!savedDataStr) {
+        loadingstate.textContent = "保存済みのスプレッドシートデータがありません。";
+        console.timeEnd("loadSpreadsheetData");
+        return;
+    }
+    let savedData = null;
+    try {
+        const decompressedJson = decompressData(savedDataStr);
+        savedData = JSON.parse(decompressedJson);
+        loadingstate.textContent = "読み込み中...";
+        console.log("保存データのパース成功", savedData);
+    } catch (err) {
+        console.error("保存データの解凍／パースエラー:", err);
+        loadingstate.textContent = "保存済みのスプレッドシートデータがありません。";
+        console.timeEnd("loadSpreadsheetData");
+        return;
+    }
+
+    // ② セルデータから最大行番号を取得し、不足分の行を追加
+    if (savedData.cells && savedData.cells.length > 0) {
+        const maxSavedRow = Math.max(...savedData.cells.map(cellData => parseInt(cellData.row, 10)));
+        if (maxSavedRow >= rowCount) {
+            loadRows(maxSavedRow - rowCount + 1);
+        }
+    }
+
+    // ③ 行高さの更新
     if (savedData.rows && savedData.rows.length > 0) {
         savedData.rows.forEach(rowData => {
-            let targetRow = document.querySelector(`#spreadsheet tbody tr[data-row='${rowData.row}']`);
+            const targetRow = getRow(rowData.row);
             if (targetRow) {
                 targetRow.style.height = rowData.height;
             }
         });
     }
-    // ② 列（th）のリサイズ情報を反映
+
+    // ④ 列幅の更新
     if (savedData.columns && savedData.columns.length > 0) {
+        const headerCells = document.querySelectorAll("#spreadsheet thead th");
         savedData.columns.forEach(colData => {
-            let headerCells = document.querySelectorAll("#spreadsheet thead th");
             if (headerCells[colData.col]) {
                 headerCells[colData.col].style.width = colData.width;
             }
         });
     }
-    // ③ ズーム情報の反映
-    if (savedData.zoom !== undefined) {
+
+    // ⑤ 拡大率（Zoom）の更新（scale は使わず、style.zoom のみ）
+    if (savedData.zoom !== undefined && savedData.zoom !== null) {
         const zoomSlider = document.getElementById("zoom-slider");
         const zoomDisplay = document.getElementById("zoom-display");
-        const spreadsheetContainer = document.getElementById("spreadsheet-container");
-        zoomSlider.value = savedData.zoom;
-        zoomDisplay.textContent = savedData.zoom + "%";
-        spreadsheetContainer.style.zoom = Number(savedData.zoom) / 100;
+        if (zoomSlider && zoomDisplay && container) {
+            let zoomValue;
+            if (typeof savedData.zoom === "string") {
+                zoomValue = Number(savedData.zoom.replace("%", "").trim());
+            } else {
+                zoomValue = Number(savedData.zoom);
+            }
+            if (isNaN(zoomValue)) {
+                zoomValue = 100;
+            }
+            zoomSlider.value = zoomValue;
+            zoomDisplay.textContent = zoomValue + "%";
+            const zoomFactor = zoomValue / 100;
+            container.style.zoom = zoomFactor;
+        }
     }
-    // ④ セルデータの反映（非同期バッチ処理）
+
+    // ⑥ セル内容の更新（非同期バッチ処理＋進捗バー更新）
     if (savedData.cells && savedData.cells.length > 0) {
         const cells = savedData.cells;
         const batchSize = 500;
         let index = 0;
+        const progressBar = document.getElementById("loading-progress-bar");
+
         function processCellBatch() {
             const end = Math.min(index + batchSize, cells.length);
             for (let i = index; i < end; i++) {
                 const cellData = cells[i];
                 let targetCell = getCell(cellData.row, cellData.col);
                 if (targetCell) {
-                    // colspan の設定
                     if (cellData.colspan && parseInt(cellData.colspan, 10) > 1) {
                         targetCell.setAttribute("colspan", cellData.colspan);
                     } else {
                         targetCell.removeAttribute("colspan");
                     }
-                    // rowspan の設定
                     if (cellData.rowspan && parseInt(cellData.rowspan, 10) > 1) {
                         targetCell.setAttribute("rowspan", cellData.rowspan);
                     } else {
                         targetCell.removeAttribute("rowspan");
                     }
-                    // 数式または値の更新
                     if (cellData.formula && cellData.formula.trim() !== "") {
                         targetCell.dataset.formula = cellData.formula;
                         if (cellData.computedValue !== undefined && cellData.computedValue !== "") {
@@ -3864,9 +3913,7 @@ function continueLoadingCells(savedData) {
                     } else if (cellData.value !== undefined) {
                         targetCell.textContent = cellData.value;
                     }
-                    // スタイルの適用
                     targetCell.style.cssText = cellData.style;
-                    // マージ情報の更新
                     if (cellData.mergeAnchorRow) {
                         targetCell.dataset.mergeAnchorRow = cellData.mergeAnchorRow;
                         targetCell.dataset.mergeAnchorCol = cellData.mergeAnchorCol;
@@ -3879,7 +3926,6 @@ function continueLoadingCells(savedData) {
                         targetCell.dataset.mergeMaxRow = cellData.mergeMaxRow;
                         targetCell.dataset.mergeMaxCol = cellData.mergeMaxCol;
                     }
-                    // 非表示状態の反映
                     if (cellData.hidden !== undefined) {
                         targetCell.hidden = (cellData.hidden === true || cellData.hidden === "true");
                     } else {
@@ -3888,57 +3934,39 @@ function continueLoadingCells(savedData) {
                 }
             }
             index += batchSize;
+            if (progressBar) {
+                const progressPercent = Math.min((index / cells.length) * 100, 100);
+                progressBar.style.width = progressPercent + "%";
+            }
             if (index < cells.length) {
                 requestAnimationFrame(processCellBatch);
             } else {
                 setupRowVisibilityObserver();
                 loadingstate.textContent = "読み込み完了";
+                if (progressBar) {
+                    progressBar.style.width = "0%"; // プログレスバーをリセット
+                }
             }
         }
         processCellBatch();
     } else {
+        setupRowVisibilityObserver();
         loadingstate.textContent = "読み込み完了";
     }
+
+    console.timeEnd("loadSpreadsheetData");
 }
 
-/***************** 読み込み処理 *****************/
-function loadSpreadsheetData() {
-    const savedDataStr = localStorage.getItem("spreadsheetData");
-    let savedData = null;
-    if (savedDataStr) {
-        try {
-            savedData = JSON.parse(savedDataStr);
-            loadingstate.textContent = "読み込み中...";
-        } catch (err) {
-            console.error("保存データのパースエラー:", err);
-            loadingstate.textContent = "保存済みのスプレッドシートデータがありません。";
-            return;
-        }
-    } else {
-        loadingstate.textContent = "保存済みのスプレッドシートデータがありません。";
-        return;
-    }
-
-    // セルデータの中から最大行番号を求め、現在の行数 (rowCount) との比較
-    if (savedData.cells && savedData.cells.length > 0) {
-        let maxSavedRow = 0;
-        savedData.cells.forEach(cellData => {
-            const r = parseInt(cellData.row, 10);
-            if (r > maxSavedRow) {
-                maxSavedRow = r;
-            }
-        });
-        // 必要な行数が足りない場合は行追加（loadRows は追加完了後に callback を呼ぶように実装）
-        if (maxSavedRow >= rowCount) {
-            loadRows(maxSavedRow - rowCount + 1, function () {
-                continueLoadingCells(savedData);
-            });
-            return; // 行追加中はここで処理を中断
-        }
-    }
-    // 追加行が不要な場合はそのままセル更新処理へ
-    continueLoadingCells(savedData);
+/* ----- ヘルパー関数 ----- */
+/**
+ * 指定された行番号（data-row 属性）を持つ tr 要素を取得する
+ * @param {number} rowNumber - 1始まりの行番号
+ * @returns {HTMLElement|null} 対象の行があれば返す、なければ null
+ */
+function getRow(rowNumber) {
+    return document.querySelector(`#spreadsheet tbody tr[data-row='${rowNumber}']`);
 }
+
 
 /***************** debounce 用の関数 *****************/
 function debounce(func, delay) {
@@ -3949,30 +3977,23 @@ function debounce(func, delay) {
     };
 }
 
-/***************** IntersectionObserver とセルの表示制御 *****************/
-// グローバル変数として observer インスタンスを保持
 let rowObserver = null;
-
 function setupRowVisibilityObserver() {
     if (rowObserver) {
         rowObserver.disconnect();
     }
-
     const options = {
-        root: container,
+        root: container, // container はグローバル変数。スクロールコンテナを指す。
         threshold: 0
     };
-
     rowObserver = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             const row = entry.target;
-            // 行がビューポートに入っているか、または編集中のセルを含んでいる場合は visible にする
             if (entry.isIntersecting || row.contains(document.activeElement)) {
                 row.style.visibility = "visible";
                 updateRowCellsVisibility(row);
             } else {
                 row.style.visibility = "hidden";
-                // ただし、各セルについても、編集中セルは非表示にしない
                 row.querySelectorAll("td, th").forEach(cell => {
                     if (cell !== document.activeElement) {
                         cell.style.visibility = "hidden";
@@ -3981,13 +4002,11 @@ function setupRowVisibilityObserver() {
             }
         });
     }, options);
-
     document.querySelectorAll("#spreadsheet tbody tr").forEach(row => {
         rowObserver.observe(row);
     });
 }
 
-// 各行内のセルの横方向の表示状態をチェック
 function updateRowCellsVisibility(row) {
     const containerRect = container.getBoundingClientRect();
     row.querySelectorAll("td, th").forEach(cell => {
@@ -4004,7 +4023,6 @@ function updateRowCellsVisibility(row) {
     });
 }
 
-/***************** throttle 関数 *****************/
 function throttle(callback, delay) {
     let lastCall = 0;
     return function (...args) {
@@ -4016,6 +4034,8 @@ function throttle(callback, delay) {
     };
 }
 
+/* ==== 初期設定 ==== */
+setupRowVisibilityObserver();
 container.addEventListener("scroll", throttle(() => {
     document.querySelectorAll("#spreadsheet tbody tr").forEach(row => {
         if (row.style.visibility === "visible") {
@@ -4023,10 +4043,6 @@ container.addEventListener("scroll", throttle(() => {
         }
     });
 }, 100));
-
-setupRowVisibilityObserver();
-
-
 
 
 // 拡大縮小バーの要素取得
