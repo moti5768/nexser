@@ -16,6 +16,43 @@ document.addEventListener('touchmove', function (e) {
     }
 }, { passive: false });
 
+let currentPressedButton = null;
+
+// ボタン上でマウスダウンがあった場合
+document.addEventListener("mousedown", (e) => {
+    const btn = e.target.closest(".button");
+    if (btn) {
+        btn.classList.add("pressed");
+        currentPressedButton = btn; // 現在操作中のボタンを記録
+    }
+});
+
+// ボタン上または画面上のどこかでマウスアップがあった場合
+document.addEventListener("mouseup", () => {
+    if (currentPressedButton) {
+        currentPressedButton.classList.remove("pressed");
+        currentPressedButton = null;
+    }
+});
+
+// カーソル移動でボタン上かどうかをチェック
+document.addEventListener("mousemove", (e) => {
+    if (currentPressedButton) {
+        const rect = currentPressedButton.getBoundingClientRect();
+        // カーソルがボタン領域外にあるかチェック
+        if (e.clientX < rect.left || e.clientX > rect.right ||
+            e.clientY < rect.top || e.clientY > rect.bottom) {
+            // たとえマウスは押されていても、カーソルが外れたら pressed を除去
+            currentPressedButton.classList.remove("pressed");
+        } else {
+            // カーソルがボタン内に戻り、なおかつマウスボタンが押されている場合は pressed を復元
+            if (e.buttons) {
+                currentPressedButton.classList.add("pressed");
+            }
+        }
+    }
+});
+
 
 
 // =======================
@@ -109,6 +146,7 @@ function loadColumns(count) {
         const th = document.createElement("th");
         th.textContent = getColumnName(colIndex);
         th.className = "col_number";
+        th.classList.add('button');
         headerFragment.appendChild(th);
         currentColumns++;
     }
@@ -142,6 +180,7 @@ function loadRows(count) {
         const th = document.createElement("th");
         th.textContent = rowCount;
         th.className = "row_number";
+        th.classList.add('button');
         tr.appendChild(th);
         // 現在の列数 (currentColumns) 分、各セル (td) を作成して追加
         for (let col = 0; col < currentColumns; col++) {
@@ -1940,75 +1979,78 @@ document.getElementById("corner").addEventListener("click", function (e) {
 
 window.onload = function () {
     //==============================
-    // 行番号ドラッグ（横の行番号）による複数行選択
+    // ドラッグ操作用の共通変数
     //==============================
     let isRowSelecting = false;
     let rowSelectionStart = null;
     let rowSelectionCurrent = null;
 
-    // 各行番号ヘッダー (th.row_number) に mousedown イベントを登録
-    const rowNumbers = document.querySelectorAll("th.row_number");
-    rowNumbers.forEach(th => {
-        th.addEventListener("mousedown", function (e) {
-            e.preventDefault();
-            if (document.activeElement && document.activeElement.isContentEditable) return; // 編集中は無視
-            isRowSelecting = true;
-            rowSelectionStart = parseInt(th.textContent.trim());
-            rowSelectionCurrent = rowSelectionStart;
-            // 選択状態を一旦クリアし、初期の1行だけ選択
-            clearSelected();
-            selectRows(rowSelectionStart, rowSelectionStart);
-        });
-    });
-
-    //==============================
-    // 列番号ドラッグ（縦の列番号）による複数列選択
-    //==============================
     let isColSelecting = false;
     let colSelectionStart = null;
     let colSelectionCurrent = null;
 
-    // 各列番号ヘッダー (th.col_number) に mousedown イベントを登録
-    const colNumbers = document.querySelectorAll("th.col_number");
-    colNumbers.forEach(th => {
-        th.addEventListener("mousedown", function (e) {
+    //==============================
+    // mousedown イベントをイベント委譲で処理
+    //==============================
+    document.addEventListener("mousedown", function (e) {
+        // 行番号 (row_number) の場合
+        const rowHeader = e.target.closest("th.row_number");
+        if (rowHeader) {
             e.preventDefault();
-            if (document.activeElement && document.activeElement.isContentEditable) return;
+            if (document.activeElement && document.activeElement.isContentEditable) {
+                document.activeElement.blur();
+            }
+            isRowSelecting = true;
+            rowSelectionStart = parseInt(rowHeader.textContent.trim());
+            rowSelectionCurrent = rowSelectionStart;
+            clearSelected();
+            selectRows(rowSelectionStart, rowSelectionStart);
+            // 行番号が優先なら、ここで処理を終了する場合:
+            return;
+        }
+
+        // 列番号 (col_number) の場合
+        const colHeader = e.target.closest("th.col_number");
+        if (colHeader) {
+            e.preventDefault();
+            if (document.activeElement && document.activeElement.isContentEditable) {
+                document.activeElement.blur();
+            }
             isColSelecting = true;
-            colSelectionStart = colLabelToIndex(th.textContent.trim());
+            colSelectionStart = colLabelToIndex(colHeader.textContent.trim());
             colSelectionCurrent = colSelectionStart;
             clearSelected();
             selectColumns(colSelectionStart, colSelectionStart);
-        });
+        }
     });
 
     //==============================
     // ドラッグ中（mousemove）に対象の行／列を更新する
     //==============================
     document.addEventListener("mousemove", function (e) {
-        // 行選択の場合
+        // 行選択の場合の処理
         if (isRowSelecting) {
-            let th = e.target.closest("th.row_number");
+            const th = e.target.closest("th.row_number");
             if (th) {
                 const hoveredRow = parseInt(th.textContent.trim());
                 if (hoveredRow !== rowSelectionCurrent) {
                     rowSelectionCurrent = hoveredRow;
-                    let from = Math.min(rowSelectionStart, rowSelectionCurrent);
-                    let to = Math.max(rowSelectionStart, rowSelectionCurrent);
+                    const from = Math.min(rowSelectionStart, rowSelectionCurrent);
+                    const to = Math.max(rowSelectionStart, rowSelectionCurrent);
                     clearSelected();
                     selectRows(from, to);
                 }
             }
         }
-        // 列選択の場合
+        // 列選択の場合の処理
         if (isColSelecting) {
-            let th = e.target.closest("th.col_number");
+            const th = e.target.closest("th.col_number");
             if (th) {
                 const hoveredCol = colLabelToIndex(th.textContent.trim());
                 if (hoveredCol !== colSelectionCurrent) {
                     colSelectionCurrent = hoveredCol;
-                    let from = Math.min(colSelectionStart, colSelectionCurrent);
-                    let to = Math.max(colSelectionStart, colSelectionCurrent);
+                    const from = Math.min(colSelectionStart, colSelectionCurrent);
+                    const to = Math.max(colSelectionStart, colSelectionCurrent);
                     clearSelected();
                     selectColumns(from, to);
                 }
@@ -2031,6 +2073,7 @@ window.onload = function () {
             colSelectionCurrent = null;
         }
     });
+
 
     //==============================
     // ヘルパー関数

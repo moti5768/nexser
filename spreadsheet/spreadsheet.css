@@ -136,7 +136,6 @@ body {
 }
 
 #spreadsheet thead th {
-    background-color: #e0e0e0;
     font-weight: bold;
     position: sticky;
     top: 0;
@@ -149,7 +148,6 @@ body {
 }
 
 #spreadsheet tbody th {
-    background-color: #f0f0f0;
     position: sticky;
     left: 0;
     z-index: 11;
@@ -267,22 +265,60 @@ td.selected:has(.fill-handle) {
 .pulldown_menu_parent {
     display: flex;
     flex-direction: column;
+    gap: 2.5px;
+    align-items: center;
+    text-align: center;
 }
 
 .pulldown_menu {
     display: none;
+    flex-direction: column;
     position: absolute;
     margin-top: 30px;
     margin-left: 60px;
     border: solid 2px black;
-    padding: 10px;
+    padding: 5px;
     font-size: x-small;
     z-index: 20;
     background-color: whitesmoke;
+    max-height: 500px;
+    overflow: auto;
+}
+
+.pulldown_menu .button {
+    display: block;
+    margin: 3px;
 }
 
 .pulldown_menu>div,
 .pulldown_menu>button {
     width: 100%;
     margin: 2px;
+}
+
+button,
+.button {
+    border: solid 1px dimgray;
+    color: black;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    list-style: none;
+    color: black;
+    background-color: #C3C7CB;
+    border: 1.8px solid #808080;
+    border-color: #fff #808080 #808080 #fff;
+    box-shadow: 0.5px 0.5px black;
+    font-weight: bold;
+    font-size: small;
+}
+
+button:active,
+.button.pressed {
+    background-color: darkgray;
+    border: 1.5px solid;
+    border-color: #7a7a7a #fff #fff #7a7a7a;
+    box-shadow: 0.5px 0.5px 0 #000 inset;
+    transform: translate(0.6px, 0.6px);
 }
