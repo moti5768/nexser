@@ -1036,7 +1036,7 @@ container.addEventListener("scroll", function () {
 
 // 10-1. Text Alignment
 // 10-1. Text Alignment (ボタン版)
-const textAlignmentButtons = document.querySelectorAll('#text-alignment-buttons button');
+const textAlignmentButtons = document.querySelectorAll('#text-alignment-buttons .button');
 
 textAlignmentButtons.forEach(button => {
     button.addEventListener("click", function () {
