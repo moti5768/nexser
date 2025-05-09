@@ -54,14 +54,13 @@ document.addEventListener("mousemove", (e) => {
 });
 
 
-
 // =======================
 // Block 1: 設定関連
 // =======================
-const INITIAL_ROWS = 30;
-const ROW_BATCH = 5;
-const INITIAL_COLUMNS = 30;  // 初期列数
-const COLUMN_BATCH = 5;
+const INITIAL_ROWS = 80;
+const ROW_BATCH = 10;
+const INITIAL_COLUMNS = 80;  // 初期列数
+const COLUMN_BATCH = 10;
 
 const container = document.getElementById("spreadsheet-container");
 const table = document.getElementById("spreadsheet");
@@ -136,72 +135,63 @@ function initializeColumns(count) {
     loadColumns(count);
 }
 
-// 改善版 loadColumns(count)
-// ヘッダー行（thead）の更新と tbody の各行へのセル追加を DocumentFragment で一括追加
+// ------------------------------------------------------
+// 最適化版 loadColumns 関数
+// ・新規のヘッダーセル（<th>）を生成して一括追加
+// ・既存の tbody 内各行に対し、新規列分のセル（<td>）を一括追加
+// ------------------------------------------------------
 function loadColumns(count) {
-    // ヘッダー領域に新規の<th>（列番号）を一括追加
-    const headerFragment = document.createDocumentFragment();
+    let headerHTML = "";
+    // ヘッダー行に追加する <th> 要素をまとめて生成
     for (let i = 0; i < count; i++) {
-        const colIndex = currentColumns;
-        const th = document.createElement("th");
-        th.textContent = getColumnName(colIndex);
-        th.className = "col_number";
-        th.classList.add('button');
-        headerFragment.appendChild(th);
+        headerHTML += `<th class="col_number button">${getColumnName(currentColumns)}</th>`;
         currentColumns++;
     }
-    theadRow.appendChild(headerFragment);
+    // ヘッダー行に一括挿入
+    theadRow.insertAdjacentHTML("beforeend", headerHTML);
 
-    // tbody の各行（既存の行）に対して、新規セル（td）を一括追加
-    // ※ tbody.rows はライブコレクションなので Array.from() で固定した配列に変換
-    const rows = Array.from(tbody.rows);
-    rows.forEach((row) => {
-        // 行番号は先頭セル（th）に記載されているとする
-        const rowNumber = parseInt(row.cells[0].textContent, 10);
-        const cellFragment = document.createDocumentFragment();
-        // 今回追加すべきセルの列番号は currentColumns - count ～ currentColumns - 1
-        for (let j = 0; j < count; j++) {
-            const colIndex = currentColumns - count + j;
-            const td = createCell(rowNumber, colIndex);
-            cellFragment.appendChild(td);
+    // 各 tbody の既存行に対して、同じく新規セルをまとめて挿入
+    // ※ 各行の先頭セルは行番号の <th> とする前提
+    for (let i = 0, len = tbody.rows.length; i < len; i++) {
+        const rowNumber = tbody.rows[i].cells[0].textContent; // 先頭セルに行番号が入っているものとする
+        let cellHTML = "";
+        // 今回追加する列は、 currentColumns - count から currentColumns - 1 まで
+        for (let col = currentColumns - count; col < currentColumns; col++) {
+            cellHTML += createCellHTML(rowNumber, col);
         }
-        row.appendChild(cellFragment);
-    });
+        tbody.rows[i].insertAdjacentHTML("beforeend", cellHTML);
+    }
 }
 
-
-// 改善版 loadRows(count)
-// 新規行（tr）の生成も DocumentFragment を利用して一括で tbody に追加
+// ------------------------------------------------------
+// 最適化版 loadRows 関数
+// ・新規の行（<tr>）を、行番号セル <th> と各 <td> を HTML 文字列で組み立て、一括で tbody に挿入
+// ------------------------------------------------------
 function loadRows(count) {
-    const rowFragment = document.createDocumentFragment();
+    let rowsHTML = "";
     for (let i = 0; i < count; i++) {
-        const tr = document.createElement("tr");
-        // 先頭セルとして行番号を示す th を作成
-        const th = document.createElement("th");
-        th.textContent = rowCount;
-        th.className = "row_number";
-        th.classList.add('button');
-        tr.appendChild(th);
-        // 現在の列数 (currentColumns) 分、各セル (td) を作成して追加
+        let cellsHTML = "";
+        // 現在の currentColumns 数だけセルを作成
         for (let col = 0; col < currentColumns; col++) {
-            const td = createCell(rowCount, col);
-            tr.appendChild(td);
+            cellsHTML += createCellHTML(rowCount, col);
         }
-        rowFragment.appendChild(tr);
+        // 行番号を示すセル（<th>）とその後のセルを含む <tr> を組み立て
+        rowsHTML += `<tr>
+                   <th class="row_number button">${rowCount}</th>
+                   ${cellsHTML}
+                 </tr>`;
         rowCount++;
     }
-    tbody.appendChild(rowFragment);
+    // tbody に一括挿入
+    tbody.insertAdjacentHTML("beforeend", rowsHTML);
 }
-
-
-// 既存の createCell 関数（イベント登録部分は削除）
-function createCell(row, col) {
-    const td = document.createElement("td");
-    td.contentEditable = "false";
-    td.dataset.row = row;
-    td.dataset.col = col;
-    // 各セルへの個別イベント登録は削除
-    return td;
+// ------------------------------------------------------
+// 最適化されたセル生成用関数：HTML文字列を出力
+// 各セルに対して contentEditable="false" と、 
+// data 属性で行番号（row）と列番号（col）を指定
+// ------------------------------------------------------
+function createCellHTML(row, col) {
+    return `<td contenteditable="false" data-row="${row}" data-col="${col}"></td>`;
 }
 
 // 以下、イベントデリゲーションを用いた処理例
@@ -258,12 +248,25 @@ spreadsheetElem.addEventListener("focusout", function (e) {
 
 let caretTimer = null;  // グローバル変数として、タイマーIDを保持
 
+function revertSelectedCellsText() {
+    const selectedCells = document.querySelectorAll("td.selected");
+    selectedCells.forEach(cell => {
+        if (cell.dataset.originalText) {
+            cell.innerHTML = cell.dataset.originalText;
+            formulaBarInput.value = cell.dataset.formula ? cell.dataset.formula : cell.textContent;
+        }
+    });
+}
+
 function handleCellDblClick(e) {
     const cell = e.target;
     cell.contentEditable = "true";
 
     // ダブルクリックで編集モードに入ったことを示すフラグをセットする
     cell.dataset.editBy = "dblclick";
+
+    // 現在表示されている内容を保存（後でキャンセル時に戻すため）
+    cell.dataset.originalText = cell.innerHTML;
 
     // 数式が設定されている場合は、セル内に元の数式を表示し、計算対象範囲をハイライトする
     if (cell.dataset.formula) {
@@ -3857,7 +3860,7 @@ function loadSpreadsheetData() {
     // ① 保存データの取得、解凍、パース
     const savedDataStr = localStorage.getItem("spreadsheetData");
     if (!savedDataStr) {
-        loadingstate.textContent = "保存済みのスプレッドシートデータがありません。";
+        loadingstate.textContent = "スプレッドシートデータがありません";
         console.timeEnd("loadSpreadsheetData");
         return;
     }
@@ -3869,7 +3872,7 @@ function loadSpreadsheetData() {
         console.log("保存データのパース成功", savedData);
     } catch (err) {
         console.error("保存データの解凍／パースエラー:", err);
-        loadingstate.textContent = "保存済みのスプレッドシートデータがありません。";
+        loadingstate.textContent = "スプレッドシートデータがありません";
         console.timeEnd("loadSpreadsheetData");
         return;
     }

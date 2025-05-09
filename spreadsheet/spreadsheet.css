@@ -322,3 +322,59 @@ button:active,
     box-shadow: 0.5px 0.5px 0 #000 inset;
     transform: translate(0.6px, 0.6px);
 }
+
+.border {
+    border: 1.5px solid;
+    border-color: #333 #eee #eee #333;
+}
+
+
+
+
+
+.mark_btn {
+    position: relative;
+    box-sizing: border-box;
+    width: 28px;
+    height: 28px;
+    align-items: center;
+}
+
+.cross::before,
+.cross::after {
+    content: "";
+    position: absolute;
+    left: 10px;
+    top: 4px;
+    height: 18px;
+    width: 2.5px;
+    background-color: red;
+    transform-origin: center;
+}
+
+.cross::before {
+    transform: rotate(45deg);
+}
+
+.cross::after {
+    transform: rotate(-45deg);
+}
+
+.pressed.cross::before,
+.pressed.cross::after {
+    margin-top: 1.25px;
+    margin-left: 1.25px;
+}
+
+
+.checkmark::after {
+    content: "";
+    position: absolute;
+    left: 7px;
+    top: 3px;
+    width: 5px;
+    height: 14px;
+    border: solid forestgreen;
+    border-width: 0 3px 3px 0;
+    transform: rotate(45deg);
+}
