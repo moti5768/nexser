@@ -54,6 +54,31 @@ document.addEventListener("mousemove", (e) => {
 });
 
 
+function printPage() {
+    window.print();
+}
+
+
+
+// 動的に@pageルールのサイズを変更する関数
+function changePageSize(sizeValue) {
+    let styleTag = document.getElementById("dynamicPageStyle");
+    if (!styleTag) {
+        styleTag = document.createElement("style");
+        styleTag.id = "dynamicPageStyle";
+        document.head.appendChild(styleTag);
+    }
+    // sizeValue は "A4", "A3", "B5", "B4" などを指定可能
+    styleTag.textContent = '@page { size: ' + sizeValue + '; margin: 1cm; }';
+    // ユーザーに選択中のサイズを分かりやすく表示する例
+    document.getElementById("selectedSize").textContent = "選択中の用紙サイズ：" + sizeValue;
+}
+
+
+
+
+
+
 // =======================
 // Block 1: 設定関連
 // =======================
@@ -250,13 +275,32 @@ let caretTimer = null;  // グローバル変数として、タイマーIDを保
 
 function revertSelectedCellsText() {
     const selectedCells = document.querySelectorAll("td.selected");
+    let formulaForBar = "";
     selectedCells.forEach(cell => {
+        // 保存済みのデータがある場合に復元する
         if (cell.dataset.originalText) {
-            cell.innerHTML = cell.dataset.originalText;
-            formulaBarInput.value = cell.dataset.formula ? cell.dataset.formula : cell.textContent;
+            // もし元の数式も保存しているなら、そちらを復元する
+            if (cell.dataset.originalFormula) {
+                cell.dataset.formula = cell.dataset.originalFormula;
+                cell.innerHTML = cell.dataset.originalFormula;
+                formulaForBar = cell.dataset.originalFormula;
+            } else {
+                cell.innerHTML = cell.dataset.originalText;
+                // 数式属性があれば解除。もしくはそのままでもよい
+                delete cell.dataset.formula;
+                formulaForBar = cell.textContent.trim();
+            }
         }
     });
+    // 数式バーの更新
+    if (formulaForBar) {
+        formulaBarInput.value = formulaForBar;
+    }
+    clearCalculationRangeHighlights();
+    updateAllFormulas();
 }
+
+
 
 function handleCellDblClick(e) {
     const cell = e.target;
@@ -265,11 +309,13 @@ function handleCellDblClick(e) {
     // ダブルクリックで編集モードに入ったことを示すフラグをセットする
     cell.dataset.editBy = "dblclick";
 
-    // 現在表示されている内容を保存（後でキャンセル時に戻すため）
+    // もともとの内容を保存
     cell.dataset.originalText = cell.innerHTML;
 
-    // 数式が設定されている場合は、セル内に元の数式を表示し、計算対象範囲をハイライトする
+    // 数式が設定されている場合は、完全な数式（例："=SUM(N4:N16)"）も保存しておく
     if (cell.dataset.formula) {
+        cell.dataset.originalFormula = cell.dataset.formula;
+        // 編集時はセル内に数式を表示する（または必要なら値に置き換える）
         cell.textContent = cell.dataset.formula;
         highlightCalculationRange(cell.dataset.formula);
     }

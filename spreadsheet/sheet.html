@@ -22,6 +22,16 @@
       <span class="button" onclick="loadSpreadsheetData()">読み込む</span>
       <span class="button" onclick="copySelectedCells()">コピー</span>
       <span class="button" onclick="pasteClipboardData()">貼り付け</span>
+      <span class="button" onclick="printPage()">印刷</span>
+
+
+      <span class="button" onclick="changePageSize('A4')">A4</span>
+      <span class="button" onclick="changePageSize('A3')">A3</span>
+      <span class="button" onclick="changePageSize('B5')">B5</span>
+      <span class="button" onclick="changePageSize('B4')">B4</span>
+      <p id="selectedSize">選択中の用紙サイズ：A4</p>
+      <br>
+
 
       <!-- フォーマットツールバー -->
       <div id="format-toolbar" style="display: flex;">
@@ -213,7 +223,7 @@
     </table>
   </div>
   <!-- 拡大率調整バー -->
-  <div id="zoom-toolbar" style="margin: 10px; display: flex; align-items: center;">
+  <div id="zoom-toolbar">
     <label for="zoom-slider">拡大率:</label>
     <input type="range" id="zoom-slider" min="20" max="200" value="100" step="10" style="margin: 0 10px;">
     <span id="zoom-display">100%</span>

@@ -378,3 +378,74 @@ button:active,
     border-width: 0 3px 3px 0;
     transform: rotate(45deg);
 }
+
+#zoom-toolbar {
+    margin: 10px;
+    display: flex;
+    align-items: center;
+}
+
+
+@media print {
+
+    @page {
+        margin: 0mm;
+    }
+
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* ページ内の全要素を非表示にする */
+
+    #toolbar-container,
+    #formula-bar-container,
+    #zoom-toolbar {
+        display: none;
+    }
+
+    #spreadsheet td {
+        border: none;
+    }
+
+    /* 印刷したいエリアとその子要素だけ表示 */
+    #tbody * {
+        visibility: visible;
+    }
+
+    tr>td {
+        visibility: visible;
+        opacity: 1;
+        z-index: 99999;
+    }
+
+    .row_number {
+        display: none;
+    }
+
+    thead {
+        display: none;
+    }
+
+    .selected::after {
+        visibility: hidden;
+    }
+
+    td.fill-selected {
+        opacity: 0;
+    }
+
+    td.selected:has(.fill-handle) {
+        opacity: 0;
+    }
+
+    /* 印刷するエリアを画面の左上に配置 */
+    #spreadsheet {
+        position: absolute;
+        left: 0;
+        top: 0;
+    }
+
+
+}
