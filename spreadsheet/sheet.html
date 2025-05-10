@@ -200,7 +200,7 @@
   <!-- 下段：数式バー -->
   <div id="formula-bar-container">
     <span class="border" id="selected-cells-display"
-      style="margin-right: 8px; font-weight: bold; width: 125px;text-align: center; padding: 2px;"></span>
+      style="margin-right: 8px; font-weight: bold; width: 125px; height: 28px; text-align: center; padding: 2px; background-color: whitesmoke;"></span>
     <span class="button mark_btn cross" style="margin-right: 5px;" onclick="revertSelectedCellsText()"></span>
     <span class="button mark_btn checkmark" style="margin-right: 5px;"></span>
     <input type="text" id="formula-bar" class="border" placeholder="数式または値を入力" autocomplete="off" />
@@ -208,30 +208,36 @@
   </div>
 
   <!-- スプレッドシート本体 -->
-  <div id="spreadsheet-container">
-    <table id="spreadsheet">
-      <thead>
-        <tr>
-          <th id="corner" class="button" style="position: sticky;
-          left: 0;
-          z-index: 12; cursor: cell; width: 80px;">allselect</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+  <!-- 外側はスクロールバー用（固定サイズ、スタイルはそのまま） -->
+  <div id="spreadsheet-container" class="scroll-container">
+    <!-- 内側の拡大縮小対象 -->
+    <div id="spreadsheet-content">
+      <table id="spreadsheet">
+        <thead>
+          <tr>
+            <th id="corner" class="button" style="position: sticky; left: 0; z-index: 12; cursor: cell; width: 80px;">
+              allselect
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- 適宜テーブルの内容を追加 -->
+        </tbody>
+      </table>
+    </div>
   </div>
   <!-- 拡大率調整バー -->
   <div id="zoom-toolbar">
-    <label for="zoom-slider">拡大率:</label>
+    <label for="zoom-slider" class="border">拡大率:</label>
     <input type="range" id="zoom-slider" min="20" max="200" value="100" step="10" style="margin: 0 10px;">
     <span id="zoom-display">100%</span>
-    <span>&emsp;&emsp;State:&emsp;<span id="loadingstate">読み込み中...</span>&emsp;</span>
+    <span class="border" style="margin-left: 20px;">&nbsp;状態:&emsp;<span id="loadingstate">読み込み中...</span>&emsp;</span>
     <!-- プログレスバーのコンテナ -->
     <div id="loading-progress-container"
       style="display:inline-block; vertical-align:middle; width:200px; height:20px; border:1px solid #ccc; background:#f0f0f0; margin-left:10px;">
       <!-- プログレスバー（初期状態は 0%） -->
       <div id="loading-progress-bar" style="height:100%; width:0%; background:#4caf50;"></div>
-    </div>&emsp;
+    </div><span>&emsp;</span>
 
     <div id="localStorageTotal"></div><span>&emsp;</span>
     <div id="localStorageUsed"></div><span>&emsp;</span>

@@ -80,6 +80,7 @@ const INITIAL_COLUMNS = 80;  // 初期列数
 const COLUMN_BATCH = 10;
 
 const container = document.getElementById("spreadsheet-container");
+const spreadsheetContent = document.getElementById("spreadsheet-content");
 const table = document.getElementById("spreadsheet");
 const theadRow = table.querySelector("thead tr");
 const tbody = table.querySelector("tbody");
@@ -3898,7 +3899,7 @@ function loadSpreadsheetData() {
     // ① 保存データの取得、解凍、パース
     const savedDataStr = localStorage.getItem("spreadsheetData");
     if (!savedDataStr) {
-        loadingstate.textContent = "スプレッドシートデータがありません";
+        loadingstate.textContent = "データがありません";
         console.timeEnd("loadSpreadsheetData");
         return;
     }
@@ -3910,7 +3911,7 @@ function loadSpreadsheetData() {
         console.log("保存データのパース成功", savedData);
     } catch (err) {
         console.error("保存データの解凍／パースエラー:", err);
-        loadingstate.textContent = "スプレッドシートデータがありません";
+        loadingstate.textContent = "データがありません";
         console.timeEnd("loadSpreadsheetData");
         return;
     }
@@ -3960,7 +3961,7 @@ function loadSpreadsheetData() {
             zoomSlider.value = zoomValue;
             zoomDisplay.textContent = zoomValue + "%";
             const zoomFactor = zoomValue / 100;
-            container.style.zoom = zoomFactor;
+            spreadsheetContent.style.zoom = zoomFactor;
         }
     }
 
@@ -4128,34 +4129,42 @@ container.addEventListener("scroll", throttle(() => {
     });
 }, 100));
 
-
-// 拡大縮小バーの要素取得
+// 要素取得
 const zoomSlider = document.getElementById("zoom-slider");
 const zoomDisplay = document.getElementById("zoom-display");
-const spreadsheetContainer = document.getElementById("spreadsheet-container");
 
-// 拡大縮小イベント
+// 保存されているズーム値（例：savedDataオブジェクトから取得）
+let savedData = { zoom: "100%" };
+// 保存データから初期 zoom 値のパース
+let zoomValue;
+if (typeof savedData.zoom === "string") {
+    zoomValue = Number(savedData.zoom.replace("%", "").trim());
+} else {
+    zoomValue = Number(savedData.zoom);
+}
+if (isNaN(zoomValue)) {
+    zoomValue = 100;
+}
+
+// スライダーと表示テキストの初期化
+zoomSlider.value = zoomValue;
+zoomDisplay.textContent = zoomValue + "%";
+
+// 初期 zoom の適用
+const zoomFactor = zoomValue / 100;
+spreadsheetContent.style.zoom = zoomFactor;
+
+// 拡大縮小スライダーのイベントリスナー
 zoomSlider.addEventListener("input", function () {
-    const zoomValue = Number(this.value);
-    const zoomFactor = zoomValue / 100;
-    // CSS zoom を設定
-    spreadsheetContainer.style.zoom = zoomFactor;
+    const currentZoomValue = Number(this.value);
+    const currentZoomFactor = currentZoomValue / 100;
+
+    // CSS zoom プロパティで拡大縮小を適用
+    spreadsheetContent.style.zoom = currentZoomFactor;
+
     // 表示テキスト更新
-    zoomDisplay.textContent = zoomValue + "%";
-
-    // 拡大縮小操作中は頻繁な observer 再設定を避けるためにデバウンス
-    clearTimeout(debounceTimeout);
-    debounceTimeout = setTimeout(() => {
-        setupRowVisibilityObserver();
-    }, 500);
+    zoomDisplay.textContent = currentZoomValue + "%";
 });
-
-
-
-
-
-
-
 
 
 // localStorage の使用量（バイト単位）を計算する関数（UTF-16：1文字＝2バイトと概算）

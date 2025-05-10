@@ -26,8 +26,9 @@ body {
     display: flex;
     flex-shrink: 0;
     flex-direction: column;
-    margin: 2.5px;
+    padding: 2.5px;
     font-family: '游ゴシック', 'Yu Gothic', 'Calibri', sans-serif;
+    background-color: #C3C7CB;
 }
 
 /* ----- 上段：ボタン類＆カラーパレットを同じ一列に ----- */
@@ -72,7 +73,8 @@ body {
     margin-right: 3px;
     margin-bottom: 3px;
     cursor: pointer;
-    border: 1px solid #ccc;
+    border: solid 1.8px;
+    border-color: #eee #333 #333 #eee;
 }
 
 /* 自由色ピッカー */
@@ -86,6 +88,7 @@ body {
     display: flex;
     width: 100%;
     font-family: '游ゴシック', 'Yu Gothic', 'Calibri', sans-serif;
+    background-color: #C3C7CB;
 }
 
 #formula-bar {
@@ -276,11 +279,12 @@ td.selected:has(.fill-handle) {
     position: absolute;
     margin-top: 30px;
     margin-left: 60px;
-    border: solid 2px black;
+    border: 1.5px solid;
+    border-color: #eee #333 #333 #eee;
     padding: 5px;
     font-size: x-small;
     z-index: 20;
-    background-color: whitesmoke;
+    background-color: #C3C7CB;
     max-height: 500px;
     overflow: auto;
 }
@@ -327,9 +331,6 @@ button:active,
     border: 1.5px solid;
     border-color: #333 #eee #eee #333;
 }
-
-
-
 
 
 .mark_btn {
@@ -380,11 +381,89 @@ button:active,
 }
 
 #zoom-toolbar {
-    margin: 10px;
+    padding: 10px;
     display: flex;
     align-items: center;
+    background-color: #C3C7CB;
 }
 
+
+
+
+
+#zoom-slider {
+    appearance: none;
+    height: 8px;
+    background: #ddd;
+    border: 1.5px solid;
+    border-color: #eee #333 #333 #eee;
+    height: 10px;
+}
+
+#zoom-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background: silver;
+    border: 1.5px solid;
+    border-color: #eee #333 #333 #eee;
+}
+
+#zoom-slider::-moz-range-thumb {
+    width: 15px;
+    height: 15px;
+    background: silver;
+    border: 1.5px solid;
+    border-color: #eee #333 #333 #eee;
+}
+
+/* 外側のスクロールコンテナ：スクロールバーやそのデザインを保持 */
+.scroll-container {
+    padding: 0;
+    box-sizing: border-box;
+}
+
+#spreadsheet-content {
+    /* transform, width の変更を高速に反映させるため */
+    will-change: transform, width;
+    /* transition を外す（不要なアニメーションが原因の場合もあるため） */
+    transition: none;
+    transform-origin: top left;
+    /* 初期は親の幅に合わせて */
+    width: 100%;
+}
+
+::-webkit-scrollbar {
+    display: block;
+    width: 15px;
+}
+
+::-webkit-scrollbar-track {
+    background-image: radial-gradient(#CCCCCC 1.5px, #ffffff 1.5px);
+    background-size: 4px 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: silver;
+    border: 1.5px solid;
+    border-color: #eee #333 #333 #eee;
+}
+
+::-webkit-scrollbar-button {
+    background: silver;
+    border: 1.5px solid;
+    border-color: #eee #333 #333 #eee;
+}
+
+::-webkit-scrollbar-corner {
+    background: silver;
+}
+
+body::-webkit-scrollbar {
+    display: none;
+    z-index: 1;
+}
 
 @media print {
 
