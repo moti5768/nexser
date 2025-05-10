@@ -4029,7 +4029,16 @@ function loadSpreadsheetData() {
                 setupRowVisibilityObserver();
                 loadingstate.textContent = "読み込み完了";
                 if (progressBar) {
-                    progressBar.style.width = "0%"; // プログレスバーをリセット
+                    progressBar.style.width = "0%";
+                    const headerCells = document.querySelectorAll("td");
+                    for (const cell of headerCells) {
+                        cell.classList.add("borderss");
+                    }
+                    requestAnimationFrame(() => {
+                        for (const cell of headerCells) {
+                            cell.classList.remove("borderss");
+                        }
+                    });
                 }
             }
         }
@@ -4038,7 +4047,6 @@ function loadSpreadsheetData() {
         setupRowVisibilityObserver();
         loadingstate.textContent = "読み込み完了";
     }
-
     console.timeEnd("loadSpreadsheetData");
 }
 

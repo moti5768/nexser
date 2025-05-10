@@ -134,7 +134,11 @@ body {
     border: 1px solid #ccc;
 }
 
-#spreadsheet td[style*="background-color"] {
+#spreadsheet td.borderss {
+    border: 0.1px solid black;
+}
+
+#spreadsheet td[style*="background-color"]:not(.borderss) {
     border: none;
 }
 
