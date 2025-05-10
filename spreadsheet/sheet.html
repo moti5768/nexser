@@ -29,16 +29,15 @@
       <span class="button" onclick="changePageSize('A3')">A3</span>
       <span class="button" onclick="changePageSize('B5')">B5</span>
       <span class="button" onclick="changePageSize('B4')">B4</span>
-      <p id="selectedSize">選択中の用紙サイズ：A4</p>
       <br>
 
 
       <!-- フォーマットツールバー -->
       <div id="format-toolbar" style="display: flex;">
         <div id="text-alignment-buttons">
-          <span class="button" data-align="left">=&nbsp;&nbsp;</span>
-          <span class="button" data-align="center">&nbsp;=&nbsp;</span>
-          <span class="button" data-align="right">&nbsp;&nbsp;=</span>
+          <span class="button" style="font-size: 16px;" data-align="left">=&nbsp;&nbsp;</span>
+          <span class="button" style="font-size: 16px;" data-align="center">&nbsp;=&nbsp;</span>
+          <span class="button" style="font-size: 16px;" data-align="right">&nbsp;&nbsp;=</span>
         </div>
         <label>
           <select id="font-size" class="button" style="outline: none;">
@@ -198,7 +197,6 @@
     </div>
 
   </div>
-
   <!-- 下段：数式バー -->
   <div id="formula-bar-container">
     <span class="border" id="selected-cells-display"
@@ -237,7 +235,8 @@
 
     <div id="localStorageTotal"></div><span>&emsp;</span>
     <div id="localStorageUsed"></div><span>&emsp;</span>
-    <div id="localStorageRemaining"></div>
+    <div id="localStorageRemaining"></div><span>&emsp;</span>
+    <span class="border">用紙サイズ：&nbsp;<span id="selectedSize">A4</span></span>
 
   </div>
   <script src="spreadsheet.js" defer></script>

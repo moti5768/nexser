@@ -57,9 +57,6 @@ document.addEventListener("mousemove", (e) => {
 function printPage() {
     window.print();
 }
-
-
-
 // 動的に@pageルールのサイズを変更する関数
 function changePageSize(sizeValue) {
     let styleTag = document.getElementById("dynamicPageStyle");
@@ -71,13 +68,8 @@ function changePageSize(sizeValue) {
     // sizeValue は "A4", "A3", "B5", "B4" などを指定可能
     styleTag.textContent = '@page { size: ' + sizeValue + '; margin: 1cm; }';
     // ユーザーに選択中のサイズを分かりやすく表示する例
-    document.getElementById("selectedSize").textContent = "選択中の用紙サイズ：" + sizeValue;
+    document.getElementById("selectedSize").textContent = sizeValue;
 }
-
-
-
-
-
 
 // =======================
 // Block 1: 設定関連
