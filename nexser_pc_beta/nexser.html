@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="description" content="nexser beta version">
     <link rel="preload" as="style" href="nexser_style/nexser.css" onload="this.rel='stylesheet'">
+    <link rel="preload" as="style" href="nexser_style/spreadsheet.css" onload="this.rel='stylesheet'">
     <title class="nexser_title">nexser beta version 1.9</title>
     <script src="nexser_scripts/error.js"></script>
 </head>
@@ -25,13 +26,4519 @@
                 style="display: none; position: relative; top: 20px; left: 5px; width: 98%; height: 45vh;">
                 <code>
                     <textarea id="code_html" class="white_text resize_none" style="display: none;">
+&lt;!DOCTYPE html&gt;
+&lt;html lang=&quot;ja&quot;&gt;
 
+&lt;head&gt;
+  &lt;meta charset=&quot;UTF-8&quot;&gt;
+  &lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1&quot;&gt;
+  &lt;meta name=&quot;description&quot; content=&quot;spreadsheet beta&quot;&gt;
+  &lt;link rel=&quot;stylesheet&quot; href=&quot;spreadsheet.css&quot;&gt;
+  &lt;title&gt;Excelライクスプレッドシート - 数式＆フォーマット機能付き&lt;/title&gt;
+&lt;/head&gt;
+
+&lt;body&gt;
+  &lt;!-- ツールバー全体をまとめるコンテナ --&gt;
+  &lt;div id=&quot;toolbar-container&quot;&gt;
+
+    &lt;!-- 上段：フォーマット操作ボタン、カラーパレット、関数ボタン、セル結合ボタンなどを同一行にまとめる --&gt;
+    &lt;div id=&quot;controls-row&quot;&gt;
+
+      &lt;span class=&quot;button&quot; onclick=&quot;undo()&quot;&gt;&amp;nbsp;↺&amp;nbsp;&lt;/span&gt;
+      &lt;span class=&quot;button&quot; onclick=&quot;redo()&quot;&gt;&amp;nbsp;↻&amp;nbsp;&lt;/span&gt;
+      &lt;span class=&quot;button&quot; onclick=&quot;saveSpreadsheetData()&quot;&gt;保存&lt;/span&gt;
+      &lt;span class=&quot;button&quot; onclick=&quot;loadSpreadsheetData()&quot;&gt;読み込む&lt;/span&gt;
+      &lt;span class=&quot;button&quot; onclick=&quot;copySelectedCells()&quot;&gt;コピー&lt;/span&gt;
+      &lt;span class=&quot;button&quot; onclick=&quot;pasteClipboardData()&quot;&gt;貼り付け&lt;/span&gt;
+      &lt;span class=&quot;button&quot; onclick=&quot;printPage()&quot;&gt;印刷&lt;/span&gt;
+
+
+      &lt;span class=&quot;button&quot; onclick=&quot;changePageSize(&#039;A4&#039;)&quot;&gt;A4&lt;/span&gt;
+      &lt;span class=&quot;button&quot; onclick=&quot;changePageSize(&#039;A3&#039;)&quot;&gt;A3&lt;/span&gt;
+      &lt;span class=&quot;button&quot; onclick=&quot;changePageSize(&#039;B5&#039;)&quot;&gt;B5&lt;/span&gt;
+      &lt;span class=&quot;button&quot; onclick=&quot;changePageSize(&#039;B4&#039;)&quot;&gt;B4&lt;/span&gt;
+      &lt;br&gt;
+
+
+      &lt;!-- フォーマットツールバー --&gt;
+      &lt;div id=&quot;format-toolbar&quot; style=&quot;display: flex;&quot;&gt;
+        &lt;div id=&quot;text-alignment-buttons&quot;&gt;
+          &lt;span class=&quot;button&quot; style=&quot;font-size: 16px;&quot; data-align=&quot;left&quot;&gt;=&amp;nbsp;&amp;nbsp;&lt;/span&gt;
+          &lt;span class=&quot;button&quot; style=&quot;font-size: 16px;&quot; data-align=&quot;center&quot;&gt;&amp;nbsp;=&amp;nbsp;&lt;/span&gt;
+          &lt;span class=&quot;button&quot; style=&quot;font-size: 16px;&quot; data-align=&quot;right&quot;&gt;&amp;nbsp;&amp;nbsp;=&lt;/span&gt;
+        &lt;/div&gt;
+        &lt;label&gt;
+          &lt;select id=&quot;font-size&quot; class=&quot;button&quot; style=&quot;outline: none;&quot;&gt;
+            &lt;option value=&quot;8px&quot;&gt;8&lt;/option&gt;
+            &lt;option value=&quot;9px&quot;&gt;9&lt;/option&gt;
+            &lt;option value=&quot;10px&quot;&gt;10&lt;/option&gt;
+            &lt;option value=&quot;11px&quot;&gt;11&lt;/option&gt;
+            &lt;option value=&quot;12px&quot;&gt;12&lt;/option&gt;
+            &lt;option value=&quot;14px&quot;&gt;14&lt;/option&gt;
+            &lt;option value=&quot;16px&quot; selected&gt;16&lt;/option&gt;
+            &lt;option value=&quot;18px&quot;&gt;18&lt;/option&gt;
+            &lt;option value=&quot;20px&quot;&gt;20&lt;/option&gt;
+            &lt;option value=&quot;24px&quot;&gt;24&lt;/option&gt;
+            &lt;option value=&quot;26px&quot;&gt;26&lt;/option&gt;
+            &lt;option value=&quot;28px&quot;&gt;28&lt;/option&gt;
+            &lt;option value=&quot;36px&quot;&gt;36&lt;/option&gt;
+            &lt;option value=&quot;48px&quot;&gt;48&lt;/option&gt;
+            &lt;option value=&quot;72px&quot;&gt;72&lt;/option&gt;
+          &lt;/select&gt;
+        &lt;/label&gt;
+        &lt;span class=&quot;button&quot; id=&quot;toggle-bold&quot;&gt;&amp;nbsp;B&amp;nbsp;&lt;/span&gt;
+        &lt;span class=&quot;button&quot; id=&quot;toggle-italic&quot; style=&quot;font-style: italic; font-weight: bold;&quot;&gt;&amp;nbsp;i&amp;nbsp;&lt;/span&gt;
+        &lt;span class=&quot;button&quot; id=&quot;toggle-underline&quot;&gt;&amp;nbsp;&lt;span style=&quot;text-decoration: underline;&quot;&gt;U&lt;/span&gt;&amp;nbsp;&lt;/span&gt;
+        &lt;span class=&quot;button&quot; id=&quot;toggle-textshadow&quot;&gt;&amp;nbsp;&lt;span
+            style=&quot;text-shadow: 3px 3px black;&quot;&gt;A&lt;/span&gt;&amp;nbsp;&lt;/span&gt;
+        &lt;span class=&quot;button&quot; id=&quot;vertical-align-top&quot;&gt;上揃え&lt;/span&gt;
+        &lt;span class=&quot;button&quot; id=&quot;vertical-align-middle&quot;&gt;中央揃え&lt;/span&gt;
+        &lt;span class=&quot;button&quot; id=&quot;vertical-align-bottom&quot;&gt;下揃え&lt;/span&gt;
+        &lt;!-- 新規追加: 文字折り返し切替ボタン --&gt;
+        &lt;span class=&quot;button&quot; id=&quot;toggle-text-wrap&quot;&gt;折り返し切替&lt;/span&gt;
+
+        &lt;div class=&quot;pulldown_menu_parent&quot;&gt;
+          &lt;span class=&quot;button pulldown_btn&quot;&gt;&amp;nbsp;枠線のプロパティ&amp;nbsp;&lt;/span&gt;
+          &lt;ul class=&quot;pulldown_menu&quot;&gt;
+            &lt;span class=&quot;button&quot; id=&quot;btnTopBorder&quot; onclick=&quot;applyTopBorder()&quot;&gt;上掛線&lt;/span&gt;
+            &lt;span class=&quot;button&quot; id=&quot;btnBottomBorder&quot; onclick=&quot;applyBottomBorder()&quot;&gt;下掛線&lt;/span&gt;
+            &lt;span class=&quot;button&quot; id=&quot;btnLeftBorder&quot; onclick=&quot;applyLeftBorder()&quot;&gt;左掛線&lt;/span&gt;
+            &lt;span class=&quot;button&quot; id=&quot;btnRightBorder&quot; onclick=&quot;applyRightBorder()&quot;&gt;右掛線&lt;/span&gt;
+            &lt;span class=&quot;button&quot; id=&quot;apply-outer-border&quot; onclick=&quot;applyOuterBorder()&quot;&gt;外枠適用&lt;/span&gt;
+            &lt;span class=&quot;button&quot; id=&quot;apply-cell-border&quot; onclick=&quot;applyCellBorder()&quot;&gt;セル枠適用&lt;/span&gt;
+            &lt;span class=&quot;button&quot; id=&quot;remove-all-borders&quot; onclick=&quot;removeAllBorders()&quot;&gt;枠線解除&lt;/span&gt;
+          &lt;/ul&gt;
+        &lt;/div&gt;
+
+        &lt;span class=&quot;button&quot; id=&quot;merge-cells&quot;&gt;セル結合&lt;/span&gt;
+        &lt;span class=&quot;button&quot; id=&quot;unmerge-cells&quot;&gt;結合解除&lt;/span&gt;
+      &lt;/div&gt;
+
+      &lt;!-- テキスト色パレット --&gt;
+      &lt;div id=&quot;text-color-palette&quot; class=&quot;pulldown_menu_parent&quot;&gt;
+        &lt;span class=&quot;button pulldown_btn&quot;&gt;&amp;nbsp;A&amp;nbsp;&lt;/span&gt;
+        &lt;ul class=&quot;pulldown_menu&quot;&gt;
+          &lt;div class=&quot;color-swatch&quot; data-color=&quot;#000000&quot; style=&quot;background-color: #000000;&quot;&gt;&lt;/div&gt;
+          &lt;div class=&quot;color-swatch&quot; data-color=&quot;#FF0000&quot; style=&quot;background-color: #FF0000;&quot;&gt;&lt;/div&gt;
+          &lt;div class=&quot;color-swatch&quot; data-color=&quot;#00FF00&quot; style=&quot;background-color: #00FF00;&quot;&gt;&lt;/div&gt;
+          &lt;div class=&quot;color-swatch&quot; data-color=&quot;#0000FF&quot; style=&quot;background-color: #0000FF;&quot;&gt;&lt;/div&gt;
+          &lt;div class=&quot;color-swatch&quot; data-color=&quot;#FFFF00&quot; style=&quot;background-color: #FFFF00;&quot;&gt;&lt;/div&gt;
+          &lt;div class=&quot;color-swatch&quot; data-color=&quot;#FF00FF&quot; style=&quot;background-color: #FF00FF;&quot;&gt;&lt;/div&gt;
+          &lt;div class=&quot;color-swatch&quot; data-color=&quot;#00FFFF&quot; style=&quot;background-color: #00FFFF;&quot;&gt;&lt;/div&gt;
+          &lt;div class=&quot;color-swatch&quot; data-color=&quot;#808080&quot; style=&quot;background-color: #808080;&quot;&gt;&lt;/div&gt;
+          &lt;div class=&quot;color-swatch&quot; data-color=&quot;#800000&quot; style=&quot;background-color: #800000;&quot;&gt;&lt;/div&gt;
+          &lt;div class=&quot;color-swatch&quot; data-color=&quot;#008000&quot; style=&quot;background-color: #008000;&quot;&gt;&lt;/div&gt;
+          &lt;div class=&quot;color-swatch&quot; data-color=&quot;#000080&quot; style=&quot;background-color: #000080;&quot;&gt;&lt;/div&gt;
+          &lt;div class=&quot;color-swatch&quot; data-color=&quot;#808000&quot; style=&quot;background-color: #808000;&quot;&gt;&lt;/div&gt;
+          &lt;div class=&quot;color-swatch&quot; data-color=&quot;#800080&quot; style=&quot;background-color: #800080;&quot;&gt;&lt;/div&gt;
+          &lt;div class=&quot;color-swatch&quot; data-color=&quot;#008080&quot; style=&quot;background-color: #008080;&quot;&gt;&lt;/div&gt;
+          &lt;div class=&quot;color-swatch&quot; data-color=&quot;#C0C0C0&quot; style=&quot;background-color: #C0C0C0;&quot;&gt;&lt;/div&gt;
+          &lt;div class=&quot;color-swatch&quot; data-color=&quot;#ffffff&quot; style=&quot;background-color: #ffffff;&quot;&gt;&lt;/div&gt;
+          &lt;div class=&quot;color-swatch button&quot; data-color=&quot;none&quot; style=&quot;height: 30px;&quot;&gt;塗りつぶしなし&lt;/div&gt;
+          &lt;div id=&quot;text-color-picker&quot; style=&quot;font-size: medium;&quot;&gt;
+            &lt;label&gt;詳細: &lt;input type=&quot;color&quot; class=&quot;button&quot; id=&quot;text-color-custom&quot;&gt;&lt;/label&gt;
+          &lt;/div&gt;
+        &lt;/ul&gt;
+
+      &lt;/div&gt;
+
+      &lt;!-- セル背景色パレット --&gt;
+      &lt;div id=&quot;cell-color-palette&quot; class=&quot;pulldown_menu_parent&quot;&gt;
+        &lt;span class=&quot;button pulldown_btn&quot; style=&quot;background-color: black; color: whitesmoke;&quot;&gt;&amp;nbsp;A&amp;nbsp;&lt;/span&gt;
+        &lt;ul class=&quot;pulldown_menu&quot;&gt;
+          &lt;div class=&quot;color-swatch&quot; data-color=&quot;#000000&quot; style=&quot;background-color: #000000;&quot;&gt;&lt;/div&gt;
+          &lt;div class=&quot;color-swatch&quot; data-color=&quot;#FF0000&quot; style=&quot;background-color: #FF0000;&quot;&gt;&lt;/div&gt;
+          &lt;div class=&quot;color-swatch&quot; data-color=&quot;#00FF00&quot; style=&quot;background-color: #00FF00;&quot;&gt;&lt;/div&gt;
+          &lt;div class=&quot;color-swatch&quot; data-color=&quot;#0000FF&quot; style=&quot;background-color: #0000FF;&quot;&gt;&lt;/div&gt;
+          &lt;div class=&quot;color-swatch&quot; data-color=&quot;#FFFF00&quot; style=&quot;background-color: #FFFF00;&quot;&gt;&lt;/div&gt;
+          &lt;div class=&quot;color-swatch&quot; data-color=&quot;#FF00FF&quot; style=&quot;background-color: #FF00FF;&quot;&gt;&lt;/div&gt;
+          &lt;div class=&quot;color-swatch&quot; data-color=&quot;#00FFFF&quot; style=&quot;background-color: #00FFFF;&quot;&gt;&lt;/div&gt;
+          &lt;div class=&quot;color-swatch&quot; data-color=&quot;#808080&quot; style=&quot;background-color: #808080;&quot;&gt;&lt;/div&gt;
+          &lt;div class=&quot;color-swatch&quot; data-color=&quot;#800000&quot; style=&quot;background-color: #800000;&quot;&gt;&lt;/div&gt;
+          &lt;div class=&quot;color-swatch&quot; data-color=&quot;#008000&quot; style=&quot;background-color: #008000;&quot;&gt;&lt;/div&gt;
+          &lt;div class=&quot;color-swatch&quot; data-color=&quot;#000080&quot; style=&quot;background-color: #000080;&quot;&gt;&lt;/div&gt;
+          &lt;div class=&quot;color-swatch&quot; data-color=&quot;#808000&quot; style=&quot;background-color: #808000;&quot;&gt;&lt;/div&gt;
+          &lt;div class=&quot;color-swatch&quot; data-color=&quot;#800080&quot; style=&quot;background-color: #800080;&quot;&gt;&lt;/div&gt;
+          &lt;div class=&quot;color-swatch&quot; data-color=&quot;#008080&quot; style=&quot;background-color: #008080;&quot;&gt;&lt;/div&gt;
+          &lt;div class=&quot;color-swatch&quot; data-color=&quot;#C0C0C0&quot; style=&quot;background-color: #C0C0C0;&quot;&gt;&lt;/div&gt;
+          &lt;div class=&quot;color-swatch&quot; data-color=&quot;#ffffff&quot; style=&quot;background-color: #ffffff;&quot;&gt;&lt;/div&gt;
+          &lt;div class=&quot;color-swatch button&quot; data-color=&quot;none&quot; style=&quot;height: 30px;&quot;&gt;塗りつぶしなし&lt;/div&gt;
+          &lt;div id=&quot;cell-color-picker&quot; style=&quot;font-size: medium;&quot;&gt;
+            &lt;label&gt;詳細: &lt;input type=&quot;color&quot; class=&quot;button&quot; id=&quot;cell-color-custom&quot;&gt;&lt;/label&gt;
+        &lt;/ul&gt;
+      &lt;/div&gt;
+
+    &lt;/div&gt; &lt;!-- end #controls-row --&gt;
+
+
+    &lt;!-- 関数ボタン群 --&gt;
+    &lt;div style=&quot;display: inline-flex;&quot;&gt;
+      &lt;div id=&quot;formula-buttons&quot; class=&quot;pulldown_menu_parent&quot;&gt;
+        &lt;span class=&quot;button pulldown_btn&quot;&gt;&amp;nbsp;関数　数学・論理&amp;nbsp;▼&amp;nbsp;&lt;/span&gt;
+        &lt;ul class=&quot;pulldown_menu&quot;&gt;
+          &lt;span class=&quot;button&quot; onclick=&quot;applyFormula(&#039;=SUM()&#039;)&quot;&gt;SUM&lt;/span&gt;
+          &lt;span class=&quot;button&quot; onclick=&quot;applyFormula(&#039;=AVERAGE()&#039;)&quot;&gt;AVERAGE&lt;/span&gt;
+          &lt;span class=&quot;button&quot; onclick=&quot;applyFormula(&#039;=MIN()&#039;)&quot;&gt;MIN&lt;/span&gt;
+          &lt;span class=&quot;button&quot; onclick=&quot;applyFormula(&#039;=MAX()&#039;)&quot;&gt;MAX&lt;/span&gt;
+          &lt;span class=&quot;button&quot; onclick=&quot;applyFormula(&#039;=IF()&#039;)&quot;&gt;IF&lt;/span&gt;
+          &lt;span class=&quot;button&quot; onclick=&quot;applyFormula(&#039;=COUNT()&#039;)&quot;&gt;COUNT&lt;/span&gt;
+          &lt;span class=&quot;button&quot; onclick=&quot;applyFormula(&#039;=PRODUCT()&#039;)&quot;&gt;PRODUCT&lt;/span&gt;
+          &lt;span class=&quot;button&quot; onclick=&quot;applyFormula(&#039;=SUBTRACT()&#039;)&quot;&gt;SUBTRACT&lt;/span&gt;
+          &lt;span class=&quot;button&quot; onclick=&quot;applyFormula(&#039;=ADD()&#039;)&quot;&gt;ADD&lt;/span&gt;
+          &lt;span class=&quot;button&quot; onclick=&quot;applyFormula(&#039;=DIVIDE()&#039;)&quot;&gt;DIVIDE&lt;/span&gt;
+          &lt;span class=&quot;button&quot; onclick=&quot;applyFormula(&#039;=POWER()&#039;)&quot;&gt;POWER&lt;/span&gt;
+          &lt;span class=&quot;button&quot; onclick=&quot;applyFormula(&#039;=SQRT()&#039;)&quot;&gt;SQRT&lt;/span&gt;
+          &lt;span class=&quot;button&quot; onclick=&quot;applyFormula(&#039;=MOD()&#039;)&quot;&gt;MOD&lt;/span&gt;
+          &lt;span class=&quot;button&quot; onclick=&quot;applyFormula(&#039;=CONCAT()&#039;)&quot;&gt;CONCAT&lt;/span&gt;
+          &lt;span class=&quot;button&quot; onclick=&quot;applyFormula(&#039;=UPPER()&#039;)&quot;&gt;UPPER&lt;/span&gt;
+          &lt;span class=&quot;button&quot; onclick=&quot;applyFormula(&#039;=LOWER()&#039;)&quot;&gt;LOWER&lt;/span&gt;
+          &lt;span class=&quot;button&quot; onclick=&quot;applyFormula(&#039;=LEFT()&#039;)&quot;&gt;LEFT&lt;/span&gt;
+          &lt;span class=&quot;button&quot; onclick=&quot;applyFormula(&#039;=RIGHT()&#039;)&quot;&gt;RIGHT&lt;/span&gt;
+          &lt;span class=&quot;button&quot; onclick=&quot;applyFormula(&#039;=MID()&#039;)&quot;&gt;MID&lt;/span&gt;
+          &lt;span class=&quot;button&quot; onclick=&quot;applyFormula(&#039;=TRIM()&#039;)&quot;&gt;TRIM&lt;/span&gt;
+          &lt;span class=&quot;button&quot; onclick=&quot;applyFormula(&#039;=LEN()&#039;)&quot;&gt;LEN&lt;/span&gt;
+          &lt;span class=&quot;button&quot; onclick=&quot;applyFormula(&#039;=FIND()&#039;)&quot;&gt;FIND&lt;/span&gt;
+          &lt;span class=&quot;button&quot; onclick=&quot;applyFormula(&#039;=REPLACE()&#039;)&quot;&gt;REPLACE&lt;/span&gt;
+        &lt;/ul&gt;
+      &lt;/div&gt;
+
+      &lt;div id=&quot;formula-buttons&quot; class=&quot;pulldown_menu_parent&quot; style=&quot;display:inline-flex; align-items:center; gap:5px;&quot;&gt;
+        &lt;span class=&quot;button pulldown_btn&quot;&gt;&amp;nbsp;関数　日付&amp;nbsp;▼&amp;nbsp;&lt;/span&gt;
+        &lt;ul class=&quot;pulldown_menu&quot;&gt;
+          &lt;span class=&quot;button&quot; onclick=&quot;applyFormula(&#039;=TODAY()&#039;)&quot;&gt;TODAY&lt;/span&gt;
+          &lt;span class=&quot;button&quot; onclick=&quot;applyFormula(&#039;=DATE(2025,4,26)&#039;)&quot;&gt;DATE&lt;/span&gt;
+          &lt;span class=&quot;button&quot; onclick=&quot;applyFormula(&#039;=DATEVALUE(\&#039;1/2\&#039;)&#039;)&quot;&gt;DATEVALUE&lt;/span&gt;
+          &lt;span class=&quot;button&quot; onclick=&quot;applyFormula(&#039;=NOW()&#039;)&quot;&gt;NOW&lt;/span&gt;
+          &lt;span class=&quot;button&quot; onclick=&quot;applyFormula(&#039;=HOUR(NOW())&#039;)&quot;&gt;HOUR&lt;/span&gt;
+          &lt;span class=&quot;button&quot; onclick=&quot;applyFormula(&#039;=MINUTE(NOW())&#039;)&quot;&gt;MINUTE&lt;/span&gt;
+          &lt;span class=&quot;button&quot; onclick=&quot;applyFormula(&#039;=SECOND(NOW())&#039;)&quot;&gt;SECOND&lt;/span&gt;
+          &lt;span class=&quot;button&quot; onclick=&quot;applyFormula(&#039;=WEEKDAY(TODAY())&#039;)&quot;&gt;WEEKDAY&lt;/span&gt;
+          &lt;span class=&quot;button&quot; onclick=&quot;applyFormula(&#039;=EDATE(TODAY(), 1)&#039;)&quot;&gt;EDATE(+1)&lt;/span&gt;
+          &lt;span class=&quot;button&quot; onclick=&quot;applyFormula(&#039;=DATEDIF(DATE(2025,1,1), DATE(2025,4,26), \&#039;D\&#039;)&#039;)&quot;&gt;DATEDIF
+            (D)&lt;/span&gt;
+          &lt;span class=&quot;button&quot; onclick=&quot;applyFormula(&#039;=TIME(15,30,0)&#039;)&quot;&gt;TIME&lt;/span&gt;
+          &lt;span class=&quot;button&quot; onclick=&quot;applyFormula(&#039;=TIMEVALUE(\&#039;14:30\&#039;)&#039;)&quot;&gt;TIMEVALUE&lt;/span&gt;
+        &lt;/ul&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+
+  &lt;/div&gt;
+  &lt;!-- 下段：数式バー --&gt;
+  &lt;div id=&quot;formula-bar-container&quot;&gt;
+    &lt;span class=&quot;border&quot; id=&quot;selected-cells-display&quot;
+      style=&quot;margin-right: 8px; font-weight: bold; width: 125px; height: 28px; text-align: center; padding: 2px; background-color: whitesmoke;&quot;&gt;&lt;/span&gt;
+    &lt;span class=&quot;button mark_btn cross&quot; style=&quot;margin-right: 5px;&quot; onclick=&quot;revertSelectedCellsText()&quot;&gt;&lt;/span&gt;
+    &lt;span class=&quot;button mark_btn checkmark&quot; style=&quot;margin-right: 5px;&quot;&gt;&lt;/span&gt;
+    &lt;input type=&quot;text&quot; id=&quot;formula-bar&quot; class=&quot;border&quot; style=&quot;margin-right: 2.5px;&quot; placeholder=&quot;数式または値を入力&quot;
+      autocomplete=&quot;off&quot; /&gt;
+  &lt;/div&gt;
+  &lt;/div&gt;
+
+  &lt;!-- スプレッドシート本体 --&gt;
+  &lt;!-- 外側はスクロールバー用（固定サイズ、スタイルはそのまま） --&gt;
+  &lt;div id=&quot;spreadsheet-container&quot; class=&quot;scroll-container&quot;&gt;
+    &lt;!-- 内側の拡大縮小対象 --&gt;
+    &lt;div id=&quot;spreadsheet-content&quot;&gt;
+      &lt;table id=&quot;spreadsheet&quot;&gt;
+        &lt;thead&gt;
+          &lt;tr&gt;
+            &lt;th id=&quot;corner&quot; class=&quot;button&quot; style=&quot;position: sticky; left: 0; z-index: 12; cursor: cell; width: 80px;&quot;&gt;
+              allselect
+            &lt;/th&gt;
+          &lt;/tr&gt;
+        &lt;/thead&gt;
+        &lt;tbody&gt;
+          &lt;!-- 適宜テーブルの内容を追加 --&gt;
+        &lt;/tbody&gt;
+      &lt;/table&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+  &lt;!-- 拡大率調整バー --&gt;
+  &lt;div id=&quot;zoom-toolbar&quot;&gt;
+    &lt;label for=&quot;zoom-slider&quot; class=&quot;border&quot;&gt;拡大率:&lt;/label&gt;
+    &lt;input type=&quot;range&quot; id=&quot;zoom-slider&quot; min=&quot;20&quot; max=&quot;200&quot; value=&quot;100&quot; step=&quot;10&quot; style=&quot;margin: 0 10px;&quot;&gt;
+    &lt;span id=&quot;zoom-display&quot;&gt;100%&lt;/span&gt;
+    &lt;span class=&quot;border&quot; style=&quot;margin-left: 20px;&quot;&gt;&amp;nbsp;状態:&amp;emsp;&lt;span id=&quot;loadingstate&quot;&gt;読み込み中...&lt;/span&gt;&amp;emsp;&lt;/span&gt;
+    &lt;!-- プログレスバーのコンテナ --&gt;
+    &lt;div id=&quot;loading-progress-container&quot;
+      style=&quot;display:inline-block; vertical-align:middle; width:200px; height:20px; border:1px solid #ccc; background:#f0f0f0; margin-left:10px;&quot;&gt;
+      &lt;!-- プログレスバー（初期状態は 0%） --&gt;
+      &lt;div id=&quot;loading-progress-bar&quot; style=&quot;height:100%; width:0%; background:#4caf50;&quot;&gt;&lt;/div&gt;
+    &lt;/div&gt;&lt;span&gt;&amp;emsp;&lt;/span&gt;
+
+    &lt;div id=&quot;localStorageTotal&quot;&gt;&lt;/div&gt;&lt;span&gt;&amp;emsp;&lt;/span&gt;
+    &lt;div id=&quot;localStorageUsed&quot;&gt;&lt;/div&gt;&lt;span&gt;&amp;emsp;&lt;/span&gt;
+    &lt;div id=&quot;localStorageRemaining&quot;&gt;&lt;/div&gt;&lt;span&gt;&amp;emsp;&lt;/span&gt;
+    &lt;span class=&quot;border&quot;&gt;用紙サイズ：&amp;nbsp;&lt;span id=&quot;selectedSize&quot;&gt;A4&lt;/span&gt;&lt;/span&gt;
+
+  &lt;/div&gt;
+  &lt;script src=&quot;spreadsheet.js&quot; defer&gt;&lt;/script&gt;
+&lt;/body&gt;
+
+&lt;/html&gt;
                 </textarea>
                 </code>
 
                 <code>
                     <textarea id="code_script" class="white_text resize_none" style="display: none;">
+let supportsPassive = false;
+try {
+    const opts = { passive: false, get passive() { supportsPassive = true; return false; } };
+    window.addEventListener(&quot;testPassive&quot;, null, opts);
+    window.removeEventListener(&quot;testPassive&quot;, null, opts);
+} catch (e) { }
 
+document.addEventListener(&#039;wheel&#039;, function (e) {
+    if (e.ctrlKey) {
+        e.preventDefault();
+    }
+}, { passive: false });
+document.addEventListener(&#039;touchmove&#039;, function (e) {
+    if (e.touches.length &gt; 1) {
+        e.preventDefault();
+    }
+}, { passive: false });
+
+let currentPressedButton = null;
+
+// ボタン上でマウスダウンがあった場合
+document.addEventListener(&quot;mousedown&quot;, (e) =&gt; {
+    const btn = e.target.closest(&quot;.button&quot;);
+    if (btn) {
+        btn.classList.add(&quot;pressed&quot;);
+        currentPressedButton = btn; // 現在操作中のボタンを記録
+    }
+});
+
+// ボタン上または画面上のどこかでマウスアップがあった場合
+document.addEventListener(&quot;mouseup&quot;, () =&gt; {
+    if (currentPressedButton) {
+        currentPressedButton.classList.remove(&quot;pressed&quot;);
+        currentPressedButton = null;
+    }
+});
+
+// カーソル移動でボタン上かどうかをチェック
+document.addEventListener(&quot;mousemove&quot;, (e) =&gt; {
+    if (currentPressedButton) {
+        const rect = currentPressedButton.getBoundingClientRect();
+        // カーソルがボタン領域外にあるかチェック
+        if (e.clientX &lt; rect.left || e.clientX &gt; rect.right ||
+            e.clientY &lt; rect.top || e.clientY &gt; rect.bottom) {
+            // たとえマウスは押されていても、カーソルが外れたら pressed を除去
+            currentPressedButton.classList.remove(&quot;pressed&quot;);
+        } else {
+            // カーソルがボタン内に戻り、なおかつマウスボタンが押されている場合は pressed を復元
+            if (e.buttons) {
+                currentPressedButton.classList.add(&quot;pressed&quot;);
+            }
+        }
+    }
+});
+
+
+function printPage() {
+    window.print();
+}
+// 動的に@pageルールのサイズを変更する関数
+function changePageSize(sizeValue) {
+    let styleTag = document.getElementById(&quot;dynamicPageStyle&quot;);
+    if (!styleTag) {
+        styleTag = document.createElement(&quot;style&quot;);
+        styleTag.id = &quot;dynamicPageStyle&quot;;
+        document.head.appendChild(styleTag);
+    }
+    // sizeValue は &quot;A4&quot;, &quot;A3&quot;, &quot;B5&quot;, &quot;B4&quot; などを指定可能
+    styleTag.textContent = &#039;@page { size: &#039; + sizeValue + &#039;; margin: 1cm; }&#039;;
+    // ユーザーに選択中のサイズを分かりやすく表示する例
+    document.getElementById(&quot;selectedSize&quot;).textContent = sizeValue;
+}
+
+// =======================
+// Block 1: 設定関連
+// =======================
+const INITIAL_ROWS = 80;
+const ROW_BATCH = 10;
+const INITIAL_COLUMNS = 80;  // 初期列数
+const COLUMN_BATCH = 10;
+
+const container = document.getElementById(&quot;spreadsheet-container&quot;);
+const spreadsheetContent = document.getElementById(&quot;spreadsheet-content&quot;);
+const table = document.getElementById(&quot;spreadsheet&quot;);
+const theadRow = table.querySelector(&quot;thead tr&quot;);
+const tbody = table.querySelector(&quot;tbody&quot;);
+const formulaBarInput = document.getElementById(&quot;formula-bar&quot;);
+const loadingstate = document.getElementById(&quot;loadingstate&quot;)
+
+let currentColumns = 0; // 現在の列数 (0-index)
+let rowCount = 1;       // 次に生成する行番号 (1-index)
+let activeCell = null;  // 現在選択中（または編集中）のセル
+// =======================
+// Block 2: 範囲選択用の変数
+// =======================
+let isSelecting = false;
+let selectionStart = null;
+let selectionEnd = null;
+// =======================
+// Block 3: ヘルパー関数群
+// =======================
+
+// 3-1. 0-index の列番号を Excel 風のアルファベット (A, B, &hellip;) に変換
+function getColumnName(index) {
+    let dividend = index + 1;
+    let columnName = &#039;&#039;;
+    while (dividend &gt; 0) {
+        let modulo = (dividend - 1) % 26;
+        columnName = String.fromCharCode(65 + modulo) + columnName;
+        dividend = Math.floor((dividend - modulo) / 26);
+    }
+    return columnName;
+}
+
+// 3-2. 指定セルから「A1」形式の参照文字列を返す
+function getCellReference(cell) {
+    if (!cell || !cell.dataset) return &quot;&quot;;
+    const row = cell.dataset.row;
+    const col = parseInt(cell.dataset.col, 10);
+    return getColumnName(col) + row;
+}
+
+// 3-3. 座標 (row, col) からセル参照を返す（rowは1-index, colは0-index）
+function getCellReferenceByCoord(row, col) {
+    return getColumnName(col) + row;
+}
+
+// 3-4. 現在、数式編集中かどうかを判定
+function isInFormulaEdit() {
+    if (document.activeElement === formulaBarInput &amp;&amp; formulaBarInput.value.trim().startsWith(&quot;=&quot;))
+        return true;
+    if (activeCell &amp;&amp; activeCell.isContentEditable &amp;&amp; activeCell.textContent.trim().startsWith(&quot;=&quot;))
+        return true;
+    return false;
+}
+
+// 3-5. 現在編集中のフィールドにセル参照文字列を「カーソル位置を保持して」挿入
+function insertCellReference(ref) {
+    if (!ref) return;
+    if (document.activeElement === formulaBarInput) {
+        formulaBarInput.value += ref;
+    } else if (activeCell &amp;&amp; activeCell.isContentEditable) {
+        document.execCommand(&#039;insertText&#039;, false, ref);
+    } else if (activeCell) {
+        activeCell.textContent += ref;
+    }
+}
+// =======================
+// Block 4: 行／列生成 および セル作成
+// =======================
+
+function initializeColumns(count) {
+    loadColumns(count);
+}
+
+// ------------------------------------------------------
+// 最適化版 loadColumns 関数
+// ・新規のヘッダーセル（&lt;th&gt;）を生成して一括追加
+// ・既存の tbody 内各行に対し、新規列分のセル（&lt;td&gt;）を一括追加
+// ------------------------------------------------------
+function loadColumns(count) {
+    let headerHTML = &quot;&quot;;
+    // ヘッダー行に追加する &lt;th&gt; 要素をまとめて生成
+    for (let i = 0; i &lt; count; i++) {
+        headerHTML += `&lt;th class=&quot;col_number button&quot;&gt;${getColumnName(currentColumns)}&lt;/th&gt;`;
+        currentColumns++;
+    }
+    // ヘッダー行に一括挿入
+    theadRow.insertAdjacentHTML(&quot;beforeend&quot;, headerHTML);
+
+    // 各 tbody の既存行に対して、同じく新規セルをまとめて挿入
+    // ※ 各行の先頭セルは行番号の &lt;th&gt; とする前提
+    for (let i = 0, len = tbody.rows.length; i &lt; len; i++) {
+        const rowNumber = tbody.rows[i].cells[0].textContent; // 先頭セルに行番号が入っているものとする
+        let cellHTML = &quot;&quot;;
+        // 今回追加する列は、 currentColumns - count から currentColumns - 1 まで
+        for (let col = currentColumns - count; col &lt; currentColumns; col++) {
+            cellHTML += createCellHTML(rowNumber, col);
+        }
+        tbody.rows[i].insertAdjacentHTML(&quot;beforeend&quot;, cellHTML);
+    }
+}
+
+// ------------------------------------------------------
+// 最適化版 loadRows 関数
+// ・新規の行（&lt;tr&gt;）を、行番号セル &lt;th&gt; と各 &lt;td&gt; を HTML 文字列で組み立て、一括で tbody に挿入
+// ------------------------------------------------------
+function loadRows(count) {
+    let rowsHTML = &quot;&quot;;
+    for (let i = 0; i &lt; count; i++) {
+        let cellsHTML = &quot;&quot;;
+        // 現在の currentColumns 数だけセルを作成
+        for (let col = 0; col &lt; currentColumns; col++) {
+            cellsHTML += createCellHTML(rowCount, col);
+        }
+        // 行番号を示すセル（&lt;th&gt;）とその後のセルを含む &lt;tr&gt; を組み立て
+        rowsHTML += `&lt;tr&gt;
+                   &lt;th class=&quot;row_number button&quot;&gt;${rowCount}&lt;/th&gt;
+                   ${cellsHTML}
+                 &lt;/tr&gt;`;
+        rowCount++;
+    }
+    // tbody に一括挿入
+    tbody.insertAdjacentHTML(&quot;beforeend&quot;, rowsHTML);
+}
+// ------------------------------------------------------
+// 最適化されたセル生成用関数：HTML文字列を出力
+// 各セルに対して contentEditable=&quot;false&quot; と、 
+// data 属性で行番号（row）と列番号（col）を指定
+// ------------------------------------------------------
+function createCellHTML(row, col) {
+    return `&lt;td contenteditable=&quot;false&quot; data-row=&quot;${row}&quot; data-col=&quot;${col}&quot;&gt;&lt;/td&gt;`;
+}
+
+// 以下、イベントデリゲーションを用いた処理例
+// ここではテーブル全体に対してイベントを一括で設定します
+const spreadsheetElem = document.getElementById(&quot;spreadsheet&quot;);
+
+// クリックイベントのデリゲーション
+spreadsheetElem.addEventListener(&quot;click&quot;, function (e) {
+    // もしクリック対象の上位に&lt;td&gt;があれば取得する
+    const cell = e.target.closest(&quot;td&quot;);
+    if (cell &amp;&amp; spreadsheetElem.contains(cell)) {
+        handleCellClick(e);
+    }
+});
+
+// ダブルクリックイベントのデリゲーション
+spreadsheetElem.addEventListener(&quot;dblclick&quot;, function (e) {
+    const cell = e.target.closest(&quot;td&quot;);
+    if (cell &amp;&amp; spreadsheetElem.contains(cell)) {
+        handleCellDblClick(e);
+        updateFillHandle();
+    }
+});
+
+// マウスダウンイベントのデリゲーション
+spreadsheetElem.addEventListener(&quot;mousedown&quot;, function (e) {
+    const cell = e.target.closest(&quot;td&quot;);
+    if (cell &amp;&amp; spreadsheetElem.contains(cell)) {
+        handleCellMouseDown(e);
+    }
+});
+
+// キーダウンイベントのデリゲーション
+spreadsheetElem.addEventListener(&quot;keydown&quot;, function (e) {
+    // キーボードイベントはフォーカスが当たっている要素でしか発生しないので、ここでは
+    // 適切にフォーカスが移るようにしておく必要があります
+    const cell = e.target.closest(&quot;td&quot;);
+    if (cell &amp;&amp; spreadsheetElem.contains(cell)) {
+        handleCellKeyDown(e);
+    }
+});
+
+// 「blur」はバブルしないため、代わりに focusout イベントを使う
+spreadsheetElem.addEventListener(&quot;focusout&quot;, function (e) {
+    const cell = e.target.closest(&quot;td&quot;);
+    if (cell &amp;&amp; spreadsheetElem.contains(cell)) {
+        handleCellBlur(e);
+    }
+});
+
+// =======================
+// Block 5: セル編集／イベント処理
+// =======================
+
+let caretTimer = null;  // グローバル変数として、タイマーIDを保持
+
+function revertSelectedCellsText() {
+    const selectedCells = document.querySelectorAll(&quot;td.selected&quot;);
+    let formulaForBar = &quot;&quot;;
+    selectedCells.forEach(cell =&gt; {
+        // 保存済みのデータがある場合に復元する
+        if (cell.dataset.originalText) {
+            // もし元の数式も保存しているなら、そちらを復元する
+            if (cell.dataset.originalFormula) {
+                cell.dataset.formula = cell.dataset.originalFormula;
+                cell.innerHTML = cell.dataset.originalFormula;
+                formulaForBar = cell.dataset.originalFormula;
+            } else {
+                cell.innerHTML = cell.dataset.originalText;
+                // 数式属性があれば解除。もしくはそのままでもよい
+                delete cell.dataset.formula;
+                formulaForBar = cell.textContent.trim();
+            }
+        }
+    });
+    // 数式バーの更新
+    if (formulaForBar) {
+        formulaBarInput.value = formulaForBar;
+    }
+    clearCalculationRangeHighlights();
+    updateAllFormulas();
+}
+
+
+
+function handleCellDblClick(e) {
+    const cell = e.target;
+    cell.contentEditable = &quot;true&quot;;
+
+    // ダブルクリックで編集モードに入ったことを示すフラグをセットする
+    cell.dataset.editBy = &quot;dblclick&quot;;
+
+    // もともとの内容を保存
+    cell.dataset.originalText = cell.innerHTML;
+
+    // 数式が設定されている場合は、完全な数式（例：&quot;=SUM(N4:N16)&quot;）も保存しておく
+    if (cell.dataset.formula) {
+        cell.dataset.originalFormula = cell.dataset.formula;
+        // 編集時はセル内に数式を表示する（または必要なら値に置き換える）
+        cell.textContent = cell.dataset.formula;
+        highlightCalculationRange(cell.dataset.formula);
+    }
+
+    cell.focus();
+    activeCell = cell;
+    formulaBarInput.value = cell.dataset.formula ? cell.dataset.formula : cell.textContent;
+
+    // 必要に応じてキャレット位置の調整
+    setTimeout(() =&gt; {
+        setCaretToEnd(cell);
+    }, 0);
+}
+
+
+function handleCellBlur(e) {
+    const cell = e.target;
+    // textContent で取得すれば、挿入された &quot;\n&quot; がそのまま残ります
+    const newText = cell.textContent.trim();
+
+    if (newText.startsWith(&quot;=&quot;)) {
+        // 数式の場合は数式情報を保持し、評価結果をセット
+        cell.dataset.formula = newText;
+        cell.textContent = evaluateFormula(newText);
+    } else {
+        // 日付形式（例：&quot;1/2&quot; や &quot;1/2/2020&quot;）の場合の自動変換
+        if (isDateFormat(newText)) {
+            const parts = newText.split(&quot;/&quot;);
+            let date;
+            if (parts.length === 2) {
+                const currentYear = new Date().getFullYear();
+                date = new Date(currentYear, parseInt(parts[0], 10) - 1, parseInt(parts[1], 10));
+            } else if (parts.length === 3) {
+                date = new Date(parseInt(parts[2], 10), parseInt(parts[0], 10) - 1, parseInt(parts[1], 10));
+            }
+            if (date &amp;&amp; !isNaN(date.getTime())) {
+                cell.dataset.valueType = &quot;date&quot;;
+                cell.dataset.dateValue = date.getTime();  // タイムスタンプを保存
+                cell.textContent = formatDate(date);        // formatDate はテキストを返すものとします
+            } else {
+                cell.textContent = newText;
+            }
+        } else {
+            // 数式でも日付形式でもない場合は、既存の数式情報を削除しそのまま表示
+            if (cell.dataset.formula) {
+                delete cell.dataset.formula;
+            }
+            cell.textContent = newText;
+        }
+        updateAllFormulas();
+    }
+
+    // 編集モード解除
+    cell.contentEditable = &quot;false&quot;;
+    delete cell.dataset.editBy;
+    clearCalculationRangeHighlights();
+    updateAllFormulas();
+}
+
+
+
+
+
+
+function handleF2Key(e) {
+    let targetCell = activeCell;
+    if (!targetCell) {
+        const selectedCells = document.querySelectorAll(&quot;#spreadsheet tbody td.selected&quot;);
+        if (selectedCells.length &gt; 0) {
+            targetCell = selectedCells[0];
+        }
+    }
+    if (targetCell) {
+        // F2 でも、ダブルクリックと同様の処理を実行し、フラグを設定する
+        targetCell.dataset.editBy = &quot;F2&quot;;
+        handleCellDblClick({ target: targetCell });
+    }
+    e.preventDefault();
+}
+
+
+
+function handleCellKeyDown(e) {
+    if (e.key === &quot;Enter&quot; &amp;&amp; e.target.isContentEditable) {
+        if (e.altKey) {
+            e.preventDefault();
+            // 改行文字 &quot;\n&quot; をテキストとして挿入する
+            document.execCommand(&#039;insertText&#039;, false, &quot;\n&quot;);
+            return;
+        }
+        // Alt なしの Enter キーの場合は編集終了して次のセルに移動
+        e.preventDefault();
+        const row = parseInt(e.target.dataset.row, 10);
+        const col = parseInt(e.target.dataset.col, 10);
+        e.target.blur();
+        setTimeout(() =&gt; {
+            navigateToCell(row + 1, col, e);
+        }, 0);
+    }
+}
+
+
+// ※ 自身のセル（数式セルの場合）をクリックした場合は、セル参照挿入せずにデフォルト動作（caret操作）を許容する
+function handleCellClick(e) {
+    if (activeCell &amp;&amp; activeCell === e.target) {
+        return; // 同じセルなら何もせず、通常の caret 操作を許す
+    }
+    if (activeCell &amp;&amp; activeCell !== e.target &amp;&amp; activeCell.isContentEditable) {
+        const currentText = activeCell.textContent.trim();
+        if (!currentText.startsWith(&quot;=&quot;)) {
+            activeCell.blur();
+        }
+    }
+    if (isInFormulaEdit()) {
+        const ref = getCellReference(e.target);
+        // 自セルクリックした場合は挿入しない
+        if (!(activeCell &amp;&amp; activeCell === e.target)) {
+            insertCellReference(ref);
+        }
+    } else {
+        activeCell = e.target;
+        formulaBarInput.value = activeCell.dataset.formula ? activeCell.dataset.formula : activeCell.textContent;
+    }
+}
+
+function navigateToCell(row, col, event) {
+    if (col &lt; 0) return;
+    // 列が足りなければ列を追加
+    if (col &gt;= currentColumns) {
+        loadColumns(col - currentColumns + 1);
+    }
+    // 行が足りなければ行を追加
+    if (row &gt;= rowCount) {
+        loadRows(row - rowCount + 1);
+    }
+    const targetCell = getCell(row, col);
+    if (targetCell) {
+        event.preventDefault();
+        // すべてのセルから selected クラスを除去
+        const allCells = document.querySelectorAll(&quot;#spreadsheet tbody td&quot;);
+        allCells.forEach(cell =&gt; cell.classList.remove(&quot;selected&quot;));
+
+        // 移動先のセルをフォーカスし、selected クラスを追加
+        targetCell.focus();
+        activeCell = targetCell;
+        activeCell.classList.add(&quot;selected&quot;);
+
+        // 数式バーも更新
+        formulaBarInput.value = activeCell.dataset.formula ? activeCell.dataset.formula : activeCell.textContent;
+    }
+}
+
+
+/**
+ * 指定された行番号と列番号に対応するセル (td 要素) を取得する
+ * ※ tbody 内の各行では、cells[0] が行番号セルなので、実データは cells[col+1]
+ * @param {number} row - 1始まりの行番号
+ * @param {number} col - 0始まりの列番号
+ * @returns {HTMLElement|null} 対象セルが存在すればその要素、なければ null
+ */
+function getCell(row, col) {
+    if (col &gt;= currentColumns) {
+        loadColumns(col - currentColumns + 1);
+    }
+    if (row &gt; rowCount) {
+        loadRows(row - rowCount);
+    }
+    const rowIndex = row - 1;
+    if (rowIndex &lt; 0 || rowIndex &gt;= tbody.rows.length) return null;
+    const cells = tbody.rows[rowIndex].cells;
+    if (col &lt; 0 || col &gt;= currentColumns) return null;
+    // cells[0] はヘッダーなので、実データセルは cells[col+1]
+    return cells[col + 1];
+}
+
+// =======================
+// Block 6: 数式評価および自動再計算
+// =======================
+
+/*********************
+* 数式で利用できるグローバル関数群
+*********************/
+
+// 以下の関数は、eval() 内で呼ばれるためグローバル関数（またはwindowオブジェクト上にある）として定義します。
+
+function flattenArray(arr) {
+    return arr.reduce((acc, val) =&gt; {
+        return acc.concat(Array.isArray(val) ? flattenArray(val) : val);
+    }, []);
+}
+
+function SUM() {
+    let args = Array.from(arguments);
+    if (args.length === 1 &amp;&amp; Array.isArray(args[0])) {
+        args = args[0];
+    }
+    const flat = flattenArray(args);
+    const nums = flat.map(v =&gt; Number(v)).filter(v =&gt; !isNaN(v));
+    return nums.reduce((a, b) =&gt; a + b, 0);
+}
+function AVERAGE() {
+    const flat = flattenArray(Array.from(arguments));
+    const nums = flat.map(v =&gt; parseFloat(v)).filter(v =&gt; !isNaN(v));
+    if (nums.length === 0) return &quot;#DIV/0!&quot;;
+    return nums.reduce((a, b) =&gt; a + b, 0) / nums.length;
+}
+function MIN() {
+    const flat = flattenArray(Array.from(arguments));
+    const nums = flat.map(v =&gt; parseFloat(v)).filter(v =&gt; !isNaN(v));
+    return Math.min(...nums);
+}
+function MAX() {
+    const flat = flattenArray(Array.from(arguments));
+    const nums = flat.map(v =&gt; parseFloat(v)).filter(v =&gt; !isNaN(v));
+    return Math.max(...nums);
+}
+function IF(condition, trueValue, falseValue) {
+    if (typeof condition === &quot;string&quot;) {
+        condition = condition.trim().toUpperCase() === &quot;TRUE&quot;;
+    }
+    return condition ? trueValue : falseValue;
+}
+function COUNT() {
+    const flat = flattenArray(Array.from(arguments));
+    return flat.filter(x =&gt; !isNaN(Number(x))).length;
+}
+function PRODUCT() {
+    const flat = flattenArray(Array.from(arguments));
+    return flat.reduce((acc, v) =&gt; acc * Number(v), 1);
+}
+function SUBTRACT(a, b) { return Number(a) - Number(b); }
+function ADD(a, b) { return Number(a) + Number(b); }
+function DIVIDE(a, b) { return Number(b) !== 0 ? Number(a) / Number(b) : &quot;#DIV/0!&quot;; }
+function POWER(a, b) { return Math.pow(Number(a), Number(b)); }
+function SQRT(a) { return Math.sqrt(Number(a)); }
+function MOD(a, b) { return Number(a) % Number(b); }
+function CONCAT() { return Array.from(arguments).join(&quot;&quot;); }
+function UPPER(text) { return String(text).toUpperCase(); }
+function LOWER(text) { return String(text).toLowerCase(); }
+function LEFT(text, count) { return String(text).substring(0, Number(count)); }
+function RIGHT(text, count) { return String(text).slice(-Number(count)); }
+function MID(text, start, count) { return String(text).substr(Number(start) - 1, Number(count)); }
+function TRIM(text) { return String(text).trim(); }
+function LEN(text) { return String(text).length; }
+function FIND(findText, withinText) { return String(withinText).indexOf(String(findText)) + 1; }
+function REPLACE(text, start, count, newText) {
+    const before = String(text).substring(0, Number(start) - 1);
+    const after = String(text).substring(Number(start) - 1 + Number(count));
+    return before + newText + after;
+}
+
+
+
+
+
+// -----------------------
+// 日付関連のグローバル関数
+// -----------------------
+
+// 指定した年、月、日のDateオブジェクトを返す（ExcelのDATE関数のように）
+function DATE(year, month, day) {
+    return new Date(year, month - 1, day);
+}
+
+// 現在の日付（時刻は切り捨てられる）
+function TODAY() {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+}
+
+// Dateオブジェクトまたは日付文字列から「年」を抽出
+function YEAR(dateInput) {
+    return new Date(dateInput).getFullYear();
+}
+
+// Dateオブジェクトまたは日付文字列から「月」を抽出（1～12）
+function MONTH(dateInput) {
+    return new Date(dateInput).getMonth() + 1;
+}
+
+// Dateオブジェクトまたは日付文字列から「日」を抽出
+function DAY(dateInput) {
+    return new Date(dateInput).getDate();
+}
+
+// 日付文字列（例：&quot;1/2&quot; または &quot;1/2/2020&quot;）をタイムスタンプに変換する
+function DATEVALUE(dateString) {
+    const parts = dateString.split(&quot;/&quot;);
+    if (parts.length === 2) {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = parseInt(parts[0], 10);
+        const day = parseInt(parts[1], 10);
+        return new Date(year, month - 1, day).getTime();
+    } else if (parts.length === 3) {
+        const month = parseInt(parts[0], 10);
+        const day = parseInt(parts[1], 10);
+        const year = parseInt(parts[2], 10);
+        return new Date(year, month - 1, day).getTime();
+    }
+    return &quot;#VALUE!&quot;;
+}
+
+// 入力が &quot;1/2&quot; や &quot;1/2/2020&quot; のような日付形式かを判定する関数
+function isDateFormat(str) {
+    return /^\d{1,2}\/\d{1,2}(\/\d{2,4})?$/.test(str);
+}
+
+// Dateオブジェクトを &quot;yyyy/mm/dd&quot; 形式に整形して返す関数
+function formatDate(date) {
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, &#039;0&#039;);
+    const day = date.getDate().toString().padStart(2, &#039;0&#039;);
+    return `${year}/${month}/${day}`;
+}
+
+/*********************
+ * 追加の日付関連グローバル関数
+ *********************/
+
+// 現在の日時を返す (NOW: 日付と時刻)
+function NOW() {
+    return new Date();
+}
+
+// Dateオブジェクトまたは日付文字列から「時」を抽出 (0～23)
+function HOUR(dateInput) {
+    return new Date(dateInput).getHours();
+}
+
+// Dateオブジェクトまたは日付文字列から「分」を抽出 (0～59)
+function MINUTE(dateInput) {
+    return new Date(dateInput).getMinutes();
+}
+
+// Dateオブジェクトまたは日付文字列から「秒」を抽出 (0～59)
+function SECOND(dateInput) {
+    return new Date(dateInput).getSeconds();
+}
+
+// 指定した日付の曜日を返す (1＝日曜日 ～ 7＝土曜日)
+// Excelの場合、WEEKDAY はオプションで開始曜日を変更可能ですが、ここでは日曜始まりとしています。
+function WEEKDAY(dateInput) {
+    return new Date(dateInput).getDay() + 1;
+}
+
+// 指定した日付から、指定された月数を加算した日付を返す (EDATE)
+function EDATE(dateInput, months) {
+    const date = new Date(dateInput);
+    date.setMonth(date.getMonth() + Number(months));
+    return date;
+}
+
+// 指定した2つの日付の間の日数、月数、または年数の差を返す (DATEDIF)
+// unit: &quot;D&quot;/&quot;DAY&quot; で日数、「M&quot;/&quot;MONTH&quot; で月数、「Y&quot;/&quot;YEAR&quot; で年数をそれぞれ返します。
+// ※ 月数や年数は平均値での概算となります
+function DATEDIF(startDate, endDate, unit) {
+    const d1 = new Date(startDate);
+    const d2 = new Date(endDate);
+    const diff = d2.getTime() - d1.getTime();
+    switch (String(unit).toLowerCase()) {
+        case &quot;d&quot;:
+        case &quot;day&quot;:
+        case &quot;days&quot;:
+            return diff / (1000 * 60 * 60 * 24);
+        case &quot;m&quot;:
+        case &quot;month&quot;:
+        case &quot;months&quot;:
+            return diff / (1000 * 60 * 60 * 24 * 30.436875); // 平均月の日数
+        case &quot;y&quot;:
+        case &quot;year&quot;:
+        case &quot;years&quot;:
+            return diff / (1000 * 60 * 60 * 24 * 365.2425); // 平均年の日数
+        default:
+            return diff; // 単位未指定の場合、ミリ秒単位で返す
+    }
+}
+
+// 指定された時、分、秒からその日の時刻を表す Dateを返す (TIME)
+// ※ 現在の日付に対して指定した時刻で Dateオブジェクトを生成します。
+function TIME(hour, minute, second) {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minute, second);
+}
+
+// 時刻文字列 (例: &quot;14:30&quot; や &quot;09:15:30&quot;) を、1日の中での経過日数（0～1の小数値）に変換する関数 (TIMEVALUE)
+// Excel では、TIMEVALUE は 1日の比率として扱われます。
+function TIMEVALUE(timeStr) {
+    const parts = timeStr.split(&quot;:&quot;);
+    if (parts.length === 2 || parts.length === 3) {
+        const h = parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10);
+        const s = parts.length === 3 ? parseInt(parts[2], 10) : 0;
+        return (h * 3600 + m * 60 + s) / 86400;
+    }
+    return &quot;#VALUE!&quot;;
+}
+
+
+
+/*********************
+ * 数式の評価エンジン
+ *********************/
+
+// ───── 数式評価関数 ─────
+// セル内のテキストが数式の場合は再評価して数値リテラルとして返すヘルパー関数
+function getCellEvaluatedValue(cell) {
+    let content = cell.textContent.trim();
+    if (content.charAt(0) === &quot;=&quot;) {
+        // 再帰的に評価（無限再帰に注意。循環参照対策は別途必要）
+        let evaluated = evaluateFormula(content);
+        return Number(evaluated);
+    } else {
+        return parseFloat(content);
+    }
+}
+
+// ────────── 前処理関数 ──────────
+// IF 関数の条件部（第1引数）の中の単独の &quot;=&quot; を &quot;==&quot; に変換する
+function preprocessIFFormula(expr) {
+    // expr は先頭の &quot;=&quot; を除いた後の文字列、例: &quot;IF(A1 = B1, &#039;〇&#039;, &#039;&#039;)&quot;
+    // ここでは IF( の直後から最初のカンマまでを条件部とみなす
+    let pos = 3; // &quot;IF(&quot; の後ろから開始
+    let parenCount = 0;
+    let inQuote = false;
+    let conditionPart = &quot;&quot;;
+    for (; pos &lt; expr.length; pos++) {
+        let ch = expr[pos];
+        if (ch === &#039;&quot;&#039;) {
+            inQuote = !inQuote;
+        } else if (!inQuote) {
+            if (ch === &#039;(&#039;) {
+                parenCount++;
+            } else if (ch === &#039;)&#039;) {
+                if (parenCount &gt; 0) {
+                    parenCount--;
+                }
+            } else if (ch === &#039;,&#039; &amp;&amp; parenCount === 0) {
+                break; // 条件部の終わり
+            }
+        }
+        conditionPart += ch;
+    }
+    // ここで conditionPart 内の、単独の &quot;=&quot;（比較用）を &quot;==&quot; に変換します。
+    // できるだけ既に &gt;=,&lt;=,!=,== といった演算子には影響しないようにするため、正規表現で処理します。
+    // ※ 環境によっては negative lookbehind が使えない場合もあるので、ここでは modern な JS と仮定します。
+    let newCondition = conditionPart.replace(/(?&lt;![&lt;&gt;=!])=(?![=])/g, &quot;==&quot;);
+    // 結果の式を再構築: &quot;IF(&quot; + 修正済みの条件 + その後の部分
+    let newExpr = &quot;IF(&quot; + newCondition + expr.substring(pos);
+    return newExpr;
+}
+
+/**
+ * 数式（文字列）が &quot;=&quot; から始まっている場合の評価関数
+ * ・範囲参照 (例: &quot;A1:B3&quot;) &rarr; 範囲内セルの数値の合計に置換
+ * ・単一セル参照 (例: &quot;A10&quot;) &rarr; そのセルの内容（数値）があれば置換、なければ 0
+ * ・評価には eval を利用（グローバルに定義された関数が呼ばれる）
+ */
+// ---------------------------------------------
+// 1. 正規表現のプリコンパイル
+// ---------------------------------------------
+const RANGE_REF_REGEX = /([A-Z]+\d+:[A-Z]+\d+)/g; // 例：&quot;A1:B2&quot;
+const SINGLE_REF_REGEX = /([A-Z]+)(\d+)/g;         // 例：&quot;A1&quot;, &quot;B10&quot;, etc.
+
+// ---------------------------------------------
+// 2. 列変換のキャッシュ用 Map
+// ---------------------------------------------
+const colCache = new Map();
+
+function columnLettersToIndex(letters) {
+    // すでにキャッシュされているなら即返す
+    if (colCache.has(letters)) {
+        return colCache.get(letters);
+    }
+    let index = 0;
+    for (let i = 0; i &lt; letters.length; i++) {
+        index = index * 26 + (letters.charCodeAt(i) - 64);
+    }
+    // 0始まりにする
+    let result = index - 1;
+    colCache.set(letters, result);
+    return result;
+}
+
+// ---------------------------------------------
+// 3. 数式評価関数
+// ---------------------------------------------
+function evaluateFormula(formula) {
+    if (!formula) return formula;
+    // 単体の &quot;=&quot; はそのまま返す
+    if (formula === &quot;=&quot;) return &quot;=&quot;;
+    // 数式は &quot;=&quot; で始まらなければならない
+    if (formula[0] !== &quot;=&quot;) return formula;
+
+    // 先頭の &quot;=&quot; を除去し、前後の空白をトリムする
+    let expr = formula.substring(1).trim();
+    if (expr === &quot;&quot;) return &quot;=&quot;;
+
+    // IF 関数の場合、条件部の &quot;=&quot; を &quot;==&quot; に変換する事前処理
+    if (expr.toUpperCase().startsWith(&quot;IF(&quot;)) {
+        expr = preprocessIFFormula(expr);
+    }
+
+    // ---------------------------------------------
+    // ① 範囲参照の置換処理（例：&quot;A1:B2&quot; &rarr; 配列リテラル &quot;[10,20,...]&quot;）
+    // ---------------------------------------------
+    expr = expr.replace(RANGE_REF_REGEX, function (match) {
+        const parts = match.split(&quot;:&quot;);
+        if (parts.length === 2) {
+            const startMatch = parts[0].match(/([A-Z]+)(\d+)/);
+            const endMatch = parts[1].match(/([A-Z]+)(\d+)/);
+            if (startMatch &amp;&amp; endMatch) {
+                const startCol = columnLettersToIndex(startMatch[1]);
+                const startRow = parseInt(startMatch[2], 10);
+                const endCol = columnLettersToIndex(endMatch[1]);
+                const endRow = parseInt(endMatch[2], 10);
+                let values = [];
+                for (let r = startRow; r &lt;= endRow; r++) {
+                    for (let c = startCol; c &lt;= endCol; c++) {
+                        const cell = getCell(r, c);
+                        if (cell) {
+                            let cellVal = getCellEvaluatedValue(cell);
+                            if (!isNaN(cellVal)) {
+                                values.push(cellVal);
+                            }
+                        }
+                    }
+                }
+                return &quot;[&quot; + values.join(&quot;,&quot;) + &quot;]&quot;;
+            }
+        }
+        return match;
+    });
+
+    // ---------------------------------------------
+    // ② 単一セル参照の置換処理（例：&quot;A1&quot; &rarr; 数値リテラル）
+    // ---------------------------------------------
+    expr = expr.replace(SINGLE_REF_REGEX, function (match, colLetters, rowStr) {
+        const colIndex = columnLettersToIndex(colLetters);
+        const rowNumber = parseInt(rowStr, 10);
+        const refCell = getCell(rowNumber, colIndex);
+        if (refCell) {
+            let cellVal = getCellEvaluatedValue(refCell);
+            return (!isNaN(cellVal)) ? cellVal : 0;
+        }
+        return 0;
+    });
+
+    // ---------------------------------------------
+    // ③ eval による評価
+    // ---------------------------------------------
+    try {
+        let result = eval(expr);
+        // 結果が関数型の場合は空文字を返す（ソースコードが表示されないようにするため）
+        if (typeof result === &quot;function&quot;) {
+            return &quot;&quot;;
+        }
+        return result;
+    } catch (e) {
+        return &quot;Error: &quot; + e.message;
+    }
+}
+
+
+function updateAllFormulas() {
+    const formulaCells = document.querySelectorAll(&quot;#spreadsheet tbody td[data-formula]&quot;);
+    formulaCells.forEach(cell =&gt; {
+        // 編集中のセルは更新しない
+        if (document.activeElement !== cell) {
+            const formula = cell.dataset.formula;
+            cell.textContent = evaluateFormula(formula);
+        }
+    });
+}
+// =======================
+// Block 7: 範囲選択機能および数式への反映
+// =======================
+
+function handleCellMouseDown(e) {
+    // もし対象が既に編集モードなら、何もしない（ネイティブなキャレット配置を許容）
+    if (e.target &amp;&amp; e.target.isContentEditable) {
+        return;
+    }
+
+    // 通常の選択処理（例：選択の開始、activeCell の更新など）
+    if (e.button !== 0) return;
+    isSelecting = true;
+    clearSelection();
+    selectionStart = {
+        row: parseInt(e.target.dataset.row, 10),
+        col: parseInt(e.target.dataset.col, 10)
+    };
+    selectionEnd = { ...selectionStart };
+    updateSelection();
+    e.preventDefault();
+
+    if (document.activeElement === formulaBarInput) {
+        return;
+    }
+    if (isSelecting === true) {
+        const cell = e.target;
+        formulaBarInput.value = cell.dataset.formula ? cell.dataset.formula : cell.textContent;
+    }
+    if (document.activeElement === formulaBarInput) {
+        return;
+    }
+    const currentText = activeCell.textContent.trim();
+    if (currentText.startsWith(&quot;=&quot;)) {
+        return;
+    }
+    activeCell = e.target;
+    removeMergedCellsHighlight();
+}
+
+
+container.addEventListener(&quot;mousemove&quot;, function (e) {
+    if (!isSelecting) return;
+    if (e.target &amp;&amp; e.target.tagName &amp;&amp; e.target.tagName.toLowerCase() === &quot;td&quot;) {
+        selectionEnd = {
+            row: parseInt(e.target.dataset.row, 10),
+            col: parseInt(e.target.dataset.col, 10)
+        };
+        updateSelection();
+    }
+});
+
+function updateSelection() {
+    if (!selectionStart || !selectionEnd) return;
+
+    const minRow = Math.min(selectionStart.row, selectionEnd.row);
+    const maxRow = Math.max(selectionStart.row, selectionEnd.row);
+    const minCol = Math.min(selectionStart.col, selectionEnd.col);
+    const maxCol = Math.max(selectionStart.col, selectionEnd.col);
+
+    if (isInFormulaEdit()) {
+        // 数式編集中の場合は、アウトラインで範囲をハイライトする
+        let rangeRef = &quot;&quot;;
+        if (minRow === maxRow &amp;&amp; minCol === maxCol) {
+            rangeRef = getCellReferenceByCoord(minRow, minCol);
+        } else {
+            rangeRef = getCellReferenceByCoord(minRow, minCol) + &quot;:&quot; + getCellReferenceByCoord(maxRow, maxCol);
+        }
+        // 既存の計算範囲ハイライトをクリアして、新たに適用
+        clearCalculationRangeHighlights();
+        highlightCalculationRange(rangeRef);
+
+        // 通常の選択用の selected クラスはすべて外すが、
+        // 値を求めたいセル（activeCell）は常に selected 状態にする
+        const cells = document.querySelectorAll(&quot;#spreadsheet tbody td&quot;);
+        cells.forEach(cell =&gt; cell.classList.remove(&quot;selected&quot;));
+        if (activeCell) {
+            activeCell.classList.add(&quot;selected&quot;);
+        }
+    } else {
+        // 非数式編集時は、通常のようにドラッグで選択したセルに selected クラスを付与
+        const cells = document.querySelectorAll(&quot;#spreadsheet tbody td&quot;);
+        cells.forEach(cell =&gt; {
+            const r = parseInt(cell.dataset.row, 10);
+            const c = parseInt(cell.dataset.col, 10);
+            if (r &gt;= minRow &amp;&amp; r &lt;= maxRow &amp;&amp; c &gt;= minCol &amp;&amp; c &lt;= maxCol) {
+                cell.classList.add(&quot;selected&quot;);
+                activeCell.contentEditable = &quot;false&quot;;
+            } else {
+                cell.classList.remove(&quot;selected&quot;);
+            }
+        });
+    }
+}
+
+
+function clearSelection() {
+    const cells = document.querySelectorAll(&quot;#spreadsheet tbody td&quot;);
+    cells.forEach(cell =&gt; cell.classList.remove(&quot;selected&quot;));
+}
+
+document.addEventListener(&quot;mouseup&quot;, function (e) {
+    if (isSelecting) {
+        isSelecting = false;
+        if (selectionStart &amp;&amp; selectionEnd) {
+            if (selectionStart.row !== selectionEnd.row || selectionStart.col !== selectionEnd.col) {
+                if (isInFormulaEdit()) {
+                    const minRow = Math.min(selectionStart.row, selectionEnd.row);
+                    const maxRow = Math.max(selectionStart.row, selectionEnd.row);
+                    const minCol = Math.min(selectionStart.col, selectionEnd.col);
+                    const maxCol = Math.max(selectionStart.col, selectionEnd.col);
+                    let rangeRef = &quot;&quot;;
+                    if (minRow === maxRow &amp;&amp; minCol === maxCol) {
+                        rangeRef = getCellReferenceByCoord(minRow, minCol);
+                    } else {
+                        rangeRef = getCellReferenceByCoord(minRow, minCol) + &quot;:&quot; + getCellReferenceByCoord(maxRow, maxCol);
+                    }
+                    insertCellReference(rangeRef);
+                }
+            }
+        }
+        // 選択状態はそのまま保持する
+    }
+});
+
+// =======================
+// Block 8: 数式バーのイベント処理 および 複数セルへの反映
+// =======================
+
+function applyValueToCells(value) {
+    // 数式編集中の場合は activeCell のみ更新
+    if (isInFormulaEdit()) {
+        if (activeCell) {
+            if (value.startsWith(&quot;=&quot;)) {
+                activeCell.dataset.formula = value;
+                activeCell.textContent = evaluateFormula(value);
+            } else {
+                activeCell.textContent = value;
+                delete activeCell.dataset.formula;
+            }
+        }
+    } else {
+        // 数式編集中でない場合は、selected クラスが付いたセルを対象に更新
+        let targetCells = document.querySelectorAll(&quot;#spreadsheet tbody td.selected&quot;);
+        if (!targetCells || targetCells.length === 0) {
+            if (activeCell) targetCells = [activeCell];
+        }
+        targetCells.forEach(cell =&gt; {
+            if (value.startsWith(&quot;=&quot;)) {
+                cell.dataset.formula = value;
+                cell.textContent = evaluateFormula(value);
+            } else {
+                cell.textContent = value;
+                delete cell.dataset.formula;
+            }
+        });
+    }
+    updateAllFormulas();
+}
+
+
+
+formulaBarInput.addEventListener(&quot;keydown&quot;, function (e) {
+    if (e.key === &quot;Enter&quot;) {
+        const value = formulaBarInput.value.trim();
+        applyValueToCells(value);
+        formulaBarInput.blur();
+        e.preventDefault();
+    }
+});
+
+formulaBarInput.addEventListener(&quot;blur&quot;, function (e) {
+    if (activeCell) {
+        const value = formulaBarInput.value.trim();
+        applyValueToCells(value);
+    }
+});
+// =======================
+// Block 9: スクロール時の動的行／列追加
+// =======================
+
+container.addEventListener(&quot;scroll&quot;, function () {
+    if (container.scrollTop + container.clientHeight &gt;= container.scrollHeight - 50) {
+        loadRows(ROW_BATCH);
+    }
+    if (container.scrollLeft + container.clientWidth &gt;= container.scrollWidth - 50) {
+        loadColumns(COLUMN_BATCH);
+    }
+});
+// =======================
+// Block 10: フォーマットツールバーのイベント処理
+// =======================
+
+// 10-1. Text Alignment
+// 10-1. Text Alignment (ボタン版)
+const textAlignmentButtons = document.querySelectorAll(&#039;#text-alignment-buttons .button&#039;);
+
+textAlignmentButtons.forEach(button =&gt; {
+    button.addEventListener(&quot;click&quot;, function () {
+        // すべてのボタンから選択状態を解除
+        textAlignmentButtons.forEach(btn =&gt; btn.classList.remove(&quot;selected&quot;));
+        // クリックされたボタンに選択状態クラスを付与
+        this.classList.add(&quot;selected&quot;);
+
+        const value = this.getAttribute(&quot;data-align&quot;);
+        if (activeCell) {
+            const cells = document.querySelectorAll(&quot;#spreadsheet tbody td.selected&quot;);
+            if (cells.length &gt; 0) {
+                cells.forEach(cell =&gt; cell.style.textAlign = value);
+            } else {
+                activeCell.style.textAlign = value;
+            }
+        }
+    });
+});
+
+
+// 10-2. Font Size
+let fontSizeSelect = document.getElementById(&quot;font-size&quot;);
+fontSizeSelect.addEventListener(&quot;change&quot;, function (e) {
+    if (activeCell) {
+        let cells = document.querySelectorAll(&quot;#spreadsheet tbody td.selected&quot;);
+        if (cells.length &gt; 0) {
+            cells.forEach(cell =&gt; cell.style.fontSize = fontSizeSelect.value);
+        } else {
+            activeCell.style.fontSize = fontSizeSelect.value;
+        }
+    }
+});
+
+// 10-3. Bold Toggle
+let toggleBoldButton = document.getElementById(&quot;toggle-bold&quot;);
+toggleBoldButton.addEventListener(&quot;click&quot;, function (e) {
+    if (activeCell) {
+        let cells = document.querySelectorAll(&quot;#spreadsheet tbody td.selected&quot;);
+        if (cells.length &gt; 0) {
+            cells.forEach(cell =&gt; {
+                cell.style.fontWeight = (cell.style.fontWeight === &quot;bold&quot;) ? &quot;normal&quot; : &quot;bold&quot;;
+            });
+        } else {
+            activeCell.style.fontWeight = (activeCell.style.fontWeight === &quot;bold&quot;) ? &quot;normal&quot; : &quot;bold&quot;;
+        }
+    }
+});
+
+let toggleBoldButton2 = document.getElementById(&quot;toggle-italic&quot;);
+toggleBoldButton2.addEventListener(&quot;click&quot;, function (e) {
+    if (activeCell) {
+        let cells = document.querySelectorAll(&quot;#spreadsheet tbody td.selected&quot;);
+        if (cells.length &gt; 0) {
+            cells.forEach(cell =&gt; {
+                cell.style.fontStyle = (cell.style.fontStyle === &quot;italic&quot;) ? &quot;normal&quot; : &quot;italic&quot;;
+            });
+        } else {
+            activeCell.style.fontStyle = (activeCell.style.fontStyle === &quot;italic&quot;) ? &quot;normal&quot; : &quot;italic&quot;;
+        }
+    }
+});
+
+let toggleUnderlineButton = document.getElementById(&quot;toggle-underline&quot;);
+toggleUnderlineButton.addEventListener(&quot;click&quot;, function (e) {
+    if (activeCell) {
+        let cells = document.querySelectorAll(&quot;#spreadsheet tbody td.selected&quot;);
+        if (cells.length &gt; 0) {
+            const allUnderlined = Array.from(cells).every(cell =&gt; cell.style.textDecoration === &quot;underline&quot;);
+            const newDecoration = allUnderlined ? &quot;none&quot; : &quot;underline&quot;;
+            cells.forEach(cell =&gt; {
+                cell.style.textDecoration = newDecoration;
+            });
+        } else {
+            activeCell.style.textDecoration = (activeCell.style.textDecoration === &quot;underline&quot;) ? &quot;none&quot; : &quot;underline&quot;;
+        }
+    }
+});
+
+
+let toggletextshadowButton = document.getElementById(&quot;toggle-textshadow&quot;);
+toggletextshadowButton.addEventListener(&quot;click&quot;, function (e) {
+    if (activeCell) {
+        let cells = document.querySelectorAll(&quot;#spreadsheet tbody td.selected&quot;);
+        if (cells.length &gt; 0) {
+            const alltextshadow = Array.from(cells).every(cell =&gt; cell.style.textShadow === &quot;black 3px 3px&quot;);
+            const newDecoration = alltextshadow ? &quot;&quot; : &quot;black 3px 3px&quot;;
+            cells.forEach(cell =&gt; {
+                cell.style.textShadow = newDecoration;
+            });
+        } else {
+            activeCell.style.textShadow = (activeCell.style.textShadow === &quot;black 3px 3px&quot;) ? &quot;&quot; : &quot;black 3px 3px&quot;;
+        }
+    }
+});
+
+// 10-4. Text Color palette (固定カラー)
+let textColorSwatches = document.querySelectorAll(&quot;#text-color-palette .color-swatch&quot;);
+textColorSwatches.forEach(swatch =&gt; {
+    swatch.addEventListener(&quot;click&quot;, function (e) {
+        let color = swatch.dataset.color;
+        let cells = document.querySelectorAll(&quot;#spreadsheet tbody td.selected&quot;);
+        if (cells.length &gt; 0) {
+            cells.forEach(cell =&gt; {
+                cell.style.color = (color === &quot;none&quot;) ? &quot;&quot; : color;
+            });
+        } else if (activeCell) {
+            activeCell.style.color = (color === &quot;none&quot;) ? &quot;&quot; : color;
+        }
+    });
+});
+
+// 10-5. Custom Text Color picker
+let textColorCustom = document.getElementById(&quot;text-color-custom&quot;);
+textColorCustom.addEventListener(&quot;input&quot;, function (e) {
+    let color = textColorCustom.value;
+    let cells = document.querySelectorAll(&quot;#spreadsheet tbody td.selected&quot;);
+    if (cells.length &gt; 0) {
+        cells.forEach(cell =&gt; {
+            cell.style.color = color;
+        });
+    } else if (activeCell) {
+        activeCell.style.color = color;
+    }
+});
+
+// 10-6. Cell Background Color palette (固定カラー)
+// ※ 背景色パレットの色は、テキストカラーと同じ濃さの色を使用する
+let cellColorSwatches = document.querySelectorAll(&quot;#cell-color-palette .color-swatch&quot;);
+cellColorSwatches.forEach(swatch =&gt; {
+    swatch.addEventListener(&quot;click&quot;, function (e) {
+        let color = swatch.dataset.color;
+        let cells = document.querySelectorAll(&quot;#spreadsheet tbody td.selected&quot;);
+        if (cells.length &gt; 0) {
+            cells.forEach(cell =&gt; {
+                cell.style.backgroundColor = (color === &quot;none&quot;) ? &quot;&quot; : color;
+            });
+        } else if (activeCell) {
+            activeCell.style.backgroundColor = (color === &quot;none&quot;) ? &quot;&quot; : color;
+        }
+    });
+});
+
+// 10-7. Custom Cell Background Color picker
+let cellColorCustom = document.getElementById(&quot;cell-color-custom&quot;);
+cellColorCustom.addEventListener(&quot;input&quot;, function (e) {
+    let color = cellColorCustom.value;
+    let cells = document.querySelectorAll(&quot;#spreadsheet tbody td.selected&quot;);
+    if (cells.length &gt; 0) {
+        cells.forEach(cell =&gt; {
+            cell.style.backgroundColor = color;
+            cell.classList.add(&#039;transparent&#039;);
+        });
+    } else if (activeCell) {
+        activeCell.style.backgroundColor = color;
+        activeCell.classList.add(&#039;transparent&#039;);
+    }
+});
+
+// =======================
+// Block 11: セル自動編集モード切替 (キーダウンイベント)
+// =======================
+
+document.addEventListener(&quot;keydown&quot;, function (e) {
+    // 既に他の入力フィールド (INPUT, TEXTAREA など) にフォーカスがある場合は無視
+    const activeTag = document.activeElement.tagName;
+    if (activeTag === &quot;INPUT&quot; || activeTag === &quot;TEXTAREA&quot;) {
+        return;
+    }
+
+    // Ctrl キーが押されている場合は、セルへの自動編集モードの切替を行わない
+    if (e.ctrlKey) {
+        return;
+    }
+
+    // もし activeCell が存在し、かつまだ編集モードになっていない場合
+    // なお、e.key が 1 文字の場合（印字可能なキー）にのみ反応
+    if (activeCell &amp;&amp; !activeCell.isContentEditable &amp;&amp; e.key.length === 1) {
+        // 自動的に編集モードにする
+        activeCell.contentEditable = &quot;true&quot;;
+        // 編集モードに切替えたらフォーカスを当てる
+        activeCell.focus();
+        // 既存の内容を削除したい場合は（Excel では初回入力で置換されることが多い）
+        activeCell.textContent = &quot;&quot;;
+        // 入力されたキーを現在のカーソル位置に挿入する
+        document.execCommand(&#039;insertText&#039;, false, e.key);
+        e.preventDefault();
+    }
+});
+
+
+
+
+// 連続移動用タイマー（グローバル変数）
+let navigationInterval = null;
+
+document.addEventListener(&quot;keydown&quot;, function (e) {
+    // 数式バーにフォーカスされていたら何もしない
+    if (document.activeElement === formulaBarInput) return;
+
+    const arrowKeys = [&quot;ArrowUp&quot;, &quot;ArrowDown&quot;, &quot;ArrowLeft&quot;, &quot;ArrowRight&quot;];
+    const navigationKeys = [...arrowKeys, &quot;Enter&quot;];
+    if (!navigationKeys.includes(e.key)) return;
+
+    // 編集中 (contentEditable) のセルならキャレット操作を優先
+    if (document.activeElement &amp;&amp; document.activeElement.isContentEditable) {
+        const cellText = document.activeElement.textContent.trim();
+        if (
+            cellText.startsWith(&quot;=&quot;) ||
+            document.activeElement.dataset.editBy === &quot;dblclick&quot; ||
+            document.activeElement.dataset.editBy === &quot;F2&quot;
+        ) {
+            return;
+        }
+    }
+
+    // activeCell が未設定なら、document.activeElement が &lt;TD&gt; なら設定する
+    let currentCell = activeCell;
+    if (!currentCell &amp;&amp; document.activeElement &amp;&amp; document.activeElement.tagName === &quot;TD&quot;) {
+        currentCell = document.activeElement;
+        activeCell = currentCell;
+    }
+    if (!currentCell) return;
+
+    // 編集中ならフォーカス解除
+    if (document.activeElement.isContentEditable) {
+        document.activeElement.blur();
+    }
+
+    // 初回 keydown 時にすぐ移動処理を実行
+    doMove(e);
+
+    // 矢印キーについては、キー長押し時に連続移動・スクロールを実行
+    if (arrowKeys.includes(e.key)) {
+        if (!navigationInterval) {
+            navigationInterval = setInterval(() =&gt; {
+                doMove(e);
+            }, 100);  // 100ms毎に処理（この数値は固定。矢印キーリピートはそのままで調整不要）
+        }
+    }
+
+    e.preventDefault();
+});
+
+document.addEventListener(&quot;keyup&quot;, function (e) {
+    const arrowKeys = [&quot;ArrowUp&quot;, &quot;ArrowDown&quot;, &quot;ArrowLeft&quot;, &quot;ArrowRight&quot;];
+    if (arrowKeys.includes(e.key)) {
+        if (navigationInterval) {
+            clearInterval(navigationInterval);
+            navigationInterval = null;
+        }
+    }
+});
+
+/**
+ * doMove(e)
+ *
+ * 現在の activeCell（結合セルの場合はアンカー情報も考慮）から移動先セルの座標を計算し、
+ * getVisibleCell() で表示されているセル（アンカーセル）を取得した上で、navigateToCell() と
+ * updateFillHandle() を実行します。さらに、スクロールコンテナ（#spreadsheet-container）内で
+ * 隣接セルの位置をチェックし、見切れていれば即時更新（behavior:&quot;auto&quot;）でスクロール補正します。
+ */
+function doMove(e) {
+    let currentCell = activeCell;
+    if (!currentCell) return;
+
+    // 現在のセルの座標（data-row, data-col）を取得
+    let currentRow = parseInt(currentCell.dataset.row, 10);
+    let currentCol = parseInt(currentCell.dataset.col, 10);
+
+    // 結合セルの場合、merge関連情報（mergeMin～mergeMax）があればアンカーを使用
+    let rs = parseInt(currentCell.getAttribute(&quot;rowspan&quot;)) || 1;
+    let cs = parseInt(currentCell.getAttribute(&quot;colspan&quot;)) || 1;
+    if (currentCell.dataset.mergeMinRow) {
+        currentRow = parseInt(currentCell.dataset.mergeMinRow, 10);
+        currentCol = parseInt(currentCell.dataset.mergeMinCol, 10);
+        rs = parseInt(currentCell.dataset.mergeMaxRow, 10) - currentRow + 1;
+        cs = parseInt(currentCell.dataset.mergeMaxCol, 10) - currentCol + 1;
+    }
+
+    // 移動先セルの座標を計算
+    let targetRow = currentRow;
+    let targetCol = currentCol;
+    if (e.key === &quot;Enter&quot; || e.key === &quot;ArrowDown&quot;) {
+        targetRow = currentRow + rs;
+    } else if (e.key === &quot;ArrowRight&quot;) {
+        targetCol = currentCol + cs;
+    } else if (e.key === &quot;ArrowLeft&quot;) {
+        targetCol = currentCol - 1;
+    } else if (e.key === &quot;ArrowUp&quot;) {
+        targetRow = currentRow - 1;
+    }
+
+    // Helper: 指定された (row, col) のセルが非表示なら、mergeAnchor情報を辿って見えるセル（アンカー）を返す
+    function getVisibleCell(row, col) {
+        let cell = getCell(row, col);
+        while (
+            cell &amp;&amp;
+            cell.style.display === &quot;none&quot; &amp;&amp;
+            cell.dataset.mergeAnchorRow &amp;&amp;
+            cell.dataset.mergeAnchorCol
+        ) {
+            row = parseInt(cell.dataset.mergeAnchorRow, 10);
+            col = parseInt(cell.dataset.mergeAnchorCol, 10);
+            cell = getCell(row, col);
+        }
+        return cell;
+    }
+
+    let visibleTarget = getVisibleCell(targetRow, targetCol);
+    if (!visibleTarget) return;
+
+    // セル移動（navigateToCell() は不足行・列があれば自動生成する既存の機能とする）
+    navigateToCell(
+        parseInt(visibleTarget.dataset.row, 10),
+        parseInt(visibleTarget.dataset.col, 10),
+        e
+    );
+    updateFillHandle();
+
+    // スクロール補正
+    const container = document.getElementById(&quot;spreadsheet-container&quot;);
+    if (container) {
+        const contRect = container.getBoundingClientRect();
+        const cellRect = visibleTarget.getBoundingClientRect();
+
+        // 横方向
+        if (e.key === &quot;ArrowLeft&quot;) {
+            let leftCell = getCell(
+                parseInt(visibleTarget.dataset.row, 10),
+                parseInt(visibleTarget.dataset.col, 10) - 1
+            );
+            if (leftCell) {
+                let leftRect = leftCell.getBoundingClientRect();
+                if (leftRect.left &lt; contRect.left) {
+                    container.scrollBy({ left: -leftCell.offsetWidth, behavior: &quot;auto&quot; });
+                }
+            }
+        } else if (e.key === &quot;ArrowRight&quot;) {
+            let rightCell = getCell(
+                parseInt(visibleTarget.dataset.row, 10),
+                parseInt(visibleTarget.dataset.col, 10) + 1
+            );
+            if (rightCell) {
+                let rightRect = rightCell.getBoundingClientRect();
+                if (rightRect.right &gt; contRect.right) {
+                    container.scrollBy({ left: rightCell.offsetWidth, behavior: &quot;auto&quot; });
+                }
+            }
+        }
+
+        // 縦方向は、隣接する「もう1つ上／下のセル」をチェックして補正
+        if (e.key === &quot;ArrowUp&quot;) {
+            let aboveCell = getCell(
+                parseInt(visibleTarget.dataset.row, 10) - 1,
+                parseInt(visibleTarget.dataset.col, 10)
+            );
+            if (aboveCell) {
+                let aboveRect = aboveCell.getBoundingClientRect();
+                if (aboveRect.top &lt; contRect.top) {
+                    container.scrollBy({ top: -aboveCell.offsetHeight, behavior: &quot;auto&quot; });
+                }
+            }
+        } else if (e.key === &quot;ArrowDown&quot; || e.key === &quot;Enter&quot;) {
+            let belowCell = getCell(
+                parseInt(visibleTarget.dataset.row, 10) + 1,
+                parseInt(visibleTarget.dataset.col, 10)
+            );
+            if (belowCell) {
+                let belowRect = belowCell.getBoundingClientRect();
+                if (belowRect.bottom &gt; contRect.bottom) {
+                    container.scrollBy({ top: belowCell.offsetHeight, behavior: &quot;auto&quot; });
+                }
+            }
+        }
+    }
+
+    document.querySelectorAll(&#039;#spreadsheet tbody td&#039;).forEach(td =&gt; {
+        td.classList.remove(&#039;transparent&#039;);
+    });
+
+}
+
+
+
+
+
+document.addEventListener(&quot;keydown&quot;, function (e) {
+    if (e.key === &quot;F2&quot;) {
+
+        let targetCell = activeCell;
+        if (!targetCell) {
+            const selectedCells = document.querySelectorAll(&quot;#spreadsheet tbody td.selected&quot;);
+            if (selectedCells.length &gt; 0) {
+                targetCell = selectedCells[0];
+            }
+        }
+        if (targetCell) {
+            // ダブルクリック時と同じ編集モードに入る処理を実行
+            handleCellDblClick({ target: targetCell });
+            updateFillHandle();
+        }
+        e.preventDefault();
+        handleF2Key(e);
+        return;
+    }
+
+    // ESC キーを判別（e.key が &quot;Escape&quot; または e.keyCode が 27）
+    if (e.key === &quot;Escape&quot; || e.keyCode === 27) {
+        // 編集中のセルを取得（contenteditable が true のもの）
+        const editingCell = document.querySelector(&quot;td[contenteditable=&#039;true&#039;]&quot;);
+        if (editingCell) {
+            // 編集モード解除
+            editingCell.contentEditable = &quot;false&quot;;
+            updateFillHandle();
+            e.preventDefault();
+        }
+    }
+});
+
+
+
+
+function setCaretToEnd(el) {
+    if (typeof window.getSelection !== &quot;undefined&quot; &amp;&amp; typeof document.createRange !== &quot;undefined&quot;) {
+        var range = document.createRange();
+        range.selectNodeContents(el);
+        range.collapse(false); // false にすることで、カーソルを末尾へ
+        var sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+    } else if (typeof document.body.createTextRange !== &quot;undefined&quot;) {
+        var textRange = document.body.createTextRange();
+        textRange.moveToElementText(el);
+        textRange.collapse(false);
+        textRange.select();
+    }
+}
+
+
+// =======================
+// Block X: 枠線適用機能 (Border Application Functions)
+// =======================
+
+// 【外枠適用】
+// 選択されたセルの中から、選択範囲の最小／最大の行・列を算出し、
+// その外側にのみ「2px solid black」の枠線を適用します。
+function applyOuterBorder() {
+    const selectedCells = document.querySelectorAll(&quot;#spreadsheet tbody td.selected&quot;);
+    if (selectedCells.length === 0) return;
+
+    let minRow = Infinity, maxRow = -Infinity, minCol = Infinity, maxCol = -Infinity;
+    selectedCells.forEach(cell =&gt; {
+        const row = parseInt(cell.dataset.row, 10);
+        const col = parseInt(cell.dataset.col, 10);
+        if (row &lt; minRow) minRow = row;
+        if (row &gt; maxRow) maxRow = row;
+        if (col &lt; minCol) minCol = col;
+        if (col &gt; maxCol) maxCol = col;
+    });
+
+    selectedCells.forEach(cell =&gt; {
+        const row = parseInt(cell.dataset.row, 10);
+        const col = parseInt(cell.dataset.col, 10);
+        if (row === minRow) {
+            cell.style.borderTop = &quot;3.5px solid black&quot;;
+        }
+        if (row === maxRow) {
+            cell.style.borderBottom = &quot;3.5px solid black&quot;;
+        }
+        if (col === minCol) {
+            cell.style.borderLeft = &quot;3.5px solid black&quot;;
+        }
+        if (col === maxCol) {
+            cell.style.borderRight = &quot;3.5px solid black&quot;;
+        }
+    });
+}
+
+// 選択範囲の上側（最小行側）のセルに上掛線を適用
+function applyTopBorder() {
+    const selectedCells = document.querySelectorAll(&quot;#spreadsheet tbody td.selected&quot;);
+    if (selectedCells.length === 0) return;
+
+    let minRow = Infinity;
+    selectedCells.forEach(cell =&gt; {
+        const row = parseInt(cell.dataset.row, 10);
+        if (row &lt; minRow) {
+            minRow = row;
+        }
+    });
+    selectedCells.forEach(cell =&gt; {
+        const row = parseInt(cell.dataset.row, 10);
+        if (row === minRow) {
+            cell.style.borderTop = &quot;3.5px solid black&quot;;
+        }
+    });
+}
+
+// 選択範囲の下側（最大行側）のセルに下掛線を適用
+function applyBottomBorder() {
+    const selectedCells = document.querySelectorAll(&quot;#spreadsheet tbody td.selected&quot;);
+    if (selectedCells.length === 0) return;
+
+    let maxRow = -Infinity;
+    selectedCells.forEach(cell =&gt; {
+        const row = parseInt(cell.dataset.row, 10);
+        if (row &gt; maxRow) {
+            maxRow = row;
+        }
+    });
+    selectedCells.forEach(cell =&gt; {
+        const row = parseInt(cell.dataset.row, 10);
+        if (row === maxRow) {
+            cell.style.borderBottom = &quot;3.5px solid black&quot;;
+        }
+    });
+}
+
+// 選択範囲の左側（最小列側）のセルに左掛線を適用
+function applyLeftBorder() {
+    const selectedCells = document.querySelectorAll(&quot;#spreadsheet tbody td.selected&quot;);
+    if (selectedCells.length === 0) return;
+
+    let minCol = Infinity;
+    selectedCells.forEach(cell =&gt; {
+        const col = parseInt(cell.dataset.col, 10);
+        if (col &lt; minCol) {
+            minCol = col;
+        }
+    });
+    selectedCells.forEach(cell =&gt; {
+        const col = parseInt(cell.dataset.col, 10);
+        if (col === minCol) {
+            cell.style.borderLeft = &quot;3.5px solid black&quot;;
+        }
+    });
+}
+
+// 選択範囲の右側（最大列側）のセルに右掛線を適用
+function applyRightBorder() {
+    const selectedCells = document.querySelectorAll(&quot;#spreadsheet tbody td.selected&quot;);
+    if (selectedCells.length === 0) return;
+
+    let maxCol = -Infinity;
+    selectedCells.forEach(cell =&gt; {
+        const col = parseInt(cell.dataset.col, 10);
+        if (col &gt; maxCol) {
+            maxCol = col;
+        }
+    });
+    selectedCells.forEach(cell =&gt; {
+        const col = parseInt(cell.dataset.col, 10);
+        if (col === maxCol) {
+            cell.style.borderRight = &quot;3.5px solid black&quot;;
+        }
+    });
+}
+
+// 【各セル枠適用】
+// 選択されたセルすべてに対して、各セルの4辺に「2px solid black」の枠線を適用します。
+function applyCellBorder() {
+    const selectedCells = document.querySelectorAll(&quot;#spreadsheet tbody td.selected&quot;);
+    if (selectedCells.length === 0) return;
+
+    selectedCells.forEach(cell =&gt; {
+        cell.style.borderTop = &quot;3.5px solid black&quot;;
+        cell.style.borderBottom = &quot;3.5px solid black&quot;;
+        cell.style.borderLeft = &quot;3.5px solid black&quot;;
+        cell.style.borderRight = &quot;3.5px solid black&quot;;
+    });
+}
+
+// =======================
+// Block X: 枠線適用ボタン用のイベントリスナー
+// =======================
+
+let applyOuterBorderButton = document.getElementById(&quot;apply-outer-border&quot;);
+applyOuterBorderButton.addEventListener(&quot;click&quot;, function (e) {
+    applyOuterBorder();
+});
+
+let applyCellBorderButton = document.getElementById(&quot;apply-cell-border&quot;);
+applyCellBorderButton.addEventListener(&quot;click&quot;, function (e) {
+    applyCellBorder();
+});
+// =======================
+// Block X: 枠線解除機能 (Combined Border Removal Function)
+// =======================
+
+function removeAllBorders() {
+    const selectedCells = document.querySelectorAll(&quot;#spreadsheet tbody td.selected&quot;);
+    if (selectedCells.length === 0) return;
+
+    selectedCells.forEach(cell =&gt; {
+        cell.style.borderTop = &quot;&quot;;
+        cell.style.borderBottom = &quot;&quot;;
+        cell.style.borderLeft = &quot;&quot;;
+        cell.style.borderRight = &quot;&quot;;
+    });
+}
+
+// =======================
+// Block X: 枠線解除ボタン用のイベントリスナー（統合版）
+// =======================
+
+let removeAllBordersButton = document.getElementById(&quot;remove-all-borders&quot;);
+removeAllBordersButton.addEventListener(&quot;click&quot;, function (e) {
+    removeAllBorders();
+});
+
+
+document.addEventListener(&quot;keydown&quot;, function (e) {
+
+    if (document.activeElement === formulaBarInput) {
+        return;
+    }
+    // もし現在フォーカスされている要素が編集モードの場合は、通常の一文字削除（デフォルト動作）を行うため何もしない
+    if (document.activeElement &amp;&amp; document.activeElement.isContentEditable) {
+        return;
+    }
+
+    // Backspace または Delete キーが押された場合の処理（編集モードでないとき）
+    if (e.key === &quot;Backspace&quot; || e.key === &quot;Delete&quot;) {
+        // 複数セルが選択されている場合（selected クラスが付いているセル群）を優先して対象とする
+        const selectedCells = document.querySelectorAll(&quot;#spreadsheet tbody td.selected&quot;);
+
+        if (selectedCells.length &gt; 0) {
+            // 選択されている複数のセルすべての内容と、保持している数式データなどをクリアする
+            selectedCells.forEach(cell =&gt; {
+                cell.textContent = &quot;&quot;;
+                if (cell.dataset.formula) {
+                    delete cell.dataset.formula;
+                }
+                // 編集モードでなくても念のため contentEditable を false に設定
+                cell.contentEditable = &quot;false&quot;;
+            });
+        } else if (activeCell) {
+            // 複数選択がなければ、activeCell に対して同様の処理を行う
+            activeCell.textContent = &quot;&quot;;
+            if (activeCell.dataset.formula) {
+                delete activeCell.dataset.formula;
+            }
+            activeCell.contentEditable = &quot;false&quot;;
+        }
+        updateFillHandle();
+        // 標準の Backspace / Delete のブラウザ動作（ページ戻り等）を防止
+        e.preventDefault();
+        formulaBarInput.value = &quot;&quot;;
+    }
+});
+
+
+
+
+// A:0, B:1, ...
+function colLetterToIndex(letter) {
+    return letter.charCodeAt(0) - &quot;A&quot;.charCodeAt(0);
+}
+
+// 例：セル参照（例 &quot;A1&quot;）を { row, col } に変換する（0-index と想定）
+function parseCellReference(ref) {
+    const match = ref.match(/^([A-Z]+)(\d+)$/);
+    if (!match) return null;
+
+    // 修正ここ: すでに定義済みの columnLettersToIndex 関数を使用して、
+    // 複数文字の列番号も正しく変換する
+    const col = columnLettersToIndex(match[1]);
+    const row = parseInt(match[2], 10);
+    return { row, col };
+}
+
+
+// 例：範囲指定（例 &quot;A1:B3&quot;）を { start: {row, col}, end: {row, col} } に変換する
+function parseRangeReference(rangeRef) {
+    const parts = rangeRef.split(&quot;:&quot;);
+    if (parts.length !== 2) return null;
+    const start = parseCellReference(parts[0]);
+    const end = parseCellReference(parts[1]);
+    if (!start || !end) return null;
+    return { start, end };
+}
+
+// セルの DOM 要素を取得する（data-row と data-col 属性で識別する例）
+function getCellElement(row, col) {
+    return document.querySelector(`#spreadsheet td[data-row=&quot;${row}&quot;][data-col=&quot;${col}&quot;]`);
+}
+
+// 既存のクリア処理（背景色クリア）を、以下のように outline のクリアに変更
+function clearCalculationRangeHighlights() {
+    const cells = document.querySelectorAll(&quot;#spreadsheet td&quot;);
+    cells.forEach(cell =&gt; {
+        cell.style.outline = &quot;&quot;;
+    });
+}
+
+// 数式内の計算対象グループごとにセルの背景色を設定する関数
+function highlightCalculationRange(formula) {
+    // まず前回のハイライトをクリア
+    clearCalculationRangeHighlights();
+
+    // カラーパレットの定義（お好みの色に変更してください）
+    const palette = [
+        &quot;blue&quot;,           // 青
+        &quot;red&quot;,            // 赤
+        &quot;yellowgreen&quot;,    // 黄緑
+        &quot;purple&quot;,         // 紫
+        &quot;yellow&quot;,         // 黄色
+        &quot;blueviolet&quot;,     // 青紫
+        &quot;mediumvioletred&quot; // 赤紫
+    ];
+
+    // 数式全体をグループ分けする処理
+    let groups = [];
+    if (formula.indexOf(&quot;,&quot;) !== -1) {
+        // カンマがある場合は、カンマで分割してグループとみなす
+        groups = formula.split(&quot;,&quot;).map(s =&gt; s.trim()).filter(s =&gt; s.length &gt; 0);
+    } else {
+        // カンマが無い場合は、正規表現でユニークなセル参照／範囲指定を抽出して、それぞれをグループとみなす
+        const regex = /([A-Z]+\d+(?::[A-Z]+\d+)?)/g;
+        let match;
+        const uniqueTargets = [];
+        while ((match = regex.exec(formula)) !== null) {
+            const ref = match[1];
+            if (uniqueTargets.indexOf(ref) === -1) {
+                uniqueTargets.push(ref);
+            }
+        }
+        groups = uniqueTargets;
+    }
+
+    // 各グループごとに色を割り当ててハイライト
+    groups.forEach((groupStr, groupIndex) =&gt; {
+        // グループごとに色を決定（グループ数がパレット数を超える場合はループする）
+        const assignedColor = palette[groupIndex % palette.length];
+
+        // 正規表現でセル参照またはセル範囲（例：&quot;A1&quot; or &quot;A1:B3&quot;）を抽出
+        const regex = /([A-Z]+\d+(?::[A-Z]+\d+)?)/g;
+        let match;
+        while ((match = regex.exec(groupStr)) !== null) {
+            const ref = match[1];
+            if (ref.indexOf(&quot;:&quot;) !== -1) {
+                // 範囲指定の場合
+                const range = parseRangeReference(ref);
+                if (range) {
+                    for (let r = range.start.row; r &lt;= range.end.row; r++) {
+                        for (let c = range.start.col; c &lt;= range.end.col; c++) {
+                            const cell = getCellElement(r, c);
+                            if (cell) {
+                                cell.style.outline = &quot;2.5px solid &quot; + assignedColor;
+                            }
+                        }
+                    }
+                }
+            } else {
+                // 単体のセルの場合
+                const pos = parseCellReference(ref);
+                if (pos) {
+                    const cell = getCellElement(pos.row, pos.col);
+                    if (cell) {
+                        cell.style.outline = &quot;2.5px solid &quot; + assignedColor;
+                    }
+                }
+            }
+        }
+    });
+}
+
+
+// 数式バーをクリック（またはフォーカス）した際に、バーに数式があれば計算対象セル範囲をハイライト
+formulaBarInput.addEventListener(&quot;click&quot;, function () {
+    const formulaText = formulaBarInput.value.trim();
+    if (formulaText &amp;&amp; formulaText.startsWith(&quot;=&quot;)) {
+        highlightCalculationRange(formulaText);
+    } else {
+        clearCalculationRangeHighlights();
+    }
+});
+
+formulaBarInput.addEventListener(&quot;input&quot;, function () {
+    const formulaText = formulaBarInput.value.trim();
+    if (formulaText &amp;&amp; formulaText.startsWith(&quot;=&quot;)) {
+        highlightCalculationRange(formulaText);
+    } else {
+        clearCalculationRangeHighlights();
+    }
+    if (formulaText === &#039;{&quot;mergecell&quot;}&#039;) {
+        highlightMergedCells();
+    } else {
+        removeMergedCellsHighlight();
+    }
+    const formulaText2 = formulaBarInput.value;
+    const selectedCells = document.querySelectorAll(&quot;#spreadsheet tbody td.selected&quot;);
+
+    selectedCells.forEach(cell =&gt; {
+        cell.textContent = formulaText2;
+    });
+});
+
+function highlightMergedCells() {
+    // シート内の全セルを取得
+    const cells = document.querySelectorAll(&quot;#spreadsheet tbody td&quot;);
+    cells.forEach(cell =&gt; {
+        // rowspan, colspan 属性の値を数値で取得（属性が無ければ 1 とする）
+        const rowSpan = cell.getAttribute(&quot;rowspan&quot;) ? parseInt(cell.getAttribute(&quot;rowspan&quot;), 10) : 1;
+        const colSpan = cell.getAttribute(&quot;colspan&quot;) ? parseInt(cell.getAttribute(&quot;colspan&quot;), 10) : 1;
+        // 結合セルとみなす条件
+        const isMerged = (rowSpan &gt; 1 || colSpan &gt; 1) || (cell.dataset.mergeMinRow &amp;&amp; cell.dataset.mergeMinCol);
+        if (isMerged) {
+            cell.classList.add(&quot;merge-highlight&quot;);
+        }
+    });
+}
+
+function removeMergedCellsHighlight() {
+    const highlighted = document.querySelectorAll(&quot;#spreadsheet tbody td.merge-highlight&quot;);
+    highlighted.forEach(cell =&gt; cell.classList.remove(&quot;merge-highlight&quot;));
+}
+
+document.addEventListener(&quot;input&quot;, function (e) {
+    // 編集モードのセル（contenteditable が true の td 要素）で発生した input イベントを確認
+    if (e.target &amp;&amp; e.target.matches(&quot;td[contenteditable=&#039;true&#039;]&quot;)) {
+        const formulaText = e.target.textContent.trim();
+        if (formulaText &amp;&amp; formulaText.startsWith(&quot;=&quot;)) {
+            highlightCalculationRange(formulaText);
+        } else {
+            clearCalculationRangeHighlights();
+        }
+        const cell45 = e.target;
+        formulaBarInput.value = cell45.textContent;
+    }
+    debouncedSaveState();
+});
+
+
+// 数式バーにフォーカスが入ったタイミングでも同様の処理を行う場合はこちらも追加（任意）
+formulaBarInput.addEventListener(&quot;focus&quot;, function () {
+    const formulaText = formulaBarInput.value.trim();
+    if (formulaText &amp;&amp; formulaText.startsWith(&quot;=&quot;)) {
+        highlightCalculationRange(formulaText);
+    }
+});
+
+// 数式バーからフォーカスが外れたら、ハイライトをクリア
+formulaBarInput.addEventListener(&quot;blur&quot;, function () {
+    clearCalculationRangeHighlights();
+});
+
+
+// keydown イベント：この段階で先に抑制する（キャプチャフェーズでの実行）
+document.addEventListener(
+    &quot;keydown&quot;,
+    function (e) {
+        if (e.ctrlKey &amp;&amp; e.key.toLowerCase() === &quot;a&quot;) {
+            if (document.activeElement === formulaBarInput) {
+                return;
+            }
+            // 編集モード中（contentEditable）のセル内なら、
+            // デフォルトのテキスト選択（セル内全選択）に任せ、セル全体の選択は行わない
+            if (document.activeElement &amp;&amp; document.activeElement.isContentEditable) {
+                return;
+            }
+            // 早期にキャンセル
+            e.preventDefault();
+            e.stopImmediatePropagation();
+
+            // 編集中ならまず blur() で解除
+            if (document.activeElement &amp;&amp; document.activeElement.isContentEditable) {
+                document.activeElement.blur();
+            }
+
+            // 全セル選択の処理
+            const previouslySelected = document.querySelectorAll(&quot;#spreadsheet tbody td.selected&quot;);
+            previouslySelected.forEach((cell) =&gt; {
+                cell.classList.remove(&quot;selected&quot;);
+            });
+            const allCells = document.querySelectorAll(&quot;#spreadsheet tbody td&quot;);
+            allCells.forEach((cell) =&gt; {
+                cell.classList.add(&quot;selected&quot;);
+            });
+            updateFillHandle();
+            if (allCells.length &gt; 0) {
+                activeCell = allCells[0];
+            }
+
+            return;
+        }
+    },
+    true // キャプチャフェーズで登録
+);
+
+// keypress イベントもキャプチャフェーズで抑止（万が一 keydown だけで防げない場合）
+document.addEventListener(
+    &quot;keypress&quot;,
+    function (e) {
+        if (e.ctrlKey &amp;&amp; e.key.toLowerCase() === &quot;a&quot;) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+        }
+    },
+    true
+);
+
+// beforeinput イベントをリッスンして、入力前に &quot;a&quot; が挿入されないようにする
+document.addEventListener(
+    &quot;beforeinput&quot;,
+    function (e) {
+        if (e.ctrlKey &amp;&amp; e.data &amp;&amp; e.data.toLowerCase() === &quot;a&quot;) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+        }
+    },
+    true
+);
+
+// 行番号と列番号の間の空白（corner エリア）をクリックしたら全セル選択する
+document.getElementById(&quot;corner&quot;).addEventListener(&quot;click&quot;, function (e) {
+    e.preventDefault(); // ブラウザのデフォルト動作をキャンセル
+
+    // もし編集中の状態なら（たとえば contentEditable が true の場合）、全選択はしない
+    if (document.activeElement &amp;&amp; document.activeElement.isContentEditable) {
+        return;
+    }
+
+    // 既存の全選択状態を一旦解除する
+    const previouslySelected = document.querySelectorAll(&quot;#spreadsheet tbody td.selected&quot;);
+    previouslySelected.forEach(cell =&gt; cell.classList.remove(&quot;selected&quot;));
+
+    // シート内のすべてのセルをまとめて全選択状態にする
+    const allCells = document.querySelectorAll(&quot;#spreadsheet tbody td&quot;);
+    allCells.forEach(cell =&gt; cell.classList.add(&quot;selected&quot;));
+    updateFillHandle();
+
+    // 任意：activeCell を全セルの先頭に更新
+    if (allCells.length &gt; 0) {
+        activeCell = allCells[0];
+    }
+});
+
+
+window.onload = function () {
+    //==============================
+    // ドラッグ操作用の共通変数
+    //==============================
+    let isRowSelecting = false;
+    let rowSelectionStart = null;
+    let rowSelectionCurrent = null;
+
+    let isColSelecting = false;
+    let colSelectionStart = null;
+    let colSelectionCurrent = null;
+
+    //==============================
+    // mousedown イベントをイベント委譲で処理
+    //==============================
+    document.addEventListener(&quot;mousedown&quot;, function (e) {
+        // 行番号 (row_number) の場合
+        const rowHeader = e.target.closest(&quot;th.row_number&quot;);
+        if (rowHeader) {
+            e.preventDefault();
+            if (document.activeElement &amp;&amp; document.activeElement.isContentEditable) {
+                document.activeElement.blur();
+            }
+            isRowSelecting = true;
+            rowSelectionStart = parseInt(rowHeader.textContent.trim());
+            rowSelectionCurrent = rowSelectionStart;
+            clearSelected();
+            selectRows(rowSelectionStart, rowSelectionStart);
+            // 行番号が優先なら、ここで処理を終了する場合:
+            return;
+        }
+
+        // 列番号 (col_number) の場合
+        const colHeader = e.target.closest(&quot;th.col_number&quot;);
+        if (colHeader) {
+            e.preventDefault();
+            if (document.activeElement &amp;&amp; document.activeElement.isContentEditable) {
+                document.activeElement.blur();
+            }
+            isColSelecting = true;
+            colSelectionStart = colLabelToIndex(colHeader.textContent.trim());
+            colSelectionCurrent = colSelectionStart;
+            clearSelected();
+            selectColumns(colSelectionStart, colSelectionStart);
+        }
+    });
+
+    //==============================
+    // ドラッグ中（mousemove）に対象の行／列を更新する
+    //==============================
+    document.addEventListener(&quot;mousemove&quot;, function (e) {
+        // 行選択の場合の処理
+        if (isRowSelecting) {
+            const th = e.target.closest(&quot;th.row_number&quot;);
+            if (th) {
+                const hoveredRow = parseInt(th.textContent.trim());
+                if (hoveredRow !== rowSelectionCurrent) {
+                    rowSelectionCurrent = hoveredRow;
+                    const from = Math.min(rowSelectionStart, rowSelectionCurrent);
+                    const to = Math.max(rowSelectionStart, rowSelectionCurrent);
+                    clearSelected();
+                    selectRows(from, to);
+                }
+            }
+        }
+        // 列選択の場合の処理
+        if (isColSelecting) {
+            const th = e.target.closest(&quot;th.col_number&quot;);
+            if (th) {
+                const hoveredCol = colLabelToIndex(th.textContent.trim());
+                if (hoveredCol !== colSelectionCurrent) {
+                    colSelectionCurrent = hoveredCol;
+                    const from = Math.min(colSelectionStart, colSelectionCurrent);
+                    const to = Math.max(colSelectionStart, colSelectionCurrent);
+                    clearSelected();
+                    selectColumns(from, to);
+                }
+            }
+        }
+    });
+
+    //==============================
+    // マウスアップでドラッグ選択終了
+    //==============================
+    document.addEventListener(&quot;mouseup&quot;, function (e) {
+        if (isRowSelecting) {
+            isRowSelecting = false;
+            rowSelectionStart = null;
+            rowSelectionCurrent = null;
+        }
+        if (isColSelecting) {
+            isColSelecting = false;
+            colSelectionStart = null;
+            colSelectionCurrent = null;
+        }
+    });
+
+
+    //==============================
+    // ヘルパー関数
+    //==============================
+
+    // 選択状態をクリア（#spreadsheet 内の td から selected クラスを削除）
+    function clearSelected() {
+        const selectedCells = document.querySelectorAll(&quot;#spreadsheet td.selected&quot;);
+        selectedCells.forEach(cell =&gt; cell.classList.remove(&quot;selected&quot;));
+    }
+
+    // 行番号 (data-row 属性に一致) の範囲を選択
+    function selectRows(from, to) {
+        for (let r = from; r &lt;= to; r++) {
+            const rowCells = document.querySelectorAll(`#spreadsheet td[data-row=&quot;${r}&quot;]`);
+            rowCells.forEach(cell =&gt; cell.classList.add(&quot;selected&quot;));
+        }
+        // 必要なら activeCell の更新など
+    }
+
+    // 列番号 (data-col 属性に一致) の範囲を選択
+    function selectColumns(from, to) {
+        for (let c = from; c &lt;= to; c++) {
+            const colCells = document.querySelectorAll(`#spreadsheet td[data-col=&quot;${c}&quot;]`);
+            colCells.forEach(cell =&gt; cell.classList.add(&quot;selected&quot;));
+        }
+        // 必要なら activeCell の更新など
+    }
+
+    // 例：列番号ラベル &quot;A&quot; -&gt; 0, &quot;B&quot; -&gt; 1, &quot;AA&quot; -&gt; 26 などに変換する関数
+    function colLabelToIndex(label) {
+        let index = 0;
+        label = label.toUpperCase();
+        for (let i = 0; i &lt; label.length; i++) {
+            index = index * 26 + ((label.charCodeAt(i) - 65) + 1);
+        }
+        return index - 1; // 0-index に調整
+    }
+
+
+
+
+
+
+
+
+    const spreadsheet = document.getElementById(&quot;spreadsheet&quot;);
+    if (!spreadsheet) {
+        console.error(&quot;Spreadsheet element not found.&quot;);
+        return;
+    }
+
+    // =========================
+    // ツールチップの生成と制御
+    // =========================
+    const resizeTooltip = (() =&gt; {
+        let tooltip = document.createElement(&quot;div&quot;);
+        tooltip.id = &quot;resize-tooltip&quot;;
+        tooltip.style.position = &quot;fixed&quot;;
+        tooltip.style.background = &quot;rgba(0, 0, 0, 0.7)&quot;;
+        tooltip.style.color = &quot;#fff&quot;;
+        tooltip.style.padding = &quot;4px 8px&quot;;
+        tooltip.style.borderRadius = &quot;4px&quot;;
+        tooltip.style.fontSize = &quot;12px&quot;;
+        tooltip.style.display = &quot;none&quot;;
+        tooltip.style.pointerEvents = &quot;none&quot;; // ツールチップがマウス操作を妨げないように
+        tooltip.style.zIndex = &quot;10000&quot;;
+        document.body.appendChild(tooltip);
+        return tooltip;
+    })();
+
+    function updateResizeTooltip(x, y, text) {
+        resizeTooltip.textContent = text;
+        // マウスポインターの右上側に表示（必要に応じてオフセットを調整してください）
+        resizeTooltip.style.left = (x + 10) + &quot;px&quot;;
+        resizeTooltip.style.top = (y - 30) + &quot;px&quot;;
+        resizeTooltip.style.display = &quot;block&quot;;
+    }
+
+    function hideResizeTooltip() {
+        resizeTooltip.style.display = &quot;none&quot;;
+    }
+
+    // =========================
+    // 初回のリサイズハンドル追加
+    // =========================
+    addRowResizeHandles();
+    addColumnResizeHandles();
+
+    // =========================
+    // 動的に追加された要素にも対応する MutationObserver の設定
+    // =========================
+    const observer = new MutationObserver((mutationsList, observer) =&gt; {
+        for (const mutation of mutationsList) {
+            mutation.addedNodes.forEach((node) =&gt; {
+                if (node.nodeType === Node.ELEMENT_NODE) {
+                    // 新規追加されたノード自身が、またはその子孫に行番号ヘッダーが含まれていたら
+                    if (node.matches(&quot;th.row_number&quot;) || node.querySelector(&quot;th.row_number&quot;)) {
+                        addRowResizeHandles();
+                    }
+                    // 同様に、列番号ヘッダーが含まれていたら
+                    if (node.matches(&quot;th.col_number&quot;) || node.querySelector(&quot;th.col_number&quot;)) {
+                        addColumnResizeHandles();
+                    }
+                }
+            });
+        }
+    });
+    observer.observe(spreadsheet, { childList: true, subtree: true });
+
+    // =========================
+    // 関数定義
+    // =========================
+
+    // 行番号ヘッダーにリサイズハンドルを追加する
+    function addRowResizeHandles() {
+        // th.row_number と td.row_number の両方に対応
+        const rowHeaders = document.querySelectorAll(&quot;th.row_number, td.row_number&quot;);
+        rowHeaders.forEach(cell =&gt; {
+            // 既にハンドルが追加されていない場合のみ追加
+            if (!cell.querySelector(&quot;.row-resize-handle&quot;)) {
+                const handle = document.createElement(&quot;div&quot;);
+                handle.className = &quot;row-resize-handle&quot;;
+                // 以下のスタイルでハンドルをセルの下端の中央に配置
+                handle.style.position = &quot;absolute&quot;;
+                handle.style.left = &quot;0&quot;;
+                handle.style.right = &quot;0&quot;;
+                // セルの下端に配置し、中央に来るように調整（すなわち「1」と「2」などの間になる）
+                handle.style.top = &quot;100%&quot;;
+                handle.style.transform = &quot;translateY(-50%)&quot;;
+                // ハンドルの高さは細いバーとして指定（必要に応じて調整）
+                handle.style.height = &quot;6px&quot;;
+                // カーソルは縦方向リサイズとする
+                handle.style.cursor = &quot;row-resize&quot;;
+                // オーバーレイが邪魔にならないようにしておく（オプション）
+                // handle.style.background = &quot;rgba(0, 0, 0, 0.3)&quot;;
+                // 親要素（セル）を相対位置に
+                cell.style.position = &quot;sticky&quot;;
+                cell.style.textAlign = &quot;right&quot;;
+                cell.style.fontSize = &quot;large&quot;;
+                cell.appendChild(handle);
+                // mousedown イベントで行リサイズハンドラーへ
+                handle.addEventListener(&quot;mousedown&quot;, rowResizeHandler);
+            }
+        });
+    }
+
+
+    // 列番号ヘッダーにリサイズハンドルを追加する
+    function addColumnResizeHandles() {
+        const colHeaders = document.querySelectorAll(&quot;th.col_number&quot;);
+        colHeaders.forEach(th =&gt; {
+            // 既にハンドルが追加されていないかチェック
+            if (!th.querySelector(&quot;.col-resize-handle&quot;)) {
+                const handle = document.createElement(&quot;div&quot;);
+                handle.className = &quot;col-resize-handle&quot;;
+                // スタイル調整（右端に配置する形）
+                handle.style.position = &quot;absolute&quot;;
+                handle.style.right = &quot;0&quot;;
+                handle.style.top = &quot;0&quot;;
+                handle.style.width = &quot;6px&quot;;
+                handle.style.height = &quot;100%&quot;;
+                handle.style.cursor = &quot;col-resize&quot;;
+                th.style.textAlign = &quot;center&quot;;
+                th.style.fontSize = &quot;large&quot;;
+                th.appendChild(handle);
+                handle.addEventListener(&quot;mousedown&quot;, colResizeHandler);
+            }
+            // ヘッダーに data-col 属性が無ければ、列番号テキストから追加（例：&quot;A&quot; &rarr; 0）
+            if (!th.hasAttribute(&quot;data-col&quot;)) {
+                const colLabel = th.textContent.trim();
+                const colIndex = colLabelToIndex(colLabel);
+                th.setAttribute(&quot;data-col&quot;, colIndex);
+            }
+        });
+    }
+
+    // ----- 行のリサイズ処理（ドラッグ中に行全体の高さを調整） -----
+    function rowResizeHandler(e) {
+        e.stopPropagation();
+        e.preventDefault();
+
+        // 現在の行を取得 (行番号ヘッダーは &lt;th&gt;、親行は &lt;tr&gt;)
+        const th = e.target.parentElement;
+        const tr = th.parentElement;
+        const startY = e.clientY;
+        const startHeight = tr.offsetHeight;
+
+        const onMouseMove = function (eMove) {
+            const dy = eMove.clientY - startY;
+            let newHeight = startHeight + dy;
+            if (newHeight &lt; 20) newHeight = 20; // 最低高さを設定
+
+            // 行内のすべてのセル (th と td) に新しい高さを設定
+            Array.from(tr.children).forEach(cell =&gt; {
+                cell.style.height = newHeight + &quot;px&quot;;
+            });
+            tr.style.height = newHeight + &quot;px&quot;;
+            // ツールチップに現在の高さ (px) を表示（マウス座標から表示）
+            updateResizeTooltip(eMove.clientX, eMove.clientY, newHeight + &quot;px&quot;);
+            setTimeout(() =&gt; {
+                setupRowVisibilityObserver();
+            }, 500);
+        };
+
+        const onMouseUp = function () {
+            document.removeEventListener(&quot;mousemove&quot;, onMouseMove);
+            document.removeEventListener(&quot;mouseup&quot;, onMouseUp);
+            hideResizeTooltip();
+        };
+
+        document.addEventListener(&quot;mousemove&quot;, onMouseMove);
+        document.addEventListener(&quot;mouseup&quot;, onMouseUp);
+    }
+
+    // ----- 列のリサイズ処理（ドラッグ中に同じ data-col の列の幅を調整） -----
+    function colResizeHandler(e) {
+        e.stopPropagation();
+        e.preventDefault();
+
+        const th = e.target.parentElement;
+        const startX = e.clientX;
+        const startWidth = th.offsetWidth;
+        const colIndex = th.getAttribute(&quot;data-col&quot;);
+
+        const onMouseMove = function (eMove) {
+            const dx = eMove.clientX - startX;
+            let newWidth = startWidth + dx;
+            if (newWidth &lt; 30) newWidth = 30; // 最小幅
+
+            // ヘッダー自身の幅を更新
+            th.style.width = newWidth + &quot;px&quot;;
+            // 同じ data-col を持つ全ての td セルの幅を更新
+            const colCells = document.querySelectorAll(`#spreadsheet td[data-col=&quot;${colIndex}&quot;]`);
+            colCells.forEach(td =&gt; {
+                td.style.width = newWidth + &quot;px&quot;;
+            });
+            // ツールチップに現在の幅 (px) を表示
+            updateResizeTooltip(eMove.clientX, eMove.clientY, newWidth + &quot;px&quot;);
+            setTimeout(() =&gt; {
+                setupRowVisibilityObserver();
+            }, 500);
+        };
+
+        const onMouseUp = function () {
+            document.removeEventListener(&quot;mousemove&quot;, onMouseMove);
+            document.removeEventListener(&quot;mouseup&quot;, onMouseUp);
+            hideResizeTooltip();
+        };
+
+        document.addEventListener(&quot;mousemove&quot;, onMouseMove);
+        document.addEventListener(&quot;mouseup&quot;, onMouseUp);
+    }
+
+    // ----- 補助関数 -----
+    // A, B, C... AA, AB... -&gt; 0, 1, 2, ... （例としてアルファベット&rarr;数値に変換する関数）
+    function colLabelToIndex(label) {
+        let index = 0;
+        for (let i = 0; i &lt; label.length; i++) {
+            index *= 26;
+            index += label.charCodeAt(i) - 64;  // &#039;A&#039; は 65 なので
+        }
+        return index - 1;  // 0-indexed にするため 1 を引く
+    }
+
+
+    // 列番号ラベル (&quot;A&quot;, &quot;B&quot;, &quot;AA&quot;, &hellip;) を 0-index に変換する関数
+    function colLabelToIndex(label) {
+        let index = 0;
+        label = label.toUpperCase();
+        for (let i = 0; i &lt; label.length; i++) {
+            index = index * 26 + (label.charCodeAt(i) - 65 + 1);
+        }
+        return index - 1;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+    // A1 セルを取得（getCellは 1-index, 0-index の引数をとります）
+    const a1Cell = getCell(1, 0);
+    if (a1Cell) {
+        // 既存の選択状態を解除
+        const previouslySelected = document.querySelectorAll(&quot;#spreadsheet tbody td.selected&quot;);
+        previouslySelected.forEach(cell =&gt; cell.classList.remove(&quot;selected&quot;));
+
+        // A1 セルを選択状態にする
+        a1Cell.classList.add(&quot;selected&quot;);
+        updateSelectedCellsDisplay();
+
+        // アクティブセルを更新
+        activeCell = a1Cell;
+        updateFillHandle();
+
+        // セルにフォーカスを当てる（エディタとして編集操作ができるように）
+        a1Cell.focus();
+
+
+        // 数式バーの内容も更新（セルの数式があればそれを、そうでなければテキスト内容を設定）
+        formulaBarInput.value = a1Cell.dataset.formula ? a1Cell.dataset.formula : a1Cell.textContent;
+    }
+
+
+
+};
+
+
+
+
+
+// 上揃えボタン
+let verticalAlignTopButton = document.getElementById(&quot;vertical-align-top&quot;);
+verticalAlignTopButton.addEventListener(&quot;click&quot;, function (e) {
+    let cells = document.querySelectorAll(&quot;#spreadsheet tbody td.selected&quot;);
+    if (cells.length &gt; 0) {
+        cells.forEach(cell =&gt; {
+            if (cell.style.verticalAlign === &quot;top&quot;) {
+                cell.style.verticalAlign = &quot;&quot;;
+            } else {
+                cell.style.verticalAlign = &quot;top&quot;;
+            }
+        });
+    } else if (activeCell) {
+        if (activeCell.style.verticalAlign === &quot;top&quot;) {
+            activeCell.style.verticalAlign = &quot;&quot;;
+        } else {
+            activeCell.style.verticalAlign = &quot;top&quot;;
+        }
+    }
+});
+// 中央揃えボタン
+let verticalAlignMiddleButton = document.getElementById(&quot;vertical-align-middle&quot;);
+verticalAlignMiddleButton.addEventListener(&quot;click&quot;, function (e) {
+    let cells = document.querySelectorAll(&quot;#spreadsheet tbody td.selected&quot;);
+    if (cells.length &gt; 0) {
+        cells.forEach(cell =&gt; {
+            if (cell.style.verticalAlign === &quot;middle&quot;) {
+                cell.style.verticalAlign = &quot;&quot;;
+            } else {
+                cell.style.verticalAlign = &quot;middle&quot;;
+            }
+        });
+    } else if (activeCell) {
+        if (activeCell.style.verticalAlign === &quot;middle&quot;) {
+            activeCell.style.verticalAlign = &quot;&quot;;
+        } else {
+            activeCell.style.verticalAlign = &quot;middle&quot;;
+        }
+    }
+});
+// 下揃えボタン
+let verticalAlignBottomButton = document.getElementById(&quot;vertical-align-bottom&quot;);
+verticalAlignBottomButton.addEventListener(&quot;click&quot;, function (e) {
+    let cells = document.querySelectorAll(&quot;#spreadsheet tbody td.selected&quot;);
+    if (cells.length &gt; 0) {
+        cells.forEach(cell =&gt; {
+            if (cell.style.verticalAlign === &quot;bottom&quot;) {
+                cell.style.verticalAlign = &quot;&quot;;
+            } else {
+                cell.style.verticalAlign = &quot;bottom&quot;;
+            }
+        });
+    } else if (activeCell) {
+        if (activeCell.style.verticalAlign === &quot;bottom&quot;) {
+            activeCell.style.verticalAlign = &quot;&quot;;
+        } else {
+            activeCell.style.verticalAlign = &quot;bottom&quot;;
+        }
+    }
+});
+let toggleTextWrapButton = document.getElementById(&quot;toggle-text-wrap&quot;);
+toggleTextWrapButton.addEventListener(&quot;click&quot;, function (e) {
+    let cells = document.querySelectorAll(&quot;#spreadsheet tbody td.selected&quot;);
+    if (cells.length &gt; 0) {
+        cells.forEach(cell =&gt; {
+            // 初期状態は &quot;pre&quot;（折り返しOFF）
+            if (cell.style.whiteSpace === &quot;pre&quot;) {
+                // 折り返しONに：改行はそのまま表示しつつ自動折り返し
+                cell.style.whiteSpace = &quot;pre-wrap&quot;;
+                cell.style.wordBreak = &quot;break-all&quot;;
+            } else {
+                // 折り返しOFFに：改行は保持されるが自動折り返しは行わない
+                cell.style.whiteSpace = &quot;pre&quot;;
+                cell.style.wordBreak = &quot;&quot;;
+            }
+        });
+    } else if (activeCell) {
+        if (activeCell.style.whiteSpace === &quot;pre&quot;) {
+            activeCell.style.whiteSpace = &quot;pre-wrap&quot;;
+            activeCell.style.wordBreak = &quot;break-all&quot;;
+        } else {
+            activeCell.style.whiteSpace = &quot;pre&quot;;
+            activeCell.style.wordBreak = &quot;&quot;;
+        }
+    }
+});
+
+
+
+
+
+
+
+
+
+
+
+// 「selected」クラスが付いているセル群について、
+// ・選択セルが 0 個の場合は何も表示しない。
+// ・セルが 1 つの場合はそのセル参照 (例：&quot;A1&quot;) を表示。
+// ・複数セルの場合、連続範囲なら「A1:B3」の形式、連続していなければ個別リスト (例：&quot;A1, B2, C3&quot;) を表示する関数
+function updateSelectedCellsDisplay() {
+    const selectedCells = Array.from(document.querySelectorAll(&quot;td.selected&quot;));
+    let displayText = &quot;&quot;;
+
+    // 先ほど定義した関数を利用して変換
+    if (selectedCells.length === 0) {
+        displayText = &quot;&quot;;
+    } else if (selectedCells.length === 1) {
+        // 単一セルの場合はそのセル参照を生成 (例：&quot;A1&quot;, &quot;AA1&quot; など)
+        const cell = selectedCells[0];
+        const row = cell.dataset.row;
+        const col = parseInt(cell.dataset.col, 10);
+        displayText = toColumnName(col) + row;
+    } else {
+        // 複数セルの場合、まず各セルの行番号・列番号を抽出
+        const rows = selectedCells.map(cell =&gt; parseInt(cell.dataset.row, 10));
+        const cols = selectedCells.map(cell =&gt; parseInt(cell.dataset.col, 10));
+        const minRow = Math.min(...rows);
+        const maxRow = Math.max(...rows);
+        const minCol = Math.min(...cols);
+        const maxCol = Math.max(...cols);
+
+        // 選択セルの数が矩形状（連続範囲）のセル数と一致すれば連続範囲とみなす
+        const expectedCount = (maxRow - minRow + 1) * (maxCol - minCol + 1);
+        if (selectedCells.length === expectedCount) {
+            const topLeft = toColumnName(minCol) + minRow;
+            const bottomRight = toColumnName(maxCol) + maxRow;
+            displayText = topLeft + &quot;:&quot; + bottomRight;
+        } else {
+            displayText = selectedCells
+                .map(cell =&gt; {
+                    const row = cell.dataset.row;
+                    const col = parseInt(cell.dataset.col, 10);
+                    return toColumnName(col) + row;
+                })
+                .join(&quot;, &quot;);
+        }
+    }
+
+    const displayElement = document.getElementById(&quot;selected-cells-display&quot;);
+    if (displayElement) {
+        displayElement.textContent = displayText;
+    }
+    updateFontSizeSelect();
+}
+
+// 0-indexedの列番号を Excel 表記（&quot;A&quot;, &quot;B&quot;, ..., &quot;Z&quot;, &quot;AA&quot;, ...）に変換する関数
+function toColumnName(colIndex) {
+    let result = &quot;&quot;;
+    while (colIndex &gt;= 0) {
+        result = String.fromCharCode((colIndex % 26) + 65) + result;
+        colIndex = Math.floor(colIndex / 26) - 1;
+    }
+    return result;
+}
+
+
+function updateFontSizeSelect() {
+    // 選択状態のセル群を取得
+    const selectedCells = document.querySelectorAll(&quot;#spreadsheet tbody td.selected&quot;);
+    if (selectedCells.length === 0) {
+        return; // 選択セルがなければ何もしない
+    }
+
+    // 各選択セルから computedStyle で font-size を取得し、ユニークな値リストを作成
+    const fontSizes = new Set();
+    selectedCells.forEach(cell =&gt; {
+        const computedFontSize = window.getComputedStyle(cell).fontSize;
+        fontSizes.add(computedFontSize);
+    });
+
+    // 複数のフォントサイズが混在している場合は、ここでは更新しません（必要なら別処理）
+    if (fontSizes.size !== 1) {
+        console.log(&quot;選択セルには複数の font-size が設定されています。&quot;);
+        return;
+    }
+
+    // 共通のフォントサイズを取得（例：&quot;16px&quot;）
+    const commonFontSize = [...fontSizes][0];
+
+    // font-size セレクト要素を取得
+    const fontSizeSelect = document.getElementById(&quot;font-size&quot;);
+    if (!fontSizeSelect) {
+        console.error(&quot;font-size セレクト要素が見つかりません。&quot;);
+        return;
+    }
+
+    let optionMatched = false;
+    // セレクト内の各 option をチェックし、一致するものを&uarr;に selected 状態にセット
+    Array.from(fontSizeSelect.options).forEach(option =&gt; {
+        if (option.value === commonFontSize) {
+            option.selected = true;
+            optionMatched = true;
+        } else {
+            option.selected = false;
+        }
+    });
+
+}
+
+
+// マウスダウン：新規選択開始時に、既存の選択をクリアしてクリックしたセルを選択
+document.addEventListener(&quot;mousedown&quot;, function (e) {
+    if (e.target.tagName.toUpperCase() === &quot;TD&quot;) {
+        updateSelectedCellsDisplay();
+    }
+    var isClickInsideStartButton = Array.from(document.querySelectorAll(&#039;.pulldown_btn,.pulldown_menu&#039;)).some(button =&gt; button.contains(e.target));
+    if (!isClickInsideStartButton) {
+        document.querySelectorAll(&quot;.pulldown_menu&quot;).forEach(pulldown_menu =&gt; {
+            pulldown_menu.style.display = &quot;none&quot;;
+        })
+    }
+});
+
+// マウス移動：左ボタン押下中 (e.buttons === 1) の場合、ドラッグでセルを選択
+document.addEventListener(&quot;mousemove&quot;, function (e) {
+    if (e.buttons === 1 &amp;&amp; e.target &amp;&amp; e.target.tagName.toUpperCase() === &quot;TD&quot;) {
+        updateSelectedCellsDisplay();
+    }
+});
+
+// クリック：単体クリックの場合は、前回の選択をクリアして新たに選択
+document.addEventListener(&quot;click&quot;, function (e) {
+    if (e.target.tagName.toUpperCase() === &quot;TD&quot;) {
+        updateSelectedCellsDisplay();
+    }
+    debouncedSaveState();
+});
+
+// キーダウン：矢印キーなどで選択が変更された場合も表示を更新
+document.addEventListener(&quot;keydown&quot;, function (e) {
+    const arrowKeys = [&quot;ArrowUp&quot;, &quot;ArrowDown&quot;, &quot;ArrowLeft&quot;, &quot;ArrowRight&quot;, &quot;Enter&quot;];
+    if (arrowKeys.includes(e.key)) {
+        updateSelectedCellsDisplay();
+    }
+});
+
+
+
+
+// アクティブセルにフィルハンドルを追加／更新する関数
+function updateFillHandle() {
+    // すべてのフィルハンドルを削除して重複表示を防ぐ
+    document.querySelectorAll(&quot;.fill-handle&quot;).forEach(handle =&gt; handle.remove());
+
+    // 選択されているセル群を取得
+    const selectedCells = document.querySelectorAll(&quot;#spreadsheet tbody td.selected&quot;);
+    if (!selectedCells || selectedCells.length === 0) return;
+
+    let targetCell = null;
+
+    if (selectedCells.length === 1) {
+        // 単一セルの場合は、アクティブセル（または選択されているセル）にフィルハンドルを表示
+        targetCell = activeCell;
+    } else {
+        // 複数セルの場合、選択範囲の最小／最大の行・列を計算
+        let minRow = Infinity, maxRow = -Infinity, minCol = Infinity, maxCol = -Infinity;
+        selectedCells.forEach(cell =&gt; {
+            const r = parseInt(cell.dataset.row, 10);
+            const c = parseInt(cell.dataset.col, 10);
+            if (r &lt; minRow) minRow = r;
+            if (r &gt; maxRow) maxRow = r;
+            if (c &lt; minCol) minCol = c;
+            if (c &gt; maxCol) maxCol = c;
+        });
+        // 通常、Excel のような動作では右下隅（最大行・最大列）のセルにフィルハンドルを表示します
+        targetCell = getCell(maxRow, maxCol);
+    }
+
+    // 編集モード中ならフィルハンドルは表示しない
+    if (targetCell &amp;&amp; !targetCell.isContentEditable) {
+        // 子要素の絶対配置が有効になるように relative を設定
+        targetCell.style.position = &quot;relative&quot;;
+        // フィルハンドル要素を作成し、targetCell の内部に追加
+        const fillHandle = document.createElement(&quot;div&quot;);
+        fillHandle.className = &quot;fill-handle&quot;;
+        targetCell.appendChild(fillHandle);
+        // フィルハンドルのマウスイベント（ドラッグ開始処理）を登録
+        fillHandle.addEventListener(&quot;mousedown&quot;, fillHandleMouseDown);
+    }
+}
+
+
+// 【selected】セルブロックの境界を計算する関数
+// フィル操作管理用グローバル変数
+let isFillDragging = false;
+let fillDragStartCell = null;          // マウスダウン時のアンカー（通常 activeCell）
+let fillDragStartCoord = { x: 0, y: 0 }; // マウスダウン時の座標（window座標）
+let currentFillRange = null;           // 現在のフィル範囲 { minRow, maxRow, minCol, maxCol }
+let initialFillRange = null;           // マウスダウン時に記録した、もともとの【selected】セルの境界
+let initialBottomRight = null;           // initialFillRange の右下（アンカー）セルの情報
+
+// 【selected】セルブロックの境界を計算する関数
+function computeInitialFillRange() {
+    const selectedCells = document.querySelectorAll(&quot;#spreadsheet tbody td.selected&quot;);
+    let minRow = Infinity, maxRow = -Infinity, minCol = Infinity, maxCol = -Infinity;
+    selectedCells.forEach(cell =&gt; {
+        const r = parseInt(cell.dataset.row, 10);
+        const c = parseInt(cell.dataset.col, 10);
+        if (r &lt; minRow) minRow = r;
+        if (r &gt; maxRow) maxRow = r;
+        if (c &lt; minCol) minCol = c;
+        if (c &gt; maxCol) maxCol = c;
+    });
+    return { minRow, maxRow, minCol, maxCol };
+}
+
+
+// フィルハンドルのマウスダウン時の処理
+function fillHandleMouseDown(e) {
+    // 編集モード中なら無視する
+    if (activeCell &amp;&amp; activeCell.isContentEditable) return;
+
+    e.stopPropagation();
+    e.preventDefault();
+
+    isFillDragging = true;
+    fillDragStartCell = activeCell;
+    fillDragStartCoord = { x: e.clientX, y: e.clientY };
+
+    // もともと【selected】になっているセルのブロックの境界を記録
+    initialFillRange = computeInitialFillRange();
+    // アンカーとして、初期選択ブロックの右下のセル（initialFillRange.maxRow, maxCol）を記録
+    initialBottomRight = { row: initialFillRange.maxRow, col: initialFillRange.maxCol };
+
+    document.addEventListener(&quot;mousemove&quot;, fillHandleMouseMove);
+    document.addEventListener(&quot;mouseup&quot;, fillHandleMouseUp);
+}
+
+
+// ドラッグ中のmousemoveで範囲を更新（デルタ計算方式）
+function fillHandleMouseMove(e) {
+    if (!isFillDragging) return;
+
+    // セルのサイズ（環境に合わせて調整または動的取得してください）
+    const cellWidth = 120;  // px
+    const cellHeight = 40;  // px
+
+    // ① マウス下のセル要素を取得
+    let targetElem = document.elementFromPoint(e.clientX, e.clientY);
+    while (targetElem &amp;&amp; targetElem.tagName !== &quot;TD&quot;) {
+        targetElem = targetElem.parentElement;
+    }
+    if (!targetElem) return;
+
+    const targetRow = parseInt(targetElem.dataset.row, 10);
+    const targetCol = parseInt(targetElem.dataset.col, 10);
+
+    let newRange = null;
+
+    // ② どちらのモードか判定：
+    // 拡大モード：マウス下のセルの行・列が初期アンカー（initialBottomRight）のそれ以上なら拡大
+    if (targetRow &gt;= initialBottomRight.row &amp;&amp; targetCol &gt;= initialBottomRight.col) {
+        newRange = {
+            minRow: initialFillRange.minRow,
+            minCol: initialFillRange.minCol,
+            maxRow: targetRow,
+            maxCol: targetCol
+        };
+    } else {
+        // 縮小モード：マウス下のセルが初期アンカーの内側にあるとき
+        // ここでは、フィルハンドルのDOM要素（初期アンカー）のウィンドウ上の位置から、
+        // 現在のマウス位置との差分を計算し、それをセル数に変換して縮小分を求める。
+
+        // フィルハンドル要素（アンカー）がある前提で、activeCell（あるいは初期アンカー側）のfill-handleを取得
+        let fillHandleElem = fillDragStartCell.querySelector(&quot;.fill-handle&quot;);
+        if (fillHandleElem) {
+            let rect = fillHandleElem.getBoundingClientRect();
+
+            // 横方向の縮小量
+            let diffX = rect.right - e.clientX;  // マウスが左にどれだけ移動したか
+            let shrinkCols = Math.round(diffX / cellWidth);
+            // 新しい maxCol は、初期アンカーから縮小分だけ減算
+            let newMaxCol = initialBottomRight.col - shrinkCols;
+            if (newMaxCol &lt; initialFillRange.minCol) newMaxCol = initialFillRange.minCol;
+
+            // 縦方向の縮小量
+            let diffY = rect.bottom - e.clientY; // マウスが上にどれだけ移動したか
+            let shrinkRows = Math.round(diffY / cellHeight);
+            let newMaxRow = initialBottomRight.row - shrinkRows;
+            if (newMaxRow &lt; initialFillRange.minRow) newMaxRow = initialFillRange.minRow;
+
+            newRange = {
+                minRow: initialFillRange.minRow,
+                minCol: initialFillRange.minCol,
+                maxRow: newMaxRow,
+                maxCol: newMaxCol
+            };
+        } else {
+            // 万が一フィルハンドルが取得できない場合は、単純に目標セルを基準にする
+            newRange = {
+                minRow: initialFillRange.minRow,
+                minCol: initialFillRange.minCol,
+                maxRow: targetRow,
+                maxCol: targetCol
+            };
+        }
+    }
+
+    currentFillRange = newRange;
+
+    // ③ 既存の一時ハイライト（fill-selected）の解除
+    document.querySelectorAll(&quot;#spreadsheet tbody td.fill-selected&quot;).forEach(cell =&gt; {
+        cell.classList.remove(&quot;fill-selected&quot;);
+    });
+
+    // ④ currentFillRange 内のセルに一時ハイライト（fill-selected）を付与
+    for (let r = currentFillRange.minRow; r &lt;= currentFillRange.maxRow; r++) {
+        for (let c = currentFillRange.minCol; c &lt;= currentFillRange.maxCol; c++) {
+            const cell = getCell(r, c); // 既存の getCell(row, col) 関数を利用
+            if (cell) {
+                cell.classList.add(&quot;fill-selected&quot;);
+            }
+        }
+    }
+}
+
+// ドラッグ終了時の処理：選択されたセルに値を反映＆selectedクラスを付与
+function fillHandleMouseUp(e) {
+    if (!isFillDragging) return;
+
+    document.removeEventListener(&quot;mousemove&quot;, fillHandleMouseMove);
+    document.removeEventListener(&quot;mouseup&quot;, fillHandleMouseUp);
+
+    // 複製元の情報：ここでは activeCell（またはアンカーセルとしての fillDragStartCell ）の情報を取得
+    // 表示テキストや数式情報、スタイルなどを含む
+    const fillSource = activeCell; // もしくは fillDragStartCell
+
+    // ① シート全体の既存の selected クラスを一旦解除してリセットする
+    document.querySelectorAll(&quot;#spreadsheet tbody td.selected&quot;).forEach(cell =&gt; {
+        cell.classList.remove(&quot;selected&quot;);
+    });
+
+    // ② currentFillRange (例: { minRow, maxRow, minCol, maxCol } ) 内の各セルを処理
+    // ドラッグ終了時などでセルコピー処理を実行（例）
+    for (let r = currentFillRange.minRow; r &lt;= currentFillRange.maxRow; r++) {
+        for (let c = currentFillRange.minCol; c &lt;= currentFillRange.maxCol; c++) {
+            const targetCell = getCell(r, c);
+            if (targetCell) {
+                cloneCellProperties(fillSource, targetCell);
+                targetCell.classList.add(&quot;selected&quot;);
+            }
+        }
+    }
+
+    // すべてのセルへのコピーが完了した後に、数式の再計算を一括で実行
+    updateAllFormulas();
+
+    // ③ 一時ハイライト（fill-selected）の解除
+    document.querySelectorAll(&quot;#spreadsheet tbody td.fill-selected&quot;).forEach(cell =&gt; {
+        cell.classList.remove(&quot;fill-selected&quot;);
+    });
+
+    isFillDragging = false;
+    currentFillRange = null;
+
+    // 必要なら、選択セルの表示を更新する関数を呼ぶなど
+    updateSelectedCellsDisplay();
+}
+
+
+/**
+ * 数式内のすべてのセル参照をコピー元とコピー先のオフセットに合わせて変更する関数
+ * (例：コピー元セルが A1 で、コピー先セルが B2 なら、参照 &quot;A1&quot; は &quot;B2&quot; に変換される)
+ *
+ * @param {string} formula - コピー元セルの数式。先頭は &quot;=&quot; がついている前提。
+ * @param {number} rowOffset - コピー先セルとコピー元セルの行の差分（targetRow - sourceRow）
+ * @param {number} colOffset - コピー先セルとコピー元セルの列の差分（targetCol - sourceCol）
+ * @returns {string} 調整済みの数式文字列
+ */
+function adjustFormula(formula, rowOffset, colOffset) {
+    const adjustedBody = formula.substring(1).replace(/([A-Z]+)(\d+)/g, function (match, colLetters, rowStr) {
+        const origRow = parseInt(rowStr, 10);
+        const origCol = columnLettersToIndex(colLetters); // 複数文字にも対応する関数
+        const newRow = origRow + rowOffset;
+        const newCol = origCol + colOffset;
+        return getCellReferenceByCoord(newRow, newCol);
+    });
+    return &quot;=&quot; + adjustedBody;
+}
+
+/**
+ * セルからセルへプロパティをクローンする関数。
+ * ※ 数式が存在する場合、コピー先セルの位置に合わせてセル参照を調整します。
+ * 　ユーザーが上書きした場合はハンドル側（handleCellBlur など）で dataset.formula を削除するため、
+ * 　ここでは、コピー元に dataset.formula が存在し先頭が &quot;=&quot; なら常にコピー・調整することにします。
+ */
+function cloneCellProperties(sourceCell, targetCell) {
+    // 1. テキスト内容をコピー
+    targetCell.textContent = sourceCell.textContent;
+
+    // 2. data-* 属性のコピー（コピー元の merge 関連の属性はコピーせず、row/col も除外）
+    Object.keys(sourceCell.dataset).forEach(key =&gt; {
+        // コピー元のデータを、&#039;row&#039;, &#039;col&#039;、および merge 関連（&quot;merge&quot; で始まる）のキーは除外する
+        if (key !== &#039;row&#039; &amp;&amp; key !== &#039;col&#039; &amp;&amp; !key.startsWith(&quot;merge&quot;)) {
+            targetCell.dataset[key] = sourceCell.dataset[key];
+        }
+    });
+    // ※ここでは、もしコピー先が既に merge の情報を持っている場合は、何も上書きしないのでそのまま維持される
+
+    // 3. 数式データのコピーと調整
+    if (sourceCell.dataset.formula &amp;&amp; sourceCell.dataset.formula[0] === &quot;=&quot;) {
+        const srcRow = parseInt(sourceCell.dataset.row, 10);
+        const srcCol = parseInt(sourceCell.dataset.col, 10);
+        const tgtRow = parseInt(targetCell.dataset.row, 10);
+        const tgtCol = parseInt(targetCell.dataset.col, 10);
+        const rowOffset = tgtRow - srcRow;
+        const colOffset = tgtCol - srcCol;
+        targetCell.dataset.formula = adjustFormula(sourceCell.dataset.formula, rowOffset, colOffset);
+    } else {
+        // 数式データがない場合、コピー先に formula 情報があれば削除する
+        if (targetCell.dataset.formula) {
+            delete targetCell.dataset.formula;
+        }
+    }
+
+    // 4. スタイル情報のコピー
+    const computed = window.getComputedStyle(sourceCell);
+    const bgColor = computed.backgroundColor;
+    targetCell.style.backgroundColor =
+        (bgColor === &quot;rgba(0, 0, 0, 0)&quot; || bgColor === &quot;transparent&quot;) ? &quot;&quot; : bgColor;
+    targetCell.style.color = computed.color;
+    targetCell.style.textAlign = computed.textAlign;
+    targetCell.style.border = computed.border;
+    targetCell.style.fontSize = computed.fontSize;
+    targetCell.style.fontFamily = computed.fontFamily;
+    targetCell.style.fontStyle = computed.fontStyle;
+    targetCell.style.fontWeight = computed.fontWeight;
+    targetCell.style.verticalAlign = computed.verticalAlign;
+    targetCell.style.textDecoration = computed.textDecoration;
+    targetCell.style.textShadow = computed.textShadow;
+
+    // 5. contenteditable など、選択状態に関する属性・クラスはコピーしない
+    targetCell.removeAttribute(&quot;contenteditable&quot;);
+    targetCell.classList.remove(&quot;selected&quot;, &quot;fill-selected&quot;);
+}
+
+
+
+
+
+
+
+// セルクリック時にアクティブセルを更新後、フィルハンドルの状態を更新
+document.querySelector(&quot;#spreadsheet tbody&quot;).addEventListener(&quot;click&quot;, function (e) {
+    if (e.target.tagName.toUpperCase() === &quot;TD&quot;) {
+        updateFillHandle();
+    }
+});
+document.querySelector(&quot;#spreadsheet tbody&quot;).addEventListener(&quot;dblclick&quot;, function (e) {
+    if (e.target.tagName.toUpperCase() === &quot;TD&quot;) {
+        updateFillHandle();
+    }
+});
+
+document.addEventListener(&quot;mousemove&quot;, function (e) {
+    // 範囲選択が終了したタイミング
+    updateFillHandle();
+});
+
+
+
+
+/*********************
+ * 数式の挿入機能
+ *********************/
+
+/**
+ * 選択中 (selected クラスが付与された) のセルに対して、数式を挿入し、評価結果を表示する
+ */
+function insertFunctionIntoSelectedCells(formula) {
+    if (formula[0] !== &quot;=&quot;) {
+        console.error(&quot;挿入する数式は &#039;=&#039; から始まる必要があります&quot;);
+        return;
+    }
+    const selectedCells = document.querySelectorAll(&quot;td.selected&quot;);
+    selectedCells.forEach(cell =&gt; {
+        // セルに数式として保持（再評価時に利用できるよう dataset に記録）
+        cell.dataset.formula = formula;
+        // 数式を評価して表示
+        const result = evaluateFormula(formula);
+        cell.textContent = result;
+        document.getElementById(&#039;formula-bar&#039;).value = formula;
+    });
+}
+
+/**
+ * ボタン押下時に呼ばれる関数
+ * 渡された数式テンプレートをそのまま選択セルに挿入する
+ */
+function applyFormula(formula) {
+    insertFunctionIntoSelectedCells(formula);
+}
+
+
+document.getElementById(&quot;merge-cells&quot;).addEventListener(&quot;click&quot;, mergeSelectedCells);
+document.getElementById(&quot;unmerge-cells&quot;).addEventListener(&quot;click&quot;, unmergeSelectedCells);
+
+/**
+ * 選択状態のセルを結合する関数
+ * ※ 選択セルは連続した矩形状でなければならない
+ */
+// 
+function mergeSelectedCells() {
+    const selectedCells = document.querySelectorAll(&quot;#spreadsheet tbody td.selected&quot;);
+    if (selectedCells.length === 0) return;
+
+    let rows = [];
+    let cols = [];
+    selectedCells.forEach(cell =&gt; {
+        rows.push(parseInt(cell.dataset.row, 10));
+        cols.push(parseInt(cell.dataset.col, 10));
+    });
+    const minRow = Math.min(...rows);
+    const maxRow = Math.max(...rows);
+    const minCol = Math.min(...cols);
+    const maxCol = Math.max(...cols);
+
+    const expectedCount = (maxRow - minRow + 1) * (maxCol - minCol + 1);
+
+    // 単体セルの場合は結合しない
+    if (expectedCount === 1) {
+        alert(&quot;単体セルでは結合できません。&quot;);
+        return;
+    }
+
+    if (selectedCells.length !== expectedCount) {
+        alert(&quot;連続した矩形状のセルを選択してください。&quot;);
+        return;
+    } else {
+        setTimeout(() =&gt; {
+            updateAllFormulas();
+        }, 0);
+    }
+
+    // 結合済みのセルが範囲内に存在していないか確認する
+    for (let r = minRow; r &lt;= maxRow; r++) {
+        for (let c = minCol; c &lt;= maxCol; c++) {
+            const cell = getCell(r, c);
+            if (cell &amp;&amp; (cell.classList.contains(&quot;merged&quot;) ||
+                cell.dataset.mergeMinRow ||
+                cell.dataset.mergeAnchorRow)) {
+                alert(&quot;既に結合されているセルが範囲内に含まれているため、結合できません。&quot;);
+                return;
+            }
+        }
+    }
+
+    // 範囲内を行優先、列優先で走査して、値が入力されているセル（空でないセル）の最初の内容を取得する
+    let anchorValue = &quot;&quot;;
+    let anchorFormula = &quot;&quot;; // 数式があれば保持するための変数
+    let found = false;
+    for (let r = minRow; r &lt;= maxRow; r++) {
+        for (let c = minCol; c &lt;= maxCol; c++) {
+            const cell = getCell(r, c);
+            if (cell &amp;&amp; cell.innerHTML.trim() !== &quot;&quot;) {
+                if (cell.dataset.formula &amp;&amp; cell.dataset.formula.trim() !== &quot;&quot;) {
+                    // 数式が登録されている場合は、評価結果とともに数式そのものも保存する
+                    anchorValue = evaluateFormula(cell.dataset.formula);
+                    anchorFormula = cell.dataset.formula;
+                } else {
+                    anchorValue = cell.innerHTML;
+                }
+                found = true;
+                break;
+            }
+        }
+        if (found) break;
+    }
+
+    // アンカーセルは常に範囲の左上（minRow, minCol）とする
+    const anchor = getCell(minRow, minCol);
+    // 取得した値をアンカーにセットする
+    anchor.innerHTML = anchorValue;
+    // 数式が存在していた場合は、数式情報も保持する
+    if (anchorFormula) {
+        anchor.dataset.formula = anchorFormula;
+    }
+    anchor.setAttribute(&quot;rowspan&quot;, maxRow - minRow + 1);
+    anchor.setAttribute(&quot;colspan&quot;, maxCol - minCol + 1);
+    anchor.classList.add(&quot;merged&quot;);
+    // 結合情報をアンカーに保持する
+    anchor.dataset.mergeMinRow = minRow;
+    anchor.dataset.mergeMaxRow = maxRow;
+    anchor.dataset.mergeMinCol = minCol;
+    anchor.dataset.mergeMaxCol = maxCol;
+
+    // 結合範囲内のアンカー以外のセルは表示を解除し、内部データをクリアする
+    for (let r = minRow; r &lt;= maxRow; r++) {
+        for (let c = minCol; c &lt;= maxCol; c++) {
+            // アンカーセルは除外
+            if (r === minRow &amp;&amp; c === minCol) continue;
+            const cell = getCell(r, c);
+            if (cell) {
+                // セルの内容を削除
+                cell.innerHTML = &quot;&quot;;
+                // dataset のうち data-row, data-col 以外すべて削除
+                Object.keys(cell.dataset).forEach(key =&gt; {
+                    if (key !== &quot;row&quot; &amp;&amp; key !== &quot;col&quot;) {
+                        delete cell.dataset[key];
+                    }
+                });
+                // スタイル属性をクリアし、非表示に設定
+                cell.removeAttribute(&quot;style&quot;);
+                cell.style.display = &quot;none&quot;;
+                // クラスもクリア
+                cell.className = &quot;&quot;;
+                // 結合時のアンカー情報を付与
+                cell.dataset.mergeAnchorRow = minRow;
+                cell.dataset.mergeAnchorCol = minCol;
+            }
+        }
+    }
+}
+
+
+
+
+/**
+ * 選択状態（または activeCell が結合セル）のセルの結合を解除する関数
+ * ※ 結合セルのアンカーとなっているセルを対象にします
+ */
+function unmergeSelectedCells() {
+    // 選択セル全体を取得
+    const selectedCells = Array.from(document.querySelectorAll(&quot;#spreadsheet tbody td.selected&quot;));
+    if (selectedCells.length === 0) {
+        alert(&quot;結合解除するセルを選択してください。&quot;);
+        return;
+    }
+
+    // 結合グループのアンカーを重複処理しないため、各アンカーの &ldquo;row,col&rdquo; キーを保持する Set
+    const processedAnchorKeys = new Set();
+
+    selectedCells.forEach(cell =&gt; {
+        // まず、セルが結合状態か判定
+        const rowSpanAttr = cell.getAttribute(&quot;rowspan&quot;);
+        const colSpanAttr = cell.getAttribute(&quot;colspan&quot;);
+        const rowSpan = rowSpanAttr ? parseInt(rowSpanAttr, 10) : 1;
+        const colSpan = colSpanAttr ? parseInt(colSpanAttr, 10) : 1;
+        const isMerged = (rowSpan &gt; 1 || colSpan &gt; 1) || (cell.dataset.mergeMinRow &amp;&amp; cell.dataset.mergeMinCol);
+
+        if (!isMerged) {
+            // 結合状態でなければスキップ
+            return;
+        }
+
+        // 結合セルの場合、まずアンカーセルを決定する。
+        // 通常はアンカーには merged クラスが付いている（または mergeAnchor* 属性が無い）ので、
+        // もし cell に mergeAnchorRow/mergeAnchorCol があれば、それはアンカー以外とみなしてアンカーを取得する
+        let anchorCell = cell;
+        if (!cell.classList.contains(&quot;merged&quot;) &amp;&amp; cell.dataset.mergeAnchorRow &amp;&amp; cell.dataset.mergeAnchorCol) {
+            anchorCell = getCell(
+                parseInt(cell.dataset.mergeAnchorRow, 10),
+                parseInt(cell.dataset.mergeAnchorCol, 10)
+            );
+        }
+        if (!anchorCell) return;
+
+        // 重複処理を避けるため、キー（例: &quot;5,3&quot;）を使ってこのアンカーを一意に識別
+        const anchorKey = anchorCell.dataset.row + &quot;,&quot; + anchorCell.dataset.col;
+        if (processedAnchorKeys.has(anchorKey)) {
+            return;
+        }
+        processedAnchorKeys.add(anchorKey);
+
+        // 結合範囲を取得する
+        let minRow, maxRow, minCol, maxCol;
+        if (
+            anchorCell.dataset.mergeMinRow &amp;&amp;
+            anchorCell.dataset.mergeMinCol &amp;&amp;
+            anchorCell.dataset.mergeMaxRow &amp;&amp;
+            anchorCell.dataset.mergeMaxCol
+        ) {
+            minRow = parseInt(anchorCell.dataset.mergeMinRow, 10);
+            maxRow = parseInt(anchorCell.dataset.mergeMaxRow, 10);
+            minCol = parseInt(anchorCell.dataset.mergeMinCol, 10);
+            maxCol = parseInt(anchorCell.dataset.mergeMaxCol, 10);
+        } else {
+            // もし merge 情報が無い場合は、HTML 属性の rowspan/colspan から計算
+            const baseRow = parseInt(anchorCell.dataset.row, 10);
+            const baseCol = parseInt(anchorCell.dataset.col, 10);
+            minRow = baseRow;
+            minCol = baseCol;
+            maxRow = baseRow + (rowSpan - 1);
+            maxCol = baseCol + (colSpan - 1);
+        }
+
+        // アンカーセルの結合属性・データ・クラスを解除する
+        anchorCell.removeAttribute(&quot;rowspan&quot;);
+        anchorCell.removeAttribute(&quot;colspan&quot;);
+        anchorCell.classList.remove(&quot;merged&quot;);
+        delete anchorCell.dataset.mergeMinRow;
+        delete anchorCell.dataset.mergeMaxRow;
+        delete anchorCell.dataset.mergeMinCol;
+        delete anchorCell.dataset.mergeMaxCol;
+        delete anchorCell.dataset.mergeAnchorRow;
+        delete anchorCell.dataset.mergeAnchorCol;
+
+        // 結合範囲内の、アンカーセル以外のセルに対しても解除処理を実施
+        for (let r = minRow; r &lt;= maxRow; r++) {
+            for (let c = minCol; c &lt;= maxCol; c++) {
+                // アンカーセルは除外
+                if (r === minRow &amp;&amp; c === minCol) continue;
+                const otherCell = getCell(r, c);
+                if (otherCell) {
+                    otherCell.style.display = &quot;&quot;; // 元の表示状態に戻す
+                    otherCell.classList.remove(&quot;merged-hidden&quot;);
+                    // merge 関連のすべての data 属性を削除
+                    delete otherCell.dataset.mergeAnchorRow;
+                    delete otherCell.dataset.mergeAnchorCol;
+                    delete otherCell.dataset.mergeMinRow;
+                    delete otherCell.dataset.mergeMinCol;
+                    delete otherCell.dataset.mergeMaxRow;
+                    delete otherCell.dataset.mergeMaxCol;
+                }
+            }
+        }
+    });
+
+    updateSelectedCellsDisplay();
+    setupRowVisibilityObserver();
+}
+
+
+// グローバル変数：コピーされたセル群の詳細情報を保持
+let clipboardData = null;
+
+function copySelectedCells() {
+    // 選択されたセルを取得
+    const selectedCells = Array.from(document.querySelectorAll(&quot;#spreadsheet tbody td.selected&quot;));
+    if (selectedCells.length === 0) {
+        console.log(&quot;コピー対象のセルがありません。&quot;);
+        return;
+    }
+
+    // 各セルの行・列番号を取得
+    const rows = selectedCells.map(cell =&gt; parseInt(cell.dataset.row, 10));
+    const cols = selectedCells.map(cell =&gt; parseInt(cell.dataset.col, 10));
+    const minRow = Math.min(...rows);
+    const maxRow = Math.max(...rows);
+    const minCol = Math.min(...cols);
+    const maxCol = Math.max(...cols);
+
+    // 連続選択か判定（矩形のセル数と実際の選択セルの数が一致すれば連続）
+    const expectedCount = (maxRow - minRow + 1) * (maxCol - minCol + 1);
+    const isContiguous = (selectedCells.length === expectedCount);
+
+    // どちらの場合も、基準セルとして左上（minRow, minCol）を記録
+    let baselineRow = minRow, baselineCol = minCol;
+
+    // clipboardData というグローバル変数に保存
+    clipboardData = {
+        startRow: baselineRow,
+        startCol: baselineCol,
+        data: null  // ここから下で内容を作成
+    };
+
+    if (isContiguous) {
+        // 連続の場合は、2次元配列形式にまとめる
+        clipboardData.data = [];
+        for (let r = minRow; r &lt;= maxRow; r++) {
+            let rowData = [];
+            for (let c = minCol; c &lt;= maxCol; c++) {
+                const cell = getCell(r, c);
+                if (cell) {
+                    rowData.push({
+                        value: cell.textContent,
+                        formula: cell.dataset.formula || &quot;&quot;,
+                        cssText: cell.getAttribute(&quot;style&quot;) || &quot;&quot;
+                    });
+                } else {
+                    rowData.push({ value: &quot;&quot;, formula: &quot;&quot;, cssText: &quot;&quot; });
+                }
+            }
+            clipboardData.data.push(rowData);
+        }
+    } else {
+        // 非連続の場合でも、左上を基準として保存する（貼り付け時に相対位置で処理できるように）
+        clipboardData.data = [];
+        selectedCells.forEach(cell =&gt; {
+            clipboardData.data.push({
+                row: parseInt(cell.dataset.row, 10),
+                col: parseInt(cell.dataset.col, 10),
+                value: cell.textContent,
+                formula: cell.dataset.formula || &quot;&quot;,
+                cssText: cell.getAttribute(&quot;style&quot;) || &quot;&quot;
+            });
+        });
+    }
+    console.log(&quot;コピー完了:&quot;, clipboardData);
+}
+
+// ===========================
+// 詳細貼り付け処理：連続範囲に合わせたコピーの復元
+// ===========================
+// 新規関数：数式中のセル参照をオフセット分調整する関数
+function adjustFormulaReferences(formula, rowDelta, colDelta) {
+    // 正規表現で A1 や B2 などの参照を検出
+    return formula.replace(/([A-Z]+)(\d+)/g, (match, colLetters, rowStr) =&gt; {
+        const colIndex = columnLettersToIndex(colLetters);
+        const newColIndex = colIndex + colDelta;
+        const newColLetters = getColumnName(newColIndex);
+        const newRow = parseInt(rowStr, 10) + rowDelta;
+        return newColLetters + newRow;
+    });
+}
+
+// 貼り付け処理の更新：数式中のセル参照を調整して貼り付ける
+function pasteClipboardData() {
+    if (!clipboardData) {
+        console.log(&quot;貼り付け対象のデータがありません。&quot;);
+        return;
+    }
+    // 複数セルが選択されているなら、選択範囲の左上セルを基準セルとして利用
+    let targetCell = activeCell;
+    const selectedDest = Array.from(document.querySelectorAll(&quot;#spreadsheet tbody td.selected&quot;));
+    if (selectedDest.length &gt; 0) {
+        let minRow = Infinity, minCol = Infinity;
+        selectedDest.forEach(cell =&gt; {
+            const r = parseInt(cell.dataset.row, 10);
+            const c = parseInt(cell.dataset.col, 10);
+            if (r &lt; minRow) minRow = r;
+            if (c &lt; minCol) minCol = c;
+        });
+        const newTarget = getCell(minRow, minCol);
+        if (newTarget) {
+            targetCell = newTarget;
+        }
+    }
+
+    const targetRow = parseInt(targetCell.dataset.row, 10);
+    const targetCol = parseInt(targetCell.dataset.col, 10);
+
+    // 貼り付け先オフセット：コピー時の基準セルからのずれ
+    const rowDelta = targetRow - clipboardData.startRow;
+    const colDelta = targetCol - clipboardData.startCol;
+
+    // 単一セルコピーかつ複数セル選択時は、すべてへ同じ値を埋め尽くす処理
+    if (clipboardData.startRow !== null &amp;&amp;
+        clipboardData.data.length === 1 &amp;&amp;
+        clipboardData.data[0].length === 1 &amp;&amp;
+        selectedDest.length &gt; 1) {
+        const cellData = clipboardData.data[0][0];
+        // 数式がある場合は相対調整
+        let newFormula = &quot;&quot;;
+        if (cellData.formula &amp;&amp; cellData.formula.trim() !== &quot;&quot;) {
+            newFormula = adjustFormulaReferences(cellData.formula, rowDelta, colDelta);
+        }
+        selectedDest.forEach(destCell =&gt; {
+            destCell.textContent = cellData.value;
+            if (newFormula !== &quot;&quot;) {
+                destCell.dataset.formula = newFormula;
+                destCell.textContent = evaluateFormula(newFormula);
+            } else {
+                delete destCell.dataset.formula;
+            }
+            destCell.style.cssText = cellData.cssText;
+        });
+        updateAllFormulas();
+        updateFillHandle();
+        updateSelectedCellsDisplay();
+        return;
+    }
+
+    // 連続範囲の場合
+    if (clipboardData.startRow !== null &amp;&amp; Array.isArray(clipboardData.data[0])) {
+        const numRows = clipboardData.data.length;
+        const numCols = clipboardData.data[0].length;
+        for (let r = 0; r &lt; numRows; r++) {
+            for (let c = 0; c &lt; numCols; c++) {
+                const destRow = targetRow + r;
+                const destCol = targetCol + c;
+                const destCell = getCell(destRow, destCol);
+                if (destCell) {
+                    const cellData = clipboardData.data[r][c];
+                    destCell.textContent = cellData.value;
+                    if (cellData.formula &amp;&amp; cellData.formula.trim() !== &quot;&quot;) {
+                        // 調整した数式を作成
+                        let newFormula = adjustFormulaReferences(cellData.formula, rowDelta, colDelta);
+                        destCell.dataset.formula = newFormula;
+                        destCell.textContent = evaluateFormula(newFormula);
+                    } else {
+                        delete destCell.dataset.formula;
+                    }
+                    destCell.style.cssText = cellData.cssText;
+                }
+            }
+        }
+    } else {
+        // 非連続の場合：各セルごとの絶対位置から、基準セルを用いた相対貼り付けに変更
+        clipboardData.data.forEach(item =&gt; {
+            // item.row, item.col はコピー時の元セル位置
+            const adjustedRow = targetRow + (item.row - clipboardData.startRow);
+            const adjustedCol = targetCol + (item.col - clipboardData.startCol);
+            const destCell = getCell(adjustedRow, adjustedCol);
+            if (destCell) {
+                destCell.textContent = item.value;
+                if (item.formula &amp;&amp; item.formula.trim() !== &quot;&quot;) {
+                    let newFormula = adjustFormulaReferences(item.formula, rowDelta, colDelta);
+                    destCell.dataset.formula = newFormula;
+                    destCell.textContent = evaluateFormula(newFormula);
+                } else {
+                    delete destCell.dataset.formula;
+                }
+                destCell.style.cssText = item.cssText;
+            }
+        });
+    }
+
+    updateAllFormulas();
+    updateFillHandle();
+    updateSelectedCellsDisplay();
+}
+
+
+// ===========================
+// キーボードイベント（Ctrl+C / Ctrl+V）およびツールバーでのボタン操作
+// ===========================
+document.addEventListener(&quot;keydown&quot;, function (e) {
+    const cell = e.target;
+    // cell.contentEditable が &quot;true&quot; でなければ条件成立する
+    if (e.ctrlKey &amp;&amp; cell.contentEditable !== &quot;true&quot;) {
+        if (e.key.toLowerCase() === &#039;c&#039;) {
+            copySelectedCells();
+            return;
+        }
+        if (e.key.toLowerCase() === &#039;v&#039;) {
+            pasteClipboardData();
+            return;
+        }
+    }
+});
+
+// ===== Undo / Redo のためのグローバル変数 =====
+let undoHistory = [];
+let redoHistory = [];
+
+// ===== 連続操作を抑えるためのデバウンス処理 =====
+let saveStateTimeout;
+
+function debouncedSaveState(delay = 250) {  // 250ms 操作がなければ状態保存
+    if (saveStateTimeout) {
+        clearTimeout(saveStateTimeout);
+    }
+    saveStateTimeout = setTimeout(() =&gt; {
+        saveState();
+    }, delay);
+}
+
+/**
+ * 保存状態を「DOM全体」ではなく、セルデータ（値、数式、スタイル、結合情報など）のみを
+ * JSON 形式にして保存する関数です。
+ */
+function saveState() {
+    // シート内のすべてのセル（例：tbody内のtd）から、必要な情報を抽出
+    const cells = document.querySelectorAll(&quot;#spreadsheet tbody td&quot;);
+    let savedCells = [];
+    cells.forEach(cell =&gt; {
+        // ここでは値があっても空でも保存しますが、条件を付ける場合は適宜調整してください
+        savedCells.push({
+            row: parseInt(cell.dataset.row, 10),
+            col: parseInt(cell.dataset.col, 10),
+            value: cell.textContent,
+            formula: cell.dataset.formula || &quot;&quot;,
+            style: cell.getAttribute(&quot;style&quot;) || &quot;&quot;,
+            colspan: cell.getAttribute(&quot;colspan&quot;) || &quot;1&quot;,
+            rowspan: cell.getAttribute(&quot;rowspan&quot;) || &quot;1&quot;
+        });
+    });
+
+    // 必要であれば、行の高さなども追加できますが、ここではセル情報のみ保存しています
+
+    const state = {
+        cells: savedCells
+    };
+
+    // 新たな操作の場合、Redo 履歴はクリア
+    redoHistory = [];
+    // JSON.stringify により文字列化して保存（undoHistory は配列として管理）
+    undoHistory.push(JSON.stringify(state));
+
+    console.log(&quot;State saved. UndoHistory length:&quot;, undoHistory.length);
+}
+
+/**
+ * 指定の状態データ（JSON文字列）からセルデータを復元する関数です。
+ * getCell(row, col) という関数で対象セルの DOM 要素を取得する前提です。
+ */
+function loadState(stateJSON) {
+    const stateData = JSON.parse(stateJSON);
+    stateData.cells.forEach(cellData =&gt; {
+        let targetCell = getCell(cellData.row, cellData.col);
+        if (targetCell) {
+            // まずは保存された値を反映します
+            targetCell.textContent = cellData.value;
+
+            // 値が空の場合は、セルの数式情報もクリアする
+            if (cellData.value.trim() === &quot;&quot;) {
+                delete targetCell.dataset.formula;
+            }
+            // もし値が空でなく、なおかつ数式情報があれば、数式を再評価して表示する
+            else if (cellData.formula &amp;&amp; cellData.formula.trim() !== &quot;&quot;) {
+                targetCell.dataset.formula = cellData.formula;
+                targetCell.textContent = evaluateFormula(cellData.formula);
+            }
+
+            // セルの style を適用
+            targetCell.style.cssText = cellData.style;
+
+            // colspan, rowspan の反映（数値が1より大きければ属性をセット、そうでなければ属性を除去）
+            if (cellData.colspan &amp;&amp; parseInt(cellData.colspan, 10) &gt; 1) {
+                targetCell.setAttribute(&quot;colspan&quot;, cellData.colspan);
+            } else {
+                targetCell.removeAttribute(&quot;colspan&quot;);
+            }
+            if (cellData.rowspan &amp;&amp; parseInt(cellData.rowspan, 10) &gt; 1) {
+                targetCell.setAttribute(&quot;rowspan&quot;, cellData.rowspan);
+            } else {
+                targetCell.removeAttribute(&quot;rowspan&quot;);
+            }
+        }
+    });
+}
+
+/**
+ * Undo (戻る) の処理：
+ * 現在の状態を redoHistory に移し、直前の状態を復元します。
+ */
+function undo() {
+    if (undoHistory.length &gt; 1) {
+        // 現在の状態を pop して redo に保存
+        const currentState = undoHistory.pop();
+        redoHistory.push(currentState);
+        // 直前の状態（undoHistory の先頭）を復元
+        const previousState = undoHistory[undoHistory.length - 1];
+        loadState(previousState);
+    } else {
+        console.log(&quot;これ以上戻れません。&quot;);
+    }
+}
+
+/**
+ * Redo (ひとつ前に進む) の処理：
+ * redoHistory から状態を取り出して復元し、undoHistory に戻します。
+ */
+function redo() {
+    if (redoHistory.length &gt; 0) {
+        const nextState = redoHistory.pop();
+        undoHistory.push(nextState);
+        loadState(nextState);
+    } else {
+        console.log(&quot;これ以上進めません。&quot;);
+    }
+}
+
+// ===== キーボードショートカットのバインド =====
+document.addEventListener(&quot;keydown&quot;, function (e) {
+    // Ctrl+Zで Undo
+    if (e.ctrlKey &amp;&amp; !e.shiftKey &amp;&amp; e.key.toLowerCase() === &quot;z&quot;) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        undo();
+        return;
+    }
+    // Ctrl+Yで Redo
+    if (e.ctrlKey &amp;&amp; e.key.toLowerCase() === &quot;y&quot;) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        redo();
+        return;
+    }
+
+    if (e.ctrlKey &amp;&amp; e.key.toLowerCase() === &quot;s&quot;) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        saveSpreadsheetData();
+        return;
+    }
+
+});
+
+// ===== 状態保存のタイミング =====
+// 例えば、セル編集完了（blur イベント）のタイミングで保存する例
+document.addEventListener(&quot;blur&quot;, function (e) {
+    if (e.target &amp;&amp; e.target.tagName.toLowerCase() === &quot;td&quot;) {
+        debouncedSaveState();
+    }
+}, true);
+
+// また、貼り付けやフォーマット変更など、操作終了時にも debouncedSaveState() を呼ぶようにしてください
+
+
+// ---------------------------------
+// 保存処理：セル・行・列・ズーム情報の保存＋圧縮して localStorage に保存
+// ---------------------------------
+/***************** 不要なデータの除去 *****************/
+// オブジェクトや配列を再帰的に走査し、空文字・null・undefinedや、特定のデフォルト値と同じプロパティを削除する
+/***************** ビット列変換用ユーティリティ *****************/
+// 指定した桁数で 2 進数表現に変換（左側を 0 でパディング）
+function toPaddedBin(num, length) {
+    const bin = num.toString(2);
+    return &quot;0&quot;.repeat(length - bin.length) + bin;
+}
+
+/***************** LZW 圧縮／解凍（コード配列版） *****************/
+// 入力文字列を LZW で圧縮し、コードの配列を返す
+function lzw_compress_array(uncompressed) {
+    const dictionary = {};
+    for (let i = 0; i &lt; 256; i++) {
+        dictionary[String.fromCharCode(i)] = i;
+    }
+    let phrase = &quot;&quot;;
+    const out = [];
+    let code = 256;
+    for (let i = 0; i &lt; uncompressed.length; i++) {
+        const currChar = uncompressed[i];
+        const phrasePlusChar = phrase + currChar;
+        if (dictionary.hasOwnProperty(phrasePlusChar)) {
+            phrase = phrasePlusChar;
+        } else {
+            out.push(dictionary[phrase]);
+            dictionary[phrasePlusChar] = code++;
+            phrase = currChar;
+        }
+    }
+    if (phrase !== &quot;&quot;) {
+        out.push(dictionary[phrase]);
+    }
+    return out;
+}
+
+// コード配列から元の文字列を LZW で復元
+function lzw_decompress_array(codes) {
+    const dictionary = {};
+    for (let i = 0; i &lt; 256; i++) {
+        dictionary[i] = String.fromCharCode(i);
+    }
+    let old = codes[0];
+    let phrase = dictionary[old];
+    let out = phrase;
+    let code = 256;
+    for (let i = 1; i &lt; codes.length; i++) {
+        const currCode = codes[i];
+        let curr;
+        if (dictionary.hasOwnProperty(currCode)) {
+            curr = dictionary[currCode];
+        } else {
+            curr = phrase + phrase[0];
+        }
+        out += curr;
+        dictionary[code++] = phrase + curr[0];
+        phrase = curr;
+    }
+    return out;
+}
+
+/***************** 高圧縮：LZW ＋ ビットパッキング *****************/
+// compressData: 入力文字列（例：JSON）を圧縮し、1 つの文字列として出力する
+function compressData(dataStr) {
+    // Unicode 対応：入力文字列をまず URL エンコード（unescape/encodeURIComponent）して ASCII 化する
+    const safeStr = unescape(encodeURIComponent(dataStr));
+
+    // 1. LZW 圧縮：文字列をコード配列に変換
+    const codes = lzw_compress_array(safeStr);
+
+    // 2. 最小必要ビット幅の算出（初期辞書は 8 ビット分とする）
+    let maxCode = 0;
+    for (let i = 0; i &lt; codes.length; i++) {
+        if (codes[i] &gt; maxCode) {
+            maxCode = codes[i];
+        }
+    }
+    const bitWidth = Math.max(8, Math.ceil(Math.log2(maxCode + 1)));
+    const codeCount = codes.length;
+
+    // 3. ヘッダー作成：先頭 8 ビットに bitWidth、次の 32 ビットにコード数 codeCount を記録
+    const header = toPaddedBin(bitWidth, 8) + toPaddedBin(codeCount, 32);
+
+    // 4. 各コードを固定ビット幅（bitWidth 桁）の 2 進数に変換し連結
+    let bits = &quot;&quot;;
+    for (let i = 0; i &lt; codes.length; i++) {
+        bits += toPaddedBin(codes[i], bitWidth);
+    }
+
+    // 5. ヘッダーとコード部ビット列を連結
+    const fullBitString = header + bits;
+
+    // 6. 【16 ビット単位に詰める】：最終ビット列の長さが 16 の倍数になるよう右側を 0 埋め
+    const padLength = (16 - (fullBitString.length % 16)) % 16;
+    const paddedBitString = fullBitString + &quot;0&quot;.repeat(padLength);
+
+    // 7. 16 ビット毎に区切り、各 16 ビットを文字コードに変換して連結
+    let compressed = &quot;&quot;;
+    for (let i = 0; i &lt; paddedBitString.length; i += 16) {
+        const chunk = paddedBitString.substring(i, i + 16);
+        const charCode = parseInt(chunk, 2);
+        compressed += String.fromCharCode(charCode);
+    }
+    return compressed;
+}
+
+
+// decompressData: 圧縮データ文字列を復元し、元の文字列（例：JSON）を返す
+function decompressData(compressedStr) {
+    let bitString = &quot;&quot;;
+    // 1. 16 ビット単位の文字列を 16 ビットの 2 進数文字列に展開
+    for (let i = 0; i &lt; compressedStr.length; i++) {
+        let bits = compressedStr.charCodeAt(i).toString(2);
+        bits = &quot;0&quot;.repeat(16 - bits.length) + bits;
+        bitString += bits;
+    }
+
+    // 2. ヘッダーから bitWidth（最初の 8 ビット）とコード数（次の 32 ビット）を読み出す
+    const bitWidth = parseInt(bitString.substring(0, 8), 2);
+    const codeCount = parseInt(bitString.substring(8, 40), 2);
+    const codes = [];
+    let index = 40; // ヘッダー分読み飛ばす
+    for (let i = 0; i &lt; codeCount; i++) {
+        const codeBits = bitString.substring(index, index + bitWidth);
+        const code = parseInt(codeBits, 2);
+        codes.push(code);
+        index += bitWidth;
+    }
+
+    // 3. LZW 復元：コード配列から元データの文字列を復元
+    const decompressed = lzw_decompress_array(codes);
+    // Unicode 対応：元の文字列に戻すため、escape/decodeURIComponent を適用
+    return decodeURIComponent(escape(decompressed));
+}
+
+/***************** 不要なデータの除去 *****************/
+// オブジェクトや配列を再帰的に走査し、空文字／null／undefined や特定のデフォルト値と同じプロパティを削除する
+function cleanData(data) {
+    if (Array.isArray(data)) {
+        return data.map(item =&gt; cleanData(item));
+    } else if (data !== null &amp;&amp; typeof data === &#039;object&#039;) {
+        for (let key in data) {
+            if (data.hasOwnProperty(key)) {
+                data[key] = cleanData(data[key]);
+                if (data[key] === &quot;&quot; || data[key] === null || data[key] === undefined) {
+                    delete data[key];
+                }
+                if ((key === &quot;colspan&quot; || key === &quot;rowspan&quot;) &amp;&amp; data[key] === &quot;1&quot;) {
+                    delete data[key];
+                }
+            }
+        }
+        return data;
+    } else {
+        return data;
+    }
+}
+
+/***************** 保存処理 *****************/
+function saveSpreadsheetData() {
+    loadingstate.textContent = &quot;保存中...&quot;;
+    setTimeout(() =&gt; {
+        try {
+            const savedCells = [];
+            const DEFAULT_CELL_STYLE = &quot;&quot;;
+            const DEFAULT_COLSPAN = &quot;1&quot;;
+            const DEFAULT_ROWSPAN = &quot;1&quot;;
+
+            // セル情報の収集
+            document.querySelectorAll(&quot;#spreadsheet tbody td&quot;).forEach(cell =&gt; {
+                const value = cell.hidden ? (cell.dataset.originalValue || &quot;&quot;) : cell.textContent;
+                const formula = cell.dataset.formula || &quot;&quot;;
+                const styleStr = cell.getAttribute(&quot;style&quot;) || &quot;&quot;;
+                const hasCustomStyle = styleStr.trim() !== &quot;&quot; &amp;&amp; styleStr.trim() !== DEFAULT_CELL_STYLE;
+
+                if (value !== &quot;&quot; || formula.trim() !== &quot;&quot; || hasCustomStyle) {
+                    let computedValue = &quot;&quot;;
+                    if (formula.trim() !== &quot;&quot;) {
+                        computedValue = evaluateFormula(formula);
+                    }
+                    const cellData = {
+                        row: parseInt(cell.dataset.row, 10),
+                        col: parseInt(cell.dataset.col, 10),
+                        value: value,
+                        computedValue: computedValue,
+                        formula: formula
+                    };
+                    if (hasCustomStyle) {
+                        cellData.style = styleStr;
+                    }
+                    const colspan = cell.getAttribute(&quot;colspan&quot;) || DEFAULT_COLSPAN;
+                    if (colspan !== DEFAULT_COLSPAN) {
+                        cellData.colspan = colspan;
+                    }
+                    const rowspan = cell.getAttribute(&quot;rowspan&quot;) || DEFAULT_ROWSPAN;
+                    if (rowspan !== DEFAULT_ROWSPAN) {
+                        cellData.rowspan = rowspan;
+                    }
+                    if (cell.dataset.mergeAnchorRow) {
+                        cellData.mergeAnchorRow = cell.dataset.mergeAnchorRow;
+                        cellData.mergeAnchorCol = cell.dataset.mergeAnchorCol;
+                    }
+                    if (cell.dataset.mergeMinRow) {
+                        cellData.mergeMinRow = cell.dataset.mergeMinRow;
+                        cellData.mergeMinCol = cell.dataset.mergeMinCol;
+                    }
+                    if (cell.dataset.mergeMaxRow) {
+                        cellData.mergeMaxRow = cell.dataset.mergeMaxRow;
+                        cellData.mergeMaxCol = cell.dataset.mergeMaxCol;
+                    }
+                    savedCells.push(cellData);
+                }
+            });
+
+            // 行（tr）のリサイズ情報の収集
+            const savedRows = [];
+            document.querySelectorAll(&quot;#spreadsheet tbody tr&quot;).forEach(tr =&gt; {
+                const rowNum = tr.getAttribute(&quot;data-row&quot;);
+                const computedHeight = window.getComputedStyle(tr).getPropertyValue(&quot;height&quot;);
+                savedRows.push({
+                    row: parseInt(rowNum, 10),
+                    height: computedHeight
+                });
+            });
+
+            // 列（th）のリサイズ情報の収集
+            const savedColumns = [];
+            document.querySelectorAll(&quot;#spreadsheet thead th&quot;).forEach((th, index) =&gt; {
+                const computedWidth = window.getComputedStyle(th).getPropertyValue(&quot;width&quot;);
+                savedColumns.push({
+                    col: index,
+                    width: computedWidth
+                });
+            });
+
+            // ズーム情報の取得
+            const zoomSlider = document.getElementById(&quot;zoom-slider&quot;);
+            const zoomValue = zoomSlider ? zoomSlider.value : &quot;100&quot;;
+
+            // 保存データオブジェクトの構築
+            const dataToSave = {
+                cells: savedCells,
+                rows: savedRows,
+                columns: savedColumns,
+                zoom: zoomValue
+            };
+
+            // 不要なデータを除去し、JSON 化した後に高圧縮
+            const cleanedData = cleanData(dataToSave);
+            const jsonStr = JSON.stringify(cleanedData);
+            const compressedData = compressData(jsonStr);
+            localStorage.setItem(&quot;spreadsheetData&quot;, compressedData);
+
+            loadingstate.textContent = &quot;保存しました。&quot;;
+            updateLocalStorageUsage();
+        } catch (error) {
+            console.error(&quot;保存エラー:&quot;, error);
+            loadingstate.textContent = &quot;保存エラーが発生しました。&quot;;
+        }
+    }, 300);
+}
+
+/***************** 読み込み処理 *****************/
+function loadSpreadsheetData() {
+    console.time(&quot;loadSpreadsheetData&quot;);
+
+    // ① 保存データの取得、解凍、パース
+    const savedDataStr = localStorage.getItem(&quot;spreadsheetData&quot;);
+    if (!savedDataStr) {
+        loadingstate.textContent = &quot;データがありません&quot;;
+        console.timeEnd(&quot;loadSpreadsheetData&quot;);
+        return;
+    }
+    let savedData = null;
+    try {
+        const decompressedJson = decompressData(savedDataStr);
+        savedData = JSON.parse(decompressedJson);
+        loadingstate.textContent = &quot;読み込み中...&quot;;
+        console.log(&quot;保存データのパース成功&quot;, savedData);
+    } catch (err) {
+        console.error(&quot;保存データの解凍／パースエラー:&quot;, err);
+        loadingstate.textContent = &quot;データがありません&quot;;
+        console.timeEnd(&quot;loadSpreadsheetData&quot;);
+        return;
+    }
+
+    // ② セルデータから最大行番号を取得し、不足分の行を追加
+    if (savedData.cells &amp;&amp; savedData.cells.length &gt; 0) {
+        const maxSavedRow = Math.max(...savedData.cells.map(cellData =&gt; parseInt(cellData.row, 10)));
+        if (maxSavedRow &gt;= rowCount) {
+            loadRows(maxSavedRow - rowCount + 1);
+        }
+    }
+
+    // ③ 行高さの更新
+    if (savedData.rows &amp;&amp; savedData.rows.length &gt; 0) {
+        savedData.rows.forEach(rowData =&gt; {
+            const targetRow = getRow(rowData.row);
+            if (targetRow) {
+                targetRow.style.height = rowData.height;
+            }
+        });
+    }
+
+    // ④ 列幅の更新
+    if (savedData.columns &amp;&amp; savedData.columns.length &gt; 0) {
+        const headerCells = document.querySelectorAll(&quot;#spreadsheet thead th&quot;);
+        savedData.columns.forEach(colData =&gt; {
+            if (headerCells[colData.col]) {
+                headerCells[colData.col].style.width = colData.width;
+            }
+        });
+    }
+
+    // ⑤ 拡大率（Zoom）の更新（scale は使わず、style.zoom のみ）
+    if (savedData.zoom !== undefined &amp;&amp; savedData.zoom !== null) {
+        const zoomSlider = document.getElementById(&quot;zoom-slider&quot;);
+        const zoomDisplay = document.getElementById(&quot;zoom-display&quot;);
+        if (zoomSlider &amp;&amp; zoomDisplay &amp;&amp; container) {
+            let zoomValue;
+            if (typeof savedData.zoom === &quot;string&quot;) {
+                zoomValue = Number(savedData.zoom.replace(&quot;%&quot;, &quot;&quot;).trim());
+            } else {
+                zoomValue = Number(savedData.zoom);
+            }
+            if (isNaN(zoomValue)) {
+                zoomValue = 100;
+            }
+            zoomSlider.value = zoomValue;
+            zoomDisplay.textContent = zoomValue + &quot;%&quot;;
+            const zoomFactor = zoomValue / 100;
+            spreadsheetContent.style.zoom = zoomFactor;
+        }
+    }
+
+    // ⑥ セル内容の更新（非同期バッチ処理＋進捗バー更新）
+    if (savedData.cells &amp;&amp; savedData.cells.length &gt; 0) {
+        const cells = savedData.cells;
+        const batchSize = 500;
+        let index = 0;
+        const progressBar = document.getElementById(&quot;loading-progress-bar&quot;);
+
+        function processCellBatch() {
+            const end = Math.min(index + batchSize, cells.length);
+            for (let i = index; i &lt; end; i++) {
+                const cellData = cells[i];
+                let targetCell = getCell(cellData.row, cellData.col);
+                if (targetCell) {
+                    if (cellData.colspan &amp;&amp; parseInt(cellData.colspan, 10) &gt; 1) {
+                        targetCell.setAttribute(&quot;colspan&quot;, cellData.colspan);
+                    } else {
+                        targetCell.removeAttribute(&quot;colspan&quot;);
+                    }
+                    if (cellData.rowspan &amp;&amp; parseInt(cellData.rowspan, 10) &gt; 1) {
+                        targetCell.setAttribute(&quot;rowspan&quot;, cellData.rowspan);
+                    } else {
+                        targetCell.removeAttribute(&quot;rowspan&quot;);
+                    }
+                    if (cellData.formula &amp;&amp; cellData.formula.trim() !== &quot;&quot;) {
+                        targetCell.dataset.formula = cellData.formula;
+                        if (cellData.computedValue !== undefined &amp;&amp; cellData.computedValue !== &quot;&quot;) {
+                            targetCell.textContent = cellData.computedValue;
+                        } else {
+                            targetCell.textContent = evaluateFormula(cellData.formula);
+                        }
+                    } else if (cellData.value !== undefined) {
+                        targetCell.textContent = cellData.value;
+                    }
+                    targetCell.style.cssText = cellData.style;
+                    if (cellData.mergeAnchorRow) {
+                        targetCell.dataset.mergeAnchorRow = cellData.mergeAnchorRow;
+                        targetCell.dataset.mergeAnchorCol = cellData.mergeAnchorCol;
+                    }
+                    if (cellData.mergeMinRow) {
+                        targetCell.dataset.mergeMinRow = cellData.mergeMinRow;
+                        targetCell.dataset.mergeMinCol = cellData.mergeMinCol;
+                    }
+                    if (cellData.mergeMaxRow) {
+                        targetCell.dataset.mergeMaxRow = cellData.mergeMaxRow;
+                        targetCell.dataset.mergeMaxCol = cellData.mergeMaxCol;
+                    }
+                    if (cellData.hidden !== undefined) {
+                        targetCell.hidden = (cellData.hidden === true || cellData.hidden === &quot;true&quot;);
+                    } else {
+                        targetCell.hidden = false;
+                    }
+                }
+            }
+            index += batchSize;
+            if (progressBar) {
+                const progressPercent = Math.min((index / cells.length) * 100, 100);
+                progressBar.style.width = progressPercent + &quot;%&quot;;
+            }
+            if (index &lt; cells.length) {
+                requestAnimationFrame(processCellBatch);
+            } else {
+                setupRowVisibilityObserver();
+                loadingstate.textContent = &quot;読み込み完了&quot;;
+                if (progressBar) {
+                    progressBar.style.width = &quot;0%&quot;;
+                    const headerCells = document.querySelectorAll(&quot;td&quot;);
+                    for (const cell of headerCells) {
+                        cell.classList.add(&quot;borderss&quot;);
+                    }
+                    requestAnimationFrame(() =&gt; {
+                        for (const cell of headerCells) {
+                            cell.classList.remove(&quot;borderss&quot;);
+                        }
+                    });
+                }
+            }
+        }
+        processCellBatch();
+    } else {
+        setupRowVisibilityObserver();
+        loadingstate.textContent = &quot;読み込み完了&quot;;
+    }
+    console.timeEnd(&quot;loadSpreadsheetData&quot;);
+}
+
+/* ----- ヘルパー関数 ----- */
+/**
+ * 指定された行番号（data-row 属性）を持つ tr 要素を取得する
+ * @param {number} rowNumber - 1始まりの行番号
+ * @returns {HTMLElement|null} 対象の行があれば返す、なければ null
+ */
+function getRow(rowNumber) {
+    return document.querySelector(`#spreadsheet tbody tr[data-row=&#039;${rowNumber}&#039;]`);
+}
+
+
+/***************** debounce 用の関数 *****************/
+function debounce(func, delay) {
+    let timer;
+    return function (...args) {
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(() =&gt; func.apply(this, args), delay);
+    };
+}
+
+let rowObserver = null;
+function setupRowVisibilityObserver() {
+    if (rowObserver) {
+        rowObserver.disconnect();
+    }
+    const options = {
+        root: container, // container はグローバル変数。スクロールコンテナを指す。
+        threshold: 0
+    };
+    rowObserver = new IntersectionObserver((entries) =&gt; {
+        entries.forEach(entry =&gt; {
+            const row = entry.target;
+            if (entry.isIntersecting || row.contains(document.activeElement)) {
+                row.style.visibility = &quot;visible&quot;;
+                updateRowCellsVisibility(row);
+            } else {
+                row.style.visibility = &quot;hidden&quot;;
+                row.querySelectorAll(&quot;td, th&quot;).forEach(cell =&gt; {
+                    if (cell !== document.activeElement) {
+                        cell.style.visibility = &quot;hidden&quot;;
+                    }
+                });
+            }
+        });
+    }, options);
+    document.querySelectorAll(&quot;#spreadsheet tbody tr&quot;).forEach(row =&gt; {
+        rowObserver.observe(row);
+    });
+}
+
+function updateRowCellsVisibility(row) {
+    const containerRect = container.getBoundingClientRect();
+    row.querySelectorAll(&quot;td, th&quot;).forEach(cell =&gt; {
+        if (cell === document.activeElement) {
+            cell.style.visibility = &quot;visible&quot;;
+            return;
+        }
+        const cellRect = cell.getBoundingClientRect();
+        if (cellRect.right &gt;= containerRect.left &amp;&amp; cellRect.left &lt;= containerRect.right) {
+            cell.style.visibility = &quot;visible&quot;;
+        } else {
+            cell.style.visibility = &quot;hidden&quot;;
+        }
+    });
+}
+
+function throttle(callback, delay) {
+    let lastCall = 0;
+    return function (...args) {
+        const now = Date.now();
+        if (now - lastCall &gt;= delay) {
+            lastCall = now;
+            callback.apply(this, args);
+        }
+    };
+}
+
+/* ==== 初期設定 ==== */
+setupRowVisibilityObserver();
+container.addEventListener(&quot;scroll&quot;, throttle(() =&gt; {
+    document.querySelectorAll(&quot;#spreadsheet tbody tr&quot;).forEach(row =&gt; {
+        if (row.style.visibility === &quot;visible&quot;) {
+            updateRowCellsVisibility(row);
+        }
+    });
+}, 100));
+
+// 要素取得
+const zoomSlider = document.getElementById(&quot;zoom-slider&quot;);
+const zoomDisplay = document.getElementById(&quot;zoom-display&quot;);
+
+// 保存されているズーム値（例：savedDataオブジェクトから取得）
+let savedData = { zoom: &quot;100%&quot; };
+// 保存データから初期 zoom 値のパース
+let zoomValue;
+if (typeof savedData.zoom === &quot;string&quot;) {
+    zoomValue = Number(savedData.zoom.replace(&quot;%&quot;, &quot;&quot;).trim());
+} else {
+    zoomValue = Number(savedData.zoom);
+}
+if (isNaN(zoomValue)) {
+    zoomValue = 100;
+}
+
+// スライダーと表示テキストの初期化
+zoomSlider.value = zoomValue;
+zoomDisplay.textContent = zoomValue + &quot;%&quot;;
+
+// 初期 zoom の適用
+const zoomFactor = zoomValue / 100;
+spreadsheetContent.style.zoom = zoomFactor;
+
+// 拡大縮小スライダーのイベントリスナー
+zoomSlider.addEventListener(&quot;input&quot;, function () {
+    const currentZoomValue = Number(this.value);
+    const currentZoomFactor = currentZoomValue / 100;
+
+    // CSS zoom プロパティで拡大縮小を適用
+    spreadsheetContent.style.zoom = currentZoomFactor;
+
+    // 表示テキスト更新
+    zoomDisplay.textContent = currentZoomValue + &quot;%&quot;;
+});
+
+
+// localStorage の使用量（バイト単位）を計算する関数（UTF-16：1文字＝2バイトと概算）
+function getLocalStorageUsage() {
+    let total = 0;
+    for (let key in localStorage) {
+        if (localStorage.hasOwnProperty(key)) {
+            total += (key.length + localStorage.getItem(key).length) * 2;
+        }
+    }
+    return total;
+}
+
+// バイト数を分かりやすい単位に変換する関数
+function formatBytes(bytes) {
+    if (bytes &lt; 1024) return bytes + &quot; bytes&quot;;
+    else if (bytes &lt; 1024 * 1024) return (bytes / 1024).toFixed(2) + &quot; KB&quot;;
+    else return (bytes / (1024 * 1024)).toFixed(2) + &quot; MB&quot;;
+}
+
+// localStorage の総容量・使用量・残り容量をそれぞれ更新する関数
+function updateLocalStorageUsage() {
+    const MAX_BYTES = 5 * 1024 * 1024; // 総容量 5MB (5 * 1024 * 1024 バイト)
+    const usedBytes = getLocalStorageUsage();
+    const remainingBytes = MAX_BYTES - usedBytes;
+
+    // 総容量（固定値）の表示
+    const totalElem = document.getElementById(&quot;localStorageTotal&quot;);
+    if (totalElem) {
+        totalElem.textContent = &quot;全体容量: &quot; + formatBytes(MAX_BYTES);
+    }
+
+    // 使用量の表示
+    const usedElem = document.getElementById(&quot;localStorageUsed&quot;);
+    if (usedElem) {
+        usedElem.textContent = &quot;使用量: &quot; + formatBytes(usedBytes);
+    }
+
+    // 残り容量の表示
+    const remainingElem = document.getElementById(&quot;localStorageRemaining&quot;);
+    if (remainingElem) {
+        remainingElem.textContent = &quot;残り容量: &quot; + formatBytes(remainingBytes);
+    }
+}
+
+// ページ読み込み時に更新（必要に応じて保存後にも呼び出してください）
+document.addEventListener(&quot;DOMContentLoaded&quot;, updateLocalStorageUsage);
+
+
+
+// ページ読み込み時に保存データを自動的に読み込む
+window.addEventListener(&quot;load&quot;, function () {
+    loadSpreadsheetData();
+});
+
+
+
+
+
+// -------------------------
+// 初期状態の生成：列・行ともに
+// -------------------------
+initializeColumns(INITIAL_COLUMNS);
+loadRows(INITIAL_ROWS);
+
+
+
+// プルダウンボタン
+
+document.querySelectorAll(&quot;.pulldown_btn&quot;).forEach(pulldown =&gt; {
+    pulldown.addEventListener(&quot;mousedown&quot;, function (e) {
+        document.querySelectorAll(&quot;.pulldown_menu&quot;).forEach(pulldown_menu =&gt; {
+            pulldown_menu.style.display = &quot;none&quot;;
+        })
+        const pulldown_menu = pulldown.closest(&quot;.pulldown_menu_parent&quot;).children[1];
+        if (pulldown_menu.style.display == &quot;block&quot;) {
+            pulldown_menu.style.display = &quot;none&quot;;
+        } else {
+            pulldown_menu.style.display = &quot;block&quot;;
+        }
+
+    })
+});
                 </textarea>
                 </code>
 
@@ -3920,5 +8427,6 @@
 <script src="nexser_scripts/nexser_sounds.js" defer></script>
 <script src="nexser_scripts/tetris.js"></script>
 <script src="nexser_scripts/bom.js"></script>
+<script src="nexser_scripts/spreadsheet.js"></script>
 
 </html>
