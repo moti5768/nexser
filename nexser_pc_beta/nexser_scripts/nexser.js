@@ -2379,6 +2379,7 @@ if (ua.includes("mobile")) {
     function window_animation_false() {
         localStorage.removeItem('window_animation');
     }
+
     function window_animation(animation) {
         animation.style.pointerEvents = "none";
         const adjustHeight = () => {
@@ -2391,12 +2392,12 @@ if (ua.includes("mobile")) {
             }
         };
         if (localStorage.getItem('window_animation')) {
-            animation.style.transition = `${windowanimation}s cubic-bezier(0, 0, 1, 1)`;
-            Array.from(animation.children).forEach(child => child.style.display = 'none');
+            animation.style.transition = `${windowanimation}s cubic-bezier(0,0,1,1)`;
+            [...animation.children].forEach(c => c.style.display = 'none');
             document.querySelectorAll('.title, .title_buttons').forEach(el => el.style.display = "flex");
             setTimeout(() => {
                 animation.style.transition = "";
-                Array.from(animation.children).forEach(child => child.style.display = '');
+                [...animation.children].forEach(c => c.style.display = '');
                 windowtool();
                 adjustHeight();
                 isAnimating_minimization = false;
@@ -2407,37 +2408,43 @@ if (ua.includes("mobile")) {
         }
     }
 
-    document.querySelectorAll('.window_half_big').forEach(halfBig => {
-        halfBig.addEventListener('click', ({ clientX, clientY, pageX, pageY }) => {
-            const win = halfBig.closest('.child_windows');
+    document.querySelectorAll('.window_half_big').forEach(btn => {
+        btn.addEventListener('click', e => {
+            const win = btn.closest('.child_windows');
             win.classList.remove('w_right', 'w_left', 'big');
-            const { left, top } = halfBig.getBoundingClientRect();
-            Object.assign(halfBig.style, {
-                left: `${pageX - (clientX - left)}px`,
-                top: `${pageY - (clientY - top)}px`
+            const rect = btn.getBoundingClientRect();
+            Object.assign(btn.style, {
+                left: `${e.pageX - (e.clientX - rect.left)}px`,
+                top: `${e.pageY - (e.clientY - rect.top)}px`
             });
             Object.assign(win.style, { height: "50%", width: "50%" });
             const child2 = win.children[1]?.children[2];
-            if (child2) Object.assign(child2.dataset, { isMaximized: 'false' }), child2.classList.replace('minbtn', 'bigminbtn');
+            if (child2) {
+                child2.dataset.isMaximized = 'false';
+                child2.classList.replace('minbtn', 'bigminbtn');
+            }
             window_animation(win);
         });
     });
 
-    document.querySelectorAll('.windowsize_reset').forEach(reset => {
-        reset.addEventListener('click', ({ clientX, clientY, pageX, pageY }) => {
-            const win = reset.closest('.child_windows');
+    document.querySelectorAll('.windowsize_reset').forEach(btn => {
+        btn.addEventListener('click', e => {
+            const win = btn.closest('.child_windows');
             Object.assign(win.style, {
                 height: "", width: "",
                 right: win.classList.contains('w_right') ? "0" : ""
             });
             win.classList.remove('big', 'w_left', 'w_right');
             const child2 = win.children[1]?.children[2];
-            if (child2) Object.assign(child2.dataset, { isMaximized: 'false' }), child2.classList.replace('minbtn', 'bigminbtn');
+            if (child2) {
+                child2.dataset.isMaximized = 'false';
+                child2.classList.replace('minbtn', 'bigminbtn');
+            }
             window_animation(win);
-            const { left, top } = reset.getBoundingClientRect();
-            Object.assign(reset.style, {
-                left: `${pageX - (clientX - left)}px`,
-                top: `${pageY - (clientY - top)}px`
+            const rect = btn.getBoundingClientRect();
+            Object.assign(btn.style, {
+                left: `${e.pageX - (e.clientX - rect.left)}px`,
+                top: `${e.pageY - (e.clientY - rect.top)}px`
             });
         });
     });
@@ -2473,25 +2480,13 @@ if (ua.includes("mobile")) {
         window._parentListListenersAdded = true;
     }
 
-    document.querySelectorAll('.allwindow_toolbar').forEach(allwindow_toolbar => {
-        allwindow_toolbar.addEventListener('click', () => {
-            document.querySelectorAll('.window_tool').forEach(window_tool => {
-                if (window_tool.style.display === "block") {
-                    window_tool.style.display = "none";
-                    localStorage.removeItem('allwindow_toolbar');
-                    document.querySelectorAll('.window_inline_side').forEach(window_inline_side => {
-                        window_inline_side.style.top = "";
-                    });
-                    clock_menu.style.height = "355px";
-                } else {
-                    window_tool.style.display = "block";
-                    localStorage.setItem('allwindow_toolbar', true);
-                    document.querySelectorAll('.window_inline_side').forEach(window_inline_side => {
-                        window_inline_side.style.top = "31px";
-                    });
-                    clock_menu.style.height = "";
-                }
-            });
+    document.querySelectorAll('.allwindow_toolbar').forEach(toolbar => {
+        toolbar.addEventListener('click', () => {
+            const isShown = [...document.querySelectorAll('.window_tool')].some(w => w.style.display === "block");
+            document.querySelectorAll('.window_tool').forEach(w => w.style.display = isShown ? "none" : "block");
+            localStorage[isShown ? 'removeItem' : 'setItem']('allwindow_toolbar', true);
+            document.querySelectorAll('.window_inline_side').forEach(side => side.style.top = isShown ? "" : "31px");
+            clock_menu.style.height = isShown ? "355px" : "";
         });
     });
 
@@ -2499,43 +2494,41 @@ if (ua.includes("mobile")) {
         const showTools = localStorage.getItem('allwindow_toolbar');
         document.querySelectorAll('.window_tool').forEach(tool => tool.style.display = showTools ? "block" : "none");
         document.querySelectorAll('.window_inline_side').forEach(side => side.style.top = showTools ? "31px" : "");
-        if (!showTools) clock_menu.style.height = "355px";
+        clock_menu.style.height = showTools ? "" : "355px";
     }
     windowtool();
 
-    const digital_clock_area = document.getElementsByClassName('digital_clock_area');
-    const analog_clock_area = document.getElementsByClassName('analog_clock_area')
-    document.querySelectorAll('.clockdata_analog').forEach(clockdata_analog => {
-        clockdata_analog.addEventListener('click', () => {
-            localStorage.setItem('clockdata_analog', true);
-            digital_clock_area[0].style.display = "none";
-            analog_clock_area[0].style.display = "block";
-        });
-    });
-    document.querySelectorAll('.clockdata_digital').forEach(clockdata_digital => {
-        clockdata_digital.addEventListener('click', () => {
-            localStorage.removeItem('clockdata_analog');
-            digital_clock_area[0].style.display = "flex";
-            analog_clock_area[0].style.display = "none";
+    const digital_clock_area = document.getElementsByClassName('digital_clock_area')[0];
+    const analog_clock_area = document.getElementsByClassName('analog_clock_area')[0];
+    ['clockdata_analog', 'clockdata_digital'].forEach(className => {
+        document.querySelector(`.${className}`).addEventListener('click', () => {
+            const isAnalog = className === 'clockdata_analog';
+            if (isAnalog) {
+                localStorage.setItem('clockdata_analog', true);
+                digital_clock_area.style.display = "none";
+                analog_clock_area.style.display = "block";
+            } else {
+                localStorage.removeItem('clockdata_analog');
+                digital_clock_area.style.display = "flex";
+                analog_clock_area.style.display = "none";
+            }
         });
     });
 
     document.querySelectorAll('.window_inline_menus').forEach(container => {
-        container.querySelectorAll('.window_inline_menus_parent').forEach(parent => {
-            parent.addEventListener('mousedown', (e) => {
-                container.querySelectorAll('.select').forEach(el => {
-                    el.classList.remove('select');
-                });
-                container.querySelectorAll('.window_inline_menus_parent').forEach(p => {
-                    p.lastElementChild.style.display = "none";
-                });
+        const parents = container.querySelectorAll('.window_inline_menus_parent');
+        parents.forEach(parent => {
+            parent.addEventListener('mousedown', () => {
+                container.querySelectorAll('.select').forEach(el => el.classList.remove('select'));
+                parents.forEach(p => p.lastElementChild.style.display = "none");
                 parent.classList.add('select');
                 parent.lastElementChild.style.display = "block";
             });
         });
     });
     document.querySelectorAll('.menuselect').forEach(child => {
-        child.children[1].style.display = "block";
+        const secondChild = child.children[1];
+        if (secondChild) secondChild.style.display = "block";
         child.classList.add('select');
     });
 
@@ -2567,8 +2560,7 @@ if (ua.includes("mobile")) {
         )
     );
 
-    const title_navyremove = () =>
-        document.querySelectorAll('.navy').forEach(e => e.classList.remove('navy'));
+    const title_navyremove = () => document.querySelectorAll('.navy').forEach(e => e.classList.remove('navy'));
 
     function nexser_search() {
         const input = document.getElementById('myInput');
@@ -2681,186 +2673,172 @@ if (ua.includes("mobile")) {
     resizeBackgroundImage();
 
     function addDragButtonListeners(button) {
-        if (!button.dataset.listenerAdded) {
-            const dragwindow = button.closest('.child_windows');
-            button.addEventListener('mousedown', function () {
-                dragwindow.classList.add("drag");
+        if (button.dataset.listenerAdded) return;
+        button.dataset.listenerAdded = true;
+        const dragwindow = button.closest('.child_windows');
+        let overlay, windowMoveElement, draggingElement;
+        let x, y, originalDragData = null;
+        let isSnapped = false;
+        button.addEventListener('mousedown', () => {
+            dragwindow.classList.add('drag');
+        });
+
+        function createOverlay() {
+            overlay = document.createElement('div');
+            Object.assign(overlay.style, {
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                zIndex: 9999
             });
-            let drag2 = button.closest('.child_windows');
-            let x, y;
-            let overlay;
-            button.addEventListener("mousedown", mdown, { passive: false }, false);
-            button.addEventListener("touchstart", mdown, { passive: false }, false);
-            function mdown(e) {
-                const event = e.type === "mousedown" ? e : e.changedTouches[0];
-                x = event.pageX - drag2.offsetLeft;
-                y = event.pageY - drag2.offsetTop;
-                overlay = document.createElement('div');
-                overlay.style.position = 'fixed';
-                overlay.style.top = 0;
-                overlay.style.left = 0;
-                overlay.style.width = '100%';
-                overlay.style.height = '100%';
-                overlay.style.zIndex = 9999;
-                if (e.target.classList.contains("drag_button") && !localStorage.getItem('window_afterimage_false')) {
-                    const closestWindow = e.target.closest(".child_windows");
-                    const rect = closestWindow.getBoundingClientRect();
-                    draggingElement = closestWindow;
-                    offsetX = e.clientX - rect.left;
-                    offsetY = e.clientY - rect.top;
-                }
-                document.body.appendChild(overlay);
-                document.body.addEventListener("mousemove", mmove, { passive: false }, false);
-                document.body.addEventListener("touchmove", mmove, { passive: false }, false);
-                document.addEventListener("mouseup", mup, false);
-                document.addEventListener("touchend", mup, false);
-            }
-
-            let originalDragData = null;
-            let isSnapped = false;
-            let windowMoveElement = null;
-            let draggingElement = null;
-            function mmove(e) {
-                const drag = document.getElementsByClassName("drag")[0];
-                const screenWidth = window.innerWidth;
-                const screenHeight = window.innerHeight;
-                const event = e.type === "mousemove" ? e : e.changedTouches[0];
-
-                if (!windowMoveElement && !localStorage.getItem('window_afterimage_false')) {
-                    let width = drag.offsetWidth;
-                    let height = drag.offsetHeight;
-                    windowMoveElement = document.createElement("div");
-                    windowMoveElement.className = "window_move";
-                    if (drag.classList.contains('resize')) {
-                        windowMoveElement.classList.add('resize');
-                    }
-                    windowMoveElement.style.width = `${width}px`;
-                    windowMoveElement.style.height = `${height}px`;
-                    windowMoveElement.style.position = "absolute";
-                    applyStyles(windowMoveElement);
-                    document.body.appendChild(windowMoveElement);
-                    windowMoveElement.style.zIndex = largestZIndex++;
-                }
-                if (!isSnapped && !localStorage.getItem('window_afterimage_false')) {
-                    windowMoveElement.style.top = `${event.pageY - y}px`;
-                    windowMoveElement.style.left = `${event.pageX - x}px`;
-                } else if (!isSnapped) {
-                    drag.style.top = `${event.pageY - y}px`;
-                    drag.style.left = `${event.pageX - x}px`;
-                }
-                const haha = document.querySelector('.window_move') || drag;
-                if (localStorage.getItem('window_invisible') && localStorage.getItem('window_afterimage_false')) {
-                    haha.style.opacity = "0.5";
-                }
-                if (e.clientX <= 0 && !isSnapped) {
-                    saveOriginalData(haha);
-                    snapWindow(haha, "left", screenWidth, screenHeight);
-                } else if (e.clientX >= screenWidth - 1 && !isSnapped) {
-                    saveOriginalData(haha);
-                    snapWindow(haha, "right", screenWidth, screenHeight);
-                } else if (isSnapped && e.clientX > 0 && e.clientX < screenWidth - 1) {
-                    setTimeout(() => {
-                        restoreOriginalData(haha);
-                        haha.classList.remove('w_left', 'w_right');
-                        if (draggingElement) {
-                            draggingElement.classList.remove('w_left', 'w_right');
-                        }
-                    }, 0);
-                }
-                taskbar.addEventListener('mouseover', function () {
-                    document.body.removeEventListener("mousemove", mmove, false);
-                    document.body.removeEventListener("touchmove", mmove, false);
-                });
-            }
-            function saveOriginalData(drag) {
-                if (!originalDragData) {
-                    originalDragData = {
-                        top: drag.style.top,
-                        left: drag.style.left,
-                        width: drag.style.width,
-                        height: drag.style.height,
-                    };
-                }
-            }
-            function snapWindow(drag, position, screenWidth, screenHeight) {
-                if (drag.classList.contains('resize')) {
-                    isSnapped = true;
-                    if (position === "left") {
-                        drag.style.width = `${screenWidth / 2}px`;
-                        drag.style.height = `${screenHeight - taskbar.clientHeight}px`;
-                        drag.style.top = "0px";
-                        drag.style.left = "0px";
-                        drag.classList.add('w_left');
-                        if (draggingElement) {
-                            draggingElement.classList.add('w_left');
-                        }
-                    } else if (position === "right") {
-                        drag.style.width = `${screenWidth / 2}px`;
-                        drag.style.height = `${screenHeight - taskbar.clientHeight}px`;
-                        drag.style.top = "0px";
-                        drag.style.left = `${screenWidth / 2}px`;
-                        drag.classList.add('w_right');
-                        if (draggingElement) {
-                            draggingElement.classList.add('w_right');
-                        }
-                    }
-                    if (localStorage.getItem('taskbar_autohide')) {
-                        drag.style.height = `${screenHeight}px`;
-                    }
-                }
-            }
-            function restoreOriginalData(drag) {
-                if (originalDragData) {
-                    drag.style.top = originalDragData.top;
-                    drag.style.left = originalDragData.left;
-                    drag.style.width = originalDragData.width;
-                    drag.style.height = originalDragData.height;
-                    originalDragData = null;
-                    isSnapped = false;
-                }
-            }
-            function mup() {
-                const drag = document.getElementsByClassName("drag")[0];
-                drag.style.opacity = "";
-                if (drag) {
-                    drag.classList.remove("drag");
-                }
-                document.body.removeEventListener("mousemove", mmove, false);
-                document.body.removeEventListener("touchmove", mmove, false);
-                document.removeEventListener("mouseup", mup, false);
-                document.removeEventListener("touchend", mup, false);
-                if (overlay) {
-                    document.body.removeChild(overlay);
-                }
-                if (windowMoveElement && draggingElement && !localStorage.getItem('window_afterimage_false')) {
-                    const rect = windowMoveElement.getBoundingClientRect();
-                    const width = windowMoveElement.clientWidth;
-                    const height = windowMoveElement.clientHeight;
-                    draggingElement.style.top = `${rect.top}px`;
-                    draggingElement.style.left = `${rect.left}px`;
-                    draggingElement.style.width = `${width}px`;
-                    draggingElement.style.height = `${height}px`;
-                    document.body.removeChild(windowMoveElement);
-                    windowMoveElement = null;
-                    draggingElement = null;
-                }
-            }
-            button.dataset.listenerAdded = true;
+            document.body.appendChild(overlay);
         }
+
+        function mdown(e) {
+            e.preventDefault();
+            const event = e.type === 'mousedown' ? e : e.changedTouches[0];
+            x = event.pageX - dragwindow.offsetLeft;
+            y = event.pageY - dragwindow.offsetTop;
+            createOverlay();
+            if (e.target.classList.contains('drag_button') && !localStorage.getItem('window_afterimage_false')) {
+                draggingElement = e.target.closest('.child_windows');
+                const rect = draggingElement.getBoundingClientRect();
+                offsetX = e.clientX - rect.left;
+                offsetY = e.clientY - rect.top;
+            }
+            document.body.addEventListener('mousemove', mmove, { passive: false });
+            document.body.addEventListener('touchmove', mmove, { passive: false });
+            document.addEventListener('mouseup', mup);
+            document.addEventListener('touchend', mup);
+        }
+
+        function mmove(e) {
+            const drag = document.getElementsByClassName('drag')[0];
+            if (!drag) return;
+            const event = e.type === 'mousemove' ? e : e.changedTouches[0];
+            const screenWidth = window.innerWidth;
+            const screenHeight = window.innerHeight;
+            if (!windowMoveElement && !localStorage.getItem('window_afterimage_false')) {
+                windowMoveElement = document.createElement('div');
+                windowMoveElement.className = 'window_move' + (drag.classList.contains('resize') ? ' resize' : '');
+                Object.assign(windowMoveElement.style, {
+                    width: drag.offsetWidth + 'px',
+                    height: drag.offsetHeight + 'px',
+                    position: 'absolute',
+                    zIndex: largestZIndex++
+                });
+                applyStyles(windowMoveElement);
+                document.body.appendChild(windowMoveElement);
+            }
+            if (!isSnapped && !localStorage.getItem('window_afterimage_false')) {
+                windowMoveElement.style.top = (event.pageY - y) + 'px';
+                windowMoveElement.style.left = (event.pageX - x) + 'px';
+            } else if (!isSnapped) {
+                drag.style.top = (event.pageY - y) + 'px';
+                drag.style.left = (event.pageX - x) + 'px';
+            }
+            const haha = windowMoveElement || drag;
+            if (localStorage.getItem('window_invisible') && localStorage.getItem('window_afterimage_false')) {
+                haha.style.opacity = '0.5';
+            }
+            if (event.clientX <= 0 && !isSnapped) {
+                saveOriginalData(haha);
+                snapWindow(haha, 'left', screenWidth, screenHeight);
+                isSnapped = true;
+            } else if (event.clientX >= screenWidth - 1 && !isSnapped) {
+                saveOriginalData(haha);
+                snapWindow(haha, 'right', screenWidth, screenHeight);
+                isSnapped = true;
+            } else if (isSnapped && event.clientX > 0 && event.clientX < screenWidth - 1) {
+                setTimeout(() => {
+                    restoreOriginalData(haha);
+                    haha.classList.remove('w_left', 'w_right');
+                    if (draggingElement) draggingElement.classList.remove('w_left', 'w_right');
+                    isSnapped = false;
+                }, 0);
+            }
+        }
+
+        function saveOriginalData(drag) {
+            if (!originalDragData) {
+                originalDragData = {
+                    top: drag.style.top,
+                    left: drag.style.left,
+                    width: drag.style.width,
+                    height: drag.style.height
+                };
+            }
+        }
+
+        function snapWindow(drag, position, screenWidth, screenHeight) {
+            if (!drag.classList.contains('resize')) return;
+            if (position === 'left') {
+                Object.assign(drag.style, {
+                    width: screenWidth / 2 + 'px',
+                    height: screenHeight - taskbar.clientHeight + 'px',
+                    top: '0px',
+                    left: '0px'
+                });
+                drag.classList.add('w_left');
+                draggingElement?.classList.add('w_left');
+            } else if (position === 'right') {
+                Object.assign(drag.style, {
+                    width: screenWidth / 2 + 'px',
+                    height: screenHeight - taskbar.clientHeight + 'px',
+                    top: '0px',
+                    left: screenWidth / 2 + 'px'
+                });
+                drag.classList.add('w_right');
+                draggingElement?.classList.add('w_right');
+            }
+            if (localStorage.getItem('taskbar_autohide')) {
+                drag.style.height = screenHeight + 'px';
+            }
+        }
+
+        function restoreOriginalData(drag) {
+            if (!originalDragData) return;
+            Object.assign(drag.style, originalDragData);
+            originalDragData = null;
+        }
+
+        function mup() {
+            const drag = document.getElementsByClassName('drag')[0];
+            if (drag) {
+                drag.style.opacity = '';
+                drag.classList.remove('drag');
+            }
+            document.body.removeChild(overlay);
+            overlay = null;
+            document.body.removeEventListener('mousemove', mmove);
+            document.body.removeEventListener('touchmove', mmove);
+            document.removeEventListener('mouseup', mup);
+            document.removeEventListener('touchend', mup);
+            if (windowMoveElement && draggingElement && !localStorage.getItem('window_afterimage_false')) {
+                const rect = windowMoveElement.getBoundingClientRect();
+                draggingElement.style.top = rect.top + 'px';
+                draggingElement.style.left = rect.left + 'px';
+                draggingElement.style.width = windowMoveElement.clientWidth + 'px';
+                draggingElement.style.height = windowMoveElement.clientHeight + 'px';
+                document.body.removeChild(windowMoveElement);
+                windowMoveElement = null;
+                draggingElement = null;
+            }
+        }
+        button.addEventListener('mousedown', mdown, { passive: false });
+        button.addEventListener('touchstart', mdown, { passive: false });
     }
+
     function observeNewElements3() {
         const observer = new MutationObserver(mutations => {
             mutations.forEach(mutation => {
                 if (mutation.type === 'childList') {
                     mutation.addedNodes.forEach(node => {
-                        if (node.nodeType === 1) {
-                            if (node.matches('.drag_button')) {
-                                addDragButtonListeners(node);
-                            }
-                            if (node.matches('.child_windows')) {
-                                node.querySelectorAll('.drag_button').forEach(addDragButtonListeners);
-                            }
-                        }
+                        if (node.nodeType !== 1) return;
+                        if (node.matches('.drag_button')) addDragButtonListeners(node);
+                        if (node.matches('.child_windows')) node.querySelectorAll('.drag_button').forEach(addDragButtonListeners);
                     });
                 }
             });
@@ -4334,43 +4312,33 @@ if (ua.includes("mobile")) {
     }
 
     function localmemory_size() {
-        if (desktop.style.display === "block") {
-            noticewindow_create("load", "データを読み込み中...");
-            document.querySelector('.local_memory_button').classList.add('pointer_none');
-            const testKey = 'testStorageKey';
-            const testData = new Array(1024).join('a');
-            let maxSize = 0;
-            try {
-                while (true) {
-                    localStorage.setItem(testKey + maxSize, testData);
-                    maxSize++;
-                }
-            } catch (e) {
-                // error
-            } finally {
-                for (let i = 0; i < maxSize; i++) {
-                    localStorage.removeItem(testKey + i);
-                }
+        if (desktop.style.display !== "block") return;
+        noticewindow_create("load", "容量計算中...");
+        const memoryButton = document.querySelector('.local_memory_button');
+        memoryButton.classList.add('pointer_none');
+        const testKey = 'testStorageKey';
+        const testData = new Array(1024).join('a'); // 約1KB
+        let maxSize = 0;
+        try {
+            for (; ; maxSize++) {
+                localStorage.setItem(`${testKey}${maxSize}`, testData);
             }
-            document.querySelector('.local_memory').innerHTML = "";
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                const value = localStorage.getItem(key);
-                const valueSize = new Blob([value]).size;
+        } catch (e) {
+            // 容量到達
+        } finally {
+            for (let i = 0; i < maxSize; i++) {
+                localStorage.removeItem(`${testKey}${i}`);
             }
-            setTimeout(() => {
-                document.querySelector('.local_memory').innerHTML = `&emsp;${maxSize}KB&emsp;`;
-                localStorage.setItem('maxSize', maxSize);
-                document.querySelector('.local_memory_button').classList.remove('pointer_none');
-                if (localStorage.getItem('memoryOver')) {
-                    localStorage.removeItem('memoryOver');
-                }
-                document.querySelector('.add_create_load_windows').remove();
-                zindexwindow_addnavy();
-                displayLocalStorageDetails();
-                window.scrollTo(0, 0);
-            }, 0);
         }
+        document.querySelector('.local_memory').innerHTML = `&emsp;${maxSize}KB&emsp;`;
+        localStorage.setItem('maxSize', maxSize);
+        memoryButton.classList.remove('pointer_none');
+        localStorage.removeItem('memoryOver');
+        const loader = document.querySelector('.add_create_load_windows');
+        if (loader) loader.remove();
+        zindexwindow_addnavy();
+        displayLocalStorageDetails();
+        window.scrollTo(0, 0);
     }
 
     let lastKeys = getLocalStorageKeysAndValues();
@@ -4400,22 +4368,25 @@ if (ua.includes("mobile")) {
 
     document.querySelector('.local_memory').innerHTML = `&emsp;${localStorage.getItem('maxSize')}KB&emsp;`;
     function displayLocalStorageDetails() {
-        document.querySelectorAll('.localstorage_key').forEach(localstorage_key => localstorage_key.remove());
         const list = document.getElementById('localStorageList');
+        const total = document.getElementById('totalSize');
+        list.querySelectorAll('.localstorage_key').forEach(el => el.remove());
+        const fragment = document.createDocumentFragment();
         let totalSize = 0;
-        const keys = Array.from({ length: localStorage.length }, (_, i) => localStorage.key(i)).sort();
-        keys.forEach(key => {
+        const keys = Object.keys(localStorage).sort();
+        for (const key of keys) {
             const value = localStorage.getItem(key);
-            const valueSize = new Blob([value]).size;
-            totalSize += valueSize;
-            const listItem = document.createElement('li');
-            listItem.classList.add('border', 'localstorage_key');
-            listItem.style.width = "max-content";
-            listItem.style.marginTop = "5px";
-            listItem.textContent = `Keyname: ${key}, Size: ${valueSize} Byte`;
-            list.appendChild(listItem);
-        });
-        document.getElementById('totalSize').textContent = `Total Size: ${totalSize} Byte`;
+            const size = new Blob([value]).size;
+            totalSize += size;
+            const li = document.createElement('li');
+            li.className = 'border localstorage_key';
+            li.style.width = 'max-content';
+            li.style.marginTop = '5px';
+            li.textContent = `Keyname: ${key}, Size: ${size} Byte`;
+            fragment.appendChild(li);
+        }
+        list.appendChild(fragment);
+        total.textContent = `Total Size: ${totalSize} Byte`;
     }
 
     const paint_canvas = document.getElementById('paint_canvas');

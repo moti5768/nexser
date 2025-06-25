@@ -169,12 +169,6 @@ li {
     font-size: xx-large;
 }
 
-/* text_design */
-
-.bold {
-    font-weight: bold;
-}
-
 /* text_decoration */
 
 .underline {
@@ -330,7 +324,6 @@ li {
     outline: 1.5px dotted black;
     outline-offset: -5px;
     text-align: center;
-    box-sizing: border-box;
 }
 
 .apply_button2 {
@@ -340,7 +333,6 @@ li {
     outline: 1.5px dotted black;
     outline-offset: -5px;
     text-align: center;
-    box-sizing: border-box;
 }
 
 .center {
@@ -783,11 +775,6 @@ input[type="file"] {
     position: absolute;
 }
 
-.nexser_files_menu {
-    width: 600px;
-    height: 400px;
-}
-
 .camera_menu {
     width: 500px;
     height: 400px;
@@ -801,6 +788,8 @@ input[type="file"] {
 }
 
 .nexser_files_menu {
+    width: 600px;
+    height: 400px;
     min-width: 600px;
     min-width: 300px;
 }
