@@ -5508,47 +5508,49 @@ if (ua.includes("mobile")) {
     nexser_search_button();
 
     function filesposition() {
-        Array.from(document.getElementsByClassName('desktop_files')).forEach(desktop_files => {
-            desktop_files.addEventListener('mousedown', () => {
-                fileborder_reset()
-            });
-            desktop_files.addEventListener('click', () => {
-                desktop_files.firstElementChild.classList.add('file_select');
-            });
-        });
         const elements = document.querySelectorAll('.desktop_files');
         elements.forEach((element, index) => {
-            const savedPosition = localStorage.getItem(`draggable-${index}`);
-            if (savedPosition) {
-                const [x, y] = savedPosition.split(',');
-                element.style.position = 'absolute';
-                element.style.left = `${x}px`;
-                element.style.top = `${y}px`;
+            element.addEventListener('mousedown', fileborder_reset);
+            element.addEventListener('click', () => {
+                element.firstElementChild.classList.add('file_select');
+            });
+            const saved = localStorage.getItem(`draggable-${index}`);
+            if (saved) {
+                const [x, y] = saved.split(',');
+                Object.assign(element.style, {
+                    position: 'absolute',
+                    left: `${x}px`,
+                    top: `${y}px`
+                });
             }
             element.draggable = true;
-            let offsetX, offsetY;
-            element.addEventListener('dragstart', (e) => {
-                offsetX = e.clientX - element.getBoundingClientRect().left;
-                offsetY = e.clientY - element.getBoundingClientRect().top;
-                e.dataTransfer.setData('text/plain', null);
-                element.style.border = '1.95px dotted dimgray';
-                element.style.opacity = '0.9';
+            let offsetX = 0, offsetY = 0;
+            element.addEventListener('dragstart', e => {
+                const rect = element.getBoundingClientRect();
+                offsetX = e.clientX - rect.left;
+                offsetY = e.clientY - rect.top;
+                e.dataTransfer.setData('text/plain', '');
+                Object.assign(element.style, {
+                    border: '1.95px dotted dimgray',
+                    opacity: '0.9'
+                });
                 rectangle_remove();
             });
-            element.addEventListener('dragend', (e) => {
+            element.addEventListener('dragend', e => {
                 const x = e.clientX - offsetX;
                 const y = e.clientY - offsetY;
-                element.style.position = 'absolute';
-                element.style.left = `${x}px`;
-                element.style.top = `${y}px`;
+                Object.assign(element.style, {
+                    position: 'absolute',
+                    left: `${x}px`,
+                    top: `${y}px`,
+                    border: '',
+                    opacity: ''
+                });
                 element.firstElementChild.style.opacity = '';
                 element.children[1].style.opacity = '';
-                element.style.opacity = '';
-                element.style.border = '';
                 localStorage.setItem(`draggable-${index}`, `${x},${y}`);
             });
         });
-
     }
     function rectangle_remove() {
         document.querySelectorAll('.rectangle').forEach(e => e.remove());
@@ -6643,198 +6645,133 @@ if (ua.includes("mobile")) {
         const savedContent = localStorage.getItem('dropListContent');
         if (savedContent) {
             dropList.innerHTML = savedContent;
-            const loadedElements = dropList.children;
-            Array.from(loadedElements).forEach(element => {
-                element.setAttribute('draggable', 'true');
-                element.addEventListener('dragstart', (e) => {
+            Array.from(dropList.children).forEach(el => {
+                el.setAttribute('draggable', 'true');
+                el.addEventListener('dragstart', e => {
                     e.dataTransfer.setData('text/plain', e.target.outerHTML);
                     e.target.style.opacity = "0.9";
                 });
-                element.addEventListener('contextmenu', (e) => {
+                el.addEventListener('contextmenu', e => {
                     e.preventDefault();
-                    showContextMenu(e, element);
-                    removefile_Border()
-                    applyBorder(e, element);
+                    showContextMenu(e, el);
+                    removefile_Border();
+                    applyBorder(e, el);
                 });
             });
         }
-
-        document.querySelectorAll('.nexser_guidebook').forEach(nexser_guidebook => { nexser_guidebook.onclick = null; nexser_guidebook.onclick = () => { toggleWindow(nexser_guidebook_menu); }; });
-        document.querySelectorAll('.guidebook_window').forEach(guidebook_window => { guidebook_window.onclick = null; guidebook_window.onclick = () => { toggleWindow(guidebook_window_menu); }; });
-        document.querySelectorAll('.guidebook_file').forEach(guidebook_file => { guidebook_file.onclick = null; guidebook_file.onclick = () => { toggleWindow(guidebook_file_menu); }; });
-        document.querySelectorAll('.guidebook_taskbar').forEach(guidebook_taskbar => { guidebook_taskbar.onclick = null; guidebook_taskbar.onclick = () => { toggleWindow(guidebook_taskbar_menu); }; });
-
-        document.querySelectorAll('.passmenu_button').forEach(passmenu_button => { passmenu_button.onclick = null; passmenu_button.onclick = () => { toggleWindow(password_menu); }; });
-        document.querySelectorAll('.localstorage_details').forEach(localstorage_details => { localstorage_details.onclick = null; localstorage_details.onclick = () => { toggleWindow(localstorage_details_menu); }; });
-        document.querySelectorAll('.kakeibo_btn').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(kakeibo_menu); }; });
-        document.querySelectorAll('.document_button').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(mydocument_menu); }; });
-        document.querySelectorAll('.restriction_btn').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(restriction_menu); }; });
-
-        document.querySelectorAll('.test_button').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(main); }; });
-        document.querySelectorAll('.test_button2').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(my_computer); }; });
-        document.querySelectorAll('.test_button3').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(control); }; });
-        document.querySelectorAll('.test_button4').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(color_menu); }; });
-        document.querySelectorAll('.test_button5').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(system_menu); }; });
-        document.querySelectorAll('.test_button6').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(window_prompt); }; });
-        document.querySelectorAll('.test_button7').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(clock_menu); }; });
-        document.querySelectorAll('.test_button8').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(sound_menu); }; });
-        document.querySelectorAll('.test_button9').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(driver_menu); }; });
-        document.querySelectorAll('.test_button10').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(mouse_menu); }; });
-        document.querySelectorAll('.test_button11').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(screen_text_menu); }; });
-        document.querySelectorAll('.test_button12').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(note_pad); notefocus(); }; });
-        document.querySelectorAll('.test_button13').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(text_drop_menu); }; });
-        document.querySelectorAll('.test_button14').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(windowmode_menu); }; });
-        document.querySelectorAll('.test_button15').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(accessory_menu); }; });
-        document.querySelectorAll('.test_button16').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(calc_menu); }; });
-        document.querySelectorAll('.test_button17').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(nexser_sound_menu); }; });
-        document.querySelectorAll('.test_button18').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(camera_menu); }; });
-        document.querySelectorAll('.test_button19').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(htmlviewer_edit_menu); }; });
-        document.querySelectorAll('.test_button20').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(htmlviewer_run_menu); }; });
-
-        document.querySelectorAll('.test_button22').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(font_menu); }; });
-        document.querySelectorAll('.test_button23').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(file_setting_menu); }; });
-        document.querySelectorAll('.test_button24').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(debug_menu); }; });
-        document.querySelectorAll('.test_button25').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(file_download_menu); }; });
-        document.querySelectorAll('.test_button26').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(display_menu); }; });
-        document.querySelectorAll('.test_button27').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(stopwatch_menu); timerreset(); }; });
-        document.querySelectorAll('.test_button28').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(add_program_menu); }; });
-        document.querySelectorAll('.test_button30').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(objective_menu); }; });
-        document.querySelectorAll('.test_button31').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(calendar_menu); caload() }; });
-        document.querySelectorAll('.test_button32').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(cpu_bench_menu); cpubench_open(); }; });
-        document.querySelectorAll('.test_button33').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(browser_menu); }; });
-        document.querySelectorAll('.test_button35').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(taskbar_setting_menu); }; });
-        document.querySelectorAll('.test_button37').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(device_menu); }; });
-        document.querySelectorAll('.test_button38').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(omikuji_menu); }; });
-        document.querySelectorAll('.test_button39').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(localstorage_monitor_menu); }; });
-        document.querySelectorAll('.test_button40').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(paint_menu); }; });
-
-        document.querySelectorAll('.test_button42').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(nexser_files_menu); setTimeout(() => { nexser_files_output_remove(); nexser_files_windowload(); }, 100); }; });
-        document.querySelectorAll('.test_button45').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(alarm_menu); }; });
-        document.querySelectorAll('.test_button46').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(location_menu); }; });
-        document.querySelectorAll('.test_button47').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(editor_menu); }; });
-        document.querySelectorAll('.test_button48').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(url_droplist_menu); }; });
-        document.querySelectorAll('.trash_can').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(trash_menu); }; });
-
-        // games
-
-        document.querySelectorAll('.test_button29').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(tetris_mneu); }; });
-        document.querySelectorAll('.test_button34').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(bom_menu); }; });
-        document.querySelectorAll('.test_button41').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(othello_menu); }; });
-        document.querySelectorAll('.test_button44').forEach(testbtn => { testbtn.onclick = null; testbtn.onclick = () => { toggleWindow(memory_game_menu); }; });
-
-        // fileclick
-
-        function handleMouseDown(event) {
-            const target = event.currentTarget;
-            if (target.classList.contains('file_border')) {
-                const fileBorder = document.querySelector('.file_border');
-                if (fileBorder) {
-                    fileBorder.classList.replace('file_border', 'file_border2');
-                }
-            }
-        }
-        function handleClick(event) {
-            const target = event.currentTarget;
-            fileElements.forEach((el) => el.classList.remove('file_border', 'file_border2'));
-            target.classList.add('file_border');
-        }
-
-        document.querySelectorAll('.window_files').forEach((el) => {
-            el.addEventListener('mousedown', handleMouseDown);
-            el.addEventListener('click', handleClick);
+        const toggleSettings = [
+            ['.nexser_guidebook', nexser_guidebook_menu], ['.guidebook_window', guidebook_window_menu],
+            ['.guidebook_file', guidebook_file_menu], ['.guidebook_taskbar', guidebook_taskbar_menu],
+            ['.passmenu_button', password_menu], ['.localstorage_details', localstorage_details_menu],
+            ['.kakeibo_btn', kakeibo_menu], ['.document_button', mydocument_menu],
+            ['.restriction_btn', restriction_menu], ['.test_button', main],
+            ['.test_button2', my_computer], ['.test_button3', control],
+            ['.test_button4', color_menu], ['.test_button5', system_menu],
+            ['.test_button6', window_prompt], ['.test_button7', clock_menu],
+            ['.test_button8', sound_menu], ['.test_button9', driver_menu],
+            ['.test_button10', mouse_menu], ['.test_button11', screen_text_menu],
+            ['.test_button12', note_pad, () => notefocus()], ['.test_button13', text_drop_menu],
+            ['.test_button14', windowmode_menu], ['.test_button15', accessory_menu],
+            ['.test_button16', calc_menu], ['.test_button17', nexser_sound_menu],
+            ['.test_button18', camera_menu], ['.test_button19', htmlviewer_edit_menu],
+            ['.test_button20', htmlviewer_run_menu], ['.test_button22', font_menu],
+            ['.test_button23', file_setting_menu], ['.test_button24', debug_menu],
+            ['.test_button25', file_download_menu], ['.test_button26', display_menu],
+            ['.test_button27', stopwatch_menu, () => timerreset()], ['.test_button28', add_program_menu],
+            ['.test_button30', objective_menu], ['.test_button31', calendar_menu, () => caload()],
+            ['.test_button32', cpu_bench_menu, () => cpubench_open()], ['.test_button33', browser_menu],
+            ['.test_button35', taskbar_setting_menu], ['.test_button37', device_menu],
+            ['.test_button38', omikuji_menu], ['.test_button39', localstorage_monitor_menu],
+            ['.test_button40', paint_menu], ['.test_button42', nexser_files_menu, () => {
+                setTimeout(() => {
+                    nexser_files_output_remove();
+                    nexser_files_windowload();
+                }, 100);
+            }],
+            ['.test_button45', alarm_menu], ['.test_button46', location_menu],
+            ['.test_button47', editor_menu], ['.test_button48', url_droplist_menu],
+            ['.trash_can', trash_menu], ['.test_button29', tetris_mneu],
+            ['.test_button34', bom_menu], ['.test_button41', othello_menu],
+            ['.test_button44', memory_game_menu]
+        ];
+        toggleSettings.forEach(([sel, menu, extra]) => {
+            document.querySelectorAll(sel).forEach(el => {
+                el.onclick = () => { toggleWindow(menu); extra && extra(); };
+            });
         });
-
-        fileElements.forEach((element, index) => {
-            const uniqueKey = `windowfile_time_${index}`;
-            element.addEventListener('click', () => {
-                let timeElements = element.querySelectorAll('.windowfile_time');
-                if (timeElements.length > 1) {
-                    timeElements.forEach((timeElement, i) => {
-                        if (i < timeElements.length - 1) {
-                            timeElement.remove();
-                        }
-                    });
-                }
-                let timeElement = element.querySelector('.windowfile_time');
-                if (!timeElement) {
-                    timeElement = document.createElement('li');
-                    timeElement.className = 'windowfile_time';
-                    element.appendChild(timeElement);
-                }
+        const files = Array.from(document.querySelectorAll('.window_files'));
+        files.forEach(el => {
+            el.addEventListener('mousedown', () => {
+                const cur = document.querySelector('.file_border');
+                cur && cur.classList.replace('file_border', 'file_border2');
+            });
+            el.addEventListener('click', () => {
+                files.forEach(e => e.classList.remove('file_border', 'file_border2'));
+                el.classList.add('file_border');
+            });
+        });
+        files.forEach((el, i) => {
+            const key = `windowfile_time_${i}`;
+            el.addEventListener('click', () => {
+                el.querySelectorAll('.windowfile_time').forEach((t, idx, arr) => { if (idx < arr.length - 1) t.remove(); });
+                let t = el.querySelector('.windowfile_time') || (() => {
+                    const li = document.createElement('li');
+                    li.className = 'windowfile_time';
+                    el.appendChild(li);
+                    return li;
+                })();
                 const now = new Date();
-                const formattedDateTime = `${now.getFullYear()}/${now.getMonth() + 1}/${now.getDate()} ${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}`;
-                timeElement.textContent = formattedDateTime;
-                localStorage.setItem(uniqueKey, formattedDateTime);
+                t.textContent = `${now.getFullYear()}/${now.getMonth() + 1}/${now.getDate()} ${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}`;
+                localStorage.setItem(key, t.textContent);
                 filetime_display();
             });
-            const savedDateTime = localStorage.getItem(uniqueKey);
-            if (savedDateTime) {
-                let timeElements = element.querySelectorAll('.windowfile_time');
-                if (timeElements.length > 1) {
-                    timeElements.forEach((timeElement, i) => {
-                        if (i < timeElements.length - 1) {
-                            timeElement.remove();
-                        }
-                    });
-                }
-                let timeElement = element.querySelector('.windowfile_time');
-                if (!timeElement) {
-                    timeElement = document.createElement('li');
-                    timeElement.className = 'windowfile_time';
-                    element.appendChild(timeElement);
-                }
-                timeElement.textContent = savedDateTime;
+            const saved = localStorage.getItem(key);
+            if (saved) {
+                el.querySelectorAll('.windowfile_time').forEach((t, idx, arr) => { if (idx < arr.length - 1) t.remove(); });
+                let t = el.querySelector('.windowfile_time') || (() => {
+                    const li = document.createElement('li');
+                    li.className = 'windowfile_time';
+                    el.appendChild(li);
+                    return li;
+                })();
+                t.textContent = saved;
                 filetime_display();
             }
         });
         function filetime_display() {
-            if (!localStorage.getItem('windowfile_1') && !localStorage.getItem('windowfile_2') && !localStorage.getItem('windowfile_3') ||
-                !localStorage.getItem('windowfile_1') && localStorage.getItem('windowfile_2') && !localStorage.getItem('windowfile_3')) {
-                document.querySelectorAll('.windowfile_time').forEach(windowfile_time =>
-                    windowfile_time.style.display = "none"
-                );
-            }
+            const w1 = localStorage.getItem('windowfile_1'), w2 = localStorage.getItem('windowfile_2'), w3 = localStorage.getItem('windowfile_3');
+            document.querySelectorAll('.windowfile_time').forEach(el => {
+                el.style.display = ((!w1 && !w2 && !w3) || (!w1 && w2 && !w3)) ? 'none' : '';
+            });
         }
     }
 
     function showContextMenu(event, element) {
-        const existingMenu = document.querySelector('.context-menu');
-        if (existingMenu) {
-            existingMenu.remove();
-        }
-        const contextMenu = document.createElement('span');
-        contextMenu.className = 'context-menu border back_silver';
-        contextMenu.style.position = 'absolute';
-        contextMenu.style.top = `${event.clientY}px`;
-        contextMenu.style.left = `${event.clientX}px`;
-        contextMenu.style.zIndex = '99999';
-        contextMenu.innerHTML = '<p id="delete" class="back_silver hover_blue" style="z-index: 99999;">&nbsp;Delete&nbsp;</p>';
-        document.body.appendChild(contextMenu);
-        const menuHeight = contextMenu.offsetHeight;
-        const menuWidth = contextMenu.offsetWidth;
-        const windowHeight = window.innerHeight;
-        const windowWidth = window.innerWidth;
-        let top = event.clientY;
-        let left = event.clientX;
-        if (top + menuHeight > windowHeight) {
-            top = windowHeight - menuHeight;
-        }
-        if (left + menuWidth > windowWidth) {
-            left = windowWidth - menuWidth;
-        }
-        contextMenu.style.top = `${top}px`;
-        contextMenu.style.left = `${left}px`;
-        document.getElementById('delete').addEventListener('click', () => {
+        document.querySelector('.context-menu')?.remove();
+        const menu = document.createElement('span');
+        menu.className = 'context-menu border back_silver';
+        menu.style = `position: absolute;
+        z-index: 99999;
+        top: ${event.clientY}px;
+        left: ${event.clientX}px;`;
+        menu.innerHTML = `<p id="delete" class="back_silver hover_blue" style="z-index:99999;">&nbsp;Delete&nbsp;</p>`;
+        document.body.appendChild(menu);
+        const { offsetHeight: mh, offsetWidth: mw } = menu;
+        const { innerHeight: wh, innerWidth: ww } = window;
+        menu.style.top = `${Math.min(event.clientY, wh - mh)}px`;
+        menu.style.left = `${Math.min(event.clientX, ww - mw)}px`;
+        document.getElementById('delete').onclick = () => {
             element.remove();
-            contextMenu.remove();
+            menu.remove();
             saveToLocalStorage();
-        });
+        };
         document.addEventListener('click', () => {
-            contextMenu.remove();
-            removefile_Border()
+            menu.remove();
+            removefile_Border();
         }, { once: true });
     }
-    function applyBorder(event, element) {
+
+    function applyBorder(e, element) {
         element.classList.add('file_border3')
     }
     function removefile_Border() {
@@ -6973,40 +6910,38 @@ if (ua.includes("mobile")) {
         setTimeout(() => window.location.reload(), 5000);
     }
 
-    let isResizing = false;
-    let isResizing2 = false;
-    const task_resizer = document.getElementById('task_resizer');
-    task_resizer.addEventListener('mousedown', () => {
-        isResizing = true;
-        nex.style.cursor = 'ns-resize';
+    let isResizing = 0; // 0: なし, 1: 下から, 2: 上から
+    const resizers = [
+        { el: 'task_resizer', direction: 1 },
+        { el: 'task_resizer2', direction: 2 }
+    ];
+    resizers.forEach(({ el, direction }) => {
+        document.getElementById(el).addEventListener('mousedown', () => {
+            isResizing = direction;
+            nex.style.cursor = 'ns-resize';
+        });
     });
-    const task_resizer2 = document.getElementById('task_resizer2');
-    task_resizer2.addEventListener('mousedown', () => {
-        isResizing2 = true;
-        nex.style.cursor = 'ns-resize';
-    });
-    nexser.addEventListener('mousemove', (e) => {
-        if (isResizing) {
-            const snappedHeight = Math.min(280, Math.max(40, Math.round((window.innerHeight - e.clientY) / 40) * 40));
-            taskbar.style.height = `${snappedHeight}px`;
+    nexser.addEventListener('mousemove', e => {
+        if (!isResizing) return;
+        const cursorY = e.clientY;
+        const snapped = Math.round((isResizing === 1 ? window.innerHeight - cursorY : cursorY) / 40) * 40;
+        const height = Math.min(280, Math.max(40, snapped));
+        taskbar.style.height = `${height}px`;
+        if (isResizing === 1) {
             desktop_version_text.style.top = "";
             toolbar.style.bottom = desktop_version_text.style.bottom = taskbar.style.height;
-            localStorage.setItem('taskbar_height', snappedHeight);
-            if (localStorage.getItem('taskbar_autohide')) taskbar.style.bottom = "";
-        }
-        if (isResizing2) {
-            const snappedHeight = Math.min(280, Math.max(40, Math.round(e.clientY / 40) * 40));
-            taskbar.style.height = `${snappedHeight}px`;
+        } else {
             toolbar.style.top = desktop_version_text.style.top = taskbar.style.height;
-            localStorage.setItem('taskbar_height', snappedHeight);
-            if (localStorage.getItem('taskbar_autohide')) taskbar.style.bottom = "";
-            if (!localStorage.getItem('taskbar_autohide')) files_inline.style.marginTop = `${taskbar.clientHeight}px`;
+            if (!localStorage.getItem('taskbar_autohide')) {
+                files_inline.style.marginTop = `${taskbar.clientHeight}px`;
+            }
         }
+        localStorage.setItem('taskbar_height', height);
+        if (localStorage.getItem('taskbar_autohide')) taskbar.style.bottom = "";
         bigwindow_resize();
     });
     nexser.addEventListener('mouseup', () => {
-        isResizing = false;
-        isResizing2 = false;
+        isResizing = 0;
         nex.style.cursor = '';
     });
 
