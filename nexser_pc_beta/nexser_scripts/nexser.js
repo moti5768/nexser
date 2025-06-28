@@ -2567,16 +2567,15 @@ if (ua.includes("mobile")) {
         const filter = input.value.toUpperCase();
         const ul = document.getElementById("myUL");
         const liElements = ul.getElementsByTagName('li');
-        const liArray = Array.from(liElements);
-        liArray.forEach(li => {
-            const textContent = li.getElementsByTagName("span")[0].textContent.toUpperCase();
-            li.style.display = textContent.includes(filter) ? "" : "none";
+        Array.from(liElements).forEach(li => {
+            const text = li.textContent.toUpperCase();
+            li.style.display = text.includes(filter) ? "" : "none";
         });
     }
 
     function search_clear() {
         document.getElementById('myInput').value = "";
-        nexser_search()
+        nexser_search();
     }
 
     function cpubench_open() {
@@ -4880,35 +4879,29 @@ if (ua.includes("mobile")) {
         });
     }
 
-    var parents = document.querySelectorAll('.parentss');
-    parents.forEach(function (parent, parentIndex) {
-        // 親要素内のクラス名が "editable" の子要素をすべて取得
-        var elements = parent.querySelectorAll('.editable');
-        // ローカルストレージから保存された名前を読み込む
-        elements.forEach(function (element, index) {
-            var savedName = localStorage.getItem('editable-' + parentIndex + '-' + index);
-            if (savedName) {
-                element.textContent = savedName;
-            }
+    let parents = document.querySelectorAll('.parentss');
+    parents.forEach((parent, pIdx) => {
+        const elements = parent.querySelectorAll('.editable');
+        elements.forEach((el, eIdx) => {
+            const saved = localStorage.getItem(`editable-${pIdx}-${eIdx}`);
+            if (saved) el.textContent = saved;
         });
-        parent.addEventListener('contextmenu', function (event) {
-            event.preventDefault();
-            if (event.target === parent) {
-                elements.forEach(function (element, index) {
-                    var originalName = element.textContent;
-                    var newName = prompt('新しい名前を入力してください (20文字以内):', element.textContent);
-                    if (newName && newName.length <= 20) {
-                        element.textContent = newName;
-                        localStorage.setItem('editable-' + parentIndex + '-' + index, newName);
-                    } else if (newName) {
-                        nex.style.cursor = '';
-                        noticewindow_create("warning", "名前は20文字以内で入力してください!", "File rename");
-                        element.textContent = originalName;
-                    } else {
-                        element.textContent = originalName;
-                    }
-                });
-            }
+        parent.addEventListener('contextmenu', (e) => {
+            if (e.target !== parent) return;
+            e.preventDefault();
+            elements.forEach((el, eIdx) => {
+                const original = el.textContent;
+                const newName = prompt('新しい名前を入力してください (20文字以内):', original);
+                if (newName === null || newName === original) return;
+                if (newName.length <= 20) {
+                    el.textContent = newName;
+                    localStorage.setItem(`editable-${pIdx}-${eIdx}`, newName);
+                } else {
+                    el.textContent = original;
+                    nex.style.cursor = '';
+                    noticewindow_create("warning", "名前は20文字以内で入力してください!", "File rename");
+                }
+            });
         });
     });
 
@@ -4967,37 +4960,37 @@ if (ua.includes("mobile")) {
 
     const taskbar_b = document.getElementById('task_buttons2');
     function test_windows_button() {
-        document.querySelectorAll('.task_buttons').forEach(task_buttons => task_buttons.remove());
-        document.querySelectorAll('.child_windows:not(.no_window):not(.active)').forEach(windowElement => {
-            const nestedChild2 = windowElement.children[0].children[1].textContent;
+        taskbar_b.querySelectorAll('.task_buttons').forEach(btn => btn.remove());
+        const windows = document.querySelectorAll('.child_windows:not(.no_window):not(.active)');
+        const fragment = document.createDocumentFragment();
+        windows.forEach(windowElement => {
+            const nestedChild2 = windowElement.children?.[0]?.children?.[1]?.textContent || '';
             const button = document.createElement('div');
             button.className = 'task_buttons button2';
-            button.style.position = "relative";
+            button.style.position = 'relative';
             button.textContent = `　　${nestedChild2}`;
             button.innerHTML += '<span class="title_icon"></span>';
-            button.addEventListener('click', () => toggleWindow(windowElement), { once: true });
-            taskbar_b.appendChild(button);
+            button.addEventListener('click', () => toggleWindow(windowElement));
+            fragment.appendChild(button);
         });
+        taskbar_b.appendChild(fragment);
         updateButtonClasses();
-        document.querySelectorAll('.child_windows.minimization').forEach(minimization_button => {
-            moveToTaskbarButton(minimization_button);
-        });
+        document.querySelectorAll('.child_windows.minimization').forEach(moveToTaskbarButton);
     }
 
-    function moveToTaskbarButton(minimization_button) {
-        const task_buttons = document.querySelectorAll('.task_buttons');
-        const index = Array.from(document.querySelectorAll('.child_windows:not(.active):not(.no_window)')).indexOf(minimization_button);
-        if (index !== -1) {
-            const button = task_buttons[index];
-            const rect = button.getBoundingClientRect();
-            Object.assign(minimization_button.style, {
+    function moveToTaskbarButton(minBtn) {
+        const buttons = document.querySelectorAll('.task_buttons');
+        const index = [...document.querySelectorAll('.child_windows:not(.active):not(.no_window)')].indexOf(minBtn);
+        if (index >= 0 && buttons[index]) {
+            const { top, left, width, height } = buttons[index].getBoundingClientRect();
+            Object.assign(minBtn.style, {
                 position: 'absolute',
-                top: `${rect.top}px`,
-                left: `${rect.left}px`,
-                width: `${rect.width}px`,
-                height: `${rect.height}px`,
-                minWidth: "0px",
-                minHeight: "0px"
+                top: `${top}px`,
+                left: `${left}px`,
+                width: `${width}px`,
+                height: `${height}px`,
+                minWidth: '0px',
+                minHeight: '0px'
             });
         }
     }
@@ -5129,79 +5122,66 @@ if (ua.includes("mobile")) {
     }
 
     function processUrl(url, name) {
-        const processFile = (url, x, y) => {
-            return new Promise((resolve) => {
-                const windowDiv = createElement('div', "child_windows testwindow2 w3 resize", null);
-                windowDiv.style.left = `${x}px`;
-                windowDiv.style.top = `${y}px`;
-                windowDiv.style.zIndex = largestZIndex++;
-                let fileData = JSON.parse(localStorage.getItem('fileData')) || [];
-                fileData = fileData.filter(item => item.url !== url);
-                const titleDiv = createElement('div', "title", windowDiv);
-                createElement('span', "title_icon", titleDiv);
-                createElement('span', "white_space_wrap", titleDiv, name);
-                const titleButtons = createElement('div', "title_buttons", windowDiv);
-                createElement('span', "drag_button", titleButtons, "&nbsp;");
-                const closeButton = createElement('span', "close_button button2 allclose_button", titleButtons);
-                createElement('span', "bigminbtn button2", titleButtons);
-                createElement('span', "minimization_button button2", titleButtons);
-                createElement('br', null, titleButtons);
-
-                const title2Div = createElement('div', "title2", windowDiv);
-                title2Div.style.padding = "6px";
-                windowDiv.appendChild(title2Div);
-
-                title2Div.innerHTML = `<div class="bold large" style="display: flex;"><button class="button2 bold large" onclick="iframe_reload(event)">&nbsp;↻&nbsp;</button>&nbsp;location:&nbsp;<span class="medium border2 white_space_wrap" style="display: inline-block; background: white; overflow: hidden;
-    text-overflow: ellipsis;">${url}</span><span class="button2 small" style="margin-left: 5px;" onclick="window2url_copy(event)">URLのコピー</span></div>`
-
-                closeButton.addEventListener('click', () => {
-                    const parentWindow = closeButton.closest('.child_windows');
-                    if (parentWindow) {
-                        parentWindow.remove();
-                        zindexwindow_addnavy();
-                    }
-                });
-                const windowContents = createElement('div', "window_contents border2", windowDiv);
-                const windowBottom = createElement('div', "window_bottom border2 bottom2", windowDiv);
-                windowBottom.innerHTML = `
-                    Document:&nbsp;<span class="white_space_wrap" style="width: 300%;">${name}</span>
-                    <span class="border">&nbsp;loading&nbsp;status:&nbsp;</span>
-                    <div class="progress-bar-container">
-                        <div class="progress-bar"></div>
-                    </div>`;
-                const style = document.createElement('style');
-                style.textContent = `
-                    .bottom2 { display: flex; }
-                    .progress-bar-container { width: 100%; position: relative; }
-                    .progress-bar { width: 0%; height: 100%; background-color: #0000ff; }
-                `;
-                windowBottom.appendChild(style);
-                windowDiv.appendChild(windowBottom);
-
-                const addIframe = (src) => {
-                    const iframe = createElement('iframe', "item_preview", windowContents);
-                    iframe.src = src;
-                    iframe.style.width = "100%";
-                    iframe.style.height = "100%";
-                    windowContents.classList.add("scrollbar_none");
-                };
-                if (isYouTubeURL(url)) {
-                    addIframe(`https://www.youtube.com/embed/${extractYouTubeID(url)}`);
-                    windowContents.classList.add('window_resize');
-                } else if (isPageUrl(url)) {
-                    addIframe(url);
-                    windowContents.classList.add('window_resize');
-                } else {
-                    noticewindow_create("error", "このファイル形式はサポートされていません。");
-                }
-                setTimeout(() => {
-                    pagewindow();
-                    optimizeWindows();
-                    resolve();
-                }, 0);
-                dropArea.appendChild(windowDiv);
-            });
-        };
+        const processFile = (url, x, y) => new Promise(resolve => {
+            const w = createElement('div', "child_windows testwindow2 w3 resize");
+            Object.assign(w.style, { left: x + "px", top: y + "px", zIndex: largestZIndex++ });
+            let fileData = JSON.parse(localStorage.getItem('fileData')) || [];
+            fileData = fileData.filter(item => item.url !== url);
+            const title = createElement('div', "title", w);
+            createElement('span', "title_icon", title);
+            createElement('span', "white_space_wrap", title, name);
+            const btns = createElement('div', "title_buttons", w);
+            createElement('span', "drag_button", btns, "\u00A0");
+            const closeBtn = createElement('span', "close_button button2 allclose_button", btns);
+            createElement('span', "bigminbtn button2", btns);
+            createElement('span', "minimization_button button2", btns);
+            createElement('br', null, btns);
+            const title2 = createElement('div', "title2", w);
+            title2.style.padding = "6px";
+            title2.innerHTML = `<div class="bold large" style="display:flex;">
+      <button class="button2 bold large" onclick="iframe_reload(event)">&nbsp;↻&nbsp;</button>&nbsp;location:&nbsp;
+      <span class="medium border2 white_space_wrap" style="display:inline-block;background:#fff;overflow:hidden;text-overflow:ellipsis;">${url}</span>
+      <span class="button2 small" style="margin-left:5px;" onclick="window2url_copy(event)">URLのコピー</span>
+    </div>`;
+            closeBtn.onclick = () => {
+                const p = closeBtn.closest('.child_windows');
+                if (p) { p.remove(); zindexwindow_addnavy(); }
+            };
+            const contents = createElement('div', "window_contents border2", w);
+            const bottom = createElement('div', "window_bottom border2 bottom2", w);
+            bottom.innerHTML = `
+      Document:&nbsp;<span class="white_space_wrap" style="width:300%;">${name}</span>
+      <span class="border">&nbsp;loading&nbsp;status:&nbsp;</span>
+      <div class="progress-bar-container"><div class="progress-bar"></div></div>`;
+            const style = document.createElement('style');
+            style.textContent = `
+      .bottom2 { display:flex; }
+      .progress-bar-container { width:100%; position:relative; }
+      .progress-bar { width:0%; height:100%; background:#00f; }
+    `;
+            bottom.appendChild(style);
+            const addIframe = src => {
+                const iframe = createElement('iframe', "item_preview", contents);
+                iframe.src = src;
+                Object.assign(iframe.style, { width: "100%", height: "100%" });
+                contents.classList.add("scrollbar_none");
+            };
+            if (isYouTubeURL(url)) {
+                addIframe(`https://www.youtube.com/embed/${extractYouTubeID(url)}`);
+                contents.classList.add('window_resize');
+            } else if (isPageUrl(url)) {
+                addIframe(url);
+                contents.classList.add('window_resize');
+            } else {
+                noticewindow_create("error", "このファイル形式はサポートされていません。");
+            }
+            dropArea.appendChild(w);
+            setTimeout(() => {
+                pagewindow();
+                optimizeWindows();
+                resolve();
+            }, 0);
+        });
         processFile(url, 0, 0);
     }
 
@@ -5265,96 +5245,84 @@ if (ua.includes("mobile")) {
     }
 
     const dropArea = document.querySelector('#soft_windows');
-    nex_files.addEventListener('dragover', (event) => {
-        event.preventDefault();
-    });
-    nex_files.addEventListener('drop', (event) => {
-        event.preventDefault();
-        const files = event.dataTransfer.files;
-        const files2 = event.dataTransfer;
-        const url = files2.getData('text/uri-list');
-        const processFile = (file, x, y) => {
-            return new Promise((resolve) => {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const result = e.target.result;
-                    const windowDiv = createElement('div', "child_windows testwindow2 resize", null);
-                    windowDiv.style.left = `${event.clientX}px`;
-                    windowDiv.style.top = `${event.clientY}px`;
-                    windowDiv.style.zIndex = largestZIndex++;
-                    const titleDiv = createElement('div', "title", windowDiv);
-                    createElement('span', "title_icon", titleDiv);
-                    createElement('span', "white_space_wrap", titleDiv, file.name);
-                    const titleButtons = createElement('div', "title_buttons", windowDiv);
-                    createElement('span', "drag_button", titleButtons, "&nbsp;");
-                    const closeButton = createElement('span', "close_button button2 allclose_button", titleButtons);
-                    createElement('span', "bigminbtn button2", titleButtons);
-                    createElement('span', "minimization_button button2", titleButtons);
-                    createElement('br', null, titleButtons);
-                    closeButton.addEventListener('click', () => {
-                        const parentWindow = closeButton.closest('.child_windows');
-                        if (parentWindow) {
-                            parentWindow.remove();
-                            zindexwindow_addnavy();
-                        }
-                    });
-                    const windowContents = createElement('div', "window_contents", windowDiv);
-                    const addMediaContent = (tag, src) => {
-                        const el = createElement(tag, "item_preview", windowContents);
-                        el.src = src;
-                        tag === 'video' && (el.controls = true);
-                        windowContents.classList.add("scrollbar_none");
-                    };
-                    const addIframe = (src) => {
-                        const iframe = createElement('iframe', "item_preview", windowContents);
-                        iframe.src = src;
-                        iframe.style.width = "100%";
-                        iframe.style.height = "100%";
-                        windowContents.classList.add("scrollbar_none");
-                    };
-                    if (file.type.startsWith('image/')) {
-                        addMediaContent('img', result);
-                        const entryDiv = document.createElement('div');
-                        entryDiv.innerHTML = `<div class="window_bottom border2">
-        <span class="button2" onclick="updateWallpaper('${url}')">画像を背景に適用</span></div>`;
-                        windowDiv.appendChild(entryDiv);
-                    } else if (file.type.startsWith('video/')) {
-                        addMediaContent('video', result);
-                    } else if (file.type === 'application/pdf') {
-                        addIframe(result);
-                    } else if (file.type.startsWith('text/')) {
-                        createElement('p', "item_preview", windowContents, e.target.result);
-                    } else if (isYouTubeURL(url)) {
-                        addIframe(`https://www.youtube.com/embed/${extractYouTubeID(url)}`);
-                    } else if (isPageUrl(url)) {
-                        addIframe(url)
-                    } else {
-                        noticewindow_create("error", "このファイル形式はサポートされていません。");
+    nex_files.addEventListener('dragover', e => e.preventDefault());
+    nex_files.addEventListener('drop', e => {
+        e.preventDefault();
+        const files = e.dataTransfer.files;
+        const url = e.dataTransfer.getData('text/uri-list');
+        const isSupported = f => {
+            const t = f.type;
+            return t.startsWith('image/') || t.startsWith('video/') || t === 'application/pdf' || t.startsWith('text/') || isYouTubeURL(url) || isPageUrl(url);
+        };
+        const processFile = (file, x, y) => new Promise((res, rej) => {
+            const reader = new FileReader();
+            reader.onload = ev => {
+                const r = ev.target.result;
+                const w = createElement('div', "child_windows testwindow2 resize");
+                Object.assign(w.style, { left: `${x}px`, top: `${y}px`, zIndex: largestZIndex++ });
+                const t = createElement('div', "title", w);
+                createElement('span', "title_icon", t);
+                createElement('span', "white_space_wrap", t, file.name);
+                const btns = createElement('div', "title_buttons", w);
+                createElement('span', "drag_button", btns, "\u00A0");
+                const closeBtn = createElement('span', "close_button button2 allclose_button", btns);
+                createElement('span', "bigminbtn button2", btns);
+                createElement('span', "minimization_button button2", btns);
+                createElement('br', null, btns);
+                closeBtn.onclick = () => {
+                    const p = closeBtn.closest('.child_windows');
+                    if (p) {
+                        p.remove();
+                        zindexwindow_addnavy();
                     }
-                    setTimeout(() => {
-                        pagewindow();
-                        resolve();
-                    }, 0);
-                    dropArea.appendChild(windowDiv);
                 };
-                reader.readAsDataURL(file);
-            })
-        }
+                const contents = createElement('div', "window_contents", w);
+                const addMedia = (tag, src) => {
+                    const el = createElement(tag, "item_preview", contents);
+                    el.src = src;
+                    if (tag === 'video') el.controls = true;
+                    contents.classList.add("scrollbar_none");
+                };
+                const addIframe = src => {
+                    const iframe = createElement('iframe', "item_preview", contents);
+                    iframe.src = src;
+                    Object.assign(iframe.style, { width: "100%", height: "100%" });
+                    contents.classList.add("scrollbar_none");
+                };
+                if (file.type.startsWith('image/')) {
+                    addMedia('img', r);
+                    const eDiv = document.createElement('div');
+                    eDiv.innerHTML = `<div class="window_bottom border2"><span class="button2" onclick="updateWallpaper('${url}')">画像を背景に適用</span></div>`;
+                    w.appendChild(eDiv);
+                } else if (file.type.startsWith('video/')) addMedia('video', r);
+                else if (file.type === 'application/pdf') addIframe(r);
+                else if (file.type.startsWith('text/')) createElement('p', "item_preview", contents, r);
+                else if (isYouTubeURL(url)) addIframe(`https://www.youtube.com/embed/${extractYouTubeID(url)}`);
+                else if (isPageUrl(url)) addIframe(url);
+                else {
+                    noticewindow_create("error", "このファイル形式はサポートされていません。");
+                    rej(new Error("Unsupported file type"));
+                    return;
+                }
+                dropArea.appendChild(w);
+                setTimeout(() => { pagewindow(); res(); }, 0);
+            };
+            reader.onerror = () => rej(new Error(`Failed to read file: ${file.name}`));
+            reader.readAsDataURL(file);
+        });
         for (let i = 0; i < files.length; i++) {
-            const file = files[i];
+            const f = files[i];
+            if (!isSupported(f)) {
+                noticewindow_create("error", `対応していないファイルです: ${f.name}`);
+                continue;
+            }
             setTimeout(() => {
-                noticewindow_create("loading", `読み込み中... ${i + 1} of ${files.length}: ${file.name}`)
+                noticewindow_create("loading", `読み込み中... ${i + 1} of ${files.length}: ${f.name}`);
                 document.querySelector('.add_create_windows').style.zIndex = largestZIndex++;
-                processFile(file, event.clientX, event.clientY).then(() => {
-                    addwindow_remove();
-                }).catch(error => {
-                    let processingMessage;
-                    if (processingMessage) {
-                        console.error(`Error processing file ${i + 1}:`, error);
-                        processingMessage.innerText = `Error processing file ${i + 1} of ${files.length}: ${file.name}`;
-                    } else {
-                        console.error("processingMessage element not found.");
-                    }
+                processFile(f, e.clientX, e.clientY).then(addwindow_remove).catch(err => {
+                    console.error(`Error processing file ${i + 1}:`, err);
+                    const m = document.querySelector('.processingMessage');
+                    if (m) m.innerText = `Error processing file ${i + 1} of ${files.length}: ${f.name}`;
                 });
             }, i * 200);
         }
@@ -5490,19 +5458,17 @@ if (ua.includes("mobile")) {
 
     function nexser_search_button() {
         const fragment = document.createDocumentFragment();
-        const windowElements = document.querySelectorAll('.child_windows:not(.window_nosearch)');
-        windowElements.forEach(windowElement => {
-            const nestedChild = windowElement.children[0]?.children[1];
-            if (nestedChild && nestedChild.textContent) {
-                const button = document.createElement('li');
-                button.className = 'borderinline_dotted button2 search_button white_space_wrap';
-                const span = document.createElement('span');
-                span.textContent = `　${nestedChild.textContent}　`;
-                button.appendChild(span);
-                button.addEventListener('click', () => toggleWindow(windowElement));
-                fragment.appendChild(button);
+        const windows = document.querySelectorAll('.child_windows:not(.window_nosearch)');
+        for (let i = 0, len = windows.length; i < len; i++) {
+            const nestedChild = windows[i].children[0]?.children[1];
+            if (nestedChild?.textContent) {
+                const li = document.createElement('li');
+                li.className = 'borderinline_dotted button2 search_button white_space_wrap';
+                li.textContent = `　${nestedChild.textContent}　`;
+                li.addEventListener('click', () => toggleWindow(windows[i]));
+                fragment.appendChild(li);
             }
-        });
+        }
         document.getElementById('myUL').appendChild(fragment);
     }
     nexser_search_button();
@@ -5564,99 +5530,64 @@ if (ua.includes("mobile")) {
         })
     );
 
-    let currentDate = new Date();
-    let alarm_hours = currentDate.getHours();
-    let alarm_minutes = currentDate.getMinutes();
-    let alarm_seconds = currentDate.getSeconds();
     let timerText = document.getElementById('timerText');
     let set_btn = document.getElementById('set_btn');
-    let delete_btn = document.getElementById('delete_btn');
-    let option_hours;
-    let option_minutes;
     let parent_list = document.getElementById('parent_list');
     let record = JSON.parse(localStorage.getItem('alarms')) || [];
-    let x = record.length;
-    let Setting = function (sethour, setminute) {
-        this.sethour = sethour;
-        this.setminute = setminute;
+    let lastAlarmTime = '';
+    const adjustDigit = n => (n < 10 ? '0' + n : n);
+    const saveAlarms = () => localStorage.setItem('alarms', JSON.stringify(record));
+    const createListItem = (hour, minute, id) => {
+        const li = document.createElement('li');
+        li.textContent = `${hour}時${minute}分`;
+        li.id = id;
+        li.classList.add('deletes', 'large');
+        const span = document.createElement('span');
+        span.textContent = '削除';
+        span.classList.add('delete_btn', 'button2', 'large');
+        li.appendChild(span);
+        span.addEventListener('click', () => {
+            record[id] = 'disabled';
+            li.remove();
+            saveAlarms();
+        });
+        return li;
     };
-    function adjustDigit(num) {
-        let digit;
-        if (num < 10) { digit = `0${num}`; }
-        else { digit = num; }
-        return digit;
-    }
-    set_btn.addEventListener('click', function () {
-        let lis = parent_list.getElementsByTagName('li');
-        let len = lis.length;
-        if (len >= 10) { return; }
-        option_hours = document.alarm_form.option_hours.value;
-        option_minutes = document.alarm_form.option_minutes.value;
-        record[x] = new Setting(option_hours, option_minutes);
-        let container_list = document.createElement('li');
-        let list_content = document.createTextNode(`${record[x].sethour}時${record[x].setminute}分`);
-        parent_list.appendChild(container_list);
-        container_list.appendChild(list_content);
-        let list_span = document.createElement('span');
-        let id_li = document.createAttribute('id');
-        let id_span = document.createAttribute('id');
-        let span_content = document.createTextNode('削除');
-        container_list.appendChild(list_span);
-        list_span.appendChild(span_content);
-        container_list.setAttributeNode(id_li);
-        container_list.id = x;
-        container_list.classList.add('deletes', 'large');
-        list_span.classList.add('delete_btn', 'button2', 'large');
-        addDeleteFunctionality();
-        x++;
+    const loadAlarms = () => {
+        parent_list.innerHTML = '';
+        record.forEach((alarm, i) => {
+            if (alarm !== 'disabled') {
+                parent_list.appendChild(createListItem(alarm.sethour, alarm.setminute, i));
+            }
+        });
+    };
+    set_btn.addEventListener('click', () => {
+        if (parent_list.children.length >= 10) return;
+        const f = document.alarm_form;
+        const h = f.option_hours.value;
+        const m = f.option_minutes.value;
+        record.push({ sethour: h, setminute: m });
+        parent_list.appendChild(createListItem(h, m, record.length - 1));
         saveAlarms();
     });
-    function saveAlarms() {
-        localStorage.setItem('alarms', JSON.stringify(record));
-    }
-    function loadAlarms() {
-        for (let i = 0; i < record.length; i++) {
-            if (record[i] !== 'disabled') {
-                let container_list = document.createElement('li');
-                let list_content = document.createTextNode(`${record[i].sethour}時${record[i].setminute}分`);
-                parent_list.appendChild(container_list);
-                container_list.appendChild(list_content);
-                let list_span = document.createElement('span');
-                let span_content = document.createTextNode('削除');
-                container_list.appendChild(list_span);
-                list_span.appendChild(span_content);
-                container_list.id = i;
-                container_list.classList.add('deletes', 'large');
-                list_span.classList.add('delete_btn', 'button2', 'large');
-            }
+    const updateCurrentTime = () => {
+        const now = new Date();
+        const hh = adjustDigit(now.getHours());
+        const mm = adjustDigit(now.getMinutes());
+        const ss = adjustDigit(now.getSeconds());
+        timerText.textContent = `${hh}:${mm}:${ss}`;
+        const currentTimeKey = `${hh}:${mm}`;
+        if (ss === '00' && currentTimeKey !== lastAlarmTime) {
+            record.forEach(a => {
+                if (a !== 'disabled' && a.sethour == now.getHours() && a.setminute == now.getMinutes()) {
+                    noticewindow_create("alarm", "お時間です!　");
+                    lastAlarmTime = currentTimeKey;
+                }
+            });
         }
-        addDeleteFunctionality();
-    }
-    function addDeleteFunctionality() {
-        let deletes = document.getElementsByClassName('deletes');
-        for (var i = 0, de_len = deletes.length; i < de_len; i++) {
-            deletes[i].onclick = function () {
-                record[this.id] = 'disabled';
-                this.id = 'temp';
-                var temp = document.getElementById('temp');
-                temp.parentNode.removeChild(temp);
-                saveAlarms();
-            };
-        }
-    }
-    function updateCurrentTime() {
-        currentDate = new Date();
-        alarm_hours = adjustDigit(currentDate.getHours());
-        alarm_minutes = adjustDigit(currentDate.getMinutes());
-        alarm_seconds = adjustDigit(currentDate.getSeconds());
-        timerText.innerHTML = `${alarm_hours}:${alarm_minutes}:${alarm_seconds}`;
-        for (var i = 0, len = record.length; i < len; i++) {
-            if (record[i].sethour == currentDate.getHours() && record[i].setminute == currentDate.getMinutes() && alarm_seconds == 0) {
-                noticewindow_create("alarm", "お時間です!　");
-            };
-        };
-    }
+    };
     loadAlarms();
+    setInterval(updateCurrentTime, 1000);
 
     window.onerror = function (message, source, lineno, colno, error) {
         const errorMessage = `
@@ -5689,7 +5620,6 @@ if (ua.includes("mobile")) {
     const taskbar_resize = () => {
         if (!parent || !child || !rightGroup || !taskbar) return;
         const offset = window.getComputedStyle(parent).display === 'none' ? 75 : 150;
-
         Object.assign(child.style, {
             position: 'absolute',
             left: `${parent.clientWidth + 70}px`,
@@ -5803,21 +5733,17 @@ if (ua.includes("mobile")) {
     kakeibo_loadEntries();
     kakeibo_setCurrentDateTime();
 
-    const slider = document.getElementById('opacitySlider');
-    const targetDiv = document.querySelector('.screen_light');
-    const valueDisplay = document.getElementById('valueDisplay');
-    const savedOpacity = localStorage.getItem('divOpacity');
-    if (savedOpacity !== null) {
-        targetDiv.style.opacity = 1 - savedOpacity;
-        slider.value = savedOpacity * 100;
-        valueDisplay.textContent = slider.value;
-    }
-    slider.addEventListener('input', () => {
-        const opacityValue = 1 - (slider.value / 100);
-        targetDiv.style.opacity = opacityValue;
-        valueDisplay.textContent = slider.value;
-        localStorage.setItem('divOpacity', 1 - opacityValue);
-    });
+    const s = document.getElementById('opacitySlider'),
+        d = document.querySelector('.screen_light'),
+        v = document.getElementById('valueDisplay'),
+        o = localStorage.getItem('divOpacity');
+    o && (d.style.opacity = 1 - o, s.value = o * 100, v.textContent = s.value);
+    s.oninput = () => {
+        const val = s.value, op = 1 - val / 100;
+        d.style.opacity = op;
+        v.textContent = val;
+        localStorage.setItem('divOpacity', 1 - op);
+    };
 
     const config = { attributes: true, childList: true, subtree: true, attributeFilter: ['class', 'style'] };
     let previousActiveCount = 0, previousLargestZIndex = largestZIndex;
@@ -5852,93 +5778,85 @@ if (ua.includes("mobile")) {
         updateChargeInfo();
     });
 
-    document.querySelectorAll('.window_tool').forEach(windowtool_files => {
-        const windowtool_files_parent = document.createElement('div');
-        windowtool_files_parent.innerHTML = `<span class="bold" style="position: absolute; margin-top: 5px;">Address:</span>
-  <span class="winchild_border"></span>
-  <div class="windowtool_parent">
-    <span class="startmenu_file_icon"></span>
-    <button class="button2" style="height: 20px; font-size: large; float: right;">&#x25BC;</button>
-    &emsp;&emsp;<span class="windowtool_child_filenames"></span>
-    <div class="windowtool_child">
-      <ul>
-        ${[
-                { text: 'main', class: 'test_button' },
-                { text: 'my computer', class: 'test_button2' },
-                { text: 'browser', class: 'test_button33' },
-                { text: 'control panel', class: 'test_button3' },
-                { text: 'accessory', class: 'test_button15' },
-                { text: 'sound', class: 'test_button8' },
-                { text: 'nexser prompt', class: 'test_button6' },
-                { text: 'driver', class: 'test_button9' },
-                { text: 'notepad', class: 'test_button12' },
-                { text: 'objective sheet', class: 'test_button30' },
-            ].map(item => `
-          <li class="${item.class}"><span class="startmenu_file_icon"></span>${item.text}</li>`).join('')}
-      </ul>
-    </div>
-  </div>`;
-        windowtool_files.appendChild(windowtool_files_parent);
+    const menuItems = [
+        { text: 'main', class: 'test_button' },
+        { text: 'my computer', class: 'test_button2' },
+        { text: 'browser', class: 'test_button33' },
+        { text: 'control panel', class: 'test_button3' },
+        { text: 'accessory', class: 'test_button15' },
+        { text: 'sound', class: 'test_button8' },
+        { text: 'nexser prompt', class: 'test_button6' },
+        { text: 'driver', class: 'test_button9' },
+        { text: 'notepad', class: 'test_button12' },
+        { text: 'objective sheet', class: 'test_button30' },
+    ];
+    const buttonsHTML = `
+  <button class="button2 windowfile2 bold" style="width:25px;">・</button>
+  <button class="button2 windowfile1 bold" style="width:25px;">ー</button>
+  <button class="button2 windowfile3 bold" style="width:25px;">=&nbsp;=</button>
+  <button class="button2 nexser_search" style="width:25px;"><span class="magnifying_glass"></span></button>
+  <button class="button2" onclick="filetimes_test()" style="width:25px;margin-left:10px;">TR</button>
+  <button class="button2" onclick="filetimes_test2()" style="width:25px;">TF</button>
+  <button class="button2" onclick="window_subtitle()" style="width:25px;margin-left:10px;text-shadow:2px 2px 1px dimgray;">title</button>
+`;
+    document.querySelectorAll('.window_tool').forEach(tool => {
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = `
+    <span class="bold" style="position:absolute;margin-top:5px;">Address:</span>
+    <span class="winchild_border"></span>
+    <div class="windowtool_parent">
+      <span class="startmenu_file_icon"></span>
+      <button class="button2" style="height:20px;font-size:large;float:right;">&#x25BC;</button>
+      &emsp;&emsp;<span class="windowtool_child_filenames"></span>
+      <div class="windowtool_child"><ul>
+        ${menuItems.map(item => `<li class="${item.class}"><span class="startmenu_file_icon"></span>${item.text}</li>`).join('')}
+      </ul></div>
+    </div>`;
+        tool.appendChild(wrapper);
     });
     document.querySelectorAll('.windowtool_parent').forEach(parent => {
-        const child = parent.lastElementChild;
-        parent.addEventListener('mousedown', (event) => {
-            if (!event.target.closest('.windowtool_child')) {
+        const child = parent.querySelector('.windowtool_child');
+        parent.addEventListener('mousedown', e => {
+            if (!e.target.closest('.windowtool_child')) {
                 child.style.display = (child.style.display === 'block') ? 'none' : 'block';
             }
         });
-        child.addEventListener('click', (event) => {
-            event.stopPropagation();
+        child.addEventListener('click', e => {
+            e.stopPropagation();
             child.style.display = 'none';
         });
     });
     document.querySelectorAll('.windowtool_child_filenames').forEach(filename => {
-        filename.textContent = filename.closest('.child_windows').children[0].lastElementChild.textContent;
+        const windowDiv = filename.closest('.child_windows');
+        filename.textContent = windowDiv?.children[0]?.lastElementChild?.textContent || '';
     });
-    document.querySelectorAll('.windowtool_buttons_child').forEach(windowtool_buttons_child => {
-        const buttonsHTML = `<button class="button2 windowfile2 bold" style="width: 25px;">・</button>
-  <button class="button2 windowfile1 bold" style="width: 25px;">ー</button>
-  <button class="button2 windowfile3 bold" style="width: 25px;">=&nbsp;=</button>
-  <button class="button2 nexser_search" style="width: 25px;">&nbsp;<span class="magnifying_glass"></span></button>
-  <button class="button2" onclick="filetimes_test()" style="width: 25px; margin-left: 10px;">TR</button>
-  <button class="button2" onclick="filetimes_test2()" style="width: 25px;">TF</button>
-  <button class="button2" onclick="window_subtitle()" style="width: 25px; margin-left: 10px; text-shadow: 2px 2px 1px dimgray;">title</button>`;
-        const windowtool_childbtns = document.createElement('div');
-        windowtool_childbtns.innerHTML = buttonsHTML;
-        windowtool_childbtns.style = "display: flex; height: 25px;";
-        windowtool_buttons_child.appendChild(windowtool_childbtns);
-        setTimeout(() => {
-            document.querySelectorAll('.windowfile1').forEach((windowfile_1) => {
-                windowfile_1.addEventListener('click', () => {
-                    localStorage.setItem('windowfile_1', true);
-                    localStorage.removeItem('windowfile_2');
-                    localStorage.removeItem('windowfile_3');
-                    window_file_list_change();
-                });
-            });
-            document.querySelectorAll('.windowfile2').forEach((windowfile_2) => {
-                windowfile_2.addEventListener('click', () => {
-                    localStorage.setItem('windowfile_2', true);
-                    localStorage.removeItem('windowfile_1');
-                    localStorage.removeItem('windowfile_3');
-                    window_file_list_reset();
-                });
-            });
-            document.querySelectorAll('.windowfile3').forEach((windowfile3) => {
-                windowfile3.addEventListener('click', () => {
-                    localStorage.setItem('windowfile_3', true);
-                    localStorage.removeItem('windowfile_1');
-                    localStorage.removeItem('windowfile_2');
-                    window_file_list_change2();
-                });
-            });
-            document.querySelectorAll('.nexser_search').forEach(nexser_search => { nexser_search.onclick = null; nexser_search.onclick = () => { toggleWindow(nexser_search_menu); }; });
-            if (localStorage.getItem('filetimes')) {
-                document.querySelectorAll('.windowfile_time').forEach(windowfileTime => {
-                    windowfileTime.style.display = 'none';
-                });
-            }
-        }, 100);
+    document.querySelectorAll('.windowtool_buttons_child').forEach(container => {
+        const div = document.createElement('div');
+        div.innerHTML = buttonsHTML;
+        div.style = "display:flex;height:25px;";
+        container.appendChild(div);
+    });
+    requestAnimationFrame(() => {
+        const setMode = (set, others, action) => {
+            localStorage.setItem(set, true);
+            others.forEach(k => localStorage.removeItem(k));
+            action();
+        };
+        document.querySelectorAll('.windowfile1').forEach(btn =>
+            btn.addEventListener('click', () => setMode('windowfile_1', ['windowfile_2', 'windowfile_3'], window_file_list_change))
+        );
+        document.querySelectorAll('.windowfile2').forEach(btn =>
+            btn.addEventListener('click', () => setMode('windowfile_2', ['windowfile_1', 'windowfile_3'], window_file_list_reset))
+        );
+        document.querySelectorAll('.windowfile3').forEach(btn =>
+            btn.addEventListener('click', () => setMode('windowfile_3', ['windowfile_1', 'windowfile_2'], window_file_list_change2))
+        );
+        document.querySelectorAll('.nexser_search').forEach(btn => {
+            btn.onclick = () => toggleWindow(nexser_search_menu);
+        });
+        if (localStorage.getItem('filetimes')) {
+            document.querySelectorAll('.windowfile_time').forEach(el => el.style.display = 'none');
+        }
     });
 
     function window_subtitle() {
@@ -5955,18 +5873,16 @@ if (ua.includes("mobile")) {
         }
     }
 
-    document.querySelectorAll('.file_windows').forEach(file_windows => {
-        const lastChildText = file_windows.querySelector('.title').lastElementChild.textContent;
-        const test3 = file_windows.children[4];
-        const file_windows_parent_html = `
-            <div class="xx-large bold window_subtitles" style="display: none; background: linear-gradient(225deg, rgb(216, 250, 250) 20%, rgb(210, 252, 210) 50%, whitesmoke, rgb(219, 219, 219)); text-shadow: 4px 4px 2px dimgray;">
-                ${lastChildText}
-                <div class="welcome_icons" style="opacity: 0.2; z-index: -1;">
-                    <span class="welicon_1"></span>
-                    <span class="welicon_2"></span>
-                </div>
-            </div>`;
-        test3.insertAdjacentHTML('afterbegin', file_windows_parent_html);
+    document.querySelectorAll('.file_windows').forEach(el => {
+        const title = el.querySelector('.title')?.lastElementChild?.textContent;
+        if (!title) return;
+        el.children[4]?.insertAdjacentHTML('afterbegin',
+            `<div class="xx-large bold window_subtitles" style="display:none;background:linear-gradient(225deg,#d8fafa 20%,#d2fcd2 50%,whitesmoke,#dbdbdb);text-shadow:4px 4px 2px dimgray;">
+      ${title}
+      <div class="welcome_icons" style="opacity:0.2;z-index:-1;">
+        <span class="welicon_1"></span><span class="welicon_2"></span>
+      </div>
+    </div>`);
     });
     if (localStorage.getItem('window_subtitle')) {
         document.querySelectorAll('.window_subtitles').forEach(element => {
@@ -6050,8 +5966,7 @@ if (ua.includes("mobile")) {
     <div class="title_buttons">
       <span class="drag_button">&nbsp;</span>
       <span class="close_button button2 allclose_button"></span>
-    </div>
-  `;
+    </div>`;
         entryDiv.appendChild(contentDiv);
         entryDiv.querySelector(".close_button").addEventListener("click", error_windows_close);
 
