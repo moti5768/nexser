@@ -4572,6 +4572,9 @@ if (ua.includes("mobile")) {
             });
             element.addEventListener('mouseleave', () => {
                 deskimg.innerHTML = "";
+                if (localStorage.getItem('selectedWallpaper')) {
+                    applySavedWallpaper();
+                }
             });
         }
     });
