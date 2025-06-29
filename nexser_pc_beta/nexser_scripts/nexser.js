@@ -412,7 +412,7 @@ if (ua.includes("mobile")) {
             document.querySelector('.taskbar_position_button').textContent = "bottom";
             taskbar.style.top = "0px";
             document.getElementById('task_resizer').style.display = "none";
-            document.getElementById('task_resizer2').style.display = "none";
+            document.getElementById('task_resizer2').style.display = "block";
         } else {
             document.getElementById('task_resizer').style.display = "block";
             document.getElementById('task_resizer2').style.display = "none";
@@ -2885,57 +2885,45 @@ if (ua.includes("mobile")) {
         }
     }
 
-    function check(elm1, elm2) {
-        const d1 = elm1.getBoundingClientRect();
-        const d2 = elm2.getBoundingClientRect();
-        return !(
-            d1.top > d2.bottom ||
-            d1.right < d2.left ||
-            d1.bottom < d2.top ||
-            d1.left > d2.right
-        )
+    function check(a, b) {
+        const r1 = a.getBoundingClientRect(), r2 = b.getBoundingClientRect();
+        return !(r1.top > r2.bottom || r1.right < r2.left || r1.bottom < r2.top || r1.left > r2.right);
     }
     const elm1 = document.getElementById('taskbar');
     const elm2 = document.getElementById('toolbar');
-
+    const taskHeight = () => taskbar.clientHeight;
+    const taskSetting = () => localStorage.getItem('taskbar_position_button');
     document.querySelectorAll('.drag_button2').forEach(drag => {
-        let drag2 = drag.closest('#toolbar');
-        let x, y;
-        const mdown_2 = e => {
-            let event = e.type === "mousedown" ? e : e.changedTouches[0];
-            x = event.pageX - drag2.offsetLeft;
-            y = event.pageY - drag2.offsetTop;
-            document.addEventListener("mousemove", mmove_2, { passive: false });
-            document.addEventListener("touchmove", mmove_2, { passive: false });
-            document.addEventListener("mouseup", mup_2, { passive: false });
-            document.addEventListener("touchend", mup_2, { passive: false });
-            document.addEventListener("mouseleave", mup_2, { passive: false });
-            document.body.addEventListener("mouseleave", mup_2, { passive: false });
-        };
-        const mmove_2 = e => {
-            let event = e.type === "mousemove" ? e : e.changedTouches[0];
+        const target = drag.closest('#toolbar');
+        let x = 0, y = 0;
+        const getEvent = e => e.type.startsWith('mouse') ? e : e.changedTouches[0];
+        const move = e => {
+            const ev = getEvent(e);
             requestAnimationFrame(() => {
-                drag2.style.top = event.pageY - y + "px";
-                drag2.style.left = event.pageX - x + "px";
+                target.style.left = `${ev.pageX - x}px`;
+                target.style.top = `${ev.pageY - y}px`;
             });
         };
-        const mup_2 = () => {
-            document.removeEventListener("mousemove", mmove_2);
-            document.removeEventListener("touchmove", mmove_2);
-            document.removeEventListener("mouseup", mup_2);
-            document.removeEventListener("touchend", mup_2);
-            document.removeEventListener("mouseleave", mup_2);
-            document.body.removeEventListener("mouseleave", mup_2);
-            const task = taskbar.clientHeight;
-            if (check(elm1, elm2) && localStorage.getItem('taskbar_position_button')) {
-                toolbar.style.top = `${task}px`;
-            } else if (check(elm1, elm2)) {
-                toolbar.style.top = "";
-                toolbar.style.bottom = `${task}px`;
+        const up = () => {
+            ['mousemove', 'touchmove', 'mouseup', 'touchend', 'mouseleave'].forEach(t =>
+                document.removeEventListener(t, move)
+            );
+            document.body.removeEventListener('mouseleave', up);
+            if (check(taskbar, toolbar)) {
+                toolbar.style.top = taskSetting() ? `${taskHeight()}px` : '';
+                toolbar.style.bottom = taskSetting() ? '' : `${taskHeight()}px`;
             }
         };
-        drag.addEventListener("mousedown", mdown_2, { passive: false });
-        drag.addEventListener("touchstart", mdown_2, { passive: false });
+        const down = e => {
+            const ev = getEvent(e);
+            x = ev.pageX - target.offsetLeft;
+            y = ev.pageY - target.offsetTop;
+            ['mousemove', 'touchmove'].forEach(t => document.addEventListener(t, move, { passive: false }));
+            ['mouseup', 'touchend', 'mouseleave'].forEach(t => document.addEventListener(t, up, { passive: false }));
+            document.body.addEventListener('mouseleave', up, { passive: false });
+        };
+        drag.addEventListener('mousedown', down, { passive: false });
+        drag.addEventListener('touchstart', down, { passive: false });
     });
 
     document.querySelectorAll('.toolbar_on, .toolbar_off').forEach((element) => {
