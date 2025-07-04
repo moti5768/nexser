@@ -146,27 +146,21 @@ if (ua.includes("mobile")) {
     const editor_2 = document.getElementById('editor_2');
 
     document.addEventListener('click', () => {
-        if (localStorage.getItem('game_none') || localStorage.getItem('work_deny')) {
-            document.querySelectorAll('.game_window:not(.active)').forEach((test) => {
-                noticewindow_create("error", "制限されているため、起動できませんでした");
-                test.classList.add('active');
-            })
-        }
-
-        if (localStorage.getItem('work_deny')) {
-            document.querySelectorAll('.work_no:not(.active)').forEach((test) => {
-                noticewindow_create("error", "仕事用でセットアップされているため、起動できませんでした");
-                test.classList.add('active');
-            })
-        }
-
+        ['game_none', 'work_deny'].forEach(k => {
+            if (localStorage.getItem(k)) {
+                const sel = k === 'game_none' ? '.game_window' : '.work_no';
+                const msg = k === 'game_none' ? "制限されているため、起動できませんでした" : "仕事用でセットアップされているため、起動できませんでした";
+                document.querySelectorAll(`${sel}:not(.active)`).forEach(el => {
+                    noticewindow_create("error", msg);
+                    el.classList.add('active');
+                });
+            }
+        });
         bigwindow_resize();
         document.querySelector('.local_memory2').innerHTML = `&emsp;${(calculateLocalStorageSize() / 1024).toFixed(2)}KB&emsp;`;
         removePopups();
-        setTimeout(() => {
-            firstLoad = false;
-        }, 500);
-    })
+        setTimeout(() => firstLoad = false, 500);
+    });
 
     if (localStorage.getItem('work_deny')) {
         document.querySelector('.edition_text').textContent = "Work Edition";
@@ -184,37 +178,30 @@ if (ua.includes("mobile")) {
         document.getElementsByClassName('game_text')[0].textContent = "ON"
     }
 
-    // マウスドラッグで出てくる水色のエリアの描画
     let startX, startY, isDrawing = false, rectangle;
-    nex_files.addEventListener('mousedown', (e) => {
+    nex_files.addEventListener('mousedown', e => {
         if (desktop.style.display !== "block") return;
-        [startX, startY, isDrawing] = [e.clientX, e.clientY, true];
-        rectangle = Object.assign(document.createElement('div'), {
-            className: 'rectangle',
-            style: {
-                left: `${startX}px`,
-                top: `${startY}px`
-            }
-        });
+        isDrawing = true;
+        [startX, startY] = [e.clientX, e.clientY];
+        rectangle = document.createElement('div');
+        rectangle.className = 'rectangle';
+        rectangle.style.cssText = `left:${startX}px;top:${startY}px;`;
         document.body.appendChild(rectangle);
     });
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-    function handleMouseMove(e) {
+    document.addEventListener('mousemove', e => {
         if (!isDrawing || desktop.style.display !== "block") return;
-        const [currentX, currentY] = [e.clientX, e.clientY];
-        const [width, height] = [Math.abs(currentX - startX), Math.abs(currentY - startY)];
+        const [x, y] = [e.clientX, e.clientY];
         Object.assign(rectangle.style, {
-            width: `${width}px`,
-            height: `${height}px`,
-            left: `${Math.min(startX, currentX)}px`,
-            top: `${Math.min(startY, currentY)}px`
+            width: `${Math.abs(x - startX)}px`,
+            height: `${Math.abs(y - startY)}px`,
+            left: `${Math.min(startX, x)}px`,
+            top: `${Math.min(startY, y)}px`
         });
-    }
-    function handleMouseUp() {
+    });
+    document.addEventListener('mouseup', () => {
         isDrawing = false;
         rectangle_remove();
-    }
+    });
 
     document.addEventListener('mousedown', (e) => {
         fileborder_reset()
@@ -1287,30 +1274,32 @@ if (ua.includes("mobile")) {
     }
 
     function window_none() {
-        document.querySelectorAll('.task_buttons').forEach(task_buttons => task_buttons.remove());
-        document.querySelectorAll('.testwindow2').forEach(win => win.remove());
-        document.querySelectorAll('.error_windows').forEach(win => win.remove());
-        document.querySelectorAll('.child_windows').forEach(win => {
-            win.style.zIndex = "0";["background", "border", "boxShadow", "mixBlendMode", "opacity"].forEach(style => win.style[style] = "");
-            Array.from(win.children).forEach(child => child.style.display = "");
+        ['.task_buttons', '.testwindow2', '.error_windows'].forEach(sel =>
+            document.querySelectorAll(sel).forEach(el => el.remove())
+        );
+        document.querySelectorAll('.child_windows').forEach(w => {
+            Object.assign(w.style, {
+                zIndex: "0", background: "", border: "", boxShadow: "", mixBlendMode: "", opacity: ""
+            });
+            [...w.children].forEach(c => c.style.display = "");
             windowtool();
-            const child2 = win.children[1]?.children[2];
-            if (child2) {
-                child2.dataset.isMaximized = 'false';
-                child2.classList.replace('minbtn', 'bigminbtn');
+            const b = w.children[1]?.children[2];
+            if (b) {
+                b.dataset.isMaximized = "false";
+                b.classList.replace("minbtn", "bigminbtn");
             }
         });
         largestZIndex = 0;
-        allwindows.forEach(allwindow_none => {
-            allwindow_none.classList.add('active');
-            allwindow_none.classList.remove('big', 'w_right', 'w_left');
-            allwindow_none.style.right = "";
-            allwindow_none.style.transition = "";
+        allwindows.forEach(w => {
+            w.classList.add('active');
+            w.classList.remove('big', 'w_right', 'w_left');
+            Object.assign(w.style, { right: "", transition: "" });
         });
         originalDragData = null;
         isSnapped = false;
         windowposition_reset();
     }
+
     function window_active() {
         document.querySelectorAll('.child_windows:not(.window_nosearch)').forEach(allwindow_active => allwindow_active.classList.remove('active'));
     }
@@ -2532,24 +2521,20 @@ if (ua.includes("mobile")) {
         child.classList.add('select');
     });
 
-    document.querySelectorAll('.child_windows:not(.overzindex), .child').forEach(windowElement => {
-        const parentWindow = windowElement.closest('.child_windows');
-        const addEventListeners = element => {
-            element.addEventListener('mousedown', () => {
-                parentWindow.scrollTop = 0;
-                parentWindow.scrollLeft = 0;
-                parentWindow.style.zIndex = largestZIndex++;
-            });
+    document.querySelectorAll('.child_windows:not(.overzindex), .child').forEach(win => {
+        const p = win.closest('.child_windows');
+        const setZ = e => {
+            p.scrollTop = 0;
+            p.scrollLeft = 0;
+            p.style.zIndex = largestZIndex++;
         };
-        addEventListeners(windowElement);
-        windowElement.querySelectorAll('iframe').forEach(iframe => {
+        win.addEventListener('mousedown', () => setZ());
+        win.querySelectorAll('iframe').forEach(iframe => {
             iframe.addEventListener('load', () => {
                 try {
-                    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-                    [iframeDoc, iframeDoc.body].forEach(addEventListeners);
-                } catch (e) {
-                    console.error('iframe no access:', e);
-                }
+                    const d = iframe.contentDocument || iframe.contentWindow.document;
+                    [d, d.body].forEach(el => el && el.addEventListener('mousedown', setZ));
+                } catch { }
             });
         });
     });
@@ -3547,17 +3532,13 @@ if (ua.includes("mobile")) {
         document.drop_form.drop_area.value = textdropdata;
     }
 
-    let dr = document.querySelector('#drop');
-    dr.addEventListener('dragover', supportsPassive ? { passive: true } : false, function (evt) {
-        evt.preventDefault();
-    });
-    dr.addEventListener('drop', function (evt) {
-        evt.preventDefault();
-        if (!localStorage.getItem('textdropdata')) {
-            evt.target.textContent += evt.dataTransfer.getData('text');
-        } else {
-            noticewindow_create("error", "テキストが保存されているため、ドラッグした文字をドロップできません!");
-        }
+    const dr = document.querySelector('#drop');
+    dr.addEventListener('dragover', e => e.preventDefault(), supportsPassive ? { passive: true } : false);
+    dr.addEventListener('drop', e => {
+        e.preventDefault();
+        localStorage.getItem('textdropdata')
+            ? noticewindow_create("error", "テキストが保存されているため、ドラッグした文字をドロップできません!")
+            : e.target.textContent += e.dataTransfer.getData('text');
     });
 
     let calc_result = document.getElementById("result");
@@ -4135,24 +4116,19 @@ if (ua.includes("mobile")) {
         return calendar;
     }
 
-    var val, intervalID;
     function startProgress(increment) {
-        document.getElementById("myProgress").style.display = "block";
-        val = 0;
-        document.getElementById("myProgress").value = val;
-        intervalID = setInterval(() => updateProgress(increment), 0);
-    }
-    function updateProgress(increment) {
-        val += increment;
-        document.getElementById("myProgress").value = val;
-        document.getElementById("myProgress").innerText = val + "%";
-        if (val >= 100) {
-            clearInterval(intervalID);
-            setTimeout(() => {
-                document.getElementById("myProgress").style.display = "none";
-                val = 0;
-            }, 1000);
-        }
+        const bar = document.getElementById("myProgress");
+        let val = 0;
+        bar.style.display = "block";
+        bar.value = val;
+        const intervalID = setInterval(() => {
+            if ((val += increment) >= 100) {
+                val = 100;
+                clearInterval(intervalID);
+                setTimeout(() => bar.style.display = "none", 1000);
+            }
+            bar.value = val;
+        }, 10);
     }
 
     function old_screen() {
@@ -4293,9 +4269,8 @@ if (ua.includes("mobile")) {
     window.addEventListener("orientationchange", getOrientation);
 
     function drawOmikuji() {
-        const omikuji_results = ['大吉', '中吉', '小吉', '末吉', '凶', '大凶', '超大凶'];
-        const index = Math.floor(Math.random() * omikuji_results.length);
-        document.querySelector('.omikuji_text').textContent = omikuji_results[index] + ' です！';
+        const r = ['大吉', '中吉', '小吉', '末吉', '凶', '大凶', '超大凶'];
+        document.querySelector('.omikuji_text').textContent = r[(Math.random() * r.length) | 0] + ' です！';
     }
 
     function localmemory_size() {
@@ -4304,7 +4279,7 @@ if (ua.includes("mobile")) {
         const memoryButton = document.querySelector('.local_memory_button');
         memoryButton.classList.add('pointer_none');
         const testKey = 'testStorageKey';
-        const testData = new Array(1024).join('a'); // 約1KB
+        const testData = new Array(1024).join('a');
         let maxSize = 0;
         try {
             for (; ; maxSize++) {
@@ -4598,7 +4573,6 @@ if (ua.includes("mobile")) {
             othello_board.children[index].appendChild(piece);
         });
     }
-
     function handleClick(event) {
         const cell = event.target;
         if (cell.children.length > 0) return;
@@ -4859,15 +4833,15 @@ if (ua.includes("mobile")) {
 
     windowposition_reset()
     function windowposition_reset() {
-        allwindows.forEach(element => {
-            welcome_menu.style.left = "50%";
-            welcome_menu.style.top = "50%";
-            welcome_menu.style.transform = "translate(-50%, -50%)";
-            if (!element.classList.contains('content_center')) {
-                element.style.left = "130px";
-                element.style.top = "130px";
+        allwindows.forEach(el => {
+            if (!el.classList.contains('content_center')) {
+                el.style.left = "130px";
+                el.style.top = "130px";
             }
         });
+        welcome_menu.style.left = "50%";
+        welcome_menu.style.top = "50%";
+        welcome_menu.style.transform = "translate(-50%, -50%)";
     }
 
     let parents = document.querySelectorAll('.parentss');
@@ -5148,8 +5122,7 @@ if (ua.includes("mobile")) {
             style.textContent = `
       .bottom2 { display:flex; }
       .progress-bar-container { width:100%; position:relative; }
-      .progress-bar { width:0%; height:100%; background:#00f; }
-    `;
+      .progress-bar { width:0%; height:100%; background:#00f; }`;
             bottom.appendChild(style);
             const addIframe = src => {
                 const iframe = createElement('iframe', "item_preview", contents);
@@ -5176,20 +5149,15 @@ if (ua.includes("mobile")) {
         processFile(url, 0, 0);
     }
 
-    function window2url_copy(event) {
-        const targetText = event.currentTarget.closest('div').children[1].textContent;
-        if (!navigator.clipboard) {
-            return noticewindow_create("warning", "このブラウザには対応してません");
-        }
-        navigator.clipboard.writeText(targetText).then(
-            () => noticewindow_create("clipboard", "コピーしました"),
-            () => alert("コピー失敗")
-        );
+    function window2url_copy(e) {
+        const txt = e.currentTarget.closest('div').children[1].textContent;
+        if (!navigator.clipboard) return noticewindow_create("warning", "このブラウザには対応してません");
+        navigator.clipboard.writeText(txt).then(() => noticewindow_create("clipboard", "コピーしました"), () => alert("コピー失敗"));
     }
 
-    function iframe_reload(event) {
-        const frameload = event.currentTarget.closest('.child_windows').children[3].firstElementChild;
-        frameload.src = frameload.src;
+    function iframe_reload(e) {
+        const iframe = e.currentTarget.closest('.child_windows').children[3].firstElementChild;
+        iframe.src = iframe.src;
     }
 
     function optimizeWindows() {
@@ -5662,24 +5630,24 @@ if (ua.includes("mobile")) {
 
     function kakeibo_setCurrentDateTime() {
         const now = new Date();
-        const date = now.toISOString().split('T')[0];
-        const time = now.toTimeString().split(' ')[0].slice(0, 5);
-        document.getElementById('kakeibo_date').value = date;
-        document.getElementById('kakeibo_time').value = time;
+        document.getElementById('kakeibo_date').value = now.toISOString().slice(0, 10);
+        document.getElementById('kakeibo_time').value = now.toTimeString().slice(0, 5);
     }
     function kakeibo_addEntry() {
-        const type = document.getElementById('type').value;
-        const amount = parseFloat(document.getElementById('amount').value) || 0;
-        const description = document.getElementById('description').value;
-        const date = document.getElementById('kakeibo_date').value;
-        const time = document.getElementById('kakeibo_time').value;
-        const entry = { type, amount, description, date, time };
+        const e = id => document.getElementById(id).value;
+        const entry = {
+            type: e('type'),
+            amount: parseFloat(e('amount')) || 0,
+            description: e('description'),
+            date: e('kakeibo_date'),
+            time: e('kakeibo_time')
+        };
         kakeibo_saveEntry(entry);
         kakeibo_displayEntries();
         kakeibo_calculateTotal();
     }
     function kakeibo_saveEntry(entry) {
-        let entries = JSON.parse(localStorage.getItem('entries')) || [];
+        const entries = JSON.parse(localStorage.getItem('entries')) || [];
         entries.push(entry);
         localStorage.setItem('entries', JSON.stringify(entries));
     }
@@ -5689,36 +5657,25 @@ if (ua.includes("mobile")) {
     }
     function kakeibo_displayEntries() {
         const entries = JSON.parse(localStorage.getItem('entries')) || [];
-        const entriesContainer = document.getElementById('entries');
-        entriesContainer.innerHTML = '';
-        entries.forEach((entry, index) => {
-            const entryDiv = document.createElement('div');
-            entryDiv.classList.add('entry');
-            const color = entry.type === '収入' ? 'red' : 'blue';
-            entryDiv.innerHTML = `
-                <div class="border" style="color: ${color};"><strong>${entry.type}</strong>: ¥${entry.amount} - ${entry.description} (${entry.date} ${entry.time})</div>
-                <button class="button2 medium" onclick="kakeibo_deleteEntry(${index})">削除</button>
-            `;
-            entriesContainer.appendChild(entryDiv);
-        });
+        const container = document.getElementById('entries');
+        container.innerHTML = entries.map((e, i) => {
+            const color = e.type === '収入' ? 'red' : 'blue';
+            return `<div class="entry">
+      <div class="border" style="color:${color};"><strong>${e.type}</strong>: ¥${e.amount} - ${e.description} (${e.date} ${e.time})</div>
+      <button class="button2 medium" onclick="kakeibo_deleteEntry(${i})">削除</button>
+    </div>`;
+        }).join('');
     }
-    function kakeibo_deleteEntry(index) {
-        let entries = JSON.parse(localStorage.getItem('entries')) || [];
-        entries.splice(index, 1);
+    function kakeibo_deleteEntry(i) {
+        const entries = JSON.parse(localStorage.getItem('entries')) || [];
+        entries.splice(i, 1);
         localStorage.setItem('entries', JSON.stringify(entries));
         kakeibo_displayEntries();
         kakeibo_calculateTotal();
     }
     function kakeibo_calculateTotal() {
         const entries = JSON.parse(localStorage.getItem('entries')) || [];
-        let total = 0;
-        entries.forEach(entry => {
-            if (entry.type === '収入') {
-                total += entry.amount;
-            } else {
-                total -= entry.amount;
-            }
-        });
+        const total = entries.reduce((sum, e) => sum + (e.type === '収入' ? e.amount : -e.amount), 0);
         document.getElementById('total').innerText = `¥${total}`;
     }
     kakeibo_loadEntries();
