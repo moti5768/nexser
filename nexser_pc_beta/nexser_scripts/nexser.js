@@ -204,56 +204,44 @@ if (ua.includes("mobile")) {
         rectangle_remove();
     });
 
-    document.addEventListener('mousedown', (e) => {
-        fileborder_reset()
-        var isClickInsideStartButton7 = Array.from(fileElements).some(button => button.contains(e.target));
-        if (!isClickInsideStartButton7) {
-            Array.from(document.getElementsByClassName('window_files')).forEach((window_files3) => {
-                window_files3.classList.remove('file_border2');
-                if (window_files3.classList.contains('file_border')) {
-                    document.querySelector('.file_border').classList.add('file_border2');
-                    document.querySelector('.file_border2').classList.remove('file_border');
-                }
-            })
+    document.addEventListener('mousedown', e => {
+        fileborder_reset();
+        const isIn = s => document.querySelector(s)?.contains(e.target);
+        const isInSome = s => Array.from(document.querySelectorAll(s)).some(el => el.contains(e.target));
+
+        if (!Array.from(fileElements).some(el => el.contains(e.target))) {
+            document.querySelectorAll('.window_files').forEach(win => win.classList.remove('file_border2'));
+            const fb = document.querySelector('.file_border');
+            if (fb) {
+                fb.classList.add('file_border2');
+                fb.classList.remove('file_border');
+            }
         }
 
-        var isClickInsideStartButton = document.getElementById('startbtn').contains(e.target);
-        var isClickInsideParentStartMenu = start_menu.contains(e.target);
-        if (!isClickInsideStartButton && !isClickInsideParentStartMenu) {
-            startmenu_close();
-        }
-        var isClickInsideStartButton3 = Array.from(document.querySelectorAll('.windowtool_parent,.windowtool_child')).some(button => button.contains(e.target));
-        if (!isClickInsideStartButton3) {
-            document.querySelectorAll('.windowtool_child').forEach(button => {
-                button.style.display = "none";
-            });
+        if (!isIn('#startbtn') && !start_menu.contains(e.target)) startmenu_close();
+        if (!isInSome('.windowtool_parent, .windowtool_child')) document.querySelectorAll('.windowtool_child').forEach(el => el.style.display = 'none');
+
+        const batteryMenu = document.querySelector('.battery_menu');
+        const batteryChild = document.querySelector('.battery_child');
+        if (!isIn('.battery_child') && !isIn('.battery_menu')) {
+            if (batteryMenu) batteryMenu.style.display = 'none';
+            if (batteryChild) batteryChild.classList.remove('pressed');
         }
 
-        var isClickInsideStartButton4 = battery_child.contains(e.target);
-        var isClickInsideStartButton4_2 = battery_menu.contains(e.target);
-        if (!isClickInsideStartButton4 && !isClickInsideStartButton4_2) {
-            battery_menu.style.display = "none";
-            battery_child.classList.remove('pressed');
+        const screenLight = document.querySelector('.screen_light_range_child');
+        const litButton = document.querySelector('.lit_button');
+        if (!isIn('.lit_button') && !isIn('.screen_light_range_child')) {
+            if (screenLight) screenLight.style.display = 'none';
+            if (litButton) litButton.classList.remove('pressed');
         }
 
-        var isClickInsideStartButton5 = document.querySelector('.lit_button').contains(e.target);
-        var isClickInsideStartButton6 = document.querySelector('.screen_light_range_child').contains(e.target);
-        if (!isClickInsideStartButton5 && !isClickInsideStartButton6) {
-            document.querySelector('.screen_light_range_child').style.display = "none";
-            document.querySelector('.lit_button').classList.remove('pressed');
-        }
-
-        var isClickInsideStartButton7 = Array.from(document.querySelectorAll('.child_windows, .child')).some(button => button.contains(e.target));
-        if (!isClickInsideStartButton7) {
+        if (!isInSome('.child_windows, .child')) {
             title_navyremove();
             titlecolor_set();
         }
 
-        var isClickInsideStartButton8 = Array.from(document.querySelectorAll('.task_buttons')).some(button => button.contains(e.target));
-        if (!isClickInsideStartButton8) {
-            document.querySelectorAll('.task_buttons').forEach(button =>
-                button.classList.remove('tsk_pressed', 'pressed')
-            );
+        if (!isInSome('.task_buttons')) {
+            document.querySelectorAll('.task_buttons').forEach(btn => btn.classList.remove('tsk_pressed', 'pressed'));
             updateButtonClasses();
         }
     });
@@ -3059,15 +3047,11 @@ if (ua.includes("mobile")) {
         localStorage.setItem(pattern, true);
         back_pattern_set();
     };
-    document.querySelector('.back_pattern_1').addEventListener('click', () => setBackPattern('back_pattern_1'));
-    document.querySelector('.back_pattern_2').addEventListener('click', () => setBackPattern('back_pattern_2'));
-    document.querySelector('.back_pattern_3').addEventListener('click', () => setBackPattern('back_pattern_3'));
-    document.querySelector('.back_pattern_4').addEventListener('click', () => setBackPattern('back_pattern_4'));
-    document.querySelector('.back_pattern_5').addEventListener('click', () => setBackPattern('back_pattern_5'));
-    document.querySelector('.back_pattern_6').addEventListener('click', () => setBackPattern('back_pattern_6'));
-    document.querySelector('.back_pattern_7').addEventListener('click', () => setBackPattern('back_pattern_7'));
-    document.querySelector('.back_pattern_8').addEventListener('click', () => setBackPattern('back_pattern_8'));
-    document.querySelector('.back_pattern_9').addEventListener('click', () => setBackPattern('back_pattern_9'));
+    for (let i = 1; i <= 9; i++) {
+        document.querySelector(`.back_pattern_${i}`)?.addEventListener('click', () => {
+            setBackPattern(`back_pattern_${i}`);
+        });
+    }
     function back_pattern_set() {
         const backgroundClasses = ['backgrounds1', 'backgrounds2', 'backgrounds3', 'backgrounds4', 'backgrounds5', 'backgrounds6', 'backgrounds7', 'backgrounds8', 'backgrounds9'];
         backgroundClasses.forEach(className => {
@@ -3375,14 +3359,9 @@ if (ua.includes("mobile")) {
         }
     })
 
-    function error_windows_close(event) {
-        const background_black = document.querySelector('.background_black');
-        if (background_black) {
-            background_black.remove();
-        }
-        const clickedElement = event.target;
-        const parentElement = clickedElement.closest('.child_windows');
-        parentElement.remove();
+    function error_windows_close(e) {
+        document.querySelector('.background_black')?.remove();
+        e.target.closest('.child_windows')?.remove();
         zindexwindow_addnavy();
     }
 
@@ -3694,60 +3673,46 @@ if (ua.includes("mobile")) {
 
     document.querySelector('.taskbar_position_button').addEventListener('click', function () {
         const t = localStorage.getItem('taskbar_height');
-        const task = taskbar.clientHeight;
         if (localStorage.getItem('taskbar_position_button')) {
             const t = localStorage.getItem('taskbar_height');
-            localStorage.removeItem('taskbar_position_button')
-
-            document.querySelector('.taskbar_position_button').textContent = "top"
-            taskbar.style.top = ""
-
-            battery_menu.style.top = "auto"
-            battery_menu.style.bottom = ""
-
-            files_inline.style.marginTop = "auto"
-            files_inline.style.bottom = ""
-
+            localStorage.removeItem('taskbar_position_button');
+            document.querySelector('.taskbar_position_button').textContent = "top";
+            taskbar.style.top = "";
+            battery_menu.style.top = "auto";
+            battery_menu.style.bottom = "";
+            files_inline.style.marginTop = "auto";
+            files_inline.style.bottom = "";
             document.getElementById('task_resizer').style.display = "block";
             document.getElementById('task_resizer2').style.display = "none";
-
             window_selectors.forEach(selector => {
                 document.querySelectorAll(selector).forEach(element => element.style.top = "auto");
             });
-
             if (check(elm1, elm2) && localStorage.getItem('taskbar_position_button')) {
                 toolbar.style.top = "40px";
                 toolbar.style.top = `${t}px`;
-
             } else if (check(elm1, elm2)) {
                 toolbar.style.top = "";
                 toolbar.style.bottom = `${t}px`;
             }
-
         } else {
             localStorage.setItem('taskbar_position_button', true);
-
-            document.querySelector('.taskbar_position_button').textContent = "bottom"
-            taskbar.style.top = "0px"
-            battery_menu.style.top = "35px"
-            battery_menu.style.bottom = "auto"
-
+            document.querySelector('.taskbar_position_button').textContent = "bottom";
+            taskbar.style.top = "0px";
+            battery_menu.style.top = "35px";
+            battery_menu.style.bottom = "auto";
             if (localStorage.getItem('taskbar_position_button') && localStorage.getItem('data_taskbar_none')) {
-                files_inline.style.marginTop = "auto"
-                files_inline.style.bottom = ""
+                files_inline.style.marginTop = "auto";
+                files_inline.style.bottom = "";
             } else if (localStorage.getItem('taskbar_position_button') && !localStorage.getItem('data_taskbar_none')) {
-                files_inline.style.marginTop = "40px"
-                files_inline.style.bottom = "auto"
-
-                files_inline.style.marginTop = `${t}px`
+                files_inline.style.marginTop = "40px";
+                files_inline.style.bottom = "auto";
+                files_inline.style.marginTop = `${t}px`;
             } else {
-                files_inline.style.marginTop = "auto"
-                files_inline.style.bottom = ""
+                files_inline.style.marginTop = "auto";
+                files_inline.style.bottom = "";
             }
-
             document.getElementById('task_resizer').style.display = "none";
             document.getElementById('task_resizer2').style.display = "block";
-
             if (localStorage.getItem('data_taskbar_none')) {
                 window_selectors.forEach(selector => {
                     document.querySelectorAll(selector).forEach(element => element.style.top = "auto");
@@ -3761,7 +3726,6 @@ if (ua.includes("mobile")) {
                     });
                 });
             }
-
             if (check(elm1, elm2) && localStorage.getItem('taskbar_position_button')) {
                 toolbar.style.top = "40px";
                 toolbar.style.top = `${t}px`;
@@ -3769,15 +3733,14 @@ if (ua.includes("mobile")) {
                 toolbar.style.top = "";
                 toolbar.style.bottom = `${t}px`;
             }
-
         }
     })
 
     function fileborder_reset() {
-        Array.from(document.getElementsByClassName('desktop_files')).forEach((df) => {
-            const file10 = df.firstElementChild;
-            file10.classList.remove('file_select');
-        })
+        document.querySelectorAll('.desktop_files').forEach(df => {
+            const child = df.firstElementChild;
+            if (child) child.classList.remove('file_select');
+        });
     }
 
     async function startCamera() {
