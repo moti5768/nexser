@@ -5093,6 +5093,7 @@ if (ua.includes("mobile")) {
                 iframe.src = src;
                 Object.assign(iframe.style, { width: "100%", height: "100%" });
                 contents.classList.add("scrollbar_none");
+                Object.assign(contents.style, { overflow: "hidden" });
             };
             if (isYouTubeURL(url)) {
                 addIframe(`https://www.youtube.com/embed/${extractYouTubeID(url)}`);
