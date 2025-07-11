@@ -122,7 +122,7 @@ body {
 #spreadsheet td {
     width: 140px;
     height: 40px;
-    padding: 2px;
+    padding: 0px;
     text-align: left;
     overflow: visible;
     white-space: nowrap;
@@ -147,6 +147,7 @@ body {
     position: sticky;
     top: 0;
     z-index: 11;
+    outline: solid 2px dimgray;
 }
 
 #spreadsheet thead th:first-child {
@@ -158,6 +159,7 @@ body {
     position: sticky;
     left: 0;
     z-index: 11;
+    outline: solid 2px dimgray;
 }
 
 #spreadsheet td:focus {

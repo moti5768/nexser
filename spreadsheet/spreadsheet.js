@@ -158,59 +158,72 @@ function initializeColumns(count) {
 // ・新規のヘッダーセル（<th>）を生成して一括追加
 // ・既存の tbody 内各行に対し、新規列分のセル（<td>）を一括追加
 // ------------------------------------------------------
-function loadColumns(count) {
-    let headerHTML = "";
-    // ヘッダー行に追加する <th> 要素をまとめて生成
-    for (let i = 0; i < count; i++) {
-        headerHTML += `<th class="col_number button">${getColumnName(currentColumns)}</th>`;
-        currentColumns++;
-    }
-    // ヘッダー行に一括挿入
-    theadRow.insertAdjacentHTML("beforeend", headerHTML);
-
-    // 各 tbody の既存行に対して、同じく新規セルをまとめて挿入
-    // ※ 各行の先頭セルは行番号の <th> とする前提
-    for (let i = 0, len = tbody.rows.length; i < len; i++) {
-        const rowNumber = tbody.rows[i].cells[0].textContent; // 先頭セルに行番号が入っているものとする
-        let cellHTML = "";
-        // 今回追加する列は、 currentColumns - count から currentColumns - 1 まで
-        for (let col = currentColumns - count; col < currentColumns; col++) {
-            cellHTML += createCellHTML(rowNumber, col);
+const COLUMN_BATCH_SIZE = 30, ROW_BATCH_SIZE = 30;
+function loadColumns(count, batchSize = COLUMN_BATCH_SIZE, callback) {
+    let s = currentColumns, e = s + count;
+    (function batchAdd(start) {
+        let end = Math.min(start + batchSize, e);
+        const headerFrag = document.createDocumentFragment();
+        for (let c = start; c < end; c++) {
+            const th = document.createElement('th');
+            th.className = "col_number button";
+            th.textContent = getColumnName(c);
+            headerFrag.appendChild(th);
         }
-        tbody.rows[i].insertAdjacentHTML("beforeend", cellHTML);
-    }
+        theadRow.appendChild(headerFrag);
+        for (const row of tbody.rows) {
+            const r = row.cells[0].textContent, frag = document.createDocumentFragment();
+            for (let c = start; c < end; c++) {
+                const td = document.createElement('td');
+                td.contentEditable = "false";
+                td.dataset.row = r;
+                td.dataset.col = c;
+                frag.appendChild(td);
+            }
+            row.appendChild(frag);
+        }
+        currentColumns = end;
+        if (end < e) setTimeout(() => batchAdd(end), 0);
+        else if (callback) callback();
+    })(s);
 }
-
 // ------------------------------------------------------
 // 最適化版 loadRows 関数
 // ・新規の行（<tr>）を、行番号セル <th> と各 <td> を HTML 文字列で組み立て、一括で tbody に挿入
 // ------------------------------------------------------
-function loadRows(count) {
-    let rowsHTML = "";
-    for (let i = 0; i < count; i++) {
-        let cellsHTML = "";
-        // 現在の currentColumns 数だけセルを作成
-        for (let col = 0; col < currentColumns; col++) {
-            cellsHTML += createCellHTML(rowCount, col);
+function loadRows(count, batchSize = ROW_BATCH_SIZE, callback) {
+    let added = 0;
+    (function batchAdd() {
+        const batch = Math.min(batchSize, count - added);
+        if (!batch) return callback && callback();
+        const frag = document.createDocumentFragment();
+        for (let i = 0; i < batch; i++, rowCount++) {
+            const tr = document.createElement('tr');
+            const th = document.createElement('th');
+            th.className = "row_number button";
+            th.textContent = rowCount;
+            tr.appendChild(th);
+            for (let c = 0; c < currentColumns; c++) {
+                const td = document.createElement('td');
+                td.contentEditable = "false";
+                td.dataset.row = rowCount;
+                td.dataset.col = c;
+                tr.appendChild(td);
+            }
+            frag.appendChild(tr);
         }
-        // 行番号を示すセル（<th>）とその後のセルを含む <tr> を組み立て
-        rowsHTML += `<tr>
-                   <th class="row_number button">${rowCount}</th>
-                   ${cellsHTML}
-                 </tr>`;
-        rowCount++;
-    }
-    // tbody に一括挿入
-    tbody.insertAdjacentHTML("beforeend", rowsHTML);
+        tbody.appendChild(frag);
+        added += batch;
+        if (added < count) setTimeout(batchAdd, 0);
+        else if (callback) callback();
+    })();
 }
 // ------------------------------------------------------
 // 最適化されたセル生成用関数：HTML文字列を出力
 // 各セルに対して contentEditable="false" と、 
 // data 属性で行番号（row）と列番号（col）を指定
 // ------------------------------------------------------
-function createCellHTML(row, col) {
-    return `<td contenteditable="false" data-row="${row}" data-col="${col}"></td>`;
-}
+const createCellHTML = (r, c) => `<td contenteditable="false" data-row="${r}" data-col="${c}"></td>`;
 
 // 以下、イベントデリゲーションを用いた処理例
 // ここではテーブル全体に対してイベントを一括で設定します
@@ -1043,14 +1056,13 @@ function applyValueToCells(value) {
     updateAllFormulas();
 }
 
-
-
 formulaBarInput.addEventListener("keydown", function (e) {
     if (e.key === "Enter") {
         const value = formulaBarInput.value.trim();
         applyValueToCells(value);
         formulaBarInput.blur();
         e.preventDefault();
+        activeCell.contentEditable = "false";
     }
 });
 
@@ -1063,15 +1075,19 @@ formulaBarInput.addEventListener("blur", function (e) {
 // =======================
 // Block 9: スクロール時の動的行／列追加
 // =======================
-
-container.addEventListener("scroll", function () {
+container.addEventListener("scroll", throttle(() => {
     if (container.scrollTop + container.clientHeight >= container.scrollHeight - 50) {
         loadRows(ROW_BATCH);
     }
     if (container.scrollLeft + container.clientWidth >= container.scrollWidth - 50) {
         loadColumns(COLUMN_BATCH);
     }
-});
+    document.querySelectorAll("#spreadsheet tbody tr").forEach(row => {
+        if (row.style.visibility === "visible") {
+            updateRowCellsVisibility(row);
+        }
+    });
+}, 10));
 // =======================
 // Block 10: フォーマットツールバーのイベント処理
 // =======================
@@ -1856,6 +1872,13 @@ formulaBarInput.addEventListener("click", function () {
     } else {
         clearCalculationRangeHighlights();
     }
+    activeCell.style.outline = "solid 1px steelblue";
+});
+
+formulaBarInput.addEventListener("mousedown", function () {
+    activeCell.contentEditable = "true";
+    activeCell.style.outline = "solid 1px steelblue";
+    updateFillHandle();
 });
 
 formulaBarInput.addEventListener("input", function () {
@@ -1875,6 +1898,7 @@ formulaBarInput.addEventListener("input", function () {
 
     selectedCells.forEach(cell => {
         cell.textContent = formulaText2;
+        cell.style.outline = "solid 1px steelblue";
     });
 });
 
@@ -3788,44 +3812,38 @@ function cleanData(data) {
     }
 }
 
-/***************** 保存処理 *****************/
+/***************** 保存処理（最適化済） *****************/
 function saveSpreadsheetData() {
     loadingstate.textContent = "保存中...";
     setTimeout(() => {
         try {
             const savedCells = [];
-            const DEFAULT_CELL_STYLE = "";
             const DEFAULT_COLSPAN = "1";
             const DEFAULT_ROWSPAN = "1";
-
-            // セル情報の収集
             document.querySelectorAll("#spreadsheet tbody td").forEach(cell => {
-                const value = cell.hidden ? (cell.dataset.originalValue || "") : cell.textContent;
+                const row = Number(cell.dataset.row);
+                const col = Number(cell.dataset.col);
                 const formula = cell.dataset.formula || "";
+                const value = cell.hidden ? (cell.dataset.originalValue || "") : cell.textContent;
                 const styleStr = cell.getAttribute("style") || "";
-                const hasCustomStyle = styleStr.trim() !== "" && styleStr.trim() !== DEFAULT_CELL_STYLE;
-
-                if (value !== "" || formula.trim() !== "" || hasCustomStyle) {
-                    let computedValue = "";
-                    if (formula.trim() !== "") {
-                        computedValue = evaluateFormula(formula);
+                const hasFormula = formula.trim() !== "";
+                const hasValue = value !== "";
+                const hasStyle = styleStr && styleStr !== "";
+                if (hasValue || hasFormula || hasStyle) {
+                    const cellData = { row, col, value };
+                    if (hasFormula) {
+                        cellData.formula = formula;
+                        cellData.computedValue = evaluateFormula(formula);
                     }
-                    const cellData = {
-                        row: parseInt(cell.dataset.row, 10),
-                        col: parseInt(cell.dataset.col, 10),
-                        value: value,
-                        computedValue: computedValue,
-                        formula: formula
-                    };
-                    if (hasCustomStyle) {
+                    if (hasStyle) {
                         cellData.style = styleStr;
                     }
-                    const colspan = cell.getAttribute("colspan") || DEFAULT_COLSPAN;
-                    if (colspan !== DEFAULT_COLSPAN) {
+                    const colspan = cell.getAttribute("colspan");
+                    if (colspan && colspan !== DEFAULT_COLSPAN) {
                         cellData.colspan = colspan;
                     }
-                    const rowspan = cell.getAttribute("rowspan") || DEFAULT_ROWSPAN;
-                    if (rowspan !== DEFAULT_ROWSPAN) {
+                    const rowspan = cell.getAttribute("rowspan");
+                    if (rowspan && rowspan !== DEFAULT_ROWSPAN) {
                         cellData.rowspan = rowspan;
                     }
                     if (cell.dataset.mergeAnchorRow) {
@@ -3843,46 +3861,29 @@ function saveSpreadsheetData() {
                     savedCells.push(cellData);
                 }
             });
-
-            // 行（tr）のリサイズ情報の収集
             const savedRows = [];
             document.querySelectorAll("#spreadsheet tbody tr").forEach(tr => {
-                const rowNum = tr.getAttribute("data-row");
-                const computedHeight = window.getComputedStyle(tr).getPropertyValue("height");
-                savedRows.push({
-                    row: parseInt(rowNum, 10),
-                    height: computedHeight
-                });
+                const row = Number(tr.dataset.row);
+                const height = window.getComputedStyle(tr).getPropertyValue("height");
+                savedRows.push({ row, height });
             });
-
-            // 列（th）のリサイズ情報の収集
             const savedColumns = [];
-            document.querySelectorAll("#spreadsheet thead th").forEach((th, index) => {
-                const computedWidth = window.getComputedStyle(th).getPropertyValue("width");
-                savedColumns.push({
-                    col: index,
-                    width: computedWidth
-                });
+            document.querySelectorAll("#spreadsheet thead th").forEach((th, col) => {
+                const width = window.getComputedStyle(th).getPropertyValue("width");
+                savedColumns.push({ col, width });
             });
-
-            // ズーム情報の取得
             const zoomSlider = document.getElementById("zoom-slider");
             const zoomValue = zoomSlider ? zoomSlider.value : "100";
-
-            // 保存データオブジェクトの構築
             const dataToSave = {
                 cells: savedCells,
                 rows: savedRows,
                 columns: savedColumns,
                 zoom: zoomValue
             };
-
-            // 不要なデータを除去し、JSON 化した後に高圧縮
             const cleanedData = cleanData(dataToSave);
             const jsonStr = JSON.stringify(cleanedData);
             const compressedData = compressData(jsonStr);
             localStorage.setItem("spreadsheetData", compressedData);
-
             loadingstate.textContent = "保存しました。";
             updateLocalStorageUsage();
         } catch (error) {
@@ -3892,15 +3893,10 @@ function saveSpreadsheetData() {
     }, 300);
 }
 
-/***************** 読み込み処理 *****************/
 function loadSpreadsheetData() {
-    console.time("loadSpreadsheetData");
-
-    // ① 保存データの取得、解凍、パース
     const savedDataStr = localStorage.getItem("spreadsheetData");
     if (!savedDataStr) {
         loadingstate.textContent = "データがありません";
-        console.timeEnd("loadSpreadsheetData");
         return;
     }
     let savedData = null;
@@ -3912,117 +3908,71 @@ function loadSpreadsheetData() {
     } catch (err) {
         console.error("保存データの解凍／パースエラー:", err);
         loadingstate.textContent = "データがありません";
-        console.timeEnd("loadSpreadsheetData");
         return;
     }
-
-    // ② セルデータから最大行番号を取得し、不足分の行を追加
     if (savedData.cells && savedData.cells.length > 0) {
-        const maxSavedRow = Math.max(...savedData.cells.map(cellData => parseInt(cellData.row, 10)));
-        if (maxSavedRow >= rowCount) {
-            loadRows(maxSavedRow - rowCount + 1);
-        }
+        const maxSavedRow = Math.max(...savedData.cells.map(c => parseInt(c.row, 10)));
+        if (maxSavedRow >= rowCount) loadRows(maxSavedRow - rowCount + 1);
     }
-
-    // ③ 行高さの更新
     if (savedData.rows && savedData.rows.length > 0) {
         savedData.rows.forEach(rowData => {
             const targetRow = getRow(rowData.row);
-            if (targetRow) {
-                targetRow.style.height = rowData.height;
-            }
+            if (targetRow) targetRow.style.height = rowData.height;
         });
     }
-
-    // ④ 列幅の更新
     if (savedData.columns && savedData.columns.length > 0) {
         const headerCells = document.querySelectorAll("#spreadsheet thead th");
         savedData.columns.forEach(colData => {
-            if (headerCells[colData.col]) {
-                headerCells[colData.col].style.width = colData.width;
-            }
+            if (headerCells[colData.col]) headerCells[colData.col].style.width = colData.width;
         });
     }
-
-    // ⑤ 拡大率（Zoom）の更新（scale は使わず、style.zoom のみ）
     if (savedData.zoom !== undefined && savedData.zoom !== null) {
         const zoomSlider = document.getElementById("zoom-slider");
         const zoomDisplay = document.getElementById("zoom-display");
         if (zoomSlider && zoomDisplay && container) {
-            let zoomValue;
-            if (typeof savedData.zoom === "string") {
-                zoomValue = Number(savedData.zoom.replace("%", "").trim());
-            } else {
-                zoomValue = Number(savedData.zoom);
-            }
-            if (isNaN(zoomValue)) {
-                zoomValue = 100;
-            }
+            let zoomValue = typeof savedData.zoom === "string"
+                ? Number(savedData.zoom.replace("%", "").trim())
+                : Number(savedData.zoom);
+            if (isNaN(zoomValue)) zoomValue = 100;
             zoomSlider.value = zoomValue;
             zoomDisplay.textContent = zoomValue + "%";
-            const zoomFactor = zoomValue / 100;
-            spreadsheetContent.style.zoom = zoomFactor;
+            spreadsheetContent.style.zoom = zoomValue / 100;
         }
     }
-
-    // ⑥ セル内容の更新（非同期バッチ処理＋進捗バー更新）
     if (savedData.cells && savedData.cells.length > 0) {
         const cells = savedData.cells;
         const batchSize = 500;
         let index = 0;
         const progressBar = document.getElementById("loading-progress-bar");
-
+        function setAttr(el, name, val) {
+            (val && +val > 1) ? el.setAttribute(name, val) : el.removeAttribute(name);
+        }
+        function setData(el, key, val) {
+            val ? (el.dataset[key] = val) : delete el.dataset[key];
+        }
         function processCellBatch() {
             const end = Math.min(index + batchSize, cells.length);
-            for (let i = index; i < end; i++) {
-                const cellData = cells[i];
-                let targetCell = getCell(cellData.row, cellData.col);
-                if (targetCell) {
-                    if (cellData.colspan && parseInt(cellData.colspan, 10) > 1) {
-                        targetCell.setAttribute("colspan", cellData.colspan);
-                    } else {
-                        targetCell.removeAttribute("colspan");
-                    }
-                    if (cellData.rowspan && parseInt(cellData.rowspan, 10) > 1) {
-                        targetCell.setAttribute("rowspan", cellData.rowspan);
-                    } else {
-                        targetCell.removeAttribute("rowspan");
-                    }
-                    if (cellData.formula && cellData.formula.trim() !== "") {
-                        targetCell.dataset.formula = cellData.formula;
-                        if (cellData.computedValue !== undefined && cellData.computedValue !== "") {
-                            targetCell.textContent = cellData.computedValue;
-                        } else {
-                            targetCell.textContent = evaluateFormula(cellData.formula);
-                        }
-                    } else if (cellData.value !== undefined) {
-                        targetCell.textContent = cellData.value;
-                    }
-                    targetCell.style.cssText = cellData.style;
-                    if (cellData.mergeAnchorRow) {
-                        targetCell.dataset.mergeAnchorRow = cellData.mergeAnchorRow;
-                        targetCell.dataset.mergeAnchorCol = cellData.mergeAnchorCol;
-                    }
-                    if (cellData.mergeMinRow) {
-                        targetCell.dataset.mergeMinRow = cellData.mergeMinRow;
-                        targetCell.dataset.mergeMinCol = cellData.mergeMinCol;
-                    }
-                    if (cellData.mergeMaxRow) {
-                        targetCell.dataset.mergeMaxRow = cellData.mergeMaxRow;
-                        targetCell.dataset.mergeMaxCol = cellData.mergeMaxCol;
-                    }
-                    if (cellData.hidden !== undefined) {
-                        targetCell.hidden = (cellData.hidden === true || cellData.hidden === "true");
-                    } else {
-                        targetCell.hidden = false;
-                    }
+            for (; index < end; index++) {
+                const d = cells[index];
+                const cell = getCell(d.row, d.col);
+                if (!cell) continue;
+                setAttr(cell, "colspan", d.colspan);
+                setAttr(cell, "rowspan", d.rowspan);
+                if (d.formula && d.formula.trim()) {
+                    cell.dataset.formula = d.formula;
+                    cell.textContent = d.computedValue !== undefined && d.computedValue !== ""
+                        ? d.computedValue
+                        : evaluateFormula(d.formula);
+                } else {
+                    cell.textContent = d.value !== undefined ? d.value : "";
+                    delete cell.dataset.formula;
                 }
+                cell.style.cssText = d.style || "";
+                ["mergeAnchorRow", "mergeAnchorCol", "mergeMinRow", "mergeMinCol", "mergeMaxRow", "mergeMaxCol"]
+                    .forEach(key => setData(cell, key, d[key]));
+                cell.hidden = d.hidden === true || d.hidden === "true";
             }
-            index += batchSize;
-            if (progressBar) {
-                const progressPercent = Math.min((index / cells.length) * 100, 100);
-                progressBar.style.width = progressPercent + "%";
-            }
+            if (progressBar) progressBar.style.width = Math.min((index / cells.length) * 100, 100) + "%";
             if (index < cells.length) {
                 requestAnimationFrame(processCellBatch);
             } else {
@@ -4030,14 +3980,10 @@ function loadSpreadsheetData() {
                 loadingstate.textContent = "読み込み完了";
                 if (progressBar) {
                     progressBar.style.width = "0%";
-                    const headerCells = document.querySelectorAll("td");
-                    for (const cell of headerCells) {
-                        cell.classList.add("borderss");
-                    }
+                    const allCells = document.querySelectorAll("td");
+                    allCells.forEach(cell => cell.classList.add("borderss"));
                     requestAnimationFrame(() => {
-                        for (const cell of headerCells) {
-                            cell.classList.remove("borderss");
-                        }
+                        allCells.forEach(cell => cell.classList.remove("borderss"));
                     });
                 }
             }
@@ -4047,7 +3993,6 @@ function loadSpreadsheetData() {
         setupRowVisibilityObserver();
         loadingstate.textContent = "読み込み完了";
     }
-    console.timeEnd("loadSpreadsheetData");
 }
 
 /* ----- ヘルパー関数 ----- */
@@ -4060,82 +4005,64 @@ function getRow(rowNumber) {
     return document.querySelector(`#spreadsheet tbody tr[data-row='${rowNumber}']`);
 }
 
-
 /***************** debounce 用の関数 *****************/
-function debounce(func, delay) {
-    let timer;
-    return function (...args) {
-        if (timer) clearTimeout(timer);
-        timer = setTimeout(() => func.apply(this, args), delay);
+function debounce(fn, delay) {
+    var timer;
+    return function () {
+        var args = arguments;
+        clearTimeout(timer);
+        timer = setTimeout(function () {
+            fn.apply(null, args);
+        }, delay);
     };
 }
 
 let rowObserver = null;
 function setupRowVisibilityObserver() {
-    if (rowObserver) {
-        rowObserver.disconnect();
-    }
-    const options = {
-        root: container, // container はグローバル変数。スクロールコンテナを指す。
-        threshold: 0
-    };
+    rowObserver?.disconnect();
     rowObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            const row = entry.target;
-            if (entry.isIntersecting || row.contains(document.activeElement)) {
-                row.style.visibility = "visible";
+        entries.forEach(({ target: row, isIntersecting }) => {
+            const active = document.activeElement;
+            const visible = isIntersecting || row.contains(active);
+            row.style.visibility = visible ? "visible" : "hidden";
+            if (visible) {
                 updateRowCellsVisibility(row);
             } else {
-                row.style.visibility = "hidden";
                 row.querySelectorAll("td, th").forEach(cell => {
-                    if (cell !== document.activeElement) {
-                        cell.style.visibility = "hidden";
-                    }
+                    if (cell !== active) cell.style.visibility = "hidden";
                 });
             }
         });
-    }, options);
-    document.querySelectorAll("#spreadsheet tbody tr").forEach(row => {
-        rowObserver.observe(row);
-    });
+    }, { root: container, threshold: 0 });
+    document.querySelectorAll("#spreadsheet tbody tr").forEach(row => rowObserver.observe(row));
 }
 
 function updateRowCellsVisibility(row) {
-    const containerRect = container.getBoundingClientRect();
+    const cRect = container.getBoundingClientRect();
+    const active = document.activeElement;
     row.querySelectorAll("td, th").forEach(cell => {
-        if (cell === document.activeElement) {
+        if (cell === active) {
             cell.style.visibility = "visible";
             return;
         }
-        const cellRect = cell.getBoundingClientRect();
-        if (cellRect.right >= containerRect.left && cellRect.left <= containerRect.right) {
-            cell.style.visibility = "visible";
-        } else {
-            cell.style.visibility = "hidden";
-        }
+        const r = cell.getBoundingClientRect();
+        cell.style.visibility = (r.right >= cRect.left && r.left <= cRect.right) ? "visible" : "hidden";
     });
 }
 
-function throttle(callback, delay) {
-    let lastCall = 0;
-    return function (...args) {
-        const now = Date.now();
-        if (now - lastCall >= delay) {
-            lastCall = now;
-            callback.apply(this, args);
+function throttle(fn, delay) {
+    var last = 0;
+    return function () {
+        var now = Date.now();
+        if (now - last >= delay) {
+            last = now;
+            fn.apply(null, arguments);
         }
     };
 }
 
 /* ==== 初期設定 ==== */
 setupRowVisibilityObserver();
-container.addEventListener("scroll", throttle(() => {
-    document.querySelectorAll("#spreadsheet tbody tr").forEach(row => {
-        if (row.style.visibility === "visible") {
-            updateRowCellsVisibility(row);
-        }
-    });
-}, 100));
 
 // 要素取得
 const zoomSlider = document.getElementById("zoom-slider");
