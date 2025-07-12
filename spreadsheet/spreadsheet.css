@@ -9,8 +9,6 @@
 html,
 body {
     height: 100%;
-    margin: 0;
-    padding: 0;
     touch-action: manipulation;
 }
 
@@ -245,8 +243,9 @@ th.col_number {
     width: 10px;
     height: 10px;
     background-color: steelblue;
-    bottom: -0.5px;
-    right: -0.5px;
+    bottom: 0;
+    right: 0;
+    transform: translate(50%, 50%);
     cursor: crosshair;
     z-index: 1;
 }
@@ -468,7 +467,6 @@ button:active,
 
 body::-webkit-scrollbar {
     display: none;
-    z-index: 1;
 }
 
 @media print {

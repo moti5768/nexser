@@ -53,7 +53,6 @@ document.addEventListener("mousemove", (e) => {
     }
 });
 
-
 function printPage() {
     window.print();
 }
@@ -306,18 +305,13 @@ function revertSelectedCellsText() {
     updateAllFormulas();
 }
 
-
-
-function handleCellDblClick(e) {
+function handleCellDblClick(e, skipFocus = false) {
     const cell = e.target;
     cell.contentEditable = "true";
-
     // ダブルクリックで編集モードに入ったことを示すフラグをセットする
     cell.dataset.editBy = "dblclick";
-
     // もともとの内容を保存
     cell.dataset.originalText = cell.innerHTML;
-
     // 数式が設定されている場合は、完全な数式（例："=SUM(N4:N16)"）も保存しておく
     if (cell.dataset.formula) {
         cell.dataset.originalFormula = cell.dataset.formula;
@@ -325,23 +319,20 @@ function handleCellDblClick(e) {
         cell.textContent = cell.dataset.formula;
         highlightCalculationRange(cell.dataset.formula);
     }
-
-    cell.focus();
+    if (!skipFocus) {
+        cell.focus();
+        setTimeout(() => {
+            setCaretToEnd(cell);
+        }, 0);
+    }
     activeCell = cell;
     formulaBarInput.value = cell.dataset.formula ? cell.dataset.formula : cell.textContent;
-
-    // 必要に応じてキャレット位置の調整
-    setTimeout(() => {
-        setCaretToEnd(cell);
-    }, 0);
 }
-
 
 function handleCellBlur(e) {
     const cell = e.target;
     // textContent で取得すれば、挿入された "\n" がそのまま残ります
     const newText = cell.textContent.trim();
-
     if (newText.startsWith("=")) {
         // 数式の場合は数式情報を保持し、評価結果をセット
         cell.dataset.formula = newText;
@@ -373,18 +364,12 @@ function handleCellBlur(e) {
         }
         updateAllFormulas();
     }
-
     // 編集モード解除
     cell.contentEditable = "false";
     delete cell.dataset.editBy;
     clearCalculationRangeHighlights();
     updateAllFormulas();
 }
-
-
-
-
-
 
 function handleF2Key(e) {
     let targetCell = activeCell;
@@ -402,8 +387,6 @@ function handleF2Key(e) {
     e.preventDefault();
 }
 
-
-
 function handleCellKeyDown(e) {
     if (e.key === "Enter" && e.target.isContentEditable) {
         if (e.altKey) {
@@ -412,7 +395,6 @@ function handleCellKeyDown(e) {
             document.execCommand('insertText', false, "\n");
             return;
         }
-        // Alt なしの Enter キーの場合は編集終了して次のセルに移動
         e.preventDefault();
         const row = parseInt(e.target.dataset.row, 10);
         const col = parseInt(e.target.dataset.col, 10);
@@ -422,7 +404,6 @@ function handleCellKeyDown(e) {
         }, 0);
     }
 }
-
 
 // ※ 自身のセル（数式セルの場合）をクリックした場合は、セル参照挿入せずにデフォルト動作（caret操作）を許容する
 function handleCellClick(e) {
@@ -474,7 +455,6 @@ function navigateToCell(row, col, event) {
     }
 }
 
-
 /**
  * 指定された行番号と列番号に対応するセル (td 要素) を取得する
  * ※ tbody 内の各行では、cells[0] が行番号セルなので、実データは cells[col+1]
@@ -483,17 +463,12 @@ function navigateToCell(row, col, event) {
  * @returns {HTMLElement|null} 対象セルが存在すればその要素、なければ null
  */
 function getCell(row, col) {
-    if (col >= currentColumns) {
-        loadColumns(col - currentColumns + 1);
-    }
-    if (row > rowCount) {
-        loadRows(row - rowCount);
-    }
-    const rowIndex = row - 1;
-    if (rowIndex < 0 || rowIndex >= tbody.rows.length) return null;
-    const cells = tbody.rows[rowIndex].cells;
-    if (col < 0 || col >= currentColumns) return null;
-    // cells[0] はヘッダーなので、実データセルは cells[col+1]
+    if (col >= currentColumns) loadColumns(col - currentColumns + 1);
+    if (row > rowCount) loadRows(row - rowCount);
+    const r = row - 1;
+    if (r < 0 || r >= tbody.rows.length) return null;
+    const cells = tbody.rows[r].cells;
+    if (col < 0 || col + 1 >= cells.length) return null; // cells[col+1] の存在チェック
     return cells[col + 1];
 }
 
@@ -572,10 +547,6 @@ function REPLACE(text, start, count, newText) {
     const after = String(text).substring(Number(start) - 1 + Number(count));
     return before + newText + after;
 }
-
-
-
-
 
 // -----------------------
 // 日付関連のグローバル関数
@@ -720,8 +691,6 @@ function TIMEVALUE(timeStr) {
     return "#VALUE!";
 }
 
-
-
 /*********************
  * 数式の評価エンジン
  *********************/
@@ -790,7 +759,6 @@ const SINGLE_REF_REGEX = /([A-Z]+)(\d+)/g;         // 例："A1", "B10", etc.
 // 2. 列変換のキャッシュ用 Map
 // ---------------------------------------------
 const colCache = new Map();
-
 function columnLettersToIndex(letters) {
     // すでにキャッシュされているなら即返す
     if (colCache.has(letters)) {
@@ -884,7 +852,6 @@ function evaluateFormula(formula) {
         return "Error: " + e.message;
     }
 }
-
 
 function updateAllFormulas() {
     const formulaCells = document.querySelectorAll("#spreadsheet tbody td[data-formula]");
@@ -1872,12 +1839,11 @@ formulaBarInput.addEventListener("click", function () {
     } else {
         clearCalculationRangeHighlights();
     }
-    activeCell.style.outline = "solid 1px steelblue";
+    activeCell.style.outline = "solid 2px steelblue";
 });
 
-formulaBarInput.addEventListener("mousedown", function () {
-    activeCell.contentEditable = "true";
-    activeCell.style.outline = "solid 1px steelblue";
+formulaBarInput.addEventListener("focus", function () {
+    handleCellDblClick({ target: activeCell }, true); // フォーカスはセルに当てない
     updateFillHandle();
 });
 
@@ -1898,7 +1864,7 @@ formulaBarInput.addEventListener("input", function () {
 
     selectedCells.forEach(cell => {
         cell.textContent = formulaText2;
-        cell.style.outline = "solid 1px steelblue";
+        cell.style.outline = "solid 2px steelblue";
     });
 });
 
@@ -2545,120 +2511,47 @@ toggleTextWrapButton.addEventListener("click", function (e) {
     }
 });
 
-
-
-
-
-
-
-
-
-
-
-// 「selected」クラスが付いているセル群について、
-// ・選択セルが 0 個の場合は何も表示しない。
-// ・セルが 1 つの場合はそのセル参照 (例："A1") を表示。
-// ・複数セルの場合、連続範囲なら「A1:B3」の形式、連続していなければ個別リスト (例："A1, B2, C3") を表示する関数
 function updateSelectedCellsDisplay() {
-    const selectedCells = Array.from(document.querySelectorAll("td.selected"));
-    let displayText = "";
-
-    // 先ほど定義した関数を利用して変換
-    if (selectedCells.length === 0) {
-        displayText = "";
-    } else if (selectedCells.length === 1) {
-        // 単一セルの場合はそのセル参照を生成 (例："A1", "AA1" など)
-        const cell = selectedCells[0];
-        const row = cell.dataset.row;
-        const col = parseInt(cell.dataset.col, 10);
-        displayText = toColumnName(col) + row;
-    } else {
-        // 複数セルの場合、まず各セルの行番号・列番号を抽出
-        const rows = selectedCells.map(cell => parseInt(cell.dataset.row, 10));
-        const cols = selectedCells.map(cell => parseInt(cell.dataset.col, 10));
-        const minRow = Math.min(...rows);
-        const maxRow = Math.max(...rows);
-        const minCol = Math.min(...cols);
-        const maxCol = Math.max(...cols);
-
-        // 選択セルの数が矩形状（連続範囲）のセル数と一致すれば連続範囲とみなす
-        const expectedCount = (maxRow - minRow + 1) * (maxCol - minCol + 1);
-        if (selectedCells.length === expectedCount) {
-            const topLeft = toColumnName(minCol) + minRow;
-            const bottomRight = toColumnName(maxCol) + maxRow;
-            displayText = topLeft + ":" + bottomRight;
-        } else {
-            displayText = selectedCells
-                .map(cell => {
-                    const row = cell.dataset.row;
-                    const col = parseInt(cell.dataset.col, 10);
-                    return toColumnName(col) + row;
-                })
-                .join(", ");
-        }
+    const selected = Array.from(document.querySelectorAll("td.selected"));
+    let text = "";
+    if (selected.length === 1) {
+        const c = selected[0];
+        text = toColumnName(+c.dataset.col) + c.dataset.row;
+    } else if (selected.length > 1) {
+        const rows = selected.map(c => +c.dataset.row);
+        const cols = selected.map(c => +c.dataset.col);
+        const minR = Math.min(...rows), maxR = Math.max(...rows);
+        const minC = Math.min(...cols), maxC = Math.max(...cols);
+        const expected = (maxR - minR + 1) * (maxC - minC + 1);
+        text = selected.length === expected
+            ? `${toColumnName(minC)}${minR}:${toColumnName(maxC)}${maxR}`
+            : selected.map(c => toColumnName(+c.dataset.col) + c.dataset.row).join(", ");
     }
-
-    const displayElement = document.getElementById("selected-cells-display");
-    if (displayElement) {
-        displayElement.textContent = displayText;
-    }
+    const el = document.getElementById("selected-cells-display");
+    if (el) el.textContent = text;
     updateFontSizeSelect();
 }
 
 // 0-indexedの列番号を Excel 表記（"A", "B", ..., "Z", "AA", ...）に変換する関数
-function toColumnName(colIndex) {
-    let result = "";
-    while (colIndex >= 0) {
-        result = String.fromCharCode((colIndex % 26) + 65) + result;
-        colIndex = Math.floor(colIndex / 26) - 1;
-    }
-    return result;
+function toColumnName(n) {
+    let s = "";
+    for (; n >= 0; n = Math.floor(n / 26) - 1)
+        s = String.fromCharCode((n % 26) + 65) + s;
+    return s;
 }
-
 
 function updateFontSizeSelect() {
-    // 選択状態のセル群を取得
-    const selectedCells = document.querySelectorAll("#spreadsheet tbody td.selected");
-    if (selectedCells.length === 0) {
-        return; // 選択セルがなければ何もしない
+    const selected = document.querySelectorAll("#spreadsheet tbody td.selected");
+    if (!selected.length) return;
+    const fontSizes = new Set([...selected].map(c => getComputedStyle(c).fontSize));
+    if (fontSizes.size !== 1) return console.log("選択セルには複数の font-size が設定されています。");
+    const common = fontSizes.values().next().value;
+    const select = document.getElementById("font-size");
+    if (!select) return console.error("font-size セレクト要素が見つかりません。");
+    for (const opt of select.options) {
+        opt.selected = opt.value === common;
     }
-
-    // 各選択セルから computedStyle で font-size を取得し、ユニークな値リストを作成
-    const fontSizes = new Set();
-    selectedCells.forEach(cell => {
-        const computedFontSize = window.getComputedStyle(cell).fontSize;
-        fontSizes.add(computedFontSize);
-    });
-
-    // 複数のフォントサイズが混在している場合は、ここでは更新しません（必要なら別処理）
-    if (fontSizes.size !== 1) {
-        console.log("選択セルには複数の font-size が設定されています。");
-        return;
-    }
-
-    // 共通のフォントサイズを取得（例："16px"）
-    const commonFontSize = [...fontSizes][0];
-
-    // font-size セレクト要素を取得
-    const fontSizeSelect = document.getElementById("font-size");
-    if (!fontSizeSelect) {
-        console.error("font-size セレクト要素が見つかりません。");
-        return;
-    }
-
-    let optionMatched = false;
-    // セレクト内の各 option をチェックし、一致するものを↑に selected 状態にセット
-    Array.from(fontSizeSelect.options).forEach(option => {
-        if (option.value === commonFontSize) {
-            option.selected = true;
-            optionMatched = true;
-        } else {
-            option.selected = false;
-        }
-    });
-
 }
-
 
 // マウスダウン：新規選択開始時に、既存の選択をクリアしてクリックしたセルを選択
 document.addEventListener("mousedown", function (e) {
@@ -2696,51 +2589,28 @@ document.addEventListener("keydown", function (e) {
     }
 });
 
-
-
-
 // アクティブセルにフィルハンドルを追加／更新する関数
 function updateFillHandle() {
-    // すべてのフィルハンドルを削除して重複表示を防ぐ
-    document.querySelectorAll(".fill-handle").forEach(handle => handle.remove());
-
-    // 選択されているセル群を取得
-    const selectedCells = document.querySelectorAll("#spreadsheet tbody td.selected");
-    if (!selectedCells || selectedCells.length === 0) return;
-
-    let targetCell = null;
-
-    if (selectedCells.length === 1) {
-        // 単一セルの場合は、アクティブセル（または選択されているセル）にフィルハンドルを表示
-        targetCell = activeCell;
-    } else {
-        // 複数セルの場合、選択範囲の最小／最大の行・列を計算
-        let minRow = Infinity, maxRow = -Infinity, minCol = Infinity, maxCol = -Infinity;
-        selectedCells.forEach(cell => {
-            const r = parseInt(cell.dataset.row, 10);
-            const c = parseInt(cell.dataset.col, 10);
-            if (r < minRow) minRow = r;
-            if (r > maxRow) maxRow = r;
-            if (c < minCol) minCol = c;
-            if (c > maxCol) maxCol = c;
+    document.querySelectorAll(".fill-handle").forEach(h => h.remove());
+    const selected = document.querySelectorAll("#spreadsheet tbody td.selected");
+    if (!selected.length) return;
+    let target = selected.length === 1 ? activeCell : (() => {
+        let minR = Infinity, maxR = -Infinity, minC = Infinity, maxC = -Infinity;
+        selected.forEach(c => {
+            const r = +c.dataset.row, cCol = +c.dataset.col;
+            if (r < minR) minR = r; if (r > maxR) maxR = r;
+            if (cCol < minC) minC = cCol; if (cCol > maxC) maxC = cCol;
         });
-        // 通常、Excel のような動作では右下隅（最大行・最大列）のセルにフィルハンドルを表示します
-        targetCell = getCell(maxRow, maxCol);
-    }
-
-    // 編集モード中ならフィルハンドルは表示しない
-    if (targetCell && !targetCell.isContentEditable) {
-        // 子要素の絶対配置が有効になるように relative を設定
-        targetCell.style.position = "relative";
-        // フィルハンドル要素を作成し、targetCell の内部に追加
-        const fillHandle = document.createElement("div");
-        fillHandle.className = "fill-handle";
-        targetCell.appendChild(fillHandle);
-        // フィルハンドルのマウスイベント（ドラッグ開始処理）を登録
-        fillHandle.addEventListener("mousedown", fillHandleMouseDown);
+        return getCell(maxR, maxC);
+    })();
+    if (target && !target.isContentEditable) {
+        target.style.position = "relative";
+        const fh = document.createElement("div");
+        fh.className = "fill-handle";
+        target.appendChild(fh);
+        fh.addEventListener("mousedown", fillHandleMouseDown);
     }
 }
-
 
 // 【selected】セルブロックの境界を計算する関数
 // フィル操作管理用グローバル変数
@@ -2771,23 +2641,18 @@ function computeInitialFillRange() {
 function fillHandleMouseDown(e) {
     // 編集モード中なら無視する
     if (activeCell && activeCell.isContentEditable) return;
-
     e.stopPropagation();
     e.preventDefault();
-
     isFillDragging = true;
     fillDragStartCell = activeCell;
     fillDragStartCoord = { x: e.clientX, y: e.clientY };
-
     // もともと【selected】になっているセルのブロックの境界を記録
     initialFillRange = computeInitialFillRange();
     // アンカーとして、初期選択ブロックの右下のセル（initialFillRange.maxRow, maxCol）を記録
     initialBottomRight = { row: initialFillRange.maxRow, col: initialFillRange.maxCol };
-
     document.addEventListener("mousemove", fillHandleMouseMove);
     document.addEventListener("mouseup", fillHandleMouseUp);
 }
-
 
 // ドラッグ中のmousemoveで範囲を更新（デルタ計算方式）
 function fillHandleMouseMove(e) {
@@ -3277,76 +3142,45 @@ function unmergeSelectedCells() {
             }
         }
     });
-
     updateSelectedCellsDisplay();
     setupRowVisibilityObserver();
 }
 
-
 // グローバル変数：コピーされたセル群の詳細情報を保持
 let clipboardData = null;
-
 function copySelectedCells() {
-    // 選択されたセルを取得
     const selectedCells = Array.from(document.querySelectorAll("#spreadsheet tbody td.selected"));
-    if (selectedCells.length === 0) {
-        console.log("コピー対象のセルがありません。");
-        return;
-    }
-
-    // 各セルの行・列番号を取得
-    const rows = selectedCells.map(cell => parseInt(cell.dataset.row, 10));
-    const cols = selectedCells.map(cell => parseInt(cell.dataset.col, 10));
-    const minRow = Math.min(...rows);
-    const maxRow = Math.max(...rows);
-    const minCol = Math.min(...cols);
-    const maxCol = Math.max(...cols);
-
-    // 連続選択か判定（矩形のセル数と実際の選択セルの数が一致すれば連続）
+    if (!selectedCells.length) return console.log("コピー対象のセルがありません。");
+    const rows = selectedCells.map(cell => +cell.dataset.row);
+    const cols = selectedCells.map(cell => +cell.dataset.col);
+    const minRow = Math.min(...rows), maxRow = Math.max(...rows);
+    const minCol = Math.min(...cols), maxCol = Math.max(...cols);
     const expectedCount = (maxRow - minRow + 1) * (maxCol - minCol + 1);
-    const isContiguous = (selectedCells.length === expectedCount);
-
-    // どちらの場合も、基準セルとして左上（minRow, minCol）を記録
-    let baselineRow = minRow, baselineCol = minCol;
-
-    // clipboardData というグローバル変数に保存
+    const isContiguous = selectedCells.length === expectedCount;
     clipboardData = {
-        startRow: baselineRow,
-        startCol: baselineCol,
-        data: null  // ここから下で内容を作成
+        startRow: minRow,
+        startCol: minCol,
+        data: isContiguous ? [] : selectedCells.map(cell => ({
+            row: +cell.dataset.row,
+            col: +cell.dataset.col,
+            value: cell.textContent,
+            formula: cell.dataset.formula || "",
+            cssText: cell.getAttribute("style") || ""
+        }))
     };
-
     if (isContiguous) {
-        // 連続の場合は、2次元配列形式にまとめる
-        clipboardData.data = [];
         for (let r = minRow; r <= maxRow; r++) {
-            let rowData = [];
+            const rowData = [];
             for (let c = minCol; c <= maxCol; c++) {
                 const cell = getCell(r, c);
-                if (cell) {
-                    rowData.push({
-                        value: cell.textContent,
-                        formula: cell.dataset.formula || "",
-                        cssText: cell.getAttribute("style") || ""
-                    });
-                } else {
-                    rowData.push({ value: "", formula: "", cssText: "" });
-                }
+                rowData.push({
+                    value: cell?.textContent || "",
+                    formula: cell?.dataset.formula || "",
+                    cssText: cell?.getAttribute("style") || ""
+                });
             }
             clipboardData.data.push(rowData);
         }
-    } else {
-        // 非連続の場合でも、左上を基準として保存する（貼り付け時に相対位置で処理できるように）
-        clipboardData.data = [];
-        selectedCells.forEach(cell => {
-            clipboardData.data.push({
-                row: parseInt(cell.dataset.row, 10),
-                col: parseInt(cell.dataset.col, 10),
-                value: cell.textContent,
-                formula: cell.dataset.formula || "",
-                cssText: cell.getAttribute("style") || ""
-            });
-        });
     }
     console.log("コピー完了:", clipboardData);
 }
@@ -3368,111 +3202,85 @@ function adjustFormulaReferences(formula, rowDelta, colDelta) {
 
 // 貼り付け処理の更新：数式中のセル参照を調整して貼り付ける
 function pasteClipboardData() {
-    if (!clipboardData) {
-        console.log("貼り付け対象のデータがありません。");
-        return;
-    }
-    // 複数セルが選択されているなら、選択範囲の左上セルを基準セルとして利用
+    if (!clipboardData) return console.log("貼り付け対象のデータがありません。");
+    const selected = Array.from(document.querySelectorAll("#spreadsheet tbody td.selected"));
     let targetCell = activeCell;
-    const selectedDest = Array.from(document.querySelectorAll("#spreadsheet tbody td.selected"));
-    if (selectedDest.length > 0) {
+    if (selected.length) {
         let minRow = Infinity, minCol = Infinity;
-        selectedDest.forEach(cell => {
-            const r = parseInt(cell.dataset.row, 10);
-            const c = parseInt(cell.dataset.col, 10);
+        for (const cell of selected) {
+            const r = +cell.dataset.row, c = +cell.dataset.col;
             if (r < minRow) minRow = r;
             if (c < minCol) minCol = c;
-        });
-        const newTarget = getCell(minRow, minCol);
-        if (newTarget) {
-            targetCell = newTarget;
         }
+        targetCell = getCell(minRow, minCol) || activeCell;
     }
-
-    const targetRow = parseInt(targetCell.dataset.row, 10);
-    const targetCol = parseInt(targetCell.dataset.col, 10);
-
-    // 貼り付け先オフセット：コピー時の基準セルからのずれ
+    const targetRow = +targetCell.dataset.row;
+    const targetCol = +targetCell.dataset.col;
     const rowDelta = targetRow - clipboardData.startRow;
     const colDelta = targetCol - clipboardData.startCol;
-
-    // 単一セルコピーかつ複数セル選択時は、すべてへ同じ値を埋め尽くす処理
-    if (clipboardData.startRow !== null &&
+    if (
+        clipboardData.startRow !== null &&
         clipboardData.data.length === 1 &&
         clipboardData.data[0].length === 1 &&
-        selectedDest.length > 1) {
+        selected.length > 1
+    ) {
         const cellData = clipboardData.data[0][0];
-        // 数式がある場合は相対調整
-        let newFormula = "";
-        if (cellData.formula && cellData.formula.trim() !== "") {
-            newFormula = adjustFormulaReferences(cellData.formula, rowDelta, colDelta);
-        }
-        selectedDest.forEach(destCell => {
-            destCell.textContent = cellData.value;
-            if (newFormula !== "") {
+        const newFormula = cellData.formula ? adjustFormulaReferences(cellData.formula, rowDelta, colDelta) : "";
+        for (const destCell of selected) {
+            if (newFormula) {
                 destCell.dataset.formula = newFormula;
                 destCell.textContent = evaluateFormula(newFormula);
             } else {
                 delete destCell.dataset.formula;
+                destCell.textContent = cellData.value;
             }
             destCell.style.cssText = cellData.cssText;
-        });
+        }
         updateAllFormulas();
         updateFillHandle();
         updateSelectedCellsDisplay();
         return;
     }
-
-    // 連続範囲の場合
-    if (clipboardData.startRow !== null && Array.isArray(clipboardData.data[0])) {
+    if (Array.isArray(clipboardData.data[0])) {
         const numRows = clipboardData.data.length;
         const numCols = clipboardData.data[0].length;
         for (let r = 0; r < numRows; r++) {
             for (let c = 0; c < numCols; c++) {
-                const destRow = targetRow + r;
-                const destCol = targetCol + c;
-                const destCell = getCell(destRow, destCol);
-                if (destCell) {
-                    const cellData = clipboardData.data[r][c];
-                    destCell.textContent = cellData.value;
-                    if (cellData.formula && cellData.formula.trim() !== "") {
-                        // 調整した数式を作成
-                        let newFormula = adjustFormulaReferences(cellData.formula, rowDelta, colDelta);
-                        destCell.dataset.formula = newFormula;
-                        destCell.textContent = evaluateFormula(newFormula);
-                    } else {
-                        delete destCell.dataset.formula;
-                    }
-                    destCell.style.cssText = cellData.cssText;
-                }
-            }
-        }
-    } else {
-        // 非連続の場合：各セルごとの絶対位置から、基準セルを用いた相対貼り付けに変更
-        clipboardData.data.forEach(item => {
-            // item.row, item.col はコピー時の元セル位置
-            const adjustedRow = targetRow + (item.row - clipboardData.startRow);
-            const adjustedCol = targetCol + (item.col - clipboardData.startCol);
-            const destCell = getCell(adjustedRow, adjustedCol);
-            if (destCell) {
-                destCell.textContent = item.value;
-                if (item.formula && item.formula.trim() !== "") {
-                    let newFormula = adjustFormulaReferences(item.formula, rowDelta, colDelta);
+                const destCell = getCell(targetRow + r, targetCol + c);
+                if (!destCell) continue;
+                const cellData = clipboardData.data[r][c];
+                const newFormula = cellData.formula ? adjustFormulaReferences(cellData.formula, rowDelta, colDelta) : "";
+                if (newFormula) {
                     destCell.dataset.formula = newFormula;
                     destCell.textContent = evaluateFormula(newFormula);
                 } else {
                     delete destCell.dataset.formula;
+                    destCell.textContent = cellData.value;
                 }
-                destCell.style.cssText = item.cssText;
+                destCell.style.cssText = cellData.cssText;
             }
-        });
+        }
+    } else {
+        for (const item of clipboardData.data) {
+            const destRow = targetRow + (item.row - clipboardData.startRow);
+            const destCol = targetCol + (item.col - clipboardData.startCol);
+            const destCell = getCell(destRow, destCol);
+            if (!destCell) continue;
+            const newFormula = item.formula ? adjustFormulaReferences(item.formula, rowDelta, colDelta) : "";
+            if (newFormula) {
+                destCell.dataset.formula = newFormula;
+                destCell.textContent = evaluateFormula(newFormula);
+            } else {
+                delete destCell.dataset.formula;
+                destCell.textContent = item.value;
+            }
+            destCell.style.cssText = item.cssText;
+        }
     }
-
     updateAllFormulas();
     updateFillHandle();
     updateSelectedCellsDisplay();
 }
-
 
 // ===========================
 // キーボードイベント（Ctrl+C / Ctrl+V）およびツールバーでのボタン操作
@@ -3543,75 +3351,44 @@ function saveState() {
     console.log("State saved. UndoHistory length:", undoHistory.length);
 }
 
-/**
- * 指定の状態データ（JSON文字列）からセルデータを復元する関数です。
- * getCell(row, col) という関数で対象セルの DOM 要素を取得する前提です。
- */
 function loadState(stateJSON) {
-    const stateData = JSON.parse(stateJSON);
-    stateData.cells.forEach(cellData => {
-        let targetCell = getCell(cellData.row, cellData.col);
-        if (targetCell) {
-            // まずは保存された値を反映します
-            targetCell.textContent = cellData.value;
-
-            // 値が空の場合は、セルの数式情報もクリアする
-            if (cellData.value.trim() === "") {
-                delete targetCell.dataset.formula;
-            }
-            // もし値が空でなく、なおかつ数式情報があれば、数式を再評価して表示する
-            else if (cellData.formula && cellData.formula.trim() !== "") {
-                targetCell.dataset.formula = cellData.formula;
-                targetCell.textContent = evaluateFormula(cellData.formula);
-            }
-
-            // セルの style を適用
-            targetCell.style.cssText = cellData.style;
-
-            // colspan, rowspan の反映（数値が1より大きければ属性をセット、そうでなければ属性を除去）
-            if (cellData.colspan && parseInt(cellData.colspan, 10) > 1) {
-                targetCell.setAttribute("colspan", cellData.colspan);
+    const cells = JSON.parse(stateJSON).cells;
+    for (const { row, col, value, formula, style, colspan, rowspan } of cells) {
+        const cell = getCell(row, col);
+        if (!cell) continue;
+        if (value.trim()) {
+            if (formula?.trim()) {
+                cell.dataset.formula = formula;
+                cell.textContent = evaluateFormula(formula);
             } else {
-                targetCell.removeAttribute("colspan");
+                delete cell.dataset.formula;
+                cell.textContent = value;
             }
-            if (cellData.rowspan && parseInt(cellData.rowspan, 10) > 1) {
-                targetCell.setAttribute("rowspan", cellData.rowspan);
-            } else {
-                targetCell.removeAttribute("rowspan");
-            }
+        } else {
+            delete cell.dataset.formula;
+            cell.textContent = "";
         }
-    });
+        cell.style.cssText = style || "";
+        setSpan(cell, "colspan", colspan);
+        setSpan(cell, "rowspan", rowspan);
+    }
+    function setSpan(cell, attr, val) {
+        const num = Number(val);
+        num > 1 ? cell.setAttribute(attr, num) : cell.removeAttribute(attr);
+    }
 }
 
-/**
- * Undo (戻る) の処理：
- * 現在の状態を redoHistory に移し、直前の状態を復元します。
- */
 function undo() {
-    if (undoHistory.length > 1) {
-        // 現在の状態を pop して redo に保存
-        const currentState = undoHistory.pop();
-        redoHistory.push(currentState);
-        // 直前の状態（undoHistory の先頭）を復元
-        const previousState = undoHistory[undoHistory.length - 1];
-        loadState(previousState);
-    } else {
-        console.log("これ以上戻れません。");
-    }
+    if (undoHistory.length <= 1) return console.log("これ以上戻れません。");
+    redoHistory.push(undoHistory.pop());
+    loadState(undoHistory[undoHistory.length - 1]);
 }
 
-/**
- * Redo (ひとつ前に進む) の処理：
- * redoHistory から状態を取り出して復元し、undoHistory に戻します。
- */
 function redo() {
-    if (redoHistory.length > 0) {
-        const nextState = redoHistory.pop();
-        undoHistory.push(nextState);
-        loadState(nextState);
-    } else {
-        console.log("これ以上進めません。");
-    }
+    if (!redoHistory.length) return console.log("これ以上進めません。");
+    const state = redoHistory.pop();
+    undoHistory.push(state);
+    loadState(state);
 }
 
 // ===== キーボードショートカットのバインド =====
@@ -3817,179 +3594,116 @@ function saveSpreadsheetData() {
     loadingstate.textContent = "保存中...";
     setTimeout(() => {
         try {
-            const savedCells = [];
-            const DEFAULT_COLSPAN = "1";
-            const DEFAULT_ROWSPAN = "1";
-            document.querySelectorAll("#spreadsheet tbody td").forEach(cell => {
-                const row = Number(cell.dataset.row);
-                const col = Number(cell.dataset.col);
-                const formula = cell.dataset.formula || "";
-                const value = cell.hidden ? (cell.dataset.originalValue || "") : cell.textContent;
-                const styleStr = cell.getAttribute("style") || "";
-                const hasFormula = formula.trim() !== "";
-                const hasValue = value !== "";
-                const hasStyle = styleStr && styleStr !== "";
-                if (hasValue || hasFormula || hasStyle) {
-                    const cellData = { row, col, value };
-                    if (hasFormula) {
-                        cellData.formula = formula;
-                        cellData.computedValue = evaluateFormula(formula);
-                    }
-                    if (hasStyle) {
-                        cellData.style = styleStr;
-                    }
-                    const colspan = cell.getAttribute("colspan");
-                    if (colspan && colspan !== DEFAULT_COLSPAN) {
-                        cellData.colspan = colspan;
-                    }
-                    const rowspan = cell.getAttribute("rowspan");
-                    if (rowspan && rowspan !== DEFAULT_ROWSPAN) {
-                        cellData.rowspan = rowspan;
-                    }
-                    if (cell.dataset.mergeAnchorRow) {
-                        cellData.mergeAnchorRow = cell.dataset.mergeAnchorRow;
-                        cellData.mergeAnchorCol = cell.dataset.mergeAnchorCol;
-                    }
-                    if (cell.dataset.mergeMinRow) {
-                        cellData.mergeMinRow = cell.dataset.mergeMinRow;
-                        cellData.mergeMinCol = cell.dataset.mergeMinCol;
-                    }
-                    if (cell.dataset.mergeMaxRow) {
-                        cellData.mergeMaxRow = cell.dataset.mergeMaxRow;
-                        cellData.mergeMaxCol = cell.dataset.mergeMaxCol;
-                    }
-                    savedCells.push(cellData);
-                }
-            });
-            const savedRows = [];
-            document.querySelectorAll("#spreadsheet tbody tr").forEach(tr => {
-                const row = Number(tr.dataset.row);
-                const height = window.getComputedStyle(tr).getPropertyValue("height");
-                savedRows.push({ row, height });
-            });
-            const savedColumns = [];
-            document.querySelectorAll("#spreadsheet thead th").forEach((th, col) => {
-                const width = window.getComputedStyle(th).getPropertyValue("width");
-                savedColumns.push({ col, width });
-            });
-            const zoomSlider = document.getElementById("zoom-slider");
-            const zoomValue = zoomSlider ? zoomSlider.value : "100";
-            const dataToSave = {
-                cells: savedCells,
-                rows: savedRows,
-                columns: savedColumns,
-                zoom: zoomValue
+            const savedCells = [], DEFAULT_COLSPAN = "1", DEFAULT_ROWSPAN = "1";
+            const mergeKeys = ["mergeAnchorRow", "mergeAnchorCol", "mergeMinRow", "mergeMinCol", "mergeMaxRow", "mergeMaxCol"];
+            const mkShort = {
+                mergeAnchorRow: "f", mergeAnchorCol: "g",
+                mergeMinRow: "h", mergeMinCol: "i",
+                mergeMaxRow: "j", mergeMaxCol: "k"
             };
-            const cleanedData = cleanData(dataToSave);
-            const jsonStr = JSON.stringify(cleanedData);
-            const compressedData = compressData(jsonStr);
-            localStorage.setItem("spreadsheetData", compressedData);
+            document.querySelectorAll("#spreadsheet tbody td").forEach(cell => {
+                const r = +cell.dataset.row, c = +cell.dataset.col;
+                const data = { l: r, m: c };
+                const v = cell.hidden ? cell.dataset.originalValue || "" : cell.textContent.trim();
+                const f = (cell.dataset.formula || "").trim();
+                const s = (cell.getAttribute("style") || "").trim();
+                const cs = cell.getAttribute("colspan"), rs = cell.getAttribute("rowspan");
+                if (v) data.a = v;
+                if (f) data.b = f;
+                if (s) data.c = s;
+                if (cs && cs !== DEFAULT_COLSPAN) data.d = cs;
+                if (rs && rs !== DEFAULT_ROWSPAN) data.e = rs;
+                mergeKeys.forEach(k => {
+                    if (cell.dataset[k]) data[mkShort[k]] = cell.dataset[k];
+                });
+                if (Object.keys(data).length > 2) savedCells.push(data);
+            });
+            const savedRows = Array.from(document.querySelectorAll("#spreadsheet tbody tr"))
+                .map(tr => ({ l: +tr.dataset.row, n: getComputedStyle(tr).height }));
+            const savedColumns = Array.from(document.querySelectorAll("#spreadsheet thead th"))
+                .map((th, c) => ({ m: c, o: getComputedStyle(th).width }));
+            const z = (document.getElementById("zoom-slider")?.value || "100");
+            const jsonStr = JSON.stringify({ c: savedCells, r: savedRows, o: savedColumns, p: z });
+            localStorage.setItem("spreadsheetData", compressData(jsonStr));
             loadingstate.textContent = "保存しました。";
             updateLocalStorageUsage();
-        } catch (error) {
-            console.error("保存エラー:", error);
+        } catch (err) {
+            console.error("保存エラー:", err);
             loadingstate.textContent = "保存エラーが発生しました。";
         }
     }, 300);
 }
 
 function loadSpreadsheetData() {
-    const savedDataStr = localStorage.getItem("spreadsheetData");
-    if (!savedDataStr) {
-        loadingstate.textContent = "データがありません";
-        return;
-    }
-    let savedData = null;
+    const savedStr = localStorage.getItem("spreadsheetData");
+    if (!savedStr) return loadingstate.textContent = "データがありません";
+    let data;
     try {
-        const decompressedJson = decompressData(savedDataStr);
-        savedData = JSON.parse(decompressedJson);
+        data = JSON.parse(decompressData(savedStr));
         loadingstate.textContent = "読み込み中...";
-        console.log("保存データのパース成功", savedData);
-    } catch (err) {
-        console.error("保存データの解凍／パースエラー:", err);
+    } catch {
         loadingstate.textContent = "データがありません";
         return;
     }
-    if (savedData.cells && savedData.cells.length > 0) {
-        const maxSavedRow = Math.max(...savedData.cells.map(c => parseInt(c.row, 10)));
-        if (maxSavedRow >= rowCount) loadRows(maxSavedRow - rowCount + 1);
+    const slider = document.getElementById("zoom-slider"),
+        display = document.getElementById("zoom-display"),
+        bar = document.getElementById("loading-progress-bar");
+
+    if (data.p != null && slider && display && container) {
+        const z = +(`${data.p}`.replace("%", "")) || 100;
+        slider.value = z; display.textContent = z + "%";
+        spreadsheetContent.style.zoom = z / 100;
     }
-    if (savedData.rows && savedData.rows.length > 0) {
-        savedData.rows.forEach(rowData => {
-            const targetRow = getRow(rowData.row);
-            if (targetRow) targetRow.style.height = rowData.height;
-        });
-    }
-    if (savedData.columns && savedData.columns.length > 0) {
-        const headerCells = document.querySelectorAll("#spreadsheet thead th");
-        savedData.columns.forEach(colData => {
-            if (headerCells[colData.col]) headerCells[colData.col].style.width = colData.width;
-        });
-    }
-    if (savedData.zoom !== undefined && savedData.zoom !== null) {
-        const zoomSlider = document.getElementById("zoom-slider");
-        const zoomDisplay = document.getElementById("zoom-display");
-        if (zoomSlider && zoomDisplay && container) {
-            let zoomValue = typeof savedData.zoom === "string"
-                ? Number(savedData.zoom.replace("%", "").trim())
-                : Number(savedData.zoom);
-            if (isNaN(zoomValue)) zoomValue = 100;
-            zoomSlider.value = zoomValue;
-            zoomDisplay.textContent = zoomValue + "%";
-            spreadsheetContent.style.zoom = zoomValue / 100;
-        }
-    }
-    if (savedData.cells && savedData.cells.length > 0) {
-        const cells = savedData.cells;
-        const batchSize = 500;
-        let index = 0;
-        const progressBar = document.getElementById("loading-progress-bar");
-        function setAttr(el, name, val) {
-            (val && +val > 1) ? el.setAttribute(name, val) : el.removeAttribute(name);
-        }
-        function setData(el, key, val) {
-            val ? (el.dataset[key] = val) : delete el.dataset[key];
-        }
-        function processCellBatch() {
-            const end = Math.min(index + batchSize, cells.length);
-            for (; index < end; index++) {
-                const d = cells[index];
-                const cell = getCell(d.row, d.col);
-                if (!cell) continue;
-                setAttr(cell, "colspan", d.colspan);
-                setAttr(cell, "rowspan", d.rowspan);
-                if (d.formula && d.formula.trim()) {
-                    cell.dataset.formula = d.formula;
-                    cell.textContent = d.computedValue !== undefined && d.computedValue !== ""
-                        ? d.computedValue
-                        : evaluateFormula(d.formula);
-                } else {
-                    cell.textContent = d.value !== undefined ? d.value : "";
-                    delete cell.dataset.formula;
-                }
-                cell.style.cssText = d.style || "";
-                ["mergeAnchorRow", "mergeAnchorCol", "mergeMinRow", "mergeMinCol", "mergeMaxRow", "mergeMaxCol"]
-                    .forEach(key => setData(cell, key, d[key]));
-                cell.hidden = d.hidden === true || d.hidden === "true";
-            }
-            if (progressBar) progressBar.style.width = Math.min((index / cells.length) * 100, 100) + "%";
-            if (index < cells.length) {
-                requestAnimationFrame(processCellBatch);
+    const maxRow = Math.max(0, ...((data.c || []).map(d => +d.l)));
+    if (maxRow >= rowCount) loadRows(maxRow - rowCount + 1);
+    (data.r || []).forEach(d => getRow(d.l)?.style && (getRow(d.l).style.height = d.n));
+    (data.o || []).forEach(d => {
+        const th = document.querySelector(`#spreadsheet thead th:nth-child(${d.m + 1})`);
+        if (th) th.style.width = d.o;
+    });
+    const cells = data.c || [], batchSize = 500;
+    const mergeMap = {
+        f: "mergeAnchorRow", g: "mergeAnchorCol",
+        h: "mergeMinRow", i: "mergeMinCol",
+        j: "mergeMaxRow", k: "mergeMaxCol"
+    };
+    let index = 0, total = cells.length;
+    function processBatch() {
+        const end = Math.min(index + batchSize, total);
+        for (; index < end; index++) {
+            const d = cells[index], cell = getCell(d.l, d.m);
+            if (!cell) continue;
+            if (d.d > 1) cell.setAttribute("colspan", d.d);
+            else cell.removeAttribute("colspan");
+            if (d.e > 1) cell.setAttribute("rowspan", d.e);
+            else cell.removeAttribute("rowspan");
+            if (d.b) {
+                cell.dataset.formula = d.b;
+                cell.textContent = evaluateFormula(d.b);
             } else {
-                setupRowVisibilityObserver();
-                loadingstate.textContent = "読み込み完了";
-                if (progressBar) {
-                    progressBar.style.width = "0%";
-                    const allCells = document.querySelectorAll("td");
-                    allCells.forEach(cell => cell.classList.add("borderss"));
-                    requestAnimationFrame(() => {
-                        allCells.forEach(cell => cell.classList.remove("borderss"));
-                    });
-                }
+                cell.textContent = d.a ?? "";
+                delete cell.dataset.formula;
             }
+            if (cell.style.cssText !== d.c) cell.style.cssText = d.c || "";
+            for (const [k, full] of Object.entries(mergeMap)) {
+                if (d[k]) cell.dataset[full] = d[k];
+                else delete cell.dataset[full];
+            }
+            cell.hidden = d.hd === true || d.hd === "true";
         }
-        processCellBatch();
-    } else {
+        if (bar) bar.style.width = `${Math.min((index / total) * 100, 100)}%`;
+        if (index < total) requestAnimationFrame(processBatch);
+        else {
+            setupRowVisibilityObserver();
+            loadingstate.textContent = "読み込み完了";
+            if (bar) bar.style.width = "0%";
+            const all = document.querySelectorAll("#spreadsheet tbody td");
+            all.forEach(td => td.classList.add("borderss"));
+            requestAnimationFrame(() => all.forEach(td => td.classList.remove("borderss")));
+        }
+    }
+    if (total) processBatch();
+    else {
         setupRowVisibilityObserver();
         loadingstate.textContent = "読み込み完了";
     }
@@ -4122,50 +3836,33 @@ function formatBytes(bytes) {
 
 // localStorage の総容量・使用量・残り容量をそれぞれ更新する関数
 function updateLocalStorageUsage() {
-    const MAX_BYTES = 5 * 1024 * 1024; // 総容量 5MB (5 * 1024 * 1024 バイト)
-    const usedBytes = getLocalStorageUsage();
-    const remainingBytes = MAX_BYTES - usedBytes;
-
-    // 総容量（固定値）の表示
-    const totalElem = document.getElementById("localStorageTotal");
-    if (totalElem) {
-        totalElem.textContent = "全体容量: " + formatBytes(MAX_BYTES);
-    }
-
-    // 使用量の表示
-    const usedElem = document.getElementById("localStorageUsed");
-    if (usedElem) {
-        usedElem.textContent = "使用量: " + formatBytes(usedBytes);
-    }
-
-    // 残り容量の表示
-    const remainingElem = document.getElementById("localStorageRemaining");
-    if (remainingElem) {
-        remainingElem.textContent = "残り容量: " + formatBytes(remainingBytes);
+    const MAX = 5 * 1024 * 1024;
+    const used = getLocalStorageUsage();
+    const rem = MAX - used;
+    const elems = {
+        localStorageTotal: `全体容量: ${formatBytes(MAX)}`,
+        localStorageUsed: `使用量: ${formatBytes(used)}`,
+        localStorageRemaining: `残り容量: ${formatBytes(rem)}`
+    };
+    for (const id in elems) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = elems[id];
     }
 }
 
 // ページ読み込み時に更新（必要に応じて保存後にも呼び出してください）
 document.addEventListener("DOMContentLoaded", updateLocalStorageUsage);
 
-
-
 // ページ読み込み時に保存データを自動的に読み込む
 window.addEventListener("load", function () {
     loadSpreadsheetData();
 });
-
-
-
-
 
 // -------------------------
 // 初期状態の生成：列・行ともに
 // -------------------------
 initializeColumns(INITIAL_COLUMNS);
 loadRows(INITIAL_ROWS);
-
-
 
 // プルダウンボタン
 
