@@ -252,7 +252,7 @@ th.col_number {
 
 /* フィルドラッグ中のハイライト */
 td.fill-selected {
-    outline: 1.5px blue dotted;
+    outline: 2px blue dashed;
 }
 
 td.selected:has(.fill-handle) {

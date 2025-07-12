@@ -697,12 +697,12 @@ function TIMEVALUE(timeStr) {
 
 // ───── 数式評価関数 ─────
 // セル内のテキストが数式の場合は再評価して数値リテラルとして返すヘルパー関数
-function getCellEvaluatedValue(cell) {
-    let content = cell.textContent.trim();
+function getCellEvaluatedValue(cell, visited = new Set()) {
+    const content = cell.textContent.trim();
     if (content.charAt(0) === "=") {
-        // 再帰的に評価（無限再帰に注意。循環参照対策は別途必要）
-        let evaluated = evaluateFormula(content);
-        return Number(evaluated);
+        const evaluated = evaluateFormula(content, visited);
+        const num = Number(evaluated);
+        return isNaN(num) ? evaluated : num;
     } else {
         return parseFloat(content);
     }
@@ -777,25 +777,27 @@ function columnLettersToIndex(letters) {
 // ---------------------------------------------
 // 3. 数式評価関数
 // ---------------------------------------------
-function evaluateFormula(formula) {
+function evaluateFormula(formula, visited = new Set()) {
     if (!formula) return formula;
-    // 単体の "=" はそのまま返す
     if (formula === "=") return "=";
-    // 数式は "=" で始まらなければならない
     if (formula[0] !== "=") return formula;
 
-    // 先頭の "=" を除去し、前後の空白をトリムする
     let expr = formula.substring(1).trim();
     if (expr === "") return "=";
 
-    // IF 関数の場合、条件部の "=" を "==" に変換する事前処理
+    // 循環参照チェック用キー（数式そのものをキーに）
+    const key = expr;
+    if (visited.has(key)) {
+        return "#CIRCULAR!";
+    }
+    visited.add(key);
+
+    // IF 関数の条件部の "=" を "==" に変換
     if (expr.toUpperCase().startsWith("IF(")) {
         expr = preprocessIFFormula(expr);
     }
 
-    // ---------------------------------------------
-    // ① 範囲参照の置換処理（例："A1:B2" → 配列リテラル "[10,20,...]"）
-    // ---------------------------------------------
+    // ① 範囲参照の置換処理（例："A1:B2" → "[10,20,...]"）
     expr = expr.replace(RANGE_REF_REGEX, function (match) {
         const parts = match.split(":");
         if (parts.length === 2) {
@@ -811,7 +813,7 @@ function evaluateFormula(formula) {
                     for (let c = startCol; c <= endCol; c++) {
                         const cell = getCell(r, c);
                         if (cell) {
-                            let cellVal = getCellEvaluatedValue(cell);
+                            let cellVal = getCellEvaluatedValue(cell, new Set(visited));  // 🔁 visitedを渡す
                             if (!isNaN(cellVal)) {
                                 values.push(cellVal);
                             }
@@ -824,34 +826,28 @@ function evaluateFormula(formula) {
         return match;
     });
 
-    // ---------------------------------------------
-    // ② 単一セル参照の置換処理（例："A1" → 数値リテラル）
-    // ---------------------------------------------
+    // ② 単一セル参照の置換処理（例："A1" → 数値）
     expr = expr.replace(SINGLE_REF_REGEX, function (match, colLetters, rowStr) {
         const colIndex = columnLettersToIndex(colLetters);
         const rowNumber = parseInt(rowStr, 10);
         const refCell = getCell(rowNumber, colIndex);
         if (refCell) {
-            let cellVal = getCellEvaluatedValue(refCell);
+            let cellVal = getCellEvaluatedValue(refCell, new Set(visited));  // 🔁 visitedを渡す
             return (!isNaN(cellVal)) ? cellVal : 0;
         }
         return 0;
     });
 
-    // ---------------------------------------------
     // ③ eval による評価
-    // ---------------------------------------------
     try {
         let result = eval(expr);
-        // 結果が関数型の場合は空文字を返す（ソースコードが表示されないようにするため）
-        if (typeof result === "function") {
-            return "";
-        }
+        if (typeof result === "function") return "";
         return result;
     } catch (e) {
         return "Error: " + e.message;
     }
 }
+
 
 function updateAllFormulas() {
     const formulaCells = document.querySelectorAll("#spreadsheet tbody td[data-formula]");
@@ -1714,14 +1710,6 @@ document.addEventListener("keydown", function (e) {
     }
 });
 
-
-
-
-// A:0, B:1, ...
-function colLetterToIndex(letter) {
-    return letter.charCodeAt(0) - "A".charCodeAt(0);
-}
-
 // 例：セル参照（例 "A1"）を { row, col } に変換する（0-index と想定）
 function parseCellReference(ref) {
     const match = ref.match(/^([A-Z]+)(\d+)$/);
@@ -1760,76 +1748,35 @@ function clearCalculationRangeHighlights() {
 
 // 数式内の計算対象グループごとにセルの背景色を設定する関数
 function highlightCalculationRange(formula) {
-    // まず前回のハイライトをクリア
     clearCalculationRangeHighlights();
 
-    // カラーパレットの定義（お好みの色に変更してください）
-    const palette = [
-        "blue",           // 青
-        "red",            // 赤
-        "yellowgreen",    // 黄緑
-        "purple",         // 紫
-        "yellow",         // 黄色
-        "blueviolet",     // 青紫
-        "mediumvioletred" // 赤紫
-    ];
+    const palette = ["blue", "red", "yellowgreen", "purple", "yellow", "blueviolet", "mediumvioletred"];
+    let groups = formula.includes(",")
+        ? formula.split(",").map(s => s.trim()).filter(Boolean)
+        : [...new Set((formula.match(/[A-Z]+\d+(?::[A-Z]+\d+)?/g) || []))];
 
-    // 数式全体をグループ分けする処理
-    let groups = [];
-    if (formula.indexOf(",") !== -1) {
-        // カンマがある場合は、カンマで分割してグループとみなす
-        groups = formula.split(",").map(s => s.trim()).filter(s => s.length > 0);
-    } else {
-        // カンマが無い場合は、正規表現でユニークなセル参照／範囲指定を抽出して、それぞれをグループとみなす
-        const regex = /([A-Z]+\d+(?::[A-Z]+\d+)?)/g;
-        let match;
-        const uniqueTargets = [];
-        while ((match = regex.exec(formula)) !== null) {
-            const ref = match[1];
-            if (uniqueTargets.indexOf(ref) === -1) {
-                uniqueTargets.push(ref);
-            }
-        }
-        groups = uniqueTargets;
-    }
-
-    // 各グループごとに色を割り当ててハイライト
-    groups.forEach((groupStr, groupIndex) => {
-        // グループごとに色を決定（グループ数がパレット数を超える場合はループする）
-        const assignedColor = palette[groupIndex % palette.length];
-
-        // 正規表現でセル参照またはセル範囲（例："A1" or "A1:B3"）を抽出
-        const regex = /([A-Z]+\d+(?::[A-Z]+\d+)?)/g;
-        let match;
-        while ((match = regex.exec(groupStr)) !== null) {
-            const ref = match[1];
-            if (ref.indexOf(":") !== -1) {
-                // 範囲指定の場合
+    for (let i = 0; i < groups.length; i++) {
+        const color = palette[i % palette.length];
+        const refs = groups[i].match(/[A-Z]+\d+(?::[A-Z]+\d+)?/g) || [];
+        for (let ref of refs) {
+            if (ref.includes(":")) {
                 const range = parseRangeReference(ref);
-                if (range) {
-                    for (let r = range.start.row; r <= range.end.row; r++) {
-                        for (let c = range.start.col; c <= range.end.col; c++) {
-                            const cell = getCellElement(r, c);
-                            if (cell) {
-                                cell.style.outline = "2.5px solid " + assignedColor;
-                            }
-                        }
+                if (!range) continue;
+                for (let r = range.start.row; r <= range.end.row; r++) {
+                    for (let c = range.start.col; c <= range.end.col; c++) {
+                        const cell = getCellElement(r, c);
+                        if (cell) cell.style.outline = `2.5px solid ${color}`;
                     }
                 }
             } else {
-                // 単体のセルの場合
                 const pos = parseCellReference(ref);
-                if (pos) {
-                    const cell = getCellElement(pos.row, pos.col);
-                    if (cell) {
-                        cell.style.outline = "2.5px solid " + assignedColor;
-                    }
-                }
+                if (!pos) continue;
+                const cell = getCellElement(pos.row, pos.col);
+                if (cell) cell.style.outline = `2.5px solid ${color}`;
             }
         }
-    });
+    }
 }
-
 
 // 数式バーをクリック（またはフォーカス）した際に、バーに数式があれば計算対象セル範囲をハイライト
 formulaBarInput.addEventListener("click", function () {
@@ -1888,21 +1835,15 @@ function removeMergedCellsHighlight() {
     highlighted.forEach(cell => cell.classList.remove("merge-highlight"));
 }
 
-document.addEventListener("input", function (e) {
-    // 編集モードのセル（contenteditable が true の td 要素）で発生した input イベントを確認
-    if (e.target && e.target.matches("td[contenteditable='true']")) {
-        const formulaText = e.target.textContent.trim();
-        if (formulaText && formulaText.startsWith("=")) {
-            highlightCalculationRange(formulaText);
-        } else {
-            clearCalculationRangeHighlights();
-        }
-        const cell45 = e.target;
-        formulaBarInput.value = cell45.textContent;
+document.addEventListener("input", e => {
+    const t = e.target;
+    if (t?.matches("td[contenteditable='true']")) {
+        const val = t.textContent.trim();
+        val.startsWith("=") ? highlightCalculationRange(val) : clearCalculationRangeHighlights();
+        formulaBarInput.value = t.textContent;
     }
     debouncedSaveState();
 });
-
 
 // 数式バーにフォーカスが入ったタイミングでも同様の処理を行う場合はこちらも追加（任意）
 formulaBarInput.addEventListener("focus", function () {
@@ -1916,7 +1857,6 @@ formulaBarInput.addEventListener("focus", function () {
 formulaBarInput.addEventListener("blur", function () {
     clearCalculationRangeHighlights();
 });
-
 
 // keydown イベント：この段階で先に抑制する（キャプチャフェーズでの実行）
 document.addEventListener(
@@ -1985,29 +1925,15 @@ document.addEventListener(
 );
 
 // 行番号と列番号の間の空白（corner エリア）をクリックしたら全セル選択する
-document.getElementById("corner").addEventListener("click", function (e) {
-    e.preventDefault(); // ブラウザのデフォルト動作をキャンセル
-
-    // もし編集中の状態なら（たとえば contentEditable が true の場合）、全選択はしない
-    if (document.activeElement && document.activeElement.isContentEditable) {
-        return;
-    }
-
-    // 既存の全選択状態を一旦解除する
-    const previouslySelected = document.querySelectorAll("#spreadsheet tbody td.selected");
-    previouslySelected.forEach(cell => cell.classList.remove("selected"));
-
-    // シート内のすべてのセルをまとめて全選択状態にする
+document.getElementById("corner").addEventListener("click", e => {
+    e.preventDefault();
+    if (document.activeElement?.isContentEditable) return;
+    // 既存選択解除と全選択をまとめて行う
     const allCells = document.querySelectorAll("#spreadsheet tbody td");
-    allCells.forEach(cell => cell.classList.add("selected"));
+    allCells.forEach(cell => cell.classList.toggle("selected", true));
     updateFillHandle();
-
-    // 任意：activeCell を全セルの先頭に更新
-    if (allCells.length > 0) {
-        activeCell = allCells[0];
-    }
+    activeCell = allCells[0] ?? activeCell;
 });
-
 
 window.onload = function () {
     //==============================
@@ -2119,20 +2045,22 @@ window.onload = function () {
 
     // 行番号 (data-row 属性に一致) の範囲を選択
     function selectRows(from, to) {
+        const selectors = [];
         for (let r = from; r <= to; r++) {
-            const rowCells = document.querySelectorAll(`#spreadsheet td[data-row="${r}"]`);
-            rowCells.forEach(cell => cell.classList.add("selected"));
+            selectors.push(`td[data-row="${r}"]`);
         }
-        // 必要なら activeCell の更新など
+        const cells = document.querySelectorAll("#spreadsheet " + selectors.join(","));
+        cells.forEach(cell => cell.classList.add("selected"));
     }
 
     // 列番号 (data-col 属性に一致) の範囲を選択
     function selectColumns(from, to) {
+        const selectors = [];
         for (let c = from; c <= to; c++) {
-            const colCells = document.querySelectorAll(`#spreadsheet td[data-col="${c}"]`);
-            colCells.forEach(cell => cell.classList.add("selected"));
+            selectors.push(`td[data-col="${c}"]`);
         }
-        // 必要なら activeCell の更新など
+        const cells = document.querySelectorAll("#spreadsheet " + selectors.join(","));
+        cells.forEach(cell => cell.classList.add("selected"));
     }
 
     // 例：列番号ラベル "A" -> 0, "B" -> 1, "AA" -> 26 などに変換する関数
@@ -2592,17 +2520,20 @@ document.addEventListener("keydown", function (e) {
 // アクティブセルにフィルハンドルを追加／更新する関数
 function updateFillHandle() {
     document.querySelectorAll(".fill-handle").forEach(h => h.remove());
-    const selected = document.querySelectorAll("#spreadsheet tbody td.selected");
+    const selected = [...document.querySelectorAll("#spreadsheet tbody td.selected")];
     if (!selected.length) return;
-    let target = selected.length === 1 ? activeCell : (() => {
+    let target;
+    if (selected.length === 1) {
+        target = activeCell;
+    } else {
         let minR = Infinity, maxR = -Infinity, minC = Infinity, maxC = -Infinity;
-        selected.forEach(c => {
-            const r = +c.dataset.row, cCol = +c.dataset.col;
+        for (const c of selected) {
+            const r = +c.dataset.row, col = +c.dataset.col;
             if (r < minR) minR = r; if (r > maxR) maxR = r;
-            if (cCol < minC) minC = cCol; if (cCol > maxC) maxC = cCol;
-        });
-        return getCell(maxR, maxC);
-    })();
+            if (col < minC) minC = col; if (col > maxC) maxC = col;
+        }
+        target = getCell(maxR, maxC);
+    }
     if (target && !target.isContentEditable) {
         target.style.position = "relative";
         const fh = document.createElement("div");
@@ -2784,7 +2715,6 @@ function fillHandleMouseUp(e) {
     updateSelectedCellsDisplay();
 }
 
-
 /**
  * 数式内のすべてのセル参照をコピー元とコピー先のオフセットに合わせて変更する関数
  * (例：コピー元セルが A1 で、コピー先セルが B2 なら、参照 "A1" は "B2" に変換される)
@@ -2812,60 +2742,50 @@ function adjustFormula(formula, rowOffset, colOffset) {
  * 　ここでは、コピー元に dataset.formula が存在し先頭が "=" なら常にコピー・調整することにします。
  */
 function cloneCellProperties(sourceCell, targetCell) {
-    // 1. テキスト内容をコピー
     targetCell.textContent = sourceCell.textContent;
-
-    // 2. data-* 属性のコピー（コピー元の merge 関連の属性はコピーせず、row/col も除外）
-    Object.keys(sourceCell.dataset).forEach(key => {
-        // コピー元のデータを、'row', 'col'、および merge 関連（"merge" で始まる）のキーは除外する
+    Object.entries(sourceCell.dataset).forEach(([key, val]) => {
         if (key !== 'row' && key !== 'col' && !key.startsWith("merge")) {
-            targetCell.dataset[key] = sourceCell.dataset[key];
+            targetCell.dataset[key] = val;
         }
     });
-    // ※ここでは、もしコピー先が既に merge の情報を持っている場合は、何も上書きしないのでそのまま維持される
-
-    // 3. 数式データのコピーと調整
-    if (sourceCell.dataset.formula && sourceCell.dataset.formula[0] === "=") {
-        const srcRow = parseInt(sourceCell.dataset.row, 10);
-        const srcCol = parseInt(sourceCell.dataset.col, 10);
-        const tgtRow = parseInt(targetCell.dataset.row, 10);
-        const tgtCol = parseInt(targetCell.dataset.col, 10);
+    if (sourceCell.dataset.formula?.startsWith("=")) {
+        const srcRow = +sourceCell.dataset.row;
+        const srcCol = +sourceCell.dataset.col;
+        const tgtRow = +targetCell.dataset.row;
+        const tgtCol = +targetCell.dataset.col;
         const rowOffset = tgtRow - srcRow;
         const colOffset = tgtCol - srcCol;
         targetCell.dataset.formula = adjustFormula(sourceCell.dataset.formula, rowOffset, colOffset);
     } else {
-        // 数式データがない場合、コピー先に formula 情報があれば削除する
-        if (targetCell.dataset.formula) {
-            delete targetCell.dataset.formula;
-        }
+        delete targetCell.dataset.formula;
     }
-
-    // 4. スタイル情報のコピー
+    ["Top", "Right", "Bottom", "Left"].forEach(side => {
+        const width = sourceCell.style[`border${side}Width`];
+        const style = sourceCell.style[`border${side}Style`];
+        const color = sourceCell.style[`border${side}Color`];
+        if (width) targetCell.style[`border${side}Width`] = width;
+        if (style) targetCell.style[`border${side}Style`] = style;
+        if (color) targetCell.style[`border${side}Color`] = color;
+    });
     const computed = window.getComputedStyle(sourceCell);
     const bgColor = computed.backgroundColor;
-    targetCell.style.backgroundColor =
-        (bgColor === "rgba(0, 0, 0, 0)" || bgColor === "transparent") ? "" : bgColor;
-    targetCell.style.color = computed.color;
-    targetCell.style.textAlign = computed.textAlign;
-    targetCell.style.border = computed.border;
-    targetCell.style.fontSize = computed.fontSize;
-    targetCell.style.fontFamily = computed.fontFamily;
-    targetCell.style.fontStyle = computed.fontStyle;
-    targetCell.style.fontWeight = computed.fontWeight;
-    targetCell.style.verticalAlign = computed.verticalAlign;
-    targetCell.style.textDecoration = computed.textDecoration;
-    targetCell.style.textShadow = computed.textShadow;
-
-    // 5. contenteditable など、選択状態に関する属性・クラスはコピーしない
+    targetCell.style.backgroundColor = (bgColor === "rgba(0, 0, 0, 0)" || bgColor === "transparent") ? "" : bgColor;
+    [
+        "color",
+        "textAlign",
+        "fontSize",
+        "fontFamily",
+        "fontStyle",
+        "fontWeight",
+        "verticalAlign",
+        "textDecoration",
+        "textShadow"
+    ].forEach(prop => {
+        targetCell.style[prop] = computed[prop];
+    });
     targetCell.removeAttribute("contenteditable");
     targetCell.classList.remove("selected", "fill-selected");
 }
-
-
-
-
-
-
 
 // セルクリック時にアクティブセルを更新後、フィルハンドルの状態を更新
 document.querySelector("#spreadsheet tbody").addEventListener("click", function (e) {
