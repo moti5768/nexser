@@ -84,7 +84,7 @@ const table = document.getElementById("spreadsheet");
 const theadRow = table.querySelector("thead tr");
 const tbody = table.querySelector("tbody");
 const formulaBarInput = document.getElementById("formula-bar");
-const loadingstate = document.getElementById("loadingstate")
+const loadingstate = document.getElementById("loadingstate");
 
 let currentColumns = 0; // 現在の列数 (0-index)
 let rowCount = 1;       // 次に生成する行番号 (1-index)
@@ -444,12 +444,10 @@ function navigateToCell(row, col, event) {
         // すべてのセルから selected クラスを除去
         const allCells = document.querySelectorAll("#spreadsheet tbody td");
         allCells.forEach(cell => cell.classList.remove("selected"));
-
         // 移動先のセルをフォーカスし、selected クラスを追加
         targetCell.focus();
         activeCell = targetCell;
         activeCell.classList.add("selected");
-
         // 数式バーも更新
         formulaBarInput.value = activeCell.dataset.formula ? activeCell.dataset.formula : activeCell.textContent;
     }
@@ -837,7 +835,6 @@ function evaluateFormula(formula, visited = new Set()) {
         }
         return 0;
     });
-
     // ③ eval による評価
     try {
         let result = eval(expr);
@@ -847,7 +844,6 @@ function evaluateFormula(formula, visited = new Set()) {
         return "Error: " + e.message;
     }
 }
-
 
 function updateAllFormulas() {
     const formulaCells = document.querySelectorAll("#spreadsheet tbody td[data-formula]");
@@ -868,7 +864,6 @@ function handleCellMouseDown(e) {
     if (e.target && e.target.isContentEditable) {
         return;
     }
-
     // 通常の選択処理（例：選択の開始、activeCell の更新など）
     if (e.button !== 0) return;
     isSelecting = true;
@@ -880,7 +875,6 @@ function handleCellMouseDown(e) {
     selectionEnd = { ...selectionStart };
     updateSelection();
     e.preventDefault();
-
     if (document.activeElement === formulaBarInput) {
         return;
     }
@@ -898,7 +892,6 @@ function handleCellMouseDown(e) {
     activeCell = e.target;
     removeMergedCellsHighlight();
 }
-
 
 container.addEventListener("mousemove", function (e) {
     if (!isSelecting) return;
@@ -930,7 +923,6 @@ function updateSelection() {
         // 既存の計算範囲ハイライトをクリアして、新たに適用
         clearCalculationRangeHighlights();
         highlightCalculationRange(rangeRef);
-
         // 通常の選択用の selected クラスはすべて外すが、
         // 値を求めたいセル（activeCell）は常に selected 状態にする
         const cells = document.querySelectorAll("#spreadsheet tbody td");
@@ -953,7 +945,6 @@ function updateSelection() {
         });
     }
 }
-
 
 function clearSelection() {
     const cells = document.querySelectorAll("#spreadsheet tbody td");
@@ -1065,7 +1056,6 @@ textAlignmentButtons.forEach(button => {
         textAlignmentButtons.forEach(btn => btn.classList.remove("selected"));
         // クリックされたボタンに選択状態クラスを付与
         this.classList.add("selected");
-
         const value = this.getAttribute("data-align");
         if (activeCell) {
             const cells = document.querySelectorAll("#spreadsheet tbody td.selected");
@@ -1077,7 +1067,6 @@ textAlignmentButtons.forEach(button => {
         }
     });
 });
-
 
 // 10-2. Font Size
 let fontSizeSelect = document.getElementById("font-size");
@@ -1248,9 +1237,6 @@ document.addEventListener("keydown", function (e) {
     }
 });
 
-
-
-
 // 連続移動用タイマー（グローバル変数）
 let navigationInterval = null;
 
@@ -1379,7 +1365,6 @@ function doMove(e) {
     updateFillHandle();
 
     // スクロール補正
-    const container = document.getElementById("spreadsheet-container");
     if (container) {
         const contRect = container.getBoundingClientRect();
         const cellRect = visibleTarget.getBoundingClientRect();
@@ -1503,126 +1488,66 @@ function setCaretToEnd(el) {
 // =======================
 
 // 【外枠適用】
-// 選択されたセルの中から、選択範囲の最小／最大の行・列を算出し、
-// その外側にのみ「2px solid black」の枠線を適用します。
-function applyOuterBorder() {
+function applyOuterBorderWithWidth(borderWidth) {
     const selectedCells = document.querySelectorAll("#spreadsheet tbody td.selected");
-    if (selectedCells.length === 0) return;
-
+    if (!selectedCells.length) return;
     let minRow = Infinity, maxRow = -Infinity, minCol = Infinity, maxCol = -Infinity;
     selectedCells.forEach(cell => {
-        const row = parseInt(cell.dataset.row, 10);
-        const col = parseInt(cell.dataset.col, 10);
-        if (row < minRow) minRow = row;
-        if (row > maxRow) maxRow = row;
-        if (col < minCol) minCol = col;
-        if (col > maxCol) maxCol = col;
+        const row = +cell.dataset.row;
+        const col = +cell.dataset.col;
+        minRow = Math.min(minRow, row);
+        maxRow = Math.max(maxRow, row);
+        minCol = Math.min(minCol, col);
+        maxCol = Math.max(maxCol, col);
     });
-
     selectedCells.forEach(cell => {
-        const row = parseInt(cell.dataset.row, 10);
-        const col = parseInt(cell.dataset.col, 10);
-        if (row === minRow) {
-            cell.style.borderTop = "3.5px solid black";
-        }
-        if (row === maxRow) {
-            cell.style.borderBottom = "3.5px solid black";
-        }
-        if (col === minCol) {
-            cell.style.borderLeft = "3.5px solid black";
-        }
-        if (col === maxCol) {
-            cell.style.borderRight = "3.5px solid black";
-        }
+        const row = +cell.dataset.row;
+        const col = +cell.dataset.col;
+        if (row === minRow) cell.style.borderTop = `${borderWidth}px solid black`;
+        if (row === maxRow) cell.style.borderBottom = `${borderWidth}px solid black`;
+        if (col === minCol) cell.style.borderLeft = `${borderWidth}px solid black`;
+        if (col === maxCol) cell.style.borderRight = `${borderWidth}px solid black`;
     });
 }
+// 通常枠
+function applyOuterBorder() {
+    applyOuterBorderWithWidth(3.5);
+}
+// 太枠
+function applyOuterBorder_bold() {
+    applyOuterBorderWithWidth(8);
+}
 
-// 選択範囲の上側（最小行側）のセルに上掛線を適用
-function applyTopBorder() {
+// 選択範囲の上側（最小行側）のセルに各掛線を適用
+function applyBorderOnEdge(direction, borderWidth = 3.5) {
     const selectedCells = document.querySelectorAll("#spreadsheet tbody td.selected");
-    if (selectedCells.length === 0) return;
-
-    let minRow = Infinity;
+    if (!selectedCells.length) return;
+    let edgeValue = direction === 'top' || direction === 'left' ? Infinity : -Infinity;
     selectedCells.forEach(cell => {
-        const row = parseInt(cell.dataset.row, 10);
-        if (row < minRow) {
-            minRow = row;
+        const value = +(direction === 'top' || direction === 'bottom' ? cell.dataset.row : cell.dataset.col);
+        if (direction === 'top' || direction === 'left') {
+            edgeValue = Math.min(edgeValue, value);
+        } else {
+            edgeValue = Math.max(edgeValue, value);
         }
     });
     selectedCells.forEach(cell => {
-        const row = parseInt(cell.dataset.row, 10);
-        if (row === minRow) {
-            cell.style.borderTop = "3.5px solid black";
-        }
-    });
-}
-
-// 選択範囲の下側（最大行側）のセルに下掛線を適用
-function applyBottomBorder() {
-    const selectedCells = document.querySelectorAll("#spreadsheet tbody td.selected");
-    if (selectedCells.length === 0) return;
-
-    let maxRow = -Infinity;
-    selectedCells.forEach(cell => {
-        const row = parseInt(cell.dataset.row, 10);
-        if (row > maxRow) {
-            maxRow = row;
-        }
-    });
-    selectedCells.forEach(cell => {
-        const row = parseInt(cell.dataset.row, 10);
-        if (row === maxRow) {
-            cell.style.borderBottom = "3.5px solid black";
+        const value = +(direction === 'top' || direction === 'bottom' ? cell.dataset.row : cell.dataset.col);
+        if (value === edgeValue) {
+            const styleProp = `border${direction[0].toUpperCase()}${direction.slice(1)}`;
+            cell.style[styleProp] = `${borderWidth}px solid black`;
         }
     });
 }
-
-// 選択範囲の左側（最小列側）のセルに左掛線を適用
-function applyLeftBorder() {
-    const selectedCells = document.querySelectorAll("#spreadsheet tbody td.selected");
-    if (selectedCells.length === 0) return;
-
-    let minCol = Infinity;
-    selectedCells.forEach(cell => {
-        const col = parseInt(cell.dataset.col, 10);
-        if (col < minCol) {
-            minCol = col;
-        }
-    });
-    selectedCells.forEach(cell => {
-        const col = parseInt(cell.dataset.col, 10);
-        if (col === minCol) {
-            cell.style.borderLeft = "3.5px solid black";
-        }
-    });
-}
-
-// 選択範囲の右側（最大列側）のセルに右掛線を適用
-function applyRightBorder() {
-    const selectedCells = document.querySelectorAll("#spreadsheet tbody td.selected");
-    if (selectedCells.length === 0) return;
-
-    let maxCol = -Infinity;
-    selectedCells.forEach(cell => {
-        const col = parseInt(cell.dataset.col, 10);
-        if (col > maxCol) {
-            maxCol = col;
-        }
-    });
-    selectedCells.forEach(cell => {
-        const col = parseInt(cell.dataset.col, 10);
-        if (col === maxCol) {
-            cell.style.borderRight = "3.5px solid black";
-        }
-    });
-}
+const applyTopBorder = () => applyBorderOnEdge('top');
+const applyBottomBorder = () => applyBorderOnEdge('bottom');
+const applyLeftBorder = () => applyBorderOnEdge('left');
+const applyRightBorder = () => applyBorderOnEdge('right');
 
 // 【各セル枠適用】
-// 選択されたセルすべてに対して、各セルの4辺に「2px solid black」の枠線を適用します。
 function applyCellBorder() {
     const selectedCells = document.querySelectorAll("#spreadsheet tbody td.selected");
     if (selectedCells.length === 0) return;
-
     selectedCells.forEach(cell => {
         cell.style.borderTop = "3.5px solid black";
         cell.style.borderBottom = "3.5px solid black";
@@ -1640,6 +1565,11 @@ applyOuterBorderButton.addEventListener("click", function (e) {
     applyOuterBorder();
 });
 
+let applyOuterBorderButton2 = document.getElementById("apply-outer-border-bold");
+applyOuterBorderButton2.addEventListener("click", function (e) {
+    applyOuterBorder_bold();
+});
+
 let applyCellBorderButton = document.getElementById("apply-cell-border");
 applyCellBorderButton.addEventListener("click", function (e) {
     applyCellBorder();
@@ -1651,7 +1581,6 @@ applyCellBorderButton.addEventListener("click", function (e) {
 function removeAllBorders() {
     const selectedCells = document.querySelectorAll("#spreadsheet tbody td.selected");
     if (selectedCells.length === 0) return;
-
     selectedCells.forEach(cell => {
         cell.style.borderTop = "";
         cell.style.borderBottom = "";
@@ -1671,7 +1600,6 @@ removeAllBordersButton.addEventListener("click", function (e) {
 
 
 document.addEventListener("keydown", function (e) {
-
     if (document.activeElement === formulaBarInput) {
         return;
     }
@@ -1679,7 +1607,6 @@ document.addEventListener("keydown", function (e) {
     if (document.activeElement && document.activeElement.isContentEditable) {
         return;
     }
-
     // Backspace または Delete キーが押された場合の処理（編集モードでないとき）
     if (e.key === "Backspace" || e.key === "Delete") {
         // 複数セルが選択されている場合（selected クラスが付いているセル群）を優先して対象とする
@@ -1721,7 +1648,6 @@ function parseCellReference(ref) {
     const row = parseInt(match[2], 10);
     return { row, col };
 }
-
 
 // 例：範囲指定（例 "A1:B3"）を { start: {row, col}, end: {row, col} } に変換する
 function parseRangeReference(rangeRef) {
