@@ -906,43 +906,30 @@ container.addEventListener("mousemove", function (e) {
 
 function updateSelection() {
     if (!selectionStart || !selectionEnd) return;
-
-    const minRow = Math.min(selectionStart.row, selectionEnd.row);
-    const maxRow = Math.max(selectionStart.row, selectionEnd.row);
-    const minCol = Math.min(selectionStart.col, selectionEnd.col);
-    const maxCol = Math.max(selectionStart.col, selectionEnd.col);
-
+    const minRow = Math.min(selectionStart.row, selectionEnd.row),
+        maxRow = Math.max(selectionStart.row, selectionEnd.row),
+        minCol = Math.min(selectionStart.col, selectionEnd.col),
+        maxCol = Math.max(selectionStart.col, selectionEnd.col);
+    const cells = document.querySelectorAll("#spreadsheet tbody td");
     if (isInFormulaEdit()) {
-        // 数式編集中の場合は、アウトラインで範囲をハイライトする
-        let rangeRef = "";
-        if (minRow === maxRow && minCol === maxCol) {
-            rangeRef = getCellReferenceByCoord(minRow, minCol);
-        } else {
-            rangeRef = getCellReferenceByCoord(minRow, minCol) + ":" + getCellReferenceByCoord(maxRow, maxCol);
-        }
-        // 既存の計算範囲ハイライトをクリアして、新たに適用
         clearCalculationRangeHighlights();
+        const rangeRef = (minRow === maxRow && minCol === maxCol)
+            ? getCellReferenceByCoord(minRow, minCol)
+            : getCellReferenceByCoord(minRow, minCol) + ":" + getCellReferenceByCoord(maxRow, maxCol);
         highlightCalculationRange(rangeRef);
-        // 通常の選択用の selected クラスはすべて外すが、
-        // 値を求めたいセル（activeCell）は常に selected 状態にする
-        const cells = document.querySelectorAll("#spreadsheet tbody td");
-        cells.forEach(cell => cell.classList.remove("selected"));
-        if (activeCell) {
-            activeCell.classList.add("selected");
-        }
+        cells.forEach(cell => cell.classList.contains("selected") && cell.classList.remove("selected"));
+        if (activeCell && !activeCell.classList.contains("selected")) activeCell.classList.add("selected");
     } else {
-        // 非数式編集時は、通常のようにドラッグで選択したセルに selected クラスを付与
-        const cells = document.querySelectorAll("#spreadsheet tbody td");
+        let anySelected = false;
         cells.forEach(cell => {
-            const r = parseInt(cell.dataset.row, 10);
-            const c = parseInt(cell.dataset.col, 10);
-            if (r >= minRow && r <= maxRow && c >= minCol && c <= maxCol) {
-                cell.classList.add("selected");
-                activeCell.contentEditable = "false";
-            } else {
-                cell.classList.remove("selected");
-            }
+            const r = +cell.dataset.row, c = +cell.dataset.col;
+            const shouldSelect = r >= minRow && r <= maxRow && c >= minCol && c <= maxCol;
+            const isSelected = cell.classList.contains("selected");
+
+            if (shouldSelect !== isSelected) cell.classList[shouldSelect ? "add" : "remove"]("selected");
+            if (shouldSelect) anySelected = true;
         });
+        if (activeCell) activeCell.contentEditable = anySelected ? "false" : "true";
     }
 }
 
@@ -1029,19 +1016,33 @@ formulaBarInput.addEventListener("blur", function (e) {
 // =======================
 // Block 9: スクロール時の動的行／列追加
 // =======================
-container.addEventListener("scroll", throttle(() => {
-    if (container.scrollTop + container.clientHeight >= container.scrollHeight - 50) {
-        loadRows(ROW_BATCH);
-    }
-    if (container.scrollLeft + container.clientWidth >= container.scrollWidth - 50) {
-        loadColumns(COLUMN_BATCH);
-    }
-    document.querySelectorAll("#spreadsheet tbody tr").forEach(row => {
-        if (row.style.visibility === "visible") {
-            updateRowCellsVisibility(row);
+let scrollPending = false;
+let isLoadingRows = false;
+let isLoadingCols = false;
+container.addEventListener("scroll", () => {
+    if (scrollPending) return;
+    scrollPending = true;
+    requestAnimationFrame(() => {
+        scrollPending = false;
+        if (!isLoadingRows && container.scrollTop + container.clientHeight >= container.scrollHeight - 50) {
+            isLoadingRows = true;
+            loadRows(ROW_BATCH, undefined, () => (isLoadingRows = false));
         }
+        if (!isLoadingCols && container.scrollLeft + container.clientWidth >= container.scrollWidth - 50) {
+            isLoadingCols = true;
+            loadColumns(COLUMN_BATCH, undefined, () => (isLoadingCols = false));
+        }
+        const rows = [...document.querySelectorAll("#spreadsheet tbody tr")].filter(
+            row => getComputedStyle(row).visibility === "visible"
+        );
+        let index = 0, batch = 30;
+        (function process() {
+            rows.slice(index, index + batch).forEach(updateRowCellsVisibility);
+            if ((index += batch) < rows.length) requestAnimationFrame(process);
+        })();
     });
-}, 10));
+});
+
 // =======================
 // Block 10: フォーマットツールバーのイベント処理
 // =======================
@@ -2366,21 +2367,24 @@ toggleTextWrapButton.addEventListener("click", function (e) {
 });
 
 function updateSelectedCellsDisplay() {
-    const selected = Array.from(document.querySelectorAll("td.selected"));
-    let text = "";
-    if (selected.length === 1) {
-        const c = selected[0];
-        text = toColumnName(+c.dataset.col) + c.dataset.row;
-    } else if (selected.length > 1) {
-        const rows = selected.map(c => +c.dataset.row);
-        const cols = selected.map(c => +c.dataset.col);
-        const minR = Math.min(...rows), maxR = Math.max(...rows);
-        const minC = Math.min(...cols), maxC = Math.max(...cols);
-        const expected = (maxR - minR + 1) * (maxC - minC + 1);
-        text = selected.length === expected
-            ? `${toColumnName(minC)}${minR}:${toColumnName(maxC)}${maxR}`
-            : selected.map(c => toColumnName(+c.dataset.col) + c.dataset.row).join(", ");
+    const selected = [...document.querySelectorAll("td.selected")];
+    if (!selected.length) {
+        const el = document.getElementById("selected-cells-display");
+        if (el) el.textContent = "";
+        updateFontSizeSelect();
+        return;
     }
+    let minR = Infinity, maxR = -Infinity, minC = Infinity, maxC = -Infinity;
+    const coords = selected.map(c => {
+        const r = +c.dataset.row, c_ = +c.dataset.col;
+        if (r < minR) minR = r; if (r > maxR) maxR = r;
+        if (c_ < minC) minC = c_; if (c_ > maxC) maxC = c_;
+        return toColumnName(c_) + r;
+    });
+    const expected = (maxR - minR + 1) * (maxC - minC + 1);
+    const text = selected.length === 1 ? coords[0]
+        : selected.length === expected ? `${toColumnName(minC)}${minR}:${toColumnName(maxC)}${maxR}`
+            : coords.join(", ");
     const el = document.getElementById("selected-cells-display");
     if (el) el.textContent = text;
     updateFontSizeSelect();
@@ -2397,14 +2401,16 @@ function toColumnName(n) {
 function updateFontSizeSelect() {
     const selected = document.querySelectorAll("#spreadsheet tbody td.selected");
     if (!selected.length) return;
-    const fontSizes = new Set([...selected].map(c => getComputedStyle(c).fontSize));
-    if (fontSizes.size !== 1) return console.log("選択セルには複数の font-size が設定されています。");
-    const common = fontSizes.values().next().value;
+    let common = null;
+    for (const cell of selected) {
+        const size = getComputedStyle(cell).fontSize;
+        if (common === null) common = size;
+        else if (common !== size) return console.log("選択セルには複数の font-size が設定されています。");
+    }
     const select = document.getElementById("font-size");
     if (!select) return console.error("font-size セレクト要素が見つかりません。");
-    for (const opt of select.options) {
-        opt.selected = opt.value === common;
-    }
+    if (select.value === common) return;
+    for (const opt of select.options) opt.selected = opt.value === common;
 }
 
 // マウスダウン：新規選択開始時に、既存の選択をクリアしてクリックしたセルを選択
