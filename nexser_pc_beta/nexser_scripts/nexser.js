@@ -147,20 +147,23 @@ if (ua.includes("mobile")) {
     const editor_2 = document.getElementById('editor_2');
 
     document.addEventListener('click', () => {
-        ['game_none', 'work_deny'].forEach(k => {
-            if (localStorage.getItem(k)) {
-                const sel = k === 'game_none' ? '.game_window' : '.work_no';
-                const msg = k === 'game_none' ? "制限されているため、起動できませんでした" : "仕事用でセットアップされているため、起動できませんでした";
-                document.querySelectorAll(`${sel}:not(.active)`).forEach(el => {
+        const gameNone = localStorage.getItem('game_none');
+        const workDeny = localStorage.getItem('work_deny');
+        [
+            { sel: '.game_window', msg: "制限されているため、起動できませんでした", cond: gameNone || workDeny },
+            { sel: '.work_no', msg: "仕事用でセットアップされているため、起動できませんでした", cond: workDeny }
+        ].forEach(({ sel, msg, cond }) => {
+            if (cond) {
+                document.querySelectorAll(`${sel}:not(.active)`).forEach(e => {
                     noticewindow_create("error", msg);
-                    el.classList.add('active');
+                    e.classList.add('active');
                 });
             }
         });
         bigwindow_resize();
         document.querySelector('.local_memory2').innerHTML = `&emsp;${(calculateLocalStorageSize() / 1024).toFixed(2)}KB&emsp;`;
         removePopups();
-        setTimeout(() => firstLoad = false, 500);
+        setTimeout(() => { firstLoad = false }, 500);
     });
 
     if (localStorage.getItem('work_deny')) {
@@ -561,42 +564,38 @@ if (ua.includes("mobile")) {
         battery_menu.style.display = battery_menu.style.display === "block" ? "none" : "block";
     });
 
-    function addButtonListeners(button) {
-        if (!button.classList.contains('listener-added')) {
+    function addUnifiedButtonListeners(button) {
+        if (button.classList.contains('listener-added')) return;
+
+        if (button.classList.contains('button2')) {
             const togglePressed = (pressed) => () => button.classList[pressed ? 'add' : 'remove']('pressed');
             button.addEventListener('mousedown', togglePressed(true));
             button.addEventListener('mouseleave', togglePressed(false));
             button.addEventListener('mouseup', togglePressed(false));
-            button.classList.add('listener-added');
-        }
-    }
-    const observer_btn = new MutationObserver((mutations) => {
-        mutations.forEach(({ addedNodes }) => {
-            addedNodes.forEach((node) => {
-                if (node.nodeType === Node.ELEMENT_NODE && node.classList.contains('button2')) {
-                    addButtonListeners(node);
-                }
-            });
-        });
-    });
-    observer_btn.observe(document.body, { childList: true, subtree: true });
-
-    function addButtonListeners2(button) {
-        if (!button.classList.contains('listener-added')) {
+        } else if (button.classList.contains('button')) {
             button.addEventListener('click', () => button.classList.toggle('pressed'));
-            button.classList.add('listener-added');
         }
+
+        button.classList.add('listener-added');
     }
-    const observer_btn2 = new MutationObserver((mutations) => {
+
+    const unifiedObserver = new MutationObserver((mutations) => {
         mutations.forEach(({ addedNodes }) => {
             addedNodes.forEach((node) => {
-                if (node.nodeType === Node.ELEMENT_NODE && node.classList.contains('button')) {
-                    addButtonListeners2(node);
+                if (node.nodeType !== Node.ELEMENT_NODE) return;
+
+                if (node.classList?.contains('button') || node.classList?.contains('button2')) {
+                    addUnifiedButtonListeners(node);
                 }
+
+                // 子孫要素に含まれる場合も対応
+                node.querySelectorAll?.('.button, .button2')?.forEach(addUnifiedButtonListeners);
             });
         });
     });
-    observer_btn2.observe(document.body, { childList: true, subtree: true });
+
+    unifiedObserver.observe(document.body, { childList: true, subtree: true });
+
 
     document.querySelector('.deskprompt').addEventListener('click', function () {
         localStorage.setItem('deskprompt', true);
@@ -2614,8 +2613,7 @@ if (ua.includes("mobile")) {
         test_windows_button();
         titlecolor_set();
         debounced_allwindow_resize();
-        Array.from(document.getElementsByClassName('button')).forEach(addButtonListeners2);
-        Array.from(document.getElementsByClassName('button2')).forEach(addButtonListeners);
+        document.querySelectorAll('.button, .button2').forEach(addUnifiedButtonListeners);
         window.scrollTo(0, 0);
         resizeBackgroundImage();
         document.querySelectorAll('.child_windows').forEach(w => w.scrollTop = w.scrollLeft = 0);
@@ -2732,6 +2730,10 @@ if (ua.includes("mobile")) {
                     isSnapped = false;
                 }, 0);
             }
+            taskbar.addEventListener('mouseover', function () {
+                document.body.removeEventListener("mousemove", mmove, false);
+                document.body.removeEventListener("touchmove", mmove, false);
+            });
         }
 
         function saveOriginalData(drag) {
