@@ -347,20 +347,15 @@ if (ua.includes("mobile")) {
         if (localStorage.getItem('window_invisible')) document.querySelector('.windowmode').textContent = "invisible";
         if (localStorage.getItem('window_afterimage_false')) document.querySelector('.windowafter').textContent = "OFF";
 
-        const fontMap = {
-            'font_default': 'serif',
-            'font_sans_serif': 'sans-serif',
-            'font_cursive': 'cursive',
-            'font_fantasy': 'fantasy',
-            'font_monospace': 'monospace'
+        const bodyEl = document.body;
+        const fonts = {
+            font_default: 'serif',
+            font_sans_serif: 'sans-serif',
+            font_cursive: 'cursive',
+            font_fantasy: 'fantasy',
+            font_monospace: 'monospace'
         };
-        Object.entries(fontMap).some(([key, font]) => {
-            if (localStorage.getItem(key)) {
-                body.style.fontFamily = font;
-                return true; // 見つけたらループ終了
-            }
-            return false;
-        });
+        bodyEl.style.fontFamily = Object.entries(fonts).find(([key]) => localStorage.getItem(key))?.[1] || bodyEl.style.fontFamily;
 
         if (localStorage.getItem('windowfile_1')) {
             window_file_list_change();
@@ -2195,14 +2190,13 @@ if (ua.includes("mobile")) {
                 break;
 
             case 'windows95/open':
-                location.href = 'https://moti5768.github.io/moti.world/windows95.html'
+                processUrl('https://moti5768.github.io/moti.world/windows95.html', 'windows95');
                 break;
-
             case 'windows2000/open':
-                location.href = 'https://moti5768.github.io/moti.world/windows%202000/windows2000_beta.html'
+                processUrl('https://moti5768.github.io/moti.world/windows%202000/windows2000_beta.html', 'windows2000');
                 break;
             case 'windowsystem/open':
-                location.href = 'https://moti5768.github.io/moti.world/new%20OS/WindowSystem.html'
+                processUrl('https://moti5768.github.io/moti.world/new%20OS/WindowSystem.html', 'windowsystem');
                 break;
 
             default:
@@ -6718,14 +6712,12 @@ if (ua.includes("mobile")) {
         });
     }
 
-
     (() => {
         const r = document.getElementById('resultArea');
         if (!r) return;
         const gl = document.createElement('canvas').getContext('webgl') || document.createElement('canvas').getContext('experimental-webgl');
         const max = gl?.getParameter(gl.MAX_TEXTURE_SIZE);
         if (!max) return void (r.textContent = 'WebGL未対応の環境です。');
-
         const p = document.createElement('p');
         Object.assign(p.style, {
             whiteSpace: 'pre',
@@ -6736,38 +6728,34 @@ if (ua.includes("mobile")) {
             border: '2px inset #808080',
         });
         r.appendChild(p);
-
         const maxPx = max ** 2;
         let prev = '';
-
         setInterval(() => {
             let total = 0;
-            document.querySelectorAll('*').forEach(el => {
-                if (!el.getBoundingClientRect || !el.offsetParent) return;
-                const s = getComputedStyle(el), rect = el.getBoundingClientRect();
-                if (s.display === 'none' || s.visibility === 'hidden' || +s.opacity === 0 || rect.width === 0 || rect.height === 0) return;
-                if (el.tagName === 'VIDEO' && (el.paused || el.ended)) return;
+            const els = document.body.getElementsByTagName('*');
+            for (let i = 0, len = els.length; i < len; i++) {
+                const el = els[i];
+                if (!el.getBoundingClientRect || !el.offsetParent) continue;
+                const s = getComputedStyle(el);
+                if (s.display === 'none' || s.visibility === 'hidden' || +s.opacity === 0) continue;
+                const rect = el.getBoundingClientRect();
+                if (rect.width === 0 || rect.height === 0) continue;
+                if (el.tagName === 'VIDEO' && (el.paused || el.ended)) continue;
                 total += Math.floor(rect.width * rect.height * devicePixelRatio ** 2);
-            });
-
+            }
             const usage = (total / maxPx) * 100;
-            const warn =
-                usage > 100 ? '⚠️ 上限超過！描画崩れ・パフォーマンス低下の可能性あり。' :
-                    usage > 80 ? '⚠️ 高負荷。ちらつき・遅延の恐れあり。' :
-                        usage > 50 ? '⚠️ 負荷上昇中。描画のちらつきに注意。' : '';
-
-            const filled = Math.round(Math.min(usage, 100) / 2);
-            const bar = Array(50).fill(0).map((_, i) =>
-                `<span style="display:inline-block;width:10px;margin:1.5px;color:${i < filled ? '#000080' : 'gray'}">■</span>`
-            ).join('');
-            const barLine = `[${bar}<span style="margin-left:6px"></span>]`;
-
-            const text = `GPU描画リソース使用率: ${usage.toFixed(1)}%\n${barLine}\n${warn}`;
-
+            const warn = usage > 100 ? '⚠️ 上限超過！描画崩れ・パフォーマンス低下の可能性あり。'
+                : usage > 80 ? '⚠️ 高負荷。ちらつき・遅延の恐れあり。'
+                    : usage > 50 ? '⚠️ 負荷上昇中。描画のちらつきに注意。' : '';
+            const filled = Math.min(Math.round(usage / 2), 50);
+            let bar = '';
+            for (let i = 0; i < 50; i++) {
+                bar += `<span style="display:inline-block;width:10px;margin:1.5px;color:${i < filled ? '#000080' : 'gray'}">■</span>`;
+            }
+            const text = `GPU描画リソース使用率: ${usage.toFixed(1)}%\n[${bar}]\n${warn}`;
             if (text !== prev) p.innerHTML = prev = text;
         }, 1000);
     })();
-
 
     function nexser_setup() {
         setup.style.display = "block";
