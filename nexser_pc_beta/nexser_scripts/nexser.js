@@ -1141,50 +1141,6 @@ if (ua.includes("mobile")) {
         titlecolor_set();
     })
 
-    function handleStartupClick(startupClass) {
-        startupsound_reset();
-        const startupElement = document.querySelector(`.${startupClass}`);
-        const isSet = localStorage.getItem(startupClass);
-        startupElement.textContent = isSet ? "no set" : "set!";
-        if (!isSet) {
-            localStorage.setItem(startupClass, true);
-        }
-    }
-    ['startup_1', 'startup_2', 'startup_3', 'startup_4', 'startup_5', 'startup_6'].forEach(startup => {
-        document.querySelector(`.${startup}`).addEventListener('click', () => handleStartupClick(startup));
-    });
-    function startupsound_reset() {
-        const keys = ['startup_1', 'startup_2', 'startup_3', 'startup_4', 'startup_5', 'startup_6'];
-        keys.forEach(key => {
-            if (localStorage.getItem(key)) {
-                localStorage.removeItem(key);
-                document.querySelector(`.${key}`).textContent = "no set";
-            }
-        });
-    }
-
-    function handleShutdownClick(shutdownClass) {
-        shutdownsound_reset();
-        const shutdownElement = document.querySelector(`.${shutdownClass}`);
-        const isSet = localStorage.getItem(shutdownClass);
-        shutdownElement.textContent = isSet ? "no set" : "set!";
-        if (!isSet) {
-            localStorage.setItem(shutdownClass, true);
-        }
-    }
-    ['shutdown_1', 'shutdown_2', 'shutdown_3', 'shutdown_4', 'shutdown_5', 'shutdown_6'].forEach(shutdown => {
-        document.querySelector(`.${shutdown}`).addEventListener('click', () => handleShutdownClick(shutdown));
-    });
-    function shutdownsound_reset() {
-        const shutdownKeys = ['shutdown_1', 'shutdown_2', 'shutdown_3', 'shutdown_4', 'shutdown_5', 'shutdown_6'];
-        shutdownKeys.forEach(key => {
-            if (localStorage.getItem(key)) {
-                localStorage.removeItem(key);
-                document.querySelector(`.${key}`).textContent = "no set";
-            }
-        });
-    }
-
     function windowmode_reset() {
         localStorage.removeItem('window_invisible');
         document.querySelector('.windowmode').textContent = "default"
@@ -5669,22 +5625,26 @@ if (ua.includes("mobile")) {
     const observer = new MutationObserver(callback);
     allwindows.forEach(node => observer.observe(node, config));
 
-    navigator.getBattery().then((battery) => {
-        const updateChargeInfo = () => {
-            const { level, charging, dischargingTime } = battery;
-            battery_child.style.color = charging ? (level === 1 ? "lime" : "#FF9900") : "black";
-            battery_child.style.background = charging ? (level === 1 ? "black" : "black") : "";
-            if (!charging && level < 0.21 && desktop.style.display == "block") {
-                noticewindow_create("warning", "バッテリー残量が少なくなっています!", "warning");
-            }
-            document.querySelector('.battery_time').textContent = charging
-                ? `${dischargingTime}`
-                : `${dischargingTime} second`;
-            document.querySelector('.taskbattery').textContent = Math.floor(level * 100);
+    navigator.getBattery().then(b => {
+        let lastWarn = 100, notice = null;
+        const show = l => {
+            notice?.remove();
+            notice = Object.assign(document.createElement('div'), { className: 'border', textContent: `バッテリー残量が少なくなっています (${l}%)` });
+            Object.assign(notice.style, { position: 'fixed', bottom: '100px', left: '50%', transform: 'translateX(-50%)', background: 'silver', padding: '10px 20px', zIndex: 999999 });
+            document.body.appendChild(notice);
+            setTimeout(() => notice?.remove(), 5000);
         };
-        battery.addEventListener('levelchange', updateChargeInfo);
-        battery.addEventListener('chargingchange', updateChargeInfo);
-        updateChargeInfo();
+        const update = () => {
+            const l = Math.floor(b.level * 100), c = b.charging;
+            battery_child.style.color = c ? (l === 100 ? 'lime' : '#FF9900') : 'black';
+            battery_child.style.background = c ? 'black' : '';
+            if (!c && l <= 20 && l < lastWarn) { lastWarn = l; show(l); }
+            document.querySelector('.battery_time').textContent = c ? `${b.dischargingTime}` : `${b.dischargingTime} second`;
+            document.querySelector('.taskbattery').textContent = l;
+        };
+        b.addEventListener('levelchange', update);
+        b.addEventListener('chargingchange', update);
+        update();
     });
 
     const menuItems = [

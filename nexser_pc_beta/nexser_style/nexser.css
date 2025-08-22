@@ -14,6 +14,10 @@ body {
     background-color: black;
 }
 
+.flex {
+    display: flex;
+}
+
 #nexser_program {
     -webkit-user-select: none;
     -moz-user-select: none;
@@ -705,7 +709,7 @@ input[type="file"] {
 }
 
 .nexser_sound_menu {
-    width: 600px;
+    width: 750px;
 }
 
 .sound_play_button {
