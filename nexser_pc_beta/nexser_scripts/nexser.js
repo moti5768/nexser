@@ -5157,13 +5157,13 @@ if (ua.includes("mobile")) {
                     const wrapper = document.createElement('div');
                     Object.assign(wrapper.style, { display: 'flex', flexDirection: 'column', alignItems: 'stretch', width: '100%', height: '100%', boxSizing: 'border-box' });
                     const video = Object.assign(document.createElement(tag), { src, controls: false });
-                    Object.assign(video.style, { display: 'block', width: '100%', height: '91%', boxSizing: 'border-box' });
+                    Object.assign(video.style, { display: 'block', marginTop: '10px', width: '100%', height: '90%', boxSizing: 'border-box' });
                     wrapper.appendChild(video);
                     const controls = Object.assign(document.createElement('div'), { className: 'border2' });
-                    Object.assign(controls.style, { display: 'flex', alignItems: 'center', width: '100%', padding: '2.5px', gap: '5px', boxSizing: 'border-box' });
+                    Object.assign(controls.style, { display: 'flex', alignItems: 'center', width: '100%', height: '35px', padding: '2.5px', gap: '5px', boxSizing: 'border-box' });
                     wrapper.appendChild(controls);
                     const play = Object.assign(document.createElement('button'), { textContent: '▶', className: 'button2' });
-                    Object.assign(play.style, { flex: '0 0 auto', padding: '5px 10px', fontSize: '16px' });
+                    Object.assign(play.style, { flex: '0 0 auto', padding: '2px 5px', fontSize: '15px' });
                     const seek = Object.assign(document.createElement('input'), { type: 'range', min: 0, max: 100, value: 0, className: 'border' });
                     Object.assign(seek.style, { flex: '1 1 auto', height: '12px', verticalAlign: 'middle', margin: 0, boxSizing: 'border-box' });
                     const timeDisplay = Object.assign(document.createElement('span'), { textContent: '0:00 / 0:00', className: 'button2' });
