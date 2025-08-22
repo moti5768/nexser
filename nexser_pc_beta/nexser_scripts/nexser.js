@@ -5154,10 +5154,33 @@ if (ua.includes("mobile")) {
                 };
                 const contents = createElement('div', "window_contents", w);
                 const addMedia = (tag, src) => {
-                    const el = createElement(tag, "item_preview", contents);
-                    el.src = src;
-                    if (tag === 'video') el.controls = true;
+                    const wrapper = document.createElement('div');
+                    Object.assign(wrapper.style, { display: 'flex', flexDirection: 'column', alignItems: 'stretch', width: '100%', height: '100%', boxSizing: 'border-box' });
+                    const video = Object.assign(document.createElement(tag), { src, controls: false });
+                    Object.assign(video.style, { display: 'block', width: '100%', height: '91%', boxSizing: 'border-box' });
+                    wrapper.appendChild(video);
+                    const controls = Object.assign(document.createElement('div'), { className: 'border2' });
+                    Object.assign(controls.style, { display: 'flex', alignItems: 'center', width: '100%', padding: '2.5px', gap: '5px', boxSizing: 'border-box' });
+                    wrapper.appendChild(controls);
+                    const play = Object.assign(document.createElement('button'), { textContent: '▶', className: 'button2' });
+                    Object.assign(play.style, { flex: '0 0 auto', padding: '5px 10px', fontSize: '16px' });
+                    const seek = Object.assign(document.createElement('input'), { type: 'range', min: 0, max: 100, value: 0, className: 'border' });
+                    Object.assign(seek.style, { flex: '1 1 auto', height: '12px', verticalAlign: 'middle', margin: 0, boxSizing: 'border-box' });
+                    const timeDisplay = Object.assign(document.createElement('span'), { textContent: '0:00 / 0:00', className: 'button2' });
+                    Object.assign(timeDisplay.style, { flex: '0 0 auto', minWidth: '60px', textAlign: 'right' });
+                    controls.append(play, seek, timeDisplay);
+                    contents.appendChild(wrapper);
                     contents.classList.add("scrollbar_none");
+                    contents.style.background = "silver";
+                    play.onclick = () => video.paused ? video.play() : video.pause();
+                    video.onplay = () => play.textContent = '⏸';
+                    video.onpause = () => play.textContent = '▶';
+                    video.ontimeupdate = () => {
+                        seek.value = (video.currentTime / video.duration) * 100 || 0;
+                        const fmt = t => `${Math.floor(t / 60)}:${Math.floor(t % 60).toString().padStart(2, '0')}`;
+                        timeDisplay.textContent = `${fmt(video.currentTime)} / ${fmt(video.duration)}`;
+                    };
+                    seek.oninput = () => video.currentTime = (seek.value / 100) * video.duration;
                 };
                 const addIframe = src => {
                     const iframe = createElement('iframe', "item_preview", contents);

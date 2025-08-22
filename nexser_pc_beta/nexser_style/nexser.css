@@ -2854,7 +2854,7 @@ progress::-webkit-progress-value {
     height: 400px;
 }
 
-#opacitySlider {
+input[type="range"] {
     margin-top: 10px;
     margin-left: 5px;
     margin-right: 40px;
@@ -2867,7 +2867,7 @@ progress::-webkit-progress-value {
     border-color: #eee #333 #333 #eee;
 }
 
-#opacitySlider::-webkit-slider-thumb {
+input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
     width: 20px;
