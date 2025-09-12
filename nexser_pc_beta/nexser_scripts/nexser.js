@@ -62,6 +62,7 @@ if (ua.includes("mobile")) {
     const files_inline = document.querySelector('.files_inline');
     let fileElements = document.querySelectorAll('.window_files');
     const z_index = document.querySelector('.z_index');
+    const startbtn = document.getElementById('startbtn');
 
     const mini_desktop = document.querySelector('.mini_desktop');
 
@@ -221,7 +222,7 @@ if (ua.includes("mobile")) {
             }
         }
 
-        if (!isIn('#startbtn') && !start_menu.contains(e.target)) startmenu_close();
+        if (!startbtn.contains(e.target) && !start_menu.contains(e.target)) startmenu_close();
         if (!isInSome('.windowtool_parent, .windowtool_child')) document.querySelectorAll('.windowtool_child').forEach(el => el.style.display = 'none');
 
         const batteryMenu = document.querySelector('.battery_menu');
@@ -542,9 +543,9 @@ if (ua.includes("mobile")) {
 
     function startmenu_close() {
         start_menu.style.display = "none";
-        document.getElementById('startbtn').classList.remove('pressed');
+        startbtn.classList.remove('pressed');
     }
-    document.getElementById('startbtn').addEventListener('mousedown', function () {
+    startbtn.addEventListener('mousedown', function () {
         const isOpen = start_menu.style.display === "block";
         if (isOpen) startmenu_close();
         else {
@@ -2582,16 +2583,22 @@ if (ua.includes("mobile")) {
     };
 
     const backgroundImageParent = document.getElementById('nexser');
-    const backgroundImageChildren = Array.from(backgroundImageParent.getElementsByClassName('nexser_background_image'));
+    const backgroundImageChildren = backgroundImageParent.getElementsByClassName('nexser_background_image');
+    let resizeScheduled = false;
     const resizeBackgroundImage = () => {
+        if (resizeScheduled) return;
+        resizeScheduled = true;
         requestAnimationFrame(() => {
-            backgroundImageChildren.forEach(child => {
-                child.style.width = `${backgroundImageParent.clientWidth}px`;
-                child.style.height = `${backgroundImageParent.clientHeight}px`;
-            });
+            const w = backgroundImageParent.clientWidth + 'px';
+            const h = backgroundImageParent.clientHeight + 'px';
+            for (let i = 0; i < backgroundImageChildren.length; i++) {
+                backgroundImageChildren[i].style.cssText = `width:${w};height:${h}`;
+            }
+            resizeScheduled = false;
         });
     };
     resizeBackgroundImage();
+    window.addEventListener('resize', resizeBackgroundImage);
 
     function addDragButtonListeners(button) {
         if (button.dataset.listenerAdded) return;
@@ -4750,14 +4757,14 @@ if (ua.includes("mobile")) {
     windowposition_reset()
     function windowposition_reset() {
         allwindows.forEach(el => {
-            if (!el.classList.contains('content_center')) {
-                el.style.left = "130px";
-                el.style.top = "130px";
-            }
+            if (el.classList.contains('content_center')) return;
+            Object.assign(el.style, { left: "130px", top: "130px" });
         });
-        welcome_menu.style.left = "50%";
-        welcome_menu.style.top = "50%";
-        welcome_menu.style.transform = "translate(-50%, -50%)";
+        Object.assign(welcome_menu.style, {
+            left: "50%",
+            top: "50%",
+            transform: "translate(-50%, -50%)"
+        });
     }
 
     let parents = document.querySelectorAll('.parentss');
@@ -5188,8 +5195,13 @@ if (ua.includes("mobile")) {
                     Object.assign(iframe.style, { width: "100%", height: "100%" });
                     contents.classList.add("scrollbar_none");
                 };
+                const addMediaContent = (mediaTag, mediaSrc) => {
+                    const mediaElement = createElement(mediaTag, "item_preview", contents);
+                    mediaElement.src = mediaSrc;
+                    contents.classList.add("scrollbar_none");
+                };
                 if (file.type.startsWith('image/')) {
-                    addMedia('img', r);
+                    addMediaContent('img', r);
                     const eDiv = document.createElement('div');
                     eDiv.innerHTML = `<div class="window_bottom border2"><span class="button2" onclick="updateWallpaper('${url}')">画像を背景に適用</span></div>`;
                     w.appendChild(eDiv);
@@ -6448,12 +6460,14 @@ if (ua.includes("mobile")) {
     }
     function loadFromLocalStorage() {
         filettext_backcolor();
+
+        // --- dropList 復元 ---
         const dropList = document.querySelector('#drop_zone ul');
         const savedContent = localStorage.getItem('dropListContent');
         if (savedContent) {
             dropList.innerHTML = savedContent;
             Array.from(dropList.children).forEach(el => {
-                el.setAttribute('draggable', 'true');
+                el.draggable = true;
                 el.addEventListener('dragstart', e => {
                     e.dataTransfer.setData('text/plain', e.target.outerHTML);
                     e.target.style.opacity = "0.9";
@@ -6466,6 +6480,8 @@ if (ua.includes("mobile")) {
                 });
             });
         }
+
+        // --- ボタンごとのメニュー設定 ---
         const toggleSettings = [
             ['.nexser_guidebook', nexser_guidebook_menu], ['.guidebook_window', guidebook_window_menu],
             ['.guidebook_file', guidebook_file_menu], ['.guidebook_taskbar', guidebook_taskbar_menu],
@@ -6477,82 +6493,78 @@ if (ua.includes("mobile")) {
             ['.test_button6', window_prompt], ['.test_button7', clock_menu],
             ['.test_button8', sound_menu], ['.test_button9', driver_menu],
             ['.test_button10', mouse_menu], ['.test_button11', screen_text_menu],
-            ['.test_button12', note_pad, () => notefocus()], ['.test_button13', text_drop_menu],
+            ['.test_button12', note_pad, notefocus], ['.test_button13', text_drop_menu],
             ['.test_button14', windowmode_menu], ['.test_button15', accessory_menu],
             ['.test_button16', calc_menu], ['.test_button17', nexser_sound_menu],
             ['.test_button18', camera_menu], ['.test_button19', htmlviewer_edit_menu],
             ['.test_button20', htmlviewer_run_menu], ['.test_button22', font_menu],
             ['.test_button23', file_setting_menu], ['.test_button24', debug_menu],
             ['.test_button25', file_download_menu], ['.test_button26', display_menu],
-            ['.test_button27', stopwatch_menu, () => timerreset()], ['.test_button28', add_program_menu],
-            ['.test_button30', objective_menu], ['.test_button31', calendar_menu, () => caload()],
-            ['.test_button32', cpu_bench_menu, () => cpubench_open()], ['.test_button33', browser_menu],
+            ['.test_button27', stopwatch_menu, timerreset], ['.test_button28', add_program_menu],
+            ['.test_button30', objective_menu], ['.test_button31', calendar_menu, caload],
+            ['.test_button32', cpu_bench_menu, cpubench_open], ['.test_button33', browser_menu],
             ['.test_button35', taskbar_setting_menu], ['.test_button37', device_menu],
             ['.test_button38', omikuji_menu], ['.test_button39', localstorage_monitor_menu],
             ['.test_button40', paint_menu], ['.test_button42', nexser_files_menu, () => {
-                setTimeout(() => {
-                    nexser_files_output_remove();
-                    nexser_files_windowload();
-                }, 100);
+                setTimeout(() => { nexser_files_output_remove(); nexser_files_windowload(); }, 100);
             }],
             ['.test_button45', alarm_menu], ['.test_button46', location_menu],
             ['.test_button47', editor_menu], ['.test_button48', url_droplist_menu],
             ['.trash_can', trash_menu], ['.test_button29', tetris_mneu],
-            ['.test_button49', systemresouce_menu],
-            ['.test_button34', bom_menu], ['.test_button41', othello_menu],
-            ['.test_button44', memory_game_menu]
+            ['.test_button49', systemresouce_menu], ['.test_button34', bom_menu],
+            ['.test_button41', othello_menu], ['.test_button44', memory_game_menu]
         ];
+
         toggleSettings.forEach(([sel, menu, extra]) => {
-            document.querySelectorAll(sel).forEach(el => {
-                el.onclick = () => { toggleWindow(menu); extra && extra(); };
-            });
+            document.querySelectorAll(sel).forEach(el => el.onclick = () => { toggleWindow(menu); extra?.(); });
         });
+
+        // --- ウィンドウファイルクリック・時間表示 ---
         const files = Array.from(document.querySelectorAll('.window_files'));
-        files.forEach(el => {
-            el.addEventListener('mousedown', () => {
-                const cur = document.querySelector('.file_border');
-                cur && cur.classList.replace('file_border', 'file_border2');
-            });
-            el.addEventListener('click', () => {
-                files.forEach(e => e.classList.remove('file_border', 'file_border2'));
-                el.classList.add('file_border');
-            });
-        });
-        files.forEach((el, i) => {
-            const key = `windowfile_time_${i}`;
-            el.addEventListener('click', () => {
-                el.querySelectorAll('.windowfile_time').forEach((t, idx, arr) => { if (idx < arr.length - 1) t.remove(); });
-                let t = el.querySelector('.windowfile_time') || (() => {
-                    const li = document.createElement('li');
-                    li.className = 'windowfile_time';
-                    el.appendChild(li);
-                    return li;
-                })();
-                const now = new Date();
-                t.textContent = `${now.getFullYear()}/${now.getMonth() + 1}/${now.getDate()} ${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}`;
-                localStorage.setItem(key, t.textContent);
-                filetime_display();
-            });
-            const saved = localStorage.getItem(key);
-            if (saved) {
-                el.querySelectorAll('.windowfile_time').forEach((t, idx, arr) => { if (idx < arr.length - 1) t.remove(); });
-                let t = el.querySelector('.windowfile_time') || (() => {
-                    const li = document.createElement('li');
-                    li.className = 'windowfile_time';
-                    el.appendChild(li);
-                    return li;
-                })();
-                t.textContent = saved;
-                filetime_display();
-            }
-        });
-        function filetime_display() {
+
+        const updateFileTime = (el, key) => {
+            const now = new Date();
+            let t = el.querySelector('.windowfile_time') || (() => {
+                const li = document.createElement('li');
+                li.className = 'windowfile_time';
+                el.appendChild(li);
+                return li;
+            })();
+            t.textContent = `${now.getFullYear()}/${now.getMonth() + 1}/${now.getDate()} ${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}`;
+            localStorage.setItem(key, t.textContent);
+            displayFileTimes();
+        };
+
+        const displayFileTimes = () => {
             const w1 = localStorage.getItem('windowfile_1'), w2 = localStorage.getItem('windowfile_2'), w3 = localStorage.getItem('windowfile_3');
             document.querySelectorAll('.windowfile_time').forEach(el => {
                 el.style.display = ((!w1 && !w2 && !w3) || (!w1 && w2 && !w3)) ? 'none' : '';
             });
-        }
+        };
+
+        files.forEach((el, i) => {
+            const key = `windowfile_time_${i}`;
+            el.addEventListener('mousedown', () => document.querySelector('.file_border')?.classList.replace('file_border', 'file_border2'));
+            el.addEventListener('click', () => {
+                files.forEach(f => f.classList.remove('file_border', 'file_border2'));
+                el.classList.add('file_border');
+                updateFileTime(el, key);
+            });
+
+            const saved = localStorage.getItem(key);
+            if (saved) el.querySelector('.windowfile_time')?.remove();
+            const t = el.querySelector('.windowfile_time') || (() => {
+                const li = document.createElement('li');
+                li.className = 'windowfile_time';
+                el.appendChild(li);
+                return li;
+            })();
+            if (saved) t.textContent = saved;
+        });
+
+        displayFileTimes();
     }
+
 
     function showContextMenu(event, element) {
         document.querySelector('.context-menu')?.remove();
