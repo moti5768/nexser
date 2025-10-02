@@ -576,22 +576,24 @@ if (ua.includes("mobile")) {
     }
 
     const unifiedObserver = new MutationObserver((mutations) => {
-        mutations.forEach(({ addedNodes }) => {
-            addedNodes.forEach((node) => {
-                if (node.nodeType !== Node.ELEMENT_NODE) return;
-
-                if (node.classList?.contains('button') || node.classList?.contains('button2')) {
+        for (let mi = 0; mi < mutations.length; mi++) {
+            const added = mutations[mi].addedNodes;
+            for (let ai = 0; ai < added.length; ai++) {
+                const node = added[ai];
+                if (node.nodeType !== Node.ELEMENT_NODE) continue;
+                if (node.nodeType === 1 && (node.classList.contains('button') || node.classList.contains('button2'))) {
                     addUnifiedButtonListeners(node);
                 }
-
-                // 子孫要素に含まれる場合も対応
-                node.querySelectorAll?.('.button, .button2')?.forEach(addUnifiedButtonListeners);
-            });
-        });
+                const descendants = node.querySelectorAll ? node.querySelectorAll('.button, .button2') : null;
+                if (descendants && descendants.length) {
+                    for (let di = 0; di < descendants.length; di++) {
+                        addUnifiedButtonListeners(descendants[di]);
+                    }
+                }
+            }
+        }
     });
-
     unifiedObserver.observe(document.body, { childList: true, subtree: true });
-
 
     document.querySelector('.deskprompt').addEventListener('click', function () {
         localStorage.setItem('deskprompt', true);
@@ -1188,18 +1190,20 @@ if (ua.includes("mobile")) {
     }
 
     function window_reset() {
-        allwindows.forEach(allwindow => {
-            allwindow.style.left = "";
-            allwindow.style.top = "";
-            allwindow.style.height = "";
-            allwindow.style.width = "";
-            windowposition_reset();
-            allwindow.classList.remove('w_left', 'w_right', 'child_windows_invisible');
-            allwindow.style.transition = "";
-            document.querySelector('.bigminbtn').style.visibility = "visible";
-            document.querySelector('.minimization_button').style.visibility = "visible";
-            allwindow.classList.remove('minimization');
+        const resetStyles = {
+            left: "",
+            top: "",
+            height: "",
+            width: "",
+            transition: ""
+        };
+        document.querySelector('.bigminbtn').style.visibility = "visible";
+        document.querySelector('.minimization_button').style.visibility = "visible";
+        allwindows.forEach(w => {
+            Object.assign(w.style, resetStyles);
+            w.classList.remove('w_left', 'w_right', 'child_windows_invisible', 'minimization');
         });
+        windowposition_reset();
         bom_reset();
         timerstop();
         timerreset();
@@ -1214,15 +1218,24 @@ if (ua.includes("mobile")) {
     }
 
     function window_none() {
-        ['.task_buttons', '.testwindow2', '.error_windows'].forEach(sel =>
-            document.querySelectorAll(sel).forEach(el => el.remove())
-        );
+        const removeTargets = ['.task_buttons', '.testwindow2', '.error_windows']
+            .flatMap(sel => [...document.querySelectorAll(sel)]);
+        removeTargets.forEach(el => el.remove());
+        const resetStyles = {
+            zIndex: "0",
+            background: "",
+            border: "",
+            boxShadow: "",
+            mixBlendMode: "",
+            opacity: "",
+            right: "",
+            transition: ""
+        };
         document.querySelectorAll('.child_windows').forEach(w => {
-            Object.assign(w.style, {
-                zIndex: "0", background: "", border: "", boxShadow: "", mixBlendMode: "", opacity: ""
-            });
-            [...w.children].forEach(c => c.style.display = "");
-            windowtool();
+            w.classList.add('active');
+            w.classList.remove('big', 'w_right', 'w_left');
+            Object.assign(w.style, resetStyles);
+            for (const c of w.children) c.style.display = "";
             const b = w.children[1]?.children[2];
             if (b) {
                 b.dataset.isMaximized = "false";
@@ -1230,13 +1243,9 @@ if (ua.includes("mobile")) {
             }
         });
         largestZIndex = 0;
-        allwindows.forEach(w => {
-            w.classList.add('active');
-            w.classList.remove('big', 'w_right', 'w_left');
-            Object.assign(w.style, { right: "", transition: "" });
-        });
         originalDragData = null;
         isSnapped = false;
+        windowtool();
         windowposition_reset();
     }
 
@@ -4305,7 +4314,9 @@ if (ua.includes("mobile")) {
     });
     function startDrawing(e) {
         paint_isDrawing = true;
-        [paint_lastX, paint_lastY] = [e.offsetX || e.touches[0].clientX, e.offsetY || e.touches[0].clientY];
+        const x = e.offsetX !== undefined ? e.offsetX : (e.touches?.[0]?.clientX || 0);
+        const y = e.offsetY !== undefined ? e.offsetY : (e.touches?.[0]?.clientY || 0);
+        [paint_lastX, paint_lastY] = [x, y];
     }
     function stopDrawing() {
         paint_isDrawing = false;
@@ -4313,28 +4324,32 @@ if (ua.includes("mobile")) {
     }
     function paint_draw(e) {
         if (!paint_isDrawing) return;
-        if (localStorage.getItem('eraser_color')) {
+        const x = e.offsetX !== undefined ? e.offsetX : (e.touches?.[0]?.clientX || 0);
+        const y = e.offsetY !== undefined ? e.offsetY : (e.touches?.[0]?.clientY || 0);
+        const drawModeElement = document.querySelector('.draw_mode');
+        if (localStorage.getItem('eraser_color') === 'true') {
             paint_ctx.strokeStyle = paint_ctx.fillStyle;
-            document.querySelector('.draw_mode').textContent = "消しゴム";
+            if (drawModeElement) drawModeElement.textContent = "消しゴム";
         } else {
             paint_ctx.strokeStyle = document.getElementById('paint_selectcolor').value;
+            if (drawModeElement) drawModeElement.textContent = "描き";
         }
         paint_ctx.lineWidth = paint_lineWidth;
         paint_ctx.lineCap = 'round';
         paint_ctx.lineJoin = 'round';
         paint_ctx.beginPath();
         paint_ctx.moveTo(paint_lastX, paint_lastY);
-        paint_ctx.lineTo(e.offsetX || e.touches[0].clientX, e.offsetY || e.touches[0].clientY);
+        paint_ctx.lineTo(x, y);
         paint_ctx.stroke();
-        [paint_lastX, paint_lastY] = [e.offsetX || e.touches[0].clientX, e.offsetY || e.touches[0].clientY];
+        [paint_lastX, paint_lastY] = [x, y];
     }
     const paintwidth = document.querySelector('.paint_width').value = "5";
     lineWidth = paintwidth;
     paint_ctx.strokeStyle = "black";
     // 線の太さの変更
     function changeLineWidth() {
-        const paintwidth = document.querySelector('.paint_width').value;
-        paint_lineWidth = paintwidth;
+        const paintwidth = Number(document.querySelector('.paint_width').value);
+        if (!isNaN(paintwidth)) paint_lineWidth = paintwidth;
     }
     // 消しゴム
     function eraser() {
@@ -4349,7 +4364,7 @@ if (ua.includes("mobile")) {
         }
         strokeStyle = fillStyleColor;
     }
-    if (localStorage.getItem('eraser_color')) {
+    if (localStorage.getItem('eraser_color') === 'true') {
         document.querySelector('.draw_mode').textContent = "消しゴム";
     }
     // テキストのスタイルを設定
