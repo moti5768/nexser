@@ -475,62 +475,84 @@ function getCell(row, col) {
 // =======================
 
 /*********************
-* 数式で利用できるグローバル関数群
+* 数式で利用できるグローバル関数群（ほぼExcel互換版）
 *********************/
 
-// 以下の関数は、eval() 内で呼ばれるためグローバル関数（またはwindowオブジェクト上にある）として定義します。
-
+// -----------------------
+// ヘルパー関数
+// -----------------------
 function flattenArray(arr) {
-    return arr.reduce((acc, val) => {
-        return acc.concat(Array.isArray(val) ? flattenArray(val) : val);
-    }, []);
+    return arr.reduce((acc, val) => acc.concat(Array.isArray(val) ? flattenArray(val) : val), []);
 }
 
+// -----------------------
+// 数値系関数
+// -----------------------
 function SUM() {
-    let args = Array.from(arguments);
-    if (args.length === 1 && Array.isArray(args[0])) {
-        args = args[0];
-    }
-    const flat = flattenArray(args);
-    const nums = flat.map(v => Number(v)).filter(v => !isNaN(v));
-    return nums.reduce((a, b) => a + b, 0);
+    const flat = flattenArray(Array.from(arguments));
+    return flat.map(Number).filter(v => !isNaN(v)).reduce((a, b) => a + b, 0);
 }
+
 function AVERAGE() {
     const flat = flattenArray(Array.from(arguments));
-    const nums = flat.map(v => parseFloat(v)).filter(v => !isNaN(v));
+    const nums = flat.map(Number).filter(v => !isNaN(v));
     if (nums.length === 0) return "#DIV/0!";
     return nums.reduce((a, b) => a + b, 0) / nums.length;
 }
+
 function MIN() {
-    const flat = flattenArray(Array.from(arguments));
-    const nums = flat.map(v => parseFloat(v)).filter(v => !isNaN(v));
-    return Math.min(...nums);
+    const flat = flattenArray(Array.from(arguments)).map(Number).filter(v => !isNaN(v));
+    return Math.min(...flat);
 }
+
 function MAX() {
-    const flat = flattenArray(Array.from(arguments));
-    const nums = flat.map(v => parseFloat(v)).filter(v => !isNaN(v));
-    return Math.max(...nums);
+    const flat = flattenArray(Array.from(arguments)).map(Number).filter(v => !isNaN(v));
+    return Math.max(...flat);
 }
-function IF(condition, trueValue, falseValue) {
-    if (typeof condition === "string") {
-        condition = condition.trim().toUpperCase() === "TRUE";
-    }
-    return condition ? trueValue : falseValue;
-}
+
 function COUNT() {
     const flat = flattenArray(Array.from(arguments));
     return flat.filter(x => !isNaN(Number(x))).length;
 }
+
 function PRODUCT() {
     const flat = flattenArray(Array.from(arguments));
     return flat.reduce((acc, v) => acc * Number(v), 1);
 }
-function SUBTRACT(a, b) { return Number(a) - Number(b); }
+
 function ADD(a, b) { return Number(a) + Number(b); }
+function SUBTRACT(a, b) { return Number(a) - Number(b); }
 function DIVIDE(a, b) { return Number(b) !== 0 ? Number(a) / Number(b) : "#DIV/0!"; }
 function POWER(a, b) { return Math.pow(Number(a), Number(b)); }
 function SQRT(a) { return Math.sqrt(Number(a)); }
 function MOD(a, b) { return Number(a) % Number(b); }
+
+// -----------------------
+// 条件付き集計系
+// -----------------------
+function SUMIF(range, condition) {
+    const arr = flattenArray(range);
+    const condFunc = new Function("v", "return v " + condition);
+    return arr.filter(v => condFunc(v)).reduce((a, b) => a + Number(b || 0), 0);
+}
+
+function AVERAGEIF(range, condition) {
+    const arr = flattenArray(range);
+    const condFunc = new Function("v", "return v " + condition);
+    const filtered = arr.filter(v => condFunc(v));
+    if (filtered.length === 0) return "#DIV/0!";
+    return filtered.reduce((a, b) => a + Number(b || 0), 0) / filtered.length;
+}
+
+function COUNTIF(range, condition) {
+    const arr = flattenArray(range);
+    const condFunc = new Function("v", "return v " + condition);
+    return arr.filter(v => condFunc(v)).length;
+}
+
+// -----------------------
+// 文字列系
+// -----------------------
 function CONCAT() { return Array.from(arguments).join(""); }
 function UPPER(text) { return String(text).toUpperCase(); }
 function LOWER(text) { return String(text).toLowerCase(); }
@@ -547,137 +569,91 @@ function REPLACE(text, start, count, newText) {
 }
 
 // -----------------------
-// 日付関連のグローバル関数
+// 論理系
 // -----------------------
-
-// 指定した年、月、日のDateオブジェクトを返す（ExcelのDATE関数のように）
-function DATE(year, month, day) {
-    return new Date(year, month - 1, day);
-}
-
-// 現在の日付（時刻は切り捨てられる）
-function TODAY() {
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-}
-
-// Dateオブジェクトまたは日付文字列から「年」を抽出
-function YEAR(dateInput) {
-    return new Date(dateInput).getFullYear();
-}
-
-// Dateオブジェクトまたは日付文字列から「月」を抽出（1～12）
-function MONTH(dateInput) {
-    return new Date(dateInput).getMonth() + 1;
-}
-
-// Dateオブジェクトまたは日付文字列から「日」を抽出
-function DAY(dateInput) {
-    return new Date(dateInput).getDate();
-}
-
-// 日付文字列（例："1/2" または "1/2/2020"）をタイムスタンプに変換する
-function DATEVALUE(dateString) {
-    const parts = dateString.split("/");
-    if (parts.length === 2) {
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = parseInt(parts[0], 10);
-        const day = parseInt(parts[1], 10);
-        return new Date(year, month - 1, day).getTime();
-    } else if (parts.length === 3) {
-        const month = parseInt(parts[0], 10);
-        const day = parseInt(parts[1], 10);
-        const year = parseInt(parts[2], 10);
-        return new Date(year, month - 1, day).getTime();
+function IF(condition, trueValue, falseValue) {
+    if (typeof condition === "string") {
+        condition = condition.trim().toUpperCase() === "TRUE";
     }
-    return "#VALUE!";
+    return condition ? trueValue : falseValue;
+}
+function AND() {
+    return Array.from(arguments).every(v => Boolean(v));
+}
+function OR() {
+    return Array.from(arguments).some(v => Boolean(v));
+}
+function NOT(value) {
+    return !Boolean(value);
 }
 
-// 入力が "1/2" や "1/2/2020" のような日付形式かを判定する関数
-function isDateFormat(str) {
-    return /^\d{1,2}\/\d{1,2}(\/\d{2,4})?$/.test(str);
+// -----------------------
+// 参照系（配列対応）
+// -----------------------
+function INDEX(array, row, col = 0) {
+    if (!Array.isArray(array)) return array;
+    const r = row - 1;
+    if (Array.isArray(array[0])) {
+        const c = col - 1;
+        return (array[r] && array[r][c] != null) ? array[r][c] : 0;
+    }
+    return array[r] != null ? array[r] : 0;
 }
 
-// Dateオブジェクトを "yyyy/mm/dd" 形式に整形して返す関数
-function formatDate(date) {
-    const year = date.getFullYear();
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    return `${year}/${month}/${day}`;
+function MATCH(lookupValue, array, matchType = 0) {
+    const flat = flattenArray(array);
+    if (matchType === 0) { // 完全一致
+        return flat.findIndex(v => v == lookupValue) + 1 || "#N/A";
+    } else if (matchType === 1) { // 小さい方で最大
+        let idx = -1;
+        flat.forEach((v, i) => { if (v <= lookupValue) idx = i; });
+        return idx + 1 || "#N/A";
+    } else if (matchType === -1) { // 大きい方で最小
+        let idx = -1;
+        flat.forEach((v, i) => { if (v >= lookupValue && idx === -1) idx = i; });
+        return idx + 1 || "#N/A";
+    }
 }
 
-/*********************
- * 追加の日付関連グローバル関数
- *********************/
-
-// 現在の日時を返す (NOW: 日付と時刻)
-function NOW() {
-    return new Date();
+function VLOOKUP(lookupValue, tableArray, colIndex, rangeLookup = true) {
+    for (let row of tableArray) {
+        if (!Array.isArray(row)) continue;
+        if (rangeLookup) {
+            if (row[0] <= lookupValue) return row[colIndex - 1] != null ? row[colIndex - 1] : "#N/A";
+        } else {
+            if (row[0] == lookupValue) return row[colIndex - 1] != null ? row[colIndex - 1] : "#N/A";
+        }
+    }
+    return "#N/A";
 }
 
-// Dateオブジェクトまたは日付文字列から「時」を抽出 (0～23)
-function HOUR(dateInput) {
-    return new Date(dateInput).getHours();
-}
-
-// Dateオブジェクトまたは日付文字列から「分」を抽出 (0～59)
-function MINUTE(dateInput) {
-    return new Date(dateInput).getMinutes();
-}
-
-// Dateオブジェクトまたは日付文字列から「秒」を抽出 (0～59)
-function SECOND(dateInput) {
-    return new Date(dateInput).getSeconds();
-}
-
-// 指定した日付の曜日を返す (1＝日曜日 ～ 7＝土曜日)
-// Excelの場合、WEEKDAY はオプションで開始曜日を変更可能ですが、ここでは日曜始まりとしています。
-function WEEKDAY(dateInput) {
-    return new Date(dateInput).getDay() + 1;
-}
-
-// 指定した日付から、指定された月数を加算した日付を返す (EDATE)
-function EDATE(dateInput, months) {
-    const date = new Date(dateInput);
-    date.setMonth(date.getMonth() + Number(months));
-    return date;
-}
-
-// 指定した2つの日付の間の日数、月数、または年数の差を返す (DATEDIF)
-// unit: "D"/"DAY" で日数、「M"/"MONTH" で月数、「Y"/"YEAR" で年数をそれぞれ返します。
-// ※ 月数や年数は平均値での概算となります
+// -----------------------
+// 日付系
+// -----------------------
+function DATE(year, month, day) { return new Date(year, month - 1, day); }
+function TODAY() { const now = new Date(); return new Date(now.getFullYear(), now.getMonth(), now.getDate()); }
+function NOW() { return new Date(); }
+function YEAR(dateInput) { return new Date(dateInput).getFullYear(); }
+function MONTH(dateInput) { return new Date(dateInput).getMonth() + 1; }
+function DAY(dateInput) { return new Date(dateInput).getDate(); }
+function HOUR(dateInput) { return new Date(dateInput).getHours(); }
+function MINUTE(dateInput) { return new Date(dateInput).getMinutes(); }
+function SECOND(dateInput) { return new Date(dateInput).getSeconds(); }
+function WEEKDAY(dateInput) { return new Date(dateInput).getDay() + 1; }
+function EDATE(dateInput, months) { const date = new Date(dateInput); date.setMonth(date.getMonth() + Number(months)); return date; }
 function DATEDIF(startDate, endDate, unit) {
-    const d1 = new Date(startDate);
-    const d2 = new Date(endDate);
-    const diff = d2.getTime() - d1.getTime();
+    const d1 = new Date(startDate); const d2 = new Date(endDate); const diff = d2.getTime() - d1.getTime();
     switch (String(unit).toLowerCase()) {
-        case "d":
-        case "day":
-        case "days":
-            return diff / (1000 * 60 * 60 * 24);
-        case "m":
-        case "month":
-        case "months":
-            return diff / (1000 * 60 * 60 * 24 * 30.436875); // 平均月の日数
-        case "y":
-        case "year":
-        case "years":
-            return diff / (1000 * 60 * 60 * 24 * 365.2425); // 平均年の日数
-        default:
-            return diff; // 単位未指定の場合、ミリ秒単位で返す
+        case "d": case "day": return diff / (1000 * 60 * 60 * 24);
+        case "m": case "month": return diff / (1000 * 60 * 60 * 24 * 30.436875);
+        case "y": case "year": return diff / (1000 * 60 * 60 * 24 * 365.2425);
+        default: return diff;
     }
 }
-
-// 指定された時、分、秒からその日の時刻を表す Dateを返す (TIME)
-// ※ 現在の日付に対して指定した時刻で Dateオブジェクトを生成します。
 function TIME(hour, minute, second) {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minute, second);
 }
-
-// 時刻文字列 (例: "14:30" や "09:15:30") を、1日の中での経過日数（0～1の小数値）に変換する関数 (TIMEVALUE)
-// Excel では、TIMEVALUE は 1日の比率として扱われます。
 function TIMEVALUE(timeStr) {
     const parts = timeStr.split(":");
     if (parts.length === 2 || parts.length === 3) {
@@ -688,6 +664,19 @@ function TIMEVALUE(timeStr) {
     }
     return "#VALUE!";
 }
+function DATEVALUE(dateString) {
+    const parts = dateString.split("/");
+    if (parts.length === 2) {
+        const now = new Date();
+        return new Date(now.getFullYear(), parseInt(parts[0], 10) - 1, parseInt(parts[1], 10)).getTime();
+    } else if (parts.length === 3) {
+        return new Date(parseInt(parts[2], 10), parseInt(parts[0], 10) - 1, parseInt(parts[1], 10)).getTime();
+    }
+    return "#VALUE!";
+}
+function isDateFormat(str) { return /^\d{1,2}\/\d{1,2}(\/\d{2,4})?$/.test(str); }
+function formatDate(date) { const y = date.getFullYear(), m = (date.getMonth() + 1).toString().padStart(2, '0'), d = date.getDate().toString().padStart(2, '0'); return `${y}/${m}/${d}`; }
+
 
 /*********************
  * 数式の評価エンジン
@@ -781,80 +770,86 @@ function evaluateFormula(formula, visited = new Set()) {
     if (formula[0] !== "=") return formula;
 
     let expr = formula.substring(1).trim();
-    if (expr === "") return "=";
+    if (!expr) return "=";
 
-    // 循環参照チェック用キー（数式そのものをキーに）
-    const key = expr;
-    if (visited.has(key)) {
-        return "#CIRCULAR!";
-    }
-    visited.add(key);
+    // 循環参照チェック (セル単位で管理)
+    const cellKey = formula;
+    if (visited.has(cellKey)) return "#CIRCULAR!";
+    visited.add(cellKey);
 
-    // IF 関数の条件部の "=" を "==" に変換
-    if (expr.toUpperCase().startsWith("IF(")) {
-        expr = preprocessIFFormula(expr);
-    }
+    try {
+        if (/^IF\(/i.test(expr)) {
+            expr = preprocessIFFormula(expr);
+        }
 
-    // ① 範囲参照の置換処理（例："A1:B2" → "[10,20,...]"）
-    expr = expr.replace(RANGE_REF_REGEX, function (match) {
-        const parts = match.split(":");
-        if (parts.length === 2) {
-            const startMatch = parts[0].match(/([A-Z]+)(\d+)/);
-            const endMatch = parts[1].match(/([A-Z]+)(\d+)/);
-            if (startMatch && endMatch) {
-                const startCol = columnLettersToIndex(startMatch[1]);
-                const startRow = parseInt(startMatch[2], 10);
-                const endCol = columnLettersToIndex(endMatch[1]);
-                const endRow = parseInt(endMatch[2], 10);
-                let values = [];
-                for (let r = startRow; r <= endRow; r++) {
-                    for (let c = startCol; c <= endCol; c++) {
-                        const cell = getCell(r, c);
-                        if (cell) {
-                            let cellVal = getCellEvaluatedValue(cell, new Set(visited));  // 🔁 visitedを渡す
-                            if (!isNaN(cellVal)) {
-                                values.push(cellVal);
-                            }
-                        }
+        // 範囲参照置換 → 配列に変換
+        expr = expr.replace(RANGE_REF_REGEX, match => {
+            const [startRef, endRef] = match.split(":");
+            if (!startRef || !endRef) return "[]";
+
+            const startMatch = startRef.match(/([A-Z]+)(\d+)/);
+            const endMatch = endRef.match(/([A-Z]+)(\d+)/);
+            if (!startMatch || !endMatch) return "[]";
+
+            const startCol = columnLettersToIndex(startMatch[1]);
+            const startRow = parseInt(startMatch[2], 10);
+            const endCol = columnLettersToIndex(endMatch[1]);
+            const endRow = parseInt(endMatch[2], 10);
+
+            const values = [];
+            for (let r = startRow; r <= endRow; r++) {
+                for (let c = startCol; c <= endCol; c++) {
+                    const cell = getCell(r, c);
+                    if (cell) {
+                        const val = getCellEvaluatedValue(cell, visited);
+                        values.push(val && !isNaN(val) ? Number(val) : 0);
                     }
                 }
-                return "[" + values.join(",") + "]";
             }
-        }
-        return match;
-    });
+            return `[${values.join(",")}]`;
+        });
 
-    // ② 単一セル参照の置換処理（例："A1" → 数値）
-    expr = expr.replace(SINGLE_REF_REGEX, function (match, colLetters, rowStr) {
-        const colIndex = columnLettersToIndex(colLetters);
-        const rowNumber = parseInt(rowStr, 10);
-        const refCell = getCell(rowNumber, colIndex);
-        if (refCell) {
-            let cellVal = getCellEvaluatedValue(refCell, new Set(visited));  // 🔁 visitedを渡す
-            return (!isNaN(cellVal)) ? cellVal : 0;
-        }
-        return 0;
-    });
-    // ③ eval による評価
-    try {
-        let result = eval(expr);
-        if (typeof result === "function") return "";
-        return result;
+        // 単一セル参照置換
+        expr = expr.replace(SINGLE_REF_REGEX, (_, colLetters, rowStr) => {
+            const colIndex = columnLettersToIndex(colLetters);
+            const rowNumber = parseInt(rowStr, 10);
+            const cell = getCell(rowNumber, colIndex);
+            if (cell) {
+                const val = getCellEvaluatedValue(cell, visited);
+                return val && !isNaN(val) ? Number(val) : 0;
+            }
+            return 0;
+        });
+
+        const result = eval(expr);
+        return typeof result === "function" ? "" : result;
+
     } catch (e) {
         return "Error: " + e.message;
+    } finally {
+        visited.delete(cellKey);
     }
 }
 
 function updateAllFormulas() {
-    const formulaCells = document.querySelectorAll("#spreadsheet tbody td[data-formula]");
-    formulaCells.forEach(cell => {
-        // 編集中のセルは更新しない
-        if (document.activeElement !== cell) {
-            const formula = cell.dataset.formula;
-            cell.textContent = evaluateFormula(formula);
-        }
-    });
+    const formulaCells = Array.from(document.querySelectorAll("#spreadsheet tbody td[data-formula]"));
+    const batchSize = 50;
+    let index = 0;
+
+    function updateBatch() {
+        const batch = formulaCells.slice(index, index + batchSize);
+        batch.forEach(cell => {
+            if (document.activeElement !== cell) {
+                cell.textContent = evaluateFormula(cell.dataset.formula);
+            }
+        });
+        index += batchSize;
+        if (index < formulaCells.length) requestAnimationFrame(updateBatch);
+    }
+
+    updateBatch();
 }
+
 // =======================
 // Block 7: 範囲選択機能および数式への反映
 // =======================
@@ -936,6 +931,7 @@ function updateSelection() {
 function clearSelection() {
     const cells = document.querySelectorAll("#spreadsheet tbody td");
     cells.forEach(cell => cell.classList.remove("selected"));
+    cells.forEach(cell => cell.classList.remove("transparent"));
 }
 
 document.addEventListener("mouseup", function (e) {
@@ -1692,14 +1688,14 @@ function highlightCalculationRange(formula) {
                 for (let r = range.start.row; r <= range.end.row; r++) {
                     for (let c = range.start.col; c <= range.end.col; c++) {
                         const cell = getCellElement(r, c);
-                        if (cell) cell.style.outline = `2.5px solid ${color}`;
+                        if (cell) cell.style.outline = `5px solid ${color}`;
                     }
                 }
             } else {
                 const pos = parseCellReference(ref);
                 if (!pos) continue;
                 const cell = getCellElement(pos.row, pos.col);
-                if (cell) cell.style.outline = `2.5px solid ${color}`;
+                if (cell) cell.style.outline = `5px solid ${color}`;
             }
         }
     }
@@ -1713,7 +1709,7 @@ formulaBarInput.addEventListener("click", function () {
     } else {
         clearCalculationRangeHighlights();
     }
-    activeCell.style.outline = "solid 2px steelblue";
+    activeCell.style.outline = "solid 3.5px steelblue";
 });
 
 formulaBarInput.addEventListener("focus", function () {
@@ -3441,41 +3437,45 @@ function cleanData(data) {
     }
 }
 
-/***************** 保存処理（最適化済） *****************/
+/***************** 配列形式・完全圧縮版 保存処理 *****************/
 function saveSpreadsheetData() {
     loadingstate.textContent = "保存中...";
     setTimeout(() => {
         try {
-            const savedCells = [], DEFAULT_COLSPAN = "1", DEFAULT_ROWSPAN = "1";
+            const savedCells = [];
             const mergeKeys = ["mergeAnchorRow", "mergeAnchorCol", "mergeMinRow", "mergeMinCol", "mergeMaxRow", "mergeMaxCol"];
-            const mkShort = {
-                mergeAnchorRow: "f", mergeAnchorCol: "g",
-                mergeMinRow: "h", mergeMinCol: "i",
-                mergeMaxRow: "j", mergeMaxCol: "k"
-            };
+            const mkShort = { mergeAnchorRow: 0, mergeAnchorCol: 1, mergeMinRow: 2, mergeMinCol: 3, mergeMaxRow: 4, mergeMaxCol: 5 };
+            const DEFAULT_COLSPAN = 1, DEFAULT_ROWSPAN = 1;
+            const DEFAULT_ROW_HEIGHT = "24px", DEFAULT_COL_WIDTH = "100px";
+
+            const compressStyle = s => s ? s.replace(/\s*([:;])\s*/g, "$1").replace(/;$/, "") : "";
+
             document.querySelectorAll("#spreadsheet tbody td").forEach(cell => {
                 const r = +cell.dataset.row, c = +cell.dataset.col;
-                const data = { l: r, m: c };
-                const v = cell.hidden ? cell.dataset.originalValue || "" : cell.textContent.trim();
+                const arr = [r, c];
+                const v = cell.hidden ? (cell.dataset.originalValue || "") : cell.textContent.trim();
+                if (v) arr[2] = v;
                 const f = (cell.dataset.formula || "").trim();
-                const s = (cell.getAttribute("style") || "").trim();
-                const cs = cell.getAttribute("colspan"), rs = cell.getAttribute("rowspan");
-                if (v) data.a = v;
-                if (f) data.b = f;
-                if (s) data.c = s;
-                if (cs && cs !== DEFAULT_COLSPAN) data.d = cs;
-                if (rs && rs !== DEFAULT_ROWSPAN) data.e = rs;
-                mergeKeys.forEach(k => {
-                    if (cell.dataset[k]) data[mkShort[k]] = cell.dataset[k];
-                });
-                if (Object.keys(data).length > 2) savedCells.push(data);
+                if (f) arr[3] = f;
+                const s = compressStyle(cell.getAttribute("style") || "");
+                if (s) arr[4] = s;
+                const cs = +cell.getAttribute("colspan") || DEFAULT_COLSPAN;
+                if (cs !== DEFAULT_COLSPAN) arr[5] = cs;
+                const rs = +cell.getAttribute("rowspan") || DEFAULT_ROWSPAN;
+                if (rs !== DEFAULT_ROWSPAN) arr[6] = rs;
+                mergeKeys.forEach((k, i) => { if (cell.dataset[k] != null) arr[7 + i] = cell.dataset[k]; });
+                if (arr.length > 2) savedCells.push(arr);
             });
+
             const savedRows = Array.from(document.querySelectorAll("#spreadsheet tbody tr"))
-                .map(tr => ({ l: +tr.dataset.row, n: getComputedStyle(tr).height }));
+                .map(tr => { const h = getComputedStyle(tr).height; return h === DEFAULT_ROW_HEIGHT ? null : [+tr.dataset.row, h]; }).filter(Boolean);
+
             const savedColumns = Array.from(document.querySelectorAll("#spreadsheet thead th"))
-                .map((th, c) => ({ m: c, o: getComputedStyle(th).width }));
-            const z = (document.getElementById("zoom-slider")?.value || "100");
-            const jsonStr = JSON.stringify({ c: savedCells, r: savedRows, o: savedColumns, p: z });
+                .map((th, c) => { const w = getComputedStyle(th).width; return w === DEFAULT_COL_WIDTH ? null : [c, w]; }).filter(Boolean);
+
+            const zoom = document.getElementById("zoom-slider")?.value || "100";
+
+            const jsonStr = JSON.stringify([savedCells, savedRows, savedColumns, zoom]);
             localStorage.setItem("spreadsheetData", compressData(jsonStr));
             loadingstate.textContent = "保存しました。";
             updateLocalStorageUsage();
@@ -3489,6 +3489,7 @@ function saveSpreadsheetData() {
 function loadSpreadsheetData() {
     const savedStr = localStorage.getItem("spreadsheetData");
     if (!savedStr) return loadingstate.textContent = "データがありません";
+
     let data;
     try {
         data = JSON.parse(decompressData(savedStr));
@@ -3497,69 +3498,74 @@ function loadSpreadsheetData() {
         loadingstate.textContent = "データがありません";
         return;
     }
+
+    const [cells, rows, columns, zoomVal] = data;
     const slider = document.getElementById("zoom-slider"),
         display = document.getElementById("zoom-display"),
         bar = document.getElementById("loading-progress-bar");
 
-    if (data.p != null && slider && display && container) {
-        const z = +(`${data.p}`.replace("%", "")) || 100;
-        slider.value = z; display.textContent = z + "%";
+    if (slider && display && container) {
+        const z = +(`${zoomVal}`.replace("%", "")) || 100;
+        slider.value = z;
+        display.textContent = z + "%";
         spreadsheetContent.style.zoom = z / 100;
     }
-    const maxRow = Math.max(0, ...((data.c || []).map(d => +d.l)));
+
+    const maxRow = Math.max(0, ...(cells || []).map(c => +c[0]));
     if (maxRow >= rowCount) loadRows(maxRow - rowCount + 1);
-    (data.r || []).forEach(d => getRow(d.l)?.style && (getRow(d.l).style.height = d.n));
-    (data.o || []).forEach(d => {
-        const th = document.querySelector(`#spreadsheet thead th:nth-child(${d.m + 1})`);
-        if (th) th.style.width = d.o;
+
+    (rows || []).forEach(r => getRow(r[0])?.style && (getRow(r[0]).style.height = r[1]));
+    (columns || []).forEach(c => {
+        const th = document.querySelector(`#spreadsheet thead th:nth-child(${c[0] + 1})`);
+        if (th) th.style.width = c[1];
     });
-    const cells = data.c || [], batchSize = 500;
-    const mergeMap = {
-        f: "mergeAnchorRow", g: "mergeAnchorCol",
-        h: "mergeMinRow", i: "mergeMinCol",
-        j: "mergeMaxRow", k: "mergeMaxCol"
-    };
+
+    const mergeKeys = ["mergeAnchorRow", "mergeAnchorCol", "mergeMinRow", "mergeMinCol", "mergeMaxRow", "mergeMaxCol"];
+    const batchSize = 1500;
     let index = 0, total = cells.length;
-    function processBatch() {
+
+    // ① 全セル復元（数式は dataset にセットするだけ）
+    function restoreCells() {
         const end = Math.min(index + batchSize, total);
         for (; index < end; index++) {
-            const d = cells[index], cell = getCell(d.l, d.m);
+            const d = cells[index];
+            const cell = getCell(d[0], d[1]); // ★ 元の getCell() を使用
             if (!cell) continue;
-            if (d.d > 1) cell.setAttribute("colspan", d.d);
-            else cell.removeAttribute("colspan");
-            if (d.e > 1) cell.setAttribute("rowspan", d.e);
-            else cell.removeAttribute("rowspan");
-            if (d.b) {
-                cell.dataset.formula = d.b;
-                cell.textContent = evaluateFormula(d.b);
-            } else {
-                cell.textContent = d.a ?? "";
-                delete cell.dataset.formula;
-            }
-            if (cell.style.cssText !== d.c) cell.style.cssText = d.c || "";
-            for (const [k, full] of Object.entries(mergeMap)) {
-                if (d[k]) cell.dataset[full] = d[k];
-                else delete cell.dataset[full];
-            }
-            cell.hidden = d.hd === true || d.hd === "true";
+
+            if (d[5] > 1) cell.setAttribute("colspan", d[5]); else cell.removeAttribute("colspan");
+            if (d[6] > 1) cell.setAttribute("rowspan", d[6]); else cell.removeAttribute("rowspan");
+
+            if (d[3]) cell.dataset.formula = d[3];
+            else { if (cell.textContent !== (d[2] ?? "")) cell.textContent = d[2] ?? ""; delete cell.dataset.formula; }
+
+            if (cell.style.cssText !== d[4]) cell.style.cssText = d[4] || "";
+
+            mergeKeys.forEach((k, i) => { if (d[7 + i] != null) cell.dataset[k] = d[7 + i]; else delete cell.dataset[k]; });
         }
+
         if (bar) bar.style.width = `${Math.min((index / total) * 100, 100)}%`;
-        if (index < total) requestAnimationFrame(processBatch);
-        else {
-            setupRowVisibilityObserver();
-            loadingstate.textContent = "読み込み完了";
-            if (bar) bar.style.width = "0%";
-            const all = document.querySelectorAll("#spreadsheet tbody td");
-            all.forEach(td => td.classList.add("borderss"));
-            requestAnimationFrame(() => all.forEach(td => td.classList.remove("borderss")));
-        }
+
+        if (index < total) requestAnimationFrame(restoreCells);
+        else evaluateAllFormulas();
     }
-    if (total) processBatch();
-    else {
+
+    // ② 全セル数式評価
+    function evaluateAllFormulas() {
+
         setupRowVisibilityObserver();
         loadingstate.textContent = "読み込み完了";
+        if (bar) bar.style.width = "0%";
+
+        const all = document.querySelectorAll("#spreadsheet tbody td");
+        all.forEach(td => td.classList.add("borderss"));
+        requestAnimationFrame(() => all.forEach(td => td.classList.remove("borderss")));
+        updateAllFormulas()
     }
+
+    if (total) restoreCells();
+    else { setupRowVisibilityObserver(); loadingstate.textContent = "読み込み完了"; }
 }
+
 
 /* ----- ヘルパー関数 ----- */
 /**
@@ -3636,37 +3642,34 @@ const zoomDisplay = document.getElementById("zoom-display");
 
 // 保存されているズーム値（例：savedDataオブジェクトから取得）
 let savedData = { zoom: "100%" };
-// 保存データから初期 zoom 値のパース
-let zoomValue;
-if (typeof savedData.zoom === "string") {
-    zoomValue = Number(savedData.zoom.replace("%", "").trim());
-} else {
-    zoomValue = Number(savedData.zoom);
-}
-if (isNaN(zoomValue)) {
-    zoomValue = 100;
-}
+
+// 初期 zoom 値の取得・パース
+let zoomValue = parseInt(savedData.zoom) || 100;
 
 // スライダーと表示テキストの初期化
 zoomSlider.value = zoomValue;
 zoomDisplay.textContent = zoomValue + "%";
 
 // 初期 zoom の適用
-const zoomFactor = zoomValue / 100;
-spreadsheetContent.style.zoom = zoomFactor;
+spreadsheetContent.style.zoom = zoomValue / 100;
+
+// rAF 用フラグ
+let pendingZoomUpdate = false;
+let targetZoom = zoomValue;
 
 // 拡大縮小スライダーのイベントリスナー
-zoomSlider.addEventListener("input", function () {
-    const currentZoomValue = Number(this.value);
-    const currentZoomFactor = currentZoomValue / 100;
-
-    // CSS zoom プロパティで拡大縮小を適用
-    spreadsheetContent.style.zoom = currentZoomFactor;
-
-    // 表示テキスト更新
-    zoomDisplay.textContent = currentZoomValue + "%";
+zoomSlider.addEventListener("input", () => {
+    targetZoom = zoomSlider.value;
+    // 更新が保留中でなければ rAF で実行
+    if (!pendingZoomUpdate) {
+        pendingZoomUpdate = true;
+        requestAnimationFrame(() => {
+            spreadsheetContent.style.zoom = targetZoom / 100;
+            zoomDisplay.textContent = targetZoom + "%";
+            pendingZoomUpdate = false;
+        });
+    }
 });
-
 
 // localStorage の使用量（バイト単位）を計算する関数（UTF-16：1文字＝2バイトと概算）
 function getLocalStorageUsage() {

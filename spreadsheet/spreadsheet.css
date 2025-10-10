@@ -252,11 +252,11 @@ th.col_number {
 
 /* フィルドラッグ中のハイライト */
 td.fill-selected {
-    outline: 2px blue dashed;
+    outline: 3.5px blue dashed;
 }
 
 td.selected:has(.fill-handle) {
-    outline: 2px steelblue solid;
+    outline: 3.5px steelblue solid;
 }
 
 #spreadsheet td {
@@ -265,7 +265,7 @@ td.selected:has(.fill-handle) {
 }
 
 .merge-highlight {
-    outline: 3px dashed red;
+    outline: 3.5px dashed red;
 }
 
 

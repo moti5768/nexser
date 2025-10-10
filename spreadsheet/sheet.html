@@ -148,52 +148,95 @@
 
 
     <!-- 関数ボタン群 -->
-    <div style="display: inline-flex;">
-      <div id="formula-buttons" class="pulldown_menu_parent">
-        <span class="button pulldown_btn">&nbsp;関数　数学・論理&nbsp;▼&nbsp;</span>
+    <!-- 関数ボタン群（Excel風グループ分け・関数名そのまま） -->
+    <div style="display:flex; flex-wrap:wrap; gap:15px;">
+
+      <!-- 数値系 -->
+      <div class="pulldown_menu_parent">
+        <span class="button pulldown_btn">数学・統計 ▼</span>
         <ul class="pulldown_menu">
-          <span class="button" onclick="applyFormula('=SUM()')">SUM</span>
-          <span class="button" onclick="applyFormula('=AVERAGE()')">AVERAGE</span>
-          <span class="button" onclick="applyFormula('=MIN()')">MIN</span>
-          <span class="button" onclick="applyFormula('=MAX()')">MAX</span>
-          <span class="button" onclick="applyFormula('=IF()')">IF</span>
-          <span class="button" onclick="applyFormula('=COUNT()')">COUNT</span>
-          <span class="button" onclick="applyFormula('=PRODUCT()')">PRODUCT</span>
-          <span class="button" onclick="applyFormula('=SUBTRACT()')">SUBTRACT</span>
-          <span class="button" onclick="applyFormula('=ADD()')">ADD</span>
-          <span class="button" onclick="applyFormula('=DIVIDE()')">DIVIDE</span>
-          <span class="button" onclick="applyFormula('=POWER()')">POWER</span>
-          <span class="button" onclick="applyFormula('=SQRT()')">SQRT</span>
-          <span class="button" onclick="applyFormula('=MOD()')">MOD</span>
-          <span class="button" onclick="applyFormula('=CONCAT()')">CONCAT</span>
-          <span class="button" onclick="applyFormula('=UPPER()')">UPPER</span>
-          <span class="button" onclick="applyFormula('=LOWER()')">LOWER</span>
-          <span class="button" onclick="applyFormula('=LEFT()')">LEFT</span>
-          <span class="button" onclick="applyFormula('=RIGHT()')">RIGHT</span>
-          <span class="button" onclick="applyFormula('=MID()')">MID</span>
-          <span class="button" onclick="applyFormula('=TRIM()')">TRIM</span>
-          <span class="button" onclick="applyFormula('=LEN()')">LEN</span>
-          <span class="button" onclick="applyFormula('=FIND()')">FIND</span>
-          <span class="button" onclick="applyFormula('=REPLACE()')">REPLACE</span>
+          <li class="button" onclick="applyFormula('=SUM()')">SUM</li>
+          <li class="button" onclick="applyFormula('=AVERAGE()')">AVERAGE</li>
+          <li class="button" onclick="applyFormula('=MIN()')">MIN</li>
+          <li class="button" onclick="applyFormula('=MAX()')">MAX</li>
+          <li class="button" onclick="applyFormula('=COUNT()')">COUNT</li>
+          <li class="button" onclick="applyFormula('=PRODUCT()')">PRODUCT</li>
+          <li class="button" onclick="applyFormula('=ADD()')">ADD</li>
+          <li class="button" onclick="applyFormula('=SUBTRACT()')">SUBTRACT</li>
+          <li class="button" onclick="applyFormula('=DIVIDE()')">DIVIDE</li>
+          <li class="button" onclick="applyFormula('=POWER()')">POWER</li>
+          <li class="button" onclick="applyFormula('=SQRT()')">SQRT</li>
+          <li class="button" onclick="applyFormula('=MOD()')">MOD</li>
         </ul>
       </div>
 
-      <div id="formula-buttons" class="pulldown_menu_parent" style="display:inline-flex; align-items:center; gap:5px;">
-        <span class="button pulldown_btn">&nbsp;関数　日付&nbsp;▼&nbsp;</span>
+      <!-- 条件付き集計系 -->
+      <div class="pulldown_menu_parent">
+        <span class="button pulldown_btn">条件付き集計 ▼</span>
         <ul class="pulldown_menu">
-          <span class="button" onclick="applyFormula('=TODAY()')">TODAY</span>
-          <span class="button" onclick="applyFormula('=DATE(2025,4,26)')">DATE</span>
-          <span class="button" onclick="applyFormula('=DATEVALUE(\'1/2\')')">DATEVALUE</span>
-          <span class="button" onclick="applyFormula('=NOW()')">NOW</span>
-          <span class="button" onclick="applyFormula('=HOUR(NOW())')">HOUR</span>
-          <span class="button" onclick="applyFormula('=MINUTE(NOW())')">MINUTE</span>
-          <span class="button" onclick="applyFormula('=SECOND(NOW())')">SECOND</span>
-          <span class="button" onclick="applyFormula('=WEEKDAY(TODAY())')">WEEKDAY</span>
-          <span class="button" onclick="applyFormula('=EDATE(TODAY(), 1)')">EDATE(+1)</span>
-          <span class="button" onclick="applyFormula('=DATEDIF(DATE(2025,1,1), DATE(2025,4,26), \'D\')')">DATEDIF
-            (D)</span>
-          <span class="button" onclick="applyFormula('=TIME(15,30,0)')">TIME</span>
-          <span class="button" onclick="applyFormula('=TIMEVALUE(\'14:30\')')">TIMEVALUE</span>
+          <li class="button" onclick="applyFormula('=SUMIF()')">SUMIF</li>
+          <li class="button" onclick="applyFormula('=AVERAGEIF()')">AVERAGEIF</li>
+          <li class="button" onclick="applyFormula('=COUNTIF()')">COUNTIF</li>
+        </ul>
+      </div>
+
+      <!-- 文字列系 -->
+      <div class="pulldown_menu_parent">
+        <span class="button pulldown_btn">文字列 ▼</span>
+        <ul class="pulldown_menu">
+          <li class="button" onclick="applyFormula('=CONCAT()')">CONCAT</li>
+          <li class="button" onclick="applyFormula('=UPPER()')">UPPER</li>
+          <li class="button" onclick="applyFormula('=LOWER()')">LOWER</li>
+          <li class="button" onclick="applyFormula('=LEFT()')">LEFT</li>
+          <li class="button" onclick="applyFormula('=RIGHT()')">RIGHT</li>
+          <li class="button" onclick="applyFormula('=MID()')">MID</li>
+          <li class="button" onclick="applyFormula('=TRIM()')">TRIM</li>
+          <li class="button" onclick="applyFormula('=LEN()')">LEN</li>
+          <li class="button" onclick="applyFormula('=FIND()')">FIND</li>
+          <li class="button" onclick="applyFormula('=REPLACE()')">REPLACE</li>
+        </ul>
+      </div>
+
+      <!-- 論理系 -->
+      <div class="pulldown_menu_parent">
+        <span class="button pulldown_btn">論理 ▼</span>
+        <ul class="pulldown_menu">
+          <li class="button" onclick="applyFormula('=IF()')">IF</li>
+          <li class="button" onclick="applyFormula('=AND()')">AND</li>
+          <li class="button" onclick="applyFormula('=OR()')">OR</li>
+          <li class="button" onclick="applyFormula('=NOT()')">NOT</li>
+        </ul>
+      </div>
+
+      <!-- 参照系 -->
+      <div class="pulldown_menu_parent">
+        <span class="button pulldown_btn">参照 ▼</span>
+        <ul class="pulldown_menu">
+          <li class="button" onclick="applyFormula('=INDEX()')">INDEX</li>
+          <li class="button" onclick="applyFormula('=MATCH()')">MATCH</li>
+          <li class="button" onclick="applyFormula('=VLOOKUP()')">VLOOKUP</li>
+        </ul>
+      </div>
+
+      <!-- 日付系 -->
+      <div class="pulldown_menu_parent">
+        <span class="button pulldown_btn">日付 ▼</span>
+        <ul class="pulldown_menu">
+          <li class="button" onclick="applyFormula('=DATE(2025,4,26)')">DATE</li>
+          <li class="button" onclick="applyFormula('=TODAY()')">TODAY</li>
+          <li class="button" onclick="applyFormula('=NOW()')">NOW</li>
+          <li class="button" onclick="applyFormula('=YEAR(TODAY())')">YEAR</li>
+          <li class="button" onclick="applyFormula('=MONTH(TODAY())')">MONTH</li>
+          <li class="button" onclick="applyFormula('=DAY(TODAY())')">DAY</li>
+          <li class="button" onclick="applyFormula('=HOUR(NOW())')">HOUR</li>
+          <li class="button" onclick="applyFormula('=MINUTE(NOW())')">MINUTE</li>
+          <li class="button" onclick="applyFormula('=SECOND(NOW())')">SECOND</li>
+          <li class="button" onclick="applyFormula('=WEEKDAY(TODAY())')">WEEKDAY</li>
+          <li class="button" onclick="applyFormula('=EDATE(TODAY(),1)')">EDATE</li>
+          <li class="button" onclick="applyFormula('=DATEDIF(DATE(2025,1,1), DATE(2025,4,26), \'D\')')">DATEDIF</li>
+          <li class="button" onclick="applyFormula('=TIME(15,30,0)')">TIME</li>
+          <li class="button" onclick="applyFormula('=TIMEVALUE(\'14:30\')')">TIMEVALUE</li>
+          <li class="button" onclick="applyFormula('=DATEVALUE(\'1/2\')')">DATEVALUE</li>
         </ul>
       </div>
     </div>
