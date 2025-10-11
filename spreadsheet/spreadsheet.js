@@ -1010,7 +1010,7 @@ formulaBarInput.addEventListener("blur", function (e) {
     }
 });
 // =======================
-// Block 9: スクロール時の動的行／列追加
+// Block 9: スクロール時の動的行／列追加（安全・軽量版）
 // =======================
 let scrollPending = false;
 let isLoadingRows = false;
@@ -1020,6 +1020,7 @@ container.addEventListener("scroll", () => {
     scrollPending = true;
     requestAnimationFrame(() => {
         scrollPending = false;
+        // --- 端までスクロールで追加 ---
         if (!isLoadingRows && container.scrollTop + container.clientHeight >= container.scrollHeight - 50) {
             isLoadingRows = true;
             loadRows(ROW_BATCH, undefined, () => (isLoadingRows = false));
@@ -1028,14 +1029,9 @@ container.addEventListener("scroll", () => {
             isLoadingCols = true;
             loadColumns(COLUMN_BATCH, undefined, () => (isLoadingCols = false));
         }
-        const rows = [...document.querySelectorAll("#spreadsheet tbody tr")].filter(
-            row => getComputedStyle(row).visibility === "visible"
-        );
-        let index = 0, batch = 30;
-        (function process() {
-            rows.slice(index, index + batch).forEach(setupRowVisibilityObserver);
-            if ((index += batch) < rows.length) requestAnimationFrame(process);
-        })();
+        // --- 可視範囲の再評価（1回だけ）---
+        computeVisibleColumns();
+        markInitialRowVisibility();
     });
 });
 
@@ -3590,42 +3586,172 @@ function throttle(fn, delay) {
     };
 }
 
-/* ----- 行可視化監視（軽量化版） ----- */
-let rowObserver = null;
+/* ----- 行可視化監視（完全即時反映・最軽量・横スクロール対応・初期ロード堅牢） ----- */
+let rowObserver = null, visibleCols = [];
+if (!container || !table) console.warn("spreadsheet-container または spreadsheet が見つかりません。");
+
+/* 横方向で見えている列を計算（キャッシュ＆最小DOM計測） */
+let _lastColCheck = 0, _cachedHeader = null, _cachedContainerRect = null;
+const computeVisibleColumns = () => {
+    const now = performance.now();
+    if (now - _lastColCheck < 20) return; // 余分な再計算を防止
+    _lastColCheck = now;
+
+    _cachedContainerRect = container?.getBoundingClientRect?.();
+    if (!_cachedContainerRect || !table) return;
+
+    const h = _cachedHeader ||= table.querySelector("thead tr") || table.querySelector("tbody tr");
+    if (!h) return (visibleCols = []);
+
+    const cleft = _cachedContainerRect.left;
+    const cright = _cachedContainerRect.right;
+    const cells = h.children;
+    const len = cells.length;
+    if (visibleCols.length !== len) visibleCols = new Array(len);
+
+    for (let i = 0; i < len; i++) {
+        const r = cells[i].getBoundingClientRect();
+        visibleCols[i] = !(r.right < cleft || r.left > cright);
+    }
+};
+
+/* 行とセルの可視性を即時反映（差分のみ更新） */
+const applyRowVisibility = (row, vis) => {
+    const active = document.activeElement;
+    const v = vis || row.contains(active);
+    const rowVis = v ? "visible" : "hidden";
+    if (row.style.visibility !== rowVis)
+        row.style.visibility = rowVis;
+
+    const cols = visibleCols;
+    const cells = row.children;
+    for (let i = 0, len = cells.length; i < len; i++) {
+        const cell = cells[i];
+        const show = ((cols[i] ?? true) && v) || cell.contains(active);
+        const s = show ? "visible" : "hidden";
+        if (cell.style.visibility !== s)
+            cell.style.visibility = s;
+    }
+};
+
 function setupRowVisibilityObserver() {
+    if (!container || !table) return;
     rowObserver?.disconnect();
-    const pendingUpdates = new Set();
-    const applyUpdates = () => {
-        pendingUpdates.forEach(row => {
-            const active = document.activeElement;
-            const visible = row.dataset.pendingVisible === "true";
-            // すでに目的の状態ならスキップ
-            if (row.style.visibility === (visible ? "visible" : "hidden")) return;
-            row.style.visibility = visible ? "visible" : "hidden";
-            row.querySelectorAll("td, th").forEach(cell => {
-                if (cell === active) {
-                    cell.style.visibility = "visible";
-                    return;
+    rowObserver = new IntersectionObserver(entries => {
+        computeVisibleColumns(); // 即時更新
+        for (let i = 0; i < entries.length; i++) {
+            const e = entries[i];
+            const r = e.target;
+            const v = e.isIntersecting || r.contains(document.activeElement);
+            if (r.dataset.visible !== String(v)) {
+                r.dataset.visible = String(v);
+                applyRowVisibility(r, v); // 即時反映
+            }
+        }
+    }, { root: container, threshold: 0 });
+    const rows = table.querySelectorAll("tbody tr");
+    for (let i = 0, len = rows.length; i < len; i++)
+        rowObserver.observe(rows[i]);
+    // ✅ ここで初期状態を即時反映
+    updateVisibilityNow();
+}
+/* ----- 即時反映トリガ関数（手動実行用） ----- */
+function updateVisibilityNow() {
+    if (!container || !table) return;
+    // 最新の横列可視状態を計算
+    computeVisibleColumns();
+    const rows = table.querySelectorAll("tbody tr");
+    const containerRect = container.getBoundingClientRect();
+    const top = containerRect.top;
+    const bottom = containerRect.bottom;
+    const active = document.activeElement;
+    for (let i = 0, len = rows.length; i < len; i++) {
+        const row = rows[i];
+        const rect = row.getBoundingClientRect();
+        // 行の可視判定
+        const visible = !(rect.bottom < top || rect.top > bottom) || row.contains(active);
+        row.dataset.visible = String(visible);
+        // 行＋セルを即時反映
+        applyRowVisibility(row, visible);
+    }
+}
+
+/* 初期描画時に即座に反映 */
+const markInitialRowVisibility = () => {
+    _cachedContainerRect = container?.getBoundingClientRect?.();
+    if (!_cachedContainerRect || !table) return;
+    const active = document.activeElement;
+    const rows = table.querySelectorAll("tbody tr");
+    const top = _cachedContainerRect.top;
+    const bottom = _cachedContainerRect.bottom;
+
+    for (let i = 0, len = rows.length; i < len; i++) {
+        const r = rows[i];
+        const b = r.getBoundingClientRect();
+        const v = !(b.bottom < top || b.top > bottom) || r.contains(active);
+        r.dataset.visible = String(v);
+        applyRowVisibility(r, v);
+    }
+};
+
+/* 横スクロール時も即時反映 */
+const onContainerScroll = () => {
+    computeVisibleColumns();
+    const rows = document.querySelectorAll("#spreadsheet tbody tr");
+    const visCols = visibleCols;
+    const active = document.activeElement;
+
+    for (let i = 0, len = rows.length; i < len; i++) {
+        const r = rows[i];
+        const v = r.dataset.visible === "true" || r.contains(active);
+        const cells = r.children;
+        for (let j = 0, cLen = cells.length; j < cLen; j++) {
+            const cell = cells[j];
+            const show = ((visCols[j] ?? true) && v) || cell.contains(active);
+            const s = show ? "visible" : "hidden";
+            if (cell.style.visibility !== s)
+                cell.style.visibility = s;
+        }
+    }
+};
+
+/* 初期化（完全同期・再初期化対応） */
+function initVisibilityControllerRobust() {
+    if (!container || !table)
+        return document.readyState === "loading"
+            ? document.addEventListener("DOMContentLoaded", initVisibilityControllerRobust, { once: true })
+            : console.warn("initVisibilityControllerRobust: container/table 未検出。");
+
+    computeVisibleColumns();
+    markInitialRowVisibility();
+    setupRowVisibilityObserver();
+
+    const tbody = table.querySelector("tbody");
+    if (tbody) {
+        const mo = new MutationObserver(records => {
+            for (let i = 0; i < records.length; i++) {
+                if (records[i].addedNodes.length) {
+                    computeVisibleColumns();
+                    markInitialRowVisibility();
+                    setupRowVisibilityObserver();
+                    break;
                 }
-                cell.style.visibility = visible ? "visible" : "hidden";
-            });
-        });
-        pendingUpdates.clear();
-    };
-    rowObserver = new IntersectionObserver((entries) => {
-        entries.forEach(({ target: row, isIntersecting }) => {
-            const active = document.activeElement;
-            const visible = isIntersecting || row.contains(active);
-            // 行に変更予定を記録
-            if (row.dataset.pendingVisible !== String(visible)) {
-                row.dataset.pendingVisible = visible;
-                pendingUpdates.add(row);
             }
         });
-        if (pendingUpdates.size) requestAnimationFrame(applyUpdates);
-    }, { root: container, threshold: 0 });
-    document.querySelectorAll("#spreadsheet tbody tr").forEach(row => rowObserver.observe(row));
+        mo.observe(tbody, { childList: true });
+    }
+
+    container.addEventListener("scroll", onContainerScroll, { passive: true });
+    window.addEventListener("resize", () => {
+        computeVisibleColumns();
+        const rows = document.querySelectorAll("#spreadsheet tbody tr");
+        for (let i = 0, len = rows.length; i < len; i++)
+            applyRowVisibility(rows[i], rows[i].dataset.visible === "true");
+    });
 }
+
+/* 実行 */
+initVisibilityControllerRobust();
 
 // =======================
 // 高性能ズーム（最適化版）

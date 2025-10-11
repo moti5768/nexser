@@ -51,34 +51,41 @@ body {
     font-size: 14px;
 }
 
-/* カラーパレット：テキスト色・セル背景色を inline-flex にして一列に */
-#text-color-palette,
-#cell-color-palette {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 14px;
+/* スウォッチコンテナ：横8個のグリッド */
+.swatch-container {
+    display: grid;
+    grid-template-columns: repeat(8, 25px);
+    gap: 3px;
+    padding: 5px;
 }
 
-#text-color-palette span,
-#cell-color-palette span {
-    margin-right: 5px;
-}
-
-.color-swatch {
-    width: 20px;
-    height: 20px;
-    margin-right: 3px;
-    margin-bottom: 3px;
+/* 通常スウォッチ */
+.color-swatch:not(.button) {
+    width: 25px;
+    height: 25px;
     cursor: pointer;
-    border: solid 1.8px;
+    border: solid 1px;
     border-color: #eee #333 #333 #eee;
+    box-sizing: border-box;
+}
+
+/* 「塗りつぶしなし」ボタン */
+.color-swatch.button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 5px;
 }
 
 /* 自由色ピッカー */
-#text-color-picker,
-#cell-color-picker {
-    margin-left: 5px;
+/* 自由色ピッカーを横並びに */
+#text-color-picker label,
+#cell-color-picker label {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 5px;
+    /* 「詳細:」とボタンの間の隙間 */
 }
 
 /* ----- 下段：数式バー ----- */
@@ -296,13 +303,11 @@ td.selected:has(.fill-handle) {
 
 .pulldown_menu .button {
     display: block;
-    margin: 3px;
 }
 
 .pulldown_menu>div,
 .pulldown_menu>button {
     width: 100%;
-    margin: 2px;
 }
 
 button,
@@ -529,6 +534,5 @@ body::-webkit-scrollbar {
         left: 0;
         top: 0;
     }
-
 
 }

@@ -94,60 +94,68 @@
       <div id="text-color-palette" class="pulldown_menu_parent">
         <span class="button pulldown_btn">&nbsp;A&nbsp;</span>
         <ul class="pulldown_menu">
-          <div class="color-swatch" data-color="#000000" style="background-color: #000000;"></div>
-          <div class="color-swatch" data-color="#FF0000" style="background-color: #FF0000;"></div>
-          <div class="color-swatch" data-color="#00FF00" style="background-color: #00FF00;"></div>
-          <div class="color-swatch" data-color="#0000FF" style="background-color: #0000FF;"></div>
-          <div class="color-swatch" data-color="#FFFF00" style="background-color: #FFFF00;"></div>
-          <div class="color-swatch" data-color="#FF00FF" style="background-color: #FF00FF;"></div>
-          <div class="color-swatch" data-color="#00FFFF" style="background-color: #00FFFF;"></div>
-          <div class="color-swatch" data-color="#808080" style="background-color: #808080;"></div>
-          <div class="color-swatch" data-color="#800000" style="background-color: #800000;"></div>
-          <div class="color-swatch" data-color="#008000" style="background-color: #008000;"></div>
-          <div class="color-swatch" data-color="#000080" style="background-color: #000080;"></div>
-          <div class="color-swatch" data-color="#808000" style="background-color: #808000;"></div>
-          <div class="color-swatch" data-color="#800080" style="background-color: #800080;"></div>
-          <div class="color-swatch" data-color="#008080" style="background-color: #008080;"></div>
-          <div class="color-swatch" data-color="#C0C0C0" style="background-color: #C0C0C0;"></div>
-          <div class="color-swatch" data-color="#ffffff" style="background-color: #ffffff;"></div>
+          <!-- スウォッチだけを囲むコンテナ -->
+          <div class="swatch-container">
+            <div class="color-swatch" data-color="#000000" style="background-color: #000000;"></div>
+            <div class="color-swatch" data-color="#FF0000" style="background-color: #FF0000;"></div>
+            <div class="color-swatch" data-color="#00FF00" style="background-color: #00FF00;"></div>
+            <div class="color-swatch" data-color="#0000FF" style="background-color: #0000FF;"></div>
+            <div class="color-swatch" data-color="#FFFF00" style="background-color: #FFFF00;"></div>
+            <div class="color-swatch" data-color="#FF00FF" style="background-color: #FF00FF;"></div>
+            <div class="color-swatch" data-color="#00FFFF" style="background-color: #00FFFF;"></div>
+            <div class="color-swatch" data-color="#808080" style="background-color: #808080;"></div>
+            <div class="color-swatch" data-color="#800000" style="background-color: #800000;"></div>
+            <div class="color-swatch" data-color="#008000" style="background-color: #008000;"></div>
+            <div class="color-swatch" data-color="#000080" style="background-color: #000080;"></div>
+            <div class="color-swatch" data-color="#808000" style="background-color: #808000;"></div>
+            <div class="color-swatch" data-color="#800080" style="background-color: #800080;"></div>
+            <div class="color-swatch" data-color="#008080" style="background-color: #008080;"></div>
+            <div class="color-swatch" data-color="#C0C0C0" style="background-color: #C0C0C0;"></div>
+            <div class="color-swatch" data-color="#ffffff" style="background-color: #ffffff;"></div>
+          </div>
+          <!-- 「塗りつぶしなし」ボタン -->
           <div class="color-swatch button" data-color="none" style="height: 30px;">塗りつぶしなし</div>
+          <!-- 自由色ピッカー -->
           <div id="text-color-picker" style="font-size: medium;">
             <label>詳細: <input type="color" class="button" id="text-color-custom"></label>
           </div>
         </ul>
-
       </div>
 
       <!-- セル背景色パレット -->
       <div id="cell-color-palette" class="pulldown_menu_parent">
         <span class="button pulldown_btn" style="background-color: black; color: whitesmoke;">&nbsp;A&nbsp;</span>
         <ul class="pulldown_menu">
-          <div class="color-swatch" data-color="#000000" style="background-color: #000000;"></div>
-          <div class="color-swatch" data-color="#FF0000" style="background-color: #FF0000;"></div>
-          <div class="color-swatch" data-color="#00FF00" style="background-color: #00FF00;"></div>
-          <div class="color-swatch" data-color="#0000FF" style="background-color: #0000FF;"></div>
-          <div class="color-swatch" data-color="#FFFF00" style="background-color: #FFFF00;"></div>
-          <div class="color-swatch" data-color="#FF00FF" style="background-color: #FF00FF;"></div>
-          <div class="color-swatch" data-color="#00FFFF" style="background-color: #00FFFF;"></div>
-          <div class="color-swatch" data-color="#808080" style="background-color: #808080;"></div>
-          <div class="color-swatch" data-color="#800000" style="background-color: #800000;"></div>
-          <div class="color-swatch" data-color="#008000" style="background-color: #008000;"></div>
-          <div class="color-swatch" data-color="#000080" style="background-color: #000080;"></div>
-          <div class="color-swatch" data-color="#808000" style="background-color: #808000;"></div>
-          <div class="color-swatch" data-color="#800080" style="background-color: #800080;"></div>
-          <div class="color-swatch" data-color="#008080" style="background-color: #008080;"></div>
-          <div class="color-swatch" data-color="#C0C0C0" style="background-color: #C0C0C0;"></div>
-          <div class="color-swatch" data-color="#ffffff" style="background-color: #ffffff;"></div>
+          <!-- スウォッチだけを囲むコンテナ -->
+          <div class="swatch-container">
+            <div class="color-swatch" data-color="#000000" style="background-color: #000000;"></div>
+            <div class="color-swatch" data-color="#FF0000" style="background-color: #FF0000;"></div>
+            <div class="color-swatch" data-color="#00FF00" style="background-color: #00FF00;"></div>
+            <div class="color-swatch" data-color="#0000FF" style="background-color: #0000FF;"></div>
+            <div class="color-swatch" data-color="#FFFF00" style="background-color: #FFFF00;"></div>
+            <div class="color-swatch" data-color="#FF00FF" style="background-color: #FF00FF;"></div>
+            <div class="color-swatch" data-color="#00FFFF" style="background-color: #00FFFF;"></div>
+            <div class="color-swatch" data-color="#808080" style="background-color: #808080;"></div>
+            <div class="color-swatch" data-color="#800000" style="background-color: #800000;"></div>
+            <div class="color-swatch" data-color="#008000" style="background-color: #008000;"></div>
+            <div class="color-swatch" data-color="#000080" style="background-color: #000080;"></div>
+            <div class="color-swatch" data-color="#808000" style="background-color: #808000;"></div>
+            <div class="color-swatch" data-color="#800080" style="background-color: #800080;"></div>
+            <div class="color-swatch" data-color="#008080" style="background-color: #008080;"></div>
+            <div class="color-swatch" data-color="#C0C0C0" style="background-color: #C0C0C0;"></div>
+            <div class="color-swatch" data-color="#ffffff" style="background-color: #ffffff;"></div>
+          </div>
+          <!-- 「塗りつぶしなし」ボタン -->
           <div class="color-swatch button" data-color="none" style="height: 30px;">塗りつぶしなし</div>
+          <!-- 自由色ピッカー -->
           <div id="cell-color-picker" style="font-size: medium;">
             <label>詳細: <input type="color" class="button" id="cell-color-custom"></label>
+          </div>
         </ul>
       </div>
 
     </div> <!-- end #controls-row -->
 
-
-    <!-- 関数ボタン群 -->
     <!-- 関数ボタン群（Excel風グループ分け・関数名そのまま） -->
     <div style="display:flex; flex-wrap:wrap; gap:15px;">
 
@@ -261,7 +269,8 @@
       <table id="spreadsheet">
         <thead>
           <tr>
-            <th id="corner" class="button" style="position: sticky; left: 0; z-index: 12; cursor: cell; width: 80px;">
+            <th id="corner" class="button"
+              style="position: sticky; left: 0; z-index: 12; cursor: cell; width: 80px; font-size: large;">
               allselect
             </th>
           </tr>
