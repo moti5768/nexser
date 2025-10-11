@@ -1033,7 +1033,7 @@ container.addEventListener("scroll", () => {
         );
         let index = 0, batch = 30;
         (function process() {
-            rows.slice(index, index + batch).forEach(updateRowCellsVisibility);
+            rows.slice(index, index + batch).forEach(setupRowVisibilityObserver);
             if ((index += batch) < rows.length) requestAnimationFrame(process);
         })();
     });
@@ -3551,33 +3551,23 @@ function loadSpreadsheetData() {
 
     // ② 全セル数式評価
     function evaluateAllFormulas() {
-
         setupRowVisibilityObserver();
         loadingstate.textContent = "読み込み完了";
         if (bar) bar.style.width = "0%";
-
         const all = document.querySelectorAll("#spreadsheet tbody td");
         all.forEach(td => td.classList.add("borderss"));
         requestAnimationFrame(() => all.forEach(td => td.classList.remove("borderss")));
-        updateAllFormulas()
+        updateAllFormulas();
     }
-
     if (total) restoreCells();
     else { setupRowVisibilityObserver(); loadingstate.textContent = "読み込み完了"; }
 }
 
-
 /* ----- ヘルパー関数 ----- */
-/**
- * 指定された行番号（data-row 属性）を持つ tr 要素を取得する
- * @param {number} rowNumber - 1始まりの行番号
- * @returns {HTMLElement|null} 対象の行があれば返す、なければ null
- */
 function getRow(rowNumber) {
     return document.querySelector(`#spreadsheet tbody tr[data-row='${rowNumber}']`);
 }
 
-/***************** debounce 用の関数 *****************/
 function debounce(fn, delay) {
     var timer;
     return function () {
@@ -3587,39 +3577,6 @@ function debounce(fn, delay) {
             fn.apply(null, args);
         }, delay);
     };
-}
-
-let rowObserver = null;
-function setupRowVisibilityObserver() {
-    rowObserver?.disconnect();
-    rowObserver = new IntersectionObserver((entries) => {
-        entries.forEach(({ target: row, isIntersecting }) => {
-            const active = document.activeElement;
-            const visible = isIntersecting || row.contains(active);
-            row.style.visibility = visible ? "visible" : "hidden";
-            if (visible) {
-                updateRowCellsVisibility(row);
-            } else {
-                row.querySelectorAll("td, th").forEach(cell => {
-                    if (cell !== active) cell.style.visibility = "hidden";
-                });
-            }
-        });
-    }, { root: container, threshold: 0 });
-    document.querySelectorAll("#spreadsheet tbody tr").forEach(row => rowObserver.observe(row));
-}
-
-function updateRowCellsVisibility(row) {
-    const cRect = container.getBoundingClientRect();
-    const active = document.activeElement;
-    row.querySelectorAll("td, th").forEach(cell => {
-        if (cell === active) {
-            cell.style.visibility = "visible";
-            return;
-        }
-        const r = cell.getBoundingClientRect();
-        cell.style.visibility = (r.right >= cRect.left && r.left <= cRect.right) ? "visible" : "hidden";
-    });
 }
 
 function throttle(fn, delay) {
@@ -3633,43 +3590,138 @@ function throttle(fn, delay) {
     };
 }
 
-/* ==== 初期設定 ==== */
-setupRowVisibilityObserver();
+/* ----- 行可視化監視（軽量化版） ----- */
+let rowObserver = null;
+function setupRowVisibilityObserver() {
+    rowObserver?.disconnect();
+    const pendingUpdates = new Set();
+    const applyUpdates = () => {
+        pendingUpdates.forEach(row => {
+            const active = document.activeElement;
+            const visible = row.dataset.pendingVisible === "true";
+            // すでに目的の状態ならスキップ
+            if (row.style.visibility === (visible ? "visible" : "hidden")) return;
+            row.style.visibility = visible ? "visible" : "hidden";
+            row.querySelectorAll("td, th").forEach(cell => {
+                if (cell === active) {
+                    cell.style.visibility = "visible";
+                    return;
+                }
+                cell.style.visibility = visible ? "visible" : "hidden";
+            });
+        });
+        pendingUpdates.clear();
+    };
+    rowObserver = new IntersectionObserver((entries) => {
+        entries.forEach(({ target: row, isIntersecting }) => {
+            const active = document.activeElement;
+            const visible = isIntersecting || row.contains(active);
+            // 行に変更予定を記録
+            if (row.dataset.pendingVisible !== String(visible)) {
+                row.dataset.pendingVisible = visible;
+                pendingUpdates.add(row);
+            }
+        });
+        if (pendingUpdates.size) requestAnimationFrame(applyUpdates);
+    }, { root: container, threshold: 0 });
+    document.querySelectorAll("#spreadsheet tbody tr").forEach(row => rowObserver.observe(row));
+}
 
-// 要素取得
+// =======================
+// 高性能ズーム（最適化版）
+// =======================
+
 const zoomSlider = document.getElementById("zoom-slider");
 const zoomDisplay = document.getElementById("zoom-display");
 
-// 保存されているズーム値（例：savedDataオブジェクトから取得）
+const MIN_ZOOM = 20, MAX_ZOOM = 200;
+const ZOOM_STEP = 5; // スライダー・ホイール・ピンチ共通刻み
+
 let savedData = { zoom: "100%" };
+let zoomValue = parseInt(savedData.zoom) || 100;       // 内部丸め済み値
+let pendingZoomValue = zoomValue;                      // 操作中の連続値
 
-// 初期 zoom 値の取得・パース
-let zoomValue = parseInt(savedData.zoom) || 100;
-
-// スライダーと表示テキストの初期化
+// スライダー初期化
 zoomSlider.value = zoomValue;
 zoomDisplay.textContent = zoomValue + "%";
-
-// 初期 zoom の適用
 spreadsheetContent.style.zoom = zoomValue / 100;
 
-// rAF 用フラグ
+// ---------------- rAF でまとめて DOM 更新 ----------------
 let pendingZoomUpdate = false;
-let targetZoom = zoomValue;
+function applyZoom() {
+    if (pendingZoomUpdate) return;
+    pendingZoomUpdate = true;
+    requestAnimationFrame(() => {
+        const displayZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.round(pendingZoomValue / ZOOM_STEP) * ZOOM_STEP));
+        spreadsheetContent.style.zoom = displayZoom / 100;
+        zoomDisplay.textContent = displayZoom + "%";
+        zoomSlider.value = displayZoom;
+        zoomValue = displayZoom;
+        // 🔹 ズーム後に可視セルを更新
+        document.querySelectorAll("#spreadsheet tbody tr").forEach(setupRowVisibilityObserver);
+        pendingZoomUpdate = false;
+    });
+}
 
-// 拡大縮小スライダーのイベントリスナー
+// ---------------- スライダー ----------------
 zoomSlider.addEventListener("input", () => {
-    targetZoom = zoomSlider.value;
-    // 更新が保留中でなければ rAF で実行
-    if (!pendingZoomUpdate) {
-        pendingZoomUpdate = true;
-        requestAnimationFrame(() => {
-            spreadsheetContent.style.zoom = targetZoom / 100;
-            zoomDisplay.textContent = targetZoom + "%";
-            pendingZoomUpdate = false;
-        });
-    }
+    pendingZoomValue = parseInt(zoomSlider.value);
+    applyZoom();
 });
+
+// ---------------- Ctrl + ホイール ----------------
+document.addEventListener("wheel", (e) => {
+    if (!e.ctrlKey) return;
+    e.preventDefault();
+    const step = (e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP);
+    pendingZoomValue = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, pendingZoomValue + step));
+    applyZoom();
+}, { passive: false });
+
+// ---------------- ピンチ ----------------
+let isPinching = false;
+let initialPinchDistance = null;
+let initialPinchZoom = null;
+
+const pinchSensitivity = 0.03;
+const pinchMinRatioChange = 0.005; // デッドゾーン拡大
+const pinchMinPxChange = 2;
+
+document.addEventListener("touchstart", (e) => {
+    if (e.touches.length === 2) {
+        isPinching = true;
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        initialPinchDistance = Math.sqrt(dx * dx + dy * dy);
+        initialPinchZoom = pendingZoomValue; // 現在の連続値を基準
+    }
+}, { passive: true });
+
+document.addEventListener("touchmove", (e) => {
+    if (!isPinching || e.touches.length !== 2) return;
+    e.preventDefault();
+
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (!initialPinchDistance || initialPinchDistance <= 0) return;
+
+    const ratio = distance / initialPinchDistance;
+    if (Math.abs(ratio - 1) < pinchMinRatioChange && Math.abs(distance - initialPinchDistance) < pinchMinPxChange) return;
+
+    // 非線形補正（穏やかに拡大縮小）
+    pendingZoomValue = initialPinchZoom * Math.pow(ratio, pinchSensitivity);
+    applyZoom();
+}, { passive: false });
+
+function endPinch() {
+    isPinching = false;
+    initialPinchDistance = null;
+    initialPinchZoom = null;
+}
+document.addEventListener("touchend", (e) => { if (e.touches.length < 2) endPinch(); }, { passive: true });
+document.addEventListener("touchcancel", endPinch, { passive: true });
 
 // localStorage の使用量（バイト単位）を計算する関数（UTF-16：1文字＝2バイトと概算）
 function getLocalStorageUsage() {
