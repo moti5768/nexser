@@ -3522,6 +3522,7 @@ function loadSpreadsheetData() {
 
     // ① 全セル復元（数式は dataset にセットするだけ）
     function restoreCells() {
+        setTimeout(() => {
         const end = Math.min(index + batchSize, total);
         for (; index < end; index++) {
             const d = cells[index];
@@ -3543,6 +3544,7 @@ function loadSpreadsheetData() {
 
         if (index < total) requestAnimationFrame(restoreCells);
         else evaluateAllFormulas();
+            }, 500);
     }
 
     // ② 全セル数式評価
@@ -3912,4 +3914,5 @@ document.querySelectorAll(".pulldown_btn").forEach(pulldown => {
         }
 
     })
+
 });
