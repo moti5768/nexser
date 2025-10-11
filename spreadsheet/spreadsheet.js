@@ -3522,11 +3522,10 @@ function loadSpreadsheetData() {
 
     // ① 全セル復元（数式は dataset にセットするだけ）
     function restoreCells() {
-        setTimeout(() => {
         const end = Math.min(index + batchSize, total);
         for (; index < end; index++) {
             const d = cells[index];
-            const cell = getCell(d[0], d[1]); // ★ 元の getCell() を使用
+            const cell = getCell(d[0], d[1]);
             if (!cell) continue;
 
             if (d[5] > 1) cell.setAttribute("colspan", d[5]); else cell.removeAttribute("colspan");
@@ -3544,22 +3543,35 @@ function loadSpreadsheetData() {
 
         if (index < total) requestAnimationFrame(restoreCells);
         else evaluateAllFormulas();
-            }, 500);
     }
 
-    // ② 全セル数式評価
+    // ② 全セル数式評価（依存関係対応）
     function evaluateAllFormulas() {
         setupRowVisibilityObserver();
         loadingstate.textContent = "読み込み完了";
         if (bar) bar.style.width = "0%";
-        const all = document.querySelectorAll("#spreadsheet tbody td");
+
+        const all = Array.from(document.querySelectorAll("#spreadsheet tbody td"));
+
+        // 簡易的に複数回評価することで下→上依存にも対応
+        const maxPasses = 5;
+        for (let pass = 0; pass < maxPasses; pass++) {
+            all.forEach(td => {
+                if (td.dataset.formula) {
+                    try { td.textContent = evaluateFormula(td.dataset.formula); }
+                    catch (e) { /* 依存セル未準備の場合は無視 */ }
+                }
+            });
+        }
+
         all.forEach(td => td.classList.add("borderss"));
         requestAnimationFrame(() => all.forEach(td => td.classList.remove("borderss")));
-        updateAllFormulas();
     }
+
     if (total) restoreCells();
     else { setupRowVisibilityObserver(); loadingstate.textContent = "読み込み完了"; }
 }
+
 
 /* ----- ヘルパー関数 ----- */
 function getRow(rowNumber) {
@@ -3914,5 +3926,4 @@ document.querySelectorAll(".pulldown_btn").forEach(pulldown => {
         }
 
     })
-
 });
