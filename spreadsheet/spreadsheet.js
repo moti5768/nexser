@@ -136,14 +136,24 @@ function isInFormulaEdit() {
 // 3-5. 現在編集中のフィールドにセル参照文字列を「カーソル位置を保持して」挿入
 function insertCellReference(ref) {
     if (!ref) return;
-    if (document.activeElement === formulaBarInput) {
-        formulaBarInput.value += ref;
+    const input = formulaBarInput;
+    if (document.activeElement === input) {
+        // 現在のカーソル位置
+        const start = input.selectionStart;
+        const end = input.selectionEnd;
+        // カーソル位置に挿入
+        input.value = input.value.slice(0, start) + ref + input.value.slice(end);
+        // 挿入後カーソルを ref の末尾に移動
+        const newPos = start + ref.length;
+        input.setSelectionRange(newPos, newPos);
+        input.focus();
     } else if (activeCell && activeCell.isContentEditable) {
         document.execCommand('insertText', false, ref);
     } else if (activeCell) {
         activeCell.textContent += ref;
     }
 }
+
 // =======================
 // Block 4: 行／列生成 および セル作成
 // =======================
@@ -387,11 +397,18 @@ function handleF2Key(e) {
     e.preventDefault();
 }
 
+// === 日本語入力中制御用 ===
+let isComposing = false;
+document.addEventListener("compositionstart", () => isComposing = true);
+document.addEventListener("compositionend", () => isComposing = false);
+
 function handleCellKeyDown(e) {
+    // ←追加: 日本語変換中はEnterを無視しない
+    if (isComposing) return;
+
     if (e.key === "Enter" && e.target.isContentEditable) {
         if (e.altKey) {
             e.preventDefault();
-            // 改行文字 "\n" をテキストとして挿入する
             document.execCommand('insertText', false, "\n");
             return;
         }
@@ -721,10 +738,7 @@ function preprocessIFFormula(expr) {
         }
         conditionPart += ch;
     }
-    // ここで conditionPart 内の、単独の "="（比較用）を "==" に変換します。
-    // できるだけ既に >=,<=,!=,== といった演算子には影響しないようにするため、正規表現で処理します。
-    // ※ 環境によっては negative lookbehind が使えない場合もあるので、ここでは modern な JS と仮定します。
-    let newCondition = conditionPart.replace(/(?<![<>=!])=(?![=])/g, "==");
+    let newCondition = conditionPart.replace(/(?<![<>=!])=(?![="=])/g, "==");
     // 結果の式を再構築: "IF(" + 修正済みの条件 + その後の部分
     let newExpr = "IF(" + newCondition + expr.substring(pos);
     return newExpr;
@@ -833,20 +847,18 @@ function evaluateFormula(formula, visited = new Set()) {
 
 function updateAllFormulas() {
     const formulaCells = Array.from(document.querySelectorAll("#spreadsheet tbody td[data-formula]"));
-    const batchSize = 50;
+    const batchSize = 100;
     let index = 0;
-
     function updateBatch() {
         const batch = formulaCells.slice(index, index + batchSize);
         batch.forEach(cell => {
-            if (document.activeElement !== cell) {
-                cell.textContent = evaluateFormula(cell.dataset.formula);
-            }
+            // 編集中セルと数式バー編集中は更新しない
+            if (document.activeElement === cell || document.activeElement === formulaBarInput) return;
+            cell.textContent = evaluateFormula(cell.dataset.formula);
         });
         index += batchSize;
         if (index < formulaCells.length) requestAnimationFrame(updateBatch);
     }
-
     updateBatch();
 }
 
@@ -1237,6 +1249,47 @@ document.addEventListener("keydown", function (e) {
     // 数式バーにフォーカスされていたら何もしない
     if (document.activeElement === formulaBarInput) return;
 
+    // Tabキー判定（Shift+Tab含む）
+    if (e.key === "Tab") {
+        let currentCell = activeCell;
+        if (!currentCell) return;
+
+        // 編集中のセルを解除（Excelと同じ挙動）
+        if (currentCell.isContentEditable) {
+            currentCell.contentEditable = "false";
+            delete currentCell.dataset.editBy;
+        }
+
+        let row = parseInt(currentCell.dataset.row, 10);
+        let col = parseInt(currentCell.dataset.col, 10);
+
+        // 左右移動
+        let targetCol = e.shiftKey ? col - 1 : col + 1;
+        let targetRow = row;
+
+        // 列が足りなければ追加
+        if (targetCol >= currentColumns) {
+            loadColumns(targetCol - currentColumns + 1);
+        }
+
+        // 左端で Shift+Tab した場合は上の行の最後列に移動
+        if (targetCol < 0) {
+            targetRow = row - 1;
+            if (targetRow < 1) targetRow = 1;
+            targetCol = currentColumns - 1;
+        }
+
+        const targetCell = getCell(targetRow, targetCol);
+        if (targetCell) {
+            navigateToCell(targetRow, targetCol, e);
+            updateFillHandle();
+        }
+
+        e.preventDefault();
+        return; // Tab処理完了で他の処理をスキップ
+    }
+
+    // 既存の矢印キー / Enter 判定
     const arrowKeys = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"];
     const navigationKeys = [...arrowKeys, "Enter"];
     if (!navigationKeys.includes(e.key)) return;
@@ -1253,28 +1306,24 @@ document.addEventListener("keydown", function (e) {
         }
     }
 
-    // activeCell が未設定なら、document.activeElement が <TD> なら設定する
-    let currentCell = activeCell;
-    if (!currentCell && document.activeElement && document.activeElement.tagName === "TD") {
-        currentCell = document.activeElement;
-        activeCell = currentCell;
+    let currentCell2 = activeCell;
+    if (!currentCell2 && document.activeElement && document.activeElement.tagName === "TD") {
+        currentCell2 = document.activeElement;
+        activeCell = currentCell2;
     }
-    if (!currentCell) return;
+    if (!currentCell2) return;
 
-    // 編集中ならフォーカス解除
     if (document.activeElement.isContentEditable) {
         document.activeElement.blur();
     }
 
-    // 初回 keydown 時にすぐ移動処理を実行
     doMove(e);
 
-    // 矢印キーについては、キー長押し時に連続移動・スクロールを実行
     if (arrowKeys.includes(e.key)) {
         if (!navigationInterval) {
             navigationInterval = setInterval(() => {
                 doMove(e);
-            }, 100);  // 100ms毎に処理（この数値は固定。矢印キーリピートはそのままで調整不要）
+            }, 100);
         }
     }
 
@@ -3269,16 +3318,6 @@ document.addEventListener("blur", function (e) {
     }
 }, true);
 
-// また、貼り付けやフォーマット変更など、操作終了時にも debouncedSaveState() を呼ぶようにしてください
-
-
-// ---------------------------------
-// 保存処理：セル・行・列・ズーム情報の保存＋圧縮して localStorage に保存
-// ---------------------------------
-/***************** 不要なデータの除去 *****************/
-// オブジェクトや配列を再帰的に走査し、空文字・null・undefinedや、特定のデフォルト値と同じプロパティを削除する
-/***************** ビット列変換用ユーティリティ *****************/
-// 指定した桁数で 2 進数表現に変換（左側を 0 でパディング）
 function toPaddedBin(num, length) {
     const bin = num.toString(2);
     return "0".repeat(length - bin.length) + bin;
@@ -3410,29 +3449,6 @@ function decompressData(compressedStr) {
     return decodeURIComponent(escape(decompressed));
 }
 
-/***************** 不要なデータの除去 *****************/
-// オブジェクトや配列を再帰的に走査し、空文字／null／undefined や特定のデフォルト値と同じプロパティを削除する
-function cleanData(data) {
-    if (Array.isArray(data)) {
-        return data.map(item => cleanData(item));
-    } else if (data !== null && typeof data === 'object') {
-        for (let key in data) {
-            if (data.hasOwnProperty(key)) {
-                data[key] = cleanData(data[key]);
-                if (data[key] === "" || data[key] === null || data[key] === undefined) {
-                    delete data[key];
-                }
-                if ((key === "colspan" || key === "rowspan") && data[key] === "1") {
-                    delete data[key];
-                }
-            }
-        }
-        return data;
-    } else {
-        return data;
-    }
-}
-
 /***************** 配列形式・完全圧縮版 保存処理 *****************/
 function saveSpreadsheetData() {
     loadingstate.textContent = "保存中...";
@@ -3485,7 +3501,6 @@ function saveSpreadsheetData() {
 function loadSpreadsheetData() {
     const savedStr = localStorage.getItem("spreadsheetData");
     if (!savedStr) return loadingstate.textContent = "データがありません";
-
     let data;
     try {
         data = JSON.parse(decompressData(savedStr));
@@ -3494,32 +3509,26 @@ function loadSpreadsheetData() {
         loadingstate.textContent = "データがありません";
         return;
     }
-
     const [cells, rows, columns, zoomVal] = data;
     const slider = document.getElementById("zoom-slider"),
         display = document.getElementById("zoom-display"),
         bar = document.getElementById("loading-progress-bar");
-
     if (slider && display && container) {
         const z = +(`${zoomVal}`.replace("%", "")) || 100;
         slider.value = z;
         display.textContent = z + "%";
         spreadsheetContent.style.zoom = z / 100;
     }
-
     const maxRow = Math.max(0, ...(cells || []).map(c => +c[0]));
     if (maxRow >= rowCount) loadRows(maxRow - rowCount + 1);
-
     (rows || []).forEach(r => getRow(r[0])?.style && (getRow(r[0]).style.height = r[1]));
     (columns || []).forEach(c => {
         const th = document.querySelector(`#spreadsheet thead th:nth-child(${c[0] + 1})`);
         if (th) th.style.width = c[1];
     });
-
     const mergeKeys = ["mergeAnchorRow", "mergeAnchorCol", "mergeMinRow", "mergeMinCol", "mergeMaxRow", "mergeMaxCol"];
     const batchSize = 1500;
     let index = 0, total = cells.length;
-
     // ① 全セル復元（数式は dataset にセットするだけ）
     function restoreCells() {
         const end = Math.min(index + batchSize, total);
@@ -3527,32 +3536,23 @@ function loadSpreadsheetData() {
             const d = cells[index];
             const cell = getCell(d[0], d[1]);
             if (!cell) continue;
-
             if (d[5] > 1) cell.setAttribute("colspan", d[5]); else cell.removeAttribute("colspan");
             if (d[6] > 1) cell.setAttribute("rowspan", d[6]); else cell.removeAttribute("rowspan");
-
             if (d[3]) cell.dataset.formula = d[3];
             else { if (cell.textContent !== (d[2] ?? "")) cell.textContent = d[2] ?? ""; delete cell.dataset.formula; }
-
             if (cell.style.cssText !== d[4]) cell.style.cssText = d[4] || "";
-
             mergeKeys.forEach((k, i) => { if (d[7 + i] != null) cell.dataset[k] = d[7 + i]; else delete cell.dataset[k]; });
         }
-
         if (bar) bar.style.width = `${Math.min((index / total) * 100, 100)}%`;
-
         if (index < total) requestAnimationFrame(restoreCells);
         else evaluateAllFormulas();
     }
-
     // ② 全セル数式評価（依存関係対応）
     function evaluateAllFormulas() {
         setupRowVisibilityObserver();
         loadingstate.textContent = "読み込み完了";
         if (bar) bar.style.width = "0%";
-
         const all = Array.from(document.querySelectorAll("#spreadsheet tbody td"));
-
         // 簡易的に複数回評価することで下→上依存にも対応
         const maxPasses = 5;
         for (let pass = 0; pass < maxPasses; pass++) {
@@ -3563,15 +3563,12 @@ function loadSpreadsheetData() {
                 }
             });
         }
-
         all.forEach(td => td.classList.add("borderss"));
         requestAnimationFrame(() => all.forEach(td => td.classList.remove("borderss")));
     }
-
     if (total) restoreCells();
     else { setupRowVisibilityObserver(); loadingstate.textContent = "読み込み完了"; }
 }
-
 
 /* ----- ヘルパー関数 ----- */
 function getRow(rowNumber) {
