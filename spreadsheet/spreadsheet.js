@@ -3765,7 +3765,7 @@ function initVisibilityControllerRobust() {
 initVisibilityControllerRobust();
 
 // =======================
-// 高性能ズーム（最適化版）
+// 高性能ズーム（最適化版・軽量化）
 // =======================
 
 const zoomSlider = document.getElementById("zoom-slider");
@@ -3785,17 +3785,26 @@ spreadsheetContent.style.zoom = zoomValue / 100;
 
 // ---------------- rAF でまとめて DOM 更新 ----------------
 let pendingZoomUpdate = false;
+let visibilityUpdateTimeout = null;
+
 function applyZoom() {
     if (pendingZoomUpdate) return;
     pendingZoomUpdate = true;
+
     requestAnimationFrame(() => {
         const displayZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.round(pendingZoomValue / ZOOM_STEP) * ZOOM_STEP));
         spreadsheetContent.style.zoom = displayZoom / 100;
         zoomDisplay.textContent = displayZoom + "%";
         zoomSlider.value = displayZoom;
         zoomValue = displayZoom;
-        // 🔹 ズーム後に可視セルを更新
-        document.querySelectorAll("#spreadsheet tbody tr").forEach(setupRowVisibilityObserver);
+
+        // 🔹 ズーム後の可視セル更新はデバウンス
+        if (visibilityUpdateTimeout) clearTimeout(visibilityUpdateTimeout);
+        visibilityUpdateTimeout = setTimeout(() => {
+            document.querySelectorAll("#spreadsheet tbody tr").forEach(setupRowVisibilityObserver);
+            visibilityUpdateTimeout = null;
+        }, 100); // 100ms ディレイでまとめる
+
         pendingZoomUpdate = false;
     });
 }
@@ -3859,6 +3868,7 @@ function endPinch() {
 }
 document.addEventListener("touchend", (e) => { if (e.touches.length < 2) endPinch(); }, { passive: true });
 document.addEventListener("touchcancel", endPinch, { passive: true });
+
 
 // localStorage の使用量（バイト単位）を計算する関数（UTF-16：1文字＝2バイトと概算）
 function getLocalStorageUsage() {
