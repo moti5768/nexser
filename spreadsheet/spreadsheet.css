@@ -206,6 +206,7 @@ td[contenteditable="true"] {
 /* 行番号と列番号のカーソル */
 th.row_number {
     cursor: e-resize;
+    z-index: 100;
 }
 
 th.col_number {
@@ -442,6 +443,17 @@ button:active,
     transform-origin: top left;
     /* 初期は親の幅に合わせて */
     width: 100%;
+}
+
+/* フローティングテキストボックス */
+.floating-textbox:focus {
+    outline: 2px solid dodgerblue;
+    background-color: rgba(255, 255, 255, 0.95);
+    z-index: -1;
+}
+
+.floating-textbox::-webkit-scrollbar {
+    display: none;
 }
 
 ::-webkit-scrollbar {

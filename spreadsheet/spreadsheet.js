@@ -403,6 +403,9 @@ document.addEventListener("compositionstart", () => isComposing = true);
 document.addEventListener("compositionend", () => isComposing = false);
 
 function handleCellKeyDown(e) {
+    // --- テキストボックスにフォーカスがある場合はセル操作を停止 ---
+    if (document.activeElement && document.activeElement.closest('.floating-textbox')) return;
+
     // ←追加: 日本語変換中はEnterを無視しない
     if (isComposing) return;
 
@@ -867,6 +870,14 @@ function updateAllFormulas() {
 // =======================
 
 function handleCellMouseDown(e) {
+    if (e.target.closest(".floating-textbox")) return;
+    setTimeout(() => {
+        if (e.target.closest(".selected")) {
+            document.querySelectorAll(".floating-textbox").forEach(textbox => {
+                textbox.blur();
+            });
+        }
+    }, 50);
     // もし対象が既に編集モードなら、何もしない（ネイティブなキャレット配置を許容）
     if (e.target && e.target.isContentEditable) {
         return;
@@ -1216,6 +1227,7 @@ cellColorCustom.addEventListener("input", function (e) {
 // =======================
 
 document.addEventListener("keydown", function (e) {
+    if (e.target.closest('.floating-textbox')) return;
     // 既に他の入力フィールド (INPUT, TEXTAREA など) にフォーカスがある場合は無視
     const activeTag = document.activeElement.tagName;
     if (activeTag === "INPUT" || activeTag === "TEXTAREA") {
@@ -1247,6 +1259,7 @@ let navigationInterval = null;
 
 document.addEventListener("keydown", function (e) {
     // 数式バーにフォーカスされていたら何もしない
+
     if (document.activeElement === formulaBarInput) return;
 
     // Tabキー判定（Shift+Tab含む）
@@ -1292,6 +1305,7 @@ document.addEventListener("keydown", function (e) {
     // 既存の矢印キー / Enter 判定
     const arrowKeys = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"];
     const navigationKeys = [...arrowKeys, "Enter"];
+    if (e.target.closest(".floating-textbox")) return;
     if (!navigationKeys.includes(e.key)) return;
 
     // 編集中 (contentEditable) のセルならキャレット操作を優先
@@ -1349,6 +1363,7 @@ document.addEventListener("keyup", function (e) {
  * 隣接セルの位置をチェックし、見切れていれば即時更新（behavior:"auto"）でスクロール補正します。
  */
 function doMove(e) {
+
     let currentCell = activeCell;
     if (!currentCell) return;
 
@@ -1763,6 +1778,7 @@ formulaBarInput.addEventListener("focus", function () {
 });
 
 formulaBarInput.addEventListener("input", function () {
+    if (e.target.closest(".floating-textbox")) return;
     const formulaText = formulaBarInput.value.trim();
     if (formulaText && formulaText.startsWith("=")) {
         highlightCalculationRange(formulaText);
@@ -1804,6 +1820,7 @@ function removeMergedCellsHighlight() {
 }
 
 document.addEventListener("input", e => {
+    if (e.target.closest(".floating-textbox")) return;
     const t = e.target;
     if (t?.matches("td[contenteditable='true']")) {
         const val = t.textContent.trim();
@@ -3318,6 +3335,104 @@ document.addEventListener("blur", function (e) {
     }
 }, true);
 
+
+
+
+
+function insertTextBox() {
+    const container = document.getElementById("spreadsheet");
+    if (!container) return;
+
+    const box = document.createElement("div");
+    box.contentEditable = true;
+    box.className = "floating-textbox";
+    box.textContent = "テキスト";
+
+    Object.assign(box.style, {
+        position: "absolute",
+        left: "150px",
+        top: "150px",
+        minWidth: "500px",
+        minHeight: "250px",
+        border: "1px solid gray",
+        background: "white",
+        padding: "4px",
+        cursor: "move",
+        zIndex: 0
+    });
+
+    container.appendChild(box);
+    enableTextboxDragging(box);
+}
+
+/***********************
+ * テキストボックス ドラッグ処理
+ * zoom対応 + スクロール考慮
+ ***********************/
+function enableTextboxDragging(box) {
+    let isDragging = false;
+    let startX = 0, startY = 0;
+    let mouseX = 0, mouseY = 0;
+    const container = document.getElementById("spreadsheet");
+
+    // 初期位置
+    box.dataset.initialLeft = parseFloat(box.style.left) || 0;
+    box.dataset.initialTop = parseFloat(box.style.top) || 0;
+
+    box.addEventListener("mousedown", e => {
+        if (e.button !== 0) return;
+        isDragging = true;
+
+        const zoom = parseFloat(spreadsheetContent.style.zoom || 1);
+        const scrollLeft = container.scrollLeft;
+        const scrollTop = container.scrollTop;
+
+        // スクロール量を考慮して補正
+        startX = e.clientX - (box.dataset.initialLeft * zoom - scrollLeft);
+        startY = e.clientY - (box.dataset.initialTop * zoom - scrollTop);
+
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+
+        box.style.userSelect = "none";
+    });
+
+    document.addEventListener("mouseup", () => {
+        isDragging = false;
+        box.style.userSelect = "auto";
+    });
+
+    function updatePosition(eClientX, eClientY) {
+        const zoom = parseFloat(spreadsheetContent.style.zoom || 1);
+        const scrollLeft = container.scrollLeft;
+        const scrollTop = container.scrollTop;
+
+        mouseX = eClientX;
+        mouseY = eClientY;
+
+        const newLeft = (mouseX - startX + scrollLeft) / zoom;
+        const newTop = (mouseY - startY + scrollTop) / zoom;
+
+        box.dataset.initialLeft = newLeft;
+        box.dataset.initialTop = newTop;
+
+        box.style.left = newLeft + "px";
+        box.style.top = newTop + "px";
+    }
+
+    document.addEventListener("mousemove", e => {
+        if (!isDragging) return;
+        updatePosition(e.clientX, e.clientY);
+    });
+
+    container.addEventListener("scroll", () => {
+        if (!isDragging) return;
+        updatePosition(mouseX, mouseY);
+    });
+}
+
+
+
 function toPaddedBin(num, length) {
     const bin = num.toString(2);
     return "0".repeat(length - bin.length) + bin;
@@ -3456,12 +3571,11 @@ function saveSpreadsheetData() {
         try {
             const savedCells = [];
             const mergeKeys = ["mergeAnchorRow", "mergeAnchorCol", "mergeMinRow", "mergeMinCol", "mergeMaxRow", "mergeMaxCol"];
-            const mkShort = { mergeAnchorRow: 0, mergeAnchorCol: 1, mergeMinRow: 2, mergeMinCol: 3, mergeMaxRow: 4, mergeMaxCol: 5 };
             const DEFAULT_COLSPAN = 1, DEFAULT_ROWSPAN = 1;
             const DEFAULT_ROW_HEIGHT = "24px", DEFAULT_COL_WIDTH = "100px";
-
             const compressStyle = s => s ? s.replace(/\s*([:;])\s*/g, "$1").replace(/;$/, "") : "";
 
+            // --- セルデータ保存 ---
             document.querySelectorAll("#spreadsheet tbody td").forEach(cell => {
                 const r = +cell.dataset.row, c = +cell.dataset.col;
                 const arr = [r, c];
@@ -3485,9 +3599,18 @@ function saveSpreadsheetData() {
             const savedColumns = Array.from(document.querySelectorAll("#spreadsheet thead th"))
                 .map((th, c) => { const w = getComputedStyle(th).width; return w === DEFAULT_COL_WIDTH ? null : [c, w]; }).filter(Boolean);
 
+            // --- テキストボックス保存 ---
+            const textboxes = Array.from(document.querySelectorAll(".floating-textbox")).map(box => ({
+                left: box.dataset.initialLeft + "px",
+                top: box.dataset.initialTop + "px",
+                width: box.style.width || "",
+                height: box.style.height || "",
+                content: box.innerHTML
+            }));
+
             const zoom = document.getElementById("zoom-slider")?.value || "100";
 
-            const jsonStr = JSON.stringify([savedCells, savedRows, savedColumns, zoom]);
+            const jsonStr = JSON.stringify([savedCells, savedRows, savedColumns, zoom, textboxes]);
             localStorage.setItem("spreadsheetData", compressData(jsonStr));
             loadingstate.textContent = "保存しました。";
             updateLocalStorageUsage();
@@ -3509,7 +3632,7 @@ function loadSpreadsheetData() {
         loadingstate.textContent = "データがありません";
         return;
     }
-    const [cells, rows, columns, zoomVal] = data;
+    const [cells, rows, columns, zoomVal, textboxes] = data;
     const slider = document.getElementById("zoom-slider"),
         display = document.getElementById("zoom-display"),
         bar = document.getElementById("loading-progress-bar");
@@ -3567,8 +3690,77 @@ function loadSpreadsheetData() {
         requestAnimationFrame(() => all.forEach(td => td.classList.remove("borderss")));
     }
     if (total) restoreCells();
+
+    // --- テキストボックス復元 ---
+    if (textboxes && Array.isArray(textboxes)) {
+        const container = document.getElementById("spreadsheet");
+        container.style.position = container.style.position || "relative";
+
+        textboxes.forEach(tb => {
+            const box = document.createElement("div");
+            box.className = "floating-textbox";
+            box.contentEditable = true;
+            box.innerHTML = tb.content;
+
+            box.dataset.initialLeft = parseFloat(tb.left) || 0;
+            box.dataset.initialTop = parseFloat(tb.top) || 0;
+
+            Object.assign(box.style, {
+                position: "absolute",
+                minWidth: tb.width || "500px",
+                minHeight: tb.height || "250px",
+                border: "1px solid gray",
+                background: "white",
+                padding: "4px",
+                cursor: "move",
+                zIndex: 0,
+                left: box.dataset.initialLeft + "px",
+                top: box.dataset.initialTop + "px"
+            });
+            container.appendChild(box);
+            enableTextboxDragging(box); // ドラッグ機能
+        });
+
+    }
     else { setupRowVisibilityObserver(); loadingstate.textContent = "読み込み完了"; }
 }
+
+
+setTimeout(() => {
+    (() => {
+        const savedStr = localStorage.getItem("spreadsheetData");
+        if (!savedStr) {
+            console.log("❌ 保存データがありません");
+            return;
+        }
+
+        try {
+            // decompressData が存在する場合はそれを使う
+            const raw = (typeof decompressData === "function")
+                ? JSON.parse(decompressData(savedStr))
+                : JSON.parse(savedStr);
+
+            console.log("✅ 保存データ構造（配列）:", raw);
+            console.log("　└ セル配列数:", raw[0]?.length ?? 0);
+            console.log("　└ 行配列数:", raw[1]?.length ?? 0);
+            console.log("　└ 列配列数:", raw[2]?.length ?? 0);
+            console.log("　└ ズーム値:", raw[3]);
+            console.log("　└ テキストボックス配列:", raw[4]);
+
+            if (Array.isArray(raw[4])) {
+                console.log(`　✅ テキストボックス数: ${raw[4].length}`);
+                raw[4].forEach((t, i) =>
+                    console.log(`　　[${i}] left:${t.left}, top:${t.top}, size:${t.width}x${t.height}, content:`, t.content)
+                );
+            } else {
+                console.log("❌ テキストボックス配列が存在しません (raw[4] 未定義)");
+            }
+        } catch (e) {
+            console.error("❌ データの展開に失敗しました:", e);
+        }
+    })();
+
+}, 1000);
 
 /* ----- ヘルパー関数 ----- */
 function getRow(rowNumber) {
@@ -3810,7 +4002,8 @@ function applyZoom() {
 }
 
 // ---------------- スライダー ----------------
-zoomSlider.addEventListener("input", () => {
+zoomSlider.addEventListener("input", (e) => {
+    if (e.target.closest('.floating-textbox')) return;
     pendingZoomValue = parseInt(zoomSlider.value);
     applyZoom();
 });
