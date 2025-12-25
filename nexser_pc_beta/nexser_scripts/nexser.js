@@ -6784,6 +6784,8 @@ if (ua.includes("mobile")) {
     function setup2(workMode) {
         if (workMode == true) {
             localStorage.setItem('work_deny', true);
+        } else if (localStorage.getItem('work_deny')) {
+            localStorage.removeItem('work_deny');
         }
         noticewindow_create('Nexser Setup', workMode ? "仕事用　でセットアップをしています..." : "個人向け　でセットアップをしています...");
         setTimeout(() => complete_setup(), 3000);
