@@ -2331,8 +2331,12 @@ if (ua.includes("mobile")) {
         if (localStorage.getItem('window_animation')) {
             animation.style.transition = `${windowanimation}s cubic-bezier(0,0,1,1)`;
             [...animation.children].forEach(c => c.style.display = 'none');
-            document.querySelectorAll('.title, .title_buttons').forEach(el => el.style.display = "flex");
+            document.querySelectorAll('.title, .title_buttons')
+                .forEach(el => el.style.display = "flex");
             setTimeout(() => {
+                animation.style.transition = "none";
+                animation.style.transform = "none";
+                animation.getBoundingClientRect();
                 animation.style.transition = "";
                 [...animation.children].forEach(c => c.style.display = '');
                 windowtool();
