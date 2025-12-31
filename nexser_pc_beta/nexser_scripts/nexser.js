@@ -2788,7 +2788,10 @@ if (ua.includes("mobile")) {
                 }
             });
         });
-        observer.observe(document.body, { childList: true, subtree: true });
+        observer.observe(document.getElementById('desktop'), {
+            childList: true,
+            subtree: true
+        });
     }
     document.querySelectorAll('.drag_button').forEach(addDragButtonListeners);
     observeNewElements3();
@@ -4860,7 +4863,10 @@ if (ua.includes("mobile")) {
                 }
             });
         });
-        observer.observe(document.body, { childList: true, subtree: true });
+        observer.observe(document.getElementById('desktop'), {
+            childList: true,
+            subtree: true
+        });
     }
     document.querySelectorAll('.minimization_button').forEach(addMinimizationButtonListeners);
     observeNewElements4();
