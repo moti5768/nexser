@@ -1604,7 +1604,7 @@ if (ua.includes("mobile")) {
                 output.innerText += `反転結果: ${reverseMessage}\n`;
                 break;
             case 'version':
-                output.innerText += `nexser beta 1.9\n`;
+                output.innerText += `nexser beta 1.10\n`;
                 break;
             case 'reload':
                 output.innerText = '';
