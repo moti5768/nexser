@@ -2309,14 +2309,6 @@ if (ua.includes("mobile")) {
     document.querySelectorAll('.bigminbtn').forEach(addMinbigScreenButtonListeners);
     minbigBtnObserver.observe(document.body, { childList: true, subtree: true });
 
-
-    function window_animation_true() {
-        localStorage.setItem('window_animation', true);
-    }
-    function window_animation_false() {
-        localStorage.removeItem('window_animation');
-    }
-
     function window_animation(animation) {
         animation.style.pointerEvents = "none";
         const adjustHeight = () => {
