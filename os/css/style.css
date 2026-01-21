@@ -1,0 +1,562 @@
+/* style.css */
+html,
+body {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    background: black;
+    font-family: Consolas, monospace;
+    overflow: hidden;
+}
+
+/* ===== CLI ===== */
+
+#screen {
+    position: fixed;
+    inset: 0;
+    color: white;
+    padding: 12px;
+    white-space: pre-wrap;
+    font-size: 14px;
+    z-index: 2000;
+
+    overflow-y: auto;
+    /* ← 追加 */
+    overflow-x: hidden;
+    /* ← 横スクロール防止 */
+    box-sizing: border-box;
+    /* ← paddingでサイズがはみ出さない */
+}
+
+#input-line {
+    display: flex;
+    align-items: center;
+}
+
+/* コマンド入力欄（重要） */
+#cmd {
+    background-color: black;
+    border: none;
+    outline: none;
+    color: #00ff66;
+    caret-color: #00ff66;
+    font-family: Consolas, monospace;
+    font-size: 14px;
+    width: 100%;
+}
+
+#cmd::selection {
+    background: #00ff66;
+    color: black;
+}
+
+/* ===== Desktop ===== */
+
+#desktop {
+    position: fixed;
+    inset: 0;
+    background: #52adad;
+    padding: 10px;
+    z-index: 1;
+}
+
+.pointer_none {
+    pointer-events: none;
+    color: gray;
+}
+
+.pointer_none::before,
+.pointer_none::after {
+    opacity: 0.3;
+}
+
+
+/* デスクトップアイコン */
+.icon {
+    width: 80px;
+    margin: 10px;
+    color: white;
+    font-size: 13px;
+    cursor: pointer;
+    user-select: none;
+    text-align: center;
+}
+
+.icon:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+}
+
+.icon.selected {
+    background-color: rgba(0, 120, 215, 0.3);
+}
+
+
+/* ===== Taskbar ===== */
+
+#taskbar {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    background-color: #C3C7CB;
+    border-top: 1.5px solid whitesmoke;
+    border-bottom: 1.5px solid #333;
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    height: 40px;
+    width: 100%;
+    align-items: center;
+    padding: 0 10px;
+    font-size: 13px;
+    z-index: 1;
+}
+
+/* 選択状態（最前面） */
+.taskbar-window-btn.selected {
+    transform: translate(0.6px, 0.6px);
+    border: 1.5px solid;
+    border-color: #7a7a7a #fff #fff #7a7a7a;
+    box-shadow: 0.5px 0.5px 0 #000 inset;
+    background: #DDDDDD;
+    text-shadow: 1px 0 #000;
+    letter-spacing: 0.5px;
+}
+
+
+
+
+#start-btn {
+    height: 24px;
+    padding: 0 10px;
+    cursor: pointer;
+}
+
+#start-btn.pressed {
+    outline: 1.5px dotted black;
+    outline-offset: -5.5px;
+}
+
+/* ===== Start Menu ===== */
+
+#start-menu {
+    position: fixed;
+    bottom: 40px;
+    left: 0;
+    min-width: 200px;
+    background: #C3C7CB;
+    border: 1px solid;
+    border-color: #fff #404040 #404040 #fff;
+    box-shadow: 1px 1px black;
+    display: none;
+    z-index: 1001;
+    padding: 2px;
+    font-size: 13px;
+    color: black;
+}
+
+/* 区切り線 */
+#start-menu>div[style*="border-top"] {
+    border-top: 1px solid #808080 !important;
+    margin: 4px 2px !important;
+}
+
+/* メニュー階層 */
+.start-menu-level {
+    position: relative;
+    min-width: 190px;
+}
+
+/* メニュー項目 */
+.start-item {
+    position: relative;
+    padding: 4px 10px;
+    cursor: default;
+    white-space: nowrap;
+    background: transparent;
+    color: black;
+}
+
+/* hover（Win95風ハイライト） */
+.start-item:hover {
+    background: #000080;
+    color: white;
+}
+
+/* ▶ アイコン */
+.start-item.has-children::after {
+    content: "▶";
+    position: absolute;
+    right: 6px;
+    top: 4px;
+    font-size: 10px;
+    color: inherit;
+}
+
+/* サブメニュー */
+.submenu {
+    display: none;
+    position: absolute;
+    left: 100%;
+    top: -2px;
+    background: #C3C7CB;
+    border: 1px solid;
+    border-color: #fff #404040 #404040 #fff;
+    box-shadow: 1px 1px black;
+    min-width: 190px;
+    padding: 2px;
+    z-index: 5000;
+}
+
+/* ログオフ（危険操作を少し強調したい場合） */
+.start-item.danger:hover {
+    background: #800000;
+    color: white;
+}
+
+
+
+.start-recent {
+    margin-bottom: 8px;
+    border-bottom: 1px solid #555;
+    padding-bottom: 6px;
+    font-size: 13px;
+}
+
+.start-recent-title {
+    opacity: 0.7;
+    margin-bottom: 4px;
+}
+
+.start-recent-item {
+    cursor: pointer;
+    padding: 2px 4px;
+}
+
+
+.start-recent-item:hover {
+    background: #000080;
+    color: white;
+}
+
+
+
+
+
+/* ===== Window ===== */
+
+.window {
+    position: absolute;
+    background: #eee;
+    border: 2px solid #c0c0c0;
+    box-shadow: 1.8px 1.8px black, -1.8px -1.8px whitesmoke;
+    display: flex;
+    /* タイトルバーとコンテンツを縦に並べる */
+    flex-direction: column;
+    /* 上がタイトルバー、下がコンテンツ */
+    min-width: 200px;
+    min-height: 120px;
+    z-index: 10;
+    overflow: hidden;
+    box-sizing: border-box;
+    /* ウィンドウ外にはみ出す部分を隠す */
+}
+
+.window::-webkit-scrollbar {
+    opacity: 0.5;
+}
+
+
+.window .content {
+    flex: 1;
+    /* タイトルバーを除いた残りを占有 */
+    overflow: auto;
+    /* はみ出す場合スクロール */
+    padding: 0px;
+    background: #fff;
+    border: 1.5px solid;
+    border-color: black #eee #eee black;
+}
+
+.window.maximized {
+    border: none;
+    box-shadow: none;
+}
+
+.window.maximized .resize-handle {
+    pointer-events: none;
+    /* マウス判定を無効化 */
+    cursor: default !important;
+    /* リサイズカーソルを消す */
+}
+
+
+.title-bar {
+    background: #444;
+    color: white;
+    border-bottom: solid 2px black;
+    font-size: 12px;
+}
+
+.title-text {
+    flex: 1;
+    /* ← 残り幅を使う */
+    min-width: 0;
+    /* ← ellipsisに必須 */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-left: 6px;
+}
+
+.content {
+    padding: 8px;
+}
+
+.window .title-bar {
+    display: flex;
+    align-items: center;
+    height: 24px;
+    background: #444;
+    color: white;
+    user-select: none;
+    position: relative;
+}
+
+.window .title-bar .window-controls {
+    display: flex;
+    margin-left: auto;
+    /* ← 右寄せ */
+    margin-right: 4px;
+    position: static;
+}
+
+
+.window .title-bar .window-controls button {
+    color: white;
+    width: 18px;
+    height: 18px;
+    margin: 1px;
+}
+
+/* 閉じるボタン × */
+.close-btn {
+    position: relative;
+    text-align: center;
+    width: 20px;
+    height: 20px;
+    box-sizing: border-box;
+}
+
+.close-btn::before,
+.close-btn::after {
+    content: "";
+    position: absolute;
+    left: 7px;
+    top: 3px;
+    height: 12px;
+    width: 2px;
+    background-color: black;
+    transform-origin: center;
+}
+
+.close-btn::before {
+    transform: rotate(45deg);
+}
+
+.close-btn::after {
+    transform: rotate(-45deg);
+}
+
+.pressed.close-btn::before,
+.pressed.close-btn::after {
+    margin-top: 1.3px;
+    margin-left: 1.3px;
+}
+
+/* 最小化ボタン _ */
+.min-btn {
+    position: relative;
+    text-align: center;
+    font-size: 11px;
+    box-sizing: border-box;
+}
+
+.min-btn::before {
+    content: "";
+    position: absolute;
+    left: 3px;
+    top: 12px;
+    height: 2px;
+    width: 8px;
+    background-color: black;
+}
+
+.pressed.min-btn::before {
+    margin-top: 1.3px;
+    margin-left: 1.3px;
+}
+
+/* 最大化ボタン □（最大化中は対象外） */
+.window:not(.maximized) .max-btn {
+    position: relative;
+    text-align: center;
+    font-size: 11px;
+    box-sizing: border-box;
+    text-shadow: 0.3px 0.3px 0, 0.3px -0.3px 0, -0.3px 0.3px 0, -0.3px -0.3px 0;
+}
+
+.window:not(.maximized) .max-btn::before {
+    content: "";
+    position: absolute;
+    left: 2px;
+    top: 2px;
+    height: 12px;
+    width: 12px;
+    box-shadow: black 0 3px inset, black 0 0 0 1px inset;
+}
+
+.window:not(.maximized) .pressed.max-btn::before {
+    margin-top: 1.3px;
+    margin-left: 1.3px;
+}
+
+.window.maximized .max-btn {
+    position: relative;
+    text-align: center;
+    font-size: 11px;
+    box-sizing: border-box;
+}
+
+.window.maximized .max-btn::before,
+.window.maximized .max-btn::after {
+    content: "";
+    position: absolute;
+    height: 8px;
+    width: 8px;
+    box-shadow: black 0 3px inset, black 0 0 0 1px inset;
+}
+
+.window.maximized .max-btn::before {
+    left: 6px;
+    top: 2px;
+}
+
+.window.maximized .max-btn::after {
+    left: 3px;
+    top: 7px;
+}
+
+.pressed.max-btn::before,
+.pressed.max-btn::after {
+    margin-top: 1.3px;
+    margin-left: 1.3px;
+}
+
+.taskbar-window-btn {
+    margin-left: 4px;
+    padding: 0 6px;
+    height: 25px;
+    width: 120px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: left;
+}
+
+/* button */
+button,
+.button,
+.button2 {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    list-style: none;
+    display: inline-block;
+    color: black;
+    background-color: #C3C7CB;
+    border: 1.8px solid #808080;
+    border-color: #fff #808080 #808080 #fff;
+    box-shadow: 0.5px 0.5px black;
+}
+
+button.pressed,
+.button.pressed,
+.button2.pressed {
+    border: 1.5px solid;
+    border-color: #7a7a7a #fff #fff #7a7a7a;
+    box-shadow: 0.5px 0.5px 0 #000 inset;
+    transform: translate(0.5px, 0.5px);
+}
+
+
+
+
+
+
+
+
+
+
+
+/* scrollbar */
+
+::-webkit-scrollbar {
+    display: block;
+    width: 15px;
+}
+
+::-webkit-scrollbar-track {
+    background-image: radial-gradient(#CCCCCC 1.5px, #ffffff 1.5px);
+    background-size: 4px 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: silver;
+    border: 1.5px solid;
+    border-color: #eee #333 #333 #eee;
+}
+
+::-webkit-scrollbar-button {
+    background: silver;
+    border: 1.5px solid;
+    border-color: #eee #333 #333 #eee;
+}
+
+::-webkit-scrollbar-corner {
+    background: silver;
+}
+
+body::-webkit-scrollbar {
+    display: none;
+    z-index: 1;
+}
+
+.scrollbar_none::-webkit-scrollbar {
+    display: none;
+    z-index: 1;
+}
+
+#screen::-webkit-scrollbar {
+    display: none;
+    z-index: 1;
+}
+
+::-webkit-resizer {
+    background: rgba();
+}
+
+/* drag color */
+
+/*Firefox用のベンダープレフィックス付き*/
+::-moz-selection {
+    background-color: darkblue;
+    color: white;
+}
+
+::selection {
+    background-color: darkblue;
+    color: white;
+}

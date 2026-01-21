@@ -1,0 +1,37 @@
+/* Terminal.css */
+.terminal-window {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    /* ウィンドウに合わせる */
+}
+
+.terminal-screen {
+    background: black;
+    color: white;
+    font-family: monospace;
+    font-size: 14px;
+    padding: 4px;
+    flex: 1;
+    /* 上部を全部埋める */
+    overflow-y: auto;
+    /* 必要に応じてスクロール */
+}
+
+.terminal-input {
+    display: flex;
+    align-items: center;
+    background: black;
+    color: white;
+    font-family: monospace;
+    padding: 2px 4px;
+}
+
+.terminal-input input {
+    background: black;
+    color: #0f0;
+    border: none;
+    outline: none;
+    font-family: monospace;
+    flex: 1;
+}

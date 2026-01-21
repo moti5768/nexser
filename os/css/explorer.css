@@ -1,0 +1,66 @@
+/* explorer.css */
+/* ===== Explorer ヘッダー ===== */
+.explorer-header {
+    display: flex;
+    align-items: center;
+    padding: 4px;
+    background: #ddd;
+    border-bottom: 1px solid #aaa;
+}
+
+.explorer-header button {
+    margin-right: 8px;
+    cursor: pointer;
+}
+
+/* ===== Optional: Path label ===== */
+.path-label {
+    font-weight: bold;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.explorer-list {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    /* header 高さ分を除く */
+}
+
+.explorer-list div {
+    padding: 4px 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+
+.explorer-list div:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.file-content {
+    white-space: pre-wrap;
+    padding: 6px;
+    font-family: Consolas, monospace;
+}
+
+
+
+
+.explorer-item {
+    padding: 4px 6px;
+    cursor: pointer;
+}
+
+.explorer-item:hover {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.explorer-item.selected {
+    background-color: rgba(0, 120, 215, 0.3);
+}
