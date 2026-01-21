@@ -1,10 +1,12 @@
 // fs.js
-import { saveFS } from "./fs-db.js";
+import { saveFS, loadFS } from "./fs-db.js";
+
 let saveTimer = null;
+
+// 初期 FS 定義
 export let FS = {
     Desktop: {
         type: "folder",
-        // ★ ショートカット
         "Explorer.app": { type: "link", target: "Programs/Explorer.app" },
         "Documents": { type: "link", target: "Programs/Documents" },
         "Images": { type: "link", target: "Programs/Documents/Images" },
@@ -12,10 +14,8 @@ export let FS = {
         "Calc.app": { type: "link", target: "Programs/Calc.app" },
         "Settings.app": { type: "link", target: "Programs/Settings.app" }
     },
-
     Programs: {
         type: "folder",
-        // ★ アプリ実体はここだけ
         "Explorer.app": { type: "app", entry: "./apps/explorer.js" },
         "Documents": {
             type: "folder",
@@ -33,11 +33,7 @@ export let FS = {
     }
 };
 
-export function replaceFS(newFS) {
-    if (!newFS) return;
-    FS = wrapProxy(newFS);
-}
-
+// 自動保存
 function scheduleSave() {
     if (saveTimer) return;
     saveTimer = setTimeout(async () => {
@@ -48,23 +44,19 @@ function scheduleSave() {
         } catch (e) {
             console.warn("FS save failed", e);
         }
-    }, 300); // 300ms デバウンス
+    }, 300);
 }
 
-/* =========================
-   Auto Save Proxy
-========================= */
-
+// Proxy 化（再帰的）
 function wrapProxy(obj) {
     if (!obj || typeof obj !== "object") return obj;
-
     return new Proxy(obj, {
         get(target, prop) {
             const v = target[prop];
             return wrapProxy(v);
         },
         set(target, prop, value) {
-            target[prop] = value;
+            target[prop] = wrapProxy(value);
             scheduleSave();
             return true;
         },
@@ -74,6 +66,15 @@ function wrapProxy(obj) {
             return true;
         }
     });
+}
+
+export async function initFS() {
+    const saved = await loadFS();
+    if (saved) {
+        // Proxy でラップして FS に反映
+        Object.assign(FS, wrapProxy(saved));
+        console.log("FS loaded from DB");
+    }
 }
 
 // FS を Proxy 化

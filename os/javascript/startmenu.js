@@ -4,8 +4,7 @@ import { launch, logOff } from "./kernel.js";
 import { getRecent } from "./recent.js";
 import { resolveFS } from "./fs-utils.js";
 import { createWindow } from "./window.js";
-import { openDB } from "./db.js"; // ← settings.js ではなく db.js から
-
+import { openDB } from "./db.js";
 
 const startBtn = document.getElementById("start-btn");
 let recentListenerInstalled = false;
@@ -15,9 +14,10 @@ let recentListenerInstalled = false;
 ===================================================== */
 export async function buildStartMenu() {
     const menu = document.getElementById("start-menu");
+    if (!menu) return;
     menu.innerHTML = "";
 
-    /* ===== Programs ===== */
+    // Programs
     const programsRoot = document.createElement("div");
     programsRoot.className = "start-item has-children";
     programsRoot.textContent = "Programs";
@@ -26,35 +26,20 @@ export async function buildStartMenu() {
     programsMenu.classList.add("submenu");
     programsRoot.appendChild(programsMenu);
 
-    let progHideTimer = null;
-    const showPrograms = () => {
-        clearTimeout(progHideTimer);
-        programsMenu.style.display = "block";
-    };
-    const hidePrograms = () => {
-        progHideTimer = setTimeout(() => {
-            programsMenu.style.display = "none";
-        }, 300);
-    };
-
-    programsRoot.addEventListener("mouseenter", showPrograms);
-    programsRoot.addEventListener("mouseleave", hidePrograms);
-    programsMenu.addEventListener("mouseenter", showPrograms);
-    programsMenu.addEventListener("mouseleave", hidePrograms);
-
+    setupHover(programsRoot, programsMenu);
     menu.appendChild(programsRoot);
 
-    /* ===== Separator ===== */
+    // Separator
     const hr = document.createElement("div");
     hr.style.borderTop = "1px solid #333";
     hr.style.margin = "6px 0";
     menu.appendChild(hr);
 
-    /* ===== Desktop ===== */
+    // Desktop
     const desktopMenu = createMenu(FS.Desktop, "Desktop", menu);
     menu.appendChild(desktopMenu);
 
-    /* ===== Logoff ===== */
+    // Logoff
     const logoffBtn = document.createElement("div");
     logoffBtn.className = "start-item danger";
     logoffBtn.textContent = "ログオフ";
@@ -66,7 +51,7 @@ export async function buildStartMenu() {
     };
     menu.appendChild(logoffBtn);
 
-    /* ===== Recent ===== */
+    // Recent
     if (window.showRecent !== false) {
         await buildRecentArea(menu);
     }
@@ -74,13 +59,17 @@ export async function buildStartMenu() {
 
 /* =====================================================
    Recursive Menu Generator
+   空フォルダは "(empty)" 表示
 ===================================================== */
 function createMenu(folder, basePath, menuRoot) {
     const container = document.createElement("div");
     container.className = "start-menu-level";
 
+    let hasItems = false;
+
     for (const name in folder) {
         if (name === "type") continue;
+        hasItems = true;
 
         const node = folder[name];
         const item = document.createElement("div");
@@ -90,8 +79,8 @@ function createMenu(folder, basePath, menuRoot) {
 
         const fullPath = `${basePath}/${name}`;
 
-        /* ---- Launchable items ---- */
-        if (node.type === "app" || node.type === "link" || node.type === "file") {
+        // Launchable items
+        if (["app", "link", "file"].includes(node.type)) {
             item.onclick = () => {
                 let targetNode = node;
                 let targetPath = fullPath;
@@ -107,7 +96,7 @@ function createMenu(folder, basePath, menuRoot) {
             };
         }
 
-        /* ---- Folder ---- */
+        // Folder
         if (node.type === "folder") {
             item.classList.add("has-children");
 
@@ -115,18 +104,33 @@ function createMenu(folder, basePath, menuRoot) {
             sub.classList.add("submenu");
             item.appendChild(sub);
 
-            let hideTimer = null;
-            const showSub = () => clearTimeout(hideTimer) || (sub.style.display = "block");
-            const hideSub = () => hideTimer = setTimeout(() => sub.style.display = "none", 200);
-
-            item.addEventListener("mouseenter", showSub);
-            item.addEventListener("mouseleave", hideSub);
-            sub.addEventListener("mouseenter", showSub);
-            sub.addEventListener("mouseleave", hideSub);
+            setupHover(item, sub);
         }
     }
 
+    // 空フォルダの場合
+    if (!hasItems) {
+        const empty = document.createElement("div");
+        empty.className = "start-item empty";
+        empty.textContent = "(empty)";
+        container.appendChild(empty);
+    }
+
     return container;
+}
+
+/* =====================================================
+   Hover helper
+===================================================== */
+function setupHover(parent, submenu) {
+    let hideTimer = null;
+    const show = () => clearTimeout(hideTimer) || (submenu.style.display = "block");
+    const hide = () => hideTimer = setTimeout(() => submenu.style.display = "none", 200);
+
+    parent.addEventListener("mouseenter", show);
+    parent.addEventListener("mouseleave", hide);
+    submenu.addEventListener("mouseenter", show);
+    submenu.addEventListener("mouseleave", hide);
 }
 
 /* =====================================================
@@ -178,6 +182,7 @@ function launchByType(type, path) {
     if (type && path) {
         import("./recent.js").then(m => m.addRecent({ type, path }));
     }
+
     switch (type) {
         case "app":
         case "file":
@@ -211,8 +216,6 @@ function installRecentListener() {
         refreshStartMenu();
     });
 }
-
-// モジュールロード時に一度だけ実行
 installRecentListener();
 
 /* =====================================================
@@ -227,17 +230,23 @@ async function initShowRecent() {
             req.onsuccess = () => resolve(req.result);
             req.onerror = () => resolve(null);
         });
-        window.showRecent = val ?? true; // デフォルト true
+        window.showRecent = val ?? true;
     } catch {
         window.showRecent = true;
     }
 }
 
 /* =====================================================
-   Start Menu 初期化用
-   Settings の DB読み込み後に呼ぶ
+   Start Menu 初期化
 ===================================================== */
 export async function startMenuReady() {
     await initShowRecent();
     await buildStartMenu();
 }
+
+function installFSListener() {
+    window.addEventListener("fs-updated", () => {
+        refreshStartMenu();
+    });
+}
+installFSListener();

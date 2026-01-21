@@ -249,7 +249,7 @@ body {
 .window {
     position: absolute;
     background: #eee;
-    border: 2px solid #c0c0c0;
+    border: 2px solid #ddd;
     box-shadow: 1.8px 1.8px black, -1.8px -1.8px whitesmoke;
     display: flex;
     /* タイトルバーとコンテンツを縦に並べる */

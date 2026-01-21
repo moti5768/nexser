@@ -1,7 +1,7 @@
 // boot.js
 import { FS } from './fs.js';
-import { replaceFS } from "./fs.js";
-import { loadFS } from "./fs-db.js";
+import { initFS } from "./fs.js";
+import { buildDesktop } from "./desktop.js";
 
 const screen = document.getElementById('screen');
 let cwd = 'C:/';
@@ -358,15 +358,14 @@ export async function bootOS() {
 /* =========================
    BIOS
 ========================= */
-
 export async function bios() {
-
     try {
-        const saved = await loadFS();
-        if (saved) {
-            replaceFS(saved);
-            console.log("FS restored from IndexedDB");
-        }
+        // FS を IndexedDB からロード
+        await initFS();
+        console.log("FS restored from DB");
+
+        // デスクトップにアイコンを描画
+        buildDesktop();
     } catch (e) {
         console.warn("FS load failed", e);
     }
@@ -377,6 +376,7 @@ export async function bios() {
     );
     setTimeout(prompt, lines.length * 300);
 }
+
 
 /* =========================
    Screen Control

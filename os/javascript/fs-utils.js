@@ -19,7 +19,6 @@ export function resolveFS(path) {
 
 /**
  * パス正規化
- * Terminal, Explorer, Desktop で共通
  */
 export function normalizePath(path, cwd = "C:/") {
     if (!path || path === ".") return cwd;

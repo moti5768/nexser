@@ -70,21 +70,50 @@ export function createWindow(title, options = {}) {
     w.style.zIndex = nextZ();
 
     w.innerHTML = `
-        <div class="title-bar">
-            <span class="title-text">${title}</span>
-            <div class="window-controls">
-                <button class="min-btn"></button>
-                <button class="max-btn"></button>
-                <button class="close-btn"></button>
-            </div>
-        </div>
-        <div class="content"></div>
-    `;
+<div class="title-bar">
+    <span class="title-text">${title}</span>
+    <div class="window-controls">
+        <button class="min-btn"></button>
+        <button class="max-btn"></button>
+        <button class="close-btn"></button>
+    </div>
+</div>
+
+${!options.hideRibbon ? `
+<div class="window-ribbon" style="
+    height:28px;
+    background:#ddd;
+    display:flex;
+    align-items:center;
+    padding:0 6px;
+    font-size: small;
+">
+</div>` : ""}
+
+<div class="content" style="
+    overflow:auto;
+    height: calc(100% - 28px ${!options.hideRibbon ? "- 28px" : ""} - 20px);
+"></div>
+
+${!options.hideStatus ? `
+<div class="window-statusbar" style="
+    height:20px;
+    background:#ddd;
+    border-top:1px solid #ccc;
+    font-size:12px;
+    padding:0 4px;
+    display:flex;
+    align-items:center;
+">
+    Ready
+</div>` : ""}
+`;
 
     const desktop = document.getElementById("desktop");
     desktop.appendChild(w);
     const content = w.querySelector(".content");
-
+    w._ribbon = w.querySelector(".window-ribbon");
+    w._statusBar = w.querySelector(".window-statusbar");
     /* ===== サイズ復元 ===== */
 
     const sizeKey = title;   // 今回は title をキーにする（簡単）
@@ -650,7 +679,9 @@ export function alertWindow(message, options = {}) {
     const content = createWindow("Alert", {
         ...centerWindowOptions(300, 150),
         taskbar: options.taskbar,
-        disableControls: true
+        disableControls: true,
+        hideRibbon: true,   // リボン非表示
+        hideStatus: true    // ステータスバー非表示
     });
     content.innerHTML = `<p>${message}</p>`;
     return content;
@@ -660,7 +691,9 @@ export function errorWindow(message, options = {}) {
     const content = createWindow("Error", {
         ...centerWindowOptions(300, 150),
         taskbar: options.taskbar,
-        disableControls: true
+        disableControls: true,
+        hideRibbon: true,
+        hideStatus: true
     });
     content.innerHTML = `<p style="color:red">${message}</p>`;
     return content;
@@ -670,7 +703,9 @@ export function confirmWindow(message, callback, options = {}) {
     const content = createWindow("Confirm", {
         ...centerWindowOptions(350, 150),
         taskbar: options.taskbar,
-        disableControls: true
+        disableControls: true,
+        hideRibbon: true,
+        hideStatus: true
     });
 
     content.innerHTML = `

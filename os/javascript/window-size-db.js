@@ -7,9 +7,19 @@ export async function saveWindowSize(key, size) {
     try {
         const db = await openDB();
         const tx = db.transaction(STORE, "readwrite");
-        tx.objectStore(STORE).put(size, key);
+        const store = tx.objectStore(STORE);
+
+        store.put(size, key);
+
+        // 書き込み完了を待つ
+        await tx.complete;
+
+        console.log(`Window size saved: ${key}`);
+        return true;
     } catch (e) {
-        console.warn("saveWindowSize failed:", e);
+        console.error("saveWindowSize failed:", e);
+        alert(`ウィンドウサイズの保存に失敗しました: ${key}`);
+        return false;
     }
 }
 

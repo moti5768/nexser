@@ -35,8 +35,21 @@ export async function dbGet(key) {
 
 const FS_KEY = "fs";
 
+// Proxy を除去して純粋なオブジェクトにする関数
+function stripProxy(obj) {
+    if (!obj || typeof obj !== "object") return obj;
+    const copy = Array.isArray(obj) ? [] : {};
+    for (const key in obj) {
+        if (obj.hasOwnProperty(key)) {
+            copy[key] = stripProxy(obj[key]);
+        }
+    }
+    return copy;
+}
+
 export async function saveFS(fs) {
-    return dbSet(FS_KEY, fs);
+    const cleanFS = stripProxy(fs); // <- Proxy を除去
+    return dbSet(FS_KEY, cleanFS);
 }
 
 export async function loadFS() {

@@ -20,10 +20,20 @@ export async function saveSetting(key, value) {
     try {
         const db = await getDB();
         const tx = db.transaction(STORE, "readwrite");
-        tx.objectStore(STORE).put(structuredClone(value), key);
-        return tx.complete;
+        const store = tx.objectStore(STORE);
+
+        // structuredClone で安全に保存
+        store.put(structuredClone(value), key);
+
+        // 完了を待つ
+        await tx.complete;
+
+        console.log(`Setting saved: ${key}`);
+        return true;
     } catch (e) {
-        console.warn("saveSetting failed:", e);
+        console.error("saveSetting failed:", e);
+        alert(`設定の保存に失敗しました: ${key}`);
+        return false;
     }
 }
 
