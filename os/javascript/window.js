@@ -288,59 +288,58 @@ ${!options.hideStatus ? `
 
     /* ===== タスクバークリックで復元 ===== */
 
-    if (taskbarBtn) {
-        taskbarBtn.onclick = () => {
+    taskbarBtn.onclick = () => {
+        // タスクバー選択状態を即時反映
+        taskbarButtons.forEach(btn => btn.classList.remove("selected"));
+        taskbarBtn.classList.add("selected");
 
+        if (w.dataset.minimized === "true") {
+            minimizing = false;
+
+            const titleBar = w.querySelector(".title-bar");
+            const titleText = titleBar?.querySelector(".title-text");
+            if (!titleText) return;
+
+            const rect = taskbarBtn.getBoundingClientRect();
+            const clone = document.createElement("div");
+
+            Object.assign(clone.style, {
+                position: "absolute",
+                left: rect.left + "px",
+                top: rect.top + "px",
+                width: rect.width + "px",
+                height: titleBar.offsetHeight + "px",
+                background: getComputedStyle(titleBar).backgroundColor,
+                color: getComputedStyle(titleText).color,
+                display: "flex",
+                alignItems: "center",
+                padding: "0 5px",
+                font: getComputedStyle(titleText).font,
+                zIndex: parseInt(w.style.zIndex) + 1,
+                pointerEvents: "none"
+            });
+            clone.textContent = titleText.textContent;
+            document.body.appendChild(clone);
+
+            // 元ウィンドウはアニメ中非表示
+            w.style.visibility = "hidden";
+            w.dataset.minimized = "true"; // アニメ中はまだ最小化状態
+
+            animateTitleClone(clone, { left: w.offsetLeft, top: w.offsetTop, width: w.offsetWidth }, 250, () => {
+                // アニメ終了時に元ウィンドウを復帰
+                w.style.visibility = "visible";
+                w.dataset.minimized = "false"; // 最小化解除
+                clone.remove();
+                bringToFront(w);
+                scheduleRefreshTopWindow(); // タイトルバー色更新
+            });
+
+        } else {
             bringToFront(w);
-            taskbarButtons.forEach(btn => btn.classList.remove("selected"));
-            taskbarBtn.classList.add("selected");
+            scheduleRefreshTopWindow();
+        }
+    };
 
-            if (w.dataset.minimized === "true") {
-                w.dataset.minimized = "false";
-                minimizing = false;
-
-                const titleBar = w.querySelector(".title-bar");
-                const titleText = titleBar?.querySelector(".title-text");
-                if (!titleText) return;
-
-                const rect = taskbarBtn.getBoundingClientRect();
-
-                const clone = document.createElement("div");
-                clone.style.position = "absolute";
-                clone.style.left = rect.left + "px";
-                clone.style.top = rect.top + "px";
-                clone.style.width = rect.width + "px";
-                clone.style.height = titleBar.offsetHeight + "px";
-                clone.style.background = getComputedStyle(titleBar).backgroundColor;
-                clone.style.color = getComputedStyle(titleText).color;
-                clone.style.display = "flex";
-                clone.style.alignItems = "center";
-                clone.style.padding = "0 5px";
-                clone.style.font = getComputedStyle(titleText).font;
-                clone.textContent = titleText.textContent;
-                clone.style.zIndex = parseInt(w.style.zIndex) + 1;
-                clone.style.pointerEvents = "none";
-                w.style.pointerEvents = "none";
-
-                document.body.appendChild(clone);
-
-                animateTitleClone(
-                    clone,
-                    { left: w.offsetLeft, top: w.offsetTop, width: w.offsetWidth },
-                    250,
-                    () => {
-                        w.style.visibility = "visible";
-                        w.style.pointerEvents = "auto";
-                        clone.remove();
-                        bringToFront(w);
-                        scheduleRefreshTopWindow();
-                    }
-                );
-            } else {
-                focus();
-            }
-        };
-    }
 
     /* ===== 最大化 ===== */
 
