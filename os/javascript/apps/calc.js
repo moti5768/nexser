@@ -5,7 +5,7 @@ export default function CalcApp(content, options) {
     const win = content.parentElement;
     if (win) {
         win.style.width = "300px";
-        win.style.height = "300px";
+        win.style.height = "365px";
     }
 
     content.innerHTML = `

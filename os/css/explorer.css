@@ -64,3 +64,37 @@
 .explorer-item.selected {
     background-color: rgba(0, 120, 215, 0.3);
 }
+
+/* ribonn */
+.ribbon-menu {
+    position: relative;
+    padding: 0 8px;
+    cursor: pointer;
+}
+
+.ribbon-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: #C3C7CB;
+    border: 1px solid;
+    border-color: #fff #404040 #404040 #fff;
+    box-shadow: 1px 1px black;
+    display: none;
+    min-width: 80px;
+    z-index: 1000;
+}
+
+.ribbon-menu:hover .ribbon-dropdown {
+    display: block;
+}
+
+.ribbon-item {
+    padding: 4px 8px;
+    cursor: pointer;
+}
+
+.ribbon-item:hover {
+    background: darkblue;
+    color: white;
+}

@@ -1,8 +1,9 @@
 // window.js
-import { nextZ } from "./zindex.js";
 import { saveWindowSize, loadWindowSize } from "./window-size-db.js";
 import { themeColor } from "./apps/settings.js"; // これを使う
 import { attachContextMenu } from "./context-menu.js";
+import { setupRibbon } from "./apps/explorer.js"; // ここに setupRibbon が定義されている
+
 
 export const taskbarButtons = []; // 作られたボタンを全部保存
 let resizeCursor = "";
@@ -23,15 +24,21 @@ function installGlobalMouseHandler() {
     globalMouseInstalled = true;
 
     document.addEventListener("mousedown", e => {
-        // ウィンドウ外かつ context-menu 外なら色リセット
-        if (!e.target.closest(".window") && !e.target.closest(".context-menu")) {
-            const titles = document.getElementsByClassName("title-bar");
-            for (const tb of titles) {
-                tb.style.background = DEFAULT_COLOR;
-            }
-            taskbarButtons.forEach(btn => btn.classList.remove("selected"));
+        const win = e.target.closest(".window");
+        if (
+            e.target.closest(".modal-overlay") ||
+            (win && win._modal) ||
+            e.target.closest(".context-menu")
+        ) return;
+
+        // ウィンドウ外なら色リセット
+        const titles = document.getElementsByClassName("title-bar");
+        for (const tb of titles) {
+            tb.style.background = DEFAULT_COLOR;
         }
+        taskbarButtons.forEach(btn => btn.classList.remove("selected"));
     });
+
 
 }
 
@@ -67,7 +74,7 @@ export function createWindow(title, options = {}) {
     w.style.top = options.top || "100px";
     w.style.width = options.width || "650px";
     w.style.height = options.height || "350px";
-    w.style.zIndex = nextZ();
+    bringToFront(w);
 
     w.innerHTML = `
 <div class="title-bar">
@@ -81,7 +88,7 @@ export function createWindow(title, options = {}) {
 
 ${!options.hideRibbon ? `
 <div class="window-ribbon" style="
-    height:28px;
+    height:26px;
     background:#ddd;
     display:flex;
     align-items:center;
@@ -92,7 +99,7 @@ ${!options.hideRibbon ? `
 
 <div class="content" style="
     overflow:auto;
-    height: calc(100% - 28px ${!options.hideRibbon ? "- 28px" : ""} - 20px);
+    height: calc(100% - 26px ${!options.hideRibbon ? "- 26px" : ""} - 20px);
 "></div>
 
 ${!options.hideStatus ? `
@@ -108,6 +115,42 @@ ${!options.hideStatus ? `
     Ready
 </div>` : ""}
 `;
+
+    // リボン要素を確実に取得
+    w._ribbon = w.querySelector(".window-ribbon");
+
+    if (w._ribbon) {
+        w._ribbon.innerHTML = ""; // 古い内容をクリア
+
+        // hideRibbon が true なら何も表示せず
+        if (!options.hideRibbon) {
+
+            // アプリの種類によって Ribbon メニューを切り替え
+            const isExplorer = w.dataset.type === "explorer";
+
+            const ribbonMenus = isExplorer
+                ? (options.ribbonMenus || []) // ExplorerはフルRibbon
+                : [
+                    {
+                        title: "Window",
+                        items: [
+                            { label: "Minimize", action: () => w.querySelector(".min-btn")?.click() },
+                            { label: "Miximize", action: () => w.querySelector(".max-btn")?.click() },
+                            { label: "Close", action: () => w.querySelector(".close-btn")?.click() }
+                        ]
+                    }
+                ];
+
+            setupRibbon(
+                w,
+                options.getCurrentPath || (() => null),
+                options.renderCallback || null,
+                ribbonMenus
+            );
+        }
+    }
+
+
 
     const desktop = document.getElementById("desktop");
     desktop.appendChild(w);
@@ -143,12 +186,21 @@ ${!options.hideStatus ? `
     };
 
     const focus = () => {
-        w.style.zIndex = nextZ();
+        if (w._modal) return; // モーダルは絶対に focus させない
+
+        bringToFront(w);
+
         if (w.dataset.minimized === "true") restoreWindow();
-        scheduleRefreshTopWindow();
     };
 
     w.addEventListener("mousedown", focus);
+
+
+    // 右クリックメニューもモーダルなら無効化
+    if (!options._modal && !options.disableContextMenu) {
+        installWindowContextMenu(w);
+    }
+
 
     /* ===== タスクバー ===== */
 
@@ -186,6 +238,9 @@ ${!options.hideStatus ? `
     }
 
     closeBtn.addEventListener("click", () => {
+        if (w._modalOverlay) {
+            w._modalOverlay.remove();
+        }
         w.remove();
 
         if (taskbarBtn) {
@@ -236,7 +291,7 @@ ${!options.hideStatus ? `
     if (taskbarBtn) {
         taskbarBtn.onclick = () => {
 
-            w.style.zIndex = nextZ();
+            bringToFront(w);
             taskbarButtons.forEach(btn => btn.classList.remove("selected"));
             taskbarBtn.classList.add("selected");
 
@@ -277,7 +332,7 @@ ${!options.hideStatus ? `
                         w.style.visibility = "visible";
                         w.style.pointerEvents = "auto";
                         clone.remove();
-                        w.style.zIndex = nextZ();
+                        bringToFront(w);
                         scheduleRefreshTopWindow();
                     }
                 );
@@ -582,29 +637,42 @@ ${!options.hideStatus ? `
         document.body.style.cursor = "";
         resizeCursor = "";
 
-        // ===== サイズ・位置保存 =====
+        // ===== サイズ・位置保存（改善後） =====
         if ((didResize || didMove) && !maximized && !w.classList.contains("maximized")) {
-            const data = {
-                w: w.offsetWidth,
-                h: w.offsetHeight,
-                x: Math.round(parseFloat(w.style.left)),
-                y: Math.round(parseFloat(w.style.top))
-            };
-
-            await saveWindowSize(sizeKey, data);
-            console.log("SAVE WINDOW", sizeKey, data);
+            if (!options.skipSave) {   // ← ★ skipSave が true の場合は保存をスキップ
+                const data = {
+                    w: w.offsetWidth,
+                    h: w.offsetHeight,
+                    x: Math.round(parseFloat(w.style.left)),
+                    y: Math.round(parseFloat(w.style.top))
+                };
+                await saveWindowSize(sizeKey, data);
+                console.log("SAVE WINDOW", sizeKey, data);
+            }
         }
 
         didResize = false;
         didMove = false;
-
     });
 
     scheduleRefreshTopWindow();
-
-    installWindowContextMenu(w);
+    if (!options._modal && !options.disableContextMenu) {
+        installWindowContextMenu(w);
+    }
 
     return content;
+}
+
+/* ===== ウィンドウ前面化 ===== */
+export function bringToFront(win) {
+    if (!win) return;
+    const visibleWindows = Array.from(document.querySelectorAll(".window"))
+        .filter(w => w.style.visibility !== "hidden" && w.dataset.minimized !== "true");
+
+    const maxZ = visibleWindows.reduce((acc, w) => Math.max(acc, parseInt(w.style.zIndex) || 0), 0);
+    win.style.zIndex = maxZ + 1;
+
+    scheduleRefreshTopWindow();
 }
 
 /* =========================
@@ -662,10 +730,15 @@ function animateTitleClone(clone, targetRect, duration = 250, callback) {
 }
 
 /* ===== 中央表示 & ダイアログ ===== */
+export function centerWindowOptions(width = 300, height = 150, parentWin = null) {
+    let rect;
 
-export function centerWindowOptions(width = 300, height = 150) {
-    const desktop = document.getElementById("desktop");
-    const rect = desktop.getBoundingClientRect();
+    if (parentWin instanceof HTMLElement) {
+        rect = parentWin.getBoundingClientRect();
+    } else {
+        const desktop = document.getElementById("desktop");
+        rect = desktop.getBoundingClientRect();
+    }
 
     return {
         width: width + "px",
@@ -675,85 +748,105 @@ export function centerWindowOptions(width = 300, height = 150) {
     };
 }
 
-export function alertWindow(message, options = {}) {
-    const content = createWindow("Alert", {
-        ...centerWindowOptions(300, 150),
+/* ===== モーダル用ウィンドウ ===== */
+export function showModalWindow(title, message, options = {}) {
+    // 既存のモーダルチェック
+    const existing = Array.from(document.querySelectorAll(".window"))
+        .find(w => w._modal && w.dataset.title === title);
+    if (existing) return existing.querySelector(".content");
+
+    // オーバーレイ作成
+    const overlay = document.createElement("div");
+    overlay.className = "modal-overlay";
+    Object.assign(overlay.style, {
+        position: "fixed",
+        left: 0, top: 0,
+        width: "100vw", height: "100vh",
+        background: "rgba(0,0,0,0.4)",
+        zIndex: 9999
+    });
+    document.body.appendChild(overlay); // ← 先に append
+
+    // モーダルウィンドウ作成
+    const content = createWindow(title, {
+        ...centerWindowOptions(options.width || 320, options.height || 150),
         taskbar: options.taskbar,
         disableControls: true,
-        hideRibbon: true,   // リボン非表示
-        hideStatus: true    // ステータスバー非表示
+        hideRibbon: true,
+        hideStatus: true,
+        skipSave: true,
+        _modal: true  // mousedown フォーカスを防ぐ
     });
-    content.innerHTML = `<p>${message}</p>`;
+
+    const win = content.parentElement;
+    win._modalOverlay = overlay; // ← ここ
+    win.style.zIndex = 10000;  // オーバーレイより上
+    document.body.appendChild(win); // ← desktop.appendChild より上に置く
+
+    // 内容設定
+    content.innerHTML = `<p>${message}</p><div style="text-align:center; margin-top:12px;"></div>`;
+    const container = content.querySelector("div");
+
+    (options.buttons || [{ label: "OK", onClick: null }]).forEach(btn => {
+        const b = document.createElement("button");
+        b.textContent = btn.label;
+        b.onclick = () => { win.remove(); overlay.remove(); btn.onClick?.(); };
+        b.style.margin = "0 6px";
+        container.appendChild(b);
+    });
+
     return content;
+}
+
+
+/* ===== 便利ラッパー ===== */
+export function alertWindow(message, options = {}) {
+    return showModalWindow("Alert", message, options);
 }
 
 export function errorWindow(message, options = {}) {
-    const content = createWindow("Error", {
-        ...centerWindowOptions(300, 150),
-        taskbar: options.taskbar,
-        disableControls: true,
-        hideRibbon: true,
-        hideStatus: true
-    });
-    content.innerHTML = `<p style="color:red">${message}</p>`;
-    return content;
+    return showModalWindow("Error", message, { ...options, buttons: [{ label: "OK", onClick: null }] });
 }
 
 export function confirmWindow(message, callback, options = {}) {
-    const content = createWindow("Confirm", {
-        ...centerWindowOptions(350, 150),
-        taskbar: options.taskbar,
-        disableControls: true,
-        hideRibbon: true,
-        hideStatus: true
+    return showModalWindow("Confirm", message, {
+        ...options,
+        buttons: [
+            { label: "はい", onClick: () => callback(true) },
+            { label: "いいえ", onClick: () => callback(false) }
+        ]
     });
-
-    content.innerHTML = `
-        <p>${message}</p>
-        <div style="text-align:center; margin-top:10px;">
-            <button id="okBtn">OK</button>
-            <button id="cancelBtn">Cancel</button>
-        </div>
-    `;
-
-    content.querySelector("#okBtn").onclick = () => {
-        callback(true);
-        content.parentElement.remove();
-        scheduleRefreshTopWindow();
-    };
-
-    content.querySelector("#cancelBtn").onclick = () => {
-        callback(false);
-        content.parentElement.remove();
-        scheduleRefreshTopWindow();
-    };
 }
 
-/* ===== 手前ウィンドウ管理 ===== */
-
+/* ===== refreshTopWindow 更新 ===== */
 export function refreshTopWindow() {
     const visibleWindows = Array.from(document.querySelectorAll(".window"))
         .filter(win => win.style.visibility !== "hidden" && win.dataset.minimized !== "true");
+
     let topWindow = null;
-    if (visibleWindows.length) {
+
+    // モーダルがあれば最優先
+    const modalWin = visibleWindows.find(w => w._modal);
+    if (modalWin) topWindow = modalWin;
+    else if (visibleWindows.length) {
         visibleWindows.sort((a, b) =>
             parseInt(b.style.zIndex) - parseInt(a.style.zIndex)
         );
         topWindow = visibleWindows[0];
     }
+
     document.querySelectorAll(".window .title-bar").forEach(tb => {
         const win = tb.parentElement;
         tb.style.background = (win === topWindow) ? themeColor : DEFAULT_COLOR;
-
     });
+
     taskbarButtons.forEach(btn => {
-        if (topWindow && btn._window === topWindow) {
-            btn.classList.add("selected");
-        } else {
-            btn.classList.remove("selected");
-        }
+        if (topWindow && btn._window === topWindow) btn.classList.add("selected");
+        else btn.classList.remove("selected");
     });
 }
+
+
 
 /* =========================
    Window Control API
@@ -864,7 +957,7 @@ export function installWindowContextMenu(w) {
             // ★ 右クリックでメニューを表示する時点でウィンドウを選択・最前面に
             if (!minimized) {
                 // ウィンドウ最前面に
-                w.style.zIndex = nextZ();
+                bringToFront(w);
 
                 // タイトルバー色更新
                 document.querySelectorAll(".window .title-bar").forEach(tb => {

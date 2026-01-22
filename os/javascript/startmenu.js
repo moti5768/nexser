@@ -3,11 +3,18 @@ import { FS } from "./fs.js";
 import { launch, logOff } from "./kernel.js";
 import { getRecent } from "./recent.js";
 import { resolveFS } from "./fs-utils.js";
-import { createWindow } from "./window.js";
 import { openDB } from "./db.js";
+import { resolveAppByPath } from "./file-associations.js";
 
 const startBtn = document.getElementById("start-btn");
 let recentListenerInstalled = false;
+
+/* =====================================================
+   Utils
+===================================================== */
+function hasExtension(name) {
+    return /\.[a-z0-9]+$/i.test(name);
+}
 
 /* =====================================================
    Start Menu Builder
@@ -59,7 +66,6 @@ export async function buildStartMenu() {
 
 /* =====================================================
    Recursive Menu Generator
-   空フォルダは "(empty)" 表示
 ===================================================== */
 function createMenu(folder, basePath, menuRoot) {
     const container = document.createElement("div");
@@ -78,26 +84,28 @@ function createMenu(folder, basePath, menuRoot) {
         container.appendChild(item);
 
         const fullPath = `${basePath}/${name}`;
+        const isFileByExt = hasExtension(name);
+        const effectiveType = isFileByExt ? "file" : node.type;
 
-        // Launchable items
-        if (["app", "link", "file"].includes(node.type)) {
+        // ===== 起動可能アイテム =====
+        if (["app", "link", "file"].includes(effectiveType)) {
             item.onclick = () => {
                 let targetNode = node;
                 let targetPath = fullPath;
 
-                if (node.type === "link") {
+                if (effectiveType === "link") {
                     targetPath = node.target;
                     targetNode = resolveFS(node.target);
                     if (!targetNode) return;
                 }
 
-                launchByType(targetNode?.type, targetPath);
+                launchByType(effectiveType, targetPath);
                 menuRoot.style.display = "none";
             };
         }
 
-        // Folder
-        if (node.type === "folder") {
+        // ===== フォルダ（※拡張子が無い場合のみ）=====
+        if (effectiveType === "folder") {
             item.classList.add("has-children");
 
             const sub = createMenu(node, fullPath, menuRoot);
@@ -185,12 +193,23 @@ function launchByType(type, path) {
 
     switch (type) {
         case "app":
-        case "file":
-            launch(path);
+            launch(path, { path, uniqueKey: path });
             break;
+
+        case "file": {
+            const appPath = resolveAppByPath(path);
+            if (appPath) {
+                launch(appPath, { path, uniqueKey: path });
+            } else {
+                launch(path, { path, uniqueKey: path });
+            }
+            break;
+        }
+
         case "folder":
-            launch("Programs/Explorer.app", { path });
+            launch("Programs/Explorer.app", { path, uniqueKey: path });
             break;
+
         default:
             console.warn("Unknown recent item type:", type, path);
     }

@@ -4,14 +4,18 @@ import { createWindow } from "../window.js";
 import { resolveFS } from "../fs-utils.js";
 import { FS, initFS } from "../fs.js";
 import { buildDesktop } from "../desktop.js";
-import { attachContextMenu } from "../context-menu.js"; // 右クリック用
+import { attachContextMenu } from "../context-menu.js";
+import { resolveAppByPath } from "../file-associations.js";
+
+function hasExtension(name) {
+    return /\.[a-z0-9]+$/i.test(name);
+}
 
 export default async function Explorer(root, options = {}) {
     const win = root.closest(".window");
     const titleEl = win?.querySelector(".title-text");
     const taskBtn = win?._taskbarBtn;
 
-    // 起動時に IndexedDB から FS を読み込み
     await initFS();
 
     let currentPath = options.path || "Desktop";
@@ -20,16 +24,20 @@ export default async function Explorer(root, options = {}) {
         currentPath = path;
         updateTitle(path);
 
-        // HTML描画
-        root.innerHTML = `
-            <div class="explorer-header">
-                <button id="back-btn">&larr;</button>
-                <span class="path-label">${path}</span>
-            </div>
-            <div class="explorer-list scrollbar_none"></div>
-        `;
+        // Explorer リスト部分だけ描画
+        let listContainer = root.querySelector(".explorer-list");
+        if (!listContainer) {
+            root.innerHTML = `
+                <div class="explorer-header">
+                    <button id="back-btn">&larr;</button>
+                    <span class="path-label">${path}</span>
+                </div>
+                <div class="explorer-list scrollbar_none"></div>
+            `;
+            listContainer = root.querySelector(".explorer-list");
+        }
+        listContainer.innerHTML = "";
 
-        const list = root.querySelector(".explorer-list");
         const folder = resolveFS(path);
         if (!folder) return;
 
@@ -40,25 +48,23 @@ export default async function Explorer(root, options = {}) {
             const item = document.createElement("div");
             item.textContent = name;
             item.className = "explorer-item";
-            list.appendChild(item);
+            listContainer.appendChild(item);
 
             const fullPath = `${path}/${name}`;
 
-            // 右クリックメニューで削除
             attachContextMenu(item, () => [{
                 label: "削除",
                 action: () => {
                     const parentNode = resolveFS(path);
                     if (!parentNode) return;
 
-                    delete parentNode[name]; // Proxy で自動保存
-                    render(path);            // Explorer 再描画
-                    buildDesktop();          // デスクトップ更新
+                    delete parentNode[name];
+                    render(path);
+                    buildDesktop();
                     window.dispatchEvent(new Event("fs-updated"));
                 }
             }]);
 
-            // 左クリック処理
             let clickTimer = null;
             item.addEventListener("click", () => {
                 if (clickTimer) {
@@ -74,28 +80,32 @@ export default async function Explorer(root, options = {}) {
                         if (!targetNode) return;
                     }
 
-                    switch (targetNode.type) {
+                    let effectiveType = targetNode.type;
+                    if (effectiveType === "folder" && hasExtension(name)) effectiveType = "file";
+
+                    switch (effectiveType) {
                         case "app":
-                            launch(targetPath);
+                            launch(targetPath, { path: targetPath, uniqueKey: targetPath });
                             break;
                         case "folder":
                             currentPath = targetPath;
                             render(currentPath);
                             break;
-                        case "file":
-                            import("../apps/fileviewer.js").then(mod => {
-                                const content = createWindow(name);
-                                mod.default(content, { name, content: targetNode.content });
-                            });
+                        case "file": {
+                            const appPath = resolveAppByPath(targetPath);
+                            if (appPath) {
+                                launch(appPath, { path: targetPath, node: targetNode, uniqueKey: targetPath });
+                            } else {
+                                import("../apps/fileviewer.js").then(mod => {
+                                    const content = createWindow(name);
+                                    mod.default(content, { name, content: targetNode.content });
+                                });
+                            }
                             break;
-                        default:
-                            console.warn("不明なタイプ:", targetNode.type);
+                        }
                     }
                 } else {
-                    clickTimer = setTimeout(() => {
-                        clearTimeout(clickTimer);
-                        clickTimer = null;
-                    }, 250);
+                    clickTimer = setTimeout(() => { clearTimeout(clickTimer); clickTimer = null; }, 250);
                 }
             });
         }
@@ -133,48 +143,92 @@ export default async function Explorer(root, options = {}) {
 
             statusBar.textContent = parts.length ? parts.join(", ") : "(empty)";
         }
-
-
     };
 
-    render(currentPath);
-    setupRibbon(win, () => currentPath, render);
+    // Ribbon メニュー
+    const ribbonMenus = [
+        {
+            title: "Window", items: [
+                { label: "Minimize", action: () => win.querySelector(".min-btn")?.click() },
+                { label: "Maximize", action: () => win.querySelector(".max-btn")?.click() },
+                { label: "Close", action: () => win.querySelector(".close-btn")?.click() }
+            ]
+        },
+        {
+            title: "File", items: [{
+                label: "Newfolder", action: () => {
+                    const folderName = prompt("新しいフォルダ名");
+                    if (!folderName) return;
+                    const folderNode = resolveFS(currentPath);
+                    folderNode[folderName] = hasExtension(folderName) ? { type: "file", content: "" } : { type: "folder" };
+                    render(currentPath);
+                    buildDesktop();
+                    window.dispatchEvent(new Event("fs-updated"));
+                }
+            }]
+        },
+        { title: "Edit", items: [{ label: "Cut", action: () => { } }, { label: "Copy", action: () => { } }, { label: "Paste", action: () => { } }] },
+        { title: "View", items: [{ label: "Icons", action: () => { } }, { label: "List", action: () => { } }, { label: "Details", action: () => { } }] }
+    ];
 
+    setupRibbon(win, () => currentPath, render, ribbonMenus);
+    render(currentPath);
+
+    if (!win._fsWatcherInstalled) {
+        win._fsWatcherInstalled = true;
+        window.addEventListener("fs-updated", () => { if (currentPath === "Desktop") render(currentPath); });
+    }
 
     function updateTitle(path) {
         if (!win) return;
         const name = path.split("/").pop() || path;
         if (titleEl) titleEl.textContent = name;
-        if (taskBtn) {
-            taskBtn.textContent = name;
-            taskBtn.dataset.title = name;
-        }
+        if (taskBtn) { taskBtn.textContent = name; taskBtn.dataset.title = name; }
         win.dataset.title = name;
     }
 }
 
-// リボン設定
-function setupRibbon(win, getCurrentPath, renderCallback) {
+
+// リボン設定関数
+export function setupRibbon(win, getCurrentPath, renderCallback, menus) {
     if (!win?._ribbon) return;
     const ribbon = win._ribbon;
     ribbon.innerHTML = "";
 
-    // 新規フォルダ
-    const newFolderBtn = document.createElement("button");
-    newFolderBtn.textContent = "新規フォルダ";
-    newFolderBtn.onclick = () => {
-        const folderName = prompt("新しいフォルダ名を入力");
-        if (!folderName) return;
+    const defaultMenus = [
+        {
+            title: "Window", items: [
+                { label: "Minimize", action: () => win.querySelector(".min-btn")?.click() },
+                { label: "Maximize", action: () => win.querySelector(".max-btn")?.click() },
+                { label: "Close", action: () => win.querySelector(".close-btn")?.click() }
+            ]
+        }
+    ];
 
-        const currentPath = getCurrentPath();       // 最新の階層を取得
-        const folderNode = resolveFS(currentPath);
-        if (!folderNode) return;
+    (menus || defaultMenus).forEach(menu => addRibbonMenu(ribbon, menu.title, menu.items));
+}
 
-        folderNode[folderName] = { type: "folder" }; // Proxyで自動保存
+// 共通関数
+function addRibbonMenu(ribbon, title, items) {
+    const menu = document.createElement("div");
+    menu.className = "ribbon-menu";
 
-        renderCallback(currentPath);  // 最新の階層で再描画
-        buildDesktop();               // デスクトップ更新
-        window.dispatchEvent(new Event("fs-updated"));
-    };
-    ribbon.appendChild(newFolderBtn);
+    const span = document.createElement("span");
+    span.className = "ribbon-title";
+    span.textContent = title;
+    menu.appendChild(span);
+
+    const dropdown = document.createElement("div");
+    dropdown.className = "ribbon-dropdown";
+
+    items.forEach(it => {
+        const div = document.createElement("div");
+        div.className = "ribbon-item";
+        div.textContent = it.label;
+        div.onclick = it.action;
+        dropdown.appendChild(div);
+    });
+
+    menu.appendChild(dropdown);
+    ribbon.appendChild(menu);
 }

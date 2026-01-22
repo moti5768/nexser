@@ -9,21 +9,18 @@ import {
     confirmWindow,
     scheduleRefreshTopWindow,
     removeAllTaskbarButtons,
-    errorWindow
+    errorWindow,
+    bringToFront
 } from "./window.js";
-import { nextZ } from "./zindex.js";
 import { showPromptScreen } from "./boot.js";
 import { startup_sound } from "./sounds.js";
 import { addRecent } from "./recent.js";
 import { installDynamicButtonEffect } from "./ui.js";
-import { createWindow as _createWindow } from './window.js';
 
-const explorerWindows = new Map();
+const explorerWindows = new Map(); // path → window
 const moduleCache = new Map();
-
-/* ===== プロセス管理 ===== */
 let pidCounter = 1;
-const processes = new Map(); // path → process
+const processes = new Map(); // uniqueKey → { pid, path, window, state }
 
 /* ===== カーネル初期化 ===== */
 export function initKernel() {
@@ -71,32 +68,30 @@ export async function launch(path, options = {}) {
     }
 
     // link 解決
-    if (item.type === "link") {
-        return launch(item.target, options);
-    }
+    if (item.type === "link") return launch(item.target, options);
 
     const isExplorer = item.type === "app" && item.entry?.includes("explorer.js");
 
-    // 既存ウィンドウがある場合は前面化
-    const getExistingWindow = () => {
-        if (isExplorer) return explorerWindows.get(options.path || "Desktop") || null;
-        if (item.singleton) return processes.get(path)?.window || null;
-        return null;
-    };
-    const existingWin = getExistingWindow();
+    // 重複防止用キーを決定
+    const uniqueKey = options.uniqueKey ?? (item.singleton ? path : null);
+
+    // 既存ウィンドウチェック
+    let existingWin = null;
+    if (isExplorer) existingWin = explorerWindows.get(options.path || "Desktop") || null;
+    else if (uniqueKey) existingWin = processes.get(uniqueKey)?.window || null;
+
     if (existingWin && document.body.contains(existingWin)) {
         const taskbarBtn = existingWin._taskbarBtn;
         if (existingWin.dataset.minimized === "true") {
             taskbarBtn?.click();
         } else {
-            existingWin.style.zIndex = nextZ();
-            scheduleRefreshTopWindow();
+            bringToFront(existingWin);
         }
         return;
     }
 
     if (isExplorer) explorerWindows.delete(options.path || "Desktop");
-    if (item.singleton) processes.delete(path);
+    if (uniqueKey) processes.delete(uniqueKey);
 
     try {
         if (item.type === "app") {
@@ -108,20 +103,24 @@ export async function launch(path, options = {}) {
             }
             if (!appModule.default) throw new Error("アプリが正しくエクスポートされていません");
 
-            const displayName = options.showFullPath ? path : item.name || basename(path);
+            const displayName =
+                options?.path
+                    ? basename(options.path)
+                    : (options.showFullPath ? path : item.name || basename(path));
+
             const content = createWindow(displayName);
             const win = content.parentElement;
 
-            // Explorer には options.path を渡す
-            appModule.default(content, options);
+            appModule.default(content, options); // アプリ起動
 
-            // Recent に FS パス保存
             addRecent(path);
 
-            if (item.singleton) {
-                processes.set(path, { pid: pidCounter++, path, window: win, state: "normal" });
+            // processes マップに登録
+            if (uniqueKey) {
+                processes.set(uniqueKey, { pid: pidCounter++, path, window: win, state: "normal" });
             }
 
+            // Explorer 用オブザーバー
             if (isExplorer) {
                 const openPath = options.path || "Desktop";
                 explorerWindows.set(openPath, win);
@@ -152,16 +151,26 @@ export async function launch(path, options = {}) {
             const displayName = options.showFullPath ? path : basename(path);
             const content = createWindow(displayName);
             mod.default(content, { name: basename(path), content: item.content });
+
+            // ファイルビューアも uniqueKey で重複防止可能
+            if (options.uniqueKey) {
+                processes.set(options.uniqueKey, { pid: pidCounter++, path, window: content.parentElement, state: "normal" });
+            }
         }
 
+        // フォルダの場合は Explorer を起動（リボン付き）
+        // フォルダの場合は Explorer を起動（リボン付き）
         else if (item.type === "folder") {
-            // フォルダの場合は Explorer.app を起動
-            await launch("Programs/Explorer.app", { path, parentCwd: options.parentCwd });
-        }
+            const displayName = options.showFullPath ? path : basename(path);
 
-        else {
-            throw new Error(`不明なタイプ: ${item.type}`);
-        }
+            // Explorer を起動
+            await launch("Programs/Explorer.app", {
+                path,                   // Explorer 内で currentPath として使用
+                parentCwd: options.parentCwd,
+                ribbonMenus: options.ribbonMenus, // Explorer.js で使用
+                showFullPath: options.showFullPath
+            });
+        } else throw new Error(`不明なタイプ: ${item.type}`);
     } catch (err) {
         console.error(err);
         errorWindow(`起動に失敗しました: ${path}\n${err.message}`, { taskbar: false });
@@ -170,12 +179,10 @@ export async function launch(path, options = {}) {
     refreshStartMenu();
 }
 
-
 /* ===== 仮想パス解決 ===== */
 function resolve(path) {
     if (typeof path !== "string") return null;
 
-    // FS 内パス用に C:/ を削除
     let fsPath = path.replace(/^C:\//, "");
     const parts = fsPath.split("/").filter(Boolean);
     let cur = FS;
@@ -185,7 +192,6 @@ function resolve(path) {
         cur = cur[p];
         if (!cur) return null;
 
-        // link 解決
         if (cur.type === "link") {
             cur = resolve(cur.target);
             if (!cur) return null;
@@ -218,7 +224,10 @@ export async function logOff() {
         confirmWindow(
             "開いているウィンドウがあります。すべて閉じてログオフしますか？",
             confirmed => confirmed && performLogoff(),
-            { taskbar: false }
+            {
+                taskbar: false,
+                disableContextMenu: true
+            }
         );
     } else {
         performLogoff();

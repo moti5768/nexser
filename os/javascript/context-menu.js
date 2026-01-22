@@ -4,7 +4,9 @@ let currentMenu = null;
 export function attachContextMenu(target, getMenuItems) {
     target.addEventListener("contextmenu", e => {
         e.preventDefault();
-        showContextMenu(e.clientX, e.clientY, getMenuItems());
+        const items = getMenuItems(e); // ← イベントを渡す
+        if (!items || !items.length) return;
+        showContextMenu(e.clientX, e.clientY, items);
     });
 }
 

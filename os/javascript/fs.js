@@ -7,9 +7,9 @@ let saveTimer = null;
 export let FS = {
     Desktop: {
         type: "folder",
-        "Explorer.app": { type: "link", target: "Programs/Explorer.app" },
+        "Programs": { type: "link", target: "Programs" },
+        "Desktop": { type: "link", target: "Desktop" },
         "Documents": { type: "link", target: "Programs/Documents" },
-        "Images": { type: "link", target: "Programs/Documents/Images" },
         "Terminal.app": { type: "link", target: "Programs/Terminal.app" },
         "Calc.app": { type: "link", target: "Programs/Calc.app" },
         "Settings.app": { type: "link", target: "Programs/Settings.app" }
@@ -17,15 +17,19 @@ export let FS = {
     Programs: {
         type: "folder",
         "Explorer.app": { type: "app", entry: "./apps/explorer.js" },
+        "TextEditor.app": { type: "app", entry: "./apps/texteditor.js" },
+        "ImageViewer.app": { type: "app", entry: "./apps/imageviewer.js" },
+        "VideoPlayer.app": { type: "app", entry: "./apps/videoplayer.js" },
         "Documents": {
             type: "folder",
-            "Notes.txt": { type: "file", content: "My personal notes..." },
-            "Images": {
-                type: "folder",
-                "photo1.png": { type: "file", content: "image1data" },
-                "photo2.png": { type: "file", content: "image2data" }
-            }
+            "Notes.txt": { type: "file", content: "My personal notes..." }
         },
+        "Picture": {
+            type: "folder",
+            "photo1.png": { type: "file", content: "image1data" },
+            "photo2.png": { type: "file", content: "image2data" }
+        },
+        "Movie": { type: "folder" },
         "Settings.app": { type: "app", entry: "./apps/settings.js", singleton: true },
         "Terminal.app": { type: "app", entry: "./apps/terminal.js", singleton: true },
         "Calc.app": { type: "app", entry: "./apps/calc.js", singleton: true },
