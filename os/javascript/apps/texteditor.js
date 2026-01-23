@@ -1,6 +1,6 @@
 // TextEditor.js
 import { resolveFS } from "../fs-utils.js";
-import { createWindow, bringToFront } from "../window.js";
+import { createWindow, bringToFront, centerWindowOptions } from "../window.js";
 import { buildDesktop } from "../desktop.js";
 import { setupRibbon } from "./explorer.js"; // ここに setupRibbon が定義されている
 
@@ -146,6 +146,9 @@ export default function TextEditor(root, options = {}) {
         textarea.style.fontFamily = styleState.fontFamily;
         textarea.style.fontWeight = styleState.fontWeight;
         textarea.style.fontStyle = styleState.fontStyle;
+        textarea.style.textDecoration = styleState.textDecoration || "none";
+        textarea.style.color = styleState.color || "black";
+        textarea.style.backgroundColor = styleState.backgroundColor || "white";
     }
     applyStyle();
 
@@ -183,7 +186,7 @@ export default function TextEditor(root, options = {}) {
                 const promptInput = document.createElement("input");
                 promptInput.type = "text";
                 promptInput.value = defaultName;
-                promptInput.style.width = "100%";
+                promptInput.style.width = "95%";
                 document.querySelector(".modal-dialog .content div").prepend(promptInput);
                 promptInput.focus();
             });
@@ -269,8 +272,40 @@ export default function TextEditor(root, options = {}) {
             {
                 title: "Style",
                 items: [
-                    { label: "B", action: () => { styleState.fontWeight = styleState.fontWeight === "bold" ? "normal" : "bold"; dirty = true; applyStyle(); updateTitle(); } },
-                    { label: "I", action: () => { styleState.fontStyle = styleState.fontStyle === "italic" ? "normal" : "italic"; dirty = true; applyStyle(); updateTitle(); } }
+                    {
+                        label: "B", action: () => {
+                            styleState.fontWeight = styleState.fontWeight === "bold" ? "normal" : "bold";
+                            dirty = true; applyStyle(); updateTitle();
+                        }
+                    },
+                    {
+                        label: "I", action: () => {
+                            styleState.fontStyle = styleState.fontStyle === "italic" ? "normal" : "italic";
+                            dirty = true; applyStyle(); updateTitle();
+                        }
+                    },
+                    {
+                        label: "U", action: () => {
+                            styleState.textDecoration = styleState.textDecoration === "underline" ? "none" : "underline";
+                            dirty = true; applyStyle(); updateTitle();
+                        }
+                    },
+                    {
+                        label: "S", action: () => {
+                            styleState.textDecoration = styleState.textDecoration === "line-through" ? "none" : "line-through";
+                            dirty = true; applyStyle(); updateTitle();
+                        }
+                    },
+                    {
+                        label: "Color", action: () => showColorPicker("文字色", styleState.color || "#000000", val => {
+                            styleState.color = val; dirty = true; applyStyle(); updateTitle();
+                        }, win)
+                    },
+                    {
+                        label: "BG", action: () => showColorPicker("背景色", styleState.backgroundColor || "#ffffff", val => {
+                            styleState.backgroundColor = val; dirty = true; applyStyle(); updateTitle();
+                        }, win)
+                    }
                 ]
             },
             {
@@ -300,7 +335,14 @@ export default function TextEditor(root, options = {}) {
     function closeWindow() { closeBtn?.click(); }
 
     function requestClose() {
-        if (!dirty) { closeWindow(); return; }
+        if (!dirty) {
+            closeWindow();
+            return;
+        }
+        // 編集中ダイアログ用に modal-dialog を付与
+        if (win && !win.classList.contains("modal-dialog")) {
+            win.classList.add("modal-dialog");
+        }
         showConfirm(root, "編集中の内容があります。\n保存しますか？",
             () => { save(); closeWindow(); },
             () => { dirty = false; updateTitle(); closeWindow(); }
@@ -325,3 +367,109 @@ function button(label) { const b = document.createElement("button"); b.textConte
 function label(text) { const s = document.createElement("span"); s.textContent = text + ":"; s.style.margin = "0 4px"; s.style.fontSize = "12px"; return s; }
 function number(value, min, max, width) { const i = document.createElement("input"); i.type = "number"; i.value = value; i.min = min; i.max = max; i.style.width = width + "px"; return i; }
 function select(map, value) { const s = document.createElement("select"); for (const k in map) { const o = document.createElement("option"); o.value = k; o.textContent = map[k]; if (k === value) o.selected = true; s.appendChild(o); } return s; }
+
+let activeColorPicker = null;
+
+export function showColorPicker(title, initialColor = "#ffffff", onSelect, parentWin) {
+    // 既存カラーピッカーが DOM に存在するかチェック
+    if (activeColorPicker && document.body.contains(activeColorPicker)) {
+        bringToFront(activeColorPicker);
+        return activeColorPicker.querySelector(".content");
+    } else {
+        // 変数が残っているが DOM にない場合はクリア
+        activeColorPicker = null;
+    }
+
+    // ウィンドウ生成
+    const content = createWindow(title, {
+        width: 320,
+        height: 200,
+        disableControls: true,
+        hideRibbon: true,
+        hideStatus: true,
+        taskbar: false,
+        skipSave: true,
+        _modal: true,
+        disableResize: false
+    });
+
+    const win = content.parentElement;
+    win.classList.add("modal-dialog", "color-picker");
+    win.style.position = "absolute";
+    win.style.zIndex = 10000;
+
+    const opts = centerWindowOptions(320, 200, parentWin instanceof HTMLElement ? parentWin : null);
+    win.style.left = opts.left;
+    win.style.top = opts.top;
+
+    // min/maxボタン操作不可
+    const minBtn = win.querySelector(".min-btn");
+    const maxBtn = win.querySelector(".max-btn");
+    if (minBtn) minBtn.classList.add("pointer_none");
+    if (maxBtn) maxBtn.classList.add("pointer_none");
+
+    // コンテンツ
+    content.innerHTML = `
+        <div style="padding:12px;text-align:center;">
+            <input type="color" value="${initialColor}" style="width:80px;height:50px;margin-bottom:12px;">
+            <div style="margin-bottom:12px;" class="color-buttons"></div>
+            <div style="margin-top:8px;"></div>
+        </div>
+    `;
+
+    const colorInput = content.querySelector("input[type=color]");
+    colorInput.className = "button";
+    const buttonContainer = content.querySelector(".color-buttons");
+    const actionContainer = content.querySelector("div div");
+
+    // プリセット色ボタン
+    const presetColors = ["#ff0000", "#00ff00", "#0000ff", "#ffff00", "#ff00ff", "#00ffff", "#ffffff", "#000000"];
+    presetColors.forEach(c => {
+        const btn = document.createElement("button");
+        btn.style.background = c;
+        btn.style.width = "24px";
+        btn.style.height = "24px";
+        btn.style.margin = "0 2px";
+        btn.addEventListener("click", () => colorInput.value = c);
+        buttonContainer.appendChild(btn);
+    });
+
+    // OKボタン
+    const okBtn = document.createElement("button");
+    okBtn.textContent = "OK";
+    okBtn.style.margin = "0 4px";
+    okBtn.addEventListener("click", () => {
+        onSelect?.(colorInput.value);
+        closePicker();
+    });
+    actionContainer.appendChild(okBtn);
+
+    // キャンセルボタン
+    const cancelBtn = document.createElement("button");
+    cancelBtn.textContent = "キャンセル";
+    cancelBtn.style.margin = "0 4px";
+    cancelBtn.addEventListener("click", closePicker);
+    actionContainer.appendChild(cancelBtn);
+
+    document.body.appendChild(win);
+    activeColorPicker = win;
+    bringToFront(win);
+
+    // 親ウィンドウが消えたらカラーピッカーも閉じる
+    let observer = null;
+    if (parentWin instanceof HTMLElement) {
+        observer = new MutationObserver(() => {
+            if (!document.body.contains(parentWin)) closePicker();
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+    }
+
+    function closePicker() {
+        if (!activeColorPicker) return;
+        activeColorPicker.remove();
+        activeColorPicker = null;
+        if (observer) observer.disconnect();
+    }
+
+    return content;
+}

@@ -143,6 +143,7 @@ export default async function SettingsApp(content) {
         const colorInput = document.createElement("input");
         colorInput.type = "color";
         colorInput.value = themeColor;
+        colorInput.className = "button";
         colorInput.style.width = "60px";
         colorInput.oninput = async () => {
             themeColor = colorInput.value;

@@ -4,7 +4,6 @@ import { themeColor } from "./apps/settings.js"; // これを使う
 import { attachContextMenu } from "./context-menu.js";
 import { setupRibbon } from "./apps/explorer.js"; // ここに setupRibbon が定義されている
 
-
 export const taskbarButtons = []; // 作られたボタンを全部保存
 let resizeCursor = "";
 let maximizing = false;
@@ -482,8 +481,21 @@ ${!options.hideStatus ? `
     // document 全体の mouseup
     document.addEventListener("mouseup", async () => {
         if (dragging && preview) {
+            // preview をウィンドウに反映
             w.style.left = preview.style.left;
             w.style.top = preview.style.top;
+
+            // 保存処理
+            if (!options.skipSave && !maximized && !w.classList.contains("maximized")) {
+                const data = {
+                    w: w.offsetWidth,
+                    h: w.offsetHeight,
+                    x: Math.round(parseFloat(w.style.left)),
+                    y: Math.round(parseFloat(w.style.top))
+                };
+                await saveWindowSize(sizeKey, data);
+            }
+
             preview.remove();
             preview = null;
         }
@@ -799,6 +811,7 @@ export function showModalWindow(title, message, options = {}) {
     const win = content.parentElement;
     win._modalOverlay = overlay; // ← ここ
     win.style.zIndex = 10000;  // オーバーレイより上
+    win.classList.add("modal-dialog");
     document.body.appendChild(win); // ← desktop.appendChild より上に置く
 
     // 内容設定

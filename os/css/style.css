@@ -279,6 +279,10 @@ body {
     border-color: black #eee #eee black;
 }
 
+.modal-dialog .content {
+    background: #C3C7CB;
+}
+
 .window.maximized {
     border: none;
     box-shadow: none;
@@ -289,6 +293,16 @@ body {
     /* マウス判定を無効化 */
     cursor: default !important;
     /* リサイズカーソルを消す */
+}
+
+input {
+    border: 1.5px solid;
+    border-color: black #eee #eee black;
+}
+
+input:focus {
+    outline: none;
+    /* フォーカス時の枠線を消す */
 }
 
 
