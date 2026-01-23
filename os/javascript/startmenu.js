@@ -1,10 +1,14 @@
 // startmenu.js
 import { FS } from "./fs.js";
 import { launch, logOff } from "./kernel.js";
-import { getRecent } from "./recent.js";
+import { getRecent, addRecent } from "./recent.js";
 import { resolveFS } from "./fs-utils.js";
 import { openDB } from "./db.js";
 import { resolveAppByPath } from "./file-associations.js";
+import {
+    createWindow
+} from "./window.js";
+import { basename } from "./kernel.js";
 
 const startBtn = document.getElementById("start-btn");
 let recentListenerInstalled = false;
@@ -92,17 +96,60 @@ function createMenu(folder, basePath, menuRoot) {
             item.onclick = () => {
                 let targetNode = node;
                 let targetPath = fullPath;
+                let effectiveType = targetNode.type;
 
+                // リンクの場合はリンク先の type に置き換える
                 if (effectiveType === "link") {
-                    targetPath = node.target;
-                    targetNode = resolveFS(node.target);
+                    targetPath = targetNode.target;
+                    targetNode = resolveFS(targetPath);
                     if (!targetNode) return;
+                    effectiveType = targetNode.type;
                 }
 
-                launchByType(effectiveType, targetPath);
+                // 拡張子があれば folder でも file にする
+                if (effectiveType === "folder" && hasExtension(name)) effectiveType = "file";
+
+                switch (effectiveType) {
+                    case "app":
+                        launch(targetPath, { path: targetPath, uniqueKey: targetPath });
+                        addRecent({ type: "app", path: targetPath });
+                        break;
+
+                    case "file": {
+                        // ファイルはそのファイルだけ開く
+                        const appPath = resolveAppByPath(targetPath);
+                        if (appPath) {
+                            launch(appPath, { path: targetPath, node: targetNode, uniqueKey: targetPath });
+                        } else {
+                            import("./apps/fileviewer.js").then(mod => {
+                                const content = createWindow(name);
+                                mod.default(content, { name, content: targetNode.content });
+                            });
+                        }
+                        addRecent({ type: "file", path: targetPath });
+                        break;
+                    }
+
+                    case "folder":
+                        // フォルダだけ Explorer を開く（親階層は展開しない）
+                        launch("Programs/Explorer.app", {
+                            path: targetPath,
+                            uniqueKey: targetPath,
+                            showFullPath: false
+                        });
+                        addRecent({ type: "folder", path: targetPath });
+                        break;
+
+                    default:
+                        console.warn("Unknown type:", effectiveType, targetPath);
+                }
+
                 menuRoot.style.display = "none";
             };
+
         }
+
+
 
         // ===== フォルダ（※拡張子が無い場合のみ）=====
         if (effectiveType === "folder") {
@@ -132,7 +179,35 @@ function createMenu(folder, basePath, menuRoot) {
 ===================================================== */
 function setupHover(parent, submenu) {
     let hideTimer = null;
-    const show = () => clearTimeout(hideTimer) || (submenu.style.display = "block");
+    let initialized = false; // ← 追加: 一度だけ位置調整
+
+    const show = () => {
+        clearTimeout(hideTimer);
+        submenu.style.display = "block";
+
+        if (!initialized) {
+            const rect = submenu.getBoundingClientRect();
+            const viewportWidth = window.innerWidth;
+
+            if (rect.right > viewportWidth) {
+                // 右にはみ出す場合は左に表示
+                submenu.style.left = `-${rect.width}px`;
+            } else {
+                submenu.style.left = ""; // デフォルト
+            }
+
+            const viewportHeight = window.innerHeight;
+            if (rect.bottom > viewportHeight) {
+                const offset = rect.bottom - viewportHeight + 10;
+                submenu.style.top = `-${offset}px`;
+            } else {
+                submenu.style.top = "";
+            }
+
+            initialized = true; // 一度だけ計算
+        }
+    };
+
     const hide = () => hideTimer = setTimeout(() => submenu.style.display = "none", 200);
 
     parent.addEventListener("mouseenter", show);
@@ -141,12 +216,14 @@ function setupHover(parent, submenu) {
     submenu.addEventListener("mouseleave", hide);
 }
 
+
 /* =====================================================
    Recent Area
 ===================================================== */
 async function buildRecentArea(root) {
-    const existing = root.querySelector(".start-recent");
-    if (existing) existing.remove();
+    // 複数存在する start-recent をすべて削除
+    const existing = root.querySelectorAll(".start-recent");
+    existing.forEach(el => el.remove());
 
     const box = document.createElement("div");
     box.className = "start-recent";
@@ -187,13 +264,29 @@ async function buildRecentArea(root) {
    Unified launcher
 ===================================================== */
 function launchByType(type, path) {
-    if (type && path) {
-        import("./recent.js").then(m => m.addRecent({ type, path }));
+    if (!type || !path) return;
+
+    // FS 内の node を取得
+    let node = resolveFS(path);
+    if (!node) {
+        console.warn("FS に存在しないパス:", path);
+        return;
     }
+
+    // link は target の type に置き換える
+    if (type === "link") type = node.type;
+
+    // ユーザーが開いた FS 内 path を Recent 登録用に準備
+    const recentItem = {
+        type: node.type,      // app/file/folder
+        path,                 // FS 内の path
+        display: basename(path)
+    };
 
     switch (type) {
         case "app":
             launch(path, { path, uniqueKey: path });
+            addRecent(recentItem); // FS 内の path を追加
             break;
 
         case "file": {
@@ -201,17 +294,22 @@ function launchByType(type, path) {
             if (appPath) {
                 launch(appPath, { path, uniqueKey: path });
             } else {
-                launch(path, { path, uniqueKey: path });
+                import("./apps/fileviewer.js").then(mod => {
+                    const content = createWindow(basename(path));
+                    mod.default(content, { name: basename(path), content: node.content || "" });
+                });
             }
+            addRecent(recentItem); // FS 内の path を追加（絶対に appPath ではない）
             break;
         }
 
         case "folder":
-            launch("Programs/Explorer.app", { path, uniqueKey: path });
+            launch("Programs/Explorer.app", { path, uniqueKey: path, showFullPath: true });
+            addRecent(recentItem); // FS 内の path を追加
             break;
 
         default:
-            console.warn("Unknown recent item type:", type, path);
+            console.warn("Unknown type:", type, path);
     }
 }
 

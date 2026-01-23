@@ -6,6 +6,7 @@ import { FS, initFS } from "../fs.js";
 import { buildDesktop } from "../desktop.js";
 import { attachContextMenu } from "../context-menu.js";
 import { resolveAppByPath } from "../file-associations.js";
+import { addRecent } from "../recent.js";
 
 function hasExtension(name) {
     return /\.[a-z0-9]+$/i.test(name);
@@ -26,16 +27,23 @@ export default async function Explorer(root, options = {}) {
 
         // Explorer リスト部分だけ描画
         let listContainer = root.querySelector(".explorer-list");
+        let pathLabel = root.querySelector(".path-label");
+
         if (!listContainer) {
             root.innerHTML = `
-                <div class="explorer-header">
-                    <button id="back-btn">&larr;</button>
-                    <span class="path-label">${path}</span>
-                </div>
-                <div class="explorer-list scrollbar_none"></div>
-            `;
+        <div class="explorer-header">
+            <button id="back-btn">&larr;</button>
+            <span class="path-label"></span>  <!-- ←空にしておく -->
+        </div>
+        <div class="explorer-list scrollbar_none"></div>
+    `;
             listContainer = root.querySelector(".explorer-list");
+            pathLabel = root.querySelector(".path-label");
         }
+
+        // パスラベルを毎回更新
+        if (pathLabel) pathLabel.textContent = currentPath;
+
         listContainer.innerHTML = "";
 
         const folder = resolveFS(path);
@@ -104,6 +112,10 @@ export default async function Explorer(root, options = {}) {
                             break;
                         }
                     }
+
+                    // ★ FS 内の type で Recent に登録
+                    addRecent({ type: effectiveType, path: targetPath });
+
                 } else {
                     clickTimer = setTimeout(() => { clearTimeout(clickTimer); clickTimer = null; }, 250);
                 }
@@ -149,21 +161,65 @@ export default async function Explorer(root, options = {}) {
     const ribbonMenus = [
         {
             title: "Window", items: [
-                { label: "Minimize", action: () => win.querySelector(".min-btn")?.click() },
-                { label: "Maximize", action: () => win.querySelector(".max-btn")?.click() },
-                { label: "Close", action: () => win.querySelector(".close-btn")?.click() }
+                { label: "最小化", action: () => win.querySelector(".min-btn")?.click() },
+                { label: "最大化 / 元のサイズに戻す", action: () => win.querySelector(".max-btn")?.click() },
+                { label: "閉じる", action: () => win.querySelector(".close-btn")?.click() }
             ]
         },
         {
             title: "File", items: [{
                 label: "Newfolder", action: () => {
-                    const folderName = prompt("新しいフォルダ名");
-                    if (!folderName) return;
                     const folderNode = resolveFS(currentPath);
-                    folderNode[folderName] = hasExtension(folderName) ? { type: "file", content: "" } : { type: "folder" };
-                    render(currentPath);
-                    buildDesktop();
-                    window.dispatchEvent(new Event("fs-updated"));
+                    if (!folderNode) return;
+
+                    let folderName = "新しいフォルダ";
+                    let counter = 1;
+                    while (folderNode[folderName]) {
+                        folderName = `新しいフォルダ (${counter++})`;
+                    }
+
+                    const listContainer = document.querySelector(".explorer-list");
+                    if (!listContainer) return;
+
+                    const itemDiv = document.createElement("div");
+                    itemDiv.className = "explorer-item";
+
+                    const input = document.createElement("input");
+                    input.type = "text";
+                    input.value = folderName;
+                    input.style.width = "100px";
+                    input.style.fontSize = "13px";
+                    input.style.textAlign = "center";
+                    itemDiv.appendChild(input);
+
+                    // ★ 一番下に追加
+                    listContainer.appendChild(itemDiv);
+
+                    input.focus();
+                    input.select();
+
+                    function finishEditing() {
+                        if (!folderNode) return;
+                        itemDiv.remove();
+
+                        let newName = input.value.trim() || folderName;
+                        let finalName = newName;
+                        let idx = 1;
+                        while (folderNode[finalName]) {
+                            finalName = `${newName} (${idx++})`;
+                        }
+
+                        folderNode[finalName] = { type: "folder" };
+
+                        render(currentPath);
+                        buildDesktop();
+                        window.dispatchEvent(new Event("fs-updated"));
+                    }
+
+                    input.addEventListener("blur", finishEditing);
+                    input.addEventListener("keydown", e => {
+                        if (e.key === "Enter") finishEditing();
+                    });
                 }
             }]
         },
@@ -188,7 +244,6 @@ export default async function Explorer(root, options = {}) {
     }
 }
 
-
 // リボン設定関数
 export function setupRibbon(win, getCurrentPath, renderCallback, menus) {
     if (!win?._ribbon) return;
@@ -198,9 +253,9 @@ export function setupRibbon(win, getCurrentPath, renderCallback, menus) {
     const defaultMenus = [
         {
             title: "Window", items: [
-                { label: "Minimize", action: () => win.querySelector(".min-btn")?.click() },
-                { label: "Maximize", action: () => win.querySelector(".max-btn")?.click() },
-                { label: "Close", action: () => win.querySelector(".close-btn")?.click() }
+                { label: "最小化", action: () => win.querySelector(".min-btn")?.click() },
+                { label: "最大化 / 元のサイズに戻す", action: () => win.querySelector(".max-btn")?.click() },
+                { label: "閉じる", action: () => win.querySelector(".close-btn")?.click() }
             ]
         }
     ];

@@ -249,7 +249,7 @@ body {
 .window {
     position: absolute;
     background: #eee;
-    border: 2px solid #ddd;
+    border: 2px solid #C3C7CB;
     box-shadow: 1.8px 1.8px black, -1.8px -1.8px whitesmoke;
     display: flex;
     /* タイトルバーとコンテンツを縦に並べる */
@@ -295,7 +295,6 @@ body {
 .title-bar {
     background: #444;
     color: white;
-    border-bottom: solid 2px black;
     font-size: 12px;
 }
 
@@ -456,7 +455,6 @@ body {
 
 .taskbar-window-btn {
     margin-left: 4px;
-    padding: 0 6px;
     height: 25px;
     width: 120px;
     white-space: nowrap;

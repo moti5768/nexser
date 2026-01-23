@@ -89,11 +89,10 @@ export function createWindow(title, options = {}) {
 ${!options.hideRibbon ? `
 <div class="window-ribbon" style="
     height:26px;
-    background:#ddd;
+    background:#C3C7CB;
     display:flex;
     align-items:center;
-    padding:0 6px;
-    font-size: small;
+    font-size: 12px;
 ">
 </div>` : ""}
 
@@ -105,8 +104,7 @@ ${!options.hideRibbon ? `
 ${!options.hideStatus ? `
 <div class="window-statusbar" style="
     height:20px;
-    background:#ddd;
-    border-top:1px solid #ccc;
+    background:#C3C7CB;
     font-size:12px;
     padding:0 4px;
     display:flex;
@@ -117,45 +115,38 @@ ${!options.hideStatus ? `
 `;
 
     // リボン要素を確実に取得
+    const content = w.querySelector(".content");
     w._ribbon = w.querySelector(".window-ribbon");
+    w._statusBar = w.querySelector(".window-statusbar");
 
-    if (w._ribbon) {
+    // 一度だけ初期化
+    if (w._ribbon && !options.hideRibbon) {
         w._ribbon.innerHTML = ""; // 古い内容をクリア
 
-        // hideRibbon が true なら何も表示せず
-        if (!options.hideRibbon) {
+        const isExplorer = w.dataset.type === "explorer";
+        const ribbonMenus = isExplorer
+            ? (options.ribbonMenus || [])
+            : [
+                {
+                    title: "Window",
+                    items: [
+                        { label: "最小化", action: () => w.querySelector(".min-btn")?.click() },
+                        { label: "最大化 / 元のサイズに戻す", action: () => w.querySelector(".max-btn")?.click() },
+                        { label: "閉じる", action: () => w.querySelector(".close-btn")?.click() }
+                    ]
+                }
+            ];
 
-            // アプリの種類によって Ribbon メニューを切り替え
-            const isExplorer = w.dataset.type === "explorer";
-
-            const ribbonMenus = isExplorer
-                ? (options.ribbonMenus || []) // ExplorerはフルRibbon
-                : [
-                    {
-                        title: "Window",
-                        items: [
-                            { label: "Minimize", action: () => w.querySelector(".min-btn")?.click() },
-                            { label: "Miximize", action: () => w.querySelector(".max-btn")?.click() },
-                            { label: "Close", action: () => w.querySelector(".close-btn")?.click() }
-                        ]
-                    }
-                ];
-
-            setupRibbon(
-                w,
-                options.getCurrentPath || (() => null),
-                options.renderCallback || null,
-                ribbonMenus
-            );
-        }
+        setupRibbon(
+            w,
+            options.getCurrentPath || (() => null),
+            options.renderCallback || null,
+            ribbonMenus
+        );
     }
-
-
 
     const desktop = document.getElementById("desktop");
     desktop.appendChild(w);
-    const content = w.querySelector(".content");
-    w._ribbon = w.querySelector(".window-ribbon");
     w._statusBar = w.querySelector(".window-statusbar");
     /* ===== サイズ復元 ===== */
 
@@ -205,7 +196,7 @@ ${!options.hideStatus ? `
     /* ===== タスクバー ===== */
 
     const taskbar = document.getElementById("taskbar");
-    let taskbarBtn;
+    let taskbarBtn = null; // 初期値は null
 
     if (taskbar && options.taskbar !== false) {
         w.dataset.taskbar = "true";
@@ -215,16 +206,14 @@ ${!options.hideStatus ? `
         taskbarBtn.className = "taskbar-window-btn button";
         taskbarBtn.dataset.title = title;
 
-        // 相互リンク
         taskbarBtn._window = w;
         w._taskbarBtn = taskbarBtn;
-
-        taskbarBtn.onclick = focus;
 
         taskbar.appendChild(taskbarBtn);
         taskbarButtons.push(taskbarBtn);
     } else {
         w.dataset.taskbar = "false";
+        taskbarBtn = null; // 明示的に null
     }
 
     /* ===== ウィンドウボタン ===== */
@@ -288,55 +277,57 @@ ${!options.hideStatus ? `
 
     /* ===== タスクバークリックで復元 ===== */
 
-    taskbarBtn.onclick = () => {
-        // タスクバー選択状態を即時反映
-        taskbarButtons.forEach(btn => btn.classList.remove("selected"));
-        taskbarBtn.classList.add("selected");
+    if (taskbarBtn) {
+        taskbarBtn.onclick = () => {
+            // タスクバー選択状態を即時反映
+            taskbarButtons.forEach(btn => btn.classList.remove("selected"));
+            taskbarBtn.classList.add("selected");
 
-        if (w.dataset.minimized === "true") {
-            minimizing = false;
+            if (w.dataset.minimized === "true") {
+                minimizing = false;
 
-            const titleBar = w.querySelector(".title-bar");
-            const titleText = titleBar?.querySelector(".title-text");
-            if (!titleText) return;
+                const titleBar = w.querySelector(".title-bar");
+                const titleText = titleBar?.querySelector(".title-text");
+                if (!titleText) return;
 
-            const rect = taskbarBtn.getBoundingClientRect();
-            const clone = document.createElement("div");
+                const rect = taskbarBtn.getBoundingClientRect();
+                const clone = document.createElement("div");
 
-            Object.assign(clone.style, {
-                position: "absolute",
-                left: rect.left + "px",
-                top: rect.top + "px",
-                width: rect.width + "px",
-                height: titleBar.offsetHeight + "px",
-                background: getComputedStyle(titleBar).backgroundColor,
-                color: getComputedStyle(titleText).color,
-                display: "flex",
-                alignItems: "center",
-                padding: "0 5px",
-                font: getComputedStyle(titleText).font,
-                zIndex: parseInt(w.style.zIndex) + 1,
-                pointerEvents: "none"
-            });
-            clone.textContent = titleText.textContent;
-            document.body.appendChild(clone);
+                Object.assign(clone.style, {
+                    position: "absolute",
+                    left: rect.left + "px",
+                    top: rect.top + "px",
+                    width: rect.width + "px",
+                    height: titleBar.offsetHeight + "px",
+                    background: getComputedStyle(titleBar).backgroundColor,
+                    color: getComputedStyle(titleText).color,
+                    display: "flex",
+                    alignItems: "center",
+                    padding: "0 5px",
+                    font: getComputedStyle(titleText).font,
+                    zIndex: parseInt(w.style.zIndex) + 1,
+                    pointerEvents: "none"
+                });
+                clone.textContent = titleText.textContent;
+                document.body.appendChild(clone);
 
-            // 元ウィンドウはアニメ中非表示
-            w.style.visibility = "hidden";
-            w.dataset.minimized = "true"; // アニメ中はまだ最小化状態
+                // 元ウィンドウはアニメ中非表示
+                w.style.visibility = "hidden";
+                w.dataset.minimized = "true"; // アニメ中はまだ最小化状態
 
-            animateTitleClone(clone, { left: w.offsetLeft, top: w.offsetTop, width: w.offsetWidth }, 250, () => {
-                // アニメ終了時に元ウィンドウを復帰
-                w.style.visibility = "visible";
-                w.dataset.minimized = "false"; // 最小化解除
-                clone.remove();
+                animateTitleClone(clone, { left: w.offsetLeft, top: w.offsetTop, width: w.offsetWidth }, 250, () => {
+                    // アニメ終了時に元ウィンドウを復帰
+                    w.style.visibility = "visible";
+                    w.dataset.minimized = "false"; // 最小化解除
+                    clone.remove();
+                    bringToFront(w);
+                    scheduleRefreshTopWindow(); // タイトルバー色更新
+                });
+
+            } else {
                 bringToFront(w);
-                scheduleRefreshTopWindow(); // タイトルバー色更新
-            });
-
-        } else {
-            bringToFront(w);
-            scheduleRefreshTopWindow();
+                scheduleRefreshTopWindow();
+            }
         }
     };
 
@@ -451,10 +442,11 @@ ${!options.hideStatus ? `
 
         dragging = true;
         dragStarted = false;
+        didMove = false; // 移動フラグを初期化
         focus();
 
-        downX = e.clientX;      // ★ 修正
-        downY = e.clientY;      // ★ 修正
+        downX = e.clientX;
+        downY = e.clientY;
 
         const rect = w.getBoundingClientRect();
         offsetX = e.clientX - rect.left;
@@ -462,11 +454,13 @@ ${!options.hideStatus ? `
 
         document.body.style.userSelect = "none";
 
+        // 他のウィンドウ操作無効化
         document.querySelectorAll(".window").forEach(win => {
             if (win !== w) win.style.pointerEvents = "none";
         });
     });
 
+    // document 全体の mousemove
     document.addEventListener("mousemove", e => {
         if (!dragging) return;
 
@@ -482,184 +476,208 @@ ${!options.hideStatus ? `
 
         preview.style.left = `${e.clientX - offsetX}px`;
         preview.style.top = `${e.clientY - offsetY}px`;
+        didMove = true;
     });
 
-    /* ===== リサイズ ===== */
-
-    const minWidth = 200, minHeight = 120;
-    const directions = ["top", "bottom", "left", "right", "topLeft", "topRight", "bottomLeft", "bottomRight"];
-    const handles = {};
-
-    directions.forEach(dir => {
-        const h = document.createElement("div");
-        h.className = "resize-handle " + dir;
-        h.style.position = "absolute";
-        h.style.background = "transparent";
-        w.appendChild(h);
-        handles[dir] = h;
-    });
-
-    const setHandle = (h, pos) => Object.assign(h.style, pos);
-
-    setHandle(handles.top, { top: "0", left: "6px", right: "6px", height: "6px", cursor: "ns-resize" });
-    setHandle(handles.bottom, { bottom: "0", left: "6px", right: "6px", height: "6px", cursor: "ns-resize" });
-    setHandle(handles.left, { left: "0", top: "6px", bottom: "6px", width: "6px", cursor: "ew-resize" });
-    setHandle(handles.right, { right: "0", top: "6px", bottom: "6px", width: "6px", cursor: "ew-resize" });
-    setHandle(handles.topLeft, { left: "0", top: "0", width: "12px", height: "12px", cursor: "nwse-resize" });
-    setHandle(handles.topRight, { right: "0", top: "0", width: "12px", height: "12px", cursor: "nesw-resize" });
-    setHandle(handles.bottomLeft, { left: "0", bottom: "0", width: "12px", height: "12px", cursor: "nesw-resize" });
-    setHandle(handles.bottomRight, { right: "0", bottom: "0", width: "12px", height: "12px", cursor: "nwse-resize" });
-
-    let resizing = false, currentHandle, startX, startY, startRect;
-    let didResize = false;
-
-    function startResize(e, handle) {
-        if (maximized) return;
-        e.stopPropagation();
-
-        resizing = true;
-        currentHandle = handle;
-        focus();
-        didResize = true;
-
-        const rect = w.getBoundingClientRect();
-        startRect = {
-            left: Math.round(rect.left),
-            top: Math.round(rect.top),
-            width: Math.round(rect.width),
-            height: Math.round(rect.height)
-        };
-
-        startX = e.clientX;
-        startY = e.clientY;
-
-        createPreview();
-        preview.style.left = startRect.left + "px";
-        preview.style.top = startRect.top + "px";
-        preview.style.width = startRect.width + "px";
-        preview.style.height = startRect.height + "px";
-
-        document.body.style.userSelect = "none";
-
-        const cursors = {
-            top: "ns-resize", bottom: "ns-resize",
-            left: "ew-resize", right: "ew-resize",
-            topLeft: "nwse-resize", bottomRight: "nwse-resize",
-            topRight: "nesw-resize", bottomLeft: "nesw-resize"
-        };
-        resizeCursor = cursors[handle] || "default";
-        document.body.style.cursor = resizeCursor;
-
-        document.querySelectorAll(".window").forEach(win => {
-            if (win !== w) win.style.pointerEvents = "none";
-        });
-    }
-
-    directions.forEach(dir =>
-        handles[dir].addEventListener("mousedown", e => startResize(e, dir))
-    );
-
-    document.addEventListener("mousemove", e => {
-        if (!resizing || !preview) return;
-
-        let dx = e.clientX - startX;
-        let dy = e.clientY - startY;
-
-        let newLeft = startRect.left;
-        let newTop = startRect.top;
-        let newWidth = startRect.width;
-        let newHeight = startRect.height;
-
-        switch (currentHandle) {
-            case "topLeft":
-                newWidth = Math.max(minWidth, startRect.width - dx);
-                newHeight = Math.max(minHeight, startRect.height - dy);
-                newLeft = startRect.left + (startRect.width - newWidth);
-                newTop = startRect.top + (startRect.height - newHeight);
-                break;
-            case "topRight":
-                newWidth = Math.max(minWidth, startRect.width + dx);
-                newHeight = Math.max(minHeight, startRect.height - dy);
-                newTop = startRect.top + (startRect.height - newHeight);
-                break;
-            case "bottomLeft":
-                newWidth = Math.max(minWidth, startRect.width - dx);
-                newHeight = Math.max(minHeight, startRect.height + dy);
-                newLeft = startRect.left + (startRect.width - newWidth);
-                break;
-            case "bottomRight":
-                newWidth = Math.max(minWidth, startRect.width + dx);
-                newHeight = Math.max(minHeight, startRect.height + dy);
-                break;
-            case "top":
-                newHeight = Math.max(minHeight, startRect.height - dy);
-                newTop = startRect.top + (startRect.height - newHeight);
-                break;
-            case "bottom":
-                newHeight = Math.max(minHeight, startRect.height + dy);
-                break;
-            case "left":
-                newWidth = Math.max(minWidth, startRect.width - dx);
-                newLeft = startRect.left + (startRect.width - newWidth);
-                break;
-            case "right":
-                newWidth = Math.max(minWidth, startRect.width + dx);
-                break;
-        }
-
-        preview.style.left = newLeft + "px";
-        preview.style.top = newTop + "px";
-        preview.style.width = newWidth + "px";
-        preview.style.height = newHeight + "px";
-    });
-
+    // document 全体の mouseup
     document.addEventListener("mouseup", async () => {
-        if ((dragging || resizing) && preview) {
+        if (dragging && preview) {
             w.style.left = preview.style.left;
             w.style.top = preview.style.top;
-            w.style.width = preview.style.width;
-            w.style.height = preview.style.height;
-            if (dragStarted) didMove = true;
             preview.remove();
             preview = null;
         }
 
-        document.querySelectorAll(".window")
-            .forEach(win => win.style.pointerEvents = "auto");
-
+        // フラグやスタイルをリセット
         dragging = false;
         dragStarted = false;
-        resizing = false;
-        currentHandle = null;
+        didMove = false;
 
+        document.querySelectorAll(".window").forEach(win => win.style.pointerEvents = "auto");
         document.body.style.userSelect = "";
         document.body.style.cursor = "";
         resizeCursor = "";
-
-        // ===== サイズ・位置保存（改善後） =====
-        if ((didResize || didMove) && !maximized && !w.classList.contains("maximized")) {
-            if (!options.skipSave) {   // ← ★ skipSave が true の場合は保存をスキップ
-                const data = {
-                    w: w.offsetWidth,
-                    h: w.offsetHeight,
-                    x: Math.round(parseFloat(w.style.left)),
-                    y: Math.round(parseFloat(w.style.top))
-                };
-                await saveWindowSize(sizeKey, data);
-                console.log("SAVE WINDOW", sizeKey, data);
-            }
-        }
-
-        didResize = false;
-        didMove = false;
     });
 
-    scheduleRefreshTopWindow();
-    if (!options._modal && !options.disableContextMenu) {
-        installWindowContextMenu(w);
-    }
+    /* ===== リサイズ ===== */
+    if (!options.disableResize) {
+        const minWidth = 200, minHeight = 120;
+        const directions = ["top", "bottom", "left", "right", "topLeft", "topRight", "bottomLeft", "bottomRight"];
+        const handles = {};
 
-    return content;
+        directions.forEach(dir => {
+            const h = document.createElement("div");
+            h.className = "resize-handle " + dir;
+            h.style.position = "absolute";
+            h.style.background = "transparent";
+            w.appendChild(h);
+            handles[dir] = h;
+        });
+
+        const setHandle = (h, pos) => Object.assign(h.style, pos);
+
+        setHandle(handles.top, { top: "0", left: "6px", right: "6px", height: "6px", cursor: "ns-resize" });
+        setHandle(handles.bottom, { bottom: "0", left: "6px", right: "6px", height: "6px", cursor: "ns-resize" });
+        setHandle(handles.left, { left: "0", top: "6px", bottom: "6px", width: "6px", cursor: "ew-resize" });
+        setHandle(handles.right, { right: "0", top: "6px", bottom: "6px", width: "6px", cursor: "ew-resize" });
+        setHandle(handles.topLeft, { left: "0", top: "0", width: "12px", height: "12px", cursor: "nwse-resize" });
+        setHandle(handles.topRight, { right: "0", top: "0", width: "12px", height: "12px", cursor: "nesw-resize" });
+        setHandle(handles.bottomLeft, { left: "0", bottom: "0", width: "12px", height: "12px", cursor: "nesw-resize" });
+        setHandle(handles.bottomRight, { right: "0", bottom: "0", width: "12px", height: "12px", cursor: "nwse-resize" });
+
+        let resizing = false, currentHandle, startX, startY, startRect;
+        let didResize = false;
+
+        function startResize(e, handle) {
+            if (maximized) return;
+            e.stopPropagation();
+
+            resizing = true;
+            currentHandle = handle;
+            focus();
+            didResize = true;
+
+            const rect = w.getBoundingClientRect();
+            startRect = {
+                left: Math.round(rect.left),
+                top: Math.round(rect.top),
+                width: Math.round(rect.width),
+                height: Math.round(rect.height)
+            };
+
+            startX = e.clientX;
+            startY = e.clientY;
+
+            createPreview();
+            preview.style.left = startRect.left + "px";
+            preview.style.top = startRect.top + "px";
+            preview.style.width = startRect.width + "px";
+            preview.style.height = startRect.height + "px";
+
+            document.body.style.userSelect = "none";
+
+            const cursors = {
+                top: "ns-resize", bottom: "ns-resize",
+                left: "ew-resize", right: "ew-resize",
+                topLeft: "nwse-resize", bottomRight: "nwse-resize",
+                topRight: "nesw-resize", bottomLeft: "nesw-resize"
+            };
+            resizeCursor = cursors[handle] || "default";
+            document.body.style.cursor = resizeCursor;
+
+            document.querySelectorAll(".window").forEach(win => {
+                if (win !== w) win.style.pointerEvents = "none";
+            });
+        }
+
+        directions.forEach(dir =>
+            handles[dir].addEventListener("mousedown", e => startResize(e, dir))
+        );
+
+        document.addEventListener("mousemove", e => {
+            if (!resizing || !preview) return;
+
+            let dx = e.clientX - startX;
+            let dy = e.clientY - startY;
+
+            let newLeft = startRect.left;
+            let newTop = startRect.top;
+            let newWidth = startRect.width;
+            let newHeight = startRect.height;
+
+            switch (currentHandle) {
+                case "topLeft":
+                    newWidth = Math.max(minWidth, startRect.width - dx);
+                    newHeight = Math.max(minHeight, startRect.height - dy);
+                    newLeft = startRect.left + (startRect.width - newWidth);
+                    newTop = startRect.top + (startRect.height - newHeight);
+                    break;
+                case "topRight":
+                    newWidth = Math.max(minWidth, startRect.width + dx);
+                    newHeight = Math.max(minHeight, startRect.height - dy);
+                    newTop = startRect.top + (startRect.height - newHeight);
+                    break;
+                case "bottomLeft":
+                    newWidth = Math.max(minWidth, startRect.width - dx);
+                    newHeight = Math.max(minHeight, startRect.height + dy);
+                    newLeft = startRect.left + (startRect.width - newWidth);
+                    break;
+                case "bottomRight":
+                    newWidth = Math.max(minWidth, startRect.width + dx);
+                    newHeight = Math.max(minHeight, startRect.height + dy);
+                    break;
+                case "top":
+                    newHeight = Math.max(minHeight, startRect.height - dy);
+                    newTop = startRect.top + (startRect.height - newHeight);
+                    break;
+                case "bottom":
+                    newHeight = Math.max(minHeight, startRect.height + dy);
+                    break;
+                case "left":
+                    newWidth = Math.max(minWidth, startRect.width - dx);
+                    newLeft = startRect.left + (startRect.width - newWidth);
+                    break;
+                case "right":
+                    newWidth = Math.max(minWidth, startRect.width + dx);
+                    break;
+            }
+
+            preview.style.left = newLeft + "px";
+            preview.style.top = newTop + "px";
+            preview.style.width = newWidth + "px";
+            preview.style.height = newHeight + "px";
+        });
+
+        document.addEventListener("mouseup", async () => {
+            // preview がなくてもフラグ解除
+            dragging = false;
+            dragStarted = false;
+            resizing = false;
+            currentHandle = null;
+
+            // pointerEvents や cursor を戻す
+            document.querySelectorAll(".window").forEach(win => win.style.pointerEvents = "auto");
+            document.body.style.userSelect = "";
+            document.body.style.cursor = "";
+            resizeCursor = "";
+
+            // preview があればサイズ・位置を反映
+            if (preview) {
+                w.style.left = preview.style.left;
+                w.style.top = preview.style.top;
+                w.style.width = preview.style.width;
+                w.style.height = preview.style.height;
+                preview.remove();
+                preview = null;
+            }
+
+            // サイズ保存
+            if ((didResize || didMove) && !maximized && !w.classList.contains("maximized")) {
+                if (!options.skipSave) {
+                    const data = {
+                        w: w.offsetWidth,
+                        h: w.offsetHeight,
+                        x: Math.round(parseFloat(w.style.left)),
+                        y: Math.round(parseFloat(w.style.top))
+                    };
+                    await saveWindowSize(sizeKey, data);
+                }
+            }
+
+            didResize = false;
+            didMove = false;
+        });
+
+
+        scheduleRefreshTopWindow();
+        if (!options._modal && !options.disableContextMenu) {
+            installWindowContextMenu(w);
+        }
+
+        return content;
+    }
+    // リサイズが無効でも content を返す
+    return w.querySelector(".content");
 }
 
 /* ===== ウィンドウ前面化 ===== */
@@ -774,7 +792,8 @@ export function showModalWindow(title, message, options = {}) {
         hideRibbon: true,
         hideStatus: true,
         skipSave: true,
-        _modal: true  // mousedown フォーカスを防ぐ
+        _modal: true,
+        disableResize: true
     });
 
     const win = content.parentElement;

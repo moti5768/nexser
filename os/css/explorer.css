@@ -68,20 +68,28 @@
 /* ribonn */
 .ribbon-menu {
     position: relative;
-    padding: 0 8px;
+    padding: 6px;
     cursor: pointer;
 }
+
+
+.ribbon-menu:hover {
+    background: darkblue;
+    color: white;
+}
+
 
 .ribbon-dropdown {
     position: absolute;
     top: 100%;
     left: 0;
     background: #C3C7CB;
+    color: black;
     border: 1px solid;
     border-color: #fff #404040 #404040 #fff;
     box-shadow: 1px 1px black;
     display: none;
-    min-width: 80px;
+    min-width: 200px;
     z-index: 1000;
 }
 

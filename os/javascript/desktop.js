@@ -52,40 +52,52 @@ export function buildDesktop() {
 
                 let targetNode = itemData;
                 let targetPath = fullPath;
+                let effectiveType = targetNode.type;
 
-                if (itemData.type === "link") {
-                    targetPath = itemData.target;
-                    targetNode = resolveFS(itemData.target);
+                // リンクの場合はリンク先の type に置き換える
+                if (effectiveType === "link") {
+                    targetPath = targetNode.target;
+                    targetNode = resolveFS(targetPath);
                     if (!targetNode) return;
+                    effectiveType = targetNode.type;
                 }
 
-                switch (targetNode.type) {
+                // 拡張子があれば folder でも file とする
+                // 関連付けが存在する場合のみ file 扱いにする
+                const associatedApp = resolveAppByPath(targetPath);
+                if (effectiveType === "folder" && associatedApp) {
+                    effectiveType = "file";
+                }
+
+                switch (effectiveType) {
                     case "app":
                         launch(targetPath, { path: targetPath, uniqueKey: targetPath });
                         addRecent({ type: "app", path: targetPath });
                         break;
-                    case "folder":
-                        launch("Programs/Explorer.app", { path: targetPath, uniqueKey: targetPath });
-                        addRecent({ type: "app", path: targetPath });
-                        break;
+
                     case "file": {
                         const appPath = resolveAppByPath(targetPath);
                         if (appPath) {
-                            launch(appPath, {
-                                path: targetPath,
-                                node: targetNode,
-                                uniqueKey: targetPath
-                            });
-                            addRecent({ type: "app", path: appPath });
+                            launch(appPath, { path: targetPath, node: targetNode, uniqueKey: targetPath });
                         } else {
                             import("./apps/fileviewer.js").then(mod => {
                                 const content = createWindow(name);
                                 mod.default(content, { name, content: targetNode.content });
                             });
-                            addRecent({ type: "app", path: targetPath });
                         }
+                        addRecent({ type: "file", path: targetPath });
                         break;
                     }
+
+                    case "folder":
+                        launch("Programs/Explorer.app", {
+                            path: targetPath,
+                            uniqueKey: targetPath,
+                            showFullPath: false // 親階層は展開しない
+                        });
+                        addRecent({ type: "folder", path: targetPath });
+                        break;
+
                     default:
                         console.warn("不明なタイプ:", targetNode.type);
                         break;
@@ -157,7 +169,8 @@ export function buildDesktop() {
                         finalName = `${newName} (${idx++})`;
                     }
 
-                    const isFile = /\.[a-z0-9]+$/i.test(finalName);
+                    const tempPath = `Desktop/${finalName}`;
+                    const isFile = !!resolveAppByPath(tempPath);
 
                     desktopNode[finalName] = isFile
                         ? { type: "file", content: "" }

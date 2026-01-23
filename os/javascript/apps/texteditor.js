@@ -235,19 +235,9 @@ export default function TextEditor(root, options = {}) {
                 oldBtn._window = null;
                 oldWin._taskbarBtn = null;
             }
-
-            // ----------------------------
-            // 新しいウィンドウのタスクバー登録（createWindow 内でやってる場合は不要）
-            // ----------------------------
-            // newRoot._taskbarBtn は createWindow 内で自動登録される
-            // もし手動で追加したい場合は taskbarButtons.push(newRoot._taskbarBtn);
-
-            // 新しいウィンドウを手前に
             bringToFront(newRoot.closest(".window"));
         }
-
     }
-
 
     /* =========================
        リボンUI
@@ -256,9 +246,9 @@ export default function TextEditor(root, options = {}) {
         const ribbonMenus = [
             {
                 title: "Window", items: [
-                    { label: "Minimize", action: () => win.querySelector(".min-btn")?.click() },
-                    { label: "Maximize", action: () => win.querySelector(".max-btn")?.click() },
-                    { label: "Close", action: () => win.querySelector(".close-btn")?.click() }
+                    { label: "最小化", action: () => win.querySelector(".min-btn")?.click() },
+                    { label: "最大化 / 元のサイズに戻す", action: () => win.querySelector(".max-btn")?.click() },
+                    { label: "閉じる", action: () => win.querySelector(".close-btn")?.click() }
                 ]
             },
             {

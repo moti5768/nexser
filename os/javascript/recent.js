@@ -1,5 +1,6 @@
 // recent.js
 import { openDB } from "./db.js";
+import { basename } from "./kernel.js";
 
 const STORE = "recent";
 const KEY = "items";
@@ -52,16 +53,16 @@ export async function addRecent(item) {
     cache.unshift({
         path: item.path,
         type: item.type,
+        display: item.display ?? basename(item.path), // ←追加
         time: Date.now()
     });
     cache = cache.slice(0, MAX);
 
     await save();
 
-    // ★ UI に「更新された」ことを通知（後述）
+    // UI に更新を通知
     window.dispatchEvent(new Event("recent-updated"));
 }
-
 
 export async function clearRecent() {
     cache = [];

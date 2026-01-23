@@ -10,6 +10,8 @@ import {
     scheduleRefreshTopWindow,
     removeAllTaskbarButtons,
     errorWindow,
+    centerWindowOptions,
+    showModalWindow,
     bringToFront
 } from "./window.js";
 import { showPromptScreen } from "./boot.js";
@@ -221,12 +223,17 @@ export async function logOff() {
     };
 
     if (hasAnyWindow) {
-        confirmWindow(
+        // モーダル表示
+        showModalWindow("ログオフ確認",
             "開いているウィンドウがあります。すべて閉じてログオフしますか？",
-            confirmed => confirmed && performLogoff(),
             {
+                width: 360,
+                height: 140,
                 taskbar: false,
-                disableContextMenu: true
+                buttons: [
+                    { label: "はい", onClick: performLogoff },
+                    { label: "いいえ", onClick: null }
+                ]
             }
         );
     } else {
