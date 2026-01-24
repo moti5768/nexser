@@ -43,70 +43,59 @@ export function buildDesktop() {
             }
         }]);
 
-        // 左クリック処理
-        let clickTimer = null;
-        item.addEventListener("click", () => {
-            if (clickTimer) {
-                clearTimeout(clickTimer);
-                clickTimer = null;
+        item.addEventListener("dblclick", () => {
 
-                let targetNode = itemData;
-                let targetPath = fullPath;
-                let effectiveType = targetNode.type;
+            let targetNode = itemData;
+            let targetPath = fullPath;
+            let effectiveType = targetNode.type;
 
-                // リンクの場合はリンク先の type に置き換える
-                if (effectiveType === "link") {
-                    targetPath = targetNode.target;
-                    targetNode = resolveFS(targetPath);
-                    if (!targetNode) return;
-                    effectiveType = targetNode.type;
-                }
+            // リンクの場合はリンク先の type に置き換える
+            if (effectiveType === "link") {
+                targetPath = targetNode.target;
+                targetNode = resolveFS(targetPath);
+                if (!targetNode) return;
+                effectiveType = targetNode.type;
+            }
 
-                // 拡張子があれば folder でも file とする
-                // 関連付けが存在する場合のみ file 扱いにする
-                const associatedApp = resolveAppByPath(targetPath);
-                if (effectiveType === "folder" && associatedApp) {
-                    effectiveType = "file";
-                }
+            // 拡張子があれば folder でも file とする
+            // 関連付けが存在する場合のみ file 扱いにする
+            const associatedApp = resolveAppByPath(targetPath);
+            if (effectiveType === "folder" && associatedApp) {
+                effectiveType = "file";
+            }
 
-                switch (effectiveType) {
-                    case "app":
-                        launch(targetPath, { path: targetPath, uniqueKey: targetPath });
-                        addRecent({ type: "app", path: targetPath });
-                        break;
+            switch (effectiveType) {
+                case "app":
+                    launch(targetPath, { path: targetPath, uniqueKey: targetPath });
+                    addRecent({ type: "app", path: targetPath });
+                    break;
 
-                    case "file": {
-                        const appPath = resolveAppByPath(targetPath);
-                        if (appPath) {
-                            launch(appPath, { path: targetPath, node: targetNode, uniqueKey: targetPath });
-                        } else {
-                            import("./apps/fileviewer.js").then(mod => {
-                                const content = createWindow(name);
-                                mod.default(content, { name, content: targetNode.content });
-                            });
-                        }
-                        addRecent({ type: "file", path: targetPath });
-                        break;
-                    }
-
-                    case "folder":
-                        launch("Programs/Explorer.app", {
-                            path: targetPath,
-                            uniqueKey: targetPath,
-                            showFullPath: false // 親階層は展開しない
+                case "file": {
+                    const appPath = resolveAppByPath(targetPath);
+                    if (appPath) {
+                        launch(appPath, { path: targetPath, node: targetNode, uniqueKey: targetPath });
+                    } else {
+                        import("./apps/fileviewer.js").then(mod => {
+                            const content = createWindow(name);
+                            mod.default(content, { name, content: targetNode.content });
                         });
-                        addRecent({ type: "folder", path: targetPath });
-                        break;
-
-                    default:
-                        console.warn("不明なタイプ:", targetNode.type);
-                        break;
+                    }
+                    addRecent({ type: "file", path: targetPath });
+                    break;
                 }
-            } else {
-                clickTimer = setTimeout(() => {
-                    clearTimeout(clickTimer);
-                    clickTimer = null;
-                }, 250);
+
+                case "folder":
+                    launch("Programs/Explorer.app", {
+                        path: targetPath,
+                        uniqueKey: targetPath,
+                        showFullPath: false // 親階層は展開しない
+                    });
+                    addRecent({ type: "folder", path: targetPath });
+                    break;
+
+                default:
+                    console.warn("不明なタイプ:", targetNode.type);
+                    break;
             }
         });
     }

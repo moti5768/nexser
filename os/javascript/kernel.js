@@ -161,7 +161,6 @@ export async function launch(path, options = {}) {
         }
 
         // フォルダの場合は Explorer を起動（リボン付き）
-        // フォルダの場合は Explorer を起動（リボン付き）
         else if (item.type === "folder") {
             const displayName = options.showFullPath ? path : basename(path);
 

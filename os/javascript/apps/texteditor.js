@@ -1,6 +1,7 @@
 // TextEditor.js
 import { resolveFS } from "../fs-utils.js";
 import { createWindow, bringToFront, centerWindowOptions } from "../window.js";
+import { taskbarButtons } from "../window.js";
 import { buildDesktop } from "../desktop.js";
 import { setupRibbon } from "./explorer.js"; // ここに setupRibbon が定義されている
 
@@ -76,6 +77,7 @@ function showModalDialog(root, title, message, buttons = []) {
         }
     });
     observer.observe(document.body, { childList: true, subtree: true });
+    return content;
 }
 
 function showWarning(root, message) {
@@ -103,7 +105,7 @@ export default function TextEditor(root, options = {}) {
     let isNewFile = !fileNode;
 
     const untitledId = Date.now().toString(36);
-    let baseTitle = filePath?.split("/").pop()?.trim() || fileNode?.name || `Untitled-${untitledId}`;
+    let baseTitle = filePath?.split("/").pop()?.trim() || `Untitled-${untitledId}`;
 
     let dirty = false;
 
@@ -179,15 +181,23 @@ export default function TextEditor(root, options = {}) {
         let finalName = baseTitle;
         async function askFileName(defaultName) {
             return new Promise(resolve => {
-                showModalDialog(root, "新規ファイル名", "ファイル名を入力してください", [
-                    { label: "OK", onClick: () => resolve(promptInput.value) },
-                    { label: "キャンセル", onClick: () => resolve(null) }
-                ]);
+                const dialogContent = showModalDialog(
+                    root,
+                    "新規ファイル名",
+                    "ファイル名を入力してください",
+                    [
+                        { label: "OK", onClick: () => resolve(promptInput.value) },
+                        { label: "キャンセル", onClick: () => resolve(null) }
+                    ]
+                );
+
                 const promptInput = document.createElement("input");
                 promptInput.type = "text";
                 promptInput.value = defaultName;
                 promptInput.style.width = "95%";
-                document.querySelector(".modal-dialog .content div").prepend(promptInput);
+
+                const container = dialogContent.querySelector("div");
+                container.prepend(promptInput);
                 promptInput.focus();
             });
         }
@@ -226,15 +236,12 @@ export default function TextEditor(root, options = {}) {
             // ----------------------------
             // 古いタスクバーボタンの完全削除
             // ----------------------------
-            if (oldBtn) {
-                // DOM から削除
+            if (oldBtn && Array.isArray(taskbarButtons)) {
                 oldBtn.remove();
 
-                // taskbarButtons 配列からも削除
                 const idx = taskbarButtons.indexOf(oldBtn);
                 if (idx !== -1) taskbarButtons.splice(idx, 1);
 
-                // 古いウィンドウとのリンクを切る
                 oldBtn._window = null;
                 oldWin._taskbarBtn = null;
             }
@@ -344,8 +351,15 @@ export default function TextEditor(root, options = {}) {
             win.classList.add("modal-dialog");
         }
         showConfirm(root, "編集中の内容があります。\n保存しますか？",
-            () => { save(); closeWindow(); },
-            () => { dirty = false; updateTitle(); closeWindow(); }
+            async () => {
+                await save();
+                closeWindow();
+            },
+            () => {
+                dirty = false;
+                updateTitle();
+                closeWindow();
+            }
         );
     }
 
@@ -373,7 +387,8 @@ let activeColorPicker = null;
 export function showColorPicker(title, initialColor = "#ffffff", onSelect, parentWin) {
     // 既存カラーピッカーが DOM に存在するかチェック
     if (activeColorPicker && document.body.contains(activeColorPicker)) {
-        bringToFront(activeColorPicker);
+        const pickerWin = activeColorPicker.closest(".window") || activeColorPicker;
+        bringToFront(pickerWin);
         return activeColorPicker.querySelector(".content");
     } else {
         // 変数が残っているが DOM にない場合はクリア
