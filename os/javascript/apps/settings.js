@@ -21,13 +21,8 @@ export async function saveSetting(key, value) {
         const db = await getDB();
         const tx = db.transaction(STORE, "readwrite");
         const store = tx.objectStore(STORE);
-
-        // structuredClone で安全に保存
         store.put(structuredClone(value), key);
-
-        // 完了を待つ
         await tx.complete;
-
         console.log(`Setting saved: ${key}`);
         return true;
     } catch (e) {
@@ -88,12 +83,12 @@ export function refreshTopWindow() {
 }
 
 // =========================
-// IndexedDB 正確サイズ計算
+// IndexedDB 概算サイズ計算（軽量版）
 // =========================
 async function getIndexedDBSize() {
     let totalBytes = 0;
     try {
-        const db = await getDB(); // 使い回し
+        const db = await getDB();
         for (const storeName of db.objectStoreNames) {
             try {
                 const tx = db.transaction(storeName, "readonly");
@@ -103,9 +98,7 @@ async function getIndexedDBSize() {
                     r.onsuccess = () => res(r.result || []);
                     r.onerror = () => res([]);
                 });
-                for (const item of allData) {
-                    totalBytes += new Blob([JSON.stringify(item)]).size;
-                }
+                totalBytes += allData.reduce((sum, item) => sum + (JSON.stringify(item)?.length || 0), 0);
             } catch (e) {
                 console.warn("Object store read failed:", e);
             }
@@ -306,15 +299,21 @@ export default async function SettingsApp(content) {
             sysList.innerHTML += `Uptime: ${upSec} s<br>`;
             sysList.innerHTML += `Open Windows: ${document.querySelectorAll(".window").length}<br>`;
 
+            // IndexedDB サイズ
             const dbBytes = await getIndexedDBSize();
             let quotaMB = "unknown";
-            if (navigator.storage?.estimate) {
-                const est = await navigator.storage.estimate();
-                let estQuotaMB = est.quota / 1024 / 1024;
-                if (estQuotaMB > 6 * 1024) estQuotaMB = 6 * 1024;
-                quotaMB = estQuotaMB.toFixed(1);
+            try {
+                if (navigator.storage?.estimate) {
+                    const est = await navigator.storage.estimate();
+                    let estQuotaMB = est.quota / 1024 / 1024;
+                    if (estQuotaMB > 6 * 1024) estQuotaMB = 6 * 1024; // 上限6GB
+                    quotaMB = estQuotaMB.toFixed(1);
+                }
+            } catch (e) {
+                console.warn("storage estimate failed", e);
             }
-            sysList.innerHTML += `IndexedDB: ${(dbBytes / 1024).toFixed(1)} KB / approx ${quotaMB} MB<br>`;
+
+            sysList.innerHTML += `IndexedDB: Used ${(dbBytes / 1024).toFixed(1)} KB / Max approx ${quotaMB} MB<br>`;
         }
 
         renderSystemInfo();
