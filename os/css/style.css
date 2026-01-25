@@ -124,9 +124,6 @@ body {
     letter-spacing: 0.5px;
 }
 
-
-
-
 #start-btn {
     height: 24px;
     padding: 0 10px;
@@ -136,6 +133,125 @@ body {
 #start-btn.pressed {
     outline: 1.5px dotted black;
     outline-offset: -5.5px;
+}
+
+#start-btn:active {
+    outline: inherit;
+    /* もしくは pressed と同じ見た目にする */
+    background: inherit;
+}
+
+/* tree */
+
+/* ===== Explorer ツリー ===== */
+.tree-container {
+    display: flex;
+    /* inline-block → flex */
+    align-items: center;
+    width: 150px;
+    /* .tree-label と合わせる */
+    overflow: hidden;
+}
+
+.tree-label {
+    position: relative;
+    flex: 1 1 auto;
+    /* 残り幅を使う */
+    min-width: 0;
+    /* ellipsis必須 */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    user-select: none;
+    background: white;
+    color: black;
+    border: 1px solid;
+    border-color: #404040 #fff #fff #404040;
+    padding-right: 22px;
+    /* 矢印の逃げ */
+    box-sizing: border-box;
+}
+
+.tree-label-arrow {
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    line-height: 18px;
+}
+
+/* ツリーパネル */
+.tree-panel {
+    position: absolute;
+    top: 24px;
+    /* ウィンドウタイトルバー下 */
+    left: 0;
+    padding: 4px;
+    width: 200px;
+    max-height: 200px;
+    /* ウィンドウ内に収める */
+    overflow-y: auto;
+    background: whitesmoke;
+    color: black;
+    border: 1px solid;
+    border-color: black #404040 #404040 black;
+    box-shadow: 1px 1px black;
+    padding: 4px;
+    box-sizing: border-box;
+    z-index: 1000;
+}
+
+
+/* 子コンテナ（折りたたみ用） */
+.tree-sub-container {
+    display: none;
+    /* 折りたたみ初期状態 */
+    padding-left: 12px;
+    /* 階層ごとのインデント */
+    box-sizing: border-box;
+}
+
+/* 各アイテム */
+.tree-item {
+    display: block;
+    /* flex ではなく block */
+    width: 100%;
+    box-sizing: border-box;
+    position: relative;
+    /* 子ボタンや sub-container 用 */
+    margin: 2px 0;
+    /* アイテム間の余白 */
+}
+
+/* フォルダやファイル名 */
+.tree-item-name {
+    display: inline-block;
+    vertical-align: middle;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-left: 5px;
+}
+
+.tree-item-name:hover {
+    background: darkblue;
+    color: white;
+}
+
+/* 矢印ボタン */
+.tree-arrow {
+    display: inline-flex;
+    justify-content: center;
+    /* 横中央 */
+    align-items: center;
+    /* 縦中央 */
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    font-size: 14px;
+    position: relative;
+    z-index: 1010;
 }
 
 /* ===== Start Menu ===== */

@@ -1,6 +1,7 @@
 // taskbar.js
 import { resetAllTitleBars } from "./window.js";
 import { taskbarButtons } from "./window.js";
+import { hideContextMenu } from "./context-menu.js"
 export function initTaskbar() {
     const taskbar = document.getElementById("taskbar");
     if (!taskbar) return;
@@ -50,6 +51,7 @@ export function initTaskbar() {
     if (startBtn && startMenu) {
         startBtn.addEventListener("mousedown", e => {
             e.stopPropagation();
+            hideContextMenu();
             const open = startMenu.style.display === "block";
             startMenu.style.display = open ? "none" : "block";
             // 全ウィンドウのタイトルバー色リセット

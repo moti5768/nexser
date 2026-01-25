@@ -5,7 +5,7 @@ import { resolveFS } from "../fs-utils.js";
 import { FS, initFS } from "../fs.js";
 import { buildDesktop } from "../desktop.js";
 import { attachContextMenu } from "../context-menu.js";
-import { resolveAppByPath } from "../file-associations.js";
+import { resolveAppByPath, getExtension } from "../file-associations.js";
 import { addRecent } from "../recent.js";
 
 function hasExtension(name) {
@@ -18,7 +18,6 @@ function hasExtension(name) {
 function deleteFSItem(parentPath, itemName, rerender) {
     const parentNode = resolveFS(parentPath);
     if (!parentNode || !parentNode[itemName]) return;
-
     delete parentNode[itemName];
     rerender?.();
     buildDesktop();
@@ -41,8 +40,8 @@ function createNewFolder(currentPath, listContainer, renderCallback) {
     input.value = folderName;
     input.style.cssText = "width:100px;font-size:13px;text-align:center";
     itemDiv.appendChild(input);
-
     listContainer.appendChild(itemDiv);
+
     input.focus();
     input.select();
 
@@ -54,7 +53,10 @@ function createNewFolder(currentPath, listContainer, renderCallback) {
         let idx = 1;
         while (folderNode[finalName]) finalName = `${newName} (${idx++})`;
 
-        folderNode[finalName] = { type: "folder" };
+        const ext = getExtension(finalName);
+        if (ext === ".app") folderNode[finalName] = { type: "app", entry: "" };
+        else if (ext) folderNode[finalName] = { type: "file", content: "" };
+        else folderNode[finalName] = { type: "folder" };
 
         renderCallback?.();
         buildDesktop();
@@ -66,7 +68,7 @@ function createNewFolder(currentPath, listContainer, renderCallback) {
 }
 
 // ------------------------
-// メイン関数
+// Explorer 本体
 // ------------------------
 export default async function Explorer(root, options = {}) {
     const win = root.closest(".window");
@@ -74,37 +76,241 @@ export default async function Explorer(root, options = {}) {
     const taskBtn = win?._taskbarBtn;
 
     await initFS();
-
     let currentPath = options.path || "Desktop";
 
+    // ------------------------
+    // ダブルクリック・アドレスバー共通ロジック
+    // ------------------------
+    function openFSItem(name, node, parentPath) {
+        let targetPath = parentPath
+            ? `${parentPath}/${name}`
+            : name;
+        let targetNode = node;
+
+        if (node.type === "link") {
+            targetPath = node.target;
+            targetNode = resolveFS(targetPath);
+            if (!targetNode) return;
+        }
+
+        let effectiveType = targetNode.type;
+        if (effectiveType === "folder" && hasExtension(name)) effectiveType = "file";
+
+        switch (effectiveType) {
+            case "folder":
+                currentPath = targetPath;
+                render(currentPath);
+                break;
+            case "app":
+                launch(targetPath, { path: targetPath, uniqueKey: targetPath });
+                break;
+            case "file": {
+                const appPath = resolveAppByPath(targetPath);
+                if (appPath) launch(appPath, { path: targetPath, node: targetNode, uniqueKey: targetPath });
+                else import("../apps/fileviewer.js").then(mod => {
+                    const content = createWindow(name);
+                    mod.default(content, { name, content: targetNode.content });
+                });
+                break;
+            }
+        }
+        addRecent({ type: effectiveType, path: targetPath });
+    }
+
+    // ------------------------
+    // 折りたたみ式アドレスバー作成
+    // ------------------------
+    function createTreeDropdown(container, currentPath) {
+        // 既存の子要素を削除
+        while (container.firstChild) container.removeChild(container.firstChild);
+        container.classList.add("tree-container");
+
+        // ラベル（フォルダ名だけ）
+        const label = document.createElement("span");
+        label.className = "tree-label";
+        label.textContent = currentPath.split("/").pop();
+        container.appendChild(label);
+
+        // ツリーパネル（body直下に置く）
+        let treePanel = document.querySelector(".tree-panel");
+        if (!treePanel) {
+            treePanel = document.createElement("div");
+            treePanel.className = "tree-panel";
+            treePanel.style.display = "none";
+            document.body.appendChild(treePanel);
+        }
+        // クリアして再利用
+        treePanel.innerHTML = "";
+
+        // パネルの位置をラベル下に調整
+        function positionTreePanel() {
+            const rect = label.getBoundingClientRect();
+            treePanel.style.left = rect.left + "px";
+            treePanel.style.top = rect.bottom + "px";
+        }
+
+        // ラベル横に矢印ボタンを追加
+        const arrowBtn = document.createElement("button");
+        arrowBtn.className = "tree-label-arrow";
+        arrowBtn.textContent = "▼";
+        arrowBtn.style.position = "absolute";
+        arrowBtn.style.marginRight = "0px";
+        arrowBtn.style.right = "0px";
+        label.appendChild(arrowBtn);
+
+        // ボタンでツリーパネル開閉
+        arrowBtn.addEventListener("mousedown", e => {
+            e.stopPropagation();
+            positionTreePanel();
+            const isOpen = treePanel.style.display === "block";
+            treePanel.style.display = isOpen ? "none" : "block";
+        });
+
+        label.addEventListener("mousedown", e => {
+            e.stopPropagation();
+            positionTreePanel();
+            const isOpen = treePanel.style.display === "block";
+            treePanel.style.display = isOpen ? "none" : "block";
+        });
+
+        // 外クリックで閉じる
+        document.addEventListener("mousedown", e => {
+            if (!treePanel.contains(e.target) && e.target !== label && e.target !== arrowBtn) {
+                treePanel.style.display = "none";
+                arrowBtn.textContent = "▼"; // 閉じた状態に戻す
+            }
+        });
+
+        // ------------------------
+        // ツリー再帰
+        // ------------------------
+        function buildTree(node, parentEl, path = "", depth = 0) {
+            for (const name in node) {
+                if (name === "type") continue;
+                const child = node[name];
+                const fullPath = path ? `${path}/${name}` : name;
+                const isFolder = child.type === "folder" || (!child.type && !hasExtension(name));
+
+                const item = document.createElement("div");
+                item.className = "tree-item";
+                item.style.paddingLeft = `${depth * 12}px`;
+                parentEl.appendChild(item);
+
+                // 子を持つフォルダだけ矢印
+                const hasChildren = isFolder && Object.keys(child).some(k => k !== "type");
+                let itemArrowBtn, subContainer;
+
+                if (hasChildren) {
+                    itemArrowBtn = document.createElement("button");
+                    itemArrowBtn.className = "tree-arrow";
+                    itemArrowBtn.textContent = "▶";
+                    item.appendChild(itemArrowBtn);
+
+                    subContainer = document.createElement("div");
+                    subContainer.className = "tree-sub-container";
+                    subContainer.style.display = "none";
+                    item.appendChild(subContainer);
+
+                    itemArrowBtn.addEventListener("click", e => {
+                        e.stopPropagation();
+                        const expanded = subContainer.style.display === "block";
+                        subContainer.style.display = expanded ? "none" : "block";
+                        itemArrowBtn.textContent = expanded ? "▶" : "▼";
+                    });
+                }
+
+                const text = document.createElement("span");
+                text.className = "tree-item-name";
+                text.textContent = name;
+                item.appendChild(text);
+
+                item.addEventListener("click", e => {
+                    e.stopPropagation();
+
+                    // ★ Explorerのアイテムと同じ呼び方に統一
+                    // path = 親フォルダのパス（ルート基準）
+                    openFSItem(name, child, path || "");
+
+                    treePanel.style.display = "none";
+                    arrowBtn.textContent = "▼";
+                });
+
+
+                if (hasChildren) buildTree(child, subContainer, fullPath, depth + 1);
+            }
+        }
+
+        buildTree(FS, treePanel);
+    }
+
+    // ------------------------
+    // 描画
+    // ------------------------
     const render = (path) => {
         currentPath = path;
         updateTitle(path);
 
         let listContainer = root.querySelector(".explorer-list");
         let pathLabel = root.querySelector(".path-label");
+        let treeContainer = root.querySelector(".tree-container");
 
+        // 初回生成
         if (!listContainer) {
-            root.innerHTML = `
-                <div class="explorer-header">
-                    <button id="back-btn">&larr;</button>
-                    <span class="path-label"></span>
-                </div>
-                <div class="explorer-list scrollbar_none"></div>
-            `;
-            listContainer = root.querySelector(".explorer-list");
-            pathLabel = root.querySelector(".path-label");
+            root.innerHTML = "";
+            const container = document.createElement("div");
+            container.className = "explorer-container";
+            container.style.display = "flex";
+            container.style.flexDirection = "column";
+            container.style.height = "100%";
+
+            const header = document.createElement("div");
+            header.className = "explorer-header";
+
+            const backBtn = document.createElement("button");
+            backBtn.id = "back-btn";
+            backBtn.textContent = "←";
+            backBtn.style.marginRight = "8px";
+
+            pathLabel = document.createElement("span");
+            pathLabel.className = "path-label";
+
+            treeContainer = document.createElement("div");
+            treeContainer.className = "tree-container";
+
+            createTreeDropdown(treeContainer, currentPath);
+
+            header.appendChild(backBtn);
+            header.appendChild(treeContainer);
+            header.appendChild(pathLabel);
+
+            listContainer = document.createElement("div");
+            listContainer.className = "explorer-list";
+            listContainer.style.flex = "1 1 auto";
+            listContainer.style.overflowY = "auto";
+
+            container.appendChild(header);
+            container.appendChild(listContainer);
+            root.appendChild(container);
+
+            backBtn.onclick = () => {
+                if (currentPath === "Desktop") return;
+                const parts = currentPath.split("/");
+                parts.pop();
+                currentPath = parts.join("/") || "Desktop";
+                render(currentPath);
+            };
+        } else {
+            if (treeContainer) createTreeDropdown(treeContainer, currentPath);
         }
 
+        // パス表示
         if (pathLabel) pathLabel.textContent = currentPath;
-        listContainer.innerHTML = "";
 
+        // ファイル・フォルダリスト
+        listContainer.innerHTML = "";
         const folder = resolveFS(path);
         if (!folder) return;
 
-        // ------------------------
-        // 各アイテム描画
-        // ------------------------
         for (const name in folder) {
             if (name === "type") continue;
             const itemData = folder[name];
@@ -114,62 +320,19 @@ export default async function Explorer(root, options = {}) {
             item.className = "explorer-item";
             listContainer.appendChild(item);
 
-            const fullPath = `${path}/${name}`;
-
-            item.addEventListener("dblclick", () => {
-                let targetNode = itemData;
-                let targetPath = fullPath;
-
-                if (itemData.type === "link") {
-                    targetPath = itemData.target;
-                    targetNode = resolveFS(targetPath);
-                    if (!targetNode) return;
-                }
-
-                let effectiveType = targetNode.type;
-                if (effectiveType === "folder" && hasExtension(name)) effectiveType = "file";
-
-                switch (effectiveType) {
-                    case "app":
-                        launch(targetPath, { path: targetPath, uniqueKey: targetPath });
-                        break;
-                    case "folder":
-                        currentPath = targetPath;
-                        render(currentPath);
-                        break;
-                    case "file": {
-                        const appPath = resolveAppByPath(targetPath);
-                        if (appPath) {
-                            launch(appPath, { path: targetPath, node: targetNode, uniqueKey: targetPath });
-                        } else {
-                            import("../apps/fileviewer.js").then(mod => {
-                                const content = createWindow(name);
-                                mod.default(content, { name, content: targetNode.content });
-                            });
-                        }
-                        break;
-                    }
-                }
-
-                addRecent({ type: effectiveType, path: targetPath });
-            });
+            item.addEventListener("dblclick", () => openFSItem(name, itemData, path));
         }
 
-        // ------------------------
-        // コンテント右クリックメニュー
-        // ------------------------
+        // 右クリック
         const contentEl = root.querySelector(".content") || root.closest(".window")?.querySelector(".content");
         if (contentEl) {
             attachContextMenu(contentEl, (e) => {
                 const items = [];
-
-                // 常に新規フォルダ
                 items.push({
                     label: "新規フォルダ",
                     action: () => createNewFolder(currentPath, listContainer, () => render(currentPath))
                 });
 
-                // 削除はアイテム上でのみ有効
                 if (e.target.classList.contains("explorer-item")) {
                     const targetName = e.target.textContent;
                     items.push({
@@ -177,28 +340,14 @@ export default async function Explorer(root, options = {}) {
                         action: () => deleteFSItem(currentPath, targetName, () => render(currentPath))
                     });
                 } else {
-                    items.push({
-                        label: "削除",
-                        disabled: true,
-                        action: () => { }
-                    });
+                    items.push({ label: "削除", disabled: true, action: () => { } });
                 }
 
                 return items;
             });
         }
 
-        // 戻るボタン
-        const backBtn = root.querySelector("#back-btn");
-        backBtn.onclick = () => {
-            if (currentPath === "Desktop") return;
-            const parts = currentPath.split("/");
-            parts.pop();
-            currentPath = parts.join("/") || "Desktop";
-            render(currentPath);
-        };
-
-        // ステータスバー更新
+        // ステータスバー
         const statusBar = win?._statusBar;
         if (statusBar) {
             let folders = 0, files = 0, apps = 0, links = 0;
@@ -218,12 +367,13 @@ export default async function Explorer(root, options = {}) {
             if (files) parts.push(`${files} file${files > 1 ? "s" : ""}`);
             if (apps) parts.push(`${apps} app${apps > 1 ? "s" : ""}`);
             if (links) parts.push(`${links} link${links > 1 ? "s" : ""}`);
-
             statusBar.textContent = parts.length ? parts.join(", ") : "(empty)";
         }
     };
 
-    // Ribbon メニュー設定
+    // ------------------------
+    // Ribbon
+    // ------------------------
     const defaultRibbonMenus = [
         {
             title: "Window", items: [
@@ -241,25 +391,10 @@ export default async function Explorer(root, options = {}) {
                     }
                 }
             ]
-        },
-        {
-            title: "Edit", items: [
-                { label: "Cut", action: () => { } },
-                { label: "Copy", action: () => { } },
-                { label: "Paste", action: () => { } }
-            ]
-        },
-        {
-            title: "View", items: [
-                { label: "Icons", action: () => { } },
-                { label: "List", action: () => { } },
-                { label: "Details", action: () => { } }
-            ]
         }
     ];
-
-    // setupRibbon 呼び出し
     setupRibbon(win, () => currentPath, render, defaultRibbonMenus);
+
     render(currentPath);
 
     if (!win._fsWatcherInstalled) {
@@ -283,7 +418,6 @@ export function setupRibbon(win, getCurrentPath, renderCallback, menus) {
     if (!win?._ribbon) return;
     const ribbon = win._ribbon;
     ribbon.innerHTML = "";
-
     (menus || []).forEach(menu => addRibbonMenu(ribbon, menu.title, menu.items));
 }
 

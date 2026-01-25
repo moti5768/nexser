@@ -6,11 +6,8 @@ import { buildStartMenu, refreshStartMenu } from "./startmenu.js";
 import { initTaskbar } from "./taskbar.js";
 import {
     createWindow,
-    confirmWindow,
-    scheduleRefreshTopWindow,
     removeAllTaskbarButtons,
     errorWindow,
-    centerWindowOptions,
     showModalWindow,
     bringToFront
 } from "./window.js";

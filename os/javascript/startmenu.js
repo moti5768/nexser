@@ -58,6 +58,7 @@ export async function buildStartMenu() {
     logoffBtn.onclick = async () => {
         await logOff();
         startBtn.classList.remove("pressed");
+        closeStartMenu();
         menu.style.display = "none";
     };
     menu.appendChild(logoffBtn);

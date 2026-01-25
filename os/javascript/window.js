@@ -257,19 +257,23 @@ ${!options.hideStatus ? `
         const taskbarBtnRect = taskbarBtn?.getBoundingClientRect() ||
             { left: w.offsetLeft, top: w.offsetTop, width: 0 };
 
-        const clone = createTitleClone(w, titleBar, titleText); // ★ 共通関数化
+        // アニメ中は display:block のまま
+        w.style.display = "block";
         w.style.pointerEvents = "none";
+
+        const clone = createTitleClone(w, titleBar, titleText);
 
         animateTitleClone(clone,
             { left: taskbarBtnRect.left, top: taskbarBtnRect.top, width: taskbarBtnRect.width },
             250,
             () => {
-                w.style.visibility = "hidden";
-                w.style.pointerEvents = "none";
-                w.dataset.minimized = "true";
                 clone.remove();
-                minimizing = false;  // 安全にフラグ解除
+                w.dataset.minimized = "true";
+                minimizing = false;
                 scheduleRefreshTopWindow();
+
+                // アニメ完了後に display:none にする
+                w.style.display = "none";
             }
         );
     });
@@ -277,55 +281,66 @@ ${!options.hideStatus ? `
     /* ===== タスクバークリックで復元 ===== */
 
     if (taskbarBtn) {
-        taskbarBtn.onclick = () => {
-            // タスクバー選択状態を即時反映
-            taskbarButtons.forEach(btn => btn.classList.remove("selected"));
-            taskbarBtn.classList.add("selected");
+        if (taskbarBtn) {
+            taskbarBtn.onclick = () => {
+                // タスクバー選択状態を即時反映
+                taskbarButtons.forEach(btn => btn.classList.remove("selected"));
+                taskbarBtn.classList.add("selected");
 
-            if (w.dataset.minimized === "true") {
-                minimizing = false;
+                if (w.dataset.minimized === "true") {
+                    minimizing = false;
 
-                const titleBar = w.querySelector(".title-bar");
-                const titleText = titleBar?.querySelector(".title-text");
-                if (!titleText) return;
+                    const titleBar = w.querySelector(".title-bar");
+                    const titleText = titleBar?.querySelector(".title-text");
+                    if (!titleText) return;
 
-                const rect = taskbarBtn.getBoundingClientRect();
-                const clone = document.createElement("div");
+                    // まず display:block にして可視化準備
+                    w.style.display = "block";
+                    w.style.visibility = "hidden";  // アニメ中は非表示
+                    w.style.pointerEvents = "none";
 
-                Object.assign(clone.style, {
-                    position: "absolute",
-                    left: rect.left + "px",
-                    top: rect.top + "px",
-                    width: rect.width + "px",
-                    height: titleBar.offsetHeight + "px",
-                    background: getComputedStyle(titleBar).backgroundColor,
-                    color: getComputedStyle(titleText).color,
-                    display: "flex",
-                    alignItems: "center",
-                    padding: "0 5px",
-                    font: getComputedStyle(titleText).font,
-                    zIndex: parseInt(w.style.zIndex) + 1,
-                    pointerEvents: "none"
-                });
-                clone.textContent = titleText.textContent;
-                document.body.appendChild(clone);
+                    const rect = taskbarBtn.getBoundingClientRect();
+                    const clone = document.createElement("div");
 
-                // 元ウィンドウはアニメ中非表示
-                w.style.visibility = "hidden";
-                w.dataset.minimized = "true"; // アニメ中はまだ最小化状態
+                    Object.assign(clone.style, {
+                        position: "absolute",
+                        left: rect.left + "px",
+                        top: rect.top + "px",
+                        width: rect.width + "px",
+                        height: titleBar.offsetHeight + "px",
+                        background: getComputedStyle(titleBar).backgroundColor,
+                        color: getComputedStyle(titleText).color,
+                        display: "flex",
+                        alignItems: "center",
+                        padding: "0 5px",
+                        font: getComputedStyle(titleText).font,
+                        zIndex: parseInt(w.style.zIndex) + 1,
+                        pointerEvents: "none"
+                    });
+                    clone.textContent = titleText.textContent;
+                    document.body.appendChild(clone);
 
-                animateTitleClone(clone, { left: w.offsetLeft, top: w.offsetTop, width: w.offsetWidth }, 250, () => {
-                    // アニメ終了時に元ウィンドウを復帰
-                    w.style.visibility = "visible";
-                    w.dataset.minimized = "false"; // 最小化解除
-                    clone.remove();
+                    // 元ウィンドウはアニメ中非表示
+                    w.dataset.minimized = "true";
+
+                    animateTitleClone(clone,
+                        { left: w.offsetLeft, top: w.offsetTop, width: w.offsetWidth },
+                        250,
+                        () => {
+                            // アニメ終了時に元ウィンドウを復帰
+                            w.style.visibility = "visible";
+                            w.style.pointerEvents = "auto";
+                            w.dataset.minimized = "false";
+                            clone.remove();
+                            bringToFront(w);
+                            scheduleRefreshTopWindow();
+                        }
+                    );
+
+                } else {
                     bringToFront(w);
-                    scheduleRefreshTopWindow(); // タイトルバー色更新
-                });
-
-            } else {
-                bringToFront(w);
-                scheduleRefreshTopWindow();
+                    scheduleRefreshTopWindow();
+                }
             }
         }
     };
@@ -906,16 +921,43 @@ export function focusWindowById(id) {
     return true;
 }
 
-export function minimizeWindowById(id) {
+export async function minimizeWindowById(id) {
     const list = getWindows();
     const win = list[id];
     if (!win) return false;
 
-    win.el.style.visibility = "hidden";
-    win.el.style.pointerEvents = "none";
-    win.el.dataset.minimized = "true";
+    const w = win.el;
+    if (w.dataset.minimized === "true") return true;
 
-    scheduleRefreshTopWindow();
+    const taskbarBtn = w._taskbarBtn;
+    if (!taskbarBtn) {
+        // タスクバーがない場合は即時非表示
+        w.style.display = "none";
+        w.dataset.minimized = "true";
+        scheduleRefreshTopWindow();
+        return true;
+    }
+
+    const titleBar = w.querySelector(".title-bar");
+    const titleText = titleBar?.querySelector(".title-text");
+    if (!titleText) return false;
+
+    const rect = taskbarBtn.getBoundingClientRect();
+    const clone = createTitleClone(w, titleBar, titleText);
+
+    // 元ウィンドウを非表示準備
+    w.style.display = "block";
+    w.style.pointerEvents = "none";
+    w.style.visibility = "hidden";
+
+    animateTitleClone(clone, { left: rect.left, top: rect.top, width: rect.width }, 250, () => {
+        clone.remove();
+        w.dataset.minimized = "true";
+        w.style.display = "none";
+        w.style.pointerEvents = "auto";
+        scheduleRefreshTopWindow();
+    });
+
     return true;
 }
 

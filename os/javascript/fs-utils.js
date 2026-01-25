@@ -8,14 +8,27 @@ export function resolveFS(path) {
     if (typeof path !== "string") return null;
     const parts = path.split("/").filter(Boolean);
     let cur = FS;
+    const visited = new Set(); // 循環防止
+
     for (const p of parts) {
+        if (!cur) return null;
         cur = cur[p];
         if (!cur) return null;
-        if (cur.type === "link") cur = resolveFS(cur.target);
+
+        // リンク解決
+        let steps = 0;
+        while (cur && cur.type === "link") {
+            if (visited.has(cur)) return null; // 循環検知
+            visited.add(cur);
+            cur = resolveFS(cur.target);
+            if (steps++ > 100) return null; // 安全ガード
+        }
+
         if (!cur) return null;
     }
     return cur;
 }
+
 
 /**
  * パス正規化

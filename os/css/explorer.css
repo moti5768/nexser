@@ -19,6 +19,16 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    margin-left: 5px;
+}
+
+.explorer-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    /* 重要 */
+    padding: 0;
+    /* padding があると scrollbar-button が 2 個描画されることがあります */
 }
 
 .explorer-list {
@@ -26,10 +36,11 @@
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
-    display: flex;
     flex-direction: column;
     overflow-y: auto;
-    /* header 高さ分を除く */
+    overflow-x: auto;
+    height: 100%;
+    box-sizing: border-box;
 }
 
 .explorer-list div {

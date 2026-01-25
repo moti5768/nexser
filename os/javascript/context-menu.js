@@ -78,6 +78,13 @@ export function hideContextMenu() {
 }
 
 // クリック・スクロール・ESCで閉じる
-document.addEventListener("click", hideContextMenu);
+document.addEventListener("mousedown", e => {
+    if (!currentMenu) return;
+    // もしクリック対象がメニューの中なら閉じない
+    if (!currentMenu.contains(e.target)) {
+        hideContextMenu();
+    }
+});
+
 document.addEventListener("scroll", hideContextMenu);
 document.addEventListener("keydown", e => { if (e.key === "Escape") hideContextMenu(); });

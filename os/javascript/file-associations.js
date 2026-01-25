@@ -24,8 +24,9 @@ export const FILE_ASSOCIATIONS = {
  * パスから拡張子を取得
  */
 export function getExtension(path) {
+    if (typeof path !== "string") return "";
     const i = path.lastIndexOf(".");
-    if (i === -1) return "";
+    if (i === -1 || i === path.length - 1) return "";
     return path.slice(i).toLowerCase();
 }
 
@@ -33,6 +34,7 @@ export function getExtension(path) {
  * 拡張子から起動アプリを取得
  */
 export function resolveAppByPath(path) {
+    if (typeof path !== "string") return null;   // 安全対策
     const ext = getExtension(path);
     return FILE_ASSOCIATIONS[ext] || null;
 }

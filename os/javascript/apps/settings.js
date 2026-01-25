@@ -69,7 +69,7 @@ loadSetting("showRecentItems").then(val => {
 // =========================
 export function refreshTopWindow() {
     const visibleWindows = Array.from(document.querySelectorAll(".window"))
-        .filter(win => win.style.visibility !== "hidden" && win.dataset.minimized !== "true");
+        .filter(win => win.style.display !== "none" && win.dataset.minimized !== "true");
 
     let topWindow = null;
     if (visibleWindows.length) {
