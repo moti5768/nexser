@@ -46,3 +46,12 @@ export function normalizePath(path, cwd = "C:/") {
 export function fsPathToModulePath(fsPath) {
     return `./apps/${fsPath}.js`;
 }
+
+export function loadFileAsDataURL(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
