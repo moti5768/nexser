@@ -9,7 +9,9 @@ import {
     removeAllTaskbarButtons,
     errorWindow,
     showModalWindow,
-    bringToFront
+    bringToFront,
+    closeWindowById,
+    getWindows
 } from "./window.js";
 import { showPromptScreen } from "./boot.js";
 import { startup_sound } from "./sounds.js";
@@ -116,7 +118,11 @@ export async function launch(path, options = {}) {
 
             // processes マップに登録
             if (uniqueKey) {
-                processes.set(uniqueKey, { pid: pidCounter++, path, window: win, state: "normal" });
+                const pid = pidCounter++;
+                processes.set(uniqueKey, { pid, path, window: win, state: "normal" });
+
+                // ★ window に processKey を覚えさせる
+                win.dataset.processKey = uniqueKey;
             }
 
             // Explorer 用オブザーバー
@@ -153,7 +159,11 @@ export async function launch(path, options = {}) {
 
             // ファイルビューアも uniqueKey で重複防止可能
             if (options.uniqueKey) {
-                processes.set(options.uniqueKey, { pid: pidCounter++, path, window: content.parentElement, state: "normal" });
+                const pid = pidCounter++;
+                processes.set(options.uniqueKey, { pid, path, window: content.parentElement, state: "normal" });
+
+                // ★ 追加
+                content.parentElement.dataset.processKey = options.uniqueKey;
             }
         }
 
@@ -196,6 +206,52 @@ function resolve(path) {
         }
     }
     return cur;
+}
+
+/* ===== プロセス一覧取得 ===== */
+export function getProcessList() {
+    return Array.from(processes.entries()).map(([key, proc]) => ({
+        key,
+        pid: proc.pid,
+        path: proc.path,
+        name: basename(proc.path),
+        state: proc.state,
+        window: proc.window
+    }));
+}
+
+/* ===== プロセス終了 ===== */
+export function killProcess(key) {
+    const proc = processes.get(key);
+    if (!proc) return false;
+
+    const win = proc.window;
+
+    try {
+        if (win) {
+            // window.js に登録されているタスクバー連携を解除
+            if (win._taskbarBtn) {
+                win._taskbarBtn.remove(); // タスクバーボタン削除
+                win._taskbarBtn = null;
+            }
+
+            // ウィンドウ自体を削除
+            win.remove();
+        }
+    } catch (e) {
+        console.warn("window remove failed:", e);
+    }
+
+    // explorer 管理からも除去
+    for (const [path, w] of explorerWindows.entries()) {
+        if (w === win) {
+            explorerWindows.delete(path);
+            break;
+        }
+    }
+
+    processes.delete(key);
+    return true;
 }
 
 /* ===== UIリセット ===== */

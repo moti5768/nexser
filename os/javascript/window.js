@@ -3,6 +3,7 @@ import { saveWindowSize, loadWindowSize } from "./window-size-db.js";
 import { themeColor } from "./apps/settings.js"; // これを使う
 import { attachContextMenu } from "./context-menu.js";
 import { setupRibbon } from "./apps/explorer.js"; // ここに setupRibbon が定義されている
+import { killProcess } from "./kernel.js";
 
 export const taskbarButtons = []; // 作られたボタンを全部保存
 let resizeCursor = "";
@@ -229,7 +230,12 @@ ${!options.hideStatus ? `
         if (w._modalOverlay) {
             w._modalOverlay.remove();
         }
-        w.remove();
+        if (w.dataset.processKey) {
+            killProcess(w.dataset.processKey);
+        } else {
+            // 念のためフォールバック
+            w.remove();
+        }
 
         if (taskbarBtn) {
             taskbarBtn._window = null;

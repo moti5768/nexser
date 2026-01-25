@@ -33,6 +33,12 @@ export let FS = {
         "Settings.app": { type: "app", entry: "./apps/settings.js", singleton: true },
         "Terminal.app": { type: "app", entry: "./apps/terminal.js", singleton: true },
         "Calc.app": { type: "app", entry: "./apps/calc.js", singleton: true },
+        "TaskManager.app": {
+            type: "app",
+            name: "Task Manager",
+            entry: "./apps/taskmanager.js",
+            singleton: true
+        },
         "Readme.txt": { type: "file", content: "Welcome to NEXSER OS" }
     }
 };

@@ -688,3 +688,26 @@ body::-webkit-scrollbar {
     background-color: darkblue;
     color: white;
 }
+
+/* taskmanager */
+.task-table {
+    border-collapse: collapse;
+    /* 枠線を重ねずきれいに表示 */
+    width: 100%;
+}
+
+.task-table td {
+    border: 1px solid #999;
+    /* 線の色 */
+    padding: 4px 8px;
+    /* 少し余白をつける */
+    text-align: left;
+}
+
+.task-table th {
+    color: black;
+    background-color: #C3C7CB;
+    border: 1.8px solid #808080;
+    border-color: #fff #808080 #808080 #fff;
+    box-shadow: 0.5px 0.5px black;
+}
