@@ -85,7 +85,13 @@ function createMenu(folder, basePath, menuRoot) {
         const node = folder[name];
         const item = document.createElement("div");
         item.className = "start-item";
-        item.textContent = name;
+
+        // ←ここに span を作ってテキストを入れる
+        const textSpan = document.createElement("span");
+        textSpan.className = "text";
+        textSpan.textContent = name;
+        item.appendChild(textSpan);
+
         container.appendChild(item);
 
         const fullPath = `${basePath}/${name}`;

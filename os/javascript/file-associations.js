@@ -6,6 +6,18 @@ export const FILE_ASSOCIATIONS = {
     ".txt": "Programs/TextEditor.app",
     ".md": "Programs/TextEditor.app",
 
+    // code
+    ".js": "Programs/CodeEditor.app",
+    ".ts": "Programs/CodeEditor.app",
+    ".json": "Programs/CodeEditor.app",
+    ".css": "Programs/CodeEditor.app",
+    ".scss": "Programs/CodeEditor.app",
+    ".vue": "Programs/CodeEditor.app",
+
+    // web
+    ".html": "Programs/Browser.app",
+    ".htm": "Programs/Browser.app",
+
     // images
     ".png": "Programs/ImageViewer.app",
     ".jpg": "Programs/ImageViewer.app",

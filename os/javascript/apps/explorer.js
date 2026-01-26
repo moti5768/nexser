@@ -184,63 +184,98 @@ export default async function Explorer(root, options = {}) {
         // ------------------------
         // ツリー再帰
         // ------------------------
-        function buildTree(node, parentEl, path = "", depth = 0) {
-            for (const name in node) {
-                if (name === "type") continue;
-                const child = node[name];
+        function buildTree(node, parentEl, path = "", depth = 0, prefix = "", currentPath = "") {
+            const entries = Object.entries(node).filter(([k]) => k !== "type");
+
+            entries.forEach(([name, child], index) => {
                 const fullPath = path ? `${path}/${name}` : name;
                 const isFolder = child.type === "folder" || (!child.type && !hasExtension(name));
+                const hasChildren = isFolder && Object.keys(child).some(k => k !== "type");
+
+                const isLast = index === entries.length - 1;
+                const newPrefix = prefix + (isLast ? "└─ " : "├─ ");
 
                 const item = document.createElement("div");
                 item.className = "tree-item";
-                item.style.paddingLeft = `${depth * 12}px`;
+                item.style.fontFamily = "Consolas, monospace";
+                item.style.cursor = "pointer";
                 parentEl.appendChild(item);
 
-                // 子を持つフォルダだけ矢印
-                const hasChildren = isFolder && Object.keys(child).some(k => k !== "type");
-                let itemArrowBtn, subContainer;
+                let arrowBtn;
+                let subContainer;
 
                 if (hasChildren) {
-                    itemArrowBtn = document.createElement("button");
-                    itemArrowBtn.className = "tree-arrow";
-                    itemArrowBtn.textContent = "▶";
-                    item.appendChild(itemArrowBtn);
+                    // 矢印ボタン
+                    arrowBtn = document.createElement("button");
+                    arrowBtn.className = "tree-arrow";
+                    arrowBtn.textContent = "▶";
+                    arrowBtn.style.marginRight = "4px";
+                    arrowBtn.style.fontFamily = "Consolas, monospace";
+                    arrowBtn.style.width = "20px";
+                    arrowBtn.style.height = "20px";
+                    arrowBtn.style.padding = "0";
+                    arrowBtn.style.lineHeight = "18px";
+                    arrowBtn.style.textAlign = "center";
+                    item.appendChild(arrowBtn);
 
+                    // 子コンテナ
                     subContainer = document.createElement("div");
-                    subContainer.className = "tree-sub-container";
-                    subContainer.style.display = "none";
-                    item.appendChild(subContainer);
+                    subContainer.style.marginLeft = "12px";
+                    parentEl.appendChild(subContainer);
 
-                    itemArrowBtn.addEventListener("click", e => {
+                    // 自動展開：currentPath 以下なら開く
+                    if (currentPath.startsWith(fullPath)) {
+                        subContainer.style.display = "block";
+                        arrowBtn.textContent = "▼";
+                    } else {
+                        subContainer.style.display = "none";
+                    }
+
+                    // クリックで開閉
+                    arrowBtn.addEventListener("click", e => {
                         e.stopPropagation();
                         const expanded = subContainer.style.display === "block";
                         subContainer.style.display = expanded ? "none" : "block";
-                        itemArrowBtn.textContent = expanded ? "▶" : "▼";
+                        arrowBtn.textContent = expanded ? "▶" : "▼";
                     });
+                } else {
+                    // フォルダでない場合はスペーサー
+                    const spacer = document.createElement("span");
+                    spacer.style.display = "inline-block";
+                    spacer.style.width = "24px";
+                    item.appendChild(spacer);
                 }
 
+                // テキスト
                 const text = document.createElement("span");
-                text.className = "tree-item-name";
-                text.textContent = name;
+                text.textContent = newPrefix + name;
                 item.appendChild(text);
 
+                // クリックで開く
+                // クリックで開く
                 item.addEventListener("click", e => {
                     e.stopPropagation();
-
-                    // ★ Explorerのアイテムと同じ呼び方に統一
-                    // path = 親フォルダのパス（ルート基準）
                     openFSItem(name, child, path || "");
 
-                    treePanel.style.display = "none";
-                    arrowBtn.textContent = "▼";
+                    // ツリーパネルを閉じる
+                    if (treePanel) {
+                        treePanel.style.display = "none";
+                        // 矢印ボタンも閉じた状態に戻す
+                        const parentArrow = item.querySelector(".tree-arrow");
+                        if (parentArrow) parentArrow.textContent = "▶";
+                    }
                 });
 
-
-                if (hasChildren) buildTree(child, subContainer, fullPath, depth + 1);
-            }
+                // 再帰
+                if (hasChildren) {
+                    buildTree(child, subContainer, fullPath, depth + 1, prefix + (isLast ? "   " : "│  "), currentPath);
+                }
+            });
         }
 
-        buildTree(FS, treePanel);
+        // 呼び出し側
+        buildTree(FS, treePanel, "", 0, "", currentPath);
+
     }
 
     // ------------------------

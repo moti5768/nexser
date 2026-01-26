@@ -18,6 +18,7 @@ export let FS = {
         type: "folder",
         "Explorer.app": { type: "app", entry: "./apps/explorer.js" },
         "TextEditor.app": { type: "app", entry: "./apps/texteditor.js" },
+        "CodeEditor.app": { type: "app", entry: "./apps/codeeditor.js" },
         "ImageViewer.app": { type: "app", entry: "./apps/imageviewer.js" },
         "VideoPlayer.app": { type: "app", entry: "./apps/videoplayer.js" },
         "Documents": {

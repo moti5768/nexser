@@ -215,26 +215,23 @@ body {
 /* 各アイテム */
 .tree-item {
     display: block;
-    /* flex ではなく block */
-    width: 100%;
-    box-sizing: border-box;
     position: relative;
-    /* 子ボタンや sub-container 用 */
-    margin: 2px 0;
-    /* アイテム間の余白 */
-}
-
-/* フォルダやファイル名 */
-.tree-item-name {
-    display: inline-block;
-    vertical-align: middle;
+    padding-left: calc(12px * var(--level));
+    /* 階層ごとにインデント */
+    font-family: Consolas, monospace;
+    font-size: 13px;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin-left: 5px;
 }
 
-.tree-item-name:hover {
+.tree-item::before {
+    content: var(--tree-prefix, '');
+    position: absolute;
+    left: 0;
+    width: calc(12px * var(--level));
+    color: #444;
+}
+
+.tree-item span:hover {
     background: darkblue;
     color: white;
 }
@@ -260,7 +257,7 @@ body {
     position: fixed;
     bottom: 40px;
     left: 0;
-    min-width: 200px;
+    width: 200px;
     background: #C3C7CB;
     border: 1px solid;
     border-color: #fff #404040 #404040 #fff;
@@ -294,6 +291,17 @@ body {
     color: black;
 }
 
+.start-item>.text {
+    display: block;
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-right: 16px;
+    /* 矢印の余白 */
+    box-sizing: border-box;
+}
+
 /* hover（Win95風ハイライト） */
 .start-item:hover {
     background: #000080;
@@ -320,7 +328,7 @@ body {
     border: 1px solid;
     border-color: #fff #404040 #404040 #fff;
     box-shadow: 1px 1px black;
-    min-width: 190px;
+    width: 200px;
     padding: 2px;
     z-index: 5000;
 }
@@ -348,8 +356,10 @@ body {
 .start-recent-item {
     cursor: pointer;
     padding: 2px 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
-
 
 .start-recent-item:hover {
     background: #000080;
