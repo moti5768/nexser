@@ -262,6 +262,12 @@ export default function TextEditor(root, options = {}) {
                 ]
             },
             {
+                title: "Edit",
+                items: [
+                    { label: "検索", action: searchText }
+                ]
+            },
+            {
                 title: "Font",
                 items: [
                     { label: "Monospace", action: () => { styleState.fontFamily = "monospace"; dirty = true; applyStyle(); updateTitle(); } },
@@ -372,6 +378,41 @@ export default function TextEditor(root, options = {}) {
     win?.addEventListener("keydown", e => {
         if (e.altKey && e.key === "F4") { e.preventDefault(); requestClose(); }
     });
+
+    function searchText() {
+        if (!win) return;
+
+        const searchContent = showModalDialog(win, "検索", "検索文字列を入力してください", [
+            { label: "検索", onClick: () => performSearch(input.value) },
+            { label: "閉じる", onClick: null }
+        ]);
+
+        const container = searchContent.querySelector("div");
+        const input = document.createElement("input");
+        input.type = "text";
+        input.style.width = "95%";
+        container.prepend(input);
+        input.focus();
+
+        function performSearch(query) {
+            if (!query) return;
+
+            // 全てのハイライトをクリア
+            const val = textarea.value;
+            textarea.value = val; // 一旦リセット（簡易ハイライト代用）
+
+            const index = val.indexOf(query);
+            if (index === -1) {
+                showWarning(win, `"${query}" は見つかりません`);
+                return;
+            }
+
+            // 選択範囲に移動してハイライト
+            textarea.focus();
+            textarea.setSelectionRange(index, index + query.length);
+            textarea.scrollTop = textarea.scrollHeight * (index / val.length);
+        }
+    }
 }
 
 /* =========================

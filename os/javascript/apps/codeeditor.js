@@ -1,4 +1,4 @@
-// CodeEditor-with-Tabs-and-Sidebar.js
+// CodeEditor.js
 import { resolveFS } from "../fs-utils.js";
 import { createWindow, bringToFront } from "../window.js";
 import { buildDesktop } from "../desktop.js";
@@ -10,6 +10,7 @@ import { setupRibbon } from "./explorer.js";
 const previewBlobMap = new Map();
 // ファイルパス（ディレクトリパス）ごとのタブとサイドバー状態を保持
 const editorStateMap = new Map();
+const openedFolders = new Set();
 
 function createBlobURL(content, type) {
     return URL.createObjectURL(new Blob([content], { type }));
@@ -79,8 +80,11 @@ export default function CodeEditor(root, options = {}) {
     const tabs = [];
     let activeTab = null;
 
+    /* =========================
+       Helpers
+    ========================== */
     function isCodeFile(name) {
-        return /\.(html|css|js)$/i.test(name);
+        return /\.(html|css|js|txt|json)$/i.test(name); // 拡張
     }
 
     function getDirPath(p) {
@@ -88,6 +92,35 @@ export default function CodeEditor(root, options = {}) {
         const parts = p.split("/");
         parts.pop();
         return parts.join("/");
+    }
+
+    /* =========================
+       連携ファイルを tabs に追加 (改善前は同期されなかった)
+    ========================== */
+    function addLinkedFilesToTabs(basePath, content) {
+        const regex = /(src|href)=["']([^"']+)["']/gi;
+        let match;
+        while (match = regex.exec(content)) {
+            const relPath = match[2];
+            const resolved = resolveRelativePath(basePath, relPath);
+            if (!resolved) continue;
+            if (tabs.some(t => t.path === resolved)) continue;
+
+            const node = resolveFS(resolved);
+            if (!node) continue;
+            if (!isCodeFile(resolved.split("/").pop())) continue;
+
+            tabs.push({
+                name: resolved.split("/").pop(),
+                path: resolved,
+                node,
+                content: String(node.content ?? ""),
+                dirty: false
+            });
+
+            // 改善後: 再帰的にリンクファイルも追加
+            if (node.type === "file") addLinkedFilesToTabs(getDirPath(resolved), node.content);
+        }
     }
 
     /* =========================
@@ -113,7 +146,7 @@ export default function CodeEditor(root, options = {}) {
 
         activeTab = tabs.find(t => t.path === filePath) || tabs[0];
 
-        // サイドバー状態も復元
+        // サイドバー状態も復元 (改善前は毎回閉じていた)
         if (savedState?.sidebarOpen) sidebar.style.display = "block";
     }
 
@@ -148,7 +181,7 @@ export default function CodeEditor(root, options = {}) {
     });
 
     /* =========================
-       Title / Tabs
+       Tabs & Title
     ========================== */
     const APP_TITLE = "CodeEditor";
     function updateTitle() {
@@ -159,9 +192,6 @@ export default function CodeEditor(root, options = {}) {
         if (win?._taskbarBtn) win._taskbarBtn.textContent = title;
     }
 
-    /* =========================
-       Tabs Rendering + Drag&Drop
-    ========================== */
     function renderTabs() {
         tabbar.innerHTML = "";
         tabs.forEach((tab, idx) => {
@@ -208,35 +238,43 @@ export default function CodeEditor(root, options = {}) {
         if (sidebar.style.display !== "none") renderSidebar();
     }
 
+    /* =========================
+       初期ロード
+    ========================== */
     loadSiblingFiles();
+    if (activeTab) {
+        const dirPath = getDirPath(activeTab.path);
+        addLinkedFilesToTabs(dirPath, activeTab.content);
+        renderTabs();
+        if (sidebar.style.display !== "none") renderSidebar();
+        renderPreview();
+    }
     if (activeTab) textarea.value = activeTab.content;
     updateLineNumbers();
     renderTabs();
     updateTitle();
 
     /* =========================
-       Save (Tabs + Sidebar State)
+       Save
     ========================== */
     async function save() {
         tabs.forEach(tab => {
             if (tab.node) {
-                tab.node.content = tab.content; // これはFSの中身だけ更新
+                tab.node.content = tab.content;
                 tab.dirty = false;
             }
         });
         dirty = false;
         renderTabs();
         updateTitle();
-        buildDesktop(); // FS構造自体の更新だけ反映
+        buildDesktop();
         window.dispatchEvent(new Event("fs-updated"));
     }
 
     /* =========================
        Error Highlight
     ========================== */
-    function clearErrorHighlights() {
-        errorOverlay.innerHTML = "";
-    }
+    function clearErrorHighlights() { errorOverlay.innerHTML = ""; }
     function showErrors(errors = []) {
         clearErrorHighlights();
         const lineHeight = parseFloat(getComputedStyle(textarea).lineHeight) || 18;
@@ -251,7 +289,6 @@ export default function CodeEditor(root, options = {}) {
             errorOverlay.appendChild(div);
         });
     }
-
     textarea.addEventListener("input", () => {
         if (!activeTab) return;
         activeTab.content = textarea.value;
@@ -286,7 +323,6 @@ export default function CodeEditor(root, options = {}) {
 
     function renderPreview() {
         if (!previewIframe || !filePath) return;
-
         const oldBlobs = new Map(previewBlobMap);
         previewBlobMap.clear();
 
@@ -325,33 +361,86 @@ export default function CodeEditor(root, options = {}) {
     }
 
     /* =========================
-       Sidebar Rendering
+       Sidebar
     ========================== */
     function toggleSidebar() {
         sidebar.style.display = sidebar.style.display === "none" ? "block" : "none";
         if (sidebar.style.display === "block") renderSidebar();
     }
 
+    let sidebarRootDir = getDirPath(filePath) || filePath.split("/")[0];
+
     function renderSidebar() {
         sidebar.innerHTML = "";
-        if (!tabs.length) return;
+        if (!sidebarRootDir) return;
 
-        const ul = document.createElement("ul");
-        ul.style.listStyle = "none";
-        ul.style.paddingLeft = "6px";
+        function buildTree(path, visited = new Set(), depth = 0) {
+            if (!path || visited.has(path) || depth > 20) return null;
+            visited.add(path);
+            const node = resolveFS(path);
+            if (!node) return null;
+            const treeNode = { name: path.split("/").pop(), path, type: node.type, children: [] };
+            if (node.type === "folder") {
+                for (const key of Object.keys(node)) {
+                    if (key === "type") continue;
+                    const childPath = path ? `${path}/${key}` : key;
+                    const childTree = buildTree(childPath, visited, depth + 1);
+                    if (childTree) treeNode.children.push(childTree);
+                }
+            }
+            return treeNode;
+        }
 
-        tabs.forEach(tab => {
+        const treeRoot = buildTree(sidebarRootDir);
+        if (!treeRoot) return;
+
+        function createList(treeNode) {
             const li = document.createElement("li");
-            li.textContent = tab.name;
-            li.style.cursor = "pointer";
-            li.onclick = e => {
-                e.stopPropagation();
-                switchTab(tab);
-            };
-            ul.appendChild(li);
-        });
+            li.textContent = treeNode.name;
+            li.style.cursor = treeNode.type === "file" ? "pointer" : "default";
 
-        sidebar.appendChild(ul);
+            if (treeNode.type === "file") {
+                li.onclick = e => {
+                    e.stopPropagation();
+                    let tab = tabs.find(t => t.path === treeNode.path);
+                    if (!tab) {
+                        const node = resolveFS(treeNode.path);
+                        if (!node) return;
+                        tab = { name: treeNode.name, path: treeNode.path, node, content: String(node.content ?? ""), dirty: false };
+                        tabs.push(tab);
+                    }
+                    switchTab(tab);
+                    renderTabs();
+                };
+            }
+
+            if (treeNode.children.length) {
+                const ul = document.createElement("ul");
+                ul.style.listStyle = "none";
+                ul.style.paddingLeft = "12px";
+                treeNode.children.forEach(child => ul.appendChild(createList(child)));
+                li.appendChild(ul);
+
+                if (treeNode.type === "folder") {
+                    li.style.cursor = "pointer";
+                    ul.style.display = openedFolders.has(treeNode.path) ? "block" : "none";
+                    li.onclick = e => {
+                        e.stopPropagation();
+                        const isOpen = ul.style.display !== "none";
+                        ul.style.display = isOpen ? "none" : "block";
+                        if (!isOpen) openedFolders.add(treeNode.path);
+                        else openedFolders.delete(treeNode.path);
+                    };
+                }
+            }
+            return li;
+        }
+
+        const ulRoot = document.createElement("ul");
+        ulRoot.style.listStyle = "none";
+        ulRoot.style.paddingLeft = "6px";
+        ulRoot.appendChild(createList(treeRoot));
+        sidebar.appendChild(ulRoot);
     }
 
     /* =========================
@@ -379,30 +468,16 @@ export default function CodeEditor(root, options = {}) {
        FS変更 → タブ自動同期
     ========================== */
     function syncTabsWithFS() {
-        if (!filePath) return;
-        const dirPath = getDirPath(filePath);
-        const dirNode = resolveFS(dirPath);
-        if (!dirNode) return;
-
-        const fsFiles = Object.keys(dirNode).filter(isCodeFile).map(name => ({
-            name, path: `${dirPath}/${name}`, node: resolveFS(`${dirPath}/${name}`)
-        }));
-
-        let changed = false;
-        for (let i = tabs.length - 1; i >= 0; i--) {
-            if (!fsFiles.some(f => f.path === tabs[i].path)) {
-                if (activeTab === tabs[i]) activeTab = null;
-                tabs.splice(i, 1);
-                changed = true;
-            }
-        }
-        fsFiles.forEach(f => {
-            if (!tabs.some(t => t.path === f.path)) {
-                tabs.push({ name: f.name, path: f.path, node: f.node, content: String(f.node?.content ?? ""), dirty: false });
-                changed = true;
+        // タブ自体の node を更新するだけ
+        tabs.forEach(tab => {
+            const node = resolveFS(tab.path);
+            if (node) tab.node = node;
+            else {
+                // ファイル削除されていたらタブから消す
+                if (activeTab === tab) activeTab = null;
+                tabs.splice(tabs.indexOf(tab), 1);
             }
         });
-        tabs.forEach(tab => tab.node = resolveFS(tab.path));
 
         if (!activeTab && tabs.length) {
             activeTab = tabs[0];
@@ -410,8 +485,13 @@ export default function CodeEditor(root, options = {}) {
             updateLineNumbers();
             baseTitle = activeTab.name;
         }
-        if (changed) { renderTabs(); updateTitle(); renderPreview(); if (sidebar.style.display !== "none") renderSidebar(); }
+
+        renderTabs();
+        updateTitle();
+        renderPreview();
+        if (sidebar.style.display !== "none") renderSidebar();
     }
+
     window.addEventListener("fs-updated", syncTabsWithFS);
 
     /* =========================

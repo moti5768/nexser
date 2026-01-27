@@ -1,12 +1,14 @@
 // Explorer.js
 import { launch } from "../kernel.js";
-import { createWindow } from "../window.js";
+import { createWindow, showModalWindow } from "../window.js";
 import { resolveFS } from "../fs-utils.js";
 import { FS, initFS } from "../fs.js";
 import { buildDesktop } from "../desktop.js";
 import { attachContextMenu } from "../context-menu.js";
 import { resolveAppByPath, getExtension } from "../file-associations.js";
 import { addRecent } from "../recent.js";
+
+let globalSelected = { item: null, window: null };
 
 function hasExtension(name) {
     return /\.[a-z0-9]+$/i.test(name);
@@ -252,7 +254,6 @@ export default async function Explorer(root, options = {}) {
                 item.appendChild(text);
 
                 // クリックで開く
-                // クリックで開く
                 item.addEventListener("click", e => {
                     e.stopPropagation();
                     openFSItem(name, child, path || "");
@@ -282,12 +283,19 @@ export default async function Explorer(root, options = {}) {
     // 描画
     // ------------------------
     const render = (path) => {
+
         currentPath = path;
         updateTitle(path);
 
         let listContainer = root.querySelector(".explorer-list");
         let pathLabel = root.querySelector(".path-label");
         let treeContainer = root.querySelector(".tree-container");
+
+        if (globalSelected.window === root.closest(".window")) {
+            globalSelected.item?.classList.remove("selected");
+            globalSelected.item = null;
+            globalSelected.window = null;
+        }
 
         // 初回生成
         if (!listContainer) {
@@ -354,12 +362,27 @@ export default async function Explorer(root, options = {}) {
             item.textContent = name;
             item.className = "explorer-item";
             listContainer.appendChild(item);
+            // シングルクリックで選択
+            item.addEventListener("click", e => {
+                e.stopPropagation();
+
+                // 前回選択解除（全ウィンドウ対象）
+                if (globalSelected.item) {
+                    globalSelected.item.classList.remove("selected");
+                }
+
+                // 新しく選択
+                item.classList.add("selected");
+                globalSelected.item = item;
+                globalSelected.window = win; // このアイテムがどのウィンドウか
+            });
 
             item.addEventListener("dblclick", () => openFSItem(name, itemData, path));
         }
 
         // 右クリック
         const contentEl = root.querySelector(".content") || root.closest(".window")?.querySelector(".content");
+        // 右クリック（選択アイテム基準）
         if (contentEl) {
             attachContextMenu(contentEl, (e) => {
                 const items = [];
@@ -368,16 +391,34 @@ export default async function Explorer(root, options = {}) {
                     action: () => createNewFolder(currentPath, listContainer, () => render(currentPath))
                 });
 
-                if (e.target.classList.contains("explorer-item")) {
-                    const targetName = e.target.textContent;
-                    items.push({
-                        label: "削除",
-                        action: () => deleteFSItem(currentPath, targetName, () => render(currentPath))
-                    });
-                } else {
-                    items.push({ label: "削除", disabled: true, action: () => { } });
-                }
+                items.push({
+                    label: "選択アイテムを削除",
+                    action: () => {
+                        if (globalSelected.item) {
+                            const name = globalSelected.item.textContent;
+                            deleteFSItem(currentPath, name, () => {
+                                render(currentPath);
+                                globalSelected.item = null;
+                            });
+                        }
+                    },
+                    disabled: !globalSelected.item
+                });
 
+                // 選択アイテムがあれば「プログラムから開く」を追加
+                if (globalSelected.item) {
+                    const name = globalSelected.item.textContent;
+                    const node = resolveFS(currentPath)[name];
+
+                    const isFolder = node?.type === "folder"; // フォルダかチェック
+                    items.push({
+                        label: "プログラムから開く",
+                        action: () => {
+                            if (!isFolder) openWithDialog(`${currentPath}/${name}`, node);
+                        },
+                        disabled: isFolder // フォルダなら無効化
+                    });
+                }
                 return items;
             });
         }
@@ -423,6 +464,16 @@ export default async function Explorer(root, options = {}) {
                     label: "ファイル/フォルダの作成", action: () => {
                         const listContainer = root.querySelector(".explorer-list");
                         createNewFolder(currentPath, listContainer, () => render(currentPath));
+                    }
+                },
+                {
+                    label: "選択アイテムを削除", action: () => {
+                        if (globalSelected.item) {
+                            deleteFSItem(currentPath, globalSelected.item.textContent, () => {
+                                render(currentPath);
+                                globalSelected.item = null;
+                            });
+                        }
                     }
                 }
             ]
@@ -478,4 +529,57 @@ function addRibbonMenu(ribbon, title, items) {
 
     menu.appendChild(dropdown);
     ribbon.appendChild(menu);
+}
+
+
+// FS 内の全アプリを取得
+function getAllApps() {
+    const apps = [];
+    function traverse(node, path = "") {
+        for (const name in node) {
+            if (name === "type") continue;
+            const child = node[name];
+            const fullPath = path ? `${path}/${name}` : name;
+            if (child.type === "app") apps.push({ name, path: fullPath });
+            else if (child.type === "folder") traverse(child, fullPath);
+        }
+    }
+    traverse(FS);
+    return apps;
+}
+
+export function openWithDialog(filePath, fileNode) {
+    const apps = getAllApps();
+    if (apps.length === 0) return alert("アプリがありません");
+
+    const fileName = filePath.split("/").pop();
+
+    // モーダル作成
+    const content = showModalWindow(`「${fileName}」を開くアプリを選択`, "", {
+        taskbar: false,
+        width: 300,
+        height: Math.min(400, apps.length * 40 + 60), // 高さ自動調整
+        buttons: [] // 標準のOKボタンは不要
+    });
+
+    // モーダル内にアプリ一覧ボタンを描画
+    content.innerHTML = ""; // 既存内容クリア
+    apps.forEach(app => {
+        const btn = document.createElement("button");
+        btn.textContent = app.name;
+        Object.assign(btn.style, {
+            display: "block",
+            width: "100%",
+            margin: "4px 0",
+            padding: "6px 0"
+        });
+        btn.onclick = () => {
+            launch(app.path, { path: filePath, node: fileNode, uniqueKey: filePath });
+            // モーダル閉じる
+            const win = content.parentElement;
+            win.remove();
+            win._modalOverlay?.remove();
+        };
+        content.appendChild(btn);
+    });
 }

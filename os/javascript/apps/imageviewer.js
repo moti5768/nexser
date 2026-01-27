@@ -124,7 +124,18 @@ export default function ImageViewer(root, options = {}) {
         if (dirty && draftImage) {
             img.src = draftImage;
         } else if (fileNode?.content) {
-            img.src = fileNode.content;
+            const content = fileNode.content;
+            if (typeof content === "string" && content.startsWith("data:")) {
+                img.src = content;
+            } else {
+                let blob;
+                if (content instanceof Uint8Array || content instanceof ArrayBuffer) {
+                    blob = new Blob([content], { type: "image/png" });
+                } else if (typeof content === "string") {
+                    blob = new Blob([content], { type: "image/png" });
+                }
+                if (blob) img.src = URL.createObjectURL(blob);
+            }
         } else {
             img.removeAttribute("src");
         }
@@ -139,7 +150,7 @@ export default function ImageViewer(root, options = {}) {
     updateTitle();
 
     /* =========================
-       画像読み込み（まだ保存しない）
+       画像読み込み
     ========================== */
     function openImageFile() {
         const input = document.createElement("input");
@@ -152,7 +163,7 @@ export default function ImageViewer(root, options = {}) {
 
             const reader = new FileReader();
             reader.onload = () => {
-                draftImage = reader.result;
+                draftImage = reader.result; // DataURL
                 dirty = true;
                 refresh();
                 updateTitle();
@@ -163,7 +174,7 @@ export default function ImageViewer(root, options = {}) {
     }
 
     /* =========================
-       保存処理（TextEditor互換）
+       保存処理
     ========================== */
     async function save() {
         const desktop = resolveFS("Desktop");
@@ -172,21 +183,17 @@ export default function ImageViewer(root, options = {}) {
             return;
         }
 
-        // TextEditor と同じ思想
-        const treatAsNew =
-            !fileNode ||
-            (filePath && filePath.toLowerCase().endsWith("imageviewer.app"));
+        const treatAsNew = !fileNode || (filePath && filePath.toLowerCase().endsWith("imageviewer.app"));
 
-        /* ===== 上書き保存 ===== */
+        /* 上書き保存 */
         if (!treatAsNew) {
             if (!dirty) return;
-
-            // draftImage が無い場合は、現在表示されている内容を保存対象にする
             const dataToSave = draftImage || fileNode?.content;
             if (!dataToSave) return;
 
+            // 常に DataURL に統一
             fileNode.type = "file";
-            fileNode.content = dataToSave;
+            fileNode.content = typeof dataToSave === "string" ? dataToSave : await blobToDataURL(dataToSave);
 
             dirty = false;
             draftImage = null;
@@ -198,7 +205,7 @@ export default function ImageViewer(root, options = {}) {
             return;
         }
 
-        /* ===== 新規保存 ===== */
+        /* 新規保存 */
         let finalName = baseTitle;
 
         async function askFileName(defaultName) {
@@ -226,9 +233,7 @@ export default function ImageViewer(root, options = {}) {
 
         let idx = 1;
         while (desktop[finalName]) {
-            finalName =
-                baseTitle.replace(/\.(png|jpg|jpeg)$/i, "") +
-                ` (${idx++}).png`;
+            finalName = baseTitle.replace(/\.(png|jpg|jpeg)$/i, "") + ` (${idx++}).png`;
         }
 
         const name = await askFileName(finalName);
@@ -244,7 +249,6 @@ export default function ImageViewer(root, options = {}) {
             type: "file",
             content: draftImage
         };
-
         desktop[finalName] = newNode;
 
         const newFilePath = `Desktop/${finalName}`;
@@ -252,7 +256,7 @@ export default function ImageViewer(root, options = {}) {
         buildDesktop();
         window.dispatchEvent(new Event("fs-updated"));
 
-        /* ===== ウィンドウ置き換え ===== */
+        /* ウィンドウ置き換え */
         if (win) {
             const oldWin = win;
             const oldRoot = root;
@@ -268,7 +272,12 @@ export default function ImageViewer(root, options = {}) {
                 oldRoot.parentElement
             );
 
+            // draftImage を引き継いで再表示
             ImageViewer(newRoot, { path: newFilePath });
+            if (draftImage) {
+                const newWinImg = newRoot.querySelector("img");
+                if (newWinImg) newWinImg.src = draftImage;
+            }
 
             if (oldBtn && Array.isArray(taskbarButtons)) {
                 oldBtn.remove();
@@ -360,4 +369,15 @@ export default function ImageViewer(root, options = {}) {
             requestClose();
         }
     });
+
+    /* =========================
+       ユーティリティ
+    ========================== */
+    async function blobToDataURL(blob) {
+        return new Promise(resolve => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.readAsDataURL(blob);
+        });
+    }
 }
