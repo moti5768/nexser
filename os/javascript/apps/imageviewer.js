@@ -120,21 +120,33 @@ export default function ImageViewer(root, options = {}) {
 
     const img = root.querySelector("img");
 
+    /* =========================
+       表示更新（多形式対応）
+    ========================== */
     function refresh() {
         if (dirty && draftImage) {
-            img.src = draftImage;
+            if (draftImage instanceof File) {
+                img.src = URL.createObjectURL(draftImage);
+            } else {
+                img.src = draftImage; // DataURL or URL文字列
+            }
         } else if (fileNode?.content) {
             const content = fileNode.content;
-            if (typeof content === "string" && content.startsWith("data:")) {
-                img.src = content;
-            } else {
-                let blob;
-                if (content instanceof Uint8Array || content instanceof ArrayBuffer) {
-                    blob = new Blob([content], { type: "image/png" });
-                } else if (typeof content === "string") {
-                    blob = new Blob([content], { type: "image/png" });
+
+            if (typeof content === "string") {
+                if (content.startsWith("data:")) {
+                    img.src = content; // DataURL
+                } else if (/^(https?|file):\/\//i.test(content)) {
+                    img.src = content; // 外部URL
+                } else {
+                    const blob = new Blob([content], { type: "image/png" });
+                    img.src = URL.createObjectURL(blob);
                 }
-                if (blob) img.src = URL.createObjectURL(blob);
+            } else if (content instanceof File) {
+                img.src = URL.createObjectURL(content);
+            } else if (content instanceof Uint8Array || content instanceof ArrayBuffer) {
+                const blob = new Blob([content], { type: "image/png" });
+                img.src = URL.createObjectURL(blob);
             }
         } else {
             img.removeAttribute("src");
@@ -150,7 +162,7 @@ export default function ImageViewer(root, options = {}) {
     updateTitle();
 
     /* =========================
-       画像読み込み
+       画像読み込み（Fileオブジェクト直接対応）
     ========================== */
     function openImageFile() {
         const input = document.createElement("input");
@@ -161,14 +173,10 @@ export default function ImageViewer(root, options = {}) {
             const file = e.target.files[0];
             if (!file) return;
 
-            const reader = new FileReader();
-            reader.onload = () => {
-                draftImage = reader.result; // DataURL
-                dirty = true;
-                refresh();
-                updateTitle();
-            };
-            reader.readAsDataURL(file);
+            draftImage = file; // Fileオブジェクト直接保持
+            dirty = true;
+            refresh();
+            updateTitle();
         };
         input.click();
     }
@@ -192,8 +200,12 @@ export default function ImageViewer(root, options = {}) {
             if (!dataToSave) return;
 
             // 常に DataURL に統一
+            if (dataToSave instanceof File || dataToSave instanceof Blob) {
+                fileNode.content = await blobToDataURL(dataToSave);
+            } else {
+                fileNode.content = dataToSave;
+            }
             fileNode.type = "file";
-            fileNode.content = typeof dataToSave === "string" ? dataToSave : await blobToDataURL(dataToSave);
 
             dirty = false;
             draftImage = null;
@@ -247,7 +259,7 @@ export default function ImageViewer(root, options = {}) {
 
         const newNode = {
             type: "file",
-            content: draftImage
+            content: draftImage instanceof File ? await blobToDataURL(draftImage) : draftImage
         };
         desktop[finalName] = newNode;
 
@@ -276,7 +288,13 @@ export default function ImageViewer(root, options = {}) {
             ImageViewer(newRoot, { path: newFilePath });
             if (draftImage) {
                 const newWinImg = newRoot.querySelector("img");
-                if (newWinImg) newWinImg.src = draftImage;
+                if (newWinImg) {
+                    if (draftImage instanceof File) {
+                        newWinImg.src = URL.createObjectURL(draftImage);
+                    } else {
+                        newWinImg.src = draftImage;
+                    }
+                }
             }
 
             if (oldBtn && Array.isArray(taskbarButtons)) {
