@@ -196,17 +196,44 @@ export default function CodeEditor(root, options = {}) {
         tabbar.innerHTML = "";
         tabs.forEach((tab, idx) => {
             const el = document.createElement("div");
-            el.textContent = tab.name + (tab.dirty ? " *" : "");
             Object.assign(el.style, {
-                padding: "6px 12px",
+                padding: "6px 8px",
                 cursor: "pointer",
                 borderRight: "1px solid #333",
                 background: tab === activeTab ? "#111" : "#1b1b1b",
                 color: tab === activeTab ? "#fff" : "#aaa",
-                userSelect: "none"
+                userSelect: "none",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px"
             });
+
+            const label = document.createElement("span");
+            label.textContent = tab.name + (tab.dirty ? " *" : "");
+
+            const closeBtn = document.createElement("span");
+            closeBtn.textContent = "✕";
+            Object.assign(closeBtn.style, {
+                fontSize: "12px",
+                opacity: 0.6,
+                cursor: "pointer"
+            });
+
+            closeBtn.onmouseenter = () => closeBtn.style.opacity = 1;
+            closeBtn.onmouseleave = () => closeBtn.style.opacity = 0.6;
+
+            closeBtn.onclick = e => {
+                e.stopPropagation();
+                requestCloseTab(tab);
+            };
+
+            el.append(label, closeBtn);
+
+            // ドラッグ並び替え（既存）
             el.draggable = true;
-            el.addEventListener("dragstart", e => e.dataTransfer.setData("text/tabIndex", idx));
+            el.addEventListener("dragstart", e =>
+                e.dataTransfer.setData("text/tabIndex", idx)
+            );
             el.addEventListener("dragover", e => e.preventDefault());
             el.addEventListener("drop", e => {
                 const fromIdx = parseInt(e.dataTransfer.getData("text/tabIndex"));
@@ -217,9 +244,62 @@ export default function CodeEditor(root, options = {}) {
                     renderTabs();
                 }
             });
+
             el.onclick = () => switchTab(tab);
             tabbar.appendChild(el);
         });
+    }
+
+    function requestCloseTab(tab) {
+        if (tab.dirty) {
+            showConfirm(root,
+                `"${tab.name}" は未保存です。\n保存して閉じますか？`,
+                async () => {
+                    tab.node.content = tab.content;
+                    tab.dirty = false;
+                    closeTab(tab);
+                },
+                () => closeTab(tab)
+            );
+        } else {
+            closeTab(tab);
+        }
+    }
+
+    function closeTab(tab) {
+        const index = tabs.indexOf(tab);
+        if (index === -1) return;
+
+        const wasActive = tab === activeTab;
+        tabs.splice(index, 1);
+
+        if (wasActive) {
+            activeTab =
+                tabs[index] ||
+                tabs[index - 1] ||
+                null;
+
+            if (activeTab) {
+                textarea.value = activeTab.content;
+                baseTitle = activeTab.name;
+                filePath = activeTab.path;
+                fileNode = activeTab.node;
+            } else {
+                textarea.value = "";
+                baseTitle = "CodeEditor";
+                filePath = null;
+                fileNode = null;
+            }
+
+            updateLineNumbers();
+        }
+
+        // ★ 追加
+        dirty = activeTab?.dirty ?? false;
+
+        renderTabs();
+        updateTitle();
+        renderPreview();
     }
 
     function switchTab(tab) {
@@ -305,7 +385,12 @@ export default function CodeEditor(root, options = {}) {
     ========================== */
     function openPreview() {
         if (previewWin && document.body.contains(previewWin)) { renderPreview(); bringToFront(previewWin); return; }
-        const content = createWindow("Preview", { width: 800, height: 520, taskbar: false });
+        const content = createWindow("Preview", {
+            width: 800,
+            height: 520,
+            taskbar: false,
+            disableMinimize: true
+        });
         previewWin = content.parentElement;
         previewIframe = document.createElement("iframe");
         Object.assign(previewIframe.style, { width: "100%", height: "100%", border: "none", background: "white", display: "block" });

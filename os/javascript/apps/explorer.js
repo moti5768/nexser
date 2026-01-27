@@ -134,12 +134,15 @@ export default async function Explorer(root, options = {}) {
         container.appendChild(label);
 
         // ツリーパネル（body直下に置く）
-        let treePanel = document.querySelector(".tree-panel");
+        let treePanel = win._treePanel;
         if (!treePanel) {
             treePanel = document.createElement("div");
             treePanel.className = "tree-panel";
             treePanel.style.display = "none";
-            document.body.appendChild(treePanel);
+            const winEl = root.closest(".window");
+            winEl.appendChild(treePanel);
+            treePanel.style.position = "fixed";
+            win._treePanel = treePanel;
         }
         // クリアして再利用
         treePanel.innerHTML = "";
@@ -176,12 +179,20 @@ export default async function Explorer(root, options = {}) {
         });
 
         // 外クリックで閉じる
-        document.addEventListener("mousedown", e => {
-            if (!treePanel.contains(e.target) && e.target !== label && e.target !== arrowBtn) {
-                treePanel.style.display = "none";
-                arrowBtn.textContent = "▼"; // 閉じた状態に戻す
-            }
-        });
+        // 外クリックで閉じる（多重登録防止）
+        if (!win._treeOutsideHandlerInstalled) {
+            win._treeOutsideHandlerInstalled = true;
+
+            document.addEventListener("mousedown", e => {
+                const treePanel = win._treePanel;
+                if (!treePanel) return;
+
+                if (!treePanel.contains(e.target)) {
+                    treePanel.style.display = "none";
+                }
+            });
+        }
+
 
         // ------------------------
         // ツリー再帰

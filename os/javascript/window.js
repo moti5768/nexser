@@ -226,6 +226,10 @@ ${!options.hideStatus ? `
         [minBtn, maxBtn].forEach(btn => btn.classList.add("pointer_none"));
     }
 
+    if (options.disableMinimize) {
+        minBtn?.classList.add("pointer_none");
+    }
+
     closeBtn.addEventListener("click", () => {
         if (w._modalOverlay) {
             w._modalOverlay.remove();
