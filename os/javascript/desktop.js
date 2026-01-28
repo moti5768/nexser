@@ -1,7 +1,7 @@
 // desktop.js
 import { FS } from "./fs.js";
 import { launch } from "./kernel.js";
-import { createWindow } from "./window.js";
+import { createWindow, alertWindow } from "./window.js";
 import { resolveFS } from "./fs-utils.js";
 import { addRecent } from "./recent.js";
 import { attachContextMenu } from "./context-menu.js";
@@ -141,25 +141,54 @@ function createNewFolder(currentPath, container) {
     iconDiv.appendChild(input);
     input.focus();
     input.select();
+    let isShowingError = false;
+    let isCommitting = false;
 
     const finishEditing = () => {
-        iconDiv.remove();
+
+        if (isShowingError || isCommitting) return;
+        isCommitting = true;   // 👈 blurを無効化する
 
         let newName = input.value.trim() || folderName;
+        const error = validateName(newName);
+
+        if (error) {
+            isCommitting = false;   // 👈 エラー時は解除
+            isShowingError = true;
+
+            alertWindow(error, { width: 360, height: 160, taskbar: false });
+
+            setTimeout(() => {
+                isShowingError = false;
+                input.focus();
+                input.select();
+            }, 0);
+
+            return;
+        }
+
+        // --- 正常処理 ---
+        iconDiv.remove();
         let finalName = newName;
         let idx = 1;
         while (folderNode[finalName]) finalName = `${newName} (${idx++})`;
 
         const tempPath = `${currentPath}/${finalName}`;
         const isFile = !!resolveAppByPath(tempPath);
-        folderNode[finalName] = isFile ? { type: "file", content: "" } : { type: "folder" };
+        folderNode[finalName] = isFile
+            ? { type: "file", content: "" }
+            : { type: "folder" };
 
         buildDesktop();
         window.dispatchEvent(new Event("fs-updated"));
     };
 
-    input.addEventListener("blur", finishEditing);
-    input.addEventListener("keydown", e => { if (e.key === "Enter") finishEditing(); });
+
+    input.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); finishEditing(); } });
+    input.addEventListener("blur", () => {
+        if (isShowingError || isCommitting) return;    // アラート中は無視
+        iconDiv.remove();            // 編集UIだけ消す
+    });
 }
 
 // --------------------
@@ -209,6 +238,25 @@ function openFSItem(name, node, parentPath) {
             addRecent({ type: "folder", path: targetPath });
             break;
     }
+}
+
+function validateName(name) {
+    if (!name) return "名前が空です";
+
+    const invalidChars = /[\\\/:*?"<>|]/;
+    if (invalidChars.test(name)) {
+        return '次の文字は使えません: \\ / : * ? " < > |';
+    }
+
+    if (!name.trim()) {
+        return "空白のみの名前は使用できません";
+    }
+
+    if (/[\. ]$/.test(name)) {
+        return "名前の末尾に「.」や空白は使えません";
+    }
+
+    return null;
 }
 
 // --------------------

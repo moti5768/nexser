@@ -1,6 +1,6 @@
 // Explorer.js
 import { launch } from "../kernel.js";
-import { createWindow, showModalWindow } from "../window.js";
+import { createWindow, showModalWindow, alertWindow } from "../window.js";
 import { resolveFS } from "../fs-utils.js";
 import { FS, initFS } from "../fs.js";
 import { buildDesktop } from "../desktop.js";
@@ -30,6 +30,9 @@ function createNewFolder(currentPath, listContainer, renderCallback) {
     const folderNode = resolveFS(currentPath);
     if (!folderNode || !listContainer) return;
 
+    // 同時作成防止
+    if (listContainer.querySelector("input")) return;
+
     let folderName = "新しいフォルダ";
     let counter = 1;
     while (folderNode[folderName]) folderName = `新しいフォルダ (${counter++})`;
@@ -47,10 +50,33 @@ function createNewFolder(currentPath, listContainer, renderCallback) {
     input.focus();
     input.select();
 
+    let isShowingError = false;
+    let isCommitting = false;
+
     const finishEditing = () => {
-        itemDiv.remove();
+        if (isShowingError || isCommitting) return;
+        isCommitting = true;
 
         let newName = input.value.trim() || folderName;
+        const error = validateName(newName);
+
+        if (error) {
+            isCommitting = false;
+            isShowingError = true;
+
+            alertWindow(error, { width: 360, height: 160, taskbar: false });
+
+            setTimeout(() => {
+                isShowingError = false;
+                input.focus();
+                input.select();
+            }, 0);
+            return;
+        }
+
+        // --- 正常処理 ---
+        itemDiv.remove();
+
         let finalName = newName;
         let idx = 1;
         while (folderNode[finalName]) finalName = `${newName} (${idx++})`;
@@ -65,8 +91,22 @@ function createNewFolder(currentPath, listContainer, renderCallback) {
         window.dispatchEvent(new Event("fs-updated"));
     };
 
-    input.addEventListener("blur", finishEditing);
-    input.addEventListener("keydown", e => { if (e.key === "Enter") finishEditing(); });
+    // Enterで確定
+    input.addEventListener("keydown", e => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            finishEditing();
+        }
+        if (e.key === "Escape") {
+            itemDiv.remove(); // キャンセル
+        }
+    });
+
+    // フォーカス外れたらキャンセル
+    input.addEventListener("blur", () => {
+        if (isShowingError || isCommitting) return;
+        itemDiv.remove();
+    });
 }
 
 // ------------------------
@@ -265,6 +305,7 @@ export default async function Explorer(root, options = {}) {
             globalSelected.item.classList.remove("selected");
             globalSelected.item = null;
             globalSelected.window = null;
+            setupRibbon(win, () => currentPath, render, defaultRibbonMenus());
         }
 
         // 初回生成
@@ -351,6 +392,7 @@ export default async function Explorer(root, options = {}) {
                 item.classList.add("selected");
                 globalSelected.item = item;
                 globalSelected.window = win;
+                setupRibbon(win, () => currentPath, render, defaultRibbonMenus());
             });
 
             item.addEventListener("dblclick", () => openFSItem(name, itemData, currentPath));
@@ -417,26 +459,46 @@ export default async function Explorer(root, options = {}) {
     // ------------------------
     // Ribbon
     // ------------------------
-    const defaultRibbonMenus = [
-        {
-            title: "Window", items: [
-                { label: "最小化", action: () => win.querySelector(".min-btn")?.click() },
-                { label: "最大化 / 元のサイズに戻す", action: () => win.querySelector(".max-btn")?.click() },
-                { label: "閉じる", action: () => win.querySelector(".close-btn")?.click() }
-            ]
-        },
-        {
-            title: "File", items: [
-                { label: "ファイル/フォルダの作成", action: () => createNewFolder(currentPath, listContainer, () => render(currentPath)) },
-                {
-                    label: "選択アイテムを削除", action: () => {
-                        if (globalSelected.item) deleteFSItem(currentPath, globalSelected.item.textContent, () => { render(currentPath); globalSelected.item = null; });
+    function defaultRibbonMenus() {
+        return [
+            {
+                title: "Window",
+                items: [
+                    { label: "最小化", action: () => win.querySelector(".min-btn")?.click() },
+                    { label: "最大化 / 元のサイズに戻す", action: () => win.querySelector(".max-btn")?.click() },
+                    { label: "閉じる", action: () => win.querySelector(".close-btn")?.click() }
+                ]
+            },
+            {
+                title: "File",
+                items: [
+                    {
+                        label: "ファイル/フォルダの作成",
+                        action: () =>
+                            createNewFolder(currentPath, listContainer, () => render(currentPath))
+                    },
+                    {
+                        label: "選択アイテムを削除",
+                        action: () => {
+                            if (!globalSelected.item) return;
+                            deleteFSItem(
+                                currentPath,
+                                globalSelected.item.textContent,
+                                () => {
+                                    render(currentPath);
+                                    globalSelected.item = null;
+                                    setupRibbon(win, () => currentPath, render, defaultRibbonMenus());
+                                }
+                            );
+                        },
+                        disabled: !globalSelected.item   // ⭐ ここが効く
                     }
-                }
-            ]
-        }
-    ];
-    setupRibbon(win, () => currentPath, render, defaultRibbonMenus);
+                ]
+            }
+        ];
+    }
+
+    setupRibbon(win, () => currentPath, render, defaultRibbonMenus());
 
     render(currentPath);
 
@@ -455,6 +517,25 @@ export default async function Explorer(root, options = {}) {
         // content 外にある pathLabel を更新
         if (pathLabel) pathLabel.textContent = path;
     }
+}
+
+function validateName(name) {
+    if (!name) return "名前が空です";
+
+    const invalidChars = /[\\\/:*?"<>|]/;
+    if (invalidChars.test(name)) {
+        return '次の文字は使えません: \\ / : * ? " < > |';
+    }
+
+    if (!name.trim()) {
+        return "空白のみの名前は使用できません";
+    }
+
+    if (/[\. ]$/.test(name)) {
+        return "名前の末尾に「.」や空白は使えません";
+    }
+
+    return null;
 }
 
 // ------------------------
@@ -483,7 +564,14 @@ function addRibbonMenu(ribbon, title, items) {
         const div = document.createElement("div");
         div.className = "ribbon-item";
         div.textContent = it.label;
-        div.onclick = it.action;
+        div.onclick = () => {
+            if (div.classList.contains("pointer_none")) return;
+            it.action();
+        };
+
+        if (it.disabled) {
+            div.classList.add("pointer_none");
+        }
         dropdown.appendChild(div);
     });
 

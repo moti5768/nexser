@@ -3,6 +3,35 @@ import { FS } from './fs.js';
 import { initFS } from "./fs.js";
 import { buildDesktop } from "./desktop.js";
 
+let supportsPassive = false;
+try {
+    const opts = { passive: false, get passive() { supportsPassive = true; return false; } };
+    window.addEventListener("testPassive", null, opts);
+    window.removeEventListener("testPassive", null, opts);
+} catch (e) { }
+
+document.addEventListener('wheel', function (e) {
+    if (e.ctrlKey) {
+        e.preventDefault();
+    }
+}, { passive: false });
+document.addEventListener('touchmove', function (e) {
+    if (e.touches.length > 1) {
+        e.preventDefault();
+    }
+}, { passive: false });
+
+let lastTouchEnd = 0;
+
+document.addEventListener("touchend", e => {
+    const now = Date.now();
+    if (now - lastTouchEnd <= 300) {
+        e.preventDefault();
+    }
+    lastTouchEnd = now;
+}, { passive: false });
+
+
 const screen = document.getElementById('screen');
 let cwd = 'C:/';
 let history = [];
