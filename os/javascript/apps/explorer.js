@@ -80,13 +80,14 @@ export default async function Explorer(root, options = {}) {
     await initFS();
     let currentPath = options.path || "Desktop";
 
+    // 固定参照保持
+    let listContainer, pathLabel, treeContainer;
+
     // ------------------------
     // ダブルクリック・アドレスバー共通ロジック
     // ------------------------
     function openFSItem(name, node, parentPath) {
-        let targetPath = parentPath
-            ? `${parentPath}/${name}`
-            : name;
+        let targetPath = parentPath ? `${parentPath}/${name}` : name;
         let targetNode = node;
 
         if (node.type === "link") {
@@ -123,17 +124,14 @@ export default async function Explorer(root, options = {}) {
     // 折りたたみ式アドレスバー作成
     // ------------------------
     function createTreeDropdown(container, currentPath) {
-        // 既存の子要素を削除
         while (container.firstChild) container.removeChild(container.firstChild);
         container.classList.add("tree-container");
 
-        // ラベル（フォルダ名だけ）
         const label = document.createElement("span");
         label.className = "tree-label";
         label.textContent = currentPath.split("/").pop();
         container.appendChild(label);
 
-        // ツリーパネル（body直下に置く）
         let treePanel = win._treePanel;
         if (!treePanel) {
             treePanel = document.createElement("div");
@@ -144,17 +142,14 @@ export default async function Explorer(root, options = {}) {
             treePanel.style.position = "fixed";
             win._treePanel = treePanel;
         }
-        // クリアして再利用
         treePanel.innerHTML = "";
 
-        // パネルの位置をラベル下に調整
         function positionTreePanel() {
             const rect = label.getBoundingClientRect();
             treePanel.style.left = rect.left + "px";
             treePanel.style.top = rect.bottom + "px";
         }
 
-        // ラベル横に矢印ボタンを追加
         const arrowBtn = document.createElement("button");
         arrowBtn.className = "tree-label-arrow";
         arrowBtn.textContent = "▼";
@@ -163,14 +158,12 @@ export default async function Explorer(root, options = {}) {
         arrowBtn.style.right = "0px";
         label.appendChild(arrowBtn);
 
-        // ボタンでツリーパネル開閉
         arrowBtn.addEventListener("mousedown", e => {
             e.stopPropagation();
             positionTreePanel();
             const isOpen = treePanel.style.display === "block";
             treePanel.style.display = isOpen ? "none" : "block";
         });
-
         label.addEventListener("mousedown", e => {
             e.stopPropagation();
             positionTreePanel();
@@ -178,28 +171,17 @@ export default async function Explorer(root, options = {}) {
             treePanel.style.display = isOpen ? "none" : "block";
         });
 
-        // 外クリックで閉じる
-        // 外クリックで閉じる（多重登録防止）
         if (!win._treeOutsideHandlerInstalled) {
             win._treeOutsideHandlerInstalled = true;
-
             document.addEventListener("mousedown", e => {
                 const treePanel = win._treePanel;
                 if (!treePanel) return;
-
-                if (!treePanel.contains(e.target)) {
-                    treePanel.style.display = "none";
-                }
+                if (!treePanel.contains(e.target)) treePanel.style.display = "none";
             });
         }
 
-
-        // ------------------------
-        // ツリー再帰
-        // ------------------------
         function buildTree(node, parentEl, path = "", depth = 0, prefix = "", currentPath = "") {
             const entries = Object.entries(node).filter(([k]) => k !== "type");
-
             entries.forEach(([name, child], index) => {
                 const fullPath = path ? `${path}/${name}` : name;
                 const isFolder = child.type === "folder" || (!child.type && !hasExtension(name));
@@ -214,11 +196,9 @@ export default async function Explorer(root, options = {}) {
                 item.style.cursor = "pointer";
                 parentEl.appendChild(item);
 
-                let arrowBtn;
-                let subContainer;
+                let arrowBtn, subContainer;
 
                 if (hasChildren) {
-                    // 矢印ボタン
                     arrowBtn = document.createElement("button");
                     arrowBtn.className = "tree-arrow";
                     arrowBtn.textContent = "▶";
@@ -231,20 +211,15 @@ export default async function Explorer(root, options = {}) {
                     arrowBtn.style.textAlign = "center";
                     item.appendChild(arrowBtn);
 
-                    // 子コンテナ
                     subContainer = document.createElement("div");
                     subContainer.style.marginLeft = "12px";
                     parentEl.appendChild(subContainer);
 
-                    // 自動展開：currentPath 以下なら開く
                     if (currentPath.startsWith(fullPath)) {
                         subContainer.style.display = "block";
                         arrowBtn.textContent = "▼";
-                    } else {
-                        subContainer.style.display = "none";
-                    }
+                    } else subContainer.style.display = "none";
 
-                    // クリックで開閉
                     arrowBtn.addEventListener("click", e => {
                         e.stopPropagation();
                         const expanded = subContainer.style.display === "block";
@@ -252,70 +227,63 @@ export default async function Explorer(root, options = {}) {
                         arrowBtn.textContent = expanded ? "▶" : "▼";
                     });
                 } else {
-                    // フォルダでない場合はスペーサー
                     const spacer = document.createElement("span");
                     spacer.style.display = "inline-block";
                     spacer.style.width = "24px";
                     item.appendChild(spacer);
                 }
 
-                // テキスト
                 const text = document.createElement("span");
                 text.textContent = newPrefix + name;
                 item.appendChild(text);
 
-                // クリックで開く
                 item.addEventListener("click", e => {
                     e.stopPropagation();
                     openFSItem(name, child, path || "");
-
-                    // ツリーパネルを閉じる
                     if (treePanel) {
                         treePanel.style.display = "none";
-                        // 矢印ボタンも閉じた状態に戻す
                         const parentArrow = item.querySelector(".tree-arrow");
                         if (parentArrow) parentArrow.textContent = "▶";
                     }
                 });
 
-                // 再帰
-                if (hasChildren) {
-                    buildTree(child, subContainer, fullPath, depth + 1, prefix + (isLast ? "   " : "│  "), currentPath);
-                }
+                if (hasChildren) buildTree(child, subContainer, fullPath, depth + 1, prefix + (isLast ? "   " : "│  "), currentPath);
             });
         }
 
-        // 呼び出し側
         buildTree(FS, treePanel, "", 0, "", currentPath);
-
     }
 
     // ------------------------
     // 描画
     // ------------------------
     const render = (path) => {
-
         currentPath = path;
-        updateTitle(path);
+        updateTitle(currentPath);
 
-        let listContainer = root.querySelector(".explorer-list");
-        let pathLabel = root.querySelector(".path-label");
-        let treeContainer = root.querySelector(".tree-container");
-
-        if (globalSelected.window === root.closest(".window")) {
-            globalSelected.item?.classList.remove("selected");
+        if (globalSelected.item) {
+            globalSelected.item.classList.remove("selected");
             globalSelected.item = null;
             globalSelected.window = null;
         }
 
         // 初回生成
         if (!listContainer) {
-            root.innerHTML = "";
+            const content = root.querySelector(".content") || root;
+            content.innerHTML = "";
+
             const container = document.createElement("div");
             container.className = "explorer-container";
             container.style.display = "flex";
             container.style.flexDirection = "column";
             container.style.height = "100%";
+
+            listContainer = document.createElement("div");
+            listContainer.className = "explorer-list";
+            listContainer.style.flex = "1 1 auto";
+            listContainer.style.overflowY = "auto";
+
+            container.appendChild(listContainer);
 
             const header = document.createElement("div");
             header.className = "explorer-header";
@@ -337,14 +305,17 @@ export default async function Explorer(root, options = {}) {
             header.appendChild(treeContainer);
             header.appendChild(pathLabel);
 
-            listContainer = document.createElement("div");
-            listContainer.className = "explorer-list";
-            listContainer.style.flex = "1 1 auto";
-            listContainer.style.overflowY = "auto";
+            const ribbon = win?._ribbon;
+            if (ribbon) {
+                const separator = document.createElement("div");
+                separator.className = "explorer-separator";
+                ribbon.insertAdjacentElement("afterend", separator);
+                separator.insertAdjacentElement("afterend", header);
+            } else {
+                root.insertBefore(header, content);
+            }
 
-            container.appendChild(header);
-            container.appendChild(listContainer);
-            root.appendChild(container);
+            content.appendChild(container);
 
             backBtn.onclick = () => {
                 if (currentPath === "Desktop") return;
@@ -362,7 +333,7 @@ export default async function Explorer(root, options = {}) {
 
         // ファイル・フォルダリスト
         listContainer.innerHTML = "";
-        const folder = resolveFS(path);
+        const folder = resolveFS(currentPath);
         if (!folder) return;
 
         for (const name in folder) {
@@ -373,63 +344,49 @@ export default async function Explorer(root, options = {}) {
             item.textContent = name;
             item.className = "explorer-item";
             listContainer.appendChild(item);
-            // シングルクリックで選択
+
             item.addEventListener("click", e => {
                 e.stopPropagation();
-
-                // 前回選択解除（全ウィンドウ対象）
-                if (globalSelected.item) {
-                    globalSelected.item.classList.remove("selected");
-                }
-
-                // 新しく選択
+                globalSelected.item?.classList.remove("selected");
                 item.classList.add("selected");
                 globalSelected.item = item;
-                globalSelected.window = win; // このアイテムがどのウィンドウか
+                globalSelected.window = win;
             });
 
-            item.addEventListener("dblclick", () => openFSItem(name, itemData, path));
+            item.addEventListener("dblclick", () => openFSItem(name, itemData, currentPath));
         }
 
         // 右クリック
         const contentEl = root.querySelector(".content") || root.closest(".window")?.querySelector(".content");
-        // 右クリック（選択アイテム基準）
         if (contentEl) {
-            attachContextMenu(contentEl, (e) => {
-                const items = [];
-                items.push({
-                    label: "新規フォルダ",
-                    action: () => createNewFolder(currentPath, listContainer, () => render(currentPath))
-                });
+            attachContextMenu(contentEl, () => {
+                const items = [
+                    { label: "新規フォルダ/ファイル作成", action: () => createNewFolder(currentPath, listContainer, () => render(currentPath)) },
+                    {
+                        label: "選択アイテムを削除", action: () => {
+                            if (globalSelected.item) {
+                                const name = globalSelected.item.textContent;
+                                deleteFSItem(currentPath, name, () => {
+                                    render(currentPath);
+                                    globalSelected.item = null;
+                                });
+                            }
+                        }, disabled: !globalSelected.item
+                    }
+                ];
 
-                items.push({
-                    label: "選択アイテムを削除",
-                    action: () => {
-                        if (globalSelected.item) {
-                            const name = globalSelected.item.textContent;
-                            deleteFSItem(currentPath, name, () => {
-                                render(currentPath);
-                                globalSelected.item = null;
-                            });
-                        }
-                    },
-                    disabled: !globalSelected.item
-                });
-
-                // 選択アイテムがあれば「プログラムから開く」を追加
                 if (globalSelected.item) {
                     const name = globalSelected.item.textContent;
                     const node = resolveFS(currentPath)[name];
+                    const isFolder = node?.type === "folder";
 
-                    const isFolder = node?.type === "folder"; // フォルダかチェック
                     items.push({
                         label: "プログラムから開く",
-                        action: () => {
-                            if (!isFolder) openWithDialog(`${currentPath}/${name}`, node);
-                        },
-                        disabled: isFolder // フォルダなら無効化
+                        action: () => { if (!isFolder) openWithDialog(`${currentPath}/${name}`, node); },
+                        disabled: isFolder
                     });
                 }
+
                 return items;
             });
         }
@@ -448,7 +405,6 @@ export default async function Explorer(root, options = {}) {
                     case "link": links++; break;
                 }
             }
-
             const parts = [];
             if (folders) parts.push(`${folders} folder${folders > 1 ? "s" : ""}`);
             if (files) parts.push(`${files} file${files > 1 ? "s" : ""}`);
@@ -471,20 +427,10 @@ export default async function Explorer(root, options = {}) {
         },
         {
             title: "File", items: [
-                {
-                    label: "ファイル/フォルダの作成", action: () => {
-                        const listContainer = root.querySelector(".explorer-list");
-                        createNewFolder(currentPath, listContainer, () => render(currentPath));
-                    }
-                },
+                { label: "ファイル/フォルダの作成", action: () => createNewFolder(currentPath, listContainer, () => render(currentPath)) },
                 {
                     label: "選択アイテムを削除", action: () => {
-                        if (globalSelected.item) {
-                            deleteFSItem(currentPath, globalSelected.item.textContent, () => {
-                                render(currentPath);
-                                globalSelected.item = null;
-                            });
-                        }
+                        if (globalSelected.item) deleteFSItem(currentPath, globalSelected.item.textContent, () => { render(currentPath); globalSelected.item = null; });
                     }
                 }
             ]
@@ -496,7 +442,7 @@ export default async function Explorer(root, options = {}) {
 
     if (!win._fsWatcherInstalled) {
         win._fsWatcherInstalled = true;
-        window.addEventListener("fs-updated", () => { if (currentPath === "Desktop") render(currentPath); });
+        window.addEventListener("fs-updated", () => { render(currentPath); });
     }
 
     function updateTitle(path) {
@@ -505,6 +451,9 @@ export default async function Explorer(root, options = {}) {
         if (titleEl) titleEl.textContent = name;
         if (taskBtn) { taskBtn.textContent = name; taskBtn.dataset.title = name; }
         win.dataset.title = name;
+
+        // content 外にある pathLabel を更新
+        if (pathLabel) pathLabel.textContent = path;
     }
 }
 
@@ -542,7 +491,6 @@ function addRibbonMenu(ribbon, title, items) {
     ribbon.appendChild(menu);
 }
 
-
 // FS 内の全アプリを取得
 function getAllApps() {
     const apps = [];
@@ -565,28 +513,20 @@ export function openWithDialog(filePath, fileNode) {
 
     const fileName = filePath.split("/").pop();
 
-    // モーダル作成
     const content = showModalWindow(`「${fileName}」を開くアプリを選択`, "", {
         taskbar: false,
         width: 300,
-        height: Math.min(400, apps.length * 40 + 60), // 高さ自動調整
-        buttons: [] // 標準のOKボタンは不要
+        height: Math.min(400, apps.length * 40 + 60),
+        buttons: []
     });
 
-    // モーダル内にアプリ一覧ボタンを描画
-    content.innerHTML = ""; // 既存内容クリア
+    content.innerHTML = "";
     apps.forEach(app => {
         const btn = document.createElement("button");
         btn.textContent = app.name;
-        Object.assign(btn.style, {
-            display: "block",
-            width: "100%",
-            margin: "4px 0",
-            padding: "6px 0"
-        });
+        Object.assign(btn.style, { display: "block", width: "100%", margin: "4px 0", padding: "6px 0" });
         btn.onclick = () => {
             launch(app.path, { path: filePath, node: fileNode, uniqueKey: filePath });
-            // モーダル閉じる
             const win = content.parentElement;
             win.remove();
             win._modalOverlay?.remove();
