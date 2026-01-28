@@ -324,6 +324,8 @@ export default async function Explorer(root, options = {}) {
             listContainer.style.flex = "1 1 auto";
             listContainer.style.overflowY = "auto";
 
+            listContainer.tabIndex = 0;
+
             container.appendChild(listContainer);
 
             const header = document.createElement("div");
@@ -393,6 +395,15 @@ export default async function Explorer(root, options = {}) {
                 globalSelected.item = item;
                 globalSelected.window = win;
                 setupRibbon(win, () => currentPath, render, defaultRibbonMenus());
+                const node = resolveFS(currentPath)[name];
+                const size = calcNodeSize(node);
+
+                const statusBar = win?._statusBar;
+                if (statusBar) {
+                    statusBar.textContent =
+                        `${name} | ${node.type} | ${formatSize(size)}`;
+                }
+                listContainer.focus();
             });
 
             item.addEventListener("dblclick", () => openFSItem(name, itemData, currentPath));
@@ -436,6 +447,10 @@ export default async function Explorer(root, options = {}) {
         // ステータスバー
         const statusBar = win?._statusBar;
         if (statusBar) {
+
+            // ⭐ 何か選択されている間は上書きしない
+            if (globalSelected.item) return;
+
             let folders = 0, files = 0, apps = 0, links = 0;
             for (const key in folder) {
                 if (key === "type") continue;
@@ -454,6 +469,58 @@ export default async function Explorer(root, options = {}) {
             if (links) parts.push(`${links} link${links > 1 ? "s" : ""}`);
             statusBar.textContent = parts.length ? parts.join(", ") : "(empty)";
         }
+
+        if (!listContainer._keydownBound) {
+            listContainer.addEventListener("keydown", e => {
+                const items = Array.from(listContainer.querySelectorAll(".explorer-item"));
+                if (!items.length) return;
+
+                let currentIndex = items.findIndex(el => el === globalSelected.item);
+
+                function selectItem(index) {
+                    globalSelected.item?.classList.remove("selected");
+                    const item = items[index];
+                    item.classList.add("selected");
+                    globalSelected.item = item;
+                    globalSelected.window = win;
+
+                    // ステータスバー更新
+                    const node = resolveFS(currentPath)[item.textContent];
+                    const size = calcNodeSize(node);
+                    const statusBar = win?._statusBar;
+                    if (statusBar) {
+                        statusBar.textContent =
+                            `${item.textContent} | ${node.type} | ${formatSize(size)}`;
+                    }
+
+                    item.scrollIntoView({ block: "nearest" });
+                }
+
+                if (e.key === "ArrowDown") {
+                    e.preventDefault();
+                    currentIndex = (currentIndex + 1) % items.length;
+                    selectItem(currentIndex);
+                }
+
+                if (e.key === "ArrowUp") {
+                    e.preventDefault();
+                    currentIndex = (currentIndex - 1 + items.length) % items.length;
+                    selectItem(currentIndex);
+                }
+
+                if (e.key === "Enter") {
+                    e.preventDefault();
+                    if (globalSelected.item) {
+                        const name = globalSelected.item.textContent;
+                        const node = resolveFS(currentPath)[name];
+                        openFSItem(name, node, currentPath);
+                    }
+                }
+            });
+
+            listContainer._keydownBound = true; // 初回だけ追加
+        }
+
     };
 
     // ------------------------
@@ -537,6 +604,33 @@ function validateName(name) {
 
     return null;
 }
+
+function calcNodeSize(node) {
+    if (!node) return 0;
+
+    if (node.type === "file") {
+        return node.content?.length ?? 0;
+    }
+
+    if (node.type === "folder") {
+        let total = 0;
+        for (const key in node) {
+            if (key === "type") continue;
+            total += calcNodeSize(node[key]);
+        }
+        return total;
+    }
+
+    // app / link はサイズ0扱い
+    return 0;
+}
+
+function formatSize(bytes) {
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / 1024 / 1024).toFixed(1) + " MB";
+}
+
 
 // ------------------------
 // Ribbon ヘルパー
