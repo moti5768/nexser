@@ -2,6 +2,16 @@
 import { FS } from './fs.js';
 import { initFS } from "./fs.js";
 import { buildDesktop } from "./desktop.js";
+import { showBSOD } from "./bsod.js";
+
+// 通常のエラー
+window.onerror = (msg, src, line, col, err) => {
+    showBSOD(String(msg), err);
+};
+// Promise 未処理
+window.addEventListener("unhandledrejection", e => {
+    showBSOD(String(e.reason), e.reason instanceof Error ? e.reason : null);
+});
 
 let supportsPassive = false;
 try {

@@ -7,7 +7,6 @@ import { killProcess } from "./kernel.js";
 
 export const taskbarButtons = []; // 作られたボタンを全部保存
 let resizeCursor = "";
-let maximizing = false;
 const DEFAULT_COLOR = "gray";
 export let TOP_COLOR = "darkblue";
 
@@ -96,10 +95,7 @@ ${!options.hideRibbon ? `
 ">
 </div>` : ""}
 
-<div class="content" style="
-    overflow:auto;
-    height: calc(100% - 26px ${!options.hideRibbon ? "- 26px" : ""} - 20px);
-"></div>
+<div class="content"></div>
 
 ${!options.hideStatus ? `
 <div class="window-statusbar" style="
@@ -254,21 +250,19 @@ ${!options.hideStatus ? `
 
     /* ===== 最小化アニメーション ===== */
 
-    let minimizing = false;
+    w._animating = false; // 共通フラグ
 
     minBtn.addEventListener("click", () => {
-        if (w.dataset.minimized === "true" || minimizing) return;
-        minimizing = true;
+        if (w.dataset.minimized === "true" || w._animating) return;
+        w._animating = true;
 
         const titleBar = w.querySelector(".title-bar");
         const titleText = titleBar?.querySelector(".title-text");
-        if (!titleText) { minimizing = false; return; }
+        if (!titleText) { w._animating = false; return; }
 
         const taskbarBtnRect = taskbarBtn?.getBoundingClientRect() ||
             { left: w.offsetLeft, top: w.offsetTop, width: 0 };
 
-        // アニメ中は display:block のまま
-        w.style.display = "block";
         w.style.pointerEvents = "none";
 
         const clone = createTitleClone(w, titleBar, titleText);
@@ -278,82 +272,59 @@ ${!options.hideStatus ? `
             250,
             () => {
                 clone.remove();
+                w.style.visibility = "hidden";
                 w.dataset.minimized = "true";
-                minimizing = false;
+                w.style.pointerEvents = "auto";
+                w._animating = false;
                 scheduleRefreshTopWindow();
-
-                // アニメ完了後に display:none にする
-                w.style.display = "none";
             }
         );
     });
-
-    /* ===== タスクバークリックで復元 ===== */
-
     if (taskbarBtn) {
-        if (taskbarBtn) {
-            taskbarBtn.onclick = () => {
-                // タスクバー選択状態を即時反映
-                taskbarButtons.forEach(btn => btn.classList.remove("selected"));
-                taskbarBtn.classList.add("selected");
+        taskbarBtn.onclick = () => {
+            taskbarButtons.forEach(btn => btn.classList.remove("selected"));
+            taskbarBtn.classList.add("selected");
 
-                if (w.dataset.minimized === "true") {
-                    minimizing = false;
+            if (w.dataset.minimized === "true") {
+                if (w._animating) return; // アニメ中は無効化
+                w._animating = true;
 
-                    const titleBar = w.querySelector(".title-bar");
-                    const titleText = titleBar?.querySelector(".title-text");
-                    if (!titleText) return;
+                const titleBar = w.querySelector(".title-bar");
+                const titleText = titleBar?.querySelector(".title-text");
+                if (!titleText) { w._animating = false; return; }
 
-                    // まず display:block にして可視化準備
-                    w.style.display = "block";
-                    w.style.visibility = "hidden";  // アニメ中は非表示
-                    w.style.pointerEvents = "none";
+                w.style.visibility = "hidden";
+                w.style.pointerEvents = "none";
 
-                    const rect = taskbarBtn.getBoundingClientRect();
-                    const clone = document.createElement("div");
+                const rect = taskbarBtn.getBoundingClientRect();
+                const clone = createTitleClone(w, titleBar, titleText);
+                Object.assign(clone.style, {
+                    left: rect.left + "px",
+                    top: rect.top + "px",
+                    width: rect.width + "px"
+                });
 
-                    Object.assign(clone.style, {
-                        position: "absolute",
-                        left: rect.left + "px",
-                        top: rect.top + "px",
-                        width: rect.width + "px",
-                        height: titleBar.offsetHeight + "px",
-                        background: getComputedStyle(titleBar).backgroundColor,
-                        color: getComputedStyle(titleText).color,
-                        display: "flex",
-                        alignItems: "center",
-                        padding: "0 5px",
-                        font: getComputedStyle(titleText).font,
-                        zIndex: parseInt(w.style.zIndex) + 1,
-                        pointerEvents: "none"
-                    });
-                    clone.textContent = titleText.textContent;
-                    document.body.appendChild(clone);
-
-                    // 元ウィンドウはアニメ中非表示
-                    w.dataset.minimized = "true";
-
-                    animateTitleClone(clone,
-                        { left: w.offsetLeft, top: w.offsetTop, width: w.offsetWidth },
-                        250,
-                        () => {
-                            // アニメ終了時に元ウィンドウを復帰
-                            w.style.visibility = "visible";
-                            w.style.pointerEvents = "auto";
-                            w.dataset.minimized = "false";
-                            clone.remove();
-                            bringToFront(w);
-                            scheduleRefreshTopWindow();
-                        }
-                    );
-
-                } else {
-                    bringToFront(w);
-                    scheduleRefreshTopWindow();
-                }
+                animateTitleClone(clone,
+                    { left: w.offsetLeft, top: w.offsetTop, width: w.offsetWidth },
+                    250,
+                    () => {
+                        w.style.visibility = "visible";
+                        w.style.pointerEvents = "auto";
+                        w.dataset.minimized = "false";
+                        clone.remove();
+                        bringToFront(w);
+                        w._animating = false;
+                        scheduleRefreshTopWindow();
+                    }
+                );
+            } else {
+                bringToFront(w);
+                scheduleRefreshTopWindow();
             }
-        }
-    };
+        };
+    }
+
+
 
 
     /* ===== 最大化 ===== */
@@ -361,62 +332,53 @@ ${!options.hideStatus ? `
     let maximized = false;
 
     function toggleMaximize() {
-        if (maximizing) return; // アニメ中は何もしない
-        maximizing = true;
+        if (w._animating) return;
+        w._animating = true;
 
         const desktop = document.getElementById("desktop");
         const rect = desktop.getBoundingClientRect();
         const titleBar = w.querySelector(".title-bar");
         const titleText = titleBar?.querySelector(".title-text");
-        if (!titleText) { maximizing = false; return; }
+        if (!titleText) { w._animating = false; return; }
 
         w.style.pointerEvents = "none";
 
+        const clone = createTitleClone(w, titleBar, titleText);
+        let targetRect;
+
         if (!maximized) {
-            // 最大化前のサイズを保存
             ["Left", "Top", "Width", "Height"].forEach(prop =>
                 w.dataset[`prev${prop}`] = w.style[prop.toLowerCase()]
             );
-
-            const targetRect = { left: 0, top: 0, width: rect.width };
-            const clone = createTitleClone(w, titleBar, titleText);
-
-            animateTitleClone(clone, targetRect, 250, () => {
-                w.style.left = "0px";
-                w.style.top = "0px";
-                w.style.width = "100%";
-                w.style.height = `calc(100% - 40px)`;
-                clone.remove();
-                w.style.pointerEvents = "auto";
-                w.classList.add("maximized");
-                maximizing = false; // ← アニメ終了でフラグ解除
-            });
-
-            maximized = true;
-            w.classList.remove("maximized"); // アニメ中は border 残す
+            targetRect = { left: 0, top: 0, width: rect.width };
         } else {
-            const clone = createTitleClone(w, titleBar, titleText);
-            const targetRect = {
+            targetRect = {
                 left: parseInt(w.dataset.prevLeft),
                 top: parseInt(w.dataset.prevTop),
                 width: parseInt(w.dataset.prevWidth)
             };
+        }
 
-            animateTitleClone(clone, targetRect, 250, () => {
+        animateTitleClone(clone, targetRect, 250, () => {
+            if (!maximized) {
+                w.style.left = "0px";
+                w.style.top = "0px";
+                w.style.width = "100%";
+                w.style.height = `calc(100% - 40px)`;
+                w.classList.add("maximized");
+            } else {
                 w.style.left = w.dataset.prevLeft;
                 w.style.top = w.dataset.prevTop;
                 w.style.width = w.dataset.prevWidth;
                 w.style.height = w.dataset.prevHeight;
-                clone.remove();
-                w.style.pointerEvents = "auto";
                 w.classList.remove("maximized");
-                maximizing = false; // ← アニメ終了でフラグ解除
-            });
-
-            maximized = false;
-        }
-
-        scheduleRefreshTopWindow();
+            }
+            clone.remove();
+            w.style.pointerEvents = "auto";
+            w._animating = false;
+            maximized = !maximized;
+            scheduleRefreshTopWindow();
+        });
     }
 
     maxBtn.addEventListener("click", toggleMaximize);
@@ -941,8 +903,8 @@ export async function minimizeWindowById(id) {
 
     const taskbarBtn = w._taskbarBtn;
     if (!taskbarBtn) {
-        // タスクバーがない場合は即時非表示
-        w.style.display = "none";
+        // タスクバーがない場合は即時非表示（visibility に統一）
+        w.style.visibility = "hidden";
         w.dataset.minimized = "true";
         scheduleRefreshTopWindow();
         return true;
@@ -955,15 +917,13 @@ export async function minimizeWindowById(id) {
     const rect = taskbarBtn.getBoundingClientRect();
     const clone = createTitleClone(w, titleBar, titleText);
 
-    // 元ウィンドウを非表示準備
-    w.style.display = "block";
+    // 元ウィンドウはアニメ中非表示
     w.style.pointerEvents = "none";
     w.style.visibility = "hidden";
 
     animateTitleClone(clone, { left: rect.left, top: rect.top, width: rect.width }, 250, () => {
         clone.remove();
         w.dataset.minimized = "true";
-        w.style.display = "none";
         w.style.pointerEvents = "auto";
         scheduleRefreshTopWindow();
     });

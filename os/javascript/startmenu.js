@@ -57,9 +57,9 @@ export async function buildStartMenu() {
     logoffBtn.style.marginTop = "8px";
     logoffBtn.onclick = async () => {
         await logOff();
-        startBtn.classList.remove("pressed");
-        closeStartMenu();
-        menu.style.display = "none";
+        if (startBtn) startBtn.classList.remove("pressed");  // ← nullチェック追加
+        if (typeof closeStartMenu === "function") closeStartMenu();
+        if (menu) menu.style.display = "none";
     };
     menu.appendChild(logoffBtn);
 

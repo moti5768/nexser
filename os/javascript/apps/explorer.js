@@ -305,7 +305,7 @@ export default async function Explorer(root, options = {}) {
             globalSelected.item.classList.remove("selected");
             globalSelected.item = null;
             globalSelected.window = null;
-            setupRibbon(win, () => currentPath, render, defaultRibbonMenus());
+            setupRibbon(win, () => currentPath, render, getExplorerMenus());
         }
 
         // 初回生成
@@ -394,7 +394,7 @@ export default async function Explorer(root, options = {}) {
                 item.classList.add("selected");
                 globalSelected.item = item;
                 globalSelected.window = win;
-                setupRibbon(win, () => currentPath, render, defaultRibbonMenus());
+                setupRibbon(win, () => currentPath, render, getExplorerMenus());
                 const node = resolveFS(currentPath)[name];
                 const size = calcNodeSize(node);
 
@@ -413,34 +413,14 @@ export default async function Explorer(root, options = {}) {
         const contentEl = root.querySelector(".content") || root.closest(".window")?.querySelector(".content");
         if (contentEl) {
             attachContextMenu(contentEl, () => {
-                const items = [
-                    { label: "新規フォルダ/ファイル作成", action: () => createNewFolder(currentPath, listContainer, () => render(currentPath)) },
-                    {
-                        label: "選択アイテムを削除", action: () => {
-                            if (globalSelected.item) {
-                                const name = globalSelected.item.textContent;
-                                deleteFSItem(currentPath, name, () => {
-                                    render(currentPath);
-                                    globalSelected.item = null;
-                                });
-                            }
-                        }, disabled: !globalSelected.item
-                    }
-                ];
+                const fileMenu = getExplorerMenus().find(m => m.title === "File");
+                if (!fileMenu) return [];
 
-                if (globalSelected.item) {
-                    const name = globalSelected.item.textContent;
-                    const node = resolveFS(currentPath)[name];
-                    const isFolder = node?.type === "folder";
-
-                    items.push({
-                        label: "プログラムから開く",
-                        action: () => { if (!isFolder) openWithDialog(`${currentPath}/${name}`, node); },
-                        disabled: isFolder
-                    });
-                }
-
-                return items;
+                return fileMenu.items.map(it => ({
+                    label: it.label,
+                    action: it.action,
+                    disabled: typeof it.disabled === "function" ? it.disabled() : it.disabled
+                }));
             });
         }
 
@@ -494,6 +474,7 @@ export default async function Explorer(root, options = {}) {
                     }
 
                     item.scrollIntoView({ block: "nearest" });
+                    setupRibbon(win, () => currentPath, render, getExplorerMenus());
                 }
 
                 if (e.key === "ArrowDown") {
@@ -526,7 +507,7 @@ export default async function Explorer(root, options = {}) {
     // ------------------------
     // Ribbon
     // ------------------------
-    function defaultRibbonMenus() {
+    function getExplorerMenus() {
         return [
             {
                 title: "Window",
@@ -540,9 +521,18 @@ export default async function Explorer(root, options = {}) {
                 title: "File",
                 items: [
                     {
-                        label: "ファイル/フォルダの作成",
-                        action: () =>
-                            createNewFolder(currentPath, listContainer, () => render(currentPath))
+                        label: "開く",
+                        action: () => {
+                            if (!globalSelected.item) return;
+                            const name = globalSelected.item.textContent;
+                            const node = resolveFS(currentPath)[name];
+                            openFSItem(name, node, currentPath);
+                        },
+                        disabled: () => !globalSelected.item
+                    },
+                    {
+                        label: "新規フォルダ/ファイル作成",
+                        action: () => createNewFolder(currentPath, listContainer, () => render(currentPath))
                     },
                     {
                         label: "選択アイテムを削除",
@@ -554,18 +544,32 @@ export default async function Explorer(root, options = {}) {
                                 () => {
                                     render(currentPath);
                                     globalSelected.item = null;
-                                    setupRibbon(win, () => currentPath, render, defaultRibbonMenus());
+                                    setupRibbon(win, () => currentPath, render, getExplorerMenus());
                                 }
                             );
                         },
-                        disabled: !globalSelected.item   // ⭐ ここが効く
+                        disabled: () => !globalSelected.item
+                    },
+                    {
+                        label: "プログラムから開く",
+                        action: () => {
+                            if (!globalSelected.item) return;
+                            const name = globalSelected.item.textContent;
+                            const node = resolveFS(currentPath)[name];
+                            if (node?.type !== "folder") openWithDialog(`${currentPath}/${name}`, node);
+                        },
+                        disabled: () => {
+                            if (!globalSelected.item) return true;
+                            const node = resolveFS(currentPath)[globalSelected.item.textContent];
+                            return !node || node.type === "folder";
+                        }
                     }
                 ]
             }
         ];
     }
 
-    setupRibbon(win, () => currentPath, render, defaultRibbonMenus());
+    setupRibbon(win, () => currentPath, render, getExplorerMenus());
 
     render(currentPath);
 
@@ -664,8 +668,10 @@ function addRibbonMenu(ribbon, title, items) {
         };
 
         if (it.disabled) {
-            div.classList.add("pointer_none");
+            const isDisabled = typeof it.disabled === "function" ? it.disabled() : it.disabled;
+            if (isDisabled) div.classList.add("pointer_none");
         }
+
         dropdown.appendChild(div);
     });
 
