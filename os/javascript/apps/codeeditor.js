@@ -534,6 +534,13 @@ export default function CodeEditor(root, options = {}) {
     if (win) {
         setupRibbon(win, () => filePath, null, [
             {
+                title: "Window", items: [
+                    { label: "最小化", action: () => win.querySelector(".min-btn")?.click() },
+                    { label: "最大化 / 元のサイズに戻す", action: () => win.querySelector(".max-btn")?.click() },
+                    { label: "閉じる", action: () => win.querySelector(".close-btn")?.click() }
+                ]
+            },
+            {
                 title: "File", items: [
                     { label: "Save", action: save },
                     { label: "Preview", action: openPreview }

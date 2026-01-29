@@ -5,6 +5,9 @@ import { bringToFront, createWindow } from "../window.js";
 
 const STORE = "settings";
 
+/* =========================
+   Modal Dialog
+========================= */
 function showModalDialog(root, title, message, buttons = []) {
     const win = root.closest(".window");
     if (!win) return;
@@ -15,7 +18,6 @@ function showModalDialog(root, title, message, buttons = []) {
     if (win._activeDialogs.has(message)) return;
     win._activeDialogs.add(message);
 
-    // 親ウィンドウ操作ロック
     win.style.pointerEvents = "none";
 
     const content = createWindow(title, {
@@ -24,7 +26,7 @@ function showModalDialog(root, title, message, buttons = []) {
         disableControls: true,
         hideRibbon: true,
         hideStatus: true,
-        taskbar: false,     // ← タスクバーに出さない
+        taskbar: false,
         skipSave: true,
         skipFocus: true
     });
@@ -35,7 +37,6 @@ function showModalDialog(root, title, message, buttons = []) {
     dialogWin.style.pointerEvents = "all";
     dialogWin.style.position = "absolute";
 
-    // 親ウィンドウ中央に配置
     const rect = win.getBoundingClientRect();
     dialogWin.style.left = rect.left + rect.width / 2 - 160 + "px";
     dialogWin.style.top = rect.top + rect.height / 2 - 75 + "px";
@@ -63,11 +64,9 @@ function showModalDialog(root, title, message, buttons = []) {
         container.appendChild(b);
     });
 
-    // ×ボタン
     const closeBtn = dialogWin.querySelector(".close-btn");
     if (closeBtn) closeBtn.onclick = () => closeDialog();
 
-    // 親ウィンドウが消えたら自動クローズ
     const observer = new MutationObserver(() => {
         if (!document.body.contains(win)) {
             closeDialog();
@@ -92,26 +91,21 @@ function showAlert(root, message) {
     ]);
 }
 
-// =========================
-// DB接続の使い回し
-// =========================
+/* =========================
+   DB
+========================= */
 let dbPromise = null;
 async function getDB() {
     if (!dbPromise) dbPromise = openDB();
     return dbPromise;
 }
 
-// =========================
-// DB操作
-// =========================
 export async function saveSetting(key, value) {
     try {
         const db = await getDB();
         const tx = db.transaction(STORE, "readwrite");
-        const store = tx.objectStore(STORE);
-        store.put(structuredClone(value), key);
+        tx.objectStore(STORE).put(structuredClone(value), key);
         await tx.complete;
-        console.log(`Setting saved: ${key}`);
         return true;
     } catch (e) {
         console.error("saveSetting failed:", e);
@@ -129,18 +123,44 @@ export async function loadSetting(key) {
             req.onsuccess = () => resolve(req.result ?? null);
             req.onerror = () => resolve(null);
         });
-    } catch (e) {
-        console.warn("loadSetting failed:", e);
+    } catch {
         return null;
     }
 }
 
-// =========================
-// Global Theme State
-// =========================
+/* =========================
+   Theme / Desktop Color
+========================= */
 export let themeColor = "darkblue";
+export let desktopColor = null;   // 未設定がデフォルト
+
 const DEFAULT_COLOR = "darkblue";
 
+function applyDesktopColor(color) {
+    desktopColor = color;
+
+    function tryApply() {
+        const desk = document.querySelector("#desktop");
+        if (!desk) {
+            requestAnimationFrame(tryApply);
+            return;
+        }
+
+        if (!color) {
+            // 未設定 → CSSデフォルトに戻す
+            desk.style.background = "";
+            desk.style.backgroundImage = "";
+            return;
+        }
+
+        desk.style.background = color;
+        desk.style.backgroundImage = "none";
+    }
+
+    tryApply();
+}
+
+/* --- load on boot --- */
 loadSetting("titlebarColor").then(color => {
     if (color) {
         themeColor = color;
@@ -148,13 +168,14 @@ loadSetting("titlebarColor").then(color => {
     }
 });
 
+loadSetting("desktopColor").then(c => {
+    applyDesktopColor(c);   // nullでも呼ぶ
+});
+
 loadSetting("showRecentItems").then(val => {
     window.showRecent = val ?? true;
 });
 
-// =========================
-// refreshTopWindow
-// =========================
 export function refreshTopWindow() {
     const visibleWindows = Array.from(document.querySelectorAll(".window"))
         .filter(win => win.style.display !== "none" && win.dataset.minimized !== "true");
@@ -166,186 +187,260 @@ export function refreshTopWindow() {
     }
 
     document.querySelectorAll(".window .title-bar").forEach(tb => {
-        tb.style.background = tb.parentElement === topWindow ? themeColor : "gray";
+        tb.style.background =
+            tb.parentElement === topWindow ? themeColor : "gray";
     });
 }
 
-// =========================
-// IndexedDB 概算サイズ計算（軽量版）
-// =========================
-async function getIndexedDBSize() {
-    let totalBytes = 0;
+/* =========================
+   Utils
+========================= */
+async function getStoreSizes() {
+    const result = {};
     try {
         const db = await getDB();
+
         for (const storeName of db.objectStoreNames) {
-            try {
-                const tx = db.transaction(storeName, "readonly");
-                const store = tx.objectStore(storeName);
-                const allData = await new Promise(res => {
-                    const r = store.getAll();
-                    r.onsuccess = () => res(r.result || []);
-                    r.onerror = () => res([]);
-                });
-                totalBytes += allData.reduce((sum, item) => sum + (JSON.stringify(item)?.length || 0), 0);
-            } catch (e) {
-                console.warn("Object store read failed:", e);
+            let bytes = 0;
+            const tx = db.transaction(storeName, "readonly");
+            const store = tx.objectStore(storeName);
+
+            const all = await new Promise(res => {
+                const r = store.getAll();
+                r.onsuccess = () => res(r.result || []);
+                r.onerror = () => res([]);
+            });
+
+            for (const item of all) {
+                bytes += JSON.stringify(item)?.length || 0;
             }
+
+            result[storeName] = bytes;
         }
-    } catch (e) {
-        console.warn("IndexedDB size calc failed:", e);
-    }
-    return totalBytes;
+    } catch { }
+
+    return result;
 }
 
-// =========================
-// Bytes 表示フォーマッタ
-// =========================
 function formatBytes(bytes) {
-    if (bytes < 1024) {
-        return `${bytes} B`;
-    }
-    if (bytes < 1024 * 1024) {
-        return `${(bytes / 1024).toFixed(1)} KB`;
-    }
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
-
-// =========================
-// Settings & System Info UI
-// =========================
+/* =========================
+   Settings App (Tabs)
+========================= */
 export default async function SettingsApp(content) {
     content.innerHTML = `
-        <h1 style="margin-bottom:10px;">Settings</h1>
-        <div id="settings-list" style="overflow-y:auto; border:1px solid #888; padding:5px;"></div>
-    `;
-    const list = content.querySelector("#settings-list");
+    <div class="win95-tab-container">
+        <div id="tabs" class="win95-tabs"></div>
+        <div id="tab-body" class="win95-tab-body"></div>
+    </div>
+`;
 
-    async function renderSettings() {
-        list.innerHTML = "";
+    const tabsEl = content.querySelector("#tabs");
+    const bodyEl = content.querySelector("#tab-body");
 
-        // -------------------------
-        // Theme Color
-        // -------------------------
-        const row = document.createElement("div");
-        row.style.display = "flex";
-        row.style.flexDirection = "column";
-        row.style.gap = "6px";
+    /* ---------- Tabs ---------- */
+    const tabs = [
+        { id: "appearance", label: "Appearance", render: renderAppearance },
+        { id: "general", label: "General", render: renderGeneral },
+        { id: "system", label: "System", render: renderSystem }
+    ];
 
-        const label = document.createElement("span");
+    function selectTab(id) {
+        [...tabsEl.children].forEach(btn => {
+            const active = btn.dataset.id === id;
+            btn.classList.toggle("active", active);
+            btn.classList.toggle("inactive", !active);
+        });
+
+        bodyEl._cleanup?.();
+        bodyEl._cleanup = null;
+
+        bodyEl.innerHTML = "";
+
+        const tab = tabs.find(t => t.id === id);
+        tab?.render(bodyEl);
+    }
+
+    tabs.forEach(t => {
+        const btn = document.createElement("button");
+        btn.textContent = t.label;
+        btn.dataset.id = t.id;
+        btn.className = "win95-tab inactive";   // ← 追加
+        btn.onclick = () => selectTab(t.id);
+        tabsEl.appendChild(btn);
+    });
+
+    selectTab("appearance");
+
+    /* ---------- Appearance ---------- */
+    function renderAppearance(root) {
+        root.innerHTML = "";
+
+        /* ---- Titlebar Color ---- */
+        const block1 = document.createElement("div");
+        block1.style.marginBottom = "12px";
+
+        const label = document.createElement("div");
         label.textContent = "Top Window Titlebar Color";
 
         const colorInput = document.createElement("input");
         colorInput.type = "color";
         colorInput.value = themeColor;
-        colorInput.className = "button";
-        colorInput.style.width = "60px";
         colorInput.oninput = async () => {
             themeColor = colorInput.value;
             await saveSetting("titlebarColor", themeColor);
             refreshTopWindow();
         };
 
-        row.appendChild(label);
-        row.appendChild(colorInput);
+        block1.append(label, colorInput);
 
-        const colors = ["#1E90FF", "#FF4500", "#32CD32", "#FFD700", "#8A2BE2", "#FF1493", "#00CED1", "#FF8C00", "#A52A2A", "#2F4F4F"];
-        const btnContainer = document.createElement("div");
-        btnContainer.style.display = "flex";
-        btnContainer.style.flexWrap = "wrap";
-        btnContainer.style.gap = "4px";
+        const colors = ["#1E90FF", "#FF4500", "#32CD32", "#FFD700", "#8A2BE2",
+            "#FF1493", "#00CED1", "#FF8C00", "#A52A2A", "#2F4F4F"];
+
+        const palette = document.createElement("div");
+        palette.style.display = "flex";
+        palette.style.flexWrap = "wrap";
+        palette.style.gap = "4px";
 
         colors.forEach(c => {
             const btn = document.createElement("button");
             btn.style.background = c;
             btn.style.width = "24px";
             btn.style.height = "24px";
-            btn.style.cursor = "pointer";
             btn.onclick = async () => {
                 themeColor = c;
                 colorInput.value = c;
                 await saveSetting("titlebarColor", themeColor);
                 refreshTopWindow();
             };
-            btnContainer.appendChild(btn);
+            palette.appendChild(btn);
         });
-        row.appendChild(btnContainer);
 
         const resetBtn = document.createElement("button");
         resetBtn.textContent = "Reset Default";
-        resetBtn.style.marginTop = "6px";
-        resetBtn.style.padding = "4px 8px";
         resetBtn.onclick = async () => {
             themeColor = DEFAULT_COLOR;
             colorInput.value = DEFAULT_COLOR;
             await saveSetting("titlebarColor", themeColor);
             refreshTopWindow();
         };
-        row.appendChild(resetBtn);
 
-        list.appendChild(row);
-        refreshTopWindow();
+        block1.append(palette, resetBtn);
 
-        // -------------------------
-        // Reset All Settings
-        // -------------------------
+        /* ---- Desktop Background Color ---- */
+        const block2 = document.createElement("div");
+        block2.style.marginTop = "12px";
+
+        const deskLabel = document.createElement("div");
+        deskLabel.textContent = "Desktop Background Color";
+
+        /* --- 共通処理 --- */
+        const deskInput = document.createElement("input");
+        deskInput.type = "color";
+        deskInput.value = desktopColor || "#000000";
+        deskInput.style.marginRight = "6px";
+
+        async function setDesktopColor(color) {
+            applyDesktopColor(color);
+            deskInput.value = color || "#000000";
+            await saveSetting("desktopColor", color);
+        }
+
+        /* --- Color Picker --- */
+        deskInput.oninput = () => {
+            setDesktopColor(deskInput.value);
+        };
+
+        /* --- Preset Buttons --- */
+        const presetColors = [
+            "#101820", // iD Desktop
+            "#1E1E1E",
+            "#2C2F33",
+            "#003366",
+            "#004400",
+            "#3B2F2F",
+            "#2F4F4F",
+            "#4B0082",
+            "#222222",
+            "#000000"
+        ];
+
+        const deskPalette = document.createElement("div");
+        deskPalette.style.display = "flex";
+        deskPalette.style.flexWrap = "wrap";
+        deskPalette.style.gap = "4px";
+
+        presetColors.forEach(color => {
+            const btn = document.createElement("button");
+            btn.title = color;
+            btn.style.background = color;
+            btn.style.width = "24px";
+            btn.style.height = "24px";
+            btn.style.cursor = "pointer";
+
+            btn.onclick = () => {
+                setDesktopColor(color);
+            };
+
+            deskPalette.appendChild(btn);
+        });
+
+        /* --- Reset Button --- */
+        const deskReset = document.createElement("button");
+        deskReset.textContent = "Reset Desktop Color";
+        deskReset.style.marginTop = "6px";
+        deskReset.onclick = () => {
+            setDesktopColor(null);   // CSSデフォルトに戻す
+        };
+
+        block2.append(
+            deskLabel,
+            deskInput,
+            deskPalette,
+            deskReset
+        );
+
+        root.append(block1, block2);
+    }
+
+    /* ---------- General ---------- */
+    async function renderGeneral(root) {
+        root.innerHTML = "";
+
         const resetAll = document.createElement("button");
         resetAll.textContent = "Reset All Settings";
-        resetAll.style.marginTop = "12px";
-        resetAll.style.padding = "6px 10px";
         resetAll.style.background = "#933";
         resetAll.style.color = "#fff";
-        resetAll.style.border = "none";
-        resetAll.style.cursor = "pointer";
 
-        resetAll.onclick = async () => {
-            showConfirm(
-                content,   // ← SettingsApp の root
-                "全ての設定を初期化しますか？",
-                async () => {
-                    try {
-                        const db = await getDB();
-                        const tx = db.transaction(STORE, "readwrite");
-                        tx.objectStore(STORE).clear();
+        resetAll.onclick = () => {
+            showConfirm(content, "全ての設定を初期化しますか？", async () => {
+                try {
+                    const db = await getDB();
+                    const tx = db.transaction(STORE, "readwrite");
+                    tx.objectStore(STORE).clear();
 
-                        themeColor = DEFAULT_COLOR;
-                        window.showRecent = true;
-                        refreshTopWindow();
-                        window.dispatchEvent(new Event("recent-updated"));
-
-                        showAlert(content, "設定を初期化しました");
-                    } catch (e) {
-                        console.warn(e);
-                        showAlert(content, "初期化に失敗しました");
-                    }
+                    themeColor = DEFAULT_COLOR;
+                    applyDesktopColor(null);
+                    await saveSetting("desktopColor", null);
+                    window.showRecent = true;
+                    refreshTopWindow();
+                    window.dispatchEvent(new Event("recent-updated"));
+                    showAlert(content, "設定を初期化しました");
+                } catch {
+                    showAlert(content, "初期化に失敗しました");
                 }
-            );
+            });
         };
-        list.appendChild(resetAll);
 
-        // -------------------------
-        // Recent Items
-        // -------------------------
-        const recentRow = document.createElement("div");
-        recentRow.style.marginTop = "12px";
-        recentRow.style.borderTop = "1px solid #666";
-        recentRow.style.paddingTop = "8px";
-
-        const recentLabel = document.createElement("div");
-        recentLabel.textContent = "Recent Items";
-        recentLabel.style.fontWeight = "bold";
-        recentRow.appendChild(recentLabel);
-
-        const toggleLabel = document.createElement("label");
-        toggleLabel.style.display = "flex";
-        toggleLabel.style.alignItems = "center";
-        toggleLabel.style.gap = "6px";
+        root.appendChild(resetAll);
 
         const toggle = document.createElement("input");
         toggle.type = "checkbox";
-        const savedShowRecent = await loadSetting("showRecentItems");
-        toggle.checked = savedShowRecent ?? true;
-        window.showRecent = toggle.checked;
+        toggle.checked = (await loadSetting("showRecentItems")) ?? true;
 
         toggle.onchange = async () => {
             window.showRecent = toggle.checked;
@@ -353,86 +448,126 @@ export default async function SettingsApp(content) {
             window.dispatchEvent(new Event("recent-updated"));
         };
 
-        toggleLabel.appendChild(toggle);
-        toggleLabel.appendChild(document.createTextNode("Show Recent in Start Menu"));
-        recentRow.appendChild(toggleLabel);
+        const label = document.createElement("label");
+        label.append(toggle, document.createTextNode(" Show Recent in Start Menu"));
 
         const clearBtn = document.createElement("button");
         clearBtn.textContent = "Clear Recent History";
-        clearBtn.style.marginTop = "6px";
         clearBtn.onclick = () => {
-            showConfirm(
-                content,
-                "最近使った項目を削除しますか？",
-                () => {
-                    clearRecent();
-                    showAlert(content, "最近の履歴を削除しました");
-                }
-            );
+            showConfirm(content, "最近使った項目を削除しますか？", () => {
+                clearRecent();
+                showAlert(content, "最近の履歴を削除しました");
+            });
         };
-        recentRow.appendChild(clearBtn);
 
-        list.appendChild(recentRow);
+        root.append(label, clearBtn);
+    }
 
-        // -------------------------
-        // System Info
-        // -------------------------
-        const sysRow = document.createElement("div");
-        sysRow.style.marginTop = "12px";
-        sysRow.style.borderTop = "1px solid #666";
-        sysRow.style.paddingTop = "8px";
+    /* ---------- System ---------- */
+    /* ---------- System ---------- */
+    function renderSystem(root) {
+        root.innerHTML = "";
 
-        const sysLabel = document.createElement("div");
-        sysLabel.textContent = "System Info";
-        sysLabel.style.fontWeight = "bold";
-        sysRow.appendChild(sysLabel);
+        const info = document.createElement("div");
+        const storageBox = document.createElement("div");
+        storageBox.style.marginTop = "10px";
+        storageBox.style.borderTop = "1px solid #666";
+        storageBox.style.paddingTop = "6px";
 
-        const sysList = document.createElement("div");
-        sysList.style.display = "flex";
-        sysList.style.flexDirection = "column";
-        sysList.style.gap = "4px";
-        sysRow.appendChild(sysList);
+        root.append(info, storageBox);
 
-        list.appendChild(sysRow);
+        async function renderStorage() {
+            storageBox.innerHTML = "<b>Storage Usage</b><br>";
 
-        async function renderSystemInfo() {
-            sysList.innerHTML = "";
+            const sizes = await getStoreSizes();
+            let total = 0;
 
-            sysList.innerHTML += `Nexser OS Version: v0.1.0<br>`;
-            sysList.innerHTML += `Build Date: 2026-01-21<br>`;
+            for (const [name, bytes] of Object.entries(sizes)) {
+                total += bytes;
 
-            if (performance.memory) {
-                const usedMB = (performance.memory.usedJSHeapSize / 1024 / 1024).toFixed(1);
-                const totalMB = (performance.memory.jsHeapSizeLimit / 1024 / 1024).toFixed(1);
-                sysList.innerHTML += `JS Heap: ${usedMB} / ${totalMB} MB<br>`;
-            } else {
-                sysList.innerHTML += `JS Heap: unknown<br>`;
+                const row = document.createElement("div");
+                row.style.display = "flex";
+                row.style.justifyContent = "space-between";
+                row.style.alignItems = "center";
+
+                const label = document.createElement("span");
+                label.textContent = `${name}: ${formatBytes(bytes)}`;
+
+                const clear = document.createElement("button");
+                clear.textContent = "Clear";
+                clear.onclick = () => {
+                    showConfirm(root, `${name} を削除しますか？`, async () => {
+                        const db = await getDB();
+                        const tx = db.transaction(name, "readwrite");
+                        tx.objectStore(name).clear();
+                        renderStorage();
+                    });
+                };
+
+                row.append(label, clear);
+                storageBox.appendChild(row);
             }
 
-            const upSec = ((Date.now() - (window.bootTime || Date.now())) / 1000).toFixed(1);
-            sysList.innerHTML += `Uptime: ${upSec} s<br>`;
-            sysList.innerHTML += `Open Windows: ${document.querySelectorAll(".window").length}<br>`;
+            // 全ストアクリアボタン
+            const clearAllBtn = document.createElement("button");
+            clearAllBtn.textContent = "Clear All Stores";
+            clearAllBtn.style.marginTop = "6px";
+            clearAllBtn.style.background = "#933";
+            clearAllBtn.style.color = "#fff";
+            clearAllBtn.onclick = () => {
+                showConfirm(root, "全てのストアを削除しますか？", async () => {
+                    const db = await getDB();
+                    for (const name of db.objectStoreNames) {
+                        const tx = db.transaction(name, "readwrite");
+                        tx.objectStore(name).clear();
+                    }
+                    renderStorage();
+                });
+            };
+            storageBox.appendChild(clearAllBtn);
 
-            // IndexedDB サイズ
-            const dbBytes = await getIndexedDBSize();
+            // 総容量とブラウザ上限
             let quotaMB = "unknown";
             try {
                 if (navigator.storage?.estimate) {
                     const est = await navigator.storage.estimate();
                     let estQuotaMB = est.quota / 1024 / 1024;
-                    if (estQuotaMB > 6 * 1024) estQuotaMB = 6 * 1024; // 上限6GB
+                    if (estQuotaMB > 6 * 1024) estQuotaMB = 6 * 1024; // 上限6GB固定
                     quotaMB = estQuotaMB.toFixed(1);
                 }
-            } catch (e) {
-                console.warn("storage estimate failed", e);
-            }
+            } catch { }
 
-            sysList.innerHTML += `IndexedDB: Used ${formatBytes(dbBytes)} / Max approx ${quotaMB} MB<br>`;
+            const totalRow = document.createElement("div");
+            totalRow.style.marginTop = "6px";
+            totalRow.innerHTML = `<b>Total: ${formatBytes(total)} / Max approx ${quotaMB} MB</b>`;
+            storageBox.appendChild(totalRow);
         }
 
-        renderSystemInfo();
-        setInterval(renderSystemInfo, 2000);
-    }
+        async function updateInfo() {
+            info.innerHTML = `
+            Nexser OS Version: v0.1.0<br>
+            Build Date: 2026-01-21<br>
+            Uptime: ${((Date.now() - (window.bootTime || Date.now())) / 1000).toFixed(1)} s<br>
+            Open Windows: ${document.querySelectorAll(".window").length}<br>
+        `;
 
-    renderSettings();
+            if (performance.memory) {
+                info.innerHTML += `JS Heap: ${(performance.memory.usedJSHeapSize / 1024 / 1024).toFixed(1)} MB<br>`;
+            }
+        }
+
+        updateInfo();
+        renderStorage();
+
+        // ✅ interval を保持
+        const timer = setInterval(() => {
+            updateInfo();
+            renderStorage();  // 容量も定期更新
+        }, 2000);
+
+        // ✅ 後片付け関数を登録
+        root._cleanup = () => {
+            clearInterval(timer);
+        };
+    }
 }

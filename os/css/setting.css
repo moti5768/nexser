@@ -13,3 +13,86 @@ body {
     background-color: var(--bg-color);
     color: var(--text-color);
 }
+
+/* ===============================
+   Windows 95 Tabs Style
+   =============================== */
+
+/* タブ専用レイアウト（contentは共通のまま） */
+.win95-tab-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.win95-tabs {
+    display: flex;
+    gap: 2px;
+    padding-left: 4px;
+    background: #C0C0C0;
+    user-select: none;
+    flex: 0 0 auto;
+}
+
+/* 共通タブ */
+.win95-tab {
+    font-family: "MS Sans Serif", Tahoma, sans-serif;
+    font-size: 12px;
+    line-height: 1;
+    padding: 4px 12px 3px;
+    background: #C0C0C0;
+
+    border-top: 1px solid #FFFFFF;
+    border-left: 1px solid #FFFFFF;
+    border-right: 1px solid #404040;
+    border-bottom: 1px solid #404040;
+
+    cursor: pointer;
+    outline: none;
+    flex: 0 0 auto;
+}
+
+/* 押した時（クリック中） */
+.win95-tab:active {
+    border-top: 1px solid #404040;
+    border-left: 1px solid #404040;
+    border-right: 1px solid #FFFFFF;
+    border-bottom: 1px solid #FFFFFF;
+}
+
+/* 非アクティブタブ（奥に沈む） */
+.win95-tab.inactive {
+    margin-top: 3px;
+    filter: brightness(0.97);
+}
+
+/* アクティブタブ（手前に浮く） */
+.win95-tab.active {
+    position: relative;
+    top: 2px;
+    z-index: 2;
+
+    border-bottom: 2px solid #C0C0C0;
+    /* ボディと一体化 */
+}
+
+/* タブボディ */
+.win95-tab-body {
+    background: #C0C0C0;
+    padding: 8px;
+    overflow: auto;
+    border-top: 1px solid #FFFFFF;
+    border-left: 1px solid #FFFFFF;
+    border-right: 1px solid #404040;
+    border-bottom: 1px solid #404040;
+    flex: 1 1 auto;
+    min-height: 0;
+    /* overflow を正しく効かせる */
+}
+
+/* フォーカス（キーボード操作風） */
+.win95-tab:focus-visible {
+    outline: 1px dotted #000;
+    outline-offset: -4px;
+}

@@ -174,7 +174,7 @@ function createMenu(folder, basePath, menuRoot) {
     if (!hasItems) {
         const empty = document.createElement("div");
         empty.className = "start-item empty";
-        empty.textContent = "(empty)";
+        empty.textContent = "(Empty)";
         container.appendChild(empty);
     }
 
@@ -186,7 +186,7 @@ function createMenu(folder, basePath, menuRoot) {
 ===================================================== */
 function setupHover(parent, submenu) {
     let hideTimer = null;
-    let initialized = false; // ← 追加: 一度だけ位置調整
+    let initialized = false;
 
     const show = () => {
         clearTimeout(hideTimer);
@@ -197,10 +197,9 @@ function setupHover(parent, submenu) {
             const viewportWidth = window.innerWidth;
 
             if (rect.right > viewportWidth) {
-                // 右にはみ出す場合は左に表示
                 submenu.style.left = `-${rect.width}px`;
             } else {
-                submenu.style.left = ""; // デフォルト
+                submenu.style.left = "";
             }
 
             const viewportHeight = window.innerHeight;
@@ -211,17 +210,36 @@ function setupHover(parent, submenu) {
                 submenu.style.top = "";
             }
 
-            initialized = true; // 一度だけ計算
+            initialized = true;
         }
     };
 
-    const hide = () => hideTimer = setTimeout(() => submenu.style.display = "none", 200);
+    const scheduleHide = () => {
+        clearTimeout(hideTimer);
+        hideTimer = setTimeout(() => {
+            submenu.style.display = "none";
+        }, 200);
+    };
+
+    const isInside = el =>
+        parent.contains(el) || submenu.contains(el);
 
     parent.addEventListener("mouseenter", show);
-    parent.addEventListener("mouseleave", hide);
     submenu.addEventListener("mouseenter", show);
-    submenu.addEventListener("mouseleave", hide);
+
+    parent.addEventListener("mouseleave", e => {
+        if (!isInside(e.relatedTarget)) {
+            scheduleHide();
+        }
+    });
+
+    submenu.addEventListener("mouseleave", e => {
+        if (!isInside(e.relatedTarget)) {
+            scheduleHide();
+        }
+    });
 }
+
 
 
 /* =====================================================

@@ -205,7 +205,11 @@ ${!options.hideStatus ? `
         taskbarBtn._window = w;
         w._taskbarBtn = taskbarBtn;
 
-        taskbar.appendChild(taskbarBtn);
+        const buttonArea =
+            taskbar.querySelector(".taskbar-buttons") || taskbar;
+
+        buttonArea.appendChild(taskbarBtn);
+
         taskbarButtons.push(taskbarBtn);
     } else {
         w.dataset.taskbar = "false";

@@ -301,6 +301,10 @@ body {
     box-sizing: border-box;
 }
 
+.start-item .empty {
+    color: gray;
+}
+
 /* hover（Win95風ハイライト） */
 .start-item:hover {
     background: #000080;
@@ -595,7 +599,7 @@ input:focus {
 .taskbar-window-btn {
     margin-left: 4px;
     height: 25px;
-    width: 120px;
+    width: 135px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -628,15 +632,45 @@ button.pressed,
     transform: translate(0.5px, 0.5px);
 }
 
+/* checkbox */
 
+input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    border: 1.5px solid;
+    border-color: #7a7a7a #fff #fff #7a7a7a;
+    box-shadow: 0.5px 0.5px 0 #000 inset;
+    width: 24px;
+    /* 好きな大きさに変更 */
+    height: 24px;
+    /* 好きな大きさに変更 */
+    display: inline-block;
+    vertical-align: middle;
+    /* 上下中央 */
+    position: relative;
+    cursor: pointer;
+}
 
+input[type="checkbox"]::after {
+    content: "✓";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: "Arial Black", Arial, sans-serif;
+    /* フォント指定 */
+    font-weight: bold;
+    /* 太さ指定 */
+    font-size: 18px;
+    /* チェックマークの大きさ */
+    color: black;
+    opacity: 0;
+    pointer-events: none;
+}
 
-
-
-
-
-
-
+input[type="checkbox"]:checked::after {
+    opacity: 1;
+}
 
 /* scrollbar */
 
