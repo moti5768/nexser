@@ -9,9 +9,7 @@ import {
     removeAllTaskbarButtons,
     errorWindow,
     showModalWindow,
-    bringToFront,
-    closeWindowById,
-    getWindows
+    bringToFront
 } from "./window.js";
 import { showPromptScreen } from "./boot.js";
 import { startup_sound } from "./sounds.js";
@@ -23,16 +21,14 @@ const moduleCache = new Map();
 let pidCounter = 1;
 const processes = new Map(); // uniqueKey → { pid, path, window, state }
 
-/* ===== カーネル初期化 ===== */
-export function initKernel() {
-    console.log("kernel init");
-
+/* ===== カーネル初期化（非同期、進捗表示用） ===== */
+export async function initKernelAsync(progressCallback = (msg) => { }) {
     const root = document.getElementById("os-root");
-    if (!root) {
-        console.error("os-root not found");
-        return;
-    }
+    if (!root) throw new Error("os-root not found");
 
+    progressCallback("Initializing kernel...");
+
+    // 1. DOM コンテナ作成
     root.innerHTML = `
         <div id="desktop"></div>
         <div id="taskbar">
@@ -40,12 +36,30 @@ export function initKernel() {
         </div>
         <div id="start-menu"></div>
     `;
+    progressCallback("UI containers created...");
 
-    startup_sound();
+    // 2. デスクトップ描画（アイコン等）
     buildDesktop();
+    progressCallback("Desktop built...");
+
+    // 3. スタートメニュー構築
     buildStartMenu();
+    progressCallback("Start Menu built...");
+
+    // 4. タスクバー初期化
     initTaskbar();
+    progressCallback("Taskbar initialized...");
+
+    // 5. UI 効果適用
     installDynamicButtonEffect();
+    progressCallback("UI effects applied...");
+
+    // 6. 起動音再生
+    startup_sound();
+    progressCallback("Startup sound played...");
+
+    // 7. 初期化完了
+    progressCallback("Kernel initialization complete!");
 }
 
 /* ===== ヘルパー: basename ===== */
@@ -188,7 +202,9 @@ export async function launch(path, options = {}) {
 }
 
 /* ===== 仮想パス解決 ===== */
-function resolve(path) {
+function resolve(path, seen = new Set()) {
+    if (seen.has(path)) return null; // 循環防止
+    seen.add(path);
     if (typeof path !== "string") return null;
 
     let fsPath = path.replace(/^C:\//, "");

@@ -3,34 +3,31 @@
 
 export const FILE_ASSOCIATIONS = {
     // text
-    ".txt": "Programs/TextEditor.app",
-    ".md": "Programs/TextEditor.app",
+    ".txt": "Programs/Accessories/TextEditor.app",
+    ".md": "Programs/Accessories/TextEditor.app",
 
     // code
-    ".js": "Programs/CodeEditor.app",
-    ".ts": "Programs/CodeEditor.app",
-    ".json": "Programs/CodeEditor.app",
-    ".css": "Programs/CodeEditor.app",
-    ".scss": "Programs/CodeEditor.app",
-    ".vue": "Programs/CodeEditor.app",
-
-    // web
-    ".html": "Programs/Browser.app",
-    ".htm": "Programs/Browser.app",
+    ".js": "Programs/Accessories/Multimedia/CodeEditor.app",
+    ".ts": "Programs/Accessories/Multimedia/CodeEditor.app",
+    ".json": "Programs/Accessories/Multimedia/CodeEditor.app",
+    ".css": "Programs/Accessories/Multimedia/CodeEditor.app",
+    ".scss": "Programs/Accessories/Multimedia/CodeEditor.app",
+    ".vue": "Programs/Accessories/Multimedia/CodeEditor.app",
 
     // images
-    ".png": "Programs/ImageViewer.app",
-    ".jpg": "Programs/ImageViewer.app",
-    ".jpeg": "Programs/ImageViewer.app",
-    ".gif": "Programs/ImageViewer.app",
+    ".png": "Programs/Accessories/Multimedia/ImageViewer.app",
+    ".jpg": "Programs/Accessories/Multimedia/ImageViewer.app",
+    ".jpeg": "Programs/Accessories/Multimedia/ImageViewer.app",
+    ".gif": "Programs/Accessories/Multimedia/ImageViewer.app",
 
     // video
-    ".mp4": "Programs/VideoPlayer.app",
-    ".webm": "Programs/VideoPlayer.app",
-    ".ogg": "Programs/VideoPlayer.app",
-    ".mov": "Programs/VideoPlayer.app",
-    ".mkv": "Programs/VideoPlayer.app",
+    ".mp4": "Programs/Accessories/Multimedia/VideoPlayer.app",
+    ".webm": "Programs/Accessories/Multimedia/VideoPlayer.app",
+    ".ogg": "Programs/Accessories/Multimedia/VideoPlayer.app",
+    ".mov": "Programs/Accessories/Multimedia/VideoPlayer.app",
+    ".mkv": "Programs/Accessories/Multimedia/VideoPlayer.app"
 };
+
 
 /**
  * パスから拡張子を取得

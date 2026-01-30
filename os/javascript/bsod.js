@@ -1,3 +1,4 @@
+// bsod.js
 export function showBSOD(message, error = null) {
     const div = document.createElement("div");
     Object.assign(div.style, {

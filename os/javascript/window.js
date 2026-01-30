@@ -37,8 +37,6 @@ function installGlobalMouseHandler() {
         }
         taskbarButtons.forEach(btn => btn.classList.remove("selected"));
     });
-
-
 }
 
 /* ===== 全ウィンドウ色リセット ===== */
@@ -231,9 +229,7 @@ ${!options.hideStatus ? `
     }
 
     closeBtn.addEventListener("click", () => {
-        if (w._modalOverlay) {
-            w._modalOverlay.remove();
-        }
+        if (w._modalOverlay) w._modalOverlay.remove();
         if (w.dataset.processKey) {
             killProcess(w.dataset.processKey);
         } else {
@@ -859,7 +855,7 @@ export function refreshTopWindow() {
 
     document.querySelectorAll(".window .title-bar").forEach(tb => {
         const win = tb.parentElement;
-        tb.style.background = (win === topWindow) ? themeColor : DEFAULT_COLOR;
+        tb.style.background = (win === topWindow) ? (themeColor || DEFAULT_COLOR) : DEFAULT_COLOR;
     });
 
     taskbarButtons.forEach(btn => {
@@ -941,7 +937,7 @@ export function maximizeWindowById(id) {
     if (!win) return false;
 
     const btn = win.el.querySelector(".max-btn");
-    btn?.click();
+    if (btn) btn.click();
     return true;
 }
 
@@ -971,9 +967,9 @@ export function installWindowContextMenu(w) {
     const maxBtn = w.querySelector(".max-btn");
     const closeBtn = w.querySelector(".close-btn");
 
-    const minDisabled = minBtn?.classList.contains("pointer_none") ?? false;
-    const maxDisabled = maxBtn?.classList.contains("pointer_none") ?? false;
-    const closeDisabled = closeBtn?.classList.contains("pointer_none") ?? false;
+    const minDisabled = minBtn && minBtn.classList.contains("pointer_none");
+    const maxDisabled = maxBtn && maxBtn.classList.contains("pointer_none");
+    const closeDisabled = closeBtn && closeBtn.classList.contains("pointer_none");
 
     // タイトルバー右クリック
     if (titleBar) {
