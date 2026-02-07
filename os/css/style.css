@@ -77,18 +77,42 @@ body {
 
 
 /* デスクトップアイコン */
+#desktop-icons {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    align-content: flex-start;
+
+    /* デスクトップ全体の高さを指定（タスクバー分を引く） */
+    height: calc(100vh - 50px);
+    width: 100%;
+    padding: 10px;
+}
+
 .icon {
     width: 80px;
-    margin: 10px;
+    min-height: 50px;
+    /* ← 最低限の高さ。これより文字が多ければさらに伸びる */
+    height: max-content;
+    margin-bottom: 10px;
+    padding: 5px;
     color: white;
     font-size: 13px;
     cursor: pointer;
     user-select: none;
     text-align: center;
+    word-break: break-all;
+
+    /* アイコン画像を入れる準備（もしあれば） */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .icon.selected {
     background-color: darkblue;
+    border-radius: 3px;
+    /* 少し角を丸めるとモダンになります */
 }
 
 /* ===== Taskbar ===== */

@@ -113,36 +113,78 @@ export default function ImageViewer(root, options = {}) {
        UI
     ========================== */
     root.innerHTML = `
-        <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#222;">
-            <img style="max-width:100%;max-height:100%;object-fit:contain;" />
-        </div>
-    `;
+    <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#222;overflow:hidden;">
+        <img style="max-width:100%;max-height:100%;object-fit:contain;transition: transform 0.2s;" />
+    </div>
+`;
 
     const img = root.querySelector("img");
 
     /* =========================
+    回転機能 (Canvasを使用してピクセルを操作)
+========================== */
+    async function rotateImage(direction = 90) {
+        if (!img.src) return;
+
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        const tempImg = new Image();
+
+        // 画像が読み込まれたら回転処理を実行
+        tempImg.onload = () => {
+            // 90度/270度回転の場合は、Canvasの縦横を入れ替える
+            if (Math.abs(direction) % 180 === 90) {
+                canvas.width = tempImg.height;
+                canvas.height = tempImg.width;
+            } else {
+                canvas.width = tempImg.width;
+                canvas.height = tempImg.height;
+            }
+
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate((direction * Math.PI) / 180);
+            ctx.drawImage(tempImg, -tempImg.width / 2, -tempImg.height / 2);
+
+            // 回転後のデータをDataURLとして保存（dirtyフラグを立てる）
+            draftImage = canvas.toDataURL("image/png");
+            dirty = true;
+            refresh();
+            updateTitle();
+        };
+        tempImg.src = img.src;
+    }
+
+    /* =========================
+       表示更新（多形式対応）
+    ========================== */
+    /* =========================
        表示更新（多形式対応）
     ========================== */
     function refresh() {
+        // 前回のBlob URLがあれば解放してメモリリークを防ぐ
+        if (img.src.startsWith('blob:')) {
+            URL.revokeObjectURL(img.src);
+        }
+
         if (dirty && draftImage) {
             if (draftImage instanceof File) {
                 img.src = URL.createObjectURL(draftImage);
             } else {
-                img.src = draftImage; // DataURL or URL文字列
+                img.src = draftImage; // DataURL (回転後はこちらに入る)
             }
         } else if (fileNode?.content) {
             const content = fileNode.content;
 
             if (typeof content === "string") {
                 if (content.startsWith("data:")) {
-                    img.src = content; // DataURL
+                    img.src = content;
                 } else if (/^(https?|file):\/\//i.test(content)) {
-                    img.src = content; // 外部URL
+                    img.src = content;
                 } else {
                     const blob = new Blob([content], { type: "image/png" });
                     img.src = URL.createObjectURL(blob);
                 }
-            } else if (content instanceof File) {
+            } else if (content instanceof File || content instanceof Blob) {
                 img.src = URL.createObjectURL(content);
             } else if (content instanceof Uint8Array || content instanceof ArrayBuffer) {
                 const blob = new Blob([content], { type: "image/png" });
@@ -319,6 +361,13 @@ export default function ImageViewer(root, options = {}) {
                     { label: "最小化", action: () => win.querySelector(".min-btn")?.click() },
                     { label: "最大化 / 元のサイズに戻す", action: () => win.querySelector(".max-btn")?.click() },
                     { label: "閉じる", action: () => win.querySelector(".close-btn")?.click() }
+                ]
+            },
+            {
+                title: "Edit",
+                items: [
+                    { label: "右に90度回転", action: () => rotateImage(90) },
+                    { label: "左に90度回転", action: () => rotateImage(-90) }
                 ]
             },
             {
