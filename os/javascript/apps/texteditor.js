@@ -338,7 +338,47 @@ export default function TextEditor(root, options = {}) {
         setupRibbon(win, () => filePath, null, ribbonMenus);
     }
 
-    textarea.addEventListener("input", () => { dirty = true; updateTitle(); });
+    // ステータスバー更新関数を追加
+    function updateStatusBar() {
+        if (!win?._statusBar) return;
+
+        const text = textarea.value;
+        const lines = text.split("\n");
+        const totalLines = lines.length;
+        const totalChars = text.length;
+
+        // カーソル位置
+        const cursorPos = textarea.selectionStart;
+        let row = 1, col = 1;
+        let count = 0;
+
+        for (let i = 0; i < lines.length; i++) {
+            const lineLength = lines[i].length + 1; // +1 は改行分
+            if (cursorPos < count + lineLength) {
+                row = i + 1;
+                col = cursorPos - count + 1;
+                break;
+            }
+            count += lineLength;
+        }
+
+        win._statusBar.textContent = `行: ${row}/${totalLines} 列: ${col} 文字: ${totalChars}`;
+    }
+
+    // 初期ステータスバー更新
+    updateStatusBar();
+
+    // 文字入力時、カーソル移動時にタイトルとステータスバーを更新
+    textarea.addEventListener("input", () => {
+        dirty = true;
+        updateTitle();
+        updateStatusBar();
+    });
+
+    textarea.addEventListener("click", updateStatusBar);
+    textarea.addEventListener("keyup", updateStatusBar);
+    textarea.addEventListener("mouseup", updateStatusBar);
+
 
     win?.addEventListener("keydown", e => {
         if (e.ctrlKey && e.key.toLowerCase() === "s") { e.preventDefault(); save(); }

@@ -9,6 +9,7 @@ import { resolveAppByPath, getExtension } from "../file-associations.js";
 import { addRecent } from "../recent.js";
 
 let globalSelected = { item: null, window: null };
+let isCreating = false;
 
 function hasExtension(name) {
     return /\.[a-z0-9]+$/i.test(name);
@@ -30,8 +31,9 @@ function createNewFolder(currentPath, listContainer, renderCallback) {
     const folderNode = resolveFS(currentPath);
     if (!folderNode || !listContainer) return;
 
-    // 同時作成防止
-    if (listContainer.querySelector("input")) return;
+    // 安全性向上: 二重作成防止
+    if (listContainer.querySelector("input") || createNewFolder.isCreating) return;
+    createNewFolder.isCreating = true;
 
     let folderName = "新しいフォルダ";
     let counter = 1;
@@ -40,7 +42,7 @@ function createNewFolder(currentPath, listContainer, renderCallback) {
     const itemDiv = document.createElement("div");
     itemDiv.className = "explorer-item";
 
-    const input = document.createElement("input");
+    const input = document.createElement("input"); // ← ここで宣言
     input.type = "text";
     input.value = folderName;
     input.style.cssText = "width:100px;font-size:13px;text-align:center";
@@ -53,6 +55,13 @@ function createNewFolder(currentPath, listContainer, renderCallback) {
     let isShowingError = false;
     let isCommitting = false;
 
+    // blur でキャンセル
+    input.addEventListener("blur", () => {
+        if (isShowingError || isCommitting) return;
+        itemDiv.remove();
+        createNewFolder.isCreating = false;
+    });
+
     const finishEditing = () => {
         if (isShowingError || isCommitting) return;
         isCommitting = true;
@@ -63,9 +72,7 @@ function createNewFolder(currentPath, listContainer, renderCallback) {
         if (error) {
             isCommitting = false;
             isShowingError = true;
-
             alertWindow(error, { width: 360, height: 160, taskbar: false });
-
             setTimeout(() => {
                 isShowingError = false;
                 input.focus();
@@ -74,8 +81,8 @@ function createNewFolder(currentPath, listContainer, renderCallback) {
             return;
         }
 
-        // --- 正常処理 ---
         itemDiv.remove();
+        createNewFolder.isCreating = false;
 
         let finalName = newName;
         let idx = 1;
@@ -91,21 +98,15 @@ function createNewFolder(currentPath, listContainer, renderCallback) {
         window.dispatchEvent(new Event("fs-updated"));
     };
 
-    // Enterで確定
     input.addEventListener("keydown", e => {
         if (e.key === "Enter") {
             e.preventDefault();
             finishEditing();
         }
         if (e.key === "Escape") {
-            itemDiv.remove(); // キャンセル
+            itemDiv.remove();
+            createNewFolder.isCreating = false;
         }
-    });
-
-    // フォーカス外れたらキャンセル
-    input.addEventListener("blur", () => {
-        if (isShowingError || isCommitting) return;
-        itemDiv.remove();
     });
 }
 
@@ -133,7 +134,14 @@ export default async function Explorer(root, options = {}) {
         if (node.type === "link") {
             targetPath = node.target;
             targetNode = resolveFS(targetPath);
-            if (!targetNode) return;
+            if (!targetNode) {
+                alertWindow(`リンク先「${targetPath}」が存在しません`, {
+                    width: 360,
+                    height: 160,
+                    taskbar: false
+                });
+                return;
+            }
         }
 
         let effectiveType = targetNode.type;
@@ -395,7 +403,8 @@ export default async function Explorer(root, options = {}) {
                 globalSelected.item = item;
                 globalSelected.window = win;
                 setupRibbon(win, () => currentPath, render, getExplorerMenus());
-                const node = resolveFS(currentPath)[name];
+                const node = resolveFS(currentPath)?.[name];
+                if (!node) return; // 安全に早期リターン
                 const size = calcNodeSize(node);
 
                 const statusBar = win?._statusBar;
@@ -405,8 +414,11 @@ export default async function Explorer(root, options = {}) {
                 }
                 listContainer.focus();
             });
-
-            item.addEventListener("dblclick", () => openFSItem(name, itemData, currentPath));
+            item.addEventListener("dblclick", () => {
+                const node = resolveFS(currentPath)?.[name];
+                if (!node) return;
+                openFSItem(name, node, currentPath);
+            });
         }
 
         // 右クリック
@@ -465,7 +477,7 @@ export default async function Explorer(root, options = {}) {
                     globalSelected.window = win;
 
                     // ステータスバー更新
-                    const node = resolveFS(currentPath)[item.textContent];
+                    const node = resolveFS(currentPath)?.[item.textContent];
                     const size = calcNodeSize(node);
                     const statusBar = win?._statusBar;
                     if (statusBar) {
@@ -491,11 +503,12 @@ export default async function Explorer(root, options = {}) {
 
                 if (e.key === "Enter") {
                     e.preventDefault();
-                    if (globalSelected.item) {
-                        const name = globalSelected.item.textContent;
-                        const node = resolveFS(currentPath)[name];
-                        openFSItem(name, node, currentPath);
-                    }
+                    // 安全性向上: nodeが存在しない場合に早期リターン
+                    if (!globalSelected.item) return;
+                    const name = globalSelected.item.textContent;
+                    const node = resolveFS(currentPath)?.[name];
+                    if (!node) return;
+                    openFSItem(name, node, currentPath);
                 }
             });
 
@@ -575,7 +588,17 @@ export default async function Explorer(root, options = {}) {
 
     if (!win._fsWatcherInstalled) {
         win._fsWatcherInstalled = true;
-        window.addEventListener("fs-updated", () => { render(currentPath); });
+        // 安全性向上: 複数イベントをまとめて1回レンダリング
+        let renderScheduled = false;
+        window.addEventListener("fs-updated", () => {
+            if (renderScheduled) return;
+            renderScheduled = true;
+            requestAnimationFrame(() => {
+                render(currentPath);
+                renderScheduled = false;
+            });
+        });
+
     }
 
     function updateTitle(path) {
@@ -716,8 +739,10 @@ export function openWithDialog(filePath, fileNode) {
         btn.onclick = () => {
             launch(app.path, { path: filePath, node: fileNode, uniqueKey: filePath });
             const win = content.parentElement;
-            win.remove();
-            win._modalOverlay?.remove();
+            if (win) {
+                win.remove();
+                win._modalOverlay?.remove();
+            }
         };
         content.appendChild(btn);
     });

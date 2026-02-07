@@ -11,6 +11,9 @@ const previewBlobMap = new Map();
 // ファイルパス（ディレクトリパス）ごとのタブとサイドバー状態を保持
 const editorStateMap = new Map();
 const openedFolders = new Set();
+let searchQuery = "";
+let searchIndex = -1;
+let searchStatus = null; // ← 追加: findNext/findPrevious から参照可能
 
 function createBlobURL(content, type) {
     return URL.createObjectURL(new Blob([content], { type }));
@@ -51,7 +54,9 @@ function resolveRelativePath(fromPath, relative) {
     const parts = relative.split("/");
     for (const part of parts) {
         if (!part || part === ".") continue;
-        if (part === "..") stack.pop();
+        if (part === "..") {
+            if (stack.length) stack.pop();
+        }
         else stack.push(part);
     }
     return stack.join("/");
@@ -132,7 +137,9 @@ export default function CodeEditor(root, options = {}) {
         const dirNode = resolveFS(dirPath);
         if (!dirNode) return;
 
-        const fileNames = Object.keys(dirNode).filter(isCodeFile);
+        const fileNames = Object.keys(dirNode)
+            .filter(k => k !== "type")
+            .filter(isCodeFile);
         const savedState = editorStateMap.get(dirPath);
         const order = savedState?.tabOrder || fileNames;
 
@@ -171,13 +178,19 @@ export default function CodeEditor(root, options = {}) {
     const sidebar = root.querySelector(".sidebar");
 
     function updateLineNumbers() {
-        const lines = textarea.value.split("\n").length || 1;
+        let lines = 1;
+        for (let i = 0; i < textarea.value.length; i++) {
+            if (textarea.value[i] === "\n") lines++;
+        }
         lineNumbers.textContent = Array.from({ length: lines }, (_, i) => i + 1).join("\n");
     }
     textarea.addEventListener("scroll", () => {
         lineNumbers.scrollTop = textarea.scrollTop;
         errorOverlay.scrollTop = textarea.scrollTop;
         sidebar.scrollTop = textarea.scrollTop;
+
+        // 検索ハイライトも同期
+        if (searchQuery) highlightSearchMatches(searchQuery);
     });
 
     /* =========================
@@ -304,7 +317,10 @@ export default function CodeEditor(root, options = {}) {
 
     function switchTab(tab) {
         if (activeTab === tab) return;
-        if (activeTab) activeTab.content = textarea.value;
+        if (activeTab) {
+            activeTab.content = textarea.value;
+            activeTab.dirty = dirty;
+        }
         activeTab = tab;
         textarea.value = tab.content;
         dirty = tab.dirty;
@@ -351,6 +367,100 @@ export default function CodeEditor(root, options = {}) {
         window.dispatchEvent(new Event("fs-updated"));
     }
 
+    function highlightSearchMatches(query) {
+        errorOverlay.innerHTML = "";
+        if (!query) return;
+
+        const text = textarea.value;
+        const lines = text.split("\n");
+        const lineHeight = parseFloat(getComputedStyle(textarea).lineHeight) || 18;
+        const paddingTop = parseFloat(getComputedStyle(textarea).paddingTop) || 0;
+        const scrollTop = textarea.scrollTop; // スクロール補正
+
+        lines.forEach((line, i) => {
+            let start = 0;
+            let idx;
+            const lowerLine = line.toLowerCase();
+            const lowerQuery = query.toLowerCase();
+
+            while ((idx = lowerLine.indexOf(lowerQuery, start)) !== -1) {
+                const div = document.createElement("div");
+                div.style.position = "absolute";
+                div.style.left = "0";
+                div.style.right = "0";
+                div.style.top = i * lineHeight + paddingTop - scrollTop + "px"; // スクロール補正追加
+                div.style.height = lineHeight + "px";
+                div.style.backgroundColor = "rgba(255,255,0,0.3)";
+                div.style.pointerEvents = "none";
+                errorOverlay.appendChild(div);
+
+                start = idx + query.length;
+            }
+        });
+    }
+
+
+
+    function scrollToIndex(index) {
+        const textUpToIndex = textarea.value.slice(0, index);
+        const lineNumber = textUpToIndex.split("\n").length - 1;
+        const lineHeight = parseFloat(getComputedStyle(textarea).lineHeight) || 18;
+        const paddingTop = parseFloat(getComputedStyle(textarea).paddingTop) || 0;
+
+        textarea.scrollTop = lineNumber * lineHeight - paddingTop;
+    }
+    function findNext() {
+        if (!searchQuery || !activeTab) return;
+
+        const text = textarea.value;
+        let startPos = searchIndex + 1;
+        if (startPos >= text.length) startPos = 0;
+
+        let index = text.toLowerCase().indexOf(searchQuery.toLowerCase(), startPos);
+
+        if (index === -1) {
+            index = text.toLowerCase().indexOf(searchQuery.toLowerCase(), 0);
+        }
+
+        if (index !== -1) {
+            textarea.setSelectionRange(index, index + searchQuery.length);
+            scrollToIndex(index);
+            searchIndex = index;
+            if (searchStatus) searchStatus.textContent = ""; // 見つかったのでクリア
+        } else {
+            searchIndex = -1;
+            if (searchStatus) searchStatus.textContent = `"${searchQuery}" は見つかりません`; // 見つからない場合
+        }
+
+        highlightSearchMatches(searchQuery);
+    }
+
+    function findPrevious() {
+        if (!searchQuery || !activeTab) return;
+
+        const text = textarea.value;
+        let startPos = searchIndex - 1;
+        if (startPos < 0) startPos = text.length - 1;
+
+        let index = text.toLowerCase().lastIndexOf(searchQuery.toLowerCase(), startPos);
+
+        if (index === -1) {
+            index = text.toLowerCase().lastIndexOf(searchQuery.toLowerCase(), text.length);
+        }
+
+        if (index !== -1) {
+            textarea.setSelectionRange(index, index + searchQuery.length);
+            scrollToIndex(index);
+            searchIndex = index;
+            if (searchStatus) searchStatus.textContent = "";
+        } else {
+            searchIndex = -1;
+            if (searchStatus) searchStatus.textContent = `"${searchQuery}" は見つかりません`;
+        }
+
+        highlightSearchMatches(searchQuery);
+    }
+
     /* =========================
        Error Highlight
     ========================== */
@@ -379,6 +489,24 @@ export default function CodeEditor(root, options = {}) {
         updateTitle();
         clearErrorHighlights();
     });
+    textarea.addEventListener("keydown", (e) => {
+        if (e.ctrlKey && e.key === "f") {
+            e.preventDefault();
+
+            const q = prompt("検索");
+            if (!q) return;
+
+            searchQuery = q;
+            searchIndex = -1;
+            findNext();
+        }
+
+        if (e.key === "F3") {
+            e.preventDefault();
+            findNext();
+        }
+    });
+
 
     /* =========================
        Preview
@@ -408,7 +536,14 @@ export default function CodeEditor(root, options = {}) {
 
     function renderPreview() {
         if (!previewIframe || !filePath) return;
+
+        // 以前のBlob URLを保存
         const oldBlobs = new Map(previewBlobMap);
+
+        // すぐ解放
+        for (const url of previewBlobMap.values()) {
+            try { URL.revokeObjectURL(url); } catch { }
+        }
         previewBlobMap.clear();
 
         const baseDir = getDirPath(filePath);
@@ -441,7 +576,9 @@ export default function CodeEditor(root, options = {}) {
         previewIframe.src = htmlBlobUrl;
 
         previewIframe.onload = () => {
-            for (const url of oldBlobs.values()) try { URL.revokeObjectURL(url); } catch { }
+            for (const url of oldBlobs.values()) {
+                try { URL.revokeObjectURL(url); } catch { }
+            }
         };
     }
 
@@ -457,6 +594,50 @@ export default function CodeEditor(root, options = {}) {
 
     function renderSidebar() {
         sidebar.innerHTML = "";
+
+        // ===== VSCode風検索バー =====
+        const searchDiv = document.createElement("div");
+        searchDiv.style.padding = "4px 6px";
+        searchDiv.style.borderBottom = "1px solid #333";
+
+        const searchInput = document.createElement("input");
+        searchInput.type = "text";
+        searchInput.placeholder = "検索...";
+        Object.assign(searchInput.style, {
+            width: "100%",
+            padding: "4px",
+            boxSizing: "border-box",
+            background: "#222",
+            color: "#eee",
+            border: "1px solid #444",
+            borderRadius: "2px"
+        });
+
+        // 検索ステータス用
+        const statusDiv = document.createElement("div");
+        statusDiv.className = "search-status";
+        Object.assign(statusDiv.style, {
+            fontSize: "12px",
+            color: "#f66",
+            marginTop: "2px",
+            minHeight: "16px"
+        });
+        searchStatus = statusDiv; // ← グローバル変数にセット
+
+        searchDiv.appendChild(searchInput);
+        searchDiv.appendChild(statusDiv);
+        sidebar.appendChild(searchDiv);
+
+        // Enter / Shift+Enter 検索
+        searchInput.addEventListener("keydown", (e) => {
+            if (!activeTab) return;
+            if (e.key === "Enter") {
+                e.preventDefault();
+                searchQuery = searchInput.value;
+                if (e.shiftKey) findPrevious();
+                else findNext();
+            }
+        });
         if (!sidebarRootDir) return;
 
         function buildTree(path, visited = new Set(), depth = 0) {
@@ -561,15 +742,17 @@ export default function CodeEditor(root, options = {}) {
     ========================== */
     function syncTabsWithFS() {
         // タブ自体の node を更新するだけ
-        tabs.forEach(tab => {
+        for (let i = tabs.length - 1; i >= 0; i--) {
+            const tab = tabs[i];
             const node = resolveFS(tab.path);
-            if (node) tab.node = node;
-            else {
-                // ファイル削除されていたらタブから消す
+
+            if (node) {
+                tab.node = node;
+            } else {
                 if (activeTab === tab) activeTab = null;
-                tabs.splice(tabs.indexOf(tab), 1);
+                tabs.splice(i, 1);
             }
-        });
+        }
 
         if (!activeTab && tabs.length) {
             activeTab = tabs[0];
