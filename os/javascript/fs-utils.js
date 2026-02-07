@@ -55,3 +55,22 @@ export function loadFileAsDataURL(file) {
         reader.readAsDataURL(file);
     });
 }
+
+export function validateName(name) {
+    if (!name) return "名前が空です";
+
+    const invalidChars = /[\\\/:*?"<>|]/;
+    if (invalidChars.test(name)) {
+        return '次の文字は使えません: \\ / : * ? " < > |';
+    }
+
+    if (!name.trim()) {
+        return "空白のみの名前は使用できません";
+    }
+
+    if (/[\. ]$/.test(name)) {
+        return "名前の末尾に「.」や空白は使えません";
+    }
+
+    return null;
+}

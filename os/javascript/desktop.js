@@ -2,7 +2,7 @@
 import { FS } from "./fs.js";
 import { launch } from "./kernel.js";
 import { createWindow, alertWindow } from "./window.js";
-import { resolveFS } from "./fs-utils.js";
+import { resolveFS, validateName } from "./fs-utils.js";
 import { addRecent } from "./recent.js";
 import { attachContextMenu } from "./context-menu.js";
 import { resolveAppByPath } from "./file-associations.js";
@@ -238,25 +238,6 @@ function openFSItem(name, node, parentPath) {
             addRecent({ type: "folder", path: targetPath });
             break;
     }
-}
-
-function validateName(name) {
-    if (!name) return "名前が空です";
-
-    const invalidChars = /[\\\/:*?"<>|]/;
-    if (invalidChars.test(name)) {
-        return '次の文字は使えません: \\ / : * ? " < > |';
-    }
-
-    if (!name.trim()) {
-        return "空白のみの名前は使用できません";
-    }
-
-    if (/[\. ]$/.test(name)) {
-        return "名前の末尾に「.」や空白は使えません";
-    }
-
-    return null;
 }
 
 // --------------------

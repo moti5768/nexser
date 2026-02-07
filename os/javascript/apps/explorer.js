@@ -1,7 +1,7 @@
 // Explorer.js
 import { launch } from "../kernel.js";
 import { createWindow, showModalWindow, alertWindow } from "../window.js";
-import { resolveFS } from "../fs-utils.js";
+import { resolveFS, validateName } from "../fs-utils.js";
 import { FS, initFS } from "../fs.js";
 import { buildDesktop } from "../desktop.js";
 import { attachContextMenu } from "../context-menu.js";
@@ -611,25 +611,6 @@ export default async function Explorer(root, options = {}) {
         // content 外にある pathLabel を更新
         if (pathLabel) pathLabel.textContent = path;
     }
-}
-
-function validateName(name) {
-    if (!name) return "名前が空です";
-
-    const invalidChars = /[\\\/:*?"<>|]/;
-    if (invalidChars.test(name)) {
-        return '次の文字は使えません: \\ / : * ? " < > |';
-    }
-
-    if (!name.trim()) {
-        return "空白のみの名前は使用できません";
-    }
-
-    if (/[\. ]$/.test(name)) {
-        return "名前の末尾に「.」や空白は使えません";
-    }
-
-    return null;
 }
 
 function calcNodeSize(node) {
