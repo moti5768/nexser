@@ -120,9 +120,24 @@ export default async function Explorer(root, options = {}) {
 
     await initFS();
     let currentPath = options.path || "Desktop";
+    let historyStack = [];
+    let forwardStack = [];
 
     // 固定参照保持
     let listContainer, pathLabel, treeContainer;
+
+    const navigateTo = (path, saveHistory = true) => {
+        // console.log("移動先:", path, "現在の場所:", currentPath);
+        // 通常の移動時のみ、同じ場所への移動を無視する
+        // 履歴移動(saveHistory=false)の時は、強制的に再描画(render)させる
+        if (saveHistory && path === currentPath) return;
+        if (saveHistory) {
+            historyStack.push(currentPath);
+            forwardStack = [];
+        }
+        currentPath = path;
+        render(currentPath); // これで確実に画面が更新される
+    };
 
     // ------------------------
     // ダブルクリック・アドレスバー共通ロジック
@@ -149,8 +164,7 @@ export default async function Explorer(root, options = {}) {
 
         switch (effectiveType) {
             case "folder":
-                currentPath = targetPath;
-                render(currentPath);
+                navigateTo(targetPath);
                 break;
             case "app":
                 launch(targetPath, { path: targetPath, uniqueKey: targetPath });
@@ -340,9 +354,32 @@ export default async function Explorer(root, options = {}) {
             header.className = "explorer-header";
 
             const backBtn = document.createElement("button");
-            backBtn.id = "back-btn";
             backBtn.textContent = "←";
-            backBtn.style.marginRight = "8px";
+            // 初期状態は履歴がないので無効化しておく
+            backBtn.disabled = historyStack.length === 0;
+            backBtn.classList.toggle("pointer_none", historyStack.length === 0);
+
+            const forwardBtn = document.createElement("button");
+            forwardBtn.textContent = "→";
+            // 初期状態は進む先がないので無効化しておく
+            forwardBtn.disabled = forwardStack.length === 0;
+            forwardBtn.classList.toggle("pointer_none", forwardStack.length === 0);
+
+            backBtn.onclick = () => {
+                if (historyStack.length > 0) {
+                    forwardStack.push(currentPath);
+                    const prev = historyStack.pop();
+                    navigateTo(prev, false);
+                }
+            };
+
+            forwardBtn.onclick = () => {
+                if (forwardStack.length > 0) {
+                    historyStack.push(currentPath);
+                    const next = forwardStack.pop();
+                    navigateTo(next, false);
+                }
+            };
 
             pathLabel = document.createElement("span");
             pathLabel.className = "path-label";
@@ -353,6 +390,7 @@ export default async function Explorer(root, options = {}) {
             createTreeDropdown(treeContainer, currentPath);
 
             header.appendChild(backBtn);
+            header.appendChild(forwardBtn);
             header.appendChild(treeContainer);
             header.appendChild(pathLabel);
 
@@ -368,15 +406,29 @@ export default async function Explorer(root, options = {}) {
 
             content.appendChild(container);
 
-            backBtn.onclick = () => {
-                if (currentPath === "Desktop") return;
-                const parts = currentPath.split("/");
-                parts.pop();
-                currentPath = parts.join("/") || "Desktop";
-                render(currentPath);
-            };
         } else {
             if (treeContainer) createTreeDropdown(treeContainer, currentPath);
+        }
+
+        // --- render 関数の最後（364行目付近）に追加 ---
+
+        // 現在の履歴スタックに応じて、ボタンの有効・無効を切り替える
+        // win（Explorerを動かしているウィンドウ）の中からボタンを探して更新します
+        const bBtn = win?.querySelector(".explorer-header button:nth-child(1)");
+        const fBtn = win?.querySelector(".explorer-header button:nth-child(2)");
+
+        if (bBtn) {
+            // 履歴がなければ disabled にし、pointer_none クラスを付与する
+            const isBackDisabled = historyStack.length === 0;
+            bBtn.disabled = isBackDisabled;
+            bBtn.classList.toggle("pointer_none", isBackDisabled);
+        }
+
+        if (fBtn) {
+            // 進むスタックがなければ disabled にし、pointer_none クラスを付与する
+            const isForwardDisabled = forwardStack.length === 0;
+            fBtn.disabled = isForwardDisabled;
+            fBtn.classList.toggle("pointer_none", isForwardDisabled);
         }
 
         // パス表示
