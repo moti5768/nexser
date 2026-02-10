@@ -1,7 +1,7 @@
 // Settings.js
 import { openDB } from "../db.js";
 import { clearRecent } from "../recent.js";
-import { bringToFront, createWindow } from "../window.js";
+import { bringToFront, createWindow, setWindowAnimationEnabled } from "../window.js";
 
 const STORE = "settings";
 
@@ -176,6 +176,10 @@ loadSetting("showRecentItems").then(val => {
     window.showRecent = val ?? true;
 });
 
+loadSetting("windowAnimationEnabled").then(v => {
+    setWindowAnimationEnabled(v ?? true);
+});
+
 export function refreshTopWindow() {
     const visibleWindows = Array.from(document.querySelectorAll(".window"))
         .filter(win => win.style.display !== "none" && win.dataset.minimized !== "true");
@@ -249,7 +253,7 @@ export default async function SettingsApp(content) {
         { id: "system", label: "System", render: renderSystem }
     ];
 
-    function selectTab(id) {
+    async function selectTab(id) {
         [...tabsEl.children].forEach(btn => {
             const active = btn.dataset.id === id;
             btn.classList.toggle("active", active);
@@ -262,7 +266,7 @@ export default async function SettingsApp(content) {
         bodyEl.innerHTML = "";
 
         const tab = tabs.find(t => t.id === id);
-        tab?.render(bodyEl);
+        await tab?.render(bodyEl);
     }
 
     tabs.forEach(t => {
@@ -277,7 +281,7 @@ export default async function SettingsApp(content) {
     selectTab("appearance");
 
     /* ---------- Appearance ---------- */
-    function renderAppearance(root) {
+    async function renderAppearance(root) {
         root.innerHTML = "";
 
         /* ---- Titlebar Color ---- */
@@ -405,6 +409,26 @@ export default async function SettingsApp(content) {
         );
 
         root.append(block1, block2);
+
+        /* ---- Window Animation ---- */
+        const animBlock = document.createElement("div");
+        animBlock.style.marginTop = "12px";
+
+        const animToggle = document.createElement("input");
+        animToggle.type = "checkbox";
+        animToggle.checked = (await loadSetting("windowAnimationEnabled")) ?? true;
+
+        animToggle.onchange = async () => {
+            setWindowAnimationEnabled(animToggle.checked);
+            await saveSetting("windowAnimationEnabled", animToggle.checked);
+        };
+
+        const animLabel = document.createElement("label");
+        animLabel.append(animToggle, document.createTextNode(" Enable Window Animations"));
+
+        animBlock.appendChild(animLabel);
+        root.appendChild(animBlock);
+
     }
 
     /* ---------- General ---------- */

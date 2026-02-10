@@ -9,6 +9,9 @@ export const taskbarButtons = []; // 作られたボタンを全部保存
 let resizeCursor = "";
 const DEFAULT_COLOR = "gray";
 export let TOP_COLOR = "darkblue";
+/* ===== Animation Settings ===== */
+export const WINDOW_ANIMATION_DURATION = 250;
+export let ENABLE_WINDOW_ANIMATION = true;
 
 let refreshQueued = false;
 
@@ -269,7 +272,7 @@ ${!options.hideStatus ? `
 
         animateTitleClone(clone,
             { left: taskbarBtnRect.left, top: taskbarBtnRect.top, width: taskbarBtnRect.width },
-            250,
+            undefined,
             () => {
                 clone.remove();
                 w.style.visibility = "hidden";
@@ -306,7 +309,7 @@ ${!options.hideStatus ? `
 
                 animateTitleClone(clone,
                     { left: w.offsetLeft, top: w.offsetTop, width: w.offsetWidth },
-                    250,
+                    undefined,
                     () => {
                         w.style.visibility = "visible";
                         w.style.pointerEvents = "auto";
@@ -359,7 +362,7 @@ ${!options.hideStatus ? `
             };
         }
 
-        animateTitleClone(clone, targetRect, 250, () => {
+        animateTitleClone(clone, targetRect, undefined, () => {
             if (!maximized) {
                 w.style.left = "0px";
                 w.style.top = "0px";
@@ -395,7 +398,7 @@ ${!options.hideStatus ? `
         preview.style.border = "2px solid white";
         preview.style.background = "transparent";
         preview.style.pointerEvents = "none";
-        preview.style.zIndex = parseInt(w.style.zIndex) + 1;
+        preview.style.zIndex = (parseInt(w.style.zIndex) || 1) + 1;
         preview.style.mixBlendMode = "difference";
         preview.style.boxSizing = "border-box";
 
@@ -463,39 +466,6 @@ ${!options.hideStatus ? `
         preview.style.left = `${e.clientX - offsetX}px`;
         preview.style.top = `${e.clientY - offsetY}px`;
         didMove = true;
-    });
-
-    // document 全体の mouseup
-    document.addEventListener("mouseup", async () => {
-        if (dragging && preview) {
-            // preview をウィンドウに反映
-            w.style.left = preview.style.left;
-            w.style.top = preview.style.top;
-
-            // 保存処理
-            if (!options.skipSave && !maximized && !w.classList.contains("maximized")) {
-                const data = {
-                    w: w.offsetWidth,
-                    h: w.offsetHeight,
-                    x: Math.round(parseFloat(w.style.left)),
-                    y: Math.round(parseFloat(w.style.top))
-                };
-                await saveWindowSize(sizeKey, data);
-            }
-
-            preview.remove();
-            preview = null;
-        }
-
-        // フラグやスタイルをリセット
-        dragging = false;
-        dragStarted = false;
-        didMove = false;
-
-        document.querySelectorAll(".window").forEach(win => win.style.pointerEvents = "auto");
-        document.body.style.userSelect = "";
-        document.body.style.cursor = "";
-        resizeCursor = "";
     });
 
     /* ===== リサイズ ===== */
@@ -628,36 +598,45 @@ ${!options.hideStatus ? `
         });
 
         document.addEventListener("mouseup", async () => {
-            // preview がなくてもフラグ解除
-            dragging = false;
-            dragStarted = false;
-            resizing = false;
-            currentHandle = null;
+            const wasDragging = dragging;
+            const wasResizing = resizing;
 
-            // pointerEvents や cursor を戻す
+            // pointerEvents / cursor 復帰（先に戻す）
             document.querySelectorAll(".window").forEach(win => win.style.pointerEvents = "auto");
             document.body.style.userSelect = "";
             document.body.style.cursor = "";
             resizeCursor = "";
 
-            // preview があればサイズ・位置を反映
+            // preview反映（存在チェックを強化）
             if (preview) {
-                w.style.left = preview.style.left;
-                w.style.top = preview.style.top;
-                w.style.width = preview.style.width;
-                w.style.height = preview.style.height;
+                if (preview.parentElement) {
+                    w.style.left = preview.style.left;
+                    w.style.top = preview.style.top;
+
+                    if (wasResizing) {
+                        w.style.width = preview.style.width;
+                        w.style.height = preview.style.height;
+                    }
+                }
+
                 preview.remove();
                 preview = null;
             }
 
-            // サイズ保存
-            if ((didResize || didMove) && !maximized && !w.classList.contains("maximized")) {
+            // フラグ解除（最後にやる）
+            dragging = false;
+            dragStarted = false;
+            resizing = false;
+            currentHandle = null;
+
+            // 保存処理
+            if ((wasDragging || didResize || didMove) && !maximized && !w.classList.contains("maximized")) {
                 if (!options.skipSave) {
                     const data = {
                         w: w.offsetWidth,
                         h: w.offsetHeight,
-                        x: Math.round(parseFloat(w.style.left)),
-                        y: Math.round(parseFloat(w.style.top))
+                        x: Math.round(parseFloat(w.style.left) || 0),
+                        y: Math.round(parseFloat(w.style.top) || 0)
                     };
                     await saveWindowSize(sizeKey, data);
                 }
@@ -666,6 +645,8 @@ ${!options.hideStatus ? `
             didResize = false;
             didMove = false;
         });
+
+
 
 
         scheduleRefreshTopWindow();
@@ -696,12 +677,13 @@ export function bringToFront(win) {
 ========================= */
 
 function createTitleClone(w, titleBar, titleText) {
+    const rect = w.getBoundingClientRect(); // ←追加
     const clone = document.createElement("div");
     Object.assign(clone.style, {
-        position: "absolute",
-        left: w.offsetLeft + "px",
-        top: w.offsetTop + "px",
-        width: w.offsetWidth + "px",
+        position: "fixed", // ← absolute → fixed
+        left: rect.left + "px", // ← offsetLeft → rect.left
+        top: rect.top + "px", // ← offsetTop → rect.top
+        width: rect.width + "px", // ← offsetWidth → rect.width
         height: titleBar.offsetHeight + "px",
         background: getComputedStyle(titleBar).backgroundColor,
         color: getComputedStyle(titleText).color,
@@ -717,10 +699,22 @@ function createTitleClone(w, titleBar, titleText) {
     return clone;
 }
 
-function animateTitleClone(clone, targetRect, duration = 250, callback) {
-    const startLeft = clone.offsetLeft;
-    const startTop = clone.offsetTop;
-    const startWidth = clone.offsetWidth;
+
+function animateTitleClone(clone, targetRect, duration = WINDOW_ANIMATION_DURATION, callback) {
+    // ★追加：duration=0対応
+    if (!ENABLE_WINDOW_ANIMATION || duration <= 0) {
+        clone.style.left = targetRect.left + "px";
+        clone.style.top = targetRect.top + "px";
+        clone.style.width = targetRect.width + "px";
+        callback?.();
+        return;
+    }
+
+    const rect = clone.getBoundingClientRect(); // ←変更
+
+    const startLeft = rect.left;
+    const startTop = rect.top;
+    const startWidth = rect.width;
 
     const deltaLeft = targetRect.left - startLeft;
     const deltaTop = targetRect.top - startTop;
@@ -921,7 +915,7 @@ export async function minimizeWindowById(id) {
     w.style.pointerEvents = "none";
     w.style.visibility = "hidden";
 
-    animateTitleClone(clone, { left: rect.left, top: rect.top, width: rect.width }, 250, () => {
+    animateTitleClone(clone, { left: rect.left, top: rect.top, width: rect.width }, undefined, () => {
         clone.remove();
         w.dataset.minimized = "true";
         w.style.pointerEvents = "auto";
@@ -1036,4 +1030,8 @@ export function installWindowContextMenu(w) {
             ];
         });
     }
+}
+
+export function setWindowAnimationEnabled(v) {
+    ENABLE_WINDOW_ANIMATION = v;
 }
