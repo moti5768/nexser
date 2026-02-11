@@ -28,6 +28,7 @@ export let FS = {
             },
             Systemtools: {
                 type: "folder",
+                "Clock.app": { type: "app", entry: "./apps/clock.js", singleton: true },
                 "Terminal.app": { type: "app", entry: "./apps/terminal.js", singleton: true },
                 "TaskManager.app": {
                     type: "app",

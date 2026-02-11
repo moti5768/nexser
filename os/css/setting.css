@@ -78,6 +78,20 @@ body {
 }
 
 /* タブボディ */
+
+#tab-body {
+    background: #C0C0C0;
+    padding: 8px;
+    overflow: auto;
+    border-top: 1px solid #FFFFFF;
+    border-left: 1px solid #FFFFFF;
+    border-right: 1px solid #404040;
+    border-bottom: 1px solid #404040;
+    flex: 1 1 auto;
+    min-height: 0;
+    /* overflow を正しく効かせる */
+}
+
 .win95-tab-body {
     background: #C0C0C0;
     padding: 8px;

@@ -677,28 +677,41 @@ export function bringToFront(win) {
 ========================= */
 
 function createTitleClone(w, titleBar, titleText) {
-    const rect = w.getBoundingClientRect(); // ←追加
+    const rect = w.getBoundingClientRect();
     const clone = document.createElement("div");
+
     Object.assign(clone.style, {
-        position: "fixed", // ← absolute → fixed
-        left: rect.left + "px", // ← offsetLeft → rect.left
-        top: rect.top + "px", // ← offsetTop → rect.top
-        width: rect.width + "px", // ← offsetWidth → rect.width
+        position: "fixed",
+        left: rect.left + "px",
+        top: rect.top + "px",
+        width: rect.width + "px",
         height: titleBar.offsetHeight + "px",
         background: getComputedStyle(titleBar).backgroundColor,
         color: getComputedStyle(titleText).color,
         display: "flex",
         alignItems: "center",
         padding: "0 5px",
-        font: getComputedStyle(titleText).font,
         zIndex: parseInt(w.style.zIndex) + 1,
-        pointerEvents: "none"
+        pointerEvents: "none",
+        overflow: "hidden"  // 親でも overflow hidden は必要
     });
-    clone.textContent = titleText.textContent;
+
+    // テキスト用 span を作る
+    const span = document.createElement("span");
+    span.textContent = titleText.textContent;
+    Object.assign(span.style, {
+        font: getComputedStyle(titleText).font,
+        whiteSpace: "nowrap",
+        overflow: "hidden",
+        textOverflow: "ellipsis",
+        flexShrink: "1",
+        minWidth: "0"
+    });
+
+    clone.appendChild(span);
     document.body.appendChild(clone);
     return clone;
 }
-
 
 function animateTitleClone(clone, targetRect, duration = WINDOW_ANIMATION_DURATION, callback) {
     // ★追加：duration=0対応
