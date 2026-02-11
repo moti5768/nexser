@@ -75,18 +75,23 @@ body {
     opacity: 0.3;
 }
 
-
 /* デスクトップアイコン */
 #desktop-icons {
     display: flex;
     flex-direction: column;
     flex-wrap: wrap;
     align-content: flex-start;
-
-    /* デスクトップ全体の高さを指定（タスクバー分を引く） */
-    height: calc(100vh - 50px);
+    height: auto;
     width: 100%;
     padding: 10px;
+    position: absolute;
+    /* ← desktop.js と同じにする */
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 40px;
+    /* 初期タスクバー高さ */
+    overflow: auto;
 }
 
 .icon {
@@ -115,6 +120,13 @@ body {
     /* 少し角を丸めるとモダンになります */
 }
 
+.icon input {
+    align-self: flex-start;
+    /* 親の flex 中で左端に固定 */
+    box-sizing: content-box;
+    /* 幅が正しく反映される */
+}
+
 /* ===== Taskbar ===== */
 
 #taskbar {
@@ -130,6 +142,7 @@ body {
     bottom: 0;
     height: 40px;
     width: 100%;
+    box-sizing: border-box;
     align-items: center;
     padding: 0 10px;
     font-size: 13px;
@@ -278,7 +291,6 @@ body {
 
 #start-menu {
     position: fixed;
-    bottom: 40px;
     left: 0;
     width: 200px;
     background: #C3C7CB;
@@ -291,6 +303,7 @@ body {
     font-size: 13px;
     color: black;
 }
+
 
 /* 区切り線 */
 #start-menu>div[style*="border-top"] {

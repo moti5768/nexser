@@ -327,9 +327,6 @@ ${!options.hideStatus ? `
         };
     }
 
-
-
-
     /* ===== 最大化 ===== */
 
     let maximized = false;
@@ -340,6 +337,11 @@ ${!options.hideStatus ? `
 
         const desktop = document.getElementById("desktop");
         const rect = desktop.getBoundingClientRect();
+
+        // ★タスクバーの高さを取得
+        const taskbar = document.getElementById("taskbar");
+        const taskbarHeight = taskbar ? taskbar.offsetHeight : 0;
+
         const titleBar = w.querySelector(".title-bar");
         const titleText = titleBar?.querySelector(".title-text");
         if (!titleText) { w._animating = false; return; }
@@ -350,10 +352,17 @@ ${!options.hideStatus ? `
         let targetRect;
 
         if (!maximized) {
+            // 元サイズ保存
             ["Left", "Top", "Width", "Height"].forEach(prop =>
                 w.dataset[`prev${prop}`] = w.style[prop.toLowerCase()]
             );
-            targetRect = { left: 0, top: 0, width: rect.width };
+
+            // 最大化のターゲット位置（幅はデスクトップ全体、高さはタスクバーを除く）
+            targetRect = {
+                left: 0,
+                top: 0,
+                width: rect.width
+            };
         } else {
             targetRect = {
                 left: parseInt(w.dataset.prevLeft),
@@ -367,7 +376,8 @@ ${!options.hideStatus ? `
                 w.style.left = "0px";
                 w.style.top = "0px";
                 w.style.width = "100%";
-                w.style.height = `calc(100% - 40px)`;
+                // ★ここをタスクバー高さに応じて調整
+                w.style.height = `calc(100% - ${taskbarHeight}px)`;
                 w.classList.add("maximized");
             } else {
                 w.style.left = w.dataset.prevLeft;
@@ -376,6 +386,7 @@ ${!options.hideStatus ? `
                 w.style.height = w.dataset.prevHeight;
                 w.classList.remove("maximized");
             }
+
             clone.remove();
             w.style.pointerEvents = "auto";
             w._animating = false;

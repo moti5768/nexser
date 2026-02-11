@@ -42,11 +42,24 @@ function createNewFolder(currentPath, listContainer, renderCallback) {
     const itemDiv = document.createElement("div");
     itemDiv.className = "explorer-item";
 
-    const input = document.createElement("input"); // ← ここで宣言
+    const input = document.createElement("input");
     input.type = "text";
     input.value = folderName;
-    input.style.cssText = "width:100px;font-size:13px;text-align:center";
+    input.style.cssText = "font-size:13px; text-align:left; width:auto; min-width:100px;";
     itemDiv.appendChild(input);
+
+    // 文字数に応じて幅を調整
+    const adjustWidth = () => {
+        // 文字数 * 8px を目安に幅を変更（必要に応じて調整）
+        input.style.width = `${Math.max(input.value.length * 8, 100)}px`;
+    };
+
+    // 初期幅調整
+    adjustWidth();
+
+    // 入力中も自動調整
+    input.addEventListener("input", adjustWidth);
+
     listContainer.appendChild(itemDiv);
 
     input.focus();

@@ -101,10 +101,19 @@ export default function ImageViewer(root, options = {}) {
     let filePath = path || null;
     let fileNode = filePath ? resolveFS(filePath) : null;
 
-    const untitledId = Date.now().toString(36);
-    let baseTitle =
-        filePath?.split("/").pop()?.trim() ||
-        `Untitled-${untitledId}.png`;
+    let baseTitle;
+
+    if (filePath) {
+        // 保存済みファイルならファイル名を使う
+        baseTitle = filePath.split("/").pop().trim();
+    } else if (options.fileObject instanceof File) {
+        // 新規でFileオブジェクトを開いた場合、元の名前を使う
+        baseTitle = options.fileObject.name;
+    } else {
+        // 完全新規作成の場合
+        const untitledId = Date.now().toString(36);
+        baseTitle = `Untitled-${untitledId}.png`;
+    }
 
     let dirty = false;
     let draftImage = null;
@@ -123,16 +132,17 @@ export default function ImageViewer(root, options = {}) {
     /* =========================
     回転機能 (Canvasを使用してピクセルを操作)
 ========================== */
-    async function rotateImage(direction = 90) {
+    function rotateImage(direction = 90) {
         if (!img.src) return;
 
         const canvas = document.createElement("canvas");
         const ctx = canvas.getContext("2d");
+
+        const source = draftImage instanceof Blob ? URL.createObjectURL(draftImage) : img.src;
         const tempImg = new Image();
 
-        // 画像が読み込まれたら回転処理を実行
         tempImg.onload = () => {
-            // 90度/270度回転の場合は、Canvasの縦横を入れ替える
+            // 90/270度回転なら縦横入れ替え
             if (Math.abs(direction) % 180 === 90) {
                 canvas.width = tempImg.height;
                 canvas.height = tempImg.width;
@@ -145,18 +155,28 @@ export default function ImageViewer(root, options = {}) {
             ctx.rotate((direction * Math.PI) / 180);
             ctx.drawImage(tempImg, -tempImg.width / 2, -tempImg.height / 2);
 
-            // 回転後のデータをDataURLとして保存（dirtyフラグを立てる）
-            draftImage = canvas.toDataURL("image/png");
-            dirty = true;
-            refresh();
-            updateTitle();
+            canvas.toBlob(blob => {
+                const newURL = URL.createObjectURL(blob);
+                draftImage = blob;
+                dirty = true;
+
+                // 古い URL を revoke は img.onload 後に
+                const oldSrc = img.src;
+                img.onload = () => {
+                    if (draftImage instanceof Blob && oldSrc.startsWith("blob:")) {
+                        URL.revokeObjectURL(oldSrc);
+                    }
+                };
+                img.src = newURL;
+
+                updateTitle();
+            }, "image/png");
+
+            if (source.startsWith("blob:")) URL.revokeObjectURL(source); // tempImg 用
         };
-        tempImg.src = img.src;
+        tempImg.src = source;
     }
 
-    /* =========================
-       表示更新（多形式対応）
-    ========================== */
     /* =========================
        表示更新（多形式対応）
     ========================== */
@@ -217,11 +237,49 @@ export default function ImageViewer(root, options = {}) {
 
             draftImage = file; // Fileオブジェクト直接保持
             dirty = true;
+
+            // 新規ファイルの場合は baseTitle を更新
+            baseTitle = file.name;
+
             refresh();
             updateTitle();
         };
         input.click();
     }
+
+    /* =========================
+   ドラッグ＆ドロップで画像を開く
+========================= */
+    root.addEventListener("dragover", e => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "copy";
+        root.style.outline = "2px dashed #aaa"; // 視覚的にドロップ領域を表示
+    });
+
+    root.addEventListener("dragleave", e => {
+        e.preventDefault();
+        root.style.outline = "none";
+    });
+
+    root.addEventListener("drop", e => {
+        e.preventDefault();
+        root.style.outline = "none";
+
+        const file = e.dataTransfer.files[0];
+        if (!file) return;
+        if (!file.type.startsWith("image/")) {
+            showWarning(root, "画像ファイルをドロップしてください");
+            return;
+        }
+
+        draftImage = file; // Fileオブジェクトとして保持
+        dirty = true;
+        baseTitle = file.name;
+
+        refresh();
+        updateTitle();
+    });
+
 
     /* =========================
        保存処理

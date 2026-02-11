@@ -2,7 +2,8 @@
 import { resetAllTitleBars, taskbarButtons } from "./window.js";
 import { hideContextMenu } from "./context-menu.js";
 import { clockDate } from "./apps/clock.js";  // ClockApp の currentDate を参照
-import { loadSetting } from "./apps/settings.js"; // 保存値読み込み
+import { saveSetting, loadSetting } from "./apps/settings.js"; // 保存読み込み
+import { updateStartMenuPosition } from "./startmenu.js";
 
 /* ============================
    Taskbar Layout Containers
@@ -42,19 +43,32 @@ export function initTaskbar() {
 
     const { startArea, buttonArea, trayArea } = ensureTaskbarAreas(taskbar);
 
-    Object.assign(taskbar.style, { display: "flex", alignItems: "center" });
-    Object.assign(startArea.style, { display: "flex", alignItems: "center", gap: "6px" });
+    // タスクバー
+    Object.assign(taskbar.style, { display: "flex", alignItems: "flex-start" });
+
+    // startArea
+    Object.assign(startArea.style, {
+        display: "flex",
+        alignItems: "flex-start",
+        gap: "6px",
+        marginTop: "8px"   // 上に少し余白
+    });
+
+    // buttonArea
     Object.assign(buttonArea.style, {
         flex: "1 1 auto",
         minWidth: "0",
         display: "flex",
-        alignItems: "center",
+        alignItems: "flex-start",
         overflowX: "hidden",
         overflowY: "hidden",
+        marginTop: "8px"
     });
+
+    // trayArea
     Object.assign(trayArea.style, {
         display: "flex",
-        alignItems: "center",
+        alignItems: "flex-start",
         gap: "6px",
         flexShrink: "0",
         marginLeft: "10px",
@@ -63,7 +77,10 @@ export function initTaskbar() {
         borderColor: "#7a7a7a #fff #fff #7a7a7a",
         boxShadow: "0.5px 0.5px 0 #000 inset",
         transform: "translate(0.5px, 0.5px)",
+        marginTop: "8px"
     });
+
+
 
     // Startボタン配置
     if (startBtn && startBtn.parentElement !== startArea) startArea.appendChild(startBtn);
@@ -148,6 +165,10 @@ export function initTaskbar() {
             const open = startMenu.style.display === "block";
             startMenu.style.display = open ? "none" : "block";
 
+            if (!open) {
+                updateStartMenuPosition();
+            }
+
             resetAllTitleBars();
             taskbarButtons.forEach(btn => btn.classList.remove("selected"));
         });
@@ -159,4 +180,121 @@ export function initTaskbar() {
             }
         });
     }
+
+    // ============================
+    // タスクバー上端リサイズ
+    // ============================
+    (async function enableTaskbarResize() {
+        // 初期高さを復元
+        const savedHeight = await loadSetting("taskbarHeight");
+        if (savedHeight) taskbar.style.height = savedHeight + "px";
+
+        window.dispatchEvent(new Event("desktop-resize"));
+
+        const handle = document.createElement("div");
+        Object.assign(handle.style, {
+            position: "absolute",
+            top: "0",
+            left: "0",
+            right: "0",
+            height: "6px",
+            cursor: "ns-resize",
+            zIndex: "1000",
+            background: "transparent",
+        });
+        taskbar.appendChild(handle);
+
+        let resizing = false, startY = 0, startHeight = 0;
+        let preview = null;
+
+        const MIN_HEIGHT = 40;
+        const MAX_HEIGHT = 400; // 上限
+
+        handle.addEventListener("mousedown", e => {
+            if (!e.target.closest("#start-btn") && !e.target.closest("#start-menu")) {
+                startBtn.classList.remove("pressed");
+                startMenu.style.display = "none";
+            }
+            e.preventDefault();
+            e.stopPropagation();
+            resizing = true;
+            startY = e.clientY;
+            startHeight = taskbar.offsetHeight;
+
+            // プレビュー枠作成（反転色）
+            preview = document.createElement("div");
+            Object.assign(preview.style, {
+                position: "fixed",
+                left: taskbar.getBoundingClientRect().left + "px",
+                width: taskbar.offsetWidth + "px",
+                height: startHeight + "px",   // ← taskbar の現在高さを使う
+                border: "2px solid white",
+                background: "transparent",
+                pointerEvents: "none",
+                zIndex: 9999,
+                top: taskbar.getBoundingClientRect().top + "px",
+                mixBlendMode: "difference",
+            });
+            document.body.appendChild(preview);
+            document.body.style.userSelect = "none";
+            document.body.style.cursor = "ns-resize";
+        });
+
+        document.addEventListener("mousemove", e => {
+            if (!resizing || !preview) return;
+
+            let dy = startY - e.clientY; // 上方向にドラッグで増える
+            let newHeight = startHeight + dy;
+
+            // 40px刻みに丸める
+            newHeight = Math.round(newHeight / 40) * 40;
+
+            // 上限・下限を適用
+            newHeight = Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, newHeight));
+
+            const rect = taskbar.getBoundingClientRect();
+            preview.style.height = newHeight + "px";
+            preview.style.top = rect.bottom - newHeight + "px";
+        });
+
+        document.addEventListener("mouseup", async () => {
+            if (!resizing) return;
+            resizing = false;
+            document.body.style.userSelect = "";
+            document.body.style.cursor = ""; // 元に戻す
+
+            if (preview) {
+                // 最終的な高さを 40px 刻みに丸めて確定
+                let finalHeight = parseInt(preview.style.height);
+                finalHeight = Math.round(finalHeight / 40) * 40;
+                finalHeight = Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, finalHeight));
+
+                if (finalHeight !== taskbar.offsetHeight) {
+                    taskbar.style.height = finalHeight + "px";
+
+                    // バージョンラベル位置更新
+                    const versionLabel = taskbar.querySelector(".os-version-label");
+                    if (versionLabel) versionLabel.style.bottom = `${finalHeight}px`;
+
+                    // 高さを保存
+                    await saveSetting("taskbarHeight", finalHeight);
+
+                    document.querySelectorAll(".window.maximized").forEach(win => {
+                        win.style.height = `calc(100% - ${finalHeight}px)`;
+                    });
+                }
+
+                preview.remove();
+                preview = null;
+                window.dispatchEvent(new Event("desktop-resize"));
+            }
+        });
+
+    })();
+
+    window.addEventListener("resize", () => {
+        updateStartMenuPosition();
+    });
+
+
 }

@@ -115,7 +115,31 @@ export function buildDesktop() {
 
         return items;
     });
+    adjustDesktopIconArea();
 }
+
+
+// タスクバー高さに応じてアイコン領域を調整
+function adjustDesktopIconArea() {
+    const desktop = document.getElementById("desktop");
+    const iconsContainer = document.getElementById("desktop-icons");
+    const taskbar = document.getElementById("taskbar");
+    if (!desktop || !iconsContainer || !taskbar) return;
+
+    const taskbarHeight = taskbar.offsetHeight;
+
+    iconsContainer.style.position = "absolute";
+    iconsContainer.style.top = "0";
+    iconsContainer.style.left = "0";
+    iconsContainer.style.right = "0";
+    iconsContainer.style.bottom = `${taskbarHeight}px`; // タスクバー分の余白
+    iconsContainer.style.display = "flex";
+    iconsContainer.style.flexWrap = "wrap";
+    iconsContainer.style.alignContent = "flex-start";
+    iconsContainer.style.padding = "10px"; // 内側余白
+    iconsContainer.style.overflow = "auto";
+}
+
 
 // --------------------
 // 新規フォルダ作成
@@ -135,12 +159,25 @@ function createNewFolder(currentPath, container) {
     const input = document.createElement("input");
     input.type = "text";
     input.value = folderName;
-    input.style.width = "100px";
     input.style.fontSize = "13px";
-    input.style.textAlign = "center";
+    input.style.textAlign = "left"; // ← 左寄せ
+    input.style.width = "auto";
+    input.style.minWidth = "100px";
     iconDiv.appendChild(input);
     input.focus();
     input.select();
+
+    // 幅を文字数に応じて自動調整
+    const adjustWidth = () => {
+        input.style.width = `${Math.max(input.value.length * 8, 100)}px`;
+    };
+
+    // 初期幅調整
+    adjustWidth();
+
+    // 入力中も幅を自動更新
+    input.addEventListener("input", adjustWidth);
+
     let isShowingError = false;
     let isCommitting = false;
 
@@ -250,3 +287,6 @@ function installDesktopWatcher() {
     window.addEventListener("fs-updated", () => buildDesktop());
 }
 installDesktopWatcher();
+
+// タスクバーの高さが変わったらアイコン領域を再調整
+window.addEventListener("desktop-resize", adjustDesktopIconArea);

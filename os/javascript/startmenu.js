@@ -392,3 +392,40 @@ function installFSListener() {
     });
 }
 installFSListener();
+
+/* =====================================================
+   Start Menu 位置更新
+===================================================== */
+export function updateStartMenuPosition() {
+    const menu = document.getElementById("start-menu");
+    const startBtn = document.getElementById("start-btn");
+    if (!menu || !startBtn) return;
+
+    const rect = startBtn.getBoundingClientRect();
+    const margin = 8; // ボタンとメニューの間の余白
+
+    menu.style.position = "fixed";
+
+    // 上に置く
+    let top = rect.top - menu.offsetHeight - margin;
+    let left = rect.left;
+
+    // ボタンがメニューで隠れる場合は横にずらす（右方向優先）
+    if (top < 0) {
+        top = margin; // 上端に固定して、隠れないようにする
+        left = rect.right + margin; // ボタンの右に表示
+    }
+
+    // 画面右端を超える場合は左方向に調整
+    if (left + menu.offsetWidth > window.innerWidth) {
+        left = Math.max(margin, window.innerWidth - menu.offsetWidth - margin);
+    }
+
+    menu.style.top = `${top}px`;
+    menu.style.left = `${left}px`;
+}
+
+
+// リサイズやスクロールでも更新
+window.addEventListener("resize", updateStartMenuPosition);
+window.addEventListener("scroll", updateStartMenuPosition);
