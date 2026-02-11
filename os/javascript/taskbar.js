@@ -72,7 +72,7 @@ export function initTaskbar() {
         gap: "6px",
         flexShrink: "0",
         marginLeft: "10px",
-        marginRight: "20px",
+        marginRight: "0px",
         border: "1.5px solid",
         borderColor: "#7a7a7a #fff #fff #7a7a7a",
         boxShadow: "0.5px 0.5px 0 #000 inset",

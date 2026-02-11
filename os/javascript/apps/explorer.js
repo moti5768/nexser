@@ -180,6 +180,7 @@ export default async function Explorer(root, options = {}) {
                 navigateTo(targetPath);
                 break;
             case "app":
+                if (targetNode.shell) return;
                 launch(targetPath, { path: targetPath, uniqueKey: targetPath });
                 break;
             case "file": {

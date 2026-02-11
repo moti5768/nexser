@@ -38,7 +38,7 @@ export let FS = {
                 }
             }
         },
-        "Explorer.app": { type: "app", entry: "./apps/explorer.js" },
+        "Explorer.app": { type: "app", entry: "./apps/explorer.js", shell: true },
         Documents: {
             type: "folder",
             "Readme.txt": { type: "file", content: "Welcome to NEXSER OS" }

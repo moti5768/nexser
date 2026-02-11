@@ -254,6 +254,8 @@ function openFSItem(name, node, parentPath) {
         type = targetNode.type;
     }
 
+    if (targetNode.shell) return;
+
     const associatedApp = resolveAppByPath(targetPath);
     if (type === "folder" && associatedApp) type = "file";
 

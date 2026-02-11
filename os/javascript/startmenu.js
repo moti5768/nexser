@@ -118,6 +118,7 @@ function createMenu(folder, basePath, menuRoot) {
 
                 switch (effectiveType) {
                     case "app":
+                        if (targetNode.shell) return;
                         launch(targetPath, { path: targetPath, uniqueKey: targetPath });
                         addRecent({ type: "app", path: targetPath });
                         break;
@@ -310,6 +311,7 @@ function launchByType(type, path) {
 
     switch (type) {
         case "app":
+            if (node.shell) return;
             launch(path, { path, uniqueKey: path });
             addRecent(recentItem); // FS 内の path を追加
             break;
