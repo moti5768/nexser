@@ -51,7 +51,7 @@ export function initTaskbar() {
         display: "flex",
         alignItems: "flex-start",
         gap: "6px",
-        marginTop: "8px"   // 上に少し余白
+        marginTop: "5px"   // 上に少し余白
     });
 
     // buttonArea
@@ -62,7 +62,7 @@ export function initTaskbar() {
         alignItems: "flex-start",
         overflowX: "hidden",
         overflowY: "hidden",
-        marginTop: "8px"
+        marginTop: "5px"
     });
 
     // trayArea
@@ -77,7 +77,7 @@ export function initTaskbar() {
         borderColor: "#7a7a7a #fff #fff #7a7a7a",
         boxShadow: "0.5px 0.5px 0 #000 inset",
         transform: "translate(0.5px, 0.5px)",
-        marginTop: "8px"
+        marginTop: "5px"
     });
 
 
@@ -118,7 +118,7 @@ export function initTaskbar() {
         clockLabel.className = "taskbar-clock";
         Object.assign(clockLabel.style, {
             fontSize: "medium",
-            padding: "2px 4px",
+            padding: "3px",
             whiteSpace: "nowrap",
             color: "black",
             pointerEvents: "none",
@@ -208,7 +208,7 @@ export function initTaskbar() {
         let preview = null;
 
         const MIN_HEIGHT = 40;
-        const MAX_HEIGHT = 400; // 上限
+        const MAX_HEIGHT = 320; // 上限
 
         handle.addEventListener("mousedown", e => {
             if (!e.target.closest("#start-btn") && !e.target.closest("#start-menu")) {

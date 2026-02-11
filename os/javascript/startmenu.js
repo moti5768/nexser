@@ -402,7 +402,7 @@ export function updateStartMenuPosition() {
     if (!menu || !startBtn) return;
 
     const rect = startBtn.getBoundingClientRect();
-    const margin = 8; // ボタンとメニューの間の余白
+    const margin = 6; // ボタンとメニューの間の余白
 
     menu.style.position = "fixed";
 

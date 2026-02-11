@@ -161,7 +161,7 @@ body {
 }
 
 #start-btn {
-    height: 24px;
+    height: 26px;
     padding: 0 10px;
     cursor: pointer;
 }
@@ -646,7 +646,7 @@ input:focus {
 
 .taskbar-window-btn {
     margin-left: 4px;
-    height: 25px;
+    height: 26px;
     width: 135px;
     white-space: nowrap;
     overflow: hidden;
