@@ -420,6 +420,44 @@ export default async function Explorer(root, options = {}) {
 
             content.appendChild(container);
 
+            listContainer.addEventListener("click", e => {
+                // クリック対象が explorer-item か、その内部かを判定
+                const item = e.target.closest(".explorer-item");
+                if (!item) {
+                    // クリックがリスト外なら選択解除
+                    if (globalSelected.item) {
+                        globalSelected.item.classList.remove("selected");
+                        globalSelected.item = null;
+                        globalSelected.window = null;
+
+                        // ステータスバー更新
+                        const statusBar = win?._statusBar;
+                        if (statusBar) {
+                            const folder = resolveFS(currentPath);
+                            let folders = 0, files = 0, apps = 0, links = 0;
+                            for (const key in folder) {
+                                if (key === "type") continue;
+                                const node = folder[key];
+                                switch (node.type) {
+                                    case "folder": folders++; break;
+                                    case "file": files++; break;
+                                    case "app": apps++; break;
+                                    case "link": links++; break;
+                                }
+                            }
+                            const parts = [];
+                            if (folders) parts.push(`${folders} folder${folders > 1 ? "s" : ""}`);
+                            if (files) parts.push(`${files} file${files > 1 ? "s" : ""}`);
+                            if (apps) parts.push(`${apps} app${apps > 1 ? "s" : ""}`);
+                            if (links) parts.push(`${links} link${links > 1 ? "s" : ""}`);
+                            statusBar.textContent = parts.length ? parts.join(", ") : "(empty)";
+                        }
+
+                        setupRibbon(win, () => currentPath, render, getExplorerMenus());
+                    }
+                }
+            });
+
         } else {
             if (treeContainer) createTreeDropdown(treeContainer, currentPath);
         }

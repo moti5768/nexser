@@ -464,10 +464,19 @@ ${!options.hideStatus ? `
     document.addEventListener("mousemove", e => {
         if (!dragging) return;
 
-        const dx = Math.abs(e.clientX - downX);
-        const dy = Math.abs(e.clientY - downY);
+        const desktop = document.getElementById("desktop");
+        const taskbar = document.getElementById("taskbar");
+        const taskbarTop = taskbar ? taskbar.getBoundingClientRect().top : Infinity;
 
-        if (!dragStarted && (dx > DRAG_THRESHOLD || dy > DRAG_THRESHOLD)) {
+        let clientY = e.clientY;
+        if (clientY > taskbarTop - offsetY) {
+            clientY = taskbarTop - offsetY; // タスクバーを超えないように制限
+        }
+
+        const dx = e.clientX - downX;
+        const dy = clientY - downY;
+
+        if (!dragStarted && (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD)) {
             dragStarted = true;
             createPreview();
         }
@@ -475,9 +484,10 @@ ${!options.hideStatus ? `
         if (!dragStarted || !preview) return;
 
         preview.style.left = `${e.clientX - offsetX}px`;
-        preview.style.top = `${e.clientY - offsetY}px`;
+        preview.style.top = `${clientY - offsetY}px`;
         didMove = true;
     });
+
 
     /* ===== リサイズ ===== */
     if (!options.disableResize) {
@@ -557,6 +567,9 @@ ${!options.hideStatus ? `
         document.addEventListener("mousemove", e => {
             if (!resizing || !preview) return;
 
+            const taskbar = document.getElementById("taskbar");
+            const taskbarTop = taskbar ? taskbar.getBoundingClientRect().top : Infinity;
+
             let dx = e.clientX - startX;
             let dy = e.clientY - startY;
 
@@ -600,6 +613,10 @@ ${!options.hideStatus ? `
                 case "right":
                     newWidth = Math.max(minWidth, startRect.width + dx);
                     break;
+            }
+
+            if (newTop + newHeight > taskbarTop) {
+                newHeight = taskbarTop - newTop;
             }
 
             preview.style.left = newLeft + "px";
@@ -804,7 +821,7 @@ export function showModalWindow(title, message, options = {}) {
     // モーダルウィンドウ作成
     const content = createWindow(title, {
         ...centerWindowOptions(options.width || 320, options.height || 150),
-        taskbar: options.taskbar,
+        taskbar: (options.taskbar !== undefined) ? options.taskbar : false,
         disableControls: true,
         hideRibbon: true,
         hideStatus: true,
