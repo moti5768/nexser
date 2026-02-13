@@ -16,19 +16,69 @@ import { startup_sound } from "./sounds.js";
 import { addRecent } from "./recent.js";
 import { installDynamicButtonEffect } from "./ui.js";
 
-const explorerWindows = new Map(); // path → window
+const explorerWindows = new Map();
 const moduleCache = new Map();
-let pidCounter = 1;
-const processes = new Map(); // uniqueKey → { pid, path, window, state }
+const importLocks = new Map();        // ★ import競合防止
+const launching = new Set();          // ★ 起動レース防止
 
-/* ===== カーネル初期化（非同期、進捗表示用） ===== */
-export async function initKernelAsync(progressCallback = (msg) => { }) {
+let pidCounter = 1;
+const processes = new Map();
+
+/* =========================
+   Metrics（CPU / Memory）
+========================= */
+
+let cpuLoad = 0;
+let lastTick = performance.now();
+
+// イベントループ負荷からCPU近似値を計測（擬似ではない）
+setInterval(() => {
+    const now = performance.now();
+    const lag = now - lastTick - 1000;
+    lastTick = now;
+
+    cpuLoad = Math.max(0, Math.min(100, lag * 2));
+}, 1000);
+
+function getMemoryMB() {
+    if (!performance.memory) return 0;
+    return Math.round(performance.memory.usedJSHeapSize / 1024 / 1024);
+}
+
+/* =========================
+   安全 import（競合防止付き）
+========================= */
+async function safeImport(entry) {
+    if (moduleCache.has(entry)) return moduleCache.get(entry);
+
+    if (importLocks.has(entry)) {
+        return importLocks.get(entry);
+    }
+
+    const promise = (async () => {
+        try {
+            const mod = await import(entry);
+            moduleCache.set(entry, mod);
+            return mod;
+        } catch (e) {
+            console.error("import failed:", entry, e);
+            throw new Error(`module load failed: ${entry}`);
+        } finally {
+            importLocks.delete(entry);
+        }
+    })();
+
+    importLocks.set(entry, promise);
+    return promise;
+}
+
+/* ===== カーネル初期化 ===== */
+export async function initKernelAsync(progressCallback = () => { }) {
     const root = document.getElementById("os-root");
     if (!root) throw new Error("os-root not found");
 
     progressCallback("Initializing kernel...");
 
-    // 1. DOM コンテナ作成
     root.innerHTML = `
         <div id="desktop"></div>
         <div id="taskbar">
@@ -36,115 +86,141 @@ export async function initKernelAsync(progressCallback = (msg) => { }) {
         </div>
         <div id="start-menu"></div>
     `;
+
     progressCallback("UI containers created...");
-
-    // 2. デスクトップ描画（アイコン等）
     buildDesktop();
+
     progressCallback("Desktop built...");
-
-    // 3. スタートメニュー構築
     buildStartMenu();
+
     progressCallback("Start Menu built...");
-
-    // 4. タスクバー初期化
     initTaskbar();
+
     progressCallback("Taskbar initialized...");
-
-    // 5. UI 効果適用
     installDynamicButtonEffect();
+
     progressCallback("UI effects applied...");
-
-    // 6. 起動音再生
     startup_sound();
-    progressCallback("Startup sound played...");
 
-    // 7. 初期化完了
     progressCallback("Kernel initialization complete!");
 }
 
-/* ===== ヘルパー: basename ===== */
+/* ===== basename（互換強化） ===== */
 export function basename(path) {
     if (!path) return "";
-    const parts = path.split("/").filter(Boolean);
+    const parts = path.split(/[\\/]/).filter(Boolean);
     return parts[parts.length - 1] || "";
 }
 
-/* ===== 起動API（全UI共通） ===== */
+/* =========================
+   起動API（完全安定版）
+========================= */
 export async function launch(path, options = {}) {
+
     if (typeof path !== "string") {
         errorWindow(`無効なパス: ${path}`, { taskbar: false });
         return;
     }
 
-    const item = resolve(path);
-    if (!item) {
-        errorWindow(`対象が見つかりません: ${path}`, { taskbar: false });
-        return;
-    }
-
-    // link 解決
-    if (item.type === "link") return launch(item.target, options);
-
-    const isExplorer = item.type === "app" && item.entry?.includes("explorer.js");
-
-    // 重複防止用キーを決定
-    const uniqueKey = options.uniqueKey ?? (item.singleton ? path : null);
-
-    // 既存ウィンドウチェック
-    let existingWin = null;
-    if (isExplorer) existingWin = explorerWindows.get(options.path || "Desktop") || null;
-    else if (uniqueKey) existingWin = processes.get(uniqueKey)?.window || null;
-
-    if (existingWin && document.body.contains(existingWin)) {
-        const taskbarBtn = existingWin._taskbarBtn;
-        if (existingWin.dataset.minimized === "true") {
-            taskbarBtn?.click();
-        } else {
-            bringToFront(existingWin);
-        }
-        return;
-    }
-
-    if (isExplorer) explorerWindows.delete(options.path || "Desktop");
-    if (uniqueKey) processes.delete(uniqueKey);
+    if (launching.has(path)) return;
+    launching.add(path);
 
     try {
+        const item = resolve(path);
+        if (!item) {
+            errorWindow(`対象が見つかりません: ${path}`, { taskbar: false });
+            return;
+        }
+
+        if (item.type === "link") {
+            return await launch(item.target, options);
+        }
+
+        const isExplorer =
+            item.type === "app" &&
+            item.entry?.includes("explorer.js");
+
+        const uniqueKey =
+            options.uniqueKey ?? (item.singleton ? path : null);
+
+        let existingWin = null;
+
+        if (isExplorer)
+            existingWin = explorerWindows.get(options.path || "Desktop") || null;
+        else if (uniqueKey)
+            existingWin = processes.get(uniqueKey)?.window || null;
+
+        if (existingWin && document.body.contains(existingWin)) {
+            if (existingWin.dataset.minimized === "true")
+                existingWin._taskbarBtn?.click();
+            else
+                bringToFront(existingWin);
+            return;
+        }
+
+        if (isExplorer)
+            explorerWindows.delete(options.path || "Desktop");
+
+        if (uniqueKey)
+            processes.delete(uniqueKey);
+
+        /* ================= APP ================= */
         if (item.type === "app") {
-            let appModule;
-            if (moduleCache.has(item.entry)) appModule = moduleCache.get(item.entry);
-            else {
-                appModule = await import(item.entry);
-                moduleCache.set(item.entry, appModule);
-            }
-            if (!appModule.default) throw new Error("アプリが正しくエクスポートされていません");
+
+            const appModule = await safeImport(item.entry);
+            if (!appModule?.default)
+                throw new Error("アプリが正しくエクスポートされていません");
 
             const displayName =
                 options?.path
                     ? basename(options.path)
-                    : (options.showFullPath ? path : item.name || basename(path));
+                    : (options.showFullPath
+                        ? path
+                        : item.name || basename(path));
 
             const content = createWindow(displayName);
+
+            if (!content?.parentElement ||
+                !document.body.contains(content.parentElement))
+                throw new Error("Window creation failed");
+
             const win = content.parentElement;
 
-            appModule.default(content, options); // アプリ起動
+            try {
+                appModule.default(content, options);
+            } catch (e) {
+                console.error("app runtime error:", e);
+                errorWindow(`アプリがクラッシュしました\n${e.message}`, { taskbar: false });
+            }
 
             addRecent(path);
 
-            // processes マップに登録
-            if (uniqueKey) {
-                const pid = pidCounter++;
-                processes.set(uniqueKey, { pid, path, window: win, state: "normal" });
+            const key =
+                uniqueKey ?? `app:${path}:${Date.now()}`;
 
-                // ★ window に processKey を覚えさせる
-                win.dataset.processKey = uniqueKey;
-            }
+            const pid = pidCounter++;
 
-            // Explorer 用オブザーバー
+            processes.set(key, {
+                pid,
+                path,
+                window: win,
+                state: "normal",
+                startTime: performance.now(),
+                memory: 0,
+                cpu: 0
+            });
+
+            win.dataset.processKey = key;
+
+            /* Explorer 管理 */
             if (isExplorer) {
+
                 const openPath = options.path || "Desktop";
                 explorerWindows.set(openPath, win);
 
-                if (win._observer) win._observer.disconnect();
+                if (win._observer)
+                    win._observer.disconnect();
+
                 const observer = new MutationObserver(() => {
                     if (!document.body.contains(win)) {
                         explorerWindows.delete(openPath);
@@ -152,113 +228,195 @@ export async function launch(path, options = {}) {
                         win._observer = null;
                     }
                 });
+
                 win._observer = observer;
-                observer.observe(document.body, { childList: true, subtree: true });
+                observer.observe(document.body, {
+                    childList: true,
+                    subtree: true
+                });
             }
         }
 
+        /* ================= FILE ================= */
         else if (item.type === "file") {
-            const entry = "./apps/fileviewer.js";
-            let mod;
-            if (moduleCache.has(entry)) mod = moduleCache.get(entry);
-            else {
-                mod = await import(entry);
-                moduleCache.set(entry, mod);
-            }
-            if (!mod.default) throw new Error("ファイルビューアが正しくエクスポートされていません");
 
-            const displayName = options.showFullPath ? path : basename(path);
-            const content = createWindow(displayName);
-            mod.default(content, { name: basename(path), content: item.content });
+            const mod =
+                await safeImport("./apps/fileviewer.js");
 
-            // ファイルビューアも uniqueKey で重複防止可能
-            if (options.uniqueKey) {
-                const pid = pidCounter++;
-                processes.set(options.uniqueKey, { pid, path, window: content.parentElement, state: "normal" });
+            if (!mod?.default)
+                throw new Error("fileviewer export missing");
 
-                // ★ 追加
-                content.parentElement.dataset.processKey = options.uniqueKey;
-            }
+            const content =
+                createWindow(basename(path));
+
+            const win = content?.parentElement;
+
+            if (!win)
+                throw new Error("Window creation failed");
+
+            mod.default(content, {
+                name: basename(path),
+                content: item.content
+            });
+
+            const key =
+                options.uniqueKey ??
+                `file:${path}:${Date.now()}`;
+
+            const pid = pidCounter++;
+
+            processes.set(key, {
+                pid,
+                path,
+                window: win,
+                state: "normal",
+                startTime: performance.now(),
+                memory: 0,
+                cpu: 0
+            });
+
+            win.dataset.processKey = key;
         }
 
-        // フォルダの場合は Explorer を起動（リボン付き）
+        /* ================= FOLDER ================= */
         else if (item.type === "folder") {
-            const displayName = options.showFullPath ? path : basename(path);
 
-            // Explorer を起動
             await launch("Programs/Explorer.app", {
-                path,                   // Explorer 内で currentPath として使用
+                path,
                 parentCwd: options.parentCwd,
-                ribbonMenus: options.ribbonMenus, // Explorer.js で使用
+                ribbonMenus: options.ribbonMenus,
                 showFullPath: options.showFullPath
             });
-        } else throw new Error(`不明なタイプ: ${item.type}`);
+        }
+
+        else {
+            throw new Error(`不明なタイプ: ${item.type}`);
+        }
+
     } catch (err) {
         console.error(err);
-        errorWindow(`起動に失敗しました: ${path}\n${err.message}`, { taskbar: false });
+        errorWindow(
+            `起動に失敗しました: ${path}\n${err.message}`,
+            { taskbar: false }
+        );
+    } finally {
+        launching.delete(path);
+        try { refreshStartMenu(); } catch { }
     }
-
-    refreshStartMenu();
 }
 
-/* ===== 仮想パス解決 ===== */
+/* ===== resolve（循環完全防止） ===== */
 function resolve(path, seen = new Set()) {
-    if (seen.has(path)) return null; // 循環防止
-    seen.add(path);
+
     if (typeof path !== "string") return null;
+    if (seen.has(path)) return null;
+
+    seen.add(path);
 
     let fsPath = path.replace(/^C:\//, "");
     const parts = fsPath.split("/").filter(Boolean);
+
     let cur = FS;
 
     for (const p of parts) {
-        if (!cur) return null;
-        cur = cur[p];
+
+        cur = cur?.[p];
         if (!cur) return null;
 
         if (cur.type === "link") {
-            cur = resolve(cur.target);
+            cur = resolve(cur.target, seen);
             if (!cur) return null;
         }
     }
+
     return cur;
 }
 
-/* ===== プロセス一覧取得 ===== */
+/* =========================
+   Process metrics updater
+========================= */
+
+setInterval(() => {
+    const mem = getMemoryMB();
+
+    for (const proc of processes.values()) {
+        proc.memory = mem;
+        proc.cpu = cpuLoad;
+    }
+}, 1000);
+
+
+/* ===== プロセス一覧 ===== */
 export function getProcessList() {
-    return Array.from(processes.entries()).map(([key, proc]) => ({
-        key,
-        pid: proc.pid,
-        path: proc.path,
-        name: basename(proc.path),
-        state: proc.state,
-        window: proc.window
-    }));
+    return Array.from(processes.entries())
+        .map(([key, proc]) => {
+
+            const win = proc.window;
+
+            let zIndex = "";
+            let minimized = false;
+            let x = "";
+            let y = "";
+            let w = "";
+            let h = "";
+
+            if (win && document.body.contains(win)) {
+
+                const rect = win.getBoundingClientRect();
+
+                zIndex = getComputedStyle(win).zIndex || "";
+                minimized = win.dataset.minimized === "true";
+
+                x = Math.round(rect.left);
+                y = Math.round(rect.top);
+                w = Math.round(rect.width);
+                h = Math.round(rect.height);
+            }
+
+            return {
+                key,
+                pid: proc.pid,
+                path: proc.path,
+                name: basename(proc.path),
+                state: proc.state,
+                window: win,
+                memory: proc.memory,
+                cpu: proc.cpu,
+                uptime: Math.floor((performance.now() - proc.startTime) / 1000),
+
+                zIndex,
+                minimized,
+                x,
+                y,
+                width: w,
+                height: h
+            };
+        });
 }
 
-/* ===== プロセス終了 ===== */
+/* =========================
+   killProcess（完全安全版）
+========================= */
 export function killProcess(key) {
+
     const proc = processes.get(key);
     if (!proc) return false;
 
     const win = proc.window;
 
     try {
-        if (win) {
-            // window.js に登録されているタスクバー連携を解除
-            if (win._taskbarBtn) {
-                win._taskbarBtn.remove(); // タスクバーボタン削除
-                win._taskbarBtn = null;
-            }
+        if (win?._observer)
+            win._observer.disconnect();
 
-            // ウィンドウ自体を削除
+        if (win?._taskbarBtn?.remove)
+            win._taskbarBtn.remove();
+
+        if (win?.remove)
             win.remove();
-        }
     } catch (e) {
         console.warn("window remove failed:", e);
     }
 
-    // explorer 管理からも除去
     for (const [path, w] of explorerWindows.entries()) {
         if (w === win) {
             explorerWindows.delete(path);
@@ -272,27 +430,42 @@ export function killProcess(key) {
 
 /* ===== UIリセット ===== */
 export function resetUI() {
-    document.querySelectorAll(".window").forEach(w => w.remove());
-    removeAllTaskbarButtons();
-    processes.clear();
-    explorerWindows.clear();
+
+    try {
+        document.querySelectorAll(".window")
+            .forEach(w => {
+                try {
+                    if (w._observer)
+                        w._observer.disconnect();
+                    w.remove();
+                } catch { }
+            });
+
+        removeAllTaskbarButtons();
+
+        processes.clear();
+        explorerWindows.clear();
+    } catch { }
 }
 
 /* ===== ログオフ ===== */
 export async function logOff() {
-    const windows = document.querySelectorAll(".window");
-    const hasAnyWindow = windows.length > 0;
+
+    const windows =
+        document.querySelectorAll(".window");
+
+    const hasAnyWindow =
+        windows.length > 0;
 
     const performLogoff = () => {
-        document.querySelectorAll(".window").forEach(w => w.remove());
-        processes.clear();
-        explorerWindows.clear();
+        resetUI();
+        moduleCache.clear(); // ★ メモリ軽減
         showPromptScreen("nexser logoff");
     };
 
     if (hasAnyWindow) {
-        // モーダル表示
-        showModalWindow("ログオフ確認",
+        showModalWindow(
+            "ログオフ確認",
             "開いているウィンドウがあります。すべて閉じてログオフしますか？",
             {
                 width: 360,

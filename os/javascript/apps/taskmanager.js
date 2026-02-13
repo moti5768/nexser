@@ -1,17 +1,22 @@
-// TaskManager
+// TaskManager.js
 import { getProcessList, killProcess } from "../kernel.js";
 
 export default function TaskManager(root) {
+
     root.innerHTML = `
         <div style="font-size:12px;">
             <table class="task-table">
                 <thead>
                     <tr>
-                        <th>PID</th>
-                        <th>Name</th>
-                        <th>State</th>
-                        <th>Path</th>
-                        <th></th>
+                        <th style="width:50px;">PID</th>
+                        <th style="width:120px;">Name</th>
+                        <th style="width:60px;">CPU%</th>
+                        <th style="width:80px;">Mem</th>
+                        <th style="width:70px;">State</th>
+                        <th style="width:60px;">Up</th>
+                        <th style="width:40px;">Z</th>
+                        <th style="width:140px;">Path</th>
+                        <th style="width:60px;"></th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -20,41 +25,84 @@ export default function TaskManager(root) {
     `;
 
     const tbody = root.querySelector("tbody");
+    if (!tbody) return;
+
+    const rowMap = new Map();
+    let timer = null;
 
     function refresh() {
+
+        if (!document.body.contains(root)) {
+            stop();
+            return;
+        }
+
         const list = getProcessList();
-        tbody.innerHTML = "";
+        const activeKeys = new Set(list.map(p => p.key));
+
+        // 削除されたプロセス
+        for (const [key, tr] of rowMap) {
+            if (!activeKeys.has(key)) {
+                tr.remove();
+                rowMap.delete(key);
+            }
+        }
 
         for (const p of list) {
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-                <td>${p.pid}</td>
-                <td>${p.name}</td>
-                <td>${p.state}</td>
-                <td style="max-width:160px; overflow:hidden; text-overflow:ellipsis;">${p.path}</td>
-                <td><button>終了</button></td>
-            `;
 
-            tr.querySelector("button").onclick = () => {
-                killProcess(p.key);
-                refresh();
-            };
+            let tr = rowMap.get(p.key);
 
-            tbody.appendChild(tr);
+            if (!tr) {
+                tr = document.createElement("tr");
+
+                for (let i = 0; i < 9; i++) {
+                    const td = document.createElement("td");
+                    tr.appendChild(td);
+                }
+
+                const btn = document.createElement("button");
+                btn.textContent = "終了";
+                btn.onclick = () => killProcess(p.key);
+
+                tr.children[8].appendChild(btn);
+
+                tbody.appendChild(tr);
+                rowMap.set(p.key, tr);
+            }
+
+            const cells = tr.children;
+
+            cells[0].textContent = p.pid;
+            cells[1].textContent = p.name;
+            cells[2].textContent = p.cpu + " %";
+            cells[3].textContent = p.memory + " MB";
+            cells[4].textContent = p.state;
+            cells[5].textContent = p.uptime + " s";
+            cells[6].textContent = p.zIndex ?? "";
+            cells[7].textContent = p.path;
         }
     }
 
+    function stop() {
+        if (timer) {
+            clearInterval(timer);
+            timer = null;
+        }
+        if (observer) observer.disconnect();
+    }
+
     refresh();
-    const timer = setInterval(refresh, 1000);
+    timer = setInterval(refresh, 1000);
 
     const win = root.closest(".window");
+    let observer = null;
+
     if (win) {
-        const observer = new MutationObserver(() => {
+        observer = new MutationObserver(() => {
             if (!document.body.contains(win)) {
-                clearInterval(timer);
-                observer.disconnect();
+                stop();
             }
         });
-        observer.observe(document.body, { childList: true, subtree: true });
+        observer.observe(document.body, { childList: true });
     }
 }

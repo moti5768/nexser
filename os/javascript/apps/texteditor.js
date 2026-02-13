@@ -3,7 +3,7 @@ import { resolveFS } from "../fs-utils.js";
 import { createWindow, bringToFront, centerWindowOptions } from "../window.js";
 import { taskbarButtons } from "../window.js";
 import { buildDesktop } from "../desktop.js";
-import { setupRibbon } from "./explorer.js"; // ここに setupRibbon が定義されている
+import { setupRibbon } from "../ribbon.js";
 
 /* =========================
    警告・確認ダイアログ管理

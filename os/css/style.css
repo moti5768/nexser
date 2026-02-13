@@ -796,8 +796,9 @@ body::-webkit-scrollbar {
 /* taskmanager */
 .task-table {
     border-collapse: collapse;
-    /* 枠線を重ねずきれいに表示 */
     width: 100%;
+    table-layout: fixed;
+    /* ← これを追加 */
 }
 
 .task-table td {
@@ -814,4 +815,11 @@ body::-webkit-scrollbar {
     border: 1.8px solid #808080;
     border-color: #fff #808080 #808080 #fff;
     box-shadow: 0.5px 0.5px black;
+}
+
+.task-table td,
+.task-table th {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }

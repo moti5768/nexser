@@ -155,6 +155,15 @@ export function initTaskbar() {
         updateClockLabel(new Date(e.detail));
     });
 
+
+    // ------------------------
+    // 全ウィンドウのリボンドロップダウンを閉じ、selected を解除
+    // ------------------------
+    function closeAllRibbonsGlobal() {
+        document.querySelectorAll(".ribbon-dropdown").forEach(dd => dd.style.display = "none");
+        document.querySelectorAll(".ribbon-menu").forEach(m => m.classList.remove("selected"));
+    }
+
     // ============================
     // Startボタン制御
     // ============================
@@ -162,6 +171,7 @@ export function initTaskbar() {
         startBtn.addEventListener("mousedown", e => {
             e.stopPropagation();
             hideContextMenu();
+            closeAllRibbonsGlobal();
             const open = startMenu.style.display === "block";
             startMenu.style.display = open ? "none" : "block";
 

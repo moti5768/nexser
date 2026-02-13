@@ -82,6 +82,17 @@ export function buildDesktop() {
 
         const items = [];
 
+        if (globalSelected.item) {
+            const name = globalSelected.item.textContent;
+            const node = desktopNode[name];
+            if (node) {
+                items.push({
+                    label: "開く",
+                    action: () => openFSItem(name, node, "Desktop")
+                });
+            }
+        }
+
         // 新規フォルダ
         items.push({
             label: "新規フォルダ/ファイル作成",
@@ -117,7 +128,6 @@ export function buildDesktop() {
     });
     adjustDesktopIconArea();
 }
-
 
 // タスクバー高さに応じてアイコン領域を調整
 function adjustDesktopIconArea() {

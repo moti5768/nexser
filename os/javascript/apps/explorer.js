@@ -7,9 +7,9 @@ import { buildDesktop } from "../desktop.js";
 import { attachContextMenu } from "../context-menu.js";
 import { resolveAppByPath, getExtension } from "../file-associations.js";
 import { addRecent } from "../recent.js";
+import { setupRibbon } from "../ribbon.js";
 
 let globalSelected = { item: null, window: null };
-let isCreating = false;
 
 function hasExtension(name) {
     return /\.[a-z0-9]+$/i.test(name);
@@ -341,7 +341,8 @@ export default async function Explorer(root, options = {}) {
             globalSelected.item.classList.remove("selected");
             globalSelected.item = null;
             globalSelected.window = null;
-            setupRibbon(win, () => currentPath, render, getExplorerMenus());
+            setupRibbon(win, () => currentPath, render, explorerMenus);
+
         }
 
         // 初回生成
@@ -453,7 +454,8 @@ export default async function Explorer(root, options = {}) {
                             statusBar.textContent = parts.length ? parts.join(", ") : "(empty)";
                         }
 
-                        setupRibbon(win, () => currentPath, render, getExplorerMenus());
+                        setupRibbon(win, () => currentPath, render, explorerMenus);
+
                     }
                 }
             });
@@ -506,7 +508,8 @@ export default async function Explorer(root, options = {}) {
                 item.classList.add("selected");
                 globalSelected.item = item;
                 globalSelected.window = win;
-                setupRibbon(win, () => currentPath, render, getExplorerMenus());
+                setupRibbon(win, () => currentPath, render, explorerMenus);
+
                 const node = resolveFS(currentPath)?.[name];
                 if (!node) return; // 安全に早期リターン
                 const size = calcNodeSize(node);
@@ -590,7 +593,8 @@ export default async function Explorer(root, options = {}) {
                     }
 
                     item.scrollIntoView({ block: "nearest" });
-                    setupRibbon(win, () => currentPath, render, getExplorerMenus());
+                    setupRibbon(win, () => currentPath, render, explorerMenus);
+
                 }
 
                 if (e.key === "ArrowDown") {
@@ -661,7 +665,8 @@ export default async function Explorer(root, options = {}) {
                                 () => {
                                     render(currentPath);
                                     globalSelected.item = null;
-                                    setupRibbon(win, () => currentPath, render, getExplorerMenus());
+                                    setupRibbon(win, () => currentPath, render, explorerMenus);
+
                                 }
                             );
                         },
@@ -686,7 +691,9 @@ export default async function Explorer(root, options = {}) {
         ];
     }
 
-    setupRibbon(win, () => currentPath, render, getExplorerMenus());
+    const explorerMenus = getExplorerMenus();
+    setupRibbon(win, () => currentPath, render, explorerMenus);
+
 
     render(currentPath);
 
@@ -741,50 +748,6 @@ function formatSize(bytes) {
     if (bytes < 1024) return bytes + " B";
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
     return (bytes / 1024 / 1024).toFixed(1) + " MB";
-}
-
-
-// ------------------------
-// Ribbon ヘルパー
-// ------------------------
-export function setupRibbon(win, getCurrentPath, renderCallback, menus) {
-    if (!win?._ribbon) return;
-    const ribbon = win._ribbon;
-    ribbon.innerHTML = "";
-    (menus || []).forEach(menu => addRibbonMenu(ribbon, menu.title, menu.items));
-}
-
-function addRibbonMenu(ribbon, title, items) {
-    const menu = document.createElement("div");
-    menu.className = "ribbon-menu";
-
-    const span = document.createElement("span");
-    span.className = "ribbon-title";
-    span.textContent = title;
-    menu.appendChild(span);
-
-    const dropdown = document.createElement("div");
-    dropdown.className = "ribbon-dropdown";
-
-    items.forEach(it => {
-        const div = document.createElement("div");
-        div.className = "ribbon-item";
-        div.textContent = it.label;
-        div.onclick = () => {
-            if (div.classList.contains("pointer_none")) return;
-            it.action();
-        };
-
-        if (it.disabled) {
-            const isDisabled = typeof it.disabled === "function" ? it.disabled() : it.disabled;
-            if (isDisabled) div.classList.add("pointer_none");
-        }
-
-        dropdown.appendChild(div);
-    });
-
-    menu.appendChild(dropdown);
-    ribbon.appendChild(menu);
 }
 
 // FS 内の全アプリを取得

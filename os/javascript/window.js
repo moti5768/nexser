@@ -2,7 +2,7 @@
 import { saveWindowSize, loadWindowSize } from "./window-size-db.js";
 import { themeColor } from "./apps/settings.js"; // これを使う
 import { attachContextMenu } from "./context-menu.js";
-import { setupRibbon } from "./apps/explorer.js"; // ここに setupRibbon が定義されている
+import { setupRibbon } from "./ribbon.js";
 import { killProcess } from "./kernel.js";
 
 export const taskbarButtons = []; // 作られたボタンを全部保存

@@ -2,7 +2,7 @@
 import { resolveFS } from "../fs-utils.js";
 import { createWindow, bringToFront, taskbarButtons } from "../window.js";
 import { buildDesktop } from "../desktop.js";
-import { setupRibbon } from "./explorer.js";
+import { setupRibbon } from "../ribbon.js";
 
 /* =========================
    警告・確認ダイアログ管理（TextEditor流用）

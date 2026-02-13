@@ -2,7 +2,7 @@
 import { resolveFS } from "../fs-utils.js";
 import { createWindow, bringToFront } from "../window.js";
 import { buildDesktop } from "../desktop.js";
-import { setupRibbon } from "./explorer.js";
+import { setupRibbon } from "../ribbon.js";
 
 /* =========================
    Preview Virtual FS Utils

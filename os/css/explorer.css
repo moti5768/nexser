@@ -86,20 +86,46 @@
 }
 
 
-/* ribonn */
+/* Ribbon メニュー */
 .ribbon-menu {
     position: relative;
-    padding: 6px;
+    display: inline-block;
+    /* 横に並ぶように */
+    padding: 0;
+    /* 内側の余白は span に任せる */
     cursor: pointer;
+    user-select: none;
 }
 
-
-.ribbon-menu:hover {
-    background: darkblue;
-    color: white;
+/* タイトルテキストをボタン風にする */
+.ribbon-title {
+    display: inline-block;
+    padding: 4px 12px;
+    border: 1.5px solid transparent;
+    box-sizing: border-box;
 }
 
+/* ホバー時だけ枠と色をつける */
+.ribbon-menu:hover .ribbon-title {
+    display: inline-block;
+    color: black;
+    background-color: #C3C7CB;
+    border: 1.8px solid #808080;
+    border-color: #fff #808080 #808080 #fff;
+    box-shadow: 0.5px 0.5px black;
+}
 
+/* ドロップダウンが表示されている ribbon-menu は押下風を維持 */
+.ribbon-menu.selected .ribbon-title {
+    display: inline-block;
+    background-color: #C3C7CB;
+    border: 1.5px solid;
+    border-color: #7a7a7a #fff #fff #7a7a7a;
+    box-shadow: 0.5px 0.5px 0 #000 inset;
+    transform: translate(0.5px, 0.5px);
+}
+
+/* ドロップダウン */
 .ribbon-dropdown {
     position: absolute;
     top: 100%;
@@ -114,13 +140,13 @@
     z-index: 1000;
 }
 
-.ribbon-menu:hover .ribbon-dropdown {
-    display: block;
-}
-
+/* アイテム */
 .ribbon-item {
     padding: 4px 8px;
     cursor: pointer;
+    display: block;
+    /* 幅いっぱいに */
+    white-space: nowrap;
 }
 
 .ribbon-item:hover {
