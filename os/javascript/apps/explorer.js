@@ -185,11 +185,13 @@ export default async function Explorer(root, options = {}) {
                 break;
             case "file": {
                 const appPath = resolveAppByPath(targetPath);
-                if (appPath) launch(appPath, { path: targetPath, node: targetNode, uniqueKey: targetPath });
-                else import("../apps/fileviewer.js").then(mod => {
-                    const content = createWindow(name);
-                    mod.default(content, { name, content: targetNode.content });
-                });
+                if (appPath) {
+                    // 既に関連付けられているアプリがある場合
+                    launch(appPath, { path: targetPath, node: targetNode, uniqueKey: targetPath });
+                } else {
+                    // ⭐ 修正箇所: 不明な拡張子の場合、アプリ選択ダイアログを表示
+                    openWithDialog(targetPath, targetNode);
+                }
                 break;
             }
         }

@@ -5,6 +5,13 @@ let saveTimer = null;
 
 // 初期 FS 定義
 export let FS = {
+    "System": {
+        type: "folder",
+        "AUTOBOOT.CFG": {
+            type: "file",
+            content: ""
+        }
+    },
     Desktop: {
         type: "folder",
         Programs: { type: "link", target: "Programs" },

@@ -75,6 +75,7 @@ const commands = {
 
 // ===== Prompt =====
 export function prompt() {
+    if (screen.style.display === 'none') return;
     const line = document.createElement('div');
     line.id = 'input-line';
     line.innerHTML = `${cwd}> <input id="cmd" autocomplete="off">`;
@@ -82,44 +83,56 @@ export function prompt() {
     scrollToBottom();
     const input = line.querySelector('#cmd');
     input.focus();
-
     input.onkeydown = e => {
-        if (e.key === 'Enter') { const cmd = input.value.trim(); history.push(cmd); hIndex = history.length; screen.removeChild(line); print(`${cwd}> ${cmd}`); exec(cmd); }
+        if (e.key === 'Enter') {
+            const cmd = input.value.trim();
+            history.push(cmd);
+            hIndex = history.length;
+            screen.removeChild(line);
+            print(`${cwd}> ${cmd}`);
+            exec(cmd);
+        }
         if (e.key === 'ArrowUp') { hIndex = Math.max(0, hIndex - 1); input.value = history[hIndex] || ''; }
         if (e.key === 'ArrowDown') { hIndex = Math.min(history.length, hIndex + 1); input.value = history[hIndex] || ''; }
-        if (e.key === 'Tab') { e.preventDefault(); const value = input.value.trim().toLowerCase(); if (!value) return; const hits = Object.keys(commands).filter(c => c.startsWith(value)); if (hits.length === 1) input.value = hits[0] + ' '; else if (hits.length > 1) { const prefix = commonPrefix(hits); if (prefix.length > value.length) input.value = prefix; } }
+        if (e.key === 'Tab') {
+            e.preventDefault();
+            const value = input.value.trim().toLowerCase();
+            if (!value) return;
+            const hits = Object.keys(commands).filter(c => c.startsWith(value));
+            if (hits.length === 1) input.value = hits[0] + ' ';
+            else if (hits.length > 1) { const prefix = commonPrefix(hits); if (prefix.length > value.length) input.value = prefix; }
+        }
     };
 }
 
 // ===== Command Executor =====
-async function exec(cmdLine) {
-    if (!cmdLine) return prompt();
+async function runSilent(cmdLine) {
+    if (!cmdLine || cmdLine.startsWith('//')) return;
     const tokens = cmdLine.match(/"[^"]+"|\S+/g) || [];
     const name = (tokens.shift() || '').toLowerCase();
     const args = tokens.map(t => t.replace(/^"|"$/g, ''));
     const cmd = commands[name];
-    if (!cmd) { print(`Command not found: ${name}`); return prompt(); }
-    try { await cmd.run(args); } catch (err) { print(`Error: ${err.message}`); }
-    prompt();
+    if (cmd) { try { await cmd.run(args); } catch (err) { print(`Error: ${err.message}`); } }
+    else { print(`Command not found: ${name}`); }
+}
+
+async function exec(cmdLine) {
+    await runSilent(cmdLine);
+    if (screen.style.display !== 'none') { prompt(); }
 }
 
 // ===== Boot Sequence =====
 export async function bootOS() {
     try {
-        print("Boot sequence started...\n");
-
-        // Kernel 初期化（FSは既にロード済み）
+        print("\nBoot sequence started...\n");
         const kernel = await import('./kernel.js');
         await kernel.initKernelAsync(msg => print(`[Kernel] ${msg}`));
-
-        // StartMenu 初期化
         const sm = await import('./startmenu.js');
         if (sm.startMenuReady) await sm.startMenuReady(msg => print(`[StartMenu] ${msg}`));
         print('[StartMenu] Ready');
-
-        // CLI非表示（デスクトップ表示）
         screen.style.display = 'none';
-
+        const root = document.getElementById('os-root');
+        if (root) root.style.display = 'block';
         print("\nBoot sequence complete!");
     } catch (e) {
         print('Boot failed: ' + e.message);
@@ -129,22 +142,51 @@ export async function bootOS() {
 
 // ===== BIOS (ページロード時) =====
 (async function initBIOS() {
-    try {
-        await initFS();          // FS一回だけ復元
-        console.log("FS restored from DB");
-        buildDesktop();          // デスクトップ描画（アイコンだけ）
-    } catch (e) { console.warn("FS load failed", e); }
+    // 1. データ復元とUI準備を並行して開始
+    const fsPromise = initFS().catch(e => console.warn("FS load failed", e));
 
-    const lines = [document.title];
-    lines.forEach((line, i) => setTimeout(() => print(line), i * 300));
-    setTimeout(prompt, lines.length * 300);
+    // 2. ロゴと著作権表示（ディレイを 300ms -> 50ms に短縮）
+    const lines = [document.title, "Copyright (C) 2026 Nexser Corp.", ""];
+    for (const line of lines) {
+        print(line);
+        await new Promise(r => setTimeout(r, 50)); // 読みやすい速さで流す
+    }
+
+    // 3. FSのロード完了を待ってデスクトップ構築
+    await fsPromise;
+    console.log("FS restored from DB");
+    buildDesktop();
+
+    // 4. AUTOBOOT.CFG の実行
+    const config = getNodeByPath("C:/System/AUTOBOOT.CFG");
+    if (config && config.type === 'file' && config.content.trim()) {
+        print("Reading System Configuration...");
+
+        const script = config.content.split('\n').map(s => s.trim()).filter(Boolean);
+        for (const line of script) {
+            // コマンド実行前に一瞬だけ待機（演出）
+            await new Promise(r => setTimeout(r, 30));
+
+            print(`${cwd}> ${line}`);
+            await runSilent(line);
+
+            // bootコマンドでGUIに切り替わったら即座に終了
+            if (screen.style.display === 'none') return;
+        }
+    }
+
+    // すべて終わったらプロンプトへ
+    prompt();
 })();
 
 // ===== Screen Control =====
 export function showPromptScreen(logoffMessage = '') {
     screen.style.display = 'block';
     const root = document.getElementById('os-root');
-    if (root) root.innerHTML = '';
+    if (root) {
+        root.style.display = 'none';
+        root.innerHTML = '';
+    }
     document.querySelectorAll('.window').forEach(w => w.remove());
     if (logoffMessage) screen.textContent += logoffMessage + '\n';
     prompt();
@@ -152,7 +194,10 @@ export function showPromptScreen(logoffMessage = '') {
 
 function bindScreenFocus() {
     if (!screen) return;
-    screen.addEventListener('click', () => { const input = document.getElementById('cmd'); if (input) input.focus(); });
+    screen.addEventListener('click', () => {
+        const input = document.getElementById('cmd');
+        if (input) input.focus();
+    });
 }
 
 // ===== Startup =====
