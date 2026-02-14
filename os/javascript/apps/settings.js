@@ -109,7 +109,6 @@ export async function saveSetting(key, value) {
         return true;
     } catch (e) {
         console.error("saveSetting failed:", e);
-        alert(`設定の保存に失敗しました: ${key}`);
         return false;
     }
 }
@@ -129,35 +128,68 @@ export async function loadSetting(key) {
 }
 
 /* =========================
-   Theme / Desktop Color
+   Theme / Desktop Background
 ========================= */
 export let themeColor = "darkblue";
-export let desktopColor = null;   // 未設定がデフォルト
+export let desktopColor = null;
 
 const DEFAULT_COLOR = "darkblue";
 
-function applyDesktopColor(color) {
-    desktopColor = color;
+/**
+ * 壁紙の表示形式を考慮して背景を適用する
+ */
+async function applyDesktopBackground() {
+    const desk = document.querySelector("#desktop");
+    if (!desk) return;
 
-    function tryApply() {
-        const desk = document.querySelector("#desktop");
-        if (!desk) {
-            requestAnimationFrame(tryApply);
-            return;
-        }
+    const color = await loadSetting("desktopColor");
+    const wpUrl = await loadSetting("wallpaperUrl");
+    const wpStyle = await loadSetting("wallpaperStyle") || "fill"; // デフォルトは「画面に合わせる」
 
-        if (!color) {
-            // 未設定 → CSSデフォルトに戻す
-            desk.style.background = "";
-            desk.style.backgroundImage = "";
-            return;
-        }
+    // 初期化
+    desk.style.backgroundImage = wpUrl ? `url(${wpUrl})` : "none";
+    desk.style.backgroundColor = color || "";
 
-        desk.style.background = color;
-        desk.style.backgroundImage = "none";
+    // スタイルに応じたCSSの切り替え
+    switch (wpStyle) {
+        case "center": // 中央に表示
+            desk.style.backgroundSize = "auto";
+            desk.style.backgroundRepeat = "no-repeat";
+            desk.style.backgroundPosition = "center";
+            break;
+        case "tile": // 並べて表示
+            desk.style.backgroundSize = "auto";
+            desk.style.backgroundRepeat = "repeat";
+            desk.style.backgroundPosition = "0 0";
+            break;
+        case "stretch": // 拡大して表示（比率無視）
+            desk.style.backgroundSize = "100% 100%";
+            desk.style.backgroundRepeat = "no-repeat";
+            desk.style.backgroundPosition = "center";
+            break;
+        case "fit": // 全体を表示（比率維持・余白あり）
+            desk.style.backgroundSize = "contain";
+            desk.style.backgroundRepeat = "no-repeat";
+            desk.style.backgroundPosition = "center";
+            break;
+        case "fill": // 画面いっぱいに広げる（比率維持・現在のcover）
+        default:
+            desk.style.backgroundSize = "cover";
+            desk.style.backgroundRepeat = "no-repeat";
+            desk.style.backgroundPosition = "center";
+            break;
     }
+}
 
-    tryApply();
+/**
+ * imageviewer.js 流用のユーティリティ
+ */
+async function blobToDataURL(blob) {
+    return new Promise(resolve => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.readAsDataURL(blob);
+    });
 }
 
 /* --- load on boot --- */
@@ -166,10 +198,6 @@ loadSetting("titlebarColor").then(color => {
         themeColor = color;
         refreshTopWindow();
     }
-});
-
-loadSetting("desktopColor").then(c => {
-    applyDesktopColor(c);   // nullでも呼ぶ
 });
 
 loadSetting("showRecentItems").then(val => {
@@ -203,26 +231,21 @@ async function getStoreSizes() {
     const result = {};
     try {
         const db = await getDB();
-
         for (const storeName of db.objectStoreNames) {
             let bytes = 0;
             const tx = db.transaction(storeName, "readonly");
             const store = tx.objectStore(storeName);
-
             const all = await new Promise(res => {
                 const r = store.getAll();
                 r.onsuccess = () => res(r.result || []);
                 r.onerror = () => res([]);
             });
-
             for (const item of all) {
                 bytes += JSON.stringify(item)?.length || 0;
             }
-
             result[storeName] = bytes;
         }
     } catch { }
-
     return result;
 }
 
@@ -247,8 +270,10 @@ export default async function SettingsApp(content) {
     const bodyEl = content.querySelector("#tab-body");
 
     /* ---------- Tabs ---------- */
+    // 改善点: Userタブを追加
     const tabs = [
         { id: "appearance", label: "Appearance", render: renderAppearance },
+        { id: "user", label: "User", render: renderUser },
         { id: "general", label: "General", render: renderGeneral },
         { id: "system", label: "System", render: renderSystem }
     ];
@@ -262,7 +287,6 @@ export default async function SettingsApp(content) {
 
         bodyEl._cleanup?.();
         bodyEl._cleanup = null;
-
         bodyEl.innerHTML = "";
 
         const tab = tabs.find(t => t.id === id);
@@ -273,7 +297,7 @@ export default async function SettingsApp(content) {
         const btn = document.createElement("button");
         btn.textContent = t.label;
         btn.dataset.id = t.id;
-        btn.className = "win95-tab inactive";   // ← 追加
+        btn.className = "win95-tab inactive";
         btn.onclick = () => selectTab(t.id);
         tabsEl.appendChild(btn);
     });
@@ -287,9 +311,7 @@ export default async function SettingsApp(content) {
         /* ---- Titlebar Color ---- */
         const block1 = document.createElement("div");
         block1.style.marginBottom = "12px";
-
-        const label = document.createElement("div");
-        label.textContent = "Top Window Titlebar Color";
+        block1.innerHTML = `<div>Top Window Titlebar Color</div>`;
 
         const colorInput = document.createElement("input");
         colorInput.type = "color";
@@ -300,8 +322,6 @@ export default async function SettingsApp(content) {
             refreshTopWindow();
         };
 
-        block1.append(label, colorInput);
-
         const colors = ["#1E90FF", "#FF4500", "#32CD32", "#FFD700", "#8A2BE2",
             "#FF1493", "#00CED1", "#FF8C00", "#A52A2A", "#2F4F4F"];
 
@@ -309,6 +329,7 @@ export default async function SettingsApp(content) {
         palette.style.display = "flex";
         palette.style.flexWrap = "wrap";
         palette.style.gap = "4px";
+        palette.style.margin = "8px 0";
 
         colors.forEach(c => {
             const btn = document.createElement("button");
@@ -333,82 +354,80 @@ export default async function SettingsApp(content) {
             refreshTopWindow();
         };
 
-        block1.append(palette, resetBtn);
+        block1.append(colorInput, palette, resetBtn);
 
-        /* ---- Desktop Background Color ---- */
+        /* ---- Desktop Background (Color & Image) ---- */
         const block2 = document.createElement("div");
         block2.style.marginTop = "12px";
+        block2.innerHTML = `<div>Desktop Background</div>`;
 
-        const deskLabel = document.createElement("div");
-        deskLabel.textContent = "Desktop Background Color";
-
-        /* --- 共通処理 --- */
+        // 背景色
         const deskInput = document.createElement("input");
         deskInput.type = "color";
-        deskInput.value = desktopColor || "#000000";
+        deskInput.value = (await loadSetting("desktopColor")) || "#000000";
         deskInput.style.marginRight = "6px";
-
-        async function setDesktopColor(color) {
-            applyDesktopColor(color);
-            deskInput.value = color || "#000000";
-            await saveSetting("desktopColor", color);
-        }
-
-        /* --- Color Picker --- */
-        deskInput.oninput = () => {
-            setDesktopColor(deskInput.value);
+        deskInput.style.verticalAlign = "middle";
+        deskInput.oninput = async () => {
+            await saveSetting("desktopColor", deskInput.value);
+            applyDesktopBackground();
         };
 
-        /* --- Preset Buttons --- */
-        const presetColors = [
-            "#101820", // iD Desktop
-            "#1E1E1E",
-            "#2C2F33",
-            "#003366",
-            "#004400",
-            "#3B2F2F",
-            "#2F4F4F",
-            "#4B0082",
-            "#222222",
-            "#000000"
+        // ★追加: 表示形式ドロップダウン
+        const styleSelect = document.createElement("select");
+        styleSelect.style.verticalAlign = "middle";
+        const styles = [
+            { id: "fill", label: "Fill (拡大して全体)" },
+            { id: "fit", label: "Fit (全体を表示)" },
+            { id: "stretch", label: "Stretch (引き伸ばし)" },
+            { id: "tile", label: "Tile (並べて表示)" },
+            { id: "center", label: "Center (中央)" }
         ];
 
-        const deskPalette = document.createElement("div");
-        deskPalette.style.display = "flex";
-        deskPalette.style.flexWrap = "wrap";
-        deskPalette.style.gap = "4px";
-
-        presetColors.forEach(color => {
-            const btn = document.createElement("button");
-            btn.title = color;
-            btn.style.background = color;
-            btn.style.width = "24px";
-            btn.style.height = "24px";
-            btn.style.cursor = "pointer";
-
-            btn.onclick = () => {
-                setDesktopColor(color);
-            };
-
-            deskPalette.appendChild(btn);
+        const currentStyle = await loadSetting("wallpaperStyle") || "fill";
+        styles.forEach(s => {
+            const opt = document.createElement("option");
+            opt.value = s.id;
+            opt.textContent = s.label;
+            if (s.id === currentStyle) opt.selected = true;
+            styleSelect.appendChild(opt);
         });
 
-        /* --- Reset Button --- */
-        const deskReset = document.createElement("button");
-        deskReset.textContent = "Reset Desktop Color";
-        deskReset.style.marginTop = "6px";
-        deskReset.onclick = () => {
-            setDesktopColor(null);   // CSSデフォルトに戻す
+        styleSelect.onchange = async () => {
+            await saveSetting("wallpaperStyle", styleSelect.value);
+            applyDesktopBackground();
         };
 
-        block2.append(
-            deskLabel,
-            deskInput,
-            deskPalette,
-            deskReset
-        );
+        const wpBlock = document.createElement("div");
+        wpBlock.style.marginTop = "8px";
 
-        root.append(block1, block2);
+        const wpBtn = document.createElement("button");
+        wpBtn.textContent = "Select Wallpaper Image...";
+        wpBtn.onclick = () => {
+            const input = document.createElement("input");
+            input.type = "file";
+            input.accept = "image/*";
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const dataUrl = await blobToDataURL(file);
+                await saveSetting("wallpaperUrl", dataUrl);
+                applyDesktopBackground();
+                showAlert(content, "Wallpaper updated.");
+            };
+            input.click();
+        };
+
+        const wpReset = document.createElement("button");
+        wpReset.textContent = "Clear Image";
+        wpReset.style.marginLeft = "4px";
+        wpReset.onclick = async () => {
+            await saveSetting("wallpaperUrl", null);
+            applyDesktopBackground();
+        };
+
+        wpBlock.append(wpBtn, wpReset);
+        // 背景色入力の横にセレクトボックスを並べる
+        block2.append(deskInput, styleSelect, wpBlock);
 
         /* ---- Window Animation ---- */
         const animBlock = document.createElement("div");
@@ -417,7 +436,6 @@ export default async function SettingsApp(content) {
         const animToggle = document.createElement("input");
         animToggle.type = "checkbox";
         animToggle.checked = (await loadSetting("windowAnimationEnabled")) ?? true;
-
         animToggle.onchange = async () => {
             setWindowAnimationEnabled(animToggle.checked);
             await saveSetting("windowAnimationEnabled", animToggle.checked);
@@ -427,8 +445,33 @@ export default async function SettingsApp(content) {
         animLabel.append(animToggle, document.createTextNode(" Enable Window Animations"));
 
         animBlock.appendChild(animLabel);
-        root.appendChild(animBlock);
+        root.append(block1, block2, animBlock);
+    }
 
+    /* ---------- User (New) ---------- */
+    async function renderUser(root) {
+        root.innerHTML = "<b>User Profile</b><hr>";
+
+        const label = document.createElement("div");
+        label.textContent = "Owner Name:";
+        label.style.marginBottom = "4px";
+
+        const nameInput = document.createElement("input");
+        nameInput.type = "text";
+        nameInput.style.width = "100%";
+        nameInput.style.boxSizing = "border-box";
+        nameInput.value = (await loadSetting("userName")) || "Admin";
+
+        const saveBtn = document.createElement("button");
+        saveBtn.textContent = "Save Changes";
+        saveBtn.style.marginTop = "8px";
+        saveBtn.onclick = async () => {
+            await saveSetting("userName", nameInput.value);
+            window.dispatchEvent(new CustomEvent("user-profile-updated", { detail: nameInput.value }));
+            showAlert(root, "User profile saved.");
+        };
+
+        root.append(label, nameInput, saveBtn);
     }
 
     /* ---------- General ---------- */
@@ -439,6 +482,7 @@ export default async function SettingsApp(content) {
         resetAll.textContent = "Reset All Settings";
         resetAll.style.background = "#933";
         resetAll.style.color = "#fff";
+        resetAll.style.marginBottom = "12px";
 
         resetAll.onclick = () => {
             showConfirm(content, "全ての設定を初期化しますか？", async () => {
@@ -448,8 +492,9 @@ export default async function SettingsApp(content) {
                     tx.objectStore(STORE).clear();
 
                     themeColor = DEFAULT_COLOR;
-                    applyDesktopColor(null);
                     await saveSetting("desktopColor", null);
+                    await saveSetting("wallpaperUrl", null);
+                    applyDesktopBackground();
                     window.showRecent = true;
                     refreshTopWindow();
                     window.dispatchEvent(new Event("recent-updated"));
@@ -465,7 +510,6 @@ export default async function SettingsApp(content) {
         const toggle = document.createElement("input");
         toggle.type = "checkbox";
         toggle.checked = (await loadSetting("showRecentItems")) ?? true;
-
         toggle.onchange = async () => {
             window.showRecent = toggle.checked;
             await saveSetting("showRecentItems", toggle.checked);
@@ -473,10 +517,12 @@ export default async function SettingsApp(content) {
         };
 
         const label = document.createElement("label");
+        label.style.display = "block";
         label.append(toggle, document.createTextNode(" Show Recent in Start Menu"));
 
         const clearBtn = document.createElement("button");
         clearBtn.textContent = "Clear Recent History";
+        clearBtn.style.marginTop = "8px";
         clearBtn.onclick = () => {
             showConfirm(content, "最近使った項目を削除しますか？", () => {
                 clearRecent();
@@ -487,7 +533,6 @@ export default async function SettingsApp(content) {
         root.append(label, clearBtn);
     }
 
-    /* ---------- System ---------- */
     /* ---------- System ---------- */
     function renderSystem(root) {
         root.innerHTML = "";
@@ -502,20 +547,16 @@ export default async function SettingsApp(content) {
 
         async function renderStorage() {
             storageBox.innerHTML = "<b>Storage Usage</b><br>";
-
             const sizes = await getStoreSizes();
             let total = 0;
 
             for (const [name, bytes] of Object.entries(sizes)) {
                 total += bytes;
-
                 const row = document.createElement("div");
                 row.style.display = "flex";
                 row.style.justifyContent = "space-between";
                 row.style.alignItems = "center";
-
-                const label = document.createElement("span");
-                label.textContent = `${name}: ${formatBytes(bytes)}`;
+                row.innerHTML = `<span>${name}: ${formatBytes(bytes)}</span>`;
 
                 const clear = document.createElement("button");
                 clear.textContent = "Clear";
@@ -527,12 +568,10 @@ export default async function SettingsApp(content) {
                         renderStorage();
                     });
                 };
-
-                row.append(label, clear);
+                row.append(clear);
                 storageBox.appendChild(row);
             }
 
-            // 全ストアクリアボタン
             const clearAllBtn = document.createElement("button");
             clearAllBtn.textContent = "Clear All Stores";
             clearAllBtn.style.marginTop = "6px";
@@ -550,13 +589,12 @@ export default async function SettingsApp(content) {
             };
             storageBox.appendChild(clearAllBtn);
 
-            // 総容量とブラウザ上限
             let quotaMB = "unknown";
             try {
                 if (navigator.storage?.estimate) {
                     const est = await navigator.storage.estimate();
                     let estQuotaMB = est.quota / 1024 / 1024;
-                    if (estQuotaMB > 6 * 1024) estQuotaMB = 6 * 1024; // 上限6GB固定
+                    if (estQuotaMB > 6 * 1024) estQuotaMB = 6 * 1024;
                     quotaMB = estQuotaMB.toFixed(1);
                 }
             } catch { }
@@ -574,7 +612,6 @@ export default async function SettingsApp(content) {
             Uptime: ${((Date.now() - (window.bootTime || Date.now())) / 1000).toFixed(1)} s<br>
             Open Windows: ${document.querySelectorAll(".window").length}<br>
         `;
-
             if (performance.memory) {
                 info.innerHTML += `JS Heap: ${(performance.memory.usedJSHeapSize / 1024 / 1024).toFixed(1)} MB<br>`;
             }
@@ -583,15 +620,17 @@ export default async function SettingsApp(content) {
         updateInfo();
         renderStorage();
 
-        // ✅ interval を保持
         const timer = setInterval(() => {
             updateInfo();
-            renderStorage();  // 容量も定期更新
+            renderStorage();
         }, 2000);
 
-        // ✅ 後片付け関数を登録
         root._cleanup = () => {
             clearInterval(timer);
         };
     }
 }
+
+// 起動時および再構築時の背景適用
+applyDesktopBackground();
+window.addEventListener("desktop-ready", applyDesktopBackground);

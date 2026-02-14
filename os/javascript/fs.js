@@ -41,7 +41,7 @@ export let FS = {
         "Explorer.app": { type: "app", entry: "./apps/explorer.js", shell: true },
         Documents: {
             type: "folder",
-            "Readme.txt": { type: "file", content: "Welcome to NEXSER OS" }
+            "Readme.txt": { type: "file", content: "Welcome to NEXSER OS", style: { fontSize: 48, fontFamily: "serif", fontWeight: "bold", fontStyle: "italic" } }
         },
         Picture: {
             type: "folder",
@@ -57,16 +57,16 @@ export let FS = {
 };
 
 // 自動保存
-function scheduleSave() {
-    if (saveTimer) return;
-
+let isSaving = false;
+async function scheduleSave() {
+    if (saveTimer || isSaving) return; // 保存中もスキップして保護
     saveTimer = setTimeout(async () => {
         saveTimer = null;
+        isSaving = true;
         try {
             await saveFS(FS);
-            console.log("FS saved");
-        } catch (e) {
-            console.warn("FS save failed", e);
+        } finally {
+            isSaving = false;
         }
     }, 300);
 }

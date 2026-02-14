@@ -57,7 +57,8 @@ export function scheduleRefreshTopWindow() {
     });
 }
 export function createWindow(title, options = {}) {
-
+    const abortController = new AbortController();
+    const { signal } = abortController;
     // ★ グローバルイベントは1回だけ登録
     installGlobalMouseHandler();
 
@@ -231,25 +232,34 @@ ${!options.hideStatus ? `
         minBtn?.classList.add("pointer_none");
     }
 
-    closeBtn.addEventListener("click", () => {
-        if (w._modalOverlay) w._modalOverlay.remove();
-        if (w.dataset.processKey) {
-            killProcess(w.dataset.processKey);
-        } else {
-            // 念のためフォールバック
-            w.remove();
+    const destroy = () => {
+        abortController.abort(); // 全イベントリスナーを一括解除
+
+        if (w._observer) {
+            w._observer.disconnect();
+            w._observer = null;
         }
+
+        if (w._modalOverlay) w._modalOverlay.remove();
 
         if (taskbarBtn) {
             taskbarBtn._window = null;
             taskbarBtn.remove();
-
             const idx = taskbarButtons.indexOf(taskbarBtn);
             if (idx !== -1) taskbarButtons.splice(idx, 1);
         }
+        w._taskbarBtn = null;
 
+        if (w.dataset.processKey) {
+            killProcess(w.dataset.processKey);
+        }
+        w.remove();
         scheduleRefreshTopWindow();
-    });
+    };
+
+    // 外部から呼べるように要素に参照を持たせる
+    w._destroy = destroy;
+    closeBtn.addEventListener("click", destroy);
 
     /* ===== 最小化アニメーション ===== */
 
@@ -437,57 +447,92 @@ ${!options.hideStatus ? `
     });
 
     titleBar.addEventListener("mousedown", e => {
-        if (e.target.closest(".window-controls")) return;
-        if (maximized) return;
-
+        if (e.target.closest(".window-controls") || maximized) return;
         dragging = true;
         dragStarted = false;
-        didMove = false; // 移動フラグを初期化
+        didMove = false;
         focus();
-
         downX = e.clientX;
         downY = e.clientY;
-
         const rect = w.getBoundingClientRect();
         offsetX = e.clientX - rect.left;
         offsetY = e.clientY - rect.top;
 
         document.body.style.userSelect = "none";
-
-        // 他のウィンドウ操作無効化
+        // 他のウィンドウを操作不能にする
         document.querySelectorAll(".window").forEach(win => {
             if (win !== w) win.style.pointerEvents = "none";
         });
+
+        // ドラッグ中のみ動く関数
+        const onMouseMove = (moveEv) => {
+            if (!dragging) return;
+            const taskbar = document.getElementById("taskbar");
+            const taskbarTop = taskbar ? taskbar.getBoundingClientRect().top : Infinity;
+
+            let clientY = moveEv.clientY;
+            if (clientY > taskbarTop - offsetY) {
+                clientY = taskbarTop - offsetY;
+            }
+
+            const dx = moveEv.clientX - downX;
+            const dy = clientY - downY;
+
+            if (!dragStarted && (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD)) {
+                dragStarted = true;
+                createPreview();
+            }
+
+            if (!dragStarted || !preview) return;
+
+            preview.style.left = `${moveEv.clientX - offsetX}px`;
+            preview.style.top = `${clientY - offsetY}px`;
+            didMove = true;
+        };
+
+        // ★改善：マウスを離した時の解除処理をここで定義
+        const endDrag = async () => {
+            document.removeEventListener("mousemove", onMouseMove);
+            window.removeEventListener("blur", endDrag);
+            if (!dragging) return;
+
+            // 操作制限の解除
+            document.querySelectorAll(".window").forEach(win => win.style.pointerEvents = "auto");
+            document.body.style.userSelect = "";
+
+            if (preview) {
+                if (preview.parentElement) {
+                    w.style.left = preview.style.left;
+                    w.style.top = preview.style.top;
+                }
+                preview.remove();
+                preview = null;
+            }
+
+            dragging = false;
+            dragStarted = false;
+
+            // 位置保存
+            if (didMove && !maximized && !w.classList.contains("maximized")) {
+                if (!options.skipSave) {
+                    const data = {
+                        w: w.offsetWidth,
+                        h: w.offsetHeight,
+                        x: Math.round(parseFloat(w.style.left) || 0),
+                        y: Math.round(parseFloat(w.style.top) || 0)
+                    };
+                    await saveWindowSize(sizeKey, data);
+                }
+            }
+            didMove = false;
+            window.removeEventListener("blur", endDrag);
+            scheduleRefreshTopWindow();
+        };
+
+        document.addEventListener("mousemove", onMouseMove);
+        document.addEventListener("mouseup", endDrag, { capture: true, once: true });
+        window.addEventListener("blur", endDrag, { once: true }); // ブラウザ外に逃げた時用
     });
-
-    // document 全体の mousemove
-    document.addEventListener("mousemove", e => {
-        if (!dragging) return;
-
-        const desktop = document.getElementById("desktop");
-        const taskbar = document.getElementById("taskbar");
-        const taskbarTop = taskbar ? taskbar.getBoundingClientRect().top : Infinity;
-
-        let clientY = e.clientY;
-        if (clientY > taskbarTop - offsetY) {
-            clientY = taskbarTop - offsetY; // タスクバーを超えないように制限
-        }
-
-        const dx = e.clientX - downX;
-        const dy = clientY - downY;
-
-        if (!dragStarted && (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD)) {
-            dragStarted = true;
-            createPreview();
-        }
-
-        if (!dragStarted || !preview) return;
-
-        preview.style.left = `${e.clientX - offsetX}px`;
-        preview.style.top = `${clientY - offsetY}px`;
-        didMove = true;
-    });
-
 
     /* ===== リサイズ ===== */
     if (!options.disableResize) {
@@ -539,11 +584,6 @@ ${!options.hideStatus ? `
             startY = e.clientY;
 
             createPreview();
-            preview.style.left = startRect.left + "px";
-            preview.style.top = startRect.top + "px";
-            preview.style.width = startRect.width + "px";
-            preview.style.height = startRect.height + "px";
-
             document.body.style.userSelect = "none";
 
             const cursors = {
@@ -558,124 +598,115 @@ ${!options.hideStatus ? `
             document.querySelectorAll(".window").forEach(win => {
                 if (win !== w) win.style.pointerEvents = "none";
             });
+
+            const onResizeMove = (moveEv) => {
+                if (!resizing || !preview) return;
+
+                const taskbar = document.getElementById("taskbar");
+                const taskbarTop = taskbar ? taskbar.getBoundingClientRect().top : Infinity;
+
+                let dx = moveEv.clientX - startX;
+                let dy = moveEv.clientY - startY;
+
+                let newLeft = startRect.left;
+                let newTop = startRect.top;
+                let newWidth = startRect.width;
+                let newHeight = startRect.height;
+
+                switch (currentHandle) {
+                    case "topLeft":
+                        newWidth = Math.max(minWidth, startRect.width - dx);
+                        newHeight = Math.max(minHeight, startRect.height - dy);
+                        newLeft = startRect.left + (startRect.width - newWidth);
+                        newTop = startRect.top + (startRect.height - newHeight);
+                        break;
+                    case "topRight":
+                        newWidth = Math.max(minWidth, startRect.width + dx);
+                        newHeight = Math.max(minHeight, startRect.height - dy);
+                        newTop = startRect.top + (startRect.height - newHeight);
+                        break;
+                    case "bottomLeft":
+                        newWidth = Math.max(minWidth, startRect.width - dx);
+                        newHeight = Math.max(minHeight, startRect.height + dy);
+                        newLeft = startRect.left + (startRect.width - newWidth);
+                        break;
+                    case "bottomRight":
+                        newWidth = Math.max(minWidth, startRect.width + dx);
+                        newHeight = Math.max(minHeight, startRect.height + dy);
+                        break;
+                    case "top":
+                        newHeight = Math.max(minHeight, startRect.height - dy);
+                        newTop = startRect.top + (startRect.height - newHeight);
+                        break;
+                    case "bottom":
+                        newHeight = Math.max(minHeight, startRect.height + dy);
+                        break;
+                    case "left":
+                        newWidth = Math.max(minWidth, startRect.width - dx);
+                        newLeft = startRect.left + (startRect.width - newWidth);
+                        break;
+                    case "right":
+                        newWidth = Math.max(minWidth, startRect.width + dx);
+                        break;
+                }
+
+                if (newTop + newHeight > taskbarTop) {
+                    newHeight = taskbarTop - newTop;
+                }
+
+                preview.style.left = newLeft + "px";
+                preview.style.top = newTop + "px";
+                preview.style.width = newWidth + "px";
+                preview.style.height = newHeight + "px";
+            };
+
+            // ★改善：リサイズ解除用の処理
+            const endResize = async () => {
+                document.removeEventListener("mousemove", onResizeMove);
+                if (!resizing) return;
+
+                document.querySelectorAll(".window").forEach(win => win.style.pointerEvents = "auto");
+                document.body.style.userSelect = "";
+                document.body.style.cursor = "";
+                resizeCursor = "";
+
+                if (preview) {
+                    if (preview.parentElement) {
+                        w.style.left = preview.style.left;
+                        w.style.top = preview.style.top;
+                        w.style.width = preview.style.width;
+                        w.style.height = preview.style.height;
+                    }
+                    preview.remove();
+                    preview = null;
+                }
+
+                resizing = false;
+                currentHandle = null;
+
+                if (didResize && !maximized && !w.classList.contains("maximized")) {
+                    if (!options.skipSave) {
+                        const data = {
+                            w: w.offsetWidth,
+                            h: w.offsetHeight,
+                            x: Math.round(parseFloat(w.style.left) || 0),
+                            y: Math.round(parseFloat(w.style.top) || 0)
+                        };
+                        await saveWindowSize(sizeKey, data);
+                    }
+                }
+                didResize = false;
+                scheduleRefreshTopWindow();
+            };
+
+            document.addEventListener("mousemove", onResizeMove);
+            document.addEventListener("mouseup", endResize, { capture: true, once: true });
+            window.addEventListener("blur", endResize, { once: true });
         }
 
         directions.forEach(dir =>
             handles[dir].addEventListener("mousedown", e => startResize(e, dir))
         );
-
-        document.addEventListener("mousemove", e => {
-            if (!resizing || !preview) return;
-
-            const taskbar = document.getElementById("taskbar");
-            const taskbarTop = taskbar ? taskbar.getBoundingClientRect().top : Infinity;
-
-            let dx = e.clientX - startX;
-            let dy = e.clientY - startY;
-
-            let newLeft = startRect.left;
-            let newTop = startRect.top;
-            let newWidth = startRect.width;
-            let newHeight = startRect.height;
-
-            switch (currentHandle) {
-                case "topLeft":
-                    newWidth = Math.max(minWidth, startRect.width - dx);
-                    newHeight = Math.max(minHeight, startRect.height - dy);
-                    newLeft = startRect.left + (startRect.width - newWidth);
-                    newTop = startRect.top + (startRect.height - newHeight);
-                    break;
-                case "topRight":
-                    newWidth = Math.max(minWidth, startRect.width + dx);
-                    newHeight = Math.max(minHeight, startRect.height - dy);
-                    newTop = startRect.top + (startRect.height - newHeight);
-                    break;
-                case "bottomLeft":
-                    newWidth = Math.max(minWidth, startRect.width - dx);
-                    newHeight = Math.max(minHeight, startRect.height + dy);
-                    newLeft = startRect.left + (startRect.width - newWidth);
-                    break;
-                case "bottomRight":
-                    newWidth = Math.max(minWidth, startRect.width + dx);
-                    newHeight = Math.max(minHeight, startRect.height + dy);
-                    break;
-                case "top":
-                    newHeight = Math.max(minHeight, startRect.height - dy);
-                    newTop = startRect.top + (startRect.height - newHeight);
-                    break;
-                case "bottom":
-                    newHeight = Math.max(minHeight, startRect.height + dy);
-                    break;
-                case "left":
-                    newWidth = Math.max(minWidth, startRect.width - dx);
-                    newLeft = startRect.left + (startRect.width - newWidth);
-                    break;
-                case "right":
-                    newWidth = Math.max(minWidth, startRect.width + dx);
-                    break;
-            }
-
-            if (newTop + newHeight > taskbarTop) {
-                newHeight = taskbarTop - newTop;
-            }
-
-            preview.style.left = newLeft + "px";
-            preview.style.top = newTop + "px";
-            preview.style.width = newWidth + "px";
-            preview.style.height = newHeight + "px";
-        });
-
-        document.addEventListener("mouseup", async () => {
-            const wasDragging = dragging;
-            const wasResizing = resizing;
-
-            // pointerEvents / cursor 復帰（先に戻す）
-            document.querySelectorAll(".window").forEach(win => win.style.pointerEvents = "auto");
-            document.body.style.userSelect = "";
-            document.body.style.cursor = "";
-            resizeCursor = "";
-
-            // preview反映（存在チェックを強化）
-            if (preview) {
-                if (preview.parentElement) {
-                    w.style.left = preview.style.left;
-                    w.style.top = preview.style.top;
-
-                    if (wasResizing) {
-                        w.style.width = preview.style.width;
-                        w.style.height = preview.style.height;
-                    }
-                }
-
-                preview.remove();
-                preview = null;
-            }
-
-            // フラグ解除（最後にやる）
-            dragging = false;
-            dragStarted = false;
-            resizing = false;
-            currentHandle = null;
-
-            // 保存処理
-            if ((wasDragging || didResize || didMove) && !maximized && !w.classList.contains("maximized")) {
-                if (!options.skipSave) {
-                    const data = {
-                        w: w.offsetWidth,
-                        h: w.offsetHeight,
-                        x: Math.round(parseFloat(w.style.left) || 0),
-                        y: Math.round(parseFloat(w.style.top) || 0)
-                    };
-                    await saveWindowSize(sizeKey, data);
-                }
-            }
-
-            didResize = false;
-            didMove = false;
-        });
-
-
-
 
         scheduleRefreshTopWindow();
         if (!options._modal && !options.disableContextMenu) {
@@ -691,12 +722,9 @@ ${!options.hideStatus ? `
 /* ===== ウィンドウ前面化 ===== */
 export function bringToFront(win) {
     if (!win) return;
-    const visibleWindows = Array.from(document.querySelectorAll(".window"))
-        .filter(w => w.style.visibility !== "hidden" && w.dataset.minimized !== "true");
-
-    const maxZ = visibleWindows.reduce((acc, w) => Math.max(acc, parseInt(w.style.zIndex) || 0), 0);
+    const wins = Array.from(document.querySelectorAll(".window"));
+    const maxZ = wins.reduce((max, w) => Math.max(max, parseInt(w.style.zIndex) || 100), 100);
     win.style.zIndex = maxZ + 1;
-
     scheduleRefreshTopWindow();
 }
 
@@ -981,16 +1009,13 @@ export function closeWindowById(id) {
     const target = wins[id];
     if (!target) throw new Error("Invalid window id");
 
-    const btn = target._taskbarBtn;
-
-    if (btn) {
-        btn.remove();
-        const idx = taskbarButtons.indexOf(btn);
-        if (idx !== -1) taskbarButtons.splice(idx, 1);
+    // 単なる remove() ではなく、定義したクリーンアップ関数を実行
+    if (typeof target._destroy === "function") {
+        target._destroy();
+    } else {
+        // フォールバック
+        target.remove();
     }
-
-    target.remove();
-    scheduleRefreshTopWindow();
 }
 
 export function installWindowContextMenu(w) {

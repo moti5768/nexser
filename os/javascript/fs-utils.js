@@ -6,7 +6,7 @@ import { FS } from "./fs.js";
  */
 export function resolveFS(path) {
     if (typeof path !== "string") return null;
-    const parts = path.split("/").filter(Boolean);
+    const parts = path.split(/[\\/]/).filter(Boolean);
     let cur = FS;
     const visited = new Set(); // 循環防止
 

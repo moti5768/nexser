@@ -41,7 +41,7 @@ async function save() {
 
 export async function getRecent() {
     if (!cache.length) await load();
-    return cache;
+    return [...cache];
 }
 
 // ★ async にする

@@ -241,13 +241,10 @@ function setupHover(parent, submenu) {
     });
 }
 
-
-
 /* =====================================================
    Recent Area
 ===================================================== */
 async function buildRecentArea(root) {
-    // 複数存在する start-recent をすべて削除
     const existing = root.querySelectorAll(".start-recent");
     existing.forEach(el => el.remove());
 
@@ -261,7 +258,15 @@ async function buildRecentArea(root) {
     const list = document.createElement("div");
     list.className = "start-recent-list";
 
-    const recent = await getRecent();
+    let recent = await getRecent();
+
+    // ★ 追加（重複防止）
+    const seen = new Set();
+    recent = recent.filter(r => {
+        if (seen.has(r.path)) return false;
+        seen.add(r.path);
+        return true;
+    });
 
     if (!recent.length) {
         const empty = document.createElement("div");
@@ -343,10 +348,14 @@ function launchByType(type, path) {
 /* =====================================================
    Refresh API
 ===================================================== */
-export async function refreshStartMenu() {
-    const menu = document.getElementById("start-menu");
-    if (!menu) return;
-    await buildStartMenu();
+let refreshTimer = null;
+export function refreshStartMenu() {
+    clearTimeout(refreshTimer);
+    refreshTimer = setTimeout(async () => {
+        const menu = document.getElementById("start-menu");
+        if (!menu) return;
+        await buildStartMenu();
+    }, 10);
 }
 
 /* =====================================================

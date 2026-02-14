@@ -142,11 +142,16 @@ export default function TerminalApp(content) {
         },
 
         cd: {
-            desc: "Change directory", run(args) {
+            desc: "Change directory",
+            run(args) {
                 if (!args[0]) return;
                 const node = getNodeByPath(args[0]);
                 if (!node || node.type === "file") return print("Not a directory");
-                cwd = normalizePath(args[0]).replace(/\/$/, "");
+                let newPath = normalizePath(args[0], cwd);
+                if (newPath !== "C:/") {
+                    newPath = newPath.replace(/\/$/, "");
+                }
+                cwd = newPath;
                 promptSpan.textContent = cwd + ">";
             }
         },
@@ -265,22 +270,25 @@ export default function TerminalApp(content) {
         },
 
         focus: { desc: "Focus window by id", run(args) { focusWindowById(Number(args[0])); } },
-        minimize: { desc: "Minimize window by id", run(args) { minimizeWindowById(Number(args[0])); } },
-        maximize: { desc: "Maximize window by id", run(args) { maximizeWindowById(Number(args[0])); } },
+        minimize: { desc: "Minimize window by id", async run(args) { await minimizeWindowById(Number(args[0])); } },
+        maximize: { desc: "Maximize window by id", async run(args) { await maximizeWindowById(Number(args[0])); } },
         resetui: { desc: "Reset all windows and UI", run() { resetUI(); print("UI has been reset."); } },
 
         touch: {
             desc: "Create empty file", run(args) {
                 if (!args[0]) return print("Usage: touch <file>");
-                const path = normalizePath(args[0]);
-                const parts = path.replace(/^C:\//, "").split("/");
+                const fullPath = normalizePath(args[0], cwd);
+                const pathWithoutDrive = fullPath.replace(/^C:\//, "");
+                const parts = pathWithoutDrive.split("/");
                 const name = parts.pop();
-                const parent = getNodeByPath(parts.join("/"));
-                if (!parent) return print("Parent not found");
+                const parentPath = parts.join("/");
+                const parent = resolveFS(parentPath);
+                if (!parent || parent.type === "file") return print("Invalid parent path");
                 if (parent[name]) return print("Already exists");
                 parent[name] = { type: "file", content: "" };
-                createdFiles.push(path);
+                createdFiles.push(fullPath);
                 print(`File created: ${name}`);
+                window.dispatchEvent(new Event("fs-updated"));
             }
         },
 
@@ -289,17 +297,37 @@ export default function TerminalApp(content) {
             async run(args) {
                 const file = args[0];
                 if (!file) return print("Usage: edit <file>");
+
                 let node = getNodeByPath(file);
+
+                // --- ファイルが存在しない場合の作成処理を修正 ---
                 if (!node) {
                     print("File not found, creating...");
-                    const path = normalizePath(file);
-                    const parts = path.replace(/^C:\//, "").split("/");
-                    const name = parts.pop();
-                    const parent = getNodeByPath(parts.join("/"));
-                    parent[name] = { type: "file", content: "" };
-                    node = parent[name];
-                    createdFiles.push(normalizePath(file));
+                    const fullPath = normalizePath(file, cwd); // 絶対パスを取得 (例: C:/Desktop/Programs/Documents/b.txt)
+
+                    // C:/ を除いたパスを分割
+                    const pathWithoutDrive = fullPath.replace(/^C:\//, "");
+                    const parts = pathWithoutDrive.split("/");
+                    const fileName = parts.pop();      // "b.txt"
+                    const parentPath = parts.join("/"); // "Desktop/Programs/Documents"
+
+                    // resolveFS を使って親ディレクトリを確実に取得
+                    const parent = resolveFS(parentPath);
+
+                    if (!parent || parent.type === "file") {
+                        return print(`Error: Directory 'C:/${parentPath}' not found.`, "#f00");
+                    }
+
+                    // ファイル作成
+                    parent[fileName] = { type: "file", content: "" };
+                    node = parent[fileName];
+                    createdFiles.push(fullPath);
+
+                    // 作成した瞬間にエクスプローラーに反映させる
+                    window.dispatchEvent(new Event("fs-updated"));
                 }
+                // ----------------------------------------------
+
                 if (node.type !== "file") return print("Not a file");
 
                 print("---- Editor (type :wq to save, :e <line> <text> to edit) ----");
@@ -330,18 +358,21 @@ export default function TerminalApp(content) {
                             editorResolve?.();
                             editorResolve = null;
                             print("Saved.");
+
+                            // 保存時にも通知（内容更新のため）
+                            window.dispatchEvent(new Event("fs-updated"));
                             return;
                         }
 
                         // 行訂正
                         const editMatch = line.match(/^:e\s+(\d+)\s+(.+)$/);
                         if (editMatch) {
-                            const num = Number(editMatch[1]) - 1; // 1-index
+                            const num = Number(editMatch[1]) - 1;
                             const newText = editMatch[2];
                             if (num < 0 || num >= editorBuffer.length) return print("Invalid line number");
                             editorBuffer[num] = newText;
                             print(`Line ${num + 1} updated: ${newText}`);
-                            return; // ←追記せず終了
+                            return;
                         }
 
                         // 通常追記
@@ -450,6 +481,7 @@ export default function TerminalApp(content) {
                 if (node.type !== "file") return print("Not a file");
                 node.content = "";
                 print(`File ${args[0]} cleared.`);
+                window.dispatchEvent(new Event("fs-updated"));
             }
         },
 
@@ -461,29 +493,25 @@ export default function TerminalApp(content) {
             }
         },
 
-        // newfiles コマンドの近くに追加
         deletefile: {
             desc: "Delete a file created in this session",
             run(args) {
                 if (!args[0]) return print("Usage: deletefile <file>");
-
-                const path = normalizePath(args[0]);
-                const idx = createdFiles.indexOf(path);
+                const fullPath = normalizePath(args[0], cwd);
+                const idx = createdFiles.indexOf(fullPath);
                 if (idx === -1) return print("File not found or not created in this session.");
-
-                // FS 上で削除
-                const parts = path.replace(/^C:\//, "").split("/");
+                const pathWithoutDrive = fullPath.replace(/^C:\//, "");
+                const parts = pathWithoutDrive.split("/");
                 const name = parts.pop();
-                const parent = getNodeByPath(parts.join("/"));
+                const parentPath = parts.join("/");
+                const parent = resolveFS(parentPath);
                 if (!parent || !parent[name]) return print("File not found in FS.");
-
-                delete parent[name];             // FS から削除
-                createdFiles.splice(idx, 1);     // createdFiles から削除
-
-                print(`Deleted file: ${path}`);
+                delete parent[name];
+                createdFiles.splice(idx, 1);
+                print(`Deleted file: ${fullPath}`);
+                window.dispatchEvent(new Event("fs-updated"));
             }
         }
-
 
     };
 

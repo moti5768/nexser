@@ -31,18 +31,18 @@ const processes = new Map();
 let cpuLoad = 0;
 let lastTick = performance.now();
 
-// イベントループ負荷からCPU近似値を計測（擬似ではない）
+// イベントループ負荷からCPU近似値を計測
 setInterval(() => {
     const now = performance.now();
     const lag = now - lastTick - 1000;
     lastTick = now;
-
     cpuLoad = Math.max(0, Math.min(100, lag * 2));
 }, 1000);
 
 function getMemoryMB() {
-    if (!performance.memory) return 0;
-    return Math.round(performance.memory.usedJSHeapSize / 1024 / 1024);
+    // ★ performance.memory が無い環境（Chrome以外）へのガードを追加
+    const mem = (performance && performance.memory) ? performance.memory.usedJSHeapSize : 0;
+    return Math.round(mem / 1024 / 1024);
 }
 
 /* =========================
@@ -50,10 +50,7 @@ function getMemoryMB() {
 ========================= */
 async function safeImport(entry) {
     if (moduleCache.has(entry)) return moduleCache.get(entry);
-
-    if (importLocks.has(entry)) {
-        return importLocks.get(entry);
-    }
+    if (importLocks.has(entry)) return importLocks.get(entry);
 
     const promise = (async () => {
         try {
@@ -100,7 +97,7 @@ export async function initKernelAsync(progressCallback = () => { }) {
     installDynamicButtonEffect();
 
     progressCallback("UI effects applied...");
-    startup_sound();
+    try { startup_sound(); } catch { } // ★ 音声エラーで止まらないようガード
 
     progressCallback("Kernel initialization complete!");
 }
@@ -108,6 +105,7 @@ export async function initKernelAsync(progressCallback = () => { }) {
 /* ===== basename（互換強化） ===== */
 export function basename(path) {
     if (!path) return "";
+    // ★ Windows形式/Linux形式両方の区切り文字に対応
     const parts = path.split(/[\\/]/).filter(Boolean);
     return parts[parts.length - 1] || "";
 }
@@ -180,14 +178,15 @@ export async function launch(path, options = {}) {
 
             const content = createWindow(displayName);
 
-            if (!content?.parentElement ||
-                !document.body.contains(content.parentElement))
+            // ★ contentから親ウィンドウ要素(.window)を確実に取得
+            const win = content?.closest(".window");
+
+            if (!win || !document.body.contains(win))
                 throw new Error("Window creation failed");
 
-            const win = content.parentElement;
-
             try {
-                appModule.default(content, options);
+                // ★ 非同期実行にも対応できるよう await を追加（互換性維持）
+                await appModule.default(content, options);
             } catch (e) {
                 console.error("app runtime error:", e);
                 errorWindow(`アプリがクラッシュしました\n${e.message}`, { taskbar: false });
@@ -212,28 +211,24 @@ export async function launch(path, options = {}) {
 
             win.dataset.processKey = key;
 
-            /* Explorer 管理 */
+            /* ★ ゾンビプロセス防止 (MutationObserver 最適化版)
+               監視範囲を絞り、isConnected プロパティで判定することで負荷を激減 */
+            const observer = new MutationObserver(() => {
+                if (!win.isConnected) {
+                    if (isExplorer) explorerWindows.delete(options.path || "Desktop");
+                    processes.delete(key);
+                    observer.disconnect();
+                    win._observer = null;
+                }
+            });
+
+            win._observer = observer;
+            // デスクトップ要素が存在すればそれを、無ければbodyを最小限に監視
+            const container = document.getElementById("desktop") || document.body;
+            observer.observe(container, { childList: true });
+
             if (isExplorer) {
-
-                const openPath = options.path || "Desktop";
-                explorerWindows.set(openPath, win);
-
-                if (win._observer)
-                    win._observer.disconnect();
-
-                const observer = new MutationObserver(() => {
-                    if (!document.body.contains(win)) {
-                        explorerWindows.delete(openPath);
-                        observer.disconnect();
-                        win._observer = null;
-                    }
-                });
-
-                win._observer = observer;
-                observer.observe(document.body, {
-                    childList: true,
-                    subtree: true
-                });
+                explorerWindows.set(options.path || "Desktop", win);
             }
         }
 
@@ -249,7 +244,7 @@ export async function launch(path, options = {}) {
             const content =
                 createWindow(basename(path));
 
-            const win = content?.parentElement;
+            const win = content?.closest(".window");
 
             if (!win)
                 throw new Error("Window creation failed");
@@ -276,6 +271,17 @@ export async function launch(path, options = {}) {
             });
 
             win.dataset.processKey = key;
+
+            // ★ ファイルビューアーにも最適化された監視を追加
+            const observer = new MutationObserver(() => {
+                if (!win.isConnected) {
+                    processes.delete(key);
+                    observer.disconnect();
+                }
+            });
+            win._observer = observer;
+            const container = document.getElementById("desktop") || document.body;
+            observer.observe(container, { childList: true });
         }
 
         /* ================= FOLDER ================= */
@@ -309,9 +315,12 @@ export async function launch(path, options = {}) {
 function resolve(path, seen = new Set()) {
 
     if (typeof path !== "string") return null;
-    if (seen.has(path)) return null;
 
-    seen.add(path);
+    // ★ パス末尾のスラッシュなどを正規化して循環判定精度を向上
+    const normPath = path.replace(/\/$/, "");
+    if (seen.has(normPath)) return null;
+
+    seen.add(normPath);
 
     let fsPath = path.replace(/^C:\//, "");
     const parts = fsPath.split("/").filter(Boolean);
@@ -405,6 +414,9 @@ export function killProcess(key) {
     const win = proc.window;
 
     try {
+        // ★ 各ウィンドウが持つクリーンアップ処理があれば呼ぶ
+        if (win?._cleanup) win._cleanup();
+
         if (win?._observer)
             win._observer.disconnect();
 
@@ -417,6 +429,7 @@ export function killProcess(key) {
         console.warn("window remove failed:", e);
     }
 
+    // ★ ウィンドウ削除に伴いMapからも確実に削除
     for (const [path, w] of explorerWindows.entries()) {
         if (w === win) {
             explorerWindows.delete(path);
@@ -434,11 +447,15 @@ export function resetUI() {
     try {
         document.querySelectorAll(".window")
             .forEach(w => {
-                try {
-                    if (w._observer)
-                        w._observer.disconnect();
-                    w.remove();
-                } catch { }
+                const key = w.dataset.processKey;
+                if (key) {
+                    killProcess(key); // ★ killProcessを呼ぶことで管理Mapも連動して消去
+                } else {
+                    try {
+                        if (w._observer) w._observer.disconnect();
+                        w.remove();
+                    } catch { }
+                }
             });
 
         removeAllTaskbarButtons();
@@ -459,7 +476,7 @@ export async function logOff() {
 
     const performLogoff = () => {
         resetUI();
-        moduleCache.clear(); // ★ メモリ軽減
+        moduleCache.clear();
         showPromptScreen("nexser logoff");
     };
 

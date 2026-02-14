@@ -127,6 +127,7 @@ export function buildDesktop() {
         return items;
     });
     adjustDesktopIconArea();
+    window.dispatchEvent(new Event("desktop-ready"));
 }
 
 // タスクバー高さに応じてアイコン領域を調整
