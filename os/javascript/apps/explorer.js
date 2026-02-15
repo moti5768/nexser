@@ -1,6 +1,6 @@
 // Explorer.js
 import { launch } from "../kernel.js";
-import { createWindow, showModalWindow, alertWindow } from "../window.js";
+import { showModalWindow, alertWindow } from "../window.js";
 import { resolveFS, validateName } from "../fs-utils.js";
 import { FS, initFS } from "../fs.js";
 import { buildDesktop } from "../desktop.js";
@@ -189,8 +189,9 @@ export default async function Explorer(root, options = {}) {
                     // 既に関連付けられているアプリがある場合
                     launch(appPath, { path: targetPath, node: targetNode, uniqueKey: targetPath });
                 } else {
-                    // ⭐ 修正箇所: 不明な拡張子の場合、アプリ選択ダイアログを表示
-                    openWithDialog(targetPath, targetNode);
+                    if (targetNode.type === "file") {
+                        openWithDialog(targetPath, targetNode);
+                    }
                 }
                 break;
             }
@@ -680,12 +681,19 @@ export default async function Explorer(root, options = {}) {
                             if (!globalSelected.item) return;
                             const name = globalSelected.item.textContent;
                             const node = resolveFS(currentPath)[name];
-                            if (node?.type !== "folder") openWithDialog(`${currentPath}/${name}`, node);
+
+                            // ⭐ 修正: node.type が確実に "file" であるときのみ実行
+                            if (node && node.type === "file") {
+                                openWithDialog(`${currentPath}/${name}`, node);
+                            } else {
+                                alertWindow("このアイテムはプログラムから開くことができません。");
+                            }
                         },
                         disabled: () => {
                             if (!globalSelected.item) return true;
                             const node = resolveFS(currentPath)[globalSelected.item.textContent];
-                            return !node || node.type === "folder";
+                            // ⭐ 修正: file 以外（folder, app, link）はすべて無効化する
+                            return !node || node.type !== "file";
                         }
                     }
                 ]
@@ -760,8 +768,16 @@ function getAllApps() {
             if (name === "type") continue;
             const child = node[name];
             const fullPath = path ? `${path}/${name}` : name;
-            if (child.type === "app") apps.push({ name, path: fullPath });
-            else if (child.type === "folder") traverse(child, fullPath);
+
+            // child.type が "app" で、かつ名前が "Explorer.app" 以外を抽出
+            if (child.type === "app") {
+                if (name !== "Explorer.app") {
+                    apps.push({ name, path: fullPath });
+                }
+            }
+            else if (child.type === "folder") {
+                traverse(child, fullPath);
+            }
         }
     }
     traverse(FS);
@@ -778,6 +794,7 @@ export function openWithDialog(filePath, fileNode) {
         taskbar: false,
         width: 300,
         height: Math.min(400, apps.length * 40 + 60),
+        overlay: true,
         buttons: []
     });
 

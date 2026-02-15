@@ -1,94 +1,25 @@
 // TextEditor.js
 import { resolveFS } from "../fs-utils.js";
-import { createWindow, bringToFront, centerWindowOptions } from "../window.js";
+import { createWindow, bringToFront, showModalWindow, alertWindow, centerWindowOptions } from "../window.js";
 import { taskbarButtons } from "../window.js";
 import { buildDesktop } from "../desktop.js";
 import { setupRibbon } from "../ribbon.js";
 
-/* =========================
-   警告・確認ダイアログ管理
-========================= */
-function showModalDialog(root, title, message, buttons = []) {
-    const win = root.closest(".window");
-    if (!win) return;
-
-    bringToFront(win); // 親ウィンドウを最前面化
-
-    if (!win._activeDialogs) win._activeDialogs = new Set();
-    if (win._activeDialogs.has(message)) return;
-    win._activeDialogs.add(message);
-
-    win.style.pointerEvents = "none";
-
-    const content = createWindow(title, {
-        width: 320,
-        height: 150,
-        disableControls: true,
-        hideRibbon: true,
-        hideStatus: true,
-        taskbar: false,
-        skipSave: true,
-        skipFocus: true
-    });
-
-    const dialogWin = content.parentElement;
-    dialogWin.classList.add("modal-dialog");
-
-    // 親ウィンドウより少し上に表示
-    dialogWin.style.zIndex = parseInt(win.style.zIndex) + 1000;
-    dialogWin.style.pointerEvents = "all";
-    dialogWin.style.position = "absolute";
-
-    const rect = win.getBoundingClientRect();
-    dialogWin.style.left = rect.left + rect.width / 2 - 160 + "px";
-    dialogWin.style.top = rect.top + rect.height / 2 - 75 + "px";
-
-    document.body.appendChild(dialogWin);
-
-    content.innerHTML = `<p>${message}</p><div style="text-align:center;margin-top:12px;"></div>`;
-    const container = content.querySelector("div");
-
-    // 閉じる処理
-    function closeDialog(callback) {
-        dialogWin.remove();
-        win._activeDialogs.delete(message);
-        win.style.pointerEvents = "auto";
-        if (typeof callback === "function") callback();
-    }
-
-    // ボタン生成
-    buttons.forEach(btn => {
-        const b = document.createElement("button");
-        b.textContent = btn.label;
-        b.onclick = () => closeDialog(btn.onClick);
-        b.style.margin = "0 4px";
-        container.appendChild(b);
-    });
-
-    // ウィンドウの閉じるボタン対応
-    const closeBtn = dialogWin.querySelector(".close-btn");
-    if (closeBtn) closeBtn.onclick = () => closeDialog();
-
-    // 親ウィンドウが消えた場合のクリーンアップ
-    const observer = new MutationObserver(() => {
-        if (!document.body.contains(win)) {
-            closeDialog();
-            observer.disconnect();
-        }
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
-    return content;
-}
-
 function showWarning(root, message) {
-    showModalDialog(root, "Warning", message, [{ label: "OK", onClick: null }]);
+    const win = root.closest(".window");
+    alertWindow(message, { parentWin: win });
 }
 
 function showConfirm(root, message, onYes, onNo) {
-    showModalDialog(root, "Confirm", message, [
-        { label: "はい", onClick: onYes },
-        { label: "いいえ", onClick: onNo }
-    ]);
+    const win = root.closest(".window");
+    showModalWindow("Confirm", message, {
+        parentWin: win,
+        iconClass: "warning_icon",
+        buttons: [
+            { label: "はい", onClick: onYes },
+            { label: "いいえ", onClick: onNo }
+        ]
+    });
 }
 
 /* =========================
@@ -181,24 +112,31 @@ export default function TextEditor(root, options = {}) {
         let finalName = baseTitle;
         async function askFileName(defaultName) {
             return new Promise(resolve => {
-                const dialogContent = showModalDialog(
-                    root,
-                    "新規ファイル名",
-                    "ファイル名を入力してください",
-                    [
+                const content = showModalWindow("新規保存", "ファイル名を入力してください", {
+                    parentWin: win,
+                    buttons: [
                         { label: "OK", onClick: () => resolve(promptInput.value) },
                         { label: "キャンセル", onClick: () => resolve(null) }
                     ]
-                );
+                });
 
+                // input要素の作成
                 const promptInput = document.createElement("input");
                 promptInput.type = "text";
                 promptInput.value = defaultName;
-                promptInput.style.width = "95%";
+                promptInput.style.width = "100%";
+                promptInput.style.boxSizing = "border-box"; // 幅を枠内に収める
+                promptInput.style.padding = "4px";
 
-                const container = dialogContent.querySelector("div");
-                container.prepend(promptInput);
-                promptInput.focus();
+                // 【重要】ボタンエリアを探して、その直前に挿入する
+                const btnContainer = content.querySelector(".modal-button-container") || content.lastElementChild;
+                if (btnContainer) {
+                    content.insertBefore(promptInput, btnContainer);
+                } else {
+                    content.appendChild(promptInput);
+                }
+
+                setTimeout(() => promptInput.focus(), 10);
             });
         }
         let idx = 1;
@@ -422,35 +360,73 @@ export default function TextEditor(root, options = {}) {
     function searchText() {
         if (!win) return;
 
-        const searchContent = showModalDialog(win, "検索", "検索文字列を入力してください", [
-            { label: "検索", onClick: () => performSearch(input.value) },
-            { label: "閉じる", onClick: null }
-        ]);
+        // 1. parentWin を null にして、エディタ本体のロックを解除（モードレス化）
+        const content = showModalWindow("検索", "検索文字列を入力してください", {
+            parentWin: null,
+            buttons: [
+                {
+                    label: "検索",
+                    onClick: () => performSearch(input.value)
+                },
+                {
+                    label: "閉じる",
+                    onClick: () => closeSearch() // 自前のクローズ処理を呼ぶ
+                }
+            ]
+        });
 
-        const container = searchContent.querySelector("div");
+        const searchWin = content.parentElement;
+
+        // 2. 位置をエディタの中央に合わせる
+        const opts = centerWindowOptions(320, 150, win);
+        searchWin.style.left = opts.left;
+        searchWin.style.top = opts.top;
+
+        // input要素の作成と挿入
         const input = document.createElement("input");
         input.type = "text";
-        input.style.width = "95%";
-        container.prepend(input);
-        input.focus();
+        input.style.width = "100%";
+        input.style.marginTop = "10px";
+        input.style.boxSizing = "border-box";
+        input.style.padding = "4px";
+
+        const btnContainer = content.querySelector(".modal-button-container") || content.lastElementChild;
+        if (btnContainer) {
+            content.insertBefore(input, btnContainer);
+        } else {
+            content.appendChild(input);
+        }
+
+        setTimeout(() => input.focus(), 10);
+
+        // 3. 【重要】親ウィンドウが消えたら自分も消えるように監視
+        let observer = new MutationObserver(() => {
+            if (!document.body.contains(win)) {
+                closeSearch();
+            }
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+
+        // 4. クローズ用ヘルパー関数（監視の解除を忘れないようにする）
+        function closeSearch() {
+            if (observer) observer.disconnect();
+            searchWin.remove();
+        }
 
         function performSearch(query) {
             if (!query) return;
-
-            // 全てのハイライトをクリア
             const val = textarea.value;
-            textarea.value = val; // 一旦リセット（簡易ハイライト代用）
-
             const index = val.indexOf(query);
             if (index === -1) {
                 showWarning(win, `"${query}" は見つかりません`);
                 return;
             }
-
-            // 選択範囲に移動してハイライト
             textarea.focus();
             textarea.setSelectionRange(index, index + query.length);
-            textarea.scrollTop = textarea.scrollHeight * (index / val.length);
+
+            const lineHeight = parseInt(getComputedStyle(textarea).lineHeight) || 20;
+            const linesBefore = val.substring(0, index).split("\n").length;
+            textarea.scrollTop = (linesBefore - 1) * lineHeight;
         }
     }
 }
@@ -466,27 +442,17 @@ function select(map, value) { const s = document.createElement("select"); for (c
 let activeColorPicker = null;
 
 export function showColorPicker(title, initialColor = "#ffffff", onSelect, parentWin) {
-    // 既存カラーピッカーが DOM に存在するかチェック
+    // 1. 既存チェック（変数名を整理）
     if (activeColorPicker && document.body.contains(activeColorPicker)) {
-        const pickerWin = activeColorPicker.closest(".window") || activeColorPicker;
-        bringToFront(pickerWin);
+        bringToFront(activeColorPicker);
         return activeColorPicker.querySelector(".content");
-    } else {
-        // 変数が残っているが DOM にない場合はクリア
-        activeColorPicker = null;
     }
 
-    // ウィンドウ生成
-    const content = createWindow(title, {
+    const content = showModalWindow(title || "Color Picker", "色を選択してください", {
+        parentWin: null,
         width: 320,
         height: 200,
-        disableControls: true,
-        hideRibbon: true,
-        hideStatus: true,
-        taskbar: false,
-        skipSave: true,
-        _modal: true,
-        disableResize: false
+        buttons: []
     });
 
     const win = content.parentElement;

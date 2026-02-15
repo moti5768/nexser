@@ -1,6 +1,6 @@
 // CodeEditor.js
 import { resolveFS } from "../fs-utils.js";
-import { createWindow, bringToFront } from "../window.js";
+import { createWindow, bringToFront, showModalWindow } from "../window.js";
 import { buildDesktop } from "../desktop.js";
 import { setupRibbon } from "../ribbon.js";
 
@@ -774,10 +774,33 @@ export default function CodeEditor(root, options = {}) {
     ========================== */
     function requestClose() {
         if (!dirty) { closeWin(); return; }
-        showConfirm(root, "編集中の内容があります。\n保存しますか？",
-            async () => { await save(); closeWin(); },
-            () => { dirty = false; renderTabs(); updateTitle(); closeWin(); }
-        );
+        showModalWindow("Save Changes", "編集中の内容があります。\n保存しますか？", {
+            parentWin: win,
+            buttons: [
+                {
+                    label: "保存",
+                    onClick: async () => {
+                        await save();
+                        closeWin();
+                    }
+                },
+                {
+                    label: "保存しない",
+                    onClick: () => {
+                        dirty = false; // 破棄フラグ
+                        renderTabs();
+                        updateTitle();
+                        closeWin();
+                    }
+                },
+                {
+                    label: "キャンセル",
+                    onClick: () => {
+                        // 何もしない（ダイアログが閉じるだけ）
+                    }
+                }
+            ]
+        });
     }
     function closeWin() {
         if (previewWin && document.body.contains(previewWin)) previewWin.remove();
@@ -809,70 +832,8 @@ export default function CodeEditor(root, options = {}) {
     }
 }
 
-/* =========================
-   Modal Dialogs
-========================= */
-function showModalDialog(root, title, message, buttons = []) {
-    const win = root.closest(".window");
-    if (!win) return;
-    if (!win._activeDialogs) win._activeDialogs = new Set();
-    if (win._activeDialogs.has(message)) return;
-    win._activeDialogs.add(message);
-    win.style.pointerEvents = "none";
-
-    const content = createWindow(title, {
-        width: 320, height: 150,
-        disableControls: true,
-        hideRibbon: true,
-        hideStatus: true,
-        taskbar: false,
-        skipSave: true,
-        skipFocus: true
-    });
-
-    const dialogWin = content.parentElement;
-    dialogWin.classList.add("modal-dialog");
-    dialogWin.style.zIndex = parseInt(win.style.zIndex) + 1000;
-    dialogWin.style.pointerEvents = "all";
-    dialogWin.style.position = "absolute";
-
-    const rect = win.getBoundingClientRect();
-    dialogWin.style.left = rect.left + rect.width / 2 - 160 + "px";
-    dialogWin.style.top = rect.top + rect.height / 2 - 75 + "px";
-
-    document.body.appendChild(dialogWin);
-    content.innerHTML = `<p>${message}</p><div style="text-align:center;margin-top:12px;"></div>`;
-    const container = content.querySelector("div");
-
-    function closeDialog(callback) {
-        dialogWin.remove();
-        win._activeDialogs.delete(message);
-        win.style.pointerEvents = "auto";
-        if (typeof callback === "function") callback();
-    }
-
-    buttons.forEach(btn => {
-        const b = document.createElement("button");
-        b.textContent = btn.label;
-        b.onclick = () => closeDialog(btn.onClick);
-        b.style.margin = "0 4px";
-        container.appendChild(b);
-    });
-
-    const closeBtn = dialogWin.querySelector(".close-btn");
-    if (closeBtn) closeBtn.onclick = () => closeDialog();
-    const observer = new MutationObserver(() => { if (!document.body.contains(win)) { closeDialog(); observer.disconnect(); } });
-    observer.observe(document.body, { childList: true, subtree: true });
-
-    return content;
-}
-
-export function showWarning(root, message) {
-    showModalDialog(root, "Warning", message, [{ label: "OK", onClick: null }]);
-}
-
 export function showConfirm(root, message, onYes, onNo) {
-    showModalDialog(root, "Confirm", message, [
+    showModalWindow(root, "Confirm", message, [
         { label: "はい", onClick: onYes },
         { label: "いいえ", onClick: onNo }
     ]);

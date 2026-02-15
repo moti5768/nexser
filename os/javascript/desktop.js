@@ -59,9 +59,18 @@ export function buildDesktop() {
                 },
                 {
                     label: "プログラムから開く",
-                    disabled: isFolder,
-                    action: () => { if (!isFolder) explorerOpenWithDialog(fullPath, node); }
-                }
+                    // ⭐ 対策: type が "file" の場合のみ実行を許可する
+                    action: () => {
+                        if (node.type === "file") {
+                            explorerOpenWithDialog(fullPath, node);
+                        } else {
+                            // ファイル以外（folder, app, link）を無理やり開こうとした場合
+                            alertWindow("システムエラー防止のため、この項目はアプリで開くことができません。", { width: 350, height: 120 });
+                        }
+                    },
+                    // UI上のヒントとして、ファイル以外ではメニューを半透明/無効に見せる（実装依存）
+                    disabled: () => node.type !== "file"
+                },
             ];
         });
     }
@@ -119,8 +128,14 @@ export function buildDesktop() {
             const isFolder = node?.type === "folder";
             items.push({
                 label: "プログラムから開く",
-                disabled: isFolder,
-                action: () => { if (!isFolder) explorerOpenWithDialog(`Desktop/${name}`, node); }
+                disabled: node.type !== "file",
+                action: () => {
+                    if (node.type === "file") {
+                        explorerOpenWithDialog(`Desktop/${name}`, node);
+                    } else {
+                        alertWindow("ファイル以外はアプリで開けません。", { width: 300, height: 120 });
+                    }
+                }
             });
         }
 

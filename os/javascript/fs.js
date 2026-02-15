@@ -3,6 +3,9 @@ import { saveFS, loadFS } from "./fs-db.js";
 
 let saveTimer = null;
 
+// --- 【BSOD対策】保護すべきシステム予約キーの定義 ---
+const PROTECTED_KEYS = ["type", "entry", "singleton", "shell", "target", "name"];
+
 // 初期 FS 定義
 export let FS = {
     "System": {
@@ -10,6 +13,10 @@ export let FS = {
         "AUTOBOOT.CFG": {
             type: "file",
             content: ""
+        },
+        "SoundConfig.json": {
+            type: "file",
+            content: "{}"  // 最初は空っぽ
         }
     },
     Desktop: {
@@ -19,6 +26,7 @@ export let FS = {
         Documents: { type: "link", target: "Programs/Documents" },
         "Terminal.app": { type: "link", target: "Programs/Accessories/Systemtools/Terminal.app" },
         "Calc.app": { type: "link", target: "Programs/Accessories/Calc.app" },
+        "Soundsplayer.app": { type: "app", entry: "./apps/soundplayer.js" },
         "Settings.app": { type: "link", target: "Programs/Settings/Settings.app" }
     },
     Programs: {
@@ -50,6 +58,7 @@ export let FS = {
             type: "folder",
             "Readme.txt": { type: "file", content: "Welcome to NEXSER OS", style: { fontSize: 48, fontFamily: "serif", fontWeight: "bold", fontStyle: "italic" } }
         },
+        Music: { type: "folder" },
         Picture: {
             type: "folder",
             "photo1.png": { type: "file", content: "image1data" },
@@ -87,12 +96,26 @@ function wrapProxy(obj) {
             const value = target[prop];
             return wrapProxy(value);
         },
+        // --- 【修正】書き込み保護 ---
         set(target, prop, value) {
+            // プロパティが保護リストに含まれ、かつ既にオブジェクトに存在する場合のみ変更を拒否
+            if (PROTECTED_KEYS.includes(prop) && Object.prototype.hasOwnProperty.call(target, prop)) {
+                console.warn(`[FS Guard] システム予約プロパティ '${prop}' は保護されているため変更できません。BSODを回避しました。`);
+                return true; // 処理をスキップして終了（呼び出し側にエラーは投げない）
+            }
+
             target[prop] = wrapProxy(value);
             scheduleSave();
             return true;
         },
+        // --- 【修正】削除保護 ---
         deleteProperty(target, prop) {
+            // 保護キーの削除を禁止
+            if (PROTECTED_KEYS.includes(prop)) {
+                console.warn(`[FS Guard] システム予約プロパティ '${prop}' は保護されているため削除できません。BSODを回避しました。`);
+                return false; // 削除を拒否
+            }
+
             delete target[prop];
             scheduleSave();
             return true;
@@ -104,9 +127,9 @@ function wrapProxy(obj) {
 export async function initFS() {
     const saved = await loadFS();
     if (saved) {
-        // Proxy でラップして FS に反映
+        // 保存されたデータも Proxy を通して反映（不正なデータがあればここでブロックされる）
         Object.assign(FS, wrapProxy(saved));
-        console.log("FS loaded from DB");
+        console.log("FS loaded from DB and protected.");
     }
 }
 

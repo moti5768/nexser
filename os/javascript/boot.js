@@ -2,6 +2,7 @@
 import { FS, initFS } from './fs.js';
 import { buildDesktop } from './desktop.js';
 import { showBSOD } from './bsod.js';
+import { playSystemEventSound } from './kernel.js'
 
 // ===== Global Error Handlers =====
 window.onerror = (msg, src, line, col, err) => showBSOD(String(msg), err);
@@ -130,6 +131,7 @@ export async function bootOS() {
         const sm = await import('./startmenu.js');
         if (sm.startMenuReady) await sm.startMenuReady(msg => print(`[StartMenu] ${msg}`));
         print('[StartMenu] Ready');
+        playSystemEventSound('startup');
         screen.style.display = 'none';
         const root = document.getElementById('os-root');
         if (root) root.style.display = 'block';

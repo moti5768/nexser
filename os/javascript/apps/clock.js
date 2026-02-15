@@ -1,4 +1,4 @@
-// Clock.js
+// clock.js
 import { saveSetting, loadSetting } from "./settings.js";
 
 // グローバル時刻（アプリ起動していなくても進む）

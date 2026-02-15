@@ -1,93 +1,24 @@
 // ImageViewer.js
 import { resolveFS } from "../fs-utils.js";
-import { createWindow, bringToFront, taskbarButtons } from "../window.js";
+import { createWindow, bringToFront, showModalWindow, alertWindow, taskbarButtons } from "../window.js";
 import { buildDesktop } from "../desktop.js";
 import { setupRibbon } from "../ribbon.js";
 
-/* =========================
-   警告・確認ダイアログ管理（TextEditor流用）
-========================= */
-function showModalDialog(root, title, message, buttons = []) {
-    const win = root.closest(".window");
-    if (!win) return;
-
-    bringToFront(win);
-
-    if (!win._activeDialogs) win._activeDialogs = new Set();
-    if (win._activeDialogs.has(message)) return;
-    win._activeDialogs.add(message);
-
-    win.style.pointerEvents = "none";
-
-    const content = createWindow(title, {
-        width: 320,
-        height: 150,
-        disableControls: true,
-        hideRibbon: true,
-        hideStatus: true,
-        taskbar: false,
-        skipSave: true,
-        skipFocus: true
-    });
-
-    const dialogWin = content.parentElement;
-    dialogWin.classList.add("modal-dialog");
-    dialogWin.style.zIndex = parseInt(win.style.zIndex || 1) + 1000;
-    dialogWin.style.pointerEvents = "all";
-    dialogWin.style.position = "absolute";
-
-    const rect = win.getBoundingClientRect();
-    dialogWin.style.left = rect.left + rect.width / 2 - 160 + "px";
-    dialogWin.style.top = rect.top + rect.height / 2 - 75 + "px";
-
-    document.body.appendChild(dialogWin);
-
-    content.innerHTML = `
-        <p>${message}</p>
-        <div style="text-align:center;margin-top:12px;"></div>
-    `;
-    const container = content.querySelector("div");
-
-    function closeDialog(callback) {
-        dialogWin.remove();
-        win._activeDialogs.delete(message);
-        win.style.pointerEvents = "auto";
-        if (typeof callback === "function") callback();
-    }
-
-    buttons.forEach(btn => {
-        const b = document.createElement("button");
-        b.textContent = btn.label;
-        b.style.margin = "0 4px";
-        b.onclick = () => closeDialog(btn.onClick);
-        container.appendChild(b);
-    });
-
-    const closeBtn = dialogWin.querySelector(".close-btn");
-    if (closeBtn) closeBtn.onclick = () => closeDialog();
-
-    const observer = new MutationObserver(() => {
-        if (!document.body.contains(win)) {
-            closeDialog();
-            observer.disconnect();
-        }
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
-
-    return content;
-}
-
 function showWarning(root, message) {
-    showModalDialog(root, "Warning", message, [
-        { label: "OK", onClick: null }
-    ]);
+    const win = root.closest(".window");
+    alertWindow(message, { parentWin: win });
 }
 
 function showConfirm(root, message, onYes, onNo) {
-    showModalDialog(root, "Confirm", message, [
-        { label: "はい", onClick: onYes },
-        { label: "いいえ", onClick: onNo }
-    ]);
+    const win = root.closest(".window");
+    showModalWindow("Confirm", message, {
+        parentWin: win,
+        iconClass: "warning_icon",
+        buttons: [
+            { label: "はい", onClick: onYes },
+            { label: "いいえ", onClick: onNo }
+        ]
+    });
 }
 
 /* =========================
@@ -322,24 +253,32 @@ export default function ImageViewer(root, options = {}) {
 
         async function askFileName(defaultName) {
             return new Promise(resolve => {
-                const dialogContent = showModalDialog(
-                    root,
-                    "新規ファイル名",
-                    "ファイル名を入力してください",
-                    [
+                // システム共通の showModalWindow を使用
+                const content = showModalWindow("新規保存", "ファイル名を入力してください", {
+                    parentWin: win,
+                    buttons: [
                         { label: "OK", onClick: () => resolve(promptInput.value) },
                         { label: "キャンセル", onClick: () => resolve(null) }
                     ]
-                );
+                });
 
                 const promptInput = document.createElement("input");
                 promptInput.type = "text";
                 promptInput.value = defaultName;
-                promptInput.style.width = "95%";
+                promptInput.style.width = "100%";
+                promptInput.style.marginTop = "10px";
+                promptInput.style.boxSizing = "border-box";
+                promptInput.style.padding = "4px";
 
-                const container = dialogContent.querySelector("div");
-                container.prepend(promptInput);
-                promptInput.focus();
+                // メッセージとボタンの間に挿入
+                const btnContainer = content.querySelector(".modal-button-container") || content.lastElementChild;
+                if (btnContainer) {
+                    content.insertBefore(promptInput, btnContainer);
+                } else {
+                    content.appendChild(promptInput);
+                }
+
+                setTimeout(() => promptInput.focus(), 10);
             });
         }
 

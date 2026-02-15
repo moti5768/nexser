@@ -1,0 +1,58 @@
+/* icons.css */
+.warning_icon {
+    display: block;
+    font-size: 13px;
+    font-weight: bold;
+    height: 24px;
+    width: 24px;
+    line-height: 30px;
+    border-bottom: solid 1.5px black;
+    clip-path: polygon(0 100%, 50% 0, 100% 100%);
+    background: yellow;
+    color: black;
+    position: absolute;
+    left: 5px;
+    text-align: center;
+    justify-content: center;
+}
+
+.error_icon {
+    display: flex;
+    /* flexに変更して中央に寄せやすくする */
+    align-items: center;
+    /* 垂直中央 */
+    justify-content: center;
+    /* 水平中央 */
+    height: 24px;
+    width: 24px;
+    border: solid 1px darkred;
+    box-shadow: 1.5px 1.5px dimgray;
+    background: #FF0033;
+    border-radius: 20px;
+    position: absolute;
+    left: 2px;
+    top: 46.5px;
+    /* テキスト用の設定（font-sizeやtext-shadowなど）は不要になったので削除 */
+}
+
+.error_icon::before,
+.error_icon::after {
+    content: "";
+    position: absolute;
+    /* 親(error_icon)の中央に配置される */
+    width: 14px;
+    /* 24pxの円に対して14〜16pxくらいが綺麗 */
+    height: 2px;
+    /* 棒の太さ */
+    background-color: white;
+    border-radius: 1px;
+}
+
+/* 45度ずつ傾けてバツにする */
+.error_icon::before {
+    transform: rotate(45deg);
+}
+
+.error_icon::after {
+    transform: rotate(-45deg);
+}

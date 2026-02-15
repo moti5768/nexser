@@ -4,6 +4,7 @@ import { themeColor } from "./apps/settings.js"; // これを使う
 import { attachContextMenu } from "./context-menu.js";
 import { setupRibbon } from "./ribbon.js";
 import { killProcess } from "./kernel.js";
+import { playSystemEventSound } from './kernel.js'
 
 export const taskbarButtons = []; // 作られたボタンを全部保存
 let resizeCursor = "";
@@ -829,26 +830,48 @@ export function centerWindowOptions(width = 300, height = 150, parentWin = null)
 
 /* ===== モーダル用ウィンドウ ===== */
 export function showModalWindow(title, message, options = {}) {
+    const parentWin = options.parentWin;
+
+    // --- 【追加】音の再生処理をここに集約 ---
+    // iconClassに基づいて音を鳴らす（指定がない場合はデフォルトの notify）
+    if (typeof playSystemEventSound === "function") {
+        if (options.iconClass === "error_icon") {
+            playSystemEventSound('error');
+        } else {
+            playSystemEventSound('notify');
+        }
+    }
+
+    // 1. 重複表示の防止 (settings.js からの移植)
+    if (parentWin) {
+        if (!parentWin._activeDialogs) parentWin._activeDialogs = new Set();
+        if (parentWin._activeDialogs.has(message)) return;
+        parentWin._activeDialogs.add(message);
+    }
+
     // 既存のモーダルチェック
     const existing = Array.from(document.querySelectorAll(".window"))
         .find(w => w._modal && w.dataset.title === title);
     if (existing) return existing.querySelector(".content");
 
-    // オーバーレイ作成
-    const overlay = document.createElement("div");
-    overlay.className = "modal-overlay";
-    Object.assign(overlay.style, {
-        position: "fixed",
-        left: 0, top: 0,
-        width: "100vw", height: "100vh",
-        background: "rgba(0,0,0,0.4)",
-        zIndex: 9999
-    });
-    document.body.appendChild(overlay); // ← 先に append
+    // 2. オーバーレイ作成 (デフォルト false: 明示的に true の時だけ作成)
+    let overlay = null;
+    if (options.overlay === true) {
+        overlay = document.createElement("div");
+        overlay.className = "modal-overlay";
+        Object.assign(overlay.style, {
+            position: "fixed",
+            left: 0, top: 0,
+            width: "100vw", height: "100vh",
+            background: "rgba(0,0,0,0.4)",
+            zIndex: 9999
+        });
+        document.body.appendChild(overlay);
+    }
 
-    // モーダルウィンドウ作成
+    // 3. モーダルウィンドウ作成
     const content = createWindow(title, {
-        ...centerWindowOptions(options.width || 320, options.height || 150),
+        ...centerWindowOptions(options.width || 340, options.height || 160, parentWin),
         taskbar: (options.taskbar !== undefined) ? options.taskbar : false,
         disableControls: true,
         hideRibbon: true,
@@ -859,39 +882,107 @@ export function showModalWindow(title, message, options = {}) {
     });
 
     const win = content.parentElement;
-    win._modalOverlay = overlay; // ← ここ
-    win.style.zIndex = 10000;  // オーバーレイより上
+    win._modalOverlay = overlay;
+    win.style.zIndex = 10000;
     win.classList.add("modal-dialog");
-    document.body.appendChild(win); // ← desktop.appendChild より上に置く
+    win.style.position = "absolute";
+    document.body.appendChild(win);
 
-    // 内容設定
-    content.innerHTML = `<p>${message}</p><div style="text-align:center; margin-top:12px;"></div>`;
-    const container = content.querySelector("div");
+    // 4. 親ウィンドウがある場合の追加処理
+    if (parentWin) {
+        // 親を操作不可にする (settings.js からの移植)
+        parentWin.style.pointerEvents = "none";
 
+        // 親の中央に正確に配置する (settings.js の計算ロジックを統合)
+        const rect = parentWin.getBoundingClientRect();
+        const left = rect.left + (rect.width - (options.width || 340)) / 2;
+        const top = rect.top + (rect.height - (options.height || 160)) / 2;
+        win.style.left = `${left}px`;
+        win.style.top = `${top}px`;
+    }
+
+    // 5. 終了処理の共通化
+    const closeDialog = (callback) => {
+        if (parentWin) {
+            parentWin._activeDialogs.delete(message);
+            parentWin.style.pointerEvents = "auto";
+        }
+        if (win._observer) win._observer.disconnect();
+        win.remove();
+        if (overlay) overlay.remove(); // オーバーレイが存在すれば消す
+        if (typeof callback === "function") callback();
+    };
+
+    // 6. 親が消えたら自分も消える (MutationObserver)
+    if (parentWin) {
+        const observer = new MutationObserver(() => {
+            if (!document.body.contains(parentWin)) {
+                closeDialog();
+            }
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+        win._observer = observer;
+    }
+
+    // --- UI構築 (アイコンとテキストの流し込み) ---
+    content.style.position = "relative";
+    content.style.display = "flex";
+    content.style.flexDirection = "column";
+    content.style.minHeight = "100px";
+
+    let iconHtml = "";
+    if (options.iconClass) {
+        const iconChar = options.iconClass === "warning_icon" ? "!" : "";
+        iconHtml = `<div class="${options.iconClass}" style="top: 20px;">${iconChar}</div>`;
+    }
+
+    const textMargin = options.iconClass ? "margin-left: 45px;" : "";
+    content.innerHTML = `
+        <div style="flex: 1; padding: 20px 15px; display: flex; align-items: flex-start;">
+            ${iconHtml}
+            <div style="${textMargin} line-height: 1.4; word-break: break-all;">
+                ${message}
+            </div>
+        </div>
+        <div class="button-container" style="text-align:center; padding-bottom:5px; padding-top:5px;"></div>
+    `;
+
+    const container = content.querySelector(".button-container");
     (options.buttons || [{ label: "OK", onClick: null }]).forEach(btn => {
         const b = document.createElement("button");
         b.textContent = btn.label;
-        b.onclick = () => { win.remove(); overlay.remove(); btn.onClick?.(); };
+        b.onclick = () => closeDialog(btn.onClick);
         b.style.margin = "0 6px";
+        b.style.minWidth = "60px";
         container.appendChild(b);
     });
 
+    const closeBtn = win.querySelector(".close-btn");
+    if (closeBtn) closeBtn.onclick = () => closeDialog();
     return content;
 }
 
-
-/* ===== 便利ラッパー ===== */
+/* ===== 便利ラッパーの更新 ===== */
 export function alertWindow(message, options = {}) {
-    return showModalWindow("Alert", message, options);
+    playSystemEventSound('notify');
+    return showModalWindow("Alert", message, {
+        ...options,
+        iconClass: "warning_icon" // 黄色の警告アイコンを適用
+    });
 }
 
 export function errorWindow(message, options = {}) {
-    return showModalWindow("Error", message, { ...options, buttons: [{ label: "OK", onClick: null }] });
+    return showModalWindow("Error", message, {
+        ...options,
+        iconClass: "error_icon", // 赤色のエラーアイコンを適用
+        buttons: [{ label: "OK", onClick: null }]
+    });
 }
 
 export function confirmWindow(message, callback, options = {}) {
     return showModalWindow("Confirm", message, {
         ...options,
+        iconClass: "warning_icon", // 確認ダイアログも警告アイコンを使用
         buttons: [
             { label: "はい", onClick: () => callback(true) },
             { label: "いいえ", onClick: () => callback(false) }

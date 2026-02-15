@@ -1,5 +1,4 @@
 /* kernel.js : OSの中枢 */
-
 import { FS } from "./fs.js";
 import { buildDesktop } from "./desktop.js";
 import { buildStartMenu, refreshStartMenu } from "./startmenu.js";
@@ -8,8 +7,8 @@ import {
     createWindow,
     removeAllTaskbarButtons,
     errorWindow,
-    showModalWindow,
-    bringToFront
+    bringToFront,
+    confirmWindow
 } from "./window.js";
 import { showPromptScreen } from "./boot.js";
 import { startup_sound } from "./sounds.js";
@@ -97,7 +96,6 @@ export async function initKernelAsync(progressCallback = () => { }) {
     installDynamicButtonEffect();
 
     progressCallback("UI effects applied...");
-    try { startup_sound(); } catch { } // ★ 音声エラーで止まらないようガード
 
     progressCallback("Kernel initialization complete!");
 }
@@ -475,26 +473,84 @@ export async function logOff() {
         windows.length > 0;
 
     const performLogoff = () => {
+        playSystemEventSound('logoff');
         resetUI();
         moduleCache.clear();
         showPromptScreen("nexser logoff");
     };
 
     if (hasAnyWindow) {
-        showModalWindow(
-            "ログオフ確認",
+        confirmWindow(
             "開いているウィンドウがあります。すべて閉じてログオフしますか？",
+            (result) => {
+                if (result) performLogoff();
+            },
             {
-                width: 360,
-                height: 140,
-                taskbar: false,
-                buttons: [
-                    { label: "はい", onClick: performLogoff },
-                    { label: "いいえ", onClick: null }
-                ]
-            }
+                width: 380,
+                height: 160,
+                overlay: true
+            },
         );
     } else {
         performLogoff();
+    }
+}
+
+
+/**
+ * FSに保存された音声データを再生する
+ * @param {string} filename Programs/Music 内のファイル名
+ */
+export function playSavedAudio(filename) {
+    const file = FS.Programs?.Music?.[filename];
+    if (file && file.content) {
+        const audio = new Audio(file.content);
+        audio.play().catch(console.error);
+    }
+}
+
+/**
+ * システムイベントに関連付けられた音声を再生する
+ */
+export function playSystemEventSound(eventName) {
+    try {
+        const configText = FS.System?.["SoundConfig.json"]?.content;
+        const config = JSON.parse(configText || "{}");
+        const filename = config[eventName];
+
+        if (filename) {
+            // --- カスタム設定がある場合 ---
+            const file = FS.Programs?.Music?.[filename];
+            if (file && file.content) {
+                const audio = new Audio(file.content);
+                audio.play().catch(err => {
+                    if (err.name === "NotAllowedError") {
+                        const playOnGesture = () => {
+                            audio.play();
+                            document.removeEventListener("click", playOnGesture);
+                            document.removeEventListener("keydown", playOnGesture);
+                        };
+                        document.addEventListener("click", playOnGesture);
+                        document.addEventListener("keydown", playOnGesture);
+                    }
+                });
+            }
+        } else if (eventName === 'startup') {
+            // --- カスタム設定がない場合（デフォルトのビープ音） ---
+            try {
+                startup_sound();
+            } catch (e) {
+                // AudioContextがブロックされた場合のガード
+                const playBeepOnGesture = () => {
+                    startup_sound();
+                    document.removeEventListener("click", playBeepOnGesture);
+                    document.removeEventListener("keydown", playBeepOnGesture);
+                };
+                document.addEventListener("click", playBeepOnGesture);
+                document.addEventListener("keydown", playBeepOnGesture);
+            }
+        }
+    } catch (e) {
+        console.warn("Sound event failed", e);
     }
 }

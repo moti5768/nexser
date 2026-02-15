@@ -1,5 +1,4 @@
 // context-menu.js
-
 let currentMenu = null;
 
 /**
