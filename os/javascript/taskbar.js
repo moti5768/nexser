@@ -80,8 +80,6 @@ export function initTaskbar() {
         marginTop: "5px"
     });
 
-
-
     // Startボタン配置
     if (startBtn && startBtn.parentElement !== startArea) startArea.appendChild(startBtn);
 
@@ -127,7 +125,7 @@ export function initTaskbar() {
         trayArea.appendChild(clockLabel);
     }
 
-    // ClockApp の時刻から表示更新
+    // 時刻の表示更新用フォーマット関数
     function updateClockLabel(date) {
         let hours = date.getHours();
         const minutes = date.getMinutes().toString().padStart(2, "0");
@@ -138,23 +136,27 @@ export function initTaskbar() {
         clockLabel.textContent = `${hoursStr}:${minutes} ${ampm}`;
     }
 
-    // 保存値があれば読み込んで初期表示
+    // 【重要】ClockAppOffset (ミリ秒差分) を読み込んで初期表示を計算
     (async () => {
         try {
-            const saved = await loadSetting("ClockAppDate");
-            if (saved) {
-                updateClockLabel(new Date(saved));
+            const savedOffset = await loadSetting("ClockAppOffset");
+            if (savedOffset !== null && savedOffset !== undefined) {
+                const offset = parseInt(savedOffset, 10);
+                // OSの現在時刻に差分を足した時刻を表示
+                updateClockLabel(new Date(Date.now() + offset));
             } else {
-                updateClockLabel(clockDate); // ClockApp の現在時刻
+                updateClockLabel(clockDate); // ClockApp の初期状態
             }
-        } catch { }
+        } catch (err) {
+            updateClockLabel(new Date());
+        }
     })();
 
-    // ClockApp で時間変更されたときに即座に更新
+    // ClockApp で時間変更イベントが発生したときに即座に更新
     window.addEventListener("ClockAppTimeChange", e => {
+        // e.detail には計算済みの Date オブジェクトが含まれる
         updateClockLabel(new Date(e.detail));
     });
-
 
     // ------------------------
     // 全ウィンドウのリボンドロップダウンを閉じ、selected を解除
@@ -237,7 +239,7 @@ export function initTaskbar() {
                 position: "fixed",
                 left: taskbar.getBoundingClientRect().left + "px",
                 width: taskbar.offsetWidth + "px",
-                height: startHeight + "px",   // ← taskbar の現在高さを使う
+                height: startHeight + "px",
                 border: "2px solid white",
                 background: "transparent",
                 pointerEvents: "none",
@@ -253,13 +255,11 @@ export function initTaskbar() {
         document.addEventListener("mousemove", e => {
             if (!resizing || !preview) return;
 
-            let dy = startY - e.clientY; // 上方向にドラッグで増える
+            let dy = startY - e.clientY;
             let newHeight = startHeight + dy;
 
             // 40px刻みに丸める
             newHeight = Math.round(newHeight / 40) * 40;
-
-            // 上限・下限を適用
             newHeight = Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, newHeight));
 
             const rect = taskbar.getBoundingClientRect();
@@ -271,10 +271,9 @@ export function initTaskbar() {
             if (!resizing) return;
             resizing = false;
             document.body.style.userSelect = "";
-            document.body.style.cursor = ""; // 元に戻す
+            document.body.style.cursor = "";
 
             if (preview) {
-                // 最終的な高さを 40px 刻みに丸めて確定
                 let finalHeight = parseInt(preview.style.height);
                 finalHeight = Math.round(finalHeight / 40) * 40;
                 finalHeight = Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, finalHeight));
@@ -282,11 +281,9 @@ export function initTaskbar() {
                 if (finalHeight !== taskbar.offsetHeight) {
                     taskbar.style.height = finalHeight + "px";
 
-                    // バージョンラベル位置更新
                     const versionLabel = taskbar.querySelector(".os-version-label");
                     if (versionLabel) versionLabel.style.bottom = `${finalHeight}px`;
 
-                    // 高さを保存
                     await saveSetting("taskbarHeight", finalHeight);
 
                     document.querySelectorAll(".window.maximized").forEach(win => {
@@ -299,12 +296,9 @@ export function initTaskbar() {
                 window.dispatchEvent(new Event("desktop-resize"));
             }
         });
-
     })();
 
     window.addEventListener("resize", () => {
         updateStartMenuPosition();
     });
-
-
 }

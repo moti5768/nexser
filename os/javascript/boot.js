@@ -7,6 +7,14 @@ import { playSystemEventSound } from './kernel.js'
 // ===== Global Error Handlers =====
 window.onerror = (msg, src, line, col, err) => showBSOD(String(msg), err);
 window.addEventListener("unhandledrejection", e => showBSOD(String(e.reason), e.reason instanceof Error ? e.reason : null));
+// リソース（JSファイルなど）の読み込み失敗をキャッチ
+window.addEventListener('error', (e) => {
+    if (e.target.tagName === 'SCRIPT' || e.target.tagName === 'LINK') {
+        showBSOD(`BOOT_COMPONENT_FAILURE (${e.target.src || e.target.href})`, new Error("Critical component missing"));
+    }
+}, true); // キャプチャフェーズで監視するのがコツ
+
+
 
 // ===== Passive Event / Touch Defaults =====
 let supportsPassive = false;
@@ -71,7 +79,14 @@ const commands = {
     echo: { desc: 'Print text', run(args) { print(args.join(' ')); } },
     history: { desc: 'Show command history', run() { history.forEach((h, i) => print(`${i}: ${h}`)); } },
     calc: { desc: 'Calculate expression', run(args) { try { const result = Function(`return (${args.join(' ')})`)(); print(result); } catch { print('Invalid expression'); } } },
-    sleep: { desc: 'Wait ms', async run(args) { const ms = Number(args[0]) || 1000; print(`Sleeping ${ms}ms...`); await new Promise(r => setTimeout(r, ms)); } }
+    sleep: { desc: 'Wait ms', async run(args) { const ms = Number(args[0]) || 1000; print(`Sleeping ${ms}ms...`); await new Promise(r => setTimeout(r, ms)); } },
+    crash: {
+        desc: 'Simulate system crash',
+        run() {
+            // 直接BSODモジュールを呼び出す
+            showBSOD("MANUALLY_INITIATED_CRASH", new Error("The user requested a system crash."));
+        }
+    }
 };
 
 // ===== Prompt =====
@@ -137,8 +152,7 @@ export async function bootOS() {
         if (root) root.style.display = 'block';
         print("\nBoot sequence complete!");
     } catch (e) {
-        print('Boot failed: ' + e.message);
-        console.error(e);
+        showBSOD("BOOT_SELECTION_FAILED", e);
     }
 }
 

@@ -487,7 +487,6 @@ export async function logOff() {
             },
             {
                 width: 380,
-                height: 160,
                 overlay: true
             },
         );

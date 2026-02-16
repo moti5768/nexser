@@ -832,8 +832,7 @@ export function centerWindowOptions(width = 300, height = 150, parentWin = null)
 export function showModalWindow(title, message, options = {}) {
     const parentWin = options.parentWin;
 
-    // --- 【追加】音の再生処理をここに集約 ---
-    // iconClassに基づいて音を鳴らす（指定がない場合はデフォルトの notify）
+    // --- 1. システム音の再生 ---
     if (typeof playSystemEventSound === "function") {
         if (options.iconClass === "error_icon") {
             playSystemEventSound('error');
@@ -842,19 +841,20 @@ export function showModalWindow(title, message, options = {}) {
         }
     }
 
-    // 1. 重複表示の防止 (settings.js からの移植)
+    // --- 2. 重複表示の防止 ---
     if (parentWin) {
         if (!parentWin._activeDialogs) parentWin._activeDialogs = new Set();
+        // 同じメッセージのダイアログが既に開いていれば何もしない
         if (parentWin._activeDialogs.has(message)) return;
         parentWin._activeDialogs.add(message);
     }
 
-    // 既存のモーダルチェック
+    // 既存の同タイトル・同種モーダルがあれば再利用または防止
     const existing = Array.from(document.querySelectorAll(".window"))
         .find(w => w._modal && w.dataset.title === title);
     if (existing) return existing.querySelector(".content");
 
-    // 2. オーバーレイ作成 (デフォルト false: 明示的に true の時だけ作成)
+    // --- 3. オーバーレイ作成 ---
     let overlay = null;
     if (options.overlay === true) {
         overlay = document.createElement("div");
@@ -869,9 +869,13 @@ export function showModalWindow(title, message, options = {}) {
         document.body.appendChild(overlay);
     }
 
-    // 3. モーダルウィンドウ作成
+    // --- 4. ウィンドウ本体の作成 ---
+    const winWidth = options.width || 340;
+    const winHeight = options.height || 160;
+
+    // 既存の createWindow 関数を利用 (外部定義済みと想定)
     const content = createWindow(title, {
-        ...centerWindowOptions(options.width || 340, options.height || 160, parentWin),
+        ...centerWindowOptions(winWidth, winHeight, parentWin),
         taskbar: (options.taskbar !== undefined) ? options.taskbar : false,
         disableControls: true,
         hideRibbon: true,
@@ -882,38 +886,68 @@ export function showModalWindow(title, message, options = {}) {
     });
 
     const win = content.parentElement;
+
+    // ★ 高さの自動調整ロジック
+    if (!options.height) {
+        win.style.height = "auto";
+        win.style.minHeight = "120px";
+        win.style.maxHeight = "85vh"; // 画面を突き抜けないように制限
+        content.style.height = "auto";
+        content.style.overflowY = "auto"; // 内容が多すぎる場合はスクロール
+    }
+
     win._modalOverlay = overlay;
     win.style.zIndex = 10000;
     win.classList.add("modal-dialog");
     win.style.position = "absolute";
     document.body.appendChild(win);
 
-    // 4. 親ウィンドウがある場合の追加処理
+    // --- 5. 配置（ポジショニング）の最適化 ---
     if (parentWin) {
-        // 親を操作不可にする (settings.js からの移植)
-        parentWin.style.pointerEvents = "none";
+        parentWin.style.pointerEvents = "none"; // 親をロック
 
-        // 親の中央に正確に配置する (settings.js の計算ロジックを統合)
         const rect = parentWin.getBoundingClientRect();
-        const left = rect.left + (rect.width - (options.width || 340)) / 2;
-        const top = rect.top + (rect.height - (options.height || 160)) / 2;
+        const left = rect.left + (rect.width - winWidth) / 2;
+        const top = rect.top + (rect.height / 2); // 一旦中央点へ配置
+
         win.style.left = `${left}px`;
         win.style.top = `${top}px`;
+
+        // 高さが auto の場合、描画後の実サイズを元に transform で中央補正し、その後に px 固定
+        if (!options.height) {
+            win.style.transform = "translateY(-50%)";
+            requestAnimationFrame(() => {
+                const finalRect = win.getBoundingClientRect();
+                win.style.transform = "none";
+                win.style.top = `${finalRect.top}px`;
+            });
+        }
+    } else if (!options.height) {
+        // 親がない場合、画面の中央に配置
+        win.style.left = "50%";
+        win.style.top = "50%";
+        win.style.transform = "translate(-50%, -50%)";
+        requestAnimationFrame(() => {
+            const finalRect = win.getBoundingClientRect();
+            win.style.transform = "none";
+            win.style.top = `${finalRect.top}px`;
+            win.style.left = `${finalRect.left}px`;
+        });
     }
 
-    // 5. 終了処理の共通化
+    // --- 6. 終了処理の定義 ---
     const closeDialog = (callback) => {
         if (parentWin) {
             parentWin._activeDialogs.delete(message);
-            parentWin.style.pointerEvents = "auto";
+            parentWin.style.pointerEvents = "auto"; // ロック解除
         }
         if (win._observer) win._observer.disconnect();
         win.remove();
-        if (overlay) overlay.remove(); // オーバーレイが存在すれば消す
+        if (overlay) overlay.remove();
         if (typeof callback === "function") callback();
     };
 
-    // 6. 親が消えたら自分も消える (MutationObserver)
+    // 親ウィンドウがDOMから削除されたら、モーダルも道連れで消す
     if (parentWin) {
         const observer = new MutationObserver(() => {
             if (!document.body.contains(parentWin)) {
@@ -924,7 +958,7 @@ export function showModalWindow(title, message, options = {}) {
         win._observer = observer;
     }
 
-    // --- UI構築 (アイコンとテキストの流し込み) ---
+    // --- 7. UI構築 (アイコン・テキスト・ボタン) ---
     content.style.position = "relative";
     content.style.display = "flex";
     content.style.flexDirection = "column";
@@ -944,7 +978,7 @@ export function showModalWindow(title, message, options = {}) {
                 ${message}
             </div>
         </div>
-        <div class="button-container" style="text-align:center; padding-bottom:5px; padding-top:5px;"></div>
+        <div class="button-container" style="text-align:center; padding-bottom:10px; padding-top:5px;"></div>
     `;
 
     const container = content.querySelector(".button-container");
@@ -953,12 +987,15 @@ export function showModalWindow(title, message, options = {}) {
         b.textContent = btn.label;
         b.onclick = () => closeDialog(btn.onClick);
         b.style.margin = "0 6px";
-        b.style.minWidth = "60px";
+        b.style.minWidth = "70px";
+        b.style.padding = "4px 10px";
         container.appendChild(b);
     });
 
+    // 右上の [x] ボタン等がある場合のハンドリング
     const closeBtn = win.querySelector(".close-btn");
     if (closeBtn) closeBtn.onclick = () => closeDialog();
+
     return content;
 }
 

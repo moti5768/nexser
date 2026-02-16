@@ -4,34 +4,48 @@ import { saveSetting, loadSetting } from "./settings.js";
 // グローバル時刻（アプリ起動していなくても進む）
 export let clockDate = new Date();
 
-// ==================== 裏でカウントアップ ====================
+// OSの時刻との差分（ミリ秒）と前回の秒を保持
+let clockOffset = 0;
+let lastFiredSecond = -1;
+
+// ==================== 裏で同期計算（再ロード・ドリフト補正版） ====================
 if (!window._ClockAppInterval) {
     (async () => {
-        const saved = await loadSetting("ClockAppDate");
-        window._ClockIsManual = false; // 手動設定フラグをグローバルに
+        // 時刻そのものではなく「OSとの差分」を読み込む
+        const savedOffset = await loadSetting("ClockAppOffset");
+        window._ClockIsManual = false;
 
-        if (saved) {
-            clockDate = new Date(saved);
-            window._ClockIsManual = true; // 保存があれば手動設定扱い
+        if (savedOffset !== null && savedOffset !== undefined) {
+            clockOffset = parseInt(savedOffset);
+            window._ClockIsManual = true;
         }
 
         window._ClockAppInterval = setInterval(() => {
-            if (!window._ClockIsManual) {
-                // 手動設定してない場合はリアルタイム
-                clockDate = new Date();
-            } else {
-                // 手動設定済みなら1秒ずつ進める
-                clockDate.setSeconds(clockDate.getSeconds() + 1);
-            }
-            window.dispatchEvent(new CustomEvent("ClockAppTimeChange", { detail: clockDate }));
-        }, 1000);
+            const now = new Date();
+            // 手動設定済みならOS時刻に差分を足す（これでOSのミリ秒と完全に同期する）
+            const currentEffectiveTime = window._ClockIsManual
+                ? new Date(now.getTime() + clockOffset)
+                : now;
 
-        // window.setDateTime で手動設定フラグを立てる
-        const originalSetDateTime = window.setDateTime;
+            const currentSecond = currentEffectiveTime.getSeconds();
+
+            // 秒が変わった瞬間だけイベントを発火
+            if (currentSecond !== lastFiredSecond) {
+                clockDate = currentEffectiveTime;
+                lastFiredSecond = currentSecond;
+                window.dispatchEvent(new CustomEvent("ClockAppTimeChange", { detail: clockDate }));
+            }
+        }, 100);
+
+        // window.setDateTime で手動設定
         window.setDateTime = (date) => {
+            const newDate = new Date(date);
+            // OSの現在時刻との「正確な差分」を計算
+            clockOffset = newDate.getTime() - Date.now();
             window._ClockIsManual = true;
-            clockDate = new Date(date);
-            saveSetting("ClockAppDate", clockDate.toISOString());
+            clockDate = newDate;
+            lastFiredSecond = -1;
+            saveSetting("ClockAppOffset", clockOffset.toString());
             window.dispatchEvent(new CustomEvent("ClockAppTimeChange", { detail: clockDate }));
         };
     })();
@@ -80,16 +94,18 @@ export default async function ClockApp(content) {
     // ==================== 共通関数 ====================
     function setDateTime(date) {
         clockDate = new Date(date);
-        window._ClockIsManual = true; // ←裏のカウント用フラグをグローバルに
-        saveSetting("ClockAppDate", clockDate.toISOString());
+        clockOffset = clockDate.getTime() - Date.now();
+        window._ClockIsManual = true;
+        lastFiredSecond = -1;
+        saveSetting("ClockAppOffset", clockOffset.toString());
         window.dispatchEvent(new CustomEvent("ClockAppTimeChange", { detail: clockDate }));
     }
 
-    // ==================== ウィンドウ閉じる時 & ページ unload 時に保存 ====================
+    // ==================== 保存処理（Offsetベース） ====================
     if (!window._clockBeforeUnloadHooked) {
         window._clockBeforeUnloadHooked = true;
         window.addEventListener("beforeunload", () => {
-            saveSetting("ClockAppDate", clockDate.toISOString());
+            if (window._ClockIsManual) saveSetting("ClockAppOffset", clockOffset.toString());
         });
     }
 
@@ -100,7 +116,7 @@ export default async function ClockApp(content) {
         if (closeBtn) {
             const originalClose = closeBtn.onclick?.bind(closeBtn);
             closeBtn.onclick = (e) => {
-                saveSetting("ClockAppDate", clockDate.toISOString());
+                if (window._ClockIsManual) saveSetting("ClockAppOffset", clockOffset.toString());
                 if (originalClose) originalClose(e);
             };
         }
@@ -213,8 +229,9 @@ export default async function ClockApp(content) {
             const h = parseInt(hourInput.value) || 0;
             const m = parseInt(minuteInput.value) || 0;
             const s = parseInt(secondInput.value) || 0;
-            clockDate.setHours(h, m, s);
-            setDateTime(clockDate);
+            const d = new Date(clockDate);
+            d.setHours(h, m, s);
+            setDateTime(d);
             drawClockTab();
         };
 
@@ -279,8 +296,9 @@ export default async function ClockApp(content) {
             tableContainer.querySelectorAll("td[data-day]").forEach(td => {
                 const day = parseInt(td.dataset.day);
                 td.onclick = () => {
-                    clockDate.setDate(day);
-                    setDateTime(clockDate);
+                    const d = new Date(clockDate);
+                    d.setDate(day);
+                    setDateTime(d);
                     updateInputs();
                     renderMonth(clockDate);
                 };
@@ -298,8 +316,9 @@ export default async function ClockApp(content) {
             const y = parseInt(yearInput.value);
             const m = parseInt(monthInput.value) - 1;
             const d = parseInt(dayInput.value);
-            clockDate.setFullYear(y, m, d);
-            setDateTime(clockDate);
+            const dt = new Date(clockDate);
+            dt.setFullYear(y, m, d);
+            setDateTime(dt);
             renderMonth(clockDate);
         };
 
