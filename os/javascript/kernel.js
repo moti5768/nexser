@@ -465,12 +465,8 @@ export function resetUI() {
 
 /* ===== ログオフ ===== */
 export async function logOff() {
-
-    const windows =
-        document.querySelectorAll(".window");
-
-    const hasAnyWindow =
-        windows.length > 0;
+    const windows = document.querySelectorAll(".window");
+    const hasAnyWindow = windows.length > 0;
 
     const performLogoff = () => {
         playSystemEventSound('logoff');
@@ -494,7 +490,6 @@ export async function logOff() {
         performLogoff();
     }
 }
-
 
 /**
  * FSに保存された音声データを再生する

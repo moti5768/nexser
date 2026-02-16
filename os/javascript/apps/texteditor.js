@@ -452,6 +452,7 @@ export function showColorPicker(title, initialColor = "#ffffff", onSelect, paren
         parentWin: null,
         width: 320,
         height: 200,
+        silent: true,
         buttons: []
     });
 

@@ -141,6 +141,62 @@ export function buildDesktop() {
 
         return items;
     });
+
+    desktop.addEventListener("click", (e) => {
+        desktop.focus();
+        // クリックされた要素がアイコン自体（またはその子要素）でないか確認
+        if (!e.target.closest(".icon")) {
+            if (globalSelected.item) {
+                globalSelected.item.classList.remove("selected");
+                globalSelected.item = null;
+                globalSelected.window = null;
+            }
+        }
+    });
+
+    // キーボード操作（矢印キーで選択）
+    if (!desktop._keydownBound) {
+        // デスクトップで入力を受け付けるために tabIndex を設定（必要に応じて）
+        desktop.tabIndex = 0;
+
+        desktop.addEventListener("keydown", e => {
+            if (document.activeElement !== desktop) return;
+            const items = Array.from(iconsContainer.querySelectorAll(".icon"));
+            if (!items.length) return;
+
+            let currentIndex = items.findIndex(el => el === globalSelected.item);
+
+            function selectItem(index) {
+                if (globalSelected.item) globalSelected.item.classList.remove("selected");
+                const item = items[index];
+                item.classList.add("selected");
+                globalSelected.item = item;
+                globalSelected.window = desktop;
+                item.scrollIntoView({ block: "nearest" });
+            }
+
+            if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+                e.preventDefault();
+                currentIndex = (currentIndex + 1) % items.length;
+                selectItem(currentIndex);
+            }
+
+            if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+                e.preventDefault();
+                currentIndex = (currentIndex - 1 + items.length) % items.length;
+                selectItem(currentIndex);
+            }
+
+            if (e.key === "Enter") {
+                e.preventDefault();
+                if (!globalSelected.item) return;
+                const name = globalSelected.item.textContent;
+                const node = resolveFS("Desktop")?.[name];
+                if (node) openFSItem(name, node, "Desktop");
+            }
+        });
+        desktop._keydownBound = true;
+    }
     adjustDesktopIconArea();
     window.dispatchEvent(new Event("desktop-ready"));
 }

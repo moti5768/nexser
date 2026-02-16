@@ -574,6 +574,7 @@ export default async function Explorer(root, options = {}) {
 
         if (!listContainer._keydownBound) {
             listContainer.addEventListener("keydown", e => {
+                e.stopPropagation();
                 const items = Array.from(listContainer.querySelectorAll(".explorer-item"));
                 if (!items.length) return;
 
@@ -795,6 +796,7 @@ export function openWithDialog(filePath, fileNode) {
         width: 300,
         height: Math.min(400, apps.length * 40 + 60),
         overlay: true,
+        silent: true,
         buttons: []
     });
 

@@ -160,24 +160,20 @@ export async function bootOS() {
 (async function initBIOS() {
     // 1. データ復元とUI準備を並行して開始
     const fsPromise = initFS().catch(e => console.warn("FS load failed", e));
-
     // 2. ロゴと著作権表示（ディレイを 300ms -> 50ms に短縮）
     const lines = [document.title, "Copyright (C) 2026 Nexser Corp.", ""];
     for (const line of lines) {
         print(line);
         await new Promise(r => setTimeout(r, 50)); // 読みやすい速さで流す
     }
-
     // 3. FSのロード完了を待ってデスクトップ構築
     await fsPromise;
     console.log("FS restored from DB");
     buildDesktop();
-
     // 4. AUTOBOOT.CFG の実行
     const config = getNodeByPath("C:/System/AUTOBOOT.CFG");
     if (config && config.type === 'file' && config.content.trim()) {
         print("Reading System Configuration...");
-
         const script = config.content.split('\n').map(s => s.trim()).filter(Boolean);
         for (const line of script) {
             // コマンド実行前に一瞬だけ待機（演出）
@@ -190,7 +186,6 @@ export async function bootOS() {
             if (screen.style.display === 'none') return;
         }
     }
-
     // すべて終わったらプロンプトへ
     prompt();
 })();

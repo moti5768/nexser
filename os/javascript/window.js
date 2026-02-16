@@ -833,7 +833,8 @@ export function showModalWindow(title, message, options = {}) {
     const parentWin = options.parentWin;
 
     // --- 1. システム音の再生 ---
-    if (typeof playSystemEventSound === "function") {
+    // options.silent が true の場合は再生をスキップ
+    if (typeof playSystemEventSound === "function" && options.silent !== true) {
         if (options.iconClass === "error_icon") {
             playSystemEventSound('error');
         } else {
@@ -1000,11 +1001,17 @@ export function showModalWindow(title, message, options = {}) {
 }
 
 /* ===== 便利ラッパーの更新 ===== */
+
 export function alertWindow(message, options = {}) {
-    playSystemEventSound('notify');
+    // options.silent が true でない場合のみ音を鳴らす
+    if (options.silent !== true) {
+        playSystemEventSound('notify');
+    }
+
     return showModalWindow("Alert", message, {
         ...options,
-        iconClass: "warning_icon" // 黄色の警告アイコンを適用
+        iconClass: "warning_icon", // 黄色の警告アイコンを適用
+        silent: true
     });
 }
 
