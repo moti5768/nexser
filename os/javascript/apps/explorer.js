@@ -8,6 +8,7 @@ import { attachContextMenu } from "../context-menu.js";
 import { resolveAppByPath, getExtension } from "../file-associations.js";
 import { addRecent } from "../recent.js";
 import { setupRibbon } from "../ribbon.js";
+import { saveSetting, loadSetting } from "./settings.js";
 
 let globalSelected = { item: null, window: null };
 
@@ -135,6 +136,7 @@ export default async function Explorer(root, options = {}) {
     let currentPath = options.path || "Desktop";
     let historyStack = [];
     let forwardStack = [];
+    let viewMode = await loadSetting("explorerViewMode") || "list";
 
     // 固定参照保持
     let listContainer, pathLabel, treeContainer;
@@ -383,6 +385,54 @@ export default async function Explorer(root, options = {}) {
             forwardBtn.disabled = forwardStack.length === 0;
             forwardBtn.classList.toggle("pointer_none", forwardStack.length === 0);
 
+            const refreshBtn = document.createElement("button");
+            refreshBtn.textContent = "↻"; // リフレッシュアイコン風
+            refreshBtn.title = "最新の情報に更新";
+            refreshBtn.onclick = () => render(currentPath);
+
+            const viewControls = document.createElement("div");
+            viewControls.className = "view-controls";
+            viewControls.style.display = "flex";
+            viewControls.style.gap = "2px";
+            viewControls.style.marginRight = "8px";
+
+            // ボタン生成用の共通関数
+            const createViewModeBtn = (label, mode, title) => {
+                const btn = document.createElement("button");
+                btn.className = "view-mode-btn";
+                btn.textContent = label;
+                btn.title = title;
+                btn.style.padding = "2px 6px";
+
+                // 現在選択されているモードのボタンを強調する
+                if (viewMode === mode) {
+                    btn.style.background = "black"; // 選択中の色
+                    btn.style.color = "white";
+                }
+
+                btn.onclick = async () => {
+                    viewMode = mode;
+                    await saveSetting("explorerViewMode", viewMode);
+                    viewControls.querySelectorAll(".view-mode-btn").forEach(b => {
+                        b.style.background = "";
+                        b.style.color = "";
+                    });
+                    btn.style.background = "black";
+                    btn.style.color = "white";
+                    render(currentPath); // モードを保存して再描画
+                };
+                return btn;
+            };
+
+            // 3つのボタンを生成
+            const listBtn = createViewModeBtn("目", "list", "リスト表示");
+            const iconBtn = createViewModeBtn("⊞", "icon", "アイコン表示");
+            const detailBtn = createViewModeBtn("≡", "details", "詳細表示");
+
+            viewControls.appendChild(listBtn);
+            viewControls.appendChild(iconBtn);
+            viewControls.appendChild(detailBtn);
+
             backBtn.onclick = () => {
                 if (historyStack.length > 0) {
                     forwardStack.push(currentPath);
@@ -409,6 +459,8 @@ export default async function Explorer(root, options = {}) {
 
             header.appendChild(backBtn);
             header.appendChild(forwardBtn);
+            header.appendChild(refreshBtn);
+            header.appendChild(viewControls);
             header.appendChild(treeContainer);
             header.appendChild(pathLabel);
 
@@ -496,15 +548,80 @@ export default async function Explorer(root, options = {}) {
         const folder = resolveFS(currentPath);
         if (!folder) return;
 
+        // --- ここから差し替え ---
+        // レイアウトを初期化（アイコン表示の時はタイル状に並べる）
+        if (viewMode === "icon") {
+            listContainer.style.display = "grid";
+            listContainer.style.gridTemplateColumns = "repeat(auto-fill, minmax(100px, 1fr))";
+            listContainer.style.gap = "8px";
+            listContainer.style.padding = "10px";
+        } else {
+            listContainer.style.display = "block";
+            listContainer.style.padding = "0";
+        }
+
         for (const name in folder) {
             if (name === "type") continue;
             const itemData = folder[name];
 
             const item = document.createElement("div");
-            item.textContent = name;
-            item.className = "explorer-item";
+            // viewMode に応じたクラスを確実に付与
+            item.className = `explorer-item ${viewMode}-view`;
+            item.dataset.name = name;
+
+            // --- アイコン判定ロジック ---
+            let iconChar = "📄";
+            if (itemData.type === "folder") {
+                iconChar = "📁";
+            } else if (itemData.type === "link") {
+                iconChar = "🔗";
+            } else if (itemData.type === "app") {
+                if (name.includes("Explorer")) iconChar = "🔍";
+                else if (name.includes("Paint")) iconChar = "🎨";
+                else if (name.includes("TextEditor")) iconChar = "📝";
+                else if (name.includes("CodeEditor")) iconChar = "💻";
+                else if (name.includes("ImageViewer")) iconChar = "🖼️";
+                else if (name.includes("VideoPlayer")) iconChar = "🎬";
+                else iconChar = "⚙️";
+            } else {
+                const ext = "." + name.split('.').pop().toLowerCase();
+                const textExts = [".txt", ".md"];
+                const codeExts = [".js", ".ts", ".json", ".css", ".scss", ".vue"];
+                const imgExts = [".png", ".jpg", ".jpeg", ".gif"];
+                const vidExts = [".mp4", ".webm", ".ogg", ".mov", ".mkv"];
+
+                if (textExts.includes(ext)) iconChar = "📄";
+                else if (codeExts.includes(ext)) iconChar = "📜";
+                else if (imgExts.includes(ext)) iconChar = "🖼️";
+                else if (vidExts.includes(ext)) iconChar = "📽️";
+            }
+
+            // --- HTML構造の生成 ---
+            if (viewMode === "icon") {
+                item.innerHTML = `
+                    <div class="item-icon-large">${iconChar}</div>
+                    <div class="item-name-label">${name}</div>
+                `;
+            } else if (viewMode === "details") {
+                const size = formatSize(calcNodeSize(itemData));
+                const typeLabel = itemData.type === "folder" ? "フォルダ" : "ファイル";
+                item.innerHTML = `
+                    <span class="item-icon-small">${iconChar}</span>
+                    <span class="item-name-text">${name}</span>
+                    <span class="item-type-text">${typeLabel}</span>
+                    <span class="item-size-text">${size}</span>
+                `;
+            } else {
+                // リスト表示
+                item.innerHTML = `
+                    <span class="item-icon-small">${iconChar}</span>
+                    <span class="item-name-text">${name}</span>
+                `;
+            }
+
             listContainer.appendChild(item);
 
+            // --- 以下のイベントロジックは一切変更していません ---
             item.addEventListener("click", e => {
                 e.stopPropagation();
                 globalSelected.item?.classList.remove("selected");
@@ -514,7 +631,7 @@ export default async function Explorer(root, options = {}) {
                 setupRibbon(win, () => currentPath, render, explorerMenus);
 
                 const node = resolveFS(currentPath)?.[name];
-                if (!node) return; // 安全に早期リターン
+                if (!node) return;
                 const size = calcNodeSize(node);
 
                 const statusBar = win?._statusBar;
@@ -530,6 +647,7 @@ export default async function Explorer(root, options = {}) {
                 openFSItem(name, node, currentPath);
             });
         }
+        // --- ここまで ---
 
         // 右クリック
         const contentEl = root.querySelector(".content") || root.closest(".window")?.querySelector(".content");
@@ -582,23 +700,27 @@ export default async function Explorer(root, options = {}) {
 
                 function selectItem(index) {
                     globalSelected.item?.classList.remove("selected");
+                    const items = listContainer.querySelectorAll(".explorer-item");
                     const item = items[index];
+                    if (!item) return;
+
                     item.classList.add("selected");
                     globalSelected.item = item;
                     globalSelected.window = win;
 
-                    // ステータスバー更新
-                    const node = resolveFS(currentPath)?.[item.textContent];
-                    const size = calcNodeSize(node);
+                    // ★ 修正ポイント: textContent ではなく dataset.name を使う
+                    const name = item.dataset.name;
+                    const node = resolveFS(currentPath)?.[name];
+
                     const statusBar = win?._statusBar;
-                    if (statusBar) {
+                    if (statusBar && node) {
+                        const size = calcNodeSize(node);
                         statusBar.textContent =
-                            `${item.textContent} | ${node.type} | ${formatSize(size)}`;
+                            `${name} | ${node.type} | ${formatSize(size)}`;
                     }
 
                     item.scrollIntoView({ block: "nearest" });
                     setupRibbon(win, () => currentPath, render, explorerMenus);
-
                 }
 
                 if (e.key === "ArrowDown") {
@@ -617,7 +739,7 @@ export default async function Explorer(root, options = {}) {
                     e.preventDefault();
                     // 安全性向上: nodeが存在しない場合に早期リターン
                     if (!globalSelected.item) return;
-                    const name = globalSelected.item.textContent;
+                    const name = globalSelected.item.dataset.name;
                     const node = resolveFS(currentPath)?.[name];
                     if (!node) return;
                     openFSItem(name, node, currentPath);
@@ -649,7 +771,7 @@ export default async function Explorer(root, options = {}) {
                         label: "開く",
                         action: () => {
                             if (!globalSelected.item) return;
-                            const name = globalSelected.item.textContent;
+                            const name = globalSelected.item.dataset.name;
                             const node = resolveFS(currentPath)[name];
                             openFSItem(name, node, currentPath);
                         },
@@ -665,7 +787,7 @@ export default async function Explorer(root, options = {}) {
                             if (!globalSelected.item) return;
                             deleteFSItem(
                                 currentPath,
-                                globalSelected.item.textContent,
+                                globalSelected.item.dataset.name,
                                 () => {
                                     render(currentPath);
                                     globalSelected.item = null;
@@ -680,7 +802,7 @@ export default async function Explorer(root, options = {}) {
                         label: "プログラムから開く",
                         action: () => {
                             if (!globalSelected.item) return;
-                            const name = globalSelected.item.textContent;
+                            const name = globalSelected.item.dataset.name;
                             const node = resolveFS(currentPath)[name];
 
                             // ⭐ 修正: node.type が確実に "file" であるときのみ実行
@@ -692,7 +814,7 @@ export default async function Explorer(root, options = {}) {
                         },
                         disabled: () => {
                             if (!globalSelected.item) return true;
-                            const node = resolveFS(currentPath)[globalSelected.item.textContent];
+                            const node = resolveFS(currentPath)[globalSelected.item.dataset.name];
                             // ⭐ 修正: file 以外（folder, app, link）はすべて無効化する
                             return !node || node.type !== "file";
                         }

@@ -1,4 +1,5 @@
-/* explorer.css */
+/* ご提示のスタイルをすべて維持 */
+
 /* ===== Explorer ヘッダー ===== */
 .explorer-header {
     display: flex;
@@ -9,21 +10,18 @@
 
 .explorer-separator {
     height: 1.5px;
-    /* 線の高さ */
     background-color: white;
-    /* Windows95グレー */
     box-shadow: 0 -1.5px 0 #7a7a7a;
-    /* 上方向に白線だけ */
     margin: 0px 0;
-    /* 上下の余白 */
 }
 
 .explorer-header button {
     margin-right: 8px;
+    width: 26px;
+    height: 26px;
     cursor: pointer;
 }
 
-/* ===== Optional: Path label ===== */
 .path-label {
     font-weight: bold;
     white-space: nowrap;
@@ -36,9 +34,7 @@
     display: flex;
     flex-direction: column;
     height: 100%;
-    /* 重要 */
     padding: 0;
-    /* padding があると scrollbar-button が 2 個描画されることがあります */
 }
 
 .explorer-list {
@@ -53,51 +49,99 @@
     box-sizing: border-box;
 }
 
-.explorer-list div {
-    padding: 4px 8px;
+/* 修正箇所：既存の div 指定を詳細表示に干渉させないよう調整 */
+.explorer-list .explorer-item {
     cursor: pointer;
-    display: flex;
-    align-items: center;
+    /* display: flex は各 view モード側で定義するためここでは指定しない */
 }
 
+/* ファイル内容表示用 */
 .file-content {
     white-space: pre-wrap;
     padding: 6px;
     font-family: Consolas, monospace;
 }
 
-
-
-
-.explorer-item {
-    padding: 4px 6px;
-    cursor: pointer;
+/* アイコン表示モード */
+.icon-view {
+    display: flex !important;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 10px;
+    width: 85px;
+    float: left;
 }
 
-.explorer-item:hover {
-    background-color: darkblue;
-    color: white;
+.item-icon-large {
+    font-size: 40px;
+    margin-bottom: 5px;
 }
 
+.item-name-label {
+    font-size: 12px;
+    word-break: break-all;
+}
+
+/* 修正箇所：詳細表示モード (レイアウト崩れ防止版) */
+.details-view {
+    display: grid !important;
+    /* 強制的に grid を適用 */
+    /* 列幅: アイコン(24px) 名前(残り全部) 種類(100px) サイズ(80px) */
+    grid-template-columns: 24px 1fr 100px 80px;
+    gap: 8px;
+    padding: 4px 12px;
+    border-bottom: 1px solid #eee;
+    font-size: 12px;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.item-type-text,
+.item-size-text {
+    color: #666;
+}
+
+.item-size-text {
+    text-align: right;
+    /* サイズを右寄せ */
+}
+
+/* リスト表示モード */
+.list-view {
+    display: flex !important;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    font-size: 12px;
+}
+
+.item-icon-small {
+    font-size: 16px;
+    width: 20px;
+    text-align: center;
+}
+
+/* 選択時のハイライト */
 .explorer-item.selected {
-    background: black;
-    /* Windowsっぽい青 */
-    color: white;
+    background-color: #000080 !important;
+    color: white !important;
 }
 
+.explorer-item.selected span {
+    color: white !important;
+}
 
-/* Ribbon メニュー */
+/* Ribbon メニュー (維持) */
 .ribbon-menu {
     position: relative;
     display: inline-block;
-    /* 横に並ぶように */
     padding: 0;
-    /* 内側の余白は span に任せる */
     cursor: pointer;
     user-select: none;
 }
 
-/* タイトルテキストをボタン風にする */
 .ribbon-title {
     display: inline-block;
     padding: 4px 12px;
@@ -105,9 +149,7 @@
     box-sizing: border-box;
 }
 
-/* ホバー時だけ枠と色をつける */
 .ribbon-menu:hover .ribbon-title {
-    display: inline-block;
     color: black;
     background-color: #C3C7CB;
     border: 1.5px solid #808080;
@@ -115,9 +157,7 @@
     box-shadow: 0.5px 0.5px black;
 }
 
-/* ドロップダウンが表示されている ribbon-menu は押下風を維持 */
 .ribbon-menu.selected .ribbon-title {
-    display: inline-block;
     background-color: #C3C7CB;
     border: 1.5px solid;
     border-color: #7a7a7a #fff #fff #7a7a7a;
@@ -125,7 +165,6 @@
     transform: translate(0.5px, 0.5px);
 }
 
-/* ドロップダウン */
 .ribbon-dropdown {
     position: absolute;
     top: 100%;
@@ -140,12 +179,10 @@
     z-index: 1000;
 }
 
-/* アイテム */
 .ribbon-item {
     padding: 4px 8px;
     cursor: pointer;
     display: block;
-    /* 幅いっぱいに */
     white-space: nowrap;
 }
 

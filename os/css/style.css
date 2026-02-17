@@ -96,9 +96,7 @@ body {
 
 .icon {
     width: 80px;
-    min-height: 50px;
-    /* ← 最低限の高さ。これより文字が多ければさらに伸びる */
-    height: max-content;
+    min-height: 60px;
     margin-bottom: 10px;
     padding: 5px;
     color: white;
@@ -108,10 +106,33 @@ body {
     text-align: center;
     word-break: break-all;
 
-    /* アイコン画像を入れる準備（もしあれば） */
+    /* 上下に並べる設定 */
     display: flex;
     flex-direction: column;
+    /* 縦に並べる */
     align-items: center;
+    /* 中央揃え */
+    justify-content: flex-start;
+}
+
+/* アイコン（絵文字）自体のサイズ調整 */
+.icon-graphic {
+    font-size: 32px;
+    /* アイコンを大きく */
+    margin-bottom: 4px;
+    line-height: 1;
+}
+
+/* 名前ラベルの調整 */
+.icon-label {
+    line-height: 1.2;
+    text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.8);
+    /* 文字を見やすく */
+}
+
+.icon.selected .icon-label {
+    background-color: darkblue;
+    /* 選択時は文字の背景だけ青くするのがWin95風 */
 }
 
 .icon.selected {

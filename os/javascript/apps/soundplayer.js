@@ -1,8 +1,11 @@
-//soundplayer.js
+// soundplayer.js
 import { FS } from "../fs.js";
 import { alertWindow } from "../window.js";
 
 export default function main(content, options) {
+    // 再生中のオーディオオブジェクトを保持する変数
+    let currentAudio = null;
+
     const container = document.createElement("div");
     // 全体の背景を少し落ち着いた色にし、フォントを調整
     container.style.cssText = "padding:12px; display:flex; flex-direction:column; gap:10px; height:100%; box-sizing:border-box; background:#f5f5f5; font-family: sans-serif; color: black;";
@@ -21,12 +24,24 @@ export default function main(content, options) {
     const listEl = container.querySelector("#player-list");
     const inputEl = container.querySelector("#audio-input");
 
+    // --- 初期化処理 ---
     if (!FS.Programs.Music) FS.Programs.Music = { type: "folder" };
+    if (!FS.System) FS.System = { type: "folder" };
+    if (!FS.System["SoundConfig.json"]) {
+        FS.System["SoundConfig.json"] = { type: "file", content: "{}" };
+    }
 
     const refresh = () => {
         listEl.innerHTML = "";
         const music = FS.Programs.Music;
-        const config = JSON.parse(FS.System["SoundConfig.json"].content || "{}");
+
+        // 安全にJSONをパース
+        let config = {};
+        try {
+            config = JSON.parse(FS.System["SoundConfig.json"].content || "{}");
+        } catch (e) {
+            config = {};
+        }
 
         const files = Object.keys(music).filter(name => name !== "type");
 
@@ -36,28 +51,28 @@ export default function main(content, options) {
         }
 
         files.forEach(name => {
-            // 現在このファイルがどのイベントに設定されているか確認（バッジ用）
+            // 現在このファイルがどのイベントに設定されているか確認
             const assignedEvents = Object.keys(config).filter(key => config[key] === name);
 
             const row = document.createElement("div");
             row.style.cssText = "padding:8px 12px; border-bottom:1px solid #ccc; display:flex; justify-content:space-between; align-items:center;";
 
-            // 割り当てがある場合はイベント名を表示
             const statusText = assignedEvents.length > 0
-                ? `<span style="font-size:10px; background:#eee; padding:2px 5px; margin-left:8px; color:#666;">${assignedEvents.join(", ")}</span>`
+                ? `<span style="font-size:10px; background:#e1f5fe; border:1px solid #b3e5fc; padding:2px 5px; margin-left:8px; color:#0277bd; border-radius:3px;">${assignedEvents.join(", ")}</span>`
                 : "";
 
             row.innerHTML = `
                 <div style="flex:1; display:flex; align-items:center; overflow:hidden;">
-                    <span style="font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${name}</span>
+                    <span style="font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${name}">${name}</span>
                     ${statusText}
                 </div>
                 <div style="display:flex; gap:6px; align-items:center; margin-left:10px;">
                     <button class="play-btn" data-name="${name}" style="padding:2px 8px; cursor:pointer; font-size:11px;">再生</button>
+                    <button class="stop-btn" style="padding:2px 8px; cursor:pointer; font-size:11px;">停止</button>
                     <button class="delete-btn" data-name="${name}" style="padding:2px 8px; cursor:pointer; font-size:11px; background:#fff; border:1px solid #ccc;">削除</button>
                     <select class="event-assign" data-filename="${name}" style="font-size:11px; padding:1px;">
                         <option value="ignore">イベントに設定</option>
-                        <option value="" ${assignedEvents.length === 0 ? 'selected' : ''}>(デフォルト)</option>
+                        <option value="" ${assignedEvents.length === 0 ? 'selected' : ''}>(なし)</option>
                         <option value="startup" ${config.startup === name ? 'selected' : ''}>起動音</option>
                         <option value="logoff" ${config.logoff === name ? 'selected' : ''}>ログオフ</option>
                         <option value="error" ${config.error === name ? 'selected' : ''}>エラー</option>
@@ -76,18 +91,13 @@ export default function main(content, options) {
             if (eventName === "ignore") return;
 
             const fileName = e.target.dataset.filename;
-            const config = JSON.parse(FS.System["SoundConfig.json"].content || "{}");
+            let config = JSON.parse(FS.System["SoundConfig.json"].content || "{}");
 
-            // --- 追加: 既存の重複設定をクリアする処理 ---
-            // このファイルが他のイベントに設定されていたら、それを削除する
+            // 同一ファイル内の他の割り当てを消す（排他的設定を維持）
             Object.keys(config).forEach(key => {
-                if (config[key] === fileName) {
-                    delete config[key];
-                }
+                if (config[key] === fileName) delete config[key];
             });
-            // ------------------------------------------
 
-            // 選択されたのが「(デフォルト)」以外なら、新しいイベントに割り当て
             if (eventName !== "") {
                 config[eventName] = fileName;
             }
@@ -103,16 +113,13 @@ export default function main(content, options) {
         const files = e.target.files;
         if (!files || files.length === 0) return;
 
-        // 許可する拡張子のリスト
         const allowedExtensions = /(\.mp3|\.ogg|\.wav)$/i;
 
         for (const file of files) {
-            // --- 追加: ファイル形式のチェック ---
             if (!allowedExtensions.exec(file.name)) {
-                alertWindow(`ファイル「${file.name}」はサポートされていない形式です。mp3, ogg, wav形式を選択してください。`);
-                continue; // このファイルをスキップして次へ
+                alertWindow(`ファイル「${file.name}」はサポートされていない形式です。`);
+                continue;
             }
-            // ----------------------------------
 
             await new Promise((resolve) => {
                 const reader = new FileReader();
@@ -127,23 +134,51 @@ export default function main(content, options) {
                 reader.readAsDataURL(file);
             });
         }
-
+        inputEl.value = ""; // 連続アップロード対応
         refresh();
     };
 
-    // 再生・削除（通知なし）
+    // 再生・停止・削除ロジック
     listEl.onclick = (e) => {
         const name = e.target.dataset.name;
-        if (!name) return;
 
+        // 再生ボタン
         if (e.target.classList.contains("play-btn")) {
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+            }
             const data = FS.Programs.Music[name].content;
-            new Audio(data).play();
+            currentAudio = new Audio(data);
+
+            // 再生終了時のクリーンアップ
+            currentAudio.onended = () => { currentAudio = null; };
+            currentAudio.play().catch(err => {
+                console.error("Playback error:", err);
+                alertWindow("再生に失敗しました。ファイルが破損している可能性があります。");
+            });
         }
 
+        // 停止ボタン
+        if (e.target.classList.contains("stop-btn")) {
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+                currentAudio = null;
+            }
+        }
+
+        // 削除ボタン
         if (e.target.classList.contains("delete-btn")) {
+            if (!name) return;
+
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio = null;
+            }
+
             delete FS.Programs.Music[name];
-            const config = JSON.parse(FS.System["SoundConfig.json"].content || "{}");
+            let config = JSON.parse(FS.System["SoundConfig.json"].content || "{}");
             let changed = false;
             Object.keys(config).forEach(k => {
                 if (config[k] === name) { delete config[k]; changed = true; }

@@ -29,10 +29,57 @@ export function buildDesktop() {
     // --------------------
     // アイコン作成
     // --------------------
+    function getFileIcon(name, node) {
+        if (node.type === "folder") return "📁";
+        if (node.type === "link") return "🔗";
+
+        if (node.type === "app") {
+            if (name.includes("Explorer")) return "🔍";
+            if (name.includes("Paint")) return "🎨";
+            if (name.includes("TextEditor") || name.includes("Notepad")) return "📝";
+            if (name.includes("CodeEditor")) return "💻";
+            if (name.includes("ImageViewer")) return "🖼️";
+            if (name.includes("VideoPlayer")) return "🎬";
+            return "⚙️"; // 一般的なアプリ
+        }
+
+        // 拡張子を取得
+        const ext = "." + name.split('.').pop().toLowerCase();
+
+        // file-associations.js の分類に基づいたアイコン設定
+        const categories = {
+            text: [".txt", ".md"],
+            code: [".js", ".ts", ".json", ".css", ".scss", ".vue"],
+            image: [".png", ".jpg", ".jpeg", ".gif"],
+            video: [".mp4", ".webm", ".ogg", ".mov", ".mkv"]
+        };
+
+        if (categories.text.includes(ext)) return "📄";
+        if (categories.code.includes(ext)) return "📜";
+        if (categories.image.includes(ext)) return "🖼️";
+        if (categories.video.includes(ext)) return "📽️";
+
+        return "📄"; // デフォルト
+    }
     function createIcon(name, node) {
         const item = document.createElement("div");
         item.className = "icon";
-        item.textContent = name;
+        item.dataset.name = name;
+
+        // 上記の関数、または同様のロジックでアイコンを決定
+        const iconChar = getFileIcon(name, node);
+
+        const iconGraphic = document.createElement("div");
+        iconGraphic.className = "icon-graphic";
+        iconGraphic.textContent = iconChar;
+
+        const iconLabel = document.createElement("div");
+        iconLabel.className = "icon-label";
+        iconLabel.textContent = name;
+
+        item.appendChild(iconGraphic);
+        item.appendChild(iconLabel);
+
         iconsContainer.appendChild(item);
 
         const fullPath = `Desktop/${name}`;
@@ -92,7 +139,7 @@ export function buildDesktop() {
         const items = [];
 
         if (globalSelected.item) {
-            const name = globalSelected.item.textContent;
+            const name = globalSelected.item.dataset.name;
             const node = desktopNode[name];
             if (node) {
                 items.push({
@@ -114,7 +161,7 @@ export function buildDesktop() {
             disabled: !globalSelected.item,
             action: () => {
                 if (globalSelected.item) {
-                    const name = globalSelected.item.textContent;
+                    const name = globalSelected.item.dataset.name;
                     deleteFSItem("Desktop", name);
                     globalSelected.item = null;
                 }
@@ -123,7 +170,7 @@ export function buildDesktop() {
 
         // 選択アイテムがあれば「プログラムから開く」
         if (globalSelected.item) {
-            const name = globalSelected.item.textContent;
+            const name = globalSelected.item.dataset.name;
             const node = desktopNode[name];
             const isFolder = node?.type === "folder";
             items.push({
@@ -436,7 +483,7 @@ function setupDesktopKeyboardNavigation() {
             case "Enter":
                 if (globalSelected.item) {
                     e.preventDefault();
-                    const name = globalSelected.item.textContent;
+                    const name = globalSelected.item.dataset.name;
                     const desktopNode = resolveFS("Desktop");
                     const node = desktopNode ? desktopNode[name] : null;
                     if (node) openFSItem(name, node, "Desktop");
