@@ -153,50 +153,6 @@ export function buildDesktop() {
             }
         }
     });
-
-    // キーボード操作（矢印キーで選択）
-    if (!desktop._keydownBound) {
-        // デスクトップで入力を受け付けるために tabIndex を設定（必要に応じて）
-        desktop.tabIndex = 0;
-
-        desktop.addEventListener("keydown", e => {
-            if (document.activeElement !== desktop) return;
-            const items = Array.from(iconsContainer.querySelectorAll(".icon"));
-            if (!items.length) return;
-
-            let currentIndex = items.findIndex(el => el === globalSelected.item);
-
-            function selectItem(index) {
-                if (globalSelected.item) globalSelected.item.classList.remove("selected");
-                const item = items[index];
-                item.classList.add("selected");
-                globalSelected.item = item;
-                globalSelected.window = desktop;
-                item.scrollIntoView({ block: "nearest" });
-            }
-
-            if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-                e.preventDefault();
-                currentIndex = (currentIndex + 1) % items.length;
-                selectItem(currentIndex);
-            }
-
-            if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-                e.preventDefault();
-                currentIndex = (currentIndex - 1 + items.length) % items.length;
-                selectItem(currentIndex);
-            }
-
-            if (e.key === "Enter") {
-                e.preventDefault();
-                if (!globalSelected.item) return;
-                const name = globalSelected.item.textContent;
-                const node = resolveFS("Desktop")?.[name];
-                if (node) openFSItem(name, node, "Desktop");
-            }
-        });
-        desktop._keydownBound = true;
-    }
     adjustDesktopIconArea();
     window.dispatchEvent(new Event("desktop-ready"));
 }
@@ -361,6 +317,7 @@ function openFSItem(name, node, parentPath) {
     }
 }
 
+
 // --------------------
 // FS更新監視
 // --------------------
@@ -371,6 +328,128 @@ function installDesktopWatcher() {
     window.addEventListener("fs-updated", () => buildDesktop());
 }
 installDesktopWatcher();
+
+// --------------------
+// キーボードナビゲーションの実装
+// --------------------
+let isDesktopKeyHandlerAttached = false;
+
+function setupDesktopKeyboardNavigation() {
+    if (isDesktopKeyHandlerAttached) return;
+
+    document.addEventListener("keydown", (e) => {
+        // --- ガード処理：デスクトップがアクティブか判定 ---
+        const active = document.activeElement;
+
+        // 1. 入力欄（リネーム中など）にフォーカスがある場合は即座に終了
+        if (active.tagName === "INPUT" || active.tagName === "TEXTAREA") return;
+
+        // 2. ウィンドウ（アプリ）内の要素にフォーカスがある場合は無視
+        if (active.closest(".window")) return;
+
+        // 3. デスクトップ要素の存在確認
+        const desktop = document.getElementById("desktop");
+        const iconsContainer = document.getElementById("desktop-icons");
+        if (!desktop || !iconsContainer) return;
+
+        // 4. デスクトップまたはbody（どこも選んでいない状態）以外がアクティブなら無視
+        // buildDesktop内で desktop.tabIndex = 0 を設定し、クリック時に .focus() させるのが前提
+        const isDesktopFocused = (active === desktop || active === document.body);
+        if (!isDesktopFocused) return;
+
+        // --- 移動ロジック開始 ---
+        const icons = Array.from(iconsContainer.querySelectorAll(".icon"));
+        if (icons.length === 0) return;
+
+        let currentIndex = icons.findIndex(el => el.classList.contains("selected"));
+
+        const selectIcon = (targetEl) => {
+            if (!targetEl) return;
+            // 全選択解除
+            icons.forEach(el => el.classList.remove("selected"));
+            // 新規選択
+            targetEl.classList.add("selected");
+            globalSelected.item = targetEl;
+            globalSelected.window = desktop;
+            // 視界に入るようスクロール
+            targetEl.scrollIntoView({ block: "nearest", inline: "nearest" });
+        };
+
+        // 物理的な距離で最適なアイコンを探す（ご提示のロジックを完全維持）
+        const getNearestIcon = (currentEl, direction) => {
+            const currentRect = currentEl.getBoundingClientRect();
+            const currentCenterX = currentRect.left + currentRect.width / 2;
+            const currentCenterY = currentRect.top + currentRect.height / 2;
+
+            let bestMatch = null;
+            let minDistance = Infinity;
+
+            icons.forEach(target => {
+                if (target === currentEl) return;
+                const targetRect = target.getBoundingClientRect();
+                const targetCenterX = targetRect.left + targetRect.width / 2;
+                const targetCenterY = targetRect.top + targetRect.height / 2;
+
+                let isProperDirection = false;
+                if (direction === "ArrowDown") isProperDirection = targetRect.top >= currentRect.bottom - 5;
+                if (direction === "ArrowUp") isProperDirection = targetRect.bottom <= currentRect.top + 5;
+
+                if (isProperDirection) {
+                    const dist = Math.pow(targetCenterX - currentCenterX, 2) + Math.pow(targetCenterY - currentCenterY, 2);
+                    if (dist < minDistance) {
+                        minDistance = dist;
+                        bestMatch = target;
+                    }
+                }
+            });
+            return bestMatch;
+        };
+
+        // キー分岐
+        switch (e.key) {
+            case "ArrowRight":
+                e.preventDefault();
+                selectIcon(icons[currentIndex === -1 ? 0 : (currentIndex + 1) % icons.length]);
+                break;
+            case "ArrowLeft":
+                e.preventDefault();
+                selectIcon(icons[currentIndex === -1 ? 0 : (currentIndex - 1 + icons.length) % icons.length]);
+                break;
+            case "ArrowDown":
+                e.preventDefault();
+                if (currentIndex === -1) {
+                    selectIcon(icons[0]);
+                } else {
+                    const next = getNearestIcon(icons[currentIndex], "ArrowDown");
+                    if (next) selectIcon(next);
+                }
+                break;
+            case "ArrowUp":
+                e.preventDefault();
+                if (currentIndex === -1) {
+                    selectIcon(icons[icons.length - 1]);
+                } else {
+                    const prev = getNearestIcon(icons[currentIndex], "ArrowUp");
+                    if (prev) selectIcon(prev);
+                }
+                break;
+            case "Enter":
+                if (globalSelected.item) {
+                    e.preventDefault();
+                    const name = globalSelected.item.textContent;
+                    const desktopNode = resolveFS("Desktop");
+                    const node = desktopNode ? desktopNode[name] : null;
+                    if (node) openFSItem(name, node, "Desktop");
+                }
+                break;
+        }
+    });
+
+    isDesktopKeyHandlerAttached = true;
+}
+
+// 最後に実行
+setupDesktopKeyboardNavigation();
 
 // タスクバーの高さが変わったらアイコン領域を再調整
 window.addEventListener("desktop-resize", adjustDesktopIconArea);

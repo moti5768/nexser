@@ -727,6 +727,10 @@ export function bringToFront(win) {
     const maxZ = wins.reduce((max, w) => Math.max(max, parseInt(w.style.zIndex) || 100), 100);
     win.style.zIndex = maxZ + 1;
     scheduleRefreshTopWindow();
+    if (!win.contains(document.activeElement)) {
+        win.setAttribute("tabindex", "-1"); // フォーカス可能にする
+        win.focus();
+    }
 }
 
 /* =========================
