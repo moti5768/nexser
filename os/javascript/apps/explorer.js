@@ -393,8 +393,8 @@ export default async function Explorer(root, options = {}) {
             const viewControls = document.createElement("div");
             viewControls.className = "view-controls";
             viewControls.style.display = "flex";
-            viewControls.style.gap = "2px";
-            viewControls.style.marginRight = "8px";
+            viewControls.style.gap = "0px";
+            viewControls.style.marginRight = "4px";
 
             // ボタン生成用の共通関数
             const createViewModeBtn = (label, mode, title) => {
@@ -403,6 +403,7 @@ export default async function Explorer(root, options = {}) {
                 btn.textContent = label;
                 btn.title = title;
                 btn.style.padding = "2px 6px";
+                btn.style.marginRight = "4px";
 
                 // 現在選択されているモードのボタンを強調する
                 if (viewMode === mode) {
@@ -553,7 +554,7 @@ export default async function Explorer(root, options = {}) {
         if (viewMode === "icon") {
             listContainer.style.display = "grid";
             listContainer.style.gridTemplateColumns = "repeat(auto-fill, minmax(100px, 1fr))";
-            listContainer.style.gap = "8px";
+            listContainer.style.gap = "4px";
             listContainer.style.padding = "10px";
         } else {
             listContainer.style.display = "block";
@@ -604,13 +605,32 @@ export default async function Explorer(root, options = {}) {
                 `;
             } else if (viewMode === "details") {
                 const size = formatSize(calcNodeSize(itemData));
-                const typeLabel = itemData.type === "folder" ? "フォルダ" : "ファイル";
+
+                // type プロパティに応じて表示名を細かく分岐
+                let typeLabel = "ファイル";
+                switch (itemData.type) {
+                    case "folder":
+                        typeLabel = "フォルダ";
+                        break;
+                    case "link":
+                        typeLabel = "ショートカット";
+                        break;
+                    case "app":
+                        typeLabel = "アプリ";
+                        break;
+                    case "file":
+                        typeLabel = "ファイル";
+                        break;
+                    default:
+                        typeLabel = "不明";
+                }
+
                 item.innerHTML = `
-                    <span class="item-icon-small">${iconChar}</span>
-                    <span class="item-name-text">${name}</span>
-                    <span class="item-type-text">${typeLabel}</span>
-                    <span class="item-size-text">${size}</span>
-                `;
+        <span class="item-icon-small">${iconChar}</span>
+        <span class="item-name-text">${name}</span>
+        <span class="item-type-text">${typeLabel}</span>
+        <span class="item-size-text">${size}</span>
+    `;
             } else {
                 // リスト表示
                 item.innerHTML = `

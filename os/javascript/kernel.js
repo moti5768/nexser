@@ -285,7 +285,7 @@ export async function launch(path, options = {}) {
         /* ================= FOLDER ================= */
         else if (item.type === "folder") {
 
-            await launch("Programs/Explorer.app", {
+            await launch("Programs/Applications/Explorer.app", {
                 path,
                 parentCwd: options.parentCwd,
                 ribbonMenus: options.ribbonMenus,

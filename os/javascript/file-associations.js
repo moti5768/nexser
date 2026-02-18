@@ -3,29 +3,29 @@
 
 export const FILE_ASSOCIATIONS = {
     // text
-    ".txt": "Programs/Accessories/TextEditor.app",
-    ".md": "Programs/Accessories/TextEditor.app",
+    ".txt": "Programs/Applications/TextEditor.app",
+    ".md": "Programs/Applications/TextEditor.app",
 
     // code
-    ".js": "Programs/Accessories/Multimedia/CodeEditor.app",
-    ".ts": "Programs/Accessories/Multimedia/CodeEditor.app",
-    ".json": "Programs/Accessories/Multimedia/CodeEditor.app",
-    ".css": "Programs/Accessories/Multimedia/CodeEditor.app",
-    ".scss": "Programs/Accessories/Multimedia/CodeEditor.app",
-    ".vue": "Programs/Accessories/Multimedia/CodeEditor.app",
+    ".js": "Programs/Applications/CodeEditor.app",
+    ".ts": "Programs/Applications/CodeEditor.app",
+    ".json": "Programs/Applications/CodeEditor.app",
+    ".css": "Programs/Applications/CodeEditor.app",
+    ".scss": "Programs/Applications/CodeEditor.app",
+    ".vue": "Programs/Applications/CodeEditor.app",
 
     // images
-    ".png": "Programs/Accessories/Multimedia/ImageViewer.app",
-    ".jpg": "Programs/Accessories/Multimedia/ImageViewer.app",
-    ".jpeg": "Programs/Accessories/Multimedia/ImageViewer.app",
-    ".gif": "Programs/Accessories/Multimedia/ImageViewer.app",
+    ".png": "Programs/Applications/ImageViewer.app",
+    ".jpg": "Programs/Applications/ImageViewer.app",
+    ".jpeg": "Programs/Applications/ImageViewer.app",
+    ".gif": "Programs/Applications/ImageViewer.app",
 
     // video
-    ".mp4": "Programs/Accessories/Multimedia/VideoPlayer.app",
-    ".webm": "Programs/Accessories/Multimedia/VideoPlayer.app",
-    ".ogg": "Programs/Accessories/Multimedia/VideoPlayer.app",
-    ".mov": "Programs/Accessories/Multimedia/VideoPlayer.app",
-    ".mkv": "Programs/Accessories/Multimedia/VideoPlayer.app"
+    ".mp4": "Programs/Applications/VideoPlayer.app",
+    ".webm": "Programs/Applications/VideoPlayer.app",
+    ".ogg": "Programs/Applications/VideoPlayer.app",
+    ".mov": "Programs/Applications/VideoPlayer.app",
+    ".mkv": "Programs/Applications/VideoPlayer.app"
 };
 
 

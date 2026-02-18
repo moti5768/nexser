@@ -2,58 +2,57 @@
 import { saveFS, loadFS } from "./fs-db.js";
 
 let saveTimer = null;
-
-// --- 【BSOD対策】保護すべきシステム予約キーの定義 ---
 const PROTECTED_KEYS = ["type", "entry", "singleton", "shell", "target", "name"];
 
-// 初期 FS 定義
 export let FS = {
     "System": {
         type: "folder",
-        "AUTOBOOT.CFG": {
-            type: "file",
-            content: ""
-        },
-        "SoundConfig.json": {
-            type: "file",
-            content: "{}"  // 最初は空っぽ
-        }
+        "AUTOBOOT.CFG": { type: "file", content: "" },
+        "SoundConfig.json": { type: "file", content: "{}" }
     },
     Desktop: {
         type: "folder",
         Programs: { type: "link", target: "Programs" },
         Desktop: { type: "link", target: "Desktop" },
         Documents: { type: "link", target: "Programs/Documents" },
-        "Terminal.app": { type: "link", target: "Programs/Accessories/Systemtools/Terminal.app" },
-        "Calc.app": { type: "link", target: "Programs/Accessories/Calc.app" },
-        "Soundsplayer.app": { type: "app", entry: "./apps/soundplayer.js" },
-        "Settings.app": { type: "link", target: "Programs/Settings/Settings.app" }
+        "Terminal.app": { type: "link", target: "Programs/Applications/Terminal.app" },
+        "Calc.app": { type: "link", target: "Programs/Applications/Calc.app" },
+        "Soundsplayer.app": { type: "link", target: "Programs/Applications/Soundsplayer.app" },
+        "Settings.app": { type: "link", target: "Programs/Applications/Settings.app" }
     },
     Programs: {
         type: "folder",
-        Accessories: {
+        Applications: {
             type: "folder",
             "Calc.app": { type: "app", entry: "./apps/calc.js", singleton: true },
             "TextEditor.app": { type: "app", entry: "./apps/texteditor.js" },
+            "CodeEditor.app": { type: "app", entry: "./apps/codeeditor.js" },
+            "ImageViewer.app": { type: "app", entry: "./apps/imageviewer.js" },
+            "VideoPlayer.app": { type: "app", entry: "./apps/videoplayer.js" },
+            "Clock.app": { type: "app", entry: "./apps/clock.js", singleton: true },
+            "Terminal.app": { type: "app", entry: "./apps/terminal.js", singleton: true },
+            "TaskManager.app": { type: "app", name: "Task Manager", entry: "./apps/taskmanager.js", singleton: true },
+            "Settings.app": { type: "app", entry: "./apps/settings.js", singleton: true },
+            "Explorer.app": { type: "app", entry: "./apps/explorer.js", shell: true },
+            "Soundsplayer.app": { type: "app", entry: "./apps/soundplayer.js" }
+        },
+        Accessories: {
+            type: "folder",
+            "Calc.app": { type: "link", target: "Programs/Applications/Calc.app" },
+            "TextEditor.app": { type: "link", target: "Programs/Applications/TextEditor.app" },
             Multimedia: {
                 type: "folder",
-                "CodeEditor.app": { type: "app", entry: "./apps/codeeditor.js" },
-                "ImageViewer.app": { type: "app", entry: "./apps/imageviewer.js" },
-                "VideoPlayer.app": { type: "app", entry: "./apps/videoplayer.js" }
+                "CodeEditor.app": { type: "link", target: "Programs/Applications/CodeEditor.app" },
+                "ImageViewer.app": { type: "link", target: "Programs/Applications/ImageViewer.app" },
+                "VideoPlayer.app": { type: "link", target: "Programs/Applications/VideoPlayer.app" }
             },
             Systemtools: {
                 type: "folder",
-                "Clock.app": { type: "app", entry: "./apps/clock.js", singleton: true },
-                "Terminal.app": { type: "app", entry: "./apps/terminal.js", singleton: true },
-                "TaskManager.app": {
-                    type: "app",
-                    name: "Task Manager",
-                    entry: "./apps/taskmanager.js",
-                    singleton: true
-                }
+                "Clock.app": { type: "link", target: "Programs/Applications/Clock.app" },
+                "Terminal.app": { type: "link", target: "Programs/Applications/Terminal.app" },
+                "TaskManager.app": { type: "link", target: "Programs/Applications/TaskManager.app" }
             }
         },
-        "Explorer.app": { type: "app", entry: "./apps/explorer.js", shell: true },
         Documents: {
             type: "folder",
             "Readme.txt": { type: "file", content: "Welcome to NEXSER OS", style: { fontSize: 48, fontFamily: "serif", fontWeight: "bold", fontStyle: "italic" } }
@@ -67,7 +66,7 @@ export let FS = {
         Movie: { type: "folder" },
         Settings: {
             type: "folder",
-            "Settings.app": { type: "app", entry: "./apps/settings.js", singleton: true }
+            "Settings.app": { type: "link", target: "Programs/Applications/Settings.app" }
         }
     }
 };

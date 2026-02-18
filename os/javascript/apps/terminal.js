@@ -244,7 +244,7 @@ export default function TerminalApp(content) {
                         break;
 
                     case "folder":
-                        launch("Programs/Explorer.app", { path, parentCwd: cwd });
+                        launch("Programs/Applications/Explorer.app", { path, parentCwd: cwd });
                         break;
 
                     default:

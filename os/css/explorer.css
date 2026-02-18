@@ -63,14 +63,37 @@
 }
 
 /* アイコン表示モード */
+/* アイコン表示モード */
 .icon-view {
     display: flex !important;
     flex-direction: column;
     align-items: center;
     text-align: center;
-    padding: 10px;
-    width: 85px;
-    float: left;
+    padding: 5px;
+    /* 10pxから少し詰める */
+    width: 100%;
+    /* JS側のGrid幅(100px)に従う */
+    height: 110px;
+    /* 115pxから95pxに短縮して余白をカット */
+    /* float: left; ← これを削除 */
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.item-name-label {
+    display: block;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    line-clamp: 2;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    /* 以下、レイアウト調整 */
+    font-size: 12px;
+    word-break: break-all;
+    margin-top: 2px;
+    line-height: 1.2;
+    width: 100%;
+    text-align: center;
 }
 
 .item-icon-large {
@@ -78,17 +101,12 @@
     margin-bottom: 5px;
 }
 
-.item-name-label {
-    font-size: 12px;
-    word-break: break-all;
-}
-
 /* 修正箇所：詳細表示モード (レイアウト崩れ防止版) */
+/* 修正箇所：詳細表示モード (レイアウト崩れ防止・省略対応版) */
 .details-view {
     display: grid !important;
-    /* 強制的に grid を適用 */
-    /* 列幅: アイコン(24px) 名前(残り全部) 種類(100px) サイズ(80px) */
-    grid-template-columns: 24px 1fr 100px 80px;
+    /* 1列目:アイコン, 2列目:名前(最小値0で伸縮), 3列目:種類(固定), 4列目:サイズ(固定) */
+    grid-template-columns: 24px minmax(0, 1fr) 100px 80px;
     gap: 8px;
     padding: 4px 12px;
     border-bottom: 1px solid #eee;
@@ -98,14 +116,24 @@
     box-sizing: border-box;
 }
 
+/* 名前テキストが長すぎる場合に「...」で省略する設定 */
+.item-name-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    /* Grid内での省略を有効にするために必要 */
+}
+
 .item-type-text,
 .item-size-text {
     color: #666;
+    white-space: nowrap;
+    /* 種類やサイズが改行されるのを防ぐ */
 }
 
 .item-size-text {
     text-align: right;
-    /* サイズを右寄せ */
 }
 
 /* リスト表示モード */

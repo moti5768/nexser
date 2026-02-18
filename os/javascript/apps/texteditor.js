@@ -114,6 +114,7 @@ export default function TextEditor(root, options = {}) {
             return new Promise(resolve => {
                 const content = showModalWindow("新規保存", "ファイル名を入力してください", {
                     parentWin: win,
+                    silent: true,
                     buttons: [
                         { label: "OK", onClick: () => resolve(promptInput.value) },
                         { label: "キャンセル", onClick: () => resolve(null) }

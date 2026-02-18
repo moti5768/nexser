@@ -140,7 +140,7 @@ function createMenu(folder, basePath, menuRoot) {
 
                     case "folder":
                         // フォルダだけ Explorer を開く（親階層は展開しない）
-                        launch("Programs/Explorer.app", {
+                        launch("Programs/Applications/Explorer.app", {
                             path: targetPath,
                             uniqueKey: targetPath,
                             showFullPath: false
@@ -336,7 +336,7 @@ function launchByType(type, path) {
         }
 
         case "folder":
-            launch("Programs/Explorer.app", { path, uniqueKey: path, showFullPath: true });
+            launch("Programs/Applications/Explorer.app", { path, uniqueKey: path, showFullPath: true });
             addRecent(recentItem); // FS 内の path を追加
             break;
 

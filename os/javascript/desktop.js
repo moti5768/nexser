@@ -358,7 +358,7 @@ function openFSItem(name, node, parentPath) {
             addRecent({ type: "file", path: targetPath });
             break;
         case "folder":
-            launch("Programs/Explorer.app", { path: targetPath, uniqueKey: targetPath, showFullPath: false });
+            launch("Programs/Applications/Explorer.app", { path: targetPath, uniqueKey: targetPath, showFullPath: false });
             addRecent({ type: "folder", path: targetPath });
             break;
     }
