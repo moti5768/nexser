@@ -5,20 +5,11 @@ import { getRecent, addRecent } from "./recent.js";
 import { resolveFS } from "./fs-utils.js";
 import { openDB } from "./db.js";
 import { resolveAppByPath } from "./file-associations.js";
-import {
-    createWindow
-} from "./window.js";
-import { basename } from "./kernel.js";
+import { basename } from "./fs-utils.js";
+import { hasExtension } from "./apps/explorer.js";
 
 const startBtn = document.getElementById("start-btn");
 let recentListenerInstalled = false;
-
-/* =====================================================
-   Utils
-===================================================== */
-function hasExtension(name) {
-    return /\.[a-z0-9]+$/i.test(name);
-}
 
 /* =====================================================
    Start Menu Builder
@@ -86,7 +77,7 @@ function createMenu(folder, basePath, menuRoot) {
         const item = document.createElement("div");
         item.className = "start-item";
 
-        // ←ここに span を作ってテキストを入れる
+        // テキストラベルの作成
         const textSpan = document.createElement("span");
         textSpan.className = "text";
         textSpan.textContent = name;
@@ -98,25 +89,28 @@ function createMenu(folder, basePath, menuRoot) {
         const isFileByExt = hasExtension(name);
         const effectiveType = isFileByExt ? "file" : node.type;
 
-        // ===== 起動可能アイテム =====
+        // ===== 起動可能アイテムの処理 (Desktop.js の openFSItem に準拠) =====
         if (["app", "link", "file"].includes(effectiveType)) {
-            item.onclick = () => {
+            item.onclick = async () => { // ダイアログのインポートを待つため async
                 let targetNode = node;
                 let targetPath = fullPath;
-                let effectiveType = targetNode.type;
+                let currentType = targetNode.type;
 
-                // リンクの場合はリンク先の type に置き換える
-                if (effectiveType === "link") {
+                // 1. リンクの解決
+                if (currentType === "link") {
                     targetPath = targetNode.target;
                     targetNode = resolveFS(targetPath);
                     if (!targetNode) return;
-                    effectiveType = targetNode.type;
+                    currentType = targetNode.type;
                 }
 
-                // 拡張子があれば folder でも file にする
-                if (effectiveType === "folder" && hasExtension(name)) effectiveType = "file";
+                // 2. 名前に拡張子がある場合はフォルダでもファイルとして扱う
+                if (currentType === "folder" && hasExtension(name)) {
+                    currentType = "file";
+                }
 
-                switch (effectiveType) {
+                // 3. 起動ロジック
+                switch (currentType) {
                     case "app":
                         if (targetNode.shell) return;
                         launch(targetPath, { path: targetPath, uniqueKey: targetPath });
@@ -124,42 +118,37 @@ function createMenu(folder, basePath, menuRoot) {
                         break;
 
                     case "file": {
-                        // ファイルはそのファイルだけ開く
                         const appPath = resolveAppByPath(targetPath);
                         if (appPath) {
+                            // 関連付けられたアプリで起動
                             launch(appPath, { path: targetPath, node: targetNode, uniqueKey: targetPath });
                         } else {
-                            import("./apps/fileviewer.js").then(mod => {
-                                const content = createWindow(name);
-                                mod.default(content, { name, content: targetNode.content });
-                            });
+                            // Desktop.js 同様、Explorer のアプリ選択ダイアログを呼び出す
+                            const { openWithDialog } = await import("./apps/explorer.js");
+                            openWithDialog(targetPath, targetNode);
                         }
                         addRecent({ type: "file", path: targetPath });
                         break;
                     }
 
                     case "folder":
-                        // フォルダだけ Explorer を開く（親階層は展開しない）
-                        launch("Programs/Applications/Explorer.app", {
-                            path: targetPath,
-                            uniqueKey: targetPath,
-                            showFullPath: false
-                        });
+                        // デスクトップ版と同じく、単純に Explorer.app を起動
+                        launch("Explorer.app", { path: targetPath, uniqueKey: targetPath });
                         addRecent({ type: "folder", path: targetPath });
                         break;
 
                     default:
-                        console.warn("Unknown type:", effectiveType, targetPath);
+                        console.warn("Unknown type:", currentType, targetPath);
                 }
 
+                // メニューを閉じ、ボタンの状態を戻す
                 menuRoot.style.display = "none";
+                const startBtn = document.getElementById("start-btn");
+                if (startBtn) startBtn.classList.remove("pressed");
             };
-
         }
 
-
-
-        // ===== フォルダ（※拡張子が無い場合のみ）=====
+        // ===== フォルダ階層の展開（サブメニュー） =====
         if (effectiveType === "folder") {
             item.classList.add("has-children");
 
@@ -171,7 +160,7 @@ function createMenu(folder, basePath, menuRoot) {
         }
     }
 
-    // 空フォルダの場合
+    // 空フォルダの場合の表示
     if (!hasItems) {
         const empty = document.createElement("div");
         empty.className = "start-item empty";
@@ -294,7 +283,7 @@ async function buildRecentArea(root) {
 /* =====================================================
    Unified launcher
 ===================================================== */
-function launchByType(type, path) {
+async function launchByType(type, path) {
     if (!type || !path) return;
 
     // FS 内の node を取得
@@ -304,44 +293,49 @@ function launchByType(type, path) {
         return;
     }
 
-    // link は target の type に置き換える
-    if (type === "link") type = node.type;
+    // link は target の実体に置き換える
+    let effectiveType = type;
+    if (effectiveType === "link") {
+        effectiveType = node.type;
+    }
 
     // ユーザーが開いた FS 内 path を Recent 登録用に準備
     const recentItem = {
-        type: node.type,      // app/file/folder
-        path,                 // FS 内の path
+        type: node.type,
+        path: path,
         display: basename(path)
     };
 
-    switch (type) {
+    switch (effectiveType) {
         case "app":
             if (node.shell) return;
+            // Desktop と同様の起動引数
             launch(path, { path, uniqueKey: path });
-            addRecent(recentItem); // FS 内の path を追加
+            addRecent(recentItem);
             break;
 
         case "file": {
             const appPath = resolveAppByPath(path);
             if (appPath) {
-                launch(appPath, { path, uniqueKey: path });
+                // 関連付けアプリがあれば起動
+                launch(appPath, { path, node, uniqueKey: path });
             } else {
-                import("./apps/fileviewer.js").then(mod => {
-                    const content = createWindow(basename(path));
-                    mod.default(content, { name: basename(path), content: node.content || "" });
-                });
+                // アプリがない場合は Explorer のアプリ選択ダイアログを表示
+                const { openWithDialog } = await import("./apps/explorer.js");
+                openWithDialog(path, node);
             }
-            addRecent(recentItem); // FS 内の path を追加（絶対に appPath ではない）
+            addRecent(recentItem);
             break;
         }
 
         case "folder":
-            launch("Programs/Applications/Explorer.app", { path, uniqueKey: path, showFullPath: true });
-            addRecent(recentItem); // FS 内の path を追加
+            // 起動パスを "Explorer.app" に統一
+            launch("Explorer.app", { path, uniqueKey: path });
+            addRecent(recentItem);
             break;
 
         default:
-            console.warn("Unknown type:", type, path);
+            console.warn("Unknown type:", effectiveType, path);
     }
 }
 

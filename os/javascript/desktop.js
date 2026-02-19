@@ -1,12 +1,12 @@
 // desktop.js
 import { FS } from "./fs.js";
 import { launch } from "./kernel.js";
-import { createWindow, alertWindow } from "./window.js";
+import { alertWindow } from "./window.js";
 import { resolveFS, validateName } from "./fs-utils.js";
 import { addRecent } from "./recent.js";
 import { attachContextMenu } from "./context-menu.js";
-import { resolveAppByPath } from "./file-associations.js";
-import { openWithDialog as explorerOpenWithDialog } from "./apps/explorer.js";
+import { resolveAppByPath, getIcon } from "./file-associations.js";
+import { openWithDialog as explorerOpenWithDialog, hasExtension } from "./apps/explorer.js";
 
 // 選択状態管理
 let globalSelected = { item: null, window: null };
@@ -26,48 +26,13 @@ export function buildDesktop() {
     }
     iconsContainer.innerHTML = ""; // 初期化
 
-    // --------------------
-    // アイコン作成
-    // --------------------
-    function getFileIcon(name, node) {
-        if (node.type === "folder") return "📁";
-        if (node.type === "link") return "🔗";
-
-        if (node.type === "app") {
-            if (name.includes("Explorer")) return "🔍";
-            if (name.includes("Paint")) return "🎨";
-            if (name.includes("TextEditor") || name.includes("Notepad")) return "📝";
-            if (name.includes("CodeEditor")) return "💻";
-            if (name.includes("ImageViewer")) return "🖼️";
-            if (name.includes("VideoPlayer")) return "🎬";
-            return "⚙️"; // 一般的なアプリ
-        }
-
-        // 拡張子を取得
-        const ext = "." + name.split('.').pop().toLowerCase();
-
-        // file-associations.js の分類に基づいたアイコン設定
-        const categories = {
-            text: [".txt", ".md"],
-            code: [".js", ".ts", ".json", ".css", ".scss", ".vue"],
-            image: [".png", ".jpg", ".jpeg", ".gif"],
-            video: [".mp4", ".webm", ".ogg", ".mov", ".mkv"]
-        };
-
-        if (categories.text.includes(ext)) return "📄";
-        if (categories.code.includes(ext)) return "📜";
-        if (categories.image.includes(ext)) return "🖼️";
-        if (categories.video.includes(ext)) return "📽️";
-
-        return "📄"; // デフォルト
-    }
     function createIcon(name, node) {
         const item = document.createElement("div");
         item.className = "icon";
         item.dataset.name = name;
 
         // 上記の関数、または同様のロジックでアイコンを決定
-        const iconChar = getFileIcon(name, node);
+        const iconChar = getIcon(name, node);
 
         const iconGraphic = document.createElement("div");
         iconGraphic.className = "icon-graphic";
@@ -225,17 +190,23 @@ function adjustDesktopIconArea() {
     iconsContainer.style.overflow = "auto";
 }
 
-
 // --------------------
-// 新規フォルダ作成
+// 新規フォルダ/ファイル作成
 // --------------------
 function createNewFolder(currentPath, container) {
     const folderNode = resolveFS(currentPath);
     if (!folderNode || !container) return;
 
-    let folderName = "新しいフォルダ";
+    // 二重作成防止（フラグ管理）
+    if (createNewFolder.isCreating) return;
+    createNewFolder.isCreating = true;
+
+    // 初期表示名
+    let defaultName = "新しいフォルダ";
     let counter = 1;
-    while (folderNode[folderName]) folderName = `新しいフォルダ (${counter++})`;
+    while (folderNode[defaultName]) {
+        defaultName = `新しいフォルダ (${counter++})`;
+    }
 
     const iconDiv = document.createElement("div");
     iconDiv.className = "icon";
@@ -243,12 +214,10 @@ function createNewFolder(currentPath, container) {
 
     const input = document.createElement("input");
     input.type = "text";
-    input.value = folderName;
-    input.style.fontSize = "13px";
-    input.style.textAlign = "left"; // ← 左寄せ
-    input.style.width = "auto";
-    input.style.minWidth = "100px";
+    input.value = defaultName;
+    input.style.cssText = "font-size:13px; text-align:left; width:auto; min-width:100px; z-index:10;";
     iconDiv.appendChild(input);
+
     input.focus();
     input.select();
 
@@ -256,60 +225,78 @@ function createNewFolder(currentPath, container) {
     const adjustWidth = () => {
         input.style.width = `${Math.max(input.value.length * 8, 100)}px`;
     };
-
-    // 初期幅調整
     adjustWidth();
-
-    // 入力中も幅を自動更新
     input.addEventListener("input", adjustWidth);
 
     let isShowingError = false;
     let isCommitting = false;
 
     const finishEditing = () => {
-
         if (isShowingError || isCommitting) return;
-        isCommitting = true;   // 👈 blurを無効化する
+        isCommitting = true;
 
-        let newName = input.value.trim() || folderName;
+        let newName = input.value.trim() || defaultName;
+
+        // 1. バリデーション (fs-utils.js)
         const error = validateName(newName);
-
         if (error) {
-            isCommitting = false;   // 👈 エラー時は解除
+            isCommitting = false;
             isShowingError = true;
-
             alertWindow(error, { width: 360, height: 160, taskbar: false });
-
             setTimeout(() => {
                 isShowingError = false;
                 input.focus();
                 input.select();
             }, 0);
-
             return;
         }
 
-        // --- 正常処理 ---
-        iconDiv.remove();
+        // 2. 名前の重複回避
         let finalName = newName;
         let idx = 1;
-        while (folderNode[finalName]) finalName = `${newName} (${idx++})`;
+        while (folderNode[finalName]) {
+            finalName = `${newName} (${idx++})`;
+        }
 
-        const tempPath = `${currentPath}/${finalName}`;
-        const isFile = !!resolveAppByPath(tempPath);
-        folderNode[finalName] = isFile
-            ? { type: "file", content: "" }
-            : { type: "folder" };
+        // --- Explorer.js の起動ロジックを適用 ---
+        // 3. 拡張子による型判定
+        // インポート済みの hasExtension を使用して判定を共通化
+        const fileExt = hasExtension(finalName)
+            ? "." + finalName.split('.').pop().toLowerCase()
+            : null;
 
+        if (fileExt === ".app") {
+            folderNode[finalName] = { type: "app", entry: "" };
+        } else if (fileExt) {
+            folderNode[finalName] = { type: "file", content: "" };
+        } else {
+            folderNode[finalName] = { type: "folder" };
+        }
+        // ---------------------------------------
+
+        // 4. UI更新
+        iconDiv.remove();
+        createNewFolder.isCreating = false; // フラグ解除
         buildDesktop();
         window.dispatchEvent(new Event("fs-updated"));
     };
 
+    input.addEventListener("keydown", e => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            finishEditing();
+        } else if (e.key === "Escape") {
+            isCommitting = true;
+            iconDiv.remove();
+            createNewFolder.isCreating = false;
+        }
+    });
 
-    input.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); finishEditing(); } });
     input.addEventListener("blur", () => {
-        if (isShowingError || isCommitting) return;    // アラート中は無視
-        iconDiv.remove();            // 編集UIだけ消す
+        if (isShowingError || isCommitting) return;
+        // デスクトップ版の挙動に合わせてキャンセル
+        iconDiv.remove();
+        createNewFolder.isCreating = false;
     });
 }
 
@@ -324,43 +311,50 @@ function deleteFSItem(parentPath, name) {
     window.dispatchEvent(new Event("fs-updated"));
 }
 
-// --------------------
-// ファイル/フォルダ開く（ダブルクリック用）
-// --------------------
+// 修正後の openFSItem
 function openFSItem(name, node, parentPath) {
     let targetNode = node;
     let targetPath = `${parentPath}/${name}`;
-    let type = targetNode.type;
 
-    if (type === "link") {
+    // 1. ショートカットの解決 (Windowsは常にリンク先を追う)
+    if (targetNode.type === "link") {
         targetPath = targetNode.target;
         targetNode = resolveFS(targetPath);
-        if (!targetNode) return;
-        type = targetNode.type;
+        if (!targetNode) {
+            alertWindow("リンク先が見つかりません。");
+            return;
+        }
     }
 
-    if (targetNode.shell) return;
-
+    // 2. 実行タイプの特定
+    const type = targetNode.type;
     const associatedApp = resolveAppByPath(targetPath);
-    if (type === "folder" && associatedApp) type = "file";
 
-    switch (type) {
-        case "app":
-            launch(targetPath, { path: targetPath, uniqueKey: targetPath });
-            addRecent({ type: "app", path: targetPath });
-            break;
-        case "file":
-            if (associatedApp) launch(associatedApp, { path: targetPath, node: targetNode, uniqueKey: targetPath });
-            else import("./apps/fileviewer.js").then(mod => {
-                const content = createWindow(name);
-                mod.default(content, { name, content: targetNode.content });
-            });
-            addRecent({ type: "file", path: targetPath });
-            break;
-        case "folder":
-            launch("Programs/Applications/Explorer.app", { path: targetPath, uniqueKey: targetPath, showFullPath: false });
-            addRecent({ type: "folder", path: targetPath });
-            break;
+    // 3. アプリケーションの実行
+    if (type === "app") {
+        launch(targetPath, { path: targetPath, uniqueKey: targetPath });
+        addRecent({ type: "app", path: targetPath });
+    }
+    // 4. フォルダの展開
+    else if (type === "folder") {
+        // Windowsは常に共通のエクスプローラーを起動
+        launch("Programs/Applications/Explorer.app", {
+            path: targetPath,
+            uniqueKey: targetPath,
+            showFullPath: true // Windowsらしくパスを表示
+        });
+        addRecent({ type: "folder", path: targetPath });
+    }
+    // 5. ファイルの実行
+    else if (type === "file") {
+        if (associatedApp) {
+            // 関連付けがあればそのアプリで起動
+            launch(associatedApp, { path: targetPath, node: targetNode, uniqueKey: targetPath });
+        } else {
+            // ⭐ 簡易ビューアではなく、Explorerと同じ「アプリ選択ダイアログ」を出す
+            explorerOpenWithDialog(targetPath, targetNode);
+        }
+        addRecent({ type: "file", path: targetPath });
     }
 }
 

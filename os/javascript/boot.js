@@ -2,28 +2,19 @@
 import { FS, initFS } from './fs.js';
 import { buildDesktop } from './desktop.js';
 import { showBSOD } from './bsod.js';
-import { playSystemEventSound } from './kernel.js'
+import { playSystemEventSound } from './kernel.js';
+import { resolveFS, normalizePath as fsNormalizePath } from './fs-utils.js';
 
 // ===== Global Error Handlers =====
 window.onerror = (msg, src, line, col, err) => showBSOD(String(msg), err);
 window.addEventListener("unhandledrejection", e => showBSOD(String(e.reason), e.reason instanceof Error ? e.reason : null));
-// リソース（JSファイルなど）の読み込み失敗をキャッチ
 window.addEventListener('error', (e) => {
     if (e.target.tagName === 'SCRIPT' || e.target.tagName === 'LINK') {
         showBSOD(`BOOT_COMPONENT_FAILURE (${e.target.src || e.target.href})`, new Error("Critical component missing"));
     }
-}, true); // キャプチャフェーズで監視するのがコツ
-
-
+}, true);
 
 // ===== Passive Event / Touch Defaults =====
-let supportsPassive = false;
-try {
-    const opts = { passive: false, get passive() { supportsPassive = true; return false; } };
-    window.addEventListener("testPassive", null, opts);
-    window.removeEventListener("testPassive", null, opts);
-} catch { }
-
 document.addEventListener('wheel', e => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
 document.addEventListener('touchmove', e => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
 
@@ -45,21 +36,14 @@ function scrollToBottom() { requestAnimationFrame(() => screen.scrollTop = scree
 export function print(text = '') { screen.textContent += text + '\n'; scrollToBottom(); }
 function commonPrefix(arr) { if (!arr.length) return ''; let prefix = arr[0]; for (let i = 1; i < arr.length; i++) { while (!arr[i].startsWith(prefix)) { prefix = prefix.slice(0, -1); if (!prefix) return ''; } } return prefix; }
 
-// ===== Virtual File System Helpers =====
+// ===== Virtual File System Helpers (Integrated with fs-utils) =====
+// 既存の名称を維持しつつ、内部ロジックを fs-utils に委譲して整合性を確保
 function normalizePath(path) {
-    if (!path || path === '.') return cwd;
-    if (path.startsWith('C:/')) return path;
-    if (path.startsWith('/')) return 'C:/' + path.slice(1);
-    return (cwd.replace(/\/$/, '') + '/' + path).replace(/\/+/g, '/');
+    return fsNormalizePath(path, cwd);
 }
 
 function getNodeByPath(path) {
-    const full = normalizePath(path).replace(/^C:\//i, '');
-    if (!full) return FS;
-    const parts = full.split('/').filter(Boolean);
-    let node = FS;
-    for (const part of parts) { if (!node || !node[part]) return null; node = node[part]; }
-    return node;
+    return resolveFS(normalizePath(path));
 }
 
 // ===== Commands =====
@@ -67,29 +51,58 @@ const commands = {
     help: { desc: 'Show available commands', run() { Object.entries(commands).forEach(([n, c]) => print(`${n.padEnd(12)} - ${c.desc}`)); } },
     cls: { desc: 'Clear screen', run() { screen.textContent = ''; } },
     boot: { desc: 'Boot OS', async run() { await bootOS(); } },
-    version: { desc: 'Show version', run() { print('NEXSER CLI v0.1.0'); } },
+    version: { desc: 'Show version', run() { print('NEXSER CLI v1.0.0 (Stable)'); } },
     time: { desc: 'Show time', run() { print(new Date().toLocaleString()); } },
     whoami: { desc: 'Current user', run() { print('user'); } },
     mem: { desc: 'System memory info', run() { print(`Approx. Memory: ${navigator.deviceMemory || 'unknown'} GB`); print(`Logical Cores: ${navigator.hardwareConcurrency || 'unknown'}`); } },
-    devices: { desc: 'Device info', run() { print(`Platform: ${navigator.platform}`); print(`User Agent: ${navigator.userAgent}`); } },
     pwd: { desc: 'Show current directory', run() { print(cwd); } },
-    cd: { desc: 'Change directory', run(args) { if (!args[0]) return; const node = getNodeByPath(args[0]); if (!node || node.type === 'file') return print('Not a directory'); cwd = normalizePath(args[0]).replace(/\/$/, ''); } },
-    cat: { desc: 'Show file content', run(args) { const node = getNodeByPath(args[0]); if (!node) return print('File not found'); if (node.type !== 'file') return print('Not a file'); print(node.content); } },
-    tree: { desc: 'Show directory tree', run(args) { const root = getNodeByPath(args[0]); if (!root) return print('Path not found'); function walk(n, depth = 0, ind = '') { Object.entries(n).forEach(([name, val]) => { if (['type', 'entry', 'singleton', 'target'].includes(name)) return; print(ind + '├─ ' + name); if (typeof val === 'object' && val.type !== 'file') walk(val, depth + 1, ind + '│  '); }); } print(cwd); walk(root); } },
-    echo: { desc: 'Print text', run(args) { print(args.join(' ')); } },
-    history: { desc: 'Show command history', run() { history.forEach((h, i) => print(`${i}: ${h}`)); } },
-    calc: { desc: 'Calculate expression', run(args) { try { const result = Function(`return (${args.join(' ')})`)(); print(result); } catch { print('Invalid expression'); } } },
-    sleep: { desc: 'Wait ms', async run(args) { const ms = Number(args[0]) || 1000; print(`Sleeping ${ms}ms...`); await new Promise(r => setTimeout(r, ms)); } },
-    crash: {
-        desc: 'Simulate system crash',
-        run() {
-            // 直接BSODモジュールを呼び出す
-            showBSOD("MANUALLY_INITIATED_CRASH", new Error("The user requested a system crash."));
+    cd: {
+        desc: 'Change directory',
+        run(args) {
+            if (!args[0]) return;
+            const node = getNodeByPath(args[0]);
+            if (!node || node.type !== 'folder') return print('Not a directory');
+            cwd = normalizePath(args[0]).replace(/\/$/, '') || 'C:/';
         }
-    }
+    },
+    cat: {
+        desc: 'Show file content',
+        run(args) {
+            const node = getNodeByPath(args[0]);
+            if (!node) return print('File not found');
+            if (node.type !== 'file') return print('Not a file');
+            print(node.content);
+        }
+    },
+    tree: {
+        desc: 'Show directory tree',
+        run(args) {
+            const root = getNodeByPath(args[0] || '.');
+            if (!root) return print('Path not found');
+            function walk(n, depth = 0, ind = '') {
+                Object.entries(n).forEach(([name, val]) => {
+                    if (['type', 'entry', 'singleton', 'target'].includes(name)) return;
+                    print(ind + '├─ ' + name);
+                    if (typeof val === 'object' && val.type !== 'file' && val.type !== 'link') walk(val, depth + 1, ind + '│  ');
+                });
+            }
+            print(normalizePath(args[0] || '.')); walk(root);
+        }
+    },
+    calc: {
+        desc: 'Calculate (Safe)',
+        run(args) {
+            try {
+                const expr = args.join('').replace(/[^0-9+\-*/().]/g, '');
+                if (!expr) return;
+                print(new Function(`return (${expr})`)());
+            } catch { print('Invalid expression'); }
+        }
+    },
+    crash: { desc: 'Simulate crash', run() { showBSOD("MANUALLY_INITIATED_CRASH", new Error("User initiated")); } }
 };
 
-// ===== Prompt =====
+// ===== Prompt & Executor =====
 export function prompt() {
     if (screen.style.display === 'none') return;
     const line = document.createElement('div');
@@ -102,8 +115,7 @@ export function prompt() {
     input.onkeydown = e => {
         if (e.key === 'Enter') {
             const cmd = input.value.trim();
-            history.push(cmd);
-            hIndex = history.length;
+            if (cmd) { history.push(cmd); hIndex = history.length; }
             screen.removeChild(line);
             print(`${cwd}> ${cmd}`);
             exec(cmd);
@@ -121,20 +133,32 @@ export function prompt() {
     };
 }
 
-// ===== Command Executor =====
 async function runSilent(cmdLine) {
     if (!cmdLine || cmdLine.startsWith('//')) return;
     const tokens = cmdLine.match(/"[^"]+"|\S+/g) || [];
     const name = (tokens.shift() || '').toLowerCase();
     const args = tokens.map(t => t.replace(/^"|"$/g, ''));
-    const cmd = commands[name];
-    if (cmd) { try { await cmd.run(args); } catch (err) { print(`Error: ${err.message}`); } }
-    else { print(`Command not found: ${name}`); }
+    if (commands[name]) {
+        try { await commands[name].run(args); } catch (err) { print(`Error: ${err.message}`); }
+    } else if (name) { print(`Command not found: ${name}`); }
 }
 
 async function exec(cmdLine) {
     await runSilent(cmdLine);
-    if (screen.style.display !== 'none') { prompt(); }
+    if (screen.style.display !== 'none') prompt();
+}
+
+// ===== Screen Control =====
+export function showPromptScreen(logoffMessage = '') {
+    screen.style.display = 'block';
+    const root = document.getElementById('os-root');
+    if (root) {
+        root.style.display = 'none';
+        root.innerHTML = '';
+    }
+    document.querySelectorAll('.window').forEach(w => w.remove());
+    if (logoffMessage) print(logoffMessage);
+    prompt();
 }
 
 // ===== Boot Sequence =====
@@ -150,7 +174,6 @@ export async function bootOS() {
         screen.style.display = 'none';
         const root = document.getElementById('os-root');
         if (root) root.style.display = 'block';
-        print("\nBoot sequence complete!");
     } catch (e) {
         showBSOD("BOOT_SELECTION_FAILED", e);
     }
@@ -158,50 +181,29 @@ export async function bootOS() {
 
 // ===== BIOS (ページロード時) =====
 (async function initBIOS() {
-    // 1. データ復元とUI準備を並行して開始
     const fsPromise = initFS().catch(e => console.warn("FS load failed", e));
-    // 2. ロゴと著作権表示（ディレイを 300ms -> 50ms に短縮）
     const lines = [document.title, "Copyright (C) 2026 Nexser Corp.", ""];
     for (const line of lines) {
         print(line);
-        await new Promise(r => setTimeout(r, 50)); // 読みやすい速さで流す
+        await new Promise(r => setTimeout(r, 50));
     }
-    // 3. FSのロード完了を待ってデスクトップ構築
     await fsPromise;
     console.log("FS restored from DB");
     buildDesktop();
-    // 4. AUTOBOOT.CFG の実行
+
     const config = getNodeByPath("C:/System/AUTOBOOT.CFG");
     if (config && config.type === 'file' && config.content.trim()) {
         print("Reading System Configuration...");
         const script = config.content.split('\n').map(s => s.trim()).filter(Boolean);
         for (const line of script) {
-            // コマンド実行前に一瞬だけ待機（演出）
             await new Promise(r => setTimeout(r, 30));
-
             print(`${cwd}> ${line}`);
             await runSilent(line);
-
-            // bootコマンドでGUIに切り替わったら即座に終了
             if (screen.style.display === 'none') return;
         }
     }
-    // すべて終わったらプロンプトへ
     prompt();
 })();
-
-// ===== Screen Control =====
-export function showPromptScreen(logoffMessage = '') {
-    screen.style.display = 'block';
-    const root = document.getElementById('os-root');
-    if (root) {
-        root.style.display = 'none';
-        root.innerHTML = '';
-    }
-    document.querySelectorAll('.window').forEach(w => w.remove());
-    if (logoffMessage) screen.textContent += logoffMessage + '\n';
-    prompt();
-}
 
 function bindScreenFocus() {
     if (!screen) return;
@@ -210,6 +212,4 @@ function bindScreenFocus() {
         if (input) input.focus();
     });
 }
-
-// ===== Startup =====
 bindScreenFocus();

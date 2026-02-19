@@ -1,6 +1,6 @@
 // recent.js
 import { openDB } from "./db.js";
-import { basename } from "./kernel.js";
+import { basename } from "./fs-utils.js";
 
 const STORE = "recent";
 const KEY = "items";

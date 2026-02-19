@@ -1,6 +1,6 @@
 // window.js
 import { saveWindowSize, loadWindowSize } from "./window-size-db.js";
-import { themeColor } from "./apps/settings.js"; // これを使う
+import { themeColor } from "./apps/settings.js";
 import { attachContextMenu } from "./context-menu.js";
 import { setupRibbon } from "./ribbon.js";
 import { killProcess } from "./kernel.js";

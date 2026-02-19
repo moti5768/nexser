@@ -5,14 +5,14 @@ import { resolveFS, validateName } from "../fs-utils.js";
 import { FS, initFS } from "../fs.js";
 import { buildDesktop } from "../desktop.js";
 import { attachContextMenu } from "../context-menu.js";
-import { resolveAppByPath, getExtension } from "../file-associations.js";
+import { resolveAppByPath, getExtension, getIcon } from "../file-associations.js";
 import { addRecent } from "../recent.js";
 import { setupRibbon } from "../ribbon.js";
 import { saveSetting, loadSetting } from "./settings.js";
 
 let globalSelected = { item: null, window: null };
 
-function hasExtension(name) {
+export function hasExtension(name) {
     return /\.[a-z0-9]+$/i.test(name);
 }
 
@@ -347,7 +347,6 @@ export default async function Explorer(root, options = {}) {
             globalSelected.item = null;
             globalSelected.window = null;
             setupRibbon(win, () => currentPath, render, explorerMenus);
-
         }
 
         // 初回生成
@@ -570,32 +569,7 @@ export default async function Explorer(root, options = {}) {
             item.className = `explorer-item ${viewMode}-view`;
             item.dataset.name = name;
 
-            // --- アイコン判定ロジック ---
-            let iconChar = "📄";
-            if (itemData.type === "folder") {
-                iconChar = "📁";
-            } else if (itemData.type === "link") {
-                iconChar = "🔗";
-            } else if (itemData.type === "app") {
-                if (name.includes("Explorer")) iconChar = "🔍";
-                else if (name.includes("Paint")) iconChar = "🎨";
-                else if (name.includes("TextEditor")) iconChar = "📝";
-                else if (name.includes("CodeEditor")) iconChar = "💻";
-                else if (name.includes("ImageViewer")) iconChar = "🖼️";
-                else if (name.includes("VideoPlayer")) iconChar = "🎬";
-                else iconChar = "⚙️";
-            } else {
-                const ext = "." + name.split('.').pop().toLowerCase();
-                const textExts = [".txt", ".md"];
-                const codeExts = [".js", ".ts", ".json", ".css", ".scss", ".vue"];
-                const imgExts = [".png", ".jpg", ".jpeg", ".gif"];
-                const vidExts = [".mp4", ".webm", ".ogg", ".mov", ".mkv"];
-
-                if (textExts.includes(ext)) iconChar = "📄";
-                else if (codeExts.includes(ext)) iconChar = "📜";
-                else if (imgExts.includes(ext)) iconChar = "🖼️";
-                else if (vidExts.includes(ext)) iconChar = "📽️";
-            }
+            const iconChar = getIcon(name, itemData);
 
             // --- HTML構造の生成 ---
             if (viewMode === "icon") {

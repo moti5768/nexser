@@ -1,25 +1,24 @@
 // ui.js
+// document 全体で一度だけ登録すればよい mouseup のための管理フラグ
+let isGlobalMouseUpRegistered = false;
+let pressedEl = null; // 現在押しているボタン（モジュールレベルで共有）
+
 export function installDynamicButtonEffect(root = document.body) {
+    // 1. root要素ごとの二重初期化防止
+    if (root._uiEffectInstalled) return;
+    root._uiEffectInstalled = true;
+
     const isTarget = el =>
         el instanceof HTMLButtonElement ||
         el.classList.contains("button") ||
         el.classList.contains("button2");
 
-    let pressedEl = null; // 現在押しているボタン
-
-    // --- 通常ボタン用 ---
+    // --- 通常ボタン用 (mousedown/mouseenter/mouseleave) ---
     root.addEventListener("mousedown", e => {
-        const el = e.target;
-        if (!isTarget(el)) return;
+        const el = e.target.closest('button, .button, .button2'); // 子要素（アイコン等）をクリックしても反応するように
+        if (!el || !isTarget(el)) return;
         pressedEl = el;
         el.classList.add("pressed");
-    });
-
-    document.addEventListener("mouseup", e => {
-        if (pressedEl) {
-            pressedEl.classList.remove("pressed");
-            pressedEl = null;
-        }
     });
 
     root.addEventListener("mouseleave", e => {
@@ -34,22 +33,32 @@ export function installDynamicButtonEffect(root = document.body) {
         if (el === pressedEl) el.classList.add("pressed");
     }, true);
 
-    // --- start-btn 用トグル ---
+    // --- グローバル mouseup (一生に一度だけ登録) ---
+    if (!isGlobalMouseUpRegistered) {
+        document.addEventListener("mouseup", () => {
+            if (pressedEl) {
+                pressedEl.classList.remove("pressed");
+                pressedEl = null;
+            }
+        });
+        isGlobalMouseUpRegistered = true;
+    }
+
+    // --- スタートメニュー専用の制御 ---
     const startBtn = document.getElementById("start-btn");
     const startMenu = document.getElementById("start-menu");
 
-    if (startBtn) {
-        startBtn.addEventListener("mousedown", e => {
-            startBtn.classList.toggle("pressed");
+    if (startBtn && startMenu) {
+        // スタートメニューの表示状態を監視して、ボタンの凹凸を同期させる
+        const observer = new MutationObserver(() => {
+            const isVisible = getComputedStyle(startMenu).display !== "none";
+            if (isVisible) {
+                startBtn.classList.add("pressed");
+            } else {
+                startBtn.classList.remove("pressed");
+            }
         });
 
-        // start-menu がクリックで閉じられたら pressed を戻す
-        if (startMenu) {
-            startMenu.addEventListener("click", e => {
-                if (getComputedStyle(startMenu).display === "none") {
-                    startBtn.classList.remove("pressed");
-                }
-            });
-        }
+        observer.observe(startMenu, { attributes: true, attributeFilter: ['style', 'class'] });
     }
 }

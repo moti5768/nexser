@@ -15,10 +15,13 @@ import { startup_sound } from "./sounds.js";
 import { addRecent } from "./recent.js";
 import { installDynamicButtonEffect } from "./ui.js";
 
+// ★ fs-utils.js から堅牢なユーティリティを導入
+import { resolveFS, basename, normalizePath } from "./fs-utils.js";
+
 const explorerWindows = new Map();
 const moduleCache = new Map();
-const importLocks = new Map();        // ★ import競合防止
-const launching = new Set();          // ★ 起動レース防止
+const importLocks = new Map();        // ★ import競合防止 (維持)
+const launching = new Set();          // ★ 起動レース防止 (維持)
 
 let pidCounter = 1;
 const processes = new Map();
@@ -39,7 +42,7 @@ setInterval(() => {
 }, 1000);
 
 function getMemoryMB() {
-    // ★ performance.memory が無い環境（Chrome以外）へのガードを追加
+    // ★ performance.memory が無い環境（Chrome以外）へのガードを追加 (維持)
     const mem = (performance && performance.memory) ? performance.memory.usedJSHeapSize : 0;
     return Math.round(mem / 1024 / 1024);
 }
@@ -100,13 +103,7 @@ export async function initKernelAsync(progressCallback = () => { }) {
     progressCallback("Kernel initialization complete!");
 }
 
-/* ===== basename（互換強化） ===== */
-export function basename(path) {
-    if (!path) return "";
-    // ★ Windows形式/Linux形式両方の区切り文字に対応
-    const parts = path.split(/[\\/]/).filter(Boolean);
-    return parts[parts.length - 1] || "";
-}
+// ※ basename は fs-utils.js からインポートするため、ここでの再定義は不要（またはインポート版を優先）
 
 /* =========================
    起動API（完全安定版）
@@ -122,13 +119,15 @@ export async function launch(path, options = {}) {
     launching.add(path);
 
     try {
-        const item = resolve(path);
+        // ★ 改善: kernel内のresolveをfs-utilsのresolveFSに置換（循環参照も自動解決）
+        const item = resolveFS(path);
         if (!item) {
             errorWindow(`対象が見つかりません: ${path}`, { taskbar: false });
             return;
         }
 
         if (item.type === "link") {
+            // 再帰的に解決（launching.deleteは再帰の末端で行われる）
             return await launch(item.target, options);
         }
 
@@ -183,7 +182,7 @@ export async function launch(path, options = {}) {
                 throw new Error("Window creation failed");
 
             try {
-                // ★ 非同期実行にも対応できるよう await を追加（互換性維持）
+                // ★ 非同期実行にも対応できるよう await を追加（維持）
                 await appModule.default(content, options);
             } catch (e) {
                 console.error("app runtime error:", e);
@@ -209,8 +208,7 @@ export async function launch(path, options = {}) {
 
             win.dataset.processKey = key;
 
-            /* ★ ゾンビプロセス防止 (MutationObserver 最適化版)
-               監視範囲を絞り、isConnected プロパティで判定することで負荷を激減 */
+            /* ★ ゾンビプロセス防止 (MutationObserver 最適化版) (維持) */
             const observer = new MutationObserver(() => {
                 if (!win.isConnected) {
                     if (isExplorer) explorerWindows.delete(options.path || "Desktop");
@@ -221,7 +219,6 @@ export async function launch(path, options = {}) {
             });
 
             win._observer = observer;
-            // デスクトップ要素が存在すればそれを、無ければbodyを最小限に監視
             const container = document.getElementById("desktop") || document.body;
             observer.observe(container, { childList: true });
 
@@ -247,7 +244,8 @@ export async function launch(path, options = {}) {
             if (!win)
                 throw new Error("Window creation failed");
 
-            mod.default(content, {
+            // ★ 非同期を考慮
+            await mod.default(content, {
                 name: basename(path),
                 content: item.content
             });
@@ -270,7 +268,6 @@ export async function launch(path, options = {}) {
 
             win.dataset.processKey = key;
 
-            // ★ ファイルビューアーにも最適化された監視を追加
             const observer = new MutationObserver(() => {
                 if (!win.isConnected) {
                     processes.delete(key);
@@ -304,40 +301,13 @@ export async function launch(path, options = {}) {
             { taskbar: false }
         );
     } finally {
+        // ★ ここが重要：エラーが発生しても必ず起動中フラグを解除する
         launching.delete(path);
         try { refreshStartMenu(); } catch { }
     }
 }
 
-/* ===== resolve（循環完全防止） ===== */
-function resolve(path, seen = new Set()) {
-
-    if (typeof path !== "string") return null;
-
-    // ★ パス末尾のスラッシュなどを正規化して循環判定精度を向上
-    const normPath = path.replace(/\/$/, "");
-    if (seen.has(normPath)) return null;
-
-    seen.add(normPath);
-
-    let fsPath = path.replace(/^C:\//, "");
-    const parts = fsPath.split("/").filter(Boolean);
-
-    let cur = FS;
-
-    for (const p of parts) {
-
-        cur = cur?.[p];
-        if (!cur) return null;
-
-        if (cur.type === "link") {
-            cur = resolve(cur.target, seen);
-            if (!cur) return null;
-        }
-    }
-
-    return cur;
-}
+// kernel.js 内の resolve は fs-utils.js の resolveFS に役目を譲りました
 
 /* =========================
    Process metrics updater
@@ -402,7 +372,7 @@ export function getProcessList() {
 }
 
 /* =========================
-   killProcess（完全安全版）
+   killProcess（完全安全版） (維持)
 ========================= */
 export function killProcess(key) {
 
@@ -412,7 +382,6 @@ export function killProcess(key) {
     const win = proc.window;
 
     try {
-        // ★ 各ウィンドウが持つクリーンアップ処理があれば呼ぶ
         if (win?._cleanup) win._cleanup();
 
         if (win?._observer)
@@ -427,7 +396,6 @@ export function killProcess(key) {
         console.warn("window remove failed:", e);
     }
 
-    // ★ ウィンドウ削除に伴いMapからも確実に削除
     for (const [path, w] of explorerWindows.entries()) {
         if (w === win) {
             explorerWindows.delete(path);
@@ -447,7 +415,7 @@ export function resetUI() {
             .forEach(w => {
                 const key = w.dataset.processKey;
                 if (key) {
-                    killProcess(key); // ★ killProcessを呼ぶことで管理Mapも連動して消去
+                    killProcess(key);
                 } else {
                     try {
                         if (w._observer) w._observer.disconnect();
@@ -463,7 +431,7 @@ export function resetUI() {
     } catch { }
 }
 
-/* ===== ログオフ ===== */
+/* ===== ログオフ (維持) ===== */
 export async function logOff() {
     const windows = document.querySelectorAll(".window");
     const hasAnyWindow = windows.length > 0;
@@ -492,8 +460,7 @@ export async function logOff() {
 }
 
 /**
- * FSに保存された音声データを再生する
- * @param {string} filename Programs/Music 内のファイル名
+ * FSに保存された音声データを再生する (維持)
  */
 export function playSavedAudio(filename) {
     const file = FS.Programs?.Music?.[filename];
@@ -504,7 +471,7 @@ export function playSavedAudio(filename) {
 }
 
 /**
- * システムイベントに関連付けられた音声を再生する
+ * システムイベントに関連付けられた音声を再生する (維持)
  */
 export function playSystemEventSound(eventName) {
     try {
@@ -513,7 +480,6 @@ export function playSystemEventSound(eventName) {
         const filename = config[eventName];
 
         if (filename) {
-            // --- カスタム設定がある場合 ---
             const file = FS.Programs?.Music?.[filename];
             if (file && file.content) {
                 const audio = new Audio(file.content);
@@ -530,11 +496,9 @@ export function playSystemEventSound(eventName) {
                 });
             }
         } else if (eventName === 'startup') {
-            // --- カスタム設定がない場合（デフォルトのビープ音） ---
             try {
                 startup_sound();
             } catch (e) {
-                // AudioContextがブロックされた場合のガード
                 const playBeepOnGesture = () => {
                     startup_sound();
                     document.removeEventListener("click", playBeepOnGesture);
