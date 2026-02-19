@@ -78,6 +78,7 @@ export async function initKernelAsync(progressCallback = () => { }) {
 
     progressCallback("Initializing kernel...");
 
+    // 1. 構造の注入
     root.innerHTML = `
         <div id="desktop"></div>
         <div id="taskbar">
@@ -86,24 +87,33 @@ export async function initKernelAsync(progressCallback = () => { }) {
         <div id="start-menu"></div>
     `;
 
+    // ★追加：ブラウザが上記HTMLを認識し、高さを計算できるよう一拍置く
+    await new Promise(r => requestAnimationFrame(r));
+
     progressCallback("UI containers created...");
+
+    // 2. デスクトップ構築
+    // desktop.js 内の requestAnimationFrame と相まって、正確な位置に配置されます
     buildDesktop();
 
     progressCallback("Desktop built...");
     buildStartMenu();
 
     progressCallback("Start Menu built...");
+
+    // 3. タスクバー初期化
     initTaskbar();
 
     progressCallback("Taskbar initialized...");
+
+    // 4. エフェクト適用
+    // 引数に root を渡すことで、再起動時のクリーンアップを確実にします
     installDynamicButtonEffect();
 
     progressCallback("UI effects applied...");
 
     progressCallback("Kernel initialization complete!");
 }
-
-// ※ basename は fs-utils.js からインポートするため、ここでの再定義は不要（またはインポート版を優先）
 
 /* =========================
    起動API（完全安定版）

@@ -15,6 +15,7 @@ let globalSelected = { item: null, window: null };
 // デスクトップ描画
 // --------------------
 export function buildDesktop() {
+    globalSelected = { item: null, window: null };
     const desktop = document.getElementById("desktop");
     if (!desktop) return;
 
@@ -165,7 +166,9 @@ export function buildDesktop() {
             }
         }
     });
-    adjustDesktopIconArea();
+    requestAnimationFrame(() => {
+        adjustDesktopIconArea();
+    });
     window.dispatchEvent(new Event("desktop-ready"));
 }
 
