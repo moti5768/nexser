@@ -253,32 +253,45 @@ export default function ImageViewer(root, options = {}) {
 
         async function askFileName(defaultName) {
             return new Promise(resolve => {
-                // システム共通の showModalWindow を使用
                 const content = showModalWindow("新規保存", "ファイル名を入力してください", {
                     parentWin: win,
                     silent: true,
                     buttons: [
-                        { label: "OK", onClick: () => resolve(promptInput.value) },
+                        {
+                            label: "OK",
+                            onClick: () => {
+                                // resolveを実行する直前に、現在のDOMから最新の入力を取得する
+                                const currentInput = content.querySelector(".modal-prompt-input");
+                                resolve(currentInput ? currentInput.value : defaultName);
+                            }
+                        },
                         { label: "キャンセル", onClick: () => resolve(null) }
                     ]
                 });
 
-                const promptInput = document.createElement("input");
-                promptInput.type = "text";
-                promptInput.value = defaultName;
-                promptInput.style.width = "100%";
-                promptInput.style.marginTop = "10px";
-                promptInput.style.boxSizing = "border-box";
-                promptInput.style.padding = "4px";
+                // 1. 既に存在するかチェック (識別用のクラス名 .modal-prompt-input を使用)
+                let promptInput = content.querySelector(".modal-prompt-input");
 
-                // メッセージとボタンの間に挿入
-                const btnContainer = content.querySelector(".modal-button-container") || content.lastElementChild;
-                if (btnContainer) {
-                    content.insertBefore(promptInput, btnContainer);
-                } else {
-                    content.appendChild(promptInput);
+                // 2. 存在しない場合のみ新しく作る
+                if (!promptInput) {
+                    promptInput = document.createElement("input");
+                    promptInput.className = "modal-prompt-input"; // クラス名を付与して識別可能にする
+                    promptInput.type = "text";
+                    promptInput.style.width = "100%";
+                    promptInput.style.marginTop = "10px";
+                    promptInput.style.boxSizing = "border-box";
+                    promptInput.style.padding = "4px";
+
+                    const btnContainer = content.querySelector(".modal-button-container") || content.lastElementChild;
+                    if (btnContainer) {
+                        content.insertBefore(promptInput, btnContainer);
+                    } else {
+                        content.appendChild(promptInput);
+                    }
                 }
 
+                // 3. 常に最新のデフォルト値をセットしてフォーカス
+                promptInput.value = defaultName;
                 setTimeout(() => promptInput.focus(), 10);
             });
         }

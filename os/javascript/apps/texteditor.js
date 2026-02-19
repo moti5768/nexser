@@ -116,25 +116,46 @@ export default function TextEditor(root, options = {}) {
                     parentWin: win,
                     silent: true,
                     buttons: [
-                        { label: "OK", onClick: () => resolve(promptInput.value) },
+                        {
+                            label: "OK", onClick: () => {
+                                // OK時に現在の input の値を取得
+                                const currentInput = content.querySelector(".modal-prompt-input");
+                                resolve(currentInput ? currentInput.value : defaultName);
+                            }
+                        },
                         { label: "キャンセル", onClick: () => resolve(null) }
                     ]
                 });
 
-                // input要素の作成
-                const promptInput = document.createElement("input");
-                promptInput.type = "text";
-                promptInput.value = defaultName;
-                promptInput.style.width = "100%";
-                promptInput.style.boxSizing = "border-box"; // 幅を枠内に収める
-                promptInput.style.padding = "4px";
+                if (!content) {
+                    console.error("showModalWindow が要素を返しませんでした。");
+                    return;
+                }
 
-                // 【重要】ボタンエリアを探して、その直前に挿入する
-                const btnContainer = content.querySelector(".modal-button-container") || content.lastElementChild;
-                if (btnContainer) {
-                    content.insertBefore(promptInput, btnContainer);
+                // 1. すでに input が存在するかチェック（重複防止）
+                let promptInput = content.querySelector(".modal-prompt-input");
+
+                // 2. 存在しない場合のみ新規作成
+                if (!promptInput) {
+                    promptInput = document.createElement("input");
+                    promptInput.className = "modal-prompt-input"; // 識別用クラス
+                    promptInput.type = "text";
+                    promptInput.value = defaultName;
+                    promptInput.style.width = "100%";
+                    promptInput.style.boxSizing = "border-box";
+                    promptInput.style.padding = "4px";
+                    promptInput.style.marginTop = "10px";
+
+                    // ボタンコンテナを探してその前に挿入
+                    const btnContainer = content.querySelector(".button-container") || content.querySelector(".modal-button-container") || content.lastElementChild;
+                    if (btnContainer) {
+                        content.insertBefore(promptInput, btnContainer);
+                    } else {
+                        content.appendChild(promptInput);
+                    }
                 } else {
-                    content.appendChild(promptInput);
+                    // 3. すでに存在する場合は値を最新にする
+                    promptInput.value = defaultName;
                 }
 
                 setTimeout(() => promptInput.focus(), 10);

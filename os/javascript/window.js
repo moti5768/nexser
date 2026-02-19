@@ -102,12 +102,17 @@ ${!options.hideRibbon ? `
 
 ${!options.hideStatus ? `
 <div class="window-statusbar" style="
-    height:20px;
-    background:#C3C7CB;
-    font-size:12px;
-    padding:0 4px;
-    display:flex;
-    align-items:center;
+    height: 20px;
+    background: #C3C7CB;
+    font-size: 12px;
+    padding: 0 4px;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;      /* 改行を防ぐ */
+    overflow: hidden;         /* はみ出た部分を隠す */
+    text-overflow: ellipsis;  /* 長い場合に ... を表示 */
+    box-sizing: border-box;   /* パディングを含めた高さ計算にする */
+    border-top: 1px solid #808080; /* 必要に応じて境界線を追加 */
 ">
     Ready
 </div>` : ""}
@@ -849,8 +854,13 @@ export function showModalWindow(title, message, options = {}) {
     // --- 2. 重複表示の防止 ---
     if (parentWin) {
         if (!parentWin._activeDialogs) parentWin._activeDialogs = new Set();
-        // 同じメッセージのダイアログが既に開いていれば何もしない
-        if (parentWin._activeDialogs.has(message)) return;
+
+        // 同じメッセージのダイアログが既に開いていれば、その要素を探して返す
+        if (parentWin._activeDialogs.has(message)) {
+            const existingWin = Array.from(document.querySelectorAll(".window"))
+                .find(w => w.innerText.includes(message)); // メッセージ内容で検索
+            return existingWin ? existingWin.querySelector(".content") : null;
+        }
         parentWin._activeDialogs.add(message);
     }
 
