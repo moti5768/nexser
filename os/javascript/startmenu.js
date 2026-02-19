@@ -132,8 +132,7 @@ function createMenu(folder, basePath, menuRoot) {
                     }
 
                     case "folder":
-                        // デスクトップ版と同じく、単純に Explorer.app を起動
-                        launch("Explorer.app", { path: targetPath, uniqueKey: targetPath });
+                        launch("Programs/Applications/Explorer.app", { path: targetPath, uniqueKey: targetPath });
                         addRecent({ type: "folder", path: targetPath });
                         break;
 
@@ -329,8 +328,7 @@ async function launchByType(type, path) {
         }
 
         case "folder":
-            // 起動パスを "Explorer.app" に統一
-            launch("Explorer.app", { path, uniqueKey: path });
+            launch("Programs/Applications/Explorer.app", { path, uniqueKey: path });
             addRecent(recentItem);
             break;
 
