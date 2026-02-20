@@ -200,9 +200,26 @@ export default function CodeEditor(root, options = {}) {
     function updateTitle() {
         const mark = dirty ? " *" : "";
         const title = `${APP_TITLE} - ${baseTitle}${mark}`;
+
+        // ウィンドウ自体のタイトル更新
         if (typeof win?.setTitle === "function") win.setTitle(title);
         else if (titleEl) titleEl.textContent = title;
-        if (win?._taskbarBtn) win._taskbarBtn.textContent = title;
+
+        // タスクバーボタンの更新（修正版）
+        if (win?._taskbarBtn) {
+            // ボタン全体を書き換えるのではなく、中のテキスト用スパンを探す
+            const textSpan = win._taskbarBtn.querySelector(".taskbar-text");
+            if (textSpan) {
+                textSpan.textContent = title; // ここだけ書き換えればアイコンは残る
+            } else {
+                // もし構造が壊れていた場合の保険（再構築）
+                win._taskbarBtn.innerHTML = `
+                <span class="taskbar-icon" style="margin-right: 4px;"></span>
+                <span class="taskbar-text">${title}</span>
+            `;
+                if (win._applyRealIcon) win._applyRealIcon();
+            }
+        }
     }
 
     function renderTabs() {
@@ -714,13 +731,6 @@ export default function CodeEditor(root, options = {}) {
     ========================== */
     if (win) {
         setupRibbon(win, () => filePath, null, [
-            {
-                title: "Window", items: [
-                    { label: "最小化", action: () => win.querySelector(".min-btn")?.click() },
-                    { label: "最大化 / 元のサイズに戻す", action: () => win.querySelector(".max-btn")?.click() },
-                    { label: "閉じる", action: () => win.querySelector(".close-btn")?.click() }
-                ]
-            },
             {
                 title: "File", items: [
                     { label: "Save", action: save },

@@ -751,14 +751,6 @@ export default async function Explorer(root, options = {}) {
     function getExplorerMenus() {
         return [
             {
-                title: "Window",
-                items: [
-                    { label: "最小化", action: () => win.querySelector(".min-btn")?.click() },
-                    { label: "最大化 / 元のサイズに戻す", action: () => win.querySelector(".max-btn")?.click() },
-                    { label: "閉じる", action: () => win.querySelector(".close-btn")?.click() }
-                ]
-            },
-            {
                 title: "File",
                 items: [
                     {
@@ -842,11 +834,26 @@ export default async function Explorer(root, options = {}) {
     function updateTitle(path) {
         if (!win) return;
         const name = path.split("/").pop() || path;
-        if (titleEl) titleEl.textContent = name;
-        if (taskBtn) { taskBtn.textContent = name; taskBtn.dataset.title = name; }
-        win.dataset.title = name;
 
-        // content 外にある pathLabel を更新
+        if (titleEl) titleEl.textContent = name;
+
+        if (taskBtn) {
+            // 直接 textContent をいじらず、テキスト用のスパンを探す
+            const textSpan = taskBtn.querySelector(".taskbar-text");
+            if (textSpan) {
+                textSpan.textContent = name; // テキスト部分だけ更新
+            } else {
+                // 万が一構造が壊れていた場合の保険（再構築）
+                // アイコン（📁）を維持しつつHTMLをセットし直す
+                taskBtn.innerHTML = `
+                <span class="taskbar-icon" style="margin-right: 4px;">📁</span>
+                <span class="taskbar-text">${name}</span>
+            `;
+            }
+            taskBtn.dataset.title = name;
+        }
+
+        win.dataset.title = name;
         if (pathLabel) pathLabel.textContent = path;
     }
 }

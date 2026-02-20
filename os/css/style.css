@@ -545,7 +545,6 @@ select {
     display: flex;
     margin-left: auto;
     /* ← 右寄せ */
-    margin-right: 4px;
     position: static;
 }
 
@@ -672,6 +671,10 @@ select {
 }
 
 .taskbar-window-btn {
+    display: inline-flex;
+    /* 横並びにする */
+    align-items: center;
+    /* 上下中央揃え */
     margin-left: 4px;
     height: 26px;
     width: 135px;
@@ -679,6 +682,19 @@ select {
     overflow: hidden;
     text-overflow: ellipsis;
     text-align: left;
+}
+
+.taskbar-icon {
+    flex-shrink: 0;
+    /* アイコンが潰れないように */
+    font-size: 14px;
+}
+
+.taskbar-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    /* 長いタイトルを三点リーダーにする */
 }
 
 /* button */

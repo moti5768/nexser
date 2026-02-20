@@ -137,8 +137,8 @@ export async function launch(path, options = {}) {
         }
 
         if (item.type === "link") {
-            // 再帰的に解決（launching.deleteは再帰の末端で行われる）
-            return await launch(item.target, options);
+            // リンク元の情報を originalNode として引き継ぐ
+            return await launch(item.target, { ...options, originalNode: item });
         }
 
         const isExplorer =
@@ -183,7 +183,11 @@ export async function launch(path, options = {}) {
                         ? path
                         : item.name || basename(path));
 
-            const content = createWindow(displayName);
+            // item (ファイルの実体) を options として createWindow に渡す
+            const content = createWindow(displayName, {
+                // ショートカットならそのアイコン、直接起動ならそのファイルのアイコンを使う
+                node: options.originalNode || item
+            });
 
             // ★ contentから親ウィンドウ要素(.window)を確実に取得
             const win = content?.closest(".window");
@@ -194,6 +198,9 @@ export async function launch(path, options = {}) {
             try {
                 // ★ 非同期実行にも対応できるよう await を追加（維持）
                 await appModule.default(content, options);
+                if (typeof win._applyRealIcon === "function") {
+                    win._applyRealIcon();
+                }
             } catch (e) {
                 console.error("app runtime error:", e);
                 errorWindow(`アプリがクラッシュしました\n${e.message}`, { taskbar: false });
@@ -246,8 +253,7 @@ export async function launch(path, options = {}) {
             if (!mod?.default)
                 throw new Error("fileviewer export missing");
 
-            const content =
-                createWindow(basename(path));
+            const content = createWindow(basename(path), { node: item });
 
             const win = content?.closest(".window");
 
@@ -259,6 +265,10 @@ export async function launch(path, options = {}) {
                 name: basename(path),
                 content: item.content
             });
+
+            if (typeof win._applyRealIcon === "function") {
+                win._applyRealIcon();
+            }
 
             const key =
                 options.uniqueKey ??

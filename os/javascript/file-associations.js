@@ -13,6 +13,7 @@ export const FILE_ASSOCIATIONS = {
     ".css": "Programs/Applications/CodeEditor.app",
     ".scss": "Programs/Applications/CodeEditor.app",
     ".vue": "Programs/Applications/CodeEditor.app",
+    ".html": "Programs/Applications/CodeEditor.app",
 
     // images
     ".png": "Programs/Applications/ImageViewer.app",
@@ -25,7 +26,11 @@ export const FILE_ASSOCIATIONS = {
     ".webm": "Programs/Applications/VideoPlayer.app",
     ".ogg": "Programs/Applications/VideoPlayer.app",
     ".mov": "Programs/Applications/VideoPlayer.app",
-    ".mkv": "Programs/Applications/VideoPlayer.app"
+    ".mkv": "Programs/Applications/VideoPlayer.app",
+
+    // audio (fs.js の Soundsplayer.app に対応)
+    ".mp3": "Programs/Applications/Soundsplayer.app",
+    ".wav": "Programs/Applications/Soundsplayer.app"
 };
 
 
@@ -48,38 +53,58 @@ export function resolveAppByPath(path) {
     return FILE_ASSOCIATIONS[ext] || null;
 }
 
-// file-ui-utils.js (新規作成 または file-associations.js に追記)
-
+/**
+ * ファイルやアプリのアイコンを判定する関数
+ */
 export function getIcon(name, node) {
-    // 1. 基本型による判定
+    // 1. 基本型（フォルダ・リンク）
     if (node.type === "folder") return "📁";
     if (node.type === "link") return "🔗";
 
-    // 2. アプリケーション固有の判定
+    // 2. アプリケーション判定（名前 + 実行パスの両方でチェック）
     if (node.type === "app") {
-        if (name.includes("Explorer")) return "🔍";
-        if (name.includes("Paint")) return "🎨";
-        if (name.includes("TextEditor") || name.includes("Notepad")) return "📝";
-        if (name.includes("CodeEditor")) return "💻";
-        if (name.includes("ImageViewer")) return "🖼️";
-        if (name.includes("VideoPlayer")) return "🎬";
-        return "⚙️"; // デフォルトのアプリアイコン
+        const lowerName = name.toLowerCase();
+        const entryPath = (node.entry || "").toLowerCase(); // 実行ファイルのパス
+
+        // 名前かパスにキーワードが含まれているか (維持)
+        if (lowerName.includes("explorer") || entryPath.includes("explorer")) return "🔍";
+        if (lowerName.includes("paint") || entryPath.includes("paint")) return "🎨";
+        if (lowerName.includes("texteditor") || lowerName.includes("notepad") || entryPath.includes("texteditor")) return "📝";
+        if (lowerName.includes("code") || entryPath.includes("codeeditor")) return "💻";
+        if (lowerName.includes("image") || entryPath.includes("imageviewer")) return "🖼️";
+        if (lowerName.includes("video") || entryPath.includes("videoplayer")) return "🎬";
+
+        // fs.js に基づく追加判定
+        if (lowerName.includes("sound") || entryPath.includes("soundplayer")) return "🎵";
+        if (lowerName.includes("calc") || entryPath.includes("calc")) return "🧮";
+        if (lowerName.includes("settings") || entryPath.includes("settings")) return "⚙️";
+        if (lowerName.includes("terminal") || entryPath.includes("terminal")) return "📟";
+        if (lowerName.includes("taskmanager") || entryPath.includes("taskmanager")) return "📊";
+        if (lowerName.includes("clock") || entryPath.includes("clock")) return "🕒";
+
+        return "⚙️"; // アプリケーションのデフォルト
     }
 
-    // 3. 拡張子によるカテゴリ判定
-    const ext = "." + name.split('.').pop().toLowerCase();
+    // 3. 拡張子による判定（ファイルの場合）
+    const dotIndex = name.lastIndexOf(".");
+    const ext = dotIndex !== -1 ? name.slice(dotIndex).toLowerCase() : "";
 
+    // カテゴリ定義 (維持しつつ、音声とシステムを追加)
     const categories = {
         text: [".txt", ".md"],
-        code: [".js", ".ts", ".json", ".css", ".scss", ".vue"],
+        code: [".js", ".ts", ".json", ".css", ".scss", ".vue", ".html"],
         image: [".png", ".jpg", ".jpeg", ".gif"],
-        video: [".mp4", ".webm", ".ogg", ".mov", ".mkv"]
+        video: [".mp4", ".webm", ".ogg", ".mov", ".mkv"],
+        audio: [".mp3", ".wav"], // 追加
+        system: [".cfg"] // AUTOBOOT.CFG 等
     };
 
     if (categories.text.includes(ext)) return "📄";
     if (categories.code.includes(ext)) return "📜";
     if (categories.image.includes(ext)) return "🖼️";
     if (categories.video.includes(ext)) return "📽️";
+    if (categories.audio.includes(ext)) return "🎵";
+    if (categories.system.includes(ext)) return "🛠️";
 
-    return "📄"; // 最終的なデフォルト
+    return "📄"; // 未知のファイルのデフォルト
 }

@@ -6,7 +6,36 @@ export function setupRibbon(win, getCurrentPath, renderCallback, menus) {
     const ribbon = win._ribbon;
     ribbon.innerHTML = "";
 
-    (menus || []).forEach(menu => addRibbonMenu(ribbon, menu.title, menu.items));
+    // --- ここから共通メニューの挿入 ---
+    const w = win; // 渡されたウィンドウを参照
+    const systemMenus = [
+        {
+            title: "Window",
+            items: [
+                {
+                    label: "最小化",
+                    action: () => w.querySelector(".min-btn")?.click(),
+                    disabled: () => w.querySelector(".min-btn")?.classList.contains("pointer_none")
+                },
+                {
+                    label: "最大化 / 元のサイズに戻す",
+                    action: () => w.querySelector(".max-btn")?.click(),
+                    disabled: () => w.querySelector(".max-btn")?.classList.contains("pointer_none") || w.dataset.minimized === "true"
+                },
+                {
+                    label: "閉じる",
+                    action: () => w.querySelector(".close-btn")?.click(),
+                    disabled: () => w.querySelector(".close-btn")?.classList.contains("pointer_none")
+                }
+            ]
+        }
+    ];
+
+    // システムメニューとアプリ固有のメニューを結合
+    const finalMenus = [...systemMenus, ...(menus || [])];
+    // --- ここまで ---
+
+    finalMenus.forEach(menu => addRibbonMenu(ribbon, menu.title, menu.items));
 }
 
 // ------------------------
@@ -28,9 +57,30 @@ function addRibbonMenu(ribbon, title, items) {
     menu.appendChild(span);
 
     const dropdown = createElementWithClass("div", "ribbon-dropdown");
-    items.forEach(it => addRibbonItem(dropdown, it));
+
+    // アイテムを作成し、後で状態更新するために要素とデータを紐付けて保持
+    const itemEntries = items.map(it => {
+        const div = addRibbonItem(dropdown, it);
+        return { el: div, data: it };
+    });
+
     menu.appendChild(dropdown);
     ribbon.appendChild(menu);
+
+    // 状態を最新に更新する関数
+    const refreshItemsStatus = () => {
+        itemEntries.forEach(entry => {
+            const isDisabled = typeof entry.data.disabled === "function"
+                ? entry.data.disabled()
+                : entry.data.disabled;
+
+            if (isDisabled) {
+                entry.el.classList.add("pointer_none");
+            } else {
+                entry.el.classList.remove("pointer_none");
+            }
+        });
+    };
 
     // ------------------------
     // mousedown で開く（押した瞬間に開く）
@@ -43,6 +93,9 @@ function addRibbonMenu(ribbon, title, items) {
 
         // 全ウィンドウのドロップダウンを閉じ、selected も解除
         closeAllRibbonDropdownsAndSelectedGlobal();
+
+        // ★追加: 開く直前に disabled 状態を判定して反映
+        refreshItemsStatus();
 
         // 今回のメニューだけ開く
         dropdown.style.display = "block";
@@ -63,6 +116,9 @@ function addRibbonMenu(ribbon, title, items) {
             // 全ウィンドウのドロップダウンを閉じ、selected も解除
             closeAllRibbonDropdownsAndSelectedGlobal();
 
+            // ★追加: 切り替わる直前に disabled 状態を判定して反映
+            refreshItemsStatus();
+
             // 現在の ribbon 内だけ開く
             dropdown.style.display = "block";
             menu.classList.add("selected");
@@ -76,6 +132,7 @@ function addRibbonMenu(ribbon, title, items) {
 function addRibbonItem(dropdown, item) {
     const div = createElementWithClass("div", "ribbon-item", item.label);
 
+    // 初回の状態設定
     const isDisabled = typeof item.disabled === "function" ? item.disabled() : item.disabled;
     if (isDisabled) div.classList.add("pointer_none");
 
@@ -95,6 +152,7 @@ function addRibbonItem(dropdown, item) {
     });
 
     dropdown.appendChild(div);
+    return div; // 要素を返して refreshItemsStatus で使えるようにする
 }
 
 // ------------------------

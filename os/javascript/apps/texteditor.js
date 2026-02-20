@@ -215,13 +215,6 @@ export default function TextEditor(root, options = {}) {
     if (win) {
         const ribbonMenus = [
             {
-                title: "Window", items: [
-                    { label: "最小化", action: () => win.querySelector(".min-btn")?.click() },
-                    { label: "最大化 / 元のサイズに戻す", action: () => win.querySelector(".max-btn")?.click() },
-                    { label: "閉じる", action: () => win.querySelector(".close-btn")?.click() }
-                ]
-            },
-            {
                 title: "Edit",
                 items: [
                     { label: "検索", action: searchText }

@@ -4,7 +4,8 @@ import { themeColor } from "./apps/settings.js";
 import { attachContextMenu } from "./context-menu.js";
 import { setupRibbon } from "./ribbon.js";
 import { killProcess } from "./kernel.js";
-import { playSystemEventSound } from './kernel.js'
+import { playSystemEventSound } from './kernel.js';
+import { getIcon } from "./file-associations.js";
 
 export const taskbarButtons = []; // 作られたボタンを全部保存
 let resizeCursor = "";
@@ -78,10 +79,14 @@ export function createWindow(title, options = {}) {
     w.style.height = options.height || "350px";
     bringToFront(w);
 
+    const initialIcon = "📄";
+    const finalIcon = getIcon(title, options.node || { type: "app" });
+
     w.innerHTML = `
-<div class="title-bar">
-    <span class="title-text">${title}</span>
-    <div class="window-controls">
+<div class="title-bar" style="display: flex; align-items: center; padding: 0 5px;">
+    <span class="window-icon" style="margin-right: 6px; font-size: 14px;">${initialIcon}</span>
+    <span class="title-text" style="flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${title}</span>
+    <div class="window-controls" style="display: flex; flex-shrink: 0;">
         <button class="min-btn"></button>
         <button class="max-btn"></button>
         <button class="close-btn"></button>
@@ -118,34 +123,31 @@ ${!options.hideStatus ? `
 </div>` : ""}
 `;
 
+    w._applyRealIcon = () => {
+        const iconEl = w.querySelector(".window-icon");
+        if (iconEl) iconEl.textContent = finalIcon;
+
+        // タスクバーのアイコンも連動させる必要がある場合
+        if (w._taskbarBtn) {
+            const tbIcon = w._taskbarBtn.querySelector(".taskbar-icon");
+            if (tbIcon) tbIcon.textContent = finalIcon;
+        }
+    };
+
     // リボン要素を確実に取得
     const content = w.querySelector(".content");
     w._ribbon = w.querySelector(".window-ribbon");
     w._statusBar = w.querySelector(".window-statusbar");
 
-    // 一度だけ初期化
+    // ウィンドウ作成時にリボンを初期化する
     if (w._ribbon && !options.hideRibbon) {
-        w._ribbon.innerHTML = ""; // 古い内容をクリア
-
-        const isExplorer = w.dataset.type === "explorer";
-        const ribbonMenus = isExplorer
-            ? (options.ribbonMenus || [])
-            : [
-                {
-                    title: "Window",
-                    items: [
-                        { label: "最小化", action: () => w.querySelector(".min-btn")?.click() },
-                        { label: "最大化 / 元のサイズに戻す", action: () => w.querySelector(".max-btn")?.click() },
-                        { label: "閉じる", action: () => w.querySelector(".close-btn")?.click() }
-                    ]
-                }
-            ];
+        const appMenus = options.ribbonMenus || [];
 
         setupRibbon(
             w,
             options.getCurrentPath || (() => null),
             options.renderCallback || null,
-            ribbonMenus
+            appMenus // そのまま渡す。Windowメニューはribbon.jsが勝手に足してくれる。
         );
     }
 
@@ -206,8 +208,11 @@ ${!options.hideStatus ? `
         w.dataset.taskbar = "true";
 
         taskbarBtn = document.createElement("button");
-        taskbarBtn.textContent = title;
         taskbarBtn.className = "taskbar-window-btn button";
+        taskbarBtn.innerHTML = `
+        <span class="taskbar-icon" style="margin-right: 4px;">${initialIcon}</span>
+        <span class="taskbar-text">${title}</span>
+    `;
         taskbarBtn.dataset.title = title;
 
         taskbarBtn._window = w;
@@ -746,35 +751,50 @@ function createTitleClone(w, titleBar, titleText) {
     const rect = w.getBoundingClientRect();
     const clone = document.createElement("div");
 
+    // 1. タイトルバーとテキストの「計算済みスタイル」を精密に取得
+    const titleBarStyles = getComputedStyle(titleBar);
+    const titleTextStyles = getComputedStyle(titleText);
+
     Object.assign(clone.style, {
         position: "fixed",
         left: rect.left + "px",
         top: rect.top + "px",
         width: rect.width + "px",
         height: titleBar.offsetHeight + "px",
-        background: getComputedStyle(titleBar).backgroundColor,
-        color: getComputedStyle(titleText).color,
+        background: titleBarStyles.backgroundColor,
+        color: titleBarStyles.color,
         display: "flex",
         alignItems: "center",
-        padding: "0 5px",
+        padding: titleBarStyles.padding,
         zIndex: parseInt(w.style.zIndex) + 1,
         pointerEvents: "none",
-        overflow: "hidden"  // 親でも overflow hidden は必要
-    });
-
-    // テキスト用 span を作る
-    const span = document.createElement("span");
-    span.textContent = titleText.textContent;
-    Object.assign(span.style, {
-        font: getComputedStyle(titleText).font,
-        whiteSpace: "nowrap",
         overflow: "hidden",
-        textOverflow: "ellipsis",
-        flexShrink: "1",
-        minWidth: "0"
+        boxSizing: "border-box"
     });
 
-    clone.appendChild(span);
+    // 2. 内容をコピー
+    clone.innerHTML = titleBar.innerHTML;
+
+    // 3. 【重要】複製されたテキスト要素に元のフォントを強制適用
+    const clonedText = clone.querySelector(".title-text");
+    if (clonedText) {
+        Object.assign(clonedText.style, {
+            font: titleTextStyles.font, // font-family, size, weightを一括適用
+            letterSpacing: titleTextStyles.letterSpacing,
+            lineHeight: titleTextStyles.lineHeight,
+            flex: "1",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap"
+        });
+    }
+
+    // 不要なコントロールを非表示
+    const controls = clone.querySelector(".window-controls");
+    if (controls) {
+        controls.style.display = "none";
+    }
+
     document.body.appendChild(clone);
     return clone;
 }
