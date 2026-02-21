@@ -862,26 +862,36 @@ function calcNodeSize(node) {
     if (!node) return 0;
 
     if (node.type === "file") {
-        return node.content?.length ?? 0;
-    }
+        const item = node.content;
+        if (!item) return 0;
 
-    if (node.type === "folder") {
-        let total = 0;
-        for (const key in node) {
-            if (key === "type") continue;
-            total += calcNodeSize(node[key]);
+        if (item instanceof Blob) {
+            return item.size;
         }
-        return total;
+
+        // 文字列またはオブジェクトを一貫した基準（UTF-8）で計算
+        const stringToMeasure = (typeof item === 'string')
+            ? item
+            : JSON.stringify(item);
+
+        // TextEncoderを使うことで、実際の保存バイト数に近づける
+        return new TextEncoder().encode(stringToMeasure).length;
     }
 
-    // app / link はサイズ0扱い
+    // フォルダの再帰計算
+    if (node.type === "folder" || (!node.type && typeof node === "object")) {
+        return Object.keys(node).reduce((total, key) => {
+            return key === "type" ? total : total + calcNodeSize(node[key]);
+        }, 0);
+    }
+
     return 0;
 }
-
 function formatSize(bytes) {
-    if (bytes < 1024) return bytes + " B";
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
-    return (bytes / 1024 / 1024).toFixed(1) + " MB";
+    if (bytes === 0) return "0 B"; // 0の時の表示を明確化
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
 // FS 内の全アプリを取得

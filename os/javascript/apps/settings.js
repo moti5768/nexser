@@ -152,37 +152,6 @@ export function refreshTopWindow() {
 }
 
 /* =========================
-   Utils
-========================= */
-async function getStoreSizes() {
-    const result = {};
-    try {
-        const db = await getDB();
-        for (const storeName of db.objectStoreNames) {
-            let bytes = 0;
-            const tx = db.transaction(storeName, "readonly");
-            const store = tx.objectStore(storeName);
-            const all = await new Promise(res => {
-                const r = store.getAll();
-                r.onsuccess = () => res(r.result || []);
-                r.onerror = () => res([]);
-            });
-            for (const item of all) {
-                bytes += JSON.stringify(item)?.length || 0;
-            }
-            result[storeName] = bytes;
-        }
-    } catch { }
-    return result;
-}
-
-function formatBytes(bytes) {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-}
-
-/* =========================
    Settings App (Tabs)
 ========================= */
 export default async function SettingsApp(content) {
@@ -470,64 +439,214 @@ export default async function SettingsApp(content) {
 
         root.append(info, storageBox);
 
-        async function renderStorage() {
-            storageBox.innerHTML = "<b>Storage Usage</b><br>";
-            const sizes = await getStoreSizes();
-            let total = 0;
+        // 単位変換
+        function formatBytes(bytes) {
+            if (bytes < 1024) return `${bytes} B`;
+            if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+            return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+        }
 
-            for (const [name, bytes] of Object.entries(sizes)) {
-                total += bytes;
-                const row = document.createElement("div");
-                row.style.display = "flex";
-                row.style.justifyContent = "space-between";
-                row.style.alignItems = "center";
-                row.innerHTML = `<span>${name}: ${formatBytes(bytes)}</span>`;
+        // ★追加：個別ストアの削除機能
+        async function clearStore(storeName) {
+            // 設定画面共通の confirmWindow を利用
+            showConfirm(root, `${storeName} のデータをすべて削除しますか？`, async () => {
+                try {
+                    const db = await getDB();
+                    const tx = db.transaction(storeName, "readwrite");
+                    await tx.objectStore(storeName).clear();
+                    showAlert(root, `${storeName} を空にしました。`);
+                    renderStorage(); // 削除後にグラフを即時更新
+                } catch (e) {
+                    showAlert(root, "削除に失敗しました。");
+                }
+            });
+        }
 
-                const clear = document.createElement("button");
-                clear.textContent = "Clear";
-                clear.onclick = () => {
-                    showConfirm(root, `${name} を削除しますか？`, async () => {
-                        const db = await getDB();
-                        const tx = db.transaction(name, "readwrite");
-                        tx.objectStore(name).clear();
-                        renderStorage();
+        async function getStoreSizes() {
+            const result = {};
+            try {
+                const db = await getDB();
+                for (const storeName of db.objectStoreNames) {
+                    let bytes = 0;
+                    const tx = db.transaction(storeName, "readonly");
+                    const store = tx.objectStore(storeName);
+                    await new Promise((resolve) => {
+                        const request = store.openCursor();
+                        request.onsuccess = (event) => {
+                            const cursor = event.target.result;
+                            if (cursor) {
+                                const item = cursor.value;
+
+                                // --- ロジックを維持しつつ、巨大データによるフリーズを防止 ---
+                                if (item instanceof Blob) {
+                                    bytes += item.size;
+                                } else if (typeof item === 'string') {
+                                    // 巨大な文字列（Base64ビデオ等）で TextEncoder を使うとフリーズするため
+                                    // 1MBを超える場合は length で代用、小さい場合は元のTextEncoderを使用
+                                    if (item.length > 1024 * 1024) {
+                                        bytes += item.length;
+                                    } else {
+                                        bytes += new TextEncoder().encode(item).length;
+                                    }
+                                } else {
+                                    // オブジェクトの場合も、一旦文字列化する前に
+                                    // 巨大な content プロパティなどがないかチェック
+                                    const jsonStr = JSON.stringify(item) || "";
+
+                                    // 文字列化した結果が巨大な場合のメモリ爆発を防止
+                                    if (jsonStr.length > 1024 * 1024) {
+                                        bytes += jsonStr.length;
+                                    } else {
+                                        bytes += new TextEncoder().encode(jsonStr).length;
+                                    }
+                                }
+                                cursor.continue();
+                            } else resolve();
+                        };
+                        request.onerror = () => resolve();
                     });
-                };
-                row.append(clear);
-                storageBox.appendChild(row);
+                    result[storeName] = bytes;
+                }
+            } catch (e) { console.error(e); }
+            return result;
+        }
+        async function renderStorage() {
+            // タイトル
+            storageBox.innerHTML = "<b style='display:block; font-size:16px; margin-bottom: 5px; padding-bottom: 5px; border-bottom:1px solid #000;'>Storage Properties (C:)</b>";
+            const sizes = await getStoreSizes();
+            let virtualUsedBytes = 0;
+
+            // 1. 各項目のリスト表示（削除ボタン付き）
+            const listTable = document.createElement("div");
+            listTable.style.fontSize = "13px";
+            listTable.style.marginBottom = "10px";
+            for (const [name, bytes] of Object.entries(sizes)) {
+                virtualUsedBytes += bytes;
+                const row = document.createElement("div");
+                row.style.cssText = "display:flex; justify-content:space-between; align-items:center; padding:3px 0; border-bottom:1px dashed #ccc;";
+
+                const nameSpan = document.createElement("span");
+                nameSpan.textContent = name;
+
+                const rightSide = document.createElement("div");
+                rightSide.style.display = "flex";
+                rightSide.style.alignItems = "center";
+                rightSide.innerHTML = `<span style='font-weight:bold; margin-right:8px;'>${formatBytes(bytes)}</span>`;
+
+                if (name !== "settings") {
+                    const delBtn = document.createElement("button");
+                    delBtn.textContent = "Clear";
+                    delBtn.style.fontSize = "10px";
+                    delBtn.style.padding = "0 4px";
+                    delBtn.onclick = () => clearStore(name);
+                    rightSide.appendChild(delBtn);
+                }
+
+                row.append(nameSpan, rightSide);
+                listTable.appendChild(row);
+            }
+            storageBox.appendChild(listTable);
+
+            // 2. システム情報の取得
+            let quota = 0;
+            if (navigator.storage && navigator.storage.estimate) {
+                const est = await navigator.storage.estimate();
+                quota = est.quota || 0;
             }
 
-            const clearAllBtn = document.createElement("button");
-            clearAllBtn.textContent = "Clear All Stores";
-            clearAllBtn.style.marginTop = "6px";
-            clearAllBtn.style.background = "#933";
-            clearAllBtn.style.color = "#fff";
-            clearAllBtn.onclick = () => {
-                showConfirm(root, "全てのストアを削除しますか？", async () => {
-                    const db = await getDB();
-                    for (const name of db.objectStoreNames) {
-                        const tx = db.transaction(name, "readwrite");
-                        tx.objectStore(name).clear();
-                    }
-                    renderStorage();
-                });
-            };
-            storageBox.appendChild(clearAllBtn);
+            // 計算：割合(0〜1)とパーセント(0〜100)
+            const usedRatio = quota > 0 ? (virtualUsedBytes / quota) : 0;
+            const finalPercent = (usedRatio * 100).toFixed(4); // 表示用
 
-            let quotaMB = "unknown";
-            try {
-                if (navigator.storage?.estimate) {
-                    const est = await navigator.storage.estimate();
-                    let estQuotaMB = est.quota / 1024 / 1024;
-                    if (estQuotaMB > 6 * 1024) estQuotaMB = 6 * 1024;
-                    quotaMB = estQuotaMB.toFixed(1);
-                }
-            } catch { }
+            // 3. SVG円グラフ（維持：影なし・はみ出しなし）
+            const radius = 10;
+            const circumference = 2 * Math.PI * radius;
+            const displayPercentForPie = usedRatio > 0 ? Math.max(0.5, usedRatio * 100) : 0;
+            const strokeDash = `${(displayPercentForPie / 100) * circumference} ${circumference}`;
 
-            const totalRow = document.createElement("div");
-            totalRow.style.marginTop = "6px";
-            totalRow.innerHTML = `<b>Total: ${formatBytes(total)} / Max approx ${quotaMB} MB</b>`;
-            storageBox.appendChild(totalRow);
+            const pieContainer = document.createElement("div");
+            pieContainer.style.cssText = "display:flex; justify-content:center; margin:15px 0;";
+            pieContainer.innerHTML = `
+                <svg width="100" height="100" viewBox="0 0 32 32" style="transform: rotate(-90deg);">
+                    <circle cx="16" cy="16" r="${radius}" fill="#FF00FF" />
+                    <circle cx="16" cy="16" r="${radius / 2}" fill="none" 
+                            stroke="#000080" 
+                            stroke-width="${radius}" 
+                            stroke-dasharray="${strokeDash}" 
+                            stroke-dashoffset="0" />
+                    <circle cx="16" cy="16" r="${radius}" fill="none" stroke="#000" stroke-width="0.5" />
+                </svg>
+            `;
+            storageBox.appendChild(pieContainer);
+
+            // 4. 統計数値テキスト（維持）
+            const statsBox = document.createElement("div");
+            statsBox.style.padding = "5px";
+            statsBox.style.background = "#fff";
+            statsBox.className = "border";
+            statsBox.innerHTML = `
+                <div style="display:flex; align-items:center; margin-bottom:6px; font-size:14px; color:#000080;">
+                    <div style="width:12px; height:12px; background:#000080; margin-right:8px; border:1px solid #000;"></div>
+                    <span style="flex:1;">Used space:</span>
+                    <span style="font-weight:bold; font-family:monospace;">${formatBytes(virtualUsedBytes)}</span>
+                </div>
+                <div style="display:flex; align-items:center; margin-bottom:6px; font-size:14px; color:#FF00FF;">
+                    <div style="width:12px; height:12px; background:#FF00FF; margin-right:8px; border:1px solid #000;"></div>
+                    <span style="flex:1;">Free space:</span>
+                    <span style="font-family:monospace;">${formatBytes(quota - virtualUsedBytes)}</span>
+                </div>
+                <div style="border-top:1px solid #000; margin:6px 0;"></div>
+                <div style="display:flex; justify-content:space-between; font-size:15px; font-weight:bold;">
+                    <span>Capacity:</span>
+                    <span style="font-family:monospace;">${formatBytes(quota)}</span>
+                </div>
+            `;
+            storageBox.appendChild(statsBox);
+
+            // 5. 棒グラフ（改善：マルチセグメント・グリッド表示）
+            const barContainer = document.createElement("div");
+            barContainer.style.marginTop = "12px";
+
+            const barBg = document.createElement("div");
+            // Win95風の凹んだ枠線 + フレックスボックス
+            barBg.style.cssText = "width:100%; height:20px; background:#eee; position:relative; display:flex; overflow:hidden;";
+            barBg.className = "border";
+            // ストアごとに色を変えて描画
+            const colors = ["#000080", "#008080", "#800080", "#008000", "#808000"];
+            let colorIdx = 0;
+
+            for (const [name, bytes] of Object.entries(sizes)) {
+                if (bytes <= 0) continue;
+
+                const segmentWidth = (bytes / quota) * 100;
+                const segment = document.createElement("div");
+                segment.style.cssText = `
+                    width: ${segmentWidth}%;
+                    height: 100%;
+                    background-color: ${colors[colorIdx % colors.length]};
+                `;
+                segment.title = `${name}: ${formatBytes(bytes)}`; // ホバーで内訳を表示
+                barBg.appendChild(segment);
+                colorIdx++;
+            }
+
+            // 細かな目盛り線（グリッド）をオーバーレイ
+            const gridOverlay = document.createElement("div");
+            gridOverlay.style.cssText = `
+                position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+                background-image: linear-gradient(90deg, rgba(255,255,255,0.2) 1px, transparent 1px);
+                background-size: 5% 100%;
+                pointer-events: none;
+            `;
+            barBg.appendChild(gridOverlay);
+            barContainer.appendChild(barBg);
+            storageBox.appendChild(barContainer);
+
+            // 使用率％表示
+            const percentLabel = document.createElement("div");
+            percentLabel.style.cssText = "text-align:right; font-size:12px; font-weight:bold; color:#000080; margin-top:2px; font-family:monospace;";
+            percentLabel.textContent = `${finalPercent}% Used`;
+            barContainer.appendChild(percentLabel);
         }
 
         async function updateInfo() {
@@ -548,7 +667,7 @@ export default async function SettingsApp(content) {
         const timer = setInterval(() => {
             updateInfo();
             renderStorage();
-        }, 2000);
+        }, 5000);
 
         root._cleanup = () => {
             clearInterval(timer);

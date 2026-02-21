@@ -13,7 +13,7 @@ export default function main(content, options) {
     container.innerHTML = `
         <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:10px; border-bottom:1px solid #ccc;">
             <div style="font-weight:bold; font-size:14px;">サウンド設定</div>
-            <input type="file" id="audio-input" accept=".mp3,.ogg,.wav" style="display:none" multiple>
+            <input type="file" id="audio-input" accept=".mp3,.ogg,.wav,.m4a,.aac,.flac" style="display:none" multiple>
             <button id="upload-btn" style="padding:4px 12px; cursor:pointer;">音声をインポート</button>
         </div>
         <div id="player-list" style="flex:1; overflow-y:auto; background:#fff; border:1px solid #999;">
@@ -108,12 +108,16 @@ export default function main(content, options) {
     };
 
     container.querySelector("#upload-btn").onclick = () => inputEl.click();
+    // soundplayer.js のアップロード部分の修正案
 
     inputEl.onchange = async (e) => {
         const files = e.target.files;
         if (!files || files.length === 0) return;
 
-        const allowedExtensions = /(\.mp3|\.ogg|\.wav)$/i;
+        const allowedExtensions = /(\.mp3|\.ogg|\.wav|\.m4a|\.aac|\.flac)$/i;
+
+        // 1. 一時的なオブジェクトに読み込み結果を格納する
+        const loadedFiles = {};
 
         for (const file of files) {
             if (!allowedExtensions.exec(file.name)) {
@@ -124,7 +128,8 @@ export default function main(content, options) {
             await new Promise((resolve) => {
                 const reader = new FileReader();
                 reader.onload = (ev) => {
-                    FS.Programs.Music[file.name] = {
+                    // ここではまだ FS に代入せず、一時変数に保持
+                    loadedFiles[file.name] = {
                         type: "file",
                         subtype: "audio",
                         content: ev.target.result
@@ -134,7 +139,13 @@ export default function main(content, options) {
                 reader.readAsDataURL(file);
             });
         }
-        inputEl.value = ""; // 連続アップロード対応
+
+        // 2. すべてのファイルの読み込み完了後、一気に FS へ反映
+        // これにより、fs.js の Proxy による保存（saveFS）の実行回数を 1回 に抑え、
+        // 処理中のデータ競合（破損）を防ぎます。
+        Object.assign(FS.Programs.Music, loadedFiles);
+
+        inputEl.value = "";
         refresh();
     };
 
