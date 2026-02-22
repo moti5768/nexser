@@ -1,6 +1,7 @@
 // soundplayer.js
 import { FS } from "../fs.js";
 import { alertWindow } from "../window.js";
+import { getFileContent } from "../fs-db.js"; // 実体取得のために追加
 
 export default function main(content, options) {
     // 再生中のオーディオオブジェクトを保持する変数
@@ -108,15 +109,12 @@ export default function main(content, options) {
     };
 
     container.querySelector("#upload-btn").onclick = () => inputEl.click();
-    // soundplayer.js のアップロード部分の修正案
 
     inputEl.onchange = async (e) => {
         const files = e.target.files;
         if (!files || files.length === 0) return;
 
         const allowedExtensions = /(\.mp3|\.ogg|\.wav|\.m4a|\.aac|\.flac)$/i;
-
-        // 1. 一時的なオブジェクトに読み込み結果を格納する
         const loadedFiles = {};
 
         for (const file of files) {
@@ -128,7 +126,6 @@ export default function main(content, options) {
             await new Promise((resolve) => {
                 const reader = new FileReader();
                 reader.onload = (ev) => {
-                    // ここではまだ FS に代入せず、一時変数に保持
                     loadedFiles[file.name] = {
                         type: "file",
                         subtype: "audio",
@@ -140,9 +137,7 @@ export default function main(content, options) {
             });
         }
 
-        // 2. すべてのファイルの読み込み完了後、一気に FS へ反映
-        // これにより、fs.js の Proxy による保存（saveFS）の実行回数を 1回 に抑え、
-        // 処理中のデータ競合（破損）を防ぎます。
+        // 一気に FS へ反映（Proxy保存を1回に集約）
         Object.assign(FS.Programs.Music, loadedFiles);
 
         inputEl.value = "";
@@ -150,7 +145,7 @@ export default function main(content, options) {
     };
 
     // 再生・停止・削除ロジック
-    listEl.onclick = (e) => {
+    listEl.onclick = async (e) => { // async化
         const name = e.target.dataset.name;
 
         // 再生ボタン
@@ -159,8 +154,22 @@ export default function main(content, options) {
                 currentAudio.pause();
                 currentAudio.currentTime = 0;
             }
-            const data = FS.Programs.Music[name].content;
-            currentAudio = new Audio(data);
+
+            let fileNode = FS.Programs.Music[name];
+            let audioData = fileNode.content;
+
+            // --- 重要: 分離保存対応 ---
+            if (audioData === "__EXTERNAL_DATA__") {
+                // files ストアから実体を取得
+                audioData = await getFileContent(`Programs/Music/${name}`);
+            }
+
+            if (!audioData) {
+                alertWindow("データの取得に失敗しました。");
+                return;
+            }
+
+            currentAudio = new Audio(audioData);
 
             // 再生終了時のクリーンアップ
             currentAudio.onended = () => { currentAudio = null; };

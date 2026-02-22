@@ -2,8 +2,10 @@
 import { openDB } from "../db.js";
 import { clearRecent } from "../recent.js";
 import { setWindowAnimationEnabled, alertWindow, confirmWindow } from "../window.js";
+import { calcNodeSize } from "./explorer.js";
 
 const STORE = "settings";
+const MAX_STORAGE_LIMIT = 100 * 1024 * 1024 * 1024; // 100GB
 
 function showConfirm(root, message, onYes, onNo) {
     const win = root.closest(".window");
@@ -30,6 +32,18 @@ async function getDB() {
 export async function saveSetting(key, value) {
     try {
         const db = await getDB();
+
+        // ★ 100GB制限のチェックを追加
+        if (navigator.storage && navigator.storage.estimate) {
+            const { usage } = await navigator.storage.estimate();
+            if (usage >= MAX_STORAGE_LIMIT) {
+                console.error("Storage limit reached (100GB). Cannot save.");
+                const activeWin = document.querySelector(".window:not([style*='display: none'])");
+                alertWindow("ディスク領域不足: 設定を保存できませんでした。不要なファイルを削除してください。", { parentWin: activeWin });
+                return false;
+            }
+        }
+
         const tx = db.transaction(STORE, "readwrite");
         tx.objectStore(STORE).put(structuredClone(value), key);
         await tx.complete;
@@ -39,6 +53,12 @@ export async function saveSetting(key, value) {
         return false;
     }
 }
+
+
+
+
+
+
 
 export async function loadSetting(key) {
     try {
@@ -173,20 +193,45 @@ export default async function SettingsApp(content) {
         { id: "general", label: "General", render: renderGeneral },
         { id: "system", label: "System", render: renderSystem }
     ];
+    let currentTabId = null; // ★追加：現在アクティブなタブを管理
 
     async function selectTab(id) {
+        // ★追加ガード：同じタブを連打した場合は処理を中断
+        if (currentTabId === id) return;
+        currentTabId = id;
+
         [...tabsEl.children].forEach(btn => {
             const active = btn.dataset.id === id;
             btn.classList.toggle("active", active);
             btn.classList.toggle("inactive", !active);
         });
 
-        bodyEl._cleanup?.();
-        bodyEl._cleanup = null;
+        // 以前のタブのクリーンアップ（タイマー停止など）
+        if (bodyEl._cleanup) {
+            bodyEl._cleanup();
+            bodyEl._cleanup = null;
+        }
         bodyEl.innerHTML = "";
 
         const tab = tabs.find(t => t.id === id);
-        await tab?.render(bodyEl);
+        if (!tab) return;
+
+        // ★重要：この変数に実行時のIDを閉じ込める（クロージャ）
+        const thisExecutionTabId = id;
+
+        try {
+            // タブの描画（awaitで待機）
+            await tab.render(bodyEl);
+
+            // 【チェック】awaitが終わった時点で、まだこのタブが「最新」か確認
+            // もしawait中に別のタブがクリックされていたら、中身をこれ以上操作しない
+            if (currentTabId !== thisExecutionTabId) {
+                console.log("Tab switch detected, cancelling render for:", thisExecutionTabId);
+                return;
+            }
+        } catch (e) {
+            console.error("Render failed:", e);
+        }
     }
 
     tabs.forEach(t => {
@@ -428,22 +473,34 @@ export default async function SettingsApp(content) {
     }
 
     /* ---------- System ---------- */
-    function renderSystem(root) {
+    async function renderSystem(root) {
         root.innerHTML = "";
 
         const info = document.createElement("div");
+        updateInfo();
         const storageBox = document.createElement("div");
         storageBox.style.marginTop = "10px";
         storageBox.style.borderTop = "1px solid #666";
         storageBox.style.paddingTop = "6px";
+        storageBox.innerHTML = "<i>Loading storage information...</i>"; // 計算中の仮表示
 
         root.append(info, storageBox);
 
         // 単位変換
         function formatBytes(bytes) {
-            if (bytes < 1024) return `${bytes} B`;
-            if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-            return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+            if (bytes === 0) return "0.00 B"; // 統一感のため
+
+            const k = 1024;
+            const dm = 2; // 小数点以下の桁数
+            const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+
+            // 単位のインデックスを計算
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+            // 計算結果を小数点第2位で固定
+            const res = parseFloat((bytes / Math.pow(k, i)).toFixed(dm));
+
+            return `${res.toFixed(dm)} ${sizes[i]}`;
         }
 
         // ★追加：個別ストアの削除機能
@@ -466,40 +523,43 @@ export default async function SettingsApp(content) {
             const result = {};
             try {
                 const db = await getDB();
-                for (const storeName of db.objectStoreNames) {
+                const storeNames = Array.from(db.objectStoreNames);
+
+                for (const storeName of storeNames) {
                     let bytes = 0;
                     const tx = db.transaction(storeName, "readonly");
                     const store = tx.objectStore(storeName);
+
                     await new Promise((resolve) => {
                         const request = store.openCursor();
-                        request.onsuccess = (event) => {
+                        request.onsuccess = async (event) => {
                             const cursor = event.target.result;
                             if (cursor) {
                                 const item = cursor.value;
 
-                                // --- ロジックを維持しつつ、巨大データによるフリーズを防止 ---
-                                if (item instanceof Blob) {
-                                    bytes += item.size;
-                                } else if (typeof item === 'string') {
-                                    // 巨大な文字列（Base64ビデオ等）で TextEncoder を使うとフリーズするため
-                                    // 1MBを超える場合は length で代用、小さい場合は元のTextEncoderを使用
-                                    if (item.length > 1024 * 1024) {
-                                        bytes += item.length;
-                                    } else {
-                                        bytes += new TextEncoder().encode(item).length;
-                                    }
+                                // --- 対応箇所 ---
+                                if (storeName === "files") {
+                                    // files ストアは実体そのものが入っている
+                                    bytes += (typeof item === 'string' ? item.length : 0);
                                 } else {
-                                    // オブジェクトの場合も、一旦文字列化する前に
-                                    // 巨大な content プロパティなどがないかチェック
-                                    const jsonStr = JSON.stringify(item) || "";
-
-                                    // 文字列化した結果が巨大な場合のメモリ爆発を防止
-                                    if (jsonStr.length > 1024 * 1024) {
-                                        bytes += jsonStr.length;
-                                    } else {
-                                        bytes += new TextEncoder().encode(jsonStr).length;
+                                    // 修正ポイント：await を追加し、計算結果を待機する
+                                    // kv ストアなどの場合、item が FS 構造（オブジェクト）であることを確認
+                                    let size = 0;
+                                    try {
+                                        // item がファイルシステムノードの形式であれば計算
+                                        size = await calcNodeSize(item, "");
+                                    } catch (e) {
+                                        size = 0;
                                     }
+
+                                    if (size === 0 && item != null) {
+                                        // フォールバック計算
+                                        size = JSON.stringify(item).length;
+                                    }
+                                    bytes += size;
                                 }
+                                // ----------------
+
                                 cursor.continue();
                             } else resolve();
                         };
@@ -511,15 +571,25 @@ export default async function SettingsApp(content) {
             return result;
         }
         async function renderStorage() {
-            // タイトル
-            storageBox.innerHTML = "<b style='display:block; font-size:16px; margin-bottom: 5px; padding-bottom: 5px; border-bottom:1px solid #000;'>Storage Properties (C:)</b>";
+            // 1. まずデータを先に計算する (この間、storageBoxの中身は古いまま維持されます)
             const sizes = await getStoreSizes();
+            if (!document.contains(storageBox) || currentTabId !== "system") return;
             let virtualUsedBytes = 0;
+
+            // 2. メモリ上に一時的なコンテナ(偽の箱)を作成する
+            const tempContainer = document.createElement("div");
+
+            // タイトル
+            const title = document.createElement("b");
+            title.style.cssText = "display:block; font-size:16px; margin-bottom: 5px; padding-bottom: 5px; border-bottom:1px solid #000;";
+            title.textContent = "Storage Properties (C:)";
+            tempContainer.appendChild(title);
 
             // 1. 各項目のリスト表示（削除ボタン付き）
             const listTable = document.createElement("div");
             listTable.style.fontSize = "13px";
-            listTable.style.marginBottom = "10px";
+            listTable.style.marginBottom = "0px";
+
             for (const [name, bytes] of Object.entries(sizes)) {
                 virtualUsedBytes += bytes;
                 const row = document.createElement("div");
@@ -545,108 +615,93 @@ export default async function SettingsApp(content) {
                 row.append(nameSpan, rightSide);
                 listTable.appendChild(row);
             }
-            storageBox.appendChild(listTable);
+            tempContainer.appendChild(listTable);
 
-            // 2. システム情報の取得
-            let quota = 0;
-            if (navigator.storage && navigator.storage.estimate) {
-                const est = await navigator.storage.estimate();
-                quota = est.quota || 0;
-            }
-
-            // 計算：割合(0〜1)とパーセント(0〜100)
+            const quota = MAX_STORAGE_LIMIT;
+            const freeSpace = Math.max(0, quota - virtualUsedBytes);
             const usedRatio = quota > 0 ? (virtualUsedBytes / quota) : 0;
-            const finalPercent = (usedRatio * 100).toFixed(4); // 表示用
+            const finalPercent = (usedRatio * 100).toFixed(4);
 
-            // 3. SVG円グラフ（維持：影なし・はみ出しなし）
-            const radius = 10;
+            // 3. SVG円グラフ
+            const radius = 12.5;
             const circumference = 2 * Math.PI * radius;
-            const displayPercentForPie = usedRatio > 0 ? Math.max(0.5, usedRatio * 100) : 0;
+            const displayPercentForPie = usedRatio > 0 ? Math.min(100, Math.max(0.5, usedRatio * 100)) : 0;
             const strokeDash = `${(displayPercentForPie / 100) * circumference} ${circumference}`;
 
             const pieContainer = document.createElement("div");
-            pieContainer.style.cssText = "display:flex; justify-content:center; margin:15px 0;";
+            pieContainer.style.cssText = "display:flex; justify-content:center; margin: 0px;";
             pieContainer.innerHTML = `
-                <svg width="100" height="100" viewBox="0 0 32 32" style="transform: rotate(-90deg);">
-                    <circle cx="16" cy="16" r="${radius}" fill="#FF00FF" />
-                    <circle cx="16" cy="16" r="${radius / 2}" fill="none" 
-                            stroke="#000080" 
-                            stroke-width="${radius}" 
-                            stroke-dasharray="${strokeDash}" 
-                            stroke-dashoffset="0" />
-                    <circle cx="16" cy="16" r="${radius}" fill="none" stroke="#000" stroke-width="0.5" />
-                </svg>
-            `;
-            storageBox.appendChild(pieContainer);
+        <svg width="100" height="100" viewBox="0 0 32 32" style="transform: rotate(-90deg);">
+            <circle cx="16" cy="16" r="${radius}" fill="#FF00FF" />
+            <circle cx="16" cy="16" r="${radius / 2}" fill="none" 
+                    stroke="#000080" 
+                    stroke-width="${radius}" 
+                    stroke-dasharray="${strokeDash}" 
+                    stroke-dashoffset="0" />
+            <circle cx="16" cy="16" r="${radius}" fill="none" stroke="#000" stroke-width="0.25" />
+        </svg>
+    `;
+            tempContainer.appendChild(pieContainer);
 
-            // 4. 統計数値テキスト（維持）
+            // 4. 統計数値テキスト
             const statsBox = document.createElement("div");
             statsBox.style.padding = "5px";
             statsBox.style.background = "#fff";
             statsBox.className = "border";
             statsBox.innerHTML = `
-                <div style="display:flex; align-items:center; margin-bottom:6px; font-size:14px; color:#000080;">
-                    <div style="width:12px; height:12px; background:#000080; margin-right:8px; border:1px solid #000;"></div>
-                    <span style="flex:1;">Used space:</span>
-                    <span style="font-weight:bold; font-family:monospace;">${formatBytes(virtualUsedBytes)}</span>
-                </div>
-                <div style="display:flex; align-items:center; margin-bottom:6px; font-size:14px; color:#FF00FF;">
-                    <div style="width:12px; height:12px; background:#FF00FF; margin-right:8px; border:1px solid #000;"></div>
-                    <span style="flex:1;">Free space:</span>
-                    <span style="font-family:monospace;">${formatBytes(quota - virtualUsedBytes)}</span>
-                </div>
-                <div style="border-top:1px solid #000; margin:6px 0;"></div>
-                <div style="display:flex; justify-content:space-between; font-size:15px; font-weight:bold;">
-                    <span>Capacity:</span>
-                    <span style="font-family:monospace;">${formatBytes(quota)}</span>
-                </div>
-            `;
-            storageBox.appendChild(statsBox);
+        <div style="display:flex; align-items:center; margin-bottom:6px; font-size:14px; color:#000080;">
+            <div style="width:12px; height:12px; background:#000080; margin-right:8px; border:1px solid #000;"></div>
+            <span style="flex:1;">Used space:</span>
+            <span style="font-weight:bold; font-family:monospace;">${formatBytes(virtualUsedBytes)}</span>
+        </div>
+        <div style="display:flex; align-items:center; margin-bottom:6px; font-size:14px; color:#FF00FF;">
+            <div style="width:12px; height:12px; background:#FF00FF; margin-right:8px; border:1px solid #000;"></div>
+            <span style="flex:1;">Free space:</span>
+            <span style="font-family:monospace;">${formatBytes(freeSpace)}</span>
+        </div>
+        <div style="border-top:1px solid #000; margin:6px 0;"></div>
+        <div style="display:flex; justify-content:space-between; font-size:15px; font-weight:bold;">
+            <span>Capacity:</span>
+            <span style="font-family:monospace;">${formatBytes(quota)}</span>
+        </div>
+    `;
+            tempContainer.appendChild(statsBox);
 
-            // 5. 棒グラフ（改善：マルチセグメント・グリッド表示）
+            // 5. 棒グラフ
             const barContainer = document.createElement("div");
             barContainer.style.marginTop = "12px";
 
             const barBg = document.createElement("div");
-            // Win95風の凹んだ枠線 + フレックスボックス
             barBg.style.cssText = "width:100%; height:20px; background:#eee; position:relative; display:flex; overflow:hidden;";
             barBg.className = "border";
-            // ストアごとに色を変えて描画
+
             const colors = ["#000080", "#008080", "#800080", "#008000", "#808000"];
             let colorIdx = 0;
 
             for (const [name, bytes] of Object.entries(sizes)) {
                 if (bytes <= 0) continue;
-
                 const segmentWidth = (bytes / quota) * 100;
                 const segment = document.createElement("div");
-                segment.style.cssText = `
-                    width: ${segmentWidth}%;
-                    height: 100%;
-                    background-color: ${colors[colorIdx % colors.length]};
-                `;
-                segment.title = `${name}: ${formatBytes(bytes)}`; // ホバーで内訳を表示
+                segment.style.cssText = `width: ${segmentWidth}%; height: 100%; background-color: ${colors[colorIdx % colors.length]};`;
+                segment.title = `${name}: ${formatBytes(bytes)}`;
                 barBg.appendChild(segment);
                 colorIdx++;
             }
 
-            // 細かな目盛り線（グリッド）をオーバーレイ
             const gridOverlay = document.createElement("div");
-            gridOverlay.style.cssText = `
-                position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-                background-image: linear-gradient(90deg, rgba(255,255,255,0.2) 1px, transparent 1px);
-                background-size: 5% 100%;
-                pointer-events: none;
-            `;
+            gridOverlay.style.cssText = `position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: linear-gradient(90deg, rgba(255,255,255,0.2) 1px, transparent 1px); background-size: 5% 100%; pointer-events: none;`;
             barBg.appendChild(gridOverlay);
             barContainer.appendChild(barBg);
-            storageBox.appendChild(barContainer);
+            tempContainer.appendChild(barContainer);
 
-            // 使用率％表示
             const percentLabel = document.createElement("div");
             percentLabel.style.cssText = "text-align:right; font-size:12px; font-weight:bold; color:#000080; margin-top:2px; font-family:monospace;";
             percentLabel.textContent = `${finalPercent}% Used`;
             barContainer.appendChild(percentLabel);
+
+            // 3. 【重要】最後に一瞬で中身を入れ替える
+            // storageBox.innerHTML = "" をここで呼ばず、replaceChildrenを使うのが最も効率的です
+            storageBox.replaceChildren(tempContainer);
         }
 
         async function updateInfo() {
@@ -665,6 +720,10 @@ export default async function SettingsApp(content) {
         renderStorage();
 
         const timer = setInterval(() => {
+            if (!document.body.contains(root)) {
+                clearInterval(timer);
+                return;
+            }
             updateInfo();
             renderStorage();
         }, 5000);
@@ -677,4 +736,7 @@ export default async function SettingsApp(content) {
 
 // 起動時および再構築時の背景適用
 applyDesktopBackground();
-window.addEventListener("desktop-ready", applyDesktopBackground);
+if (!window._desktopBackgroundInitialized) {
+    window.addEventListener("desktop-ready", applyDesktopBackground);
+    window._desktopBackgroundInitialized = true;
+}

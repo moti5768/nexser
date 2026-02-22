@@ -3,6 +3,7 @@ import { resolveFS } from "../fs-utils.js";
 import { createWindow, bringToFront, showModalWindow, alertWindow, taskbarButtons } from "../window.js";
 import { buildDesktop } from "../desktop.js";
 import { setupRibbon } from "../ribbon.js";
+import { getFileContent } from "../fs-db.js"; // 追加
 
 function showWarning(root, message) {
     const win = root.closest(".window");
@@ -62,28 +63,33 @@ export default function VideoPlayer(root, options = {}) {
     const saveOverlay = root.querySelector(".save-overlay");
 
     /* =========================
-       表示更新
+       表示更新 (エラー対策修正)
     ========================== */
     function refresh() {
-        if (video.src.startsWith('blob:')) {
+        if (video.src && video.src.startsWith('blob:')) {
             URL.revokeObjectURL(video.src);
+            video.src = "";
         }
 
-        if (dirty && draftVideo) {
-            video.src = URL.createObjectURL(draftVideo);
-        } else if (fileNode?.content) {
-            const content = fileNode.content;
-            if (typeof content === "string") {
-                if (content.startsWith("data:") || /^(https?|file):\/\//i.test(content)) {
-                    video.src = content;
-                } else {
-                    const blob = new Blob([content], { type: "video/mp4" });
-                    video.src = URL.createObjectURL(blob);
-                }
-            } else if (content instanceof File || content instanceof Blob) {
-                video.src = URL.createObjectURL(content);
+        // 表示するコンテンツの選定
+        const content = (dirty && draftVideo) ? draftVideo : fileNode?.content;
+
+        if (!content || content === "__EXTERNAL_DATA__") return;
+
+        // 型チェックを行い、適切な方法でビデオソースを設定
+        if (content instanceof Blob || content instanceof File) {
+            video.src = URL.createObjectURL(content);
+        } else if (typeof content === "string") {
+            if (content.startsWith("data:") || content.startsWith("blob:") || /^(https?|file):\/\//i.test(content)) {
+                video.src = content;
+            } else {
+                // 生の文字列データの場合はBlob化
+                const blob = new Blob([content], { type: "video/mp4" });
+                video.src = URL.createObjectURL(blob);
             }
         }
+
+        if (video.src) video.load();
     }
     refresh();
 
@@ -146,42 +152,58 @@ export default function VideoPlayer(root, options = {}) {
 
         const treatAsNew = !fileNode || (filePath && filePath.toLowerCase().endsWith("videoplayer.app"));
 
-        // 保存開始時のUIフィードバック
         saveOverlay.style.display = "flex";
         await new Promise(r => setTimeout(r, 100)); // 描画待ち
 
         try {
-            /* 上書き保存 */
+            /* --- 1. 保存する実データの準備とサイズ計算 --- */
+            const dataToSave = treatAsNew ? draftVideo : (draftVideo || fileNode?.content);
+            if (!dataToSave) throw new Error("保存するデータがありません");
+
+            // Blob/FileならDataURLに変換
+            const encodedContent = (dataToSave instanceof File || dataToSave instanceof Blob)
+                ? await blobToDataURL(dataToSave)
+                : dataToSave;
+
+            // 【ここが重要】Base64(DataURL)から実際のバイト数を計算
+            let actualSize = 0;
+            if (typeof encodedContent === "string" && encodedContent.startsWith("data:")) {
+                const base64Part = encodedContent.split(",")[1] || "";
+                actualSize = Math.floor((base64Part.length * 3) / 4) - (base64Part.endsWith("==") ? 2 : base64Part.endsWith("=") ? 1 : 0);
+            } else if (typeof encodedContent === "string") {
+                actualSize = new TextEncoder().encode(encodedContent).length;
+            }
+
+            /* --- 2. 上書き保存 --- */
             if (!treatAsNew) {
                 if (!dirty) {
                     saveOverlay.style.display = "none";
                     updateTitle();
                     return;
                 }
-                const dataToSave = draftVideo || fileNode?.content;
-                if (!dataToSave) throw new Error("保存するデータがありません");
 
-                fileNode.content = (dataToSave instanceof File || dataToSave instanceof Blob)
-                    ? await blobToDataURL(dataToSave)
-                    : dataToSave;
+                // contentとsizeを同時に更新
+                fileNode.content = encodedContent;
+                fileNode.size = actualSize; // ★サイズを明示的にセット
 
                 dirty = false;
                 draftVideo = null;
                 updateTitle();
                 buildDesktop();
                 window.dispatchEvent(new Event("fs-updated"));
+                refresh();
                 saveOverlay.style.display = "none";
                 return;
             }
 
-            /* 新規保存 (ImageViewerスタイルのプロンプト) */
+            /* --- 3. 新規保存 --- */
             let finalName = baseTitle;
             let idx = 1;
             while (desktop[finalName]) {
                 finalName = baseTitle.replace(/\.(mp4|webm|ogg)$/i, "") + ` (${idx++}).mp4`;
             }
 
-            saveOverlay.style.display = "none"; // ダイアログ表示前に隠す
+            saveOverlay.style.display = "none";
             const name = await askFileName(finalName);
             if (!name) {
                 updateTitle();
@@ -194,35 +216,29 @@ export default function VideoPlayer(root, options = {}) {
                 return;
             }
 
-            saveOverlay.style.display = "flex"; // エンコード開始前に再表示
+            saveOverlay.style.display = "flex";
             await new Promise(r => setTimeout(r, 50));
 
-            const encodedContent = (draftVideo instanceof Blob) ? await blobToDataURL(draftVideo) : draftVideo;
-
+            // 新規作成時も size を含める
             desktop[finalName] = {
                 type: "file",
-                content: encodedContent
+                content: encodedContent,
+                size: actualSize // ★ここがエクスプローラーの表示に使われる
             };
 
             const newFilePath = `Desktop/${finalName}`;
             buildDesktop();
             window.dispatchEvent(new Event("fs-updated"));
 
-            /* ウィンドウ差し替えと後始末 (ImageViewer完全互換) */
+            /* ウィンドウ差し替えロジック (変更なし) */
             if (win) {
                 const oldWin = win;
                 const oldRoot = root;
                 const oldBtn = oldWin._taskbarBtn;
-
                 const newRoot = createWindow(finalName, { width: 600, height: 450 });
-
-                // DOMの直接置換
                 oldWin.parentElement.replaceChild(newRoot.parentElement, oldRoot.parentElement);
-
-                // 新しいインスタンスの初期化
                 VideoPlayer(newRoot, { path: newFilePath });
 
-                // タスクバーの整合性維持
                 if (oldBtn && Array.isArray(taskbarButtons)) {
                     oldBtn.remove();
                     const i = taskbarButtons.indexOf(oldBtn);
@@ -258,7 +274,6 @@ export default function VideoPlayer(root, options = {}) {
                 ]
             });
 
-            // クラス名ベースの要素取得・生成ロジック
             let promptInput = content.querySelector(".modal-prompt-input");
             if (!promptInput) {
                 promptInput = document.createElement("input");
@@ -273,9 +288,6 @@ export default function VideoPlayer(root, options = {}) {
         });
     }
 
-    /* =========================
-       メニュー・終了処理
-    ========================== */
     if (win) {
         const ribbonMenus = [{
             title: "File",
@@ -288,27 +300,28 @@ export default function VideoPlayer(root, options = {}) {
     }
 
     const closeBtn = win?.querySelector(".close-btn");
-
     function closeWindow() {
-        win.remove();
+        if (closeBtn) {
+            // すでに dirty は false になっているので、再入防止のため
+            // そのまま標準の閉じる処理が実行されます
+            closeBtn.click();
+        } else {
+            win.remove();
+        }
     }
 
     function requestClose() {
-        if (!dirty) {
-            closeWindow();
-            return;
-        }
-
-        // 閉じる前に確認。ImageViewerと同じくstopImmediatePropagationのためにキャプチャで呼ぶ
+        if (!dirty) { closeWindow(); return; }
         showConfirm(root, "変更されたビデオが保存されていません。\n保存しますか？",
             async () => {
                 await save();
-                closeWindow();
+                // save() の中で新しいウィンドウに差し替わらない場合のみ閉じる
+                if (document.body.contains(win)) closeWindow();
             },
             () => {
-                dirty = false;
+                dirty = false; // フラグを落とす
                 updateTitle();
-                closeWindow();
+                closeWindow(); // これでタスクバーも一緒に消える
             }
         );
     }
@@ -316,12 +329,12 @@ export default function VideoPlayer(root, options = {}) {
     closeBtn?.addEventListener("click", e => {
         if (!dirty) return;
         e.preventDefault();
-        e.stopImmediatePropagation(); // 他の終了イベントを遮断
+        e.stopImmediatePropagation();
         requestClose();
-    }, true); // キャプチャフェーズ指定
+    }, true);
 
     /* =========================
-       ユーティリティ
+       ユーティリティ & 初期化
     ========================== */
     async function blobToDataURL(blob) {
         return new Promise((resolve, reject) => {
@@ -331,4 +344,16 @@ export default function VideoPlayer(root, options = {}) {
             reader.readAsDataURL(blob);
         });
     }
+
+    async function init() {
+        if (filePath && fileNode) {
+            // もしデータが外部にあるなら事前に読み込んでおく
+            if (fileNode.content === "__EXTERNAL_DATA__") {
+                fileNode.content = await getFileContent(filePath);
+            }
+            // 実際のビデオ設定ロジックは refresh が持っているので、それを呼ぶだけでOK
+            refresh();
+        }
+    }
+    init();
 }

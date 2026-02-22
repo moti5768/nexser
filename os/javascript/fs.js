@@ -1,5 +1,5 @@
 // fs.js
-import { saveFS, loadFS } from "./fs-db.js";
+import { saveFS, loadFS, getFileContent } from "./fs-db.js";
 
 let saveTimer = null;
 const PROTECTED_KEYS = ["type", "entry", "singleton", "shell", "target", "name"];
@@ -74,12 +74,19 @@ export let FS = {
 // 自動保存
 let isSaving = false;
 async function scheduleSave() {
-    if (saveTimer || isSaving) return; // 保存中もスキップして保護
+    if (saveTimer || isSaving) return;
     saveTimer = setTimeout(async () => {
         saveTimer = null;
         isSaving = true;
         try {
-            await saveFS(FS);
+            // プロキシを解除して純粋なオブジェクトにする
+            const rawFS = JSON.parse(JSON.stringify(FS));
+            // もしくは、循環参照がないことが確実なら 
+            // const snapshot = structuredClone(rawFS); 
+
+            await saveFS(rawFS);
+        } catch (e) {
+            console.error("[FS] Snapshot failed:", e);
         } finally {
             isSaving = false;
         }
@@ -87,23 +94,31 @@ async function scheduleSave() {
 }
 
 // Proxy 化（再帰的）
-function wrapProxy(obj) {
+function wrapProxy(obj, path = "") { // path 引数を追加して自分の場所を把握させる
     if (!obj || typeof obj !== "object") return obj;
 
     return new Proxy(obj, {
         get(target, prop) {
             const value = target[prop];
-            return wrapProxy(value);
-        },
-        // --- 【修正】書き込み保護 ---
-        set(target, prop, value) {
-            // プロパティが保護リストに含まれ、かつ既にオブジェクトに存在する場合のみ変更を拒否
-            if (PROTECTED_KEYS.includes(prop) && Object.prototype.hasOwnProperty.call(target, prop)) {
-                console.warn(`[FS Guard] システム予約プロパティ '${prop}' は保護されているため変更できません。BSODを回避しました。`);
-                return true; // 処理をスキップして終了（呼び出し側にエラーは投げない）
+            const currentPath = path ? `${path}/${prop}` : prop;
+
+            // --- 【改善点】外部データフラグの自動検知 ---
+            if (prop === "content" && value === "__EXTERNAL_DATA__") {
+                // ProxyのGETは同期処理のため、ここでawaitはできない。
+                // 代わりに「データが必要な場合は getFileContent(path) を呼んでね」という
+                // 警告を出すか、Promiseを返すように設計変更の余地を作る。
+                console.info(`[FS] 大容量データへのアクセスを検知: ${path}`);
             }
 
-            target[prop] = wrapProxy(value);
+            return wrapProxy(value, currentPath);
+        },
+        set(target, prop, value) {
+            if (PROTECTED_KEYS.includes(prop) && Object.prototype.hasOwnProperty.call(target, prop)) {
+                console.warn(`[FS Guard] 保護プロパティにつき変更拒否`);
+                return true;
+            }
+
+            target[prop] = wrapProxy(value, path ? `${path}/${prop}` : prop);
             scheduleSave();
             return true;
         },
@@ -123,14 +138,26 @@ function wrapProxy(obj) {
 }
 
 // FS 初期化
+// fs.js の initFS を以下のように書き換えてください
 export async function initFS() {
     const saved = await loadFS();
     if (saved) {
-        // 保存されたデータも Proxy を通して反映（不正なデータがあればここでブロックされる）
-        Object.assign(FS, wrapProxy(saved));
-        console.log("FS loaded from DB and protected.");
+        isSaving = true; // 復元中の自動保存をロック
+        try {
+            // 既存の FS の中身をリセット（保護キー以外）
+            for (const key in FS) {
+                if (!PROTECTED_KEYS.includes(key)) delete FS[key];
+            }
+            // 保存データを流し込む（Proxy経由なので自動でラップされます）
+            for (const key in saved) {
+                FS[key] = saved[key];
+            }
+            console.log("[FS] System restored safely.");
+        } finally {
+            isSaving = false; // ロック解除
+        }
     }
 }
 
 // FS を Proxy 化
-FS = wrapProxy(FS);
+FS = wrapProxy(FS, "");

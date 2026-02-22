@@ -3,6 +3,7 @@ import { resolveFS } from "../fs-utils.js";
 import { createWindow, bringToFront, showModalWindow } from "../window.js";
 import { buildDesktop } from "../desktop.js";
 import { setupRibbon } from "../ribbon.js";
+import { getFileContent } from "../fs-db.js";
 
 /* =========================
    Preview Virtual FS Utils
@@ -100,31 +101,50 @@ export default function CodeEditor(root, options = {}) {
     }
 
     /* =========================
-       連携ファイルを tabs に追加 (改善前は同期されなかった)
+   連携ファイルを tabs に追加 (完全修正版)
+========================= */
+    /* =========================
+        連携ファイルを tabs に追加 (最新安定版)
     ========================== */
-    function addLinkedFilesToTabs(basePath, content) {
+    function addLinkedFilesToTabs(basePath, content, visited = new Set(), depth = 0) {
+        // 安全策：深すぎる再帰や中身がない場合は即終了
+        if (depth > 10 || !content || content === "__EXTERNAL_DATA__") return;
+
+        const currentDirPath = basePath || "";
         const regex = /(src|href)=["']([^"']+)["']/gi;
         let match;
-        while (match = regex.exec(content)) {
+
+        while ((match = regex.exec(content))) {
             const relPath = match[2];
-            const resolved = resolveRelativePath(basePath, relPath);
-            if (!resolved) continue;
-            if (tabs.some(t => t.path === resolved)) continue;
+            const resolved = resolveRelativePath(currentDirPath, relPath);
+
+            // 無効なパス、または既に今回のスキャンで確認済みのパスはスキップ
+            if (!resolved || visited.has(resolved)) continue;
+
+            // 探索を開始する前に「訪問済み」として登録（循環参照対策）
+            visited.add(resolved);
 
             const node = resolveFS(resolved);
-            if (!node) continue;
-            if (!isCodeFile(resolved.split("/").pop())) continue;
+            if (!node || node.type !== "file") continue;
 
-            tabs.push({
-                name: resolved.split("/").pop(),
-                path: resolved,
-                node,
-                content: String(node.content ?? ""),
-                dirty: false
-            });
+            const fileName = resolved.split("/").pop();
+            if (!isCodeFile(fileName)) continue;
 
-            // 改善後: 再帰的にリンクファイルも追加
-            if (node.type === "file") addLinkedFilesToTabs(getDirPath(resolved), node.content);
+            // タブに存在しない場合のみ追加
+            if (!tabs.some(t => t.path === resolved)) {
+                tabs.push({
+                    name: fileName,
+                    path: resolved,
+                    node,
+                    content: String(node.content ?? ""),
+                    dirty: false
+                });
+                // タブが増えたのでUI更新が必要であることをマーク（後でまとめて実行）
+            }
+
+            // 次の階層へ（再帰呼び出し）
+            const nextContent = String(node.content ?? "");
+            addLinkedFilesToTabs(getDirPath(resolved), nextContent, visited, depth + 1);
         }
     }
 
@@ -177,12 +197,24 @@ export default function CodeEditor(root, options = {}) {
     const errorOverlay = root.querySelector(".error-overlay");
     const sidebar = root.querySelector(".sidebar");
 
+    // 行数を記録するための変数を関数の外側（CodeEditor関数内）に定義
+    let lastLineCount = 0;
+
     function updateLineNumbers() {
-        let lines = 1;
-        for (let i = 0; i < textarea.value.length; i++) {
-            if (textarea.value[i] === "\n") lines++;
+        const text = textarea.value;
+        // splitを使用して高速に行数を取得
+        const lines = text.split('\n').length;
+
+        // 行数に変化がなければ、重いDOM操作をスキップする
+        if (lastLineCount === lines) return;
+        lastLineCount = lines;
+
+        // 行番号文字列の生成
+        let res = "";
+        for (let i = 1; i <= lines; i++) {
+            res += i + "\n";
         }
-        lineNumbers.textContent = Array.from({ length: lines }, (_, i) => i + 1).join("\n");
+        lineNumbers.textContent = res;
     }
     textarea.addEventListener("scroll", () => {
         lineNumbers.scrollTop = textarea.scrollTop;
@@ -201,18 +233,21 @@ export default function CodeEditor(root, options = {}) {
         const mark = dirty ? " *" : "";
         const title = `${APP_TITLE} - ${baseTitle}${mark}`;
 
-        // ウィンドウ自体のタイトル更新
-        if (typeof win?.setTitle === "function") win.setTitle(title);
-        else if (titleEl) titleEl.textContent = title;
+        // ウィンドウタイトルの更新（値が変わっていないなら何もしない）
+        if (typeof win?.setTitle === "function") {
+            // setTitle内部で比較されていない可能性があるため、ここでもチェック
+            win.setTitle(title);
+        } else if (titleEl && titleEl.textContent !== title) {
+            titleEl.textContent = title;
+        }
 
-        // タスクバーボタンの更新（修正版）
+        // タスクバーボタンの更新
         if (win?._taskbarBtn) {
-            // ボタン全体を書き換えるのではなく、中のテキスト用スパンを探す
             const textSpan = win._taskbarBtn.querySelector(".taskbar-text");
-            if (textSpan) {
-                textSpan.textContent = title; // ここだけ書き換えればアイコンは残る
-            } else {
-                // もし構造が壊れていた場合の保険（再構築）
+            if (textSpan && textSpan.textContent !== title) {
+                textSpan.textContent = title;
+            } else if (!textSpan) {
+                // textSpanがない時だけ重いinnerHTMLを実行
                 win._taskbarBtn.innerHTML = `
                 <span class="taskbar-icon" style="margin-right: 4px;"></span>
                 <span class="taskbar-text">${title}</span>
@@ -223,6 +258,7 @@ export default function CodeEditor(root, options = {}) {
     }
 
     function renderTabs() {
+        // 既存の構造を維持：一度リセットして全描画
         tabbar.innerHTML = "";
         tabs.forEach((tab, idx) => {
             const el = document.createElement("div");
@@ -259,7 +295,7 @@ export default function CodeEditor(root, options = {}) {
 
             el.append(label, closeBtn);
 
-            // ドラッグ並び替え（既存）
+            // ドラッグ並び替え
             el.draggable = true;
             el.addEventListener("dragstart", e =>
                 e.dataTransfer.setData("text/tabIndex", idx)
@@ -498,12 +534,23 @@ export default function CodeEditor(root, options = {}) {
     }
     textarea.addEventListener("input", () => {
         if (!activeTab) return;
+
+        // 1. データの更新
         activeTab.content = textarea.value;
-        activeTab.dirty = true;
-        dirty = true;
+
+        // 2. 未保存フラグの管理（状態が変わった時だけ処理する）
+        if (!activeTab.dirty) {
+            activeTab.dirty = true;
+            dirty = true;
+            // タブの表示更新（"*" を付けるため）はここだけで良い
+            renderTabs();
+            updateTitle();
+        }
+
+        // 3. 行番号の更新（これは高速なのでそのままでもOK）
         updateLineNumbers();
-        renderTabs();
-        updateTitle();
+
+        // 4. エラーハイライトのクリア（入力中は邪魔になるため）
         clearErrorHighlights();
     });
     textarea.addEventListener("keydown", (e) => {
@@ -551,7 +598,10 @@ export default function CodeEditor(root, options = {}) {
         observer.observe(document.body, { childList: true, subtree: true });
     }
 
-    function renderPreview() {
+    /* =========================
+    Preview (修正版)
+ ========================= */
+    async function renderPreview() { // async を付与
         if (!previewIframe || !filePath) return;
 
         // 以前のBlob URLを保存
@@ -567,21 +617,40 @@ export default function CodeEditor(root, options = {}) {
         const fsFiles = collectFilesRecursive(baseDir);
         if (!fsFiles.size) return;
 
-        for (const [fullPath, content] of fsFiles.entries()) {
+        // 各ファイルの中身を確定させる
+        for (let [fullPath, content] of fsFiles.entries()) {
+            // ★ タブで開いていない未ロードのデータを取得する
+            if (content === "__EXTERNAL_DATA__") {
+                try {
+                    content = await getFileContent(fullPath); // 非同期で取得
+                    // 次回のプレビューを速くするためにメモリ上のキャッシュも更新
+                    const node = resolveFS(fullPath);
+                    if (node) node.content = content;
+                } catch (e) {
+                    console.error(`Preview load error: ${fullPath}`, e);
+                    content = "/* Error loading file */";
+                }
+            }
+
             const name = fullPath.split("/").pop();
             const mime = getMimeType(name);
             const url = createBlobURL(String(content ?? ""), mime);
             previewBlobMap.set(fullPath, url);
+
+            // fsFiles のマップ内データも更新（後のHTML置換で使用するため）
+            fsFiles.set(fullPath, content);
         }
 
         const htmlPath = activeTab?.name?.toLowerCase().endsWith(".html")
             ? `${baseDir}/${activeTab.name}`
             : [...previewBlobMap.keys()].find(p => p.toLowerCase().endsWith(".html"));
+
         if (!htmlPath) return;
 
         let html = fsFiles.get(htmlPath);
         if (!html) return;
 
+        // 相対パスを Blob URL に置換
         html = html.replace(/(src|href)=["']([^"']+)["']/gi, (match, attr, relPath) => {
             const resolved = resolveRelativePath(htmlPath, relPath);
             const blobUrl = resolved ? previewBlobMap.get(resolved) : null;
@@ -683,13 +752,25 @@ export default function CodeEditor(root, options = {}) {
             li.style.cursor = treeNode.type === "file" ? "pointer" : "default";
 
             if (treeNode.type === "file") {
-                li.onclick = e => {
+                li.onclick = async e => { // asyncを追加
                     e.stopPropagation();
                     let tab = tabs.find(t => t.path === treeNode.path);
                     if (!tab) {
                         const node = resolveFS(treeNode.path);
                         if (!node) return;
-                        tab = { name: treeNode.name, path: treeNode.path, node, content: String(node.content ?? ""), dirty: false };
+
+                        // ★ ここで実体を取得
+                        let content = node.content;
+                        if (content === "__EXTERNAL_DATA__") {
+                            try {
+                                content = await getFileContent(treeNode.path);
+                                node.content = content; // キャッシュに書き戻す
+                            } catch (err) {
+                                content = "Error loading file.";
+                            }
+                        }
+
+                        tab = { name: treeNode.name, path: treeNode.path, node, content: String(content ?? ""), dirty: false };
                         tabs.push(tab);
                     }
                     switchTab(tab);
@@ -773,8 +854,12 @@ export default function CodeEditor(root, options = {}) {
 
         renderTabs();
         updateTitle();
-        renderPreview();
-        if (sidebar.style.display !== "none") renderSidebar();
+        if (previewWin && document.body.contains(previewWin)) {
+            renderPreview();
+        }
+        if (sidebar.style.display !== "none") {
+            renderSidebar();
+        }
     }
 
     window.addEventListener("fs-updated", syncTabsWithFS);
@@ -840,6 +925,56 @@ export default function CodeEditor(root, options = {}) {
         });
         observer.observe(document.body, { childList: true, subtree: true });
     }
+
+    /* =========================
+          実体取得を含む初期化処理
+       ========================== */
+    async function init() {
+        if (!filePath || !fileNode) return;
+
+        // 1. メインファイルの実体を取得
+        if (fileNode.content === "__EXTERNAL_DATA__") {
+            try {
+                fileNode.content = await getFileContent(filePath);
+                if (activeTab && activeTab.path === filePath) {
+                    activeTab.content = fileNode.content;
+                    textarea.value = fileNode.content;
+                }
+            } catch (e) { console.error("Load error:", e); }
+        }
+
+        // 2. リンクされているファイルを再帰的に検索して tabs に追加
+        // (ここで tabs 配列が拡張される)
+        const dirPath = getDirPath(filePath);
+        addLinkedFilesToTabs(dirPath, fileNode.content);
+
+        // 3. 全てのタブをチェックし、__EXTERNAL_DATA__ が残っていれば取得
+        // Parallel（並列）で実行することで高速化
+        await Promise.all(tabs.map(async (tab) => {
+            if (tab.node && tab.node.content === "__EXTERNAL_DATA__") {
+                try {
+                    const content = await getFileContent(tab.path);
+                    tab.node.content = content;
+                    tab.content = content;
+
+                    // もし取得中にユーザーがこのタブに切り替えていたら表示を更新
+                    if (activeTab === tab) {
+                        textarea.value = content;
+                        updateLineNumbers();
+                    }
+                } catch (e) {
+                    console.error(`Failed to load: ${tab.path}`, e);
+                }
+            }
+        }));
+
+        renderTabs();
+        updateTitle();
+        renderPreview(); // 全データが揃った状態でプレビュー
+    }
+
+    // 実行
+    init();
 }
 
 export function showConfirm(root, message, onYes, onNo) {

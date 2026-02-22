@@ -3,6 +3,7 @@ import { resolveFS } from "../fs-utils.js";
 import { createWindow, bringToFront, showModalWindow, alertWindow, taskbarButtons } from "../window.js";
 import { buildDesktop } from "../desktop.js";
 import { setupRibbon } from "../ribbon.js";
+import { getFileContent } from "../fs-db.js";
 
 function showWarning(root, message) {
     const win = root.closest(".window");
@@ -451,4 +452,21 @@ export default function ImageViewer(root, options = {}) {
             reader.readAsDataURL(blob);
         });
     }
+    async function init() {
+        if (filePath && fileNode) {
+            let content = fileNode.content;
+
+            // ★ ここが重要：外部データなら取得する
+            if (content === "__EXTERNAL_DATA__") {
+                content = await getFileContent(filePath);
+                // メモリ上でも展開しておく
+                fileNode.content = content;
+            }
+
+            if (content) {
+                img.src = content;
+            }
+        }
+    }
+    init(); // 実行
 }

@@ -338,7 +338,7 @@ export default async function Explorer(root, options = {}) {
     // ------------------------
     // 描画
     // ------------------------
-    const render = (path) => {
+    const render = async (path) => {
         currentPath = path;
         updateTitle(currentPath);
 
@@ -563,6 +563,7 @@ export default async function Explorer(root, options = {}) {
         for (const name in folder) {
             if (name === "type") continue;
             const itemData = folder[name];
+            const childPath = currentPath ? `${currentPath}/${name}` : name;
 
             const item = document.createElement("div");
             // viewMode に応じたクラスを確実に付与
@@ -578,7 +579,8 @@ export default async function Explorer(root, options = {}) {
                     <div class="item-name-label">${name}</div>
                 `;
             } else if (viewMode === "details") {
-                const size = formatSize(calcNodeSize(itemData));
+                const sizeValue = await calcNodeSize(itemData, childPath);
+                const size = formatSize(sizeValue);
 
                 // type プロパティに応じて表示名を細かく分岐
                 let typeLabel = "ファイル";
@@ -616,7 +618,7 @@ export default async function Explorer(root, options = {}) {
             listContainer.appendChild(item);
 
             // --- 以下のイベントロジックは一切変更していません ---
-            item.addEventListener("click", e => {
+            item.addEventListener("click", async e => {
                 e.stopPropagation();
                 globalSelected.item?.classList.remove("selected");
                 item.classList.add("selected");
@@ -626,7 +628,7 @@ export default async function Explorer(root, options = {}) {
 
                 const node = resolveFS(currentPath)?.[name];
                 if (!node) return;
-                const size = calcNodeSize(node);
+                const size = await calcNodeSize(node, `${currentPath}/${name}`);
 
                 const statusBar = win?._statusBar;
                 if (statusBar) {
@@ -692,7 +694,7 @@ export default async function Explorer(root, options = {}) {
 
                 let currentIndex = items.findIndex(el => el === globalSelected.item);
 
-                function selectItem(index) {
+                async function selectItem(index) {
                     globalSelected.item?.classList.remove("selected");
                     const items = listContainer.querySelectorAll(".explorer-item");
                     const item = items[index];
@@ -708,7 +710,7 @@ export default async function Explorer(root, options = {}) {
 
                     const statusBar = win?._statusBar;
                     if (statusBar && node) {
-                        const size = calcNodeSize(node);
+                        const size = await calcNodeSize(node, `${currentPath}/${name}`);
                         statusBar.textContent =
                             `${name} | ${node.type} | ${formatSize(size)}`;
                     }
@@ -858,31 +860,38 @@ export default async function Explorer(root, options = {}) {
     }
 }
 
-function calcNodeSize(node) {
+/**
+ * 物理的な占有量をシミュレートして計算する
+ */
+export async function calcNodeSize(node, path = "") {
     if (!node) return 0;
 
     if (node.type === "file") {
-        const item = node.content;
-        if (!item) return 0;
+        // 1. 記録されたサイズがあれば、それをそのまま返す（DBアクセス不要）
+        if (typeof node.size === "number") return node.size;
 
-        if (item instanceof Blob) {
-            return item.size;
+        // 2. メモリ上に content があれば計算する
+        if (node.content && node.content !== "__EXTERNAL_DATA__") {
+            return new TextEncoder().encode(node.content).length;
         }
-
-        // 文字列またはオブジェクトを一貫した基準（UTF-8）で計算
-        const stringToMeasure = (typeof item === 'string')
-            ? item
-            : JSON.stringify(item);
-
-        // TextEncoderを使うことで、実際の保存バイト数に近づける
-        return new TextEncoder().encode(stringToMeasure).length;
+        return 0;
     }
 
-    // フォルダの再帰計算
-    if (node.type === "folder" || (!node.type && typeof node === "object")) {
-        return Object.keys(node).reduce((total, key) => {
-            return key === "type" ? total : total + calcNodeSize(node[key]);
-        }, 0);
+    // フォルダの場合（再帰的に計算）
+    if (node.type === "folder") {
+        const keys = Object.keys(node).filter(key =>
+            !["type", "name", "size", "content", "entry", "singleton"].includes(key)
+        );
+
+        // 全ての子要素のサイズを並列で計算
+        const sizes = await Promise.all(keys.map(key => {
+            const childNode = node[key];
+            if (!childNode) return 0; // 安全策
+            const childPath = path ? `${path}/${key}` : key;
+            return calcNodeSize(childNode, childPath);
+        }));
+
+        return sizes.reduce((total, s) => total + s, 0);
     }
 
     return 0;
