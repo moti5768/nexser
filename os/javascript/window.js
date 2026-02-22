@@ -585,6 +585,10 @@ ${!options.hideStatus ? `
 
         function startResize(e, handle) {
             if (maximized) return;
+
+            // マウスの場合は左クリック(0)のみ反応させる。タッチ(pointerType === 'touch')は常に通す
+            if (e.pointerType === "mouse" && e.button !== 0) return;
+
             e.stopPropagation();
 
             resizing = true;
@@ -680,9 +684,12 @@ ${!options.hideStatus ? `
                 preview.style.height = newHeight + "px";
             };
 
-            // ★改善：リサイズ解除用の処理
             const endResize = async () => {
-                document.removeEventListener("mousemove", onResizeMove);
+                // Pointerイベントの解除
+                document.removeEventListener("pointermove", onResizeMove);
+                document.removeEventListener("pointerup", endResize, { capture: true });
+                document.removeEventListener("pointercancel", endResize, { capture: true });
+
                 if (!resizing) return;
 
                 document.querySelectorAll(".window").forEach(win => win.style.pointerEvents = "auto");
@@ -719,13 +726,19 @@ ${!options.hideStatus ? `
                 scheduleRefreshTopWindow();
             };
 
-            document.addEventListener("mousemove", onResizeMove);
-            document.addEventListener("mouseup", endResize, { capture: true, once: true });
+            // 最新版：Pointer Events を使用
+            document.addEventListener("pointermove", onResizeMove);
+            document.addEventListener("pointerup", endResize, { capture: true, once: true });
+            document.addEventListener("pointercancel", endResize, { capture: true, once: true });
             window.addEventListener("blur", endResize, { once: true });
         }
 
         directions.forEach(dir =>
-            handles[dir].addEventListener("mousedown", e => startResize(e, dir))
+            handles[dir].addEventListener("pointerdown", e => {
+                // マウスの場合は左クリック(0)のみ反応させる。タッチは常に通す
+                if (e.pointerType === "mouse" && e.button !== 0) return;
+                startResize(e, dir);
+            })
         );
 
         scheduleRefreshTopWindow();
