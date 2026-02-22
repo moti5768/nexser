@@ -34,7 +34,8 @@ export let FS = {
             "TaskManager.app": { type: "app", name: "Task Manager", entry: "./apps/taskmanager.js", singleton: true },
             "Settings.app": { type: "app", entry: "./apps/settings.js", singleton: true },
             "Explorer.app": { type: "app", entry: "./apps/explorer.js", shell: true },
-            "Soundsplayer.app": { type: "app", entry: "./apps/soundplayer.js" }
+            "Soundsplayer.app": { type: "app", entry: "./apps/soundplayer.js" },
+            "AudioPlayer.app": { type: "app", entry: "./apps/audioplayer.js" }
         },
         Accessories: {
             type: "folder",

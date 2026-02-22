@@ -28,9 +28,12 @@ export const FILE_ASSOCIATIONS = {
     ".mov": "Programs/Applications/VideoPlayer.app",
     ".mkv": "Programs/Applications/VideoPlayer.app",
 
-    // audio (fs.js の Soundsplayer.app に対応)
-    ".mp3": "Programs/Applications/Soundsplayer.app",
-    ".wav": "Programs/Applications/Soundsplayer.app"
+    // audio (再生バー付きの新しい AudioPlayer.app に対応)
+    ".mp3": "Programs/Applications/AudioPlayer.app",
+    ".wav": "Programs/Applications/AudioPlayer.app",
+    ".m4a": "Programs/Applications/AudioPlayer.app",
+    ".flac": "Programs/Applications/AudioPlayer.app",
+    ".aac": "Programs/Applications/AudioPlayer.app"
 };
 
 
@@ -66,7 +69,7 @@ export function getIcon(name, node) {
         const lowerName = name.toLowerCase();
         const entryPath = (node.entry || "").toLowerCase(); // 実行ファイルのパス
 
-        // 名前かパスにキーワードが含まれているか (維持)
+        // 名前かパスにキーワードが含まれているか
         if (lowerName.includes("explorer") || entryPath.includes("explorer")) return "🔍";
         if (lowerName.includes("paint") || entryPath.includes("paint")) return "🎨";
         if (lowerName.includes("texteditor") || lowerName.includes("notepad") || entryPath.includes("texteditor")) return "📝";
@@ -74,8 +77,9 @@ export function getIcon(name, node) {
         if (lowerName.includes("image") || entryPath.includes("imageviewer")) return "🖼️";
         if (lowerName.includes("video") || entryPath.includes("videoplayer")) return "🎬";
 
-        // fs.js に基づく追加判定
-        if (lowerName.includes("sound") || entryPath.includes("soundplayer")) return "🎵";
+        // オーディオ関連の判定 (AudioPlayer / Soundsplayer)
+        if (lowerName.includes("audio") || lowerName.includes("sound") || entryPath.includes("player")) return "🎵";
+
         if (lowerName.includes("calc") || entryPath.includes("calc")) return "🧮";
         if (lowerName.includes("settings") || entryPath.includes("settings")) return "⚙️";
         if (lowerName.includes("terminal") || entryPath.includes("terminal")) return "📟";
@@ -86,16 +90,15 @@ export function getIcon(name, node) {
     }
 
     // 3. 拡張子による判定（ファイルの場合）
-    const dotIndex = name.lastIndexOf(".");
-    const ext = dotIndex !== -1 ? name.slice(dotIndex).toLowerCase() : "";
+    const ext = getExtension(name);
 
-    // カテゴリ定義 (維持しつつ、音声とシステムを追加)
+    // カテゴリ定義
     const categories = {
         text: [".txt", ".md"],
         code: [".js", ".ts", ".json", ".css", ".scss", ".vue", ".html"],
         image: [".png", ".jpg", ".jpeg", ".gif"],
         video: [".mp4", ".webm", ".ogg", ".mov", ".mkv"],
-        audio: [".mp3", ".wav"], // 追加
+        audio: [".mp3", ".wav", ".m4a", ".flac", ".aac"],
         system: [".cfg"] // AUTOBOOT.CFG 等
     };
 

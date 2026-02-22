@@ -145,22 +145,20 @@ export default function main(content, options) {
     };
 
     // 再生・停止・削除ロジック
-    listEl.onclick = async (e) => { // async化
+    listEl.onclick = async (e) => {
         const name = e.target.dataset.name;
 
         // 再生ボタン
         if (e.target.classList.contains("play-btn")) {
             if (currentAudio) {
                 currentAudio.pause();
-                currentAudio.currentTime = 0;
+                currentAudio.src = ""; // リソース解放
             }
 
             let fileNode = FS.Programs.Music[name];
             let audioData = fileNode.content;
 
-            // --- 重要: 分離保存対応 ---
             if (audioData === "__EXTERNAL_DATA__") {
-                // files ストアから実体を取得
                 audioData = await getFileContent(`Programs/Music/${name}`);
             }
 
@@ -170,12 +168,10 @@ export default function main(content, options) {
             }
 
             currentAudio = new Audio(audioData);
-
-            // 再生終了時のクリーンアップ
             currentAudio.onended = () => { currentAudio = null; };
             currentAudio.play().catch(err => {
                 console.error("Playback error:", err);
-                alertWindow("再生に失敗しました。ファイルが破損している可能性があります。");
+                alertWindow("再生に失敗しました。");
             });
         }
 
@@ -183,7 +179,7 @@ export default function main(content, options) {
         if (e.target.classList.contains("stop-btn")) {
             if (currentAudio) {
                 currentAudio.pause();
-                currentAudio.currentTime = 0;
+                currentAudio.src = "";
                 currentAudio = null;
             }
         }
@@ -191,12 +187,10 @@ export default function main(content, options) {
         // 削除ボタン
         if (e.target.classList.contains("delete-btn")) {
             if (!name) return;
-
             if (currentAudio) {
                 currentAudio.pause();
                 currentAudio = null;
             }
-
             delete FS.Programs.Music[name];
             let config = JSON.parse(FS.System["SoundConfig.json"].content || "{}");
             let changed = false;
@@ -207,6 +201,19 @@ export default function main(content, options) {
             refresh();
         }
     };
+
+    // --- ウィンドウが閉じられた際のクリーンアップ ---
+    const observer = new MutationObserver(() => {
+        if (!document.body.contains(container)) {
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.src = ""; // メモリ解放
+                currentAudio = null;
+            }
+            observer.disconnect();
+        }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
 
     refresh();
 }
