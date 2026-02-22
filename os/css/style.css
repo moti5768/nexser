@@ -451,10 +451,6 @@ body {
     color: white;
 }
 
-
-
-
-
 /* ===== Window ===== */
 
 .window {
@@ -535,6 +531,7 @@ select {
 }
 
 .title-bar {
+    touch-action: none;
     background: #444;
     color: white;
     font-size: 12px;
@@ -556,6 +553,7 @@ select {
 }
 
 .window .title-bar {
+    touch-action: none;
     display: flex;
     align-items: center;
     height: 24px;

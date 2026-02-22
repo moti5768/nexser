@@ -457,12 +457,17 @@ ${!options.hideStatus ? `
         if (!options.disableControls) toggleMaximize();
     });
 
-    titleBar.addEventListener("mousedown", e => {
-        if (e.target.closest(".window-controls") || maximized) return;
+    titleBar.addEventListener("pointerdown", e => {
+        // マウスの場合は左クリック(0)のみ反応させる。タッチは常に通す
+        if (e.pointerType === "mouse" && e.button !== 0) return;
+
+        if (e.target.closest(".window-controls") || e.target.closest(".resize-handle") || maximized) return;
+
         dragging = true;
         dragStarted = false;
         didMove = false;
-        focus();
+        focus(); //
+
         downX = e.clientX;
         downY = e.clientY;
         const rect = w.getBoundingClientRect();
@@ -470,13 +475,14 @@ ${!options.hideStatus ? `
         offsetY = e.clientY - rect.top;
 
         document.body.style.userSelect = "none";
+
         // 他のウィンドウを操作不能にする
         document.querySelectorAll(".window").forEach(win => {
             if (win !== w) win.style.pointerEvents = "none";
         });
 
-        // ドラッグ中のみ動く関数
-        const onMouseMove = (moveEv) => {
+        // ドラッグ中のみ動く関数 (pointermove)
+        const onPointerMove = (moveEv) => {
             if (!dragging) return;
             const taskbar = document.getElementById("taskbar");
             const taskbarTop = taskbar ? taskbar.getBoundingClientRect().top : Infinity;
@@ -489,6 +495,7 @@ ${!options.hideStatus ? `
             const dx = moveEv.clientX - downX;
             const dy = clientY - downY;
 
+            // 閾値を超えたらプレビュー枠を作成
             if (!dragStarted && (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD)) {
                 dragStarted = true;
                 createPreview();
@@ -501,9 +508,9 @@ ${!options.hideStatus ? `
             didMove = true;
         };
 
-        // ★改善：マウスを離した時の解除処理をここで定義
+        // 解除処理 (pointerup / pointercancel)
         const endDrag = async () => {
-            document.removeEventListener("mousemove", onMouseMove);
+            document.removeEventListener("pointermove", onPointerMove);
             window.removeEventListener("blur", endDrag);
             if (!dragging) return;
 
@@ -532,17 +539,19 @@ ${!options.hideStatus ? `
                         x: Math.round(parseFloat(w.style.left) || 0),
                         y: Math.round(parseFloat(w.style.top) || 0)
                     };
-                    await saveWindowSize(sizeKey, data);
+                    await saveWindowSize(sizeKey, data); //
                 }
             }
             didMove = false;
             window.removeEventListener("blur", endDrag);
-            scheduleRefreshTopWindow();
+            scheduleRefreshTopWindow(); //
         };
 
-        document.addEventListener("mousemove", onMouseMove);
-        document.addEventListener("mouseup", endDrag, { capture: true, once: true });
-        window.addEventListener("blur", endDrag, { once: true }); // ブラウザ外に逃げた時用
+        // リスナーを pointer 系に変更
+        document.addEventListener("pointermove", onPointerMove);
+        document.addEventListener("pointerup", endDrag, { capture: true, once: true });
+        document.addEventListener("pointercancel", endDrag, { capture: true, once: true }); // タッチ中断用
+        window.addEventListener("blur", endDrag, { once: true });
     });
 
     /* ===== リサイズ ===== */
@@ -562,14 +571,14 @@ ${!options.hideStatus ? `
 
         const setHandle = (h, pos) => Object.assign(h.style, pos);
 
-        setHandle(handles.top, { top: "0", left: "6px", right: "6px", height: "6px", cursor: "ns-resize" });
-        setHandle(handles.bottom, { bottom: "0", left: "6px", right: "6px", height: "6px", cursor: "ns-resize" });
-        setHandle(handles.left, { left: "0", top: "6px", bottom: "6px", width: "6px", cursor: "ew-resize" });
-        setHandle(handles.right, { right: "0", top: "6px", bottom: "6px", width: "6px", cursor: "ew-resize" });
-        setHandle(handles.topLeft, { left: "0", top: "0", width: "12px", height: "12px", cursor: "nwse-resize" });
-        setHandle(handles.topRight, { right: "0", top: "0", width: "12px", height: "12px", cursor: "nesw-resize" });
-        setHandle(handles.bottomLeft, { left: "0", bottom: "0", width: "12px", height: "12px", cursor: "nesw-resize" });
-        setHandle(handles.bottomRight, { right: "0", bottom: "0", width: "12px", height: "12px", cursor: "nwse-resize" });
+        setHandle(handles.top, { top: "0", left: "3px", right: "3px", height: "3px", cursor: "ns-resize" });
+        setHandle(handles.bottom, { bottom: "0", left: "3px", right: "3px", height: "3px", cursor: "ns-resize" });
+        setHandle(handles.left, { left: "0", top: "3px", bottom: "3px", width: "3px", cursor: "ew-resize" });
+        setHandle(handles.right, { right: "0", top: "3px", bottom: "3px", width: "3px", cursor: "ew-resize" });
+        setHandle(handles.topLeft, { left: "0", top: "0", width: "6px", height: "6px", cursor: "nwse-resize" });
+        setHandle(handles.topRight, { right: "0", top: "0", width: "6px", height: "6px", cursor: "nesw-resize" });
+        setHandle(handles.bottomLeft, { left: "0", bottom: "0", width: "6px", height: "6px", cursor: "nesw-resize" });
+        setHandle(handles.bottomRight, { right: "0", bottom: "0", width: "6px", height: "6px", cursor: "nwse-resize" });
 
         let resizing = false, currentHandle, startX, startY, startRect;
         let didResize = false;
