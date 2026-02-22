@@ -454,6 +454,7 @@ body {
 /* ===== Window ===== */
 
 .window {
+    touch-action: none;
     position: absolute;
     background: #eee;
     border: 2px solid #C3C7CB;

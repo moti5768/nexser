@@ -450,16 +450,30 @@ ${!options.hideStatus ? `
     let didMove = false;
     let offsetX = 0, offsetY = 0, downX = 0, downY = 0;
     const DRAG_THRESHOLD = 3;
-
-    titleBar.addEventListener("dblclick", e => {
-        if (e.target.closest(".window-controls")) return;
-        e.stopPropagation();
-        if (!options.disableControls) toggleMaximize();
-    });
+    let lastTap = 0;
 
     titleBar.addEventListener("pointerdown", e => {
         // マウスの場合は左クリック(0)のみ反応させる。タッチは常に通す
         if (e.pointerType === "mouse" && e.button !== 0) return;
+
+        // --- ダブルタップ / ダブルクリック 判定 ---
+        const now = Date.now();
+        const DOUBLE_TAP_DELAY = 300; // 300ms 以内ならダブルとみなす
+
+        if (now - lastTap < DOUBLE_TAP_DELAY) {
+            // ダブル操作確定時の処理
+            if (e.target.closest(".window-controls")) return;
+            e.stopPropagation();
+
+            if (!options.disableControls) {
+                toggleMaximize();
+            }
+
+            // ダブルタップ成功時は lastTap をリセットして3連タップを防止
+            lastTap = 0;
+            return;
+        }
+        lastTap = now;
 
         if (e.target.closest(".window-controls") || e.target.closest(".resize-handle") || maximized) return;
 
