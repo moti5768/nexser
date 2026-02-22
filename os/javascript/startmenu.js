@@ -4,7 +4,7 @@ import { launch, logOff } from "./kernel.js";
 import { getRecent, addRecent } from "./recent.js";
 import { resolveFS } from "./fs-utils.js";
 import { openDB } from "./db.js";
-import { resolveAppByPath } from "./file-associations.js";
+import { resolveAppByPath, getIcon } from "./file-associations.js";
 import { basename } from "./fs-utils.js";
 import { hasExtension } from "./apps/explorer.js";
 
@@ -76,6 +76,12 @@ function createMenu(folder, basePath, menuRoot) {
         const node = folder[name];
         const item = document.createElement("div");
         item.className = "start-item";
+
+        const iconSpan = document.createElement("span");
+        iconSpan.className = "icon";
+        iconSpan.style.marginRight = "8px"; // アイコンと文字の間に少し隙間を
+        iconSpan.textContent = getIcon(name, node);
+        item.appendChild(iconSpan);
 
         // テキストラベルの作成
         const textSpan = document.createElement("span");

@@ -341,22 +341,46 @@ body {
 /* メニュー項目 */
 .start-item {
     position: relative;
-    padding: 4px 10px;
+    padding: 0 8px;
+    /* 上下 padding を 0 にして height で制御 */
+    height: 24px;
+    /* 20pxだと絵文字がはみ出しやすいため、少しだけ広げると安定します */
     cursor: default;
     white-space: nowrap;
     background: transparent;
     color: black;
+    display: flex;
+    align-items: center;
+    /* これで垂直中央に揃える */
+    box-sizing: border-box;
+}
+
+.start-item .icon {
+    flex-shrink: 0;
+    width: 20px;
+    margin-right: 8px;
+    margin-top: 5px;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    /* アイコン内でも中央揃え */
+    font-size: 16px;
+    line-height: 1;
+    /* 行間による押し下げを防止 */
+    transform: translateY(1px);
+    /* 【重要】絵文字は少し上に浮く傾向があるため、手動で微調整 */
 }
 
 .start-item>.text {
+    flex: 1;
     display: block;
-    width: 100%;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     padding-right: 16px;
-    /* 矢印の余白 */
     box-sizing: border-box;
+    line-height: 24px;
+    /* 親の height と合わせると垂直中央が安定します */
 }
 
 .start-item .empty {

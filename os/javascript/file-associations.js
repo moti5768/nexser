@@ -60,25 +60,24 @@ export function resolveAppByPath(path) {
  * ファイルやアプリのアイコンを判定する関数
  */
 export function getIcon(name, node) {
-    // 1. 基本型（フォルダ・リンク）
     if (node.type === "folder") return "📁";
     if (node.type === "link") return "🔗";
 
-    // 2. アプリケーション判定（名前 + 実行パスの両方でチェック）
     if (node.type === "app") {
         const lowerName = name.toLowerCase();
-        const entryPath = (node.entry || "").toLowerCase(); // 実行ファイルのパス
+        const entryPath = (node.entry || "").toLowerCase();
 
-        // 名前かパスにキーワードが含まれているか
         if (lowerName.includes("explorer") || entryPath.includes("explorer")) return "🔍";
         if (lowerName.includes("paint") || entryPath.includes("paint")) return "🎨";
         if (lowerName.includes("texteditor") || lowerName.includes("notepad") || entryPath.includes("texteditor")) return "📝";
         if (lowerName.includes("code") || entryPath.includes("codeeditor")) return "💻";
         if (lowerName.includes("image") || entryPath.includes("imageviewer")) return "🖼️";
-        if (lowerName.includes("video") || entryPath.includes("videoplayer")) return "🎬";
 
-        // オーディオ関連の判定 (AudioPlayer / Soundsplayer)
-        if (lowerName.includes("audio") || lowerName.includes("sound") || entryPath.includes("player")) return "🎵";
+        // --- 修正ポイント：audio を video より先に判定するか、条件を厳密にする ---
+        if (lowerName.includes("audio") || lowerName.includes("sound") || entryPath.includes("audioplayer") || entryPath.includes("soundplayer")) return "🎵";
+
+        // video の判定
+        if (lowerName.includes("video") || entryPath.includes("videoplayer")) return "🎬";
 
         if (lowerName.includes("calc") || entryPath.includes("calc")) return "🧮";
         if (lowerName.includes("settings") || entryPath.includes("settings")) return "⚙️";
@@ -86,7 +85,7 @@ export function getIcon(name, node) {
         if (lowerName.includes("taskmanager") || entryPath.includes("taskmanager")) return "📊";
         if (lowerName.includes("clock") || entryPath.includes("clock")) return "🕒";
 
-        return "⚙️"; // アプリケーションのデフォルト
+        return "⚙️";
     }
 
     // 3. 拡張子による判定（ファイルの場合）
