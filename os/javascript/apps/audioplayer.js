@@ -4,12 +4,13 @@ import { getFileContent } from "../fs-db.js";
 import { alertWindow } from "../window.js";
 
 /**
- * 高機能オーディオプレーヤー（ループ・自動再生切替版）
+ * 高機能オーディオプレーヤー（安定性向上・シーク修正・タイトル連動版）
  */
 export default function main(content, options) {
     let currentAudio = null;
     let updateTimer = null;
     let isDragging = false;
+    let isLoading = false; // [追加] 非同期の二重実行防止用
     let currentPath = options?.path || null;
 
     // 再生モード: 0 = OFF(停止), 1 = 全曲(次へ), 2 = 1曲(ループ)
@@ -18,6 +19,8 @@ export default function main(content, options) {
     const modeColors = ["#888", "#1db954", "#3498db"];
 
     const win = content.parentElement;
+    const titleTextEl = win?.querySelector(".title-text");
+
     if (win && win.classList.contains("window")) {
         win.style.height = "260px";
     }
@@ -81,6 +84,43 @@ export default function main(content, options) {
     const volSlider = container.querySelector("#vol-slider");
 
     // --- ヘルパー関数 ---
+
+    // [改善] 共通クリーンアップ関数（リソース解放の徹底）
+    const cleanupAudio = () => {
+        if (currentAudio) {
+            currentAudio.pause();
+            currentAudio.onended = null;
+            currentAudio.onerror = null;
+            currentAudio.onplay = null;
+            currentAudio.onpause = null;
+            currentAudio.onloadedmetadata = null;
+            // Blob URLなどを使用している場合のメモリ解放（必要に応じて）
+            if (currentAudio.src.startsWith("blob:")) {
+                URL.revokeObjectURL(currentAudio.src);
+            }
+            currentAudio.src = "";
+            try { currentAudio.load(); } catch (e) { }
+            currentAudio = null;
+        }
+        if (updateTimer) {
+            clearInterval(updateTimer);
+            updateTimer = null;
+        }
+    };
+
+    const updateWindowTitle = (name) => {
+        const fullTitle = `${name}`;
+        if (typeof win?.setTitle === "function") {
+            win.setTitle(fullTitle);
+        } else if (titleTextEl) {
+            titleTextEl.textContent = fullTitle;
+        }
+        if (win && win._taskbarBtn) {
+            const taskbarTextEl = win._taskbarBtn.querySelector(".taskbar-text");
+            if (taskbarTextEl) taskbarTextEl.textContent = fullTitle;
+        }
+    };
+
     const formatTime = (sec) => {
         if (isNaN(sec) || sec < 0) return "0:00";
         const m = Math.floor(sec / 60);
@@ -89,7 +129,7 @@ export default function main(content, options) {
     };
 
     const updateUI = () => {
-        if (!currentAudio || isDragging) return;
+        if (!currentAudio || isDragging || isNaN(currentAudio.duration)) return;
         const per = (currentAudio.currentTime / currentAudio.duration) * 100;
         progressEl.value = per || 0;
         curTimeEl.innerText = formatTime(currentAudio.currentTime);
@@ -101,7 +141,6 @@ export default function main(content, options) {
     const changeSong = (direction) => {
         const songs = getSongList();
         if (songs.length === 0) return;
-
         const currentFileName = currentPath ? currentPath.split("/").pop() : null;
         let idx = songs.indexOf(currentFileName);
 
@@ -119,11 +158,11 @@ export default function main(content, options) {
 
     // --- メインロジック ---
     const loadAndPlay = async (pathOrName) => {
-        if (currentAudio) {
-            currentAudio.pause();
-            currentAudio.src = "";
-            clearInterval(updateTimer);
-        }
+        if (isLoading) return; // 二重読み込み防止
+        isLoading = true;
+
+        // 既存のオーディオを確実にクリーンアップ
+        cleanupAudio();
 
         const fileName = pathOrName.split("/").pop();
         currentPath = `Programs/Music/${fileName}`;
@@ -131,6 +170,7 @@ export default function main(content, options) {
         const fileNode = FS.Programs.Music[fileName];
         if (!fileNode) {
             alertWindow(`ファイルが見つかりません: ${fileName}`);
+            isLoading = false;
             return;
         }
 
@@ -141,44 +181,62 @@ export default function main(content, options) {
 
         if (!audioData) {
             alertWindow("再生データの読み込みに失敗しました。");
+            isLoading = false;
             return;
         }
 
-        currentAudio = new Audio(audioData);
-        currentAudio.volume = volSlider.value;
-        titleEl.innerText = fileName;
+        try {
+            currentAudio = new Audio(audioData);
+            currentAudio.volume = parseFloat(volSlider.value);
 
-        currentAudio.onloadedmetadata = () => {
-            durTimeEl.innerText = formatTime(currentAudio.duration);
-            updateUI();
-        };
+            titleEl.innerText = fileName;
+            updateWindowTitle(fileName);
 
-        currentAudio.onplay = () => {
-            playBtn.innerText = "⏸";
-            playBtn.style.background = "#1db954";
-            if (!updateTimer) updateTimer = setInterval(updateUI, 100);
-        };
+            currentAudio.onloadedmetadata = () => {
+                durTimeEl.innerText = formatTime(currentAudio.duration);
+                updateUI();
+            };
 
-        currentAudio.onpause = () => {
-            playBtn.innerText = "▶";
-            playBtn.style.background = "#fff";
-            clearInterval(updateTimer);
-            updateTimer = null;
-        };
+            currentAudio.onplay = () => {
+                playBtn.innerText = "⏸";
+                playBtn.style.background = "#1db954";
+                if (!updateTimer) updateTimer = setInterval(updateUI, 100);
+            };
 
-        currentAudio.onended = () => {
-            if (playMode === 1) { // 全曲
-                changeSong("next");
-            } else if (playMode === 2) { // 1曲ループ
-                currentAudio.currentTime = 0;
-                currentAudio.play();
-            } else { // OFF
+            currentAudio.onpause = () => {
                 playBtn.innerText = "▶";
                 playBtn.style.background = "#fff";
-            }
-        };
+            };
 
-        currentAudio.play().catch(e => console.error("Playback failed", e));
+            currentAudio.onerror = () => {
+                alertWindow("ファイルの再生中にエラーが発生しました。");
+                cleanupAudio();
+            };
+
+            currentAudio.onended = () => {
+                if (playMode === 1) {
+                    changeSong("next");
+                } else if (playMode === 2) {
+                    currentAudio.currentTime = 0;
+                    currentAudio.play();
+                } else {
+                    playBtn.innerText = "▶";
+                    playBtn.style.background = "#fff";
+                    if (updateTimer) {
+                        clearInterval(updateTimer);
+                        updateTimer = null;
+                    }
+                }
+            };
+
+            await currentAudio.play();
+        } catch (e) {
+            console.error("Playback failed", e);
+            playBtn.innerText = "▶";
+            playBtn.style.background = "#fff";
+        } finally {
+            isLoading = false; // 処理完了
+        }
     };
 
     // --- イベントリスナー ---
@@ -207,37 +265,42 @@ export default function main(content, options) {
     };
 
     volSlider.oninput = () => {
-        if (currentAudio) currentAudio.volume = volSlider.value;
-        volIcon.innerText = volSlider.value == 0 ? "🔇" : volSlider.value < 0.5 ? "🔉" : "🔊";
+        const val = parseFloat(volSlider.value);
+        if (currentAudio) currentAudio.volume = val;
+        volIcon.innerText = val === 0 ? "🔇" : val < 0.5 ? "🔉" : "🔊";
     };
 
+    // --- シークバー ---
     progressEl.onmousedown = () => { isDragging = true; };
+
     progressEl.oninput = () => {
-        if (currentAudio && currentAudio.duration) {
+        if (currentAudio && !isNaN(currentAudio.duration)) {
             const per = progressEl.value;
             curTimeEl.innerText = formatTime((per / 100) * currentAudio.duration);
             progressEl.style.background = `linear-gradient(to right, #1db954 ${per}%, #444 ${per}%)`;
         }
     };
+
     progressEl.onchange = () => {
-        if (currentAudio && currentAudio.duration) {
+        if (currentAudio && !isNaN(currentAudio.duration)) {
             currentAudio.currentTime = (progressEl.value / 100) * currentAudio.duration;
         }
         isDragging = false;
     };
 
-    window.addEventListener("mouseup", () => { isDragging = false; });
+    // [改善] 参照を保持して解除可能にする
+    const handleMouseUp = () => { if (isDragging) isDragging = false; };
+    window.addEventListener("mouseup", handleMouseUp);
 
     // --- 初期起動 ---
     if (currentPath) loadAndPlay(currentPath);
 
+    // ウィンドウが閉じられた時のクリーンアップ
     const observer = new MutationObserver(() => {
         if (!document.body.contains(container)) {
-            if (currentAudio) {
-                currentAudio.pause();
-                currentAudio.src = "";
-            }
-            clearInterval(updateTimer);
+            // [改善] 共通クリーンアップとwindowリスナー解除
+            cleanupAudio();
+            window.removeEventListener("mouseup", handleMouseUp);
             observer.disconnect();
         }
     });
