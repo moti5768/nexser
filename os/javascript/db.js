@@ -1,6 +1,5 @@
 // db.js
 const DB_NAME = "nexser-os";
-// バージョンを上げないと onupgradeneeded が実行されません
 const DB_VERSION = 2;
 
 let dbPromise = null;

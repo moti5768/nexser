@@ -1,7 +1,6 @@
 // CodeEditor.js
 import { resolveFS } from "../fs-utils.js";
-import { createWindow, bringToFront, showModalWindow } from "../window.js";
-import { buildDesktop } from "../desktop.js";
+import { createWindow, bringToFront, showModalWindow, updateWindowTitle } from "../window.js";
 import { setupRibbon } from "../ribbon.js";
 import { getFileContent } from "../fs-db.js";
 
@@ -228,33 +227,8 @@ export default function CodeEditor(root, options = {}) {
     /* =========================
        Tabs & Title
     ========================== */
-    const APP_TITLE = "CodeEditor";
     function updateTitle() {
-        const mark = dirty ? " *" : "";
-        const title = `${APP_TITLE} - ${baseTitle}${mark}`;
-
-        // ウィンドウタイトルの更新（値が変わっていないなら何もしない）
-        if (typeof win?.setTitle === "function") {
-            // setTitle内部で比較されていない可能性があるため、ここでもチェック
-            win.setTitle(title);
-        } else if (titleEl && titleEl.textContent !== title) {
-            titleEl.textContent = title;
-        }
-
-        // タスクバーボタンの更新
-        if (win?._taskbarBtn) {
-            const textSpan = win._taskbarBtn.querySelector(".taskbar-text");
-            if (textSpan && textSpan.textContent !== title) {
-                textSpan.textContent = title;
-            } else if (!textSpan) {
-                // textSpanがない時だけ重いinnerHTMLを実行
-                win._taskbarBtn.innerHTML = `
-                <span class="taskbar-icon" style="margin-right: 4px;"></span>
-                <span class="taskbar-text">${title}</span>
-            `;
-                if (win._applyRealIcon) win._applyRealIcon();
-            }
-        }
+        updateWindowTitle(win, baseTitle, dirty);
     }
 
     function renderTabs() {
@@ -416,7 +390,6 @@ export default function CodeEditor(root, options = {}) {
         dirty = false;
         renderTabs();
         updateTitle();
-        buildDesktop();
         window.dispatchEvent(new Event("fs-updated"));
     }
 

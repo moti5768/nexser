@@ -224,8 +224,10 @@ body {
     color: black;
     border: 1px solid;
     border-color: #404040 #fff #fff #404040;
-    padding-right: 22px;
-    /* 矢印の逃げ */
+    padding-right: 25px;
+    padding-left: 2.5px;
+    padding-top: 2.5px;
+    height: 25px;
     box-sizing: border-box;
 }
 
@@ -593,8 +595,8 @@ select {
 .close-btn::after {
     content: "";
     position: absolute;
-    left: 7px;
-    top: 3px;
+    left: 6.5px;
+    top: 2px;
     height: 12px;
     width: 2px;
     background-color: black;
@@ -650,7 +652,7 @@ select {
 .window:not(.maximized) .max-btn::before {
     content: "";
     position: absolute;
-    left: 2px;
+    left: 1.5px;
     top: 2px;
     height: 12px;
     width: 12px;
@@ -679,12 +681,12 @@ select {
 }
 
 .window.maximized .max-btn::before {
-    left: 6px;
+    left: 5px;
     top: 2px;
 }
 
 .window.maximized .max-btn::after {
-    left: 3px;
+    left: 2px;
     top: 7px;
 }
 

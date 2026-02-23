@@ -1,7 +1,6 @@
 // ImageViewer.js
 import { resolveFS } from "../fs-utils.js";
-import { createWindow, bringToFront, showModalWindow, alertWindow, taskbarButtons } from "../window.js";
-import { buildDesktop } from "../desktop.js";
+import { createWindow, bringToFront, showModalWindow, alertWindow, taskbarButtons, updateWindowTitle } from "../window.js";
 import { setupRibbon } from "../ribbon.js";
 import { getFileContent } from "../fs-db.js";
 
@@ -149,9 +148,7 @@ export default function ImageViewer(root, options = {}) {
     refresh();
 
     function updateTitle() {
-        const title = dirty ? `${baseTitle} *` : baseTitle;
-        if (typeof win?.setTitle === "function") win.setTitle(title);
-        else if (titleEl) titleEl.textContent = title;
+        updateWindowTitle(win, baseTitle, dirty);
     }
     updateTitle();
 
@@ -244,7 +241,6 @@ export default function ImageViewer(root, options = {}) {
 
             refresh();
             updateTitle();
-            buildDesktop();
             window.dispatchEvent(new Event("fs-updated"));
             return;
         }
@@ -319,7 +315,6 @@ export default function ImageViewer(root, options = {}) {
 
         const newFilePath = `Desktop/${finalName}`;
 
-        buildDesktop();
         window.dispatchEvent(new Event("fs-updated"));
 
         /* ウィンドウ置き換え */

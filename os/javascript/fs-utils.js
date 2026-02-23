@@ -83,7 +83,7 @@ export function fsPathToModulePath(fsPath) {
 /**
  * FileReader を Promise 化
  */
-export function loadFileAsDataURL(file) {
+export async function loadFileAsDataURL(file) {
     return new Promise((resolve, reject) => {
         if (!(file instanceof Blob)) {
             return reject(new Error("有効なファイルではありません"));

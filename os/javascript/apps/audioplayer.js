@@ -1,7 +1,7 @@
 // AudioPlayer.js
 import { FS } from "../fs.js";
 import { getFileContent } from "../fs-db.js";
-import { alertWindow } from "../window.js";
+import { alertWindow, updateWindowTitle } from "../window.js";
 
 /**
  * 高機能オーディオプレーヤー（安定動作・シーク戻り完全修正版）
@@ -102,19 +102,6 @@ export default function main(content, options) {
         }
     };
 
-    const updateWindowTitle = (name) => {
-        const fullTitle = `${name}`;
-        if (typeof win?.setTitle === "function") {
-            win.setTitle(fullTitle);
-        } else if (titleTextEl) {
-            titleTextEl.textContent = fullTitle;
-        }
-        if (win && win._taskbarBtn) {
-            const taskbarTextEl = win._taskbarBtn.querySelector(".taskbar-text");
-            if (taskbarTextEl) taskbarTextEl.textContent = fullTitle;
-        }
-    };
-
     const formatTime = (sec) => {
         if (isNaN(sec) || sec < 0) return "0:00";
         const m = Math.floor(sec / 60);
@@ -180,8 +167,8 @@ export default function main(content, options) {
         try {
             currentAudio = new Audio(audioData);
             currentAudio.volume = parseFloat(volSlider.value);
-            titleEl.innerText = fileName;
-            updateWindowTitle(fileName);
+            if (titleEl) titleEl.innerText = fileName;
+            updateWindowTitle(win, fileName, false);
 
             currentAudio.onloadedmetadata = () => {
                 durTimeEl.innerText = formatTime(currentAudio.duration);

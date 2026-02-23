@@ -280,7 +280,6 @@ function createNewFolder(currentPath, container) {
         // 4. UI更新
         iconDiv.remove();
         createNewFolder.isCreating = false; // フラグ解除
-        buildDesktop();
         window.dispatchEvent(new Event("fs-updated"));
     };
 
@@ -310,7 +309,6 @@ function deleteFSItem(parentPath, name) {
     const node = resolveFS(parentPath);
     if (!node || !node[name]) return;
     delete node[name];
-    buildDesktop();
     window.dispatchEvent(new Event("fs-updated"));
 }
 

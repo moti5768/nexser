@@ -3,7 +3,6 @@ import { launch } from "../kernel.js";
 import { showModalWindow, alertWindow } from "../window.js";
 import { resolveFS, validateName } from "../fs-utils.js";
 import { FS, initFS } from "../fs.js";
-import { buildDesktop } from "../desktop.js";
 import { attachContextMenu } from "../context-menu.js";
 import { resolveAppByPath, getExtension, getIcon } from "../file-associations.js";
 import { addRecent } from "../recent.js";
@@ -24,7 +23,6 @@ function deleteFSItem(parentPath, itemName, rerender) {
     if (!parentNode || !parentNode[itemName]) return;
     delete parentNode[itemName];
     rerender?.();
-    buildDesktop();
     window.dispatchEvent(new Event("fs-updated"));
 }
 
@@ -108,7 +106,6 @@ function createNewFolder(currentPath, listContainer, renderCallback) {
         else folderNode[finalName] = { type: "folder" };
 
         renderCallback?.();
-        buildDesktop();
         window.dispatchEvent(new Event("fs-updated"));
     };
 
@@ -340,7 +337,7 @@ export default async function Explorer(root, options = {}) {
     // ------------------------
     const render = async (path) => {
         currentPath = path;
-        updateTitle(currentPath);
+        updateTitle_explorer(currentPath);
 
         if (globalSelected.item) {
             globalSelected.item.classList.remove("selected");
@@ -833,7 +830,7 @@ export default async function Explorer(root, options = {}) {
 
     }
 
-    function updateTitle(path) {
+    function updateTitle_explorer(path) {
         if (!win) return;
         const name = path.split("/").pop() || path;
 

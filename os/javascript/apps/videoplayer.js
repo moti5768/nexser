@@ -1,9 +1,9 @@
 // VideoPlayer.js
 import { resolveFS } from "../fs-utils.js";
-import { createWindow, bringToFront, showModalWindow, alertWindow, taskbarButtons } from "../window.js";
-import { buildDesktop } from "../desktop.js";
+import { createWindow, bringToFront, showModalWindow, alertWindow, taskbarButtons, updateWindowTitle } from "../window.js";
 import { setupRibbon } from "../ribbon.js";
-import { getFileContent } from "../fs-db.js"; // 追加
+import { getFileContent } from "../fs-db.js";
+import { basename, loadFileAsDataURL } from "../fs-utils.js";
 
 function showWarning(root, message) {
     const win = root.closest(".window");
@@ -32,7 +32,7 @@ export default function VideoPlayer(root, options = {}) {
 
     let baseTitle;
     if (filePath) {
-        baseTitle = filePath.split("/").pop().trim();
+        baseTitle = basename(filePath);
     } else if (options.fileObject instanceof File) {
         baseTitle = options.fileObject.name;
     } else {
@@ -74,7 +74,7 @@ export default function VideoPlayer(root, options = {}) {
         // 表示するコンテンツの選定
         const content = (dirty && draftVideo) ? draftVideo : fileNode?.content;
 
-        if (!content || content === "__EXTERNAL_DATA__") return;
+        if (!content) return;
 
         // 型チェックを行い、適切な方法でビデオソースを設定
         if (content instanceof Blob || content instanceof File) {
@@ -94,9 +94,7 @@ export default function VideoPlayer(root, options = {}) {
     refresh();
 
     function updateTitle() {
-        const title = dirty ? `${baseTitle} *` : baseTitle;
-        if (typeof win?.setTitle === "function") win.setTitle(title);
-        else if (titleEl) titleEl.textContent = title;
+        updateWindowTitle(win, baseTitle, dirty);
     }
     updateTitle();
 
@@ -162,7 +160,7 @@ export default function VideoPlayer(root, options = {}) {
 
             // Blob/FileならDataURLに変換
             const encodedContent = (dataToSave instanceof File || dataToSave instanceof Blob)
-                ? await blobToDataURL(dataToSave)
+                ? await loadFileAsDataURL(dataToSave)
                 : dataToSave;
 
             // 【ここが重要】Base64(DataURL)から実際のバイト数を計算
@@ -189,7 +187,6 @@ export default function VideoPlayer(root, options = {}) {
                 dirty = false;
                 draftVideo = null;
                 updateTitle();
-                buildDesktop();
                 window.dispatchEvent(new Event("fs-updated"));
                 refresh();
                 saveOverlay.style.display = "none";
@@ -227,7 +224,6 @@ export default function VideoPlayer(root, options = {}) {
             };
 
             const newFilePath = `Desktop/${finalName}`;
-            buildDesktop();
             window.dispatchEvent(new Event("fs-updated"));
 
             /* ウィンドウ差し替えロジック (変更なし) */
@@ -336,21 +332,11 @@ export default function VideoPlayer(root, options = {}) {
     /* =========================
        ユーティリティ & 初期化
     ========================== */
-    async function blobToDataURL(blob) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = () => reject(new Error("読み込み失敗"));
-            reader.readAsDataURL(blob);
-        });
-    }
 
     async function init() {
         if (filePath && fileNode) {
             // もしデータが外部にあるなら事前に読み込んでおく
-            if (fileNode.content === "__EXTERNAL_DATA__") {
-                fileNode.content = await getFileContent(filePath);
-            }
+            fileNode.content = await getFileContent(filePath);
             // 実際のビデオ設定ロジックは refresh が持っているので、それを呼ぶだけでOK
             refresh();
         }

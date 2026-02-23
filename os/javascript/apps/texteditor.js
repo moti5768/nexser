@@ -1,8 +1,6 @@
 // TextEditor.js
 import { resolveFS } from "../fs-utils.js";
-import { createWindow, bringToFront, showModalWindow, alertWindow, centerWindowOptions } from "../window.js";
-import { taskbarButtons } from "../window.js";
-import { buildDesktop } from "../desktop.js";
+import { createWindow, bringToFront, showModalWindow, alertWindow, centerWindowOptions, taskbarButtons, updateWindowTitle } from "../window.js";
 import { setupRibbon } from "../ribbon.js";
 
 function showWarning(root, message) {
@@ -86,9 +84,7 @@ export default function TextEditor(root, options = {}) {
     applyStyle();
 
     function updateTitle() {
-        const title = dirty ? `${baseTitle} *` : baseTitle;
-        if (typeof win?.setTitle === "function") win.setTitle(title);
-        else if (titleEl) titleEl.textContent = title;
+        updateWindowTitle(win, baseTitle, dirty);
     }
     updateTitle();
 
@@ -103,7 +99,6 @@ export default function TextEditor(root, options = {}) {
             fileNode.style = { ...styleState };
             dirty = false;
             updateTitle();
-            buildDesktop();
             window.dispatchEvent(new Event("fs-updated"));
             return;
         }
@@ -176,7 +171,6 @@ export default function TextEditor(root, options = {}) {
         baseTitle = finalName;
         dirty = false;
 
-        buildDesktop();
         window.dispatchEvent(new Event("fs-updated"));
         // -------------------------------
         // 元の TextEditor.app ウィンドウを置き換え

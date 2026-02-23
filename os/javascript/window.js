@@ -1137,6 +1137,30 @@ export function refreshTopWindow() {
 /* =========================
    Window Control API
 ========================= */
+/**
+ * ウィンドウとタスクバーのタイトルを同期して更新する
+ */
+export function updateWindowTitle(win, baseTitle, isDirty) {
+    if (!win) return;
+
+    const titleText = isDirty ? `${baseTitle} *` : baseTitle;
+
+    // 1. ウィンドウ本体のタイトルバーを更新
+    const titleEl = win.querySelector(".title-text");
+    if (titleEl) {
+        titleEl.textContent = titleText;
+    }
+
+    // 2. タスクバーのボタンを更新
+    // taskbarButtons 配列から、このウィンドウに対応するボタンを探す
+    const btn = taskbarButtons.find(b => b._window === win);
+    if (btn) {
+        const textEl = btn.querySelector(".taskbar-text");
+        if (textEl) {
+            textEl.textContent = titleText;
+        }
+    }
+}
 
 export function getWindows() {
     return Array.from(document.querySelectorAll(".window")).map((w, index) => ({
