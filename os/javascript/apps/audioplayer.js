@@ -4,16 +4,15 @@ import { getFileContent } from "../fs-db.js";
 import { alertWindow } from "../window.js";
 
 /**
- * 高機能オーディオプレーヤー（安定性向上・シーク修正・タイトル連動版）
+ * 高機能オーディオプレーヤー（安定動作・シーク戻り完全修正版）
  */
 export default function main(content, options) {
     let currentAudio = null;
     let updateTimer = null;
     let isDragging = false;
-    let isLoading = false; // [追加] 非同期の二重実行防止用
+    let isLoading = false;
     let currentPath = options?.path || null;
 
-    // 再生モード: 0 = OFF(停止), 1 = 全曲(次へ), 2 = 1曲(ループ)
     let playMode = 0;
     const modeLabels = ["OFF", "全曲", "1曲"];
     const modeColors = ["#888", "#1db954", "#3498db"];
@@ -25,7 +24,6 @@ export default function main(content, options) {
         win.style.height = "260px";
     }
 
-    // --- UI構築 ---
     const container = document.createElement("div");
     container.style.cssText = `
         padding: 15px; 
@@ -47,14 +45,14 @@ export default function main(content, options) {
         
         <div style="display: flex; align-items: center; gap: 8px;">
             <span id="cur-time" style="font-size: 11px; min-width: 35px; text-align: right;">0:00</span>
-            <input type="range" id="progress-bar" value="0" max="100" step="0.1" style="flex: 1; cursor: pointer; accent-color: #1db954;">
+            <input type="range" id="progress-bar" value="0" max="100" step="0.1" style="flex: 1; cursor: pointer; accent-color: #1db954; touch-action: none;">
             <span id="dur-time" style="font-size: 11px; min-width: 35px;">0:00</span>
         </div>
 
         <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 5px;">
             <div id="volume-container" style="position: relative; width: 30px; display: flex; justify-content: center;">
                 <span id="vol-icon" style="cursor: pointer; font-size: 14px;">🔊</span>
-                <input type="range" id="vol-slider" min="0" max="1" step="0.01" value="0.7" style="position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%) rotate(-90deg); transform-origin: bottom center; width: 80px; display: none; accent-color: #1db954; cursor: pointer;">
+                <input type="range" id="vol-slider" min="0" max="1" step="0.01" value="0.7" style="position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%) rotate(-90deg); transform-origin: bottom center; width: 80px; display: none; accent-color: #1db954; cursor: pointer; touch-action: none;">
             </div>
 
             <div style="display: flex; align-items: center; gap: 12px;">
@@ -83,9 +81,6 @@ export default function main(content, options) {
     const volIcon = container.querySelector("#vol-icon");
     const volSlider = container.querySelector("#vol-slider");
 
-    // --- ヘルパー関数 ---
-
-    // [改善] 共通クリーンアップ関数（リソース解放の徹底）
     const cleanupAudio = () => {
         if (currentAudio) {
             currentAudio.pause();
@@ -94,7 +89,6 @@ export default function main(content, options) {
             currentAudio.onplay = null;
             currentAudio.onpause = null;
             currentAudio.onloadedmetadata = null;
-            // Blob URLなどを使用している場合のメモリ解放（必要に応じて）
             if (currentAudio.src.startsWith("blob:")) {
                 URL.revokeObjectURL(currentAudio.src);
             }
@@ -129,6 +123,7 @@ export default function main(content, options) {
     };
 
     const updateUI = () => {
+        // ドラッグ中、または「指を離した直後の同期中」はUI更新をスキップ
         if (!currentAudio || isDragging || isNaN(currentAudio.duration)) return;
         const per = (currentAudio.currentTime / currentAudio.duration) * 100;
         progressEl.value = per || 0;
@@ -156,12 +151,9 @@ export default function main(content, options) {
         loadAndPlay(songs[idx]);
     };
 
-    // --- メインロジック ---
     const loadAndPlay = async (pathOrName) => {
-        if (isLoading) return; // 二重読み込み防止
+        if (isLoading) return;
         isLoading = true;
-
-        // 既存のオーディオを確実にクリーンアップ
         cleanupAudio();
 
         const fileName = pathOrName.split("/").pop();
@@ -188,7 +180,6 @@ export default function main(content, options) {
         try {
             currentAudio = new Audio(audioData);
             currentAudio.volume = parseFloat(volSlider.value);
-
             titleEl.innerText = fileName;
             updateWindowTitle(fileName);
 
@@ -206,11 +197,6 @@ export default function main(content, options) {
             currentAudio.onpause = () => {
                 playBtn.innerText = "▶";
                 playBtn.style.background = "#fff";
-            };
-
-            currentAudio.onerror = () => {
-                alertWindow("ファイルの再生中にエラーが発生しました。");
-                cleanupAudio();
             };
 
             currentAudio.onended = () => {
@@ -232,14 +218,11 @@ export default function main(content, options) {
             await currentAudio.play();
         } catch (e) {
             console.error("Playback failed", e);
-            playBtn.innerText = "▶";
-            playBtn.style.background = "#fff";
         } finally {
-            isLoading = false; // 処理完了
+            isLoading = false;
         }
     };
 
-    // --- イベントリスナー ---
     modeBtn.onclick = () => {
         playMode = (playMode + 1) % 3;
         modeBtn.innerText = `モード: ${modeLabels[playMode]}`;
@@ -270,9 +253,24 @@ export default function main(content, options) {
         volIcon.innerText = val === 0 ? "🔇" : val < 0.5 ? "🔉" : "🔊";
     };
 
-    // --- シークバー ---
-    progressEl.onmousedown = () => { isDragging = true; };
+    // --- シークバー（動いていた元のロジック + タッチ対応 + 戻り防止） ---
+    const startDragging = () => { isDragging = true; };
 
+    const endDragging = () => {
+        if (isDragging && currentAudio && !isNaN(currentAudio.duration)) {
+            currentAudio.currentTime = (progressEl.value / 100) * currentAudio.duration;
+            // 指を離してから 150ms の間は updateUI をブロックし続ける（重要：これで戻るのを防ぐ）
+            setTimeout(() => { isDragging = false; }, 150);
+        } else {
+            isDragging = false;
+        }
+    };
+
+    // マウスとタッチ両方の開始を検知
+    progressEl.onmousedown = startDragging;
+    progressEl.ontouchstart = startDragging;
+
+    // スライド中の表示更新
     progressEl.oninput = () => {
         if (currentAudio && !isNaN(currentAudio.duration)) {
             const per = progressEl.value;
@@ -281,26 +279,22 @@ export default function main(content, options) {
         }
     };
 
-    progressEl.onchange = () => {
-        if (currentAudio && !isNaN(currentAudio.duration)) {
-            currentAudio.currentTime = (progressEl.value / 100) * currentAudio.duration;
-        }
-        isDragging = false;
-    };
+    // マウスとタッチ両方の終了を検知
+    progressEl.onmouseup = endDragging;
+    progressEl.ontouchend = endDragging;
 
-    // [改善] 参照を保持して解除可能にする
-    const handleMouseUp = () => { if (isDragging) isDragging = false; };
-    window.addEventListener("mouseup", handleMouseUp);
+    // 万が一バーの外で離した場合のセーフティ
+    const globalHandleUp = () => { if (isDragging) endDragging(); };
+    window.addEventListener("mouseup", globalHandleUp);
+    window.addEventListener("touchend", globalHandleUp);
 
-    // --- 初期起動 ---
     if (currentPath) loadAndPlay(currentPath);
 
-    // ウィンドウが閉じられた時のクリーンアップ
     const observer = new MutationObserver(() => {
         if (!document.body.contains(container)) {
-            // [改善] 共通クリーンアップとwindowリスナー解除
             cleanupAudio();
-            window.removeEventListener("mouseup", handleMouseUp);
+            window.removeEventListener("mouseup", globalHandleUp);
+            window.removeEventListener("touchend", globalHandleUp);
             observer.disconnect();
         }
     });
