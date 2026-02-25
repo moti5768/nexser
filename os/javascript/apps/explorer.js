@@ -26,59 +26,67 @@ function deleteFSItem(parentPath, itemName, rerender) {
     window.dispatchEvent(new Event("fs-updated"));
 }
 
-function createNewFolder(currentPath, listContainer, renderCallback) {
+function createNewItem(currentPath, listContainer, renderCallback, type = "folder") {
     const folderNode = resolveFS(currentPath);
     if (!folderNode || !listContainer) return;
 
-    // 安全性向上: 二重作成防止
-    if (listContainer.querySelector("input") || createNewFolder.isCreating) return;
-    createNewFolder.isCreating = true;
+    if (listContainer.querySelector("input") || createNewItem.isCreating) return;
+    createNewItem.isCreating = true;
 
-    let folderName = "新しいフォルダ";
+    // 初期名の設定
+    let baseName = type === "folder" ? "新しいフォルダ" : "新しいテキスト.txt";
+    let itemName = baseName;
     let counter = 1;
-    while (folderNode[folderName]) folderName = `新しいフォルダ (${counter++})`;
+
+    // 重複チェック
+    while (folderNode[itemName]) {
+        if (type === "folder") {
+            itemName = `新しいフォルダ (${counter++})`;
+        } else {
+            itemName = `新しいテキスト (${counter++}).txt`;
+        }
+    }
 
     const itemDiv = document.createElement("div");
     itemDiv.className = "explorer-item";
 
     const input = document.createElement("input");
     input.type = "text";
-    input.value = folderName;
+    input.value = itemName;
     input.style.cssText = "font-size:13px; text-align:left; width:auto; min-width:100px;";
     itemDiv.appendChild(input);
 
-    // 文字数に応じて幅を調整
     const adjustWidth = () => {
-        // 文字数 * 8px を目安に幅を変更（必要に応じて調整）
         input.style.width = `${Math.max(input.value.length * 8, 100)}px`;
     };
-
-    // 初期幅調整
     adjustWidth();
-
-    // 入力中も自動調整
     input.addEventListener("input", adjustWidth);
-
     listContainer.appendChild(itemDiv);
 
     input.focus();
-    input.select();
+
+    // ファイルの場合は拡張子の手前までを選択、フォルダは全選択
+    const dotIndex = itemName.lastIndexOf(".");
+    if (type === "file" && dotIndex > 0) {
+        input.setSelectionRange(0, dotIndex);
+    } else {
+        input.select();
+    }
 
     let isShowingError = false;
     let isCommitting = false;
 
-    // blur でキャンセル
     input.addEventListener("blur", () => {
         if (isShowingError || isCommitting) return;
         itemDiv.remove();
-        createNewFolder.isCreating = false;
+        createNewItem.isCreating = false;
     });
 
     const finishEditing = () => {
         if (isShowingError || isCommitting) return;
         isCommitting = true;
 
-        let newName = input.value.trim() || folderName;
+        let newName = input.value.trim() || itemName;
         const error = validateName(newName);
 
         if (error) {
@@ -88,22 +96,23 @@ function createNewFolder(currentPath, listContainer, renderCallback) {
             setTimeout(() => {
                 isShowingError = false;
                 input.focus();
-                input.select();
             }, 0);
             return;
         }
 
         itemDiv.remove();
-        createNewFolder.isCreating = false;
+        createNewItem.isCreating = false;
 
         let finalName = newName;
         let idx = 1;
         while (folderNode[finalName]) finalName = `${newName} (${idx++})`;
 
-        const ext = getExtension(finalName);
-        if (ext === ".app") folderNode[finalName] = { type: "app", entry: "" };
-        else if (ext) folderNode[finalName] = { type: "file", content: "" };
-        else folderNode[finalName] = { type: "folder" };
+        // 指定されたタイプで作成
+        if (type === "folder") {
+            folderNode[finalName] = { type: "folder" };
+        } else {
+            folderNode[finalName] = { type: "file", content: "" };
+        }
 
         renderCallback?.();
         window.dispatchEvent(new Event("fs-updated"));
@@ -116,7 +125,7 @@ function createNewFolder(currentPath, listContainer, renderCallback) {
         }
         if (e.key === "Escape") {
             itemDiv.remove();
-            createNewFolder.isCreating = false;
+            createNewItem.isCreating = false;
         }
     });
 }
@@ -763,8 +772,12 @@ export default async function Explorer(root, options = {}) {
                         disabled: () => !globalSelected.item
                     },
                     {
-                        label: "新規フォルダ/ファイル作成",
-                        action: () => createNewFolder(currentPath, listContainer, () => render(currentPath))
+                        label: "新しいフォルダ",
+                        action: () => createNewItem(currentPath, listContainer, () => render(currentPath), "folder")
+                    },
+                    {
+                        label: "新しいファイル",
+                        action: () => createNewItem(currentPath, listContainer, () => render(currentPath), "file")
                     },
                     {
                         label: "選択アイテムを削除",

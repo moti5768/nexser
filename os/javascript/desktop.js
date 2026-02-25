@@ -115,10 +115,13 @@ export function buildDesktop() {
             }
         }
 
-        // 新規フォルダ
         items.push({
-            label: "新規フォルダ/ファイル作成",
-            action: () => createNewFolder("Desktop", iconsContainer)
+            label: "新しいフォルダ",
+            action: () => createNewItem("Desktop", iconsContainer, "folder")
+        });
+        items.push({
+            label: "新しいファイル",
+            action: () => createNewItem("Desktop", iconsContainer, "file")
         });
 
         // 選択アイテム削除
@@ -196,19 +199,26 @@ function adjustDesktopIconArea() {
 // --------------------
 // 新規フォルダ/ファイル作成
 // --------------------
-function createNewFolder(currentPath, container) {
+function createNewItem(currentPath, container, itemType = "folder") {
     const folderNode = resolveFS(currentPath);
     if (!folderNode || !container) return;
 
     // 二重作成防止（フラグ管理）
-    if (createNewFolder.isCreating) return;
-    createNewFolder.isCreating = true;
+    if (createNewItem.isCreating) return;
+    createNewItem.isCreating = true;
 
-    // 初期表示名
-    let defaultName = "新しいフォルダ";
+    // 初期表示名の設定
+    let baseName = itemType === "folder" ? "新しいフォルダ" : "新しいテキスト.txt";
+    let defaultName = baseName;
     let counter = 1;
+
+    // 重複チェック
     while (folderNode[defaultName]) {
-        defaultName = `新しいフォルダ (${counter++})`;
+        if (itemType === "folder") {
+            defaultName = `新しいフォルダ (${counter++})`;
+        } else {
+            defaultName = `新しいテキスト (${counter++}).txt`;
+        }
     }
 
     const iconDiv = document.createElement("div");
@@ -222,7 +232,14 @@ function createNewFolder(currentPath, container) {
     iconDiv.appendChild(input);
 
     input.focus();
-    input.select();
+
+    // ファイルの場合は拡張子の手前までを選択、フォルダは全選択
+    const dotIndex = defaultName.lastIndexOf(".");
+    if (itemType === "file" && dotIndex > 0) {
+        input.setSelectionRange(0, dotIndex);
+    } else {
+        input.select();
+    }
 
     // 幅を文字数に応じて自動調整
     const adjustWidth = () => {
@@ -240,7 +257,7 @@ function createNewFolder(currentPath, container) {
 
         let newName = input.value.trim() || defaultName;
 
-        // 1. バリデーション (fs-utils.js)
+        // バリデーション (fs-utils.js)
         const error = validateName(newName);
         if (error) {
             isCommitting = false;
@@ -249,37 +266,25 @@ function createNewFolder(currentPath, container) {
             setTimeout(() => {
                 isShowingError = false;
                 input.focus();
-                input.select();
             }, 0);
             return;
         }
 
-        // 2. 名前の重複回避
         let finalName = newName;
         let idx = 1;
         while (folderNode[finalName]) {
             finalName = `${newName} (${idx++})`;
         }
 
-        // --- Explorer.js の起動ロジックを適用 ---
-        // 3. 拡張子による型判定
-        // インポート済みの hasExtension を使用して判定を共通化
-        const fileExt = hasExtension(finalName)
-            ? "." + finalName.split('.').pop().toLowerCase()
-            : null;
-
-        if (fileExt === ".app") {
-            folderNode[finalName] = { type: "app", entry: "" };
-        } else if (fileExt) {
-            folderNode[finalName] = { type: "file", content: "" };
-        } else {
+        // 指定されたタイプで作成
+        if (itemType === "folder") {
             folderNode[finalName] = { type: "folder" };
+        } else {
+            folderNode[finalName] = { type: "file", content: "" };
         }
-        // ---------------------------------------
 
-        // 4. UI更新
         iconDiv.remove();
-        createNewFolder.isCreating = false; // フラグ解除
+        createNewItem.isCreating = false;
         window.dispatchEvent(new Event("fs-updated"));
     };
 
@@ -290,15 +295,14 @@ function createNewFolder(currentPath, container) {
         } else if (e.key === "Escape") {
             isCommitting = true;
             iconDiv.remove();
-            createNewFolder.isCreating = false;
+            createNewItem.isCreating = false;
         }
     });
 
     input.addEventListener("blur", () => {
         if (isShowingError || isCommitting) return;
-        // デスクトップ版の挙動に合わせてキャンセル
         iconDiv.remove();
-        createNewFolder.isCreating = false;
+        createNewItem.isCreating = false;
     });
 }
 
