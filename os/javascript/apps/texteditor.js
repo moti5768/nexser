@@ -2,6 +2,9 @@
 import { resolveFS } from "../fs-utils.js";
 import { createWindow, bringToFront, showModalWindow, alertWindow, centerWindowOptions, taskbarButtons, updateWindowTitle } from "../window.js";
 import { setupRibbon } from "../ribbon.js";
+import { getFileContent } from "../fs-db.js";
+
+let activeSearchWin = null;
 
 function showWarning(root, message) {
     const win = root.closest(".window");
@@ -23,7 +26,7 @@ function showConfirm(root, message, onYes, onNo) {
 /* =========================
    TextEditor
 ========================= */
-export default function TextEditor(root, options = {}) {
+export default async function TextEditor(root, options = {}) {
     const { path } = options;
     const win = root.closest(".window");
     const ribbon = win?._ribbon;
@@ -32,6 +35,16 @@ export default function TextEditor(root, options = {}) {
     let filePath = path || null;
     let fileNode = filePath ? resolveFS(filePath) : null;
     let isNewFile = !fileNode;
+
+    // --- 追加: 実体データの取得処理 ---
+    if (fileNode && fileNode.content === "__EXTERNAL_DATA__") {
+        try {
+            fileNode.content = await getFileContent(filePath);
+        } catch (e) {
+            console.error("Failed to load file content:", e);
+            fileNode.content = "Error: データの読み込みに失敗しました。";
+        }
+    }
 
     const untitledId = Date.now().toString(36);
     let baseTitle = filePath?.split("/").pop()?.trim() || `Untitled-${untitledId}`;
@@ -95,6 +108,10 @@ export default function TextEditor(root, options = {}) {
         const treatAsNew = !fileNode || (filePath && filePath.toLowerCase().endsWith("texteditor.app"));
 
         if (!treatAsNew) {
+            if (fileNode.content === "__EXTERNAL_DATA__") {
+                showWarning(root, "データがまだ読み込み中のため保存できません。");
+                return;
+            }
             fileNode.content = textarea.value;
             fileNode.style = { ...styleState };
             dirty = false;
@@ -369,33 +386,50 @@ export default function TextEditor(root, options = {}) {
     function searchText() {
         if (!win) return;
 
-        // 1. parentWin を null にして、エディタ本体のロックを解除（モードレス化）
+        // 1. 既存の検索ウィンドウがあれば最前面に持ってきて終了
+        if (activeSearchWin && document.body.contains(activeSearchWin)) {
+            bringToFront(activeSearchWin);
+            const existingInput = activeSearchWin.querySelector("input[type='text']");
+            if (existingInput) existingInput.focus();
+            return;
+        }
+
+        // 2. 検索ウィンドウの作成
         const content = showModalWindow("検索", "検索文字列を入力してください", {
-            parentWin: null,
+            parentWin: null, // モードレス
             buttons: [
-                {
-                    label: "検索",
-                    onClick: () => performSearch(input.value)
-                },
-                {
-                    label: "閉じる",
-                    onClick: () => closeSearch() // 自前のクローズ処理を呼ぶ
-                }
-            ]
+                { label: "検索", onClick: () => performSearch(input.value) },
+                { label: "閉じる", onClick: () => closeSearch() }
+            ],
+            silent: true
         });
 
         const searchWin = content.parentElement;
+        activeSearchWin = searchWin;
 
-        // 2. 位置をエディタの中央に合わせる
-        const opts = centerWindowOptions(320, 150, win);
+        // --- 中央配置のロジック ---
+        const searchWidth = 320;
+        const searchHeight = 165;
+
+        // ウィンドウの初期サイズを固定
+        searchWin.style.width = searchWidth + "px";
+        searchWin.style.height = searchHeight + "px";
+
+        // centerWindowOptions を使用して座標を取得
+        const opts = centerWindowOptions(searchWidth, searchHeight, win);
+
+        // 重要: modal-dialog 等の CSS で transform: translate(-50%, -50%) が
+        // かかっている場合、座標がズレるためリセットする
+        searchWin.style.transform = "none";
         searchWin.style.left = opts.left;
         searchWin.style.top = opts.top;
+        searchWin.style.margin = "0"; // 余計なマージンを排除
 
-        // input要素の作成と挿入
+        // input要素の作成
         const input = document.createElement("input");
         input.type = "text";
         input.style.width = "100%";
-        input.style.marginTop = "10px";
+        input.style.marginTop = "0px";
         input.style.boxSizing = "border-box";
         input.style.padding = "4px";
 
@@ -406,9 +440,13 @@ export default function TextEditor(root, options = {}) {
             content.appendChild(input);
         }
 
+        input.addEventListener("keydown", e => {
+            if (e.key === "Enter") performSearch(input.value);
+        });
+
         setTimeout(() => input.focus(), 10);
 
-        // 3. 【重要】親ウィンドウが消えたら自分も消えるように監視
+        // 親ウィンドウ監視
         let observer = new MutationObserver(() => {
             if (!document.body.contains(win)) {
                 closeSearch();
@@ -416,18 +454,21 @@ export default function TextEditor(root, options = {}) {
         });
         observer.observe(document.body, { childList: true, subtree: true });
 
-        // 4. クローズ用ヘルパー関数（監視の解除を忘れないようにする）
         function closeSearch() {
             if (observer) observer.disconnect();
-            searchWin.remove();
+            if (searchWin && searchWin.parentNode) searchWin.remove();
+            if (activeSearchWin === searchWin) activeSearchWin = null;
         }
+
+        const searchCloseBtn = searchWin.querySelector(".close-btn");
+        if (searchCloseBtn) searchCloseBtn.addEventListener("click", closeSearch);
 
         function performSearch(query) {
             if (!query) return;
             const val = textarea.value;
             const index = val.indexOf(query);
             if (index === -1) {
-                showWarning(win, `"${query}" は見つかりません`);
+                showWarning(root, `"${query}" は見つかりません`);
                 return;
             }
             textarea.focus();
