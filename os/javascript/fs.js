@@ -77,6 +77,7 @@ let isSaving = false;
 async function scheduleSave() {
     if (saveTimer || isSaving) return;
     saveTimer = setTimeout(async () => {
+        console.log("[FS Debug] Starting saveFS..."); // 追加
         saveTimer = null;
         isSaving = true;
         try {
@@ -86,6 +87,7 @@ async function scheduleSave() {
             // const snapshot = structuredClone(rawFS); 
 
             await saveFS(rawFS);
+            console.log("[FS Debug] saveFS completed."); // 追加
         } catch (e) {
             console.error("[FS] Snapshot failed:", e);
         } finally {
@@ -118,9 +120,13 @@ function wrapProxy(obj, path = "") { // path 引数を追加して自分の場�
                 console.warn(`[FS Guard] 保護プロパティにつき変更拒否`);
                 return true;
             }
+            if (prop === "content" && target.size !== undefined) {
+                delete target.size;
+            }
 
             target[prop] = wrapProxy(value, path ? `${path}/${prop}` : prop);
             scheduleSave();
+            window.dispatchEvent(new Event("fs-updated"));
             return true;
         },
         // --- 【修正】削除保護 ---

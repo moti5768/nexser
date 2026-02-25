@@ -864,26 +864,26 @@ export async function calcNodeSize(node, path = "") {
     if (!node) return 0;
 
     if (node.type === "file") {
-        // 1. 記録されたサイズがあれば、それをそのまま返す（DBアクセス不要）
-        if (typeof node.size === "number") return node.size;
-
-        // 2. メモリ上に content があれば計算する
+        // 【修正】まずメモリ上の実体（content）があるか確認する
+        // 編集直後の最新データはここにあるため、これを最優先にする
         if (node.content && node.content !== "__EXTERNAL_DATA__") {
             return new TextEncoder().encode(node.content).length;
         }
+
+        // 次に、記録されたサイズがあればそれを返す（巨大ファイルなどでDBにある場合用）
+        if (typeof node.size === "number") return node.size;
+
         return 0;
     }
 
-    // フォルダの場合（再帰的に計算）
     if (node.type === "folder") {
         const keys = Object.keys(node).filter(key =>
-            !["type", "name", "size", "content", "entry", "singleton"].includes(key)
+            !["type", "name", "size", "content", "entry", "singleton", "target"].includes(key)
         );
 
-        // 全ての子要素のサイズを並列で計算
         const sizes = await Promise.all(keys.map(key => {
             const childNode = node[key];
-            if (!childNode) return 0; // 安全策
+            if (!childNode) return 0;
             const childPath = path ? `${path}/${key}` : key;
             return calcNodeSize(childNode, childPath);
         }));
