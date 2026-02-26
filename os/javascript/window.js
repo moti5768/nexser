@@ -210,7 +210,7 @@ ${!options.hideStatus ? `
         taskbarBtn = document.createElement("button");
         taskbarBtn.className = "taskbar-window-btn button";
         taskbarBtn.innerHTML = `
-        <span class="taskbar-icon" style="margin-right: 4px;">${initialIcon}</span>
+        <span class="taskbar-icon">${initialIcon}</span>
         <span class="taskbar-text">${title}</span>
     `;
         taskbarBtn.dataset.title = title;
@@ -1056,7 +1056,7 @@ export function showModalWindow(title, message, options = {}) {
     (options.buttons || [{ label: "OK", onClick: null }]).forEach(btn => {
         const b = document.createElement("button");
         b.textContent = btn.label;
-        b.onclick = () => closeDialog(btn.onClick);
+        b.onclick = () => closeDialog(btn.onClick || btn.action);
         b.style.margin = "0 6px";
         b.style.minWidth = "70px";
         b.style.padding = "4px 10px";

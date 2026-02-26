@@ -4,7 +4,7 @@ import { showModalWindow, alertWindow } from "../window.js";
 import { resolveFS, validateName } from "../fs-utils.js";
 import { FS, initFS } from "../fs.js";
 import { attachContextMenu } from "../context-menu.js";
-import { resolveAppByPath, getExtension, getIcon } from "../file-associations.js";
+import { resolveAppByPath, getIcon } from "../file-associations.js";
 import { addRecent } from "../recent.js";
 import { setupRibbon } from "../ribbon.js";
 import { saveSetting, loadSetting } from "./settings.js";
@@ -21,9 +21,148 @@ export function hasExtension(name) {
 function deleteFSItem(parentPath, itemName, rerender) {
     const parentNode = resolveFS(parentPath);
     if (!parentNode || !parentNode[itemName]) return;
-    delete parentNode[itemName];
-    rerender?.();
-    window.dispatchEvent(new Event("fs-updated"));
+
+    // --- ゴミ箱内からの完全消去の場合 ---
+    if (parentPath === "Trash" || parentPath.startsWith("Trash/")) {
+        const msg = `
+            <div style="padding:10px; font-size:13px;">
+                「${itemName}」を完全に消去しますか？<br>
+                <small style="color:#ff4444;">※この操作は取り消せません。</small>
+            </div>`;
+
+        const win = showModalWindow("完全削除の確認", msg, {
+            width: 320,
+            height: 175,
+            taskbar: false,
+            overlay: true,
+            buttons: [
+                {
+                    label: "削除",
+                    action: () => {
+                        // 1. 最新のノードを再取得して削除
+                        const targetNode = resolveFS(parentPath);
+                        if (targetNode) {
+                            delete targetNode[itemName];
+                        }
+
+                        // 2. ウィンドウを先に閉じる（イベント発火時の干渉を防ぐ）
+                        if (win._modalOverlay) win._modalOverlay.remove();
+                        win.remove();
+
+                        // 3. システム全体に通知し、描画を更新
+                        window.dispatchEvent(new Event("fs-updated"));
+                        if (typeof rerender === 'function') rerender();
+                    }
+                },
+                {
+                    label: "キャンセル",
+                    action: () => {
+                        if (win._modalOverlay) win._modalOverlay.remove();
+                        win.remove();
+                    }
+                }
+            ]
+        });
+        return;
+    }
+
+    // --- 通常の削除（ゴミ箱へ移動） ---
+    // （ここは元のコードのままでOKですが、rerenderの前にイベントを飛ばすと確実です）
+    try {
+        const targetItemData = JSON.parse(JSON.stringify(parentNode[itemName]));
+        targetItemData.originalPath = parentPath;
+
+        const trashNode = resolveFS("Trash");
+        if (!trashNode) return;
+
+        delete parentNode[itemName];
+
+        let targetName = itemName;
+        if (trashNode[itemName]) {
+            targetName = `${Date.now()}_${itemName}`;
+        }
+        trashNode[targetName] = targetItemData;
+
+        window.dispatchEvent(new Event("fs-updated"));
+        rerender?.();
+    } catch (e) {
+        alertWindow(`「${itemName}」は保護されているため削除できません。`);
+    }
+}
+
+/**
+ * ゴミ箱から元に戻す機能
+ */
+export function restoreFSItem(itemName, rerender) {
+    const trash = resolveFS("Trash");
+    const item = trash[itemName];
+    if (!item) return;
+
+    // 削除時に保存しておいた originalPath を使用。なければ Desktop へ。
+    const destPath = item.originalPath || "Desktop";
+    const destNode = resolveFS(destPath);
+
+    if (destNode) {
+        const data = JSON.parse(JSON.stringify(item));
+        delete data.originalPath; // 復元後は管理用パスを削除
+
+        destNode[itemName] = data;
+        delete trash[itemName];
+
+        rerender?.();
+        window.dispatchEvent(new Event("fs-updated"));
+    }
+}
+
+/**
+ * ゴミ箱を空にする機能
+ */
+export function emptyTrash(rerender) {
+    const trash = resolveFS("Trash");
+    if (!trash) return;
+
+    const keys = Object.keys(trash).filter(key =>
+        key !== "type" && key !== "system" && key !== "originalPath"
+    );
+
+    if (keys.length === 0) {
+        return alertWindow("ゴミ箱は空です。");
+    }
+
+    const msg = `
+        <div style="padding:10px; font-size:13px;">
+            ゴミ箱にある ${keys.length} 個のアイテムをすべて完全に削除しますか？
+        </div>`;
+
+    const win = showModalWindow("ゴミ箱を空にする", msg, {
+        width: 320,
+        height: 175,
+        overlay: true,
+        buttons: [
+            {
+                label: "すべて削除",
+                action: () => {
+                    const latestTrash = resolveFS("Trash");
+                    keys.forEach(key => {
+                        delete latestTrash[key];
+                    });
+
+                    if (win._modalOverlay) win._modalOverlay.remove();
+                    win.remove();
+
+                    window.dispatchEvent(new Event("fs-updated"));
+                    rerender?.();
+                }
+            },
+            {
+                label: "キャンセル",
+                action: () => {
+                    if (win._modalOverlay) win._modalOverlay.remove();
+                    win.remove();
+                }
+            }
+        ]
+    });
 }
 
 function createNewItem(currentPath, listContainer, renderCallback, type = "folder") {
@@ -267,12 +406,30 @@ export default async function Explorer(root, options = {}) {
             });
         }
 
-        function buildTree(node, parentEl, path = "", depth = 0, prefix = "", currentPath = "") {
-            const entries = Object.entries(node).filter(([k]) => k !== "type");
+        // explorer.js 内の buildTree を以下に差し替えてください
+
+        function buildTree(node, parentEl, path = "", depth = 0, prefix = "", currentPath = "", visited = new Set()) {
+            // 【重要】無限ループ防止: 既に訪れたオブジェクト（ノード）ならスキップ
+            if (node && typeof node === "object") {
+                if (visited.has(node)) return;
+                visited.add(node);
+            }
+
+            // メタデータを除外してループ
+            const entries = Object.entries(node).filter(([k]) =>
+                k !== "type" && k !== "system" && k !== "originalPath"
+            );
+
             entries.forEach(([name, child], index) => {
                 const fullPath = path ? `${path}/${name}` : name;
-                const isFolder = child.type === "folder" || (!child.type && !hasExtension(name));
-                const hasChildren = isFolder && Object.keys(child).some(k => k !== "type");
+
+                // 【重要】isFolder の判定を厳格にする (link は中身を追跡しない)
+                const isFolder = child.type === "folder";
+
+                // 子要素があるか判定（メタデータ以外のキーがあるか）
+                const hasChildren = isFolder && Object.keys(child).some(k =>
+                    k !== "type" && k !== "system" && k !== "originalPath"
+                );
 
                 const isLast = index === entries.length - 1;
                 const newPrefix = prefix + (isLast ? "└─ " : "├─ ");
@@ -289,13 +446,7 @@ export default async function Explorer(root, options = {}) {
                     arrowBtn = document.createElement("button");
                     arrowBtn.className = "tree-arrow";
                     arrowBtn.textContent = "▶";
-                    arrowBtn.style.marginRight = "4px";
-                    arrowBtn.style.fontFamily = "Consolas, monospace";
-                    arrowBtn.style.width = "20px";
-                    arrowBtn.style.height = "20px";
-                    arrowBtn.style.padding = "0";
-                    arrowBtn.style.lineHeight = "18px";
-                    arrowBtn.style.textAlign = "center";
+                    arrowBtn.style.cssText = "margin-right:4px; font-family:Consolas, monospace; width:20px; height:20px; padding:0; line-height:18px; text-align:center;";
                     item.appendChild(arrowBtn);
 
                     subContainer = document.createElement("div");
@@ -305,7 +456,9 @@ export default async function Explorer(root, options = {}) {
                     if (currentPath.startsWith(fullPath)) {
                         subContainer.style.display = "block";
                         arrowBtn.textContent = "▼";
-                    } else subContainer.style.display = "none";
+                    } else {
+                        subContainer.style.display = "none";
+                    }
 
                     arrowBtn.addEventListener("click", e => {
                         e.stopPropagation();
@@ -327,18 +480,21 @@ export default async function Explorer(root, options = {}) {
                 item.addEventListener("click", e => {
                     e.stopPropagation();
                     openFSItem(name, child, path || "");
-                    if (treePanel) {
-                        treePanel.style.display = "none";
-                        const parentArrow = item.querySelector(".tree-arrow");
-                        if (parentArrow) parentArrow.textContent = "▶";
+                    if (win._treePanel) {
+                        win._treePanel.style.display = "none";
                     }
                 });
 
-                if (hasChildren) buildTree(child, subContainer, fullPath, depth + 1, prefix + (isLast ? "   " : "│  "), currentPath);
+                // 再帰呼び出し時、visited セットを引き継ぐ
+                if (hasChildren) {
+                    buildTree(child, subContainer, fullPath, depth + 1, prefix + (isLast ? "   " : "│  "), currentPath, visited);
+                }
             });
         }
 
-        buildTree(FS, treePanel, "", 0, "", currentPath);
+        // 呼び出し側も visited をリセットするように変更
+        buildTree(FS, treePanel, "", 0, "", currentPath, new Set());
+
     }
 
     // ------------------------
@@ -347,7 +503,7 @@ export default async function Explorer(root, options = {}) {
     const render = async (path) => {
         currentPath = path;
         updateTitle_explorer(currentPath);
-
+        setupRibbon(win, () => currentPath, render, getExplorerMenus());
         if (globalSelected.item) {
             globalSelected.item.classList.remove("selected");
             globalSelected.item = null;
@@ -567,7 +723,7 @@ export default async function Explorer(root, options = {}) {
         }
 
         for (const name in folder) {
-            if (name === "type") continue;
+            if (name === "type" || name === "system") continue;
             const itemData = folder[name];
             const childPath = currentPath ? `${currentPath}/${name}` : name;
 
@@ -757,30 +913,51 @@ export default async function Explorer(root, options = {}) {
     // Ribbon
     // ------------------------
     function getExplorerMenus() {
+        // 現在の場所がゴミ箱（Trash）の中かどうかを判定
+        const isInsideTrash = currentPath === "Trash" || currentPath.startsWith("Trash/");
+
         return [
             {
                 title: "File",
                 items: [
                     {
-                        label: "開く",
+                        // ゴミ箱なら「元に戻す」、通常なら「開く」
+                        label: isInsideTrash ? "元に戻す" : "開く",
                         action: () => {
                             if (!globalSelected.item) return;
                             const name = globalSelected.item.dataset.name;
-                            const node = resolveFS(currentPath)[name];
-                            openFSItem(name, node, currentPath);
+
+                            if (isInsideTrash) {
+                                // 復元処理を実行
+                                restoreFSItem(name, () => render(currentPath));
+                            } else {
+                                // 通常の開く処理
+                                const node = resolveFS(currentPath)[name];
+                                openFSItem(name, node, currentPath);
+                            }
                         },
                         disabled: () => !globalSelected.item
                     },
                     {
                         label: "新しいフォルダ",
-                        action: () => createNewItem(currentPath, listContainer, () => render(currentPath), "folder")
+                        action: () => createNewItem(currentPath, listContainer, () => render(currentPath), "folder"),
+                        // ゴミ箱の中では新規フォルダ作成を禁止
+                        disabled: () => isInsideTrash
                     },
                     {
-                        label: "新しいファイル",
-                        action: () => createNewItem(currentPath, listContainer, () => render(currentPath), "file")
+                        // ゴミ箱なら「空にする」、通常なら「新しいファイル」
+                        label: isInsideTrash ? "ゴミ箱を空にする" : "新しいファイル",
+                        action: () => {
+                            if (isInsideTrash) {
+                                emptyTrash(() => render(currentPath));
+                            } else {
+                                createNewItem(currentPath, listContainer, () => render(currentPath), "file");
+                            }
+                        }
                     },
                     {
-                        label: "選択アイテムを削除",
+                        // ゴミ箱なら「完全に削除」、通常なら「ゴミ箱に捨てる」
+                        label: isInsideTrash ? "完全に削除" : "選択アイテムを削除",
                         action: () => {
                             if (!globalSelected.item) return;
                             deleteFSItem(
@@ -789,8 +966,8 @@ export default async function Explorer(root, options = {}) {
                                 () => {
                                     render(currentPath);
                                     globalSelected.item = null;
-                                    setupRibbon(win, () => currentPath, render, explorerMenus);
-
+                                    // リボンメニューの状態を再更新
+                                    setupRibbon(win, () => currentPath, render, getExplorerMenus());
                                 }
                             );
                         },
@@ -803,7 +980,6 @@ export default async function Explorer(root, options = {}) {
                             const name = globalSelected.item.dataset.name;
                             const node = resolveFS(currentPath)[name];
 
-                            // ⭐ 修正: node.type が確実に "file" であるときのみ実行
                             if (node && node.type === "file") {
                                 openWithDialog(`${currentPath}/${name}`, node);
                             } else {
@@ -811,9 +987,9 @@ export default async function Explorer(root, options = {}) {
                             }
                         },
                         disabled: () => {
-                            if (!globalSelected.item) return true;
+                            // ゴミ箱の中、またはファイル以外が選択されている場合は無効
+                            if (!globalSelected.item || isInsideTrash) return true;
                             const node = resolveFS(currentPath)[globalSelected.item.dataset.name];
-                            // ⭐ 修正: file 以外（folder, app, link）はすべて無効化する
                             return !node || node.type !== "file";
                         }
                     }
@@ -858,7 +1034,7 @@ export default async function Explorer(root, options = {}) {
                 // 万が一構造が壊れていた場合の保険（再構築）
                 // アイコン（📁）を維持しつつHTMLをセットし直す
                 taskBtn.innerHTML = `
-                <span class="taskbar-icon" style="margin-right: 4px;">📁</span>
+                <span class="taskbar-icon">📁</span>
                 <span class="taskbar-text">${name}</span>
             `;
             }

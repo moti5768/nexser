@@ -90,7 +90,7 @@ export function buildDesktop() {
 
     // デスクトップ直下のアイコンを生成
     for (const name in FS.Desktop) {
-        if (name === "type") continue;
+        if (name === "type" || name === "system") continue;
         createIcon(name, FS.Desktop[name]);
     }
 
@@ -307,13 +307,50 @@ function createNewItem(currentPath, container, itemType = "folder") {
 }
 
 // --------------------
-// アイテム削除
+// アイテム削除 (ゴミ箱対応版)
 // --------------------
-function deleteFSItem(parentPath, name) {
-    const node = resolveFS(parentPath);
-    if (!node || !node[name]) return;
-    delete node[name];
-    window.dispatchEvent(new Event("fs-updated"));
+function deleteFSItem(parentPath, itemName) {
+    const parentNode = resolveFS(parentPath);
+    if (!parentNode || !parentNode[itemName]) return;
+
+    // ゴミ箱ノードを取得
+    const trashNode = resolveFS("Trash");
+    if (!trashNode) {
+        // ゴミ箱がない場合は念のため従来通りの直接削除を試みる
+        if (!confirm(`「${itemName}」を完全に消去しますか？`)) return;
+        delete parentNode[itemName];
+        window.dispatchEvent(new Event("fs-updated"));
+        return;
+    }
+
+    try {
+        // 1. 元のデータをコピーし、復元用の「元の親パス」を記録
+        const targetItemData = JSON.parse(JSON.stringify(parentNode[itemName]));
+        targetItemData.originalPath = parentPath; // ★復元先を記録
+
+        // 2. 元の場所から削除 (Proxyによる保護がある場合はここでエラーになる)
+        const success = delete parentNode[itemName];
+        if (!success) throw new Error("Blocked by Proxy");
+
+        // 3. ゴミ箱内での名前を決定 (重複回避)
+        let targetName = itemName;
+        if (trashNode[itemName]) {
+            targetName = `${Date.now()}_${itemName}`;
+        }
+
+        // 4. ゴミ箱へ追加
+        trashNode[targetName] = targetItemData;
+
+        // 完了通知
+        window.dispatchEvent(new Event("fs-updated"));
+    } catch (e) {
+        console.warn(`[Desktop Guard] 削除拒否: ${itemName}`);
+        alertWindow(`「${itemName}」は保護されているため削除できません。`, {
+            title: "システム保護",
+            width: 350,
+            height: 160
+        });
+    }
 }
 
 // 修正後の openFSItem

@@ -70,7 +70,7 @@ function createMenu(folder, basePath, menuRoot) {
     let hasItems = false;
 
     for (const name in folder) {
-        if (name === "type") continue;
+        if (name === "type" || name === "system") continue;
         hasItems = true;
 
         const node = folder[name];
