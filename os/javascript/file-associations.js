@@ -60,6 +60,7 @@ export function resolveAppByPath(path) {
  * ファイルやアプリのアイコンを判定する関数
  */
 export function getIcon(name, node) {
+    if (name.toLowerCase() === "trash") return "🗑️";
     if (node.type === "folder") return "📁";
     if (node.type === "link") return "🔗";
 

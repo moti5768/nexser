@@ -13,7 +13,7 @@ export let FS = {
     },
     Desktop: {
         type: "folder",
-        Trash: { type: "link", target: "Trash" },
+        Trash: { type: "link", target: "Trash", system: true },
         Programs: { type: "link", target: "Programs" },
         Documents: { type: "link", target: "Programs/Documents" },
         "Terminal.app": { type: "link", target: "Programs/Applications/Terminal.app" },

@@ -906,7 +906,9 @@ export default async function Explorer(root, options = {}) {
 
             listContainer._keydownBound = true; // 初回だけ追加
         }
-
+        requestAnimationFrame(() => {
+            updateTitle_explorer(path);
+        });
     };
 
     // ------------------------
@@ -1021,23 +1023,36 @@ export default async function Explorer(root, options = {}) {
 
     function updateTitle_explorer(path) {
         if (!win) return;
-        const name = path.split("/").pop() || path;
 
+        // 現在のパスから名前とノード情報を取得
+        const name = path.split("/").pop() || path;
+        const node = resolveFS(path);
+
+        // 1. まずアイコンを取得（getIcon関数でゴミ箱なら🗑️が返るはずです）
+        let iconChar = node ? getIcon(name, node) : "📁";
+
+        // 2. ゴミ箱以外で、かつフォルダなら 📁 にする
+        // 【修正】ゴミ箱（Trash）の時は、getIconの判定を優先させる（上書きしない）
+        if (node && node.type === "folder" && name !== "Trash") {
+            iconChar = "📁";
+        }
+
+        // 1. ウィンドウタイトルのテキストを更新
         if (titleEl) titleEl.textContent = name;
 
+        // 2. ウィンドウタイトルのアイコンを更新
+        const windowIcon = win.querySelector(".window-icon");
+        if (windowIcon) {
+            windowIcon.textContent = iconChar;
+        }
+
+        // 3. タスクバーの更新
         if (taskBtn) {
-            // 直接 textContent をいじらず、テキスト用のスパンを探す
+            const iconSpan = taskBtn.querySelector(".taskbar-icon");
             const textSpan = taskBtn.querySelector(".taskbar-text");
-            if (textSpan) {
-                textSpan.textContent = name; // テキスト部分だけ更新
-            } else {
-                // 万が一構造が壊れていた場合の保険（再構築）
-                // アイコン（📁）を維持しつつHTMLをセットし直す
-                taskBtn.innerHTML = `
-                <span class="taskbar-icon">📁</span>
-                <span class="taskbar-text">${name}</span>
-            `;
-            }
+
+            if (iconSpan) iconSpan.textContent = iconChar;
+            if (textSpan) textSpan.textContent = name;
             taskBtn.dataset.title = name;
         }
 
