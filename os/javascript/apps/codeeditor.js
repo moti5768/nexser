@@ -784,11 +784,20 @@ export default function CodeEditor(root, options = {}) {
        Ribbon
     ========================== */
     if (win) {
+        const reloadPreview = () => {
+            if (previewWin && document.body.contains(previewWin)) {
+                renderPreview(); // 既存のプレビューがあれば中身を更新
+                bringToFront(previewWin);
+            } else {
+                openPreview(); // なければ新規で開く
+            }
+        };
         setupRibbon(win, () => filePath, null, [
             {
                 title: "File", items: [
                     { label: "Save", action: save },
-                    { label: "Preview", action: openPreview }
+                    { label: "Preview", action: openPreview },
+                    { label: "Reload Preview", action: reloadPreview }
                 ]
             },
             {
@@ -886,6 +895,12 @@ export default function CodeEditor(root, options = {}) {
         if (e.altKey && e.key === "F4") { e.preventDefault(); requestClose(); }
         if (e.ctrlKey && e.key.toLowerCase() === "s") { e.preventDefault(); save(); }
         if (e.ctrlKey && e.key === "Enter") { e.preventDefault(); openPreview(); }
+        if (e.ctrlKey && e.key.toLowerCase() === "r") {
+            e.preventDefault();
+            if (previewWin && document.body.contains(previewWin)) {
+                renderPreview();
+            }
+        }
     });
 
     if (win) {

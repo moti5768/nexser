@@ -2,10 +2,8 @@
 import { openDB } from "../db.js";
 import { clearRecent } from "../recent.js";
 import { setWindowAnimationEnabled, alertWindow, confirmWindow } from "../window.js";
-import { calcNodeSize } from "./explorer.js";
 
 const STORE = "settings";
-const MAX_STORAGE_LIMIT = 100 * 1024 * 1024 * 1024; // 100GB
 
 function showConfirm(root, message, onYes, onNo) {
     const win = root.closest(".window");
@@ -33,13 +31,12 @@ export async function saveSetting(key, value) {
     try {
         const db = await getDB();
 
-        // ★ 100GB制限のチェックを追加
         if (navigator.storage && navigator.storage.estimate) {
-            const { usage } = await navigator.storage.estimate();
-            if (usage >= MAX_STORAGE_LIMIT) {
-                console.error("Storage limit reached (100GB). Cannot save.");
+            const { usage, quota } = await navigator.storage.estimate();
+            // ★ 固定値ではなく quota を使用
+            if (usage >= quota * 0.95) {
                 const activeWin = document.querySelector(".window:not([style*='display: none'])");
-                alertWindow("ディスク領域不足: 設定を保存できませんでした。不要なファイルを削除してください。", { parentWin: activeWin });
+                alertWindow("ディスク領域不足のため、設定を保存できませんでした。", { parentWin: activeWin });
                 return false;
             }
         }
@@ -407,8 +404,25 @@ export default async function SettingsApp(content) {
         saveBtn.textContent = "Save Changes";
         saveBtn.style.marginTop = "8px";
         saveBtn.onclick = async () => {
-            await saveSetting("userName", nameInput.value);
-            window.dispatchEvent(new CustomEvent("user-profile-updated", { detail: nameInput.value }));
+            // --- バリデーション追加 ---
+            const newName = nameInput.value.trim(); // 前後の空白を削除
+
+            if (newName === "") {
+                // 空欄の場合は警告を出して中断
+                showAlert(root, "名前を入力してください。空欄にすることはできません。");
+                // 入力欄をリセット（任意）
+                nameInput.value = (await loadSetting("userName")) || "Admin";
+                return;
+            }
+
+            if (newName.length > 20) {
+                showAlert(root, "名前が長すぎます（20文字以内）。");
+                return;
+            }
+            // ------------------------
+
+            await saveSetting("userName", newName);
+            window.dispatchEvent(new CustomEvent("user-profile-updated", { detail: newName }));
             showAlert(root, "User profile saved.");
         };
 
@@ -527,52 +541,73 @@ export default async function SettingsApp(content) {
 
                 for (const storeName of storeNames) {
                     let bytes = 0;
+                    // トランザクションを開始
                     const tx = db.transaction(storeName, "readonly");
                     const store = tx.objectStore(storeName);
 
-                    await new Promise((resolve) => {
+                    await new Promise((resolve, reject) => {
                         const request = store.openCursor();
-                        request.onsuccess = async (event) => {
+
+                        request.onsuccess = (event) => {
                             const cursor = event.target.result;
                             if (cursor) {
                                 const item = cursor.value;
 
-                                // --- 対応箇所 ---
+                                // 1. files ストア（実体データ）の計算
                                 if (storeName === "files") {
-                                    // files ストアは実体そのものが入っている
-                                    bytes += (typeof item === 'string' ? item.length : 0);
-                                } else {
-                                    // 修正ポイント：await を追加し、計算結果を待機する
-                                    // kv ストアなどの場合、item が FS 構造（オブジェクト）であることを確認
-                                    let size = 0;
-                                    try {
-                                        // item がファイルシステムノードの形式であれば計算
-                                        size = await calcNodeSize(item, "");
-                                    } catch (e) {
-                                        size = 0;
+                                    if (item instanceof Blob) {
+                                        bytes += item.size;
+                                    } else if (typeof item === 'string') {
+                                        // UTF-8換算での正確なバイト数を加算
+                                        bytes += new TextEncoder().encode(item).length;
+                                    } else if (item instanceof ArrayBuffer) {
+                                        bytes += item.byteLength;
                                     }
-
-                                    if (size === 0 && item != null) {
-                                        // フォールバック計算
-                                        size = JSON.stringify(item).length;
-                                    }
-                                    bytes += size;
                                 }
-                                // ----------------
+                                // 2. kv ストアやその他の構造データの計算
+                                else {
+                                    // JSON.stringifyの結果をバイト換算（目安として最も確実）
+                                    try {
+                                        const jsonString = JSON.stringify(item);
+                                        if (jsonString) {
+                                            bytes += new TextEncoder().encode(jsonString).length;
+                                        }
+                                    } catch (e) {
+                                        // 循環参照などでJSON化できない場合のフォールバック
+                                        bytes += 0;
+                                    }
+                                }
 
+                                // 重要: await を挟まずに continue を呼ぶことでトランザクションを維持
                                 cursor.continue();
-                            } else resolve();
+                            } else {
+                                resolve();
+                            }
                         };
-                        request.onerror = () => resolve();
+
+                        request.onerror = () => reject(request.error);
+                        tx.onabort = () => reject(new Error("Transaction aborted"));
                     });
                     result[storeName] = bytes;
                 }
-            } catch (e) { console.error(e); }
+            } catch (e) {
+                console.error("[Settings] getStoreSizes failed:", e);
+            }
             return result;
         }
         async function renderStorage() {
             // 1. まずデータを先に計算する (この間、storageBoxの中身は古いまま維持されます)
             const sizes = await getStoreSizes();
+
+            // ★ ブラウザから実際のクォータを取得
+            let quota = 0;
+            if (navigator.storage && navigator.storage.estimate) {
+                const estimate = await navigator.storage.estimate();
+                quota = estimate.quota;
+            } else {
+                quota = 100 * 1024 * 1024 * 1024; // フォールバック用(100GB)
+            }
+
             if (!document.contains(storageBox) || currentTabId !== "system") return;
             let virtualUsedBytes = 0;
 
@@ -617,7 +652,6 @@ export default async function SettingsApp(content) {
             }
             tempContainer.appendChild(listTable);
 
-            const quota = MAX_STORAGE_LIMIT;
             const freeSpace = Math.max(0, quota - virtualUsedBytes);
             const usedRatio = quota > 0 ? (virtualUsedBytes / quota) : 0;
             const finalPercent = (usedRatio * 100).toFixed(4);

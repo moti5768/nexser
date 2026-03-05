@@ -7,8 +7,6 @@ const STORE_FILES = "files"; // データ本体保存用
 const FS_KEY = "fs";
 
 const LARGE_FILE_THRESHOLD = 100 * 1024;
-// ★追加: 保存上限 (100GB)
-const MAX_STORAGE_LIMIT = 100 * 1024 * 1024 * 1024;
 
 let saveChain = Promise.resolve();
 
@@ -109,16 +107,20 @@ export async function getFileContent(path) {
 export async function saveFS(fs) {
     saveChain = saveChain.then(async () => {
         if (navigator.storage && navigator.storage.estimate) {
-            const { usage } = await navigator.storage.estimate();
-            if (usage >= MAX_STORAGE_LIMIT) {
-                console.error(`[FS-DB] Save aborted: Storage limit reached (${(usage / 1024 / 1024 / 1024).toFixed(2)}GB / 100GB)`);
+            // ★ quota (割り当て上限) を取得
+            const { usage, quota } = await navigator.storage.estimate();
+
+            // 使用量が上限の 95% を超えたら警告して中断（余裕を持たせる）
+            if (usage >= quota * 0.95) {
+                const quotaGB = (quota / 1024 / 1024 / 1024).toFixed(2);
+                console.error(`[FS-DB] Save aborted: Storage limit reached (${(usage / 1024 / 1024 / 1024).toFixed(2)}GB / ${quotaGB}GB)`);
+
                 import("./window.js").then(m => {
-                    m.alertWindow(`ディスク領域不足: 100GB の制限に達したため、変更を保存できませんでした。不要なファイルを削除してください。`, { title: "システム エラー" });
+                    m.alertWindow(`ディスク領域不足: ブラウザの制限 (${quotaGB}GB) に達したため、保存できません。`, { title: "システム エラー" });
                 }).catch(() => {
-                    // 万が一 window.js がロードできない場合
-                    alert("ディスク領域不足: 100GB の制限に達しました。");
+                    alert("ディスク領域不足です。");
                 });
-                return; // 保存処理を行わずに終了
+                return;
             }
         }
         const db = await openDB();
