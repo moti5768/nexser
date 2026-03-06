@@ -44,7 +44,10 @@ export default function main(content, options) {
             config = {};
         }
 
-        const files = Object.keys(music).filter(name => name !== "type");
+        const files = Object.keys(music).filter(name => {
+            const PROTECTED_KEYS = ["type", "system", "entry", "singleton", "shell", "target"];
+            return !PROTECTED_KEYS.includes(name);
+        });
 
         if (files.length === 0) {
             listEl.innerHTML = `<div style="padding:20px; text-align:center; color:#888; font-size:12px;">ファイルがありません</div>`;

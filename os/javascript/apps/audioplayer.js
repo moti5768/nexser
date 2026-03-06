@@ -12,6 +12,7 @@ export default function main(content, options) {
     let isDragging = false;
     let isLoading = false;
     let currentPath = options?.path || null;
+    let currentVolume = 0.7;
 
     let playMode = 0;
     const modeLabels = ["OFF", "全曲", "1曲"];
@@ -166,7 +167,8 @@ export default function main(content, options) {
 
         try {
             currentAudio = new Audio(audioData);
-            currentAudio.volume = parseFloat(volSlider.value);
+            currentAudio.volume = currentVolume; // ★保存しておいた音量を適用
+            volSlider.value = currentVolume;    // ★スライダーのつまみの位置も合わせる
             if (titleEl) titleEl.innerText = fileName;
             updateWindowTitle(win, fileName, false);
 
@@ -239,6 +241,11 @@ export default function main(content, options) {
         if (currentAudio) currentAudio.volume = val;
         volIcon.innerText = val === 0 ? "🔇" : val < 0.5 ? "🔉" : "🔊";
     };
+    window.addEventListener("click", (e) => {
+        if (e.target !== volIcon && e.target !== volSlider) {
+            volSlider.style.display = "none";
+        }
+    });
 
     // --- シークバー（動いていた元のロジック + タッチ対応 + 戻り防止） ---
     const startDragging = () => { isDragging = true; };
