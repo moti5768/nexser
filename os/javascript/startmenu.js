@@ -181,31 +181,42 @@ function createMenu(folder, basePath, menuRoot) {
 ===================================================== */
 function setupHover(parent, submenu) {
     let hideTimer = null;
-    let initialized = false;
 
     const show = () => {
         clearTimeout(hideTimer);
+
+        // 1. まず表示させてサイズを確定させる
         submenu.style.display = "block";
 
-        if (!initialized) {
-            const rect = submenu.getBoundingClientRect();
-            const viewportWidth = window.innerWidth;
+        // 2. 位置を一旦リセット（前回の計算結果をクリア）
+        submenu.style.left = "";
+        submenu.style.top = "";
 
-            if (rect.right > viewportWidth) {
-                submenu.style.left = `-${rect.width}px`;
-            } else {
-                submenu.style.left = "";
+        // 3. 最新の座標と画面サイズを取得
+        const rect = submenu.getBoundingClientRect();
+        const parentRect = parent.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+
+        // --- 横方向の調整 ---
+        // 右端がはみ出すなら左側に表示
+        if (rect.right > viewportWidth) {
+            submenu.style.left = `-${rect.width}px`;
+
+            // 左に振った結果、左端もはみ出すなら画面の左端(0)に強制移動
+            const newRect = submenu.getBoundingClientRect();
+            if (newRect.left < 0) {
+                submenu.style.left = `-${parentRect.left}px`;
             }
+        }
 
-            const viewportHeight = window.innerHeight;
-            if (rect.bottom > viewportHeight) {
-                const offset = rect.bottom - viewportHeight + 10;
-                submenu.style.top = `-${offset}px`;
-            } else {
-                submenu.style.top = "";
-            }
-
-            initialized = true;
+        // --- 縦方向の調整 ---
+        // 下端がはみ出すなら、はみ出した分だけ上にずらす
+        if (rect.bottom > viewportHeight) {
+            const overflow = rect.bottom - viewportHeight;
+            // 親要素の y 座標を超えない範囲で上にずらす（+10は余白）
+            const safeOffset = Math.min(overflow + 10, parentRect.top);
+            submenu.style.top = `-${safeOffset}px`;
         }
     };
 
@@ -216,22 +227,17 @@ function setupHover(parent, submenu) {
         }, 200);
     };
 
-    const isInside = el =>
-        parent.contains(el) || submenu.contains(el);
+    const isInside = el => parent.contains(el) || submenu.contains(el);
 
     parent.addEventListener("mouseenter", show);
     submenu.addEventListener("mouseenter", show);
 
     parent.addEventListener("mouseleave", e => {
-        if (!isInside(e.relatedTarget)) {
-            scheduleHide();
-        }
+        if (!isInside(e.relatedTarget)) scheduleHide();
     });
 
     submenu.addEventListener("mouseleave", e => {
-        if (!isInside(e.relatedTarget)) {
-            scheduleHide();
-        }
+        if (!isInside(e.relatedTarget)) scheduleHide();
     });
 }
 

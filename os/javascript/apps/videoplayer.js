@@ -145,8 +145,9 @@ export default function VideoPlayer(root, options = {}) {
        保存ロジック (統合版)
     ========================== */
     async function save() {
-        const desktop = resolveFS("Desktop");
-        if (!desktop) return showWarning(root, "Desktopが見つかりません");
+        // 1. 保存先を Desktop から Programs/Movie に変更
+        const targetDir = resolveFS("Programs/Movie");
+        if (!targetDir) return showWarning(root, "Programs/Movieが見つかりません");
 
         const treatAsNew = !fileNode || (filePath && filePath.toLowerCase().endsWith("videoplayer.app"));
 
@@ -163,7 +164,7 @@ export default function VideoPlayer(root, options = {}) {
                 ? await loadFileAsDataURL(dataToSave)
                 : dataToSave;
 
-            // 【ここが重要】Base64(DataURL)から実際のバイト数を計算
+            // Base64(DataURL)から実際のバイト数を計算
             let actualSize = 0;
             if (typeof encodedContent === "string" && encodedContent.startsWith("data:")) {
                 const base64Part = encodedContent.split(",")[1] || "";
@@ -182,7 +183,7 @@ export default function VideoPlayer(root, options = {}) {
 
                 // contentとsizeを同時に更新
                 fileNode.content = encodedContent;
-                fileNode.size = actualSize; // ★サイズを明示的にセット
+                fileNode.size = actualSize;
 
                 dirty = false;
                 draftVideo = null;
@@ -196,7 +197,8 @@ export default function VideoPlayer(root, options = {}) {
             /* --- 3. 新規保存 --- */
             let finalName = baseTitle;
             let idx = 1;
-            while (desktop[finalName]) {
+            // targetDir (Programs/Movie) 内で重複チェック
+            while (targetDir[finalName]) {
                 finalName = baseTitle.replace(/\.(mp4|webm|ogg)$/i, "") + ` (${idx++}).mp4`;
             }
 
@@ -208,7 +210,7 @@ export default function VideoPlayer(root, options = {}) {
             }
             finalName = name;
 
-            if (desktop[finalName]) {
+            if (targetDir[finalName]) {
                 showWarning(root, "同名のファイルが存在します");
                 return;
             }
@@ -216,23 +218,29 @@ export default function VideoPlayer(root, options = {}) {
             saveOverlay.style.display = "flex";
             await new Promise(r => setTimeout(r, 50));
 
-            // 新規作成時も size を含める
-            desktop[finalName] = {
+            // targetDir (Programs/Movie) に新規作成
+            targetDir[finalName] = {
                 type: "file",
                 content: encodedContent,
-                size: actualSize // ★ここがエクスプローラーの表示に使われる
+                size: actualSize
             };
 
-            const newFilePath = `Desktop/${finalName}`;
+            // 新しいパスを Programs/Movie に設定
+            const newFilePath = `Programs/Movie/${finalName}`;
             window.dispatchEvent(new Event("fs-updated"));
 
-            /* ウィンドウ差し替えロジック (変更なし) */
+            /* ウィンドウ差し替えロジック */
             if (win) {
                 const oldWin = win;
                 const oldRoot = root;
                 const oldBtn = oldWin._taskbarBtn;
+
+                // 新しいタイトルでウィンドウを作成
                 const newRoot = createWindow(finalName, { width: 600, height: 450 });
+
                 oldWin.parentElement.replaceChild(newRoot.parentElement, oldRoot.parentElement);
+
+                // 新しいパスで VideoPlayer を初期化
                 VideoPlayer(newRoot, { path: newFilePath });
 
                 if (oldBtn && Array.isArray(taskbarButtons)) {

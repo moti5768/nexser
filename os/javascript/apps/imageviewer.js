@@ -214,9 +214,10 @@ export default function ImageViewer(root, options = {}) {
        保存処理
     ========================== */
     async function save() {
-        const desktop = resolveFS("Desktop");
-        if (!desktop) {
-            showWarning(root, "Desktop が見つかりません");
+        // 1. 保存先を Programs/Picture に変更
+        const targetDir = resolveFS("Programs/Picture");
+        if (!targetDir) {
+            showWarning(root, "Programs/Picture が見つかりません");
             return;
         }
 
@@ -257,7 +258,6 @@ export default function ImageViewer(root, options = {}) {
                         {
                             label: "OK",
                             onClick: () => {
-                                // resolveを実行する直前に、現在のDOMから最新の入力を取得する
                                 const currentInput = content.querySelector(".modal-prompt-input");
                                 resolve(currentInput ? currentInput.value : defaultName);
                             }
@@ -266,13 +266,10 @@ export default function ImageViewer(root, options = {}) {
                     ]
                 });
 
-                // 1. 既に存在するかチェック (識別用のクラス名 .modal-prompt-input を使用)
                 let promptInput = content.querySelector(".modal-prompt-input");
-
-                // 2. 存在しない場合のみ新しく作る
                 if (!promptInput) {
                     promptInput = document.createElement("input");
-                    promptInput.className = "modal-prompt-input"; // クラス名を付与して識別可能にする
+                    promptInput.className = "modal-prompt-input";
                     promptInput.type = "text";
                     promptInput.style.width = "100%";
                     promptInput.style.marginTop = "10px";
@@ -287,14 +284,14 @@ export default function ImageViewer(root, options = {}) {
                     }
                 }
 
-                // 3. 常に最新のデフォルト値をセットしてフォーカス
                 promptInput.value = defaultName;
                 setTimeout(() => promptInput.focus(), 10);
             });
         }
 
+        // 重複チェックも targetDir (Programs/Picture) に対して行う
         let idx = 1;
-        while (desktop[finalName]) {
+        while (targetDir[finalName]) {
             finalName = baseTitle.replace(/\.(png|jpg|jpeg)$/i, "") + ` (${idx++}).png`;
         }
 
@@ -302,7 +299,7 @@ export default function ImageViewer(root, options = {}) {
         if (!name) return;
         finalName = name;
 
-        if (desktop[finalName]) {
+        if (targetDir[finalName]) {
             showWarning(root, "同名のファイルが存在します");
             return;
         }
@@ -311,9 +308,12 @@ export default function ImageViewer(root, options = {}) {
             type: "file",
             content: draftImage instanceof File ? await blobToDataURL(draftImage) : draftImage
         };
-        desktop[finalName] = newNode;
 
-        const newFilePath = `Desktop/${finalName}`;
+        // targetDir に保存
+        targetDir[finalName] = newNode;
+
+        // パスを Programs/Picture に合わせて設定
+        const newFilePath = `Programs/Picture/${finalName}`;
 
         window.dispatchEvent(new Event("fs-updated"));
 
@@ -333,7 +333,7 @@ export default function ImageViewer(root, options = {}) {
                 oldRoot.parentElement
             );
 
-            // draftImage を引き継いで再表示
+            // 新しいパス（Programs/Picture/...）を引き継いで再表示
             ImageViewer(newRoot, { path: newFilePath });
             if (draftImage) {
                 const newWinImg = newRoot.querySelector("img");
