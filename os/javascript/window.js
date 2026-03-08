@@ -481,7 +481,15 @@ ${!options.hideStatus ? `
         dragStarted = false;
         didMove = false;
         focus(); //
-
+        const dragShield = document.createElement("div");
+        Object.assign(dragShield.style, {
+            position: "fixed",
+            top: 0, left: 0,
+            width: "100vw", height: "100vh",
+            zIndex: 9998,
+            background: "transparent"
+        });
+        document.body.appendChild(dragShield);
         downX = e.clientX;
         downY = e.clientY;
         const rect = w.getBoundingClientRect();
@@ -540,7 +548,7 @@ ${!options.hideStatus ? `
                 preview.remove();
                 preview = null;
             }
-
+            dragShield.remove();
             dragging = false;
             dragStarted = false;
 
@@ -624,12 +632,23 @@ ${!options.hideStatus ? `
             createPreview();
             document.body.style.userSelect = "none";
 
+            const resizeShield = document.createElement("div");
+            Object.assign(resizeShield.style, {
+                position: "fixed",
+                top: 0, left: 0,
+                width: "100vw", height: "100vh",
+                zIndex: 9998,
+                background: "transparent",
+                // cursor は resizeCursor を流用
+            });
             const cursors = {
                 top: "ns-resize", bottom: "ns-resize",
                 left: "ew-resize", right: "ew-resize",
                 topLeft: "nwse-resize", bottomRight: "nwse-resize",
                 topRight: "nesw-resize", bottomLeft: "nesw-resize"
             };
+            resizeShield.style.cursor = cursors[handle] || "default";
+            document.body.appendChild(resizeShield);
             resizeCursor = cursors[handle] || "default";
             document.body.style.cursor = resizeCursor;
 
@@ -721,7 +740,7 @@ ${!options.hideStatus ? `
                     preview.remove();
                     preview = null;
                 }
-
+                resizeShield.remove();
                 resizing = false;
                 currentHandle = null;
 
@@ -1329,4 +1348,17 @@ export function installWindowContextMenu(w) {
 
 export function setWindowAnimationEnabled(v) {
     ENABLE_WINDOW_ANIMATION = v;
+}
+
+export function destroyWindow(win) {
+    if (!win) return;
+    const index = taskbarButtons.findIndex(btn => btn._window === win);
+    if (index !== -1) {
+        taskbarButtons[index].remove();
+        taskbarButtons.splice(index, 1);
+        console.log("Taskbar button removed for:", win.querySelector(".title-text")?.innerText);
+    }
+    if (win.isConnected) {
+        win.remove();
+    }
 }

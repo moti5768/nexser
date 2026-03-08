@@ -100,9 +100,6 @@ export default function CodeEditor(root, options = {}) {
     }
 
     /* =========================
-   連携ファイルを tabs に追加 (完全修正版)
-========================= */
-    /* =========================
         連携ファイルを tabs に追加 (最新安定版)
     ========================== */
     function addLinkedFilesToTabs(basePath, content, visited = new Set(), depth = 0) {
@@ -228,7 +225,14 @@ export default function CodeEditor(root, options = {}) {
        Tabs & Title
     ========================== */
     function updateTitle() {
-        updateWindowTitle(win, baseTitle, dirty);
+        if (!activeTab) return;
+
+        // タブ切り替え時と同じルールでタイトルを生成
+        const baseTitle = activeTab.name || "Untitled";
+        const fullTitle = `${baseTitle}`;
+
+        // window.js の共通関数を呼び出す（isModified も連動させる）
+        updateWindowTitle(win, fullTitle, activeTab.isModified);
     }
 
     function renderTabs() {
@@ -245,11 +249,21 @@ export default function CodeEditor(root, options = {}) {
                 userSelect: "none",
                 display: "flex",
                 alignItems: "center",
-                gap: "6px"
+                gap: "6px",
+                maxWidth: "160px",  // タブ全体の最大幅
+                minWidth: "40px",   // 極端に小さくならないように
+                overflow: "hidden"
             });
 
             const label = document.createElement("span");
             label.textContent = tab.name + (tab.dirty ? " *" : "");
+            label.title = tab.name;
+            Object.assign(label.style, {
+                whiteSpace: "nowrap",      // 折り返さない
+                overflow: "hidden",        // はみ出た分を隠す
+                textOverflow: "ellipsis",  // 三点リーダーを表示
+                maxWidth: "120px"          // 省略を開始する最大幅（お好みで調整してください）
+            });
 
             const closeBtn = document.createElement("span");
             closeBtn.textContent = "✕";
@@ -623,6 +637,18 @@ export default function CodeEditor(root, options = {}) {
         let html = fsFiles.get(htmlPath);
         if (!html) return;
 
+        const titleMatch = html.match(/<title>(.*?)<\/title>/i);
+        const winTitleEl = previewWin?.querySelector(".title-text");
+        if (winTitleEl) {
+            if (titleMatch && titleMatch[1]) {
+                // タグの中身があればそれを採用
+                winTitleEl.textContent = `${titleMatch[1]}`;
+            } else {
+                // なければ元のファイル名を表示
+                winTitleEl.textContent = `Preview - ${activeTab?.name || "Untitled"}`;
+            }
+        }
+
         // 相対パスを Blob URL に置換
         html = html.replace(/(src|href)=["']([^"']+)["']/gi, (match, attr, relPath) => {
             const resolved = resolveRelativePath(htmlPath, relPath);
@@ -963,6 +989,57 @@ export default function CodeEditor(root, options = {}) {
 
     // 実行
     init();
+    return {
+        isTabApp: true,
+        /**
+         * 外部（kernel）から新しいファイルを開くよう要求された時の処理
+         * @param {string} newFilePath - 開きたいファイルのフルパス
+         */
+        openNewTab: async (newFilePath) => {
+            const newNode = resolveFS(newFilePath);
+            if (!newNode || newNode.type !== "file") return;
+
+            // すでにタブが開いているか確認
+            const existingTab = tabs.find(t => t.path === newFilePath);
+            if (existingTab) {
+                // すでに開いていればそのタブを選択
+                activeTab = existingTab;
+            } else {
+                // 新しいタブとして追加
+                const newTab = {
+                    name: newFilePath.split("/").pop(),
+                    path: newFilePath,
+                    content: newNode.content,
+                    node: newNode,
+                    isModified: false
+                };
+
+                // もし content が "__EXTERNAL_DATA__" なら実体を取得
+                if (newNode.content === "__EXTERNAL_DATA__") {
+                    try {
+                        const realContent = await getFileContent(newFilePath);
+                        newTab.content = realContent;
+                        newNode.content = realContent;
+                    } catch (e) {
+                        console.error("Failed to load external data for new tab:", e);
+                    }
+                }
+
+                tabs.push(newTab);
+                activeTab = newTab;
+            }
+
+            // UIを更新
+            textarea.value = activeTab.content;
+            renderTabs();
+            updateTitle();
+            updateLineNumbers();
+            renderPreview();
+
+            // ウィンドウを前面に持ってくる（kernel側でも行っていますが念のため）
+            bringToFront(win);
+        }
+    }
 }
 
 export function showConfirm(root, message, onYes, onNo) {

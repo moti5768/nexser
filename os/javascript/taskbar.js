@@ -218,6 +218,7 @@ export function initTaskbar() {
 
         let resizing = false, startY = 0, startHeight = 0;
         let preview = null;
+        let shield = null;
 
         const MIN_HEIGHT = 40;
         const MAX_HEIGHT = 320; // 上限
@@ -232,6 +233,19 @@ export function initTaskbar() {
             resizing = true;
             startY = e.clientY;
             startHeight = taskbar.offsetHeight;
+
+            shield = document.createElement("div");
+            Object.assign(shield.style, {
+                position: "fixed",
+                top: 0,
+                left: 0,
+                width: "100vw",
+                height: "100vh",
+                zIndex: 9998, // プレビュー(9999)のすぐ下
+                background: "transparent",
+                cursor: "ns-resize"
+            });
+            document.body.appendChild(shield);
 
             // プレビュー枠作成（反転色）
             preview = document.createElement("div");
@@ -272,6 +286,11 @@ export function initTaskbar() {
             resizing = false;
             document.body.style.userSelect = "";
             document.body.style.cursor = "";
+
+            if (shield) {
+                shield.remove();
+                shield = null;
+            }
 
             if (preview) {
                 let finalHeight = parseInt(preview.style.height);

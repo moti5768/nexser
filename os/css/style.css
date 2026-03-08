@@ -460,19 +460,19 @@ body {
     touch-action: none;
     position: absolute;
     background: #eee;
-    border: 2px solid #C3C7CB;
+    border: 2.5px solid #C3C7CB;
     /* 4方向すべてに枠を出す */
     box-shadow:
         /* 上下左右の線 */
-        0 2px 0 black,
-        2px 0 0 black,
-        0 -2px 0 whitesmoke,
-        -2px 0 0 whitesmoke,
+        0 2.5px 0 black,
+        2.5px 0 0 black,
+        0 -2.5px 0 whitesmoke,
+        -2.5px 0 0 whitesmoke,
         /* 角を埋める 4 点 */
-        2px 2px 0 black,
-        -2px 2px 0 black,
-        2px -2px 0 whitesmoke,
-        -2px -2px 0 whitesmoke;
+        2.5px 2.5px 0 black,
+        -2.5px 2.5px 0 black,
+        2.5px -2.5px 0 whitesmoke,
+        -2.5px -2.5px 0 whitesmoke;
     display: flex;
     /* タイトルバーとコンテンツを縦に並べる */
     flex-direction: column;

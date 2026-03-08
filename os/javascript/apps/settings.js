@@ -299,10 +299,10 @@ export default async function SettingsApp(content) {
         block2.style.marginTop = "12px";
         block2.innerHTML = `<div>Desktop Background</div>`;
 
-        // 背景色
+        // 背景色入力 (Titlebar側と同じ挙動)
         const deskInput = document.createElement("input");
         deskInput.type = "color";
-        deskInput.value = (await loadSetting("desktopColor")) || "#000000";
+        deskInput.value = (await loadSetting("desktopColor")) || "#52adad";
         deskInput.style.marginRight = "6px";
         deskInput.style.verticalAlign = "middle";
         deskInput.oninput = async () => {
@@ -310,7 +310,7 @@ export default async function SettingsApp(content) {
             applyDesktopBackground();
         };
 
-        // ★追加: 表示形式ドロップダウン
+        // 表示形式ドロップダウン (ピッカーの横に配置)
         const styleSelect = document.createElement("select");
         styleSelect.style.verticalAlign = "middle";
         const styles = [
@@ -332,6 +332,36 @@ export default async function SettingsApp(content) {
 
         styleSelect.onchange = async () => {
             await saveSetting("wallpaperStyle", styleSelect.value);
+            applyDesktopBackground();
+        };
+
+        // 背景色パレット (Titlebar側と同じ構造・同じ色リストを使用)
+        const deskPalette = document.createElement("div");
+        deskPalette.style.display = "flex";
+        deskPalette.style.flexWrap = "wrap";
+        deskPalette.style.gap = "4px";
+        deskPalette.style.margin = "8px 0";
+
+        colors.forEach(c => {
+            const btn = document.createElement("button");
+            btn.style.background = c;
+            btn.style.width = "24px";
+            btn.style.height = "24px";
+            btn.onclick = async () => {
+                deskInput.value = c;
+                await saveSetting("desktopColor", c);
+                applyDesktopBackground();
+            };
+            deskPalette.appendChild(btn);
+        });
+
+        // 背景色リセットボタン
+        const deskResetBtn = document.createElement("button");
+        deskResetBtn.textContent = "Reset Default";
+        deskResetBtn.onclick = async () => {
+            const defaultDeskColor = "#52adad";
+            deskInput.value = defaultDeskColor;
+            await saveSetting("desktopColor", defaultDeskColor);
             applyDesktopBackground();
         };
 
@@ -364,8 +394,9 @@ export default async function SettingsApp(content) {
         };
 
         wpBlock.append(wpBtn, wpReset);
-        // 背景色入力の横にセレクトボックスを並べる
-        block2.append(deskInput, styleSelect, wpBlock);
+
+        // Block2の組み立て (構成をTitlebar側と統一)
+        block2.append(deskInput, styleSelect, deskPalette, deskResetBtn, wpBlock);
 
         /* ---- Window Animation ---- */
         const animBlock = document.createElement("div");
