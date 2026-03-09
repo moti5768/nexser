@@ -1,6 +1,6 @@
 // Paint.js
 import { resolveFS } from "../fs-utils.js";
-import { createWindow, bringToFront, showModalWindow, alertWindow, updateWindowTitle, taskbarButtons } from "../window.js";
+import { showModalWindow, alertWindow, updateWindowTitle } from "../window.js";
 import { setupRibbon } from "../ribbon.js";
 import { getFileContent } from "../fs-db.js";
 import { showColorPicker } from "./texteditor.js";
@@ -259,7 +259,7 @@ export default async function Paint(root, options = {}) {
             promptInput.className = "modal-prompt-input";
             promptInput.type = "text";
             promptInput.value = baseName;
-            promptInput.style.cssText = "width:100%; margin-top:10px;";
+            promptInput.style.cssText = "width:100%; margin-top:10px;　padding:4px; box-sizing:border-box;";
             content.insertBefore(promptInput, content.querySelector(".button-container") || content.lastElementChild);
             setTimeout(() => promptInput.focus(), 10);
         });
