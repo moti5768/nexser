@@ -1,6 +1,6 @@
 // Explorer.js
 import { launch } from "../kernel.js";
-import { showModalWindow, alertWindow } from "../window.js";
+import { showModalWindow, alertWindow, bringToFront } from "../window.js";
 import { resolveFS, validateName } from "../fs-utils.js";
 import { FS, initFS } from "../fs.js";
 import { attachContextMenu } from "../context-menu.js";
@@ -393,6 +393,8 @@ export default async function Explorer(root, options = {}) {
         label.addEventListener("mousedown", e => {
             e.stopPropagation();
             positionTreePanel();
+            const win = label.closest(".window");
+            if (win) bringToFront(win);
             const isOpen = treePanel.style.display === "block";
             treePanel.style.display = isOpen ? "none" : "block";
         });
