@@ -171,7 +171,7 @@ export default function TerminalApp(content) {
                 if (!root) return print("Path not found");
                 function walk(node, indent = "") {
                     Object.entries(node).forEach(([name, value]) => {
-                        if (["type", "entry", "singleton", "target"].includes(name)) return;
+                        if (["type", "entry", "singleton", "target", "name", "system"].includes(name)) return;
                         print(indent + "├─ " + name);
                         if (typeof value === "object" && value.type !== "file") walk(value, indent + "│  ");
                     });
