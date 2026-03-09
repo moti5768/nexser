@@ -21,6 +21,9 @@ export const FILE_ASSOCIATIONS = {
     ".jpeg": "Programs/Applications/ImageViewer.app",
     ".gif": "Programs/Applications/ImageViewer.app",
 
+    // paint
+    ".bmp": "Programs/Applications/Paint.app",
+
     // video
     ".mp4": "Programs/Applications/VideoPlayer.app",
     ".webm": "Programs/Applications/VideoPlayer.app",
@@ -97,6 +100,7 @@ export function getIcon(name, node) {
         text: [".txt", ".md"],
         code: [".js", ".ts", ".json", ".css", ".scss", ".vue", ".html"],
         image: [".png", ".jpg", ".jpeg", ".gif"],
+        paint: [".bmp"],
         video: [".mp4", ".webm", ".ogg", ".mov", ".mkv"],
         audio: [".mp3", ".wav", ".m4a", ".flac", ".aac"],
         system: [".cfg"] // AUTOBOOT.CFG 等
@@ -105,6 +109,7 @@ export function getIcon(name, node) {
     if (categories.text.includes(ext)) return "📄";
     if (categories.code.includes(ext)) return "📜";
     if (categories.image.includes(ext)) return "🖼️";
+    if (categories.paint.includes(ext)) return "🎨";
     if (categories.video.includes(ext)) return "📽️";
     if (categories.audio.includes(ext)) return "🎵";
     if (categories.system.includes(ext)) return "🛠️";

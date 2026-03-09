@@ -41,13 +41,15 @@ export let FS = {
             "Settings.app": { type: "app", entry: "./apps/settings.js", system: true, singleton: true },
             "Explorer.app": { type: "app", entry: "./apps/explorer.js", system: true, shell: true },
             "Soundsplayer.app": { type: "app", entry: "./apps/soundplayer.js", system: true },
-            "AudioPlayer.app": { type: "app", entry: "./apps/audioplayer.js", system: true }
+            "AudioPlayer.app": { type: "app", entry: "./apps/audioplayer.js", system: true },
+            "Paint.app": { type: "app", entry: "./apps/paint.js", system: true }
         },
         Accessories: {
             type: "folder",
             system: true,
             "Calc.app": { type: "link", target: "Programs/Applications/Calc.app" },
             "TextEditor.app": { type: "link", target: "Programs/Applications/TextEditor.app" },
+            "Paint.app": { type: "link", target: "Programs/Applications/Paint.app" },
             Multimedia: {
                 type: "folder",
                 system: true,
