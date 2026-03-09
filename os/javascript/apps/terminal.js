@@ -145,13 +145,27 @@ export default function TerminalApp(content) {
             desc: "Change directory",
             run(args) {
                 if (!args[0]) return;
-                const node = getNodeByPath(args[0]);
-                if (!node || node.type === "file") return print("Not a directory");
+
+                // 1. パスの正規化
                 let newPath = normalizePath(args[0], cwd);
-                if (newPath !== "C:/") {
-                    newPath = newPath.replace(/\/$/, "");
+
+                // 2. ルートディレクトリ (C:/) かどうかの判定
+                const isRoot = (newPath === "C:/" || newPath === "C:");
+
+                // 3. ファイルシステム上のノードを取得
+                // ルートの場合は空文字を渡し、それ以外は C:/ を除いた相対パスを渡す
+                const fsSearchPath = isRoot ? "" : newPath.replace(/^C:\//, "");
+                const node = resolveFS(fsSearchPath);
+
+                if (!node || node.type === "file") return print("Not a directory");
+
+                // 4. cwd の更新 (ルート以外は末尾のスラッシュを除く)
+                if (isRoot) {
+                    cwd = "C:/";
+                } else {
+                    cwd = newPath.replace(/\/$/, "");
                 }
-                cwd = newPath;
+
                 promptSpan.textContent = cwd + ">";
             }
         },
