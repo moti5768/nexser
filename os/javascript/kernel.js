@@ -118,8 +118,7 @@ export async function initKernelAsync(progressCallback = () => { }) {
 /* =========================
    起動API（完全安定版）
 ========================= */
-// kernel.js の上部（関数の外）に配置
-const tabAppInstances = new Map(); // appEntryPath -> { win, handle }
+const tabAppInstances = new Map();
 
 export async function launch(path, options = {}) {
     let win = null;

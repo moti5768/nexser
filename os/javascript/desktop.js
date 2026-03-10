@@ -94,9 +94,6 @@ export function buildDesktop() {
         createIcon(name, FS.Desktop[name]);
     }
 
-    // --------------------
-    // デスクトップ空白部分右クリック
-    // --------------------
     attachContextMenu(desktop, (e) => {
         if (e.target.closest(".window")) return [];
         const desktopNode = resolveFS("Desktop");
