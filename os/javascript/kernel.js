@@ -15,9 +15,8 @@ import { showPromptScreen } from "./boot.js";
 import { startup_sound } from "./sounds.js";
 import { addRecent } from "./recent.js";
 import { installDynamicButtonEffect } from "./ui.js";
-
-// ★ fs-utils.js から堅牢なユーティリティを導入
-import { resolveFS, basename, normalizePath } from "./fs-utils.js";
+import { resolveFS, basename } from "./fs-utils.js";
+import { resolveAppByPath } from "./file-associations.js";
 
 const explorerWindows = new Map();
 const moduleCache = new Map();
@@ -341,7 +340,6 @@ export async function launch(path, options = {}) {
     }
 }
 
-// kernel.js 内の resolve は fs-utils.js の resolveFS に役目を譲りました
 
 /* =========================
    Process metrics updater

@@ -6,13 +6,22 @@ import { playSystemEventSound } from './kernel.js';
 import { resolveFS, normalizePath as fsNormalizePath } from './fs-utils.js';
 
 // ===== Global Error Handlers =====
-window.onerror = (msg, src, line, col, err) => showBSOD(String(msg), err);
-window.addEventListener("unhandledrejection", e => showBSOD(String(e.reason), e.reason instanceof Error ? e.reason : null));
-window.addEventListener('error', (e) => {
-    if (e.target.tagName === 'SCRIPT' || e.target.tagName === 'LINK') {
-        showBSOD(`BOOT_COMPONENT_FAILURE (${e.target.src || e.target.href})`, new Error("Critical component missing"));
+const CRITICAL_PREFIXES = ["BOOT_", "KERNEL_", "FS_", "0x"]; // 深刻とみなすエラーコード
+function isCriticalError(msg) {
+    // 深刻なエラーコードが含まれているか、または特定のスタックトレースを持つ場合のみTrue
+    return CRITICAL_PREFIXES.some(prefix => String(msg).includes(prefix));
+}
+// エラーハンドラーを書き換え
+window.addEventListener("error", (e) => {
+    const msg = e.error ? e.error.message : e.message;
+    if (isCriticalError(msg)) {
+        showBSOD(msg, e.error);
+    } else {
+        // 軽微なエラーはコンソールログのみ、またはアプリ内ウィンドウにエラー表示
+        console.warn("[System Notice] Non-critical error:", msg);
+        // ここで必要なら「警告ウィンドウ」を表示するUI関数を呼ぶ
     }
-}, true);
+});
 
 // ===== Passive Event / Touch Defaults =====
 document.addEventListener('wheel', e => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });

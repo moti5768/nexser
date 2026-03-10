@@ -4,7 +4,8 @@ import { saveFS, loadFS } from "./fs-db.js";
 let saveTimer = null;
 const PROTECTED_KEYS = ["type", "entry", "singleton", "shell", "target", "name"];
 
-export let FS = {
+// 1. ベースデータ (Proxy化しない純粋なデータ構造)
+const baseFS = {
     System: {
         type: "folder",
         system: true,
@@ -21,10 +22,7 @@ export let FS = {
         "Soundsplayer.app": { type: "link", target: "Programs/Applications/Soundsplayer.app" },
         "Settings.app": { type: "link", target: "Programs/Applications/Settings.app" }
     },
-    Trash: {
-        type: "folder",
-        system: true,
-    },
+    Trash: { type: "folder", system: true },
     Programs: {
         type: "folder",
         Applications: {
@@ -70,14 +68,14 @@ export let FS = {
             system: true,
             "Readme.txt": { type: "file", content: "Welcome to NEXSER OS", style: { fontSize: 48, fontFamily: "serif", fontWeight: "bold", fontStyle: "italic" } }
         },
-        Music: { type: "folder", system: true, },
+        Music: { type: "folder", system: true },
         Picture: {
             type: "folder",
             system: true,
             "photo1.png": { type: "file", content: "image1data" },
             "photo2.png": { type: "file", content: "image2data" }
         },
-        Movie: { type: "folder", system: true, },
+        Movie: { type: "folder", system: true },
         Settings: {
             type: "folder",
             system: true,
@@ -86,12 +84,96 @@ export let FS = {
     }
 };
 
+// Proxy 生成ロジック
+function wrapProxy(obj, path = "") {
+    if (!obj || typeof obj !== "object") return obj;
+
+    return new Proxy(obj, {
+        get(target, prop) {
+            const value = target[prop];
+            const currentPath = path ? `${path}/${prop}` : prop;
+            if (prop === "content" && value === "__EXTERNAL_DATA__") {
+                console.info(`[FS] 大容量データへのアクセスを検知: ${path}`);
+            }
+            return wrapProxy(value, currentPath);
+        },
+        set(target, prop, value) {
+            // 1. メタデータの保護
+            if (PROTECTED_KEYS.includes(prop) && Object.prototype.hasOwnProperty.call(target, prop)) {
+                console.warn(`[FS Guard] システムプロパティ '${prop}' は変更できません`);
+                return true;
+            }
+
+            // 2. システム保護ロジックの改善
+            // すでに存在するシステムアイテムを更新する場合のチェック
+            if (target.system && target[prop] && target[prop].system) {
+                // もし新しい値(value)がオブジェクトで、typeが既存と異なる場合は「構造変更」とみなしてブロック
+                if (typeof value === "object" && value !== null && value.type !== target[prop].type) {
+                    console.warn(`[FS Guard] システムアイテム '${prop}' の構造（type）は変更できません`);
+                    return true;
+                }
+                // ※ ここで return true せずに処理を続行すれば、
+                // typeが同じ場合（＝中身の更新や同一オブジェクトの再代入）は許可されます。
+            }
+
+            // 3. サイズ情報の削除
+            if (prop === "content" && target.size !== undefined) {
+                delete target.size;
+            }
+
+            // 4. 書き込み実行
+            target[prop] = wrapProxy(value, path ? `${path}/${prop}` : prop);
+            scheduleSave();
+            window.dispatchEvent(new Event("fs-updated"));
+            return true;
+        },
+        deleteProperty(target, prop) {
+            if (PROTECTED_KEYS.includes(prop) || (target[prop] && target[prop].system === true)) {
+                console.warn(`[FS Guard] システム保護されたアイテム '${prop}' は削除できません。`);
+                return false;
+            }
+            delete target[prop];
+            scheduleSave();
+            window.dispatchEvent(new Event("fs-updated"));
+            return true;
+        }
+    });
+}
+
+// ★ 最初から Proxy された状態の FS を公開する（これが重要）
+export const FS = wrapProxy(baseFS, "");
+
+// --- ユーティリティ ---
+
+export function isValidNode(node) {
+    if (!node || typeof node !== 'object') return false;
+    if (!['folder', 'file', 'link', 'app'].includes(node.type)) return false;
+    return true;
+}
+
+// 安全な再帰的マージ関数
+function deepMerge(target, source) {
+    for (const key in source) {
+        // ソースがフォルダの場合、階層を深くする
+        if (source[key] && typeof source[key] === 'object' && source[key].type === 'folder') {
+            if (!target[key]) target[key] = { type: 'folder' };
+            deepMerge(target[key], source[key]);
+        } else {
+            // ファイル/リンク等は直接代入（Proxyが自動的に機能する）
+            if (isValidNode(source[key])) {
+                target[key] = source[key];
+            } else {
+                console.error(`[FS Recovery] Skipping invalid node: ${key}`);
+            }
+        }
+    }
+}
+
 // 自動保存
 let isSaving = false;
 async function scheduleSave() {
     if (saveTimer || isSaving) return;
     saveTimer = setTimeout(async () => {
-        console.log("[FS Debug] Starting saveFS...");
         saveTimer = null;
         isSaving = true;
         try {
@@ -106,87 +188,18 @@ async function scheduleSave() {
     }, 300);
 }
 
-// Proxy 化（再帰的）
-function wrapProxy(obj, path = "") {
-    if (!obj || typeof obj !== "object") return obj;
-
-    return new Proxy(obj, {
-        get(target, prop) {
-            const value = target[prop];
-            const currentPath = path ? `${path}/${prop}` : prop;
-            if (prop === "content" && value === "__EXTERNAL_DATA__") {
-                console.info(`[FS] 大容量データへのアクセスを検知: ${path}`);
-            }
-            return wrapProxy(value, currentPath);
-        },
-        set(target, prop, value) {
-            // 1. メタデータの保護 (type, entry, system など重要な鍵自体は上書きさせない)
-            if (PROTECTED_KEYS.includes(prop) && Object.prototype.hasOwnProperty.call(target, prop)) {
-                console.warn(`[FS Guard] システムプロパティ '${prop}' は変更できません`);
-                return true;
-            }
-
-            // 2. システムアイテムの保護ロジックを修正
-            // target[prop] ではなく、今書き込もうとしている対象(target)自体が system かどうかで判定します
-            if (target.system) {
-                // システムフォルダやシステムファイルの中にあるプロパティ(content, style等)の書き換えは許可
-                // ただし、そのプロパティ自体がまた system: true を持っている「子アイテム」の場合はブロックを継続
-                if (target[prop] && target[prop].system && typeof value === "object") {
-                    console.warn(`[FS Guard] システムアイテム '${prop}' 自体は上書きできません`);
-                    return true;
-                }
-            }
-
-            // 3. 既存のサイズ削除ロジック
-            if (prop === "content" && target.size !== undefined) {
-                delete target.size;
-            }
-
-            // 4. 書き込み実行
-            target[prop] = wrapProxy(value, path ? `${path}/${prop}` : prop);
-            scheduleSave();
-            window.dispatchEvent(new Event("fs-updated"));
-            return true;
-        },
-        deleteProperty(target, prop) {
-            if (PROTECTED_KEYS.includes(prop)) {
-                return false;
-            }
-            const targetItem = target[prop];
-            if (targetItem && targetItem.system === true) {
-                console.warn(`[FS Guard] システム保護されたアイテム '${prop}' は削除できません。`);
-                return false;
-            }
-            delete target[prop];
-            scheduleSave();
-            window.dispatchEvent(new Event("fs-updated"));
-            return true;
-        }
-    });
-}
-
-// FS 初期化
+// 初期化関数
 export async function initFS() {
     const saved = await loadFS();
-    if (saved) {
-        isSaving = true; // 復元中の自動保存をロック
-        try {
-            // 【修正ポイント】
-            // 全削除（delete FS[key]）をせず、保存データで上書きする
-            for (const key in saved) {
-                // すでに system: true なフォルダ（System など）が存在する場合、
-                // その中身だけを更新するようにすると、より安全です。
-                FS[key] = saved[key];
-            }
+    if (!saved) return;
 
-            console.log("[FS] System restored safely.");
-        } catch (e) {
-            console.error("[FS] Restore error:", e);
-        } finally {
-            isSaving = false; // ロック解除
-        }
+    isSaving = true; // 復元中の自動保存をロック
+    try {
+        deepMerge(FS, saved);
+        console.log("[FS] System restored safely.");
+    } catch (e) {
+        console.error("[FS] Restore failed, using defaults", e);
+    } finally {
+        isSaving = false;
     }
 }
-
-// FS を Proxy 化
-FS = wrapProxy(FS, "");

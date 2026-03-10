@@ -1,21 +1,22 @@
 /* Terminal.css */
+/* terminal.css */
 .terminal-window {
     display: flex;
     flex-direction: column;
     height: 100%;
-    /* ウィンドウに合わせる */
+    overflow-y: auto;
+    /* 全体をスクロール */
+    background: black;
 }
 
 .terminal-screen {
-    background: black;
+    /* 画面全体として振る舞う */
     color: white;
     font-family: monospace;
     font-size: 14px;
     padding: 4px;
     flex: 1;
-    /* 上部を全部埋める */
-    overflow-y: auto;
-    /* 必要に応じてスクロール */
+    /* 可能な限り広がる */
 }
 
 .terminal-input {
@@ -25,6 +26,8 @@
     color: white;
     font-family: monospace;
     padding: 2px 4px;
+    /* 新しく追加: 下の要素を詰めるための設定 */
+    margin-top: 4px;
 }
 
 .terminal-input input {
@@ -34,4 +37,6 @@
     outline: none;
     font-family: monospace;
     flex: 1;
+    margin-left: 5px;
+    /* プロンプトとの間隔 */
 }

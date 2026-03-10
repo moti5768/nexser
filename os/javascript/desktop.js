@@ -6,7 +6,7 @@ import { resolveFS, validateName } from "./fs-utils.js";
 import { addRecent } from "./recent.js";
 import { attachContextMenu } from "./context-menu.js";
 import { resolveAppByPath, getIcon } from "./file-associations.js";
-import { openWithDialog as explorerOpenWithDialog, hasExtension } from "./apps/explorer.js";
+import { openWithDialog as explorerOpenWithDialog } from "./apps/explorer.js";
 
 // 選択状態管理
 let globalSelected = { item: null, window: null };

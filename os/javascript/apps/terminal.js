@@ -10,7 +10,7 @@ import {
 import { resolveFS, normalizePath } from "../fs-utils.js";
 
 export default function TerminalApp(content) {
-
+    content.classList.add("terminal-window");
     /* =========================
        UI Setup
     ========================= */
@@ -20,13 +20,15 @@ export default function TerminalApp(content) {
     content.style.fontFamily = "Consolas, monospace";
     content.style.fontSize = "14px";
 
+    // terminal.js の修正部分
     content.innerHTML = `
-        <div class="terminal-screen"></div>
+    <div class="terminal-screen">
         <div class="terminal-input">
             <span class="prompt">C:/></span>
             <input type="text" autocomplete="off" />
         </div>
-    `;
+    </div>
+`;
 
     const screen = content.querySelector(".terminal-screen");
     const input = content.querySelector("input");
@@ -57,14 +59,18 @@ export default function TerminalApp(content) {
         });
     }
 
+    // terminal.js の print 関数内を修正
     function print(text = "", color = null, bg = null, size = null) {
         const line = document.createElement("div");
         line.textContent = text;
         if (color) line.style.color = color;
         if (bg) line.style.backgroundColor = bg;
         if (size) line.style.fontSize = size;
-        screen.appendChild(line);
-        while (screen.children.length > MAX_LINES) {
+
+        // input の「前」に挿入することで、入力欄が常に一番下になる
+        screen.insertBefore(line, input.parentElement);
+
+        while (screen.children.length > MAX_LINES + 1) { // 入力欄分を考慮
             screen.removeChild(screen.firstChild);
         }
         scrollToBottom();
@@ -125,7 +131,22 @@ export default function TerminalApp(content) {
             }
         },
 
-        cls: { desc: "Clear screen", run() { screen.innerHTML = ""; } },
+        cls: {
+            desc: "Clear screen",
+            run() {
+                // 1. 入力欄の親要素を退避
+                const inputContainer = input.parentElement;
+
+                // 2. 画面を一度空にする
+                screen.innerHTML = "";
+
+                // 3. 入力欄を再挿入
+                screen.appendChild(inputContainer);
+
+                // 4. 入力欄にフォーカスを戻す（便利！）
+                input.focus();
+            }
+        },
 
         logoff: { desc: "Log off OS", async run() { await logOff(); input.blur(); } },
 
