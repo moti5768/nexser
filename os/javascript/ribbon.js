@@ -87,9 +87,13 @@ function addRibbonMenu(ribbon, title, items) {
     // ------------------------
     menu.addEventListener("mousedown", e => {
         e.stopPropagation();
-
+        const startMenu = document.getElementById("start-menu");
+        if (startMenu) startMenu.style.display = "none";
         const win = ribbon.closest(".window");
         if (win) bringToFront(win);
+        if (win && win._treePanel) {
+            win._treePanel.style.display = "none";
+        }
 
         // 全ウィンドウのドロップダウンを閉じ、selected も解除
         closeAllRibbonDropdownsAndSelectedGlobal();
@@ -161,6 +165,7 @@ function addRibbonItem(dropdown, item) {
 function closeAllRibbonDropdownsAndSelectedGlobal() {
     document.querySelectorAll(".ribbon-dropdown").forEach(dd => dd.style.display = "none");
     document.querySelectorAll(".ribbon-menu").forEach(m => m.classList.remove("selected"));
+    document.querySelectorAll(".tree-panel").forEach(tp => tp.style.display = "none");
 }
 
 // ------------------------
@@ -170,7 +175,8 @@ document.addEventListener("mousedown", e => {
     const isInsideRibbon = e.target.closest(".ribbon-menu")
         || e.target.closest(".ribbon-dropdown")
         || e.target.closest(".ribbon-item");
-
+    const isInsideTree = e.target.closest(".tree-container") || e.target.closest(".tree-panel");
+    if (isInsideTree) return;
     if (!isInsideRibbon) {
         closeAllRibbonDropdownsAndSelectedGlobal();
     }

@@ -174,6 +174,9 @@ export function initTaskbar() {
             e.stopPropagation();
             hideContextMenu();
             closeAllRibbonsGlobal();
+            document.querySelectorAll(".tree-panel").forEach(tp => {
+                tp.style.display = "none";
+            });
             const open = startMenu.style.display === "block";
             startMenu.style.display = open ? "none" : "block";
 
@@ -189,6 +192,9 @@ export function initTaskbar() {
             if (!e.target.closest("#start-btn") && !e.target.closest("#start-menu")) {
                 startBtn.classList.remove("pressed");
                 startMenu.style.display = "none";
+            }
+            if (!e.target.closest(".ribbon-menu") && !e.target.closest(".ribbon-dropdown")) {
+                closeAllRibbonsGlobal();
             }
         });
     }

@@ -392,6 +392,8 @@ export default async function Explorer(root, options = {}) {
         });
         label.addEventListener("mousedown", e => {
             e.stopPropagation();
+            document.querySelectorAll(".ribbon-dropdown").forEach(dd => dd.style.display = "none");
+            document.querySelectorAll(".ribbon-menu").forEach(m => m.classList.remove("selected"));
             positionTreePanel();
             const win = label.closest(".window");
             if (win) bringToFront(win);
@@ -399,12 +401,23 @@ export default async function Explorer(root, options = {}) {
             treePanel.style.display = isOpen ? "none" : "block";
         });
 
+        // explorer.js の _treeOutsideHandlerInstalled 部分
         if (!win._treeOutsideHandlerInstalled) {
             win._treeOutsideHandlerInstalled = true;
             document.addEventListener("mousedown", e => {
                 const treePanel = win._treePanel;
-                if (!treePanel) return;
-                if (!treePanel.contains(e.target)) treePanel.style.display = "none";
+                if (!treePanel || treePanel.style.display === "none") return;
+
+                // 「これら以外」をクリックしたら閉じる判定を明確化
+                const isSafeElement =
+                    e.target.closest(".tree-container") ||
+                    e.target.closest(".tree-panel") ||
+                    e.target.closest(".ribbon-menu") ||
+                    e.target.closest("#start-btn");
+
+                if (!isSafeElement) {
+                    treePanel.style.display = "none";
+                }
             });
         }
 
