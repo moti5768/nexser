@@ -172,11 +172,15 @@ export default async function Paint(root, options = {}) {
     ========================== */
     function getPos(e) {
         const rect = canvas.getBoundingClientRect();
-        return { x: (e.clientX - rect.left), y: (e.clientY - rect.top) };
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return { x: (clientX - rect.left), y: (clientY - rect.top) };
     }
 
     function startDrawing(e) {
+        if (e.touches && e.touches.length > 1) return; // マルチタッチ無視
         const pos = getPos(e);
+
         if (tool === "bucket") {
             const fillCol = (e.button === 2) ? bgColor : currentColor;
             floodFill(Math.floor(pos.x), Math.floor(pos.y), hexToRgb(fillCol));
@@ -199,8 +203,9 @@ export default async function Paint(root, options = {}) {
         const pos = getPos(e);
         updateStatus(pos.x, pos.y);
         if (!isDrawing) return;
+        if (e.touches && e.touches.length > 1) return;
 
-        const activeStroke = (e.buttons === 2) ? bgColor : (tool === "eraser" ? bgColor : currentColor);
+        const activeStroke = (e.buttons === 2 || e.button === 2) ? bgColor : (tool === "eraser" ? bgColor : currentColor);
         ctx.strokeStyle = activeStroke;
         ctx.lineWidth = tool === "eraser" ? brushSize * 5 : brushSize;
         ctx.lineCap = "round";
@@ -222,13 +227,33 @@ export default async function Paint(root, options = {}) {
         if (!dirty) { dirty = true; updateTitle(); }
     }
 
-    canvas.addEventListener("mousedown", startDrawing);
-    canvas.addEventListener("mousemove", draw);
-    window.addEventListener("mouseup", () => {
+    function stopDrawing() {
         isDrawing = false;
         previewData = null;
-    });
+    }
+
+    // マウス
+    canvas.addEventListener("mousedown", startDrawing);
+    canvas.addEventListener("mousemove", draw);
+    window.addEventListener("mouseup", stopDrawing);
     canvas.addEventListener("contextmenu", e => e.preventDefault());
+
+    // タッチ対応
+    canvas.addEventListener("touchstart", (e) => {
+        if (e.touches.length === 1) {
+            e.preventDefault();
+            startDrawing(e);
+        }
+    }, { passive: false });
+
+    canvas.addEventListener("touchmove", (e) => {
+        if (e.touches.length === 1) {
+            e.preventDefault();
+            draw(e);
+        }
+    }, { passive: false });
+
+    window.addEventListener("touchend", stopDrawing);
 
     /* =========================
        保存ロジック
@@ -259,7 +284,7 @@ export default async function Paint(root, options = {}) {
             promptInput.className = "modal-prompt-input";
             promptInput.type = "text";
             promptInput.value = baseName;
-            promptInput.style.cssText = "width:100%; margin-top:10px;　padding:4px; box-sizing:border-box;";
+            promptInput.style.cssText = "width:100%; margin-top:10px; padding:4px; box-sizing:border-box;";
             content.insertBefore(promptInput, content.querySelector(".button-container") || content.lastElementChild);
             setTimeout(() => promptInput.focus(), 10);
         });
@@ -355,17 +380,20 @@ export default async function Paint(root, options = {}) {
         });
 
         const closeBtn = win.querySelector(".close-btn");
-        closeBtn?.addEventListener("click", e => {
-            if (!dirty) return;
-            e.preventDefault(); e.stopImmediatePropagation();
-            showModalWindow("Confirm", "変更内容を保存しますか？", {
-                parentWin: win, iconClass: "warning_icon",
-                buttons: [
-                    { label: "はい", onClick: async () => { await save(); closeBtn.click(); } },
-                    { label: "いいえ", onClick: () => { dirty = false; closeBtn.click(); } },
-                    { label: "キャンセル" }
-                ]
-            });
-        }, true);
+        if (closeBtn) {
+            // クローンを作らず、既存の挙動をオーバーライドするために true キャプチャを使用
+            closeBtn.addEventListener("click", e => {
+                if (!dirty) return;
+                e.preventDefault(); e.stopImmediatePropagation();
+                showModalWindow("Confirm", "変更内容を保存しますか？", {
+                    parentWin: win, iconClass: "warning_icon",
+                    buttons: [
+                        { label: "はい", onClick: async () => { await save(); dirty = false; closeBtn.click(); } },
+                        { label: "いいえ", onClick: () => { dirty = false; closeBtn.click(); } },
+                        { label: "キャンセル" }
+                    ]
+                });
+            }, true);
+        }
     }
 }

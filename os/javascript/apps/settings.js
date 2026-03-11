@@ -193,9 +193,13 @@ export default async function SettingsApp(content) {
     let currentTabId = null; // ★追加：現在アクティブなタブを管理
 
     async function selectTab(id) {
-        // ★追加ガード：同じタブを連打した場合は処理を中断
         if (currentTabId === id) return;
         currentTabId = id;
+
+        if (id === "system") {
+            // Systemタブが選ばれた瞬間に計算を実行
+            setTimeout(() => renderStorage(), 0);
+        }
 
         [...tabsEl.children].forEach(btn => {
             const active = btn.dataset.id === id;
@@ -781,20 +785,54 @@ export default async function SettingsApp(content) {
             }
         }
 
-        updateInfo();
-        renderStorage();
+        let storageUpdateTimer = null;
 
-        const timer = setInterval(() => {
+        const onFsUpdated = () => {
+            // rootがDOMから消えていたら即終了
             if (!document.body.contains(root)) {
-                clearInterval(timer);
+                window.removeEventListener("fs-updated", onFsUpdated);
                 return;
             }
-            updateInfo();
-            renderStorage();
+
+            const win = root.closest(".window");
+            // ウィンドウが存在しない、または非表示の場合は計算しない
+            if (!win || win.style.display === "none" || win.dataset.minimized === "true") {
+                return;
+            }
+
+            // Systemタブがアクティブでない場合も計算しない
+            if (currentTabId !== "system") return;
+
+            if (storageUpdateTimer) clearTimeout(storageUpdateTimer);
+
+            storageUpdateTimer = setTimeout(() => {
+                // 実行直前にもう一度生存確認
+                if (document.body.contains(root) && currentTabId === "system") {
+                    renderStorage();
+                }
+                storageUpdateTimer = null;
+            }, 500);
+        };
+
+        // B. イベントリスナーを登録
+        window.addEventListener("fs-updated", onFsUpdated);
+
+        // C. 既存のタイマーは「軽い情報(Uptime等)」の更新専用にする
+        updateInfo();
+        renderStorage(); // 初回表示時のみ実行
+
+        const infoTimer = setInterval(() => {
+            if (!document.body.contains(root)) {
+                clearInterval(infoTimer);
+                return;
+            }
+            updateInfo(); // ストレージ計算を含まない軽い更新のみ
         }, 5000);
 
+        // D. クリーンアップ処理（リスナーの解除）
         root._cleanup = () => {
-            clearInterval(timer);
+            clearInterval(infoTimer);
+            window.removeEventListener("fs-updated", onFsUpdated); // メモリリーク防止
         };
     }
 }

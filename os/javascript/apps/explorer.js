@@ -320,7 +320,6 @@ export default async function Explorer(root, options = {}) {
         }
 
         let effectiveType = targetNode.type;
-        if (effectiveType === "folder" && hasExtension(name)) effectiveType = "file";
 
         switch (effectiveType) {
             case "folder":
@@ -641,6 +640,31 @@ export default async function Explorer(root, options = {}) {
             header.appendChild(treeContainer);
             header.appendChild(pathLabel);
 
+            const searchInput = document.createElement("input");
+            searchInput.type = "text";
+            searchInput.placeholder = "検索...";
+            searchInput.className = "explorer-search-input border";
+            // Windowsクラシック風のスタイル（適宜CSSへ移動してください）
+            Object.assign(searchInput.style, {
+                width: "150px",
+                marginLeft: "auto",
+                marginRight: "4px",
+                fontSize: "12px",
+                height: "18px"
+            });
+
+            searchInput.addEventListener("keydown", (e) => {
+                if (e.key === "Enter") {
+                    const query = searchInput.value.trim();
+                    if (query) {
+                        renderSearchResults(query); // 検索結果描画へ
+                    } else {
+                        render(currentPath); // 空なら通常表示に戻す
+                    }
+                }
+            });
+            header.appendChild(searchInput);
+
             const ribbon = win?._ribbon;
             if (ribbon) {
                 const separator = document.createElement("div");
@@ -925,7 +949,48 @@ export default async function Explorer(root, options = {}) {
             updateTitle_explorer(path);
         });
     };
+    // Explorer 関数の中に追記
+    const renderSearchResults = async (query) => {
+        listContainer.innerHTML = "";
+        pathLabel.textContent = `「${query}」の検索結果`;
 
+        // 現在のディレクトリ以下を検索（FS全体にしたい場合は resolveFS("") に変更）
+        const rootNode = resolveFS(currentPath);
+        const results = searchFS(rootNode, query, currentPath);
+
+        if (results.length === 0) {
+            listContainer.innerHTML = `<div style="padding:10px; font-size:12px; color:#666;">一致する項目はありません。</div>`;
+            return;
+        }
+
+        // 検索結果の描画
+        results.forEach(res => {
+            const item = document.createElement("div");
+            item.className = `explorer-item ${viewMode}-view`;
+            item.dataset.name = res.name;
+
+            const iconChar = getIcon(res.name, res.node);
+
+            item.innerHTML = `
+            <span class="item-icon-small">${iconChar}</span>
+            <span class="item-name-text">${res.name}</span>
+            <span style="color:#888; font-size:10px; margin-left:8px;">(${res.path})</span>
+        `;
+
+            listContainer.appendChild(item);
+
+            item.onclick = () => {
+                globalSelected.item?.classList.remove("selected");
+                item.classList.add("selected");
+                globalSelected.item = item;
+            };
+
+            item.ondblclick = () => {
+                const parentPath = res.path.split('/').slice(0, -1).join('/');
+                openFSItem(res.name, res.node, parentPath);
+            };
+        });
+    };
     // ------------------------
     // Ribbon
     // ------------------------
@@ -1173,4 +1238,26 @@ export function openWithDialog(filePath, fileNode) {
         };
         content.appendChild(btn);
     });
+}
+
+function searchFS(node, query, path = "") {
+    let results = [];
+    const q = query.toLowerCase();
+
+    for (const name in node) {
+        if (name === "type" || name === "system" || name === "originalPath") continue;
+        const child = node[name];
+        const fullPath = path ? `${path}/${name}` : name;
+
+        // 名前が一致（部分一致）
+        if (name.toLowerCase().includes(q)) {
+            results.push({ name, node: child, path: fullPath });
+        }
+
+        // フォルダならその中身も再帰的に探す
+        if (child.type === "folder") {
+            results = results.concat(searchFS(child, query, fullPath));
+        }
+    }
+    return results;
 }

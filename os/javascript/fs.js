@@ -4,7 +4,7 @@ import { saveFS, loadFS } from "./fs-db.js";
 let saveTimer = null;
 const PROTECTED_KEYS = ["type", "entry", "singleton", "shell", "target", "name"];
 
-// 1. ベースデータ (Proxy化しない純粋なデータ構造)
+// 1. ベースデータ
 const baseFS = {
     System: {
         type: "folder",
@@ -84,7 +84,8 @@ const baseFS = {
     }
 };
 
-// Proxy 生成ロジック
+// --- コアロジック ---
+
 function wrapProxy(obj, path = "") {
     if (!obj || typeof obj !== "object") return obj;
 
@@ -93,43 +94,32 @@ function wrapProxy(obj, path = "") {
             const value = target[prop];
             const currentPath = path ? `${path}/${prop}` : prop;
             if (prop === "content" && value === "__EXTERNAL_DATA__") {
-                console.info(`[FS] 大容量データへのアクセスを検知: ${path}`);
+                console.info(`[FS] 大容量データアクセス: ${path}`);
             }
             return wrapProxy(value, currentPath);
         },
         set(target, prop, value) {
-            // 1. メタデータの保護
             if (PROTECTED_KEYS.includes(prop) && Object.prototype.hasOwnProperty.call(target, prop)) {
-                console.warn(`[FS Guard] システムプロパティ '${prop}' は変更できません`);
+                console.warn(`[FS Guard] '${prop}' は変更不可`);
                 return true;
             }
-
-            // 2. システム保護ロジックの改善
-            // すでに存在するシステムアイテムを更新する場合のチェック
             if (target.system && target[prop] && target[prop].system) {
-                // もし新しい値(value)がオブジェクトで、typeが既存と異なる場合は「構造変更」とみなしてブロック
                 if (typeof value === "object" && value !== null && value.type !== target[prop].type) {
-                    console.warn(`[FS Guard] システムアイテム '${prop}' の構造（type）は変更できません`);
+                    console.warn(`[FS Guard] '${prop}' の構造型は変更不可`);
                     return true;
                 }
-                // ※ ここで return true せずに処理を続行すれば、
-                // typeが同じ場合（＝中身の更新や同一オブジェクトの再代入）は許可されます。
             }
+            if (prop === "content" && target.size !== undefined) delete target.size;
 
-            // 3. サイズ情報の削除
-            if (prop === "content" && target.size !== undefined) {
-                delete target.size;
-            }
-
-            // 4. 書き込み実行
             target[prop] = wrapProxy(value, path ? `${path}/${prop}` : prop);
             scheduleSave();
             window.dispatchEvent(new Event("fs-updated"));
             return true;
         },
         deleteProperty(target, prop) {
+            // system: true がついているものは消せない（Windowsのシステム保護ファイル相当）
             if (PROTECTED_KEYS.includes(prop) || (target[prop] && target[prop].system === true)) {
-                console.warn(`[FS Guard] システム保護されたアイテム '${prop}' は削除できません。`);
+                console.warn(`[FS Guard] '${prop}' はシステム保護されているため削除できません。`);
                 return false;
             }
             delete target[prop];
@@ -140,36 +130,60 @@ function wrapProxy(obj, path = "") {
     });
 }
 
-// ★ 最初から Proxy された状態の FS を公開する（これが重要）
 export const FS = wrapProxy(baseFS, "");
 
-// --- ユーティリティ ---
+// --- 同期（Sync）エンジン ---
 
-export function isValidNode(node) {
-    if (!node || typeof node !== 'object') return false;
-    if (!['folder', 'file', 'link', 'app'].includes(node.type)) return false;
-    return true;
-}
+/**
+ * saved（保存データ）をベースにし、baseFS（デフォルト）から新しい要素を補完する
+ */
+function deepSync(currentProxy, savedNode, defaultNode) {
+    // 1. 保存データ(savedNode)に無いが、現在のメモリ(currentProxy)に存在するものを処理
+    for (const key in currentProxy) {
+        if (PROTECTED_KEYS.includes(key)) continue;
 
-// 安全な再帰的マージ関数
-function deepMerge(target, source) {
-    for (const key in source) {
-        // ソースがフォルダの場合、階層を深くする
-        if (source[key] && typeof source[key] === 'object' && source[key].type === 'folder') {
-            if (!target[key]) target[key] = { type: 'folder' };
-            deepMerge(target[key], source[key]);
+        // 保存データにキーが存在しない ＝ ユーザーが削除した
+        if (savedNode && !(key in savedNode)) {
+            // システム必須属性がない場合のみ、削除を確定させる
+            if (!currentProxy[key]?.system) {
+                delete currentProxy[key];
+            }
+        }
+    }
+
+    // 2. 保存データ(savedNode)にあるものをメモリに反映
+    for (const key in savedNode) {
+        if (PROTECTED_KEYS.includes(key)) continue;
+
+        const savedValue = savedNode[key];
+        const defaultValue = defaultNode ? defaultNode[key] : null;
+
+        if (savedValue && typeof savedValue === 'object' && savedValue.type === 'folder') {
+            // フォルダなら再帰
+            if (!currentProxy[key] || currentProxy[key].type !== 'folder') {
+                currentProxy[key] = { type: 'folder' };
+            }
+            deepSync(currentProxy[key], savedValue, defaultValue);
         } else {
-            // ファイル/リンク等は直接代入（Proxyが自動的に機能する）
-            if (isValidNode(source[key])) {
-                target[key] = source[key];
-            } else {
-                console.error(`[FS Recovery] Skipping invalid node: ${key}`);
+            // ファイル、アプリ、リンク等は上書き
+            currentProxy[key] = savedValue;
+        }
+    }
+
+    // 3. baseFS（デフォルト）にあって、保存データにもメモリにも無いものを補完
+    // これにより、OSアップデートで追加された新しいファイルが出現する
+    if (defaultNode) {
+        for (const key in defaultNode) {
+            if (!(key in currentProxy)) {
+                currentProxy[key] = JSON.parse(JSON.stringify(defaultNode[key]));
+                console.log(`[FS Update] New system item added: ${key}`);
             }
         }
     }
 }
 
-// 自動保存
+// --- 保存・初期化 ---
+
 let isSaving = false;
 async function scheduleSave() {
     if (saveTimer || isSaving) return;
@@ -177,28 +191,28 @@ async function scheduleSave() {
         saveTimer = null;
         isSaving = true;
         try {
+            // Proxyを剥がして純粋なオブジェクトとして保存
             const rawFS = JSON.parse(JSON.stringify(FS));
             await saveFS(rawFS);
-            console.log("[FS Debug] saveFS completed.");
         } catch (e) {
-            console.error("[FS] Snapshot failed:", e);
+            console.error("[FS] Save failed:", e);
         } finally {
             isSaving = false;
         }
     }, 300);
 }
 
-// 初期化関数
 export async function initFS() {
     const saved = await loadFS();
     if (!saved) return;
 
-    isSaving = true; // 復元中の自動保存をロック
+    isSaving = true;
     try {
-        deepMerge(FS, saved);
-        console.log("[FS] System restored safely.");
+        // 現在の FS (baseFSが最初に入っている) に対して、保存データを同期する
+        deepSync(FS, saved, baseFS);
+        console.log("[FS] System synchronized successfully.");
     } catch (e) {
-        console.error("[FS] Restore failed, using defaults", e);
+        console.error("[FS] Restore failed", e);
     } finally {
         isSaving = false;
     }

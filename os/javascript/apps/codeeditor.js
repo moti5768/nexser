@@ -178,15 +178,26 @@ export default function CodeEditor(root, options = {}) {
     ========================== */
     root.innerHTML = `
 <div class="tabbar" style="display:flex;background:#1b1b1b;border-bottom:1px solid #333;user-select:none;"></div>
-<div class="editor-wrap" style="display:flex;width:100%;height:calc(100% - 32px);overflow:hidden;background:#111;">
-    <div class="sidebar" style="width:200px;background:#1a1a1a;color:#ccc;overflow:auto;display:none;border-right:1px solid #222;padding:6px;box-sizing:border-box;"></div>
+<div class="main-layout" style="display:flex;width:100%;height:calc(100% - 32px);overflow:hidden;background:#111;">
+    <div class="activity-bar" style="width:48px;background:#1a1a1a;display:flex;flex-direction:column;align-items:center;padding-top:5px;border-right:1px solid #111;flex-shrink:0;">
+    <div class="activity-icon search-trigger" title="Search" style="cursor:pointer;width:100%;height:48px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;border-left:2px solid transparent;">
+        <svg class="search-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+    </div>
+</div>
+    
+    <div class="sidebar" style="width:250px;background:#1a1a1a;color:#ccc;overflow:auto;display:none;border-right:1px solid #222;padding:0;box-sizing:border-box;flex-shrink:0;"></div>
+    
     <div class="linenumbers" style="width:52px;padding:10px 6px;box-sizing:border-box;text-align:right;font-family:monospace;font-size:14px;line-height:1.4;color:#777;background:#0d0d0d;border-right:1px solid #222;user-select:none;overflow:hidden;white-space:pre;"></div>
-    <div class="codecontainer" style="position:relative;flex:1;display:flex;flex-direction:column;">
+    <div class="codecontainer" style="position:relative;flex:1;display:flex;flex-direction:column;min-width:0;">
         <textarea class="codeeditor" spellcheck="false" wrap="off" style="flex:1;width:100%;resize:none;box-sizing:border-box;border:none;outline:none;padding:10px;background:#111;color:#eaeaea;overflow:auto;white-space:pre;font-family:monospace;font-size:14px;line-height:1.4;position:relative;z-index:1;"></textarea>
         <div class="error-overlay" style="position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:2;"></div>
     </div>
 </div>
 `;
+
     const tabbar = root.querySelector(".tabbar");
     const textarea = root.querySelector(".codeeditor");
     const lineNumbers = root.querySelector(".linenumbers");
@@ -225,14 +236,15 @@ export default function CodeEditor(root, options = {}) {
        Tabs & Title
     ========================== */
     function updateTitle() {
+        // 1. アクティブなタブがない場合は実行しない
         if (!activeTab) return;
 
-        // タブ切り替え時と同じルールでタイトルを生成
-        const baseTitle = activeTab.name || "Untitled";
-        const fullTitle = `${baseTitle}`;
+        // 2. 表示する名前を確定（名前がない場合は "Untitled"）
+        const displayName = activeTab.name || "Untitled";
 
-        // window.js の共通関数を呼び出す（isModified も連動させる）
-        updateWindowTitle(win, fullTitle, activeTab.isModified);
+        // 3. window.js の共通関数を呼び出し、変更フラグ (dirty) を渡す
+        // これにより、タイトルバーに自動で "*" が付与されます
+        updateWindowTitle(win, displayName, activeTab.dirty);
     }
 
     function renderTabs() {
@@ -392,18 +404,38 @@ export default function CodeEditor(root, options = {}) {
     updateTitle();
 
     /* =========================
-       Save
+       Save (修正)
     ========================== */
     async function save() {
+        if (activeTab) {
+            // 1. エディタの現在の値をタブのコンテンツに反映
+            activeTab.content = textarea.value;
+
+            // 2. タブのノード（仮想FSのメモリ実体）にも反映
+            if (activeTab.node) {
+                activeTab.node.content = activeTab.content;
+            }
+        }
+
+        // 全てのタブの状態をクリーンにする
         tabs.forEach(tab => {
             if (tab.node) {
+                // 他のタブも一応同期
                 tab.node.content = tab.content;
                 tab.dirty = false;
             }
         });
+
         dirty = false;
         renderTabs();
         updateTitle();
+
+        // 3. プレビューを即時実行
+        if (previewWin && document.body.contains(previewWin)) {
+            await renderPreview();
+        }
+
+        // 他のウィンドウ（ファイルマネージャー等）への通知
         window.dispatchEvent(new Event("fs-updated"));
     }
 
@@ -521,26 +553,33 @@ export default function CodeEditor(root, options = {}) {
     }
     textarea.addEventListener("input", () => {
         if (!activeTab) return;
-
-        // 1. データの更新
+        // 1. メモリ上のテキストデータを同期
         activeTab.content = textarea.value;
-
-        // 2. 未保存フラグの管理（状態が変わった時だけ処理する）
+        // 2. 未保存状態 (dirty) への遷移処理
         if (!activeTab.dirty) {
             activeTab.dirty = true;
-            dirty = true;
-            // タブの表示更新（"*" を付けるため）はここだけで良い
+            dirty = true; // エディタ全体の変更フラグも同期
             renderTabs();
-            updateTitle();
         }
-
-        // 3. 行番号の更新（これは高速なのでそのままでもOK）
+        // 3. ウィンドウタイトルバーの更新
+        // dirty フラグが立っていることを反映し、タイトルに "*" を付与します
+        updateTitle();
+        // 4. 表示の更新（行番号・エラー消去）
         updateLineNumbers();
-
-        // 4. エラーハイライトのクリア（入力中は邪魔になるため）
         clearErrorHighlights();
     });
     textarea.addEventListener("keydown", (e) => {
+        if (e.key === "Tab") {
+            e.preventDefault();
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+
+            // 選択範囲にタブ文字を挿入
+            textarea.setRangeText("\t", start, end, "end");
+
+            // 内容が変わったので input イベントを手動で発生させて dirty フラグを更新
+            textarea.dispatchEvent(new Event("input"));
+        }
         if (e.ctrlKey && e.key === "f") {
             e.preventDefault();
 
@@ -588,29 +627,31 @@ export default function CodeEditor(root, options = {}) {
     /* =========================
     Preview (修正版)
  ========================= */
-    async function renderPreview() { // async を付与
+    async function renderPreview() {
         if (!previewIframe || !filePath) return;
 
-        // 以前のBlob URLを保存
+        // 1. 古いURLを一時保存（解放は後で行う）
         const oldBlobs = new Map(previewBlobMap);
-
-        // すぐ解放
-        for (const url of previewBlobMap.values()) {
-            try { URL.revokeObjectURL(url); } catch { }
-        }
-        previewBlobMap.clear();
 
         const baseDir = getDirPath(filePath);
         const fsFiles = collectFilesRecursive(baseDir);
         if (!fsFiles.size) return;
 
-        // 各ファイルの中身を確定させる
+        // 2. ★最重要：エディタのタブにある最新の内容を最優先で反映する
+        tabs.forEach(t => {
+            if (fsFiles.has(t.path)) {
+                fsFiles.set(t.path, t.content);
+            }
+        });
+
+        // プレビュー用マップをクリア
+        previewBlobMap.clear();
+
+        // 3. 各ファイルの中身を確定させ Blob URL を生成
         for (let [fullPath, content] of fsFiles.entries()) {
-            // ★ タブで開いていない未ロードのデータを取得する
             if (content === "__EXTERNAL_DATA__") {
                 try {
-                    content = await getFileContent(fullPath); // 非同期で取得
-                    // 次回のプレビューを速くするためにメモリ上のキャッシュも更新
+                    content = await getFileContent(fullPath);
                     const node = resolveFS(fullPath);
                     if (node) node.content = content;
                 } catch (e) {
@@ -623,13 +664,12 @@ export default function CodeEditor(root, options = {}) {
             const mime = getMimeType(name);
             const url = createBlobURL(String(content ?? ""), mime);
             previewBlobMap.set(fullPath, url);
-
-            // fsFiles のマップ内データも更新（後のHTML置換で使用するため）
-            fsFiles.set(fullPath, content);
+            fsFiles.set(fullPath, content); // 置換用に中身を保存
         }
 
-        const htmlPath = activeTab?.name?.toLowerCase().endsWith(".html")
-            ? `${baseDir}/${activeTab.name}`
+        // 4. プレビュー対象のHTMLパスを決定
+        const htmlPath = (activeTab?.path && activeTab.path.toLowerCase().endsWith(".html"))
+            ? activeTab.path
             : [...previewBlobMap.keys()].find(p => p.toLowerCase().endsWith(".html"));
 
         if (!htmlPath) return;
@@ -637,19 +677,16 @@ export default function CodeEditor(root, options = {}) {
         let html = fsFiles.get(htmlPath);
         if (!html) return;
 
+        // タイトル更新処理 (既存のまま)
         const titleMatch = html.match(/<title>(.*?)<\/title>/i);
         const winTitleEl = previewWin?.querySelector(".title-text");
         if (winTitleEl) {
-            if (titleMatch && titleMatch[1]) {
-                // タグの中身があればそれを採用
-                winTitleEl.textContent = `${titleMatch[1]}`;
-            } else {
-                // なければ元のファイル名を表示
-                winTitleEl.textContent = `Preview - ${activeTab?.name || "Untitled"}`;
-            }
+            winTitleEl.textContent = (titleMatch && titleMatch[1])
+                ? titleMatch[1]
+                : `Preview - ${activeTab?.name || "Untitled"}`;
         }
 
-        // 相対パスを Blob URL に置換
+        // 5. 相対パスを Blob URL に置換
         html = html.replace(/(src|href)=["']([^"']+)["']/gi, (match, attr, relPath) => {
             const resolved = resolveRelativePath(htmlPath, relPath);
             const blobUrl = resolved ? previewBlobMap.get(resolved) : null;
@@ -658,9 +695,11 @@ export default function CodeEditor(root, options = {}) {
 
         const htmlBlobUrl = createBlobURL(html, "text/html");
         previewBlobMap.set("__html__", htmlBlobUrl);
-        previewIframe.src = htmlBlobUrl;
 
+        // 6. 反映と後片付け
+        previewIframe.src = htmlBlobUrl;
         previewIframe.onload = () => {
+            // 新しい内容が表示された後に古い URL を解放する
             for (const url of oldBlobs.values()) {
                 try { URL.revokeObjectURL(url); } catch { }
             }
@@ -670,11 +709,6 @@ export default function CodeEditor(root, options = {}) {
     /* =========================
        Sidebar
     ========================== */
-    function toggleSidebar() {
-        sidebar.style.display = sidebar.style.display === "none" ? "block" : "none";
-        if (sidebar.style.display === "block") renderSidebar();
-    }
-
     let sidebarRootDir = getDirPath(filePath) || filePath.split("/")[0];
 
     function renderSidebar() {
@@ -805,7 +839,44 @@ export default function CodeEditor(root, options = {}) {
         ulRoot.appendChild(createList(treeRoot));
         sidebar.appendChild(ulRoot);
     }
+    /* =========================
+           Activity Bar Logic
+        ========================== */
+    /* =========================
+           Activity Bar & Sidebar Logic
+        ========================== */
+    const searchTrigger = root.querySelector(".search-trigger");
+    const searchSvg = root.querySelector(".search-svg");
 
+    function toggleSidebarWithSearch() {
+        const isHidden = sidebar.style.display === "none";
+
+        if (isHidden) {
+            // サイドバーを開く
+            sidebar.style.display = "block";
+            searchTrigger.style.borderLeft = "2px solid #fff";
+            searchSvg.setAttribute("stroke", "#fff"); // アイコンを白に
+            renderSidebar();
+            // 検索窓へのフォーカス
+            setTimeout(() => sidebar.querySelector("input")?.focus(), 10);
+        } else {
+            // サイドバーを閉じる
+            sidebar.style.display = "none";
+            searchTrigger.style.borderLeft = "2px solid transparent";
+            searchSvg.setAttribute("stroke", "#888"); // アイコンをグレーに
+        }
+    }
+
+    // アイコンクリック
+    searchTrigger.addEventListener("click", toggleSidebarWithSearch);
+
+    // ホバーエフェクト（サイドバーが閉じている時だけ少し明るくする）
+    searchTrigger.onmouseenter = () => {
+        if (sidebar.style.display === "none") searchSvg.setAttribute("stroke", "#ccc");
+    };
+    searchTrigger.onmouseleave = () => {
+        if (sidebar.style.display === "none") searchSvg.setAttribute("stroke", "#888");
+    };
     /* =========================
        Ribbon
     ========================== */
@@ -828,7 +899,7 @@ export default function CodeEditor(root, options = {}) {
             },
             {
                 title: "View", items: [
-                    { label: "Toggle Sidebar", action: toggleSidebar }
+                    { label: "Toggle Sidebar (Search)", action: toggleSidebarWithSearch }
                 ]
             }
         ]);
@@ -837,15 +908,20 @@ export default function CodeEditor(root, options = {}) {
     sidebar.style.display = "none";
 
     /* =========================
-       FS変更 → タブ自動同期
+       FS変更 → タブ自動同期（修正版）
     ========================== */
     function syncTabsWithFS() {
-        // タブ自体の node を更新するだけ
+        let activeTabWasUpdated = false; // アクティブなタブが更新されたかどうかのフラグ
+
         for (let i = tabs.length - 1; i >= 0; i--) {
             const tab = tabs[i];
             const node = resolveFS(tab.path);
 
             if (node) {
+                // 更新されたノードが現在のアクティブタブと同じパスならフラグを立てる
+                if (activeTab && tab.path === activeTab.path) {
+                    activeTabWasUpdated = true;
+                }
                 tab.node = node;
             } else {
                 if (activeTab === tab) activeTab = null;
@@ -858,19 +934,21 @@ export default function CodeEditor(root, options = {}) {
             textarea.value = activeTab.content;
             updateLineNumbers();
             baseTitle = activeTab.name;
+            activeTabWasUpdated = true; // タブが切り替わった場合も更新対象とする
         }
 
         renderTabs();
         updateTitle();
-        if (previewWin && document.body.contains(previewWin)) {
+
+        // 修正ポイント：プレビューウィンドウが存在し、かつアクティブタブに更新があった場合のみ実行
+        if (previewWin && document.body.contains(previewWin) && activeTabWasUpdated) {
             renderPreview();
         }
+
         if (sidebar.style.display !== "none") {
             renderSidebar();
         }
     }
-
-    window.addEventListener("fs-updated", syncTabsWithFS);
 
     /* =========================
        Close & Cleanup
