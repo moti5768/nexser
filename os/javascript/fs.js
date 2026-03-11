@@ -40,7 +40,8 @@ const baseFS = {
             "Explorer.app": { type: "app", entry: "./apps/explorer.js", system: true, shell: true },
             "Soundsplayer.app": { type: "app", entry: "./apps/soundplayer.js", system: true },
             "AudioPlayer.app": { type: "app", entry: "./apps/audioplayer.js", system: true },
-            "Paint.app": { type: "app", entry: "./apps/paint.js", system: true }
+            "Paint.app": { type: "app", entry: "./apps/paint.js", system: true },
+            "RegistryEditor.app": { type: "app", entry: "./apps/registryeditor.js", system: true }
         },
         Accessories: {
             type: "folder",
@@ -60,7 +61,8 @@ const baseFS = {
                 system: true,
                 "Clock.app": { type: "link", target: "Programs/Applications/Clock.app" },
                 "Terminal.app": { type: "link", target: "Programs/Applications/Terminal.app" },
-                "TaskManager.app": { type: "link", target: "Programs/Applications/TaskManager.app" }
+                "TaskManager.app": { type: "link", target: "Programs/Applications/TaskManager.app" },
+                "RegistryEditor.app": { type: "link", target: "Programs/Applications/RegistryEditor.app" }
             }
         },
         Documents: {
