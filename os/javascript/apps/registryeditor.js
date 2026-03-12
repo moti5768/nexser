@@ -10,7 +10,7 @@ export default function RegistryEditor(root) {
     let dbPromise = null;
     let isProcessing = false;
     let searchTerm = "";
-    const MAX_VISIBLE_ITEMS = 100;
+    const MAX_VISIBLE_ITEMS = 1000;
 
     const win = root.closest(".window");
     let editingKey = null; // インライン編集中のキーを保持
@@ -105,8 +105,9 @@ export default function RegistryEditor(root) {
                 if (typeof rawVal === 'string') {
                     if (rawVal.startsWith('{') || rawVal.startsWith('[')) {
                         try { val = JSON.parse(rawVal); } catch (e) { val = rawVal; }
-                    } else if (rawVal !== "" && !isNaN(rawVal) && !isNaN(parseFloat(rawVal))) {
-                        val = Number(rawVal);
+                    } else if (typeof rawVal === 'string' && rawVal.trim() !== "" && !isNaN(Number(rawVal))) {
+                        // 整数として扱うべきか、浮動小数点か、OSの仕様に合わせて厳密に変換
+                        val = rawVal.includes('.') ? parseFloat(rawVal) : parseInt(rawVal, 10);
                     }
                 }
             }
@@ -175,14 +176,13 @@ export default function RegistryEditor(root) {
                 req.onerror = () => reject(req.error);
             });
 
-            // 値（val）を新しいキーで保存
             await store.put(val, newKey);
-            // 古いキーを削除
             await store.delete(oldKey);
-            // --- 修正箇所ここまで ---
-
-            await tx.done;
-
+            // トランザクションが完全に確定するのを待つ
+            await new Promise((resolve) => {
+                tx.oncomplete = resolve;
+                tx.onerror = () => { throw tx.error; };
+            });
             selectedKey = newKey;
             refresh(true);
         } catch (e) {
@@ -248,30 +248,38 @@ export default function RegistryEditor(root) {
         let newKey = newKeyBase;
         let counter = 1;
 
-        // 1. 重複チェック (rowMap だけでなく DB 側も考慮するのが理想ですが、一旦 rowMap で)
-        while (rowMap.has(newKey)) {
-            newKey = `${newKeyBase} #${counter++}`;
-        }
-
         try {
+            const db = await getDB();
+
+            // 1. DB全体での重複チェック（rowMapに依存しない）
+            // IDBObjectStore.count() を使うと効率的です
+            const checkExists = async (k) => {
+                const tx = db.transaction(currentStore, "readonly");
+                const count = await tx.objectStore(currentStore).count(k);
+                return count > 0;
+            };
+
+            while (await checkExists(newKey)) {
+                newKey = `${newKeyBase} #${counter++}`;
+            }
+
             const targetKey = String(newKey);
 
-            // 2. 直接 DB に保存するロジックを呼ぶ (performSave を介さず確実に処理)
-            const db = await getDB();
+            // 2. DBへ保存
             const tx = db.transaction(currentStore, "readwrite");
-            // 初期値は空文字列、型は REG_SZ として扱う
             await tx.objectStore(currentStore).put("", targetKey);
             await tx.done;
 
-            // 3. UIをリフレッシュして新しい行を描画させる
+            // 3. UIリフレッシュ
+            // refreshがPromiseを返すなら、awaitで描画完了を確実に待てる
             await refresh(true);
 
-            // 4. 描画された後に選択と編集モードへ
-            // refresh(true) は非同期の cursor を使っているため、少し待機が必要な場合があります
-            setTimeout(() => {
+            // 4. 描画完了直後に実行（setTimeout 0 または直呼び出し）
+            // DOMのレンダリングを確実に待つなら requestAnimationFrame も有効
+            requestAnimationFrame(() => {
                 selectRow(targetKey);
                 enterEditMode(targetKey, "name");
-            }, 100); // 50msから100msに微増させると安定します
+            });
 
         } catch (e) {
             console.error("Create failed:", e);
@@ -332,65 +340,76 @@ export default function RegistryEditor(root) {
         input.click();
     }
 
-    // --- UIリフレッシュ ---
     async function refresh(forceReset = false) {
-        if (!document.body.contains(root) || isProcessing) return;
+        // 1. Promiseを返して、外部から await できるようにする
+        return new Promise(async (resolve, reject) => {
+            if (!document.body.contains(root) || isProcessing) return resolve();
 
-        const snapshotStore = currentStore;
-        isProcessing = true;
+            const snapshotStore = currentStore;
+            isProcessing = true;
 
-        try {
-            const db = await getDB();
-            const tx = db.transaction(currentStore, "readonly");
-            const store = tx.objectStore(currentStore);
+            try {
+                const db = await getDB();
+                const tx = db.transaction(currentStore, "readonly");
+                const store = tx.objectStore(currentStore);
 
-            if (forceReset) {
-                bodyEl.innerHTML = "";
-                rowMap.clear();
-            }
+                if (forceReset) {
+                    bodyEl.innerHTML = "";
+                    rowMap.clear();
+                }
 
-            const dbKeys = new Set();
-            const visibleKeys = new Set();
-            let count = 0;
+                const dbKeys = new Set();
+                const visibleKeys = new Set();
+                let count = 0;
 
-            const request = store.openCursor();
-            request.onsuccess = (e) => {
-                if (currentStore !== snapshotStore) { isProcessing = false; return; }
-
-                const cursor = e.target.result;
-                if (cursor) {
-                    const keyStr = String(cursor.key);
-                    dbKeys.add(keyStr);
-
-                    if (count < MAX_VISIBLE_ITEMS) {
-                        const isMatch = !searchTerm || keyStr.toLowerCase().includes(searchTerm.toLowerCase());
-                        if (isMatch) {
-                            visibleKeys.add(keyStr);
-                            updateRow(cursor.key, keyStr, cursor.value);
-                            count++;
-                        }
+                const request = store.openCursor();
+                request.onsuccess = (e) => {
+                    if (currentStore !== snapshotStore) {
+                        isProcessing = false;
+                        return resolve();
                     }
-                    cursor.continue();
-                } else {
-                    for (const [k, tr] of rowMap) {
-                        if (!dbKeys.has(k) || !visibleKeys.has(k)) {
-                            // 編集中の行は削除しない
-                            if (editingKey !== k) {
-                                tr.remove();
-                                rowMap.delete(k);
+
+                    const cursor = e.target.result;
+                    if (cursor) {
+                        const keyStr = String(cursor.key);
+                        dbKeys.add(keyStr);
+
+                        if (count < MAX_VISIBLE_ITEMS) {
+                            const isMatch = !searchTerm || keyStr.toLowerCase().includes(searchTerm.toLowerCase());
+                            if (isMatch) {
+                                visibleKeys.add(keyStr);
+                                updateRow(cursor.key, keyStr, cursor.value);
+                                count++;
                             }
                         }
+                        cursor.continue();
+                    } else {
+                        // カーソルが最後まで到達
+                        for (const [k, tr] of rowMap) {
+                            if (!dbKeys.has(k) || !visibleKeys.has(k)) {
+                                if (editingKey !== k) {
+                                    tr.remove();
+                                    rowMap.delete(k);
+                                }
+                            }
+                        }
+                        isProcessing = false;
+                        if (win && win._statusBar) {
+                            win._statusBar.textContent = `My Computer\\${currentStore} (${dbKeys.size} items)`;
+                        }
+                        resolve(); // ここで完了を通知！
                     }
+                };
+                request.onerror = (e) => {
                     isProcessing = false;
-                    if (win && win._statusBar) {
-                        win._statusBar.textContent = `My Computer\\${currentStore} (${dbKeys.size} items)`;
-                    }
-                }
-            };
-        } catch (e) {
-            isProcessing = false;
-            console.error("[Registry] Refresh error:", e);
-        }
+                    reject(e);
+                };
+            } catch (e) {
+                isProcessing = false;
+                console.error("[Registry] Refresh error:", e);
+                reject(e);
+            }
+        });
     }
 
     function updateRow(key, keyStr, val) {
@@ -507,19 +526,29 @@ export default function RegistryEditor(root) {
         });
     }
 
+    let searchTimeout;
     searchInput.oninput = (e) => {
-        searchTerm = e.target.value;
-        refresh(true);
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            searchTerm = e.target.value;
+            refresh(true);
+        }, 250);
     };
 
     buildTree();
     refresh();
 
-    timer = setInterval(() => {
-        if (editingKey) return; // 編集中は自動更新を停止
-        if (document.activeElement && root.contains(document.activeElement)) return;
-        refresh(false);
-    }, 5000);
+    function startSafeTimer() {
+        timer = setTimeout(async () => {
+            // コンテキストメニューが開いている場合もスキップ対象に加える
+            const isMenuOpen = document.querySelector('.context-menu');
+            if (!editingKey && !isMenuOpen && document.visibilityState === 'visible') {
+                await refresh(false);
+            }
+            startSafeTimer(); // 重なりを防ぐため処理完了後に再セット
+        }, 5000);
+    }
+    startSafeTimer();
 
     if (win) {
         const obs = new MutationObserver(() => {
