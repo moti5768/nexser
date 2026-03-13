@@ -153,23 +153,31 @@ export default function RegistryEditor(root) {
 
     async function renameItem(oldKey, newKey) {
         if (!newKey || oldKey === newKey) return refresh(false);
+
+        // --- 【完全ブロック】ここから ---
+        // 1. 変更元が fs なら拒否
         if (isProtected(currentStore, oldKey)) {
             return errorWindow(`'${oldKey}' はシステム保護された項目のため、名前を変更できません。`, { parentWin: win });
         }
+
+        // 2. 変更先を fs にしようとしても拒否（上書き・偽装防止）
+        if (isProtected(currentStore, newKey)) {
+            return errorWindow(`'${newKey}' はシステム予約済みの名前です。この名前に変更することはできません。`, { parentWin: win });
+        }
+        // --- 【完全ブロック】ここまで ---
 
         try {
             const db = await getDB();
             const tx = db.transaction(currentStore, "readwrite");
             const store = tx.objectStore(currentStore);
 
+            // 重複チェック（既存の fs 以外のデータへの上書きも防止）
             const existing = await store.count(newKey);
             if (existing > 0) {
                 errorWindow(`Error: "${newKey}" already exists.`, { parentWin: win });
                 return refresh(false);
             }
 
-            // --- 修正箇所ここから ---
-            // store.get() は Request を返すので、Promise で結果を待つ必要があります
             const val = await new Promise((resolve, reject) => {
                 const req = store.get(oldKey);
                 req.onsuccess = () => resolve(req.result);
@@ -178,11 +186,12 @@ export default function RegistryEditor(root) {
 
             await store.put(val, newKey);
             await store.delete(oldKey);
-            // トランザクションが完全に確定するのを待つ
+
             await new Promise((resolve) => {
                 tx.oncomplete = resolve;
                 tx.onerror = () => { throw tx.error; };
             });
+
             selectedKey = newKey;
             refresh(true);
         } catch (e) {
@@ -259,7 +268,7 @@ export default function RegistryEditor(root) {
                 return count > 0;
             };
 
-            while (await checkExists(newKey)) {
+            while ((await checkExists(newKey)) || isProtected(currentStore, newKey)) {
                 newKey = `${newKeyBase} #${counter++}`;
             }
 
