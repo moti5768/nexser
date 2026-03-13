@@ -15,7 +15,8 @@ const baseFS = {
     Desktop: {
         type: "folder",
         Trash: { type: "link", target: "Trash", system: true },
-        Programs: { type: "link", target: "Programs" },
+        "My Computer": { type: "link", target: "Programs", system: true },
+        "ControlPanel": { type: "link", target: "Programs/ControlPanel", system: true },
         Documents: { type: "link", target: "Programs/Documents" },
         "Terminal.app": { type: "link", target: "Programs/Applications/Terminal.app" },
         "Calc.app": { type: "link", target: "Programs/Applications/Calc.app" },
@@ -25,6 +26,7 @@ const baseFS = {
     Trash: { type: "folder", system: true },
     Programs: {
         type: "folder",
+        system: true,
         Applications: {
             type: "folder",
             system: true,
@@ -43,6 +45,7 @@ const baseFS = {
             "Paint.app": { type: "app", entry: "./apps/paint.js", system: true },
             "RegistryEditor.app": { type: "app", entry: "./apps/registryeditor.js", system: true }
         },
+        ControlPanel: { type: "folder", system: true },
         Accessories: {
             type: "folder",
             system: true,
