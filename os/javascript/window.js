@@ -1034,6 +1034,7 @@ export function showModalWindow(title, message, options = {}) {
         if (win._observer) win._observer.disconnect();
         win.remove();
         if (overlay) overlay.remove();
+        scheduleRefreshTopWindow();
         if (typeof callback === "function") callback();
     };
 

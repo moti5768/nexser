@@ -10,7 +10,7 @@ export default function RegistryEditor(root) {
     let dbPromise = null;
     let isProcessing = false;
     let searchTerm = "";
-    const MAX_VISIBLE_ITEMS = 1000;
+    const MAX_VISIBLE_ITEMS = 5000;
 
     const win = root.closest(".window");
     let editingKey = null; // インライン編集中のキーを保持
@@ -33,7 +33,7 @@ export default function RegistryEditor(root) {
                 <input type="text" class="border" id="reg-search" style="flex:1; outline:none; padding:1px 3px; background:#fff;" placeholder="Search keys...">
             </div>
             <div style="display:flex; flex:1; overflow:hidden;">
-                <div class="reg-left border" style="width:160px; background:#fff; overflow-y:auto; padding:4px; border-right: 1px solid #808080;">
+                <div class="reg-left border" id="reg-tree-container" tabindex="0" style="width:160px; background:#fff; overflow-y:auto; padding:4px; border-right: 1px solid #808080;">
                     <div style="font-weight:bold; margin-bottom:4px;">💻 My Computer</div>
                     <ul style="list-style:none; padding-left:15px; margin:0;" id="reg-tree"></ul>
                 </div>
@@ -243,6 +243,7 @@ export default function RegistryEditor(root) {
             } else {
                 refresh(false);
             }
+            mainView.focus();
         };
 
         input.onblur = () => finish(true);
@@ -511,9 +512,64 @@ export default function RegistryEditor(root) {
     }
 
     mainView.onkeydown = (e) => {
-        if (!selectedKey || editingKey) return;
-        if (e.key === "Delete") deleteItem(selectedKey);
-        if (e.key === "Enter") enterEditMode(selectedKey, "data");
+        if (editingKey) return; // 編集時は無効化
+
+        const visibleKeys = Array.from(rowMap.keys());
+        if (visibleKeys.length === 0) return;
+
+        let currentIndex = visibleKeys.indexOf(selectedKey);
+
+        switch (e.key) {
+            case "F5":
+                e.preventDefault();
+                refresh(true);
+                break;
+
+            case "ArrowDown":
+                e.preventDefault();
+                // 選択されていない場合は1番目、選択中なら次へ
+                const nextIdx = currentIndex < visibleKeys.length - 1 ? currentIndex + 1 : currentIndex;
+                const nextKey = visibleKeys[nextIdx];
+                if (nextKey) {
+                    selectRow(nextKey);
+                    rowMap.get(nextKey)?.scrollIntoView({ block: "nearest" });
+                }
+                break;
+
+            case "ArrowUp":
+                e.preventDefault();
+                const prevIdx = currentIndex > 0 ? currentIndex - 1 : 0;
+                const prevKey = visibleKeys[prevIdx];
+                if (prevKey) {
+                    selectRow(prevKey);
+                    rowMap.get(prevKey)?.scrollIntoView({ block: "nearest" });
+                }
+                break;
+
+            case "ArrowLeft":
+                e.preventDefault();
+
+                // 1. 選択状態を変数レベルで解除
+                selectedKey = null;
+
+                // 2. UI上のハイライトをすべてクリア
+                for (const [k, tr] of rowMap) {
+                    tr.style.background = "";
+                    tr.style.color = "";
+                }
+
+                // 3. 左側のメニューにフォーカスを戻す
+                treeContainer.focus();
+                break;
+
+            case "Delete":
+                if (selectedKey) deleteItem(selectedKey);
+                break;
+
+            case "Enter":
+                if (selectedKey) enterEditMode(selectedKey, "data");
+                break;
+        }
     };
 
     function buildTree() {
@@ -535,6 +591,40 @@ export default function RegistryEditor(root) {
         });
     }
 
+    const treeContainer = root.querySelector("#reg-tree-container");
+
+    treeContainer.onkeydown = (e) => {
+        const currentIndex = STORE_NAMES.indexOf(currentStore);
+        let nextIndex = currentIndex;
+
+        if (e.key === "ArrowDown") {
+            e.preventDefault();
+            nextIndex = Math.min(STORE_NAMES.length - 1, currentIndex + 1);
+        } else if (e.key === "ArrowUp") {
+            e.preventDefault();
+            nextIndex = Math.max(0, currentIndex - 1);
+        } else if (e.key === "Enter" || e.key === "ArrowRight") { // 右矢印を追加
+            e.preventDefault();
+            // 右側ビューにフォーカスを当てる
+            mainView.focus();
+
+            // すでにアイテムがある場合は、一番上のアイテムを選択状態にする
+            const visibleKeys = Array.from(rowMap.keys());
+            if (visibleKeys.length > 0) {
+                selectRow(visibleKeys[0]);
+                rowMap.get(visibleKeys[0])?.scrollIntoView({ block: "nearest" });
+            }
+            return;
+        } else {
+            return;
+        }
+
+        if (nextIndex !== currentIndex) {
+            const targetLi = treeEl.children[nextIndex];
+            if (targetLi) targetLi.click();
+        }
+    };
+
     let searchTimeout;
     searchInput.oninput = (e) => {
         clearTimeout(searchTimeout);
@@ -546,18 +636,6 @@ export default function RegistryEditor(root) {
 
     buildTree();
     refresh();
-
-    function startSafeTimer() {
-        timer = setTimeout(async () => {
-            // コンテキストメニューが開いている場合もスキップ対象に加える
-            const isMenuOpen = document.querySelector('.context-menu');
-            if (!editingKey && !isMenuOpen && document.visibilityState === 'visible') {
-                await refresh(false);
-            }
-            startSafeTimer(); // 重なりを防ぐため処理完了後に再セット
-        }, 5000);
-    }
-    startSafeTimer();
 
     if (win) {
         const obs = new MutationObserver(() => {

@@ -1178,10 +1178,13 @@ export async function calcNodeSize(node, path = "") {
     return 0;
 }
 function formatSize(bytes) {
-    if (bytes === 0) return "0 B"; // 0の時の表示を明確化
+    if (bytes === 0) return "0 B";
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+    if (bytes < 1024 * 1024 * 1024) {
+        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    }
+    return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
 }
 
 // FS 内の全アプリを取得

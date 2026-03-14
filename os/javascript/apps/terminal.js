@@ -151,6 +151,108 @@ export default function TerminalApp(content) {
         logoff: { desc: "Log off OS", async run() { await logOff(); input.blur(); } },
 
         pwd: { desc: "Show current directory", run() { print(cwd); } },
+        exit: {
+            desc: "Close terminal",
+            run() {
+                const wins = getWindows();
+
+                // 1. content の参照一致、または DOM の包含関係で自分を探す
+                const myWin = wins.find(w =>
+                    w.content === content ||
+                    w.content?.contains(content)
+                );
+
+                if (myWin) {
+                    closeWindowById(myWin.id);
+                } else {
+                    // 2. 万が一見つからない場合は、タイトルが "Terminal" のものを探す（予備策）
+                    const terminalWin = wins.find(w => w.title?.includes("Terminal"));
+                    if (terminalWin) {
+                        closeWindowById(terminalWin.id);
+                    } else {
+                        print("Error: Could not find terminal window instance.", "#f00");
+                    }
+                }
+            }
+        },
+
+
+
+        pc: {
+            desc: "Display PC animation with typing text and auto-run",
+            async run(args) {
+                // 1. 引数の前処理
+                const hasRun = args ? args.includes("run") : false;
+                let displayArgs = args ? args.filter(a => a !== "run") : [];
+                let targetText = displayArgs.join(" ");
+
+                // 文字列を25文字に制限
+                if (targetText.length > 25) {
+                    targetText = targetText.substring(0, 25);
+                }
+
+                const frames = ["\\_", " /_", "  <", " /_"];
+                const duration = 5000;
+                const interval = 150;
+                const maxSpaces = 20;
+
+                const line = document.createElement("div");
+                line.style.color = "#0f0";
+                line.style.fontWeight = "bold";
+                line.style.fontFamily = "Consolas, Monaco, 'Courier New', monospace";
+                line.style.whiteSpace = "pre";
+
+                // input の前に挿入
+                screen.insertBefore(line, input.parentElement);
+
+                const startTime = Date.now();
+
+                // 2. 移動アニメーション
+                await new Promise((resolve) => {
+                    const timer = setInterval(() => {
+                        const elapsed = Date.now() - startTime;
+
+                        if (elapsed > duration) {
+                            clearInterval(timer);
+                            resolve();
+                            return;
+                        }
+
+                        const progress = elapsed / duration;
+                        const spaceCount = Math.floor(progress * maxSpaces);
+                        const padding = " ".repeat(spaceCount);
+                        const frameIndex = Math.floor(elapsed / interval) % frames.length;
+
+                        line.textContent = padding + frames[frameIndex];
+                        screen.scrollTop = screen.scrollHeight;
+                    }, interval);
+                });
+
+                // 3. タイピングアニメーション（位置固定版）
+                const finalPadding = " ".repeat(maxSpaces);
+                const fixedSpacing = " "; // PC本体と文字の間のスペースを常に1つ入れる
+
+                for (let i = 0; i <= targetText.length; i++) {
+                    const currentText = targetText.substring(0, i);
+
+                    // fixedSpacing を使うことで、0文字目からPCの位置が固定される
+                    line.textContent = finalPadding + "\\_" + fixedSpacing + currentText;
+
+                    await new Promise(r => setTimeout(r, 250));
+                    screen.scrollTop = screen.scrollHeight;
+                }
+
+                // 4. "run" 引数があった場合にコマンド実行
+                if (hasRun && targetText.trim()) {
+                    await new Promise(r => setTimeout(r, 500));
+                    await exec(targetText.trim());
+                }
+            }
+        },
+
+
+
+
 
         ls: {
             desc: "List directory contents", run(args) {

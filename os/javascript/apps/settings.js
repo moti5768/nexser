@@ -196,11 +196,6 @@ export default async function SettingsApp(content) {
         if (currentTabId === id) return;
         currentTabId = id;
 
-        if (id === "system") {
-            // Systemタブが選ばれた瞬間に計算を実行
-            setTimeout(() => renderStorage(), 0);
-        }
-
         [...tabsEl.children].forEach(btn => {
             const active = btn.dataset.id === id;
             btn.classList.toggle("active", active);

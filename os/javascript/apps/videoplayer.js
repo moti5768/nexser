@@ -231,16 +231,30 @@ export default function VideoPlayer(root, options = {}) {
 
             /* ウィンドウ差し替えロジック */
             if (win) {
+                // 1. まず、重いリソース（ビデオ本体）だけを殺す
+                if (video.src && video.src.startsWith('blob:')) {
+                    URL.revokeObjectURL(video.src);
+                }
+                video.pause();
+                video.src = "";
+                video.load();
+
                 const oldWin = win;
-                const oldRoot = root;
+                const oldRoot = root; // この時点ではまだ DOM 構造を維持
                 const oldBtn = oldWin._taskbarBtn;
 
-                // 新しいタイトルでウィンドウを作成
+                // 2. 新しいウィンドウを生成
                 const newRoot = createWindow(finalName, { width: 600, height: 450 });
 
-                oldWin.parentElement.replaceChild(newRoot.parentElement, oldRoot.parentElement);
+                // 3. DOMを入れ替える（古い root が親から外される）
+                if (oldWin.parentElement) {
+                    oldWin.parentElement.replaceChild(newRoot.parentElement, oldRoot.parentElement);
+                }
 
-                // 新しいパスで VideoPlayer を初期化
+                // 4. 入れ替えが終わってから、古い root を完全に空にする（クリーンアップ完了）
+                oldRoot.innerHTML = "";
+
+                // 5. 新しいプレイヤーを起動
                 VideoPlayer(newRoot, { path: newFilePath });
 
                 if (oldBtn && Array.isArray(taskbarButtons)) {
@@ -303,13 +317,23 @@ export default function VideoPlayer(root, options = {}) {
         setupRibbon(win, () => filePath, null, ribbonMenus);
     }
 
+    // 改善後：メモリを掃除してから閉じる
     const closeBtn = win?.querySelector(".close-btn");
+
     function closeWindow() {
+        /* --- クリーンアップ処理を追加 --- */
+        if (video.src && video.src.startsWith('blob:')) {
+            URL.revokeObjectURL(video.src); // メモリ上のビデオデータを解放
+            video.src = "";
+        }
+        video.load(); // ビデオエンジンの動作を強制終了
+        root.innerHTML = ""; // 内部の要素を空にして参照を切り、ガベージコレクションを促す
+
+        /* --- 実際の削除処理 --- */
         if (closeBtn) {
-            // すでに dirty は false になっているので、再入防止のため
-            // そのまま標準の閉じる処理が実行されます
+            // すでに dirty は false になっているので、安全にクリックをシミュレート
             closeBtn.click();
-        } else {
+        } else if (win) {
             win.remove();
         }
     }
