@@ -54,16 +54,21 @@ async function safeImport(entry) {
     if (moduleCache.has(entry)) return moduleCache.get(entry);
     if (importLocks.has(entry)) return importLocks.get(entry);
 
+    const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("Timeout")), 10000)
+    );
+
     const promise = (async () => {
         try {
-            const mod = await import(entry);
+            // タイムアウト付きでインポート
+            const mod = await Promise.race([import(entry), timeout]);
             moduleCache.set(entry, mod);
             return mod;
         } catch (e) {
             console.error("import failed:", entry, e);
-            throw new Error(`module load failed: ${entry}`);
+            throw e;
         } finally {
-            importLocks.delete(entry);
+            importLocks.delete(entry); // 失敗しても成功してもロックは外す
         }
     })();
 
@@ -406,35 +411,38 @@ export function getProcessList() {
    killProcess（完全安全版） (維持)
 ========================= */
 export function killProcess(key) {
-
     const proc = processes.get(key);
     if (!proc) return false;
 
     const win = proc.window;
 
     try {
+        // 1. アプリ側のクリーンアップ（タイマー停止など）
         if (win?._cleanup) win._cleanup();
 
-        if (win?._observer)
+        // 2. Observerを真っ先に切断
+        if (win?._observer) {
             win._observer.disconnect();
+            win._observer = null;
+        }
 
-        if (win?._taskbarBtn?.remove)
-            win._taskbarBtn.remove();
+        // 3. タスクバーとウィンドウをUIから削除
+        if (win?._taskbarBtn) win._taskbarBtn.remove();
+        if (win) win.remove();
 
-        if (win?.remove)
-            win.remove();
     } catch (e) {
-        console.warn("window remove failed:", e);
-    }
-
-    for (const [path, w] of explorerWindows.entries()) {
-        if (w === win) {
-            explorerWindows.delete(path);
-            break;
+        console.warn("Process cleanup failed:", e);
+    } finally {
+        // 4. 最後に必ず管理情報を削除
+        processes.delete(key);
+        // エクスプローラー管理からも削除
+        for (const [path, w] of explorerWindows.entries()) {
+            if (w === win) {
+                explorerWindows.delete(path);
+                break;
+            }
         }
     }
-
-    processes.delete(key);
     return true;
 }
 

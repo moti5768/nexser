@@ -20,6 +20,7 @@ export const FILE_ASSOCIATIONS = {
     ".jpg": "Programs/Applications/ImageViewer.app",
     ".jpeg": "Programs/Applications/ImageViewer.app",
     ".gif": "Programs/Applications/ImageViewer.app",
+    ".webp": "Programs/Applications/ImageViewer.app",
 
     // paint
     ".bmp": "Programs/Applications/Paint.app",
@@ -99,7 +100,7 @@ export function getIcon(name, node) {
     const categories = {
         text: [".txt", ".md"],
         code: [".js", ".ts", ".json", ".css", ".scss", ".vue", ".html"],
-        image: [".png", ".jpg", ".jpeg", ".gif"],
+        image: [".png", ".jpg", ".jpeg", ".gif", ".webp"],
         paint: [".bmp"],
         video: [".mp4", ".webm", ".ogg", ".mov", ".mkv"],
         audio: [".mp3", ".wav", ".m4a", ".flac", ".aac"],

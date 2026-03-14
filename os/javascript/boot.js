@@ -11,7 +11,12 @@ function isCriticalError(msg) {
     // 深刻なエラーコードが含まれているか、または特定のスタックトレースを持つ場合のみTrue
     return CRITICAL_PREFIXES.some(prefix => String(msg).includes(prefix));
 }
-// エラーハンドラーを書き換え
+window.addEventListener("unhandledrejection", (e) => {
+    const error = e.reason;
+    const msg = error?.message || String(error);
+    // 非同期エラーは予期せぬ場所で起きやすいため、原則BSODで保護
+    showBSOD(`UNHANDLED_REJECTION: ${msg}`, error);
+});
 window.addEventListener("error", (e) => {
     const msg = e.error ? e.error.message : e.message;
     if (isCriticalError(msg)) {

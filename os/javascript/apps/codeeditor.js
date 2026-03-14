@@ -180,22 +180,114 @@ export default function CodeEditor(root, options = {}) {
 <div class="tabbar" style="display:flex;background:#1b1b1b;border-bottom:1px solid #333;user-select:none;"></div>
 <div class="main-layout" style="display:flex;width:100%;height:calc(100% - 32px);overflow:hidden;background:#111;">
     <div class="activity-bar" style="width:48px;background:#1a1a1a;display:flex;flex-direction:column;align-items:center;padding-top:5px;border-right:1px solid #111;flex-shrink:0;">
-    <div class="activity-icon search-trigger" title="Search" style="cursor:pointer;width:100%;height:48px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;border-left:2px solid transparent;">
-        <svg class="search-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="11" cy="11" r="8"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-        </svg>
+        <div class="activity-icon search-trigger" title="Search" style="cursor:pointer;width:100%;height:48px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;border-left:2px solid transparent;">
+            <svg class="search-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+        </div>
     </div>
-</div>
     
     <div class="sidebar" style="width:250px;background:#1a1a1a;color:#ccc;overflow:auto;display:none;border-right:1px solid #222;padding:0;box-sizing:border-box;flex-shrink:0;"></div>
     
-    <div class="linenumbers" style="width:52px;padding:10px 6px;box-sizing:border-box;text-align:right;font-family:monospace;font-size:14px;line-height:1.4;color:#777;background:#0d0d0d;border-right:1px solid #222;user-select:none;overflow:hidden;white-space:pre;"></div>
-    <div class="codecontainer" style="position:relative;flex:1;display:flex;flex-direction:column;min-width:0;">
-        <textarea class="codeeditor" spellcheck="false" wrap="off" style="flex:1;width:100%;resize:none;box-sizing:border-box;border:none;outline:none;padding:10px;background:#111;color:#eaeaea;overflow:auto;white-space:pre;font-family:monospace;font-size:14px;line-height:1.4;position:relative;z-index:1;"></textarea>
+    <div class="linenumbers" style="width:52px;padding:10px 6px;box-sizing:border-box;text-align:right;color:#777;background:#0d0d0d;border-right:1px solid #222;user-select:none;overflow:hidden;white-space:pre;"></div>
+    
+    <div class="codecontainer" style="position:relative;flex:1;display:flex;min-width:0;overflow:hidden;background:#111;">
+        <pre class="syntax-highlight" aria-hidden="true"></pre>
+        
+        <textarea class="codeeditor" spellcheck="false" wrap="off"></textarea>
+        
         <div class="error-overlay" style="position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:2;"></div>
     </div>
+
+    <div class="minimap-container" style="width:60px; background:#0d0d0d; border-left:1px solid #222; position:relative; flex-shrink:0; cursor:pointer; user-select:none;">
+        <canvas class="minimap-canvas" style="width:100%; height:100%; pointer-events:none;"></canvas>
+        <div class="minimap-slider" style="position:absolute; top:0; left:0; width:100%; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); pointer-events:none; box-sizing:border-box; z-index:3;"></div>
+    </div>
 </div>
+
+<style>
+/* 共通のフォント・レイアウト設定（極めて重要） */
+.codeeditor, .syntax-highlight, .linenumbers {
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace !important;
+    font-size: 14px !important;
+    line-height: 20px !important;
+    tab-size: 4 !important;
+    letter-spacing: 0px !important;
+    font-variant-ligatures: none !important;
+    -webkit-font-smoothing: antialiased;
+}
+
+.codeeditor, .syntax-highlight {
+    padding: 10px !important; 
+    margin: 0 !important;
+    border: none !important;
+    box-sizing: border-box !important;
+    white-space: pre !important; /* 絶対に折り返さない */
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace !important;
+    font-size: 14px !important;
+    line-height: 20px !important;
+    tab-size: 4 !important;
+    letter-spacing: 0px !important;
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* textareaは透明にして、カーソルだけ見せる */
+.codeeditor {
+    color: transparent !important;
+    caret-color: #fff; /* カーソルは白 */
+    background: transparent !important;
+}
+
+.codeeditor {
+    position: absolute;
+    top: 0; left: 0;
+    z-index: 2;
+    background: transparent !important;
+    color: transparent !important;
+    caret-color: #fff;
+    outline: none;
+    resize: none;
+    overflow: auto;
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+}
+
+.codeeditor::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
+}
+
+.syntax-highlight {
+    position: absolute;
+    top: 0; left: 0;
+    z-index: 1;
+    color: #eaeaea;
+    overflow: hidden; 
+    pointer-events: none;
+    background: #111;
+    /* transformを適用した際のボケを防止 */
+    will-change: transform;
+}
+
+/* ハイライト配色 */
+.hl-keyword  { color: #569cd6; font-weight: bold; }
+.hl-string   { color: #ce9178; }
+.hl-comment  { color: #6a9955; font-style: italic; }
+.hl-number   { color: #b5cea8; }
+.hl-bracket  { color: #ffd700; }
+.hl-tag      { color: #569cd6; }
+.hl-angle    { color: #808080; }
+.hl-attr     { color: #9cdcfe; }
+.hl-doctype  { color: #808080; }
+.hl-selector { color: #d7ba7d; }
+.hl-property { color: #9cdcfe; }
+.hl-builtin  { color: #4fc1ff; }
+.hl-variable { color: #9cdcfe; }
+.hl-operator { color: #d4d4d4; }
+</style>
 `;
 
     const tabbar = root.querySelector(".tabbar");
@@ -203,6 +295,120 @@ export default function CodeEditor(root, options = {}) {
     const lineNumbers = root.querySelector(".linenumbers");
     const errorOverlay = root.querySelector(".error-overlay");
     const sidebar = root.querySelector(".sidebar");
+    const syntaxLayer = root.querySelector(".syntax-highlight");
+
+
+    const COLORS = {
+        // 共通
+        keyword: "#569cd6",   // 制御構文 (if, function, class)
+        string: "#ce9178",    // 文字列
+        comment: "#6a9955",   // コメント
+        number: "#b5cea8",    // 数値
+        bracket: "#ffd700",   // 括弧類
+        operator: "#d4d4d4",  // 演算子 (+, -, =, &)
+
+        // JavaScript
+        func: "#dcdcaa",      // 関数名・メソッド名
+        variable: "#9cdcfe",  // 変数名 (def)
+        builtin: "#4fc1ff",   // 組み込みオブジェクト (console, Math)
+        property_js: "#9cdcfe", // オブジェクトのプロパティ
+
+        // HTML
+        tag: "#569cd6",       // タグ名 (div, html)
+        angle: "#808080",     // <, >
+        attr: "#9cdcfe",      // 属性名 (class, src)
+        doctype: "#808080",   // <!DOCTYPE>
+
+        // CSS
+        selector: "#d7ba7d",  // セレクタ (.class, #id, tag)
+        property: "#9cdcfe",  // プロパティ (color, margin)
+        unit: "#b5cea8",      // 単位 (px, rem)
+        value: "#ce9178",     // プロパティの値 (文字列に近い扱い)
+    };
+    // 共通のトークナイザー
+    function tokenize(line) {
+        // 演算子、括弧、文字列、コメント、単語を細かく分割
+        return line.split(/(\/\/.+|\/\*[\s\S]*?\*\/|"(?:\\.|[^"])*"|'(?:\\.|[^'])*'|`[\s\S]*?`|<\/?[a-zA-Z0-9!.-]+|[\w$-]+|[{}().,;+\-*/&|=<>!\[\]]|[\s]+)/).filter(Boolean);
+    }
+
+    function getTokenType(token, filePath) {
+        const t = token.trim();
+        if (!t) return null;
+        const ext = filePath ? filePath.split('.').pop().toLowerCase() : '';
+
+        // --- 共通 (最優先) ---
+        if (t.startsWith("//") || t.startsWith("/*")) return "comment";
+        if (/^["'`]/.test(t)) return "string";
+        if (/^[0-9]+(\.[0-9]+)?(px|rem|em|%|vh|vw|s|ms|deg)?$/.test(t)) return "number";
+        if (/^[{}()\[\]]$/.test(t)) return "bracket";
+        if (/^[.,;]$/.test(t)) return null; // 句読点は通常色
+
+        // --- HTML ---
+        if (ext === 'html') {
+            if (t.startsWith('<')) return "tag";
+            if (t === '>') return "angle";
+            // タグ内の属性判定 (簡易的に = の前にある英単語)
+            if (/^[a-zA-Z-]+$/.test(t)) return "attr";
+            if (t.startsWith('!')) return "doctype";
+        }
+
+        // --- CSS ---
+        if (ext === 'css') {
+            if (t.startsWith('.') || t.startsWith('#') || /^(html|body|div|span|a|h[1-6]|p|ul|li|section|header|footer|nav|main)$/.test(t)) {
+                return "selector";
+            }
+            if (t.endsWith(':') || /^[a-z-]+$/.test(t)) {
+                // プロパティか値かの判定は本来文脈が必要だが、簡易的にプロパティとして色付け
+                return "property";
+            }
+        }
+
+        // --- JavaScript ---
+        if (ext === 'js') {
+            // キーワード
+            const keywords = /^(const|let|var|function|return|if|else|for|while|import|export|from|as|default|class|extends|constructor|static|get|set|async|await|new|this|super|try|catch|finally|throw|break|continue|switch|case|of|in|yield|delete|typeof|instanceof|void|null|undefined|true|false)$/;
+            if (keywords.test(t)) return "keyword";
+
+            // 組み込みオブジェクト
+            const builtins = /^(console|window|document|Math|Object|Array|String|Number|Boolean|Promise|JSON|Map|Set|Symbol|Error|Proxy|Reflect|setTimeout|setInterval|fetch)$/;
+            if (builtins.test(t)) return "builtin";
+
+            // 関数呼び出し (トークンの次が '(' なら関数だが、単体判定では英単語を def に)
+            if (/^[a-zA-Z_$][\w$]*$/.test(t)) {
+                return "variable";
+            }
+
+            // 演算子
+            if (/^[+\-*/&|=<>!%^]+$/.test(t)) return "operator";
+        }
+
+        return null;
+    }
+
+    // シンタックスハイライト適用関数
+    function applySyntaxHighlight() {
+        const lines = textarea.value.split('\n');
+        let htmlResult = "";
+
+        lines.forEach((line, i) => {
+            const tokens = tokenize(line);
+            tokens.forEach(token => {
+                if (!token) return;
+                const type = getTokenType(token, activeTab?.path);
+                const escaped = token.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+                if (type) {
+                    const className = `hl-${type}`;
+                    htmlResult += `<span class="${className}">${escaped}</span>`;
+                } else {
+                    htmlResult += escaped;
+                }
+            });
+            if (i < lines.length - 1) htmlResult += "\n";
+        });
+
+        syntaxLayer.innerHTML = htmlResult + (textarea.value.endsWith('\n') ? ' ' : '');
+    }
 
     // 行数を記録するための変数を関数の外側（CodeEditor関数内）に定義
     let lastLineCount = 0;
@@ -223,13 +429,149 @@ export default function CodeEditor(root, options = {}) {
         }
         lineNumbers.textContent = res;
     }
-    textarea.addEventListener("scroll", () => {
-        lineNumbers.scrollTop = textarea.scrollTop;
-        errorOverlay.scrollTop = textarea.scrollTop;
-        sidebar.scrollTop = textarea.scrollTop;
+    let highlightLayer = null;
 
-        // 検索ハイライトも同期
-        if (searchQuery) highlightSearchMatches(searchQuery);
+    textarea.addEventListener("scroll", () => {
+        // 1. 行番号の同期
+        lineNumbers.scrollTop = textarea.scrollTop;
+
+        // 2. シンタックスハイライト層（preタグ）の同期
+        // ここが抜けていたため、スクロールしても色だけ置いていかれていました
+        if (syntaxLayer) {
+            syntaxLayer.scrollTop = textarea.scrollTop;
+            syntaxLayer.scrollLeft = textarea.scrollLeft;
+        }
+
+        // 3. 検索ヒット用レイヤー（canvas/div群）の同期
+        if (highlightLayer) { // 変数名が highlightLayer になっている箇所を確認してください
+            const sx = Math.round(textarea.scrollLeft);
+            const sy = Math.round(textarea.scrollTop);
+            highlightLayer.style.transform = `translate(${-sx}px, ${-sy}px)`;
+        }
+    });
+    /* =========================
+         Minimap Logic (Fixed for Sync & Resize)
+      ========================== */
+    const minimapCanvas = root.querySelector(".minimap-canvas");
+    const minimapCtx = minimapCanvas.getContext("2d");
+    const minimapSlider = root.querySelector(".minimap-slider");
+    const minimapContainer = root.querySelector(".minimap-container");
+
+    const LINE_H_PX = 2; // ミニマップ上の1行の高さ
+    const CHAR_W_PX = 1;
+    let isDraggingMinimap = false;
+
+    function updateMinimap() {
+        const text = textarea.value;
+        const lines = text.split("\n");
+        const lineCount = lines.length;
+
+        const containerW = minimapContainer.clientWidth;
+        const containerH = minimapContainer.clientHeight;
+        if (containerW === 0 || containerH === 0) return;
+
+        const dpr = window.devicePixelRatio || 1;
+        if (minimapCanvas.width !== containerW * dpr || minimapCanvas.height !== containerH * dpr) {
+            minimapCanvas.width = containerW * dpr;
+            minimapCanvas.height = containerH * dpr;
+            minimapCanvas.style.width = containerW + 'px';
+            minimapCanvas.style.height = containerH + 'px';
+        }
+
+        minimapCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        minimapCtx.clearRect(0, 0, containerW, containerH);
+
+        const scrollHeight = textarea.scrollHeight || 1;
+        const clientHeight = textarea.clientHeight || 1;
+        const scrollTop = textarea.scrollTop;
+        const maxScrollTop = scrollHeight - clientHeight;
+        const scrollRatio = maxScrollTop > 0 ? scrollTop / maxScrollTop : 0;
+
+        const totalMinimapContentHeight = lineCount * LINE_H_PX;
+        let drawOffsetY = 0;
+        if (totalMinimapContentHeight > containerH) {
+            drawOffsetY = scrollRatio * (totalMinimapContentHeight - containerH);
+        }
+
+        lines.forEach((line, i) => {
+            const y = (i * LINE_H_PX) - drawOffsetY;
+            if (y + LINE_H_PX < 0) return;
+            if (y > containerH) return;
+
+            let x = 4;
+            const tokens = tokenize(line);
+
+            tokens.forEach(token => {
+                if (!token) return;
+                const type = getTokenType(token, activeTab?.path);
+
+                if (token.trim() === "") {
+                    x += token.length * CHAR_W_PX;
+                } else {
+                    minimapCtx.fillStyle = COLORS[type] || "#6db3d9"; // デフォルトは水色
+                    const tokenWidth = token.length * CHAR_W_PX;
+                    minimapCtx.fillRect(x, y, tokenWidth, LINE_H_PX - 0.5);
+                    x += tokenWidth;
+                }
+            });
+        });
+
+        const sliderHeight = Math.max(20, (clientHeight / scrollHeight) * containerH);
+        const sliderTop = scrollRatio * (containerH - sliderHeight);
+        minimapSlider.style.height = `${sliderHeight}px`;
+        minimapSlider.style.top = `${sliderTop}px`;
+    }
+
+    // --- イベント周りの修正 ---
+
+    const handleMinimapInput = (ev) => {
+        const rect = minimapContainer.getBoundingClientRect();
+        const containerH = minimapContainer.clientHeight;
+
+        // クリック位置（y）を取得し、コンテナ内での相対位置にする
+        let clickY = ev.clientY - rect.top;
+
+        // スライダーの現在の高さを取得
+        const sliderHeight = parseFloat(minimapSlider.style.height) || 20;
+
+        // スライダーの中心をクリック位置に持ってくるためのオフセット調整
+        let targetTop = clickY - (sliderHeight / 2);
+
+        // 境界チェック（0 ～ コンテナ高 - スライダー高）
+        const maxSliderTop = containerH - sliderHeight;
+        targetTop = Math.max(0, Math.min(targetTop, maxSliderTop));
+
+        // スライダーが動ける範囲の中での位置割合を計算
+        const scrollPercent = maxSliderTop > 0 ? targetTop / maxSliderTop : 0;
+
+        // エディタの最大スクロール距離にその割合を適用
+        const maxEditorScroll = textarea.scrollHeight - textarea.clientHeight;
+        textarea.scrollTop = scrollPercent * maxEditorScroll;
+    };
+
+    // リサイズ監視（ウィンドウサイズが変わっても見切れないようにする）
+    const ro = new ResizeObserver(() => {
+        requestAnimationFrame(updateMinimap);
+    });
+    ro.observe(minimapContainer);
+    ro.observe(textarea); // エディタ側のサイズ変更も監視
+
+    // スクロールと入力への反応
+    textarea.addEventListener("scroll", () => requestAnimationFrame(updateMinimap));
+    textarea.addEventListener("input", () => requestAnimationFrame(updateMinimap));
+
+    // ドラッグ操作
+    minimapContainer.addEventListener("mousedown", (e) => {
+        isDraggingMinimap = true;
+        handleMinimapInput(e);
+        const onMouseMove = (ev) => isDraggingMinimap && handleMinimapInput(ev);
+        const onMouseUp = () => {
+            isDraggingMinimap = false;
+            window.removeEventListener("mousemove", onMouseMove);
+            window.removeEventListener("mouseup", onMouseUp);
+        };
+        window.addEventListener("mousemove", onMouseMove);
+        window.addEventListener("mouseup", onMouseUp);
     });
 
     /* =========================
@@ -356,8 +698,10 @@ export default function CodeEditor(root, options = {}) {
                 filePath = null;
                 fileNode = null;
             }
-
             updateLineNumbers();
+            applySyntaxHighlight(); // 閉じ終わった後の内容をハイライト
+            if (searchQuery) highlightSearchMatches(searchQuery);
+            requestAnimationFrame(updateMinimap);
         }
 
         // ★ 追加
@@ -370,21 +714,50 @@ export default function CodeEditor(root, options = {}) {
 
     function switchTab(tab) {
         if (activeTab === tab) return;
+
+        // 1. 現在のタブの状態を保存
         if (activeTab) {
             activeTab.content = textarea.value;
             activeTab.dirty = dirty;
         }
+
+        // 2. アクティブタブの切り替え
         activeTab = tab;
         textarea.value = tab.content;
         dirty = tab.dirty;
         baseTitle = tab.name;
         filePath = tab.path;
         fileNode = tab.node;
+
+        // 3. 基本UIの更新
         updateLineNumbers();
         renderTabs();
         updateTitle();
-        clearErrorHighlights();
+
+        // 4. ハイライトの再適用
+        // シンタックスハイライト（背景の色付け）
+        applySyntaxHighlight();
+
+        // 検索ヒットのハイライト（黄色のマーカー）
+        if (searchQuery && searchQuery.trim() !== "") {
+            // 前のタブの残像を消してから新しく描画
+            clearErrorHighlights();
+            highlightSearchMatches(searchQuery);
+        } else {
+            clearErrorHighlights();
+            highlightLayer = null;
+        }
+
+        // 5. スクロール位置の同期（重要：ハイライトレイヤーのズレ防止）
+        if (highlightLayer) {
+            const sx = Math.round(textarea.scrollLeft);
+            const sy = Math.round(textarea.scrollTop);
+            highlightLayer.style.transform = `translate(${-sx}px, ${-sy}px)`;
+        }
+
+        // 6. 周辺コンポーネントの更新
         if (sidebar.style.display !== "none") renderSidebar();
+        requestAnimationFrame(updateMinimap);
     }
 
     /* =========================
@@ -440,14 +813,44 @@ export default function CodeEditor(root, options = {}) {
     }
 
     function highlightSearchMatches(query) {
+        // 1. 既存のハイライトをクリア
         errorOverlay.innerHTML = "";
-        if (!query) return;
+
+        // ★ 修正点: クエリが空（またはスペースのみ）の場合、件数表示も即座に消去する
+        if (!query || query.trim() === "") {
+            highlightLayer = null;
+            if (searchStatus) {
+                searchStatus.textContent = "";
+            }
+            return;
+        }
 
         const text = textarea.value;
         const lines = text.split("\n");
-        const lineHeight = parseFloat(getComputedStyle(textarea).lineHeight) || 18;
-        const paddingTop = parseFloat(getComputedStyle(textarea).paddingTop) || 0;
-        const scrollTop = textarea.scrollTop; // スクロール補正
+        const computed = getComputedStyle(textarea);
+
+        const lineHeight = parseFloat(computed.lineHeight);
+        const paddingTop = parseFloat(computed.paddingTop);
+        const paddingLeft = parseFloat(computed.paddingLeft);
+        const tabSize = 8;
+
+        const innerContainer = document.createElement("div");
+        highlightLayer = innerContainer;
+
+        Object.assign(innerContainer.style, {
+            position: "absolute",
+            top: "0",
+            left: "0",
+            height: Math.ceil(textarea.scrollHeight) + "px",
+            width: Math.ceil(textarea.scrollWidth) + "px",
+            pointerEvents: "none"
+        });
+
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        ctx.font = `${computed.fontWeight} ${computed.fontSize} ${computed.fontFamily}`;
+
+        let matchCount = 0; // ヒット数カウント用
 
         lines.forEach((line, i) => {
             let start = 0;
@@ -456,21 +859,52 @@ export default function CodeEditor(root, options = {}) {
             const lowerQuery = query.toLowerCase();
 
             while ((idx = lowerLine.indexOf(lowerQuery, start)) !== -1) {
-                const div = document.createElement("div");
-                div.style.position = "absolute";
-                div.style.left = "0";
-                div.style.right = "0";
-                div.style.top = i * lineHeight + paddingTop - scrollTop + "px"; // スクロール補正追加
-                div.style.height = lineHeight + "px";
-                div.style.backgroundColor = "rgba(255,255,0,0.3)";
-                div.style.pointerEvents = "none";
-                errorOverlay.appendChild(div);
+                matchCount++;
 
+                const beforeText = line.substring(0, idx);
+                const measuredBeforeText = beforeText.replace(/\t/g, ' '.repeat(tabSize));
+                const leftOffset = ctx.measureText(measuredBeforeText).width;
+
+                const matchText = line.substring(idx, idx + query.length);
+                const measuredMatchText = matchText.replace(/\t/g, ' '.repeat(tabSize));
+                const matchWidth = ctx.measureText(measuredMatchText).width;
+
+                const div = document.createElement("div");
+                Object.assign(div.style, {
+                    position: "absolute",
+                    left: Math.round(paddingLeft + leftOffset) + "px",
+                    top: Math.round((i * lineHeight) + paddingTop) + "px",
+                    width: Math.round(matchWidth) + "px",
+                    height: Math.round(lineHeight) + "px",
+                    backgroundColor: "rgba(255, 255, 0, 0.4)",
+                    borderRadius: "2px"
+                });
+
+                innerContainer.appendChild(div);
                 start = idx + query.length;
             }
         });
-    }
 
+        // 3. サイドバーのステータス表示を更新
+        if (searchStatus) {
+            if (matchCount > 0) {
+                searchStatus.style.color = "#aaa";
+                searchStatus.textContent = `${matchCount} 件見つかりました`;
+            } else {
+                // 文字が入っているがヒットしない場合
+                searchStatus.style.color = "#f66";
+                searchStatus.textContent = `"${query}" は見つかりません`;
+            }
+        }
+
+        errorOverlay.appendChild(innerContainer);
+
+        if (highlightLayer) {
+            const sx = Math.round(textarea.scrollLeft);
+            const sy = Math.round(textarea.scrollTop);
+            highlightLayer.style.transform = `translate(${-sx}px, ${-sy}px)`;
+        }
+    }
 
 
     function scrollToIndex(index) {
@@ -551,23 +985,28 @@ export default function CodeEditor(root, options = {}) {
             errorOverlay.appendChild(div);
         });
     }
+    // --- 改善後 ---
     textarea.addEventListener("input", () => {
         if (!activeTab) return;
-        // 1. メモリ上のテキストデータを同期
         activeTab.content = textarea.value;
-        // 2. 未保存状態 (dirty) への遷移処理
+
         if (!activeTab.dirty) {
             activeTab.dirty = true;
-            dirty = true; // エディタ全体の変更フラグも同期
+            dirty = true;
             renderTabs();
         }
-        // 3. ウィンドウタイトルバーの更新
-        // dirty フラグが立っていることを反映し、タイトルに "*" を付与します
         updateTitle();
-        // 4. 表示の更新（行番号・エラー消去）
         updateLineNumbers();
-        clearErrorHighlights();
+        applySyntaxHighlight();
+        // ★ 変更点: 入力があったら、新しいテキストに基づいて「巨大な板」を作り直す
+        if (searchQuery && searchQuery.trim() !== "") {
+            highlightSearchMatches(searchQuery);
+        } else {
+            clearErrorHighlights();
+            highlightLayer = null; // レイヤーの参照もクリア
+        }
     });
+
     textarea.addEventListener("keydown", (e) => {
         if (e.key === "Tab") {
             e.preventDefault();
@@ -737,11 +1176,13 @@ export default function CodeEditor(root, options = {}) {
         statusDiv.className = "search-status";
         Object.assign(statusDiv.style, {
             fontSize: "12px",
-            color: "#f66",
-            marginTop: "2px",
-            minHeight: "16px"
+            color: "#888", // 通常時はグレー
+            marginTop: "4px",
+            minHeight: "16px",
+            display: "flex",
+            justifyContent: "space-between" // 右側に件数を出すため
         });
-        searchStatus = statusDiv; // ← グローバル変数にセット
+        searchStatus = statusDiv;
 
         searchDiv.appendChild(searchInput);
         searchDiv.appendChild(statusDiv);
@@ -755,6 +1196,19 @@ export default function CodeEditor(root, options = {}) {
                 searchQuery = searchInput.value;
                 if (e.shiftKey) findPrevious();
                 else findNext();
+            }
+        });
+        // sidebar内のsearchInputのイベント
+        searchInput.addEventListener("input", () => {
+            searchQuery = searchInput.value;
+
+            // 入力欄が空になったら、表示もハイライトも即座に消す
+            if (!searchQuery || searchQuery.trim() === "") {
+                clearErrorHighlights();
+                if (searchStatus) searchStatus.textContent = "";
+                highlightLayer = null;
+            } else {
+                highlightSearchMatches(searchQuery);
             }
         });
         if (!sidebarRootDir) return;
@@ -911,21 +1365,27 @@ export default function CodeEditor(root, options = {}) {
        FS変更 → タブ自動同期（修正版）
     ========================== */
     function syncTabsWithFS() {
-        let activeTabWasUpdated = false; // アクティブなタブが更新されたかどうかのフラグ
+        let activeTabWasUpdated = false;
 
         for (let i = tabs.length - 1; i >= 0; i--) {
             const tab = tabs[i];
             const node = resolveFS(tab.path);
 
             if (node) {
-                // 更新されたノードが現在のアクティブタブと同じパスならフラグを立てる
                 if (activeTab && tab.path === activeTab.path) {
-                    activeTabWasUpdated = true;
+                    // nodeの内容がメモリ上のタブ内容と異なる場合、同期してフラグを立てる
+                    if (activeTab.content !== node.content) {
+                        activeTab.content = String(node.content ?? "");
+                        textarea.value = activeTab.content;
+                        activeTabWasUpdated = true;
+                    }
                 }
                 tab.node = node;
+                tab.content = String(node.content ?? "");
             } else {
                 if (activeTab === tab) activeTab = null;
                 tabs.splice(i, 1);
+                activeTabWasUpdated = true; // タブが消滅した場合もUI更新が必要
             }
         }
 
@@ -934,15 +1394,31 @@ export default function CodeEditor(root, options = {}) {
             textarea.value = activeTab.content;
             updateLineNumbers();
             baseTitle = activeTab.name;
-            activeTabWasUpdated = true; // タブが切り替わった場合も更新対象とする
+            activeTabWasUpdated = true;
         }
 
         renderTabs();
         updateTitle();
 
-        // 修正ポイント：プレビューウィンドウが存在し、かつアクティブタブに更新があった場合のみ実行
-        if (previewWin && document.body.contains(previewWin) && activeTabWasUpdated) {
-            renderPreview();
+        // ★ ハイライトの更新
+        if (activeTabWasUpdated) {
+            // シンタックスハイライトの再適用
+            applySyntaxHighlight();
+
+            // 検索中のワードがあれば、新しい内容に対してハイライトを再描画
+            if (searchQuery && searchQuery.trim() !== "") {
+                highlightSearchMatches(searchQuery);
+            } else {
+                clearErrorHighlights();
+            }
+
+            // プレビューの更新
+            if (previewWin && document.body.contains(previewWin)) {
+                renderPreview();
+            }
+
+            // ミニマップも更新
+            requestAnimationFrame(updateMinimap);
         }
 
         if (sidebar.style.display !== "none") {
@@ -1031,17 +1507,18 @@ export default function CodeEditor(root, options = {}) {
                 if (activeTab && activeTab.path === filePath) {
                     activeTab.content = fileNode.content;
                     textarea.value = fileNode.content;
+                    // ★追加: メインファイルの読み込みが完了した瞬間に更新
+                    updateLineNumbers();
+                    applySyntaxHighlight();
                 }
             } catch (e) { console.error("Load error:", e); }
         }
 
         // 2. リンクされているファイルを再帰的に検索して tabs に追加
-        // (ここで tabs 配列が拡張される)
         const dirPath = getDirPath(filePath);
         addLinkedFilesToTabs(dirPath, fileNode.content);
 
         // 3. 全てのタブをチェックし、__EXTERNAL_DATA__ が残っていれば取得
-        // Parallel（並列）で実行することで高速化
         await Promise.all(tabs.map(async (tab) => {
             if (tab.node && tab.node.content === "__EXTERNAL_DATA__") {
                 try {
@@ -1049,7 +1526,6 @@ export default function CodeEditor(root, options = {}) {
                     tab.node.content = content;
                     tab.content = content;
 
-                    // もし取得中にユーザーがこのタブに切り替えていたら表示を更新
                     if (activeTab === tab) {
                         textarea.value = content;
                         updateLineNumbers();
@@ -1062,11 +1538,18 @@ export default function CodeEditor(root, options = {}) {
 
         renderTabs();
         updateTitle();
-        renderPreview(); // 全データが揃った状態でプレビュー
+        // ★追加: すべての初期化処理が終わった後、確実に行番号を最新にする
+        updateLineNumbers();
+        renderPreview();
+        applySyntaxHighlight();
+        requestAnimationFrame(updateMinimap);
     }
 
     // 実行
     init();
+    requestAnimationFrame(() => {
+        updateMinimap();
+    });
     return {
         isTabApp: true,
         /**
@@ -1113,7 +1596,9 @@ export default function CodeEditor(root, options = {}) {
             updateTitle();
             updateLineNumbers();
             renderPreview();
-
+            applySyntaxHighlight();
+            requestAnimationFrame(updateMinimap);
+            applySyntaxHighlight();
             // ウィンドウを前面に持ってくる（kernel側でも行っていますが念のため）
             bringToFront(win);
         }
