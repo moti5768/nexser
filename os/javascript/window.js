@@ -359,9 +359,17 @@ ${!options.hideStatus ? `
         const desktop = document.getElementById("desktop");
         const rect = desktop.getBoundingClientRect();
 
-        // ★タスクバーの高さを取得
+        // ★タスクバーの「現在見えている高さ」を計算
         const taskbar = document.getElementById("taskbar");
-        const taskbarHeight = taskbar ? taskbar.offsetHeight : 0;
+        let taskbarVisibleHeight = 0;
+        if (taskbar) {
+            const style = window.getComputedStyle(taskbar);
+            // transform: translateY(...) の値を取得
+            const matrix = new WebKitCSSMatrix(style.transform);
+            const translateY = matrix.m42;
+            // 物理的な高さから沈んでいる分を引く
+            taskbarVisibleHeight = Math.max(0, taskbar.offsetHeight - translateY);
+        }
 
         const titleBar = w.querySelector(".title-bar");
         const titleText = titleBar?.querySelector(".title-text");
@@ -378,7 +386,7 @@ ${!options.hideStatus ? `
                 w.dataset[`prev${prop}`] = w.style[prop.toLowerCase()]
             );
 
-            // 最大化のターゲット位置（幅はデスクトップ全体、高さはタスクバーを除く）
+            // 最大化のターゲット位置
             targetRect = {
                 left: 0,
                 top: 0,
@@ -397,8 +405,8 @@ ${!options.hideStatus ? `
                 w.style.left = "0px";
                 w.style.top = "0px";
                 w.style.width = "100%";
-                // ★ここをタスクバー高さに応じて調整
-                w.style.height = `calc(100% - ${taskbarHeight}px)`;
+                // ★動的に計算した「見えている高さ」を差し引く
+                w.style.height = `calc(100% - ${taskbarVisibleHeight}px)`;
                 w.classList.add("maximized");
             } else {
                 w.style.left = w.dataset.prevLeft;

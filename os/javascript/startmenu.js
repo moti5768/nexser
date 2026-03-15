@@ -3,13 +3,16 @@ import { FS } from "./fs.js";
 import { launch, logOff } from "./kernel.js";
 import { getRecent, addRecent } from "./recent.js";
 import { resolveFS } from "./fs-utils.js";
-import { openDB } from "./db.js";
 import { resolveAppByPath, getIcon } from "./file-associations.js";
 import { basename } from "./fs-utils.js";
 import { hasExtension } from "./apps/explorer.js";
+import { loadSetting } from "./apps/settings.js";
 
 const startBtn = document.getElementById("start-btn");
 let recentListenerInstalled = false;
+
+// グローバルな状態管理用 (スモールアイコン)
+window.smallIcons = false;
 
 /* =====================================================
    Start Menu Builder
@@ -18,6 +21,9 @@ export async function buildStartMenu() {
     const menu = document.getElementById("start-menu");
     if (!menu) return;
     menu.innerHTML = "";
+
+    // 設定クラスの付与（CSSでの制御用）
+    menu.classList.toggle("small-icons", window.smallIcons);
 
     // Programs
     const programsRoot = document.createElement("div");
@@ -48,8 +54,7 @@ export async function buildStartMenu() {
     logoffBtn.style.marginTop = "8px";
     logoffBtn.onclick = async () => {
         await logOff();
-        if (startBtn) startBtn.classList.remove("pressed");  // ← nullチェック追加
-        if (typeof closeStartMenu === "function") closeStartMenu();
+        if (startBtn) startBtn.classList.remove("pressed");
         if (menu) menu.style.display = "none";
     };
     menu.appendChild(logoffBtn);
@@ -67,6 +72,9 @@ function createMenu(folder, basePath, menuRoot) {
     const container = document.createElement("div");
     container.className = "start-menu-level";
 
+    // スモールアイコン時はコンテナにクラス付与
+    if (window.smallIcons) container.classList.add("small");
+
     let hasItems = false;
 
     for (const name in folder) {
@@ -79,7 +87,18 @@ function createMenu(folder, basePath, menuRoot) {
 
         const iconSpan = document.createElement("span");
         iconSpan.className = "icon";
-        iconSpan.style.marginRight = "8px"; // アイコンと文字の間に少し隙間を
+
+        // スモールアイコン設定に応じてサイズを変更
+        const iconSize = window.smallIcons ? "14px" : "18px";
+        const marginSize = window.smallIcons ? "6px" : "8px";
+        Object.assign(iconSpan.style, {
+            fontSize: iconSize,
+            marginRight: marginSize,
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center"
+        });
+
         iconSpan.textContent = getIcon(name, node);
         item.appendChild(iconSpan);
 
@@ -87,6 +106,7 @@ function createMenu(folder, basePath, menuRoot) {
         const textSpan = document.createElement("span");
         textSpan.className = "text";
         textSpan.textContent = name;
+        if (window.smallIcons) textSpan.style.fontSize = "11px";
         item.appendChild(textSpan);
 
         container.appendChild(item);
@@ -95,14 +115,13 @@ function createMenu(folder, basePath, menuRoot) {
         const isFileByExt = hasExtension(name);
         const effectiveType = isFileByExt ? "file" : node.type;
 
-        // ===== 起動可能アイテムの処理 (Desktop.js の openFSItem に準拠) =====
+        // 起動可能アイテムの処理
         if (["app", "link", "file"].includes(effectiveType)) {
-            item.onclick = async () => { // ダイアログのインポートを待つため async
+            item.onclick = async () => {
                 let targetNode = node;
                 let targetPath = fullPath;
                 let currentType = targetNode.type;
 
-                // 1. リンクの解決
                 if (currentType === "link") {
                     targetPath = targetNode.target;
                     targetNode = resolveFS(targetPath);
@@ -110,62 +129,47 @@ function createMenu(folder, basePath, menuRoot) {
                     currentType = targetNode.type;
                 }
 
-                // 2. 名前に拡張子がある場合はフォルダでもファイルとして扱う
                 if (currentType === "folder" && hasExtension(name)) {
                     currentType = "file";
                 }
 
-                // 3. 起動ロジック
                 switch (currentType) {
                     case "app":
                         if (targetNode.shell) return;
                         launch(targetPath, { path: targetPath, uniqueKey: targetPath });
                         addRecent({ type: "app", path: targetPath });
                         break;
-
                     case "file": {
                         const appPath = resolveAppByPath(targetPath);
                         if (appPath) {
-                            // 関連付けられたアプリで起動
                             launch(appPath, { path: targetPath, node: targetNode, uniqueKey: targetPath });
                         } else {
-                            // Desktop.js 同様、Explorer のアプリ選択ダイアログを呼び出す
                             const { openWithDialog } = await import("./apps/explorer.js");
                             openWithDialog(targetPath, targetNode);
                         }
                         addRecent({ type: "file", path: targetPath });
                         break;
                     }
-
                     case "folder":
                         launch("Programs/Applications/Explorer.app", { path: targetPath, uniqueKey: targetPath });
                         addRecent({ type: "folder", path: targetPath });
                         break;
-
-                    default:
-                        console.warn("Unknown type:", currentType, targetPath);
                 }
 
-                // メニューを閉じ、ボタンの状態を戻す
                 menuRoot.style.display = "none";
-                const startBtn = document.getElementById("start-btn");
                 if (startBtn) startBtn.classList.remove("pressed");
             };
         }
 
-        // ===== フォルダ階層の展開（サブメニュー） =====
         if (effectiveType === "folder") {
             item.classList.add("has-children");
-
             const sub = createMenu(node, fullPath, menuRoot);
             sub.classList.add("submenu");
             item.appendChild(sub);
-
             setupHover(item, sub);
         }
     }
 
-    // 空フォルダの場合の表示
     if (!hasItems) {
         const empty = document.createElement("div");
         empty.className = "start-item empty";
@@ -177,44 +181,29 @@ function createMenu(folder, basePath, menuRoot) {
 }
 
 /* =====================================================
-   Hover helper
+   Hover helper / Recent Area / Launcher (維持)
 ===================================================== */
 function setupHover(parent, submenu) {
     let hideTimer = null;
-
     const show = () => {
         clearTimeout(hideTimer);
-
-        // 1. まず表示させてサイズを確定させる
         submenu.style.display = "block";
-
-        // 2. 位置を一旦リセット（前回の計算結果をクリア）
         submenu.style.left = "";
         submenu.style.top = "";
 
-        // 3. 最新の座標と画面サイズを取得
         const rect = submenu.getBoundingClientRect();
         const parentRect = parent.getBoundingClientRect();
         const viewportWidth = window.innerWidth;
         const viewportHeight = window.innerHeight;
 
-        // --- 横方向の調整 ---
-        // 右端がはみ出すなら左側に表示
         if (rect.right > viewportWidth) {
             submenu.style.left = `-${rect.width}px`;
-
-            // 左に振った結果、左端もはみ出すなら画面の左端(0)に強制移動
             const newRect = submenu.getBoundingClientRect();
-            if (newRect.left < 0) {
-                submenu.style.left = `-${parentRect.left}px`;
-            }
+            if (newRect.left < 0) submenu.style.left = `-${parentRect.left}px`;
         }
 
-        // --- 縦方向の調整 ---
-        // 下端がはみ出すなら、はみ出した分だけ上にずらす
         if (rect.bottom > viewportHeight) {
             const overflow = rect.bottom - viewportHeight;
-            // 親要素の y 座標を超えない範囲で上にずらす（+10は余白）
             const safeOffset = Math.min(overflow + 10, parentRect.top);
             submenu.style.top = `-${safeOffset}px`;
         }
@@ -222,28 +211,16 @@ function setupHover(parent, submenu) {
 
     const scheduleHide = () => {
         clearTimeout(hideTimer);
-        hideTimer = setTimeout(() => {
-            submenu.style.display = "none";
-        }, 200);
+        hideTimer = setTimeout(() => { submenu.style.display = "none"; }, 200);
     };
 
     const isInside = el => parent.contains(el) || submenu.contains(el);
-
     parent.addEventListener("mouseenter", show);
     submenu.addEventListener("mouseenter", show);
-
-    parent.addEventListener("mouseleave", e => {
-        if (!isInside(e.relatedTarget)) scheduleHide();
-    });
-
-    submenu.addEventListener("mouseleave", e => {
-        if (!isInside(e.relatedTarget)) scheduleHide();
-    });
+    parent.addEventListener("mouseleave", e => { if (!isInside(e.relatedTarget)) scheduleHide(); });
+    submenu.addEventListener("mouseleave", e => { if (!isInside(e.relatedTarget)) scheduleHide(); });
 }
 
-/* =====================================================
-   Recent Area
-===================================================== */
 async function buildRecentArea(root) {
     const existing = root.querySelectorAll(".start-recent");
     existing.forEach(el => el.remove());
@@ -254,13 +231,12 @@ async function buildRecentArea(root) {
     const title = document.createElement("div");
     title.textContent = "最近使った項目";
     title.className = "start-recent-title";
+    if (window.smallIcons) title.style.fontSize = "10px";
 
     const list = document.createElement("div");
     list.className = "start-recent-list";
 
     let recent = await getRecent();
-
-    // ★ 追加（重複防止）
     const seen = new Set();
     recent = recent.filter(r => {
         if (seen.has(r.path)) return false;
@@ -278,6 +254,7 @@ async function buildRecentArea(root) {
             const div = document.createElement("div");
             div.className = "start-recent-item";
             div.textContent = item.path;
+            if (window.smallIcons) div.style.fontSize = "11px";
             div.onclick = () => {
                 launchByType(item.type, item.path);
                 root.style.display = "none";
@@ -285,128 +262,75 @@ async function buildRecentArea(root) {
             list.appendChild(div);
         }
     }
-
     box.appendChild(title);
     box.appendChild(list);
     root.insertBefore(box, root.firstChild);
 }
 
-/* =====================================================
-   Unified launcher
-===================================================== */
 async function launchByType(type, path) {
-    if (!type || !path) return;
-
-    // FS 内の node を取得
     let node = resolveFS(path);
-    if (!node) {
-        console.warn("FS に存在しないパス:", path);
-        return;
-    }
-
-    // link は target の実体に置き換える
-    let effectiveType = type;
-    if (effectiveType === "link") {
-        effectiveType = node.type;
-    }
-
-    // ユーザーが開いた FS 内 path を Recent 登録用に準備
-    const recentItem = {
-        type: node.type,
-        path: path,
-        display: basename(path)
-    };
+    if (!node) return;
+    let effectiveType = type === "link" ? node.type : type;
+    const recentItem = { type: node.type, path: path, display: basename(path) };
 
     switch (effectiveType) {
         case "app":
             if (node.shell) return;
-            // Desktop と同様の起動引数
             launch(path, { path, uniqueKey: path });
             addRecent(recentItem);
             break;
-
         case "file": {
             const appPath = resolveAppByPath(path);
-            if (appPath) {
-                // 関連付けアプリがあれば起動
-                launch(appPath, { path, node, uniqueKey: path });
-            } else {
-                // アプリがない場合は Explorer のアプリ選択ダイアログを表示
+            if (appPath) launch(appPath, { path, node, uniqueKey: path });
+            else {
                 const { openWithDialog } = await import("./apps/explorer.js");
                 openWithDialog(path, node);
             }
             addRecent(recentItem);
             break;
         }
-
         case "folder":
             launch("Programs/Applications/Explorer.app", { path, uniqueKey: path });
             addRecent(recentItem);
             break;
-
-        default:
-            console.warn("Unknown type:", effectiveType, path);
     }
 }
 
 /* =====================================================
-   Refresh API
+   Refresh & Settings Listener
 ===================================================== */
 let refreshTimer = null;
 export function refreshStartMenu() {
     clearTimeout(refreshTimer);
     refreshTimer = setTimeout(async () => {
-        const menu = document.getElementById("start-menu");
-        if (!menu) return;
         await buildStartMenu();
+        updateStartMenuPosition();
     }, 10);
 }
 
-/* =====================================================
-   Recent Listener
-===================================================== */
-function installRecentListener() {
-    if (recentListenerInstalled) return;
-    recentListenerInstalled = true;
-
-    window.addEventListener("recent-updated", () => {
+// タスクバープロパティからの設定変更をリッスン
+window.addEventListener("taskbar-style-changed", (e) => {
+    if (e.detail.smallIcons !== undefined) {
+        window.smallIcons = e.detail.smallIcons;
         refreshStartMenu();
-    });
-}
-installRecentListener();
-
-/* =====================================================
-   DBから showRecent 読み込み
-===================================================== */
-async function initShowRecent() {
-    try {
-        const db = await openDB();
-        const tx = db.transaction("settings", "readonly");
-        const req = tx.objectStore("settings").get("showRecentItems");
-        const val = await new Promise(resolve => {
-            req.onsuccess = () => resolve(req.result);
-            req.onerror = () => resolve(null);
-        });
-        window.showRecent = val ?? true;
-    } catch {
-        window.showRecent = true;
     }
-}
+});
 
 /* =====================================================
-   Start Menu 初期化
+   初期化ロジック
 ===================================================== */
+async function initSettings() {
+    window.showRecent = (await loadSetting("showRecentItems")) ?? true;
+    window.smallIcons = (await loadSetting("smallIcons")) ?? false;
+}
+
 export async function startMenuReady() {
-    await initShowRecent();
+    await initSettings();
     await buildStartMenu();
 }
 
-function installFSListener() {
-    window.addEventListener("fs-updated", () => {
-        refreshStartMenu();
-    });
-}
-installFSListener();
+window.addEventListener("fs-updated", refreshStartMenu);
+window.addEventListener("recent-updated", refreshStartMenu);
 
 /* =====================================================
    Start Menu 位置更新
@@ -417,21 +341,17 @@ export function updateStartMenuPosition() {
     if (!menu || !startBtn) return;
 
     const rect = startBtn.getBoundingClientRect();
-    const margin = 6; // ボタンとメニューの間の余白
-
+    const margin = 6;
     menu.style.position = "fixed";
 
-    // 上に置く
     let top = rect.top - menu.offsetHeight - margin;
     let left = rect.left;
 
-    // ボタンがメニューで隠れる場合は横にずらす（右方向優先）
     if (top < 0) {
-        top = margin; // 上端に固定して、隠れないようにする
-        left = rect.right + margin; // ボタンの右に表示
+        top = margin;
+        left = rect.right + margin;
     }
 
-    // 画面右端を超える場合は左方向に調整
     if (left + menu.offsetWidth > window.innerWidth) {
         left = Math.max(margin, window.innerWidth - menu.offsetWidth - margin);
     }
@@ -440,7 +360,5 @@ export function updateStartMenuPosition() {
     menu.style.left = `${left}px`;
 }
 
-
-// リサイズやスクロールでも更新
 window.addEventListener("resize", updateStartMenuPosition);
 window.addEventListener("scroll", updateStartMenuPosition);

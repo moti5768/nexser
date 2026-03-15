@@ -43,9 +43,16 @@ const baseFS = {
             "Soundsplayer.app": { type: "app", entry: "./apps/soundplayer.js", system: true },
             "AudioPlayer.app": { type: "app", entry: "./apps/audioplayer.js", system: true },
             "Paint.app": { type: "app", entry: "./apps/paint.js", system: true },
-            "RegistryEditor.app": { type: "app", entry: "./apps/registryeditor.js", system: true }
+            "RegistryEditor.app": { type: "app", entry: "./apps/registryeditor.js", system: true },
+            "SystemProperties.app": { type: "app", entry: "./apps/systemproperties.js", system: true },
+            "TaskbarProperties.app": { type: "app", entry: "./apps/taskbarproperties.js", system: true }
         },
-        ControlPanel: { type: "folder", system: true },
+        ControlPanel: {
+            type: "folder",
+            system: true,
+            "TaskbarProperties.app": { type: "link", target: "Programs/Applications/TaskbarProperties.app" },
+            "SystemProperties.app": { type: "link", target: "Programs/Applications/SystemProperties.app" }
+        },
         Accessories: {
             type: "folder",
             system: true,
