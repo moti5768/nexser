@@ -545,6 +545,160 @@ export default async function Explorer(root, options = {}) {
 
             listContainer.tabIndex = 0;
 
+
+            // --- render関数内の listContainer 生成・初期化部分に追記 ---
+
+            // ドラッグ中（重なっている間）の視覚効果
+            listContainer.addEventListener("dragover", (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                listContainer.classList.add("drag-over"); // CSSで背景色を変える等のスタイル用
+            });
+
+            listContainer.addEventListener("dragleave", (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                listContainer.classList.remove("drag-over");
+            });
+
+            // ドロップされた時の処理
+            // ドロップされた時の処理
+            listContainer.addEventListener("drop", async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                listContainer.classList.remove("drag-over");
+
+                const folderNode = resolveFS(currentPath);
+                if (!folderNode || folderNode.type !== "folder") return;
+
+                // --- 1. エントリの同期確保 ---
+                // 非同期処理に入る前に DataTransferItem を確保しないと、
+                // Chrome等では後続の処理で中身が消える(nullになる)ことがあります。
+                const entries = [];
+                const filesFallback = [];
+
+                if (e.dataTransfer.items) {
+                    for (let i = 0; i < e.dataTransfer.items.length; i++) {
+                        const item = e.dataTransfer.items[i];
+                        if (item.kind === 'file') {
+                            const entry = item.webkitGetAsEntry();
+                            if (entry) entries.push(entry);
+                        }
+                    }
+                } else {
+                    filesFallback.push(...Array.from(e.dataTransfer.files));
+                }
+
+                // --- 2. 非同期ヘルパー関数 ---
+                const readFileAsData = (file) => {
+                    return new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = (ev) => resolve(ev.target.result);
+                        reader.onerror = (err) => reject(err);
+
+                        // ファイル形式による読み分け
+                        const isBinary = !file.type.startsWith("text/");
+                        if (isBinary) {
+                            reader.readAsDataURL(file); // 画像やバイナリはBase64
+                        } else {
+                            reader.readAsText(file);    // テキストは文字列
+                        }
+                    });
+                };
+
+                const addFileToNode = async (file, targetNode) => {
+                    let targetName = file.name;
+                    let counter = 1;
+                    // 同名ファイルのリネーム処理
+                    while (targetNode[targetName]) {
+                        const dot = file.name.lastIndexOf(".");
+                        if (dot !== -1) {
+                            targetName = `${file.name.substring(0, dot)} (${counter++})${file.name.substring(dot)}`;
+                        } else {
+                            targetName = `${file.name} (${counter++})`;
+                        }
+                    }
+
+                    try {
+                        const content = await readFileAsData(file);
+                        targetNode[targetName] = {
+                            type: "file",
+                            content,
+                            size: file.size,
+                            lastModified: file.lastModified
+                        };
+                    } catch (err) {
+                        console.error(`Failed to read file: ${file.name}`, err);
+                    }
+                };
+
+                const processEntry = async (entry, targetNode) => {
+                    if (entry.isFile) {
+                        const file = await new Promise(res => entry.file(res));
+                        await addFileToNode(file, targetNode);
+                    } else if (entry.isDirectory) {
+                        let dirName = entry.name;
+                        let counter = 1;
+                        while (targetNode[dirName]) {
+                            dirName = `${entry.name} (${counter++})`;
+                        }
+
+                        // フォルダを作成
+                        targetNode[dirName] = { type: "folder" };
+                        const newDirNode = targetNode[dirName];
+
+                        // フォルダ内のエントリをすべて取得（再帰）
+                        const reader = entry.createReader();
+                        const getEntries = () => new Promise(res => reader.readEntries(res, err => {
+                            console.error("Directory read error", err);
+                            res([]);
+                        }));
+
+                        let allSubEntries = [];
+                        let batch;
+                        do {
+                            batch = await getEntries();
+                            allSubEntries = allSubEntries.concat(batch);
+                        } while (batch.length > 0);
+
+                        // サブエントリを逐次処理（並列にするとフォルダ階層が深い場合に負荷が高いため）
+                        for (const subEntry of allSubEntries) {
+                            await processEntry(subEntry, newDirNode);
+                        }
+                    }
+                };
+
+                // --- 3. 実行 ---
+                try {
+                    // UIを「処理中」の状態にする（オプション）
+                    listContainer.style.opacity = "0.5";
+                    listContainer.style.pointerEvents = "none";
+
+                    // メイン処理：フォルダエントリとフォールバックファイルを処理
+                    const tasks = [
+                        ...entries.map(entry => processEntry(entry, folderNode)),
+                        ...filesFallback.map(file => addFileToNode(file, folderNode))
+                    ];
+
+                    await Promise.all(tasks);
+
+                } catch (err) {
+                    console.error("Drop processing failed:", err);
+                } finally {
+                    // UIを元に戻す
+                    listContainer.style.opacity = "1";
+                    listContainer.style.pointerEvents = "auto";
+
+                    // システムに通知して再描画
+                    window.dispatchEvent(new Event("fs-updated"));
+                    render(currentPath);
+                }
+            });
+
+
+
+
+
             container.appendChild(listContainer);
 
             const header = document.createElement("div");
