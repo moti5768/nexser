@@ -556,6 +556,22 @@ export default async function Explorer(root, options = {}) {
             backBtn.disabled = historyStack.length === 0;
             backBtn.classList.toggle("pointer_none", historyStack.length === 0);
 
+
+            const upBtn = document.createElement("button");
+            upBtn.className = "up-button"; // クラス名を追加
+            upBtn.textContent = "↑";
+            upBtn.title = "上の階層へ";
+
+            upBtn.onclick = () => {
+                const pathParts = currentPath.split("/");
+                if (pathParts.length > 1) {
+                    pathParts.pop();
+                    navigateTo(pathParts.join("/"));
+                } else if (currentPath !== "") {
+                    navigateTo("");
+                }
+            };
+
             const forwardBtn = document.createElement("button");
             forwardBtn.textContent = "→";
             // 初期状態は進む先がないので無効化しておく
@@ -637,6 +653,7 @@ export default async function Explorer(root, options = {}) {
 
             header.appendChild(backBtn);
             header.appendChild(forwardBtn);
+            header.appendChild(upBtn);
             header.appendChild(refreshBtn);
             header.appendChild(viewControls);
             header.appendChild(treeContainer);
@@ -728,6 +745,7 @@ export default async function Explorer(root, options = {}) {
         // win（Explorerを動かしているウィンドウ）の中からボタンを探して更新します
         const bBtn = win?.querySelector(".explorer-header button:nth-child(1)");
         const fBtn = win?.querySelector(".explorer-header button:nth-child(2)");
+        const uBtn = win?.querySelector(".up-button");
 
         if (bBtn) {
             // 履歴がなければ disabled にし、pointer_none クラスを付与する
@@ -741,6 +759,13 @@ export default async function Explorer(root, options = {}) {
             const isForwardDisabled = forwardStack.length === 0;
             fBtn.disabled = isForwardDisabled;
             fBtn.classList.toggle("pointer_none", isForwardDisabled);
+        }
+
+        if (uBtn) {
+            // フォルダ移動のたびにここが走り、最新の currentPath で判定される
+            const isAtRoot = currentPath === "" || currentPath === "Desktop";
+            uBtn.disabled = isAtRoot;
+            uBtn.classList.toggle("pointer_none", isAtRoot);
         }
 
         // パス表示

@@ -23,7 +23,6 @@ const baseFS = {
         "Soundsplayer.app": { type: "link", target: "Programs/Applications/Soundsplayer.app" },
         "Settings.app": { type: "link", target: "Programs/Applications/Settings.app" }
     },
-    Trash: { type: "folder", system: true },
     Programs: {
         type: "folder",
         system: true,
