@@ -78,7 +78,7 @@ export default function CodeEditor(root, options = {}) {
     let isDestroyed = false;
     let previewWin = null;
     let previewIframe = null;
-
+    let minimapUpdatePending = false;
     /* =========================
        Tabs State
     ========================== */
