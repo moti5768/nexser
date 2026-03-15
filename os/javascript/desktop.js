@@ -6,7 +6,7 @@ import { resolveFS, validateName } from "./fs-utils.js";
 import { addRecent } from "./recent.js";
 import { attachContextMenu } from "./context-menu.js";
 import { resolveAppByPath, getIcon } from "./file-associations.js";
-import { openWithDialog as explorerOpenWithDialog } from "./apps/explorer.js";
+import { openWithDialog as explorerOpenWithDialog, showProperties } from "./apps/explorer.js";
 
 // 選択状態管理
 let globalSelected = { item: null, window: null };
@@ -84,6 +84,10 @@ export function buildDesktop() {
                     // UI上のヒントとして、ファイル以外ではメニューを半透明/無効に見せる（実装依存）
                     disabled: () => node.type !== "file"
                 },
+                {
+                    label: "プロパティ",
+                    action: () => showProperties(name, node, fullPath)
+                }
             ];
         });
     }
@@ -139,6 +143,7 @@ export function buildDesktop() {
             const name = globalSelected.item.dataset.name;
             const node = desktopNode[name];
             const isFolder = node?.type === "folder";
+            const fullPath = `Desktop/${name}`; // パスを生成
             items.push({
                 label: "プログラムから開く",
                 disabled: node.type !== "file",
@@ -149,6 +154,10 @@ export function buildDesktop() {
                         alertWindow("ファイル以外はアプリで開けません。", { width: 300, height: 120 });
                     }
                 }
+            });
+            items.push({
+                label: "プロパティ",
+                action: () => showProperties(name, node, fullPath)
             });
         }
 

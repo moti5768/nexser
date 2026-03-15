@@ -307,24 +307,16 @@ export default async function TextEditor(root, options = {}) {
         if (!win?._statusBar) return;
 
         const text = textarea.value;
-        const lines = text.split("\n");
-        const totalLines = lines.length;
-        const totalChars = text.length;
-
-        // カーソル位置
         const cursorPos = textarea.selectionStart;
-        let row = 1, col = 1;
-        let count = 0;
 
-        for (let i = 0; i < lines.length; i++) {
-            const lineLength = lines[i].length + 1; // +1 は改行分
-            if (cursorPos < count + lineLength) {
-                row = i + 1;
-                col = cursorPos - count + 1;
-                break;
-            }
-            count += lineLength;
-        }
+        // 改善：カーソル位置までの文字列だけを切り取り、改行を数える
+        const textBeforeCursor = text.substring(0, cursorPos);
+        const lines = textBeforeCursor.split("\n");
+
+        const row = lines.length;
+        const col = lines[lines.length - 1].length + 1;
+        const totalChars = text.length;
+        const totalLines = text.split("\n").length; // 全体行数（ここも必要時のみ計算）
 
         win._statusBar.textContent = `行: ${row}/${totalLines} 列: ${col} 文字: ${totalChars}`;
     }
@@ -333,12 +325,17 @@ export default async function TextEditor(root, options = {}) {
     updateStatusBar();
 
     // 文字入力時、カーソル移動時にタイトルとステータスバーを更新
+    let statusBarTimeout;
     textarea.addEventListener("input", () => {
         dirty = true;
-        updateTitle();
-        updateStatusBar();
-    });
+        updateTitle(); // タイトルは軽いので即時
 
+        // 改善：計算処理を「分割（後回し）」にする
+        clearTimeout(statusBarTimeout);
+        statusBarTimeout = setTimeout(() => {
+            updateStatusBar();
+        }, 150); // 150ms 入力が止まったら計算
+    });
     textarea.addEventListener("click", updateStatusBar);
     textarea.addEventListener("keyup", updateStatusBar);
     textarea.addEventListener("mouseup", updateStatusBar);
@@ -467,16 +464,17 @@ export default async function TextEditor(root, options = {}) {
             if (!query) return;
             const val = textarea.value;
             const index = val.indexOf(query);
-            if (index === -1) {
-                showWarning(root, `"${query}" は見つかりません`);
-                return;
-            }
+            if (index === -1) return;
+
             textarea.focus();
             textarea.setSelectionRange(index, index + query.length);
 
+            // 改善：配列を作らず、正規表現で改行数（＝行番号）を直接取得
+            const matches = val.substring(0, index).match(/\n/g);
+            const lineIndex = matches ? matches.length : 0;
+
             const lineHeight = parseInt(getComputedStyle(textarea).lineHeight) || 20;
-            const linesBefore = val.substring(0, index).split("\n").length;
-            textarea.scrollTop = (linesBefore - 1) * lineHeight;
+            textarea.scrollTop = lineIndex * lineHeight;
         }
     }
 }

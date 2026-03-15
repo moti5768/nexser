@@ -10,6 +10,8 @@ import { setupRibbon } from "../ribbon.js";
 import { saveSetting, loadSetting } from "./settings.js";
 
 let globalSelected = { item: null, window: null };
+// プロパティウィンドウの重複チェック用
+const propertyWindows = {};
 
 export function hasExtension(name) {
     return /\.[a-z0-9]+$/i.test(name);
@@ -1074,6 +1076,17 @@ export default async function Explorer(root, options = {}) {
                             const node = resolveFS(currentPath)[globalSelected.item.dataset.name];
                             return !node || node.type !== "file";
                         }
+                    },
+                    {
+                        label: "プロパティ",
+                        action: () => {
+                            if (!globalSelected.item) return;
+                            const name = globalSelected.item.dataset.name;
+                            const node = resolveFS(currentPath)[name];
+                            const fullPath = currentPath ? `${currentPath}/${name}` : name;
+                            showProperties(name, node, fullPath);
+                        },
+                        disabled: () => !globalSelected.item
                     }
                 ]
             }
@@ -1241,6 +1254,64 @@ export function openWithDialog(filePath, fileNode) {
         };
         content.appendChild(btn);
     });
+}
+
+/**
+ * アイテムのプロパティを表示する
+ */
+export async function showProperties(name, node, path) {
+    // 1. 既に開いているかチェック
+    if (propertyWindows[path]) {
+        bringToFront(propertyWindows[path]);
+        return;
+    }
+
+    const size = await calcNodeSize(node, path);
+    const formattedSize = formatSize(size);
+    const parentPath = path.split('/').slice(0, -1).join('/') || "(root)";
+    const iconChar = getIcon(name, node);
+
+    const msg = `
+        <div style="padding:15px; font-size:13px; line-height:1.6; user-select:none;">
+            <div style="display:flex; align-items:center; gap:15px; border-bottom:1px solid #ccc; padding-bottom:10px; margin-bottom:10px;">
+                <span style="font-size:32px;">${iconChar}</span>
+                <b style="font-size:14px;">${name}</b>
+            </div>
+            <table style="width:100%; border-collapse:collapse;">
+                <tr><td style="width:70px; color:#666;">タイプ:</td><td>${node.type || '不明'}</td></tr>
+                <tr><td style="color:#666;">場所:</td><td>${parentPath}</td></tr>
+                <tr><td style="color:#666;">サイズ:</td><td>${formattedSize} (${size.toLocaleString()} バイト)</td></tr>
+            </table>
+        </div>`;
+
+    const win = showModalWindow(`${name} のプロパティ`, msg, {
+        width: 350,
+        taskbar: false,
+        overlay: false,
+        silent: true,
+        buttons: [{
+            label: "閉じる",
+            action: (w) => {
+                if (w._modalOverlay) w._modalOverlay.remove();
+                w.remove();
+                // ※ここでは delete しなくてOK（下の Observer が処理します）
+            }
+        }]
+    });
+
+    // 2. 管理リストに登録
+    propertyWindows[path] = win;
+
+    // 3. 【修正の要】ウィンドウがDOMから消えたら自動でリストから削除する
+    const observer = new MutationObserver(() => {
+        if (!document.body.contains(win)) {
+            delete propertyWindows[path];
+            observer.disconnect(); // 監視を終了
+        }
+    });
+
+    // ウィンドウが所属する親要素（bodyなど）を監視
+    observer.observe(document.body, { childList: true });
 }
 
 function searchFS(node, query, path = "") {

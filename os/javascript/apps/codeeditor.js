@@ -75,7 +75,7 @@ export default function CodeEditor(root, options = {}) {
     let dirty = false;
     const untitledId = Date.now().toString(36);
     let baseTitle = filePath?.split("/").pop()?.trim() || `Untitled-${untitledId}`;
-
+    let isDestroyed = false;
     let previewWin = null;
     let previewIframe = null;
 
@@ -216,6 +216,7 @@ export default function CodeEditor(root, options = {}) {
     letter-spacing: 0px !important;
     font-variant-ligatures: none !important;
     -webkit-font-smoothing: antialiased;
+    overflow-anchor: none !important;
 }
 
 .codeeditor, .syntax-highlight {
@@ -226,32 +227,27 @@ export default function CodeEditor(root, options = {}) {
     white-space: pre !important; /* 絶対に折り返さない */
     word-break: normal !important;
     overflow-wrap: normal !important;
-    font-family: 'Consolas', 'Monaco', 'Courier New', monospace !important;
-    font-size: 14px !important;
-    line-height: 20px !important;
-    tab-size: 4 !important;
-    letter-spacing: 0px !important;
     width: 100% !important;
     height: 100% !important;
+    overflow-anchor: none !important;
 }
 
-/* textareaは透明にして、カーソルだけ見せる */
-.codeeditor {
-    color: transparent !important;
-    caret-color: #fff; /* カーソルは白 */
-    background: transparent !important;
-}
-
+/* 実際の入力用 textarea */
 .codeeditor {
     position: absolute;
     top: 0; left: 0;
     z-index: 2;
     background: transparent !important;
-    color: transparent !important;
-    caret-color: #fff;
+    color: transparent !important; /* 文字自体は下のレイヤーで見せる */
+    caret-color: #fff; /* カーソルだけ表示 */
     outline: none;
     resize: none;
     overflow: auto;
+    
+    /* 【根本修正1】ブラウザが勝手にスクロール位置を調整するのを防ぐ */
+    overflow-anchor: none !important;
+    
+    /* スクロールバーを隠す（同期のズレを防ぐため） */
     scrollbar-width: none; /* Firefox */
     -ms-overflow-style: none; /* IE/Edge */
 }
@@ -260,16 +256,34 @@ export default function CodeEditor(root, options = {}) {
     display: none; /* Chrome/Safari */
 }
 
+/* シンタックスハイライト表示層 */
 .syntax-highlight {
     position: absolute;
     top: 0; left: 0;
     z-index: 1;
     color: #eaeaea;
-    overflow: hidden; 
-    pointer-events: none;
     background: #111;
-    /* transformを適用した際のボケを防止 */
-    will-change: transform;
+    
+    /* 【根本修正2】中身の高さに関わらず、コンテナのサイズに固定してJSでスクロール制御 */
+    overflow: hidden !important; 
+    pointer-events: none; /* マウス操作を透過させてtextareaに届かせる */
+    
+    /* transformボケ防止 */
+    will-change: transform, scroll-position;
+}
+
+/* 検索マッチ等のハイライト層がある場合も同様の設定にする */
+.highlight-layer {
+    position: absolute;
+    top: 0; left: 0;
+    z-index: 0;
+    width: 100% !important;
+    height: 100% !important;
+    overflow: hidden !important;
+    pointer-events: none;
+    white-space: pre !important;
+    padding: 10px !important;
+    box-sizing: border-box !important;
 }
 
 /* ハイライト配色 */
@@ -386,28 +400,81 @@ export default function CodeEditor(root, options = {}) {
     }
 
     // シンタックスハイライト適用関数
+    // 関数外（スコープ内）で管理する変数
+    let highlightTask = null;
+
     function applySyntaxHighlight() {
-        const lines = textarea.value.split('\n');
+        // 1. 実行中のタスクがあれば即座にキャンセル
+        if (highlightTask) {
+            cancelAnimationFrame(highlightTask);
+            highlightTask = null;
+        }
+
+        const text = textarea.value;
+        const lines = text.split('\n');
+        const totalLines = lines.length;
+        const currentPath = activeTab ? activeTab.path : "";
+
+        // 【改善点①】ここで innerHTML = "" をしない！
+        // 以前の表示を残したままバックグラウンドでHTML文字列を組み立てることで
+        // レイアウトの崩れとスクロールのリセットを防ぎます。
+
+        let currentLine = 0;
+        const chunkSize = 200;
         let htmlResult = "";
 
-        lines.forEach((line, i) => {
-            const tokens = tokenize(line);
-            tokens.forEach(token => {
-                if (!token) return;
-                const type = getTokenType(token, activeTab?.path);
-                const escaped = token.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        function processChunk() {
+            if (isDestroyed) return;
 
-                if (type) {
-                    const className = `hl-${type}`;
-                    htmlResult += `<span class="${className}">${escaped}</span>`;
-                } else {
-                    htmlResult += escaped;
+            // 2. 非同期処理中にタブが切り替わっていないかチェック
+            if (activeTab && activeTab.path !== currentPath) return;
+
+            const end = Math.min(currentLine + chunkSize, totalLines);
+
+            for (let i = currentLine; i < end; i++) {
+                const line = lines[i];
+                // tokenize, getTokenType, escape処理（既存のまま）
+                const tokens = tokenize(line);
+                for (let j = 0; j < tokens.length; j++) {
+                    const token = tokens[j];
+                    if (!token) continue;
+                    const type = getTokenType(token, currentPath);
+                    const escaped = token.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                    htmlResult += type ? `<span class="hl-${type}">${escaped}</span>` : escaped;
                 }
-            });
-            if (i < lines.length - 1) htmlResult += "\n";
-        });
+                if (i < totalLines - 1) htmlResult += "\n";
+            }
 
-        syntaxLayer.innerHTML = htmlResult + (textarea.value.endsWith('\n') ? ' ' : '');
+            currentLine = end;
+
+            if (currentLine < totalLines) {
+                // まだ解析が必要な場合
+                highlightTask = requestAnimationFrame(processChunk);
+
+                // 【改善点②】非常に長いファイルの場合のみ、
+                // 初回チャンクで「中身が空の場合だけ」反映して、UXを確保する
+                if (currentLine === chunkSize && syntaxLayer.innerHTML === "") {
+                    syntaxLayer.innerHTML = htmlResult;
+                }
+            } else {
+                // 【改善点③】すべて完了した時に「一気に」反映する
+                // これにより、入力中のガタつきが完全に消えます。
+                // 末尾の改行対策にスペースを追加
+                syntaxLayer.innerHTML = htmlResult + (text.endsWith('\n') ? ' ' : '');
+
+                // スクロール位置を強制同期（一気に書き換えた直後に行うのが最も安全）
+                syntaxLayer.scrollTop = textarea.scrollTop;
+                syntaxLayer.scrollLeft = textarea.scrollLeft;
+
+                if (typeof updateMinimap === "function") {
+                    updateMinimap();
+                }
+                highlightTask = null;
+            }
+        }
+
+        // 最初の実行
+        processChunk();
     }
 
     // 行数を記録するための変数を関数の外側（CodeEditor関数内）に定義
@@ -432,23 +499,34 @@ export default function CodeEditor(root, options = {}) {
     let highlightLayer = null;
 
     textarea.addEventListener("scroll", () => {
-        // 1. 行番号の同期
-        lineNumbers.scrollTop = textarea.scrollTop;
+        const top = textarea.scrollTop;
+        const left = textarea.scrollLeft;
 
-        // 2. シンタックスハイライト層（preタグ）の同期
-        // ここが抜けていたため、スクロールしても色だけ置いていかれていました
+        // 1. 同期が必要な要素をまとめて処理（DOMへのアクセスを最小限に）
+        lineNumbers.scrollTop = top;
+
         if (syntaxLayer) {
-            syntaxLayer.scrollTop = textarea.scrollTop;
-            syntaxLayer.scrollLeft = textarea.scrollLeft;
+            syntaxLayer.scrollTop = top;
+            syntaxLayer.scrollLeft = left;
         }
 
-        // 3. 検索ヒット用レイヤー（canvas/div群）の同期
-        if (highlightLayer) { // 変数名が highlightLayer になっている箇所を確認してください
-            const sx = Math.round(textarea.scrollLeft);
-            const sy = Math.round(textarea.scrollTop);
-            highlightLayer.style.transform = `translate(${-sx}px, ${-sy}px)`;
+        // 2. 検索レイヤーの同期 (transformではなくscrollTopを使う設計の方が安定します)
+        if (highlightLayer) {
+            // transformではなくscrollTopを使う方が、他のレイヤーとのズレ（ジッタ）が減ります
+            highlightLayer.scrollTop = top;
+            highlightLayer.scrollLeft = left;
         }
-    });
+
+        // 3. ミニマップは「描画が必要な時だけ」呼ぶ
+        // すでに requestAnimationFrame が予約されていなければ予約する
+        if (!minimapUpdatePending) {
+            minimapUpdatePending = true;
+            requestAnimationFrame(() => {
+                updateMinimap();
+                minimapUpdatePending = false;
+            });
+        }
+    }, { passive: true }); // passive: true をつけるとスクロールが滑らかになります
     /* =========================
          Minimap Logic (Fixed for Sync & Resize)
       ========================== */
@@ -715,49 +793,63 @@ export default function CodeEditor(root, options = {}) {
     function switchTab(tab) {
         if (activeTab === tab) return;
 
-        // 1. 現在のタブの状態を保存
+        // 1. 現在の状態を保存
         if (activeTab) {
             activeTab.content = textarea.value;
-            activeTab.dirty = dirty;
+            activeTab.scrollPos = {
+                top: textarea.scrollTop,
+                left: textarea.scrollLeft
+            };
         }
 
-        // 2. アクティブタブの切り替え
-        activeTab = tab;
-        textarea.value = tab.content;
-        dirty = tab.dirty;
-        baseTitle = tab.name;
-        filePath = tab.path;
-        fileNode = tab.node;
+        // 進行中のハイライト処理を完全に止める
+        if (highlightTask) {
+            cancelAnimationFrame(highlightTask);
+            highlightTask = null;
+        }
+        clearTimeout(highlightTimer);
 
-        // 3. 基本UIの更新
-        updateLineNumbers();
+        // 2. 【重要】タブ切り替え時のみ、表示レイヤーをクリアする
+        // これにより、新しいファイルが解析されるまで前のファイルの内容が見えるのを防ぎます
+        if (syntaxLayer) syntaxLayer.innerHTML = "";
+        if (lineNumbers) lineNumbers.innerHTML = "";
+
+        activeTab = tab;
+        const pos = tab.scrollPos || { top: 0, left: 0 };
+
+        // 3. 内容とスクロール位置の更新
+        textarea.value = tab.content;
+        textarea.scrollTop = pos.top;
+        textarea.scrollLeft = pos.left;
+
+        // 4. UI状態の更新
+        dirty = tab.dirty;
         renderTabs();
         updateTitle();
+        updateLineNumbers();
 
-        // 4. ハイライトの再適用
-        // シンタックスハイライト（背景の色付け）
+        // 5. ハイライト処理を開始
+        // 前の回答で修正した「一気に反映するタイプ」の applySyntaxHighlight を呼び出す
         applySyntaxHighlight();
 
-        // 検索ヒットのハイライト（黄色のマーカー）
-        if (searchQuery && searchQuery.trim() !== "") {
-            // 前のタブの残像を消してから新しく描画
-            clearErrorHighlights();
-            highlightSearchMatches(searchQuery);
-        } else {
-            clearErrorHighlights();
-            highlightLayer = null;
-        }
+        // 6. スクロール位置の最終同期と表示の調整
+        requestAnimationFrame(() => {
+            // 各要素のスクロール位置を強制的に合わせる
+            textarea.scrollTop = pos.top;
+            textarea.scrollLeft = pos.left;
 
-        // 5. スクロール位置の同期（重要：ハイライトレイヤーのズレ防止）
-        if (highlightLayer) {
-            const sx = Math.round(textarea.scrollLeft);
-            const sy = Math.round(textarea.scrollTop);
-            highlightLayer.style.transform = `translate(${-sx}px, ${-sy}px)`;
-        }
+            if (syntaxLayer) {
+                syntaxLayer.scrollTop = pos.top;
+                syntaxLayer.scrollLeft = pos.left;
+            }
+            if (lineNumbers) {
+                lineNumbers.scrollTop = pos.top;
+            }
 
-        // 6. 周辺コンポーネントの更新
-        if (sidebar.style.display !== "none") renderSidebar();
-        requestAnimationFrame(updateMinimap);
+            if (typeof updateMinimap === "function") updateMinimap();
+        });
+
+        if (searchQuery) highlightSearchMatches(searchQuery);
     }
 
     /* =========================
@@ -985,11 +1077,16 @@ export default function CodeEditor(root, options = {}) {
             errorOverlay.appendChild(div);
         });
     }
-    // --- 改善後 ---
+
+    // CodeEditor関数内の上部（変数定義エリア）にタイマー変数を追加
+    let highlightTimer = null;
+
+    // --- 修正後の input イベント ---
     textarea.addEventListener("input", () => {
         if (!activeTab) return;
         activeTab.content = textarea.value;
 
+        // 軽い処理（フラグ変更や行番号更新）は即座に行う
         if (!activeTab.dirty) {
             activeTab.dirty = true;
             dirty = true;
@@ -997,14 +1094,24 @@ export default function CodeEditor(root, options = {}) {
         }
         updateTitle();
         updateLineNumbers();
-        applySyntaxHighlight();
-        // ★ 変更点: 入力があったら、新しいテキストに基づいて「巨大な板」を作り直す
-        if (searchQuery && searchQuery.trim() !== "") {
-            highlightSearchMatches(searchQuery);
-        } else {
-            clearErrorHighlights();
-            highlightLayer = null; // レイヤーの参照もクリア
-        }
+
+        // 重い処理（ハイライト、検索、ミニマップ）はタイマーで遅延実行
+        clearTimeout(highlightTimer);
+        highlightTimer = setTimeout(() => {
+            // 1. シンタックスハイライト
+            applySyntaxHighlight();
+
+            // 2. 検索ヒットのハイライト
+            if (searchQuery && searchQuery.trim() !== "") {
+                highlightSearchMatches(searchQuery);
+            } else {
+                clearErrorHighlights();
+                highlightLayer = null;
+            }
+
+            // 3. ミニマップの更新
+            requestAnimationFrame(updateMinimap);
+        }, 0); // 0ms 入力が止まったら実行
     });
 
     textarea.addEventListener("keydown", (e) => {
@@ -1486,9 +1593,33 @@ export default function CodeEditor(root, options = {}) {
     if (win) {
         const observer = new MutationObserver(() => {
             if (!document.body.contains(win)) {
+                // 1. フラグとタイマーの停止
+                isDestroyed = true;
+                if (highlightTask) cancelAnimationFrame(highlightTask);
+                if (highlightTimer) clearTimeout(highlightTimer);
+
+                // 2. メモリ解放 (Blob URL)
+                for (const url of previewBlobMap.values()) {
+                    try { URL.revokeObjectURL(url); } catch { }
+                }
+                previewBlobMap.clear();
+
+                // 3. 大きなデータの参照を切る
+                tabs.length = 0;
+                activeTab = null;
+
+                // 4. 外部連携の解除
                 window.removeEventListener("fs-updated", syncTabsWithFS);
+                ro.disconnect();
+
+                // 5. 関連ウィンドウの破棄
+                if (previewWin) {
+                    previewWin.remove();
+                    previewWin = null;
+                }
+
+                // 6. 自分自身の監視を終了
                 observer.disconnect();
-                previewWin?.remove();
             }
         });
         observer.observe(document.body, { childList: true, subtree: true });
@@ -1598,7 +1729,6 @@ export default function CodeEditor(root, options = {}) {
             renderPreview();
             applySyntaxHighlight();
             requestAnimationFrame(updateMinimap);
-            applySyntaxHighlight();
             // ウィンドウを前面に持ってくる（kernel側でも行っていますが念のため）
             bringToFront(win);
         }
