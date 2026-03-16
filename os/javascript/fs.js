@@ -2,6 +2,7 @@
 import { saveFS, loadFS } from "./fs-db.js";
 
 let saveTimer = null;
+const DEBUG_FS = false;
 const PROTECTED_KEYS = ["type", "entry", "singleton", "shell", "target", "name"];
 
 // 1. ベースデータ
@@ -98,48 +99,60 @@ const baseFS = {
 
 // --- コアロジック ---
 
+const proxyCache = new WeakMap();
+
 function wrapProxy(obj, path = "") {
     if (!obj || typeof obj !== "object") return obj;
 
-    return new Proxy(obj, {
+    if (proxyCache.has(obj)) {
+        return proxyCache.get(obj);
+    }
+
+    const proxy = new Proxy(obj, {
         get(target, prop) {
             const value = target[prop];
-            const currentPath = path ? `${path}/${prop}` : prop;
-            if (prop === "content" && value === "__EXTERNAL_DATA__") {
-                console.info(`[FS] 大容量データアクセス: ${path}`);
+            if (typeof prop === "symbol") {
+                return target[prop];
             }
+
+            const currentPath = path ? `${path}/${prop}` : prop;
+
+            if (prop === "content" && value === "__EXTERNAL_DATA__") {
+                if (DEBUG_FS) console.info(`[FS] Large data access: ${path}`);
+            }
+
             return wrapProxy(value, currentPath);
         },
+
         set(target, prop, value) {
             if (PROTECTED_KEYS.includes(prop) && Object.prototype.hasOwnProperty.call(target, prop)) {
-                console.warn(`[FS Guard] '${prop}' は変更不可`);
+                if (DEBUG_FS) console.warn(`[FS Guard] '${prop}' は変更不可`);
                 return true;
             }
-            if (target.system && target[prop] && target[prop].system) {
-                if (typeof value === "object" && value !== null && value.type !== target[prop].type) {
-                    console.warn(`[FS Guard] '${prop}' の構造型は変更不可`);
-                    return true;
-                }
-            }
-            if (prop === "content" && target.size !== undefined) delete target.size;
-
-            target[prop] = wrapProxy(value, path ? `${path}/${prop}` : prop);
+            target[prop] = value;
             scheduleSave();
             window.dispatchEvent(new Event("fs-updated"));
             return true;
         },
+
         deleteProperty(target, prop) {
-            // system: true がついているものは消せない（Windowsのシステム保護ファイル相当）
             if (PROTECTED_KEYS.includes(prop) || (target[prop] && target[prop].system === true)) {
-                console.warn(`[FS Guard] '${prop}' はシステム保護されているため削除できません。`);
+                if (DEBUG_FS) console.warn(`[FS Guard] '${prop}' は削除不可`);
                 return false;
             }
-            delete target[prop];
+
+            if (prop in target) {
+                delete target[prop];
+            }
+
             scheduleSave();
             window.dispatchEvent(new Event("fs-updated"));
             return true;
         }
     });
+
+    proxyCache.set(obj, proxy);
+    return proxy;
 }
 
 export const FS = wrapProxy(baseFS, "");
@@ -188,7 +201,7 @@ function deepSync(currentProxy, savedNode, defaultNode) {
         for (const key in defaultNode) {
             if (!(key in currentProxy)) {
                 currentProxy[key] = JSON.parse(JSON.stringify(defaultNode[key]));
-                console.log(`[FS Update] New system item added: ${key}`);
+                if (DEBUG_FS) console.log(`[FS Update] New system item added: ${key}`);
             }
         }
     }
@@ -211,7 +224,7 @@ async function scheduleSave() {
         } finally {
             isSaving = false;
         }
-    }, 300);
+    }, 1000);
 }
 
 export async function initFS() {
@@ -222,10 +235,10 @@ export async function initFS() {
     try {
         // 現在の FS (baseFSが最初に入っている) に対して、保存データを同期する
         deepSync(FS, saved, baseFS);
-        console.log("[FS] System synchronized successfully.");
+        if (DEBUG_FS) console.log("[FS] System synchronized successfully.");
     } catch (e) {
         console.error("[FS] Restore failed", e);
     } finally {
         isSaving = false;
     }
-}
+} 

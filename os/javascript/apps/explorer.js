@@ -942,6 +942,8 @@ export default async function Explorer(root, options = {}) {
             listContainer.style.padding = "0";
         }
 
+        const fragment = document.createDocumentFragment();
+
         for (const name in folder) {
             if (name === "type" || name === "system") continue;
             const itemData = folder[name];
@@ -997,7 +999,7 @@ export default async function Explorer(root, options = {}) {
                 `;
             }
 
-            listContainer.appendChild(item);
+            fragment.appendChild(item);
 
             // --- 以下のイベントロジックは一切変更していません ---
             item.addEventListener("click", async e => {
@@ -1025,7 +1027,7 @@ export default async function Explorer(root, options = {}) {
                 openFSItem(name, node, currentPath);
             });
         }
-        // --- ここまで ---
+        listContainer.appendChild(fragment);
 
         // 右クリック
         const contentEl = root.querySelector(".content") || root.closest(".window")?.querySelector(".content");

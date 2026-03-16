@@ -76,14 +76,14 @@ async function safeImport(entry) {
     return promise;
 }
 
-/* ===== カーネル初期化 ===== */
+/* ===== カーネル初期化 (最新・最適化版) ===== */
 export async function initKernelAsync(progressCallback = () => { }) {
     const root = document.getElementById("os-root");
     if (!root) throw new Error("os-root not found");
 
-    progressCallback("Initializing kernel...");
-
-    // 1. 構造の注入
+    // 1. 基本構造の注入
+    // 描画コストを下げるため、まずは最小限のHTMLを流し込む
+    progressCallback("Initializing kernel structure...");
     root.innerHTML = `
         <div id="desktop"></div>
         <div id="taskbar">
@@ -92,30 +92,33 @@ export async function initKernelAsync(progressCallback = () => { }) {
         <div id="start-menu"></div>
     `;
 
-    // ★追加：ブラウザが上記HTMLを認識し、高さを計算できるよう一拍置く
+    // ブラウザにDOMの反映とレイアウト計算の隙を与える（バックグラウンド処理化の肝）
     await new Promise(r => requestAnimationFrame(r));
 
-    progressCallback("UI containers created...");
-
     // 2. デスクトップ構築
-    // desktop.js 内の requestAnimationFrame と相まって、正確な位置に配置されます
+    // buildDesktop() が内部でアイコン配置などを行う際の計算時間を確保
+    progressCallback("Building Desktop icons and layout...");
     buildDesktop();
+    await new Promise(r => requestAnimationFrame(r));
 
-    progressCallback("Desktop built...");
+    // 3. スタートメニュー構築
+    progressCallback("Preparing Start Menu...");
     buildStartMenu();
+    // ここで一瞬待機を入れることで、メニューの重なり等の計算を安定させる
+    await new Promise(r => setTimeout(r, 0));
 
-    progressCallback("Start Menu built...");
-
-    // 3. タスクバー初期化
+    // 4. タスクバー初期化
+    progressCallback("Initializing Taskbar...");
     initTaskbar();
+    await new Promise(r => requestAnimationFrame(r));
 
-    progressCallback("Taskbar initialized...");
-
-    // 4. エフェクト適用
-    // 引数に root を渡すことで、再起動時のクリーンアップを確実にします
+    // 5. UIエフェクトの適用
+    // ボタンの動的エフェクトなどは最後に適用し、操作可能になったことを示す
+    progressCallback("Applying dynamic UI effects...");
     installDynamicButtonEffect();
 
-    progressCallback("UI effects applied...");
+    // 全てのレンダリングが完了するまで一拍置く
+    await new Promise(r => requestAnimationFrame(r));
 
     progressCallback("Kernel initialization complete!");
 }
