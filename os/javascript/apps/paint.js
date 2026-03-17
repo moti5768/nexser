@@ -255,6 +255,53 @@ export default async function Paint(root, options = {}) {
 
     window.addEventListener("touchend", stopDrawing);
 
+
+    /* =========================
+       ドラッグ＆ドロップで画像を開く
+    ========================= */
+    root.addEventListener("dragover", e => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "copy";
+        canvas.style.outline = "2px dashed #000"; // ドロップ領域を強調
+    });
+
+    root.addEventListener("dragleave", e => {
+        e.preventDefault();
+        canvas.style.outline = "none";
+    });
+
+    root.addEventListener("drop", async e => {
+        e.preventDefault();
+        canvas.style.outline = "none";
+
+        const file = e.dataTransfer.files[0];
+        if (!file) return;
+        if (!file.type.startsWith("image/")) {
+            showWarning("画像ファイルをドロップしてください");
+            return;
+        }
+
+        // 読み込み処理
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+
+        img.onload = () => {
+            saveUndoState(); // 現在の状態を保存
+
+            // キャンバスサイズを画像に合わせるか、そのまま描画するか選べますが、
+            // ペイントソフトの挙動としては「画像に合わせてリサイズ」が一般的です
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+
+            URL.revokeObjectURL(url);
+            dirty = true;
+            updateTitle();
+            updateStatus();
+        };
+        img.src = url;
+    });
+
     /* =========================
        保存ロジック
     ========================== */

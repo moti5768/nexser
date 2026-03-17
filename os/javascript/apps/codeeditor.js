@@ -21,7 +21,7 @@ function createBlobURL(content, type) {
 
 function getMimeType(name) {
     const n = name.toLowerCase();
-    if (n.endsWith(".html")) return "text/html";
+    if (n.endsWith(".html") || n.endsWith(".htm")) return "text/html";
     if (n.endsWith(".css")) return "text/css";
     if (n.endsWith(".js")) return "text/javascript";
     if (n.endsWith(".json")) return "application/json";
@@ -89,7 +89,7 @@ export default function CodeEditor(root, options = {}) {
        Helpers
     ========================== */
     function isCodeFile(name) {
-        return /\.(html|css|js|txt|json)$/i.test(name); // 拡張
+        return /\.(html|htm|css|js|txt|json)$/i.test(name); // 拡張
     }
 
     function getDirPath(p) {
@@ -286,21 +286,31 @@ export default function CodeEditor(root, options = {}) {
     box-sizing: border-box !important;
 }
 
-/* ハイライト配色 */
-.hl-keyword  { color: #569cd6; font-weight: bold; }
-.hl-string   { color: #ce9178; }
-.hl-comment  { color: #6a9955; font-style: italic; }
-.hl-number   { color: #b5cea8; }
-.hl-bracket  { color: #ffd700; }
+/* 共通項目 */
+.hl-keyword   { color: #569cd6; font-weight: bold; }
+.hl-string    { color: #ce9178; }
+.hl-comment   { color: #6a9955; font-style: italic; }
+.hl-number    { color: #b5cea8; }
+.hl-bracket   { color: #ffd700; }
+.hl-operator  { color: #d4d4d4; }
+.hl-angle     { color: #808080; }
+
+/* JavaScript */
+.hl-func        { color: #dcdcaa; } /* 関数名 */
+.hl-variable    { color: #9cdcfe; } /* 変数名 */
+.hl-property_js { color: #9cdcfe; } /* JSプロパティ */
+.hl-builtin     { color: #4fc1ff; } /* console等 */
+
+/* HTML */
 .hl-tag      { color: #569cd6; }
-.hl-angle    { color: #808080; }
 .hl-attr     { color: #9cdcfe; }
 .hl-doctype  { color: #808080; }
+
+/* CSS */
 .hl-selector { color: #d7ba7d; }
 .hl-property { color: #9cdcfe; }
-.hl-builtin  { color: #4fc1ff; }
-.hl-variable { color: #9cdcfe; }
-.hl-operator { color: #d4d4d4; }
+.hl-unit     { color: #b5cea8; } /* 単位 (10pxなど) */
+.hl-value    { color: #ce9178; } /* CSSの値 */
 </style>
 `;
 
@@ -339,31 +349,43 @@ export default function CodeEditor(root, options = {}) {
         unit: "#b5cea8",      // 単位 (px, rem)
         value: "#ce9178",     // プロパティの値 (文字列に近い扱い)
     };
-    // 共通のトークナイザー
+    // --- 共通のトークナイザー ---
     function tokenize(line) {
-        // 演算子、括弧、文字列、コメント、単語を細かく分割
-        return line.split(/(\/\/.+|\/\*[\s\S]*?\*\/|"(?:\\.|[^"])*"|'(?:\\.|[^'])*'|`[\s\S]*?`|<\/?[a-zA-Z0-9!.-]+|[\w$-]+|[{}().,;+\-*/&|=<>!\[\]]|[\s]+)/).filter(Boolean);
+        // 演算子、括弧、文字列、コメント、単語、ドット、コロンを細かく分割
+        // これにより .log や :hover などを個別に判定可能にします
+        return line.split(/(\/\/.+|\/\*[\s\S]*?\*\/|"(?:\\.|[^"])*"|'(?:\\.|[^'])*'|`[\s\S]*?`|<\/?[a-zA-Z0-9!.-]+|[\w$-]+|[{}().,;+\-*/&|=<>!\[\]:]|[\s]+)/).filter(Boolean);
     }
 
-    function getTokenType(token, filePath) {
+    // --- トークンタイプ判定（文脈考慮・エラー防止完全版） ---
+    /**
+     * @param {string} token - 判定する単語
+     * @param {string} filePath - 拡張子判別用パス
+     * @param {number} index - tokens配列内の現在の位置 (デフォルト0)
+     * @param {Array} tokens - 現在の行の全トークン配列 (デフォルト空配列)
+     */
+    function getTokenType(token, filePath, index = 0, tokens = []) {
         const t = token.trim();
         if (!t) return null;
         const ext = filePath ? filePath.split('.').pop().toLowerCase() : '';
+
+        // 前後のトークンを安全に取得（オプショナルチェイニング ?. で undefined エラーを完全防止）
+        const next = tokens[index + 1]?.trim();
+        const prev = tokens[index - 1]?.trim();
 
         // --- 共通 (最優先) ---
         if (t.startsWith("//") || t.startsWith("/*")) return "comment";
         if (/^["'`]/.test(t)) return "string";
         if (/^[0-9]+(\.[0-9]+)?(px|rem|em|%|vh|vw|s|ms|deg)?$/.test(t)) return "number";
         if (/^[{}()\[\]]$/.test(t)) return "bracket";
-        if (/^[.,;]$/.test(t)) return null; // 句読点は通常色
+        if (t === "." || t === "," || t === ";" || t === ":") return null;
 
         // --- HTML ---
-        if (ext === 'html') {
+        if (ext === 'html' || ext === 'htm') {
             if (t.startsWith('<')) return "tag";
             if (t === '>') return "angle";
-            // タグ内の属性判定 (簡易的に = の前にある英単語)
-            if (/^[a-zA-Z-]+$/.test(t)) return "attr";
             if (t.startsWith('!')) return "doctype";
+            // 属性判定: 後ろに '=' が続く
+            if (next === '=' && /^[a-zA-Z-]+$/.test(t)) return "attr";
         }
 
         // --- CSS ---
@@ -371,40 +393,35 @@ export default function CodeEditor(root, options = {}) {
             if (t.startsWith('.') || t.startsWith('#') || /^(html|body|div|span|a|h[1-6]|p|ul|li|section|header|footer|nav|main)$/.test(t)) {
                 return "selector";
             }
-            if (t.endsWith(':') || /^[a-z-]+$/.test(t)) {
-                // プロパティか値かの判定は本来文脈が必要だが、簡易的にプロパティとして色付け
-                return "property";
-            }
+            // プロパティ判定: 後ろに ':' がある
+            if (next === ':' && /^[a-z-]+$/.test(t)) return "property";
         }
 
         // --- JavaScript ---
         if (ext === 'js') {
-            // キーワード
             const keywords = /^(const|let|var|function|return|if|else|for|while|import|export|from|as|default|class|extends|constructor|static|get|set|async|await|new|this|super|try|catch|finally|throw|break|continue|switch|case|of|in|yield|delete|typeof|instanceof|void|null|undefined|true|false)$/;
             if (keywords.test(t)) return "keyword";
 
-            // 組み込みオブジェクト
             const builtins = /^(console|window|document|Math|Object|Array|String|Number|Boolean|Promise|JSON|Map|Set|Symbol|Error|Proxy|Reflect|setTimeout|setInterval|fetch)$/;
             if (builtins.test(t)) return "builtin";
 
-            // 関数呼び出し (トークンの次が '(' なら関数だが、単体判定では英単語を def に)
-            if (/^[a-zA-Z_$][\w$]*$/.test(t)) {
-                return "variable";
-            }
+            // VS Code風: 関数呼び出し (後ろが '(')
+            if (next === '(' && /^[a-zA-Z_$][\w$]*$/.test(t)) return "func";
 
-            // 演算子
+            // VS Code風: オブジェクトのプロパティ (前が '.')
+            if (prev === '.' && /^[a-zA-Z_$][\w$]*$/.test(t)) return "property_js";
+
+            if (/^[a-zA-Z_$][\w$]*$/.test(t)) return "variable";
             if (/^[+\-*/&|=<>!%^]+$/.test(t)) return "operator";
         }
 
         return null;
     }
 
-    // シンタックスハイライト適用関数
-    // 関数外（スコープ内）で管理する変数
+    // --- シンタックスハイライト適用メイン関数 ---
     let highlightTask = null;
 
     function applySyntaxHighlight() {
-        // 1. 実行中のタスクがあれば即座にキャンセル
         if (highlightTask) {
             cancelAnimationFrame(highlightTask);
             highlightTask = null;
@@ -415,30 +432,27 @@ export default function CodeEditor(root, options = {}) {
         const totalLines = lines.length;
         const currentPath = activeTab ? activeTab.path : "";
 
-        // 【改善点①】ここで innerHTML = "" をしない！
-        // 以前の表示を残したままバックグラウンドでHTML文字列を組み立てることで
-        // レイアウトの崩れとスクロールのリセットを防ぎます。
-
         let currentLine = 0;
         const chunkSize = 200;
         let htmlResult = "";
 
         function processChunk() {
-            if (isDestroyed) return;
-
-            // 2. 非同期処理中にタブが切り替わっていないかチェック
+            if (typeof isDestroyed !== 'undefined' && isDestroyed) return;
             if (activeTab && activeTab.path !== currentPath) return;
 
             const end = Math.min(currentLine + chunkSize, totalLines);
 
             for (let i = currentLine; i < end; i++) {
                 const line = lines[i];
-                // tokenize, getTokenType, escape処理（既存のまま）
                 const tokens = tokenize(line);
+
                 for (let j = 0; j < tokens.length; j++) {
                     const token = tokens[j];
                     if (!token) continue;
-                    const type = getTokenType(token, currentPath);
+
+                    // 文脈判断のために j (index) と tokens (配列) を渡す
+                    const type = getTokenType(token, currentPath, j, tokens);
+
                     const escaped = token.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
                     htmlResult += type ? `<span class="hl-${type}">${escaped}</span>` : escaped;
                 }
@@ -448,21 +462,12 @@ export default function CodeEditor(root, options = {}) {
             currentLine = end;
 
             if (currentLine < totalLines) {
-                // まだ解析が必要な場合
                 highlightTask = requestAnimationFrame(processChunk);
-
-                // 【改善点②】非常に長いファイルの場合のみ、
-                // 初回チャンクで「中身が空の場合だけ」反映して、UXを確保する
                 if (currentLine === chunkSize && syntaxLayer.innerHTML === "") {
                     syntaxLayer.innerHTML = htmlResult;
                 }
             } else {
-                // 【改善点③】すべて完了した時に「一気に」反映する
-                // これにより、入力中のガタつきが完全に消えます。
-                // 末尾の改行対策にスペースを追加
                 syntaxLayer.innerHTML = htmlResult + (text.endsWith('\n') ? ' ' : '');
-
-                // スクロール位置を強制同期（一気に書き換えた直後に行うのが最も安全）
                 syntaxLayer.scrollTop = textarea.scrollTop;
                 syntaxLayer.scrollLeft = textarea.scrollLeft;
 
@@ -473,7 +478,6 @@ export default function CodeEditor(root, options = {}) {
             }
         }
 
-        // 最初の実行
         processChunk();
     }
 
@@ -1171,7 +1175,7 @@ export default function CodeEditor(root, options = {}) {
     }
 
     /* =========================
-    Preview (修正版)
+    Preview (最新版: img src & バイナリ対応)
  ========================= */
     async function renderPreview() {
         if (!previewIframe || !filePath) return;
@@ -1183,7 +1187,7 @@ export default function CodeEditor(root, options = {}) {
         const fsFiles = collectFilesRecursive(baseDir);
         if (!fsFiles.size) return;
 
-        // 2. ★最重要：エディタのタブにある最新の内容を最優先で反映する
+        // 2. ★エディタのタブにある最新の内容を最優先で反映する
         tabs.forEach(t => {
             if (fsFiles.has(t.path)) {
                 fsFiles.set(t.path, t.content);
@@ -1202,28 +1206,46 @@ export default function CodeEditor(root, options = {}) {
                     if (node) node.content = content;
                 } catch (e) {
                     console.error(`Preview load error: ${fullPath}`, e);
-                    content = "/* Error loading file */";
+                    content = "";
                 }
             }
 
             const name = fullPath.split("/").pop();
             const mime = getMimeType(name);
-            const url = createBlobURL(String(content ?? ""), mime);
+
+            // --- 修正ポイント: バイナリデータの保護 ---
+            // 画像などのバイナリデータに対し String() を使うとデータが壊れるため
+            // 型を判定して適切に Blob 化する
+            let blob;
+            if (content instanceof Uint8Array || content instanceof ArrayBuffer || content instanceof Blob) {
+                blob = new Blob([content], { type: mime });
+            } else {
+                // テキストデータの場合（HTML/CSS/JSなど）
+                blob = new Blob([String(content ?? "")], { type: mime });
+            }
+
+            const url = URL.createObjectURL(blob);
             previewBlobMap.set(fullPath, url);
             fsFiles.set(fullPath, content); // 置換用に中身を保存
         }
 
-        // 4. プレビュー対象のHTMLパスを決定
-        const htmlPath = (activeTab?.path && activeTab.path.toLowerCase().endsWith(".html"))
+        const htmlPath = (activeTab?.path && /\.(html|htm)$/i.test(activeTab.path))
             ? activeTab.path
-            : [...previewBlobMap.keys()].find(p => p.toLowerCase().endsWith(".html"));
+            : [...previewBlobMap.keys()].find(p => /\.(html|htm)$/i.test(p));
 
         if (!htmlPath) return;
 
         let html = fsFiles.get(htmlPath);
-        if (!html) return;
+        // HTMLは文字列である必要がある
+        if (typeof html !== "string") {
+            if (html instanceof Uint8Array) {
+                html = new TextDecoder().decode(html);
+            } else {
+                return;
+            }
+        }
 
-        // タイトル更新処理 (既存のまま)
+        // タイトル更新処理
         const titleMatch = html.match(/<title>(.*?)<\/title>/i);
         const winTitleEl = previewWin?.querySelector(".title-text");
         if (winTitleEl) {
@@ -1233,13 +1255,26 @@ export default function CodeEditor(root, options = {}) {
         }
 
         // 5. 相対パスを Blob URL に置換
+        // <img> の src, <link> の href, <script> の src などを置換
         html = html.replace(/(src|href)=["']([^"']+)["']/gi, (match, attr, relPath) => {
+            // http, https, data: から始まる外部リンクやデータURLは置換しない
+            if (/^(https?|data):/i.test(relPath)) return match;
+
             const resolved = resolveRelativePath(htmlPath, relPath);
             const blobUrl = resolved ? previewBlobMap.get(resolved) : null;
             return blobUrl ? `${attr}="${blobUrl}"` : match;
         });
 
-        const htmlBlobUrl = createBlobURL(html, "text/html");
+        // 背景画像 (CSSのurl()) にも対応させる場合
+        html = html.replace(/url\(["']?([^"'\)]+)["']?\)/gi, (match, relPath) => {
+            if (/^(https?|data):/i.test(relPath)) return match;
+            const resolved = resolveRelativePath(htmlPath, relPath);
+            const blobUrl = resolved ? previewBlobMap.get(resolved) : null;
+            return blobUrl ? `url("${blobUrl}")` : match;
+        });
+
+        // 最終的なHTMLをBlob化
+        const htmlBlobUrl = URL.createObjectURL(new Blob([html], { type: "text/html" }));
         previewBlobMap.set("__html__", htmlBlobUrl);
 
         // 6. 反映と後片付け

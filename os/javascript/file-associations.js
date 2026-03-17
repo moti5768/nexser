@@ -14,6 +14,7 @@ export const FILE_ASSOCIATIONS = {
     ".scss": "Programs/Applications/CodeEditor.app",
     ".vue": "Programs/Applications/CodeEditor.app",
     ".html": "Programs/Applications/CodeEditor.app",
+    ".htm": "Programs/Applications/CodeEditor.app",
 
     // images
     ".png": "Programs/Applications/ImageViewer.app",
@@ -99,7 +100,7 @@ export function getIcon(name, node) {
     // カテゴリ定義
     const categories = {
         text: [".txt", ".md"],
-        code: [".js", ".ts", ".json", ".css", ".scss", ".vue", ".html"],
+        code: [".js", ".ts", ".json", ".css", ".scss", ".vue", ".html", ".htm"],
         image: [".png", ".jpg", ".jpeg", ".gif", ".webp"],
         paint: [".bmp"],
         video: [".mp4", ".webm", ".ogg", ".mov", ".mkv"],
