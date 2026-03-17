@@ -159,24 +159,16 @@ export const FS = wrapProxy(baseFS, "");
 
 // --- 同期（Sync）エンジン ---
 
-/**
- * saved（保存データ）をベースにし、baseFS（デフォルト）から新しい要素を補完する
- */
 function deepSync(currentProxy, savedNode, defaultNode) {
-    // 1. 保存データ(savedNode)に無いが、現在のメモリ(currentProxy)に存在するものを処理
     for (const key in currentProxy) {
         if (PROTECTED_KEYS.includes(key)) continue;
-
-        // 保存データにキーが存在しない ＝ ユーザーが削除した
         if (savedNode && !(key in savedNode)) {
-            // システム必須属性がない場合のみ、削除を確定させる
             if (!currentProxy[key]?.system) {
                 delete currentProxy[key];
             }
         }
     }
 
-    // 2. 保存データ(savedNode)にあるものをメモリに反映
     for (const key in savedNode) {
         if (PROTECTED_KEYS.includes(key)) continue;
 
@@ -184,19 +176,15 @@ function deepSync(currentProxy, savedNode, defaultNode) {
         const defaultValue = defaultNode ? defaultNode[key] : null;
 
         if (savedValue && typeof savedValue === 'object' && savedValue.type === 'folder') {
-            // フォルダなら再帰
             if (!currentProxy[key] || currentProxy[key].type !== 'folder') {
                 currentProxy[key] = { type: 'folder' };
             }
             deepSync(currentProxy[key], savedValue, defaultValue);
         } else {
-            // ファイル、アプリ、リンク等は上書き
             currentProxy[key] = savedValue;
         }
     }
 
-    // 3. baseFS（デフォルト）にあって、保存データにもメモリにも無いものを補完
-    // これにより、OSアップデートで追加された新しいファイルが出現する
     if (defaultNode) {
         for (const key in defaultNode) {
             if (!(key in currentProxy)) {
@@ -210,21 +198,43 @@ function deepSync(currentProxy, savedNode, defaultNode) {
 // --- 保存・初期化 ---
 
 let isSaving = false;
+
+/**
+ * 実際の書き込み処理 (100%維持しつつ共通化)
+ */
+async function performSave() {
+    isSaving = true;
+    try {
+        const rawFS = JSON.parse(JSON.stringify(FS));
+        await saveFS(rawFS);
+        if (DEBUG_FS) console.log("[FS] Save completed.");
+    } catch (e) {
+        console.error("[FS] Save failed:", e);
+    } finally {
+        isSaving = false;
+    }
+}
+
+/**
+ * 通常の遅延保存 (1秒待機)
+ */
 async function scheduleSave() {
     if (saveTimer || isSaving) return;
     saveTimer = setTimeout(async () => {
         saveTimer = null;
-        isSaving = true;
-        try {
-            // Proxyを剥がして純粋なオブジェクトとして保存
-            const rawFS = JSON.parse(JSON.stringify(FS));
-            await saveFS(rawFS);
-        } catch (e) {
-            console.error("[FS] Save failed:", e);
-        } finally {
-            isSaving = false;
-        }
+        await performSave();
     }, 1000);
+}
+
+/**
+ * 【追加】強制即時保存 (リロード前の消失防止用)
+ */
+export async function forceSave() {
+    if (saveTimer) {
+        clearTimeout(saveTimer);
+        saveTimer = null;
+    }
+    await performSave();
 }
 
 export async function initFS() {
@@ -233,7 +243,6 @@ export async function initFS() {
 
     isSaving = true;
     try {
-        // 現在の FS (baseFSが最初に入っている) に対して、保存データを同期する
         deepSync(FS, saved, baseFS);
         if (DEBUG_FS) console.log("[FS] System synchronized successfully.");
     } catch (e) {
@@ -241,4 +250,4 @@ export async function initFS() {
     } finally {
         isSaving = false;
     }
-} 
+}

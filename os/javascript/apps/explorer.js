@@ -2,7 +2,7 @@
 import { launch } from "../kernel.js";
 import { showModalWindow, alertWindow, bringToFront } from "../window.js";
 import { resolveFS, validateName } from "../fs-utils.js";
-import { FS, initFS } from "../fs.js";
+import { FS, initFS, forceSave } from "../fs.js";
 import { attachContextMenu } from "../context-menu.js";
 import { resolveAppByPath, getIcon } from "../file-associations.js";
 import { addRecent } from "../recent.js";
@@ -68,8 +68,6 @@ function deleteFSItem(parentPath, itemName, rerender) {
         return;
     }
 
-    // --- 通常の削除（ゴミ箱へ移動） ---
-    // （ここは元のコードのままでOKですが、rerenderの前にイベントを飛ばすと確実です）
     try {
         const targetItemData = JSON.parse(JSON.stringify(parentNode[itemName]));
         targetItemData.originalPath = parentPath;
@@ -79,10 +77,12 @@ function deleteFSItem(parentPath, itemName, rerender) {
 
         delete parentNode[itemName];
 
+        // 改善点: 最初から itemName をデフォルト値として入れておく
         let targetName = itemName;
         if (trashNode[itemName]) {
             targetName = `${Date.now()}_${itemName}`;
         }
+
         trashNode[targetName] = targetItemData;
 
         window.dispatchEvent(new Event("fs-updated"));
@@ -100,15 +100,40 @@ export function restoreFSItem(itemName, rerender) {
     const item = trash[itemName];
     if (!item) return;
 
-    // 削除時に保存しておいた originalPath を使用。なければ Desktop へ。
-    const destPath = item.originalPath || "Desktop";
-    const destNode = resolveFS(destPath);
+    // 1. 復元先のノードを取得。見つからなければ Desktop を代替にする
+    let destPath = item.originalPath || "Desktop";
+    let destNode = resolveFS(destPath);
+
+    if (!destNode) {
+        destPath = "Desktop";
+        destNode = resolveFS(destPath);
+    }
 
     if (destNode) {
         const data = JSON.parse(JSON.stringify(item));
-        delete data.originalPath; // 復元後は管理用パスを削除
+        delete data.originalPath;
 
-        destNode[itemName] = data;
+        // 2. 復元先での名前重複を回避するロジックを追加
+        let finalName = itemName;
+        let counter = 1;
+
+        // ゴミ箱用につけた「Date.now()_」プレフィックスがあれば除去して綺麗にする（任意）
+        let cleanName = itemName.replace(/^\d+_/, "");
+        finalName = cleanName;
+
+        while (destNode[finalName]) {
+            const dotIndex = cleanName.lastIndexOf(".");
+            if (dotIndex !== -1) {
+                // ファイルの場合: "name (1).txt"
+                finalName = `${cleanName.substring(0, dotIndex)} (${counter++})${cleanName.substring(dotIndex)}`;
+            } else {
+                // フォルダの場合: "folder (1)"
+                finalName = `${cleanName} (${counter++})`;
+            }
+        }
+
+        // 3. データの移動を実行
+        destNode[finalName] = data;
         delete trash[itemName];
 
         rerender?.();
@@ -545,7 +570,6 @@ export default async function Explorer(root, options = {}) {
 
             listContainer.tabIndex = 0;
 
-
             // --- render関数内の listContainer 生成・初期化部分に追記 ---
 
             // ドラッグ中（重なっている間）の視覚効果
@@ -561,8 +585,7 @@ export default async function Explorer(root, options = {}) {
                 listContainer.classList.remove("drag-over");
             });
 
-            // ドロップされた時の処理
-            // ドロップされた時の処理
+            // explorer.js 内のドロップイベント処理
             listContainer.addEventListener("drop", async (e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -572,11 +595,7 @@ export default async function Explorer(root, options = {}) {
                 if (!folderNode || folderNode.type !== "folder") return;
 
                 // --- 1. エントリの同期確保 ---
-                // 非同期処理に入る前に DataTransferItem を確保しないと、
-                // Chrome等では後続の処理で中身が消える(nullになる)ことがあります。
                 const entries = [];
-                const filesFallback = [];
-
                 if (e.dataTransfer.items) {
                     for (let i = 0; i < e.dataTransfer.items.length; i++) {
                         const item = e.dataTransfer.items[i];
@@ -586,8 +605,12 @@ export default async function Explorer(root, options = {}) {
                         }
                     }
                 } else {
-                    filesFallback.push(...Array.from(e.dataTransfer.files));
+                    entries.push(...Array.from(e.dataTransfer.files));
                 }
+
+                // UIを「処理中」の状態にする
+                listContainer.style.opacity = "0.5";
+                listContainer.style.pointerEvents = "none";
 
                 // --- 2. 非同期ヘルパー関数 ---
                 const readFileAsData = (file) => {
@@ -595,13 +618,11 @@ export default async function Explorer(root, options = {}) {
                         const reader = new FileReader();
                         reader.onload = (ev) => resolve(ev.target.result);
                         reader.onerror = (err) => reject(err);
-
-                        // ファイル形式による読み分け
                         const isBinary = !file.type.startsWith("text/");
                         if (isBinary) {
-                            reader.readAsDataURL(file); // 画像やバイナリはBase64
+                            reader.readAsDataURL(file);
                         } else {
-                            reader.readAsText(file);    // テキストは文字列
+                            reader.readAsText(file);
                         }
                     });
                 };
@@ -609,14 +630,12 @@ export default async function Explorer(root, options = {}) {
                 const addFileToNode = async (file, targetNode) => {
                     let targetName = file.name;
                     let counter = 1;
-                    // 同名ファイルのリネーム処理
+                    const dot = file.name.lastIndexOf(".");
+                    const base = dot !== -1 ? file.name.substring(0, dot) : file.name;
+                    const ext = dot !== -1 ? file.name.substring(dot) : "";
+
                     while (targetNode[targetName]) {
-                        const dot = file.name.lastIndexOf(".");
-                        if (dot !== -1) {
-                            targetName = `${file.name.substring(0, dot)} (${counter++})${file.name.substring(dot)}`;
-                        } else {
-                            targetName = `${file.name} (${counter++})`;
-                        }
+                        targetName = `${base} (${counter++})${ext}`;
                     }
 
                     try {
@@ -643,11 +662,9 @@ export default async function Explorer(root, options = {}) {
                             dirName = `${entry.name} (${counter++})`;
                         }
 
-                        // フォルダを作成
                         targetNode[dirName] = { type: "folder" };
                         const newDirNode = targetNode[dirName];
 
-                        // フォルダ内のエントリをすべて取得（再帰）
                         const reader = entry.createReader();
                         const getEntries = () => new Promise(res => reader.readEntries(res, err => {
                             console.error("Directory read error", err);
@@ -661,7 +678,6 @@ export default async function Explorer(root, options = {}) {
                             allSubEntries = allSubEntries.concat(batch);
                         } while (batch.length > 0);
 
-                        // サブエントリを逐次処理（並列にするとフォルダ階層が深い場合に負荷が高いため）
                         for (const subEntry of allSubEntries) {
                             await processEntry(subEntry, newDirNode);
                         }
@@ -670,26 +686,25 @@ export default async function Explorer(root, options = {}) {
 
                 // --- 3. 実行 ---
                 try {
-                    // UIを「処理中」の状態にする（オプション）
-                    listContainer.style.opacity = "0.5";
-                    listContainer.style.pointerEvents = "none";
+                    // ファイルの読み込みとメモリ(FS)への展開
+                    for (const item of entries) {
+                        if (item instanceof File) {
+                            await addFileToNode(item, folderNode);
+                        } else {
+                            await processEntry(item, folderNode);
+                        }
+                    }
 
-                    // メイン処理：フォルダエントリとフォールバックファイルを処理
-                    const tasks = [
-                        ...entries.map(entry => processEntry(entry, folderNode)),
-                        ...filesFallback.map(file => addFileToNode(file, folderNode))
-                    ];
-
-                    await Promise.all(tasks);
+                    // 【重要】ここで即座に IndexedDB へ保存し、完了を待つ
+                    // これを入れないと、リロードした瞬間に「まだメモリにしかないデータ」が消えます
+                    await forceSave();
 
                 } catch (err) {
                     console.error("Drop processing failed:", err);
                 } finally {
-                    // UIを元に戻す
+                    // 全ての保存が終わってから UI を復帰させる
                     listContainer.style.opacity = "1";
                     listContainer.style.pointerEvents = "auto";
-
-                    // システムに通知して再描画
                     window.dispatchEvent(new Event("fs-updated"));
                     render(currentPath);
                 }
@@ -1287,14 +1302,15 @@ export default async function Explorer(root, options = {}) {
         window.addEventListener("fs-updated", () => {
             if (renderScheduled) return;
             renderScheduled = true;
+            // イベントが発生した「その瞬間」のパスを記憶しておく
+            const pathToRender = currentPath;
             requestAnimationFrame(() => {
-                render(currentPath);
+                // 記憶しておいたパスを渡す
+                render(pathToRender);
                 renderScheduled = false;
             });
         });
-
     }
-
     function updateTitle_explorer(path) {
         if (!win) return;
 
