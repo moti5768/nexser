@@ -1,6 +1,6 @@
 // Explorer.js
 import { launch } from "../kernel.js";
-import { showModalWindow, alertWindow, bringToFront } from "../window.js";
+import { showModalWindow, alertWindow, bringToFront, progressWindow } from "../window.js";
 import { resolveFS, validateName } from "../fs-utils.js";
 import { FS, initFS, forceSave } from "../fs.js";
 import { attachContextMenu } from "../context-menu.js";
@@ -585,7 +585,7 @@ export default async function Explorer(root, options = {}) {
                 listContainer.classList.remove("drag-over");
             });
 
-            // explorer.js 内のドロップイベント処理
+            // explorer.js 内のドロップイベント処理 (修正版)
             listContainer.addEventListener("drop", async (e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -594,40 +594,73 @@ export default async function Explorer(root, options = {}) {
                 const folderNode = resolveFS(currentPath);
                 if (!folderNode || folderNode.type !== "folder") return;
 
-                // --- 1. エントリの同期確保 ---
-                const entries = [];
+                // --- 1. ドロップされた直後のエントリを取得 ---
+                const initialEntries = [];
                 if (e.dataTransfer.items) {
                     for (let i = 0; i < e.dataTransfer.items.length; i++) {
                         const item = e.dataTransfer.items[i];
                         if (item.kind === 'file') {
                             const entry = item.webkitGetAsEntry();
-                            if (entry) entries.push(entry);
+                            if (entry) initialEntries.push(entry);
                         }
                     }
                 } else {
-                    entries.push(...Array.from(e.dataTransfer.files));
+                    initialEntries.push(...Array.from(e.dataTransfer.files));
                 }
 
-                // UIを「処理中」の状態にする
+                if (initialEntries.length === 0) return;
+
+                // --- 2. 総項目数をカウントする (フォルダ自体もカウントに含める) ---
+                let totalFiles = 0;
+                const countEntries = async (entry) => {
+                    totalFiles++; // フォルダまたはファイルを1つとしてカウント
+                    if (entry.isDirectory) {
+                        const reader = entry.createReader();
+                        const getEntries = () => new Promise(res => reader.readEntries(res));
+                        let batch;
+                        do {
+                            batch = await getEntries();
+                            if (batch) {
+                                for (const sub of batch) await countEntries(sub);
+                            }
+                        } while (batch && batch.length > 0);
+                    }
+                };
+
+                // 最初のスキャン
+                for (const ent of initialEntries) {
+                    if (ent instanceof File) totalFiles++;
+                    else await countEntries(ent);
+                }
+
+                // --- 3. プログレスウィンドウの生成 ---
+                const pg = progressWindow("コピー中...", "コピーの準備をしています...", {
+                    width: 380,
+                    height: 250,
+                    autoClose: true
+                });
+
                 listContainer.style.opacity = "0.5";
                 listContainer.style.pointerEvents = "none";
 
-                // --- 2. 非同期ヘルパー関数 ---
+                let processedCount = 0;
+
+                // --- 4. ヘルパー関数 ---
                 const readFileAsData = (file) => {
                     return new Promise((resolve, reject) => {
                         const reader = new FileReader();
                         reader.onload = (ev) => resolve(ev.target.result);
                         reader.onerror = (err) => reject(err);
                         const isBinary = !file.type.startsWith("text/");
-                        if (isBinary) {
-                            reader.readAsDataURL(file);
-                        } else {
-                            reader.readAsText(file);
-                        }
+                        if (isBinary) reader.readAsDataURL(file);
+                        else reader.readAsText(file);
                     });
                 };
 
                 const addFileToNode = async (file, targetNode) => {
+                    // 進捗更新 (processedCount はインクリメント前に渡してOK)
+                    pg.update(processedCount, totalFiles, `${file.name} をコピーしています...`);
+
                     let targetName = file.name;
                     let counter = 1;
                     const dot = file.name.lastIndexOf(".");
@@ -649,6 +682,7 @@ export default async function Explorer(root, options = {}) {
                     } catch (err) {
                         console.error(`Failed to read file: ${file.name}`, err);
                     }
+                    processedCount++;
                 };
 
                 const processEntry = async (entry, targetNode) => {
@@ -661,33 +695,30 @@ export default async function Explorer(root, options = {}) {
                         while (targetNode[dirName]) {
                             dirName = `${entry.name} (${counter++})`;
                         }
-
                         targetNode[dirName] = { type: "folder" };
                         const newDirNode = targetNode[dirName];
 
-                        const reader = entry.createReader();
-                        const getEntries = () => new Promise(res => reader.readEntries(res, err => {
-                            console.error("Directory read error", err);
-                            res([]);
-                        }));
+                        // --- フォルダ作成自体を1カウントとして処理 ---
+                        processedCount++;
+                        pg.update(processedCount, totalFiles, `${dirName} を作成しています...`);
 
-                        let allSubEntries = [];
+                        const reader = entry.createReader();
+                        const getEntries = () => new Promise(res => reader.readEntries(res));
                         let batch;
                         do {
                             batch = await getEntries();
-                            allSubEntries = allSubEntries.concat(batch);
-                        } while (batch.length > 0);
-
-                        for (const subEntry of allSubEntries) {
-                            await processEntry(subEntry, newDirNode);
-                        }
+                            if (batch) {
+                                for (const subEntry of batch) {
+                                    await processEntry(subEntry, newDirNode);
+                                }
+                            }
+                        } while (batch && batch.length > 0);
                     }
                 };
 
-                // --- 3. 実行 ---
+                // --- 5. 実行 ---
                 try {
-                    // ファイルの読み込みとメモリ(FS)への展開
-                    for (const item of entries) {
+                    for (const item of initialEntries) {
                         if (item instanceof File) {
                             await addFileToNode(item, folderNode);
                         } else {
@@ -695,24 +726,26 @@ export default async function Explorer(root, options = {}) {
                         }
                     }
 
-                    // 【重要】ここで即座に IndexedDB へ保存し、完了を待つ
-                    // これを入れないと、リロードした瞬間に「まだメモリにしかないデータ」が消えます
+                    // 最終更新 (これで確実に autoClose がトリガーされる)
+                    pg.update(totalFiles, totalFiles, "すべての項目のコピーが完了しました。");
                     await forceSave();
 
                 } catch (err) {
                     console.error("Drop processing failed:", err);
+                    // エラー時は強制的に閉じる
+                    if (pg && typeof pg.close === "function") pg.close();
                 } finally {
-                    // 全ての保存が終わってから UI を復帰させる
                     listContainer.style.opacity = "1";
                     listContainer.style.pointerEvents = "auto";
                     window.dispatchEvent(new Event("fs-updated"));
                     render(currentPath);
+
+                    // 万が一ウィンドウが残っていた場合の安全策
+                    setTimeout(() => {
+                        if (pg && typeof pg.close === "function") pg.close();
+                    }, 500);
                 }
             });
-
-
-
-
 
             container.appendChild(listContainer);
 

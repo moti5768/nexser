@@ -152,7 +152,12 @@ ${!options.hideStatus ? `
     }
 
     const desktop = document.getElementById("desktop");
-    desktop.appendChild(w);
+    if (desktop) {
+        desktop.appendChild(w);
+    } else {
+        // desktopが見つからない場合はbodyに追加（これでエラーを回避）
+        document.body.appendChild(w);
+    }
     w._statusBar = w.querySelector(".window-statusbar");
     /* ===== サイズ復元 ===== */
 
@@ -448,7 +453,13 @@ ${!options.hideStatus ? `
         preview.style.width = rect.width + "px";
         preview.style.height = rect.height + "px";
 
-        desktop.appendChild(preview);
+        // --- 修正箇所 ---
+        const desktopEl = document.getElementById("desktop");
+        if (desktopEl) {
+            desktopEl.appendChild(preview);
+        } else {
+            document.body.appendChild(preview);
+        }
     }
 
     /* ===== ドラッグ ===== */
@@ -909,12 +920,23 @@ export function centerWindowOptions(width = 300, height = 150, parentWin = null)
         rect = parentWin.getBoundingClientRect();
     } else {
         const desktop = document.getElementById("desktop");
-        rect = desktop.getBoundingClientRect();
+        if (desktop) {
+            rect = desktop.getBoundingClientRect();
+        } else {
+            // ★ desktop要素が見つからない場合はブラウザの表示領域を基準にする
+            rect = {
+                left: 0,
+                top: 0,
+                width: window.innerWidth,
+                height: window.innerHeight
+            };
+        }
     }
 
     return {
         width: width + "px",
         height: height + "px",
+        // rect が取得できていれば、ここでの計算はエラーになりません
         left: rect.left + rect.width / 2 - width / 2 + "px",
         top: rect.top + rect.height / 2 - height / 2 + "px"
     };
@@ -1130,6 +1152,100 @@ export function confirmWindow(message, callback, options = {}) {
             { label: "いいえ", onClick: () => callback(false) }
         ]
     });
+}
+
+export function progressWindow(title, itemName, options = {}) {
+    const winWidth = options.width || 380;
+    const winHeight = options.height || 180;
+    const startTime = performance.now(); // 残り時間計算の開始点
+
+    // 1. showModalWindow を使用してウィンドウを生成
+    // これにより、既存のモーダルロジックやタスクバー連携がそのまま機能します
+    const content = showModalWindow(title, "", {
+        ...options,
+        width: winWidth,
+        height: winHeight,
+        silent: true,
+        // キャンセルボタンが必要な場合に備えて設定
+        buttons: options.allowCancel ? [{ label: "キャンセル", onClick: options.onCancel || null }] : (options.buttons || []),
+    });
+
+    // 実際のウィンドウ外枠要素を取得
+    const win = content.parentElement;
+
+    // 2. ウィンドウ内部のレイアウト（Windows風）
+    content.innerHTML = `
+        <div style="padding: 15px; font-size: 12px; font-family: 'MS Sans Serif', Tahoma, sans-serif; color: #000; user-select: none;">
+            <div class="pg-item-name" style="margin-bottom: 10px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                ${itemName}
+            </div>
+            
+            <div style="height: 26px; border: 1px solid #808080; background: #fff; box-shadow: inset 1px 1px #000; margin-bottom: 10px; position: relative;">
+                <div class="pg-bar" style="height: 100%; width: 0%; background: #000080; transition: width 0.2s;"></div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 80px 1fr; gap: 4px; color: #404040; line-height: 1.4;">
+                <span>進捗率:</span>   <span class="pg-percent">0%</span>
+                <span>詳細:</span>     <span class="pg-detail">準備中...</span>
+                <span>残り時間:</span> <span class="pg-time">計算中...</span>
+            </div>
+        </div>
+    `;
+
+    const bar = content.querySelector(".pg-bar");
+    const percentText = content.querySelector(".pg-percent");
+    const detailText = content.querySelector(".pg-detail");
+    const timeText = content.querySelector(".pg-time");
+
+    return {
+        /**
+         * 進捗状況を更新するメソッド
+         * @param {number} current - 現在値
+         * @param {number} total - 最大値
+         * @param {string} detail - 詳細テキスト（例: "5.2MB / 10MB"）
+         */
+        update: (current, total = 100, detail = "") => {
+            // ウィンドウが閉じられていたら処理しない
+            if (!win || !win.isConnected) return;
+
+            const p = Math.max(0, Math.min(100, (current / total) * 100));
+
+            // バーとパーセントの更新
+            bar.style.width = `${p}%`;
+            percentText.textContent = `${Math.round(p)}%`;
+            if (detail) detailText.textContent = detail;
+
+            // 残り時間の計算ロジック
+            const elapsed = (performance.now() - startTime) / 1000; // 経過秒
+            if (p > 5) {
+                // (経過時間 / 現在の進捗率) - 経過時間 = 残り時間
+                const remaining = (elapsed / (p / 100)) - elapsed;
+                if (remaining > 60) {
+                    timeText.textContent = `約 ${Math.floor(remaining / 60)}分 ${Math.round(remaining % 60)}秒`;
+                } else {
+                    timeText.textContent = `約 ${Math.round(remaining)}秒`;
+                }
+            }
+
+            // 100%に達したら自動で閉じる
+            if (p >= 100) {
+                timeText.textContent = "完了しました";
+                if (options.autoClose !== false) {
+                    setTimeout(() => {
+                        if (win && win.isConnected) {
+                            // window.jsのクリーンアップ関数を実行（タスクバーボタン等も消去される）
+                            if (typeof win._destroy === "function") win._destroy();
+                            else win.remove();
+                        }
+                    }, 800); // 完了を確認できるように少し待機
+                }
+            }
+        },
+        // 手動で閉じたい場合用
+        close: () => {
+            if (win && typeof win._destroy === "function") win._destroy();
+        }
+    };
 }
 
 /* ===== refreshTopWindow 更新 ===== */
