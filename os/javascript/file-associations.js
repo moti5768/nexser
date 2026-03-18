@@ -1,6 +1,5 @@
 // file-associations.js
 // 拡張子 → 起動アプリ対応表
-
 export const FILE_ASSOCIATIONS = {
     // text
     ".txt": "Programs/Applications/TextEditor.app",
@@ -33,7 +32,7 @@ export const FILE_ASSOCIATIONS = {
     ".mov": "Programs/Applications/VideoPlayer.app",
     ".mkv": "Programs/Applications/VideoPlayer.app",
 
-    // audio (再生バー付きの新しい AudioPlayer.app に対応)
+    // audio
     ".mp3": "Programs/Applications/AudioPlayer.app",
     ".wav": "Programs/Applications/AudioPlayer.app",
     ".m4a": "Programs/Applications/AudioPlayer.app",
@@ -41,6 +40,38 @@ export const FILE_ASSOCIATIONS = {
     ".aac": "Programs/Applications/AudioPlayer.app"
 };
 
+/**
+ * 拡張子ごとのアイコンマップ (O(1)検索用)
+ */
+const EXTENSION_ICONS = {
+    ".txt": "📄", ".md": "📄",
+    ".js": "📜", ".ts": "📜", ".json": "📜", ".css": "📜", ".scss": "📜", ".vue": "📜", ".html": "📜", ".htm": "📜",
+    ".png": "🖼️", ".jpg": "🖼️", ".jpeg": "🖼️", ".gif": "🖼️", ".webp": "🖼️",
+    ".bmp": "🎨",
+    ".mp4": "📽️", ".webm": "📽️", ".ogg": "📽️", ".mov": "📽️", ".mkv": "📽️",
+    ".mp3": "🎵", ".wav": "🎵", ".m4a": "🎵", ".flac": "🎵", ".aac": "🎵",
+    ".cfg": "🛠️"
+};
+
+/**
+ * アプリ名・パスに含まれるキーワードによるアイコン判定
+ */
+const APP_KEYWORDS = [
+    { key: "explorer", icon: "🔍" },
+    { key: "paint", icon: "🎨" },
+    { key: "texteditor", icon: "📝" },
+    { key: "notepad", icon: "📝" },
+    { key: "code", icon: "💻" },
+    { key: "image", icon: "🖼️" },
+    { key: "audio", icon: "🎵" },
+    { key: "sound", icon: "🎵" },
+    { key: "video", icon: "🎬" },
+    { key: "calc", icon: "🧮" },
+    { key: "settings", icon: "⚙️" },
+    { key: "terminal", icon: "📟" },
+    { key: "taskmanager", icon: "📊" },
+    { key: "clock", icon: "🕒" }
+];
 
 /**
  * パスから拡張子を取得
@@ -56,7 +87,7 @@ export function getExtension(path) {
  * 拡張子から起動アプリを取得
  */
 export function resolveAppByPath(path) {
-    if (typeof path !== "string") return null;   // 安全対策
+    if (typeof path !== "string") return null;
     const ext = getExtension(path);
     return FILE_ASSOCIATIONS[ext] || null;
 }
@@ -65,56 +96,25 @@ export function resolveAppByPath(path) {
  * ファイルやアプリのアイコンを判定する関数
  */
 export function getIcon(name, node) {
-    if (name.toLowerCase() === "trash") return "🗑️";
+    const lowerName = name.toLowerCase();
+
+    // 1. 特殊・基本フォルダ
+    if (lowerName === "trash") return "🗑️";
     if (node.type === "folder") return "📁";
     if (node.type === "link") return "🔗";
 
+    // 2. アプリケーションの判定
     if (node.type === "app") {
-        const lowerName = name.toLowerCase();
         const entryPath = (node.entry || "").toLowerCase();
-
-        if (lowerName.includes("explorer") || entryPath.includes("explorer")) return "🔍";
-        if (lowerName.includes("paint") || entryPath.includes("paint")) return "🎨";
-        if (lowerName.includes("texteditor") || lowerName.includes("notepad") || entryPath.includes("texteditor")) return "📝";
-        if (lowerName.includes("code") || entryPath.includes("codeeditor")) return "💻";
-        if (lowerName.includes("image") || entryPath.includes("imageviewer")) return "🖼️";
-
-        // --- 修正ポイント：audio を video より先に判定するか、条件を厳密にする ---
-        if (lowerName.includes("audio") || lowerName.includes("sound") || entryPath.includes("audioplayer") || entryPath.includes("soundplayer")) return "🎵";
-
-        // video の判定
-        if (lowerName.includes("video") || entryPath.includes("videoplayer")) return "🎬";
-
-        if (lowerName.includes("calc") || entryPath.includes("calc")) return "🧮";
-        if (lowerName.includes("settings") || entryPath.includes("settings")) return "⚙️";
-        if (lowerName.includes("terminal") || entryPath.includes("terminal")) return "📟";
-        if (lowerName.includes("taskmanager") || entryPath.includes("taskmanager")) return "📊";
-        if (lowerName.includes("clock") || entryPath.includes("clock")) return "🕒";
-
-        return "⚙️";
+        for (const item of APP_KEYWORDS) {
+            if (lowerName.includes(item.key) || entryPath.includes(item.key)) {
+                return item.icon;
+            }
+        }
+        return "⚙️"; // アプリのデフォルト
     }
 
     // 3. 拡張子による判定（ファイルの場合）
     const ext = getExtension(name);
-
-    // カテゴリ定義
-    const categories = {
-        text: [".txt", ".md"],
-        code: [".js", ".ts", ".json", ".css", ".scss", ".vue", ".html", ".htm"],
-        image: [".png", ".jpg", ".jpeg", ".gif", ".webp"],
-        paint: [".bmp"],
-        video: [".mp4", ".webm", ".ogg", ".mov", ".mkv"],
-        audio: [".mp3", ".wav", ".m4a", ".flac", ".aac"],
-        system: [".cfg"] // AUTOBOOT.CFG 等
-    };
-
-    if (categories.text.includes(ext)) return "📄";
-    if (categories.code.includes(ext)) return "📜";
-    if (categories.image.includes(ext)) return "🖼️";
-    if (categories.paint.includes(ext)) return "🎨";
-    if (categories.video.includes(ext)) return "📽️";
-    if (categories.audio.includes(ext)) return "🎵";
-    if (categories.system.includes(ext)) return "🛠️";
-
-    return "📄"; // 未知のファイルのデフォルト
+    return EXTENSION_ICONS[ext] || "📄"; // 未知のファイルのデフォルト
 }

@@ -16,6 +16,7 @@ let globalSelected = { item: null, window: null };
 // --------------------
 export function buildDesktop() {
     globalSelected = { item: null, window: null };
+
     const desktop = document.getElementById("desktop");
     if (!desktop) return;
 
@@ -25,19 +26,18 @@ export function buildDesktop() {
         iconsContainer.id = "desktop-icons";
         desktop.appendChild(iconsContainer);
     }
-    iconsContainer.innerHTML = ""; // 初期化
+
+    // 🔥 追加：Fragmentでまとめて描画
+    const fragment = document.createDocumentFragment();
 
     function createIcon(name, node) {
         const item = document.createElement("div");
         item.className = "icon";
         item.dataset.name = name;
 
-        // 上記の関数、または同様のロジックでアイコンを決定
-        const iconChar = getIcon(name, node);
-
         const iconGraphic = document.createElement("div");
         iconGraphic.className = "icon-graphic";
-        iconGraphic.textContent = iconChar;
+        iconGraphic.textContent = getIcon(name, node);
 
         const iconLabel = document.createElement("div");
         iconLabel.className = "icon-label";
@@ -45,8 +45,6 @@ export function buildDesktop() {
 
         item.appendChild(iconGraphic);
         item.appendChild(iconLabel);
-
-        iconsContainer.appendChild(item);
 
         const fullPath = `Desktop/${name}`;
 
@@ -59,55 +57,61 @@ export function buildDesktop() {
             globalSelected.window = desktop;
         });
 
-        // ダブルクリックで開く
-        item.addEventListener("dblclick", () => openFSItem(name, node, "Desktop"));
-
-        // 右クリックメニュー（アイコン個別）
-        attachContextMenu(item, () => {
-            const isFolder = node?.type === "folder";
-            return [
-                {
-                    label: "削除",
-                    action: () => deleteFSItem("Desktop", name)
-                },
-                {
-                    label: "プログラムから開く",
-                    // ⭐ 対策: type が "file" の場合のみ実行を許可する
-                    action: () => {
-                        if (node.type === "file") {
-                            explorerOpenWithDialog(fullPath, node);
-                        } else {
-                            // ファイル以外（folder, app, link）を無理やり開こうとした場合
-                            alertWindow("システムエラー防止のため、この項目はアプリで開くことができません。", { width: 350, height: 120 });
-                        }
-                    },
-                    // UI上のヒントとして、ファイル以外ではメニューを半透明/無効に見せる（実装依存）
-                    disabled: () => node.type !== "file"
-                },
-                {
-                    label: "プロパティ",
-                    action: () => showProperties(name, node, fullPath)
-                }
-            ];
+        // ダブルクリック
+        item.addEventListener("dblclick", () => {
+            openFSItem(name, node, "Desktop");
         });
+
+        // 右クリック
+        attachContextMenu(item, () => [
+            {
+                label: "削除",
+                action: () => deleteFSItem("Desktop", name)
+            },
+            {
+                label: "プログラムから開く",
+                disabled: () => node.type !== "file",
+                action: () => {
+                    if (node.type === "file") {
+                        explorerOpenWithDialog(fullPath, node);
+                    } else {
+                        alertWindow("システムエラー防止のため開けません", { width: 350, height: 120 });
+                    }
+                }
+            },
+            {
+                label: "プロパティ",
+                action: () => showProperties(name, node, fullPath)
+            }
+        ]);
+
+        return item; // ← appendしない
     }
 
-    // デスクトップ直下のアイコンを生成
+    // 🔥 ここでまとめて作る
     for (const name in FS.Desktop) {
         if (name === "type" || name === "system") continue;
-        createIcon(name, FS.Desktop[name]);
+        fragment.appendChild(createIcon(name, FS.Desktop[name]));
     }
+
+    // 🔥 一括反映
+    iconsContainer.innerHTML = "";
+    iconsContainer.appendChild(fragment);
+
+    // --------------------
+    // 右クリックメニュー（デスクトップ）
+    // --------------------
+    const desktopNode = FS.Desktop; // ← resolveFS削減
 
     attachContextMenu(desktop, (e) => {
         if (e.target.closest(".window")) return [];
-        const desktopNode = resolveFS("Desktop");
-        if (!desktopNode) return [];
 
         const items = [];
 
         if (globalSelected.item) {
             const name = globalSelected.item.dataset.name;
             const node = desktopNode[name];
+
             if (node) {
                 items.push({
                     label: "開く",
@@ -120,12 +124,12 @@ export function buildDesktop() {
             label: "新しいフォルダ",
             action: () => createNewItem("Desktop", iconsContainer, "folder")
         });
+
         items.push({
             label: "新しいファイル",
             action: () => createNewItem("Desktop", iconsContainer, "file")
         });
 
-        // 選択アイテム削除
         items.push({
             label: "選択アイテムを削除",
             disabled: !globalSelected.item,
@@ -138,23 +142,23 @@ export function buildDesktop() {
             }
         });
 
-        // 選択アイテムがあれば「プログラムから開く」
         if (globalSelected.item) {
             const name = globalSelected.item.dataset.name;
             const node = desktopNode[name];
-            const isFolder = node?.type === "folder";
-            const fullPath = `Desktop/${name}`; // パスを生成
+            const fullPath = `Desktop/${name}`;
+
             items.push({
                 label: "プログラムから開く",
                 disabled: node.type !== "file",
                 action: () => {
                     if (node.type === "file") {
-                        explorerOpenWithDialog(`Desktop/${name}`, node);
+                        explorerOpenWithDialog(fullPath, node);
                     } else {
-                        alertWindow("ファイル以外はアプリで開けません。", { width: 300, height: 120 });
+                        alertWindow("ファイル以外は開けません", { width: 300, height: 120 });
                     }
                 }
             });
+
             items.push({
                 label: "プロパティ",
                 action: () => showProperties(name, node, fullPath)
@@ -164,9 +168,12 @@ export function buildDesktop() {
         return items;
     });
 
-    desktop.addEventListener("click", (e) => {
+    // --------------------
+    // デスクトップクリック
+    // --------------------
+    desktop.onclick = (e) => {
         desktop.focus();
-        // クリックされた要素がアイコン自体（またはその子要素）でないか確認
+
         if (!e.target.closest(".icon")) {
             if (globalSelected.item) {
                 globalSelected.item.classList.remove("selected");
@@ -174,10 +181,9 @@ export function buildDesktop() {
                 globalSelected.window = null;
             }
         }
-    });
-    requestAnimationFrame(() => {
-        adjustDesktopIconArea();
-    });
+    };
+
+    requestAnimationFrame(adjustDesktopIconArea);
     window.dispatchEvent(new Event("desktop-ready"));
 }
 
