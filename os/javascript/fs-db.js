@@ -73,7 +73,7 @@ function extractAndStrip(obj, path = "", largeFiles = new Map()) {
     if (!obj || typeof obj !== "object") return obj;
     const copy = Array.isArray(obj) ? [] : {};
 
-    for (const key of Object.keys(obj)) {
+    for (const key in obj) {
         const value = obj[key];
         const currentPath = path ? `${path}/${key}` : key;
 
@@ -147,7 +147,7 @@ export async function saveFS(fs) {
 
             for (const savedPath of allSavedPaths) {
                 // 今回の保存リストになく、かつ「FS構造」からも消えている場合のみ削除
-                const node = resolveFS(savedPath);
+                const node = resolveFS(savedPath, "C:/", fs);
 
                 // node が存在しない = ユーザーが明示的に削除した
                 // node.content が "__EXTERNAL_DATA__" でもない = 構造から完全に消えた

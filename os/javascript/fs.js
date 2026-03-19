@@ -3,7 +3,7 @@ import { saveFS, loadFS } from "./fs-db.js";
 
 let saveTimer = null;
 const DEBUG_FS = false;
-const PROTECTED_KEYS = ["type", "entry", "singleton", "shell", "target", "name"];
+const PROTECTED_KEYS = new Set(["type", "entry", "singleton", "shell", "target", "name"]);
 
 // 1. ベースデータ
 const baseFS = {
@@ -121,11 +121,14 @@ function wrapProxy(obj, path = "") {
                 if (DEBUG_FS) console.info(`[FS] Large data access: ${path}`);
             }
 
-            return wrapProxy(value, currentPath);
+            if (value && typeof value === "object") {
+                return wrapProxy(value, currentPath);
+            }
+            return value;
         },
 
         set(target, prop, value) {
-            if (PROTECTED_KEYS.includes(prop) && Object.prototype.hasOwnProperty.call(target, prop)) {
+            if (PROTECTED_KEYS.has(prop) && Object.prototype.hasOwnProperty.call(target, prop)) {
                 if (DEBUG_FS) console.warn(`[FS Guard] '${prop}' は変更不可`);
                 return true;
             }
@@ -136,14 +139,12 @@ function wrapProxy(obj, path = "") {
         },
 
         deleteProperty(target, prop) {
-            if (PROTECTED_KEYS.includes(prop) || (target[prop] && target[prop].system === true)) {
+            if (PROTECTED_KEYS.has(prop) || (target[prop] && target[prop].system === true)) {
                 if (DEBUG_FS) console.warn(`[FS Guard] '${prop}' は削除不可`);
                 return false;
             }
 
-            if (prop in target) {
-                delete target[prop];
-            }
+            delete target[prop];
 
             scheduleSave();
             window.dispatchEvent(new Event("fs-updated"));
@@ -161,16 +162,17 @@ export const FS = wrapProxy(baseFS, "");
 
 function deepSync(currentProxy, savedNode, defaultNode) {
     for (const key in currentProxy) {
-        if (PROTECTED_KEYS.includes(key)) continue;
+        if (PROTECTED_KEYS.has(key)) continue;
         if (savedNode && !(key in savedNode)) {
-            if (!currentProxy[key]?.system) {
+            const curVal = currentProxy[key];
+            if (!curVal || !curVal.system) {
                 delete currentProxy[key];
             }
         }
     }
 
     for (const key in savedNode) {
-        if (PROTECTED_KEYS.includes(key)) continue;
+        if (PROTECTED_KEYS.has(key)) continue;
 
         const savedValue = savedNode[key];
         const defaultValue = defaultNode ? defaultNode[key] : null;
@@ -218,11 +220,24 @@ async function performSave() {
 /**
  * 通常の遅延保存 (1秒待機)
  */
+let pendingSave = false;
+
 async function scheduleSave() {
-    if (saveTimer || isSaving) return;
+    if (saveTimer) return;
+
+    if (isSaving) {
+        pendingSave = true;
+        return;
+    }
+
     saveTimer = setTimeout(async () => {
         saveTimer = null;
         await performSave();
+
+        if (pendingSave) {
+            pendingSave = false;
+            scheduleSave();
+        }
     }, 1000);
 }
 

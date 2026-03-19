@@ -1,18 +1,14 @@
 // fs-utils.js
 import { FS } from "./fs.js";
 
-/**
- * FS のパスを解決（リンクも自動解決）
- * 堅牢性向上: 再帰をループに置き換え、スタックオーバーフローを防止
- */
-export function resolveFS(path) {
+export function resolveFS(path, cwd = "C:/", root = FS) {
     if (typeof path !== "string") return null;
 
     // パスを正規化してから処理
-    const normalized = normalizePath(path);
+    const normalized = normalizePath(path, cwd);
     const parts = normalized.replace(/^C:\//, "").split("/").filter(Boolean);
 
-    let cur = FS;
+    let cur = root; // インポートした FS ではなく、引数の root を起点にする
     const visited = new Set(); // 循環参照検知用
 
     for (const p of parts) {
@@ -22,11 +18,12 @@ export function resolveFS(path) {
         // リンク解決のループ
         let linkSteps = 0;
         while (cur && cur.type === "link") {
-            if (visited.has(cur) || linkSteps > 50) return null; // 循環または深すぎるリンク
+            // 循環または深すぎるリンクの防止
+            if (visited.has(cur) || linkSteps > 50) return null;
             visited.add(cur);
 
-            // リンク先を再評価（絶対パスとして解決）
-            cur = resolveFS(cur.target);
+            // リンク先を再評価。再帰呼び出し時も同じ root を引き継ぐのがポイント
+            cur = resolveFS(cur.target, "C:/", root);
             linkSteps++;
         }
 
@@ -53,7 +50,8 @@ export function normalizePath(path, cwd = "C:/") {
     }
 
     // スラッシュの統一と分割
-    const parts = fullPath.replace(/\\/g, "/").split("/").filter(Boolean);
+    const normalizedPath = fullPath.includes("\\") ? fullPath.replace(/\\/g, "/") : fullPath;
+    const parts = normalizedPath.split("/").filter(Boolean);
     const stack = [];
 
     for (const part of parts) {
