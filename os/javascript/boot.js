@@ -1,5 +1,5 @@
 // boot.js
-import { FS, initFS } from './fs.js';
+import { initFS } from './fs.js';
 import { buildDesktop } from './desktop.js';
 import { showBSOD } from './bsod.js';
 import { playSystemEventSound } from './kernel.js';

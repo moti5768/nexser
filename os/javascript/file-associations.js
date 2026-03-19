@@ -37,7 +37,10 @@ export const FILE_ASSOCIATIONS = {
     ".wav": "Programs/Applications/AudioPlayer.app",
     ".m4a": "Programs/Applications/AudioPlayer.app",
     ".flac": "Programs/Applications/AudioPlayer.app",
-    ".aac": "Programs/Applications/AudioPlayer.app"
+    ".aac": "Programs/Applications/AudioPlayer.app",
+
+    // pdf
+    ".pdf": "Programs/Applications/PDFViewer.app"
 };
 
 /**
@@ -50,6 +53,7 @@ const EXTENSION_ICONS = {
     ".bmp": "🎨",
     ".mp4": "📽️", ".webm": "📽️", ".ogg": "📽️", ".mov": "📽️", ".mkv": "📽️",
     ".mp3": "🎵", ".wav": "🎵", ".m4a": "🎵", ".flac": "🎵", ".aac": "🎵",
+    ".pdf": "📕",
     ".cfg": "🛠️"
 };
 
@@ -63,6 +67,7 @@ const APP_KEYWORDS = [
     { key: "notepad", icon: "📝" },
     { key: "code", icon: "💻" },
     { key: "image", icon: "🖼️" },
+    { key: "pdf", icon: "📕" },
     { key: "audio", icon: "🎵" },
     { key: "sound", icon: "🎵" },
     { key: "video", icon: "🎬" },

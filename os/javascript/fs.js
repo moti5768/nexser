@@ -46,7 +46,8 @@ const baseFS = {
             "Paint.app": { type: "app", entry: "./apps/paint.js", system: true },
             "RegistryEditor.app": { type: "app", entry: "./apps/registryeditor.js", system: true },
             "SystemProperties.app": { type: "app", entry: "./apps/systemproperties.js", system: true },
-            "TaskbarProperties.app": { type: "app", entry: "./apps/taskbarproperties.js", system: true }
+            "TaskbarProperties.app": { type: "app", entry: "./apps/taskbarproperties.js", system: true },
+            "PDFViewer.app": { type: "app", entry: "./apps/pdfviewer.js", system: true }
         },
         ControlPanel: {
             type: "folder",
@@ -65,6 +66,7 @@ const baseFS = {
                 system: true,
                 "CodeEditor.app": { type: "link", target: "Programs/Applications/CodeEditor.app" },
                 "ImageViewer.app": { type: "link", target: "Programs/Applications/ImageViewer.app" },
+                "PDFViewer.app": { type: "link", target: "Programs/Applications/PDFViewer.app" },
                 "VideoPlayer.app": { type: "link", target: "Programs/Applications/VideoPlayer.app" }
             },
             Systemtools: {
