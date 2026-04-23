@@ -20,7 +20,7 @@ export async function dbDelete(key, storeName = STORE_KV) {
     return new Promise((resolve, reject) => {
         const tx = db.transaction(storeName, "readwrite");
         const store = tx.objectStore(storeName);
-        const req = store.delete(key);
+        store.delete(key); // リクエスト自体は即座に発行
         tx.oncomplete = () => resolve();
         tx.onerror = () => reject(tx.error);
     });
@@ -71,18 +71,27 @@ export async function dbGet(key, storeName = STORE_KV) {
 
 function extractAndStrip(obj, path = "", largeFiles = new Map()) {
     if (!obj || typeof obj !== "object") return obj;
-    const copy = Array.isArray(obj) ? [] : {};
 
-    for (const key in obj) {
+    const isArr = Array.isArray(obj);
+    const copy = isArr ? [] : {};
+    const keys = Object.keys(obj);
+
+    for (let i = 0; i < keys.length; i++) {
+        const key = keys[i];
         const value = obj[key];
-        const currentPath = path ? `${path}/${key}` : key;
 
+        // 1. 最も頻出する「content」かつ「巨大データ」の判定を先頭で行い、パス計算を最小限にする
         if (key === "content" && typeof value === "string" && value.length > LARGE_FILE_THRESHOLD) {
-            largeFiles.set(path, value); // path は親のパス
+            largeFiles.set(path, value);
             copy[key] = "__EXTERNAL_DATA__";
             copy["size"] = value.length;
-        } else if (typeof value === "object" && value !== null) {
-            copy[key] = extractAndStrip(value, currentPath, largeFiles);
+            continue;
+        }
+
+        // 2. オブジェクト（フォルダ等）の場合のみパスを結合して再帰
+        if (value !== null && typeof value === "object") {
+            const nextPath = path ? `${path}/${key}` : key;
+            copy[key] = extractAndStrip(value, nextPath, largeFiles);
         } else {
             copy[key] = value;
         }
@@ -101,16 +110,10 @@ export async function getFileContent(path) {
 /**
  * FSをIndexedDBに保存する (クリーンアップ対応版)
  */
-/**
- * 堅牢性を高めた一括保存処理
- */
 export async function saveFS(fs) {
     saveChain = saveChain.then(async () => {
         if (navigator.storage && navigator.storage.estimate) {
-            // ★ quota (割り当て上限) を取得
             const { usage, quota } = await navigator.storage.estimate();
-
-            // 使用量が上限の 95% を超えたら警告して中断（余裕を持たせる）
             if (usage >= quota * 0.95) {
                 const quotaGB = (quota / 1024 / 1024 / 1024).toFixed(2);
                 console.error(`[FS-DB] Save aborted: Storage limit reached (${(usage / 1024 / 1024 / 1024).toFixed(2)}GB / ${quotaGB}GB)`);
@@ -123,6 +126,7 @@ export async function saveFS(fs) {
                 return;
             }
         }
+
         const db = await openDB();
         const tx = db.transaction([STORE_FILES, STORE_KV], "readwrite");
         const fileStore = tx.objectStore(STORE_FILES);
@@ -134,24 +138,29 @@ export async function saveFS(fs) {
 
             if (!cleanFS?.System) throw new Error("FS corruption detected.");
 
-            // 1. 今回取得した新しい大容量データを保存
-            for (const [path, data] of largeFiles) {
-                fileStore.put(data, path);
-            }
+            // I/O効率化：キー取得リクエストを先行して発行
+            const keysReq = fileStore.getAllKeys();
 
-            // 2. 不要データの削除（ここを改善）
-            const allSavedPaths = await new Promise((res) => {
-                const req = fileStore.getAllKeys();
-                req.onsuccess = () => res(req.result);
+            // 1. 新しい大容量データを保存
+            largeFiles.forEach((data, path) => {
+                fileStore.put(data, path);
             });
 
-            for (const savedPath of allSavedPaths) {
-                // 今回の保存リストになく、かつ「FS構造」からも消えている場合のみ削除
-                const node = resolveFS(savedPath, "C:/", fs);
+            // 2. キー取得を待機して不要データを削除
+            const allSavedPaths = await new Promise((res, rej) => {
+                keysReq.onsuccess = () => res(keysReq.result);
+                keysReq.onerror = () => rej(keysReq.error);
+            });
 
-                // node が存在しない = ユーザーが明示的に削除した
-                // node.content が "__EXTERNAL_DATA__" でもない = 構造から完全に消えた
-                if (!largeFiles.has(savedPath) && !node) {
+            for (let i = 0; i < allSavedPaths.length; i++) {
+                const savedPath = allSavedPaths[i];
+
+                // ガード句：今保存したファイルならスキップ（resolveFSを呼ばない）
+                if (largeFiles.has(savedPath)) continue;
+
+                // 構造から完全に消えている場合のみ削除を実行
+                const node = resolveFS(savedPath, "C:/", fs);
+                if (!node) {
                     fileStore.delete(savedPath);
                     console.log(`[FS-DB] GC: Deleted orphaned file data at ${savedPath}`);
                 }
