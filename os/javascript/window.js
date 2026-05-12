@@ -124,11 +124,10 @@ ${!options.hideStatus ? `
 `;
 
     w._applyRealIcon = () => {
+        if (!w.isConnected) return; // すでに閉じられていたら何もしない
         const iconEl = w.querySelector(".window-icon");
         if (iconEl) iconEl.textContent = finalIcon;
-
-        // タスクバーのアイコンも連動させる必要がある場合
-        if (w._taskbarBtn) {
+        if (w._taskbarBtn && w._taskbarBtn.isConnected) {
             const tbIcon = w._taskbarBtn.querySelector(".taskbar-icon");
             if (tbIcon) tbIcon.textContent = finalIcon;
         }

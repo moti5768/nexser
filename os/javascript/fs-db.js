@@ -146,10 +146,13 @@ export async function saveFS(fs) {
                 fileStore.put(data, path);
             });
 
-            // 2. キー取得を待機して不要データを削除
+            // 2. キー取得を待機して不要データを削除 エラー発生時に何が起きたか追跡しやすくし、データの不整合を防ぐ
             const allSavedPaths = await new Promise((res, rej) => {
-                keysReq.onsuccess = () => res(keysReq.result);
-                keysReq.onerror = () => rej(keysReq.error);
+                keysReq.onsuccess = () => res(keysReq.result || []);
+                keysReq.onerror = () => {
+                    console.error("Critical: Could not retrieve DB keys during GC.");
+                    rej(keysReq.error);
+                };
             });
 
             for (let i = 0; i < allSavedPaths.length; i++) {

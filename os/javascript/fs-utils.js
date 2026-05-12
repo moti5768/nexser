@@ -18,11 +18,12 @@ export function resolveFS(path, cwd = "C:/", root = FS) {
         // リンク解決のループ
         let linkSteps = 0;
         while (cur && cur.type === "link") {
-            // 循環または深すぎるリンクの防止
-            if (visited.has(cur) || linkSteps > 50) return null;
+            // target が文字列でない場合はリンク切れとして扱う
+            if (typeof cur.target !== "string" || visited.has(cur) || linkSteps > 50) {
+                return null;
+            }
             visited.add(cur);
-
-            // リンク先を再評価。再帰呼び出し時も同じ root を引き継ぐのがポイント
+            // 第2引数の cwd を "C:/" に固定することで絶対パスとして解決を強制
             cur = resolveFS(cur.target, "C:/", root);
             linkSteps++;
         }
@@ -65,7 +66,11 @@ export function normalizePath(path, cwd = "C:/") {
 
     // ドライブレターがスタックにない場合のガード（通常は [0] が "C:"）
     const result = stack.join("/");
-    return result.includes(":") ? result : "C:/" + result;
+    // stack[0] が "C:" であることを前提に、常にドライブ直下にスラッシュを入れる
+    if (stack[0] && stack[0].endsWith(":")) {
+        return stack[0] + "/" + stack.slice(1).join("/");
+    }
+    return "C:/" + result;
 }
 
 /**
@@ -127,8 +132,21 @@ export function validateName(name) {
  * パスからファイル名（末尾の要素）を取得する
  */
 export function basename(path) {
-    if (!path) return "";
-    // Windows形式( \ )とLinux形式( / )の両方の区切り文字に対応し、末尾のスラッシュを除去
-    const parts = path.replace(/[\\/]$/, "").split(/[\\/]/).filter(Boolean);
-    return parts[parts.length - 1] || "";
+    if (typeof path !== "string" || !path) return "";
+
+    // 1. 末尾のスラッシュ（複数可）をすべて除去
+    const cleanPath = path.replace(/[\\/]+$/, "");
+
+    // 2. 最後の区切り文字の位置を探す
+    const lastSlashIndex = Math.max(cleanPath.lastIndexOf("/"), cleanPath.lastIndexOf("\\"));
+
+    // 3. 区切り文字が見つからない場合
+    if (lastSlashIndex === -1) {
+        // "C:" のようなドライブレターのみの場合は空文字を返す（OSの慣習に合わせる場合）
+        return cleanPath.endsWith(":") ? "" : cleanPath;
+    }
+
+    // 4. 最後がドライブレター（例: "C:/Windows" の "/" が最後の場合など）への配慮
+    const result = cleanPath.substring(lastSlashIndex + 1);
+    return result.endsWith(":") ? "" : result;
 }

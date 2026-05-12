@@ -36,9 +36,11 @@ let lastTick = performance.now();
 // イベントループ負荷からCPU近似値を計測
 setInterval(() => {
     const now = performance.now();
-    const lag = now - lastTick - 1000;
+    const diff = now - lastTick;
+    const lag = Math.max(0, diff - 1000); // 実際の経過時間との差分を見る
     lastTick = now;
-    cpuLoad = Math.max(0, Math.min(100, lag * 2));
+    // 計測間隔（diff）に対するラグの比率で計算
+    cpuLoad = Math.min(100, Math.round((lag / 1000) * 100));
 }, 1000);
 
 function getMemoryMB() {
@@ -354,7 +356,6 @@ export async function launch(path, options = {}) {
 
 setInterval(() => {
     const mem = getMemoryMB();
-
     for (const proc of processes.values()) {
         proc.memory = mem;
         proc.cpu = cpuLoad;
