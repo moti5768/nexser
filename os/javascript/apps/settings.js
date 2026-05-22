@@ -563,70 +563,61 @@ export default async function SettingsApp(content) {
             });
         }
 
+        // 関数外で一度だけ作成（メモリ節約）
+        const encoder = new TextEncoder();
+
         async function getStoreSizes() {
-            const result = {};
             try {
                 const db = await getDB();
                 const storeNames = Array.from(db.objectStoreNames);
 
-                for (const storeName of storeNames) {
+                // 各ストアの計算を並列に実行
+                const results = await Promise.all(storeNames.map(async (storeName) => {
                     let bytes = 0;
-                    // トランザクションを開始
                     const tx = db.transaction(storeName, "readonly");
                     const store = tx.objectStore(storeName);
 
                     await new Promise((resolve, reject) => {
                         const request = store.openCursor();
-
                         request.onsuccess = (event) => {
                             const cursor = event.target.result;
                             if (cursor) {
                                 const item = cursor.value;
 
-                                // 1. files ストア（実体データ）の計算
+                                // 1. files ストアの計算
                                 if (storeName === "files") {
-                                    if (item instanceof Blob) {
-                                        bytes += item.size;
-                                    } else if (typeof item === 'string') {
-                                        // UTF-8換算での正確なバイト数を加算
-                                        bytes += new TextEncoder().encode(item).length;
-                                    } else if (item instanceof ArrayBuffer) {
-                                        bytes += item.byteLength;
-                                    }
+                                    if (item instanceof Blob) bytes += item.size;
+                                    else if (typeof item === 'string') bytes += encoder.encode(item).length;
+                                    else if (item instanceof ArrayBuffer) bytes += item.byteLength;
                                 }
-                                // 2. kv ストアやその他の構造データの計算
+                                // 2. その他ストアの計算
                                 else {
-                                    // JSON.stringifyの結果をバイト換算（目安として最も確実）
                                     try {
                                         const jsonString = JSON.stringify(item);
-                                        if (jsonString) {
-                                            bytes += new TextEncoder().encode(jsonString).length;
-                                        }
-                                    } catch (e) {
-                                        // 循環参照などでJSON化できない場合のフォールバック
-                                        bytes += 0;
-                                    }
+                                        if (jsonString) bytes += encoder.encode(jsonString).length;
+                                    } catch (e) { bytes += 0; }
                                 }
-
-                                // 重要: await を挟まずに continue を呼ぶことでトランザクションを維持
                                 cursor.continue();
                             } else {
                                 resolve();
                             }
                         };
-
                         request.onerror = () => reject(request.error);
                         tx.onabort = () => reject(new Error("Transaction aborted"));
                     });
-                    result[storeName] = bytes;
-                }
+                    return { name: storeName, bytes };
+                }));
+
+                // 配列からオブジェクトへ変換
+                return Object.fromEntries(results.map(r => [r.name, r.bytes]));
             } catch (e) {
                 console.error("[Settings] getStoreSizes failed:", e);
+                return {};
             }
-            return result;
         }
+
         async function renderStorage() {
-            // 1. まずデータを先に計算する (この間、storageBoxの中身は古いまま維持されます)
+            // 1. データの計算（getStoreSizesが並列処理かつTextEncoder再利用済みであることを前提）
             const sizes = await getStoreSizes();
 
             // ★ ブラウザから実際のクォータを取得
@@ -639,18 +630,18 @@ export default async function SettingsApp(content) {
             }
 
             if (!document.contains(storageBox) || currentTabId !== "system") return;
-            let virtualUsedBytes = 0;
 
-            // 2. メモリ上に一時的なコンテナ(偽の箱)を作成する
-            const tempContainer = document.createElement("div");
+            // ★ 改善点: DocumentFragment を使用して DOM 更新を一度に集約
+            const frag = document.createDocumentFragment();
+            let virtualUsedBytes = 0;
 
             // タイトル
             const title = document.createElement("b");
             title.style.cssText = "display:block; font-size:16px; margin-bottom: 5px; padding-bottom: 5px; border-bottom:1px solid #000;";
             title.textContent = "Storage Properties (C:)";
-            tempContainer.appendChild(title);
+            frag.appendChild(title);
 
-            // 1. 各項目のリスト表示（削除ボタン付き）
+            // リスト部分の構築
             const listTable = document.createElement("div");
             listTable.style.fontSize = "13px";
             listTable.style.marginBottom = "0px";
@@ -666,6 +657,7 @@ export default async function SettingsApp(content) {
                 const rightSide = document.createElement("div");
                 rightSide.style.display = "flex";
                 rightSide.style.alignItems = "center";
+                // innerHTMLの利用も必要最小限に留める
                 rightSide.innerHTML = `<span style='font-weight:bold; margin-right:8px;'>${formatBytes(bytes)}</span>`;
 
                 if (name !== "settings") {
@@ -680,34 +672,37 @@ export default async function SettingsApp(content) {
                 row.append(nameSpan, rightSide);
                 listTable.appendChild(row);
             }
-            tempContainer.appendChild(listTable);
+            frag.appendChild(listTable);
 
             const freeSpace = Math.max(0, quota - virtualUsedBytes);
             const usedRatio = quota > 0 ? (virtualUsedBytes / quota) : 0;
             const finalPercent = (usedRatio * 100).toFixed(4);
 
-            // 3. SVG円グラフ
+            // 円グラフの修正版ロジック
             const radius = 12.5;
-            const circumference = 2 * Math.PI * radius;
-            const displayPercentForPie = usedRatio > 0 ? Math.min(100, Math.max(0.5, usedRatio * 100)) : 0;
-            const strokeDash = `${(displayPercentForPie / 100) * circumference} ${circumference}`;
+            const strokeWidth = 12.5; // 太さ
+            const innerRadius = radius - (strokeWidth / 2); // はみ出さないための半径計算
+            const circumference = 2 * Math.PI * innerRadius; // 調整した半径で円周を計算
+            const ratio = Math.max(0, Math.min(1, usedRatio));
 
             const pieContainer = document.createElement("div");
-            pieContainer.style.cssText = "display:flex; justify-content:center; margin: 0px;";
-            pieContainer.innerHTML = `
-        <svg width="100" height="100" viewBox="0 0 32 32" style="transform: rotate(-90deg);">
-            <circle cx="16" cy="16" r="${radius}" fill="#FF00FF" />
-            <circle cx="16" cy="16" r="${radius / 2}" fill="none" 
-                    stroke="#000080" 
-                    stroke-width="${radius}" 
-                    stroke-dasharray="${strokeDash}" 
-                    stroke-dashoffset="0" />
-            <circle cx="16" cy="16" r="${radius}" fill="none" stroke="#000" stroke-width="0.25" />
-        </svg>
-    `;
-            tempContainer.appendChild(pieContainer);
+            pieContainer.style.cssText = "display:flex; justify-content:center; margin: 10px;";
 
-            // 4. 統計数値テキスト
+            pieContainer.innerHTML = `
+    <svg width="100" height="100" viewBox="0 0 32 32" style="transform: rotate(-90deg);">
+        <circle cx="16" cy="16" r="${radius}" fill="#FF00FF" />
+        
+        <circle cx="16" cy="16" r="${innerRadius}" fill="none" 
+                stroke="#000080" 
+                stroke-width="${strokeWidth}" 
+                stroke-dasharray="${ratio * circumference} ${circumference}" />
+        
+        <circle cx="16" cy="16" r="${radius}" fill="none" stroke="#000" stroke-width="0.25" />
+    </svg>
+`;
+            frag.appendChild(pieContainer);
+
+            // 統計数値テキスト
             const statsBox = document.createElement("div");
             statsBox.style.padding = "5px";
             statsBox.style.background = "#fff";
@@ -729,9 +724,9 @@ export default async function SettingsApp(content) {
             <span style="font-family:monospace;">${formatBytes(quota)}</span>
         </div>
     `;
-            tempContainer.appendChild(statsBox);
+            frag.appendChild(statsBox);
 
-            // 5. 棒グラフ
+            // 棒グラフ
             const barContainer = document.createElement("div");
             barContainer.style.marginTop = "12px";
 
@@ -756,16 +751,15 @@ export default async function SettingsApp(content) {
             gridOverlay.style.cssText = `position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: linear-gradient(90deg, rgba(255,255,255,0.2) 1px, transparent 1px); background-size: 5% 100%; pointer-events: none;`;
             barBg.appendChild(gridOverlay);
             barContainer.appendChild(barBg);
-            tempContainer.appendChild(barContainer);
 
             const percentLabel = document.createElement("div");
             percentLabel.style.cssText = "text-align:right; font-size:12px; font-weight:bold; color:#000080; margin-top:2px; font-family:monospace;";
             percentLabel.textContent = `${finalPercent}% Used`;
             barContainer.appendChild(percentLabel);
+            frag.appendChild(barContainer);
 
-            // 3. 【重要】最後に一瞬で中身を入れ替える
-            // storageBox.innerHTML = "" をここで呼ばず、replaceChildrenを使うのが最も効率的です
-            storageBox.replaceChildren(tempContainer);
+            // 最後に一括で更新
+            storageBox.replaceChildren(frag);
         }
 
         async function updateInfo() {
