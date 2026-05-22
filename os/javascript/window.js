@@ -346,8 +346,24 @@ ${!options.hideStatus ? `
                     }
                 );
             } else {
-                bringToFront(w);
-                scheduleRefreshTopWindow();
+                // 開いている全ウィンドウの中で自分が最前面(最大のZ-Index)か判定
+                const visibleWins = Array.from(document.querySelectorAll(".window"))
+                    .filter(win => win.style.visibility !== "hidden" && win.dataset.minimized !== "true");
+
+                const maxZ = Math.max(...visibleWins.map(win => parseInt(win.style.zIndex) || 0));
+                const isTopMost = parseInt(w.style.zIndex) === maxZ;
+
+                if (isTopMost) {
+                    // すでに最前面なら最小化する（Windows特有の挙動）
+                    const minBtn = w.querySelector(".min-btn");
+                    if (minBtn && !minBtn.classList.contains("pointer_none")) {
+                        minBtn.click();
+                    }
+                } else {
+                    // 後ろにあるなら最前面へ持ってくる
+                    bringToFront(w);
+                    scheduleRefreshTopWindow();
+                }
             }
         };
     }
@@ -543,8 +559,16 @@ ${!options.hideStatus ? `
 
             if (!dragStarted || !preview) return;
 
-            preview.style.left = `${moveEv.clientX - offsetX}px`;
-            preview.style.top = `${clientY - offsetY}px`;
+            let newLeft = moveEv.clientX - offsetX;
+            let newTop = clientY - offsetY;
+
+            // タイトルバーが画面上部(top: 0)にめり込まないように制限
+            if (newTop < 0) {
+                newTop = 0;
+            }
+
+            preview.style.left = `${newLeft}px`;
+            preview.style.top = `${newTop}px`;
             didMove = true;
         };
 

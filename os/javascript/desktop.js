@@ -347,7 +347,12 @@ function deleteFSItem(parentPath, itemName) {
         // 3. ゴミ箱内での名前を決定 (重複回避)
         let targetName = itemName;
         if (trashNode[itemName]) {
-            targetName = `${Date.now()}_${itemName}`;
+            let counter = 1;
+            let baseName = `${Date.now()}_${itemName}`;
+            targetName = baseName;
+            while (trashNode[targetName]) {
+                targetName = `${baseName}_${counter++}`;
+            }
         }
 
         // 4. ゴミ箱へ追加
