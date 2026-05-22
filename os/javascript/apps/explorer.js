@@ -12,6 +12,7 @@ import { saveSetting, loadSetting } from "./settings.js";
 let globalSelected = { item: null, window: null };
 // プロパティウィンドウの重複チェック用
 const propertyWindows = {};
+const sharedTextEncoder = new TextEncoder();
 
 export function hasExtension(name) {
     return /\.[a-z0-9]+$/i.test(name);
@@ -25,7 +26,7 @@ function deleteFSItem(parentPath, itemName, rerender) {
     if (!parentNode || !parentNode[itemName]) return;
 
     // --- ゴミ箱内からの完全消去の場合 ---
-    if (parentPath === "Trash" || parentPath.startsWith("Trash/")) {
+    if (isTrashPath(parentPath)) {
         const msg = `
             <div style="padding:10px; font-size:13px;">
                 「${itemName}」を完全に消去しますか？<br>
@@ -77,10 +78,16 @@ function deleteFSItem(parentPath, itemName, rerender) {
 
         delete parentNode[itemName];
 
-        // 改善点: 最初から itemName をデフォルト値として入れておく
         let targetName = itemName;
+
         if (trashNode[itemName]) {
-            targetName = `${Date.now()}_${itemName}`;
+            let counter = 1;
+            // Date.now() が同一ミリ秒で衝突する可能性を考慮し、whileで確実に回避
+            let baseName = `${Date.now()}_${itemName}`;
+            targetName = baseName;
+            while (trashNode[targetName]) {
+                targetName = `${baseName}_${counter++}`;
+            }
         }
 
         trashNode[targetName] = targetItemData;
@@ -114,23 +121,11 @@ export function restoreFSItem(itemName, rerender) {
         delete data.originalPath;
 
         // 2. 復元先での名前重複を回避するロジックを追加
-        let finalName = itemName;
-        let counter = 1;
-
         // ゴミ箱用につけた「Date.now()_」プレフィックスがあれば除去して綺麗にする（任意）
         let cleanName = itemName.replace(/^\d+_/, "");
-        finalName = cleanName;
 
-        while (destNode[finalName]) {
-            const dotIndex = cleanName.lastIndexOf(".");
-            if (dotIndex !== -1) {
-                // ファイルの場合: "name (1).txt"
-                finalName = `${cleanName.substring(0, dotIndex)} (${counter++})${cleanName.substring(dotIndex)}`;
-            } else {
-                // フォルダの場合: "folder (1)"
-                finalName = `${cleanName} (${counter++})`;
-            }
-        }
+        // 既存のヘルパー関数を使用して重複を回避
+        let finalName = getUniqueName(destNode, cleanName);
 
         // 3. データの移動を実行
         destNode[finalName] = data;
@@ -148,9 +143,7 @@ export function emptyTrash(rerender) {
     const trash = resolveFS("Trash");
     if (!trash) return;
 
-    const keys = Object.keys(trash).filter(key =>
-        key !== "type" && key !== "system" && key !== "originalPath"
-    );
+    const keys = Object.keys(trash).filter(key => !isSystemMetaKey(key));
 
     if (keys.length === 0) {
         return alertWindow("ゴミ箱は空です。");
@@ -201,17 +194,7 @@ function createNewItem(currentPath, listContainer, renderCallback, type = "folde
 
     // 初期名の設定
     let baseName = type === "folder" ? "新しいフォルダ" : "新しいテキスト.txt";
-    let itemName = baseName;
-    let counter = 1;
-
-    // 重複チェック
-    while (folderNode[itemName]) {
-        if (type === "folder") {
-            itemName = `新しいフォルダ (${counter++})`;
-        } else {
-            itemName = `新しいテキスト (${counter++}).txt`;
-        }
-    }
+    let itemName = getUniqueName(folderNode, baseName);
 
     const itemDiv = document.createElement("div");
     itemDiv.className = "explorer-item";
@@ -269,9 +252,7 @@ function createNewItem(currentPath, listContainer, renderCallback, type = "folde
         itemDiv.remove();
         createNewItem.isCreating = false;
 
-        let finalName = newName;
-        let idx = 1;
-        while (folderNode[finalName]) finalName = `${newName} (${idx++})`;
+        let finalName = getUniqueName(folderNode, newName);
 
         // 指定されたタイプで作成
         if (type === "folder") {
@@ -294,6 +275,51 @@ function createNewItem(currentPath, listContainer, renderCallback, type = "folde
             createNewItem.isCreating = false;
         }
     });
+}
+
+// ----------------------------------------------------------------
+// 共通ヘルパー関数（重複防止用）
+// ----------------------------------------------------------------
+function isTrashPath(path) {
+    return path === "Trash" || path.startsWith("Trash/");
+}
+
+function isSystemMetaKey(key) {
+    return key === "type" || key === "system" || key === "originalPath";
+}
+
+function getUniqueName(parentNode, idealName) {
+    if (!parentNode || !parentNode[idealName]) return idealName;
+    const dotIndex = idealName.lastIndexOf(".");
+    const base = dotIndex !== -1 ? idealName.substring(0, dotIndex) : idealName;
+    const ext = dotIndex !== -1 ? idealName.substring(dotIndex) : "";
+
+    let counter = 1;
+    let finalName = idealName;
+    while (parentNode[finalName]) {
+        finalName = `${base} (${counter++})${ext}`;
+    }
+    return finalName;
+}
+
+function updateStatusBarSummary(statusBar, folderNode) {
+    if (!statusBar || !folderNode) return;
+    let folders = 0, files = 0, apps = 0, links = 0;
+    for (const key in folderNode) {
+        if (isSystemMetaKey(key)) continue;
+        switch (folderNode[key].type) {
+            case "folder": folders++; break;
+            case "file": files++; break;
+            case "app": apps++; break;
+            case "link": links++; break;
+        }
+    }
+    const parts = [];
+    if (folders) parts.push(`${folders} folder${folders > 1 ? "s" : ""}`);
+    if (files) parts.push(`${files} file${files > 1 ? "s" : ""}`);
+    if (apps) parts.push(`${apps} app${apps > 1 ? "s" : ""}`);
+    if (links) parts.push(`${links} link${links > 1 ? "s" : ""}`);
+    statusBar.textContent = parts.length ? parts.join(", ") : "(empty)";
 }
 
 // ------------------------
@@ -457,9 +483,7 @@ export default async function Explorer(root, options = {}) {
             }
 
             // メタデータを除外してループ
-            const entries = Object.entries(node).filter(([k]) =>
-                k !== "type" && k !== "system" && k !== "originalPath"
-            );
+            const entries = Object.entries(node).filter(([k]) => !isSystemMetaKey(k));
 
             entries.forEach(([name, child], index) => {
                 const fullPath = path ? `${path}/${name}` : name;
@@ -468,9 +492,7 @@ export default async function Explorer(root, options = {}) {
                 const isFolder = child.type === "folder";
 
                 // 子要素があるか判定（メタデータ以外のキーがあるか）
-                const hasChildren = isFolder && Object.keys(child).some(k =>
-                    k !== "type" && k !== "system" && k !== "originalPath"
-                );
+                const hasChildren = isFolder && Object.keys(child).some(k => !isSystemMetaKey(k));
 
                 const isLast = index === entries.length - 1;
                 const newPrefix = prefix + (isLast ? "└─ " : "├─ ");
@@ -543,14 +565,14 @@ export default async function Explorer(root, options = {}) {
     // ------------------------
     const render = async (path) => {
         currentPath = path;
-        updateTitle_explorer(currentPath);
-        setupRibbon(win, () => currentPath, render, getExplorerMenus());
         if (globalSelected.item) {
             globalSelected.item.classList.remove("selected");
             globalSelected.item = null;
             globalSelected.window = null;
-            setupRibbon(win, () => currentPath, render, explorerMenus);
         }
+
+        // 最後に1回だけリボンをセットアップする
+        setupRibbon(win, () => currentPath, render, getExplorerMenus());
 
         // 初回生成
         if (!listContainer) {
@@ -661,15 +683,7 @@ export default async function Explorer(root, options = {}) {
                     // 進捗更新 (processedCount はインクリメント前に渡してOK)
                     pg.update(processedCount, totalFiles, `${file.name} をコピーしています...`);
 
-                    let targetName = file.name;
-                    let counter = 1;
-                    const dot = file.name.lastIndexOf(".");
-                    const base = dot !== -1 ? file.name.substring(0, dot) : file.name;
-                    const ext = dot !== -1 ? file.name.substring(dot) : "";
-
-                    while (targetNode[targetName]) {
-                        targetName = `${base} (${counter++})${ext}`;
-                    }
+                    let targetName = getUniqueName(targetNode, file.name);
 
                     try {
                         const content = await readFileAsData(file);
@@ -690,11 +704,7 @@ export default async function Explorer(root, options = {}) {
                         const file = await new Promise(res => entry.file(res));
                         await addFileToNode(file, targetNode);
                     } else if (entry.isDirectory) {
-                        let dirName = entry.name;
-                        let counter = 1;
-                        while (targetNode[dirName]) {
-                            dirName = `${entry.name} (${counter++})`;
-                        }
+                        let dirName = getUniqueName(targetNode, entry.name);
                         targetNode[dirName] = { type: "folder" };
                         const newDirNode = targetNode[dirName];
 
@@ -912,23 +922,8 @@ export default async function Explorer(root, options = {}) {
                         const statusBar = win?._statusBar;
                         if (statusBar) {
                             const folder = resolveFS(currentPath);
-                            let folders = 0, files = 0, apps = 0, links = 0;
-                            for (const key in folder) {
-                                if (key === "type") continue;
-                                const node = folder[key];
-                                switch (node.type) {
-                                    case "folder": folders++; break;
-                                    case "file": files++; break;
-                                    case "app": apps++; break;
-                                    case "link": links++; break;
-                                }
-                            }
-                            const parts = [];
-                            if (folders) parts.push(`${folders} folder${folders > 1 ? "s" : ""}`);
-                            if (files) parts.push(`${files} file${files > 1 ? "s" : ""}`);
-                            if (apps) parts.push(`${apps} app${apps > 1 ? "s" : ""}`);
-                            if (links) parts.push(`${links} link${links > 1 ? "s" : ""}`);
-                            statusBar.textContent = parts.length ? parts.join(", ") : "(empty)";
+                            // 空白をクリックしたら選択解除
+                            updateStatusBarSummary(statusBar, folder);
                         }
 
                         setupRibbon(win, () => currentPath, render, explorerMenus);
@@ -937,9 +932,10 @@ export default async function Explorer(root, options = {}) {
                 }
             });
 
-        } else {
-            if (treeContainer) createTreeDropdown(treeContainer, currentPath);
-        }
+        } // ← 初回生成 if (!listContainer) の終わり
+
+        // 【改善】if-else分岐の外にまとめ、再描画・初回生成の両方で必ず実行させます
+        if (treeContainer) createTreeDropdown(treeContainer, currentPath);
 
         // --- render 関数の最後（364行目付近）に追加 ---
 
@@ -970,9 +966,6 @@ export default async function Explorer(root, options = {}) {
             uBtn.classList.toggle("pointer_none", isAtRoot);
         }
 
-        // パス表示
-        if (pathLabel) pathLabel.textContent = currentPath;
-
         // ファイル・フォルダリスト
         listContainer.innerHTML = "";
         const folder = resolveFS(currentPath);
@@ -992,8 +985,28 @@ export default async function Explorer(root, options = {}) {
 
         const fragment = document.createDocumentFragment();
 
+        // ▼ 追加：選択処理の共通化
+        const selectItemUI = async (targetItem) => {
+            globalSelected.item?.classList.remove("selected");
+            targetItem.classList.add("selected");
+            globalSelected.item = targetItem;
+            globalSelected.window = win;
+            setupRibbon(win, () => currentPath, render, explorerMenus);
+
+            const targetName = targetItem.dataset.name;
+            const node = resolveFS(currentPath)?.[targetName];
+            if (!node) return;
+
+            const statusBar = win?._statusBar;
+            if (statusBar) {
+                const size = await calcNodeSize(node, `${currentPath}/${targetName}`);
+                statusBar.textContent = `${targetName} | ${node.type} | ${formatSize(size)}`;
+            }
+        };
+        // ▲ ここまで
+
         for (const name in folder) {
-            if (name === "type" || name === "system") continue;
+            if (isSystemMetaKey(name)) continue;
             const itemData = folder[name];
             const childPath = currentPath ? `${currentPath}/${name}` : name;
 
@@ -1049,26 +1062,12 @@ export default async function Explorer(root, options = {}) {
 
             fragment.appendChild(item);
 
-            // --- 以下のイベントロジックは一切変更していません ---
             item.addEventListener("click", async e => {
                 e.stopPropagation();
-                globalSelected.item?.classList.remove("selected");
-                item.classList.add("selected");
-                globalSelected.item = item;
-                globalSelected.window = win;
-                setupRibbon(win, () => currentPath, render, explorerMenus);
-
-                const node = resolveFS(currentPath)?.[name];
-                if (!node) return;
-                const size = await calcNodeSize(node, `${currentPath}/${name}`);
-
-                const statusBar = win?._statusBar;
-                if (statusBar) {
-                    statusBar.textContent =
-                        `${name} | ${node.type} | ${formatSize(size)}`;
-                }
+                await selectItemUI(item);
                 listContainer.focus();
             });
+
             item.addEventListener("dblclick", () => {
                 const node = resolveFS(currentPath)?.[name];
                 if (!node) return;
@@ -1098,24 +1097,8 @@ export default async function Explorer(root, options = {}) {
 
             // ⭐ 何か選択されている間は上書きしない
             if (globalSelected.item) return;
-
-            let folders = 0, files = 0, apps = 0, links = 0;
-            for (const key in folder) {
-                if (key === "type") continue;
-                const node = folder[key];
-                switch (node.type) {
-                    case "folder": folders++; break;
-                    case "file": files++; break;
-                    case "app": apps++; break;
-                    case "link": links++; break;
-                }
-            }
-            const parts = [];
-            if (folders) parts.push(`${folders} folder${folders > 1 ? "s" : ""}`);
-            if (files) parts.push(`${files} file${files > 1 ? "s" : ""}`);
-            if (apps) parts.push(`${apps} app${apps > 1 ? "s" : ""}`);
-            if (links) parts.push(`${links} link${links > 1 ? "s" : ""}`);
-            statusBar.textContent = parts.length ? parts.join(", ") : "(empty)";
+            // 最後にステータスバーを更新
+            updateStatusBarSummary(statusBar, folder);
         }
 
         if (!listContainer._keydownBound) {
@@ -1127,28 +1110,12 @@ export default async function Explorer(root, options = {}) {
                 let currentIndex = items.findIndex(el => el === globalSelected.item);
 
                 async function selectItem(index) {
-                    globalSelected.item?.classList.remove("selected");
                     const items = listContainer.querySelectorAll(".explorer-item");
                     const item = items[index];
                     if (!item) return;
 
-                    item.classList.add("selected");
-                    globalSelected.item = item;
-                    globalSelected.window = win;
-
-                    // ★ 修正ポイント: textContent ではなく dataset.name を使う
-                    const name = item.dataset.name;
-                    const node = resolveFS(currentPath)?.[name];
-
-                    const statusBar = win?._statusBar;
-                    if (statusBar && node) {
-                        const size = await calcNodeSize(node, `${currentPath}/${name}`);
-                        statusBar.textContent =
-                            `${name} | ${node.type} | ${formatSize(size)}`;
-                    }
-
+                    await selectItemUI(item);
                     item.scrollIntoView({ block: "nearest" });
-                    setupRibbon(win, () => currentPath, render, explorerMenus);
                 }
 
                 if (e.key === "ArrowDown") {
@@ -1226,9 +1193,7 @@ export default async function Explorer(root, options = {}) {
     // Ribbon
     // ------------------------
     function getExplorerMenus() {
-        // 現在の場所がゴミ箱（Trash）の中かどうかを判定
-        const isInsideTrash = currentPath === "Trash" || currentPath.startsWith("Trash/");
-
+        const isInsideTrash = isTrashPath(currentPath);
         return [
             {
                 title: "File",
@@ -1391,14 +1356,13 @@ export async function calcNodeSize(node, path = "") {
     if (!node) return 0;
 
     if (node.type === "file") {
-        // 【修正】まずメモリ上の実体（content）があるか確認する
-        // 編集直後の最新データはここにあるため、これを最優先にする
-        if (node.content && node.content !== "__EXTERNAL_DATA__") {
-            return new TextEncoder().encode(node.content).length;
-        }
-
-        // 次に、記録されたサイズがあればそれを返す（巨大ファイルなどでDBにある場合用）
+        // 1. 【軽量化】記録されたサイズがあれば最優先で返す (不要な重い計算をスキップ)
         if (typeof node.size === "number") return node.size;
+
+        // 2. サイズ情報がない場合のみ、共有エンコーダーで計算
+        if (node.content && node.content !== "__EXTERNAL_DATA__") {
+            return sharedTextEncoder.encode(node.content).length;
+        }
 
         return 0;
     }
@@ -1420,6 +1384,7 @@ export async function calcNodeSize(node, path = "") {
 
     return 0;
 }
+
 function formatSize(bytes) {
     if (bytes === 0) return "0 B";
     if (bytes < 1024) return `${bytes} B`;
@@ -1549,7 +1514,7 @@ function searchFS(node, query, path = "") {
     const q = query.toLowerCase();
 
     for (const name in node) {
-        if (name === "type" || name === "system" || name === "originalPath") continue;
+        if (isSystemMetaKey(name)) continue;
         const child = node[name];
         const fullPath = path ? `${path}/${name}` : name;
 
