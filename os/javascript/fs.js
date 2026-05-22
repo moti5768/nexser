@@ -130,26 +130,28 @@ function wrapProxy(obj, path = "") {
         },
 
         set(target, prop, value) {
-            if (PROTECTED_KEYS.has(prop) && Object.prototype.hasOwnProperty.call(target, prop)) {
-                if (DEBUG_FS) console.warn(`[FS Guard] '${prop}' は変更不可`);
-                return true;
-            }
+            if (PROTECTED_KEYS.has(prop) && Object.hasOwn(target, prop)) return true;
             target[prop] = value;
-            scheduleSave();
-            window.dispatchEvent(new Event("fs-updated"));
+
+            // isSaving 中は保存予約をしない
+            if (!isSaving) {
+                scheduleSave();
+                window.dispatchEvent(new Event("fs-updated"));
+            }
             return true;
         },
 
         deleteProperty(target, prop) {
             if (PROTECTED_KEYS.has(prop) || (target[prop] && target[prop].system === true)) {
-                if (DEBUG_FS) console.warn(`[FS Guard] '${prop}' は削除不可`);
                 return false;
             }
-
             delete target[prop];
 
-            scheduleSave();
-            window.dispatchEvent(new Event("fs-updated"));
+            // ここにも追加
+            if (!isSaving) {
+                scheduleSave();
+                window.dispatchEvent(new Event("fs-updated"));
+            }
             return true;
         }
     });
@@ -192,7 +194,7 @@ function deepSync(currentProxy, savedNode, defaultNode) {
     if (defaultNode) {
         for (const key in defaultNode) {
             if (!(key in currentProxy)) {
-                currentProxy[key] = JSON.parse(JSON.stringify(defaultNode[key]));
+                currentProxy[key] = structuredClone(defaultNode[key]);
                 if (DEBUG_FS) console.log(`[FS Update] New system item added: ${key}`);
             }
         }
@@ -209,7 +211,11 @@ let isSaving = false;
 async function performSave() {
     isSaving = true;
     try {
-        const rawFS = JSON.parse(JSON.stringify(FS));
+        const rawFS = structuredClone(baseFS);
+
+        // 簡単な整合性チェック
+        if (!rawFS || typeof rawFS !== 'object') throw new Error("Invalid FS structure");
+
         await saveFS(rawFS);
         if (DEBUG_FS) console.log("[FS] Save completed.");
     } catch (e) {
@@ -218,7 +224,6 @@ async function performSave() {
         isSaving = false;
     }
 }
-
 /**
  * 通常の遅延保存 (1秒待機)
  */
@@ -258,13 +263,18 @@ export async function initFS() {
     const saved = await loadFS();
     if (!saved) return;
 
+    // 初期化中は保存処理を完全にブロックする
     isSaving = true;
     try {
+        // ここで deepSync を実行
+        // ※内部の set トラップ内で isSaving を見て保存をスキップするようにする
         deepSync(FS, saved, baseFS);
         if (DEBUG_FS) console.log("[FS] System synchronized successfully.");
     } catch (e) {
         console.error("[FS] Restore failed", e);
     } finally {
         isSaving = false;
+        // 初期化が終わったら念のため一度だけ強制保存し、整合性を確定させる
+        await performSave();
     }
 }

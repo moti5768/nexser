@@ -365,50 +365,46 @@ setInterval(() => {
 
 /* ===== プロセス一覧 ===== */
 export function getProcessList() {
-    return Array.from(processes.entries())
-        .map(([key, proc]) => {
+    const list = [];
+    for (const [key, proc] of processes) {
+        const win = proc.window;
 
-            const win = proc.window;
+        let zIndex = "";
+        let minimized = false;
+        let x = "";
+        let y = "";
+        let w = "";
+        let h = "";
 
-            let zIndex = "";
-            let minimized = false;
-            let x = "";
-            let y = "";
-            let w = "";
-            let h = "";
+        if (win && document.body.contains(win)) {
+            const rect = win.getBoundingClientRect();
+            zIndex = getComputedStyle(win).zIndex || "";
+            minimized = win.dataset.minimized === "true";
+            x = Math.round(rect.left);
+            y = Math.round(rect.top);
+            w = Math.round(rect.width);
+            h = Math.round(rect.height);
+        }
 
-            if (win && document.body.contains(win)) {
-
-                const rect = win.getBoundingClientRect();
-
-                zIndex = getComputedStyle(win).zIndex || "";
-                minimized = win.dataset.minimized === "true";
-
-                x = Math.round(rect.left);
-                y = Math.round(rect.top);
-                w = Math.round(rect.width);
-                h = Math.round(rect.height);
-            }
-
-            return {
-                key,
-                pid: proc.pid,
-                path: proc.path,
-                name: basename(proc.path),
-                state: proc.state,
-                window: win,
-                memory: proc.memory,
-                cpu: proc.cpu,
-                uptime: Math.floor((performance.now() - proc.startTime) / 1000),
-
-                zIndex,
-                minimized,
-                x,
-                y,
-                width: w,
-                height: h
-            };
+        list.push({
+            key,
+            pid: proc.pid,
+            path: proc.path,
+            name: basename(proc.path),
+            state: proc.state,
+            window: win,
+            memory: proc.memory,
+            cpu: proc.cpu,
+            uptime: Math.floor((performance.now() - proc.startTime) / 1000),
+            zIndex,
+            minimized,
+            x,
+            y,
+            width: w,
+            height: h
         });
+    }
+    return list;
 }
 
 /* =========================
