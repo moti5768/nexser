@@ -10,7 +10,7 @@ export default function RegistryEditor(root) {
     let dbPromise = null;
     let isProcessing = false;
     let searchTerm = "";
-    const MAX_VISIBLE_ITEMS = 5000;
+    const MAX_VISIBLE_ITEMS = 500;
 
     const win = root.closest(".window");
     let editingKey = null; // インライン編集中のキーを保持
@@ -441,7 +441,9 @@ export default function RegistryEditor(root) {
 
             tr.ondblclick = () => enterEditMode(keyStr, "data");
             tr.onclick = () => selectRow(keyStr);
-            bodyEl.appendChild(tr);
+            if (!tr.parentElement) {
+                bodyEl.appendChild(tr); // 親がない（新規作成時）のみ追加
+            }
             rowMap.set(keyStr, tr);
         }
 
