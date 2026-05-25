@@ -249,13 +249,22 @@ async function scheduleSave() {
 }
 
 /**
- * 【追加】強制即時保存 (リロード前の消失防止用)
+ * 【追加・改善】強制即時保存 (リロード前の消失防止用、多重実行防止付き)
  */
 export async function forceSave() {
+    // 待機中のタイマーがあればクリアする
     if (saveTimer) {
         clearTimeout(saveTimer);
         saveTimer = null;
     }
+
+    // すでに別スレッド（非同期タスク）が保存実行中の場合は、
+    // 重複して performSave を呼ばずに pendingSave フラグを立てて終了する
+    if (isSaving) {
+        pendingSave = true;
+        return;
+    }
+
     await performSave();
 }
 

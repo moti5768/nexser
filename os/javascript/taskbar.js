@@ -3,7 +3,7 @@ import { resetAllTitleBars, taskbarButtons } from "./window.js";
 import { hideContextMenu } from "./context-menu.js";
 import { clockDate } from "./apps/clock.js";  // ClockApp の currentDate を参照
 import { saveSetting, loadSetting } from "./apps/settings.js"; // 保存読み込み
-import { updateStartMenuPosition } from "./startmenu.js";
+import { updateStartMenuPosition, buildStartMenu } from "./startmenu.js";
 
 /* ============================
    Taskbar Layout Containers
@@ -394,10 +394,7 @@ export function initTaskbar() {
 
         // スモールアイコン設定 (startmenu.jsへの伝達)
         if (smallIcons !== undefined) {
-            // startmenu.js 側でこのイベントを listen して再描画することを想定
-            // もしくはグローバル変数 window.smallIcons を更新
             window.smallIcons = smallIcons;
-            const { buildStartMenu } = require("./startmenu.js"); // 動的ロードまたは既存関数の実行
             if (typeof buildStartMenu === "function") buildStartMenu();
         }
     });

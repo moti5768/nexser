@@ -111,6 +111,7 @@ export async function getFileContent(path) {
  * FSをIndexedDBに保存する (クリーンアップ対応版)
  */
 export async function saveFS(fs) {
+    // 【修正の要】then の後に catch を繋ぎ、Promise チェーンのクラッシュを防ぐ
     saveChain = saveChain.then(async () => {
         if (navigator.storage && navigator.storage.estimate) {
             const { usage, quota } = await navigator.storage.estimate();
@@ -180,8 +181,15 @@ export async function saveFS(fs) {
         } catch (err) {
             tx.abort();
             console.error("[FS-DB] Save failed:", err);
+            // 内部のトランザクションエラーはここでthrowし、外側のcatchで確実に捕捉させる
+            throw err;
         }
+    }).catch(err => {
+        // 【重要】ここでエラーを握りつぶす(resolveさせる)ことで、
+        // 次回の saveFS() 呼び出し時に Promise チェーンが正常に再スタートできるようにする
+        console.warn("[FS-DB] Save chain recovered from an error. Next save is permitted.", err);
     });
+
     return saveChain;
 }
 

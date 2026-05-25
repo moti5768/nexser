@@ -1,7 +1,11 @@
 // fs-utils.js
 import { FS } from "./fs.js";
 
-export function resolveFS(path, cwd = "C:/", root = FS) {
+/**
+ * パスからファイルシステム上のノードを解決する
+ * 【修正】visited を第4引数として引き継ぐことで、シンボリックリンクの循環参照による無限再帰（フリーズ）を完全に防止
+ */
+export function resolveFS(path, cwd = "C:/", root = FS, visited = new Set()) {
     if (typeof path !== "string") return null;
 
     // パスを正規化してから処理
@@ -9,7 +13,6 @@ export function resolveFS(path, cwd = "C:/", root = FS) {
     const parts = normalized.replace(/^C:\//, "").split("/").filter(Boolean);
 
     let cur = root; // インポートした FS ではなく、引数の root を起点にする
-    const visited = new Set(); // 循環参照検知用
 
     for (const p of parts) {
         if (!cur || typeof cur !== "object") return null;
@@ -18,13 +21,16 @@ export function resolveFS(path, cwd = "C:/", root = FS) {
         // リンク解決のループ
         let linkSteps = 0;
         while (cur && cur.type === "link") {
-            // target が文字列でない場合はリンク切れとして扱う
+            // target が文字列でない場合、または既に解決済みのリンクオブジェクト（循環参照）、または単一コンテキストで深すぎる場合はリンク切れ(null)とする
             if (typeof cur.target !== "string" || visited.has(cur) || linkSteps > 50) {
                 return null;
             }
+
+            // 現在のリンクオブジェクトを訪問済みリストに登録
             visited.add(cur);
-            // 第2引数の cwd を "C:/" に固定することで絶対パスとして解決を強制
-            cur = resolveFS(cur.target, "C:/", root);
+
+            // 【修正の要】共有された巡回履歴（visited）を第4引数に渡して再帰し、システム全体でループを検知できるようにする
+            cur = resolveFS(cur.target, "C:/", root, visited);
             linkSteps++;
         }
 

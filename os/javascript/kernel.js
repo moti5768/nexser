@@ -37,10 +37,16 @@ let lastTick = performance.now();
 setInterval(() => {
     const now = performance.now();
     const diff = now - lastTick;
-    const lag = Math.max(0, diff - 1000); // 実際の経過時間との差分を見る
     lastTick = now;
-    // 計測間隔（diff）に対するラグの比率で計算
-    cpuLoad = Math.min(100, Math.round((lag / 1000) * 100));
+
+    // 【修正】タブがバックグラウンドに回った際のタイマー遅延（スロットリング）を除外
+    // 1000ms間隔のタイマーが2000ms以上遅れた場合はブラウザによる意図的な遅延とみなす
+    if (diff > 2000) {
+        cpuLoad = 0; // OSの高負荷による遅延ではないため0にリセット
+    } else {
+        const lag = Math.max(0, diff - 1000);
+        cpuLoad = Math.min(100, Math.round((lag / 1000) * 100));
+    }
 }, 1000);
 
 function getMemoryMB() {
