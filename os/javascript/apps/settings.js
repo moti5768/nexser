@@ -526,44 +526,36 @@ export default async function SettingsApp(content) {
         storageBox.style.marginTop = "10px";
         storageBox.style.borderTop = "1px solid #666";
         storageBox.style.paddingTop = "6px";
-        storageBox.innerHTML = "<i>Loading storage information...</i>"; // 計算中の仮表示
+        storageBox.innerHTML = "<i>Loading storage information...</i>";
 
         root.append(info, storageBox);
 
         // 単位変換
         function formatBytes(bytes) {
-            if (bytes === 0) return "0.00 B"; // 統一感のため
-
+            if (bytes === 0) return "0.00 B";
             const k = 1024;
-            const dm = 2; // 小数点以下の桁数
+            const dm = 2;
             const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-
-            // 単位のインデックスを計算
             const i = Math.floor(Math.log(bytes) / Math.log(k));
-
-            // 計算結果を小数点第2位で固定
             const res = parseFloat((bytes / Math.pow(k, i)).toFixed(dm));
-
             return `${res.toFixed(dm)} ${sizes[i]}`;
         }
 
-        // ★追加：個別ストアの削除機能
+        // 個別ストアの削除機能
         async function clearStore(storeName) {
-            // 設定画面共通の confirmWindow を利用
             showConfirm(root, `${storeName} のデータをすべて削除しますか？`, async () => {
                 try {
                     const db = await getDB();
                     const tx = db.transaction(storeName, "readwrite");
                     await tx.objectStore(storeName).clear();
                     showAlert(root, `${storeName} を空にしました。`);
-                    renderStorage(); // 削除後にグラフを即時更新
+                    renderStorage();
                 } catch (e) {
                     showAlert(root, "削除に失敗しました。");
                 }
             });
         }
 
-        // 関数外で一度だけ作成（メモリ節約）
         const encoder = new TextEncoder();
 
         async function getStoreSizes() {
@@ -571,7 +563,6 @@ export default async function SettingsApp(content) {
                 const db = await getDB();
                 const storeNames = Array.from(db.objectStoreNames);
 
-                // 各ストアの計算を並列に実行
                 const results = await Promise.all(storeNames.map(async (storeName) => {
                     let bytes = 0;
                     const tx = db.transaction(storeName, "readonly");
@@ -583,15 +574,11 @@ export default async function SettingsApp(content) {
                             const cursor = event.target.result;
                             if (cursor) {
                                 const item = cursor.value;
-
-                                // 1. files ストアの計算
                                 if (storeName === "files") {
                                     if (item instanceof Blob) bytes += item.size;
                                     else if (typeof item === 'string') bytes += encoder.encode(item).length;
                                     else if (item instanceof ArrayBuffer) bytes += item.byteLength;
-                                }
-                                // 2. その他ストアの計算
-                                else {
+                                } else {
                                     try {
                                         const jsonString = JSON.stringify(item);
                                         if (jsonString) bytes += encoder.encode(jsonString).length;
@@ -608,7 +595,6 @@ export default async function SettingsApp(content) {
                     return { name: storeName, bytes };
                 }));
 
-                // 配列からオブジェクトへ変換
                 return Object.fromEntries(results.map(r => [r.name, r.bytes]));
             } catch (e) {
                 console.error("[Settings] getStoreSizes failed:", e);
@@ -617,31 +603,28 @@ export default async function SettingsApp(content) {
         }
 
         async function renderStorage() {
-            // 1. データの計算（getStoreSizesが並列処理かつTextEncoder再利用済みであることを前提）
+            if (!document.body.contains(root) || currentTabId !== "system") return;
             const sizes = await getStoreSizes();
 
-            // ★ ブラウザから実際のクォータを取得
             let quota = 0;
             if (navigator.storage && navigator.storage.estimate) {
                 const estimate = await navigator.storage.estimate();
                 quota = estimate.quota;
             } else {
-                quota = 100 * 1024 * 1024 * 1024; // フォールバック用(100GB)
+                quota = 100 * 1024 * 1024 * 1024;
             }
 
-            if (!document.contains(storageBox) || currentTabId !== "system") return;
+            // 【追加】非同期処理を待っている間にタブが切り替わったり閉じられたら、処理を中断するガード
+            if (!document.body.contains(storageBox) || currentTabId !== "system") return;
 
-            // ★ 改善点: DocumentFragment を使用して DOM 更新を一度に集約
             const frag = document.createDocumentFragment();
             let virtualUsedBytes = 0;
 
-            // タイトル
             const title = document.createElement("b");
             title.style.cssText = "display:block; font-size:16px; margin-bottom: 5px; padding-bottom: 5px; border-bottom:1px solid #000;";
             title.textContent = "Storage Properties (C:)";
             frag.appendChild(title);
 
-            // リスト部分の構築
             const listTable = document.createElement("div");
             listTable.style.fontSize = "13px";
             listTable.style.marginBottom = "0px";
@@ -657,7 +640,6 @@ export default async function SettingsApp(content) {
                 const rightSide = document.createElement("div");
                 rightSide.style.display = "flex";
                 rightSide.style.alignItems = "center";
-                // innerHTMLの利用も必要最小限に留める
                 rightSide.innerHTML = `<span style='font-weight:bold; margin-right:8px;'>${formatBytes(bytes)}</span>`;
 
                 if (name !== "settings") {
@@ -678,55 +660,50 @@ export default async function SettingsApp(content) {
             const usedRatio = quota > 0 ? (virtualUsedBytes / quota) : 0;
             const finalPercent = (usedRatio * 100).toFixed(4);
 
-            // 円グラフの修正版ロジック
             const radius = 12.5;
-            const strokeWidth = 12.5; // 太さ
-            const innerRadius = radius - (strokeWidth / 2); // はみ出さないための半径計算
-            const circumference = 2 * Math.PI * innerRadius; // 調整した半径で円周を計算
+            const strokeWidth = 12.5;
+            const innerRadius = radius - (strokeWidth / 2);
+            const circumference = 2 * Math.PI * innerRadius;
             const ratio = Math.max(0, Math.min(1, usedRatio));
 
             const pieContainer = document.createElement("div");
             pieContainer.style.cssText = "display:flex; justify-content:center; margin: 10px;";
 
             pieContainer.innerHTML = `
-    <svg width="100" height="100" viewBox="0 0 32 32" style="transform: rotate(-90deg);">
-        <circle cx="16" cy="16" r="${radius}" fill="#FF00FF" />
-        
-        <circle cx="16" cy="16" r="${innerRadius}" fill="none" 
-                stroke="#000080" 
-                stroke-width="${strokeWidth}" 
-                stroke-dasharray="${ratio * circumference} ${circumference}" />
-        
-        <circle cx="16" cy="16" r="${radius}" fill="none" stroke="#000" stroke-width="0.25" />
-    </svg>
-`;
+                <svg width="100" height="100" viewBox="0 0 32 32" style="transform: rotate(-90deg);">
+                    <circle cx="16" cy="16" r="${radius}" fill="#FF00FF" />
+                    <circle cx="16" cy="16" r="${innerRadius}" fill="none" 
+                            stroke="#000080" 
+                            stroke-width="${strokeWidth}" 
+                            stroke-dasharray="${ratio * circumference} ${circumference}" />
+                    <circle cx="16" cy="16" r="${radius}" fill="none" stroke="#000" stroke-width="0.25" />
+                </svg>
+            `;
             frag.appendChild(pieContainer);
 
-            // 統計数値テキスト
             const statsBox = document.createElement("div");
             statsBox.style.padding = "5px";
             statsBox.style.background = "#fff";
             statsBox.className = "border";
             statsBox.innerHTML = `
-        <div style="display:flex; align-items:center; margin-bottom:6px; font-size:14px; color:#000080;">
-            <div style="width:12px; height:12px; background:#000080; margin-right:8px; border:1px solid #000;"></div>
-            <span style="flex:1;">Used space:</span>
-            <span style="font-weight:bold; font-family:monospace;">${formatBytes(virtualUsedBytes)}</span>
-        </div>
-        <div style="display:flex; align-items:center; margin-bottom:6px; font-size:14px; color:#FF00FF;">
-            <div style="width:12px; height:12px; background:#FF00FF; margin-right:8px; border:1px solid #000;"></div>
-            <span style="flex:1;">Free space:</span>
-            <span style="font-family:monospace;">${formatBytes(freeSpace)}</span>
-        </div>
-        <div style="border-top:1px solid #000; margin:6px 0;"></div>
-        <div style="display:flex; justify-content:space-between; font-size:15px; font-weight:bold;">
-            <span>Capacity:</span>
-            <span style="font-family:monospace;">${formatBytes(quota)}</span>
-        </div>
-    `;
+                <div style="display:flex; align-items:center; margin-bottom:6px; font-size:14px; color:#000080;">
+                    <div style="width:12px; height:12px; background:#000080; margin-right:8px; border:1px solid #000;"></div>
+                    <span style="flex:1;">Used space:</span>
+                    <span style="font-weight:bold; font-family:monospace;">${formatBytes(virtualUsedBytes)}</span>
+                </div>
+                <div style="display:flex; align-items:center; margin-bottom:6px; font-size:14px; color:#FF00FF;">
+                    <div style="width:12px; height:12px; background:#FF00FF; margin-right:8px; border:1px solid #000;"></div>
+                    <span style="flex:1;">Free space:</span>
+                    <span style="font-family:monospace;">${formatBytes(freeSpace)}</span>
+                </div>
+                <div style="border-top:1px solid #000; margin:6px 0;"></div>
+                <div style="display:flex; justify-content:space-between; font-size:15px; font-weight:bold;">
+                    <span>Capacity:</span>
+                    <span style="font-family:monospace;">${formatBytes(quota)}</span>
+                </div>
+            `;
             frag.appendChild(statsBox);
 
-            // 棒グラフ
             const barContainer = document.createElement("div");
             barContainer.style.marginTop = "12px";
 
@@ -758,17 +735,18 @@ export default async function SettingsApp(content) {
             barContainer.appendChild(percentLabel);
             frag.appendChild(barContainer);
 
-            // 最後に一括で更新
             storageBox.replaceChildren(frag);
         }
 
         async function updateInfo() {
+            if (!document.body.contains(info)) return;
+
             info.innerHTML = `
-            Nexser OS Version: v0.1.0<br>
-            Build Date: 2026-01-21<br>
-            Uptime: ${((Date.now() - (window.bootTime || Date.now())) / 1000).toFixed(1)} s<br>
-            Open Windows: ${document.querySelectorAll(".window").length}<br>
-        `;
+                Nexser OS Version: v0.1.0<br>
+                Build Date: 2026-01-21<br>
+                Uptime: ${((Date.now() - (window.bootTime || Date.now())) / 1000).toFixed(1)} s<br>
+                Open Windows: ${document.querySelectorAll(".window").length}<br>
+            `;
             if (performance.memory) {
                 info.innerHTML += `JS Heap: ${(performance.memory.usedJSHeapSize / 1024 / 1024).toFixed(1)} MB<br>`;
             }
@@ -777,25 +755,23 @@ export default async function SettingsApp(content) {
         let storageUpdateTimer = null;
 
         const onFsUpdated = () => {
-            // rootがDOMから消えていたら即終了
+            // 【安全策】rootが画面から消えていたら即座にイベントリスナー自体を自爆解除する
             if (!document.body.contains(root)) {
                 window.removeEventListener("fs-updated", onFsUpdated);
+                if (storageUpdateTimer) clearTimeout(storageUpdateTimer);
                 return;
             }
 
             const win = root.closest(".window");
-            // ウィンドウが存在しない、または非表示の場合は計算しない
             if (!win || win.style.display === "none" || win.dataset.minimized === "true") {
                 return;
             }
 
-            // Systemタブがアクティブでない場合も計算しない
             if (currentTabId !== "system") return;
 
             if (storageUpdateTimer) clearTimeout(storageUpdateTimer);
 
             storageUpdateTimer = setTimeout(() => {
-                // 実行直前にもう一度生存確認
                 if (document.body.contains(root) && currentTabId === "system") {
                     renderStorage();
                 }
@@ -803,25 +779,25 @@ export default async function SettingsApp(content) {
             }, 500);
         };
 
-        // B. イベントリスナーを登録
         window.addEventListener("fs-updated", onFsUpdated);
 
-        // C. 既存のタイマーは「軽い情報(Uptime等)」の更新専用にする
         updateInfo();
-        renderStorage(); // 初回表示時のみ実行
+        renderStorage();
 
         const infoTimer = setInterval(() => {
-            if (!document.body.contains(root)) {
+            // タブ切り替えや終了時にタイマーを自動停止
+            if (!document.body.contains(root) || currentTabId !== "system") {
                 clearInterval(infoTimer);
                 return;
             }
-            updateInfo(); // ストレージ計算を含まない軽い更新のみ
+            updateInfo();
         }, 5000);
 
-        // D. クリーンアップ処理（リスナーの解除）
-        root._cleanup = () => {
+        // ★【大修正】root._cleanup ではなく bodyEl._cleanup に書き換える
+        bodyEl._cleanup = () => {
             clearInterval(infoTimer);
-            window.removeEventListener("fs-updated", onFsUpdated); // メモリリーク防止
+            if (storageUpdateTimer) clearTimeout(storageUpdateTimer);
+            window.removeEventListener("fs-updated", onFsUpdated);
         };
     }
 }

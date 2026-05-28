@@ -86,13 +86,15 @@ export default async function TextEditor(root, options = {}) {
     if (contentEl) contentEl.style.overflow = "hidden";
 
     function applyStyle() {
-        textarea.style.fontSize = styleState.fontSize + "px";
-        textarea.style.fontFamily = styleState.fontFamily;
-        textarea.style.fontWeight = styleState.fontWeight;
-        textarea.style.fontStyle = styleState.fontStyle;
-        textarea.style.textDecoration = styleState.textDecoration || "none";
-        textarea.style.color = styleState.color || "black";
-        textarea.style.backgroundColor = styleState.backgroundColor || "white";
+        Object.assign(textarea.style, {
+            fontSize: styleState.fontSize + "px",
+            fontFamily: styleState.fontFamily,
+            fontWeight: styleState.fontWeight,
+            fontStyle: styleState.fontStyle,
+            textDecoration: styleState.textDecoration || "none",
+            color: styleState.color || "black",
+            backgroundColor: styleState.backgroundColor || "white"
+        });
     }
     applyStyle();
 
@@ -309,14 +311,15 @@ export default async function TextEditor(root, options = {}) {
         const text = textarea.value;
         const cursorPos = textarea.selectionStart;
 
-        // 改善：カーソル位置までの文字列だけを切り取り、改行を数える
-        const textBeforeCursor = text.substring(0, cursorPos);
-        const lines = textBeforeCursor.split("\n");
-
-        const row = lines.length;
-        const col = lines[lines.length - 1].length + 1;
         const totalChars = text.length;
-        const totalLines = text.split("\n").length; // 全体行数（ここも必要時のみ計算）
+
+        // splitによる配列生成を避け、正規表現のカウントと lastIndexOf のみにする
+        const row = (text.substring(0, cursorPos).match(/\n/g) || []).length + 1;
+        const totalLines = (text.match(/\n/g) || []).length + 1;
+
+        // カーソル直前の改行位置を探して引き算するだけで列数を算出（O(1)のメモリ消費）
+        const lastNewlineIdx = text.lastIndexOf("\n", cursorPos - 1);
+        const col = cursorPos - lastNewlineIdx;
 
         win._statusBar.textContent = `行: ${row}/${totalLines} 列: ${col} 文字: ${totalChars}`;
     }
@@ -326,19 +329,25 @@ export default async function TextEditor(root, options = {}) {
 
     // 文字入力時、カーソル移動時にタイトルとステータスバーを更新
     let statusBarTimeout;
-    textarea.addEventListener("input", () => {
-        dirty = true;
-        updateTitle(); // タイトルは軽いので即時
 
-        // 改善：計算処理を「分割（後回し）」にする
+    // デバウンス処理を関数化してまとめる
+    function debouncedUpdateStatusBar() {
         clearTimeout(statusBarTimeout);
         statusBarTimeout = setTimeout(() => {
             updateStatusBar();
-        }, 150); // 150ms 入力が止まったら計算
+        }, 150);
+    }
+
+    textarea.addEventListener("input", () => {
+        dirty = true;
+        updateTitle();
+        debouncedUpdateStatusBar();
     });
-    textarea.addEventListener("click", updateStatusBar);
-    textarea.addEventListener("keyup", updateStatusBar);
-    textarea.addEventListener("mouseup", updateStatusBar);
+
+    // 入力だけでなく、カーソル移動や選択時も遅延実行させる
+    textarea.addEventListener("click", debouncedUpdateStatusBar);
+    textarea.addEventListener("keyup", debouncedUpdateStatusBar);
+    textarea.addEventListener("mouseup", debouncedUpdateStatusBar);
 
 
     win?.addEventListener("keydown", e => {
