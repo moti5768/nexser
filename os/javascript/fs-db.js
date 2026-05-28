@@ -1,6 +1,6 @@
 // fs-db.js
 import { openDB } from "./db.js";
-import { resolveFS } from "./fs-utils.js";
+// 【改善】resolveFS のインポートは不要になったため削除し、クリーンにしました
 
 const STORE_KV = "kv";
 const STORE_FILES = "files"; // データ本体保存用
@@ -14,19 +14,17 @@ let saveChain = Promise.resolve();
    Low level API
 ========================= */
 
-// --- 【追加】削除用の低レベルAPI ---
 export async function dbDelete(key, storeName = STORE_KV) {
     const db = await openDB();
     return new Promise((resolve, reject) => {
         const tx = db.transaction(storeName, "readwrite");
         const store = tx.objectStore(storeName);
-        store.delete(key); // リクエスト自体は即座に発行
+        store.delete(key);
         tx.oncomplete = () => resolve();
         tx.onerror = () => reject(tx.error);
     });
 }
 
-// --- 【追加】全キー取得用API（クリーンアップで使用） ---
 async function dbGetAllKeys(storeName = STORE_FILES) {
     const db = await openDB();
     return new Promise((resolve, reject) => {
@@ -80,7 +78,6 @@ function extractAndStrip(obj, path = "", largeFiles = new Map()) {
         const key = keys[i];
         const value = obj[key];
 
-        // 1. 最も頻出する「content」かつ「巨大データ」の判定を先頭で行い、パス計算を最小限にする
         if (key === "content" && typeof value === "string" && value.length > LARGE_FILE_THRESHOLD) {
             largeFiles.set(path, value);
             copy[key] = "__EXTERNAL_DATA__";
@@ -88,7 +85,6 @@ function extractAndStrip(obj, path = "", largeFiles = new Map()) {
             continue;
         }
 
-        // 2. オブジェクト（フォルダ等）の場合のみパスを結合して再帰
         if (value !== null && typeof value === "object") {
             const nextPath = path ? `${path}/${key}` : key;
             copy[key] = extractAndStrip(value, nextPath, largeFiles);
@@ -107,11 +103,7 @@ export async function getFileContent(path) {
     return await dbGet(path, STORE_FILES);
 }
 
-/**
- * FSをIndexedDBに保存する (クリーンアップ対応版)
- */
 export async function saveFS(fs) {
-    // 【修正の要】then の後に catch を繋ぎ、Promise チェーンのクラッシュを防ぐ
     saveChain = saveChain.then(async () => {
         if (navigator.storage && navigator.storage.estimate) {
             const { usage, quota } = await navigator.storage.estimate();
@@ -139,15 +131,12 @@ export async function saveFS(fs) {
 
             if (!cleanFS?.System) throw new Error("FS corruption detected.");
 
-            // I/O効率化：キー取得リクエストを先行して発行
             const keysReq = fileStore.getAllKeys();
 
-            // 1. 新しい大容量データを保存
             largeFiles.forEach((data, path) => {
                 fileStore.put(data, path);
             });
 
-            // 2. キー取得を待機して不要データを削除 エラー発生時に何が起きたか追跡しやすくし、データの不整合を防ぐ
             const allSavedPaths = await new Promise((res, rej) => {
                 keysReq.onsuccess = () => res(keysReq.result || []);
                 keysReq.onerror = () => {
@@ -156,21 +145,35 @@ export async function saveFS(fs) {
                 };
             });
 
+            // 【改善】typeに依存せず、オブジェクトツリーの構造そのものを抽出して堅牢化
+            const activePaths = new Set();
+            function collectActivePaths(node, currentPath = "") {
+                if (!node || typeof node !== "object") return;
+                for (const key in node) {
+                    // システム用キーや文字列データのキーはパスとみなさない
+                    if (key === "type" || key === "system" || key === "content" || key === "size") continue;
+
+                    const child = node[key];
+                    if (child !== null && typeof child === "object") {
+                        const fullPath = currentPath ? `${currentPath}/${key}` : key;
+                        activePaths.add(fullPath);
+                        collectActivePaths(child, fullPath);
+                    }
+                }
+            }
+            collectActivePaths(fs);
+
             for (let i = 0; i < allSavedPaths.length; i++) {
                 const savedPath = allSavedPaths[i];
 
-                // ガード句：今保存したファイルならスキップ（resolveFSを呼ばない）
                 if (largeFiles.has(savedPath)) continue;
 
-                // 構造から完全に消えている場合のみ削除を実行
-                const node = resolveFS(savedPath, "C:/", fs);
-                if (!node) {
+                if (!activePaths.has(savedPath)) {
                     fileStore.delete(savedPath);
                     console.log(`[FS-DB] GC: Deleted orphaned file data at ${savedPath}`);
                 }
             }
 
-            // 3. 構造の保存
             kvStore.put(cleanFS, FS_KEY);
 
             await new Promise((res, rej) => {
@@ -181,12 +184,9 @@ export async function saveFS(fs) {
         } catch (err) {
             tx.abort();
             console.error("[FS-DB] Save failed:", err);
-            // 内部のトランザクションエラーはここでthrowし、外側のcatchで確実に捕捉させる
             throw err;
         }
     }).catch(err => {
-        // 【重要】ここでエラーを握りつぶす(resolveさせる)ことで、
-        // 次回の saveFS() 呼び出し時に Promise チェーンが正常に再スタートできるようにする
         console.warn("[FS-DB] Save chain recovered from an error. Next save is permitted.", err);
     });
 
