@@ -185,16 +185,26 @@ export default async function TaskbarProperties(content) {
         `;
 
         root.querySelector("#tp-sm-clear").onclick = async () => {
-            if (confirm("Are you sure you want to clear the list of recently used documents?")) {
-                const { clearRecent } = await import("./recent.js");
-                await clearRecent();
-                window.dispatchEvent(new Event("recent-updated"));
-                alert("Documents menu cleared.");
+            try {
+                if (confirm("Are you sure you want to clear the list of recently used documents?")) {
+                    const { clearRecent } = await import("./recent.js");
+                    await clearRecent();
+                    window.dispatchEvent(new Event("recent-updated"));
+                    alert("Documents menu cleared.");
+                }
+            } catch (e) {
+                console.warn("履歴のクリアに失敗しました", e);
             }
         };
+
         root.querySelector("#tp-sm-advanced").onclick = async () => {
-            const { launch } = await import("./kernel.js");
-            launch("explorer", { initialPath: "C:/Windows/Start Menu/Programs" });
+            try {
+                const { launch } = await import("./kernel.js");
+                // 修正: "explorer"という曖昧な指定をやめ、直接対象のフォルダパスを渡す
+                launch("C:/Windows/Start Menu/Programs");
+            } catch (e) {
+                console.warn("エクスプローラーの起動に失敗しました", e);
+            }
         };
     }
 
@@ -223,22 +233,44 @@ export default async function TaskbarProperties(content) {
         applyBtn.classList.add("pointer_none");
     }
 
-    content.querySelector("#tp-ok").onclick = async () => { await saveAll(); notifyStyleChange(); closeWindow(); };
-    content.querySelector("#tp-apply").onclick = async () => { await saveAll(); notifyStyleChange(); };
+    content.querySelector("#tp-ok").onclick = async () => {
+        try {
+            await saveAll();
+            notifyStyleChange();
+            closeWindow();
+        } catch (e) {
+            console.warn("設定の保存に失敗しました", e);
+        }
+    };
+
+    content.querySelector("#tp-apply").onclick = async () => {
+        try {
+            await saveAll();
+            notifyStyleChange();
+        } catch (e) {
+            console.warn("設定の適用に失敗しました", e);
+        }
+    };
+
     content.querySelector("#tp-cancel").onclick = async () => {
-        const h = await loadSetting("taskbarHeight") || 40;
-        const c = (await loadSetting("showClock")) !== false;
-        const a = await loadSetting("autoHide") || false;
-        const s = await loadSetting("smallIcons") || false;
+        try {
+            const h = await loadSetting("taskbarHeight") || 40;
+            const c = (await loadSetting("showClock")) !== false;
+            const a = await loadSetting("autoHide") || false;
+            const s = await loadSetting("smallIcons") || false;
 
-        // 設定を戻す
-        tempSettings.taskbarHeight = h;
-        tempSettings.showClock = c;
-        tempSettings.autoHide = a;
-        tempSettings.smallIcons = s;
+            // 設定を戻す
+            tempSettings.taskbarHeight = h;
+            tempSettings.showClock = c;
+            tempSettings.autoHide = a;
+            tempSettings.smallIcons = s;
 
-        window.dispatchEvent(new CustomEvent("taskbar-style-changed", { detail: { taskbarHeight: h, showClock: c, autoHide: a, smallIcons: s } }));
-        closeWindow();
+            window.dispatchEvent(new CustomEvent("taskbar-style-changed", { detail: { taskbarHeight: h, showClock: c, autoHide: a, smallIcons: s } }));
+            closeWindow();
+        } catch (e) {
+            console.warn("設定の復元に失敗しました", e);
+            closeWindow(); // エラーが起きてもウィンドウは落とす
+        }
     };
 
     function closeWindow() {

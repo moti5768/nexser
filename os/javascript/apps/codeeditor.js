@@ -1856,6 +1856,7 @@ export default function CodeEditor(root, options = {}) {
     }
 
     // 実行
+    window.addEventListener("fs-updated", syncTabsWithFS);
     init();
     requestAnimationFrame(() => {
         updateMinimap();
@@ -1915,8 +1916,12 @@ export default function CodeEditor(root, options = {}) {
 }
 
 export function showConfirm(root, message, onYes, onNo) {
-    showModalWindow(root, "Confirm", message, [
-        { label: "はい", onClick: onYes },
-        { label: "いいえ", onClick: onNo }
-    ]);
+    const parent = root.closest ? root.closest(".window") : null;
+    showModalWindow("Confirm", message, {
+        parentWin: parent,
+        buttons: [
+            { label: "はい", onClick: onYes },
+            { label: "いいえ", onClick: onNo }
+        ]
+    });
 }

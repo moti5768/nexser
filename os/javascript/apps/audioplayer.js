@@ -193,7 +193,7 @@ export default function main(content, options) {
                     changeSong("next");
                 } else if (playMode === 2) {
                     currentAudio.currentTime = 0;
-                    currentAudio.play();
+                    currentAudio.play().catch(e => console.warn("リピート再生に失敗しました", e));
                 } else {
                     playBtn.innerText = "▶";
                     playBtn.style.background = "#fff";
@@ -225,7 +225,16 @@ export default function main(content, options) {
             if (songs.length > 0) loadAndPlay(songs[0]);
             return;
         }
-        currentAudio.paused ? currentAudio.play() : currentAudio.pause();
+
+        if (currentAudio.paused) {
+            // .play() が失敗した場合はコンソールにエラーを出すだけで、システムを止めない
+            currentAudio.play().catch(e => {
+                console.warn("再生できません:", e);
+                alertWindow("このファイルは再生できません。"); // 必要に応じて警告ウィンドウを表示
+            });
+        } else {
+            currentAudio.pause();
+        }
     };
 
     stopBtn.onclick = () => { if (currentAudio) currentAudio.pause(); };
