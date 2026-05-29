@@ -155,6 +155,28 @@ export async function launch(path, options = {}) {
 
         if (item.type === "link") {
             launching.delete(path);
+
+            // リンク先の存在チェックを追加
+            const targetItem = resolveFS(item.target);
+            if (!targetItem) {
+                // 参照先がない場合、Windows風の確認ダイアログを表示
+                confirmWindow(
+                    `問題のあるショートカット\n\nこのショートカットが参照している '${item.target}' は変更または移動されているか、存在しないため、正しく機能しません。\n\nこのショートカットを削除しますか？`,
+                    (result) => {
+                        if (result) {
+                            console.log(`ショートカットを削除します: ${path}`);
+                            // TODO: ここに実際の削除処理を追加（FSからの削除とデスクトップ更新）
+                        }
+                    },
+                    {
+                        width: 400,
+                        overlay: true
+                    }
+                );
+                return; // 起動を中断
+            }
+
+            // リンク先が存在する場合は通常起動
             return await launch(item.target, { ...options, originalNode: item });
         }
 

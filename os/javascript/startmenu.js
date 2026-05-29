@@ -1,7 +1,8 @@
 // startmenu.js
 import { FS } from "./fs.js";
 import { launch, logOff } from "./kernel.js";
-import { getRecent, addRecent } from "./recent.js";
+import { confirmWindow } from "./window.js";
+import { getRecent, addRecent, removeRecent } from "./recent.js";
 import { resolveFS } from "./fs-utils.js";
 import { resolveAppByPath, getIcon } from "./file-associations.js";
 import { basename } from "./fs-utils.js";
@@ -112,8 +113,10 @@ function createMenu(folder, basePath, menuRoot) {
         container.appendChild(item);
 
         const fullPath = `${basePath}/${name}`;
-        const isFileByExt = hasExtension(name);
-        const effectiveType = isFileByExt ? "file" : node.type;
+        // 実際のタイプが "folder" の場合は、名前にドットがあっても "folder" として扱う
+        const effectiveType = (node.type === "folder")
+            ? "folder"
+            : (hasExtension(name) ? "file" : node.type);
 
         // 起動可能アイテムの処理
         if (["app", "link", "file"].includes(effectiveType)) {
@@ -125,12 +128,27 @@ function createMenu(folder, basePath, menuRoot) {
                 if (currentType === "link") {
                     targetPath = targetNode.target;
                     targetNode = resolveFS(targetPath);
-                    if (!targetNode) return;
+                    if (!targetNode) {
+                        // 参照先がない場合、Windows風の確認ダイアログを表示
+                        confirmWindow(
+                            `問題のあるショートカット\n\nこのショートカットが参照している '${targetPath}' は変更または移動されているか、存在しないため、正しく機能しません。\n\nこのショートカットを削除しますか？`,
+                            (result) => {
+                                if (result) {
+                                    console.log(`ショートカットを削除します: ${fullPath}`);
+                                    // TODO: ここに実際の削除処理を追加（FSからの削除とメニュー更新）
+                                }
+                            },
+                            {
+                                width: 400,
+                                overlay: true
+                            }
+                        );
+                        // スタートメニューを閉じる
+                        menuRoot.style.display = "none";
+                        if (startBtn) startBtn.classList.remove("pressed");
+                        return; // 起動を中断
+                    }
                     currentType = targetNode.type;
-                }
-
-                if (currentType === "folder" && hasExtension(name)) {
-                    currentType = "file";
                 }
 
                 switch (currentType) {
@@ -269,7 +287,22 @@ async function buildRecentArea(root) {
 
 async function launchByType(type, path) {
     let node = resolveFS(path);
-    if (!node) return;
+
+    // ★ノードが存在しない（リンク切れなど）の場合はエラーダイアログを出す
+    if (!node) {
+        confirmWindow(
+            `ショートカット エラー\n\nこの項目 '${path}' は既に削除されたか、利用できません。\n\n「最近使った項目」から削除しますか？`,
+            async (result) => {
+                if (result) {
+                    // 実際に履歴から削除する
+                    await removeRecent(path);
+                }
+            },
+            { width: 400, overlay: true }
+        );
+        return;
+    }
+
     let effectiveType = type === "link" ? node.type : type;
     const recentItem = { type: node.type, path: path, display: basename(path) };
 

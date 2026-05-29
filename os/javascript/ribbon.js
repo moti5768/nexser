@@ -113,8 +113,15 @@ function addRibbonMenu(ribbon, title, items) {
     // ホバーで隣のリボンに移動しても切り替える
     // ------------------------
     menu.addEventListener("mouseenter", () => {
-        const anyOpen = Array.from(ribbon.querySelectorAll(".ribbon-dropdown"))
-            .some(dd => dd.style.display === "block"); // このウィンドウ内だけ
+        // ★配列化を避けて軽量化
+        const dropdowns = ribbon.querySelectorAll(".ribbon-dropdown");
+        let anyOpen = false;
+        for (let i = 0; i < dropdowns.length; i++) {
+            if (dropdowns[i].style.display === "block") {
+                anyOpen = true;
+                break;
+            }
+        }
 
         if (anyOpen) {
             // 全ウィンドウのドロップダウンを閉じ、selected も解除

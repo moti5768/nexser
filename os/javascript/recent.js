@@ -7,6 +7,7 @@ const KEY = "items";
 const MAX = 10;
 
 let cache = [];
+let isLoaded = false; // ★追加: 読み込み完了状態を管理するフラグ
 
 async function load() {
     try {
@@ -18,15 +19,18 @@ async function load() {
         return new Promise(resolve => {
             req.onsuccess = () => {
                 cache = req.result || [];
+                isLoaded = true; // ★追加: 読み込み成功
                 resolve(cache);
             };
             req.onerror = () => {
                 cache = [];
+                isLoaded = true; // ★追加: エラー時も「読み込み試行済み」としてフラグを立てる
                 resolve(cache);
             };
         });
     } catch {
         cache = [];
+        isLoaded = true; // ★追加: DBオープン失敗時などもフラグを立てる
         return cache;
     }
 }
@@ -40,7 +44,8 @@ async function save() {
 }
 
 export async function getRecent() {
-    if (!cache.length) await load();
+    // ★変更: cache.length（配列の長さ）ではなく、ロード済みフラグで判定
+    if (!isLoaded) await load();
     return [...cache];
 }
 
@@ -72,5 +77,13 @@ export async function clearRecent() {
         tx.objectStore(STORE).put([], KEY);
     } catch { }
 
+    window.dispatchEvent(new Event("recent-updated"));
+}
+
+// ★追加: 特定のパスを「最近使った項目」から削除する関数
+export async function removeRecent(path) {
+    cache = cache.filter(i => i.path !== path);
+    await save();
+    // UI(スタートメニューなど)に自動更新を通知
     window.dispatchEvent(new Event("recent-updated"));
 }

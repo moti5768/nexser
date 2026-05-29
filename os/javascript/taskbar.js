@@ -112,7 +112,6 @@ export function initTaskbar() {
         versionLabel.style.bottom = `${h}px`;
     }
     updateVersionPosition();
-    window.addEventListener("resize", updateVersionPosition);
 
     // ============================
     // Auto-hide ロジック
@@ -134,24 +133,29 @@ export function initTaskbar() {
         });
     }
 
-    // マウス位置による出し入れ判定
+    // マウス位置による出し入れ判定（軽量化版）
+    let isAutoHidingTicking = false;
     document.addEventListener("mousemove", (e) => {
-        if (!isAutoHide) return;
+        if (!isAutoHide || isAutoHidingTicking) return;
+        isAutoHidingTicking = true;
 
-        const threshold = window.innerHeight - 10;
-        if (e.clientY > threshold) {
-            // 画面下端にマウスが来たら表示
-            if (isTaskbarHidden) {
-                isTaskbarHidden = false;
-                updateAutoHideEffect();
+        requestAnimationFrame(() => {
+            const threshold = window.innerHeight - 10;
+            if (e.clientY > threshold) {
+                // 画面下端にマウスが来たら表示
+                if (isTaskbarHidden) {
+                    isTaskbarHidden = false;
+                    updateAutoHideEffect();
+                }
+            } else if (e.clientY < (window.innerHeight - taskbar.offsetHeight)) {
+                // タスクバーの領域からマウスが外れたら隠す
+                if (!isTaskbarHidden) {
+                    isTaskbarHidden = true;
+                    updateAutoHideEffect();
+                }
             }
-        } else if (e.clientY < (window.innerHeight - taskbar.offsetHeight)) {
-            // タスクバーの領域からマウスが外れたら隠す
-            if (!isTaskbarHidden) {
-                isTaskbarHidden = true;
-                updateAutoHideEffect();
-            }
-        }
+            isAutoHidingTicking = false;
+        });
     });
 
     // ============================
@@ -308,15 +312,21 @@ export function initTaskbar() {
             document.body.style.cursor = "ns-resize";
         });
 
+        let resizePreviewTicking = false;
         document.addEventListener("mousemove", e => {
-            if (!resizing || !preview) return;
-            let dy = startY - e.clientY;
-            let newHeight = Math.round((startHeight + dy) / 40) * 40;
-            newHeight = Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, newHeight));
+            if (!resizing || !preview || resizePreviewTicking) return;
+            resizePreviewTicking = true;
 
-            const rect = taskbar.getBoundingClientRect();
-            preview.style.height = newHeight + "px";
-            preview.style.top = rect.bottom - newHeight + "px";
+            requestAnimationFrame(() => {
+                let dy = startY - e.clientY;
+                let newHeight = Math.round((startHeight + dy) / 40) * 40;
+                newHeight = Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, newHeight));
+
+                const rect = taskbar.getBoundingClientRect();
+                preview.style.height = newHeight + "px";
+                preview.style.top = rect.bottom - newHeight + "px";
+                resizePreviewTicking = false;
+            });
         });
 
         document.addEventListener("mouseup", async () => {
@@ -357,9 +367,19 @@ export function initTaskbar() {
         });
     })();
 
-    // ウィンドウリサイズ時のスタートメニュー位置補正
+    // ウィンドウリサイズ時の各種位置補正（複数あった処理を統合＆軽量化）
+    let resizeTicking = false;
     window.addEventListener("resize", () => {
-        updateStartMenuPosition();
+        if (!resizeTicking) {
+            requestAnimationFrame(() => {
+                updateVersionPosition();
+                if (typeof updateStartMenuPosition === "function") {
+                    updateStartMenuPosition();
+                }
+                resizeTicking = false;
+            });
+            resizeTicking = true;
+        }
     });
 
     // ============================
