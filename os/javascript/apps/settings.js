@@ -75,6 +75,7 @@ export async function loadSetting(key) {
    Theme / Desktop Background
 ========================= */
 export let themeColor = "darkblue";
+export let themeColor2 = null;
 export let desktopColor = null;
 
 const DEFAULT_COLOR = "darkblue";
@@ -137,11 +138,13 @@ async function blobToDataURL(blob) {
 }
 
 /* --- load on boot --- */
-loadSetting("titlebarColor").then(color => {
-    if (color) {
-        themeColor = color;
-        refreshTopWindow();
-    }
+Promise.all([
+    loadSetting("titlebarColor"),
+    loadSetting("titlebarColor2")
+]).then(([color1, color2]) => {
+    if (color1) themeColor = color1;
+    if (color2) themeColor2 = color2;
+    if (color1 || color2) refreshTopWindow();
 });
 
 loadSetting("showRecentItems").then(val => {
@@ -163,8 +166,14 @@ export function refreshTopWindow() {
     }
 
     document.querySelectorAll(".window .title-bar").forEach(tb => {
-        tb.style.background =
-            tb.parentElement === topWindow ? themeColor : "gray";
+        if (tb.parentElement === topWindow) {
+            // ★ 2つ目の色が設定されていればグラデーションを適用
+            tb.style.background = themeColor2
+                ? `linear-gradient(90deg, ${themeColor}, ${themeColor2})`
+                : themeColor;
+        } else {
+            tb.style.background = "gray";
+        }
     });
 }
 
@@ -250,15 +259,49 @@ export default async function SettingsApp(content) {
         block1.style.marginBottom = "12px";
         block1.innerHTML = `<div>Top Window Titlebar Color</div>`;
 
-        const colorInput = document.createElement("input");
-        colorInput.type = "color";
-        colorInput.value = themeColor;
-        colorInput.oninput = async () => {
-            themeColor = colorInput.value;
+        // 1つ目の色（左）
+        const colorInput1 = document.createElement("input");
+        colorInput1.type = "color";
+        colorInput1.value = themeColor.startsWith("#") ? themeColor : "#00008b";
+
+        // グラデーション有効化チェックボックス
+        const enableGradient = document.createElement("input");
+        enableGradient.type = "checkbox";
+        enableGradient.checked = !!themeColor2;
+        enableGradient.style.marginLeft = "8px";
+
+        const labelGradient = document.createElement("span");
+        labelGradient.textContent = " Gradient: ";
+        labelGradient.style.marginLeft = "4px";
+        labelGradient.style.fontSize = "13px";
+
+        // 2つ目の色（右）
+        const colorInput2 = document.createElement("input");
+        colorInput2.type = "color";
+        colorInput2.value = (themeColor2 && themeColor2.startsWith("#")) ? themeColor2 : "#00bfff";
+        colorInput2.disabled = !enableGradient.checked;
+
+        // 色更新ロジック
+        const updateTitlebar = async () => {
+            themeColor = colorInput1.value;
+            themeColor2 = enableGradient.checked ? colorInput2.value : null;
             await saveSetting("titlebarColor", themeColor);
+            await saveSetting("titlebarColor2", themeColor2);
             refreshTopWindow();
         };
 
+        colorInput1.oninput = updateTitlebar;
+        colorInput2.oninput = updateTitlebar;
+        enableGradient.onchange = () => {
+            colorInput2.disabled = !enableGradient.checked;
+            updateTitlebar();
+        };
+
+        const colorControls = document.createElement("div");
+        colorControls.style.margin = "4px 0";
+        colorControls.append(colorInput1, enableGradient, labelGradient, colorInput2);
+
+        // 単色パレット
         const colors = ["#1E90FF", "#FF4500", "#32CD32", "#FFD700", "#8A2BE2",
             "#FF1493", "#00CED1", "#FF8C00", "#A52A2A", "#2F4F4F"];
 
@@ -273,25 +316,57 @@ export default async function SettingsApp(content) {
             btn.style.background = c;
             btn.style.width = "24px";
             btn.style.height = "24px";
-            btn.onclick = async () => {
-                themeColor = c;
-                colorInput.value = c;
-                await saveSetting("titlebarColor", themeColor);
-                refreshTopWindow();
+            btn.onclick = () => {
+                enableGradient.checked = false;
+                colorInput2.disabled = true;
+                colorInput1.value = c;
+                updateTitlebar();
             };
             palette.appendChild(btn);
         });
 
+        // グラデーションサンプルパレット
+        const gradientSamples = [
+            { c1: "#1E90FF", c2: "#00CED1" }, // Blue-Cyan
+            { c1: "#FF4500", c2: "#FFD700" }, // Orange-Gold
+            { c1: "#8A2BE2", c2: "#FF1493" }, // Purple-Pink
+            { c1: "#32CD32", c2: "#00FA9A" }, // Green-SpringGreen
+            { c1: "#2F4F4F", c2: "#A9A9A9" }, // Dark-Gray
+            { c1: "#02175e", c2: "#a3c1e2" }  //Windows98-theme
+        ];
+
+        const gradPalette = document.createElement("div");
+        gradPalette.style.display = "flex";
+        gradPalette.style.flexWrap = "wrap";
+        gradPalette.style.gap = "4px";
+        gradPalette.style.marginBottom = "8px";
+
+        gradientSamples.forEach(g => {
+            const btn = document.createElement("button");
+            btn.style.background = `linear-gradient(90deg, ${g.c1}, ${g.c2})`;
+            btn.style.width = "48px";
+            btn.style.height = "24px";
+            btn.onclick = () => {
+                enableGradient.checked = true;
+                colorInput2.disabled = false;
+                colorInput1.value = g.c1;
+                colorInput2.value = g.c2;
+                updateTitlebar();
+            };
+            gradPalette.appendChild(btn);
+        });
+
+        // リセットボタン
         const resetBtn = document.createElement("button");
         resetBtn.textContent = "Reset Default";
-        resetBtn.onclick = async () => {
-            themeColor = DEFAULT_COLOR;
-            colorInput.value = DEFAULT_COLOR;
-            await saveSetting("titlebarColor", themeColor);
-            refreshTopWindow();
+        resetBtn.onclick = () => {
+            colorInput1.value = "#00008b";
+            enableGradient.checked = false;
+            colorInput2.disabled = true;
+            updateTitlebar();
         };
 
-        block1.append(colorInput, palette, resetBtn);
+        block1.append(colorControls, palette, gradPalette, resetBtn);
 
         /* ---- Desktop Background (Color & Image) ---- */
         const block2 = document.createElement("div");
