@@ -1,6 +1,6 @@
 // window.js
 import { saveWindowSize, loadWindowSize } from "./window-size-db.js";
-import { themeColor } from "./apps/settings.js";
+import { themeColor, themeColor2 } from "./apps/settings.js";
 import { attachContextMenu } from "./context-menu.js";
 import { setupRibbon } from "./ribbon.js";
 import { killProcess } from "./kernel.js";
@@ -858,7 +858,7 @@ function createTitleClone(w, titleBar, titleText) {
         top: rect.top + "px",
         width: rect.width + "px",
         height: titleBar.offsetHeight + "px",
-        background: titleBarStyles.backgroundColor,
+        background: titleBarStyles.background,
         color: titleBarStyles.color,
         display: "flex",
         alignItems: "center",
@@ -1290,7 +1290,13 @@ export function refreshTopWindow() {
 
     document.querySelectorAll(".window .title-bar").forEach(tb => {
         const win = tb.parentElement;
-        tb.style.background = (win === topWindow) ? (themeColor || DEFAULT_COLOR) : DEFAULT_COLOR;
+        if (win === topWindow) {
+            tb.style.background = themeColor2
+                ? `linear-gradient(90deg, ${themeColor || DEFAULT_COLOR}, ${themeColor2})`
+                : (themeColor || DEFAULT_COLOR);
+        } else {
+            tb.style.background = DEFAULT_COLOR;
+        }
     });
 
     taskbarButtons.forEach(btn => {
@@ -1460,7 +1466,13 @@ export function installWindowContextMenu(w) {
 
                 // タイトルバー色更新
                 document.querySelectorAll(".window .title-bar").forEach(tb => {
-                    tb.style.background = (tb.parentElement === w) ? themeColor : "gray";
+                    if (tb.parentElement === w) {
+                        tb.style.background = themeColor2
+                            ? `linear-gradient(90deg, ${themeColor}, ${themeColor2})`
+                            : themeColor;
+                    } else {
+                        tb.style.background = "gray";
+                    }
                 });
 
                 // タスクバー選択状態更新
