@@ -1291,8 +1291,16 @@ export default function CodeEditor(root, options = {}) {
         renderPreview();
 
         const observer = new MutationObserver(() => {
-            if (!document.body.contains(win)) {
-                previewWin?.remove();
+            // エディタが閉じられた、またはプレビュー自身が閉じられた場合
+            if (!document.body.contains(win) || (previewWin && !document.body.contains(previewWin))) {
+                if (previewIframe) {
+                    previewIframe.src = "about:blank"; // JSコンテキストを強制破棄
+                    previewIframe = null;
+                }
+                if (previewWin && document.body.contains(previewWin)) {
+                    previewWin.remove();
+                }
+                previewWin = null;
                 observer.disconnect();
             }
         });
@@ -1746,7 +1754,14 @@ export default function CodeEditor(root, options = {}) {
         });
     }
     function closeWin() {
-        if (previewWin && document.body.contains(previewWin)) previewWin.remove();
+        if (previewWin && document.body.contains(previewWin)) {
+            if (previewIframe) {
+                previewIframe.src = "about:blank"; // JSコンテキストを強制破棄
+                previewIframe = null;
+            }
+            previewWin.remove();
+            previewWin = null;
+        }
         win?.querySelector(".close-btn")?.click();
     }
     const closeBtn = win?.querySelector(".close-btn");
@@ -1793,6 +1808,10 @@ export default function CodeEditor(root, options = {}) {
 
                 // 5. 関連ウィンドウの破棄
                 if (previewWin) {
+                    if (previewIframe) {
+                        previewIframe.src = "about:blank"; // JSコンテキストを強制破棄
+                        previewIframe = null;
+                    }
                     previewWin.remove();
                     previewWin = null;
                 }

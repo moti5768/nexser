@@ -1005,8 +1005,22 @@ export default async function Explorer(root, options = {}) {
         };
         // ▲ ここまで
 
-        for (const name in folder) {
-            if (isSystemMetaKey(name)) continue;
+        // メタデータを除外し、フォルダ優先＆名前順にソートする配列を作成
+        const sortedNames = Object.keys(folder)
+            .filter(name => !isSystemMetaKey(name))
+            .sort((a, b) => {
+                const isFolderA = folder[a].type === "folder";
+                const isFolderB = folder[b].type === "folder";
+
+                // フォルダを先頭にまとめる
+                if (isFolderA && !isFolderB) return -1;
+                if (!isFolderA && isFolderB) return 1;
+
+                // 同じタイプ同士なら名前順（日本語対応）でソート
+                return a.localeCompare(b, 'ja');
+            });
+
+        for (const name of sortedNames) {
             const itemData = folder[name];
             const childPath = currentPath ? `${currentPath}/${name}` : name;
 

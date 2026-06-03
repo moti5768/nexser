@@ -204,20 +204,37 @@ export default async function ClockApp(content) {
             const minute = date.getMinutes();
             const second = date.getSeconds();
             drawHand(ctx, hour * Math.PI / 6 + minute * Math.PI / 360, radius * 0.6, 6, "#008080");
-            drawHand(ctx, minute * Math.PI / 30, radius * 0.9, 4, "#008080");
-            drawHand(ctx, second * Math.PI / 30, radius * 0.98, 1, "#000");
+            // 分針の角度に、秒数から計算した端数（second * Math.PI / 1800）を加算
+            drawHand(ctx, minute * Math.PI / 30 + second * Math.PI / 1800, radius * 0.9, 4, "#008080");
+            drawHand(ctx, second * Math.PI / 30, radius * 0.85, 1, "#000");
         }
 
         function drawHand(ctx, pos, length, width, color = "#000") {
-            ctx.beginPath();
-            ctx.lineWidth = width;
-            ctx.strokeStyle = color;
-            ctx.lineCap = "square";
-            ctx.moveTo(0, 0);
+            ctx.save(); // 現在のキャンバスの状態（回転など）を保存
             ctx.rotate(pos);
-            ctx.lineTo(0, -length);
-            ctx.stroke();
-            ctx.rotate(-pos);
+
+            if (width <= 2) {
+                // 秒針（細い針）は線のままですが、本物の時計っぽく中心から少し後ろにも伸ばします
+                ctx.beginPath();
+                ctx.lineWidth = width;
+                ctx.strokeStyle = color;
+                ctx.lineCap = "round";
+                ctx.moveTo(0, 10);
+                ctx.lineTo(0, -length);
+                ctx.stroke();
+            } else {
+                // 時針・分針は先端が尖った多角形を描いて塗りつぶします
+                ctx.beginPath();
+                ctx.fillStyle = color;
+                ctx.moveTo(-width / 2, width * 1.5);   // 根元 左側（中心より少し後ろ）
+                ctx.lineTo(-width / 4, -length);       // 先端 左側
+                ctx.lineTo(0, -length - width * 1.5);  // 先端の頂点（一番尖っている部分）
+                ctx.lineTo(width / 4, -length);        // 先端 右側
+                ctx.lineTo(width / 2, width * 1.5);    // 根元 右側
+                ctx.fill();
+            }
+
+            ctx.restore(); // キャンバスの状態を元に戻す
         }
 
         function drawClockTab() {
