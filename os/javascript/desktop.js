@@ -1,7 +1,7 @@
 // desktop.js
-import { FS } from "./fs.js";
+import { FS, forceSave } from "./fs.js";
 import { launch } from "./kernel.js";
-import { alertWindow } from "./window.js";
+import { alertWindow, progressWindow } from "./window.js";
 import { resolveFS, validateName } from "./fs-utils.js";
 import { addRecent } from "./recent.js";
 import { attachContextMenu } from "./context-menu.js";
@@ -182,6 +182,179 @@ export function buildDesktop() {
             }
         }
     };
+
+    // ────────────────────────────────────────────────────────
+    // 🔥 追加：外部からのファイルドロップ受付機能
+    // ────────────────────────────────────────────────────────
+    // ⭐ 修正：イベントリスナーの多重登録を防ぐガードを追加
+    if (!desktop._dndInstalled) {
+        desktop._dndInstalled = true;
+
+        desktop.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            desktop.classList.add("drag-over"); // 視覚効果用のCSSクラス
+        });
+
+        desktop.addEventListener("dragleave", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            desktop.classList.remove("drag-over");
+        });
+
+        desktop.addEventListener("drop", async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            desktop.classList.remove("drag-over");
+
+            const folderNode = FS.Desktop; // デスクトップの仮想FSノードを参照
+            if (!folderNode) return;
+
+            // ドロップされた直後のエントリを取得
+            const initialEntries = [];
+            if (e.dataTransfer.items) {
+                for (let i = 0; i < e.dataTransfer.items.length; i++) {
+                    const item = e.dataTransfer.items[i];
+                    if (item.kind === 'file') {
+                        const entry = item.webkitGetAsEntry();
+                        if (entry) initialEntries.push(entry);
+                    }
+                }
+            } else {
+                initialEntries.push(...Array.from(e.dataTransfer.files));
+            }
+
+            if (initialEntries.length === 0) return;
+
+            // 総項目数をカウント（プログレスバー用）
+            let totalFiles = 0;
+            const countEntries = async (entry) => {
+                totalFiles++;
+                if (entry.isDirectory) {
+                    const reader = entry.createReader();
+                    const getEntries = () => new Promise(res => reader.readEntries(res));
+                    let batch;
+                    do {
+                        batch = await getEntries();
+                        if (batch) {
+                            for (const sub of batch) await countEntries(sub);
+                        }
+                    } while (batch && batch.length > 0);
+                }
+            };
+
+            for (const ent of initialEntries) {
+                if (ent instanceof File) totalFiles++;
+                else await countEntries(ent);
+            }
+
+            // プログレスウィンドウの生成
+            const pg = progressWindow("コピー中...", "コピーの準備をしています...", {
+                width: 380,
+                height: 250,
+                autoClose: true
+            });
+
+            desktop.style.opacity = "0.5";
+            desktop.style.pointerEvents = "none";
+            let processedCount = 0;
+
+            // デスクトップ用の名前重複回避ヘルパー
+            const getUniqueDesktopName = (node, name) => {
+                if (!node[name]) return name;
+                const dotIdx = name.lastIndexOf(".");
+                const base = dotIdx !== -1 ? name.substring(0, dotIdx) : name;
+                const ext = dotIdx !== -1 ? name.substring(dotIdx) : "";
+                let idx = 1;
+                let finalName = name;
+                while (node[finalName]) {
+                    finalName = `${base} (${idx++})${ext}`;
+                }
+                return finalName;
+            };
+
+            const readFileAsData = (file) => {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => resolve(ev.target.result);
+                    reader.onerror = (err) => reject(err);
+                    if (!file.type.startsWith("text/")) reader.readAsDataURL(file);
+                    else reader.readAsText(file);
+                });
+            };
+
+            const addFileToNode = async (file, targetNode) => {
+                pg.update(processedCount, totalFiles, `${file.name} をコピーしています...`);
+                let targetName = getUniqueDesktopName(targetNode, file.name);
+
+                try {
+                    const content = await readFileAsData(file);
+                    targetNode[targetName] = {
+                        type: "file",
+                        content,
+                        size: file.size,
+                        lastModified: file.lastModified
+                    };
+                } catch (err) {
+                    console.error(`Failed to read file: ${file.name}`, err);
+                }
+                processedCount++;
+            };
+
+            const processEntry = async (entry, targetNode) => {
+                if (entry.isFile) {
+                    const file = await new Promise(res => entry.file(res));
+                    await addFileToNode(file, targetNode);
+                } else if (entry.isDirectory) {
+                    let dirName = getUniqueDesktopName(targetNode, entry.name);
+                    targetNode[dirName] = { type: "folder" };
+                    const newDirNode = targetNode[dirName];
+
+                    processedCount++;
+                    pg.update(processedCount, totalFiles, `${dirName} を作成しています...`);
+
+                    const reader = entry.createReader();
+                    const getEntries = () => new Promise(res => reader.readEntries(res));
+                    let batch;
+                    do {
+                        batch = await getEntries();
+                        if (batch) {
+                            for (const subEntry of batch) {
+                                await processEntry(subEntry, newDirNode);
+                            }
+                        }
+                    } while (batch && batch.length > 0);
+                }
+            };
+
+            try {
+                for (const item of initialEntries) {
+                    if (item instanceof File) {
+                        await addFileToNode(item, folderNode);
+                    } else {
+                        await processEntry(item, folderNode);
+                    }
+                }
+
+                // 最終更新
+                pg.update(totalFiles, totalFiles, "すべての項目のコピーが完了しました。");
+                await forceSave();
+
+            } catch (err) {
+                console.error("Drop processing failed:", err);
+                if (pg && typeof pg.close === "function") pg.close();
+            } finally {
+                desktop.style.opacity = "1";
+                desktop.style.pointerEvents = "auto";
+                window.dispatchEvent(new Event("fs-updated"));
+                buildDesktop();
+
+                setTimeout(() => {
+                    if (pg && typeof pg.close === "function") pg.close();
+                }, 500);
+            }
+        });
+    } // ⭐ ガード処理はここまで
 
     requestAnimationFrame(adjustDesktopIconArea);
     window.dispatchEvent(new Event("desktop-ready"));
