@@ -128,6 +128,31 @@ export async function initKernelAsync(progressCallback = () => { }) {
     // 全てのレンダリングが完了するまで一拍置く
     await new Promise(r => requestAnimationFrame(r));
 
+    // ==========================================
+    // 【追加】ブート時の自動システムスキャン (破損検知のお知らせ)
+    // ==========================================
+    progressCallback("Scanning system integrity...");
+    try {
+        // 先ほど fs.js に作った診断関数を動的に読み込む
+        const { diagnoseAndCleanFS } = await import("./fs.js");
+        const report = await diagnoseAndCleanFS(false); // 起動時はチェックのみ(false)
+
+        // もし System や Desktop が壊れていたら警告を出す
+        if (report.corruptionDetected) {
+            // kernel.js 内にあるエラー音再生を呼び出す
+            playSystemEventSound('error');
+
+            // window.js からインポートされている errorWindow でデスクトップにお知らせ
+            errorWindow(
+                "【システム診断】\nシステムファイルの破損または消失を検出しました。\n\n一部の重要なフォルダが正常に読み込めない状態です。\n設定アプリ (Settings.app) の「System」タブから「Run Cleanup & Repair」を実行して修復してください。",
+                { title: "システム整合性チェック", taskbar: true }
+            );
+        }
+    } catch (e) {
+        console.warn("Boot-time system scan failed:", e);
+    }
+    // ==========================================
+
     progressCallback("Kernel initialization complete!");
 }
 

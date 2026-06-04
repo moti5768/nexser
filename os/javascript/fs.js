@@ -3,7 +3,7 @@ import { saveFS, loadFS } from "./fs-db.js";
 
 let saveTimer = null;
 const DEBUG_FS = false;
-const PROTECTED_KEYS = new Set(["type", "entry", "singleton", "shell", "target", "name"]);
+const PROTECTED_KEYS = new Set(["type", "entry", "singleton", "shell", "target", "name", "system"]);
 
 // 1. ベースデータ
 const baseFS = {
@@ -286,4 +286,57 @@ export async function initFS() {
         // 初期化が終わったら念のため一度だけ強制保存し、整合性を確定させる
         await performSave();
     }
+}
+
+/**
+ * 【追加】システム診断 & ゴミデータクリーンアップエンジン
+ * @param {boolean} executeRepair - 実際に削除・修復処理を行うフラグ
+ */
+export async function diagnoseAndCleanFS(executeRepair = false) {
+    const report = {
+        garbageItems: 0,
+        garbageNames: [], // ★ 追加: 具体的な不要ファイル名のリスト
+        corruptionDetected: false,
+        logs: []
+    };
+
+    // 1. ゴミ箱 (Trash) のスキャン・クリーンアップ
+    if (FS.Trash) {
+        const trashKeys = Object.keys(FS.Trash).filter(key => !PROTECTED_KEYS.has(key));
+        report.garbageItems += trashKeys.length;
+        report.garbageNames = trashKeys; // ★ 追加: 検出したファイル名を格納
+
+        if (executeRepair && trashKeys.length > 0) {
+            trashKeys.forEach(key => {
+                // system属性を無視して強制安全削除
+                delete FS.Trash[key];
+            });
+            report.logs.push(`ゴミ箱から ${trashKeys.length} 個の項目を完全に削除しました。`);
+        } else if (trashKeys.length > 0) {
+            report.logs.push(`ゴミ箱の中に ${trashKeys.length} 個のファイルが残っています。`);
+        }
+    }
+
+    // 2. システムコアディレクトリのデータ破損チェック (Integrity Check)
+    const vitalNodes = ["System", "Desktop", "Programs"];
+    vitalNodes.forEach(node => {
+        if (!FS[node] || FS[node].type !== "folder") {
+            report.corruptionDetected = true;
+            report.logs.push(`【警告】システム構造破損: '${node}' ディレクトリが不正、または消失しています。`);
+
+            // 修復実行フラグがある場合はbaseFSから復元
+            if (executeRepair) {
+                FS[node] = structuredClone(baseFS[node]);
+                report.logs.push(`[修復] '${node}' ディレクトリを工場出荷時の状態に再生成しました。`);
+            }
+        }
+    });
+
+    // 修復が行われた場合は即時保存して状態を確定
+    if (executeRepair) {
+        await forceSave();
+        window.dispatchEvent(new Event("fs-updated"));
+    }
+
+    return report;
 }
