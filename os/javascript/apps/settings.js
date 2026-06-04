@@ -810,6 +810,95 @@ export default async function SettingsApp(content) {
             barContainer.appendChild(percentLabel);
             frag.appendChild(barContainer);
 
+            // ==========================================
+            // 【追加】システム診断・クリーンアップツールUI
+            // ==========================================
+            const toolsSection = document.createElement("div");
+            toolsSection.style.cssText = "margin-top: 15px; border-top: 1px solid #666; padding-top: 10px;";
+
+            toolsSection.innerHTML = `
+                <b style="display:block; margin-bottom:6px; font-size:13px;">System Tools</b>
+                <div style="display:flex; gap:6px; margin-bottom:8px;">
+                    <button id="btn-scan" style="padding:4px 10px;">Scan System</button>
+                    <button id="btn-clean" style="padding:4px 10px; background:#393; color:white;" disabled>Run Cleanup & Repair</button>
+                </div>
+                <div id="maintenance-console" style="background:#000; color:#0f0; font-family:monospace; font-size:11px; padding:6px; height:70px; overflow-y:auto; border:1px solid #666; border-radius:2px;">
+                    システムは正常です。スキャンを実行してください。
+                </div>
+            `;
+            frag.appendChild(toolsSection);
+
+            // 動的処理用インポート
+            const btnScan = toolsSection.querySelector("#btn-scan");
+            const btnClean = toolsSection.querySelector("#btn-clean");
+            const consoleBox = toolsSection.querySelector("#maintenance-console");
+
+            let lastReport = null;
+
+            // スキャン処理
+            btnScan.onclick = async () => {
+                consoleBox.innerHTML = "Scanning system structure and temporary files...";
+                const { diagnoseAndCleanFS } = await import("../fs.js");
+
+                // 読み込みフラグを考慮して少しウェイト(演出)
+                setTimeout(async () => {
+                    lastReport = await diagnoseAndCleanFS(false); // 診断のみ
+                    consoleBox.innerHTML = "";
+
+                    if (lastReport.logs.length === 0) {
+                        consoleBox.innerHTML = "◇ スキャン完了: 検出された問題や不要なデータはありません。システムは完全にクリーンです。";
+                        btnClean.disabled = true;
+                    } else {
+                        consoleBox.innerHTML = "<b>◇ スキャン結果:</b><br>";
+                        lastReport.logs.forEach(log => {
+                            // 警告メッセージを目立たせるアレンジ
+                            if (log.includes("【警告】")) {
+                                const folderName = log.match(/'([^']+)'/)?.[1] || "不明なディレクトリ";
+                                consoleBox.innerHTML += `> <span style="color: #ff4d4d; font-weight: bold;">[破損検知] パス: C:/${folderName} が消失または不正です。</span><br>`;
+                            } else {
+                                consoleBox.innerHTML += `> <span style="color: #ffb300;">${log}</span><br>`;
+                            }
+                        });
+                        if (lastReport.garbageNames && lastReport.garbageNames.length > 0) {
+                            consoleBox.innerHTML += `> <span style="color: #aaa;">[詳細] 検出された不要ファイル: ${lastReport.garbageNames.join(", ")}</span><br>`;
+                        }
+                        consoleBox.innerHTML += `<br><span style="color: #0f0;">[要アクション] 不要ファイル: ${lastReport.garbageItems}件 / システム破損: ${lastReport.corruptionDetected ? "あり (要修復)" : "なし"}</span>`;
+                        btnClean.disabled = false;
+                    }
+                    consoleBox.scrollTop = consoleBox.scrollHeight;
+                }, 600);
+            };
+
+            // クリーニング＆修復実行
+            btnClean.onclick = () => {
+                const msg = lastReport?.corruptionDetected
+                    ? "データ破損が検出されています。システムファイルを復元し、ゴミ箱を空にしてもよろしいですか？"
+                    : "ゴミ箱を空にして一時データをクリーンアップしますか？";
+
+                showConfirm(root, msg, async () => {
+                    consoleBox.innerHTML = "Executing system maintenance...";
+                    const { diagnoseAndCleanFS } = await import("../fs.js");
+
+                    const finalReport = await diagnoseAndCleanFS(true); // 実際に修復
+
+                    consoleBox.innerHTML = "<b>[メンテナンス完了]</b><br>";
+                    finalReport.logs.forEach(log => {
+                        consoleBox.innerHTML += `<span style="color:#fff;">> ${log}</span><br>`;
+                    });
+                    if (finalReport.garbageNames && finalReport.garbageNames.length > 0) {
+                        consoleBox.innerHTML += `> <span style="color: #aaa;">[詳細] 削除されたファイル: ${finalReport.garbageNames.join(", ")}</span><br>`;
+                    }
+                    consoleBox.innerHTML += "システム構造の最適化とクリーンアップが成功しました。";
+                    btnClean.disabled = true;
+
+                    // 最近使った項目のクリーンアップも合わせて実行
+                    if (finalReport.garbageItems > 0) {
+                        renderStorage(); // ストレージグラフを再描画
+                    }
+                });
+            };
+            // ==========================================
+
             storageBox.replaceChildren(frag);
         }
 
