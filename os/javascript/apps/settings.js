@@ -550,15 +550,38 @@ export default async function SettingsApp(content) {
                     const db = await getDB();
                     const tx = db.transaction(STORE, "readwrite");
                     tx.objectStore(STORE).clear();
+                    await tx.done;
 
+                    // --- 変数とDBのリセット ---
                     themeColor = DEFAULT_COLOR;
+                    themeColor2 = null;
+                    window.showRecent = true;
+
+                    await saveSetting("titlebarColor", DEFAULT_COLOR);
+                    await saveSetting("titlebarColor2", null);
                     await saveSetting("desktopColor", null);
                     await saveSetting("wallpaperUrl", null);
+                    await saveSetting("wallpaperStyle", "fill");
+                    await saveSetting("showRecentItems", true);
+                    await saveSetting("windowAnimationEnabled", true);
+                    await saveSetting("userName", "Admin");
+
+                    // --- UIの更新 ---
                     applyDesktopBackground();
-                    window.showRecent = true;
+                    setWindowAnimationEnabled(true);
                     refreshTopWindow();
                     window.dispatchEvent(new Event("recent-updated"));
-                } catch {
+
+                    // 【修正】renderGeneral(content) を呼ぶとタブ領域ごと消える可能性があるため、
+                    // 成功メッセージのみを表示し、必要であればUIの状態を個別に更新する
+                    showAlert(content, "全ての設定が初期化されました。");
+
+                    // チェックボックス等の状態を現在の値（デフォルト）に同期させる
+                    const toggle = content.querySelector('input[type="checkbox"]');
+                    if (toggle) toggle.checked = true;
+
+                } catch (e) {
+                    console.error("Reset failed:", e);
                     showAlert(content, "初期化に失敗しました");
                 }
             });
