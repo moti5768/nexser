@@ -4,6 +4,7 @@ import { buildDesktop } from './desktop.js';
 import { showBSOD } from './bsod.js';
 import { playSystemEventSound } from './kernel.js';
 import { resolveFS, normalizePath as fsNormalizePath } from './fs-utils.js';
+import { loadSetting } from "./apps/settings.js";
 
 // ===== Global Error Handlers =====
 const CRITICAL_PREFIXES = ["BOOT_", "KERNEL_", "FS_", "0x"]; // 深刻とみなすエラーコード
@@ -51,13 +52,14 @@ export function print(text = '') { screen.textContent += text + '\n'; scrollToBo
 function commonPrefix(arr) { if (!arr.length) return ''; let prefix = arr[0]; for (let i = 1; i < arr.length; i++) { while (!arr[i].startsWith(prefix)) { prefix = prefix.slice(0, -1); if (!prefix) return ''; } } return prefix; }
 
 // ===== Virtual File System Helpers (Integrated with fs-utils) =====
-// 既存の名称を維持しつつ、内部ロジックを fs-utils に委譲して整合性を確保
 function normalizePath(path) {
     return fsNormalizePath(path, cwd);
 }
 
 function getNodeByPath(path) {
-    return resolveFS(normalizePath(path));
+    // terminal.js と統一し、resolveFS には 'C:/' を除外した相対パスを渡す
+    const fullPath = normalizePath(path);
+    return resolveFS(fullPath.replace(/^C:\//, ""));
 }
 
 // ===== Commands =====
@@ -70,39 +72,114 @@ const commands = {
     whoami: { desc: 'Current user', run() { print('user'); } },
     mem: { desc: 'System memory info', run() { print(`Approx. Memory: ${navigator.deviceMemory || 'unknown'} GB`); print(`Logical Cores: ${navigator.hardwareConcurrency || 'unknown'}`); } },
     pwd: { desc: 'Show current directory', run() { print(cwd); } },
+
+    ls: {
+        desc: 'List directory contents',
+        run(args) {
+            const targetPath = normalizePath(args[0] || ".");
+            const fsSearchPath = targetPath === "C:/" ? "" : targetPath.replace(/^C:\//, "");
+            const node = resolveFS(fsSearchPath);
+            if (!node) return print('Path not found');
+            if (node.type === 'file') return print(args[0]);
+            Object.keys(node)
+                .filter(k => !['type', 'entry', 'singleton', 'target'].includes(k))
+                .forEach(name => print(name));
+        }
+    },
+
     cd: {
         desc: 'Change directory',
         run(args) {
             if (!args[0]) return;
-            const node = getNodeByPath(args[0]);
-            if (!node || node.type !== 'folder') return print('Not a directory');
-            cwd = normalizePath(args[0]).replace(/\/$/, '') || 'C:/';
+            const targetPath = normalizePath(args[0]);
+            const fsSearchPath = targetPath === "C:/" ? "" : targetPath.replace(/^C:\//, "");
+            const node = resolveFS(fsSearchPath);
+            if (!node || node.type === 'file') return print('Not a directory');
+            cwd = targetPath === 'C:/' ? 'C:/' : targetPath.replace(/\/$/, '');
         }
     },
+
     cat: {
         desc: 'Show file content',
         run(args) {
-            const node = getNodeByPath(args[0]);
+            if (!args[0]) return print('Usage: cat <file>');
+            const targetPath = normalizePath(args[0]);
+            const fsSearchPath = targetPath.replace(/^C:\//, "");
+            const node = resolveFS(fsSearchPath);
             if (!node) return print('File not found');
             if (node.type !== 'file') return print('Not a file');
-            print(node.content);
+            print(node.content || "");
         }
     },
+
+    touch: {
+        desc: 'Create an empty file',
+        run(args) {
+            if (!args[0]) return print("Usage: touch <file>");
+            const fullPath = normalizePath(args[0]);
+            const parts = fullPath.replace(/^C:\//, "").split("/");
+            const name = parts.pop();
+            const parentPath = parts.join("/");
+            const parent = resolveFS(parentPath);
+            if (!parent || parent.type === "file") return print("Invalid parent path");
+            if (parent[name]) return print("Already exists");
+            parent[name] = { type: "file", content: "" };
+            print(`File created: ${name}`);
+            window.dispatchEvent(new Event("fs-updated"));
+        }
+    },
+
+    mkdir: {
+        desc: 'Create a new directory',
+        run(args) {
+            if (!args[0]) return print("Usage: mkdir <folder>");
+            const fullPath = normalizePath(args[0]);
+            const parts = fullPath.replace(/^C:\//, "").split("/");
+            const name = parts.pop();
+            const parentPath = parts.join("/");
+            const parent = resolveFS(parentPath);
+            if (!parent || parent.type === "file") return print("Invalid parent path");
+            if (parent[name]) return print("Already exists");
+            parent[name] = { type: "folder" };
+            print(`Directory created: ${name}`);
+            window.dispatchEvent(new Event("fs-updated"));
+        }
+    },
+
+    rm: {
+        desc: 'Remove a file or directory',
+        run(args) {
+            if (!args[0]) return print("Usage: rm <path>");
+            const fullPath = normalizePath(args[0]);
+            const parts = fullPath.replace(/^C:\//, "").split("/");
+            const name = parts.pop();
+            const parentPath = parts.join("/");
+            const parent = resolveFS(parentPath);
+            if (!parent || !parent[name]) return print("File or directory not found");
+            delete parent[name];
+            print(`Removed: ${name}`);
+            window.dispatchEvent(new Event("fs-updated"));
+        }
+    },
+
     tree: {
         desc: 'Show directory tree',
         run(args) {
-            const root = getNodeByPath(args[0] || '.');
+            const targetPath = normalizePath(args[0] || ".");
+            const fsSearchPath = targetPath === "C:/" ? "" : targetPath.replace(/^C:\//, "");
+            const root = resolveFS(fsSearchPath);
             if (!root) return print('Path not found');
             function walk(n, depth = 0, ind = '') {
                 Object.entries(n).forEach(([name, val]) => {
-                    if (['type', 'entry', 'singleton', 'target'].includes(name)) return;
+                    if (['type', 'entry', 'singleton', 'target', 'content', 'system', 'name'].includes(name)) return;
                     print(ind + '├─ ' + name);
                     if (typeof val === 'object' && val.type !== 'file' && val.type !== 'link') walk(val, depth + 1, ind + '│  ');
                 });
             }
-            print(normalizePath(args[0] || '.')); walk(root);
+            print(targetPath); walk(root);
         }
     },
+
     calc: {
         desc: 'Calculate (Safe)',
         run(args) {
@@ -113,7 +190,117 @@ const commands = {
             } catch { print('Invalid expression'); }
         }
     },
-    crash: { desc: 'Simulate crash', run() { showBSOD("MANUALLY_INITIATED_CRASH", new Error("User initiated")); } }
+
+    crash: { desc: 'Simulate crash', run() { showBSOD("MANUALLY_INITIATED_CRASH", new Error("User initiated")); } },
+
+    truncate: {
+        desc: 'Clear file content',
+        run(args) {
+            if (!args[0]) return print("Usage: truncate <file>");
+            const targetPath = normalizePath(args[0]);
+            const fsSearchPath = targetPath.replace(/^C:\//, "");
+            const node = resolveFS(fsSearchPath);
+            if (!node) return print("File not found");
+            if (node.type !== "file") return print("Not a file");
+            node.content = "";
+            print(`File ${args[0]} cleared.`);
+            window.dispatchEvent(new Event("fs-updated"));
+        }
+    },
+
+    edit: {
+        desc: 'Edit text file (:wq to save, :e <line> <text> to edit)',
+        async run(args) {
+            const file = args[0];
+            if (!file) return print("Usage: edit <file>");
+
+            const targetPath = normalizePath(file);
+            const fsSearchPath = targetPath.replace(/^C:\//, "");
+            let node = resolveFS(fsSearchPath);
+
+            // ファイルが存在しない場合は新規作成
+            if (!node) {
+                print("File not found, creating...");
+                const parts = fsSearchPath.split("/");
+                const fileName = parts.pop();
+                const parentPath = parts.join("/");
+
+                // ルートディレクトリ (C:/) の場合は resolveFS("") は機能しないかもしれないため対処
+                const parent = parentPath === "" ? resolveFS("") : resolveFS(parentPath);
+
+                if (!parent || parent.type === "file") {
+                    return print(`Error: Directory not found.`);
+                }
+
+                parent[fileName] = { type: "file", content: "" };
+                node = parent[fileName];
+                window.dispatchEvent(new Event("fs-updated"));
+            }
+
+            if (node.type !== "file") return print("Not a file");
+
+            print("---- Editor (type :wq to save, :e <line> <text> to edit) ----");
+            let editorBuffer = node.content ? node.content.split("\n") : [];
+            editorBuffer.forEach(line => print(line));
+
+            // エディタ用の入力ループを Promise で待機
+            return new Promise(resolve => {
+                function editorPrompt() {
+                    const lineDiv = document.createElement('div');
+                    // boot.js の画面に合わせたシンプルな入力欄
+                    lineDiv.innerHTML = `<input class="edit-cmd" autocomplete="off" style="background:transparent; color:inherit; border:none; outline:none; width:90%; font-family:inherit; font-size:inherit;">`;
+                    screen.appendChild(lineDiv);
+                    scrollToBottom();
+
+                    const input = lineDiv.querySelector('.edit-cmd');
+                    input.focus();
+
+                    input.onkeydown = e => {
+                        if (e.key === 'Enter') {
+                            const line = input.value;
+                            screen.removeChild(lineDiv); // 入力欄を一旦消す
+
+                            // 保存して終了
+                            if (line === ":wq") {
+                                node.content = editorBuffer.join("\n");
+                                print("Saved.");
+                                window.dispatchEvent(new Event("fs-updated"));
+                                resolve(); // Promiseを解決して元のCLIに戻る
+                                return;
+                            }
+
+                            // 特定行の修正
+                            const editMatch = line.match(/^:e\s+(\d+)\s+(.+)$/);
+                            if (editMatch) {
+                                const num = Number(editMatch[1]) - 1;
+                                const newText = editMatch[2];
+                                if (num < 0 || num >= editorBuffer.length) {
+                                    print("Invalid line number");
+                                } else {
+                                    editorBuffer[num] = newText;
+                                    print(`Line ${num + 1} updated: ${newText}`);
+                                }
+                            } else {
+                                // 通常の追記
+                                editorBuffer.push(line);
+                                print(line);
+                            }
+                            editorPrompt(); // 次の行の入力へ
+                        }
+                    };
+
+                    // 画面のどこかをクリックした時に入力欄へフォーカスを戻す
+                    lineDiv.onclick = e => {
+                        e.stopPropagation();
+                        input.focus();
+                    };
+                }
+
+                editorPrompt();
+            });
+        }
+    }
+
 };
 
 // ===== Prompt & Executor =====
@@ -195,27 +382,55 @@ export async function bootOS() {
 
 // ===== BIOS (ページロード時) =====
 (async function initBIOS() {
+    // 1. ファイルシステムの初期化
     const fsPromise = initFS().catch(e => console.warn("FS load failed", e));
+
+    // 2. BIOS起動メッセージ表示
     const lines = [document.title, "Copyright (C) 2026 Nexser Corp.", ""];
     for (const line of lines) {
         print(line);
         await new Promise(r => setTimeout(r, 50));
     }
+
     await fsPromise;
     console.log("FS restored from DB");
-    buildDesktop();
 
+    // 3. 設定のロードと適用
+    const savedHeight = await loadSetting("taskbarHeight") || 40;
+    document.documentElement.style.setProperty('--taskbar-height', `${savedHeight}px`);
+
+    // 4. デスクトップの構築
+    buildDesktop();
+    window.dispatchEvent(new Event("desktop-resize"));
+
+    // 5. AUTOBOOT.CFG の安全な実行
     const config = getNodeByPath("C:/System/AUTOBOOT.CFG");
     if (config && config.type === 'file' && config.content.trim()) {
         print("Reading System Configuration...");
         const script = config.content.split('\n').map(s => s.trim()).filter(Boolean);
+
         for (const line of script) {
+            // BSODが既に発生している場合は即座に中断
+            if (screen.style.display === 'none') return;
+
+            // コマンドが 'crash' を含む場合は実行せず警告
+            if (line.toLowerCase().includes('crash')) {
+                print(`[Security] Blocked suspicious command in AUTOBOOT.CFG: ${line}`);
+                continue;
+            }
+
             await new Promise(r => setTimeout(r, 30));
             print(`${cwd}> ${line}`);
+
+            // コマンド実行
             await runSilent(line);
+
+            // コマンド実行後に BSOD 発生なら処理を中断
             if (screen.style.display === 'none') return;
         }
     }
+
+    // 6. すべての処理が正常終了した場合のみプロンプトを表示
     prompt();
 })();
 

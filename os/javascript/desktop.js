@@ -361,13 +361,15 @@ export function buildDesktop() {
 }
 
 // タスクバー高さに応じてアイコン領域を調整
+// タスクバー高さに応じてアイコン領域を調整
 function adjustDesktopIconArea() {
     const desktop = document.getElementById("desktop");
     const iconsContainer = document.getElementById("desktop-icons");
     const taskbar = document.getElementById("taskbar");
     if (!desktop || !iconsContainer || !taskbar) return;
 
-    const taskbarHeight = taskbar.offsetHeight;
+    // 🔥 修正点1: 起動中で画面が隠れている(display:none)時は高さが0になるため、デフォルト値(40など)を仮置きする
+    const taskbarHeight = taskbar.offsetHeight > 0 ? taskbar.offsetHeight : 40;
 
     iconsContainer.style.position = "absolute";
     iconsContainer.style.top = "0";
@@ -375,11 +377,30 @@ function adjustDesktopIconArea() {
     iconsContainer.style.right = "0";
     iconsContainer.style.bottom = `${taskbarHeight}px`; // タスクバー分の余白
     iconsContainer.style.display = "flex";
+
+    // 🔥 修正点2: アイコンを「上から下」へ並べ、画面下まで到達したら「右」へ折り返す (Windows標準の挙動)
+    iconsContainer.style.flexDirection = "column";
     iconsContainer.style.flexWrap = "wrap";
+
     iconsContainer.style.alignContent = "flex-start";
     iconsContainer.style.padding = "10px"; // 内側余白
     iconsContainer.style.overflow = "auto";
 }
+
+// --------------------
+// 起動完了時やリサイズ時に確実に再計算させる仕組み
+// --------------------
+// 🔥 修正点3: 画面が非表示から表示に切り替わった瞬間を検知してレイアウトを直す
+if (!window._desktopResizeObserver) {
+    window._desktopResizeObserver = new ResizeObserver(() => {
+        adjustDesktopIconArea();
+    });
+    // 画面全体(body)のサイズや表示状態の変化を監視
+    window._desktopResizeObserver.observe(document.body);
+}
+
+// 既存のイベントリスナー（これは残しておいてOKです）
+window.addEventListener("desktop-resize", adjustDesktopIconArea);
 
 // --------------------
 // 新規フォルダ/ファイル作成
