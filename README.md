@@ -1,2 +1,0 @@
-# nexser
-test.os
