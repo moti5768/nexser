@@ -1,0 +1,1524 @@
+// window.js
+import { saveWindowSize, loadWindowSize } from "./window-size-db.js";
+import { themeColor, themeColor2 } from "./apps/settings.js";
+import { attachContextMenu } from "./context-menu.js";
+import { setupRibbon } from "./ribbon.js";
+import { killProcess } from "./kernel.js";
+import { playSystemEventSound } from './kernel.js';
+import { getIcon } from "./file-associations.js";
+
+export const taskbarButtons = []; // 作られたボタンを全部保存
+let resizeCursor = "";
+const DEFAULT_COLOR = "gray";
+export let TOP_COLOR = "darkblue";
+/* ===== Animation Settings ===== */
+export const WINDOW_ANIMATION_DURATION = 250;
+export let ENABLE_WINDOW_ANIMATION = true;
+
+let refreshQueued = false;
+
+/* =========================
+   Global Event Guards
+========================= */
+
+let globalMouseInstalled = false;
+
+function installGlobalMouseHandler() {
+    if (globalMouseInstalled) return;
+    globalMouseInstalled = true;
+
+    document.addEventListener("mousedown", e => {
+        const win = e.target.closest(".window");
+        if (
+            e.target.closest(".modal-overlay") ||
+            (win && win._modal) ||
+            e.target.closest(".context-menu")
+        ) return;
+
+        // ウィンドウ外なら色リセット
+        const titles = document.getElementsByClassName("title-bar");
+        for (const tb of titles) {
+            tb.style.background = DEFAULT_COLOR;
+        }
+        taskbarButtons.forEach(btn => btn.classList.remove("selected"));
+    });
+}
+
+/* ===== 全ウィンドウ色リセット ===== */
+export function resetAllTitleBars() {
+    document.querySelectorAll(".window .title-bar")
+        .forEach(tb => tb.style.background = DEFAULT_COLOR);
+}
+export function scheduleRefreshTopWindow() {
+    if (refreshQueued) return;
+    refreshQueued = true;
+
+    requestAnimationFrame(() => {
+        refreshQueued = false;
+        refreshTopWindow();
+    });
+}
+export function createWindow(title, options = {}) {
+    const abortController = new AbortController();
+    const { signal } = abortController;
+    // ★ グローバルイベントは1回だけ登録
+    installGlobalMouseHandler();
+
+    const startMenu = document.getElementById("start-menu");
+    const startBtn = document.getElementById("start-btn");
+    if (startMenu) startMenu.style.display = "none";
+    if (startBtn) startBtn.classList.remove("pressed");
+
+    const w = document.createElement("div");
+    w.className = "window";
+    w.dataset.title = title;
+    w.style.position = "absolute";
+    w.style.left = options.left || "100px";
+    w.style.top = options.top || "100px";
+    w.style.width = options.width || "650px";
+    w.style.height = options.height || "350px";
+    bringToFront(w);
+
+    const initialIcon = "📄";
+    const finalIcon = getIcon(title, options.node || { type: "app" });
+
+    w.innerHTML = `
+<div class="title-bar" style="display: flex; align-items: center; padding: 0 5px;">
+    <span class="window-icon" style="margin-right: 6px; font-size: 14px;">${initialIcon}</span>
+    <span class="title-text" style="flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${title}</span>
+    <div class="window-controls" style="display: flex; flex-shrink: 0;">
+        <button class="min-btn"></button>
+        <button class="max-btn"></button>
+        <button class="close-btn"></button>
+    </div>
+</div>
+
+${!options.hideRibbon ? `
+<div class="window-ribbon" style="
+    height:26px;
+    background:#C3C7CB;
+    display:flex;
+    align-items:center;
+    font-size: 12px;
+">
+</div>` : ""}
+
+<div class="content"></div>
+
+${!options.hideStatus ? `
+<div class="window-statusbar" style="
+    height: 20px;
+    background: #C3C7CB;
+    font-size: 12px;
+    padding: 0 4px;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;      /* 改行を防ぐ */
+    overflow: hidden;         /* はみ出た部分を隠す */
+    text-overflow: ellipsis;  /* 長い場合に ... を表示 */
+    box-sizing: border-box;   /* パディングを含めた高さ計算にする */
+    border-top: 1px solid #808080; /* 必要に応じて境界線を追加 */
+">
+    Ready
+</div>` : ""}
+`;
+
+    w._applyRealIcon = () => {
+        if (!w.isConnected) return; // すでに閉じられていたら何もしない
+        const iconEl = w.querySelector(".window-icon");
+        if (iconEl) iconEl.textContent = finalIcon;
+        if (w._taskbarBtn && w._taskbarBtn.isConnected) {
+            const tbIcon = w._taskbarBtn.querySelector(".taskbar-icon");
+            if (tbIcon) tbIcon.textContent = finalIcon;
+        }
+    };
+
+    // リボン要素を確実に取得
+    const content = w.querySelector(".content");
+    w._ribbon = w.querySelector(".window-ribbon");
+    w._statusBar = w.querySelector(".window-statusbar");
+
+    // ウィンドウ作成時にリボンを初期化する
+    if (w._ribbon && !options.hideRibbon) {
+        const appMenus = options.ribbonMenus || [];
+
+        setupRibbon(
+            w,
+            options.getCurrentPath || (() => null),
+            options.renderCallback || null,
+            appMenus // そのまま渡す。Windowメニューはribbon.jsが勝手に足してくれる。
+        );
+    }
+
+    const desktop = document.getElementById("desktop");
+    if (desktop) {
+        desktop.appendChild(w);
+    } else {
+        // desktopが見つからない場合はbodyに追加（これでエラーを回避）
+        document.body.appendChild(w);
+    }
+    w._statusBar = w.querySelector(".window-statusbar");
+    /* ===== サイズ復元 ===== */
+
+    const sizeKey = title;   // 今回は title をキーにする（簡単）
+
+    (async () => {
+        const size = await loadWindowSize(sizeKey);  // ✅ await で確実に取得
+        if (!size) return;
+
+        if (size.w) w.style.width = size.w + "px";
+        if (size.h) w.style.height = size.h + "px";
+        if (size.x !== undefined) w.style.left = size.x + "px";
+        if (size.y !== undefined) w.style.top = size.y + "px";
+    })();
+
+    /* ===== フォーカス & 復元 ===== */
+
+    const restoreWindow = () => {
+        w.style.visibility = "visible";
+        w.style.pointerEvents = "auto";
+        w.dataset.minimized = "false";
+
+        const input = w.querySelector("input, textarea");
+        if (input) input.focus();
+
+        const screen = w.querySelector(".terminal-screen");
+        if (screen) screen.scrollTop = screen.scrollHeight;
+    };
+
+    const focus = () => {
+        if (w._modal) return; // モーダルは絶対に focus させない
+
+        bringToFront(w);
+
+        if (w.dataset.minimized === "true") restoreWindow();
+    };
+
+    w.addEventListener("mousedown", focus);
+
+
+    // 右クリックメニューもモーダルなら無効化
+    if (!options._modal && !options.disableContextMenu) {
+        installWindowContextMenu(w);
+    }
+
+
+    /* ===== タスクバー ===== */
+
+    const taskbar = document.getElementById("taskbar");
+    let taskbarBtn = null; // 初期値は null
+
+    if (taskbar && options.taskbar !== false) {
+        w.dataset.taskbar = "true";
+
+        taskbarBtn = document.createElement("button");
+        taskbarBtn.className = "taskbar-window-btn button";
+        taskbarBtn.innerHTML = `
+        <span class="taskbar-icon">${initialIcon}</span>
+        <span class="taskbar-text">${title}</span>
+    `;
+        taskbarBtn.dataset.title = title;
+
+        taskbarBtn._window = w;
+        w._taskbarBtn = taskbarBtn;
+
+        const buttonArea =
+            taskbar.querySelector(".taskbar-buttons") || taskbar;
+
+        buttonArea.appendChild(taskbarBtn);
+
+        taskbarButtons.push(taskbarBtn);
+    } else {
+        w.dataset.taskbar = "false";
+        taskbarBtn = null; // 明示的に null
+    }
+
+    /* ===== ウィンドウボタン ===== */
+
+    const closeBtn = w.querySelector(".close-btn");
+    const minBtn = w.querySelector(".min-btn");
+    const maxBtn = w.querySelector(".max-btn");
+
+    if (options.disableControls) {
+        [minBtn, maxBtn].forEach(btn => btn.classList.add("pointer_none"));
+    }
+
+    if (options.disableMinimize) {
+        minBtn?.classList.add("pointer_none");
+    }
+
+    const destroy = () => {
+        abortController.abort(); // 全イベントリスナーを一括解除
+
+        if (w._observer) {
+            w._observer.disconnect();
+            w._observer = null;
+        }
+
+        if (w._modalOverlay) w._modalOverlay.remove();
+
+        if (taskbarBtn) {
+            taskbarBtn._window = null;
+            taskbarBtn.remove();
+            const idx = taskbarButtons.indexOf(taskbarBtn);
+            if (idx !== -1) taskbarButtons.splice(idx, 1);
+        }
+        w._taskbarBtn = null;
+
+        if (w.dataset.processKey) {
+            killProcess(w.dataset.processKey);
+        }
+        w.remove();
+        scheduleRefreshTopWindow();
+    };
+
+    // 外部から呼べるように要素に参照を持たせる
+    w._destroy = destroy;
+    closeBtn.addEventListener("click", destroy);
+
+    /* ===== 最小化アニメーション ===== */
+
+    w._animating = false; // 共通フラグ
+
+    minBtn.addEventListener("click", () => {
+        if (w.dataset.minimized === "true" || w._animating) return;
+        w._animating = true;
+
+        const titleBar = w.querySelector(".title-bar");
+        const titleText = titleBar?.querySelector(".title-text");
+        if (!titleText) { w._animating = false; return; }
+
+        const taskbarBtnRect = taskbarBtn?.getBoundingClientRect() ||
+            { left: w.offsetLeft, top: w.offsetTop, width: 0 };
+
+        w.style.pointerEvents = "none";
+
+        const clone = createTitleClone(w, titleBar, titleText);
+
+        animateTitleClone(clone,
+            { left: taskbarBtnRect.left, top: taskbarBtnRect.top, width: taskbarBtnRect.width },
+            undefined,
+            () => {
+                clone.remove();
+                w.style.visibility = "hidden";
+                w.dataset.minimized = "true";
+                w.style.pointerEvents = "auto";
+                w._animating = false;
+                scheduleRefreshTopWindow();
+            }
+        );
+    });
+    if (taskbarBtn) {
+        taskbarBtn.onclick = () => {
+            taskbarButtons.forEach(btn => btn.classList.remove("selected"));
+            taskbarBtn.classList.add("selected");
+
+            if (w.dataset.minimized === "true") {
+                if (w._animating) return; // アニメ中は無効化
+                w._animating = true;
+
+                const titleBar = w.querySelector(".title-bar");
+                const titleText = titleBar?.querySelector(".title-text");
+                if (!titleText) { w._animating = false; return; }
+
+                w.style.visibility = "hidden";
+                w.style.pointerEvents = "none";
+
+                const rect = taskbarBtn.getBoundingClientRect();
+                const clone = createTitleClone(w, titleBar, titleText);
+                Object.assign(clone.style, {
+                    left: rect.left + "px",
+                    top: rect.top + "px",
+                    width: rect.width + "px"
+                });
+
+                animateTitleClone(clone,
+                    { left: w.offsetLeft, top: w.offsetTop, width: w.offsetWidth },
+                    undefined,
+                    () => {
+                        w.style.visibility = "visible";
+                        w.style.pointerEvents = "auto";
+                        w.dataset.minimized = "false";
+                        clone.remove();
+                        bringToFront(w);
+                        w._animating = false;
+                        scheduleRefreshTopWindow();
+                    }
+                );
+            } else {
+                // 開いている全ウィンドウの中で自分が最前面(最大のZ-Index)か判定
+                const visibleWins = Array.from(document.querySelectorAll(".window"))
+                    .filter(win => win.style.visibility !== "hidden" && win.dataset.minimized !== "true");
+
+                const maxZ = Math.max(...visibleWins.map(win => parseInt(win.style.zIndex) || 0));
+                const isTopMost = parseInt(w.style.zIndex) === maxZ;
+
+                if (isTopMost) {
+                    // すでに最前面なら最小化する（Windows特有の挙動）
+                    const minBtn = w.querySelector(".min-btn");
+                    if (minBtn && !minBtn.classList.contains("pointer_none")) {
+                        minBtn.click();
+                    }
+                } else {
+                    // 後ろにあるなら最前面へ持ってくる
+                    bringToFront(w);
+                    scheduleRefreshTopWindow();
+                }
+            }
+        };
+    }
+
+    /* ===== 最大化 ===== */
+
+    let maximized = false;
+
+    function toggleMaximize() {
+        if (w._animating) return;
+        w._animating = true;
+
+        const desktop = document.getElementById("desktop");
+        const rect = desktop.getBoundingClientRect();
+
+        // ★タスクバーの「現在見えている高さ」を計算
+        const taskbar = document.getElementById("taskbar");
+        let taskbarVisibleHeight = 0;
+        if (taskbar) {
+            const style = window.getComputedStyle(taskbar);
+            // transform: translateY(...) の値を取得
+            const matrix = new WebKitCSSMatrix(style.transform);
+            const translateY = matrix.m42;
+            // 物理的な高さから沈んでいる分を引く
+            taskbarVisibleHeight = Math.max(0, taskbar.offsetHeight - translateY);
+        }
+
+        const titleBar = w.querySelector(".title-bar");
+        const titleText = titleBar?.querySelector(".title-text");
+        if (!titleText) { w._animating = false; return; }
+
+        w.style.pointerEvents = "none";
+
+        const clone = createTitleClone(w, titleBar, titleText);
+        let targetRect;
+
+        if (!maximized) {
+            // 元サイズ保存
+            ["Left", "Top", "Width", "Height"].forEach(prop =>
+                w.dataset[`prev${prop}`] = w.style[prop.toLowerCase()]
+            );
+
+            // 最大化のターゲット位置
+            targetRect = {
+                left: 0,
+                top: 0,
+                width: rect.width
+            };
+        } else {
+            targetRect = {
+                left: parseInt(w.dataset.prevLeft),
+                top: parseInt(w.dataset.prevTop),
+                width: parseInt(w.dataset.prevWidth)
+            };
+        }
+
+        animateTitleClone(clone, targetRect, undefined, () => {
+            if (!maximized) {
+                w.style.left = "0px";
+                w.style.top = "0px";
+                w.style.width = "100%";
+                // ★動的に計算した「見えている高さ」を差し引く
+                w.style.height = `calc(100% - ${taskbarVisibleHeight}px)`;
+                w.classList.add("maximized");
+            } else {
+                w.style.left = w.dataset.prevLeft;
+                w.style.top = w.dataset.prevTop;
+                w.style.width = w.dataset.prevWidth;
+                w.style.height = w.dataset.prevHeight;
+                w.classList.remove("maximized");
+            }
+
+            clone.remove();
+            w.style.pointerEvents = "auto";
+            w._animating = false;
+            maximized = !maximized;
+            scheduleRefreshTopWindow();
+        });
+    }
+
+    maxBtn.addEventListener("click", toggleMaximize);
+
+    /* ===== 共通プレビュー ===== */
+
+    let preview = null;
+
+    function createPreview() {
+        if (preview) preview.remove();
+
+        preview = document.createElement("div");
+        preview.style.position = "absolute";
+        preview.style.border = "2px solid white";
+        preview.style.background = "transparent";
+        preview.style.pointerEvents = "none";
+        preview.style.zIndex = (parseInt(w.style.zIndex) || 1) + 1;
+        preview.style.mixBlendMode = "difference";
+        preview.style.boxSizing = "border-box";
+
+        const rect = w.getBoundingClientRect();
+        preview.style.left = rect.left + "px";
+        preview.style.top = rect.top + "px";
+        preview.style.width = rect.width + "px";
+        preview.style.height = rect.height + "px";
+
+        // --- 修正箇所 ---
+        const desktopEl = document.getElementById("desktop");
+        if (desktopEl) {
+            desktopEl.appendChild(preview);
+        } else {
+            document.body.appendChild(preview);
+        }
+    }
+
+    /* ===== ドラッグ ===== */
+
+    const titleBar = w.querySelector(".title-bar");
+    let dragging = false, dragStarted = false;
+    let didMove = false;
+    let offsetX = 0, offsetY = 0, downX = 0, downY = 0;
+    const DRAG_THRESHOLD = 3;
+    let lastTap = 0;
+
+    titleBar.addEventListener("pointerdown", e => {
+        // マウスの場合は左クリック(0)のみ反応させる。タッチは常に通す
+        if (e.pointerType === "mouse" && e.button !== 0) return;
+
+        // --- ダブルタップ / ダブルクリック 判定 ---
+        const now = Date.now();
+        const DOUBLE_TAP_DELAY = 300; // 300ms 以内ならダブルとみなす
+
+        if (now - lastTap < DOUBLE_TAP_DELAY) {
+            // ダブル操作確定時の処理
+            if (e.target.closest(".window-controls")) return;
+            e.stopPropagation();
+
+            if (!options.disableControls) {
+                toggleMaximize();
+            }
+
+            // ダブルタップ成功時は lastTap をリセットして3連タップを防止
+            lastTap = 0;
+            return;
+        }
+        lastTap = now;
+
+        if (e.target.closest(".window-controls") || e.target.closest(".resize-handle") || maximized) return;
+
+        dragging = true;
+        dragStarted = false;
+        didMove = false;
+        focus(); //
+        const dragShield = document.createElement("div");
+        Object.assign(dragShield.style, {
+            position: "fixed",
+            top: 0, left: 0,
+            width: "100vw", height: "100vh",
+            zIndex: 9998,
+            background: "transparent"
+        });
+        document.body.appendChild(dragShield);
+        downX = e.clientX;
+        downY = e.clientY;
+        const rect = w.getBoundingClientRect();
+        offsetX = e.clientX - rect.left;
+        offsetY = e.clientY - rect.top;
+
+        document.body.style.userSelect = "none";
+
+        // 他のウィンドウを操作不能にする
+        document.querySelectorAll(".window").forEach(win => {
+            if (win !== w) win.style.pointerEvents = "none";
+        });
+
+        // ドラッグ中のみ動く関数 (pointermove)
+        const onPointerMove = (moveEv) => {
+            if (!dragging) return;
+            const taskbar = document.getElementById("taskbar");
+            const taskbarTop = taskbar ? taskbar.getBoundingClientRect().top : Infinity;
+
+            let clientY = moveEv.clientY;
+            if (clientY > taskbarTop - offsetY) {
+                clientY = taskbarTop - offsetY;
+            }
+
+            const dx = moveEv.clientX - downX;
+            const dy = clientY - downY;
+
+            // 閾値を超えたらプレビュー枠を作成
+            if (!dragStarted && (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD)) {
+                dragStarted = true;
+                createPreview();
+            }
+
+            if (!dragStarted || !preview) return;
+
+            let newLeft = moveEv.clientX - offsetX;
+            let newTop = clientY - offsetY;
+
+            // タイトルバーが画面上部(top: 0)にめり込まないように制限
+            if (newTop < 0) {
+                newTop = 0;
+            }
+
+            preview.style.left = `${newLeft}px`;
+            preview.style.top = `${newTop}px`;
+            didMove = true;
+        };
+
+        // 解除処理 (pointerup / pointercancel)
+        const endDrag = async () => {
+            document.removeEventListener("pointermove", onPointerMove);
+            window.removeEventListener("blur", endDrag);
+            if (!dragging) return;
+
+            // 操作制限の解除
+            document.querySelectorAll(".window").forEach(win => win.style.pointerEvents = "auto");
+            document.body.style.userSelect = "";
+
+            if (preview) {
+                if (preview.parentElement) {
+                    w.style.left = preview.style.left;
+                    w.style.top = preview.style.top;
+                }
+                preview.remove();
+                preview = null;
+            }
+            dragShield.remove();
+            dragging = false;
+            dragStarted = false;
+
+            // 位置保存
+            if (didMove && !maximized && !w.classList.contains("maximized")) {
+                if (!options.skipSave) {
+                    const data = {
+                        w: w.offsetWidth,
+                        h: w.offsetHeight,
+                        x: Math.round(parseFloat(w.style.left) || 0),
+                        y: Math.round(parseFloat(w.style.top) || 0)
+                    };
+                    await saveWindowSize(sizeKey, data); //
+                }
+            }
+            didMove = false;
+            window.removeEventListener("blur", endDrag);
+            scheduleRefreshTopWindow(); //
+        };
+
+        // リスナーを pointer 系に変更
+        document.addEventListener("pointermove", onPointerMove);
+        document.addEventListener("pointerup", endDrag, { capture: true, once: true });
+        document.addEventListener("pointercancel", endDrag, { capture: true, once: true }); // タッチ中断用
+        window.addEventListener("blur", endDrag, { once: true });
+    });
+
+    /* ===== リサイズ ===== */
+    if (!options.disableResize) {
+        const minWidth = 200, minHeight = 120;
+        const directions = ["top", "bottom", "left", "right", "topLeft", "topRight", "bottomLeft", "bottomRight"];
+        const handles = {};
+
+        directions.forEach(dir => {
+            const h = document.createElement("div");
+            h.className = "resize-handle " + dir;
+            h.style.position = "absolute";
+            h.style.background = "transparent";
+            w.appendChild(h);
+            handles[dir] = h;
+        });
+
+        const setHandle = (h, pos) => Object.assign(h.style, pos);
+
+        setHandle(handles.top, { top: "0", left: "3px", right: "3px", height: "3px", cursor: "ns-resize" });
+        setHandle(handles.bottom, { bottom: "0", left: "3px", right: "3px", height: "3px", cursor: "ns-resize" });
+        setHandle(handles.left, { left: "0", top: "3px", bottom: "3px", width: "3px", cursor: "ew-resize" });
+        setHandle(handles.right, { right: "0", top: "3px", bottom: "3px", width: "3px", cursor: "ew-resize" });
+        setHandle(handles.topLeft, { left: "0", top: "0", width: "6px", height: "6px", cursor: "nwse-resize" });
+        setHandle(handles.topRight, { right: "0", top: "0", width: "6px", height: "6px", cursor: "nesw-resize" });
+        setHandle(handles.bottomLeft, { left: "0", bottom: "0", width: "6px", height: "6px", cursor: "nesw-resize" });
+        setHandle(handles.bottomRight, { right: "0", bottom: "0", width: "6px", height: "6px", cursor: "nwse-resize" });
+
+        let resizing = false, currentHandle, startX, startY, startRect;
+        let didResize = false;
+
+        function startResize(e, handle) {
+            if (maximized) return;
+
+            // マウスの場合は左クリック(0)のみ反応させる。タッチ(pointerType === 'touch')は常に通す
+            if (e.pointerType === "mouse" && e.button !== 0) return;
+
+            e.stopPropagation();
+
+            resizing = true;
+            currentHandle = handle;
+            focus();
+            didResize = true;
+
+            const rect = w.getBoundingClientRect();
+            startRect = {
+                left: Math.round(rect.left),
+                top: Math.round(rect.top),
+                width: Math.round(rect.width),
+                height: Math.round(rect.height)
+            };
+
+            startX = e.clientX;
+            startY = e.clientY;
+
+            createPreview();
+            document.body.style.userSelect = "none";
+
+            const resizeShield = document.createElement("div");
+            Object.assign(resizeShield.style, {
+                position: "fixed",
+                top: 0, left: 0,
+                width: "100vw", height: "100vh",
+                zIndex: 9998,
+                background: "transparent",
+                // cursor は resizeCursor を流用
+            });
+            const cursors = {
+                top: "ns-resize", bottom: "ns-resize",
+                left: "ew-resize", right: "ew-resize",
+                topLeft: "nwse-resize", bottomRight: "nwse-resize",
+                topRight: "nesw-resize", bottomLeft: "nesw-resize"
+            };
+            resizeShield.style.cursor = cursors[handle] || "default";
+            document.body.appendChild(resizeShield);
+            resizeCursor = cursors[handle] || "default";
+            document.body.style.cursor = resizeCursor;
+
+            document.querySelectorAll(".window").forEach(win => {
+                if (win !== w) win.style.pointerEvents = "none";
+            });
+
+            const onResizeMove = (moveEv) => {
+                if (!resizing || !preview) return;
+
+                const taskbar = document.getElementById("taskbar");
+                const taskbarTop = taskbar ? taskbar.getBoundingClientRect().top : Infinity;
+
+                let dx = moveEv.clientX - startX;
+                let dy = moveEv.clientY - startY;
+
+                let newLeft = startRect.left;
+                let newTop = startRect.top;
+                let newWidth = startRect.width;
+                let newHeight = startRect.height;
+
+                switch (currentHandle) {
+                    case "topLeft":
+                        newWidth = Math.max(minWidth, startRect.width - dx);
+                        newHeight = Math.max(minHeight, startRect.height - dy);
+                        newLeft = startRect.left + (startRect.width - newWidth);
+                        newTop = startRect.top + (startRect.height - newHeight);
+                        break;
+                    case "topRight":
+                        newWidth = Math.max(minWidth, startRect.width + dx);
+                        newHeight = Math.max(minHeight, startRect.height - dy);
+                        newTop = startRect.top + (startRect.height - newHeight);
+                        break;
+                    case "bottomLeft":
+                        newWidth = Math.max(minWidth, startRect.width - dx);
+                        newHeight = Math.max(minHeight, startRect.height + dy);
+                        newLeft = startRect.left + (startRect.width - newWidth);
+                        break;
+                    case "bottomRight":
+                        newWidth = Math.max(minWidth, startRect.width + dx);
+                        newHeight = Math.max(minHeight, startRect.height + dy);
+                        break;
+                    case "top":
+                        newHeight = Math.max(minHeight, startRect.height - dy);
+                        newTop = startRect.top + (startRect.height - newHeight);
+                        break;
+                    case "bottom":
+                        newHeight = Math.max(minHeight, startRect.height + dy);
+                        break;
+                    case "left":
+                        newWidth = Math.max(minWidth, startRect.width - dx);
+                        newLeft = startRect.left + (startRect.width - newWidth);
+                        break;
+                    case "right":
+                        newWidth = Math.max(minWidth, startRect.width + dx);
+                        break;
+                }
+
+                if (newTop + newHeight > taskbarTop) {
+                    newHeight = taskbarTop - newTop;
+                }
+
+                preview.style.left = newLeft + "px";
+                preview.style.top = newTop + "px";
+                preview.style.width = newWidth + "px";
+                preview.style.height = newHeight + "px";
+            };
+
+            const endResize = async () => {
+                // Pointerイベントの解除
+                document.removeEventListener("pointermove", onResizeMove);
+                document.removeEventListener("pointerup", endResize, { capture: true });
+                document.removeEventListener("pointercancel", endResize, { capture: true });
+
+                if (!resizing) return;
+
+                document.querySelectorAll(".window").forEach(win => win.style.pointerEvents = "auto");
+                document.body.style.userSelect = "";
+                document.body.style.cursor = "";
+                resizeCursor = "";
+
+                if (preview) {
+                    if (preview.parentElement) {
+                        w.style.left = preview.style.left;
+                        w.style.top = preview.style.top;
+                        w.style.width = preview.style.width;
+                        w.style.height = preview.style.height;
+                    }
+                    preview.remove();
+                    preview = null;
+                }
+                resizeShield.remove();
+                resizing = false;
+                currentHandle = null;
+
+                if (didResize && !maximized && !w.classList.contains("maximized")) {
+                    if (!options.skipSave) {
+                        const data = {
+                            w: w.offsetWidth,
+                            h: w.offsetHeight,
+                            x: Math.round(parseFloat(w.style.left) || 0),
+                            y: Math.round(parseFloat(w.style.top) || 0)
+                        };
+                        await saveWindowSize(sizeKey, data);
+                    }
+                }
+                didResize = false;
+                scheduleRefreshTopWindow();
+            };
+
+            // 最新版：Pointer Events を使用
+            document.addEventListener("pointermove", onResizeMove);
+            document.addEventListener("pointerup", endResize, { capture: true, once: true });
+            document.addEventListener("pointercancel", endResize, { capture: true, once: true });
+            window.addEventListener("blur", endResize, { once: true });
+        }
+
+        directions.forEach(dir =>
+            handles[dir].addEventListener("pointerdown", e => {
+                // マウスの場合は左クリック(0)のみ反応させる。タッチは常に通す
+                if (e.pointerType === "mouse" && e.button !== 0) return;
+                startResize(e, dir);
+            })
+        );
+
+        scheduleRefreshTopWindow();
+        if (!options._modal && !options.disableContextMenu) {
+            installWindowContextMenu(w);
+        }
+
+        return content;
+    }
+    // リサイズが無効でも content を返す
+    return w.querySelector(".content");
+}
+
+/* ===== ウィンドウ前面化 ===== */
+export function bringToFront(win) {
+    if (!win) return;
+    const wins = Array.from(document.querySelectorAll(".window"));
+    const maxZ = wins.reduce((max, w) => Math.max(max, parseInt(w.style.zIndex) || 100), 100);
+    win.style.zIndex = maxZ + 1;
+    scheduleRefreshTopWindow();
+    if (!win.contains(document.activeElement)) {
+        win.setAttribute("tabindex", "-1"); // フォーカス可能にする
+        win.focus();
+    }
+}
+
+/* =========================
+   Utilities
+========================= */
+
+function createTitleClone(w, titleBar, titleText) {
+    const rect = w.getBoundingClientRect();
+    const clone = document.createElement("div");
+
+    // 1. タイトルバーとテキストの「計算済みスタイル」を精密に取得
+    const titleBarStyles = getComputedStyle(titleBar);
+    const titleTextStyles = getComputedStyle(titleText);
+
+    Object.assign(clone.style, {
+        position: "fixed",
+        left: rect.left + "px",
+        top: rect.top + "px",
+        width: rect.width + "px",
+        height: titleBar.offsetHeight + "px",
+        background: titleBarStyles.background,
+        color: titleBarStyles.color,
+        display: "flex",
+        alignItems: "center",
+        padding: titleBarStyles.padding,
+        zIndex: parseInt(w.style.zIndex) + 1,
+        pointerEvents: "none",
+        overflow: "hidden",
+        boxSizing: "border-box"
+    });
+
+    // 2. 内容をコピー
+    clone.innerHTML = titleBar.innerHTML;
+
+    // 3. 【重要】複製されたテキスト要素に元のフォントを強制適用
+    const clonedText = clone.querySelector(".title-text");
+    if (clonedText) {
+        Object.assign(clonedText.style, {
+            font: titleTextStyles.font, // font-family, size, weightを一括適用
+            letterSpacing: titleTextStyles.letterSpacing,
+            lineHeight: titleTextStyles.lineHeight,
+            flex: "1",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap"
+        });
+    }
+
+    // 不要なコントロールを非表示
+    const controls = clone.querySelector(".window-controls");
+    if (controls) {
+        controls.style.display = "none";
+    }
+
+    document.body.appendChild(clone);
+    return clone;
+}
+
+function animateTitleClone(clone, targetRect, duration = WINDOW_ANIMATION_DURATION, callback) {
+    // ★追加：duration=0対応
+    if (!ENABLE_WINDOW_ANIMATION || duration <= 0) {
+        clone.style.left = targetRect.left + "px";
+        clone.style.top = targetRect.top + "px";
+        clone.style.width = targetRect.width + "px";
+        callback?.();
+        return;
+    }
+
+    const rect = clone.getBoundingClientRect(); // ←変更
+
+    const startLeft = rect.left;
+    const startTop = rect.top;
+    const startWidth = rect.width;
+
+    const deltaLeft = targetRect.left - startLeft;
+    const deltaTop = targetRect.top - startTop;
+    const deltaWidth = targetRect.width - startWidth;
+
+    const startTime = performance.now();
+
+    function step(time) {
+        const t = Math.min((time - startTime) / duration, 1);
+
+        clone.style.left = startLeft + t * deltaLeft + "px";
+        clone.style.top = startTop + t * deltaTop + "px";
+        clone.style.width = startWidth + t * deltaWidth + "px";
+
+        if (t < 1) {
+            requestAnimationFrame(step);
+        } else {
+            callback?.();
+        }
+    }
+
+    requestAnimationFrame(step);
+}
+
+/* ===== 中央表示 & ダイアログ ===== */
+export function centerWindowOptions(width = 300, height = 150, parentWin = null) {
+    let rect;
+
+    if (parentWin instanceof HTMLElement) {
+        rect = parentWin.getBoundingClientRect();
+    } else {
+        const desktop = document.getElementById("desktop");
+        if (desktop) {
+            rect = desktop.getBoundingClientRect();
+        } else {
+            // ★ desktop要素が見つからない場合はブラウザの表示領域を基準にする
+            rect = {
+                left: 0,
+                top: 0,
+                width: window.innerWidth,
+                height: window.innerHeight
+            };
+        }
+    }
+
+    return {
+        width: width + "px",
+        height: height + "px",
+        // rect が取得できていれば、ここでの計算はエラーになりません
+        left: rect.left + rect.width / 2 - width / 2 + "px",
+        top: rect.top + rect.height / 2 - height / 2 + "px"
+    };
+}
+
+/* ===== モーダル用ウィンドウ ===== */
+export function showModalWindow(title, message, options = {}) {
+    const parentWin = options.parentWin;
+
+    // --- 1. システム音の再生 ---
+    // options.silent が true の場合は再生をスキップ
+    if (typeof playSystemEventSound === "function" && options.silent !== true) {
+        if (options.iconClass === "error_icon") {
+            playSystemEventSound('error');
+        } else {
+            playSystemEventSound('notify');
+        }
+    }
+
+    // --- 2. 重複表示の防止 ---
+    if (parentWin) {
+        if (!parentWin._activeDialogs) parentWin._activeDialogs = new Set();
+
+        // 同じメッセージのダイアログが既に開いていれば、その要素を探して返す
+        if (parentWin._activeDialogs.has(message)) {
+            const existingWin = Array.from(document.querySelectorAll(".window"))
+                .find(w => w.innerText.includes(message)); // メッセージ内容で検索
+            return existingWin ? existingWin.querySelector(".content") : null;
+        }
+        parentWin._activeDialogs.add(message);
+    }
+
+    // 既存の同タイトル・同種モーダルがあれば再利用または防止
+    const existing = Array.from(document.querySelectorAll(".window"))
+        .find(w => w._modal && w.dataset.title === title);
+    if (existing) return existing.querySelector(".content");
+
+    // --- 3. オーバーレイ作成 ---
+    let overlay = null;
+    if (options.overlay === true) {
+        overlay = document.createElement("div");
+        overlay.className = "modal-overlay";
+        Object.assign(overlay.style, {
+            position: "fixed",
+            left: 0, top: 0,
+            width: "100vw", height: "100vh",
+            background: "rgba(0,0,0,0.4)",
+            zIndex: 9999
+        });
+        document.body.appendChild(overlay);
+    }
+
+    // --- 4. ウィンドウ本体の作成 ---
+    const winWidth = options.width || 340;
+    const winHeight = options.height || 160;
+
+    // 既存の createWindow 関数を利用 (外部定義済みと想定)
+    const content = createWindow(title, {
+        ...centerWindowOptions(winWidth, winHeight, parentWin),
+        taskbar: (options.taskbar !== undefined) ? options.taskbar : false,
+        disableControls: true,
+        hideRibbon: true,
+        hideStatus: true,
+        skipSave: true,
+        _modal: true,
+        disableResize: true
+    });
+
+    const win = content.parentElement;
+
+    // ★ 高さの自動調整ロジック
+    if (!options.height) {
+        win.style.height = "auto";
+        win.style.minHeight = "120px";
+        win.style.maxHeight = "85vh"; // 画面を突き抜けないように制限
+        content.style.height = "auto";
+        content.style.overflowY = "auto"; // 内容が多すぎる場合はスクロール
+    }
+
+    win._modalOverlay = overlay;
+    win.style.zIndex = 10000;
+    win.classList.add("modal-dialog");
+    win.style.position = "absolute";
+    document.body.appendChild(win);
+
+    // --- 5. 配置（ポジショニング）の最適化 ---
+    if (parentWin) {
+        parentWin.style.pointerEvents = "none"; // 親をロック
+
+        const rect = parentWin.getBoundingClientRect();
+        const left = rect.left + (rect.width - winWidth) / 2;
+        const top = rect.top + (rect.height / 2); // 一旦中央点へ配置
+
+        win.style.left = `${left}px`;
+        win.style.top = `${top}px`;
+
+        // 高さが auto の場合、描画後の実サイズを元に transform で中央補正し、その後に px 固定
+        if (!options.height) {
+            win.style.transform = "translateY(-50%)";
+            requestAnimationFrame(() => {
+                const finalRect = win.getBoundingClientRect();
+                win.style.transform = "none";
+                win.style.top = `${finalRect.top}px`;
+            });
+        }
+    } else if (!options.height) {
+        // 親がない場合、画面の中央に配置
+        win.style.left = "50%";
+        win.style.top = "50%";
+        win.style.transform = "translate(-50%, -50%)";
+        requestAnimationFrame(() => {
+            const finalRect = win.getBoundingClientRect();
+            win.style.transform = "none";
+            win.style.top = `${finalRect.top}px`;
+            win.style.left = `${finalRect.left}px`;
+        });
+    }
+
+    // --- 6. 終了処理の定義 ---
+    const closeDialog = (callback) => {
+        if (parentWin) {
+            parentWin._activeDialogs.delete(message);
+            parentWin.style.pointerEvents = "auto"; // ロック解除
+        }
+        if (win._observer) win._observer.disconnect();
+        win.remove();
+        if (overlay) overlay.remove();
+        scheduleRefreshTopWindow();
+        if (typeof callback === "function") callback();
+    };
+
+    // 親ウィンドウがDOMから削除されたら、モーダルも道連れで消す
+    if (parentWin) {
+        const observer = new MutationObserver(() => {
+            if (!document.body.contains(parentWin)) {
+                closeDialog();
+            }
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+        win._observer = observer;
+    }
+
+    // --- 7. UI構築 (アイコン・テキスト・ボタン) ---
+    content.style.position = "relative";
+    content.style.display = "flex";
+    content.style.flexDirection = "column";
+    content.style.minHeight = "100px";
+
+    let iconHtml = "";
+    if (options.iconClass) {
+        const iconChar = options.iconClass === "warning_icon" ? "!" : "";
+        iconHtml = `<div class="${options.iconClass}" style="top: 20px;">${iconChar}</div>`;
+    }
+
+    const textMargin = options.iconClass ? "margin-left: 45px;" : "";
+    content.innerHTML = `
+        <div style="flex: 1; padding: 20px 15px; display: flex; align-items: flex-start;">
+            ${iconHtml}
+            <div style="${textMargin} line-height: 1.4; word-break: break-all;">
+                ${message}
+            </div>
+        </div>
+        <div class="button-container" style="text-align:center; padding-bottom:10px; padding-top:5px;"></div>
+    `;
+
+    const container = content.querySelector(".button-container");
+    (options.buttons || [{ label: "OK", onClick: null }]).forEach(btn => {
+        const b = document.createElement("button");
+        b.textContent = btn.label;
+        b.onclick = () => closeDialog(btn.onClick || btn.action);
+        b.style.margin = "0 6px";
+        b.style.minWidth = "70px";
+        b.style.padding = "4px 10px";
+        container.appendChild(b);
+    });
+
+    // 右上の [x] ボタン等がある場合のハンドリング
+    const closeBtn = win.querySelector(".close-btn");
+    if (closeBtn) closeBtn.onclick = () => closeDialog();
+
+    return content;
+}
+
+/* ===== 便利ラッパーの更新 ===== */
+
+export function alertWindow(message, options = {}) {
+    // options.silent が true でない場合のみ音を鳴らす
+    if (options.silent !== true) {
+        playSystemEventSound('notify');
+    }
+
+    return showModalWindow("Alert", message, {
+        ...options,
+        iconClass: "warning_icon", // 黄色の警告アイコンを適用
+        silent: true
+    });
+}
+
+export function errorWindow(message, options = {}) {
+    return showModalWindow("Error", message, {
+        ...options,
+        iconClass: "error_icon", // 赤色のエラーアイコンを適用
+        buttons: [{ label: "OK", onClick: null }]
+    });
+}
+
+export function confirmWindow(message, callback, options = {}) {
+    return showModalWindow("Confirm", message, {
+        ...options,
+        iconClass: "warning_icon", // 確認ダイアログも警告アイコンを使用
+        buttons: [
+            { label: "はい", onClick: () => callback(true) },
+            { label: "いいえ", onClick: () => callback(false) }
+        ]
+    });
+}
+
+export function progressWindow(title, itemName, options = {}) {
+    const winWidth = options.width || 380;
+    const winHeight = options.height || 180;
+    const startTime = performance.now(); // 残り時間計算の開始点
+
+    // 1. showModalWindow を使用してウィンドウを生成
+    // これにより、既存のモーダルロジックやタスクバー連携がそのまま機能します
+    const content = showModalWindow(title, "", {
+        ...options,
+        width: winWidth,
+        height: winHeight,
+        silent: true,
+        // キャンセルボタンが必要な場合に備えて設定
+        buttons: options.allowCancel ? [{ label: "キャンセル", onClick: options.onCancel || null }] : (options.buttons || []),
+    });
+
+    // 実際のウィンドウ外枠要素を取得
+    const win = content.parentElement;
+
+    // 2. ウィンドウ内部のレイアウト（Windows風）
+    content.innerHTML = `
+        <div style="padding: 15px; font-size: 12px; font-family: 'MS Sans Serif', Tahoma, sans-serif; color: #000; user-select: none;">
+            <div class="pg-item-name" style="margin-bottom: 10px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                ${itemName}
+            </div>
+            
+            <div style="height: 26px; border: 1px solid #808080; background: #fff; box-shadow: inset 1px 1px #000; margin-bottom: 10px; position: relative;">
+                <div class="pg-bar" style="height: 100%; width: 0%; background: #000080; transition: width 0.2s;"></div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 80px 1fr; gap: 4px; color: #404040; line-height: 1.4;">
+                <span>進捗率:</span>   <span class="pg-percent">0%</span>
+                <span>詳細:</span>     <span class="pg-detail">準備中...</span>
+                <span>残り時間:</span> <span class="pg-time">計算中...</span>
+            </div>
+        </div>
+    `;
+
+    const bar = content.querySelector(".pg-bar");
+    const percentText = content.querySelector(".pg-percent");
+    const detailText = content.querySelector(".pg-detail");
+    const timeText = content.querySelector(".pg-time");
+
+    return {
+        /**
+         * 進捗状況を更新するメソッド
+         * @param {number} current - 現在値
+         * @param {number} total - 最大値
+         * @param {string} detail - 詳細テキスト（例: "5.2MB / 10MB"）
+         */
+        update: (current, total = 100, detail = "") => {
+            // ウィンドウが閉じられていたら処理しない
+            if (!win || !win.isConnected) return;
+
+            const p = Math.max(0, Math.min(100, (current / total) * 100));
+
+            // バーとパーセントの更新
+            bar.style.width = `${p}%`;
+            percentText.textContent = `${Math.round(p)}%`;
+            if (detail) detailText.textContent = detail;
+
+            // 残り時間の計算ロジック
+            const elapsed = (performance.now() - startTime) / 1000; // 経過秒
+            if (p > 5) {
+                // (経過時間 / 現在の進捗率) - 経過時間 = 残り時間
+                const remaining = (elapsed / (p / 100)) - elapsed;
+                if (remaining > 60) {
+                    timeText.textContent = `約 ${Math.floor(remaining / 60)}分 ${Math.round(remaining % 60)}秒`;
+                } else {
+                    timeText.textContent = `約 ${Math.round(remaining)}秒`;
+                }
+            }
+
+            // 100%に達したら自動で閉じる
+            if (p >= 100) {
+                timeText.textContent = "完了しました";
+                if (options.autoClose !== false) {
+                    setTimeout(() => {
+                        if (win && win.isConnected) {
+                            // window.jsのクリーンアップ関数を実行（タスクバーボタン等も消去される）
+                            if (typeof win._destroy === "function") win._destroy();
+                            else win.remove();
+                        }
+                    }, 800); // 完了を確認できるように少し待機
+                }
+            }
+        },
+        // 手動で閉じたい場合用
+        close: () => {
+            if (win && typeof win._destroy === "function") win._destroy();
+        }
+    };
+}
+
+/* ===== refreshTopWindow 更新 ===== */
+export function refreshTopWindow() {
+    const visibleWindows = Array.from(document.querySelectorAll(".window"))
+        .filter(win => win.style.visibility !== "hidden" && win.dataset.minimized !== "true");
+
+    let topWindow = null;
+
+    // モーダルがあれば最優先
+    const modalWin = visibleWindows.find(w => w._modal);
+    if (modalWin) topWindow = modalWin;
+    else if (visibleWindows.length) {
+        visibleWindows.sort((a, b) =>
+            parseInt(b.style.zIndex) - parseInt(a.style.zIndex)
+        );
+        topWindow = visibleWindows[0];
+    }
+
+    document.querySelectorAll(".window .title-bar").forEach(tb => {
+        const win = tb.parentElement;
+        if (win === topWindow) {
+            tb.style.background = themeColor2
+                ? `linear-gradient(90deg, ${themeColor || DEFAULT_COLOR}, ${themeColor2})`
+                : (themeColor || DEFAULT_COLOR);
+        } else {
+            tb.style.background = DEFAULT_COLOR;
+        }
+    });
+
+    taskbarButtons.forEach(btn => {
+        if (topWindow && btn._window === topWindow) btn.classList.add("selected");
+        else btn.classList.remove("selected");
+    });
+}
+
+
+
+/* =========================
+   Window Control API
+========================= */
+/**
+ * ウィンドウとタスクバーのタイトルを同期して更新する
+ */
+export function updateWindowTitle(win, baseTitle, isDirty) {
+    if (!win) return;
+
+    const titleText = isDirty ? `${baseTitle} *` : baseTitle;
+
+    // 1. ウィンドウ本体のタイトルバーを更新
+    const titleEl = win.querySelector(".title-text");
+    if (titleEl) {
+        titleEl.textContent = titleText;
+    }
+
+    // 2. タスクバーのボタンを更新
+    // taskbarButtons 配列から、このウィンドウに対応するボタンを探す
+    const btn = taskbarButtons.find(b => b._window === win);
+    if (btn) {
+        const textEl = btn.querySelector(".taskbar-text");
+        if (textEl) {
+            textEl.textContent = titleText;
+        }
+    }
+}
+
+export function getWindows() {
+    return Array.from(document.querySelectorAll(".window")).map((w, index) => ({
+        id: index,
+        title: w.dataset.title || "Untitled",
+        minimized: w.dataset.minimized === "true",
+        zIndex: Number(w.style.zIndex || 0),
+        el: w
+    }));
+}
+
+export function removeAllTaskbarButtons() {
+    taskbarButtons.forEach(btn => btn.remove());
+    taskbarButtons.length = 0;
+}
+
+export function focusWindowById(id) {
+    const list = getWindows();
+    const win = list[id];
+    if (!win) return false;
+    win.el.dispatchEvent(new MouseEvent("mousedown"));
+    return true;
+}
+
+export async function minimizeWindowById(id) {
+    const list = getWindows();
+    const win = list[id];
+    if (!win) return false;
+
+    const w = win.el;
+    if (w.dataset.minimized === "true") return true;
+
+    const taskbarBtn = w._taskbarBtn;
+    if (!taskbarBtn) {
+        // タスクバーがない場合は即時非表示（visibility に統一）
+        w.style.visibility = "hidden";
+        w.dataset.minimized = "true";
+        scheduleRefreshTopWindow();
+        return true;
+    }
+
+    const titleBar = w.querySelector(".title-bar");
+    const titleText = titleBar?.querySelector(".title-text");
+    if (!titleText) return false;
+
+    const rect = taskbarBtn.getBoundingClientRect();
+    const clone = createTitleClone(w, titleBar, titleText);
+
+    // 元ウィンドウはアニメ中非表示
+    w.style.pointerEvents = "none";
+    w.style.visibility = "hidden";
+
+    animateTitleClone(clone, { left: rect.left, top: rect.top, width: rect.width }, undefined, () => {
+        clone.remove();
+        w.dataset.minimized = "true";
+        w.style.pointerEvents = "auto";
+        scheduleRefreshTopWindow();
+    });
+
+    return true;
+}
+
+export function maximizeWindowById(id) {
+    const list = getWindows();
+    const win = list[id];
+    if (!win) return false;
+
+    const btn = win.el.querySelector(".max-btn");
+    if (btn) btn.click();
+    return true;
+}
+
+export function closeWindowById(id) {
+    const wins = Array.from(document.querySelectorAll(".window"));
+    const target = wins[id];
+    if (!target) throw new Error("Invalid window id");
+
+    // 単なる remove() ではなく、定義したクリーンアップ関数を実行
+    if (typeof target._destroy === "function") {
+        target._destroy();
+    } else {
+        // フォールバック
+        target.remove();
+    }
+}
+
+export function installWindowContextMenu(w) {
+    const titleBar = w.querySelector(".title-bar");
+    const taskbarBtn = w._taskbarBtn;
+
+    // 各ボタンの存在チェックと pointer_none 判定
+    const minBtn = w.querySelector(".min-btn");
+    const maxBtn = w.querySelector(".max-btn");
+    const closeBtn = w.querySelector(".close-btn");
+
+    const minDisabled = minBtn && minBtn.classList.contains("pointer_none");
+    const maxDisabled = maxBtn && maxBtn.classList.contains("pointer_none");
+    const closeDisabled = closeBtn && closeBtn.classList.contains("pointer_none");
+
+    // タイトルバー右クリック
+    if (titleBar) {
+        attachContextMenu(titleBar, () => [
+            {
+                label: "最小化",
+                action: () => { if (!minDisabled) minBtn?.click(); },
+                disabled: minDisabled
+            },
+            {
+                label: "最大化 / 元のサイズに戻す",
+                action: () => { if (!maxDisabled) maxBtn?.click(); },
+                disabled: maxDisabled || w.dataset.minimized === "true"
+            },
+            {
+                label: "閉じる",
+                action: () => { if (!closeDisabled) closeBtn?.click(); },
+                disabled: closeDisabled
+            }
+        ]);
+    }
+
+    // タスクバー右クリック
+    if (taskbarBtn) {
+        attachContextMenu(taskbarBtn, () => {
+            const minimized = w.dataset.minimized === "true";
+
+            // ★ 右クリックでメニューを表示する時点でウィンドウを選択・最前面に
+            if (!minimized) {
+                // ウィンドウ最前面に
+                bringToFront(w);
+
+                // タイトルバー色更新
+                document.querySelectorAll(".window .title-bar").forEach(tb => {
+                    if (tb.parentElement === w) {
+                        tb.style.background = themeColor2
+                            ? `linear-gradient(90deg, ${themeColor}, ${themeColor2})`
+                            : themeColor;
+                    } else {
+                        tb.style.background = "gray";
+                    }
+                });
+
+                // タスクバー選択状態更新
+                taskbarButtons.forEach(btn => btn.classList.remove("selected"));
+                taskbarBtn.classList.add("selected");
+            }
+
+            return [
+                {
+                    label: "元の位置に戻す",
+                    action: () => { if (!minDisabled && minimized) taskbarBtn.click(); },
+                    disabled: minDisabled || !minimized
+                },
+                {
+                    label: "最小化",
+                    action: () => { if (!minDisabled && !minimized) minBtn?.click(); },
+                    disabled: minDisabled || minimized
+                },
+                {
+                    label: "最大化 / 元のサイズに戻す",
+                    action: () => { if (!maxDisabled) maxBtn?.click(); },
+                    disabled: maxDisabled || minimized
+                },
+                {
+                    label: "閉じる",
+                    action: () => { if (!closeDisabled) closeBtn?.click(); },
+                    disabled: closeDisabled
+                }
+            ];
+        });
+    }
+}
+
+export function setWindowAnimationEnabled(v) {
+    ENABLE_WINDOW_ANIMATION = v;
+}
+
+export function destroyWindow(win) {
+    if (!win) return;
+    const index = taskbarButtons.findIndex(btn => btn._window === win);
+    if (index !== -1) {
+        taskbarButtons[index].remove();
+        taskbarButtons.splice(index, 1);
+        console.log("Taskbar button removed for:", win.querySelector(".title-text")?.innerText);
+    }
+    if (win.isConnected) {
+        win.remove();
+    }
+}

@@ -1,0 +1,595 @@
+// TextEditor.js
+import { resolveFS } from "../fs-utils.js";
+import { createWindow, bringToFront, showModalWindow, alertWindow, centerWindowOptions, taskbarButtons, updateWindowTitle } from "../window.js";
+import { setupRibbon } from "../ribbon.js";
+import { getFileContent } from "../fs-db.js";
+
+let activeSearchWin = null;
+
+function showWarning(root, message) {
+    const win = root.closest(".window");
+    alertWindow(message, { parentWin: win });
+}
+
+function showConfirm(root, message, onYes, onNo) {
+    const win = root.closest(".window");
+    showModalWindow("Confirm", message, {
+        parentWin: win,
+        iconClass: "warning_icon",
+        buttons: [
+            { label: "はい", onClick: onYes },
+            { label: "いいえ", onClick: onNo }
+        ]
+    });
+}
+
+/* =========================
+   TextEditor
+========================= */
+export default async function TextEditor(root, options = {}) {
+    const { path } = options;
+    const win = root.closest(".window");
+    const ribbon = win?._ribbon;
+    const titleEl = win?.querySelector(".title-text");
+
+    let filePath = path || null;
+    let fileNode = filePath ? resolveFS(filePath) : null;
+    let isNewFile = !fileNode;
+
+    // --- 追加: 実体データの取得処理 ---
+    if (fileNode && fileNode.content === "__EXTERNAL_DATA__") {
+        try {
+            fileNode.content = await getFileContent(filePath);
+        } catch (e) {
+            console.error("Failed to load file content:", e);
+            fileNode.content = "Error: データの読み込みに失敗しました。";
+        }
+    }
+
+    const untitledId = Date.now().toString(36);
+    let baseTitle = filePath?.split("/").pop()?.trim() || `Untitled-${untitledId}`;
+
+    let dirty = false;
+
+    const styleState = Object.assign({
+        fontSize: 16,
+        fontFamily: "monospace",
+        fontWeight: "normal",
+        fontStyle: "normal"
+    }, fileNode?.style || {});
+
+    /* =========================
+       UI
+    ========================== */
+    root.innerHTML = `
+        <textarea class="texteditor" wrap="off" style="
+            width:100%;
+            height:100%;
+            resize:none;
+            box-sizing:border-box;
+            border:none;
+            outline:none;
+            padding:8px;
+            background:white;
+            color:black;
+            overflow:auto;
+            white-space:pre;
+            word-break:normal;
+            overflow-wrap:normal;
+        "></textarea>
+    `;
+
+    const textarea = root.querySelector(".texteditor");
+    textarea.value = fileNode?.content || "";
+
+    const contentEl = win?.querySelector(".content");
+    if (contentEl) contentEl.style.overflow = "hidden";
+
+    function applyStyle() {
+        Object.assign(textarea.style, {
+            fontSize: styleState.fontSize + "px",
+            fontFamily: styleState.fontFamily,
+            fontWeight: styleState.fontWeight,
+            fontStyle: styleState.fontStyle,
+            textDecoration: styleState.textDecoration || "none",
+            color: styleState.color || "black",
+            backgroundColor: styleState.backgroundColor || "white"
+        });
+    }
+    applyStyle();
+
+    function updateTitle() {
+        updateWindowTitle(win, baseTitle, dirty);
+    }
+    updateTitle();
+
+    async function save() {
+        const desktop = resolveFS("Desktop");
+        if (!desktop) { showWarning(root, "Desktop が見つかりません"); return; }
+
+        const treatAsNew = !fileNode || (filePath && filePath.toLowerCase().endsWith("texteditor.app"));
+
+        if (!treatAsNew) {
+            if (fileNode.content === "__EXTERNAL_DATA__") {
+                showWarning(root, "データがまだ読み込み中のため保存できません。");
+                return;
+            }
+            fileNode.content = textarea.value;
+            fileNode.style = { ...styleState };
+            dirty = false;
+            updateTitle();
+            window.dispatchEvent(new Event("fs-updated"));
+            return;
+        }
+
+        // 新規ファイル名入力
+        let finalName = baseTitle;
+        async function askFileName(defaultName) {
+            return new Promise(resolve => {
+                const content = showModalWindow("新規保存", "ファイル名を入力してください", {
+                    parentWin: win,
+                    silent: true,
+                    buttons: [
+                        {
+                            label: "OK", onClick: () => {
+                                // OK時に現在の input の値を取得
+                                const currentInput = content.querySelector(".modal-prompt-input");
+                                resolve(currentInput ? currentInput.value : defaultName);
+                            }
+                        },
+                        { label: "キャンセル", onClick: () => resolve(null) }
+                    ]
+                });
+
+                if (!content) {
+                    console.error("showModalWindow が要素を返しませんでした。");
+                    return;
+                }
+
+                // 1. すでに input が存在するかチェック（重複防止）
+                let promptInput = content.querySelector(".modal-prompt-input");
+
+                // 2. 存在しない場合のみ新規作成
+                if (!promptInput) {
+                    promptInput = document.createElement("input");
+                    promptInput.className = "modal-prompt-input"; // 識別用クラス
+                    promptInput.type = "text";
+                    promptInput.value = defaultName;
+                    promptInput.style.width = "100%";
+                    promptInput.style.boxSizing = "border-box";
+                    promptInput.style.padding = "4px";
+                    promptInput.style.marginTop = "10px";
+
+                    // ボタンコンテナを探してその前に挿入
+                    const btnContainer = content.querySelector(".button-container") || content.querySelector(".modal-button-container") || content.lastElementChild;
+                    if (btnContainer) {
+                        content.insertBefore(promptInput, btnContainer);
+                    } else {
+                        content.appendChild(promptInput);
+                    }
+                } else {
+                    // 3. すでに存在する場合は値を最新にする
+                    promptInput.value = defaultName;
+                }
+
+                setTimeout(() => promptInput.focus(), 10);
+            });
+        }
+        let idx = 1;
+        while (desktop[finalName]) finalName = `${baseTitle} (${idx++})`;
+        const name = await askFileName(finalName);
+        if (!name) return;
+        finalName = name;
+        if (desktop[finalName]) { showWarning(root, "同名のファイルが存在します"); return; }
+
+        // Desktop に新規ファイルを作成
+        const newNode = { type: "file", content: textarea.value, style: { ...styleState } };
+        desktop[finalName] = newNode;
+        fileNode = newNode;
+        filePath = `Desktop/${finalName}`;
+        baseTitle = finalName;
+        dirty = false;
+
+        window.dispatchEvent(new Event("fs-updated"));
+        // -------------------------------
+        // 元の TextEditor.app ウィンドウを置き換え
+        // -------------------------------
+        if (win) {
+            const oldWin = win;
+            const oldRoot = root;
+            const oldBtn = oldWin._taskbarBtn; // 元のタスクバーのボタン
+
+            // 新しいウィンドウを作る
+            const newRoot = createWindow(finalName, { width: 600, height: 400 });
+            oldWin.parentElement.replaceChild(newRoot.parentElement, oldRoot.parentElement);
+
+            // 新規ファイル用 TextEditor 初期化
+            TextEditor(newRoot, { path: filePath, fromApp: false });
+
+            // ----------------------------
+            // 古いタスクバーボタンの完全削除
+            // ----------------------------
+            if (oldBtn && Array.isArray(taskbarButtons)) {
+                oldBtn.remove();
+
+                const idx = taskbarButtons.indexOf(oldBtn);
+                if (idx !== -1) taskbarButtons.splice(idx, 1);
+
+                oldBtn._window = null;
+                oldWin._taskbarBtn = null;
+            }
+            bringToFront(newRoot.closest(".window"));
+        }
+    }
+
+    /* =========================
+       リボンUI
+    ========================== */
+    if (win) {
+        const ribbonMenus = [
+            {
+                title: "Edit",
+                items: [
+                    { label: "検索", action: searchText }
+                ]
+            },
+            {
+                title: "Font",
+                items: [
+                    { label: "Monospace", action: () => { styleState.fontFamily = "monospace"; dirty = true; applyStyle(); updateTitle(); } },
+                    { label: "Sans", action: () => { styleState.fontFamily = "sans-serif"; dirty = true; applyStyle(); updateTitle(); } },
+                    { label: "Serif", action: () => { styleState.fontFamily = "serif"; dirty = true; applyStyle(); updateTitle(); } }
+                ]
+            },
+            {
+                title: "Size",
+                items: [8, 12, 16, 20, 24, 32, 48, 64, 128].map(sz => ({
+                    label: sz + "px",
+                    action: () => { styleState.fontSize = sz; dirty = true; applyStyle(); updateTitle(); }
+                }))
+            },
+            {
+                title: "Style",
+                items: [
+                    {
+                        label: "B", action: () => {
+                            styleState.fontWeight = styleState.fontWeight === "bold" ? "normal" : "bold";
+                            dirty = true; applyStyle(); updateTitle();
+                        }
+                    },
+                    {
+                        label: "I", action: () => {
+                            styleState.fontStyle = styleState.fontStyle === "italic" ? "normal" : "italic";
+                            dirty = true; applyStyle(); updateTitle();
+                        }
+                    },
+                    {
+                        label: "U", action: () => {
+                            styleState.textDecoration = styleState.textDecoration === "underline" ? "none" : "underline";
+                            dirty = true; applyStyle(); updateTitle();
+                        }
+                    },
+                    {
+                        label: "S", action: () => {
+                            styleState.textDecoration = styleState.textDecoration === "line-through" ? "none" : "line-through";
+                            dirty = true; applyStyle(); updateTitle();
+                        }
+                    },
+                    {
+                        label: "Color", action: () => showColorPicker("文字色", styleState.color || "#000000", val => {
+                            styleState.color = val; dirty = true; applyStyle(); updateTitle();
+                        }, win)
+                    },
+                    {
+                        label: "BG", action: () => showColorPicker("背景色", styleState.backgroundColor || "#ffffff", val => {
+                            styleState.backgroundColor = val; dirty = true; applyStyle(); updateTitle();
+                        }, win)
+                    }
+                ]
+            },
+            {
+                title: "File",
+                items: [
+                    { label: "Save", action: save },
+                    {
+                        label: "Reset", action: () => {
+                            Object.assign(styleState, { fontSize: 16, fontFamily: "monospace", fontWeight: "normal", fontStyle: "normal" });
+                            dirty = true; applyStyle(); updateTitle();
+                        }
+                    }
+                ]
+            }
+        ];
+
+        setupRibbon(win, () => filePath, null, ribbonMenus);
+    }
+
+    // ステータスバー更新関数を追加
+    function updateStatusBar() {
+        if (!win?._statusBar) return;
+
+        const text = textarea.value;
+        const cursorPos = textarea.selectionStart;
+
+        const totalChars = text.length;
+
+        // splitによる配列生成を避け、正規表現のカウントと lastIndexOf のみにする
+        const row = (text.substring(0, cursorPos).match(/\n/g) || []).length + 1;
+        const totalLines = (text.match(/\n/g) || []).length + 1;
+
+        // カーソル直前の改行位置を探して引き算するだけで列数を算出（O(1)のメモリ消費）
+        const lastNewlineIdx = text.lastIndexOf("\n", cursorPos - 1);
+        const col = cursorPos - lastNewlineIdx;
+
+        win._statusBar.textContent = `行: ${row}/${totalLines} 列: ${col} 文字: ${totalChars}`;
+    }
+
+    // 初期ステータスバー更新
+    updateStatusBar();
+
+    // 文字入力時、カーソル移動時にタイトルとステータスバーを更新
+    let statusBarTimeout;
+
+    // デバウンス処理を関数化してまとめる
+    function debouncedUpdateStatusBar() {
+        clearTimeout(statusBarTimeout);
+        statusBarTimeout = setTimeout(() => {
+            updateStatusBar();
+        }, 150);
+    }
+
+    textarea.addEventListener("input", () => {
+        dirty = true;
+        updateTitle();
+        debouncedUpdateStatusBar();
+    });
+
+    // 入力だけでなく、カーソル移動や選択時も遅延実行させる
+    textarea.addEventListener("click", debouncedUpdateStatusBar);
+    textarea.addEventListener("keyup", debouncedUpdateStatusBar);
+    textarea.addEventListener("mouseup", debouncedUpdateStatusBar);
+
+
+    win?.addEventListener("keydown", e => {
+        if (e.ctrlKey && e.key.toLowerCase() === "s") { e.preventDefault(); save(); }
+    });
+
+    const closeBtn = win?.querySelector(".close-btn");
+    function closeWindow() { closeBtn?.click(); }
+
+    function requestClose() {
+        if (!dirty) {
+            closeWindow();
+            return;
+        }
+        // 編集中ダイアログ用に modal-dialog を付与
+        if (win && !win.classList.contains("modal-dialog")) {
+            win.classList.add("modal-dialog");
+        }
+        showConfirm(root, "編集中の内容があります。\n保存しますか？",
+            async () => {
+                await save();
+                closeWindow();
+            },
+            () => {
+                dirty = false;
+                updateTitle();
+                closeWindow();
+            }
+        );
+    }
+
+    closeBtn?.addEventListener("click", e => {
+        if (!dirty) return;
+        e.preventDefault(); e.stopImmediatePropagation();
+        requestClose();
+    }, true);
+
+    win?.addEventListener("keydown", e => {
+        if (e.altKey && e.key === "F4") { e.preventDefault(); requestClose(); }
+    });
+
+    function searchText() {
+        if (!win) return;
+
+        // 1. 既存の検索ウィンドウがあれば最前面に持ってきて終了
+        if (activeSearchWin && document.body.contains(activeSearchWin)) {
+            bringToFront(activeSearchWin);
+            const existingInput = activeSearchWin.querySelector("input[type='text']");
+            if (existingInput) existingInput.focus();
+            return;
+        }
+
+        // 2. 検索ウィンドウの作成
+        const content = showModalWindow("検索", "検索文字列を入力してください", {
+            parentWin: null, // モードレス
+            buttons: [
+                { label: "検索", onClick: () => performSearch(input.value) },
+                { label: "閉じる", onClick: () => closeSearch() }
+            ],
+            silent: true
+        });
+
+        const searchWin = content.parentElement;
+        activeSearchWin = searchWin;
+
+        // --- 中央配置のロジック ---
+        const searchWidth = 320;
+        const searchHeight = 165;
+
+        // ウィンドウの初期サイズを固定
+        searchWin.style.width = searchWidth + "px";
+        searchWin.style.height = searchHeight + "px";
+
+        // centerWindowOptions を使用して座標を取得
+        const opts = centerWindowOptions(searchWidth, searchHeight, win);
+
+        // 重要: modal-dialog 等の CSS で transform: translate(-50%, -50%) が
+        // かかっている場合、座標がズレるためリセットする
+        searchWin.style.transform = "none";
+        searchWin.style.left = opts.left;
+        searchWin.style.top = opts.top;
+        searchWin.style.margin = "0"; // 余計なマージンを排除
+
+        // input要素の作成
+        const input = document.createElement("input");
+        input.type = "text";
+        input.style.width = "100%";
+        input.style.marginTop = "0px";
+        input.style.boxSizing = "border-box";
+        input.style.padding = "4px";
+
+        const btnContainer = content.querySelector(".modal-button-container") || content.lastElementChild;
+        if (btnContainer) {
+            content.insertBefore(input, btnContainer);
+        } else {
+            content.appendChild(input);
+        }
+
+        input.addEventListener("keydown", e => {
+            if (e.key === "Enter") performSearch(input.value);
+        });
+
+        setTimeout(() => input.focus(), 10);
+
+        // 親ウィンドウ監視
+        let observer = new MutationObserver(() => {
+            if (!document.body.contains(win)) {
+                closeSearch();
+            }
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+
+        function closeSearch() {
+            if (observer) observer.disconnect();
+            if (searchWin && searchWin.parentNode) searchWin.remove();
+            if (activeSearchWin === searchWin) activeSearchWin = null;
+        }
+
+        const searchCloseBtn = searchWin.querySelector(".close-btn");
+        if (searchCloseBtn) searchCloseBtn.addEventListener("click", closeSearch);
+
+        function performSearch(query) {
+            if (!query) return;
+            const val = textarea.value;
+            const index = val.indexOf(query);
+            if (index === -1) return;
+
+            textarea.focus();
+            textarea.setSelectionRange(index, index + query.length);
+
+            // 改善：配列を作らず、正規表現で改行数（＝行番号）を直接取得
+            const matches = val.substring(0, index).match(/\n/g);
+            const lineIndex = matches ? matches.length : 0;
+
+            const lineHeight = parseInt(getComputedStyle(textarea).lineHeight) || 20;
+            textarea.scrollTop = lineIndex * lineHeight;
+        }
+    }
+}
+
+/* =========================
+   ユーティリティ
+========================= */
+function button(label) { const b = document.createElement("button"); b.textContent = label; b.style.marginRight = "4px"; b.style.height = "20px"; return b; }
+function label(text) { const s = document.createElement("span"); s.textContent = text + ":"; s.style.margin = "0 4px"; s.style.fontSize = "12px"; return s; }
+function number(value, min, max, width) { const i = document.createElement("input"); i.type = "number"; i.value = value; i.min = min; i.max = max; i.style.width = width + "px"; return i; }
+function select(map, value) { const s = document.createElement("select"); for (const k in map) { const o = document.createElement("option"); o.value = k; o.textContent = map[k]; if (k === value) o.selected = true; s.appendChild(o); } return s; }
+
+let activeColorPicker = null;
+
+export function showColorPicker(title, initialColor = "#ffffff", onSelect, parentWin) {
+    // 1. 既存チェック（変数名を整理）
+    if (activeColorPicker && document.body.contains(activeColorPicker)) {
+        bringToFront(activeColorPicker);
+        return activeColorPicker.querySelector(".content");
+    }
+
+    const content = showModalWindow(title || "Color Picker", "色を選択してください", {
+        parentWin: null,
+        width: 320,
+        height: 200,
+        silent: true,
+        buttons: []
+    });
+
+    const win = content.parentElement;
+    win.classList.add("modal-dialog", "color-picker");
+    win.style.position = "absolute";
+    win.style.zIndex = 10000;
+
+    const opts = centerWindowOptions(320, 200, parentWin instanceof HTMLElement ? parentWin : null);
+    win.style.left = opts.left;
+    win.style.top = opts.top;
+
+    // min/maxボタン操作不可
+    const minBtn = win.querySelector(".min-btn");
+    const maxBtn = win.querySelector(".max-btn");
+    if (minBtn) minBtn.classList.add("pointer_none");
+    if (maxBtn) maxBtn.classList.add("pointer_none");
+
+    // コンテンツ
+    content.innerHTML = `
+        <div style="padding:12px;text-align:center;">
+            <input type="color" value="${initialColor}" style="width:80px;height:50px;margin-bottom:12px;">
+            <div style="margin-bottom:12px;" class="color-buttons"></div>
+            <div style="margin-top:8px;"></div>
+        </div>
+    `;
+
+    const colorInput = content.querySelector("input[type=color]");
+    colorInput.className = "button";
+    const buttonContainer = content.querySelector(".color-buttons");
+    const actionContainer = content.querySelector("div div");
+
+    // プリセット色ボタン
+    const presetColors = ["#ff0000", "#00ff00", "#0000ff", "#ffff00", "#ff00ff", "#00ffff", "#ffffff", "#000000"];
+    presetColors.forEach(c => {
+        const btn = document.createElement("button");
+        btn.style.background = c;
+        btn.style.width = "24px";
+        btn.style.height = "24px";
+        btn.style.margin = "0 2px";
+        btn.addEventListener("click", () => colorInput.value = c);
+        buttonContainer.appendChild(btn);
+    });
+
+    // OKボタン
+    const okBtn = document.createElement("button");
+    okBtn.textContent = "OK";
+    okBtn.style.margin = "0 4px";
+    okBtn.addEventListener("click", () => {
+        onSelect?.(colorInput.value);
+        closePicker();
+    });
+    actionContainer.appendChild(okBtn);
+
+    // キャンセルボタン
+    const cancelBtn = document.createElement("button");
+    cancelBtn.textContent = "キャンセル";
+    cancelBtn.style.margin = "0 4px";
+    cancelBtn.addEventListener("click", closePicker);
+    actionContainer.appendChild(cancelBtn);
+
+    document.body.appendChild(win);
+    activeColorPicker = win;
+    bringToFront(win);
+
+    // 親ウィンドウが消えたらカラーピッカーも閉じる
+    let observer = null;
+    if (parentWin instanceof HTMLElement) {
+        observer = new MutationObserver(() => {
+            if (!document.body.contains(parentWin)) closePicker();
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+    }
+
+    function closePicker() {
+        if (!activeColorPicker) return;
+        activeColorPicker.remove();
+        activeColorPicker = null;
+        if (observer) observer.disconnect();
+    }
+
+    return content;
+}
