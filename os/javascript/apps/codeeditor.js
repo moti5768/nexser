@@ -1411,6 +1411,9 @@ export default function CodeEditor(root, options = {}) {
         previewBlobMap.set("__html__", htmlBlobUrl);
 
         // 6. 反映と後片付け
+        // ★追加: 非同期処理(await)の待機中にウィンドウが閉じられた場合のクラッシュを防止
+        if (!previewIframe) return;
+
         previewIframe.src = htmlBlobUrl;
         previewIframe.onload = () => {
             // 新しい内容が表示された後に古い URL を解放する
