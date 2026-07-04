@@ -15,6 +15,7 @@ const baseFS = {
     },
     Desktop: {
         type: "folder",
+        system: true,
         Trash: { type: "link", target: "Trash", system: true },
         "My Computer": { type: "link", target: "Programs", system: true },
         "ControlPanel": { type: "link", target: "Programs/ControlPanel", system: true },
@@ -98,6 +99,8 @@ const baseFS = {
         }
     }
 };
+
+const FACTORY_FS = structuredClone(baseFS);
 
 // --- コアロジック ---
 
@@ -277,7 +280,7 @@ export async function initFS() {
     try {
         // ここで deepSync を実行
         // ※内部の set トラップ内で isSaving を見て保存をスキップするようにする
-        deepSync(FS, saved, baseFS);
+        deepSync(FS, saved, FACTORY_FS);
         if (DEBUG_FS) console.log("[FS] System synchronized successfully.");
     } catch (e) {
         console.error("[FS] Restore failed", e);
@@ -324,9 +327,9 @@ export async function diagnoseAndCleanFS(executeRepair = false) {
             report.corruptionDetected = true;
             report.logs.push(`【警告】システム構造破損: '${node}' ディレクトリが不正、または消失しています。`);
 
-            // 修復実行フラグがある場合はbaseFSから復元
+            // 修復実行フラグがある場合は FACTORY_FS から復元
             if (executeRepair) {
-                FS[node] = structuredClone(baseFS[node]);
+                FS[node] = structuredClone(FACTORY_FS[node]); // ★ baseFS から FACTORY_FS に変更
                 report.logs.push(`[修復] '${node}' ディレクトリを工場出荷時の状態に再生成しました。`);
             }
         }
