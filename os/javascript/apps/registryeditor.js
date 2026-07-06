@@ -19,6 +19,15 @@ export default function RegistryEditor(root) {
     function isProtected(store, key) {
         return store === "kv" && key === "fs";
     }
+    function notifySystemChange(store, key) {
+        if (store === "settings") {
+            window.dispatchEvent(new CustomEvent("setting-changed", { detail: { key } }));
+        } else if (store === "recent") {
+            window.dispatchEvent(new Event("recent-updated"));
+        } else if (store === "files") {
+            window.dispatchEvent(new Event("fs-updated"));
+        }
+    }
 
     async function getDB() {
         if (!dbPromise) dbPromise = openDB();
@@ -103,11 +112,22 @@ export default function RegistryEditor(root) {
                 val = Number(rawVal);
             } else {
                 if (typeof rawVal === 'string') {
-                    if (rawVal.startsWith('{') || rawVal.startsWith('[')) {
-                        try { val = JSON.parse(rawVal); } catch (e) { val = rawVal; }
-                    } else if (typeof rawVal === 'string' && rawVal.trim() !== "" && !isNaN(Number(rawVal))) {
-                        // 整数として扱うべきか、浮動小数点か、OSの仕様に合わせて厳密に変換
-                        val = rawVal.includes('.') ? parseFloat(rawVal) : parseInt(rawVal, 10);
+                    const trimmed = rawVal.trim();
+                    const lower = trimmed.toLowerCase();
+
+                    // 1. 真偽値 (Boolean) のチェックを追加 ★
+                    if (lower === "true") {
+                        val = true;
+                    } else if (lower === "false") {
+                        val = false;
+                    }
+                    // 2. JSON (Object/Array) のチェック
+                    else if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+                        try { val = JSON.parse(trimmed); } catch (e) { val = trimmed; }
+                    }
+                    // 3. 数値 (Number) のチェック
+                    else if (trimmed !== "" && !isNaN(Number(trimmed))) {
+                        val = trimmed.includes('.') ? parseFloat(trimmed) : parseInt(trimmed, 10);
                     }
                 }
             }
@@ -116,6 +136,8 @@ export default function RegistryEditor(root) {
             const tx = db.transaction(currentStore, "readwrite");
             await tx.objectStore(currentStore).put(val, key);
             await tx.done;
+
+            notifySystemChange(currentStore, key);
 
             updateRow(key, String(key), val);
             setTimeout(() => refresh(false), 500);
@@ -135,6 +157,7 @@ export default function RegistryEditor(root) {
                 const db = await getDB();
                 const tx = db.transaction(currentStore, "readwrite");
                 await tx.objectStore(currentStore).delete(key);
+                notifySystemChange(currentStore, key);
                 await tx.done;
 
                 const tr = rowMap.get(String(key));
@@ -191,7 +214,8 @@ export default function RegistryEditor(root) {
                 tx.oncomplete = resolve;
                 tx.onerror = () => { throw tx.error; };
             });
-
+            notifySystemChange(currentStore, oldKey); // ★追加: 変更前のキー削除を通知
+            notifySystemChange(currentStore, newKey); // ★追加: 新規キーの追加を通知
             selectedKey = newKey;
             refresh(true);
         } catch (e) {
@@ -253,7 +277,7 @@ export default function RegistryEditor(root) {
         };
     }
 
-    async function createNew() {
+    async function createNew(type = "REG_SZ") {
         let newKeyBase = "New Value";
         let newKey = newKeyBase;
         let counter = 1;
@@ -261,31 +285,40 @@ export default function RegistryEditor(root) {
         try {
             const db = await getDB();
 
-            // 1. DB全体での重複チェック（rowMapに依存しない）
-            // IDBObjectStore.count() を使うと効率的です
-            const checkExists = async (k) => {
-                const tx = db.transaction(currentStore, "readonly");
-                const count = await tx.objectStore(currentStore).count(k);
-                return count > 0;
-            };
+            // 1. 【修正】確実に全キーを配列として取得する
+            const txRead = db.transaction(currentStore, "readonly");
+            const store = txRead.objectStore(currentStore);
 
-            while ((await checkExists(newKey)) || isProtected(currentStore, newKey)) {
+            // Promiseでラップして、IDBRequestの成功結果を待つ
+            const allKeysArray = await new Promise((resolve, reject) => {
+                const request = store.getAllKeys();
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+
+            // ここで安全に Set を生成
+            const existingKeys = new Set(allKeysArray.map(String));
+
+            // 2. 重複チェック
+            while (existingKeys.has(newKey) || isProtected(currentStore, newKey)) {
                 newKey = `${newKeyBase} #${counter++}`;
             }
 
             const targetKey = String(newKey);
 
-            // 2. DBへ保存
-            const tx = db.transaction(currentStore, "readwrite");
-            await tx.objectStore(currentStore).put("", targetKey);
-            await tx.done;
+            // 3. 型に応じた初期値設定
+            let initialValue = "";
+            if (type === "REG_DWORD") initialValue = 0;
+            if (type === "REG_JSON") initialValue = {};
 
-            // 3. UIリフレッシュ
-            // refreshがPromiseを返すなら、awaitで描画完了を確実に待てる
+            // 4. DB書き込み
+            const txWrite = db.transaction(currentStore, "readwrite");
+            await txWrite.objectStore(currentStore).put(initialValue, targetKey);
+            await txWrite.done;
+
+            // 5. UI更新
             await refresh(true);
 
-            // 4. 描画完了直後に実行（setTimeout 0 または直呼び出し）
-            // DOMのレンダリングを確実に待つなら requestAnimationFrame も有効
             requestAnimationFrame(() => {
                 selectRow(targetKey);
                 enterEditMode(targetKey, "name");
@@ -503,7 +536,11 @@ export default function RegistryEditor(root) {
             {
                 title: "Edit",
                 items: [
-                    { label: "New Value", action: () => createNew() },
+                    // 🟢 ここを変更：3種類のデータ型から選んで作成できるように分割
+                    { label: "New String Value", action: () => createNew("REG_SZ") },
+                    { label: "New DWORD Value", action: () => createNew("REG_DWORD") },
+                    { label: "New JSON Value", action: () => createNew("REG_JSON") },
+
                     { label: "Modify", action: () => { if (selectedKey) enterEditMode(selectedKey, "data"); } },
                     { label: "Rename", action: () => { if (selectedKey) enterEditMode(selectedKey, "name"); } },
                     { label: "Delete", action: () => { if (selectedKey) deleteItem(selectedKey); } },

@@ -44,6 +44,7 @@ export async function saveSetting(key, value) {
         const tx = db.transaction(STORE, "readwrite");
         tx.objectStore(STORE).put(structuredClone(value), key);
         await tx.complete;
+        window.dispatchEvent(new CustomEvent("setting-changed", { detail: { key } }));
         return true;
     } catch (e) {
         console.error("saveSetting failed:", e);
@@ -154,7 +155,29 @@ loadSetting("showRecentItems").then(val => {
 loadSetting("windowAnimationEnabled").then(v => {
     setWindowAnimationEnabled(v ?? true);
 });
+window.addEventListener("setting-changed", async (e) => {
+    const key = e.detail?.key;
+    if (!key) return;
 
+    if (key === "titlebarColor" || key === "titlebarColor2") {
+        themeColor = (await loadSetting("titlebarColor")) || "darkblue";
+        themeColor2 = (await loadSetting("titlebarColor2")) || null;
+        refreshTopWindow();
+    } else if (key === "desktopColor" || key === "wallpaperUrl" || key === "wallpaperStyle") {
+        applyDesktopBackground();
+    } else if (key === "windowAnimationEnabled") {
+        let val = await loadSetting("windowAnimationEnabled");
+        // もし過去のバグ等で文字列の "false" が保存されていた場合の保護
+        if (val === "false") val = false;
+        setWindowAnimationEnabled(val ?? true);
+    } else if (key === "showRecentItems") {
+        window.showRecent = (await loadSetting("showRecentItems")) ?? true;
+        window.dispatchEvent(new Event("recent-updated"));
+    } else if (key === "userName") {
+        const newName = (await loadSetting("userName")) || "Admin";
+        window.dispatchEvent(new CustomEvent("user-profile-updated", { detail: newName }));
+    }
+});
 export function refreshTopWindow() {
     const visibleWindows = Array.from(document.querySelectorAll(".window"))
         .filter(win => win.style.display !== "none" && win.dataset.minimized !== "true");
