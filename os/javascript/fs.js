@@ -62,6 +62,11 @@ const baseFS = {
             "Calc.app": { type: "link", target: "Programs/Applications/Calc.app" },
             "TextEditor.app": { type: "link", target: "Programs/Applications/TextEditor.app" },
             "Paint.app": { type: "link", target: "Programs/Applications/Paint.app" },
+            Games: {
+                type: "folder",
+                system: true,
+                "Tetris.app": { type: "app", entry: "./apps/games/tetris.js", system: true }
+            },
             Multimedia: {
                 type: "folder",
                 system: true,
@@ -81,15 +86,12 @@ const baseFS = {
         },
         Documents: {
             type: "folder",
-            system: true,
-            "Readme.txt": { type: "file", content: "Welcome to NEXSER OS", style: { fontSize: 48, fontFamily: "serif", fontWeight: "bold", fontStyle: "italic" } }
+            system: true
         },
         Music: { type: "folder", system: true },
         Picture: {
             type: "folder",
-            system: true,
-            "photo1.png": { type: "file", content: "image1data" },
-            "photo2.png": { type: "file", content: "image2data" }
+            system: true
         },
         Movie: { type: "folder", system: true },
         Settings: {

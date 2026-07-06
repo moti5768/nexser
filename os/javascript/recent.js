@@ -79,8 +79,10 @@ export async function clearRecent() {
 
     window.dispatchEvent(new Event("recent-updated"));
 }
+window.addEventListener("recent-updated", () => {
+    isLoaded = false;
+});
 
-// ★追加: 特定のパスを「最近使った項目」から削除する関数
 export async function removeRecent(path) {
     cache = cache.filter(i => i.path !== path);
     await save();
