@@ -105,6 +105,35 @@ export async function loadFileAsDataURL(file) {
 }
 
 /**
+ * FileReader を使ってテキストとして読み込む
+ */
+export async function loadFileAsText(file) {
+    return new Promise((resolve, reject) => {
+        if (!(file instanceof Blob)) {
+            return reject(new Error("有効なファイルではありません"));
+        }
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result); // そのままの文字列が返る
+        reader.onerror = () => reject(reader.error);
+        reader.readAsText(file);
+    });
+}
+
+/**
+ * 拡張子を判定し、テキストかDataURLかを自動で振り分けて読み込む
+ */
+export async function importFileSmart(file) {
+    // テキストとして扱うべき拡張子のリスト
+    const textExts = /\.(txt|md|js|ts|json|css|scss|vue|html|htm|cfg)$/i;
+
+    if (textExts.test(file.name)) {
+        return await loadFileAsText(file);
+    } else {
+        return await loadFileAsDataURL(file); // 画像や音声は今まで通りBase64
+    }
+}
+
+/**
  * ファイル/フォルダ名のバリデーション
  * 堅牢性向上: Windowsのシステム予約名（CON, NUL等）のチェックを追加
  */

@@ -216,12 +216,8 @@ let isSaving = false;
 async function performSave() {
     isSaving = true;
     try {
-        const rawFS = structuredClone(baseFS);
+        await saveFS(baseFS);
 
-        // 簡単な整合性チェック
-        if (!rawFS || typeof rawFS !== 'object') throw new Error("Invalid FS structure");
-
-        await saveFS(rawFS);
         if (DEBUG_FS) console.log("[FS] Save completed.");
     } catch (e) {
         console.error("[FS] Save failed:", e);

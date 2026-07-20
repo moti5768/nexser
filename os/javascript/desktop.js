@@ -2,7 +2,7 @@
 import { FS, forceSave } from "./fs.js";
 import { launch } from "./kernel.js";
 import { alertWindow, progressWindow } from "./window.js";
-import { resolveFS, validateName } from "./fs-utils.js";
+import { resolveFS, validateName, importFileSmart } from "./fs-utils.js";
 import { addRecent } from "./recent.js";
 import { attachContextMenu } from "./context-menu.js";
 import { resolveAppByPath, getIcon } from "./file-associations.js";
@@ -273,22 +273,12 @@ export function buildDesktop() {
                 return finalName;
             };
 
-            const readFileAsData = (file) => {
-                return new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = (ev) => resolve(ev.target.result);
-                    reader.onerror = (err) => reject(err);
-                    if (!file.type.startsWith("text/")) reader.readAsDataURL(file);
-                    else reader.readAsText(file);
-                });
-            };
-
             const addFileToNode = async (file, targetNode) => {
                 pg.update(processedCount, totalFiles, `${file.name} をコピーしています...`);
                 let targetName = getUniqueDesktopName(targetNode, file.name);
 
                 try {
-                    const content = await readFileAsData(file);
+                    const content = await importFileSmart(file);
                     targetNode[targetName] = {
                         type: "file",
                         content,
