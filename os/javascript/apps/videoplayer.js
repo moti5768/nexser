@@ -3,7 +3,7 @@ import { resolveFS } from "../fs-utils.js";
 import { createWindow, bringToFront, showModalWindow, alertWindow, taskbarButtons, updateWindowTitle } from "../window.js";
 import { setupRibbon } from "../ribbon.js";
 import { getFileContent } from "../fs-db.js";
-import { basename, loadFileAsDataURL } from "../fs-utils.js";
+import { basename, importFileSmart } from "../fs-utils.js";
 
 function showWarning(root, message) {
     const win = root.closest(".window");
@@ -161,7 +161,7 @@ export default function VideoPlayer(root, options = {}) {
 
             // Blob/FileならDataURLに変換
             const encodedContent = (dataToSave instanceof File || dataToSave instanceof Blob)
-                ? await loadFileAsDataURL(dataToSave)
+                ? await importFileSmart(dataToSave)
                 : dataToSave;
 
             // Base64(DataURL)から実際のバイト数を計算

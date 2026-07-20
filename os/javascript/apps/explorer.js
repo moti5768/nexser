@@ -1,7 +1,7 @@
 // Explorer.js
 import { launch } from "../kernel.js";
 import { showModalWindow, alertWindow, bringToFront, progressWindow } from "../window.js";
-import { resolveFS, validateName } from "../fs-utils.js";
+import { resolveFS, validateName, importFileSmart } from "../fs-utils.js";
 import { FS, initFS, forceSave } from "../fs.js";
 import { attachContextMenu } from "../context-menu.js";
 import { resolveAppByPath, getIcon } from "../file-associations.js";
@@ -667,18 +667,6 @@ export default async function Explorer(root, options = {}) {
 
                 let processedCount = 0;
 
-                // --- 4. ヘルパー関数 ---
-                const readFileAsData = (file) => {
-                    return new Promise((resolve, reject) => {
-                        const reader = new FileReader();
-                        reader.onload = (ev) => resolve(ev.target.result);
-                        reader.onerror = (err) => reject(err);
-                        const isBinary = !file.type.startsWith("text/");
-                        if (isBinary) reader.readAsDataURL(file);
-                        else reader.readAsText(file);
-                    });
-                };
-
                 const addFileToNode = async (file, targetNode) => {
                     // 進捗更新 (processedCount はインクリメント前に渡してOK)
                     pg.update(processedCount, totalFiles, `${file.name} をコピーしています...`);
@@ -686,7 +674,7 @@ export default async function Explorer(root, options = {}) {
                     let targetName = getUniqueName(targetNode, file.name);
 
                     try {
-                        const content = await readFileAsData(file);
+                        const content = await importFileSmart(file);
                         targetNode[targetName] = {
                             type: "file",
                             content,
