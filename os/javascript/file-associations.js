@@ -111,12 +111,9 @@ export function getIcon(name, node) {
     // 2. アプリケーションの判定
     if (node.type === "app") {
         const entryPath = (node.entry || "").toLowerCase();
-        for (const item of APP_KEYWORDS) {
-            if (lowerName.includes(item.key) || entryPath.includes(item.key)) {
-                return item.icon;
-            }
-        }
-        return "⚙️"; // アプリのデフォルト
+        const matched = APP_KEYWORDS.find(item => lowerName.includes(item.key) || entryPath.includes(item.key));
+
+        return matched ? matched.icon : "⚙️"; // アプリのデフォルト
     }
 
     // 3. 拡張子による判定（ファイルの場合）

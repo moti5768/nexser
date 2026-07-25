@@ -7,32 +7,42 @@ const KEY = "items";
 const MAX = 10;
 
 let cache = [];
-let isLoaded = false; // ★追加: 読み込み完了状態を管理するフラグ
+let isLoaded = false;
+let loadPromise = null;
 
 async function load() {
-    try {
-        const db = await openDB();
-        const tx = db.transaction(STORE, "readonly");
-        const store = tx.objectStore(STORE);
-        const req = store.get(KEY);
+    if (loadPromise) return loadPromise; // 既にロード処理中ならそのPromiseを返す
 
-        return new Promise(resolve => {
-            req.onsuccess = () => {
-                cache = req.result || [];
-                isLoaded = true; // ★追加: 読み込み成功
-                resolve(cache);
-            };
-            req.onerror = () => {
-                cache = [];
-                isLoaded = true; // ★追加: エラー時も「読み込み試行済み」としてフラグを立てる
-                resolve(cache);
-            };
-        });
-    } catch {
-        cache = [];
-        isLoaded = true; // ★追加: DBオープン失敗時などもフラグを立てる
-        return cache;
-    }
+    loadPromise = (async () => {
+        try {
+            const db = await openDB();
+            const tx = db.transaction(STORE, "readonly");
+            const store = tx.objectStore(STORE);
+            const req = store.get(KEY);
+
+            return new Promise(resolve => {
+                req.onsuccess = () => {
+                    cache = req.result || [];
+                    isLoaded = true;
+                    resolve(cache);
+                };
+                req.onerror = () => {
+                    cache = [];
+                    isLoaded = true;
+                    resolve(cache);
+                };
+            });
+        } catch {
+            cache = [];
+            isLoaded = true;
+            return cache;
+        } finally {
+            // ロード完了後にキャッシュをクリア（再ロードに備えるため）
+            loadPromise = null;
+        }
+    })();
+
+    return loadPromise;
 }
 
 async function save() {

@@ -74,11 +74,7 @@ function addRibbonMenu(ribbon, title, items) {
                 ? entry.data.disabled()
                 : entry.data.disabled;
 
-            if (isDisabled) {
-                entry.el.classList.add("pointer_none");
-            } else {
-                entry.el.classList.remove("pointer_none");
-            }
+            entry.el.classList.toggle("pointer_none", !!isDisabled);
         });
     };
 
