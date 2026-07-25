@@ -13,6 +13,7 @@ let globalSelected = { item: null, window: null };
 // プロパティウィンドウの重複チェック用
 const propertyWindows = {};
 const sharedTextEncoder = new TextEncoder();
+const IGNORED_METADATA_KEYS = new Set(["type", "name", "size", "content", "entry", "singleton", "target"]);
 
 export function hasExtension(name) {
     return /\.[a-z0-9]+$/i.test(name);
@@ -304,21 +305,18 @@ function getUniqueName(parentNode, idealName) {
 
 function updateStatusBarSummary(statusBar, folderNode) {
     if (!statusBar || !folderNode) return;
-    let folders = 0, files = 0, apps = 0, links = 0;
+    const counts = {};
+
     for (const key in folderNode) {
         if (isSystemMetaKey(key)) continue;
-        switch (folderNode[key].type) {
-            case "folder": folders++; break;
-            case "file": files++; break;
-            case "app": apps++; break;
-            case "link": links++; break;
-        }
+        const type = folderNode[key].type;
+        if (type) counts[type] = (counts[type] || 0) + 1;
     }
-    const parts = [];
-    if (folders) parts.push(`${folders} folder${folders > 1 ? "s" : ""}`);
-    if (files) parts.push(`${files} file${files > 1 ? "s" : ""}`);
-    if (apps) parts.push(`${apps} app${apps > 1 ? "s" : ""}`);
-    if (links) parts.push(`${links} link${links > 1 ? "s" : ""}`);
+
+    const parts = Object.entries(counts).map(
+        ([type, count]) => `${count} ${type}${count > 1 ? "s" : ""}`
+    );
+
     statusBar.textContent = parts.length ? parts.join(", ") : "(empty)";
 }
 
@@ -1358,43 +1356,32 @@ export async function calcNodeSize(node, path = "") {
     if (!node) return 0;
 
     if (node.type === "file") {
-        // 1. 【軽量化】記録されたサイズがあれば最優先で返す (不要な重い計算をスキップ)
         if (typeof node.size === "number") return node.size;
-
-        // 2. サイズ情報がない場合のみ、共有エンコーダーで計算
         if (node.content && node.content !== "__EXTERNAL_DATA__") {
             return sharedTextEncoder.encode(node.content).length;
         }
-
         return 0;
     }
 
     if (node.type === "folder") {
-        const keys = Object.keys(node).filter(key =>
-            !["type", "name", "size", "content", "entry", "singleton", "target"].includes(key)
-        );
-
+        const keys = Object.keys(node).filter(key => !IGNORED_METADATA_KEYS.has(key));
         const sizes = await Promise.all(keys.map(key => {
             const childNode = node[key];
             if (!childNode) return 0;
             const childPath = path ? `${path}/${key}` : key;
             return calcNodeSize(childNode, childPath);
         }));
-
         return sizes.reduce((total, s) => total + s, 0);
     }
-
     return 0;
 }
 
 function formatSize(bytes) {
     if (bytes === 0) return "0 B";
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    if (bytes < 1024 * 1024 * 1024) {
-        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-    }
-    return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+    const k = 1024;
+    const units = ["B", "KB", "MB", "GB", "TB", "PB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(i === 0 ? 0 : 1)) + " " + units[i];
 }
 
 // FS 内の全アプリを取得
