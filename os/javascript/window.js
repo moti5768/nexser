@@ -558,10 +558,15 @@ ${!options.hideStatus ? `
             // ★ タスクバー自身のウィンドウモードでなければ、下端（タスクバーの位置）で止めようとする制限をかける
             if (w.dataset.title !== "Taskbar") {
                 const taskbar = document.getElementById("taskbar");
-                const taskbarTop = taskbar ? taskbar.getBoundingClientRect().top : Infinity;
+                // タスクバーがウィンドウモード（親がウィンドウの中にある、または独自の判定）の場合は制限を無視する
+                const isTaskbarWindowMode = taskbar && taskbar.closest(".window") !== null;
 
-                if (clientY > taskbarTop - offsetY) {
-                    clientY = taskbarTop - offsetY;
+                if (!isTaskbarWindowMode) {
+                    const taskbarTop = taskbar ? taskbar.getBoundingClientRect().top : Infinity;
+
+                    if (clientY > taskbarTop - offsetY) {
+                        clientY = taskbarTop - offsetY;
+                    }
                 }
             }
 
@@ -763,13 +768,15 @@ ${!options.hideStatus ? `
                         break;
                 }
 
-                // ★ タスクバーウィンドウモードのときは下端の制限を無効化する
-                if (w.dataset.title === "Taskbar") {
+                // ★ タスクバーウィンドウモードのとき、またはタスクバー自体がウィンドウモードのときは下端の制限を無効化する
+                const taskbar = document.getElementById("taskbar");
+                const isTaskbarWindowMode = taskbar && taskbar.closest(".window") !== null;
+
+                if (w.dataset.title === "Taskbar" || isTaskbarWindowMode) {
                     if (newTop < 0) {
                         newTop = 0;
                     }
                 } else {
-                    const taskbar = document.getElementById("taskbar");
                     const taskbarTop = taskbar ? taskbar.getBoundingClientRect().top : Infinity;
 
                     if (newTop < 0) {
@@ -1515,6 +1522,9 @@ export function installWindowContextMenu(w) {
 
     // タスクバー右クリック
     if (taskbarBtn) {
+        taskbarBtn.addEventListener("contextmenu", (e) => {
+            e.stopPropagation();
+        });
         attachContextMenu(taskbarBtn, () => {
             const minimized = w.dataset.minimized === "true";
 
