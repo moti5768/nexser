@@ -288,7 +288,28 @@ export default async function TaskbarProperties(content) {
             tempSettings.autoHide = a;
             tempSettings.smallIcons = s;
             tempSettings.taskbarWindowMode = w;
+            const checkWindowMode = content.querySelector("#tp-check-windowmode");
+            const checkAutoHide = content.querySelector("#tp-check-autohide");
+            const checkClock = content.querySelector("#tp-check-clock");
+            const checkSmall = content.querySelector("#tp-check-small");
+            const slider = content.querySelector("#tp-size-slider");
+            const sizeLegend = content.querySelector("#tp-size-legend");
+            const previewBar = content.querySelector("#tp-preview-bar");
+            const previewClock = content.querySelector("#tp-preview-clock");
 
+            if (checkWindowMode) checkWindowMode.checked = w;
+            if (checkAutoHide) checkAutoHide.checked = a;
+            if (checkClock) checkClock.checked = c;
+            if (checkSmall) checkSmall.checked = s;
+            if (slider) slider.value = h;
+            if (sizeLegend) sizeLegend.textContent = `Taskbar Size (Current: ${h}px)`;
+            if (previewBar) {
+                previewBar.style.height = (h / 4) + "px";
+                previewBar.style.transform = a ? 'translateY(80%)' : 'translateY(0)';
+            }
+            if (previewClock) {
+                previewClock.style.display = c ? 'flex' : 'none';
+            }
             window.dispatchEvent(new CustomEvent("taskbar-style-changed", {
                 detail: {
                     taskbarHeight: w ? undefined : h,
