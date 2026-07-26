@@ -642,7 +642,7 @@ ${!options.hideStatus ? `
 
     /* ===== リサイズ ===== */
     if (!options.disableResize) {
-        const minWidth = 200, minHeight = 120;
+        const minWidth = 200, minHeight = 110;
         const directions = ["top", "bottom", "left", "right", "topLeft", "topRight", "bottomLeft", "bottomRight"];
         const handles = {};
 
@@ -1069,7 +1069,7 @@ export function showModalWindow(title, message, options = {}) {
     // ★ 高さの自動調整ロジック
     if (!options.height) {
         win.style.height = "auto";
-        win.style.minHeight = "120px";
+        win.style.minHeight = "110px";
         win.style.maxHeight = "85vh"; // 画面を突き抜けないように制限
         content.style.height = "auto";
         content.style.overflowY = "auto"; // 内容が多すぎる場合はスクロール

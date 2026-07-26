@@ -75,7 +75,7 @@ export function buildDesktop() {
                     if (node.type === "file") {
                         explorerOpenWithDialog(fullPath, node);
                     } else {
-                        alertWindow("システムエラー防止のため開けません", { width: 350, height: 120 });
+                        alertWindow("システムエラー防止のため開けません", { width: 350, height: 110 });
                     }
                 }
             },
@@ -154,7 +154,7 @@ export function buildDesktop() {
                     if (node.type === "file") {
                         explorerOpenWithDialog(fullPath, node);
                     } else {
-                        alertWindow("ファイル以外は開けません", { width: 300, height: 120 });
+                        alertWindow("ファイル以外は開けません", { width: 300, height: 110 });
                     }
                 }
             });
