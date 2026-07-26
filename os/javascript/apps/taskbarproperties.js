@@ -1,5 +1,6 @@
 // taskbarproperties.js
 import { loadSetting, saveSetting } from "./settings.js";
+import { refreshMaximizedWindows } from "../window.js";
 
 export default async function TaskbarProperties(content) {
     // SystemProperties.js と共通のベース構造
@@ -24,8 +25,11 @@ export default async function TaskbarProperties(content) {
         taskbarHeight: await loadSetting("taskbarHeight") || 40,
         showClock: (await loadSetting("showClock")) !== false,
         smallIcons: await loadSetting("smallIcons") || false,
-        autoHide: await loadSetting("autoHide") || false
+        autoHide: await loadSetting("autoHide") || false,
+        taskbarWindowMode: await loadSetting("taskbarWindowMode") || false
     };
+
+    let isSaved = false;
 
     /* ---------- タブ定義 ---------- */
     const tabs = [
@@ -92,6 +96,9 @@ export default async function TaskbarProperties(content) {
                         <fieldset style="padding: 10px; border: 2px groove #fff; margin: 0;">
                             <legend style="margin-left: 10px;">Taskbar properties</legend>
                             <label style="display: flex; align-items: center; margin-bottom: 6px; gap: 4px; cursor: pointer;">
+                                <input type="checkbox" id="tp-check-windowmode" ${tempSettings.taskbarWindowMode ? 'checked' : ''}> Window mode
+                            </label>
+                            <label style="display: flex; align-items: center; margin-bottom: 6px; gap: 4px; cursor: pointer;">
                                 <input type="checkbox" id="tp-check-autohide" ${tempSettings.autoHide ? 'checked' : ''}> Auto hide
                             </label>
                             <label style="display: flex; align-items: center; margin-bottom: 6px; gap: 4px; cursor: pointer;">
@@ -119,6 +126,11 @@ export default async function TaskbarProperties(content) {
         root.querySelector("#tp-check-autohide").onchange = (e) => {
             tempSettings.autoHide = e.target.checked;
             previewBar.style.transform = tempSettings.autoHide ? 'translateY(80%)' : 'translateY(0)';
+            onSettingModified();
+        };
+
+        root.querySelector("#tp-check-windowmode").onchange = (e) => {
+            tempSettings.taskbarWindowMode = e.target.checked;
             onSettingModified();
         };
 
@@ -209,6 +221,7 @@ export default async function TaskbarProperties(content) {
     }
 
     function onSettingModified() {
+        isSaved = false;
         applyBtn.classList.remove("pointer_none");
         notifyStyleChange();
     }
@@ -217,12 +230,15 @@ export default async function TaskbarProperties(content) {
         window.dispatchEvent(new CustomEvent("taskbar-style-changed", {
             detail: {
                 showClock: tempSettings.showClock,
-                taskbarHeight: tempSettings.taskbarHeight,
+                // ウィンドウモードのときはタスクバーの高さを強制変更させないため、高さを送らないか制御する
+                taskbarHeight: tempSettings.taskbarWindowMode ? undefined : tempSettings.taskbarHeight,
                 autoHide: tempSettings.autoHide,
-                smallIcons: tempSettings.smallIcons
+                smallIcons: tempSettings.smallIcons,
+                taskbarWindowMode: tempSettings.taskbarWindowMode
             }
         }));
         window.dispatchEvent(new Event("desktop-resize"));
+        refreshMaximizedWindows();
     }
 
     async function saveAll() {
@@ -230,6 +246,8 @@ export default async function TaskbarProperties(content) {
         await saveSetting("showClock", tempSettings.showClock);
         await saveSetting("smallIcons", tempSettings.smallIcons);
         await saveSetting("autoHide", tempSettings.autoHide);
+        await saveSetting("taskbarWindowMode", tempSettings.taskbarWindowMode);
+        isSaved = true;
         applyBtn.classList.add("pointer_none");
     }
 
@@ -237,6 +255,8 @@ export default async function TaskbarProperties(content) {
         try {
             await saveAll();
             notifyStyleChange();
+            refreshMaximizedWindows();
+            isSaved = true;
             closeWindow();
         } catch (e) {
             console.warn("設定の保存に失敗しました", e);
@@ -247,34 +267,66 @@ export default async function TaskbarProperties(content) {
         try {
             await saveAll();
             notifyStyleChange();
+            refreshMaximizedWindows();
+            isSaved = true;
         } catch (e) {
             console.warn("設定の適用に失敗しました", e);
         }
     };
 
-    content.querySelector("#tp-cancel").onclick = async () => {
+
+    async function handleCancel() {
         try {
             const h = await loadSetting("taskbarHeight") || 40;
             const c = (await loadSetting("showClock")) !== false;
             const a = await loadSetting("autoHide") || false;
             const s = await loadSetting("smallIcons") || false;
+            const w = await loadSetting("taskbarWindowMode") || false;
 
-            // 設定を戻す
             tempSettings.taskbarHeight = h;
             tempSettings.showClock = c;
             tempSettings.autoHide = a;
             tempSettings.smallIcons = s;
+            tempSettings.taskbarWindowMode = w;
 
-            window.dispatchEvent(new CustomEvent("taskbar-style-changed", { detail: { taskbarHeight: h, showClock: c, autoHide: a, smallIcons: s } }));
-            closeWindow();
+            window.dispatchEvent(new CustomEvent("taskbar-style-changed", {
+                detail: {
+                    taskbarHeight: w ? undefined : h,
+                    showClock: c,
+                    autoHide: a,
+                    smallIcons: s,
+                    taskbarWindowMode: w
+                }
+            }));
+            window.dispatchEvent(new Event("desktop-resize"));
+            refreshMaximizedWindows();
         } catch (e) {
             console.warn("設定の復元に失敗しました", e);
-            closeWindow(); // エラーが起きてもウィンドウは落とす
         }
+    }
+
+    content.querySelector("#tp-cancel").onclick = async () => {
+        await handleCancel();
+        isSaved = true; // 追加: キャンセル終了なので自動キャンセルを発動させない[cite: 2]
+        closeWindow();
     };
 
     function closeWindow() {
         const win = content.closest(".window");
         if (win) win.querySelector(".title-bar-button.close")?.click();
     }
+
+    const winEl = content.closest(".window");
+    if (winEl) {
+        const observer = new MutationObserver((mutations) => {
+            if (!document.body.contains(winEl)) {
+                observer.disconnect();
+                if (!isSaved) {
+                    handleCancel();
+                }
+            }
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+    }
+
 }

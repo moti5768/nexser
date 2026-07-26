@@ -1591,9 +1591,6 @@ export default function CodeEditor(root, options = {}) {
         sidebar.appendChild(ulRoot);
     }
     /* =========================
-           Activity Bar Logic
-        ========================== */
-    /* =========================
            Activity Bar & Sidebar Logic
         ========================== */
     const searchTrigger = root.querySelector(".search-trigger");

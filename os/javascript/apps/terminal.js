@@ -402,7 +402,26 @@ export default function TerminalApp(content) {
             desc: "Close window by id", run(args) {
                 const id = Number(args[0]);
                 if (Number.isNaN(id)) return print("Usage: kill <id>");
-                try { closeWindowById(id); print(`Window ${id} closed`); } catch { print("Invalid window id"); }
+
+                const wins = getWindows();
+                const targetWin = wins.find(w => w.id === id);
+
+                if (!targetWin) {
+                    return print("Invalid window id");
+                }
+
+                // 閉じるボタンがガード（pointer_none）されているかチェック
+                const closeBtn = targetWin.el.querySelector(".close-btn");
+                if (closeBtn && closeBtn.classList.contains("pointer_none")) {
+                    return print(`Error: Window ${id} (${targetWin.title}) is protected and cannot be closed.`, "#f00");
+                }
+
+                try {
+                    closeWindowById(id);
+                    print(`Window ${id} closed`);
+                } catch {
+                    print("Failed to close window");
+                }
             }
         },
 
