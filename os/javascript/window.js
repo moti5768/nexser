@@ -247,7 +247,14 @@ ${!options.hideStatus ? `
         minBtn?.classList.add("pointer_none");
     }
 
+    if (options.disableClose) {
+        closeBtn?.classList.add("pointer_none");
+    }
+
     const destroy = () => {
+        if (options.disableClose && closeBtn?.classList.contains("pointer_none")) {
+            return;
+        }
         abortController.abort(); // 全イベントリスナーを一括解除
 
         if (w._observer) {
@@ -383,12 +390,17 @@ ${!options.hideStatus ? `
         const taskbar = document.getElementById("taskbar");
         let taskbarVisibleHeight = 0;
         if (taskbar) {
-            const style = window.getComputedStyle(taskbar);
-            // transform: translateY(...) の値を取得
-            const matrix = new WebKitCSSMatrix(style.transform);
-            const translateY = matrix.m42;
-            // 物理的な高さから沈んでいる分を引く
-            taskbarVisibleHeight = Math.max(0, taskbar.offsetHeight - translateY);
+            // タスクバーがウィンドウモードの場合は、最大化時にタスクバーの高さを無視（0にする）
+            const isWindowMode = taskbar.closest(".window") !== null;
+
+            if (!isWindowMode) {
+                const style = window.getComputedStyle(taskbar);
+                // transform: translateY(...) の値を取得
+                const matrix = new WebKitCSSMatrix(style.transform);
+                const translateY = matrix.m42;
+                // 物理的な高さから沈んでいる分を引く
+                taskbarVisibleHeight = Math.max(0, taskbar.offsetHeight - translateY);
+            }
         }
 
         const titleBar = w.querySelector(".title-bar");
@@ -540,12 +552,17 @@ ${!options.hideStatus ? `
         // ドラッグ中のみ動く関数 (pointermove)
         const onPointerMove = (moveEv) => {
             if (!dragging) return;
-            const taskbar = document.getElementById("taskbar");
-            const taskbarTop = taskbar ? taskbar.getBoundingClientRect().top : Infinity;
 
             let clientY = moveEv.clientY;
-            if (clientY > taskbarTop - offsetY) {
-                clientY = taskbarTop - offsetY;
+
+            // ★ タスクバー自身のウィンドウモードでなければ、下端（タスクバーの位置）で止めようとする制限をかける
+            if (w.dataset.title !== "Taskbar") {
+                const taskbar = document.getElementById("taskbar");
+                const taskbarTop = taskbar ? taskbar.getBoundingClientRect().top : Infinity;
+
+                if (clientY > taskbarTop - offsetY) {
+                    clientY = taskbarTop - offsetY;
+                }
             }
 
             const dx = moveEv.clientX - downX;
@@ -701,9 +718,6 @@ ${!options.hideStatus ? `
             const onResizeMove = (moveEv) => {
                 if (!resizing || !preview) return;
 
-                const taskbar = document.getElementById("taskbar");
-                const taskbarTop = taskbar ? taskbar.getBoundingClientRect().top : Infinity;
-
                 let dx = moveEv.clientX - startX;
                 let dy = moveEv.clientY - startY;
 
@@ -749,13 +763,23 @@ ${!options.hideStatus ? `
                         break;
                 }
 
-                if (newTop < 0) {
-                    newTop = 0;
-                    // 上端を0に固定した場合、下端の位置が変わらないように高さを再計算する
-                    newHeight = startRect.top + startRect.height;
-                }
-                if (newTop + newHeight > taskbarTop) {
-                    newHeight = taskbarTop - newTop;
+                // ★ タスクバーウィンドウモードのときは下端の制限を無効化する
+                if (w.dataset.title === "Taskbar") {
+                    if (newTop < 0) {
+                        newTop = 0;
+                    }
+                } else {
+                    const taskbar = document.getElementById("taskbar");
+                    const taskbarTop = taskbar ? taskbar.getBoundingClientRect().top : Infinity;
+
+                    if (newTop < 0) {
+                        newTop = 0;
+                        // 上端を0に固定した場合、下端の位置が変わらないように高さを再計算する
+                        newHeight = startRect.top + startRect.height;
+                    }
+                    if (newTop + newHeight > taskbarTop) {
+                        newHeight = taskbarTop - newTop;
+                    }
                 }
 
                 preview.style.left = newLeft + "px";
@@ -1348,6 +1372,36 @@ export function getWindows() {
         zIndex: Number(w.style.zIndex || 0),
         el: w
     }));
+}
+
+/**
+ * タスクバーのモード変更（ウィンドウモードのON/OFFなど）に伴い、
+ * 最大化中のウィンドウの高さを再計算して適用する
+ */
+export function refreshMaximizedWindows() {
+    const maximizedWindows = document.querySelectorAll(".window.maximized");
+
+    maximizedWindows.forEach(w => {
+        // タスクバーの「現在見えている高さ」を再計算
+        const taskbar = document.getElementById("taskbar");
+        let taskbarVisibleHeight = 0;
+
+        if (taskbar) {
+            const isWindowMode = taskbar.closest(".window") !== null || taskbar.dataset.windowMode === "true";
+
+            if (isWindowMode) {
+                taskbarVisibleHeight = 0; // ウィンドウモード時は高さを0（フル100%）にする
+            } else {
+                const style = window.getComputedStyle(taskbar);
+                const matrix = new WebKitCSSMatrix(style.transform);
+                const translateY = matrix.m42;
+                taskbarVisibleHeight = Math.max(0, taskbar.offsetHeight - translateY);
+            }
+        }
+
+        // 高さを再設定
+        w.style.height = `calc(100% - ${taskbarVisibleHeight}px)`;
+    });
 }
 
 export function removeAllTaskbarButtons() {
