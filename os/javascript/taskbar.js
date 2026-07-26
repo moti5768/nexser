@@ -122,8 +122,8 @@ export function initTaskbar() {
                 // ウィンドウモード解除時の処理
                 if (taskbarFloatingWindow) {
 
-                    // 1. タスクバーを元のデスクトップ(またはbody)に戻す
-                    const desktop = document.getElementById("desktop") || document.body;
+                    // 1. タスクバーを元のos-root(またはbody)に戻す
+                    const desktop = document.getElementById("os-root") || document.body;
                     desktop.appendChild(taskbar);
 
                     // 2. ウィンドウモードで上書きされたスタイルをクリアし、画面下部固定のスタイルを完全に再適用する
