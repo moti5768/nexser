@@ -749,6 +749,11 @@ ${!options.hideStatus ? `
                         break;
                 }
 
+                if (newTop < 0) {
+                    newTop = 0;
+                    // 上端を0に固定した場合、下端の位置が変わらないように高さを再計算する
+                    newHeight = startRect.top + startRect.height;
+                }
                 if (newTop + newHeight > taskbarTop) {
                     newHeight = taskbarTop - newTop;
                 }
