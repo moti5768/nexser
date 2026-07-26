@@ -351,24 +351,24 @@ export function buildDesktop() {
 }
 
 // タスクバー高さに応じてアイコン領域を調整
-// タスクバー高さに応じてアイコン領域を調整
 function adjustDesktopIconArea() {
     const desktop = document.getElementById("desktop");
     const iconsContainer = document.getElementById("desktop-icons");
     const taskbar = document.getElementById("taskbar");
     if (!desktop || !iconsContainer || !taskbar) return;
 
-    // 🔥 修正点1: 起動中で画面が隠れている(display:none)時は高さが0になるため、デフォルト値(40など)を仮置きする
-    const taskbarHeight = taskbar.offsetHeight > 0 ? taskbar.offsetHeight : 40;
+    // 🔥 修正: タスクバーがウィンドウモードの場合はタスクバーの高さを考慮せず 0 にする
+    const isWindowMode = taskbar.closest(".window") !== null;
+    const taskbarHeight = isWindowMode ? 0 : (taskbar.offsetHeight > 0 ? taskbar.offsetHeight : 40);
 
     iconsContainer.style.position = "absolute";
     iconsContainer.style.top = "0";
     iconsContainer.style.left = "0";
     iconsContainer.style.right = "0";
-    iconsContainer.style.bottom = `${taskbarHeight}px`; // タスクバー分の余白
+    iconsContainer.style.bottom = `${taskbarHeight}px`; // タスクバー分の余白 (ウィンドウモード時は 0px)
     iconsContainer.style.display = "flex";
 
-    // 🔥 修正点2: アイコンを「上から下」へ並べ、画面下まで到達したら「右」へ折り返す (Windows標準の挙動)
+    // アイコンを「上から下」へ並べ、画面下まで到達したら「右」へ折り返す (Windows標準の挙動)
     iconsContainer.style.flexDirection = "column";
     iconsContainer.style.flexWrap = "wrap";
 

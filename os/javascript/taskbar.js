@@ -63,104 +63,110 @@ export function initTaskbar() {
     const { startArea, buttonArea, trayArea } = ensureTaskbarAreas(taskbar);
 
     // 内部状態管理
-    // 内部状態管理
     let isAutoHide = false;
     let isTaskbarHidden = false;
     let isTaskbarWindowMode = false;
-    let taskbarFloatingWindow = null; // 生成したウィンドウの参照を保持
+    let taskbarFloatingWindow = null;
+    let isApplyingWindowMode = false;
 
     async function applyTaskbarWindowMode() {
-        if (isTaskbarWindowMode) {
-            // すでにウィンドウ化されていれば何もしない
-            if (taskbarFloatingWindow) return;
+        if (isApplyingWindowMode) return; // 処理中なら弾く
+        isApplyingWindowMode = true;
 
-            // 事前に保存されたタスクバーの高さ（または現在の高さ）を確実に取得する
-            const savedHeight = await loadSetting("taskbarHeight");
-            const targetHeight = savedHeight ? `${savedHeight}px` : `${taskbar.offsetHeight || 40}px`;
-
-            // 1. window.js の機能を使って本物のウィンドウを作成
-            const content = createWindow("Taskbar", {
-                width: "600px",
-                height: targetHeight,
-                left: "10px",
-                top: "10px",
-                taskbar: false,     // タスクバー自身のボタンがタスクバーに登録されるのを防ぐ
-                hideRibbon: true,   // リボンメニューを非表示
-                hideStatus: true,
-                disableMinimize: true,
-                disableClose: true
-            });
-
-            taskbarFloatingWindow = content.parentElement;
-
-            // 2. ウィンドウ側のコンテンツエリア（content）のレイアウトを整え、高さを追随させる
-            content.style.height = "100%";
-            content.style.display = "flex";
-            content.style.flexDirection = "column";
-
-            // 3. タスクバーを生成したウィンドウの content 内に移動
-            content.appendChild(taskbar);
-
-            // 4. タスクバー自体の固定スタイルを解除し、ウィンドウ枠内にフィットさせる
-            Object.assign(taskbar.style, {
-                position: "relative",
-                width: "100%",
-                height: "100%",
-                left: "0",
-                bottom: "0",
-                borderRadius: "0",
-                border: "none",
-                boxShadow: "none"
-            });
-
-        } else {
-            // ウィンドウモード解除時の処理
-            if (taskbarFloatingWindow) {
-
-                // 1. タスクバーを元のデスクトップ(またはbody)に戻す
-                const desktop = document.getElementById("desktop") || document.body;
-                desktop.appendChild(taskbar);
-
-                // 2. ウィンドウモードで上書きされたスタイルをクリアし、画面下部固定のスタイルを完全に再適用する
-                taskbar.style.position = "absolute";
-                taskbar.style.left = "0px";
-                taskbar.style.bottom = "0px";
-                taskbar.style.width = "100%";
-                taskbar.style.height = ""; // 保存されている高さ（style.height）に戻るようにクリア、または必要なら再設定
-                taskbar.style.borderRadius = "";
-                taskbar.style.border = "";
-                taskbar.style.boxShadow = "";
-
-                // 保存された高さがある場合は復元
-                loadSetting("taskbarHeight").then(savedHeight => {
-                    if (savedHeight) {
-                        taskbar.style.height = savedHeight + "px";
-                        if (versionLabel) versionLabel.style.bottom = `${savedHeight}px`;
-                    }
-                });
-
-                const closeBtn = taskbarFloatingWindow.querySelector(".close-btn");
-                if (closeBtn) {
-                    closeBtn.classList.remove("pointer_none");
-                }
-
-                // 3. ウィンドウを正しく破棄する
-                if (typeof taskbarFloatingWindow._destroy === "function") {
-                    taskbarFloatingWindow._destroy();
-                } else {
-                    taskbarFloatingWindow.remove();
-                }
+        try {
+            if (isTaskbarWindowMode) {
+                // すでにウィンドウ化されていれば何もしない（実体が残っているかも確認）
+                if (taskbarFloatingWindow && document.body.contains(taskbarFloatingWindow)) return;
                 taskbarFloatingWindow = null;
 
-                setupTaskbarContextMenu(taskbar);
-                taskbar.addEventListener("contextmenu", (e) => {
-                    e.stopPropagation();
+                // 事前に保存されたタスクバーの高さ（または現在の高さ）を確実に取得する
+                const savedHeight = await loadSetting("taskbarHeight");
+                const targetHeight = savedHeight ? `${savedHeight}px` : `${taskbar.offsetHeight || 40}px`;
+
+                // 1. window.js の機能を使って本物のウィンドウを作成
+                const content = createWindow("Taskbar", {
+                    width: "600px",
+                    height: targetHeight,
+                    left: "10px",
+                    top: "10px",
+                    taskbar: false,     // タスクバー自身のボタンがタスクバーに登録されるのを防ぐ
+                    hideRibbon: true,   // リボンメニューを非表示
+                    hideStatus: true,
+                    disableMinimize: true,
+                    disableClose: true
                 });
 
+                taskbarFloatingWindow = content.parentElement;
 
+                // 2. ウィンドウ側のコンテンツエリア（content）のレイアウトを整え、高さを追随させる
+                content.style.height = "100%";
+                content.style.display = "flex";
+                content.style.flexDirection = "column";
+
+                // 3. タスクバーを生成したウィンドウの content 内に移動
+                content.appendChild(taskbar);
+
+                // 4. タスクバー自体の固定スタイルを解除し、ウィンドウ枠内にフィットさせる
+                Object.assign(taskbar.style, {
+                    position: "relative",
+                    width: "100%",
+                    height: "100%",
+                    left: "0",
+                    bottom: "0",
+                    borderRadius: "0",
+                    border: "none",
+                    boxShadow: "none"
+                });
+
+            } else {
+                // ウィンドウモード解除時の処理
+                if (taskbarFloatingWindow) {
+
+                    // 1. タスクバーを元のデスクトップ(またはbody)に戻す
+                    const desktop = document.getElementById("desktop") || document.body;
+                    desktop.appendChild(taskbar);
+
+                    // 2. ウィンドウモードで上書きされたスタイルをクリアし、画面下部固定のスタイルを完全に再適用する
+                    taskbar.style.position = "absolute";
+                    taskbar.style.left = "0px";
+                    taskbar.style.bottom = "0px";
+                    taskbar.style.width = "100%";
+                    taskbar.style.height = ""; // 保存されている高さ（style.height）に戻るようにクリア
+                    taskbar.style.borderRadius = "";
+                    taskbar.style.border = "";
+                    taskbar.style.boxShadow = "";
+
+                    // 保存された高さがある場合は復元
+                    loadSetting("taskbarHeight").then(savedHeight => {
+                        if (savedHeight) {
+                            taskbar.style.height = savedHeight + "px";
+                            if (versionLabel) versionLabel.style.bottom = `${savedHeight}px`;
+                        }
+                    });
+
+                    const closeBtn = taskbarFloatingWindow.querySelector(".close-btn");
+                    if (closeBtn) {
+                        closeBtn.classList.remove("pointer_none");
+                    }
+
+                    // 3. ウィンドウを正しく破棄する
+                    if (typeof taskbarFloatingWindow._destroy === "function") {
+                        taskbarFloatingWindow._destroy();
+                    } else {
+                        taskbarFloatingWindow.remove();
+                    }
+                    taskbarFloatingWindow = null;
+
+                    setupTaskbarContextMenu(taskbar);
+                    taskbar.addEventListener("contextmenu", (e) => {
+                        e.stopPropagation();
+                    });
+                }
             }
+            window.dispatchEvent(new Event("desktop-resize"));
+        } finally {
+            isApplyingWindowMode = false; // 処理完了後にフラグを解放
         }
-        window.dispatchEvent(new Event("desktop-resize"));
     }
 
     // タスクバー基本スタイル
