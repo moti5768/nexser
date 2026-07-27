@@ -40,7 +40,11 @@ export const FILE_ASSOCIATIONS = {
     ".aac": "Programs/Applications/AudioPlayer.app",
 
     // pdf
-    ".pdf": "Programs/Applications/PDFViewer.app"
+    ".pdf": "Programs/Applications/PDFViewer.app",
+
+    // url
+    ".url": "Programs/Applications/Browser.app"
+
 };
 
 /**
@@ -49,6 +53,7 @@ export const FILE_ASSOCIATIONS = {
 const EXTENSION_ICONS = {
     ".txt": "📄", ".md": "📄",
     ".js": "📜", ".ts": "📜", ".json": "📜", ".css": "📜", ".scss": "📜", ".vue": "📜", ".html": "📜", ".htm": "📜",
+    ".url": "🌐",
     ".png": "🖼️", ".jpg": "🖼️", ".jpeg": "🖼️", ".gif": "🖼️", ".webp": "🖼️",
     ".bmp": "🎨",
     ".mp4": "📽️", ".webm": "📽️", ".ogg": "📽️", ".mov": "📽️", ".mkv": "📽️",
@@ -61,6 +66,7 @@ const EXTENSION_ICONS = {
  * アプリ名・パスに含まれるキーワードによるアイコン判定
  */
 const APP_KEYWORDS = [
+    { key: "browser", icon: "🌐" },
     { key: "explorer", icon: "🔍" },
     { key: "paint", icon: "🎨" },
     { key: "texteditor", icon: "📝" },

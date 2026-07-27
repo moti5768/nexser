@@ -212,16 +212,55 @@ export function buildDesktop() {
 
             // ドロップされた直後のエントリを取得
             const initialEntries = [];
+            let hasFiles = false;
             if (e.dataTransfer.items) {
                 for (let i = 0; i < e.dataTransfer.items.length; i++) {
                     const item = e.dataTransfer.items[i];
                     if (item.kind === 'file') {
+                        hasFiles = true;
                         const entry = item.webkitGetAsEntry();
                         if (entry) initialEntries.push(entry);
                     }
                 }
             } else {
+                if (e.dataTransfer.files.length > 0) hasFiles = true;
                 initialEntries.push(...Array.from(e.dataTransfer.files));
+            }
+
+            // ⭐ 追加: URLがドロップされた場合の処理
+            const uriList = e.dataTransfer.getData("text/uri-list");
+            const textPlain = e.dataTransfer.getData("text/plain");
+            const urlToSave = uriList || textPlain;
+
+            if (!hasFiles && urlToSave && urlToSave.startsWith("http")) {
+                let urlName = "新しいショートカット.url";
+                try {
+                    const urlObj = new URL(urlToSave);
+                    urlName = (urlObj.hostname).replace(/[\/\\?%*:|"<>]/g, "_") + ".url";
+                } catch (err) { }
+
+                // 重複回避
+                const dotIdx = urlName.lastIndexOf(".");
+                const base = dotIdx !== -1 ? urlName.substring(0, dotIdx) : urlName;
+                const ext = dotIdx !== -1 ? urlName.substring(dotIdx) : "";
+                let idx = 1;
+                let finalName = urlName;
+                while (folderNode[finalName]) {
+                    finalName = `${base} (${idx++})${ext}`;
+                }
+
+                // Windows仕様のURLファイルとして保存
+                folderNode[finalName] = {
+                    type: "file",
+                    content: `[InternetShortcut]\nURL=${urlToSave}`,
+                    size: urlToSave.length + 21,
+                    lastModified: Date.now()
+                };
+
+                await forceSave();
+                window.dispatchEvent(new Event("fs-updated"));
+                buildDesktop();
+                return;
             }
 
             if (initialEntries.length === 0) return;

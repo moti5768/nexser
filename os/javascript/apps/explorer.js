@@ -616,16 +616,47 @@ export default async function Explorer(root, options = {}) {
 
                 // --- 1. ドロップされた直後のエントリを取得 ---
                 const initialEntries = [];
+                let hasFiles = false;
                 if (e.dataTransfer.items) {
                     for (let i = 0; i < e.dataTransfer.items.length; i++) {
                         const item = e.dataTransfer.items[i];
                         if (item.kind === 'file') {
+                            hasFiles = true;
                             const entry = item.webkitGetAsEntry();
                             if (entry) initialEntries.push(entry);
                         }
                     }
                 } else {
+                    if (e.dataTransfer.files.length > 0) hasFiles = true;
                     initialEntries.push(...Array.from(e.dataTransfer.files));
+                }
+
+                // ⭐ 追加: URLがドロップされた場合の処理
+                const uriList = e.dataTransfer.getData("text/uri-list");
+                const textPlain = e.dataTransfer.getData("text/plain");
+                const urlToSave = uriList || textPlain;
+
+                if (!hasFiles && urlToSave && urlToSave.startsWith("http")) {
+                    let urlName = "新しいショートカット.url";
+                    try {
+                        const urlObj = new URL(urlToSave);
+                        urlName = (urlObj.hostname).replace(/[\/\\?%*:|"<>]/g, "_") + ".url";
+                    } catch (err) { }
+
+                    const finalName = getUniqueName(folderNode, urlName);
+
+                    // Windows仕様のURLファイルとして保存
+                    folderNode[finalName] = {
+                        type: "file",
+                        content: `[InternetShortcut]\nURL=${urlToSave}`,
+                        size: urlToSave.length + 21,
+                        lastModified: Date.now()
+                    };
+
+                    await forceSave();
+                    window.dispatchEvent(new Event("fs-updated"));
+                    render(currentPath);
+                    return;
                 }
 
                 if (initialEntries.length === 0) return;
@@ -1450,43 +1481,125 @@ export async function showProperties(name, node, path) {
         return;
     }
 
+    // ⭐ 追加: Data URL (data:...;base64,...) をデコードして生のテキストを取得するヘルパー関数
+    const getDecodedContent = (content) => {
+        if (typeof content !== "string") return "";
+        if (content.startsWith("data:")) {
+            try {
+                const base64Index = content.indexOf(";base64,");
+                if (base64Index !== -1) {
+                    const base64 = content.substring(base64Index + 8);
+                    const binary = atob(base64);
+                    const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+                    return new TextDecoder().decode(bytes);
+                }
+            } catch (e) {
+                console.error("Base64 decode error:", e);
+            }
+        }
+        return content;
+    };
+
     const size = await calcNodeSize(node, path);
     const formattedSize = formatSize(size);
     const parentPath = path.split('/').slice(0, -1).join('/') || "(root)";
     const iconChar = getIcon(name, node);
 
+    // URLファイルかの判定とURL文字列の抽出
+    const isUrl = name.toLowerCase().endsWith(".url") && node.type === "file";
+    let urlValue = "";
+
+    // ⭐ 変更: Data URL の場合でもデコードしてテキスト化してから読み取る
+    const rawContent = getDecodedContent(node.content);
+    if (isUrl && typeof rawContent === "string") {
+        const match = rawContent.match(/URL=(.+)/i);
+        urlValue = match ? match[1].trim() : rawContent.trim();
+    }
+
     const msg = `
         <div style="padding:15px; font-size:13px; line-height:1.6; user-select:none;">
             <div style="display:flex; align-items:center; gap:15px; border-bottom:1px solid #ccc; padding-bottom:10px; margin-bottom:10px;">
                 <span style="font-size:32px;">${iconChar}</span>
-                <b style="font-size:14px;">${name}</b>
+                <b style="font-size:14px; word-break:break-all;">${name}</b>
             </div>
             <table style="width:100%; border-collapse:collapse;">
                 <tr><td style="width:70px; color:#666;">タイプ:</td><td>${node.type || '不明'}</td></tr>
                 <tr><td style="color:#666;">場所:</td><td>${parentPath}</td></tr>
                 <tr><td style="color:#666;">サイズ:</td><td>${formattedSize} (${size.toLocaleString()} バイト)</td></tr>
             </table>
+            ${isUrl ? `
+            <div style="margin-top:15px;">
+                <label style="color:#666; display:block; margin-bottom:5px;">Web ドキュメントのURL:</label>
+                <input type="text" class="border" id="prop-url-input" value="${urlValue}" style="width:100%; box-sizing:border-box; padding:4px; font-size:12px;">
+            </div>
+            ` : ""}
         </div>`;
+
+    // ⭐ 追加: URLかどうかでボタンの構成を切り替える
+    const dialogButtons = isUrl
+        ? [
+            {
+                label: "OK",
+                action: (w) => {
+                    const input = w.querySelector("#prop-url-input");
+                    if (input && input.value !== urlValue) {
+                        const newContentText = `[InternetShortcut]\r\nURL=${input.value}\r\n`;
+
+                        // ⭐ 変更: 元データが Data URL 形式だった場合は Data URL に再エンコードして保存
+                        if (typeof node.content === "string" && node.content.startsWith("data:")) {
+                            const bytes = new TextEncoder().encode(newContentText);
+                            const binary = String.fromCharCode(...bytes);
+                            const base64 = btoa(binary);
+
+                            // 元の MIME タイプを保持 (デフォルトは application/octet-stream)
+                            const mimeMatch = node.content.match(/^data:([^;]+);/);
+                            const mime = mimeMatch ? mimeMatch[1] : "application/octet-stream";
+
+                            node.content = `data:${mime};base64,${base64}`;
+                        } else {
+                            // 通常のテキスト形式だった場合はそのまま保存
+                            node.content = newContentText;
+                        }
+
+                        node.size = new TextEncoder().encode(node.content).length;
+                        node.lastModified = Date.now();
+                        window.dispatchEvent(new Event("fs-updated"));
+                    }
+                    if (w._modalOverlay) w._modalOverlay.remove();
+                    w.remove();
+                }
+            },
+            {
+                label: "キャンセル",
+                action: (w) => {
+                    if (w._modalOverlay) w._modalOverlay.remove();
+                    w.remove();
+                }
+            }
+        ]
+        : [
+            {
+                label: "閉じる",
+                action: (w) => {
+                    if (w._modalOverlay) w._modalOverlay.remove();
+                    w.remove();
+                }
+            }
+        ];
 
     const win = showModalWindow(`${name} のプロパティ`, msg, {
         width: 350,
+        height: isUrl ? 360 : 300,
         taskbar: false,
         overlay: false,
         silent: true,
-        buttons: [{
-            label: "閉じる",
-            action: (w) => {
-                if (w._modalOverlay) w._modalOverlay.remove();
-                w.remove();
-                // ※ここでは delete しなくてOK（下の Observer が処理します）
-            }
-        }]
+        buttons: dialogButtons // ⭐ 切り替えたボタンを適用
     });
 
     // 2. 管理リストに登録
     propertyWindows[path] = win;
 
-    // 3. 【修正の要】ウィンドウがDOMから消えたら自動でリストから削除する
+    // 3. ウィンドウがDOMから消えたら自動でリストから削除する
     const observer = new MutationObserver(() => {
         if (!document.body.contains(win)) {
             delete propertyWindows[path];
