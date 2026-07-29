@@ -426,7 +426,8 @@ export default function ImageViewer(root, options = {}) {
         true
     );
 
-    window.addEventListener("keydown", e => {
+    // グローバルリスナーを関数として定義しておき、後で解除できるようにする
+    function handleKeyDown(e) {
         if (e.ctrlKey && e.key.toLowerCase() === "s") {
             e.preventDefault();
             save();
@@ -435,7 +436,8 @@ export default function ImageViewer(root, options = {}) {
             e.preventDefault();
             requestClose();
         }
-    });
+    }
+    window.addEventListener("keydown", handleKeyDown);
 
     /* =========================
        ユーティリティ
@@ -464,4 +466,16 @@ export default function ImageViewer(root, options = {}) {
         }
     }
     init(); // 実行
+    // ★ kernelの killProcess から連携される dispose とハンドルを返す
+    return {
+        dispose: () => {
+            // 1. グローバルリスナーの削除（メモリリーク・ゾンビ化防止）
+            window.removeEventListener("keydown", handleKeyDown);
+
+            // 2. 表示中のBlob URLがあれば解放
+            if (img.src && img.src.startsWith("blob:")) {
+                URL.revokeObjectURL(img.src);
+            }
+        }
+    };
 }

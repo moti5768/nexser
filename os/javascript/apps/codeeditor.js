@@ -1289,22 +1289,6 @@ export default function CodeEditor(root, options = {}) {
         Object.assign(previewIframe.style, { width: "100%", height: "100%", border: "none", background: "white", display: "block" });
         content.appendChild(previewIframe);
         renderPreview();
-
-        const observer = new MutationObserver(() => {
-            // エディタが閉じられた、またはプレビュー自身が閉じられた場合
-            if (!document.body.contains(win) || (previewWin && !document.body.contains(previewWin))) {
-                if (previewIframe) {
-                    previewIframe.src = "about:blank"; // JSコンテキストを強制破棄
-                    previewIframe = null;
-                }
-                if (previewWin && document.body.contains(previewWin)) {
-                    previewWin.remove();
-                }
-                previewWin = null;
-                observer.disconnect();
-            }
-        });
-        observer.observe(document.body, { childList: true, subtree: true });
     }
 
     /* =========================
@@ -1784,44 +1768,34 @@ export default function CodeEditor(root, options = {}) {
         }
     });
 
-    if (win) {
-        const observer = new MutationObserver(() => {
-            if (!document.body.contains(win)) {
-                // 1. フラグとタイマーの停止
-                isDestroyed = true;
-                if (highlightTask) cancelAnimationFrame(highlightTask);
-                if (highlightTimer) clearTimeout(highlightTimer);
+    // クリーンアップ処理を関数化（kernelの killProcess から呼び出されます）
+    const cleanup = () => {
+        if (isDestroyed) return;
+        isDestroyed = true;
 
-                // 2. メモリ解放 (Blob URL)
-                for (const url of previewBlobMap.values()) {
-                    try { URL.revokeObjectURL(url); } catch { }
-                }
-                previewBlobMap.clear();
+        if (highlightTask) cancelAnimationFrame(highlightTask);
+        if (highlightTimer) clearTimeout(highlightTimer);
 
-                // 3. 大きなデータの参照を切る
-                tabs.length = 0;
-                activeTab = null;
+        for (const url of previewBlobMap.values()) {
+            try { URL.revokeObjectURL(url); } catch { }
+        }
+        previewBlobMap.clear();
 
-                // 4. 外部連携の解除
-                window.removeEventListener("fs-updated", syncTabsWithFS);
-                ro.disconnect();
+        tabs.length = 0;
+        activeTab = null;
 
-                // 5. 関連ウィンドウの破棄
-                if (previewWin) {
-                    if (previewIframe) {
-                        previewIframe.src = "about:blank"; // JSコンテキストを強制破棄
-                        previewIframe = null;
-                    }
-                    previewWin.remove();
-                    previewWin = null;
-                }
+        window.removeEventListener("fs-updated", syncTabsWithFS);
+        ro.disconnect();
 
-                // 6. 自分自身の監視を終了
-                observer.disconnect();
+        if (previewWin) {
+            if (previewIframe) {
+                previewIframe.src = "about:blank";
+                previewIframe = null;
             }
-        });
-        observer.observe(document.body, { childList: true, subtree: true });
-    }
+            previewWin.remove();
+            previewWin = null;
+        }
+    };
 
     /* =========================
           実体取得を含む初期化処理
@@ -1930,7 +1904,8 @@ export default function CodeEditor(root, options = {}) {
             requestAnimationFrame(updateMinimap);
             // ウィンドウを前面に持ってくる（kernel側でも行っていますが念のため）
             bringToFront(win);
-        }
+        },
+        dispose: cleanup
     }
 }
 

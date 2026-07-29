@@ -205,18 +205,17 @@ export default function main(content, options) {
         }
     };
 
-    // --- ウィンドウが閉じられた際のクリーンアップ ---
-    const observer = new MutationObserver(() => {
-        if (!document.body.contains(container)) {
+    refresh();
+
+    return {
+        isTabApp: false,
+        dispose: () => {
             if (currentAudio) {
                 currentAudio.pause();
-                currentAudio.src = ""; // メモリ解放
+                currentAudio.src = ""; // メモリ・リソース解放
                 currentAudio = null;
             }
-            observer.disconnect();
+            console.log("SoundPlayer disposed successfully.");
         }
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
-
-    refresh();
+    };
 }

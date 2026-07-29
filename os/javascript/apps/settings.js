@@ -1009,7 +1009,17 @@ export default async function SettingsApp(content) {
             if (storageUpdateTimer) clearTimeout(storageUpdateTimer);
             window.removeEventListener("fs-updated", onFsUpdated);
         };
+
     }
+
+    return {
+        isTabApp: true,
+        dispose: () => {
+            if (bodyEl._cleanup) {
+                bodyEl._cleanup();
+            }
+        }
+    };
 }
 
 // 起動時および再構築時の背景適用

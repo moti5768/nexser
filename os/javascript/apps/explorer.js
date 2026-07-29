@@ -1,7 +1,7 @@
 // Explorer.js
 import { launch } from "../kernel.js";
 import { showModalWindow, alertWindow, bringToFront, progressWindow } from "../window.js";
-import { resolveFS, validateName, importFileSmart } from "../fs-utils.js";
+import { resolveFS, validateName, importFileSmart, getUniqueName } from "../fs-utils.js";
 import { FS, initFS, forceSave } from "../fs.js";
 import { attachContextMenu } from "../context-menu.js";
 import { resolveAppByPath, getIcon } from "../file-associations.js";
@@ -287,20 +287,6 @@ function isTrashPath(path) {
 
 function isSystemMetaKey(key) {
     return key === "type" || key === "system" || key === "originalPath";
-}
-
-function getUniqueName(parentNode, idealName) {
-    if (!parentNode || !parentNode[idealName]) return idealName;
-    const dotIndex = idealName.lastIndexOf(".");
-    const base = dotIndex !== -1 ? idealName.substring(0, dotIndex) : idealName;
-    const ext = dotIndex !== -1 ? idealName.substring(dotIndex) : "";
-
-    let counter = 1;
-    let finalName = idealName;
-    while (parentNode[finalName]) {
-        finalName = `${base} (${counter++})${ext}`;
-    }
-    return finalName;
 }
 
 function updateStatusBarSummary(statusBar, folderNode) {
@@ -1324,22 +1310,22 @@ export default async function Explorer(root, options = {}) {
 
     render(currentPath);
 
+    let renderScheduled = false;
+    const handleFsUpdated = () => {
+        if (renderScheduled) return;
+        renderScheduled = true;
+        const pathToRender = currentPath;
+        requestAnimationFrame(() => {
+            render(pathToRender);
+            renderScheduled = false;
+        });
+    };
+
     if (!win._fsWatcherInstalled) {
         win._fsWatcherInstalled = true;
-        // 安全性向上: 複数イベントをまとめて1回レンダリング
-        let renderScheduled = false;
-        window.addEventListener("fs-updated", () => {
-            if (renderScheduled) return;
-            renderScheduled = true;
-            // イベントが発生した「その瞬間」のパスを記憶しておく
-            const pathToRender = currentPath;
-            requestAnimationFrame(() => {
-                // 記憶しておいたパスを渡す
-                render(pathToRender);
-                renderScheduled = false;
-            });
-        });
+        window.addEventListener("fs-updated", handleFsUpdated);
     }
+
     function updateTitle_explorer(path) {
         if (!win) return;
 
@@ -1378,6 +1364,17 @@ export default async function Explorer(root, options = {}) {
         win.dataset.title = name;
         if (pathLabel) pathLabel.textContent = path;
     }
+
+    return {
+        dispose: () => {
+            window.removeEventListener("fs-updated", handleFsUpdated);
+            if (win._treePanel) {
+                win._treePanel.remove();
+                win._treePanel = null;
+            }
+        }
+    };
+
 }
 
 /**
@@ -1516,23 +1513,32 @@ export async function showProperties(name, node, path) {
         urlValue = match ? match[1].trim() : rawContent.trim();
     }
 
+    // 更新日時のフォーマット処理を追加
+    const dateOpts = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+    const modifiedStr = node.lastModified
+        ? new Date(node.lastModified).toLocaleDateString('ja-JP', dateOpts)
+        : '不明';
+
     const msg = `
-        <div style="padding:15px; font-size:13px; line-height:1.6; user-select:none;">
-            <div style="display:flex; align-items:center; gap:15px; border-bottom:1px solid #ccc; padding-bottom:10px; margin-bottom:10px;">
-                <span style="font-size:32px;">${iconChar}</span>
-                <b style="font-size:14px; word-break:break-all;">${name}</b>
+        <div style="padding:15px; font-size:12px; line-height:1.8; user-select:none; font-family: 'Segoe UI', Tahoma, sans-serif;">
+            <div style="display:flex; align-items:center; gap:15px; padding-bottom:15px;">
+                <span style="font-size:36px;">${iconChar}</span>
+                <input type="text" value="${name}" class="border" style="flex:1; padding:3px; font-size:12px;" readonly>
             </div>
+            <hr style="border:0; border-top:1px solid #dfdfdf; margin: 0 0 10px 0;">
+            
             <table style="width:100%; border-collapse:collapse;">
-                <tr><td style="width:70px; color:#666;">タイプ:</td><td>${node.type || '不明'}</td></tr>
-                <tr><td style="color:#666;">場所:</td><td>${parentPath}</td></tr>
-                <tr><td style="color:#666;">サイズ:</td><td>${formattedSize} (${size.toLocaleString()} バイト)</td></tr>
+                <tr><td style="width:85px; color:#333;">ファイルの種類:</td><td style="color:#000;">${node.type === 'folder' ? 'ファイル フォルダー' : (node.type || '不明')}</td></tr>
+                ${isUrl ? `<tr><td style="color:#333;">URL:</td><td>${urlValue}</td></tr>` : ''}
+                <tr><td style="color:#333;">場所:</td><td style="color:#000;">${parentPath}</td></tr>
+                <tr><td style="color:#333;">サイズ:</td><td style="color:#000;">${formattedSize} (${size.toLocaleString()} バイト)</td></tr>
             </table>
-            ${isUrl ? `
-            <div style="margin-top:15px;">
-                <label style="color:#666; display:block; margin-bottom:5px;">Web ドキュメントのURL:</label>
-                <input type="text" class="border" id="prop-url-input" value="${urlValue}" style="width:100%; box-sizing:border-box; padding:4px; font-size:12px;">
-            </div>
-            ` : ""}
+            
+            <hr style="border:0; border-top:1px solid #dfdfdf; margin: 10px 0;">
+            
+            <table style="width:100%; border-collapse:collapse;">
+                <tr><td style="width:85px; color:#333;">更新日時:</td><td style="color:#000;">${modifiedStr}</td></tr>
+            </table>
         </div>`;
 
     // ⭐ 追加: URLかどうかでボタンの構成を切り替える
@@ -1589,7 +1595,7 @@ export async function showProperties(name, node, path) {
 
     const win = showModalWindow(`${name} のプロパティ`, msg, {
         width: 350,
-        height: isUrl ? 360 : 300,
+        height: isUrl ? 420 : 420,
         taskbar: false,
         overlay: false,
         silent: true,

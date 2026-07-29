@@ -2,7 +2,7 @@
 import { FS, forceSave } from "./fs.js";
 import { launch } from "./kernel.js";
 import { alertWindow, progressWindow } from "./window.js";
-import { resolveFS, validateName, importFileSmart } from "./fs-utils.js";
+import { resolveFS, validateName, importFileSmart, getUniqueName } from "./fs-utils.js";
 import { addRecent } from "./recent.js";
 import { attachContextMenu } from "./context-menu.js";
 import { resolveAppByPath, getIcon } from "./file-associations.js";
@@ -298,23 +298,9 @@ export function buildDesktop() {
             desktop.style.pointerEvents = "none";
             let processedCount = 0;
 
-            // デスクトップ用の名前重複回避ヘルパー
-            const getUniqueDesktopName = (node, name) => {
-                if (!node[name]) return name;
-                const dotIdx = name.lastIndexOf(".");
-                const base = dotIdx !== -1 ? name.substring(0, dotIdx) : name;
-                const ext = dotIdx !== -1 ? name.substring(dotIdx) : "";
-                let idx = 1;
-                let finalName = name;
-                while (node[finalName]) {
-                    finalName = `${base} (${idx++})${ext}`;
-                }
-                return finalName;
-            };
-
             const addFileToNode = async (file, targetNode) => {
                 pg.update(processedCount, totalFiles, `${file.name} をコピーしています...`);
-                let targetName = getUniqueDesktopName(targetNode, file.name);
+                let targetName = getUniqueName(targetNode, file.name);
 
                 try {
                     const content = await importFileSmart(file);
@@ -335,7 +321,7 @@ export function buildDesktop() {
                     const file = await new Promise(res => entry.file(res));
                     await addFileToNode(file, targetNode);
                 } else if (entry.isDirectory) {
-                    let dirName = getUniqueDesktopName(targetNode, entry.name);
+                    let dirName = getUniqueName(targetNode, entry.name);
                     targetNode[dirName] = { type: "folder" };
                     const newDirNode = targetNode[dirName];
 

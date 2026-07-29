@@ -271,9 +271,11 @@ export async function launch(path, options = {}) {
             if (!win || !document.body.contains(win))
                 throw new Error("Window creation failed");
 
+            let appHandle = null; // 【追加】tryブロックの外で変数を定義
+
             try {
                 // ★ アプリの戻り値（ハンドル）を受け取る
-                const appHandle = await appModule.default(content, options);
+                appHandle = await appModule.default(content, options); // 【修正】constを外す
 
                 // タブ対応アプリであれば登録
                 if (appHandle && appHandle.isTabApp) {
@@ -298,6 +300,7 @@ export async function launch(path, options = {}) {
                 pid,
                 path,
                 window: win,
+                handle: appHandle, // 【追加】アプリ側のハンドルをプロセス情報として保存
                 state: "normal",
                 startTime: performance.now(),
                 memory: 0,
@@ -306,20 +309,22 @@ export async function launch(path, options = {}) {
 
             win.dataset.processKey = key;
 
-            const observer = new MutationObserver(() => {
-                if (!win.isConnected) {
-                    if (isExplorer) explorerWindows.delete(options.path || "Desktop");
-                    processes.delete(key);
-                    // ウィンドウが閉じられたらタブ管理からも削除
-                    if (item.entry) tabAppInstances.delete(item.entry);
-                    observer.disconnect();
-                    win._observer = null;
+            const observer = new MutationObserver((mutations, obs) => {
+                if (!document.body.contains(win)) {
+                    obs.disconnect();
+                    if (processes.has(key)) {
+                        killProcess(key);
+                    }
                 }
             });
-
+            observer.observe(document.body, { childList: true, subtree: true });
             win._observer = observer;
-            const container = document.getElementById("desktop") || document.body;
-            observer.observe(container, { childList: true });
+
+            win._cleanup = () => {
+                if (processes.has(key)) {
+                    killProcess(key);
+                }
+            };
 
             if (isExplorer) {
                 explorerWindows.set(options.path || "Desktop", win);
@@ -368,15 +373,23 @@ export async function launch(path, options = {}) {
 
             win.dataset.processKey = key;
 
-            const observer = new MutationObserver(() => {
-                if (!win.isConnected) {
-                    processes.delete(key);
-                    observer.disconnect();
+            const observer = new MutationObserver((mutations, obs) => {
+                if (!document.body.contains(win)) {
+                    obs.disconnect();
+                    if (processes.has(key)) {
+                        killProcess(key);
+                    }
                 }
             });
+            observer.observe(document.body, { childList: true, subtree: true });
             win._observer = observer;
-            const container = document.getElementById("desktop") || document.body;
-            observer.observe(container, { childList: true });
+
+            // ✅ APP側と同様に必ず killProcess を経由させる
+            win._cleanup = () => {
+                if (processes.has(key)) {
+                    killProcess(key);
+                }
+            };
         }
 
         /* ================= FOLDER ================= */
@@ -468,9 +481,16 @@ export function killProcess(key) {
     if (!proc) return false;
 
     const win = proc.window;
+    const handle = proc.handle; // 【追加】プロセス情報からハンドルを取得
 
     try {
-        // 1. アプリ側のクリーンアップ（タイマー停止など）
+        // 1. アプリ側のクリーンアップ（タイマー停止、メモリ解放など）
+        // 【追加】アプリの戻り値(handle)に dispose が実装されていれば実行
+        if (handle && typeof handle.dispose === 'function') {
+            handle.dispose();
+        }
+
+        // (既存) DOMに紐づいた後方互換用のクリーンアップ
         if (win?._cleanup) win._cleanup();
 
         // 2. Observerを真っ先に切断
@@ -492,6 +512,12 @@ export function killProcess(key) {
         for (const [path, w] of explorerWindows.entries()) {
             if (w === win) {
                 explorerWindows.delete(path);
+                break;
+            }
+        }
+        for (const [entry, instance] of tabAppInstances.entries()) {
+            if (instance.win === win) {
+                tabAppInstances.delete(entry);
                 break;
             }
         }

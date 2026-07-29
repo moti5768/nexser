@@ -1,12 +1,11 @@
 // SystemProperties.js
 import { openDB } from "../db.js";
 import { FILE_ASSOCIATIONS } from "../file-associations.js";
-import { loadSetting } from "./settings.js"; // ユーザー名読み込みのために追加
+import { loadSetting } from "./settings.js";
 
 const STORE = "settings";
 
 export default async function SystemProperties(content) {
-    // Settings.js と共通のベース構造
     content.innerHTML = `
     <div class="win95-tab-container" style="height: 100%; display: flex; flex-direction: column;">
         <div id="tabs" class="win95-tabs"></div>
@@ -17,36 +16,38 @@ export default async function SystemProperties(content) {
     const tabsEl = content.querySelector("#tabs");
     const bodyEl = content.querySelector("#tab-body");
 
+    let currentTabId = null;
+    let activeCleanup = null; // 現在アクティブなタブのクリーンアップ関数を保持
+
     /* ---------- タブ定義 ---------- */
     const tabs = [
         { id: "general", label: "General", render: renderGeneral },
         { id: "performance", label: "Performance", render: renderPerformance }
     ];
 
-    let currentTabId = null;
-
     async function selectTab(id) {
         if (currentTabId === id) return;
         currentTabId = id;
 
-        // タブボタンのアクティブ状態の切り替え
+        // タブボタンのアクティブ状態切り替え
         [...tabsEl.children].forEach(btn => {
             const active = btn.dataset.id === id;
             btn.classList.toggle("active", active);
             btn.classList.toggle("inactive", !active);
         });
 
-        // 以前のタブのクリーンアップ（タイマー停止、イベントリスナー解除など）
-        if (bodyEl._cleanup) {
-            bodyEl._cleanup();
-            bodyEl._cleanup = null;
+        // 1. 前のタブのクリーンアップを実行して確実に破棄する
+        if (activeCleanup) {
+            activeCleanup();
+            activeCleanup = null;
         }
         bodyEl.innerHTML = "";
 
         const tab = tabs.find(t => t.id === id);
         if (tab && typeof tab.render === "function") {
             try {
-                await tab.render(bodyEl);
+                // 2. 各タブのレンダリング関数からクリーンアップ関数を受け取る
+                activeCleanup = await tab.render(bodyEl);
             } catch (e) {
                 console.error("Render failed:", e);
             }
@@ -68,12 +69,9 @@ export default async function SystemProperties(content) {
 
     /* ---------- General タブ描画 ---------- */
     async function renderGeneral(root) {
-        // 分析に基づいた動的データ
         const registeredAppsCount = Object.keys(FILE_ASSOCIATIONS).length;
         const db = await openDB();
         const dbVersion = db.version;
-
-        // settings.js の設定からユーザー名を取得
         const userName = (await loadSetting("userName")) || "Local User";
 
         root.innerHTML = `
@@ -102,15 +100,14 @@ export default async function SystemProperties(content) {
             </div>
         `;
 
-        // ユーザー名更新イベントの監視
         const onUserUpdate = (e) => {
             const nameEl = root.querySelector("#sys-prop-user-name");
             if (nameEl) nameEl.textContent = e.detail;
         };
         window.addEventListener("user-profile-updated", onUserUpdate);
 
-        // クリーンアップ処理を登録
-        root._cleanup = () => {
+        // Generalタブのクリーンアップ関数を返す
+        return () => {
             window.removeEventListener("user-profile-updated", onUserUpdate);
         };
     }
@@ -119,7 +116,6 @@ export default async function SystemProperties(content) {
     async function renderPerformance(root) {
         root.innerHTML = "";
 
-        // ストレージセクション
         const storageField = document.createElement("fieldset");
         storageField.style.margin = "0 0 12px 0";
         storageField.style.padding = "10px";
@@ -138,7 +134,6 @@ export default async function SystemProperties(content) {
         barContainer.appendChild(bar);
         storageField.append(storageInfo, barContainer);
 
-        // リソースセクション
         const resourceField = document.createElement("fieldset");
         resourceField.style.padding = "10px";
         resourceField.innerHTML = `<legend>System Resources</legend>`;
@@ -156,7 +151,6 @@ export default async function SystemProperties(content) {
         resourceField.append(cpuInfo, memInfo, fsInfo);
         root.append(storageField, resourceField);
 
-        // 動的更新ロジック
         async function updateStats() {
             if (currentTabId !== "performance") return;
 
@@ -174,7 +168,6 @@ export default async function SystemProperties(content) {
             storageInfo.textContent = `Used: ${usedMB} MB / Total: ${totalMB} MB (${percent}%)`;
             bar.style.width = `${percent}%`;
 
-            // kernel.js で計算されている cpuLoad を参照
             const load = window.cpuLoad !== undefined ? window.cpuLoad : 0;
             cpuInfo.textContent = `CPU Load (Event Loop Lag): ${load.toFixed(1)}%`;
 
@@ -190,9 +183,19 @@ export default async function SystemProperties(content) {
         const timer = setInterval(updateStats, 2000);
         updateStats();
 
-        // タブ切り替え時のクリーンアップ
-        root._cleanup = () => {
+        // Performanceタブのクリーンアップ関数を返す
+        return () => {
             clearInterval(timer);
         };
     }
+
+    /* ---------- ★ カーネルへ渡すアプリ全体のハンドル ---------- */
+    return {
+        dispose: () => {
+            if (activeCleanup) {
+                activeCleanup();
+                activeCleanup = null;
+            }
+        }
+    };
 }

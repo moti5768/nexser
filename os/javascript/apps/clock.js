@@ -342,5 +342,15 @@ export default async function ClockApp(content) {
         renderMonth(clockDate);
     }
 
+    const cleanup = () => {
+        bodyEl._cleanup?.();
+    };
+
+    content._cleanup = cleanup;
+
     selectTab("analog");
+
+    return {
+        dispose: cleanup
+    };
 }

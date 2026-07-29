@@ -197,27 +197,21 @@ export default async function TextEditor(root, options = {}) {
         if (win) {
             const oldWin = win;
             const oldRoot = root;
-            const oldBtn = oldWin._taskbarBtn; // 元のタスクバーのボタン
 
-            // 新しいウィンドウを作る
+            // 1. 新しいウィンドウを作る
             const newRoot = createWindow(finalName, { width: 600, height: 400 });
+
+            // 2. 先にDOMの置き換えを実行する
             oldWin.parentElement.replaceChild(newRoot.parentElement, oldRoot.parentElement);
 
-            // 新規ファイル用 TextEditor 初期化
+            // 3. 新規ファイル用 TextEditor 初期化
             TextEditor(newRoot, { path: filePath, fromApp: false });
 
-            // ----------------------------
-            // 古いタスクバーボタンの完全削除
-            // ----------------------------
-            if (oldBtn && Array.isArray(taskbarButtons)) {
-                oldBtn.remove();
-
-                const idx = taskbarButtons.indexOf(oldBtn);
-                if (idx !== -1) taskbarButtons.splice(idx, 1);
-
-                oldBtn._window = null;
-                oldWin._taskbarBtn = null;
+            // 4. ▼ 置き換えが完了した「後」に、古いウィンドウのプロセスとリソースをクリーンアップ
+            if (typeof oldWin._cleanup === "function") {
+                oldWin._cleanup();
             }
+
             bringToFront(newRoot.closest(".window"));
         }
     }
@@ -486,6 +480,15 @@ export default async function TextEditor(root, options = {}) {
             textarea.scrollTop = lineIndex * lineHeight;
         }
     }
+    return {
+        dispose: () => {
+            // エディタ終了時に開いたままの検索ウィンドウがあれば強制的に閉じる
+            if (activeSearchWin && document.body.contains(activeSearchWin)) {
+                activeSearchWin.remove();
+                activeSearchWin = null;
+            }
+        }
+    };
 }
 
 /* =========================

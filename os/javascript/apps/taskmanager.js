@@ -29,9 +29,20 @@ export default function TaskManager(root) {
 
     const rowMap = new Map();
     let timer = null;
+    let observer = null; // 【改善】上部で変数宣言
+
+    function stop() {
+        if (timer) {
+            clearInterval(timer);
+            timer = null;
+        }
+        if (observer) {
+            observer.disconnect();
+            observer = null;
+        }
+    }
 
     function refresh() {
-
         if (!document.body.contains(root)) {
             stop();
             return;
@@ -49,7 +60,6 @@ export default function TaskManager(root) {
         }
 
         for (const p of list) {
-
             let tr = rowMap.get(p.key);
 
             if (!tr) {
@@ -71,7 +81,6 @@ export default function TaskManager(root) {
             }
 
             const cells = tr.children;
-
             cells[0].textContent = p.pid;
             cells[1].textContent = p.name;
             cells[2].textContent = p.cpu + " %";
@@ -83,20 +92,11 @@ export default function TaskManager(root) {
         }
     }
 
-    function stop() {
-        if (timer) {
-            clearInterval(timer);
-            timer = null;
-        }
-        if (observer) observer.disconnect();
-    }
-
     refresh();
     timer = setInterval(refresh, 1000);
 
+    // 【改善】ウィンドウが閉じられたときの監視（オブザーバー）
     const win = root.closest(".window");
-    let observer = null;
-
     if (win) {
         observer = new MutationObserver(() => {
             if (!document.body.contains(win)) {
@@ -105,4 +105,12 @@ export default function TaskManager(root) {
         });
         observer.observe(document.body, { childList: true });
     }
+
+    // カーネルの killProcess から呼ばれるクリーンアップ用ハンドル
+    return {
+        isTabApp: false,
+        dispose: () => {
+            stop();
+        }
+    };
 }

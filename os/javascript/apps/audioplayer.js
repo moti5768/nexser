@@ -293,13 +293,11 @@ export default function main(content, options) {
 
     if (currentPath) loadAndPlay(currentPath);
 
-    const observer = new MutationObserver(() => {
-        if (!document.body.contains(container)) {
+    return {
+        dispose: () => {
             cleanupAudio();
             window.removeEventListener("mouseup", globalHandleUp);
             window.removeEventListener("touchend", globalHandleUp);
-            observer.disconnect();
         }
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
+    };
 }

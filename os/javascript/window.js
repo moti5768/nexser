@@ -251,33 +251,47 @@ ${!options.hideStatus ? `
         closeBtn?.classList.add("pointer_none");
     }
 
+    // 【改善後】ウィンドウの消滅を監視し、kernelから強制削除されても確実に後始末する
     const destroy = () => {
         if (options.disableClose && closeBtn?.classList.contains("pointer_none")) {
             return;
         }
-        abortController.abort(); // 全イベントリスナーを一括解除
 
-        if (w._observer) {
-            w._observer.disconnect();
-            w._observer = null;
-        }
-
-        if (w._modalOverlay) w._modalOverlay.remove();
-
-        if (taskbarBtn) {
-            taskbarBtn._window = null;
-            taskbarBtn.remove();
-            const idx = taskbarButtons.indexOf(taskbarBtn);
-            if (idx !== -1) taskbarButtons.splice(idx, 1);
-        }
-        w._taskbarBtn = null;
-
+        // 1. プロセス側の終了を先に呼ぶ（まだ終わっていなければ）
         if (w.dataset.processKey) {
             killProcess(w.dataset.processKey);
         }
-        w.remove();
-        scheduleRefreshTopWindow();
+
+        // 2. ウィンドウ自体の削除
+        if (w.isConnected) {
+            w.remove();
+        }
     };
+
+    // ★ 【安全ネット】kernel側や外部から突然 win.remove() された場合の後始末を保証するオブザーバー
+    const cleanupObserver = new MutationObserver((mutations, obs) => {
+        if (!document.body.contains(w)) {
+            obs.disconnect();
+            abortController.abort(); // イベントリスナーを全解除してメモリリーク防止
+
+            if (w._observer) {
+                w._observer.disconnect();
+                w._observer = null;
+            }
+
+            if (w._modalOverlay) w._modalOverlay.remove();
+
+            if (taskbarBtn) {
+                taskbarBtn._window = null;
+                if (taskbarBtn.isConnected) taskbarBtn.remove();
+                const idx = taskbarButtons.indexOf(taskbarBtn);
+                if (idx !== -1) taskbarButtons.splice(idx, 1); // ゾンビボタンを完全に排除
+            }
+            w._taskbarBtn = null;
+            scheduleRefreshTopWindow();
+        }
+    });
+    cleanupObserver.observe(document.body, { childList: true, subtree: true });
 
     // 外部から呼べるように要素に参照を持たせる
     w._destroy = destroy;

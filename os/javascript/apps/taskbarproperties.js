@@ -38,6 +38,7 @@ export default async function TaskbarProperties(content) {
     ];
 
     let currentTabId = null;
+    let activeCleanup = null; // ★追加: 現在アクティブなタブのクリーンアップ関数を保持
 
     async function selectTab(id) {
         if (currentTabId === id) return;
@@ -50,10 +51,10 @@ export default async function TaskbarProperties(content) {
             btn.classList.toggle("inactive", !active);
         });
 
-        // クリーンアップ
-        if (bodyEl._cleanup) {
-            bodyEl._cleanup();
-            bodyEl._cleanup = null;
+        // ★修正: 前のタブのクリーンアップを実行して確実に破棄する
+        if (activeCleanup) {
+            activeCleanup();
+            activeCleanup = null;
         }
         bodyEl.innerHTML = "";
 
@@ -163,13 +164,12 @@ export default async function TaskbarProperties(content) {
         const handleExternalHeightChange = (e) => {
             const newHeight = e.detail.height;
             updateHeightUI(newHeight);
-            // 直接リサイズ時は既に保存されているため Apply は無効のままで良い
         };
 
         window.addEventListener("taskbar-height-external-change", handleExternalHeightChange);
 
-        // タブ切り替え時のクリーンアップに登録
-        root._cleanup = () => {
+        // ★修正: タブ用のクリーンアップ関数を返す
+        return () => {
             window.removeEventListener("taskbar-height-external-change", handleExternalHeightChange);
         };
     }
@@ -349,5 +349,12 @@ export default async function TaskbarProperties(content) {
         });
         observer.observe(document.body, { childList: true, subtree: true });
     }
-
+    return {
+        dispose: () => {
+            if (activeCleanup) {
+                activeCleanup();
+                activeCleanup = null;
+            }
+        }
+    };
 }

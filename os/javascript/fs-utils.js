@@ -185,3 +185,24 @@ export function basename(path) {
     const result = cleanPath.substring(lastSlashIndex + 1);
     return result.endsWith(":") ? "" : result;
 }
+
+export function getUniqueName(parentNode, idealName) {
+    if (!parentNode || !parentNode[idealName]) return idealName;
+
+    const dotIndex = idealName.lastIndexOf(".");
+
+    // 拡張子を持つかどうかの判定 (dotIndex === 0 の場合は ".env" のような隠しファイルとみなす)
+    const hasExtension = dotIndex > 0;
+    const base = hasExtension ? idealName.substring(0, dotIndex) : idealName;
+    const ext = hasExtension ? idealName.substring(dotIndex) : "";
+
+    let counter = 1;
+    let finalName = idealName;
+
+    // 既存の名前と被らなくなるまでカウントアップ
+    while (parentNode[finalName]) {
+        finalName = `${base} (${counter++})${ext}`;
+    }
+
+    return finalName;
+}

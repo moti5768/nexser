@@ -88,7 +88,6 @@ export default function RegistryEditor(root) {
     const searchInput = root.querySelector("#reg-search");
     const rowMap = new Map();
     let selectedKey = null;
-    let timer = null;
 
     // --- データ操作ロジック ---
 
@@ -675,14 +674,4 @@ export default function RegistryEditor(root) {
 
     buildTree();
     refresh();
-
-    if (win) {
-        const obs = new MutationObserver(() => {
-            if (!document.body.contains(win)) {
-                clearInterval(timer);
-                obs.disconnect();
-            }
-        });
-        obs.observe(document.body, { childList: true });
-    }
 }

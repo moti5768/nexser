@@ -271,10 +271,13 @@ export default async function Paint(root, options = {}) {
         previewData = null;
     }
 
-    // マウス/タッチイベント (オリジナルを維持)
+    const handleMouseUp = stopDrawing;
+    const handleTouchEnd = stopDrawing;
+
+    // マウス/タッチイベントを登録
     canvas.addEventListener("mousedown", startDrawing);
     canvas.addEventListener("mousemove", draw);
-    window.addEventListener("mouseup", stopDrawing);
+    window.addEventListener("mouseup", handleMouseUp); // ★ 変数化
     canvas.addEventListener("contextmenu", e => e.preventDefault());
 
     canvas.addEventListener("touchstart", (e) => {
@@ -283,7 +286,7 @@ export default async function Paint(root, options = {}) {
     canvas.addEventListener("touchmove", (e) => {
         if (e.touches.length === 1) { e.preventDefault(); draw(e); }
     }, { passive: false });
-    window.addEventListener("touchend", stopDrawing);
+    window.addEventListener("touchend", handleTouchEnd); // ★ 変数化
 
     /* =========================
        ドラッグ＆ドロップ (オリジナル維持)
@@ -443,4 +446,10 @@ export default async function Paint(root, options = {}) {
             }, true);
         }
     }
+    return {
+        dispose: () => {
+            window.removeEventListener("mouseup", handleMouseUp);
+            window.removeEventListener("touchend", handleTouchEnd);
+        }
+    };
 }

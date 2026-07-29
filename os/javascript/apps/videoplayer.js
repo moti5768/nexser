@@ -317,23 +317,19 @@ export default function VideoPlayer(root, options = {}) {
         setupRibbon(win, () => filePath, null, ribbonMenus);
     }
 
-    // 改善後：メモリを掃除してから閉じる
     const closeBtn = win?.querySelector(".close-btn");
 
     function closeWindow() {
-        /* --- クリーンアップ処理を追加 --- */
+        // リソースの確実な解放
         if (video.src && video.src.startsWith('blob:')) {
-            URL.revokeObjectURL(video.src); // メモリ上のビデオデータを解放
+            URL.revokeObjectURL(video.src);
             video.src = "";
         }
-        video.load(); // ビデオエンジンの動作を強制終了
-        root.innerHTML = ""; // 内部の要素を空にして参照を切り、ガベージコレクションを促す
+        video.load();
+        root.innerHTML = "";
 
-        /* --- 実際の削除処理 --- */
-        if (closeBtn) {
-            // すでに dirty は false になっているので、安全にクリックをシミュレート
-            closeBtn.click();
-        } else if (win) {
+        // ウィンドウの削除（kernel側の MutationObserver や _cleanup が自動でプロセスを回収する）
+        if (win) {
             win.remove();
         }
     }
@@ -374,4 +370,15 @@ export default function VideoPlayer(root, options = {}) {
         }
     }
     init();
+    return {
+        isTabApp: false,
+        dispose: () => {
+            if (video.src && video.src.startsWith('blob:')) {
+                URL.revokeObjectURL(video.src);
+                video.src = "";
+            }
+            video.load();
+            root.innerHTML = "";
+        }
+    };
 }

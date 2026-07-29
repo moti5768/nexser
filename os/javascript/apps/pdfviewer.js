@@ -311,4 +311,16 @@ export default function PDFViewer(root, options = {}) {
     });
 
     init();
+
+    // 【追加】カーネルの killProcess から呼ばれるクリーンアップ処理
+    function dispose() {
+        if (viewer.src && viewer.src.startsWith('blob:')) {
+            URL.revokeObjectURL(viewer.src);
+        }
+    }
+
+    // 【追加】kernel.js 側へハンドルを返却する
+    return {
+        dispose
+    };
 }

@@ -151,7 +151,11 @@ export default function CalcApp(content, options) {
         if (key === "Escape") clear();
     });
 
-
-
     update();
+    return {
+        dispose: () => {
+            // 電卓アプリ固有のクリーンアップ処理（タイマーやイベントの明示的解除が必要な場合はここに記述）
+            console.log("Calc app resources released.");
+        }
+    };
 }

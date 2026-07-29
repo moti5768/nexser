@@ -230,4 +230,17 @@ export default async function BrowserApp(root, options = {}) {
 
         setupRibbon(win, () => filePath, null, ribbonMenus);
     }
+    return {
+        dispose: () => {
+            // iframeの読み込みを停止してメモリリークやバックグラウンド通信を防止
+            if (frame) {
+                try {
+                    frame.src = "about:blank";
+                } catch (e) {
+                    // ignore
+                }
+            }
+            console.log("Browser app resources released.");
+        }
+    };
 }
