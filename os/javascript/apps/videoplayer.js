@@ -218,54 +218,24 @@ export default function VideoPlayer(root, options = {}) {
             saveOverlay.style.display = "flex";
             await new Promise(r => setTimeout(r, 50));
 
-            // targetDir (Programs/Movie) に新規作成
-            targetDir[finalName] = {
+            // 新規ファイルのノード作成
+            const newNode = {
                 type: "file",
                 content: encodedContent,
                 size: actualSize
             };
+            targetDir[finalName] = newNode;
 
-            // 新しいパスを Programs/Movie に設定
-            const newFilePath = `Programs/Movie/${finalName}`;
+            // ★ DOM差し替えを行わず、既存インスタンスの変数だけ書き換え
+            fileNode = newNode;
+            filePath = `Programs/Movie/${finalName}`;
+            baseTitle = finalName;
+            dirty = false;
+            draftVideo = null;
+
+            updateTitle();
             window.dispatchEvent(new Event("fs-updated"));
-
-            /* ウィンドウ差し替えロジック */
-            if (win) {
-                // 1. まず、重いリソース（ビデオ本体）だけを殺す
-                if (video.src && video.src.startsWith('blob:')) {
-                    URL.revokeObjectURL(video.src);
-                }
-                video.pause();
-                video.src = "";
-                video.load();
-
-                const oldWin = win;
-                const oldRoot = root; // この時点ではまだ DOM 構造を維持
-                const oldBtn = oldWin._taskbarBtn;
-
-                // 2. 新しいウィンドウを生成
-                const newRoot = createWindow(finalName, { width: 600, height: 450 });
-
-                // 3. DOMを入れ替える（古い root が親から外される）
-                if (oldWin.parentElement) {
-                    oldWin.parentElement.replaceChild(newRoot.parentElement, oldRoot.parentElement);
-                }
-
-                // 4. 入れ替えが終わってから、古い root を完全に空にする（クリーンアップ完了）
-                oldRoot.innerHTML = "";
-
-                // 5. 新しいプレイヤーを起動
-                VideoPlayer(newRoot, { path: newFilePath });
-
-                if (oldBtn && Array.isArray(taskbarButtons)) {
-                    oldBtn.remove();
-                    const i = taskbarButtons.indexOf(oldBtn);
-                    if (i !== -1) taskbarButtons.splice(i, 1);
-                    oldBtn._window = null;
-                    oldWin._taskbarBtn = null;
-                }
-                bringToFront(newRoot.closest(".window"));
-            }
+            refresh();
         } catch (err) {
             console.error(err);
             showWarning(root, "保存中にエラーが発生しました。");

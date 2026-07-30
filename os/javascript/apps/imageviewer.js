@@ -317,45 +317,15 @@ export default function ImageViewer(root, options = {}) {
 
         window.dispatchEvent(new Event("fs-updated"));
 
-        /* ウィンドウ置き換え */
-        if (win) {
-            const oldWin = win;
-            const oldRoot = root;
-            const oldBtn = oldWin._taskbarBtn;
+        /* 内部状態の更新（既存ウィンドウとカーネルプロセス管理を維持） */
+        filePath = newFilePath;
+        fileNode = newNode;
+        baseTitle = finalName;
+        dirty = false;
+        draftImage = null;
 
-            const newRoot = createWindow(finalName, {
-                width: 600,
-                height: 400
-            });
-
-            oldWin.parentElement.replaceChild(
-                newRoot.parentElement,
-                oldRoot.parentElement
-            );
-
-            // 新しいパス（Programs/Picture/...）を引き継いで再表示
-            ImageViewer(newRoot, { path: newFilePath });
-            if (draftImage) {
-                const newWinImg = newRoot.querySelector("img");
-                if (newWinImg) {
-                    if (draftImage instanceof File) {
-                        newWinImg.src = URL.createObjectURL(draftImage);
-                    } else {
-                        newWinImg.src = draftImage;
-                    }
-                }
-            }
-
-            if (oldBtn && Array.isArray(taskbarButtons)) {
-                oldBtn.remove();
-                const i = taskbarButtons.indexOf(oldBtn);
-                if (i !== -1) taskbarButtons.splice(i, 1);
-                oldBtn._window = null;
-                oldWin._taskbarBtn = null;
-            }
-
-            bringToFront(newRoot.closest(".window"));
-        }
+        refresh();
+        updateTitle();
     }
 
     /* =========================

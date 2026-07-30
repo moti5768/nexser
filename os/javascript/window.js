@@ -136,7 +136,6 @@ ${!options.hideStatus ? `
     // リボン要素を確実に取得
     const content = w.querySelector(".content");
     w._ribbon = w.querySelector(".window-ribbon");
-    w._statusBar = w.querySelector(".window-statusbar");
 
     // ウィンドウ作成時にリボンを初期化する
     if (w._ribbon && !options.hideRibbon) {
@@ -158,6 +157,7 @@ ${!options.hideStatus ? `
         document.body.appendChild(w);
     }
     w._statusBar = w.querySelector(".window-statusbar");
+    w._applyRealIcon();
     /* ===== サイズ復元 ===== */
 
     const sizeKey = title;   // 今回は title をキーにする（簡単）
@@ -251,20 +251,21 @@ ${!options.hideStatus ? `
         closeBtn?.classList.add("pointer_none");
     }
 
-    // 【改善後】ウィンドウの消滅を監視し、kernelから強制削除されても確実に後始末する
+    // 【改善後】
     const destroy = () => {
         if (options.disableClose && closeBtn?.classList.contains("pointer_none")) {
             return;
         }
 
-        // 1. プロセス側の終了を先に呼ぶ（まだ終わっていなければ）
         if (w.dataset.processKey) {
+            // カーネルのプロセスとして管理されている場合はカーネルに委譲
+            // ※ killProcess 内部で w.remove() が呼ばれるため、ここでは何もしません
             killProcess(w.dataset.processKey);
-        }
-
-        // 2. ウィンドウ自体の削除
-        if (w.isConnected) {
-            w.remove();
+        } else {
+            // プロセス管理外の単独ウィンドウ（モーダル等）の場合は自身で削除
+            if (w.isConnected) {
+                w.remove();
+            }
         }
     };
 
@@ -865,16 +866,12 @@ ${!options.hideStatus ? `
                 startResize(e, dir);
             })
         );
+    } // ← if (!options.disableResize) ブロックの閉じ括弧
 
-        scheduleRefreshTopWindow();
-        if (!options._modal && !options.disableContextMenu) {
-            installWindowContextMenu(w);
-        }
+    scheduleRefreshTopWindow();
 
-        return content;
-    }
-    // リサイズが無効でも content を返す
-    return w.querySelector(".content");
+    // ★ リサイズの有無に関わらず、生成した content を確実に返却
+    return content;
 }
 
 /* ===== ウィンドウ前面化 ===== */
@@ -1595,12 +1592,15 @@ export function setWindowAnimationEnabled(v) {
 
 export function destroyWindow(win) {
     if (!win) return;
-    const index = taskbarButtons.findIndex(btn => btn._window === win);
-    if (index !== -1) {
-        taskbarButtons[index].remove();
-        taskbarButtons.splice(index, 1);
-        console.log("Taskbar button removed for:", win.querySelector(".title-text")?.innerText);
+
+    // カーネルのプロセスとして管理されている場合はカーネルに委譲
+    if (win.dataset && win.dataset.processKey) {
+        killProcess(win.dataset.processKey);
+        return;
     }
+
+    // プロセス管理外の場合は単に remove するだけ
+    // ※ taskbarButtons 配列からの削除などは、すべて cleanupObserver が自動処理するためコードを削減
     if (win.isConnected) {
         win.remove();
     }

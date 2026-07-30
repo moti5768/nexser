@@ -90,12 +90,12 @@ export default async function Paint(root, options = {}) {
         const targetB = data[targetPos + 2];
         const targetA = data[targetPos + 3];
 
-        if (targetR === fillRGB[0] && targetG === fillRGB[1] && targetB === fillRGB[2]) return;
+        if (targetR === fillRGB[0] && targetG === fillRGB[1] && targetB === fillRGB[2] && targetA === 255) return;
 
-        // キューベースの高速な塗りつぶし
+        // ★ pop() を使うことで O(1) になり、一瞬で塗りつぶしが完了する
         const queue = [[startX, startY]];
         while (queue.length > 0) {
-            const [x, y] = queue.shift();
+            const [x, y] = queue.pop();
             const pos = (y * width + x) * 4;
 
             if (data[pos] === targetR && data[pos + 1] === targetG && data[pos + 2] === targetB && data[pos + 3] === targetA) {
@@ -196,7 +196,15 @@ export default async function Paint(root, options = {}) {
         const rect = canvas.getBoundingClientRect();
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        return { x: (clientX - rect.left), y: (clientY - rect.top) };
+
+        // ★ Canvasのピクセル解像度との比率を掛け合わせる
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+
+        return {
+            x: (clientX - rect.left) * scaleX,
+            y: (clientY - rect.top) * scaleY
+        };
     }
 
     function startDrawing(e) {
@@ -384,6 +392,12 @@ export default async function Paint(root, options = {}) {
         p.addEventListener("contextmenu", e => e.preventDefault());
     });
 
+    function handleKeyDown(e) {
+        if (e.ctrlKey && e.key.toLowerCase() === "s") { e.preventDefault(); save(); }
+        if (e.ctrlKey && e.key.toLowerCase() === "z") { e.preventDefault(); undo(); }
+        if (e.ctrlKey && e.key.toLowerCase() === "y") { e.preventDefault(); redo(); }
+    }
+
     if (win) {
         setupRibbon(win, () => filePath, null, [
             {
@@ -424,11 +438,7 @@ export default async function Paint(root, options = {}) {
             }
         ]);
 
-        win.addEventListener("keydown", e => {
-            if (e.ctrlKey && e.key.toLowerCase() === "s") { e.preventDefault(); save(); }
-            if (e.ctrlKey && e.key.toLowerCase() === "z") { e.preventDefault(); undo(); }
-            if (e.ctrlKey && e.key.toLowerCase() === "y") { e.preventDefault(); redo(); }
-        });
+        win.addEventListener("keydown", handleKeyDown);
 
         const closeBtn = win.querySelector(".close-btn");
         if (closeBtn) {
@@ -448,6 +458,7 @@ export default async function Paint(root, options = {}) {
     }
     return {
         dispose: () => {
+            win?.removeEventListener("keydown", handleKeyDown);
             window.removeEventListener("mouseup", handleMouseUp);
             window.removeEventListener("touchend", handleTouchEnd);
         }

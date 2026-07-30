@@ -223,26 +223,15 @@ export default function PDFViewer(root, options = {}) {
         const newFilePath = `Programs/Documents/${finalName}`;
         window.dispatchEvent(new Event("fs-updated"));
 
-        /* ウィンドウの再生成 (ImageViewer同様) */
-        if (win) {
-            const oldWin = win;
-            const oldBtn = oldWin._taskbarBtn;
+        /* 内部状態の更新（既存ウィンドウとカーネルプロセス管理を維持） */
+        filePath = newFilePath;
+        fileNode = newNode;
+        baseTitle = finalName;
+        dirty = false;
+        draftBlob = null;
 
-            const newRoot = createWindow(finalName, { width: 700, height: 500 });
-
-            oldWin.parentElement.replaceChild(newRoot.parentElement, root.parentElement);
-            PDFViewer(newRoot, { path: newFilePath });
-
-            // タスクバー管理のクリーンアップ (ImageViewer準拠)
-            if (oldBtn && Array.isArray(taskbarButtons)) {
-                oldBtn.remove();
-                const i = taskbarButtons.indexOf(oldBtn);
-                if (i !== -1) taskbarButtons.splice(i, 1);
-                oldBtn._window = null;
-                oldWin._taskbarBtn = null;
-            }
-            bringToFront(newRoot.closest(".window"));
-        }
+        refresh();
+        updateTitle();
     }
 
     /* =========================
@@ -306,16 +295,33 @@ export default function PDFViewer(root, options = {}) {
         updateTitle();
     }
 
-    window.addEventListener("keydown", e => {
-        if (e.ctrlKey && e.key.toLowerCase() === "s") { e.preventDefault(); save(); }
-    });
+    // ハンドル関数として定義
+    function handleKeyDown(e) {
+        if (e.ctrlKey && e.key.toLowerCase() === "s") {
+            e.preventDefault();
+            save();
+        }
+    }
+    window.addEventListener("keydown", handleKeyDown);
 
     init();
 
-    // 【追加】カーネルの killProcess から呼ばれるクリーンアップ処理
     function dispose() {
-        if (viewer.src && viewer.src.startsWith('blob:')) {
-            URL.revokeObjectURL(viewer.src);
+        // 1. キーイベントの解約（メモリリーク防止）
+        window.removeEventListener("keydown", handleKeyDown);
+
+        // 現在のsrc文字列を退避
+        const currentSrc = viewer.src;
+
+        // 2. DOMから切り離し
+        viewer.removeAttribute("src");
+        if (viewer.parentNode) {
+            viewer.parentNode.removeChild(viewer);
+        }
+
+        // 3. Blob URL解放
+        if (currentSrc && currentSrc.startsWith('blob:')) {
+            URL.revokeObjectURL(currentSrc);
         }
     }
 

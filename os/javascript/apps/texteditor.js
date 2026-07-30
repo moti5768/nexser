@@ -185,35 +185,15 @@ export default async function TextEditor(root, options = {}) {
         // Desktop に新規ファイルを作成
         const newNode = { type: "file", content: textarea.value, style: { ...styleState } };
         desktop[finalName] = newNode;
+
+        // ★ DOMやウィンドウの差し替えは行わず、内部状態をその場で更新
         fileNode = newNode;
         filePath = `Desktop/${finalName}`;
         baseTitle = finalName;
         dirty = false;
 
+        updateTitle();
         window.dispatchEvent(new Event("fs-updated"));
-        // -------------------------------
-        // 元の TextEditor.app ウィンドウを置き換え
-        // -------------------------------
-        if (win) {
-            const oldWin = win;
-            const oldRoot = root;
-
-            // 1. 新しいウィンドウを作る
-            const newRoot = createWindow(finalName, { width: 600, height: 400 });
-
-            // 2. 先にDOMの置き換えを実行する
-            oldWin.parentElement.replaceChild(newRoot.parentElement, oldRoot.parentElement);
-
-            // 3. 新規ファイル用 TextEditor 初期化
-            TextEditor(newRoot, { path: filePath, fromApp: false });
-
-            // 4. ▼ 置き換えが完了した「後」に、古いウィンドウのプロセスとリソースをクリーンアップ
-            if (typeof oldWin._cleanup === "function") {
-                oldWin._cleanup();
-            }
-
-            bringToFront(newRoot.closest(".window"));
-        }
     }
 
     /* =========================
@@ -344,9 +324,16 @@ export default async function TextEditor(root, options = {}) {
     textarea.addEventListener("mouseup", debouncedUpdateStatusBar);
 
 
-    win?.addEventListener("keydown", e => {
-        if (e.ctrlKey && e.key.toLowerCase() === "s") { e.preventDefault(); save(); }
-    });
+    function handleKeyDown(e) {
+        if (e.ctrlKey && e.key.toLowerCase() === "s") {
+            e.preventDefault();
+            save();
+        } else if (e.altKey && e.key === "F4") {
+            e.preventDefault();
+            requestClose();
+        }
+    }
+    win?.addEventListener("keydown", handleKeyDown);
 
     const closeBtn = win?.querySelector(".close-btn");
     function closeWindow() { closeBtn?.click(); }
@@ -378,10 +365,6 @@ export default async function TextEditor(root, options = {}) {
         e.preventDefault(); e.stopImmediatePropagation();
         requestClose();
     }, true);
-
-    win?.addEventListener("keydown", e => {
-        if (e.altKey && e.key === "F4") { e.preventDefault(); requestClose(); }
-    });
 
     function searchText() {
         if (!win) return;
@@ -482,6 +465,9 @@ export default async function TextEditor(root, options = {}) {
     }
     return {
         dispose: () => {
+            // ★ キーリスナーを破棄
+            win?.removeEventListener("keydown", handleKeyDown);
+
             // エディタ終了時に開いたままの検索ウィンドウがあれば強制的に閉じる
             if (activeSearchWin && document.body.contains(activeSearchWin)) {
                 activeSearchWin.remove();

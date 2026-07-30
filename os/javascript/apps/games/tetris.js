@@ -524,10 +524,9 @@ export default function TetrisApp(content, options) {
     addContinuousHandler(content.querySelector("#btn-fall-hard"), () => game.fall2(), 150);
     addContinuousHandler(content.querySelector("#btn-hold"), () => game.hold(), 150);
 
-    // キーボード操作
-    content.addEventListener("keydown", (e) => {
+    // キーボード操作用のハンドラーを関数化
+    const handleKeyDown = (e) => {
         if (tetris_loop) return;
-        // 矢印キーなどでの画面スクロールを防ぐ
         if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
             e.preventDefault();
         }
@@ -537,5 +536,21 @@ export default function TetrisApp(content, options) {
         else if (e.keyCode === 40) game.fall();
         else if (e.keyCode === 67) game.hold(); // 'C' キー
         else if (e.keyCode === 13) game.fall2(); // 'Enter' キー
-    });
+    };
+
+    content.addEventListener("keydown", handleKeyDown);
+
+    // ★ kernel.js からの killProcess(key) 呼び出しと連携するdisposeオブジェクトを返却
+    return {
+        dispose: () => {
+            // 1. ループタイマーを完全に停止してゾンビ処理を防止
+            tetris_loop = true;
+            if (game.timerID) {
+                clearTimeout(game.timerID);
+                game.timerID = null;
+            }
+            // 2. イベントリスナーの解除
+            content.removeEventListener("keydown", handleKeyDown);
+        }
+    };
 }

@@ -6,25 +6,21 @@ const STORE = "window-size";
 export async function saveWindowSize(key, size) {
     try {
         const db = await openDB();
-        return new Promise((resolve, reject) => {
-            const tx = db.transaction(STORE, "readwrite");
-            const store = tx.objectStore(STORE);
+        const tx = db.transaction(STORE, "readwrite");
+        const store = tx.objectStore(STORE);
 
-            store.put(size, key);
+        store.put(size, key);
 
-            // 標準の IndexedDB API では tx.oncomplete を使用します
+        await new Promise((resolve, reject) => {
             tx.oncomplete = () => {
                 console.log(`Window size saved: ${key}`);
-                resolve(true);
+                resolve();
             };
-            tx.onerror = () => {
-                console.error("saveWindowSize failed:", tx.error);
-                reject(tx.error);
-            };
+            tx.onerror = () => reject(tx.error);
         });
+        return true;
     } catch (e) {
-        console.error("saveWindowSize catch error:", e);
-        // alert(`ウィンドウサイズの保存に失敗しました: ${key}`);
+        console.error("saveWindowSize failed:", e);
         return false;
     }
 }
@@ -32,12 +28,12 @@ export async function saveWindowSize(key, size) {
 export async function loadWindowSize(key) {
     try {
         const db = await openDB();
-        return new Promise((resolve, reject) => {
-            const tx = db.transaction(STORE, "readonly");
-            const store = tx.objectStore(STORE);
-            const req = store.get(key);
+        const tx = db.transaction(STORE, "readonly");
+        const store = tx.objectStore(STORE);
 
-            req.onsuccess = () => resolve(req.result || null);
+        return await new Promise((resolve, reject) => {
+            const req = store.get(key);
+            req.onsuccess = () => resolve(req.result ?? null);
             req.onerror = () => reject(req.error);
         });
     } catch (e) {
