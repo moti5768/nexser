@@ -578,39 +578,48 @@ export async function logOff() {
 }
 
 /**
- * FSに保存された音声データを再生する (維持)
+ * FSに保存された音声データを再生する
  */
-export function playSavedAudio(filename) {
-    const file = FS.Programs?.Music?.[filename];
+export async function playSavedAudio(path) {
+    const file = resolveFS(`Programs/Music/${path}`);
     if (file && file.content) {
-        const audio = new Audio(file.content);
-        audio.play().catch(console.error);
+        let audioData = file.content;
+        if (audioData === "__EXTERNAL_DATA__") {
+            const { getFileContent } = await import("./fs-db.js");
+            audioData = await getFileContent(`Programs/Music/${path}`);
+        }
+        if (audioData) {
+            const audio = new Audio(audioData);
+            audio.play().catch(console.error);
+        }
     }
 }
+
 /**
- * システムイベントに関連付けられた音声を再生する (維持 + 外部データ取得対応)
+ * システムイベントに関連付けられた音声を再生する
  */
 export async function playSystemEventSound(eventName) {
     try {
         const configText = FS.System?.["SoundConfig.json"]?.content;
         const config = JSON.parse(configText || "{}");
-        const filename = config[eventName];
+        const path = config[eventName];
 
-        if (filename) {
-            const file = FS.Programs?.Music?.[filename];
+        if (path) {
+            // resolveFS を使ってサブフォルダ階層のパスから安全にファイルを取得
+            const file = resolveFS(`Programs/Music/${path}`);
             if (file) {
                 let audioData = file.content;
 
-                // ★ 追加: 外部DBに保存されている実データを取得する
+                // 外部DBに保存されている実データを取得する
                 if (audioData === "__EXTERNAL_DATA__") {
                     const { getFileContent } = await import("./fs-db.js");
-                    audioData = await getFileContent(`Programs/Music/${filename}`);
+                    audioData = await getFileContent(`Programs/Music/${path}`);
                 }
 
                 if (audioData) {
                     const audio = new Audio(audioData);
                     audio.play().catch(err => {
-                        // オートプレイ制限 (NotAllowedError) への対処を維持
+                        // オートプレイ制限 (NotAllowedError) への対処
                         if (err.name === "NotAllowedError") {
                             const playOnGesture = () => {
                                 audio.play();
@@ -624,7 +633,6 @@ export async function playSystemEventSound(eventName) {
                 }
             }
         } else if (eventName === 'startup') {
-            // startup_sound のフォールバックロジックを維持
             try {
                 startup_sound();
             } catch (e) {

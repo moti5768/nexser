@@ -1,29 +1,73 @@
 // soundplayer.js
-import { FS } from "../fs.js";
+import { FS, forceSave } from "../fs.js";
+import { resolveFS } from "../fs-utils.js";
 import { alertWindow } from "../window.js";
-import { getFileContent } from "../fs-db.js"; // 実体取得のために追加
+import { getFileContent } from "../fs-db.js";
 
 export default function main(content, options) {
-    // 再生中のオーディオオブジェクトを保持する変数
     let currentAudio = null;
+    let currentVolume = 1.0;
+    let isLooping = false;
+    let searchQuery = "";
 
     const container = document.createElement("div");
-    // 全体の背景を少し落ち着いた色にし、フォントを調整
-    container.style.cssText = "padding:12px; display:flex; flex-direction:column; gap:10px; height:100%; box-sizing:border-box; background:#f5f5f5; font-family: sans-serif; color: black;";
+    // Windows 95 スタイル（#c0c0c0背景、MS Sans Serifフォント、クラシックな余白）
+    container.style.cssText = `
+        padding: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        height: 100%;
+        box-sizing: border-box;
+        background: #c0c0c0;
+        font-family: 'MS Sans Serif', Tahoma, sans-serif;
+        font-size: 12px;
+        color: #000000;
+        user-select: none;
+    `;
 
     container.innerHTML = `
-        <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:10px; border-bottom:1px solid #ccc;">
-            <div style="font-weight:bold; font-size:14px;">サウンド設定</div>
+        <!-- 上部コントロール行: 検索 & インポート -->
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 6px;">
+            <div style="display: flex; align-items: center; gap: 4px; flex: 1;">
+                <span style="white-space: nowrap;">検索:</span>
+                <input type="text" id="search-input" class="border" placeholder="ファイル名..." style="flex: 1; padding: 2px 4px; font-size: 11px; outline: none;">
+            </div>
             <input type="file" id="audio-input" accept=".mp3,.ogg,.wav,.m4a,.aac,.flac" style="display:none" multiple>
-            <button id="upload-btn" style="padding:4px 12px; cursor:pointer;">音声をインポート</button>
+            <button id="upload-btn" style="cursor: pointer; font-size: 11px; white-space: nowrap;">インポート</button>
         </div>
-        <div id="player-list" style="flex:1; overflow-y:auto; background:#fff; border:1px solid #999;">
+
+        <!-- 音声プレイヤー・コントロールバー (Win95グループボックス風) -->
+        <fieldset style="padding: 6px 8px; margin: 0; display: flex; align-items: center; gap: 10px; background: #c0c0c0;">
+            <legend style="padding: 0 4px; color: #000000;">プレイヤー制御</legend>
+            <div style="display: flex; align-items: center; gap: 4px;">
+                <span>音量:</span>
+                <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="1" style="width: 70px; cursor: pointer;">
+            </div>
+            <div style="display: flex; align-items: center; gap: 4px;">
+                <input type="checkbox" id="loop-checkbox" style="cursor: pointer;">
+                <label for="loop-checkbox" style="cursor: pointer;">ループ</label>
+            </div>
+            <div style="margin-left: auto;">
+                <button id="stop-all-btn" style="padding: 2px 6px; cursor: pointer; font-size: 11px;">全体停止</button>
+            </div>
+        </fieldset>
+
+        <!-- ファイルリスト表示部 (Win95凹みコンテナ) -->
+        <div id="player-list" class="border" style="flex: 1; overflow-y: auto;">
+        </div>
+
+        <div id="drop-zone-hint" style="font-size: 10px; color: #404040; text-align: center;">
+            ※ 音声ファイルをウィンドウにドラッグ＆ドロップして追加できます
         </div>
     `;
     content.appendChild(container);
 
     const listEl = container.querySelector("#player-list");
     const inputEl = container.querySelector("#audio-input");
+    const searchInput = container.querySelector("#search-input");
+    const volumeSlider = container.querySelector("#volume-slider");
+    const loopCheckbox = container.querySelector("#loop-checkbox");
 
     // --- 初期化処理 ---
     if (!FS.Programs.Music) FS.Programs.Music = { type: "folder" };
@@ -32,11 +76,36 @@ export default function main(content, options) {
         FS.System["SoundConfig.json"] = { type: "file", content: "{}" };
     }
 
+    const isSystemMetaKey = (key) => {
+        return key === "type" || key === "system" || key === "originalPath" || key === "entry" || key === "singleton" || key === "target";
+    };
+
+    // サブフォルダを再帰的に走査してファイルパス（folder/file.mp3）の配列を作る関数
+    const collectAudioFiles = (node, currentPath = "", visited = new Set()) => {
+        let files = [];
+        if (!node || typeof node !== "object") return files;
+        if (visited.has(node)) return visited; // 循環参照防止
+        visited.add(node);
+
+        for (const name in node) {
+            if (isSystemMetaKey(name)) continue;
+            const child = node[name];
+            const fullPath = currentPath ? `${currentPath}/${name}` : name;
+
+            if (child && child.type === "folder") {
+                files = files.concat(collectAudioFiles(child, fullPath, visited));
+            } else if (child && child.type === "file") {
+                files.push(fullPath);
+            }
+        }
+        return files;
+    };
+
     const refresh = () => {
         listEl.innerHTML = "";
-        const music = FS.Programs.Music;
+        const musicNode = resolveFS("Programs/Music");
+        if (!musicNode) return;
 
-        // 安全にJSONをパース
         let config = {};
         try {
             config = JSON.parse(FS.System["SoundConfig.json"].content || "{}");
@@ -44,38 +113,34 @@ export default function main(content, options) {
             config = {};
         }
 
-        const files = Object.keys(music).filter(name => {
-            const PROTECTED_KEYS = ["type", "system", "entry", "singleton", "shell", "target"];
-            return !PROTECTED_KEYS.includes(name);
-        });
+        const files = collectAudioFiles(musicNode);
+        const filteredFiles = files.filter(name => name.toLowerCase().includes(searchQuery.toLowerCase()));
 
-        if (files.length === 0) {
-            listEl.innerHTML = `<div style="padding:20px; text-align:center; color:#888; font-size:12px;">ファイルがありません</div>`;
+        if (filteredFiles.length === 0) {
+            listEl.innerHTML = `<div style="padding: 20px; text-align: center; color: #808080; font-size: 11px;">ファイルがありません</div>`;
             return;
         }
 
-        files.forEach(name => {
-            // 現在このファイルがどのイベントに設定されているか確認
+        filteredFiles.forEach(name => {
             const assignedEvents = Object.keys(config).filter(key => config[key] === name);
-
             const row = document.createElement("div");
-            row.style.cssText = "padding:8px 12px; border-bottom:1px solid #ccc; display:flex; justify-content:space-between; align-items:center;";
+            row.style.cssText = "padding: 6px 8px; border-bottom: 1px dotted #dfdfdf; display: flex; justify-content: space-between; align-items: center; background: #ffffff;";
 
             const statusText = assignedEvents.length > 0
-                ? `<span style="font-size:10px; background:#e1f5fe; border:1px solid #b3e5fc; padding:2px 5px; margin-left:8px; color:#0277bd; border-radius:3px;">${assignedEvents.join(", ")}</span>`
+                ? `<span style="font-size: 10px; background: #000080; color: #ffffff; padding: 1px 4px; margin-left: 6px; border-radius: 2px;">${assignedEvents.join(", ")}</span>`
                 : "";
 
             row.innerHTML = `
-                <div style="flex:1; display:flex; align-items:center; overflow:hidden;">
-                    <span style="font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${name}">${name}</span>
+                <div style="flex: 1; display: flex; align-items: center; overflow: hidden;">
+                    <span style="font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${name}">${name}</span>
                     ${statusText}
                 </div>
-                <div style="display:flex; gap:6px; align-items:center; margin-left:10px;">
-                    <button class="play-btn" data-name="${name}" style="padding:2px 8px; cursor:pointer; font-size:11px;">再生</button>
-                    <button class="stop-btn" style="padding:2px 8px; cursor:pointer; font-size:11px;">停止</button>
-                    <button class="delete-btn" data-name="${name}" style="padding:2px 8px; cursor:pointer; font-size:11px; background:#fff; border:1px solid #ccc;">削除</button>
-                    <select class="event-assign" data-filename="${name}" style="font-size:11px; padding:1px;">
-                        <option value="ignore">イベントに設定</option>
+                <div style="display: flex; gap: 4px; align-items: center; margin-left: 8px;">
+                    <button class="play-btn" data-name="${name}" style=" padding: 2px 6px; cursor: pointer; font-size: 10px;">再生</button>
+                    <button class="stop-btn" style=" padding: 2px 6px; cursor: pointer; font-size: 10px;">停止</button>
+                    <button class="delete-btn" data-name="${name}" style=" padding: 2px 6px; cursor: pointer; font-size: 10px;">削除</button>
+                    <select class="event-assign border" data-filename="${name}" style="font-size: 11px;">
+                        <option value="ignore">割当設定...</option>
                         <option value="" ${assignedEvents.length === 0 ? 'selected' : ''}>(なし)</option>
                         <option value="startup" ${config.startup === name ? 'selected' : ''}>起動音</option>
                         <option value="logoff" ${config.logoff === name ? 'selected' : ''}>ログオフ</option>
@@ -88,7 +153,32 @@ export default function main(content, options) {
         });
     };
 
-    // イベント変更
+    // 検索入力
+    searchInput.oninput = (e) => {
+        searchQuery = e.target.value;
+        refresh();
+    };
+
+    // 音量・ループ操作
+    volumeSlider.oninput = (e) => {
+        currentVolume = parseFloat(e.target.value);
+        if (currentAudio) currentAudio.volume = currentVolume;
+    };
+
+    loopCheckbox.onchange = (e) => {
+        isLooping = e.target.checked;
+        if (currentAudio) currentAudio.loop = isLooping;
+    };
+
+    container.querySelector("#stop-all-btn").onclick = () => {
+        if (currentAudio) {
+            currentAudio.pause();
+            currentAudio.src = "";
+            currentAudio = null;
+        }
+    };
+
+    // イベント割り当て変更
     listEl.onchange = (e) => {
         if (e.target.classList.contains("event-assign")) {
             const eventName = e.target.value;
@@ -97,7 +187,6 @@ export default function main(content, options) {
             const fileName = e.target.dataset.filename;
             let config = JSON.parse(FS.System["SoundConfig.json"].content || "{}");
 
-            // 同一ファイル内の他の割り当てを消す（排他的設定を維持）
             Object.keys(config).forEach(key => {
                 if (config[key] === fileName) delete config[key];
             });
@@ -113,8 +202,8 @@ export default function main(content, options) {
 
     container.querySelector("#upload-btn").onclick = () => inputEl.click();
 
-    inputEl.onchange = async (e) => {
-        const files = e.target.files;
+    // ファイルインポート共通関数
+    const handleFilesImport = async (files) => {
         if (!files || files.length === 0) return;
 
         const allowedExtensions = /(\.mp3|\.ogg|\.wav|\.m4a|\.aac|\.flac)$/i;
@@ -140,29 +229,46 @@ export default function main(content, options) {
             });
         }
 
-        // 一気に FS へ反映（Proxy保存を1回に集約）
         Object.assign(FS.Programs.Music, loadedFiles);
-
-        inputEl.value = "";
+        await forceSave?.();
+        window.dispatchEvent(new Event("fs-updated"));
         refresh();
+    };
+
+    inputEl.onchange = async (e) => {
+        await handleFilesImport(e.target.files);
+        inputEl.value = "";
+    };
+
+    // ドラッグ＆ドロップ対応
+    container.ondragover = (e) => { e.preventDefault(); };
+    container.ondrop = async (e) => {
+        e.preventDefault();
+        if (e.dataTransfer && e.dataTransfer.files) {
+            await handleFilesImport(e.dataTransfer.files);
+        }
     };
 
     // 再生・停止・削除ロジック
     listEl.onclick = async (e) => {
-        const name = e.target.dataset.name;
+        const path = e.target.dataset.name;
 
         // 再生ボタン
         if (e.target.classList.contains("play-btn")) {
             if (currentAudio) {
                 currentAudio.pause();
-                currentAudio.src = ""; // リソース解放
+                currentAudio.src = "";
             }
 
-            let fileNode = FS.Programs.Music[name];
+            let fileNode = resolveFS(`Programs/Music/${path}`);
+            if (!fileNode) {
+                alertWindow("ファイルが見つかりませんでした。");
+                return;
+            }
             let audioData = fileNode.content;
 
             if (audioData === "__EXTERNAL_DATA__") {
-                audioData = await getFileContent(`Programs/Music/${name}`);
+                audioData = await getFileContent(`Programs/Music/${path}`);
             }
 
             if (!audioData) {
@@ -171,7 +277,11 @@ export default function main(content, options) {
             }
 
             currentAudio = new Audio(audioData);
-            currentAudio.onended = () => { currentAudio = null; };
+            currentAudio.volume = currentVolume;
+            currentAudio.loop = isLooping;
+            currentAudio.onended = () => {
+                if (!currentAudio.loop) currentAudio = null;
+            };
             currentAudio.play().catch(err => {
                 console.error("Playback error:", err);
                 alertWindow("再生に失敗しました。");
@@ -189,18 +299,30 @@ export default function main(content, options) {
 
         // 削除ボタン
         if (e.target.classList.contains("delete-btn")) {
-            if (!name) return;
+            if (!path) return;
             if (currentAudio) {
                 currentAudio.pause();
                 currentAudio = null;
             }
-            delete FS.Programs.Music[name];
+
+            const parts = path.split("/");
+            const fileName = parts.pop();
+            const parentPath = parts.length > 0 ? `Programs/Music/${parts.join("/")}` : "Programs/Music";
+            const parentNode = resolveFS(parentPath);
+
+            if (parentNode && parentNode[fileName]) {
+                delete parentNode[fileName];
+            }
+
             let config = JSON.parse(FS.System["SoundConfig.json"].content || "{}");
             let changed = false;
             Object.keys(config).forEach(k => {
-                if (config[k] === name) { delete config[k]; changed = true; }
+                if (config[k] === path) { delete config[k]; changed = true; }
             });
             if (changed) FS.System["SoundConfig.json"].content = JSON.stringify(config, null, 2);
+
+            await forceSave?.();
+            window.dispatchEvent(new Event("fs-updated"));
             refresh();
         }
     };
@@ -212,7 +334,7 @@ export default function main(content, options) {
         dispose: () => {
             if (currentAudio) {
                 currentAudio.pause();
-                currentAudio.src = ""; // メモリ・リソース解放
+                currentAudio.src = "";
                 currentAudio = null;
             }
             console.log("SoundPlayer disposed successfully.");
