@@ -81,15 +81,17 @@ export function initTaskbar() {
 
                 // 事前に保存されたタスクバーの高さ（または現在の高さ）を確実に取得する
                 const savedHeight = await loadSetting("taskbarHeight");
-                const targetHeight = savedHeight ? `${savedHeight}px` : `${taskbar.offsetHeight || 40}px`;
+                const heightVal = savedHeight || taskbar.offsetHeight || 40;
+                const targetHeight = `${heightVal}px`;
+                const targetTop = `calc(100vh - ${targetHeight})`;
 
                 // 1. window.js の機能を使って本物のウィンドウを作成
                 const content = createWindow("Taskbar", {
-                    width: "600px",
+                    width: "100%",
                     height: targetHeight,
-                    left: "10px",
-                    top: "10px",
-                    taskbar: false,     // タスクバー自身のボタンがタスクバーに登録されるのを防ぐ
+                    left: "0px",
+                    top: targetTop,
+                    taskbar: false,    // タスクバー自身のボタンがタスクバーに登録されるのを防ぐ
                     hideRibbon: true,   // リボンメニューを非表示
                     hideStatus: true,
                     disableMinimize: true,
@@ -98,7 +100,16 @@ export function initTaskbar() {
 
                 taskbarFloatingWindow = content.parentElement;
 
+                // ウィンドウ要素を一番下に固定する
+                if (taskbarFloatingWindow) {
+                    taskbarFloatingWindow.style.top = "auto";
+                    taskbarFloatingWindow.style.bottom = "0px";
+                    taskbarFloatingWindow.style.height = targetHeight; // ウィンドウ枠の高さを確実に指定
+                }
+
                 // 2. ウィンドウ側のコンテンツエリア（content）のレイアウトを整え、高さを追随させる
+                content.style.position = "relative";
+                content.style.width = "100%";
                 content.style.height = "100%";
                 content.style.display = "flex";
                 content.style.flexDirection = "column";
