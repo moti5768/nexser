@@ -42,6 +42,23 @@ function installGlobalMouseHandler() {
         }
         taskbarButtons.forEach(btn => btn.classList.remove("selected"));
     });
+
+    // ★ 追加: iframe（クロスオリジン含む）クリック時の手前表示対応
+    window.addEventListener("blur", () => {
+        // フォーカスの切り替わりが完了するまでイベントループを1つ回す
+        setTimeout(() => {
+            const active = document.activeElement;
+
+            // 現在フォーカスされているのが iframe 要素だった場合
+            if (active && active.tagName === "IFRAME") {
+                const win = active.closest(".window");
+                // その iframe が属するウィンドウがあれば、最前面に移動させる
+                if (win && !win._modal) {
+                    bringToFront(win);
+                }
+            }
+        }, 0);
+    });
 }
 
 /* ===== 全ウィンドウ色リセット ===== */
