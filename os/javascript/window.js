@@ -290,6 +290,10 @@ ${!options.hideStatus ? `
             obs.disconnect();
             abortController.abort(); // イベントリスナーを全解除してメモリリーク防止
 
+            if (!options._modal && !options.silent) {
+                playSystemEventSound('close');
+            }
+
             if (w._observer) {
                 w._observer.disconnect();
                 w._observer = null;
@@ -320,7 +324,7 @@ ${!options.hideStatus ? `
     minBtn.addEventListener("click", () => {
         if (w.dataset.minimized === "true" || w._animating) return;
         w._animating = true;
-
+        playSystemEventSound('minimize');
         const titleBar = w.querySelector(".title-bar");
         const titleText = titleBar?.querySelector(".title-text");
         if (!titleText) { w._animating = false; return; }
@@ -353,7 +357,7 @@ ${!options.hideStatus ? `
             if (w.dataset.minimized === "true") {
                 if (w._animating) return; // アニメ中は無効化
                 w._animating = true;
-
+                playSystemEventSound('restore');
                 const titleBar = w.querySelector(".title-bar");
                 const titleText = titleBar?.querySelector(".title-text");
                 if (!titleText) { w._animating = false; return; }
@@ -443,6 +447,7 @@ ${!options.hideStatus ? `
         let targetRect;
 
         if (!maximized) {
+            playSystemEventSound('maximize');
             // 元サイズ保存
             ["Left", "Top", "Width", "Height"].forEach(prop =>
                 w.dataset[`prev${prop}`] = w.style[prop.toLowerCase()]
@@ -455,6 +460,7 @@ ${!options.hideStatus ? `
                 width: rect.width
             };
         } else {
+            playSystemEventSound('restore');
             targetRect = {
                 left: parseInt(w.dataset.prevLeft),
                 top: parseInt(w.dataset.prevTop),
@@ -853,6 +859,7 @@ ${!options.hideStatus ? `
                 currentHandle = null;
 
                 if (didResize && !maximized && !w.classList.contains("maximized")) {
+                    playSystemEventSound('resize');
                     if (!options.skipSave) {
                         const data = {
                             w: w.offsetWidth,
@@ -884,6 +891,10 @@ ${!options.hideStatus ? `
     } // ← if (!options.disableResize) ブロックの閉じ括弧
 
     scheduleRefreshTopWindow();
+
+    if (!options._modal && !options.silent) {
+        playSystemEventSound('open');
+    }
 
     // ★ リサイズの有無に関わらず、生成した content を確実に返却
     return content;
@@ -1457,7 +1468,7 @@ export async function minimizeWindowById(id) {
 
     const w = win.el;
     if (w.dataset.minimized === "true") return true;
-
+    playSystemEventSound('minimize');
     const taskbarBtn = w._taskbarBtn;
     if (!taskbarBtn) {
         // タスクバーがない場合は即時非表示（visibility に統一）

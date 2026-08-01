@@ -146,6 +146,12 @@ export default function main(content, options) {
                         <option value="logoff" ${config.logoff === name ? 'selected' : ''}>ログオフ</option>
                         <option value="error" ${config.error === name ? 'selected' : ''}>エラー</option>
                         <option value="notify" ${config.notify === name ? 'selected' : ''}>通知</option>
+                        <option value="minimize" ${config.minimize === name ? 'selected' : ''}>最小化</option>
+                        <option value="maximize" ${config.maximize === name ? 'selected' : ''}>最大化</option>
+                        <option value="restore" ${config.restore === name ? 'selected' : ''}>元に戻す</option>
+                        <option value="resize" ${config.resize === name ? 'selected' : ''}>サイズ変更</option>
+                        <option value="open" ${config.open === name ? 'selected' : ''}>ウィンドウの起動</option>
+                        <option value="close" ${config.close === name ? 'selected' : ''}>ウィンドウを閉じる</option>
                     </select>
                 </div>
             `;
