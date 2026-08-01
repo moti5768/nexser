@@ -474,24 +474,30 @@ export function getProcessList() {
 }
 
 /* =========================
-   killProcess（完全安全版） (維持)
+   killProcess（完全安全版）
 ========================= */
 export function killProcess(key) {
     const proc = processes.get(key);
     if (!proc) return false;
 
+    // ★ 修正: 多重呼び出しを完全に防ぐため、真っ先にプロセス一覧から除外する
+    processes.delete(key);
+
     const win = proc.window;
-    const handle = proc.handle; // 【追加】プロセス情報からハンドルを取得
+    const handle = proc.handle;
 
     try {
         // 1. アプリ側のクリーンアップ（タイマー停止、メモリ解放など）
-        // 【追加】アプリの戻り値(handle)に dispose が実装されていれば実行
         if (handle && typeof handle.dispose === 'function') {
             handle.dispose();
         }
 
         // (既存) DOMに紐づいた後方互換用のクリーンアップ
-        if (win?._cleanup) win._cleanup();
+        if (win?._cleanup) {
+            const cleanup = win._cleanup;
+            win._cleanup = null;
+            cleanup();
+        }
 
         // 2. Observerを真っ先に切断
         if (win?._observer) {
@@ -506,9 +512,7 @@ export function killProcess(key) {
     } catch (e) {
         console.warn("Process cleanup failed:", e);
     } finally {
-        // 4. 最後に必ず管理情報を削除
-        processes.delete(key);
-        // エクスプローラー管理からも削除
+        // エクスプローラー管理やタブ管理からの削除はそのまま実行
         for (const [path, w] of explorerWindows.entries()) {
             if (w === win) {
                 explorerWindows.delete(path);

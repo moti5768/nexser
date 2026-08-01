@@ -1,10 +1,11 @@
 // AudioPlayer.js
 import { FS } from "../fs.js";
+import { resolveFS } from "../fs-utils.js";
 import { getFileContent } from "../fs-db.js";
 import { alertWindow, updateWindowTitle } from "../window.js";
 
 /**
- * 高機能オーディオプレーヤー（安定動作・シーク戻り完全修正版）
+ * 高機能オーディオプレーヤー（エラーハンドリング・自動再生対策強化版）
  */
 export default function main(content, options) {
     let currentAudio = null;
@@ -82,6 +83,30 @@ export default function main(content, options) {
     const volIcon = container.querySelector("#vol-icon");
     const volSlider = container.querySelector("#vol-slider");
 
+    const isSystemMetaKey = (key) => {
+        return key === "type" || key === "system" || key === "originalPath" || key === "entry" || key === "singleton" || key === "target";
+    };
+
+    const collectAudioFiles = (node, currentPath = "", visited = new Set()) => {
+        let files = [];
+        if (!node || typeof node !== "object") return files;
+        if (visited.has(node)) return visited;
+        visited.add(node);
+
+        for (const name in node) {
+            if (isSystemMetaKey(name)) continue;
+            const child = node[name];
+            const fullPath = currentPath ? `${currentPath}/${name}` : name;
+
+            if (child && child.type === "folder") {
+                files = files.concat(collectAudioFiles(child, fullPath, visited));
+            } else if (child && child.type === "file") {
+                files.push(fullPath);
+            }
+        }
+        return files;
+    };
+
     const cleanupAudio = () => {
         if (currentAudio) {
             currentAudio.pause();
@@ -111,7 +136,6 @@ export default function main(content, options) {
     };
 
     const updateUI = () => {
-        // ドラッグ中、または「指を離した直後の同期中」はUI更新をスキップ
         if (!currentAudio || isDragging || isNaN(currentAudio.duration)) return;
         const per = (currentAudio.currentTime / currentAudio.duration) * 100;
         progressEl.value = per || 0;
@@ -119,13 +143,16 @@ export default function main(content, options) {
         progressEl.style.background = `linear-gradient(to right, #1db954 ${per}%, #444 ${per}%)`;
     };
 
-    const getSongList = () => Object.keys(FS.Programs.Music).filter(k => k !== "type");
+    const getSongList = () => {
+        const musicNode = resolveFS("Programs/Music");
+        return musicNode ? collectAudioFiles(musicNode) : [];
+    };
 
     const changeSong = (direction) => {
         const songs = getSongList();
         if (songs.length === 0) return;
-        const currentFileName = currentPath ? currentPath.split("/").pop() : null;
-        let idx = songs.indexOf(currentFileName);
+        let idx = songs.indexOf(currentPath);
+        if (idx === -1) idx = 0;
 
         if (direction === "next") {
             idx = (idx + 1) % songs.length;
@@ -144,11 +171,32 @@ export default function main(content, options) {
         isLoading = true;
         cleanupAudio();
 
-        const fileName = pathOrName.split("/").pop();
-        currentPath = `Programs/Music/${fileName}`;
+        let targetPath = pathOrName || "";
 
-        const fileNode = FS.Programs.Music[fileName];
+        // パスに "Programs/Music/" や "Music/" が重複して含まれている場合は削る
+        if (targetPath.startsWith("Programs/Music/")) {
+            targetPath = targetPath.replace("Programs/Music/", "");
+        } else if (targetPath.startsWith("Music/")) {
+            targetPath = targetPath.replace("Music/", "");
+        }
+
+        let fileNode = resolveFS(`Programs/Music/${targetPath}`);
+
+        // 直接見つからない場合、全ファイルから再帰検索する
         if (!fileNode) {
+            const songs = getSongList();
+            const found = songs.find(p => p === targetPath || p.endsWith("/" + targetPath) || p.split("/").pop() === targetPath);
+            if (found) {
+                targetPath = found;
+                fileNode = resolveFS(`Programs/Music/${targetPath}`);
+            }
+        }
+
+        currentPath = targetPath;
+        const fileName = targetPath ? targetPath.split("/").pop() : pathOrName;
+
+        if (!fileNode) {
+            console.warn(`ファイルが見つかりません。探索パス: Programs/Music/${targetPath}`);
             alertWindow(`ファイルが見つかりません: ${fileName}`);
             isLoading = false;
             return;
@@ -156,7 +204,7 @@ export default function main(content, options) {
 
         let audioData = fileNode.content;
         if (audioData === "__EXTERNAL_DATA__") {
-            audioData = await getFileContent(currentPath);
+            audioData = await getFileContent(`Programs/Music/${targetPath}`);
         }
 
         if (!audioData) {
@@ -167,8 +215,8 @@ export default function main(content, options) {
 
         try {
             currentAudio = new Audio(audioData);
-            currentAudio.volume = currentVolume; // ★保存しておいた音量を適用
-            volSlider.value = currentVolume;    // ★スライダーのつまみの位置も合わせる
+            currentAudio.volume = currentVolume;
+            volSlider.value = currentVolume;
             if (titleEl) titleEl.innerText = fileName;
             updateWindowTitle(win, fileName, false);
 
@@ -188,12 +236,17 @@ export default function main(content, options) {
                 playBtn.style.background = "#fff";
             };
 
+            currentAudio.onerror = (e) => {
+                console.error("Audio element error:", e);
+                alertWindow(`音声のデコードに失敗しました: ${fileName}`);
+            };
+
             currentAudio.onended = () => {
                 if (playMode === 1) {
                     changeSong("next");
                 } else if (playMode === 2) {
                     currentAudio.currentTime = 0;
-                    currentAudio.play().catch(e => console.warn("リピート再生に失敗しました", e));
+                    currentAudio.play().catch(err => console.warn("リピート再生に失敗しました", err));
                 } else {
                     playBtn.innerText = "▶";
                     playBtn.style.background = "#fff";
@@ -206,7 +259,8 @@ export default function main(content, options) {
 
             await currentAudio.play();
         } catch (e) {
-            console.error("Playback failed", e);
+            console.error("Playback failed:", e);
+            alertWindow("再生がブロックされたか、ファイル形式が不正です。再生ボタンを押してやり直してください。");
         } finally {
             isLoading = false;
         }
@@ -227,10 +281,9 @@ export default function main(content, options) {
         }
 
         if (currentAudio.paused) {
-            // .play() が失敗した場合はコンソールにエラーを出すだけで、システムを止めない
             currentAudio.play().catch(e => {
                 console.warn("再生できません:", e);
-                alertWindow("このファイルは再生できません。"); // 必要に応じて警告ウィンドウを表示
+                alertWindow("このファイルは再生できません。");
             });
         } else {
             currentAudio.pause();
@@ -256,24 +309,20 @@ export default function main(content, options) {
         }
     });
 
-    // --- シークバー（動いていた元のロジック + タッチ対応 + 戻り防止） ---
     const startDragging = () => { isDragging = true; };
 
     const endDragging = () => {
         if (isDragging && currentAudio && !isNaN(currentAudio.duration)) {
             currentAudio.currentTime = (progressEl.value / 100) * currentAudio.duration;
-            // 指を離してから 150ms の間は updateUI をブロックし続ける（重要：これで戻るのを防ぐ）
             setTimeout(() => { isDragging = false; }, 150);
         } else {
             isDragging = false;
         }
     };
 
-    // マウスとタッチ両方の開始を検知
     progressEl.onmousedown = startDragging;
     progressEl.ontouchstart = startDragging;
 
-    // スライド中の表示更新
     progressEl.oninput = () => {
         if (currentAudio && !isNaN(currentAudio.duration)) {
             const per = progressEl.value;
@@ -282,11 +331,9 @@ export default function main(content, options) {
         }
     };
 
-    // マウスとタッチ両方の終了を検知
     progressEl.onmouseup = endDragging;
     progressEl.ontouchend = endDragging;
 
-    // 万が一バーの外で離した場合のセーフティ
     const globalHandleUp = () => { if (isDragging) endDragging(); };
     window.addEventListener("mouseup", globalHandleUp);
     window.addEventListener("touchend", globalHandleUp);

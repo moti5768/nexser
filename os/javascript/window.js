@@ -213,13 +213,6 @@ ${!options.hideStatus ? `
 
     w.addEventListener("mousedown", focus);
 
-
-    // 右クリックメニューもモーダルなら無効化
-    if (!options._modal && !options.disableContextMenu) {
-        installWindowContextMenu(w);
-    }
-
-
     /* ===== タスクバー ===== */
 
     const taskbar = document.getElementById("taskbar");
@@ -248,6 +241,11 @@ ${!options.hideStatus ? `
     } else {
         w.dataset.taskbar = "false";
         taskbarBtn = null; // 明示的に null
+    }
+
+    // 右クリックメニューもモーダルなら無効化
+    if (!options._modal && !options.disableContextMenu) {
+        installWindowContextMenu(w);
     }
 
     /* ===== ウィンドウボタン ===== */
