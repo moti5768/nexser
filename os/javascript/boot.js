@@ -256,6 +256,113 @@ const commands = {
         }
     },
 
+    add: {
+        desc: 'Install a .nexser or .js package (Usage: add Programs)',
+        async run(args) {
+            if (args[0] !== "Programs") {
+                return print("Usage: add Programs");
+            }
+
+            return new Promise((resolve) => {
+                // ファイル選択ダイアログ (.nexserだけでなく .js も選択可能に拡張)
+                const input = document.createElement("input");
+                input.type = "file";
+                input.accept = ".nexser,.js,.json";
+
+                input.onchange = async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) {
+                        print("Installation cancelled.");
+                        resolve();
+                        return;
+                    }
+
+                    print(`Reading package: ${file.name}...`);
+                    const reader = new FileReader();
+                    reader.onload = async (ev) => {
+                        try {
+                            let nexserData;
+                            const textContent = ev.target.result;
+
+                            // .js ファイルが直接選ばれた場合や、JSONではない場合の救済処理
+                            if (file.name.endsWith('.js') || !textContent.trim().startsWith('{')) {
+                                nexserData = {
+                                    type: "app",
+                                    name: file.name.replace(/\.[^/.]+$/, ""),
+                                    windowOptions: { width: "300px", height: "400px" },
+                                    code: textContent
+                                };
+                            } else {
+                                nexserData = JSON.parse(textContent);
+                            }
+
+                            // --- アプリのインストール ---
+                            if (nexserData.type === "app" && nexserData.name && nexserData.code) {
+                                const appNodeName = `${nexserData.name}.app`;
+                                let codeContent = nexserData.code;
+
+                                // 【重要】コード内の相対インポート（./fs.js 等）を、
+                                // ブラウザで解決できる絶対パス（/fs.js）に自動置換
+                                codeContent = codeContent.replace(
+                                    /from\s+['"](\.\.?\/[^'"]+)['"]/g,
+                                    (match, p1) => {
+                                        // '../fs.js' や './fs.js' を '/fs.js' のような絶対パスに正規化
+                                        const cleanPath = p1.replace(/^(\.\.\/)+/, '');
+                                        return `from "/${cleanPath}"`;
+                                    }
+                                );
+
+                                // スクリプトをData URI化し、次回起動時も仮想FSから直接インポート可能にする
+                                const encodedJs = encodeURIComponent(codeContent);
+                                const dataUri = `data:text/javascript;charset=utf-8,${encodedJs}`;
+
+                                const targetFolder = resolveFS("Programs/Applications");
+                                if (!targetFolder) throw new Error("Programs/Applications folder not found");
+
+                                // Data URIではなく、元コード（あるいはパッチ済みコード）を code として保存する
+                                // これにより kernel.js 側の安全な Blob URL 変換が使われます
+                                targetFolder[appNodeName] = {
+                                    type: "app",
+                                    code: codeContent,
+                                    windowOptions: nexserData.windowOptions || {}
+                                };
+                                print(`[App] Installed with dynamic code support: ${appNodeName}`);
+                            }
+
+                            // --- グローバルシステム設定の変更 ---
+                            if (nexserData.settings) {
+                                const systemFolder = resolveFS("System");
+                                if (systemFolder) {
+                                    if (!systemFolder["Config.json"]) {
+                                        systemFolder["Config.json"] = { type: "file", content: "{}" };
+                                    }
+                                    const currentConfig = JSON.parse(systemFolder["Config.json"].content || "{}");
+                                    const mergedConfig = { ...currentConfig, ...nexserData.settings };
+                                    systemFolder["Config.json"].content = JSON.stringify(mergedConfig, null, 2);
+                                    print("[System] Global settings updated.");
+                                }
+                            }
+
+                            // FSを更新してDBに強制保存
+                            window.dispatchEvent(new Event("fs-updated"));
+                            const { forceSave } = await import('./fs.js');
+                            await forceSave();
+                            print("Installation complete. You can now launch it from the Start Menu or Explorer.");
+
+                        } catch (err) {
+                            print(`Error: Installation failed (${err.message})`);
+                        }
+                        resolve();
+                    };
+                    reader.readAsText(file);
+                };
+
+                // ダイアログを表示
+                input.click();
+            });
+        }
+    },
+
     edit: {
         desc: 'Edit text file (:wq to save, :e <line> <text> to edit)',
         async run(args) {

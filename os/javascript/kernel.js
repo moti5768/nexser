@@ -252,7 +252,41 @@ export async function launch(path, options = {}) {
 
         /* ================= APP ================= */
         if (item.type === "app") {
-            const appModule = await safeImport(item.entry);
+            let appModule;
+
+            // ★ item.code を持つ動的アプリ（WidgetToolなど）の場合の処理
+            if (item.code) {
+                try {
+                    // 1. import文を取り除く
+                    const cleanCode = item.code.replace(/import\s+[\s\S]*?from\s+['"][^'"]+['"];?/g, '');
+
+                    // 2. export default の関数抽出またはラップ
+                    // コード内の `export default async function...` を一時的な変数に代入する形に置換
+                    const executableCode = cleanCode
+                        .replace(/export\s+default\s+async\s+function/, 'window.__tempAppExport = async function')
+                        .replace(/export\s+default\s+function/, 'window.__tempAppExport = function');
+
+                    // 3. FS や forceSave を外部から注入して実行可能な関数を生成
+                    const { FS, forceSave } = await import("./fs.js");
+
+                    // スクリプトを実行してグローバルに登録させる
+                    const runScript = new Function('FS', 'forceSave', executableCode);
+                    runScript(FS, forceSave);
+
+                    appModule = {
+                        default: window.__tempAppExport
+                    };
+                    window.__tempAppExport = undefined; // クリーンアップ
+
+                } catch (e) {
+                    console.error("Dynamic code evaluation failed:", e);
+                    throw new Error(`動的コードの解析に失敗しました: ${e.message}`);
+                }
+            } else {
+                // 従来の静的ファイル（entry）を使うアプリ
+                appModule = await safeImport(item.entry);
+            }
+
             if (!appModule?.default)
                 throw new Error("アプリが正しくエクスポートされていません");
 

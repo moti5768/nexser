@@ -155,6 +155,14 @@ loadSetting("showRecentItems").then(val => {
 loadSetting("windowAnimationEnabled").then(v => {
     setWindowAnimationEnabled(v ?? true);
 });
+
+loadSetting("widgetTool_isPreviewEnabled").then(v => {
+    const val = v ?? true;
+    if (typeof window.setWindowPreviewEnabled === 'function') {
+        window.setWindowPreviewEnabled(val);
+    }
+});
+
 window.addEventListener("setting-changed", async (e) => {
     const key = e.detail?.key;
     if (!key) return;
@@ -176,6 +184,12 @@ window.addEventListener("setting-changed", async (e) => {
     } else if (key === "userName") {
         const newName = (await loadSetting("userName")) || "Admin";
         window.dispatchEvent(new CustomEvent("user-profile-updated", { detail: newName }));
+    } else if (key === "widgetTool_isPreviewEnabled") {
+        // ★ 追加: 設定変更時にプレビュー状態を即時反映
+        const val = await loadSetting("widgetTool_isPreviewEnabled");
+        if (typeof window.setWindowPreviewEnabled === 'function') {
+            window.setWindowPreviewEnabled(val ?? true);
+        }
     }
 });
 export function refreshTopWindow() {

@@ -14,6 +14,7 @@ export let TOP_COLOR = "darkblue";
 /* ===== Animation Settings ===== */
 export const WINDOW_ANIMATION_DURATION = 250;
 export let ENABLE_WINDOW_ANIMATION = true;
+export let ENABLE_WINDOW_PREVIEW = true;
 
 let refreshQueued = false;
 
@@ -499,6 +500,7 @@ ${!options.hideStatus ? `
     let preview = null;
 
     function createPreview() {
+        if (!ENABLE_WINDOW_PREVIEW) return; // ★ 追加: 無効時はプレビューを作成しない
         if (preview) preview.remove();
 
         preview = document.createElement("div");
@@ -615,18 +617,23 @@ ${!options.hideStatus ? `
                 createPreview();
             }
 
-            if (!dragStarted || !preview) return;
+            if (!dragStarted) return;
 
             let newLeft = moveEv.clientX - offsetX;
             let newTop = clientY - offsetY;
 
-            // タイトルバーが画面上部(top: 0)にめり込まないように制限
             if (newTop < 0) {
                 newTop = 0;
             }
 
-            preview.style.left = `${newLeft}px`;
-            preview.style.top = `${newTop}px`;
+            // プレビューがあればプレビューを動かし、なければウィンドウを直接動かす
+            if (preview) {
+                preview.style.left = `${newLeft}px`;
+                preview.style.top = `${newTop}px`;
+            } else {
+                w.style.left = `${newLeft}px`;
+                w.style.top = `${newTop}px`;
+            }
             didMove = true;
         };
 
@@ -757,7 +764,7 @@ ${!options.hideStatus ? `
             });
 
             const onResizeMove = (moveEv) => {
-                if (!resizing || !preview) return;
+                if (!resizing) return;
 
                 let dx = moveEv.clientX - startX;
                 let dy = moveEv.clientY - startY;
@@ -804,7 +811,6 @@ ${!options.hideStatus ? `
                         break;
                 }
 
-                // ★ タスクバーウィンドウモードのとき、またはタスクバー自体がウィンドウモードのときは下端の制限を無効化する
                 const taskbar = document.getElementById("taskbar");
                 const isTaskbarWindowMode = taskbar && taskbar.closest(".window") !== null;
 
@@ -817,7 +823,6 @@ ${!options.hideStatus ? `
 
                     if (newTop < 0) {
                         newTop = 0;
-                        // 上端を0に固定した場合、下端の位置が変わらないように高さを再計算する
                         newHeight = startRect.top + startRect.height;
                     }
                     if (newTop + newHeight > taskbarTop) {
@@ -825,10 +830,18 @@ ${!options.hideStatus ? `
                     }
                 }
 
-                preview.style.left = newLeft + "px";
-                preview.style.top = newTop + "px";
-                preview.style.width = newWidth + "px";
-                preview.style.height = newHeight + "px";
+                // プレビューがあればプレビューを更新し、なければウィンドウを直接リサイズ
+                if (preview) {
+                    preview.style.left = newLeft + "px";
+                    preview.style.top = newTop + "px";
+                    preview.style.width = newWidth + "px";
+                    preview.style.height = newHeight + "px";
+                } else {
+                    w.style.left = newLeft + "px";
+                    w.style.top = newTop + "px";
+                    w.style.width = newWidth + "px";
+                    w.style.height = newHeight + "px";
+                }
             };
 
             const endResize = async () => {
@@ -1614,6 +1627,15 @@ export function installWindowContextMenu(w) {
 
 export function setWindowAnimationEnabled(v) {
     ENABLE_WINDOW_ANIMATION = v;
+}
+
+export function setWindowPreviewEnabled(v) {
+    ENABLE_WINDOW_PREVIEW = v;
+}
+
+if (typeof window !== "undefined") {
+    window.setWindowPreviewEnabled = setWindowPreviewEnabled;
+    window.setWindowAnimationEnabled = setWindowAnimationEnabled; // 必要であればアニメーション設定も同様に
 }
 
 export function destroyWindow(win) {
