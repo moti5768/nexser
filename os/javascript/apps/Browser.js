@@ -41,7 +41,34 @@ export default async function BrowserApp(root, options = {}) {
         return content;
     };
 
-    // --- 高精度なURL抽出・初期化処理 ---
+    // --- YouTubeのURLを埋め込み用(embed)に変換するヘルパー関数 ---
+    const convertYouTubeUrl = (urlStr) => {
+        try {
+            let testUrl = urlStr;
+            if (!testUrl.startsWith("http://") && !testUrl.startsWith("https://")) {
+                testUrl = "https://" + testUrl;
+            }
+            const parsed = new URL(testUrl);
+
+            if (parsed.hostname.includes("youtube.com") && parsed.pathname === "/watch") {
+                const videoId = parsed.searchParams.get("v");
+                if (videoId) {
+                    return `https://www.youtube.com/embed/${videoId}`;
+                }
+            }
+
+            if (parsed.hostname === "youtu.be") {
+                const videoId = parsed.pathname.slice(1);
+                if (videoId) {
+                    return `https://www.youtube.com/embed/${videoId}`;
+                }
+            }
+        } catch (e) {
+            // URLパースエラー時はそのまま返す
+        }
+        return urlStr;
+    };
+
     let rawContent = getDecodedContent(fileNode?.content) || url || "https://www.google.com/webhp?igu=1";
     let currentUrl = rawContent;
 
@@ -54,6 +81,9 @@ export default async function BrowserApp(root, options = {}) {
     if (!currentUrl.startsWith("http://") && !currentUrl.startsWith("https://") && !currentUrl.startsWith("about:")) {
         currentUrl = "https://" + currentUrl;
     }
+
+    // YouTubeのURL形式をembed用に変換
+    currentUrl = convertYouTubeUrl(currentUrl);
 
     let baseTitle = filePath?.split("/").pop()?.trim() || "Browser";
 
@@ -107,6 +137,10 @@ export default async function BrowserApp(root, options = {}) {
         if (!url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("about:")) {
             url = "https://" + url;
         }
+
+        // YouTubeのURL形式をembed用に変換
+        url = convertYouTubeUrl(url);
+
         addressInput.value = url;
         frame.src = url;
         updateTitle();
