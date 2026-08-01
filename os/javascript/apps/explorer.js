@@ -440,7 +440,7 @@ export default async function Explorer(root, options = {}) {
         // explorer.js の _treeOutsideHandlerInstalled 部分
         if (!win._treeOutsideHandlerInstalled) {
             win._treeOutsideHandlerInstalled = true;
-            document.addEventListener("mousedown", e => {
+            win._treeOutsideClickHandler = e => {
                 const treePanel = win._treePanel;
                 if (!treePanel || treePanel.style.display === "none") return;
 
@@ -454,7 +454,8 @@ export default async function Explorer(root, options = {}) {
                 if (!isSafeElement) {
                     treePanel.style.display = "none";
                 }
-            });
+            };
+            document.addEventListener("mousedown", win._treeOutsideClickHandler);
         }
 
         // explorer.js 内の buildTree を以下に差し替えてください
@@ -745,18 +746,38 @@ export default async function Explorer(root, options = {}) {
 
                 } catch (err) {
                     console.error("Drop processing failed:", err);
-                    // エラー時は強制的に閉じる
                     if (pg && typeof pg.close === "function") pg.close();
                 } finally {
                     listContainer.style.opacity = "1";
                     listContainer.style.pointerEvents = "auto";
+
+                    // ==========================================
+                    // ⭐ メモリ解放 (GCの促進)
+                    // ==========================================
+                    // 1. 巨大なオブジェクトツリーの参照を切断
+                    initialEntries.length = 0;
+
+                    // 2. ブラウザ側のD&Dキャッシュを強力にクリア
+                    if (e.dataTransfer) {
+                        if (typeof e.dataTransfer.clearData === 'function') {
+                            e.dataTransfer.clearData();
+                        }
+                        if (e.dataTransfer.items && typeof e.dataTransfer.items.clear === 'function') {
+                            try { e.dataTransfer.items.clear(); } catch (err) { }
+                        }
+                    }
+
                     window.dispatchEvent(new Event("fs-updated"));
                     render(currentPath);
 
-                    // 万が一ウィンドウが残っていた場合の安全策
-                    setTimeout(() => {
-                        if (pg && typeof pg.close === "function") pg.close();
-                    }, 500);
+                    // 3. クロージャによるFileオブジェクト等のメモリ拘束（リーク）を防ぐため、
+                    // setTimeoutには必要な参照(pg)のみを引数として渡す
+                    const closeProgress = (progressWindowObj) => {
+                        if (progressWindowObj && typeof progressWindowObj.close === "function") {
+                            progressWindowObj.close();
+                        }
+                    };
+                    setTimeout(closeProgress, 500, pg);
                 }
             });
 
@@ -1368,6 +1389,14 @@ export default async function Explorer(root, options = {}) {
     return {
         dispose: () => {
             window.removeEventListener("fs-updated", handleFsUpdated);
+            if (win._treePanel) {
+                win._treePanel.remove();
+                win._treePanel = null;
+            }
+            if (win._treeOutsideClickHandler) {
+                document.removeEventListener("mousedown", win._treeOutsideClickHandler);
+                win._treeOutsideClickHandler = null;
+            }
             if (win._treePanel) {
                 win._treePanel.remove();
                 win._treePanel = null;

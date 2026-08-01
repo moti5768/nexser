@@ -698,17 +698,24 @@ export default function CodeEditor(root, options = {}) {
     ro.observe(textarea); // エディタ側のサイズ変更も監視
 
     // ドラッグ操作
+    let minimapMouseMoveHandler = null;
+    let minimapMouseUpHandler = null;
+
     minimapContainer.addEventListener("mousedown", (e) => {
         isDraggingMinimap = true;
         handleMinimapInput(e);
-        const onMouseMove = (ev) => isDraggingMinimap && handleMinimapInput(ev);
-        const onMouseUp = () => {
+
+        minimapMouseMoveHandler = (ev) => isDraggingMinimap && handleMinimapInput(ev);
+        minimapMouseUpHandler = () => {
             isDraggingMinimap = false;
-            window.removeEventListener("mousemove", onMouseMove);
-            window.removeEventListener("mouseup", onMouseUp);
+            if (minimapMouseMoveHandler) window.removeEventListener("mousemove", minimapMouseMoveHandler);
+            if (minimapMouseUpHandler) window.removeEventListener("mouseup", minimapMouseUpHandler);
+            minimapMouseMoveHandler = null;
+            minimapMouseUpHandler = null;
         };
-        window.addEventListener("mousemove", onMouseMove);
-        window.addEventListener("mouseup", onMouseUp);
+
+        window.addEventListener("mousemove", minimapMouseMoveHandler);
+        window.addEventListener("mouseup", minimapMouseUpHandler);
     });
 
     /* =========================
@@ -1772,6 +1779,10 @@ export default function CodeEditor(root, options = {}) {
     const cleanup = () => {
         if (isDestroyed) return;
         isDestroyed = true;
+
+        // 2. cleanup (dispose) 時にドラッグ中であれば強制解除
+        if (minimapMouseMoveHandler) window.removeEventListener("mousemove", minimapMouseMoveHandler);
+        if (minimapMouseUpHandler) window.removeEventListener("mouseup", minimapMouseUpHandler);
 
         if (highlightTask) cancelAnimationFrame(highlightTask);
         if (highlightTimer) clearTimeout(highlightTimer);

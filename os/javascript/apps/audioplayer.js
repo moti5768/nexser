@@ -303,11 +303,12 @@ export default function main(content, options) {
         if (currentAudio) currentAudio.volume = val;
         volIcon.innerText = val === 0 ? "🔇" : val < 0.5 ? "🔉" : "🔊";
     };
-    window.addEventListener("click", (e) => {
+    const handleGlobalClick = (e) => {
         if (e.target !== volIcon && e.target !== volSlider) {
             volSlider.style.display = "none";
         }
-    });
+    };
+    window.addEventListener("click", handleGlobalClick);
 
     const startDragging = () => { isDragging = true; };
 
@@ -343,6 +344,7 @@ export default function main(content, options) {
     return {
         dispose: () => {
             cleanupAudio();
+            window.removeEventListener("click", handleGlobalClick);
             window.removeEventListener("mouseup", globalHandleUp);
             window.removeEventListener("touchend", globalHandleUp);
         }

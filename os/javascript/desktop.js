@@ -359,14 +359,38 @@ export function buildDesktop() {
                 console.error("Drop processing failed:", err);
                 if (pg && typeof pg.close === "function") pg.close();
             } finally {
+                // 【修正】desktop.jsの正しいDOM要素を参照させる
                 desktop.style.opacity = "1";
                 desktop.style.pointerEvents = "auto";
+
+                // ==========================================
+                // ⭐ メモリ解放 (GCの促進)
+                // ==========================================
+                // 1. 巨大なオブジェクトツリーの参照を切断
+                initialEntries.length = 0;
+
+                // 2. ブラウザ側のD&Dキャッシュを強力にクリア
+                if (e.dataTransfer) {
+                    if (typeof e.dataTransfer.clearData === 'function') {
+                        e.dataTransfer.clearData();
+                    }
+                    if (e.dataTransfer.items && typeof e.dataTransfer.items.clear === 'function') {
+                        try { e.dataTransfer.items.clear(); } catch (err) { }
+                    }
+                }
+
                 window.dispatchEvent(new Event("fs-updated"));
+                // 【修正】desktop.jsの正しい再描画関数を呼ぶ
                 buildDesktop();
 
-                setTimeout(() => {
-                    if (pg && typeof pg.close === "function") pg.close();
-                }, 500);
+                // 3. クロージャによるFileオブジェクト等のメモリ拘束（リーク）を防ぐため、
+                // setTimeoutには必要な参照(pg)のみを引数として渡す
+                const closeProgress = (progressWindowObj) => {
+                    if (progressWindowObj && typeof progressWindowObj.close === "function") {
+                        progressWindowObj.close();
+                    }
+                };
+                setTimeout(closeProgress, 500, pg);
             }
         });
     } // ⭐ ガード処理はここまで
