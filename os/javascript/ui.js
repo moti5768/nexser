@@ -3,10 +3,10 @@ let isGlobalMouseUpRegistered = false;
 let pressedEl = null;
 
 export function installDynamicButtonEffect() {
-    // 常に body を対象にする
+    // 常に body を対象にする[cite: 1]
     const root = document.body;
 
-    // 再起動・再実行時のクリーンアップ
+    // 再起動・再実行時のクリーンアップ[cite: 1]
     if (root._uiObserver) {
         root._uiObserver.disconnect();
         root._uiEffectInstalled = false;
@@ -15,13 +15,18 @@ export function installDynamicButtonEffect() {
     if (root._uiEffectInstalled) return;
     root._uiEffectInstalled = true;
 
-    // ボタン判定ロジック：標準のbuttonタグ、または特定のクラスを持つ要素
+    // ボタン判定ロジック：標準のbuttonタグ、または特定のクラスを持つ要素（win95-tabは除外）
     const getTargetButton = (el) => {
         if (!el || el === document || el === document.body) return null;
-        return el.closest('button, .button, .button2');
+        const target = el.closest('button, .button, .button2');
+        // win95-tab クラスを持つ要素は除外する
+        if (!target || target.classList.contains('win95-tab')) {
+            return null;
+        }
+        return target;
     };
 
-    // --- マウスイベント (bodyで一括受信) ---
+    // --- マウスイベント (bodyで一括受信) ---[cite: 1]
     root.addEventListener("mousedown", e => {
         const el = getTargetButton(e.target);
         if (!el) return;
@@ -45,7 +50,7 @@ export function installDynamicButtonEffect() {
         }
     });
 
-    // --- グローバル mouseup (一生に一度だけ登録) ---
+    // --- グローバル mouseup (一生に一度だけ登録) ---[cite: 1]
     if (!isGlobalMouseUpRegistered) {
         document.addEventListener("mouseup", () => {
             if (pressedEl) {
@@ -56,7 +61,7 @@ export function installDynamicButtonEffect() {
         isGlobalMouseUpRegistered = true;
     }
 
-    // --- 特殊制御（スタートメニュー等） ---
+    // --- 特殊制御（スタートメニュー等） ---[cite: 1]
     const startMenu = document.getElementById("start-menu");
     const startBtn = document.getElementById("start-btn");
 

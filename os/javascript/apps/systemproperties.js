@@ -60,7 +60,7 @@ export default async function SystemProperties(content) {
         btn.textContent = t.label;
         btn.dataset.id = t.id;
         btn.className = "win95-tab inactive";
-        btn.onclick = () => selectTab(t.id);
+        btn.onmousedown = () => selectTab(t.id);
         tabsEl.appendChild(btn);
     });
 
