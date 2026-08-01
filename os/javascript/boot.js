@@ -162,6 +162,54 @@ const commands = {
         }
     },
 
+    rename: {
+        desc: 'Rename or move a file/directory',
+        run(args) {
+            if (args.length < 2) return print("Usage: rename <old_path> <new_path>");
+
+            // --- 変更元 (Source) の解決 ---
+            const srcPath = normalizePath(args[0]);
+            if (srcPath === "C:/") return print("Cannot rename root directory");
+
+            const srcParts = srcPath.replace(/^C:\//, "").split("/");
+            const srcName = srcParts.pop();
+            const srcParentPath = srcParts.join("/");
+            const srcParent = resolveFS(srcParentPath);
+
+            if (!srcParent || !srcParent[srcName]) return print("Source not found");
+
+            // --- 変更先 (Destination) の解決 ---
+            const destPath = normalizePath(args[1]);
+            if (destPath === "C:/") return print("Cannot overwrite root directory");
+
+            const destParts = destPath.replace(/^C:\//, "").split("/");
+            const destName = destParts.pop();
+            const destParentPath = destParts.join("/");
+            const destParent = resolveFS(destParentPath);
+
+            if (!destParent || destParent.type === "file") return print("Invalid destination path");
+            if (destParent[destName]) return print("Destination already exists");
+
+            // --- リネーム (移動) 処理 ---
+            // 新しい親ディレクトリにノードを割り当て、古い親ディレクトリから削除する
+            destParent[destName] = srcParent[srcName];
+            delete srcParent[srcName];
+
+            print(`Renamed: ${srcName} -> ${destName}`);
+
+            // ファイルシステム更新イベントを発火 (UI等への反映用)
+            window.dispatchEvent(new Event("fs-updated"));
+        }
+    },
+
+    // (任意) mv という短いエイリアスも登録しておくと便利です
+    mv: {
+        desc: 'Move or rename a file/directory (Alias for rename)',
+        run(args) {
+            commands.rename.run(args);
+        }
+    },
+
     tree: {
         desc: 'Show directory tree',
         run(args) {
