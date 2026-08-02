@@ -73,6 +73,192 @@ const commands = {
     mem: { desc: 'System memory info', run() { print(`Approx. Memory: ${navigator.deviceMemory || 'unknown'} GB`); print(`Logical Cores: ${navigator.hardwareConcurrency || 'unknown'}`); } },
     pwd: { desc: 'Show current directory', run() { print(cwd); } },
 
+    // --- MS-DOS スタイルのコマンド ---
+
+    dir: {
+        desc: 'List directory contents (MS-DOS style)',
+        run(args) {
+            const targetPath = normalizePath(args[0] || ".");
+            const fsSearchPath = targetPath === "C:/" ? "" : targetPath.replace(/^C:\//, "");
+            const node = resolveFS(fsSearchPath);
+
+            if (!node) return print('File Not Found');
+            if (node.type === 'file') return print(args[0]);
+
+            let fileCount = 0, dirCount = 0, totalSize = 0;
+            print(` Directory of ${targetPath}\n`);
+
+            Object.entries(node).forEach(([name, val]) => {
+                if (['type', 'entry', 'singleton', 'target', 'system', 'name', 'originalPath'].includes(name)) return;
+
+                if (val.type === 'folder' || !val.type) {
+                    print(`<DIR>          ${name}`);
+                    dirCount++;
+                } else if (val.type === 'file') {
+                    const size = val.size || (val.content ? val.content.length : 0);
+                    print(`${String(size).padStart(14)} ${name}`);
+                    totalSize += size;
+                    fileCount++;
+                } else if (val.type === 'link') {
+                    print(`<SYMLINK>      ${name}`);
+                    fileCount++;
+                } else if (val.type === 'app') {
+                    print(`<APP>          ${name}`);
+                    fileCount++;
+                }
+            });
+            print(`${String(fileCount).padStart(14)} File(s) ${String(totalSize).padStart(14)} bytes`);
+            print(`${String(dirCount).padStart(14)} Dir(s)`);
+        }
+    },
+
+    type: {
+        desc: 'Displays the contents of a text file (Alias for cat)',
+        run(args) { commands.cat.run(args); }
+    },
+
+    md: {
+        desc: 'Creates a directory (Alias for mkdir)',
+        run(args) { commands.mkdir.run(args); }
+    },
+
+    rd: {
+        desc: 'Removes a directory (MS-DOS style rmdir)',
+        run(args) {
+            if (!args[0]) return print("Usage: rd <directory>");
+            const fullPath = normalizePath(args[0]);
+            const parts = fullPath.replace(/^C:\//, "").split("/");
+            const name = parts.pop();
+            const parentPath = parts.join("/");
+            const parent = parentPath === "" ? resolveFS("") : resolveFS(parentPath);
+
+            if (!parent || !parent[name]) return print("The system cannot find the path specified.");
+            if (parent[name].type !== 'folder') return print("The directory name is invalid.");
+
+            // 中身が空かどうかの確認
+            const isEmpty = Object.keys(parent[name]).filter(k => !['type', 'system', 'name'].includes(k)).length === 0;
+            if (!isEmpty) return print("The directory is not empty.");
+
+            delete parent[name];
+            print(`Directory removed: ${name}`);
+            window.dispatchEvent(new Event("fs-updated"));
+        }
+    },
+
+    del: {
+        desc: 'Deletes one or more files',
+        run(args) {
+            if (!args[0]) return print("Usage: del <file>");
+            const fullPath = normalizePath(args[0]);
+            const parts = fullPath.replace(/^C:\//, "").split("/");
+            const name = parts.pop();
+            const parentPath = parts.join("/");
+            const parent = parentPath === "" ? resolveFS("") : resolveFS(parentPath);
+
+            if (!parent || !parent[name]) return print("Could Not Find " + fullPath);
+            if (parent[name].type === 'folder') return print("Access is denied. (Use 'rd' to remove directories)");
+
+            delete parent[name];
+            window.dispatchEvent(new Event("fs-updated"));
+        }
+    },
+
+    copy: {
+        desc: 'Copy one or more files to another location',
+        run(args) {
+            if (args.length < 2) return print("Usage: copy <source> <destination>");
+            const srcPath = normalizePath(args[0]);
+            const srcNode = resolveFS(srcPath === "C:/" ? "" : srcPath.replace(/^C:\//, ""));
+
+            if (!srcNode || srcNode.type !== 'file') return print("The system cannot find the file specified, or it is a directory.");
+
+            let destPath = normalizePath(args[1]);
+            let destNode = resolveFS(destPath === "C:/" ? "" : destPath.replace(/^C:\//, ""));
+            let destParent, finalName;
+
+            if (destNode && destNode.type === 'folder') {
+                destParent = destNode;
+                const srcParts = srcPath.replace(/^C:\//, "").split("/");
+                finalName = srcParts.pop();
+            } else {
+                const destParts = destPath.replace(/^C:\//, "").split("/");
+                finalName = destParts.pop();
+                const parentPath = destParts.join("/");
+                destParent = parentPath === "" ? resolveFS("") : resolveFS(parentPath);
+
+                if (!destParent || destParent.type === 'file') return print("Invalid destination path.");
+            }
+
+            destParent[finalName] = JSON.parse(JSON.stringify(srcNode));
+            print(`        1 file(s) copied.`);
+            window.dispatchEvent(new Event("fs-updated"));
+        }
+    },
+
+    ren: {
+        desc: 'Renames a file or files (Alias for rename)',
+        run(args) { commands.rename.run(args); }
+    },
+
+    echo: {
+        desc: 'Displays messages or writes to a file (e.g. echo text > file.txt)',
+        run(args) {
+            if (args.length === 0) return print("ECHO is on.");
+
+            const redirIdx = args.indexOf(">");
+            const appendIdx = args.indexOf(">>");
+
+            if (redirIdx !== -1 || appendIdx !== -1) {
+                const isAppend = appendIdx !== -1;
+                const splitIdx = isAppend ? appendIdx : redirIdx;
+                const text = args.slice(0, splitIdx).join(" ");
+                const targetFilePath = args.slice(splitIdx + 1).join(" ");
+
+                if (!targetFilePath) return print("The syntax of the command is incorrect.");
+
+                const fullPath = normalizePath(targetFilePath);
+                const parts = fullPath.replace(/^C:\//, "").split("/");
+                const name = parts.pop();
+                const parentPath = parts.join("/");
+                const parent = parentPath === "" ? resolveFS("") : resolveFS(parentPath);
+
+                if (!parent || parent.type === "file") return print("The system cannot find the path specified.");
+
+                if (!parent[name]) {
+                    parent[name] = { type: "file", content: text };
+                } else if (parent[name].type === "file") {
+                    parent[name].content = isAppend ? (parent[name].content + "\n" + text) : text;
+                } else {
+                    return print("Access is denied.");
+                }
+                window.dispatchEvent(new Event("fs-updated"));
+            } else {
+                print(args.join(" "));
+            }
+        }
+    },
+
+    find: {
+        desc: 'Searches for a text string in a file',
+        run(args) {
+            if (args.length < 2) return print("Usage: find <string> <file>");
+            const searchStr = args[0];
+            const targetPath = normalizePath(args[1]);
+            const node = resolveFS(targetPath.replace(/^C:\//, ""));
+
+            if (!node) return print("File not found");
+            if (node.type !== 'file') return print("Access denied");
+
+            print(`---------- ${args[1].toUpperCase()}`);
+            const lines = (node.content || "").split("\n");
+            lines.forEach(line => {
+                if (line.includes(searchStr)) print(line);
+            });
+        }
+    },
+
+    // --- UNIX・システム系のコマンド ---
+
     ls: {
         desc: 'List directory contents',
         run(args) {
@@ -120,7 +306,7 @@ const commands = {
             const parts = fullPath.replace(/^C:\//, "").split("/");
             const name = parts.pop();
             const parentPath = parts.join("/");
-            const parent = resolveFS(parentPath);
+            const parent = parentPath === "" ? resolveFS("") : resolveFS(parentPath);
             if (!parent || parent.type === "file") return print("Invalid parent path");
             if (parent[name]) return print("Already exists");
             parent[name] = { type: "file", content: "" };
@@ -137,7 +323,7 @@ const commands = {
             const parts = fullPath.replace(/^C:\//, "").split("/");
             const name = parts.pop();
             const parentPath = parts.join("/");
-            const parent = resolveFS(parentPath);
+            const parent = parentPath === "" ? resolveFS("") : resolveFS(parentPath);
             if (!parent || parent.type === "file") return print("Invalid parent path");
             if (parent[name]) return print("Already exists");
             parent[name] = { type: "folder" };
@@ -154,7 +340,7 @@ const commands = {
             const parts = fullPath.replace(/^C:\//, "").split("/");
             const name = parts.pop();
             const parentPath = parts.join("/");
-            const parent = resolveFS(parentPath);
+            const parent = parentPath === "" ? resolveFS("") : resolveFS(parentPath);
             if (!parent || !parent[name]) return print("File or directory not found");
             delete parent[name];
             print(`Removed: ${name}`);
@@ -167,47 +353,38 @@ const commands = {
         run(args) {
             if (args.length < 2) return print("Usage: rename <old_path> <new_path>");
 
-            // --- 変更元 (Source) の解決 ---
             const srcPath = normalizePath(args[0]);
             if (srcPath === "C:/") return print("Cannot rename root directory");
 
             const srcParts = srcPath.replace(/^C:\//, "").split("/");
             const srcName = srcParts.pop();
             const srcParentPath = srcParts.join("/");
-            const srcParent = resolveFS(srcParentPath);
+            const srcParent = srcParentPath === "" ? resolveFS("") : resolveFS(srcParentPath);
 
             if (!srcParent || !srcParent[srcName]) return print("Source not found");
 
-            // --- 変更先 (Destination) の解決 ---
             const destPath = normalizePath(args[1]);
             if (destPath === "C:/") return print("Cannot overwrite root directory");
 
             const destParts = destPath.replace(/^C:\//, "").split("/");
             const destName = destParts.pop();
             const destParentPath = destParts.join("/");
-            const destParent = resolveFS(destParentPath);
+            const destParent = destParentPath === "" ? resolveFS("") : resolveFS(destParentPath);
 
             if (!destParent || destParent.type === "file") return print("Invalid destination path");
             if (destParent[destName]) return print("Destination already exists");
 
-            // --- リネーム (移動) 処理 ---
-            // 新しい親ディレクトリにノードを割り当て、古い親ディレクトリから削除する
             destParent[destName] = srcParent[srcName];
             delete srcParent[srcName];
 
             print(`Renamed: ${srcName} -> ${destName}`);
-
-            // ファイルシステム更新イベントを発火 (UI等への反映用)
             window.dispatchEvent(new Event("fs-updated"));
         }
     },
 
-    // (任意) mv という短いエイリアスも登録しておくと便利です
     mv: {
         desc: 'Move or rename a file/directory (Alias for rename)',
-        run(args) {
-            commands.rename.run(args);
-        }
+        run(args) { commands.rename.run(args); }
     },
 
     tree: {
@@ -256,6 +433,8 @@ const commands = {
         }
     },
 
+    // --- インストール・エディタ系 ---
+
     add: {
         desc: 'Install a .nexser or .js package (Usage: add Programs)',
         async run(args) {
@@ -264,7 +443,6 @@ const commands = {
             }
 
             return new Promise((resolve) => {
-                // ファイル選択ダイアログ (.nexserだけでなく .js も選択可能に拡張)
                 const input = document.createElement("input");
                 input.type = "file";
                 input.accept = ".nexser,.js,.json";
@@ -284,7 +462,6 @@ const commands = {
                             let nexserData;
                             const textContent = ev.target.result;
 
-                            // .js ファイルが直接選ばれた場合や、JSONではない場合の救済処理
                             if (file.name.endsWith('.js') || !textContent.trim().startsWith('{')) {
                                 nexserData = {
                                     type: "app",
@@ -293,42 +470,29 @@ const commands = {
                                     code: textContent
                                 };
                             } else {
-                                // 【改行エラー対策】
-                                // JSON文字列リテラル ("...") 内に含まれる生の改行・タブ制御文字のみをエスケープ文字に変換
                                 const sanitizedText = textContent.replace(/"(?:[^"\\]|\\.)*"/g, (match) => {
                                     return match
                                         .replace(/\r?\n/g, "\\n")
                                         .replace(/\t/g, "\\t");
                                 });
-
                                 nexserData = JSON.parse(sanitizedText);
                             }
 
-                            // --- アプリのインストール ---
                             if (nexserData.type === "app" && nexserData.name && nexserData.code) {
                                 const appNodeName = `${nexserData.name}.app`;
                                 let codeContent = nexserData.code;
 
-                                // 【重要】コード内の相対インポート（./fs.js 等）を、
-                                // ブラウザで解決できる絶対パス（/fs.js）に自動置換
                                 codeContent = codeContent.replace(
                                     /from\s+['"](\.\.?\/[^'"]+)['"]/g,
                                     (match, p1) => {
-                                        // '../fs.js' や './fs.js' を '/fs.js' のような絶対パスに正規化
                                         const cleanPath = p1.replace(/^(\.\.\/)+/, '');
                                         return `from "/${cleanPath}"`;
                                     }
                                 );
 
-                                // スクリプトをData URI化し、次回起動時も仮想FSから直接インポート可能にする
-                                const encodedJs = encodeURIComponent(codeContent);
-                                const dataUri = `data:text/javascript;charset=utf-8,${encodedJs}`;
-
                                 const targetFolder = resolveFS("Programs/Applications");
                                 if (!targetFolder) throw new Error("Programs/Applications folder not found");
 
-                                // Data URIではなく、元コード（あるいはパッチ済みコード）を code として保存する
-                                // これにより kernel.js 側の安全な Blob URL 変換が使われます
                                 targetFolder[appNodeName] = {
                                     type: "app",
                                     code: codeContent,
@@ -337,7 +501,6 @@ const commands = {
                                 print(`[App] Installed with dynamic code support: ${appNodeName}`);
                             }
 
-                            // --- グローバルシステム設定の変更 ---
                             if (nexserData.settings) {
                                 const systemFolder = resolveFS("System");
                                 if (systemFolder) {
@@ -351,7 +514,6 @@ const commands = {
                                 }
                             }
 
-                            // FSを更新してDBに強制保存
                             window.dispatchEvent(new Event("fs-updated"));
                             const { forceSave } = await import('./fs.js');
                             await forceSave();
@@ -364,8 +526,6 @@ const commands = {
                     };
                     reader.readAsText(file);
                 };
-
-                // ダイアログを表示
                 input.click();
             });
         }
@@ -381,14 +541,12 @@ const commands = {
             const fsSearchPath = targetPath.replace(/^C:\//, "");
             let node = resolveFS(fsSearchPath);
 
-            // ファイルが存在しない場合は新規作成
             if (!node) {
                 print("File not found, creating...");
                 const parts = fsSearchPath.split("/");
                 const fileName = parts.pop();
                 const parentPath = parts.join("/");
 
-                // ルートディレクトリ (C:/) の場合は resolveFS("") は機能しないかもしれないため対処
                 const parent = parentPath === "" ? resolveFS("") : resolveFS(parentPath);
 
                 if (!parent || parent.type === "file") {
@@ -406,11 +564,9 @@ const commands = {
             let editorBuffer = node.content ? node.content.split("\n") : [];
             editorBuffer.forEach(line => print(line));
 
-            // エディタ用の入力ループを Promise で待機
             return new Promise(resolve => {
                 function editorPrompt() {
                     const lineDiv = document.createElement('div');
-                    // boot.js の画面に合わせたシンプルな入力欄
                     lineDiv.innerHTML = `<input class="edit-cmd" autocomplete="off" style="background:transparent; color:inherit; border:none; outline:none; width:90%; font-family:inherit; font-size:inherit;">`;
                     screen.appendChild(lineDiv);
                     scrollToBottom();
@@ -421,18 +577,16 @@ const commands = {
                     input.onkeydown = e => {
                         if (e.key === 'Enter') {
                             const line = input.value;
-                            screen.removeChild(lineDiv); // 入力欄を一旦消す
+                            screen.removeChild(lineDiv);
 
-                            // 保存して終了
                             if (line === ":wq") {
                                 node.content = editorBuffer.join("\n");
                                 print("Saved.");
                                 window.dispatchEvent(new Event("fs-updated"));
-                                resolve(); // Promiseを解決して元のCLIに戻る
+                                resolve();
                                 return;
                             }
 
-                            // 特定行の修正
                             const editMatch = line.match(/^:e\s+(\d+)\s+(.+)$/);
                             if (editMatch) {
                                 const num = Number(editMatch[1]) - 1;
@@ -444,15 +598,13 @@ const commands = {
                                     print(`Line ${num + 1} updated: ${newText}`);
                                 }
                             } else {
-                                // 通常の追記
                                 editorBuffer.push(line);
                                 print(line);
                             }
-                            editorPrompt(); // 次の行の入力へ
+                            editorPrompt();
                         }
                     };
 
-                    // 画面のどこかをクリックした時に入力欄へフォーカスを戻す
                     lineDiv.onclick = e => {
                         e.stopPropagation();
                         input.focus();
@@ -463,7 +615,6 @@ const commands = {
             });
         }
     }
-
 };
 
 // ===== Prompt & Executor =====
