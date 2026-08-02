@@ -1262,6 +1262,19 @@ export default function CodeEditor(root, options = {}) {
             // 内容が変わったので input イベントを手動で発生させて dirty フラグを更新
             textarea.dispatchEvent(new Event("input"));
         }
+        if (e.key === "Enter") {
+            // 改行処理自体は textarea のデフォルト挙動に任せるため preventDefault はしません
+            requestAnimationFrame(() => {
+                updateActiveLine();
+                updateSidebarSelection();
+            });
+        }
+        if (e.key === "Backspace" || e.key === "Delete") {
+            requestAnimationFrame(() => {
+                updateActiveLine();
+                updateSidebarSelection();
+            });
+        }
         if (e.ctrlKey && e.key === "f") {
             e.preventDefault();
 
