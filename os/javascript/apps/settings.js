@@ -163,6 +163,13 @@ loadSetting("widgetTool_isPreviewEnabled").then(v => {
     }
 });
 
+loadSetting("widgetTool_isTaskbarPreviewEnabled").then(v => {
+    const val = v ?? true;
+    if (typeof window.setTaskbarPreviewEnabled === 'function') {
+        window.setTaskbarPreviewEnabled(val);
+    }
+});
+
 window.addEventListener("setting-changed", async (e) => {
     const key = e.detail?.key;
     if (!key) return;
@@ -189,6 +196,12 @@ window.addEventListener("setting-changed", async (e) => {
         const val = await loadSetting("widgetTool_isPreviewEnabled");
         if (typeof window.setWindowPreviewEnabled === 'function') {
             window.setWindowPreviewEnabled(val ?? true);
+        }
+    } else if (key === "widgetTool_isTaskbarPreviewEnabled") {
+        // ★ 追加: タスクバープレビュー設定変更の即時反映
+        const val = await loadSetting("widgetTool_isTaskbarPreviewEnabled");
+        if (typeof window.setTaskbarPreviewEnabled === 'function') {
+            window.setTaskbarPreviewEnabled(val ?? true);
         }
     }
 });
