@@ -293,7 +293,15 @@ const commands = {
                                     code: textContent
                                 };
                             } else {
-                                nexserData = JSON.parse(textContent);
+                                // 【改行エラー対策】
+                                // JSON文字列リテラル ("...") 内に含まれる生の改行・タブ制御文字のみをエスケープ文字に変換
+                                const sanitizedText = textContent.replace(/"(?:[^"\\]|\\.)*"/g, (match) => {
+                                    return match
+                                        .replace(/\r?\n/g, "\\n")
+                                        .replace(/\t/g, "\\t");
+                                });
+
+                                nexserData = JSON.parse(sanitizedText);
                             }
 
                             // --- アプリのインストール ---
