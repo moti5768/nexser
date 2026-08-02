@@ -9,7 +9,8 @@ import { addRecent } from "../recent.js";
 import { setupRibbon } from "../ribbon.js";
 import { saveSetting, loadSetting } from "./settings.js";
 
-let globalSelected = { item: null, window: null };
+// 複数選択・範囲選択に対応
+let globalSelected = { items: new Set(), window: null, lastSelected: null };
 // プロパティウィンドウの重複チェック用
 const propertyWindows = {};
 const sharedTextEncoder = new TextEncoder();
@@ -323,6 +324,11 @@ export default async function Explorer(root, options = {}) {
     // 固定参照保持
     let listContainer, pathLabel, treeContainer;
 
+    let isSelecting = false;
+    let selectionBox = null;
+    let startX, startY;
+    let wasDragging = false;
+
     const navigateTo = (path, saveHistory = true) => {
         // console.log("移動先:", path, "現在の場所:", currentPath);
         // 通常の移動時のみ、同じ場所への移動を無視する
@@ -550,9 +556,11 @@ export default async function Explorer(root, options = {}) {
     // ------------------------
     const render = async (path) => {
         currentPath = path;
-        if (globalSelected.item) {
-            globalSelected.item.classList.remove("selected");
-            globalSelected.item = null;
+        // 複数選択用の解除処理に修正
+        if (globalSelected.items.size > 0) {
+            globalSelected.items.forEach(i => i.classList.remove("selected"));
+            globalSelected.items.clear();
+            globalSelected.lastSelected = null;
             globalSelected.window = null;
         }
 
@@ -933,13 +941,15 @@ export default async function Explorer(root, options = {}) {
             content.appendChild(container);
 
             listContainer.addEventListener("click", e => {
+                if (wasDragging) return;
                 // クリック対象が explorer-item か、その内部かを判定
                 const item = e.target.closest(".explorer-item");
                 if (!item) {
                     // クリックがリスト外なら選択解除
-                    if (globalSelected.item) {
-                        globalSelected.item.classList.remove("selected");
-                        globalSelected.item = null;
+                    if (globalSelected.items.size > 0) {
+                        globalSelected.items.forEach(i => i.classList.remove("selected"));
+                        globalSelected.items.clear();
+                        globalSelected.lastSelected = null;
                         globalSelected.window = null;
 
                         // ステータスバー更新
@@ -953,6 +963,83 @@ export default async function Explorer(root, options = {}) {
                         setupRibbon(win, () => currentPath, render, explorerMenus);
 
                     }
+                }
+            });
+
+            listContainer.addEventListener("mousedown", (e) => {
+                if (e.button !== 0) return; // 左クリックのみ
+                // .explorer-item 上でも開始できるように判定を削除
+                startX = e.clientX;
+                startY = e.clientY;
+                isSelecting = false;
+                wasDragging = false;
+            });
+
+            document.addEventListener("mousemove", (e) => {
+                if (startX === undefined || startY === undefined) return;
+
+                const dx = Math.abs(e.clientX - startX);
+                const dy = Math.abs(e.clientY - startY);
+
+                // 3px以上マウスが動いたらドラッグ(範囲選択)開始と判定
+                if (!isSelecting && (dx > 3 || dy > 3)) {
+                    isSelecting = true;
+                    wasDragging = true;
+
+                    // Ctrlキーを押していない場合は既存の選択をクリア
+                    if (!e.ctrlKey) {
+                        globalSelected.items.forEach(i => i.classList.remove("selected"));
+                        globalSelected.items.clear();
+                        globalSelected.lastSelected = null;
+                    }
+
+                    selectionBox = document.createElement("div");
+                    selectionBox.style.cssText = "position:fixed; border:1px solid #0078D7; background-color:rgba(0, 120, 215, 0.2); z-index:1000; pointer-events:none;";
+                    document.body.appendChild(selectionBox);
+                }
+
+                if (isSelecting && selectionBox) {
+                    e.preventDefault(); // デフォルトのテキスト選択や画像ドラッグを防ぐ
+                    const currentX = e.clientX;
+                    const currentY = e.clientY;
+                    selectionBox.style.left = Math.min(startX, currentX) + "px";
+                    selectionBox.style.top = Math.min(startY, currentY) + "px";
+                    selectionBox.style.width = Math.abs(startX - currentX) + "px";
+                    selectionBox.style.height = Math.abs(startY - currentY) + "px";
+
+                    const boxRect = selectionBox.getBoundingClientRect();
+                    const items = listContainer.querySelectorAll(".explorer-item");
+
+                    items.forEach(item => {
+                        const itemRect = item.getBoundingClientRect();
+                        const isIntersecting = !(
+                            itemRect.right < boxRect.left || itemRect.left > boxRect.right ||
+                            itemRect.bottom < boxRect.top || itemRect.top > boxRect.bottom
+                        );
+                        if (isIntersecting) {
+                            item.classList.add("selected");
+                            globalSelected.items.add(item);
+                        } else if (!e.ctrlKey) {
+                            item.classList.remove("selected");
+                            globalSelected.items.delete(item);
+                        }
+                    });
+                }
+            });
+
+            document.addEventListener("mouseup", () => {
+                startX = undefined;
+                startY = undefined;
+
+                if (isSelecting) {
+                    isSelecting = false;
+                    if (selectionBox) selectionBox.remove();
+                    selectionBox = null;
+
+                    setupRibbon(win, () => currentPath, render, getExplorerMenus());
+
+                    // clickイベントが発火し終わった後にフラグを下ろす
+                    setTimeout(() => { wasDragging = false; }, 50);
                 }
             });
 
@@ -995,7 +1082,6 @@ export default async function Explorer(root, options = {}) {
         const folder = resolveFS(currentPath);
         if (!folder) return;
 
-        // --- ここから差し替え ---
         // レイアウトを初期化（アイコン表示の時はタイル状に並べる）
         if (viewMode === "icon") {
             listContainer.style.display = "grid";
@@ -1009,25 +1095,58 @@ export default async function Explorer(root, options = {}) {
 
         const fragment = document.createDocumentFragment();
 
-        // ▼ 追加：選択処理の共通化
-        const selectItemUI = async (targetItem) => {
-            globalSelected.item?.classList.remove("selected");
-            targetItem.classList.add("selected");
-            globalSelected.item = targetItem;
+        // ▼ 変更：選択処理の共通化 (Ctrl/Shift 複数選択対応)
+        const selectItemUI = async (targetItem, e) => {
             globalSelected.window = win;
+            const itemsArray = Array.from(listContainer.querySelectorAll(".explorer-item"));
+
+            if (e && e.ctrlKey) {
+                // Ctrlキー: 個別追加・解除
+                if (globalSelected.items.has(targetItem)) {
+                    globalSelected.items.delete(targetItem);
+                    targetItem.classList.remove("selected");
+                } else {
+                    globalSelected.items.add(targetItem);
+                    targetItem.classList.add("selected");
+                }
+                globalSelected.lastSelected = targetItem;
+            } else if (e && e.shiftKey && globalSelected.lastSelected) {
+                // Shiftキー: 範囲選択
+                const startIdx = itemsArray.indexOf(globalSelected.lastSelected);
+                const endIdx = itemsArray.indexOf(targetItem);
+                const [min, max] = [Math.min(startIdx, endIdx), Math.max(startIdx, endIdx)];
+
+                globalSelected.items.forEach(i => i.classList.remove("selected"));
+                globalSelected.items.clear();
+
+                for (let i = min; i <= max; i++) {
+                    globalSelected.items.add(itemsArray[i]);
+                    itemsArray[i].classList.add("selected");
+                }
+            } else {
+                // 通常クリック: 単一選択
+                globalSelected.items.forEach(i => i.classList.remove("selected"));
+                globalSelected.items.clear();
+                globalSelected.items.add(targetItem);
+                targetItem.classList.add("selected");
+                globalSelected.lastSelected = targetItem;
+            }
+
             setupRibbon(win, () => currentPath, render, explorerMenus);
 
-            const targetName = targetItem.dataset.name;
-            const node = resolveFS(currentPath)?.[targetName];
-            if (!node) return;
-
+            // ステータスバーの更新
             const statusBar = win?._statusBar;
-            if (statusBar) {
-                const size = await calcNodeSize(node, `${currentPath}/${targetName}`);
-                statusBar.textContent = `${targetName} | ${node.type} | ${formatSize(size)}`;
+            if (statusBar && globalSelected.items.size === 1) {
+                const targetName = targetItem.dataset.name;
+                const node = resolveFS(currentPath)?.[targetName];
+                if (node) {
+                    const size = await calcNodeSize(node, `${currentPath}/${targetName}`);
+                    statusBar.textContent = `${targetName} | ${node.type} | ${formatSize(size)}`;
+                }
+            } else if (statusBar && globalSelected.items.size > 1) {
+                statusBar.textContent = `${globalSelected.items.size} 個のアイテムを選択中`;
             }
         };
-        // ▲ ここまで
 
         // メタデータを除外し、フォルダ優先＆名前順にソートする配列を作成
         const sortedNames = Object.keys(folder)
@@ -1101,8 +1220,9 @@ export default async function Explorer(root, options = {}) {
             fragment.appendChild(item);
 
             item.addEventListener("click", async e => {
+                if (wasDragging) return;
                 e.stopPropagation();
-                await selectItemUI(item);
+                await selectItemUI(item, e);
                 listContainer.focus();
             });
 
@@ -1132,9 +1252,8 @@ export default async function Explorer(root, options = {}) {
         // ステータスバー
         const statusBar = win?._statusBar;
         if (statusBar) {
-
             // ⭐ 何か選択されている間は上書きしない
-            if (globalSelected.item) return;
+            if (globalSelected.items.size > 0) return;
             // 最後にステータスバーを更新
             updateStatusBarSummary(statusBar, folder);
         }
@@ -1145,14 +1264,16 @@ export default async function Explorer(root, options = {}) {
                 const items = Array.from(listContainer.querySelectorAll(".explorer-item"));
                 if (!items.length) return;
 
-                let currentIndex = items.findIndex(el => el === globalSelected.item);
+                // 複数選択されている場合は最初の要素を起点にする
+                const firstSelected = Array.from(globalSelected.items)[0];
+                let currentIndex = items.findIndex(el => el === firstSelected);
 
                 async function selectItem(index) {
                     const items = listContainer.querySelectorAll(".explorer-item");
                     const item = items[index];
                     if (!item) return;
 
-                    await selectItemUI(item);
+                    await selectItemUI(item, null); // キー操作は単一選択扱い
                     item.scrollIntoView({ block: "nearest" });
                 }
 
@@ -1170,16 +1291,17 @@ export default async function Explorer(root, options = {}) {
 
                 if (e.key === "Enter") {
                     e.preventDefault();
-                    // 安全性向上: nodeが存在しない場合に早期リターン
-                    if (!globalSelected.item) return;
-                    const name = globalSelected.item.dataset.name;
-                    const node = resolveFS(currentPath)?.[name];
-                    if (!node) return;
-                    openFSItem(name, node, currentPath);
+                    if (globalSelected.items.size === 0) return;
+
+                    // エンターキーで選択されているアイテムをすべて開く
+                    globalSelected.items.forEach(selectedItem => {
+                        const name = selectedItem.dataset.name;
+                        const node = resolveFS(currentPath)?.[name];
+                        if (node) openFSItem(name, node, currentPath);
+                    });
                 }
             });
-
-            listContainer._keydownBound = true; // 初回だけ追加
+            listContainer._keydownBound = true;
         }
         requestAnimationFrame(() => {
             updateTitle_explorer(path);
@@ -1215,10 +1337,13 @@ export default async function Explorer(root, options = {}) {
 
             listContainer.appendChild(item);
 
-            item.onclick = () => {
-                globalSelected.item?.classList.remove("selected");
+            item.onclick = (e) => {
+                if (!e.ctrlKey) {
+                    globalSelected.items.forEach(i => i.classList.remove("selected"));
+                    globalSelected.items.clear();
+                }
                 item.classList.add("selected");
-                globalSelected.item = item;
+                globalSelected.items.add(item);
             };
 
             item.ondblclick = () => {
@@ -1237,31 +1362,34 @@ export default async function Explorer(root, options = {}) {
                 title: "File",
                 items: [
                     {
-                        // ゴミ箱なら「元に戻す」、通常なら「開く」
                         label: isInsideTrash ? "元に戻す" : "開く",
                         action: () => {
-                            if (!globalSelected.item) return;
-                            const name = globalSelected.item.dataset.name;
+                            if (globalSelected.items.size === 0) return;
+
+                            const items = Array.from(globalSelected.items);
 
                             if (isInsideTrash) {
-                                // 復元処理を実行
-                                restoreFSItem(name, () => render(currentPath));
+                                // ゴミ箱内ならループでまとめて復元してから最後に1回再描画
+                                items.forEach(selectedItem => {
+                                    restoreFSItem(selectedItem.dataset.name);
+                                });
+                                render(currentPath);
                             } else {
-                                // 通常の開く処理
-                                const node = resolveFS(currentPath)[name];
-                                openFSItem(name, node, currentPath);
+                                items.forEach(selectedItem => {
+                                    const name = selectedItem.dataset.name;
+                                    const node = resolveFS(currentPath)?.[name];
+                                    if (node) openFSItem(name, node, currentPath);
+                                });
                             }
                         },
-                        disabled: () => !globalSelected.item
+                        disabled: () => globalSelected.items.size === 0
                     },
                     {
                         label: "新しいフォルダ",
                         action: () => createNewItem(currentPath, listContainer, () => render(currentPath), "folder"),
-                        // ゴミ箱の中では新規フォルダ作成を禁止
                         disabled: () => isInsideTrash
                     },
                     {
-                        // ゴミ箱なら「空にする」、通常なら「新しいファイル」
                         label: isInsideTrash ? "ゴミ箱を空にする" : "新しいファイル",
                         action: () => {
                             if (isInsideTrash) {
@@ -1272,29 +1400,67 @@ export default async function Explorer(root, options = {}) {
                         }
                     },
                     {
-                        // ゴミ箱なら「完全に削除」、通常なら「ゴミ箱に捨てる」
                         label: isInsideTrash ? "完全に削除" : "選択アイテムを削除",
                         action: () => {
-                            if (!globalSelected.item) return;
-                            deleteFSItem(
-                                currentPath,
-                                globalSelected.item.dataset.name,
-                                () => {
-                                    render(currentPath);
-                                    globalSelected.item = null;
-                                    // リボンメニューの状態を再更新
-                                    setupRibbon(win, () => currentPath, render, getExplorerMenus());
-                                }
-                            );
+                            if (globalSelected.items.size === 0) return;
+
+                            const itemNames = Array.from(globalSelected.items).map(item => item.dataset.name);
+
+                            if (isInsideTrash) {
+                                // ゴミ箱内：確認ダイアログを1回だけ表示し、一括で完全削除する
+                                const msg = `
+                                    <div style="padding:10px; font-size:13px;">
+                                        選択した ${itemNames.length} 個のアイテムを完全に消去しますか？<br>
+                                        <small style="color:#ff4444;">※この操作は取り消せません。</small>
+                                    </div>`;
+
+                                const confirmWin = showModalWindow("完全削除の確認", msg, {
+                                    width: 320,
+                                    height: 175,
+                                    taskbar: false,
+                                    overlay: true,
+                                    buttons: [
+                                        {
+                                            label: "削除",
+                                            action: () => {
+                                                const targetNode = resolveFS(currentPath);
+                                                if (targetNode) {
+                                                    itemNames.forEach(name => delete targetNode[name]);
+                                                }
+                                                if (confirmWin._modalOverlay) confirmWin._modalOverlay.remove();
+                                                confirmWin.remove();
+
+                                                window.dispatchEvent(new Event("fs-updated"));
+                                                render(currentPath);
+                                            }
+                                        },
+                                        {
+                                            label: "キャンセル",
+                                            action: () => {
+                                                if (confirmWin._modalOverlay) confirmWin._modalOverlay.remove();
+                                                confirmWin.remove();
+                                            }
+                                        }
+                                    ]
+                                });
+                            } else {
+                                // 通常フォルダ：ゴミ箱へ一括移動して最後に1回再描画
+                                itemNames.forEach(name => {
+                                    deleteFSItem(currentPath, name);
+                                });
+                                render(currentPath);
+                            }
                         },
-                        disabled: () => !globalSelected.item
+                        disabled: () => globalSelected.items.size === 0
                     },
                     {
                         label: "プログラムから開く",
                         action: () => {
-                            if (!globalSelected.item) return;
-                            const name = globalSelected.item.dataset.name;
-                            const node = resolveFS(currentPath)[name];
+                            if (globalSelected.items.size === 0) return;
+
+                            const firstItem = Array.from(globalSelected.items)[0];
+                            const name = firstItem.dataset.name;
+                            const node = resolveFS(currentPath)?.[name];
 
                             if (node && node.type === "file") {
                                 openWithDialog(`${currentPath}/${name}`, node);
@@ -1303,22 +1469,25 @@ export default async function Explorer(root, options = {}) {
                             }
                         },
                         disabled: () => {
-                            // ゴミ箱の中、またはファイル以外が選択されている場合は無効
-                            if (!globalSelected.item || isInsideTrash) return true;
-                            const node = resolveFS(currentPath)[globalSelected.item.dataset.name];
+                            if (globalSelected.items.size !== 1 || isInsideTrash) return true;
+                            const firstItem = Array.from(globalSelected.items)[0];
+                            const node = resolveFS(currentPath)?.[firstItem.dataset.name];
                             return !node || node.type !== "file";
                         }
                     },
                     {
                         label: "プロパティ",
                         action: () => {
-                            if (!globalSelected.item) return;
-                            const name = globalSelected.item.dataset.name;
-                            const node = resolveFS(currentPath)[name];
-                            const fullPath = currentPath ? `${currentPath}/${name}` : name;
-                            showProperties(name, node, fullPath);
+                            if (globalSelected.items.size === 0) return;
+
+                            globalSelected.items.forEach(selectedItem => {
+                                const name = selectedItem.dataset.name;
+                                const node = resolveFS(currentPath)?.[name];
+                                const fullPath = currentPath ? `${currentPath}/${name}` : name;
+                                if (node) showProperties(name, node, fullPath);
+                            });
                         },
-                        disabled: () => !globalSelected.item
+                        disabled: () => globalSelected.items.size === 0
                     }
                 ]
             }
@@ -1558,7 +1727,10 @@ export async function showProperties(name, node, path) {
             
             <table style="width:100%; border-collapse:collapse;">
                 <tr><td style="width:85px; color:#333;">ファイルの種類:</td><td style="color:#000;">${node.type === 'folder' ? 'ファイル フォルダー' : (node.type || '不明')}</td></tr>
-                ${isUrl ? `<tr><td style="color:#333;">URL:</td><td>${urlValue}</td></tr>` : ''}
+                
+                <!-- ▼ 修正：URLの場合はただの文字ではなく input フィールド（id="prop-url-input"）にする -->
+                ${isUrl ? `<tr><td style="color:#333;">URL:</td><td><input type="text" id="prop-url-input" value="${urlValue}" style="width:100%; border:1px solid #ccc; padding:2px;"></td></tr>` : ''}
+                
                 <tr><td style="color:#333;">場所:</td><td style="color:#000;">${parentPath}</td></tr>
                 <tr><td style="color:#333;">サイズ:</td><td style="color:#000;">${formattedSize} (${size.toLocaleString()} バイト)</td></tr>
             </table>
