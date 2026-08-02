@@ -176,7 +176,7 @@ body {
     border: 1.5px solid;
     border-color: #7a7a7a #fff #fff #7a7a7a;
     box-shadow: 0.5px 0.5px 0 #000 inset;
-    background: #DDDDDD;
+    background: #ececec;
     text-shadow: 1px 0 #000;
     letter-spacing: 0.5px;
 }
@@ -889,4 +889,30 @@ body::-webkit-scrollbar {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+
+
+/* 1. 要素全体のベース設定 */
+progress {
+    appearance: none;
+    -webkit-appearance: none;
+    border: 1.5px solid;
+    border-color: #7a7a7a #fff #fff #7a7a7a;
+    box-shadow: 0.5px 0.5px 0 #000 inset;
+}
+
+/* 2. 背景（未達成部分）のスタイリング */
+progress::-webkit-progress-bar {
+    background-color: #C3C7CB;
+}
+
+/* 3. 進捗（達成部分）のスタイリング */
+progress::-webkit-progress-value {
+    background: darkblue;
+}
+
+/* Firefox用 */
+progress::-moz-progress-bar {
+    background: darkblue;
 }
