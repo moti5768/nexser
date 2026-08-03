@@ -124,19 +124,7 @@ ${!options.hideRibbon ? `
 <div class="content"></div>
 
 ${!options.hideStatus ? `
-<div class="window-statusbar" style="
-    height: 20px;
-    background: #C3C7CB;
-    font-size: 12px;
-    padding: 0 4px;
-    display: flex;
-    align-items: center;
-    white-space: nowrap;      /* 改行を防ぐ */
-    overflow: hidden;         /* はみ出た部分を隠す */
-    text-overflow: ellipsis;  /* 長い場合に ... を表示 */
-    box-sizing: border-box;   /* パディングを含めた高さ計算にする */
-    border-top: 1px solid #808080; /* 必要に応じて境界線を追加 */
-">
+<div class="window-statusbar resize_icon">
     Ready
 </div>` : ""}
 `;

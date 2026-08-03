@@ -1,5 +1,5 @@
 // desktop.js
-import { FS, forceSave } from "./fs.js";
+import { FS, forceSave, markDefaultDeleted } from "./fs.js";
 import { launch } from "./kernel.js";
 import { alertWindow, progressWindow } from "./window.js";
 import { resolveFS, validateName, importFileSmart, getUniqueName } from "./fs-utils.js";
@@ -7,18 +7,40 @@ import { addRecent } from "./recent.js";
 import { attachContextMenu } from "./context-menu.js";
 import { resolveAppByPath, getIcon } from "./file-associations.js";
 import { openWithDialog as explorerOpenWithDialog, showProperties } from "./apps/explorer.js";
+import { dbGet, dbSet } from "./fs-db.js";
 
-// 選択状態管理
-let globalSelected = { item: null, window: null };
+// 選択状態管理 (複数選択・範囲選択対応)
+let globalSelected = { items: new Set(), window: null, lastSelected: null };
+let autoArrange = true; // 自動整列フラグ
+let iconPositions = {}; // ★ 追加: 自動整列OFF時のアイコン座標データ
+
+(async () => {
+    try {
+        const savedAutoArrange = await dbGet("desktop_autoArrange", "settings");
+        if (savedAutoArrange !== undefined) autoArrange = savedAutoArrange;
+
+        const savedPositions = await dbGet("desktop_iconsPositions", "settings");
+        if (savedPositions) iconPositions = savedPositions;
+
+        // 読み込み完了後に再描画（既に構築済みの場合は新しい設定で上書き）
+        const desktop = document.getElementById("desktop");
+        if (desktop) buildDesktop();
+    } catch (e) {
+        console.warn("デスクトップ設定の読み込みに失敗しました:", e);
+    }
+})();
 
 // --------------------
 // デスクトップ描画
 // --------------------
 export function buildDesktop() {
-    globalSelected = { item: null, window: null };
+    globalSelected = { items: new Set(), window: null, lastSelected: null, item: null };
 
     const desktop = document.getElementById("desktop");
     if (!desktop) return;
+
+    // ★ 追加：デスクトップ自身がキーボードフォーカスを受け取れるようにする
+    desktop.tabIndex = 0;
 
     let iconsContainer = document.getElementById("desktop-icons");
     if (!iconsContainer) {
@@ -49,12 +71,72 @@ export function buildDesktop() {
         const fullPath = `Desktop/${name}`;
 
         // 選択
+        // 選択処理 (単一 / Ctrl / Shift 選択対応)
         item.addEventListener("click", e => {
+            if (selState.wasDragging) return;
             e.stopPropagation();
-            if (globalSelected.item) globalSelected.item.classList.remove("selected");
-            item.classList.add("selected");
-            globalSelected.item = item;
-            globalSelected.window = desktop;
+            selectIconUI(item, e);
+        });
+
+        // ★ 追加: 未選択のアイコンを右クリックした際、Windows同様にそのアイコンを選択状態にする（バグ防止）
+        item.addEventListener("mousedown", e => {
+            if (e.button === 2) { // 右クリック
+                if (!globalSelected.items.has(item)) {
+                    selectIconUI(item, e);
+                }
+            }
+        });
+
+        // 複数アイコンのドラッグ＆ドロップ移動機能
+        item.draggable = true;
+        item.addEventListener("dragstart", (e) => {
+            if (!globalSelected.items.has(item)) {
+                selectIconUI(item, e);
+            }
+
+            // ★ 修正: 複数選択されたすべてのアイコンのオフセット情報を計算して保持
+            const draggedItemsInfo = Array.from(globalSelected.items).map(i => {
+                const rect = i.getBoundingClientRect();
+                return {
+                    name: i.dataset.name,
+                    offsetX: e.clientX - rect.left,
+                    offsetY: e.clientY - rect.top
+                };
+            });
+            const draggedNames = draggedItemsInfo.map(i => i.name);
+
+            e.dataTransfer.setData("text/plain", JSON.stringify({
+                type: "desktop-icons",
+                names: draggedNames,
+                draggedItems: draggedItemsInfo // 各アイコン個別のオフセット情報を追加
+            }));
+            e.dataTransfer.effectAllowed = "move";
+        });
+        item.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            item.classList.add("drag-target");
+        });
+
+        item.addEventListener("dragleave", () => {
+            item.classList.remove("drag-target");
+        });
+
+        item.addEventListener("drop", (e) => {
+            e.preventDefault();
+            item.classList.remove("drag-target");
+
+            const dataStr = e.dataTransfer.getData("text/plain");
+            try {
+                const data = JSON.parse(dataStr);
+                if (data && data.type === "desktop-icons") {
+                    // ★ 追加: 自動整列ONの場合のみ順序の入れ替えを行う
+                    // OFFの時はイベントの伝播を止めず、デスクトップ背景のDropイベント（座標移動）に処理を任せる
+                    if (autoArrange) {
+                        e.stopPropagation();
+                        reorderDesktopIcons(data.names, name);
+                    }
+                }
+            } catch (err) { }
         });
 
         // ダブルクリック
@@ -84,6 +166,28 @@ export function buildDesktop() {
                 action: () => showProperties(name, node, fullPath)
             }
         ]);
+
+        // ★ 追加: 自動整列OFFの時、メモリ上の座標データがあればスタイルに適用
+        if (!autoArrange) {
+            item.style.position = "absolute";
+            if (iconPositions[name]) {
+                item.style.left = `${iconPositions[name].x}px`;
+                item.style.top = `${iconPositions[name].y}px`;
+            } else {
+                // ドラッグ歴がないアイコンや新規作成アイコンを標準グリッド（縦並び）に配置
+                const iconNames = Object.keys(FS.Desktop).filter(k => k !== "type" && k !== "system");
+                const iconIndex = iconNames.indexOf(name);
+                const rowHeight = 90;
+                const colWidth = 90;
+                const maxRows = Math.max(1, Math.floor(((window.innerHeight || 600) - 60) / rowHeight));
+
+                const col = Math.floor(iconIndex / maxRows);
+                const row = iconIndex % maxRows;
+
+                item.style.left = `${10 + col * colWidth}px`;
+                item.style.top = `${10 + row * rowHeight}px`;
+            }
+        }
 
         return item; // ← appendしない
     }
@@ -131,13 +235,61 @@ export function buildDesktop() {
         });
 
         items.push({
-            label: "選択アイテムを削除",
-            disabled: !globalSelected.item,
+            label: `自動整列 ${autoArrange ? "✓" : ""}`,
             action: () => {
-                if (globalSelected.item) {
-                    const name = globalSelected.item.dataset.name;
-                    deleteFSItem("Desktop", name);
-                    globalSelected.item = null;
+                const nextAutoArrange = !autoArrange;
+
+                // ★ 改善: 自動整列ONからOFFに切り替える際、現在のFlexbox上の表示位置を座標データとして保存する
+                if (autoArrange && !nextAutoArrange) {
+                    const iconsContainer = document.getElementById("desktop-icons");
+                    if (iconsContainer) {
+                        const containerRect = iconsContainer.getBoundingClientRect();
+                        const icons = iconsContainer.querySelectorAll(".icon");
+                        iconPositions = {};
+                        icons.forEach(icon => {
+                            const name = icon.dataset.name;
+                            const rect = icon.getBoundingClientRect();
+                            iconPositions[name] = {
+                                x: rect.left - containerRect.left,
+                                y: rect.top - containerRect.top
+                            };
+                        });
+                        dbSet("desktop_iconsPositions", iconPositions, "settings").catch(e => console.error(e));
+                    }
+                }
+
+                autoArrange = nextAutoArrange;
+                // 状態をDBの settings ストアへ保存
+                dbSet("desktop_autoArrange", autoArrange, "settings").catch(e => console.error(e));
+
+                // 自動整列がONになったら、保存されているアイコンの自由配置データを消去する
+                if (autoArrange) {
+                    iconPositions = {};
+                    dbSet("desktop_iconsPositions", {}, "settings").catch(e => console.error(e));
+                }
+
+                autoArrangeIcons();
+                buildDesktop(); // 配置方法が変わるため強制再描画
+            }
+        });
+
+        items.push({
+            label: "選択アイテムを削除",
+            disabled: globalSelected.items.size === 0,
+            action: async () => {
+                if (globalSelected.items.size > 0) {
+                    const itemsToDelete = Array.from(globalSelected.items).map(item => item.dataset.name);
+                    globalSelected.items.clear();
+
+                    // 順番に確実に削除を処理
+                    for (const name of itemsToDelete) {
+                        await deleteFSItem("Desktop", name, false);
+                        // ★ デフォルト項目の場合は削除されたことを記録
+                        await markDefaultDeleted(`Desktop/${name}`);
+                    }
+
+                    await forceSave(); // ★ 確実に保存を待つ
+                    window.dispatchEvent(new Event("fs-updated"));
                 }
             }
         });
@@ -169,19 +321,155 @@ export function buildDesktop() {
     });
 
     // --------------------
-    // デスクトップクリック
+    // 選択UI共通関数 (Ctrl/Shift/単一選択対応)
     // --------------------
-    desktop.onclick = (e) => {
-        desktop.focus();
+    const selectIconUI = (targetItem, e) => {
+        globalSelected.window = desktop;
+        const iconsArray = Array.from(iconsContainer.querySelectorAll(".icon"));
 
-        if (!e.target.closest(".icon")) {
-            if (globalSelected.item) {
-                globalSelected.item.classList.remove("selected");
-                globalSelected.item = null;
-                globalSelected.window = null;
+        if (e && e.ctrlKey) {
+            if (globalSelected.items.has(targetItem)) {
+                globalSelected.items.delete(targetItem);
+                targetItem.classList.remove("selected");
+            } else {
+                globalSelected.items.add(targetItem);
+                targetItem.classList.add("selected");
             }
+            globalSelected.lastSelected = targetItem;
+        } else if (e && e.shiftKey && globalSelected.lastSelected) {
+            const startIdx = iconsArray.indexOf(globalSelected.lastSelected);
+            const endIdx = iconsArray.indexOf(targetItem);
+            const [min, max] = [Math.min(startIdx, endIdx), Math.max(startIdx, endIdx)];
+
+            globalSelected.items.forEach(i => i.classList.remove("selected"));
+            globalSelected.items.clear();
+
+            for (let i = min; i <= max; i++) {
+                globalSelected.items.add(iconsArray[i]);
+                iconsArray[i].classList.add("selected");
+            }
+        } else {
+            globalSelected.items.forEach(i => i.classList.remove("selected"));
+            globalSelected.items.clear();
+            globalSelected.items.add(targetItem);
+            targetItem.classList.add("selected");
+            globalSelected.lastSelected = targetItem;
         }
+
+        // 単一選択メニュー（開く・プロパティ等）との互換性を保持
+        globalSelected.item = globalSelected.items.size === 1 ? Array.from(globalSelected.items)[0] : null;
     };
+
+    // --------------------
+    // マウスドラッグによる範囲選択処理
+    // --------------------
+    if (!window._desktopSelectionState) {
+        window._desktopSelectionState = {
+            isSelecting: false,
+            selectionBox: null,
+            startX: undefined,
+            startY: undefined,
+            wasDragging: false
+        };
+    }
+    const selState = window._desktopSelectionState;
+
+    if (!window._desktopSelectionGuard) {
+        window._desktopSelectionGuard = true;
+
+        // 1. デスクトップ以外の場所をクリックした時の選択解除
+        document.addEventListener("mousedown", (e) => {
+            if (e.button !== 0) return;
+            if (e.target.closest(".icon") || e.target.closest(".context-menu")) return;
+
+            if (!e.ctrlKey && !e.shiftKey) {
+                if (globalSelected.items) {
+                    globalSelected.items.forEach(i => i.classList.remove("selected"));
+                    globalSelected.items.clear();
+                }
+                globalSelected.lastSelected = null;
+                globalSelected.item = null;
+            }
+        });
+
+        // 2. マウス移動時の範囲選択ボックスの描画とアイコン判定
+        document.addEventListener("mousemove", (e) => {
+            if (selState.startX === undefined || selState.startY === undefined) return;
+            const dx = Math.abs(e.clientX - selState.startX);
+            const dy = Math.abs(e.clientY - selState.startY);
+
+            if (!selState.isSelecting && (dx > 3 || dy > 3)) {
+                selState.isSelecting = true;
+                selState.wasDragging = true;
+                if (!e.ctrlKey) {
+                    globalSelected.items.forEach(i => i.classList.remove("selected"));
+                    globalSelected.items.clear();
+                    globalSelected.lastSelected = null;
+                }
+                selState.selectionBox = document.createElement("div");
+                selState.selectionBox.style.cssText = "position:fixed; border:1px solid #0078D7; background-color:rgba(0, 120, 215, 0.2); z-index:1000; pointer-events:none;";
+                document.body.appendChild(selState.selectionBox);
+            }
+
+            if (selState.isSelecting && selState.selectionBox) {
+                e.preventDefault();
+                const currentX = e.clientX;
+                const currentY = e.clientY;
+                selState.selectionBox.style.left = Math.min(selState.startX, currentX) + "px";
+                selState.selectionBox.style.top = Math.min(selState.startY, currentY) + "px";
+                selState.selectionBox.style.width = Math.abs(selState.startX - currentX) + "px";
+                selState.selectionBox.style.height = Math.abs(selState.startY - currentY) + "px";
+
+                const boxRect = selState.selectionBox.getBoundingClientRect();
+                const iconsContainerCurrent = document.getElementById("desktop-icons");
+                if (!iconsContainerCurrent) return;
+                const icons = iconsContainerCurrent.querySelectorAll(".icon");
+
+                icons.forEach(item => {
+                    const itemRect = item.getBoundingClientRect();
+                    const isIntersecting = !(
+                        itemRect.right < boxRect.left || itemRect.left > boxRect.right ||
+                        itemRect.bottom < boxRect.top || itemRect.top > boxRect.bottom
+                    );
+                    if (isIntersecting) {
+                        item.classList.add("selected");
+                        globalSelected.items.add(item);
+                    } else if (!e.ctrlKey) {
+                        item.classList.remove("selected");
+                        globalSelected.items.delete(item);
+                    }
+                });
+            }
+        });
+
+        // 3. マウスを離した時の処理
+        document.addEventListener("mouseup", () => {
+            selState.startX = undefined;
+            selState.startY = undefined;
+            if (selState.isSelecting) {
+                selState.isSelecting = false;
+                if (selState.selectionBox) selState.selectionBox.remove();
+                selState.selectionBox = null;
+                setTimeout(() => { selState.wasDragging = false; }, 50);
+            }
+        });
+    }
+
+    // デスクトップ上の mousedown（範囲選択の起点 ＆ フォーカス用）
+    if (!desktop._mousedownInstalled) {
+        desktop._mousedownInstalled = true;
+        desktop.addEventListener("mousedown", (e) => {
+            if (e.button !== 0 || e.target.closest(".window")) return;
+            if (e.target.closest(".icon")) return;
+
+            desktop.focus(); // キーボード操作のためにフォーカスを当てる
+
+            selState.startX = e.clientX;
+            selState.startY = e.clientY;
+            selState.isSelecting = false;
+            selState.wasDragging = false;
+        });
+    }
 
     // ────────────────────────────────────────────────────────
     // 🔥 追加：外部からのファイルドロップ受付機能
@@ -206,6 +494,34 @@ export function buildDesktop() {
             e.preventDefault();
             e.stopPropagation();
             desktop.classList.remove("drag-over");
+
+            // ★ 追加: 内部アイコンのドラッグ移動（自動整列OFF時）
+            const dataStr = e.dataTransfer.getData("text/plain");
+            try {
+                const data = JSON.parse(dataStr);
+                if (data && data.type === "desktop-icons" && !autoArrange) {
+                    // ★ 修正: 個別のオフセット情報がある場合はそれを使用し、フォーメーションを維持する
+                    if (data.draggedItems) {
+                        data.draggedItems.forEach((itemData) => {
+                            let newX = e.clientX - itemData.offsetX;
+                            let newY = e.clientY - itemData.offsetY;
+                            iconPositions[itemData.name] = { x: newX, y: newY };
+                        });
+                    } else {
+                        // 古い形式のデータが来た場合のフォールバック処理
+                        let newX = e.clientX - (data.offsetX || 0);
+                        let newY = e.clientY - (data.offsetY || 0);
+                        data.names.forEach((name, index) => {
+                            iconPositions[name] = { x: newX + (index * 30), y: newY + (index * 30) };
+                        });
+                    }
+
+                    // メモリの座標を更新し、DBの settings ストアに非同期で保存
+                    await dbSet("desktop_iconsPositions", iconPositions, "settings");
+                    buildDesktop(); // 再描画して新しい位置を反映
+                    return; // ここで処理を終了し、外部ファイルドロップの処理は行わない
+                }
+            } catch (err) { /* JSONパースエラー時は無視して通常のファイルドロップ処理へ */ }
 
             const folderNode = FS.Desktop; // デスクトップの仮想FSノードを参照
             if (!folderNode) return;
@@ -554,30 +870,38 @@ function createNewItem(currentPath, container, itemType = "folder") {
 // --------------------
 // アイテム削除 (ゴミ箱対応版)
 // --------------------
-function deleteFSItem(parentPath, itemName) {
+async function deleteFSItem(parentPath, itemName, dispatchEvent = true) {
     const parentNode = resolveFS(parentPath);
-    if (!parentNode || !parentNode[itemName]) return;
+    if (!parentNode || !parentNode[itemName]) return false;
 
-    // ゴミ箱ノードを取得
-    const trashNode = resolveFS("Trash");
-    if (!trashNode) {
-        // ゴミ箱がない場合は念のため従来通りの直接削除を試みる
-        if (!confirm(`「${itemName}」を完全に消去しますか？`)) return;
+    // --- ゴミ箱内からの完全消去の場合 ---
+    const isTrash = parentPath === "Trash" || parentPath.startsWith("Trash/");
+    if (isTrash) {
         delete parentNode[itemName];
-        window.dispatchEvent(new Event("fs-updated"));
-        return;
+        if (dispatchEvent) {
+            await forceSave(); // ★ 確実に保存を待つ
+            window.dispatchEvent(new Event("fs-updated"));
+        }
+        return true;
     }
 
     try {
-        // 1. 元のデータをコピーし、復元用の「元の親パス」を記録
         const targetItemData = JSON.parse(JSON.stringify(parentNode[itemName]));
-        targetItemData.originalPath = parentPath; // ★復元先を記録
+        targetItemData.originalPath = parentPath;
 
-        // 2. 元の場所から削除 (Proxyによる保護がある場合はここでエラーになる)
+        const trashNode = resolveFS("Trash");
+        if (!trashNode) {
+            delete parentNode[itemName];
+            if (dispatchEvent) {
+                await forceSave(); // ★ 確実に保存を待つ
+                window.dispatchEvent(new Event("fs-updated"));
+            }
+            return true;
+        }
+
         const success = delete parentNode[itemName];
         if (!success) throw new Error("Blocked by Proxy");
 
-        // 3. ゴミ箱内での名前を決定 (重複回避)
         let targetName = itemName;
         if (trashNode[itemName]) {
             let counter = 1;
@@ -588,11 +912,13 @@ function deleteFSItem(parentPath, itemName) {
             }
         }
 
-        // 4. ゴミ箱へ追加
         trashNode[targetName] = targetItemData;
 
-        // 完了通知
-        window.dispatchEvent(new Event("fs-updated"));
+        if (dispatchEvent) {
+            await forceSave(); // ★ 確実に保存を待つ
+            window.dispatchEvent(new Event("fs-updated"));
+        }
+        return true;
     } catch (e) {
         console.warn(`[Desktop Guard] 削除拒否: ${itemName}`);
         alertWindow(`「${itemName}」は保護されているため削除できません。`, {
@@ -600,6 +926,7 @@ function deleteFSItem(parentPath, itemName) {
             width: 350,
             height: 160
         });
+        return false;
     }
 }
 
@@ -670,7 +997,7 @@ let isDesktopKeyHandlerAttached = false;
 function setupDesktopKeyboardNavigation() {
     if (isDesktopKeyHandlerAttached) return;
 
-    document.addEventListener("keydown", (e) => {
+    document.addEventListener("keydown", async (e) => {
         // --- ガード処理：デスクトップがアクティブか判定 ---
         const active = document.activeElement;
 
@@ -775,6 +1102,22 @@ function setupDesktopKeyboardNavigation() {
                     if (node) openFSItem(name, node, "Desktop");
                 }
                 break;
+            case "Delete":
+                if (globalSelected.items.size > 0) {
+                    e.preventDefault();
+                    const itemsToDelete = Array.from(globalSelected.items).map(item => item.dataset.name);
+                    globalSelected.items.clear();
+
+                    for (const name of itemsToDelete) {
+                        await deleteFSItem("Desktop", name, false);
+                        // ★ デフォルト項目の場合は削除されたことを記録
+                        await markDefaultDeleted(`Desktop/${name}`);
+                    }
+
+                    await forceSave(); // ★ 確実に保存を待つ
+                    window.dispatchEvent(new Event("fs-updated"));
+                }
+                break;
         }
     });
 
@@ -786,3 +1129,53 @@ setupDesktopKeyboardNavigation();
 
 // タスクバーの高さが変わったらアイコン領域を再調整
 window.addEventListener("desktop-resize", adjustDesktopIconArea);
+
+
+// --------------------
+// 自動整列処理
+// --------------------
+export function autoArrangeIcons() {
+    const iconsContainer = document.getElementById("desktop-icons");
+    if (!iconsContainer) return;
+
+    if (autoArrange) {
+        // 自動整列ON: Flexboxレイアウトで整列
+        iconsContainer.style.display = "flex";
+        iconsContainer.style.flexDirection = "column";
+        iconsContainer.style.flexWrap = "wrap";
+        iconsContainer.style.alignContent = "flex-start";
+    } else {
+        // ★ 追加: 自動整列OFF時は自由配置にするためFlexを解除
+        iconsContainer.style.display = "block";
+    }
+}
+
+// --------------------
+// ドラッグ移動によるデスクトップアイコン並び替え
+// --------------------
+function reorderDesktopIcons(draggedNames, targetName) {
+    const desktopFS = FS.Desktop;
+    if (!desktopFS) return;
+
+    const keys = Object.keys(desktopFS).filter(k => k !== "type" && k !== "system");
+    const draggedSet = new Set(draggedNames);
+
+    // 移動先の位置を特定して順番を差し替え
+    const remainingKeys = keys.filter(k => !draggedSet.has(k));
+    const targetIdx = remainingKeys.indexOf(targetName);
+
+    if (targetIdx !== -1) {
+        remainingKeys.splice(targetIdx, 0, ...draggedNames);
+    } else {
+        remainingKeys.push(...draggedNames);
+    }
+
+    // FSオブジェクトのプロパティ順序を再構築
+    const newDesktop = { type: desktopFS.type, system: desktopFS.system };
+    remainingKeys.forEach(k => {
+        if (desktopFS[k]) newDesktop[k] = desktopFS[k];
+    });
+
+    FS.Desktop = newDesktop;
+    window.dispatchEvent(new Event("fs-updated"));
+}

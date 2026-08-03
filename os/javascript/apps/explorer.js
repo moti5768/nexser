@@ -2,7 +2,7 @@
 import { launch } from "../kernel.js";
 import { showModalWindow, alertWindow, bringToFront, progressWindow } from "../window.js";
 import { resolveFS, validateName, importFileSmart, getUniqueName } from "../fs-utils.js";
-import { FS, initFS, forceSave } from "../fs.js";
+import { FS, initFS, forceSave, markDefaultDeleted } from "../fs.js";
 import { attachContextMenu } from "../context-menu.js";
 import { resolveAppByPath, getIcon } from "../file-associations.js";
 import { addRecent } from "../recent.js";
@@ -43,12 +43,20 @@ function deleteFSItem(parentPath, itemName, rerender) {
             buttons: [
                 {
                     label: "削除",
-                    action: () => {
-                        // 1. 最新のノードを再取得して削除
+                    action: async () => {
                         const targetNode = resolveFS(parentPath);
-                        if (targetNode) {
+                        if (targetNode && targetNode[itemName]) {
+                            const item = targetNode[itemName];
+                            // ゴミ箱内のアイテムが持つ originalPath から元のフルパスを復元
+                            const originalPath = item.originalPath ? `${item.originalPath}/${itemName}` : itemName;
+
                             delete targetNode[itemName];
+
+                            // ★ 削除されたデフォルト項目として記録
+                            await markDefaultDeleted(originalPath);
                         }
+
+                        await forceSave();
 
                         // 2. ウィンドウを先に閉じる（イベント発火時の干渉を防ぐ）
                         if (win._modalOverlay) win._modalOverlay.remove();
@@ -163,11 +171,20 @@ export function emptyTrash(rerender) {
         buttons: [
             {
                 label: "すべて削除",
-                action: () => {
+                action: async () => {
                     const latestTrash = resolveFS("Trash");
-                    keys.forEach(key => {
-                        delete latestTrash[key];
-                    });
+                    for (const key of keys) {
+                        const item = latestTrash[key];
+                        if (item) {
+                            const originalPath = item.originalPath ? `${item.originalPath}/${key}` : key;
+                            delete latestTrash[key];
+
+                            // ★ 個別にデフォルト削除として記録
+                            await markDefaultDeleted(originalPath);
+                        }
+                    }
+
+                    await forceSave();
 
                     if (win._modalOverlay) win._modalOverlay.remove();
                     win.remove();
@@ -1422,11 +1439,23 @@ export default async function Explorer(root, options = {}) {
                                     buttons: [
                                         {
                                             label: "削除",
-                                            action: () => {
+                                            action: async () => {
                                                 const targetNode = resolveFS(currentPath);
                                                 if (targetNode) {
-                                                    itemNames.forEach(name => delete targetNode[name]);
+                                                    for (const name of itemNames) {
+                                                        const item = targetNode[name];
+                                                        if (item) {
+                                                            const originalPath = item.originalPath ? `${item.originalPath}/${name}` : name;
+                                                            delete targetNode[name];
+
+                                                            // ★ 削除されたデフォルト項目として記録
+                                                            await markDefaultDeleted(originalPath);
+                                                        }
+                                                    }
                                                 }
+
+                                                await forceSave();
+
                                                 if (confirmWin._modalOverlay) confirmWin._modalOverlay.remove();
                                                 confirmWin.remove();
 

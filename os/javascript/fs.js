@@ -1,7 +1,8 @@
 // fs.js
-import { saveFS, loadFS } from "./fs-db.js";
+import { saveFS, loadFS, dbGet, dbSet } from "./fs-db.js";
 
 let saveTimer = null;
+let deletedDefaults = new Set();
 const DEBUG_FS = false;
 const PROTECTED_KEYS = new Set(["type", "entry", "singleton", "shell", "target", "name", "system"]);
 
@@ -170,13 +171,20 @@ export const FS = wrapProxy(baseFS, "");
 
 // --- 同期（Sync）エンジン ---
 
-function deepSync(currentProxy, savedNode, defaultNode) {
+function deepSync(currentProxy, savedNode, defaultNode, path = "") {
     for (const key in currentProxy) {
         if (PROTECTED_KEYS.has(key)) continue;
         if (savedNode && !(key in savedNode)) {
             const curVal = currentProxy[key];
             if (!curVal || !curVal.system) {
                 delete currentProxy[key];
+
+                // ★ 根本解決：デフォルトに存在していた項目が削除された場合、削除リストに記録して保存
+                const currentPath = path ? `${path}/${key}` : key;
+                if (defaultNode && defaultNode[key]) {
+                    deletedDefaults.add(currentPath);
+                    dbSet("deleted_defaults", Array.from(deletedDefaults), "kv").catch(e => console.error(e));
+                }
             }
         }
     }
@@ -186,12 +194,13 @@ function deepSync(currentProxy, savedNode, defaultNode) {
 
         const savedValue = savedNode[key];
         const defaultValue = defaultNode ? defaultNode[key] : null;
+        const currentPath = path ? `${path}/${key}` : key; // ★ パスを追跡
 
         if (savedValue && typeof savedValue === 'object' && savedValue.type === 'folder') {
             if (!currentProxy[key] || currentProxy[key].type !== 'folder') {
                 currentProxy[key] = { type: 'folder' };
             }
-            deepSync(currentProxy[key], savedValue, defaultValue);
+            deepSync(currentProxy[key], savedValue, defaultValue, currentPath);
         } else {
             currentProxy[key] = savedValue;
         }
@@ -200,6 +209,13 @@ function deepSync(currentProxy, savedNode, defaultNode) {
     if (defaultNode) {
         for (const key in defaultNode) {
             if (!(key in currentProxy)) {
+                const currentPath = path ? `${path}/${key}` : key;
+
+                // ★ 削除リストに含まれている場合は、デフォルトにあっても復活させない
+                if (deletedDefaults.has(currentPath)) {
+                    continue;
+                }
+
                 currentProxy[key] = structuredClone(defaultNode[key]);
                 if (DEBUG_FS) console.log(`[FS Update] New system item added: ${key}`);
             }
@@ -272,14 +288,19 @@ export async function forceSave() {
 
 export async function initFS() {
     const saved = await loadFS();
+
+    // ★ 保存されていた削除済みデフォルト項目のリストを復元
+    const savedDeletedDefaults = await dbGet("deleted_defaults", "kv");
+    if (savedDeletedDefaults && Array.isArray(savedDeletedDefaults)) {
+        deletedDefaults = new Set(savedDeletedDefaults);
+    }
+
     if (!saved) return;
 
     // 初期化中は保存処理を完全にブロックする
     isSaving = true;
     try {
-        // ここで deepSync を実行
-        // ※内部の set トラップ内で isSaving を見て保存をスキップするようにする
-        deepSync(FS, saved, FACTORY_FS);
+        deepSync(FS, saved, FACTORY_FS, ""); // ★ 空のパスから同期を開始
         if (DEBUG_FS) console.log("[FS] System synchronized successfully.");
     } catch (e) {
         console.error("[FS] Restore failed", e);
@@ -341,4 +362,22 @@ export async function diagnoseAndCleanFS(executeRepair = false) {
     }
 
     return report;
+}
+
+export async function markDefaultDeleted(path) {
+    const parts = path.split("/");
+    let node = FACTORY_FS;
+    for (const p of parts) {
+        if (node && node[p]) {
+            node = node[p];
+        } else {
+            node = null;
+            break;
+        }
+    }
+    // ファクトリー側に実際に存在する項目であれば記録対象とする
+    if (node) {
+        deletedDefaults.add(path);
+        await dbSet("deleted_defaults", Array.from(deletedDefaults), "kv").catch(e => console.error(e));
+    }
 }

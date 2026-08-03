@@ -688,6 +688,52 @@ select {
     top: 7px;
 }
 
+.window.maximized .resize_icon::after {
+    display: none;
+}
+
+/* ステータスバー本体 */
+.window-statusbar {
+    position: relative;
+    height: 20px;
+    background: #C3C7CB;
+    font-size: 12px;
+    padding: 0 4px;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    box-sizing: border-box;
+
+    border: 1.5px solid;
+    border-color: #7a7a7a #fff #fff #7a7a7a;
+    box-shadow: 0.5px 0.5px 0 #000 inset;
+}
+
+/* リサイズマーク（::afterで表現） */
+.window-statusbar.resize_icon::after {
+    content: "";
+    display: block;
+    position: absolute;
+    height: 13px;
+    width: 13px;
+    right: 0px;
+    bottom: 0px;
+    pointer-events: none;
+    transform: scale(-1, -1);
+    background:
+        /* 1本目（一番長い棒） */
+        linear-gradient(135deg, transparent 10px, #808080 10px, #808080 11px, transparent 11px),
+        linear-gradient(135deg, transparent 9px, #ffffff 9px, #ffffff 10px, transparent 10px),
+        /* 2本目（中くらいの棒） */
+        linear-gradient(135deg, transparent 6px, #808080 6px, #808080 7px, transparent 7px),
+        linear-gradient(135deg, transparent 5px, #ffffff 5px, #ffffff 6px, transparent 6px),
+        /* 3本目（一番短い棒） */
+        linear-gradient(135deg, transparent 2px, #808080 2px, #808080 3px, transparent 3px),
+        linear-gradient(135deg, transparent 1px, #ffffff 1px, #ffffff 2px, transparent 2px);
+}
+
 .pressed.max-btn::before,
 .pressed.max-btn::after {
     margin-top: 1.3px;
