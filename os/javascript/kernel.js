@@ -251,6 +251,7 @@ export async function launch(path, options = {}) {
         if (uniqueKey) processes.delete(uniqueKey);
 
         /* ================= APP ================= */
+        /* ================= APP ================= */
         if (item.type === "app") {
             let appModule;
 
@@ -261,17 +262,22 @@ export async function launch(path, options = {}) {
                     const cleanCode = item.code.replace(/import\s+[\s\S]*?from\s+['"][^'"]+['"];?/g, '');
 
                     // 2. export default の関数抽出またはラップ
-                    // コード内の `export default async function...` を一時的な変数に代入する形に置換
                     const executableCode = cleanCode
                         .replace(/export\s+default\s+async\s+function/, 'window.__tempAppExport = async function')
                         .replace(/export\s+default\s+function/, 'window.__tempAppExport = function');
 
-                    // 3. FS や forceSave を外部から注入して実行可能な関数を生成
+                    // 3. 必要なモジュールを外部から一括してインポート・注入する
                     const { FS, forceSave } = await import("./fs.js");
+                    const { resolveFS } = await import("./fs-utils.js");
+                    const { updateWindowTitle, showModalWindow } = await import("./window.js");
+                    const { getFileContent } = await import("./fs-db.js");
 
                     // スクリプトを実行してグローバルに登録させる
-                    const runScript = new Function('FS', 'forceSave', executableCode);
-                    runScript(FS, forceSave);
+                    const runScript = new Function(
+                        'FS', 'forceSave', 'resolveFS', 'updateWindowTitle', 'showModalWindow', 'getFileContent',
+                        executableCode
+                    );
+                    runScript(FS, forceSave, resolveFS, updateWindowTitle, showModalWindow, getFileContent);
 
                     appModule = {
                         default: window.__tempAppExport
@@ -305,11 +311,11 @@ export async function launch(path, options = {}) {
             if (!win || !document.body.contains(win))
                 throw new Error("Window creation failed");
 
-            let appHandle = null; // 【追加】tryブロックの外で変数を定義
+            let appHandle = null;
 
             try {
                 // ★ アプリの戻り値（ハンドル）を受け取る
-                appHandle = await appModule.default(content, options); // 【修正】constを外す
+                appHandle = await appModule.default(content, options);
 
                 // タブ対応アプリであれば登録
                 if (appHandle && appHandle.isTabApp) {
@@ -334,7 +340,7 @@ export async function launch(path, options = {}) {
                 pid,
                 path,
                 window: win,
-                handle: appHandle, // 【追加】アプリ側のハンドルをプロセス情報として保存
+                handle: appHandle,
                 state: "normal",
                 startTime: performance.now(),
                 memory: 0,
