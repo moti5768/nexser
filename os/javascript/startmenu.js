@@ -80,9 +80,12 @@ function createMenu(folder, basePath, menuRoot) {
 
     for (const name in folder) {
         if (name === "type" || name === "system") continue;
-        hasItems = true;
 
         const node = folder[name];
+        if (node.hidden) continue; // ★隠しファイルを除外
+
+        hasItems = true;
+
         const item = document.createElement("div");
         item.className = "start-item";
 

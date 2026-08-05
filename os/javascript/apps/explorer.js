@@ -337,6 +337,8 @@ export default async function Explorer(root, options = {}) {
     let historyStack = [];
     let forwardStack = [];
     let viewMode = await loadSetting("explorerViewMode") || "list";
+    const rawHidden = await loadSetting("explorerShowHidden");
+    let showHidden = rawHidden === true || rawHidden === "true";
 
     // 固定参照保持
     let listContainer, pathLabel, treeContainer;
@@ -481,8 +483,6 @@ export default async function Explorer(root, options = {}) {
             document.addEventListener("mousedown", win._treeOutsideClickHandler);
         }
 
-        // explorer.js 内の buildTree を以下に差し替えてください
-
         function buildTree(node, parentEl, path = "", depth = 0, prefix = "", currentPath = "", visited = new Set()) {
             // 【重要】無限ループ防止: 既に訪れたオブジェクト（ノード）ならスキップ
             if (node && typeof node === "object") {
@@ -491,7 +491,7 @@ export default async function Explorer(root, options = {}) {
             }
 
             // メタデータを除外してループ
-            const entries = Object.entries(node).filter(([k]) => !isSystemMetaKey(k));
+            const entries = Object.entries(node).filter(([k, v]) => !isSystemMetaKey(k) && (showHidden || !v.hidden)); // ★隠しファイル表示設定を考慮
 
             entries.forEach(([name, child], index) => {
                 const fullPath = path ? `${path}/${name}` : name;
@@ -849,6 +849,7 @@ export default async function Explorer(root, options = {}) {
             viewControls.style.display = "flex";
             viewControls.style.gap = "0px";
             viewControls.style.marginRight = "4px";
+            viewControls.style.marginTop = "4px";
 
             // ボタン生成用の共通関数
             const createViewModeBtn = (label, mode, title) => {
@@ -884,9 +885,31 @@ export default async function Explorer(root, options = {}) {
             const iconBtn = createViewModeBtn("⊞", "icon", "アイコン表示");
             const detailBtn = createViewModeBtn("≡", "details", "詳細表示");
 
+            // ★ 追加: 隠しファイルの表示切り替えUI
+            const hiddenContainer = document.createElement("label");
+            hiddenContainer.style.display = "flex";
+            hiddenContainer.style.alignItems = "center";
+            hiddenContainer.style.marginLeft = "10px";
+            hiddenContainer.style.fontSize = "12px";
+            hiddenContainer.style.cursor = "pointer";
+
+            const hiddenCheckbox = document.createElement("input");
+            hiddenCheckbox.type = "checkbox";
+            hiddenCheckbox.checked = showHidden;
+            hiddenCheckbox.style.marginRight = "4px";
+            hiddenCheckbox.onchange = async () => {
+                showHidden = hiddenCheckbox.checked;
+                await saveSetting("explorerShowHidden", showHidden); // 状態を保存
+                render(currentPath); // すぐに反映
+            };
+
+            hiddenContainer.appendChild(hiddenCheckbox);
+            hiddenContainer.appendChild(document.createTextNode("隠しファイル"));
+
             viewControls.appendChild(listBtn);
             viewControls.appendChild(iconBtn);
             viewControls.appendChild(detailBtn);
+            viewControls.appendChild(hiddenContainer); // ★ 追加
 
             backBtn.onclick = () => {
                 if (historyStack.length > 0) {
@@ -1167,7 +1190,7 @@ export default async function Explorer(root, options = {}) {
 
         // メタデータを除外し、フォルダ優先＆名前順にソートする配列を作成
         const sortedNames = Object.keys(folder)
-            .filter(name => !isSystemMetaKey(name))
+            .filter(name => !isSystemMetaKey(name) && (showHidden || !folder[name].hidden)) // ★隠しファイル表示設定を考慮
             .sort((a, b) => {
                 const isFolderA = folder[a].type === "folder";
                 const isFolderB = folder[b].type === "folder";
@@ -1188,6 +1211,11 @@ export default async function Explorer(root, options = {}) {
             // viewMode に応じたクラスを確実に付与
             item.className = `explorer-item ${viewMode}-view`;
             item.dataset.name = name;
+
+            // ★追加: 隠しファイルの場合は半透明にする (Windows風)
+            if (itemData.hidden) {
+                item.style.opacity = "0.5";
+            }
 
             const iconChar = getIcon(name, itemData);
 
@@ -1324,14 +1352,14 @@ export default async function Explorer(root, options = {}) {
             updateTitle_explorer(path);
         });
     };
-    // Explorer 関数の中に追記
+
     const renderSearchResults = async (query) => {
         listContainer.innerHTML = "";
         pathLabel.textContent = `「${query}」の検索結果`;
 
         // 現在のディレクトリ以下を検索（FS全体にしたい場合は resolveFS("") に変更）
         const rootNode = resolveFS(currentPath);
-        const results = searchFS(rootNode, query, currentPath);
+        const results = searchFS(rootNode, query, currentPath, showHidden); // ★ showHiddenを渡す
 
         if (results.length === 0) {
             listContainer.innerHTML = `<div style="padding:10px; font-size:12px; color:#666;">一致する項目はありません。</div>`;
@@ -1343,6 +1371,11 @@ export default async function Explorer(root, options = {}) {
             const item = document.createElement("div");
             item.className = `explorer-item ${viewMode}-view`;
             item.dataset.name = res.name;
+
+            // ★追加: 検索結果でも隠しファイルの場合は半透明にする
+            if (res.node.hidden) {
+                item.style.opacity = "0.5";
+            }
 
             const iconChar = getIcon(res.name, res.node);
 
@@ -1768,68 +1801,82 @@ export async function showProperties(name, node, path) {
             
             <table style="width:100%; border-collapse:collapse;">
                 <tr><td style="width:85px; color:#333;">更新日時:</td><td style="color:#000;">${modifiedStr}</td></tr>
+                <tr><td style="color:#333;">属性:</td><td><label><input type="checkbox" id="prop-hidden-checkbox" ${node.hidden ? "checked" : ""}> 隠しファイル</label></td></tr>
             </table>
         </div>`;
 
     // ⭐ 追加: URLかどうかでボタンの構成を切り替える
-    const dialogButtons = isUrl
-        ? [
-            {
-                label: "OK",
-                action: (w) => {
-                    const input = w.querySelector("#prop-url-input");
+    const dialogButtons = [
+        {
+            label: "OK",
+            action: async () => { // 引数をなくす
+                let isChanged = false;
+
+                // 1. URLの保存処理 (URLファイルの場合のみ実行)
+                if (isUrl) {
+                    const input = win.querySelector("#prop-url-input"); // スコープ内の win を直接参照
                     if (input && input.value !== urlValue) {
                         const newContentText = `[InternetShortcut]\r\nURL=${input.value}\r\n`;
 
-                        // ⭐ 変更: 元データが Data URL 形式だった場合は Data URL に再エンコードして保存
                         if (typeof node.content === "string" && node.content.startsWith("data:")) {
                             const bytes = new TextEncoder().encode(newContentText);
                             const binary = String.fromCharCode(...bytes);
                             const base64 = btoa(binary);
 
-                            // 元の MIME タイプを保持 (デフォルトは application/octet-stream)
                             const mimeMatch = node.content.match(/^data:([^;]+);/);
                             const mime = mimeMatch ? mimeMatch[1] : "application/octet-stream";
 
                             node.content = `data:${mime};base64,${base64}`;
                         } else {
-                            // 通常のテキスト形式だった場合はそのまま保存
                             node.content = newContentText;
                         }
 
                         node.size = new TextEncoder().encode(node.content).length;
                         node.lastModified = Date.now();
-                        window.dispatchEvent(new Event("fs-updated"));
+                        isChanged = true;
                     }
-                    if (w._modalOverlay) w._modalOverlay.remove();
-                    w.remove();
                 }
-            },
-            {
-                label: "キャンセル",
-                action: (w) => {
-                    if (w._modalOverlay) w._modalOverlay.remove();
-                    w.remove();
+
+                // 2. 隠しファイル属性の保存処理
+                const hiddenCheckbox = win.querySelector("#prop-hidden-checkbox"); // スコープ内の win を直接参照
+                if (hiddenCheckbox) {
+                    if (hiddenCheckbox.checked !== !!node.hidden) {
+                        if (hiddenCheckbox.checked) {
+                            node.hidden = true;
+                        } else {
+                            delete node.hidden;
+                        }
+                        isChanged = true;
+                    }
                 }
+
+                // 変更があった場合のみシステムに更新を通知
+                if (isChanged) {
+                    node.lastModified = Date.now();
+                    await forceSave();
+                    window.dispatchEvent(new Event("fs-updated"));
+                }
+
+                if (win._modalOverlay) win._modalOverlay.remove();
+                win.remove();
             }
-        ]
-        : [
-            {
-                label: "閉じる",
-                action: (w) => {
-                    if (w._modalOverlay) w._modalOverlay.remove();
-                    w.remove();
-                }
+        },
+        {
+            label: "キャンセル",
+            action: () => { // 引数をなくす
+                if (win._modalOverlay) win._modalOverlay.remove();
+                win.remove();
             }
-        ];
+        }
+    ];
 
     const win = showModalWindow(`${name} のプロパティ`, msg, {
         width: 350,
-        height: isUrl ? 420 : 420,
+        height: 420, // isUrlでの高さ分岐を削除して固定
         taskbar: false,
         overlay: false,
         silent: true,
-        buttons: dialogButtons // ⭐ 切り替えたボタンを適用
+        buttons: dialogButtons // ⭐ 統合したボタンを適用
     });
 
     // 2. 管理リストに登録
@@ -1847,13 +1894,15 @@ export async function showProperties(name, node, path) {
     observer.observe(document.body, { childList: true });
 }
 
-function searchFS(node, query, path = "") {
+function searchFS(node, query, path = "", showHidden = false) {
     let results = [];
     const q = query.toLowerCase();
 
     for (const name in node) {
         if (isSystemMetaKey(name)) continue;
         const child = node[name];
+        if (!showHidden && child.hidden) continue; // ★隠しファイル表示設定を考慮
+
         const fullPath = path ? `${path}/${name}` : name;
 
         // 名前が一致（部分一致）
@@ -1863,7 +1912,8 @@ function searchFS(node, query, path = "") {
 
         // フォルダならその中身も再帰的に探す
         if (child.type === "folder") {
-            results = results.concat(searchFS(child, query, fullPath));
+            // ★第4引数に showHidden を追加し、サブフォルダ検索時も設定を維持する
+            results = results.concat(searchFS(child, query, fullPath, showHidden));
         }
     }
     return results;

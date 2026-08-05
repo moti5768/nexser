@@ -42,7 +42,7 @@ const baseFS = {
             "Terminal.app": { type: "app", entry: "./apps/terminal.js", system: true, singleton: true },
             "TaskManager.app": { type: "app", name: "Task Manager", entry: "./apps/taskmanager.js", system: true, singleton: true },
             "Settings.app": { type: "app", entry: "./apps/settings.js", system: true, singleton: true },
-            "Explorer.app": { type: "app", entry: "./apps/explorer.js", system: true, shell: true },
+            "Explorer.app": { type: "app", entry: "./apps/explorer.js", system: true, shell: true, hidden: true },
             "Soundsplayer.app": { type: "app", entry: "./apps/soundplayer.js", system: true },
             "AudioPlayer.app": { type: "app", entry: "./apps/audioplayer.js", system: true },
             "Paint.app": { type: "app", entry: "./apps/paint.js", system: true },
@@ -200,12 +200,19 @@ function deepSync(currentProxy, savedNode, defaultNode, path = "") {
             if (!currentProxy[key] || currentProxy[key].type !== 'folder') {
                 currentProxy[key] = { type: 'folder' };
             }
+
+            // ★ 追加: フォルダ自身が持つプロパティ（hidden や originalPath など）を確実に引き継ぐ
+            for (const subKey in savedValue) {
+                if (PROTECTED_KEYS.has(subKey) || subKey === "hidden" || subKey === "originalPath") {
+                    currentProxy[key][subKey] = savedValue[subKey];
+                }
+            }
+
             deepSync(currentProxy[key], savedValue, defaultValue, currentPath);
         } else {
             currentProxy[key] = savedValue;
         }
     }
-
     if (defaultNode) {
         for (const key in defaultNode) {
             if (!(key in currentProxy)) {
