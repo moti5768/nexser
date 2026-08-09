@@ -67,7 +67,8 @@ const baseFS = {
             Games: {
                 type: "folder",
                 system: true,
-                "Tetris.app": { type: "app", entry: "./apps/games/tetris.js", system: true }
+                "Tetris.app": { type: "app", entry: "./apps/games/tetris.js", system: true },
+                "Minesweeper.app": { type: "app", entry: "./apps/games/minesweeper.js", system: true }
             },
             Multimedia: {
                 type: "folder",
