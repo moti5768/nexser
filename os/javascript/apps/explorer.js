@@ -246,8 +246,8 @@ function createNewItem(currentPath, listContainer, renderCallback, type = "folde
 
     input.addEventListener("blur", () => {
         if (isShowingError || isCommitting) return;
-        itemDiv.remove();
-        createNewItem.isCreating = false;
+        // 入力途中でフォーカスが外れた場合は、削除せずに入力を確定(保存)させる
+        finishEditing();
     });
 
     const finishEditing = () => {

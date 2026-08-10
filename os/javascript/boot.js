@@ -5,6 +5,7 @@ import { showBSOD } from './bsod.js';
 import { playSystemEventSound } from './kernel.js';
 import { resolveFS, normalizePath as fsNormalizePath } from './fs-utils.js';
 import { loadSetting } from "./apps/settings.js";
+import { initScreensaver } from "./screensaver.js";
 
 // ===== Global Error Handlers =====
 const CRITICAL_PREFIXES = ["BOOT_", "KERNEL_", "FS_", "0x"]; // 深刻とみなすエラーコード
@@ -685,6 +686,13 @@ export async function bootOS() {
         const sm = await import('./startmenu.js');
         if (sm.startMenuReady) await sm.startMenuReady(msg => print(`[StartMenu] ${msg}`));
         print('[StartMenu] Ready');
+        try {
+            // 先頭でインポート済みの initScreensaver を直接実行する
+            await initScreensaver();
+            print('[Screensaver] Ready');
+        } catch (ssErr) {
+            console.warn("Screensaver failed to initialize:", ssErr);
+        }
         playSystemEventSound('startup');
         screen.style.display = 'none';
         const root = document.getElementById('os-root');

@@ -245,6 +245,7 @@ export default async function SettingsApp(content) {
     // 改善点: Userタブを追加
     const tabs = [
         { id: "appearance", label: "Appearance", render: renderAppearance },
+        { id: "screensaver", label: "Screen Saver", render: renderScreensaver }, // ★ 追加
         { id: "user", label: "User", render: renderUser },
         { id: "general", label: "General", render: renderGeneral },
         { id: "system", label: "System", render: renderSystem }
@@ -536,10 +537,232 @@ export default async function SettingsApp(content) {
 
         const animLabel = document.createElement("label");
         animLabel.append(animToggle, document.createTextNode(" Enable Window Animations"));
-
         animBlock.appendChild(animLabel);
+
         root.append(block1, block2, animBlock);
     }
+
+    /* ---------- Screen Saver (新規タブ) 修正版 ---------- */
+    async function renderScreensaver(root) {
+        root.innerHTML = "";
+
+        // ★ プレビューのクリーンアップ関数を保持する変数
+        let currentPreviewCleanup = null;
+        let isDestroyed = false; // タブが破棄されたかどうかのフラグ
+
+        const ssBlock = document.createElement("div");
+        ssBlock.style.marginTop = "8px";
+
+        // 1. プレビュー用モニターのCSS構造
+        const monitorContainer = document.createElement("div");
+        monitorContainer.style.cssText = `
+            width: 152px; height: 120px;
+            background: #c0c0c0;
+            border-top: 2px solid #dfdfdf; border-left: 2px solid #dfdfdf;
+            border-bottom: 2px solid #000; border-right: 2px solid #000;
+            border-radius: 4px;
+            margin: 0 auto 12px auto;
+            position: relative;
+        `;
+
+        const monitorScreen = document.createElement("div");
+        monitorScreen.style.cssText = `
+            position: absolute;
+            top: 10px; left: 10px; right: 10px; bottom: 20px;
+            box-shadow: inset 0 0 4px #000;
+            overflow: hidden;
+        `;
+
+        const monitorLed = document.createElement("div");
+        monitorLed.style.cssText = `
+            position: absolute;
+            bottom: 6px; right: 12px;
+            width: 4px; height: 4px;
+            background: #0f0;
+            border-radius: 50%;
+        `;
+        monitorContainer.append(monitorScreen, monitorLed);
+
+        // 2. Win95風のグループ枠(Fieldset)
+        const ssControlBlock = document.createElement("fieldset");
+        ssControlBlock.style.cssText = "padding: 8px; margin: 0; border: 1px solid #dfdfdf; border-radius: 2px; box-shadow: -1px -1px #000, inset 1px 1px #fff, inset -1px -1px #808080;";
+
+        const ssLegend = document.createElement("legend");
+        ssLegend.textContent = "Screen Saver";
+        ssLegend.style.padding = "0 4px";
+        ssControlBlock.appendChild(ssLegend);
+
+        const ssInner = document.createElement("div");
+        ssInner.style.display = "flex";
+        ssInner.style.alignItems = "center";
+        ssInner.style.flexWrap = "wrap";
+        ssInner.style.gap = "8px";
+
+        // セレクトボックス
+        const ssSelect = document.createElement("select");
+        const ssOptions = [
+            { id: "none", label: "(None)" },
+            { id: "blank", label: "Blank Screen" },
+            { id: "text", label: "3D Text" },
+            { id: "mystify", label: "Mystify" }
+        ];
+
+        const currentSs = await loadSetting("screensaverType") || "none";
+
+        // もし非同期読み込みの最中にユーザーが別タブに移動していたら処理を中断
+        if (isDestroyed) return;
+
+        ssOptions.forEach(o => {
+            const opt = document.createElement("option");
+            opt.value = o.id;
+            opt.textContent = o.label;
+            if (o.id === currentSs) opt.selected = true;
+            ssSelect.appendChild(opt);
+        });
+
+        const previewBtn = document.createElement("button");
+        previewBtn.textContent = "Preview";
+        previewBtn.style.padding = "2px 8px";
+
+        // モニター画面にアニメーションを反映するヘルパー関数
+        const updatePreviewMonitor = async (type) => {
+            if (isDestroyed) return;
+            try {
+                // 古いプレビューが動いていれば先に停止する
+                if (currentPreviewCleanup) {
+                    currentPreviewCleanup();
+                    currentPreviewCleanup = null;
+                }
+
+                // モニターの背景を一旦リセット
+                monitorScreen.style.backgroundImage = "none";
+                monitorScreen.style.backgroundColor = "";
+
+                // noneの場合は実際のデスクトップ背景色・壁紙を適用する
+                if (type === "none") {
+                    const color = await loadSetting("desktopColor");
+                    const wpUrl = await loadSetting("wallpaperUrl");
+                    const wpStyle = await loadSetting("wallpaperStyle") || "fill";
+
+                    if (isDestroyed) return;
+
+                    // 設定されている背景色（未設定ならデフォルトの #52adad）
+                    monitorScreen.style.backgroundColor = color || "#52adad";
+
+                    // 壁紙が設定されていれば適用
+                    if (wpUrl) {
+                        monitorScreen.style.backgroundImage = `url(${wpUrl})`;
+                        switch (wpStyle) {
+                            case "center":
+                                monitorScreen.style.backgroundSize = "auto";
+                                monitorScreen.style.backgroundRepeat = "no-repeat";
+                                monitorScreen.style.backgroundPosition = "center";
+                                break;
+                            case "tile":
+                                monitorScreen.style.backgroundSize = "auto";
+                                monitorScreen.style.backgroundRepeat = "repeat";
+                                monitorScreen.style.backgroundPosition = "0 0";
+                                break;
+                            case "stretch":
+                                monitorScreen.style.backgroundSize = "100% 100%";
+                                monitorScreen.style.backgroundRepeat = "no-repeat";
+                                monitorScreen.style.backgroundPosition = "center";
+                                break;
+                            case "fit":
+                                monitorScreen.style.backgroundSize = "contain";
+                                monitorScreen.style.backgroundRepeat = "no-repeat";
+                                monitorScreen.style.backgroundPosition = "center";
+                                break;
+                            case "fill":
+                            default:
+                                monitorScreen.style.backgroundSize = "cover";
+                                monitorScreen.style.backgroundRepeat = "no-repeat";
+                                monitorScreen.style.backgroundPosition = "center";
+                                break;
+                        }
+                    }
+                    return;
+                }
+
+                const { startPreview } = await import("../screensaver.js");
+                if (isDestroyed) return;
+
+                // ★ startPreview が「停止用のクリーンアップ関数」を返す設計であればここで受け取る
+                currentPreviewCleanup = startPreview(monitorScreen, type);
+            } catch (e) {
+                console.warn("プレビューの読み込みに失敗しました", e);
+            }
+        };
+
+        // 設定の保存とプレビュー更新
+        ssSelect.onchange = async () => {
+            const type = ssSelect.value;
+            await saveSetting("screensaverType", type);
+            window.dispatchEvent(new Event("screensaver-settings-changed"));
+            updatePreviewMonitor(type);
+        };
+
+        // Previewボタンでフルスクリーン起動テスト
+        previewBtn.onclick = async () => {
+            const type = ssSelect.value;
+            if (type === "none") return;
+            try {
+                const { testScreensaver } = await import("../screensaver.js");
+                testScreensaver();
+            } catch (e) {
+                console.warn(e);
+            }
+        };
+
+        // 待機時間の入力 UI
+        const waitBlock = document.createElement("div");
+        waitBlock.style.marginLeft = "auto";
+
+        const ssWaitLabel = document.createElement("span");
+        ssWaitLabel.textContent = "Wait: ";
+
+        const ssWaitInput = document.createElement("input");
+        ssWaitInput.type = "number";
+        ssWaitInput.min = "1";
+        ssWaitInput.max = "60";
+        ssWaitInput.value = await loadSetting("screensaverWait") || "10";
+        ssWaitInput.style.width = "40px";
+
+        if (isDestroyed) return;
+
+        const ssWaitUnit = document.createElement("span");
+        ssWaitUnit.textContent = " minutes";
+
+        ssWaitInput.onchange = async () => {
+            await saveSetting("screensaverWait", ssWaitInput.value);
+            window.dispatchEvent(new Event("screensaver-settings-changed"));
+        };
+
+        waitBlock.append(ssWaitLabel, ssWaitInput, ssWaitUnit);
+        ssInner.append(ssSelect, previewBtn, waitBlock);
+        ssControlBlock.appendChild(ssInner);
+        ssBlock.append(monitorContainer, ssControlBlock);
+
+        root.append(ssBlock);
+
+        // プレビュー描画を実行
+        requestAnimationFrame(() => {
+            if (!isDestroyed) {
+                updatePreviewMonitor(currentSs);
+            }
+        });
+
+        // ★ 【超重要】親（selectTab）がタブを切り替えたときに自動で呼ばれるクリーンアップを設定
+        root._cleanup = () => {
+            isDestroyed = true;
+            if (currentPreviewCleanup) {
+                currentPreviewCleanup();
+                currentPreviewCleanup = null;
+            }
+        };
+    }
+
+
 
     /* ---------- User (New) ---------- */
     async function renderUser(root) {
@@ -626,8 +849,8 @@ export default async function SettingsApp(content) {
                     // 成功メッセージのみを表示し、必要であればUIの状態を個別に更新する
                     showAlert(content, "全ての設定が初期化されました。");
 
-                    // チェックボックス等の状態を現在の値（デフォルト）に同期させる
-                    const toggle = content.querySelector('input[type="checkbox"]');
+                    // querySelectorを使わず、すぐ下で定義されている toggle 変数自身を直接操作する
+                    // （※ブロックスコープの外の toggle 要素を安全に更新）
                     if (toggle) toggle.checked = true;
 
                 } catch (e) {
