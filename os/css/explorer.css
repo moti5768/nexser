@@ -113,8 +113,8 @@
 /* 修正箇所：詳細表示モード (レイアウト崩れ防止・省略対応版) */
 .details-view {
     display: grid !important;
-    /* 1列目:アイコン, 2列目:名前(最小値0で伸縮), 3列目:種類(固定), 4列目:サイズ(固定) */
-    grid-template-columns: 24px minmax(0, 1fr) 100px 80px;
+    /* 1列目:アイコン, 2列目:名前, 3列目:種類, 4列目:サイズ, 5列目:更新日時 を追加 */
+    grid-template-columns: 24px minmax(0, 1fr) 100px 80px 130px;
     gap: 8px;
     padding: 4px 12px;
     border-bottom: 1px solid #eee;
@@ -142,6 +142,10 @@
 
 .item-size-text {
     text-align: right;
+}
+
+.item-date-text {
+    text-align: left;
 }
 
 /* リスト表示モード */

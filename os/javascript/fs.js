@@ -3,6 +3,8 @@ import { saveFS, loadFS, dbGet, dbSet } from "./fs-db.js";
 
 let saveTimer = null;
 let deletedDefaults = new Set();
+let isSaving = false;
+let isInitializing = false;
 const DEBUG_FS = false;
 const PROTECTED_KEYS = new Set(["type", "entry", "singleton", "shell", "target", "name", "system"]);
 
@@ -139,10 +141,14 @@ function wrapProxy(obj, path = "") {
 
         set(target, prop, value) {
             if (PROTECTED_KEYS.has(prop) && Object.hasOwn(target, prop)) return true;
+
+            // ★ 修正: 初期化中 (isInitializing) は勝手に lastModified を更新しない
+            if (!isInitializing && prop !== "lastModified" && target[prop] !== value) {
+                target.lastModified = Date.now();
+            }
             target[prop] = value;
 
-            // isSaving 中は保存予約をしない
-            if (!isSaving) {
+            if (!isSaving && !isInitializing) { // ★ 修正: 初期化中は自動保存やイベント発火もブロック
                 scheduleSave();
                 window.dispatchEvent(new Event("fs-updated"));
             }
@@ -155,8 +161,12 @@ function wrapProxy(obj, path = "") {
             }
             delete target[prop];
 
-            // ここにも追加
-            if (!isSaving) {
+            // ★ 修正: 初期化中は削除時も親の lastModified を更新しない
+            if (!isInitializing) {
+                target.lastModified = Date.now();
+            }
+
+            if (!isSaving && !isInitializing) { // ★ 修正: 初期化中は保存もブロック
                 scheduleSave();
                 window.dispatchEvent(new Event("fs-updated"));
             }
@@ -233,8 +243,6 @@ function deepSync(currentProxy, savedNode, defaultNode, path = "") {
 
 // --- 保存・初期化 ---
 
-let isSaving = false;
-
 /**
  * 実際の書き込み処理 (100%維持しつつ共通化)
  */
@@ -297,7 +305,7 @@ export async function forceSave() {
 export async function initFS() {
     const saved = await loadFS();
 
-    // ★ 保存されていた削除済みデフォルト項目のリストを復元
+    // 保存されていた削除済みデフォルト項目のリストを復元
     const savedDeletedDefaults = await dbGet("deleted_defaults", "kv");
     if (savedDeletedDefaults && Array.isArray(savedDeletedDefaults)) {
         deletedDefaults = new Set(savedDeletedDefaults);
@@ -305,14 +313,16 @@ export async function initFS() {
 
     if (!saved) return;
 
-    // 初期化中は保存処理を完全にブロックする
+    // 初期化中は保存処理と自動更新を完全にブロックする
     isSaving = true;
+    isInitializing = true; // ★ 追加: 初期化開始
     try {
-        deepSync(FS, saved, FACTORY_FS, ""); // ★ 空のパスから同期を開始
+        deepSync(FS, saved, FACTORY_FS, ""); // 空のパスから同期を開始
         if (DEBUG_FS) console.log("[FS] System synchronized successfully.");
     } catch (e) {
         console.error("[FS] Restore failed", e);
     } finally {
+        isInitializing = false; // ★ 追加: 初期化終了
         isSaving = false;
         // 初期化が終わったら念のため一度だけ強制保存し、整合性を確定させる
         await performSave();

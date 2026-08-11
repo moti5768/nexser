@@ -79,7 +79,7 @@ function createMenu(folder, basePath, menuRoot) {
     let hasItems = false;
 
     for (const name in folder) {
-        if (name === "type" || name === "system") continue;
+        if (name === "type" || name === "system" || name === "lastModified") continue;
 
         const node = folder[name];
         if (node.hidden) continue; // ★隠しファイルを除外

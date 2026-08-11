@@ -274,10 +274,11 @@ function createNewItem(currentPath, listContainer, renderCallback, type = "folde
         let finalName = getUniqueName(folderNode, newName);
 
         // 指定されたタイプで作成
+        const now = Date.now();
         if (type === "folder") {
-            folderNode[finalName] = { type: "folder" };
+            folderNode[finalName] = { type: "folder", lastModified: now };
         } else {
-            folderNode[finalName] = { type: "file", content: "" };
+            folderNode[finalName] = { type: "file", content: "", lastModified: now };
         }
 
         renderCallback?.();
@@ -304,7 +305,7 @@ function isTrashPath(path) {
 }
 
 function isSystemMetaKey(key) {
-    return key === "type" || key === "system" || key === "originalPath";
+    return key === "type" || key === "system" || key === "originalPath" || key === "lastModified";
 }
 
 function updateStatusBarSummary(statusBar, folderNode) {
@@ -720,7 +721,7 @@ export default async function Explorer(root, options = {}) {
                             type: "file",
                             content,
                             size: file.size,
-                            lastModified: file.lastModified
+                            lastModified: file.lastModified || Date.now()
                         };
                     } catch (err) {
                         console.error(`Failed to read file: ${file.name}`, err);
@@ -734,7 +735,10 @@ export default async function Explorer(root, options = {}) {
                         await addFileToNode(file, targetNode);
                     } else if (entry.isDirectory) {
                         let dirName = getUniqueName(targetNode, entry.name);
-                        targetNode[dirName] = { type: "folder" };
+                        targetNode[dirName] = {
+                            type: "folder",
+                            lastModified: Date.now()
+                        };
                         const newDirNode = targetNode[dirName];
 
                         // --- フォルダ作成自体を1カウントとして処理 ---
@@ -764,7 +768,7 @@ export default async function Explorer(root, options = {}) {
                             await processEntry(item, folderNode);
                         }
                     }
-
+                    folderNode.lastModified = Date.now();
                     // 最終更新 (これで確実に autoClose がトリガーされる)
                     pg.update(totalFiles, totalFiles, "すべての項目のコピーが完了しました。");
                     await forceSave();
@@ -1264,11 +1268,17 @@ export default async function Explorer(root, options = {}) {
                         typeLabel = "不明";
                 }
 
+                const dateOpts = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' };
+                const modifiedStr = itemData.lastModified
+                    ? new Date(itemData.lastModified).toLocaleDateString('ja-JP', dateOpts)
+                    : '';
+
                 item.innerHTML = `
         <span class="item-icon-small">${iconChar}</span>
         <span class="item-name-text">${name}</span>
         <span class="item-type-text">${typeLabel}</span>
         <span class="item-size-text">${size}</span>
+        <span class="item-date-text">${modifiedStr}</span>
     `;
             } else {
                 // リスト表示

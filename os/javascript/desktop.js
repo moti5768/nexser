@@ -194,7 +194,7 @@ export function buildDesktop() {
 
     // 🔥 ここでまとめて作る
     for (const name in FS.Desktop) {
-        if (name === "type" || name === "system") continue;
+        if (name === "type" || name === "system" || name === "lastModified") continue;
         fragment.appendChild(createIcon(name, FS.Desktop[name]));
     }
 
@@ -624,7 +624,7 @@ export function buildDesktop() {
                         type: "file",
                         content,
                         size: file.size,
-                        lastModified: file.lastModified
+                        lastModified: file.lastModified || Date.now()
                     };
                 } catch (err) {
                     console.error(`Failed to read file: ${file.name}`, err);
@@ -638,7 +638,10 @@ export function buildDesktop() {
                     await addFileToNode(file, targetNode);
                 } else if (entry.isDirectory) {
                     let dirName = getUniqueName(targetNode, entry.name);
-                    targetNode[dirName] = { type: "folder" };
+                    targetNode[dirName] = {
+                        type: "folder",
+                        lastModified: Date.now()
+                    };
                     const newDirNode = targetNode[dirName];
 
                     processedCount++;
@@ -666,7 +669,7 @@ export function buildDesktop() {
                         await processEntry(item, folderNode);
                     }
                 }
-
+                folderNode.lastModified = Date.now();
                 // 最終更新
                 pg.update(totalFiles, totalFiles, "すべての項目のコピーが完了しました。");
                 await forceSave();
@@ -838,10 +841,11 @@ function createNewItem(currentPath, container, itemType = "folder") {
         }
 
         // 指定されたタイプで作成
+        const now = Date.now();
         if (itemType === "folder") {
-            folderNode[finalName] = { type: "folder" };
+            folderNode[finalName] = { type: "folder", lastModified: now };
         } else {
-            folderNode[finalName] = { type: "file", content: "" };
+            folderNode[finalName] = { type: "file", content: "", lastModified: now };
         }
 
         iconDiv.remove();
@@ -1157,7 +1161,7 @@ function reorderDesktopIcons(draggedNames, targetName) {
     const desktopFS = FS.Desktop;
     if (!desktopFS) return;
 
-    const keys = Object.keys(desktopFS).filter(k => k !== "type" && k !== "system");
+    const keys = Object.keys(desktopFS).filter(k => k !== "type" && k !== "system" && k !== "lastModified");
     const draggedSet = new Set(draggedNames);
 
     // 移動先の位置を特定して順番を差し替え
