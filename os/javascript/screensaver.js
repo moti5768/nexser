@@ -1,3 +1,4 @@
+// Screensaver.js
 import { loadSetting } from "./apps/settings.js";
 
 let idleTimer = null;
@@ -7,9 +8,13 @@ let screensaverLayer = null;
 // 設定値のキャッシュ
 let currentType = "none";
 let waitTimeMs = 10 * 60 * 1000; // デフォルト10分
+let currentTextColor = "#ff0000"; // ★追加: テキスト色のキャッシュ
+let currentMazeWallColor = "#008080";
+let currentMazeFloorColor = "#333333";
+let currentMazeCeilingColor = "#555555";
 
 let currentPreviewCleanup = null;
-let currentFullscreenCleanup = null; // ★ フルスクリーン用のクリーンアップ保持変数
+let currentFullscreenCleanup = null;
 
 /**
  * 設定を読み込み、タイマーをリセットする
@@ -18,6 +23,13 @@ async function refreshSettings() {
     currentType = (await loadSetting("screensaverType")) || "none";
     const waitMinutes = parseInt(await loadSetting("screensaverWait"), 10) || 10;
     waitTimeMs = waitMinutes * 60 * 1000;
+
+    currentTextColor = (await loadSetting("screensaverColor_text")) || "#ff0000";
+
+    // ★変更: 3つの設定をそれぞれ読み込む
+    currentMazeWallColor = (await loadSetting("screensaverColor_maze_wall")) || "#008080";
+    currentMazeFloorColor = (await loadSetting("screensaverColor_maze_floor")) || "#333333";
+    currentMazeCeilingColor = (await loadSetting("screensaverColor_maze_ceiling")) || "#555555";
 
     resetIdleTimer();
 }
@@ -53,6 +65,7 @@ function startScreensaver() {
         color: white;
         z-index: 99999; /* 最前面に表示 */
         overflow: hidden;
+        cursor: none
     `;
 
     document.body.appendChild(screensaverLayer);
@@ -110,10 +123,14 @@ export function testScreensaver() {
  * 実際のスクリーンセーバーの描画・アニメーション処理
  */
 function renderScreensaver(container, type, isFullscreen) {
-    container.style.background = "black"; // ★ コメントアウトを解除して背景を黒に設定
+    container.style.background = "black";
     container.style.overflow = "hidden";
 
     let animationFrameId = null;
+
+    // 共通のサイズ取得ヘルパー
+    const getWidth = () => isFullscreen ? window.innerWidth : (container.clientWidth || 132);
+    const getHeight = () => isFullscreen ? window.innerHeight : (container.clientHeight || 90);
 
     if (type === "blank") {
         // 何もしない（背景が黒のままになる）
@@ -122,7 +139,7 @@ function renderScreensaver(container, type, isFullscreen) {
         textEl.textContent = "Nexser";
         textEl.style.cssText = `
             position: absolute;
-            color: #fff;
+            color: ${currentTextColor};
             font-size: ${isFullscreen ? '48px' : '20px'};
             font-family: 'Times New Roman', serif;
             font-style: italic;
@@ -166,13 +183,8 @@ function renderScreensaver(container, type, isFullscreen) {
 
     } else if (type === "mystify") {
         const canvas = document.createElement("canvas");
-
-        // ★ フルスクリーン時は実画面サイズ、プレビュー時はコンテナサイズ（最低保証付き）を安全に取得
-        const width = isFullscreen ? window.innerWidth : (container.clientWidth || 132);
-        const height = isFullscreen ? window.innerHeight : (container.clientHeight || 90);
-
-        canvas.width = width;
-        canvas.height = height;
+        canvas.width = getWidth();
+        canvas.height = getHeight();
         canvas.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%;";
         container.appendChild(canvas);
 
@@ -220,6 +232,232 @@ function renderScreensaver(container, type, isFullscreen) {
             animationFrameId = requestAnimationFrame(animateMystify);
         }
         animateMystify();
+
+    } else if (type === "starfield") {
+        // Win 3.1 風 Starfield（星空ワープ）
+        const canvas = document.createElement("canvas");
+        canvas.width = getWidth();
+        canvas.height = getHeight();
+        canvas.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%;";
+        container.appendChild(canvas);
+
+        const ctx = canvas.getContext("2d");
+        const numStars = isFullscreen ? 200 : 50;
+        const stars = [];
+
+        for (let i = 0; i < numStars; i++) {
+            stars.push({
+                x: (Math.random() - 0.5) * canvas.width * 2,
+                y: (Math.random() - 0.5) * canvas.height * 2,
+                z: Math.random() * canvas.width
+            });
+        }
+
+        function animateStarfield() {
+            ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+
+            ctx.fillStyle = "white";
+            for (let i = 0; i < stars.length; i++) {
+                const s = stars[i];
+                s.z -= isFullscreen ? 4 : 2;
+                if (s.z <= 0) {
+                    s.z = canvas.width;
+                    s.x = (Math.random() - 0.5) * canvas.width * 2;
+                    s.y = (Math.random() - 0.5) * canvas.height * 2;
+                }
+
+                const k = 250 / s.z;
+                const px = s.x * k + cx;
+                const py = s.y * k + cy;
+
+                if (px >= 0 && px < canvas.width && py >= 0 && py < canvas.height) {
+                    const size = Math.max(1, (1 - s.z / canvas.width) * 3);
+                    ctx.fillRect(px, py, size, size);
+                }
+            }
+
+            animationFrameId = requestAnimationFrame(animateStarfield);
+        }
+        animateStarfield();
+
+    } else if (type === "maze") {
+        // Win 95/98 風 3D Maze（3D迷路）の完全再現版
+        const canvas = document.createElement("canvas");
+        canvas.width = getWidth();
+        canvas.height = getHeight();
+        canvas.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%;";
+        container.appendChild(canvas);
+
+        const ctx = canvas.getContext("2d");
+
+        // 迷路のマップデータ (1: 壁, 0: 通路)
+        const map = [
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+            [1, 0, 1, 0, 1, 0, 1, 1, 0, 1],
+            [1, 0, 1, 0, 0, 0, 0, 1, 0, 1],
+            [1, 0, 1, 1, 1, 1, 0, 1, 0, 1],
+            [1, 0, 0, 0, 0, 1, 0, 0, 0, 1],
+            [1, 1, 1, 0, 1, 1, 1, 1, 0, 1],
+            [1, 0, 0, 0, 0, 0, 0, 1, 0, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+        ];
+
+        let posX = 1.5, posY = 1.5;
+        let dirX = 1, dirY = 0;
+        let planeX = 0, planeY = 0.66;
+
+        // ★ 直前にいたマスの座標と、Windows 95風の滑らかな旋回用変数
+        let lastMapX = -1;
+        let lastMapY = -1;
+        let turnFramesLeft = 0;
+        let turnStepAngle = 0;
+
+        function animateMaze() {
+            // 旋回中でなければ前進
+            if (turnFramesLeft <= 0) {
+                posX += dirX * 0.025;
+                posY += dirY * 0.025;
+
+                // 現在いるマスの座標を更新
+                const currentMapX = Math.floor(posX);
+                const currentMapY = Math.floor(posY);
+
+                // ★ 前方の壁が近づいたら、衝突する前に滑らかな旋回を開始
+                const nextX = posX + dirX * 0.2;
+                const nextY = posY + dirY * 0.2;
+                if (map[Math.floor(nextY)] && map[Math.floor(nextY)][Math.floor(nextX)] === 1) {
+                    // 左右の方向ベクトルを計算
+                    const leftDirX = -dirY;
+                    const leftDirY = dirX;
+                    const rightDirX = dirY;
+                    const rightDirY = -dirX;
+
+                    // 左右がそれぞれ通路（0）かどうか、かつどのマスかを確認
+                    const leftX = Math.floor(posX + leftDirX * 0.5);
+                    const leftY = Math.floor(posY + leftDirY * 0.5);
+                    const rightX = Math.floor(posX + rightDirX * 0.5);
+                    const rightY = Math.floor(posY + rightDirY * 0.5);
+
+                    const canLeft = map[leftY]?.[leftX] === 0;
+                    const canRight = map[rightY]?.[rightX] === 0;
+
+                    // 直前にいたマスへの逆戻りを避けるための判定
+                    const isLeftBack = (leftX === lastMapX && leftY === lastMapY);
+                    const isRightBack = (rightX === lastMapX && rightY === lastMapY);
+
+                    let turnDir = 1;
+                    if (canLeft && canRight) {
+                        if (isLeftBack && !isRightBack) turnDir = -1;
+                        else if (isRightBack && !isLeftBack) turnDir = 1;
+                        else turnDir = Math.random() > 0.5 ? 1 : -1;
+                    } else if (canLeft) {
+                        turnDir = 1;
+                    } else if (canRight) {
+                        turnDir = -1;
+                    } else {
+                        turnDir = Math.random() > 0.5 ? 1 : -1;
+                    }
+
+                    turnFramesLeft = 30; // 30フレームかけて滑らかに90度回転する
+                    turnStepAngle = (Math.PI / 2 * turnDir) / turnFramesLeft;
+                }
+
+                // マスが切り替わったら「直前のマス」を更新
+                if (currentMapX !== lastMapX || currentMapY !== lastMapY) {
+                    lastMapX = currentMapX;
+                    lastMapY = currentMapY;
+                }
+            } else {
+                // ★ スムーズに回転（旋回アニメーション）中の処理
+                turnFramesLeft--;
+                const angle = turnStepAngle;
+
+                const oldDirX = dirX;
+                dirX = dirX * Math.cos(angle) - dirY * Math.sin(angle);
+                dirY = oldDirX * Math.sin(angle) + dirY * Math.cos(angle);
+
+                const oldPlaneX = planeX;
+                planeX = planeX * Math.cos(angle) - planeY * Math.sin(angle);
+                planeY = oldPlaneX * Math.sin(angle) + planeY * Math.cos(angle);
+            }
+
+            // レイキャスティングによる3D壁面描画（全体の事前ベタ塗りを廃止し、ストライプごとに天井・壁・床を一体で描画）
+            const w = canvas.width;
+            const h = canvas.height;
+            const stripeWidth = isFullscreen ? 2 : 4;
+
+            for (let x = 0; x < w; x += stripeWidth) {
+                const cameraX = 2 * x / w - 1;
+                const rayDirX = dirX + planeX * cameraX;
+                const rayDirY = dirY + planeY * cameraX;
+
+                let mapX = Math.floor(posX);
+                let mapY = Math.floor(posY);
+
+                let sideDistX, sideDistY;
+                const deltaDistX = Math.abs(1 / rayDirX);
+                const deltaDistY = Math.abs(1 / rayDirY);
+                let perpWallDist;
+
+                let stepX, stepY;
+                let hit = 0, side = 0;
+
+                if (rayDirX < 0) {
+                    stepX = -1;
+                    sideDistX = (posX - mapX) * deltaDistX;
+                } else {
+                    stepX = 1;
+                    sideDistX = (mapX + 1.0 - posX) * deltaDistX;
+                }
+                if (rayDirY < 0) {
+                    stepY = -1;
+                    sideDistY = (posY - mapY) * deltaDistY;
+                } else {
+                    stepY = 1;
+                    sideDistY = (mapY + 1.0 - posY) * deltaDistY;
+                }
+
+                while (hit === 0) {
+                    if (sideDistX < sideDistY) {
+                        sideDistX += deltaDistX;
+                        mapX += stepX;
+                        side = 0;
+                    } else {
+                        sideDistY += deltaDistY;
+                        mapY += stepY;
+                        side = 1;
+                    }
+                    if (map[mapY] && map[mapY][mapX] > 0) hit = 1;
+                }
+
+                if (side === 0) perpWallDist = (mapX - posX + (1 - stepX) / 2) / rayDirX;
+                else perpWallDist = (mapY - posY + (1 - stepY) / 2) / rayDirY;
+
+                const lineHeight = Math.floor(h / perpWallDist);
+                let drawStart = Math.max(0, -lineHeight / 2 + h / 2);
+                let drawEnd = Math.min(h - 1, lineHeight / 2 + h / 2);
+
+                // 1. 天井の描画
+                ctx.fillStyle = currentMazeCeilingColor;
+                ctx.fillRect(x, 0, stripeWidth, drawStart);
+
+                // 2. 壁の描画
+                ctx.fillStyle = currentMazeWallColor;
+                ctx.fillRect(x, drawStart, stripeWidth, drawEnd - drawStart);
+
+                // 3. 床の描画
+                ctx.fillStyle = currentMazeFloorColor;
+                ctx.fillRect(x, drawEnd, stripeWidth, h - drawEnd);
+            }
+
+            animationFrameId = requestAnimationFrame(animateMaze);
+        }
+        animateMaze();
     }
 
     // クリーンアップ用の関数を返す

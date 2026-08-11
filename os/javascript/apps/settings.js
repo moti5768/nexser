@@ -2,6 +2,9 @@
 import { openDB } from "../db.js";
 import { clearRecent } from "../recent.js";
 import { setWindowAnimationEnabled, alertWindow, confirmWindow } from "../window.js";
+import { FS, forceSave } from "../fs.js";
+import { resolveFS } from "../fs-utils.js";
+import { getFileContent } from "../fs-db.js";
 
 const STORE = "settings";
 
@@ -245,7 +248,8 @@ export default async function SettingsApp(content) {
     // 改善点: Userタブを追加
     const tabs = [
         { id: "appearance", label: "Appearance", render: renderAppearance },
-        { id: "screensaver", label: "Screen Saver", render: renderScreensaver }, // ★ 追加
+        { id: "screensaver", label: "Screen Saver", render: renderScreensaver },
+        { id: "sound", label: "Sound", render: renderSound },
         { id: "user", label: "User", render: renderUser },
         { id: "general", label: "General", render: renderGeneral },
         { id: "system", label: "System", render: renderSystem }
@@ -305,6 +309,29 @@ export default async function SettingsApp(content) {
     async function renderAppearance(root) {
         root.innerHTML = "";
 
+        // 共通カラーリスト
+        const colors = ["#1E90FF", "#FF4500", "#32CD32", "#FFD700", "#8A2BE2",
+            "#FF1493", "#00CED1", "#FF8C00", "#A52A2A", "#2F4F4F"];
+
+        // パレット生成ヘルパー関数
+        function createColorPalette(onClickCallback) {
+            const container = document.createElement("div");
+            container.style.display = "flex";
+            container.style.flexWrap = "wrap";
+            container.style.gap = "4px";
+            container.style.margin = "8px 0";
+
+            colors.forEach(c => {
+                const btn = document.createElement("button");
+                btn.style.background = c;
+                btn.style.width = "24px";
+                btn.style.height = "24px";
+                btn.onclick = () => onClickCallback(c);
+                container.appendChild(btn);
+            });
+            return container;
+        }
+
         /* ---- Titlebar Color ---- */
         const block1 = document.createElement("div");
         block1.style.marginBottom = "12px";
@@ -352,28 +379,12 @@ export default async function SettingsApp(content) {
         colorControls.style.margin = "4px 0";
         colorControls.append(colorInput1, enableGradient, labelGradient, colorInput2);
 
-        // 単色パレット
-        const colors = ["#1E90FF", "#FF4500", "#32CD32", "#FFD700", "#8A2BE2",
-            "#FF1493", "#00CED1", "#FF8C00", "#A52A2A", "#2F4F4F"];
-
-        const palette = document.createElement("div");
-        palette.style.display = "flex";
-        palette.style.flexWrap = "wrap";
-        palette.style.gap = "4px";
-        palette.style.margin = "8px 0";
-
-        colors.forEach(c => {
-            const btn = document.createElement("button");
-            btn.style.background = c;
-            btn.style.width = "24px";
-            btn.style.height = "24px";
-            btn.onclick = () => {
-                enableGradient.checked = false;
-                colorInput2.disabled = true;
-                colorInput1.value = c;
-                updateTitlebar();
-            };
-            palette.appendChild(btn);
+        // パレットの生成 (タイトルバー用)
+        const palette = createColorPalette((selectedColor) => {
+            enableGradient.checked = false;
+            colorInput2.disabled = true;
+            colorInput1.value = selectedColor;
+            updateTitlebar();
         });
 
         // グラデーションサンプルパレット
@@ -460,24 +471,11 @@ export default async function SettingsApp(content) {
             applyDesktopBackground();
         };
 
-        // 背景色パレット (Titlebar側と同じ構造・同じ色リストを使用)
-        const deskPalette = document.createElement("div");
-        deskPalette.style.display = "flex";
-        deskPalette.style.flexWrap = "wrap";
-        deskPalette.style.gap = "4px";
-        deskPalette.style.margin = "8px 0";
-
-        colors.forEach(c => {
-            const btn = document.createElement("button");
-            btn.style.background = c;
-            btn.style.width = "24px";
-            btn.style.height = "24px";
-            btn.onclick = async () => {
-                deskInput.value = c;
-                await saveSetting("desktopColor", c);
-                applyDesktopBackground();
-            };
-            deskPalette.appendChild(btn);
+        // パレットの生成 (デスクトップ背景用)
+        const deskPalette = createColorPalette(async (selectedColor) => {
+            deskInput.value = selectedColor;
+            await saveSetting("desktopColor", selectedColor);
+            applyDesktopBackground();
         });
 
         // 背景色リセットボタン
@@ -583,13 +581,29 @@ export default async function SettingsApp(content) {
         `;
         monitorContainer.append(monitorScreen, monitorLed);
 
-        // 2. Win95風のグループ枠(Fieldset)
-        const ssControlBlock = document.createElement("fieldset");
-        ssControlBlock.style.cssText = "padding: 8px; margin: 0; border: 1px solid #dfdfdf; border-radius: 2px; box-shadow: -1px -1px #000, inset 1px 1px #fff, inset -1px -1px #808080;";
+        // 2. Win95風のグループ枠(擬似Fieldset)
+        const ssControlBlock = document.createElement("div");
+        ssControlBlock.style.cssText = `
+            position: relative;
+            padding: 12px 8px 8px 8px; 
+            margin: 10px 0 0 0; 
+            border: 1px solid #dfdfdf; 
+            box-shadow: -1px -1px #000, inset 1px 1px #fff, inset -1px -1px #808080;
+            background: transparent;
+        `;
 
-        const ssLegend = document.createElement("legend");
+        const ssLegend = document.createElement("div");
         ssLegend.textContent = "Screen Saver";
-        ssLegend.style.padding = "0 4px";
+        // 背景色を親要素の背景色と同じ（#c0c0c0）にすることで、後ろの線を隠して切り抜いて見せる
+        ssLegend.style.cssText = `
+            position: absolute;
+            top: -9px;
+            left: 6px;
+            background: #c0c0c0; 
+            padding: 0 4px;
+            font-size: 13px;
+        `;
+
         ssControlBlock.appendChild(ssLegend);
 
         const ssInner = document.createElement("div");
@@ -604,7 +618,9 @@ export default async function SettingsApp(content) {
             { id: "none", label: "(None)" },
             { id: "blank", label: "Blank Screen" },
             { id: "text", label: "3D Text" },
-            { id: "mystify", label: "Mystify" }
+            { id: "mystify", label: "Mystify" },
+            { id: "starfield", label: "Starfield (Win 3.1)" },
+            { id: "maze", label: "3D Maze (Win 95/98)" }
         ];
 
         const currentSs = await loadSetting("screensaverType") || "none";
@@ -624,6 +640,65 @@ export default async function SettingsApp(content) {
         previewBtn.textContent = "Preview";
         previewBtn.style.padding = "2px 8px";
 
+        // ★追加：色設定オプション用コンテナ
+        const ssOptionsBlock = document.createElement("div");
+        ssOptionsBlock.style.cssText = "width: 100%; margin-top: 8px; padding-top: 8px; border-top: 1px solid #808080;";
+
+        // ★追加：色設定UIの動的描画関数
+        const renderColorSettings = async (type) => {
+            ssOptionsBlock.innerHTML = ""; // 初期化
+
+            if (type === "text") {
+                const colorLabel = document.createElement("label");
+                colorLabel.style.cssText = "font-size: 12px; display: flex; align-items: center; gap: 6px;";
+                colorLabel.textContent = "テキスト色: ";
+
+                const colorInput = document.createElement("input");
+                colorInput.type = "color";
+                colorInput.value = (await loadSetting("screensaverColor_text")) || "#ff0000";
+
+                colorInput.onchange = async () => {
+                    await saveSetting("screensaverColor_text", colorInput.value);
+                    window.dispatchEvent(new Event("screensaver-settings-changed"));
+                    updatePreviewMonitor(type);
+                };
+
+                colorLabel.appendChild(colorInput);
+                ssOptionsBlock.appendChild(colorLabel);
+
+            } else if (type === "maze") {
+                // ★追加: 迷路の場合は「壁」「床」「天井」の3つの設定を用意
+                const mazeSettings = [
+                    { key: "screensaverColor_maze_wall", label: "壁の色: ", defaultVal: "#008080" },
+                    { key: "screensaverColor_maze_floor", label: "床の色: ", defaultVal: "#333333" },
+                    { key: "screensaverColor_maze_ceiling", label: "天井の色: ", defaultVal: "#555555" }
+                ];
+
+                for (const setting of mazeSettings) {
+                    const colorLabel = document.createElement("label");
+                    colorLabel.style.cssText = "font-size: 12px; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;";
+                    colorLabel.textContent = setting.label;
+
+                    const colorInput = document.createElement("input");
+                    colorInput.type = "color";
+                    colorInput.value = (await loadSetting(setting.key)) || setting.defaultVal;
+
+                    const targetKey = setting.key;
+                    colorInput.onchange = async () => {
+                        await saveSetting(targetKey, colorInput.value);
+                        window.dispatchEvent(new Event("screensaver-settings-changed"));
+                        updatePreviewMonitor(type);
+                    };
+
+                    colorLabel.appendChild(colorInput);
+                    ssOptionsBlock.appendChild(colorLabel);
+                }
+            }
+        };
+
+        // 初期描画時に現在の設定に合わせた色設定を表示
+        await renderColorSettings(currentSs);
+
         // モニター画面にアニメーションを反映するヘルパー関数
         const updatePreviewMonitor = async (type) => {
             if (isDestroyed) return;
@@ -635,6 +710,7 @@ export default async function SettingsApp(content) {
                 }
 
                 // モニターの背景を一旦リセット
+                monitorScreen.innerHTML = "";
                 monitorScreen.style.backgroundImage = "none";
                 monitorScreen.style.backgroundColor = "";
 
@@ -646,10 +722,8 @@ export default async function SettingsApp(content) {
 
                     if (isDestroyed) return;
 
-                    // 設定されている背景色（未設定ならデフォルトの #52adad）
                     monitorScreen.style.backgroundColor = color || "#52adad";
 
-                    // 壁紙が設定されていれば適用
                     if (wpUrl) {
                         monitorScreen.style.backgroundImage = `url(${wpUrl})`;
                         switch (wpStyle) {
@@ -684,11 +758,21 @@ export default async function SettingsApp(content) {
                     return;
                 }
 
+                // ★【追加】迷路の場合は保存されている色設定を読み込む
+                let options = {};
+                if (type === "maze") {
+                    options = {
+                        wallColor: await loadSetting("screensaverColor_maze_wall") || "#008080",
+                        floorColor: await loadSetting("screensaverColor_maze_floor") || "#333333",
+                        ceilingColor: await loadSetting("screensaverColor_maze_ceiling") || "#555555"
+                    };
+                }
+
                 const { startPreview } = await import("../screensaver.js");
                 if (isDestroyed) return;
 
-                // ★ startPreview が「停止用のクリーンアップ関数」を返す設計であればここで受け取る
-                currentPreviewCleanup = startPreview(monitorScreen, type);
+                // ★【修正】第3引数に options を渡すように変更
+                currentPreviewCleanup = startPreview(monitorScreen, type, options);
             } catch (e) {
                 console.warn("プレビューの読み込みに失敗しました", e);
             }
@@ -698,10 +782,10 @@ export default async function SettingsApp(content) {
         ssSelect.onchange = async () => {
             const type = ssSelect.value;
             await saveSetting("screensaverType", type);
+            await renderColorSettings(type); // ★色設定UIの切り替えを追加
             window.dispatchEvent(new Event("screensaver-settings-changed"));
             updatePreviewMonitor(type);
         };
-
         // Previewボタンでフルスクリーン起動テスト
         previewBtn.onclick = async () => {
             const type = ssSelect.value;
@@ -740,7 +824,10 @@ export default async function SettingsApp(content) {
 
         waitBlock.append(ssWaitLabel, ssWaitInput, ssWaitUnit);
         ssInner.append(ssSelect, previewBtn, waitBlock);
+
         ssControlBlock.appendChild(ssInner);
+        ssControlBlock.appendChild(ssOptionsBlock); // ★色設定ブロックを追加
+
         ssBlock.append(monitorContainer, ssControlBlock);
 
         root.append(ssBlock);
@@ -762,6 +849,133 @@ export default async function SettingsApp(content) {
         };
     }
 
+
+    /* ---------- Sound (機能拡張・安定版) ---------- */
+    async function renderSound(root) {
+        root.innerHTML = "<b>System Event Sounds</b><hr>";
+
+        // FSとConfigの初期化
+        if (!FS.System) FS.System = { type: "folder" };
+        if (!FS.System["SoundConfig.json"]) {
+            FS.System["SoundConfig.json"] = { type: "file", content: "{}" };
+        }
+
+        let config = {};
+        try {
+            config = JSON.parse(FS.System["SoundConfig.json"].content || "{}");
+        } catch (e) {
+            config = {};
+        }
+
+        // 音声ファイル収集ロジック
+        const collectAudioFiles = (node, currentPath = "", visited = new Set()) => {
+            let files = [];
+            if (!node || typeof node !== "object" || visited.has(node)) return files;
+            visited.add(node);
+
+            for (const name in node) {
+                if (["type", "system", "originalPath", "entry", "singleton", "target"].includes(name)) continue;
+                const child = node[name];
+                const fullPath = currentPath ? `${currentPath}/${name}` : name;
+                if (child && child.type === "folder") {
+                    files = files.concat(collectAudioFiles(child, fullPath, visited));
+                } else if (child && child.type === "file") {
+                    files.push(fullPath);
+                }
+            }
+            return files;
+        };
+
+        const musicNode = resolveFS("Programs/Music");
+        const files = musicNode ? collectAudioFiles(musicNode) : [];
+
+        // soundplayer.js と完全に一致させた全イベントリスト
+        const events = [
+            { id: "startup", label: "起動音" },
+            { id: "logoff", label: "ログオフ" },
+            { id: "error", label: "エラー" },
+            { id: "notify", label: "通知" },
+            { id: "minimize", label: "最小化" },
+            { id: "maximize", label: "最大化" },
+            { id: "restore", label: "元に戻す" },
+            { id: "resize", label: "サイズ変更" },
+            { id: "open", label: "ウィンドウの起動" },
+            { id: "close", label: "ウィンドウを閉じる" }
+        ];
+
+        let previewAudio = null;
+
+        events.forEach(ev => {
+            const row = document.createElement("div");
+            row.style.marginBottom = "8px";
+            row.innerHTML = `<label style="display:block; font-size:11px; margin-bottom:2px;">${ev.label}</label>`;
+
+            const controlsWrapper = document.createElement("div");
+            controlsWrapper.style.display = "flex";
+            controlsWrapper.style.gap = "4px";
+
+            const select = document.createElement("select");
+            select.style.flex = "1";
+            select.style.fontSize = "11px";
+            select.innerHTML = `<option value="">(なし)</option>` +
+                files.map(f => `<option value="${f}" ${config[ev.id] === f ? 'selected' : ''}>${f}</option>`).join("");
+
+            // 試聴ボタン
+            const testBtn = document.createElement("button");
+            testBtn.textContent = "試聴";
+            testBtn.style.fontSize = "10px";
+            testBtn.style.padding = "2px 6px";
+            testBtn.style.cursor = "pointer";
+
+            testBtn.onclick = async () => {
+                const selectedFile = select.value;
+                if (!selectedFile) return;
+
+                // 再生中の音を止める
+                if (previewAudio) {
+                    previewAudio.pause();
+                    previewAudio = null;
+                }
+
+                const path = `Programs/Music/${selectedFile}`;
+                const fileNode = resolveFS(path);
+                if (!fileNode) return;
+
+                // 非同期でのデータ取得 (soundplayer.js と同じロジック)
+                let audioData = fileNode.content;
+                if (audioData === "__EXTERNAL_DATA__") {
+                    audioData = await getFileContent(path);
+                }
+
+                if (!audioData) {
+                    console.error("Audio data could not be loaded.");
+                    return;
+                }
+
+                previewAudio = new Audio(audioData);
+                previewAudio.play().catch(err => console.error("Playback failed:", err));
+            };
+
+            select.onchange = async () => {
+                config[ev.id] = select.value || undefined;
+                FS.System["SoundConfig.json"].content = JSON.stringify(config, null, 2);
+                await forceSave?.();
+                window.dispatchEvent(new Event("fs-updated"));
+            };
+
+            controlsWrapper.append(select, testBtn);
+            row.appendChild(controlsWrapper);
+            root.appendChild(row);
+        });
+
+        // タブ移動時に確実に停止させる
+        root._cleanup = () => {
+            if (previewAudio) {
+                previewAudio.pause();
+                previewAudio = null;
+            }
+        };
+    }
 
 
     /* ---------- User (New) ---------- */
@@ -985,7 +1199,7 @@ export default async function SettingsApp(content) {
                 quota = 100 * 1024 * 1024 * 1024;
             }
 
-            // 【追加】非同期処理を待っている間にタブが切り替わったり閉じられたら、処理を中断するガード
+            // 非同期処理を待っている間にタブが切り替わったり閉じられたら、処理を中断するガード
             if (!document.body.contains(storageBox) || currentTabId !== "system") return;
 
             const frag = document.createDocumentFragment();
@@ -996,34 +1210,51 @@ export default async function SettingsApp(content) {
             title.textContent = "Storage Properties (C:)";
             frag.appendChild(title);
 
+            // リストやグラフで共有するカラーパレットを定義
+            const storage_colors = ["#000080", "#008080", "#800080", "#008000", "#808000", "#4682B4", "#D2691E"];
+
             const listTable = document.createElement("div");
             listTable.style.fontSize = "13px";
-            listTable.style.marginBottom = "0px";
+            listTable.style.marginBottom = "8px";
 
+            let colorIdx = 0;
             for (const [name, bytes] of Object.entries(sizes)) {
                 virtualUsedBytes += bytes;
+                const currentColor = storage_colors[colorIdx % storage_colors.length];
+
                 const row = document.createElement("div");
-                row.style.cssText = "display:flex; justify-content:space-between; align-items:center; padding:3px 0; border-bottom:1px dashed #ccc;";
+                row.style.cssText = "display:flex; justify-content:space-between; align-items:center; padding:4px 0; border-bottom:1px dashed #ccc;";
+
+                // ストア名の左側にカラーチップ（凡例）を表示するコンテナ
+                const nameWrapper = document.createElement("div");
+                nameWrapper.style.cssText = "display:flex; align-items:center;";
+
+                const colorChip = document.createElement("div");
+                colorChip.style.cssText = `width: 10px; height: 10px; background-color: ${currentColor}; margin-right: 6px; border: 1px solid #000; flex-shrink: 0;`;
 
                 const nameSpan = document.createElement("span");
                 nameSpan.textContent = name;
+                nameSpan.style.fontWeight = "bold";
+
+                nameWrapper.append(colorChip, nameSpan);
 
                 const rightSide = document.createElement("div");
                 rightSide.style.display = "flex";
                 rightSide.style.alignItems = "center";
-                rightSide.innerHTML = `<span style='font-weight:bold; margin-right:8px;'>${formatBytes(bytes)}</span>`;
+                rightSide.innerHTML = `<span style='margin-right:8px; font-size: 12px;'>${formatBytes(bytes)}</span>`;
 
                 if (name !== "settings") {
                     const delBtn = document.createElement("button");
                     delBtn.textContent = "Clear";
-                    delBtn.style.fontSize = "10px";
+                    delBtn.style.fontSize = "12px";
                     delBtn.style.padding = "0 4px";
                     delBtn.onclick = () => clearStore(name);
                     rightSide.appendChild(delBtn);
                 }
 
-                row.append(nameSpan, rightSide);
+                row.append(nameWrapper, rightSide);
                 listTable.appendChild(row);
+                colorIdx++;
             }
             frag.appendChild(listTable);
 
@@ -1035,21 +1266,47 @@ export default async function SettingsApp(content) {
             const strokeWidth = 12.5;
             const innerRadius = radius - (strokeWidth / 2);
             const circumference = 2 * Math.PI * innerRadius;
-            const ratio = Math.max(0, Math.min(1, usedRatio));
+
+            // ==========================================
+            // 【修正】SVG円グラフの複数セグメント生成
+            // ==========================================
+            let pieCircles = "";
+            let cumulativeRatio = 0;
+            let pieColorIdx = 0;
+
+            for (const [name, bytes] of Object.entries(sizes)) {
+                if (bytes > 0) {
+                    const itemRatio = bytes / quota;
+                    const itemLength = itemRatio * circumference;
+                    // stroke-dashoffsetを負の値にして開始位置をずらす
+                    const offset = -(cumulativeRatio * circumference);
+
+                    pieCircles += `
+                    <circle cx="16" cy="16" r="${innerRadius}" fill="none" 
+                            stroke="${storage_colors[pieColorIdx % storage_colors.length]}" 
+                            stroke-width="${strokeWidth}" 
+                            stroke-dasharray="${itemLength} ${circumference}" 
+                            stroke-dashoffset="${offset}" />`;
+
+                    cumulativeRatio += itemRatio;
+                }
+                // 0バイトでもインデックスを進め、リストと色を確実に同期させる
+                pieColorIdx++;
+            }
 
             const pieContainer = document.createElement("div");
             pieContainer.style.cssText = "display:flex; justify-content:center; margin: 10px;";
 
             pieContainer.innerHTML = `
-                <svg width="100" height="100" viewBox="0 0 32 32" style="transform: rotate(-90deg);">
-                    <circle cx="16" cy="16" r="${radius}" fill="#FF00FF" />
-                    <circle cx="16" cy="16" r="${innerRadius}" fill="none" 
-                            stroke="#000080" 
-                            stroke-width="${strokeWidth}" 
-                            stroke-dasharray="${ratio * circumference} ${circumference}" />
-                    <circle cx="16" cy="16" r="${radius}" fill="none" stroke="#000" stroke-width="0.25" />
-                </svg>
-            `;
+            <svg width="100" height="100" viewBox="0 0 32 32" style="transform: rotate(-90deg);">
+                <!-- 空き容量 (マゼンタ背景) -->
+                <circle cx="16" cy="16" r="${radius}" fill="#FF00FF" />
+                <!-- 使用量 (各ストアごとの色分け) -->
+                ${pieCircles}
+                <!-- 枠線 -->
+                <circle cx="16" cy="16" r="${radius}" fill="none" stroke="#000" stroke-width="0.25" />
+            </svg>
+        `;
             frag.appendChild(pieContainer);
 
             const statsBox = document.createElement("div");
@@ -1057,22 +1314,22 @@ export default async function SettingsApp(content) {
             statsBox.style.background = "#fff";
             statsBox.className = "border";
             statsBox.innerHTML = `
-                <div style="display:flex; align-items:center; margin-bottom:6px; font-size:14px; color:#000080;">
-                    <div style="width:12px; height:12px; background:#000080; margin-right:8px; border:1px solid #000;"></div>
-                    <span style="flex:1;">Used space:</span>
-                    <span style="font-weight:bold; font-family:monospace;">${formatBytes(virtualUsedBytes)}</span>
-                </div>
-                <div style="display:flex; align-items:center; margin-bottom:6px; font-size:14px; color:#FF00FF;">
-                    <div style="width:12px; height:12px; background:#FF00FF; margin-right:8px; border:1px solid #000;"></div>
-                    <span style="flex:1;">Free space:</span>
-                    <span style="font-family:monospace;">${formatBytes(freeSpace)}</span>
-                </div>
-                <div style="border-top:1px solid #000; margin:6px 0;"></div>
-                <div style="display:flex; justify-content:space-between; font-size:15px; font-weight:bold;">
-                    <span>Capacity:</span>
-                    <span style="font-family:monospace;">${formatBytes(quota)}</span>
-                </div>
-            `;
+            <div style="display:flex; align-items:center; margin-bottom:6px; font-size:14px; color:#000080;">
+                <div style="width:12px; height:12px; background:#000080; margin-right:8px; border:1px solid #000;"></div>
+                <span style="flex:1;">Used space:</span>
+                <span style="font-weight:bold; font-family:monospace;">${formatBytes(virtualUsedBytes)}</span>
+            </div>
+            <div style="display:flex; align-items:center; margin-bottom:6px; font-size:14px; color:#FF00FF;">
+                <div style="width:12px; height:12px; background:#FF00FF; margin-right:8px; border:1px solid #000;"></div>
+                <span style="flex:1;">Free space:</span>
+                <span style="font-family:monospace;">${formatBytes(freeSpace)}</span>
+            </div>
+            <div style="border-top:1px solid #000; margin:6px 0;"></div>
+            <div style="display:flex; justify-content:space-between; font-size:15px; font-weight:bold;">
+                <span>Capacity:</span>
+                <span style="font-family:monospace;">${formatBytes(quota)}</span>
+            </div>
+        `;
             frag.appendChild(statsBox);
 
             const barContainer = document.createElement("div");
@@ -1082,17 +1339,24 @@ export default async function SettingsApp(content) {
             barBg.style.cssText = "width:100%; height:20px; background:#eee; position:relative; display:flex; overflow:hidden;";
             barBg.className = "border";
 
-            const colors = ["#000080", "#008080", "#800080", "#008000", "#808000"];
-            let colorIdx = 0;
-
+            // ==========================================
+            // 【修正】棒グラフの色分けと同期修正
+            // ==========================================
+            let barColorIdx = 0;
             for (const [name, bytes] of Object.entries(sizes)) {
-                if (bytes <= 0) continue;
-                const segmentWidth = (bytes / quota) * 100;
-                const segment = document.createElement("div");
-                segment.style.cssText = `width: ${segmentWidth}%; height: 100%; background-color: ${colors[colorIdx % colors.length]};`;
-                segment.title = `${name}: ${formatBytes(bytes)}`;
-                barBg.appendChild(segment);
-                colorIdx++;
+                if (bytes > 0) {
+                    const segmentWidth = (bytes / quota) * 100;
+                    const segment = document.createElement("div");
+                    segment.style.cssText = `width: ${segmentWidth}%; height: 100%; background-color: ${storage_colors[barColorIdx % storage_colors.length]}; transition: opacity 0.2s;`;
+                    segment.title = `${name}: ${formatBytes(bytes)}`;
+
+                    segment.onmouseover = () => segment.style.opacity = "0.8";
+                    segment.onmouseout = () => segment.style.opacity = "1";
+
+                    barBg.appendChild(segment);
+                }
+                // 0バイトでもインデックスを進め、リスト・円グラフと色を完全に同期させる
+                barColorIdx++;
             }
 
             const gridOverlay = document.createElement("div");
@@ -1107,21 +1371,21 @@ export default async function SettingsApp(content) {
             frag.appendChild(barContainer);
 
             // ==========================================
-            // 【追加】システム診断・クリーンアップツールUI
+            // システム診断・クリーンアップツールUI
             // ==========================================
             const toolsSection = document.createElement("div");
             toolsSection.style.cssText = "margin-top: 15px; border-top: 1px solid #666; padding-top: 10px;";
 
             toolsSection.innerHTML = `
-                <b style="display:block; margin-bottom:6px; font-size:13px;">System Tools</b>
-                <div style="display:flex; gap:6px; margin-bottom:8px;">
-                    <button id="btn-scan" style="padding:4px 10px;">Scan System</button>
-                    <button id="btn-clean" style="padding:4px 10px; background:#393; color:white;" disabled>Run Cleanup & Repair</button>
-                </div>
-                <div id="maintenance-console" style="background:#000; color:#0f0; font-family:monospace; font-size:11px; padding:6px; height:70px; overflow-y:auto; border:1px solid #666; border-radius:2px;">
-                    システムは正常です。スキャンを実行してください。
-                </div>
-            `;
+            <b style="display:block; margin-bottom:6px; font-size:13px;">System Tools</b>
+            <div style="display:flex; gap:6px; margin-bottom:8px;">
+                <button id="btn-scan" style="padding:4px 10px;">Scan System</button>
+                <button id="btn-clean" style="padding:4px 10px; background:#393; color:white;" disabled>Run Cleanup & Repair</button>
+            </div>
+            <div id="maintenance-console" style="background:#000; color:#0f0; font-family:monospace; font-size:11px; padding:6px; height:70px; overflow-y:auto; border:1px solid #666; border-radius:2px;">
+                システムは正常です。スキャンを実行してください。
+            </div>
+        `;
             frag.appendChild(toolsSection);
 
             // 動的処理用インポート

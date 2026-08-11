@@ -809,10 +809,17 @@ export default async function Explorer(root, options = {}) {
             container.appendChild(listContainer);
 
             const header = document.createElement("div");
-            header.className = "explorer-header";
+            header.className = "explorer-header scrollbar_none";
+            header.style.display = "flex";
+            header.style.flexWrap = "nowrap";
+            header.style.alignItems = "center";
+            header.style.gap = "4px";
+            header.style.padding = "2px";
+            header.style.overflowX = "auto";
 
             const backBtn = document.createElement("button");
             backBtn.textContent = "←";
+            backBtn.style.flexShrink = "0";
             // 初期状態は履歴がないので無効化しておく
             backBtn.disabled = historyStack.length === 0;
             backBtn.classList.toggle("pointer_none", historyStack.length === 0);
@@ -835,6 +842,7 @@ export default async function Explorer(root, options = {}) {
 
             const forwardBtn = document.createElement("button");
             forwardBtn.textContent = "→";
+            forwardBtn.style.flexShrink = "0";
             // 初期状態は進む先がないので無効化しておく
             forwardBtn.disabled = forwardStack.length === 0;
             forwardBtn.classList.toggle("pointer_none", forwardStack.length === 0);
@@ -842,39 +850,34 @@ export default async function Explorer(root, options = {}) {
             const refreshBtn = document.createElement("button");
             refreshBtn.textContent = "↻"; // リフレッシュアイコン風
             refreshBtn.title = "最新の情報に更新";
+            refreshBtn.style.flexShrink = "0";
             refreshBtn.onclick = () => render(currentPath);
 
             const viewControls = document.createElement("div");
             viewControls.className = "view-controls";
             viewControls.style.display = "flex";
+            viewControls.style.flexWrap = "nowrap";
             viewControls.style.gap = "0px";
             viewControls.style.marginRight = "4px";
             viewControls.style.marginTop = "4px";
+            viewControls.style.flexShrink = "0";
 
             // ボタン生成用の共通関数
             const createViewModeBtn = (label, mode, title) => {
                 const btn = document.createElement("button");
-                btn.className = "view-mode-btn";
+                btn.className = viewMode === mode ? "view-mode-btn selected" : "view-mode-btn";
                 btn.textContent = label;
                 btn.title = title;
                 btn.style.padding = "2px 6px";
                 btn.style.marginRight = "4px";
 
-                // 現在選択されているモードのボタンを強調する
-                if (viewMode === mode) {
-                    btn.style.background = "black"; // 選択中の色
-                    btn.style.color = "white";
-                }
-
-                btn.onclick = async () => {
+                btn.onmousedown = async () => {
                     viewMode = mode;
                     await saveSetting("explorerViewMode", viewMode);
                     viewControls.querySelectorAll(".view-mode-btn").forEach(b => {
-                        b.style.background = "";
-                        b.style.color = "";
+                        b.classList.remove("selected");
                     });
-                    btn.style.background = "black";
-                    btn.style.color = "white";
+                    btn.classList.add("selected");
                     render(currentPath); // モードを保存して再描画
                 };
                 return btn;
@@ -929,9 +932,20 @@ export default async function Explorer(root, options = {}) {
 
             pathLabel = document.createElement("span");
             pathLabel.className = "path-label";
+            pathLabel.style.whiteSpace = "nowrap";
+            pathLabel.style.overflow = "hidden";
+            pathLabel.style.textOverflow = "ellipsis";
+            // 2. 他のボタンは維持しつつ、パス表示部分だけを優先的に縮ませる設定
+            pathLabel.style.minWidth = "0px"; // ★重要: これがないとFlexbox内で限界まで縮みません
+            pathLabel.style.flexShrink = "1";
+
+            // 3. Windowsのように、先頭（親階層）を「...」にして、末尾（現在のフォルダ）を残すテクニック
+            pathLabel.style.direction = "rtl";
+            pathLabel.style.textAlign = "left";
 
             treeContainer = document.createElement("div");
             treeContainer.className = "tree-container";
+            treeContainer.style.flexShrink = "0";
 
             createTreeDropdown(treeContainer, currentPath);
 
@@ -950,10 +964,12 @@ export default async function Explorer(root, options = {}) {
             // Windowsクラシック風のスタイル（適宜CSSへ移動してください）
             Object.assign(searchInput.style, {
                 width: "150px",
+                minWidth: "100px", // ★追加: 最小幅（これ以上は縮ませない）
                 marginLeft: "auto",
                 marginRight: "4px",
                 fontSize: "12px",
-                height: "18px"
+                height: "18px",
+                flexShrink: "1"   // ★追加: 隙間が減った時に柔軟に縮むことを許可する
             });
 
             searchInput.addEventListener("keydown", (e) => {
@@ -1614,7 +1630,9 @@ export default async function Explorer(root, options = {}) {
         }
 
         win.dataset.title = name;
-        if (pathLabel) pathLabel.textContent = path;
+        if (pathLabel) {
+            pathLabel.innerHTML = `<bdi dir="ltr">${path}</bdi>`;
+        }
     }
 
     return {

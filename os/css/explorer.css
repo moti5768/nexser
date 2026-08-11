@@ -22,6 +22,16 @@
     cursor: pointer;
 }
 
+.view-mode-btn.selected {
+    transform: translate(0.6px, 0.6px);
+    border: 1.5px solid;
+    border-color: #7a7a7a #fff #fff #7a7a7a;
+    box-shadow: 0.5px 0.5px 0 #000 inset;
+    background: #ececec;
+    text-shadow: 1px 0 #000;
+    letter-spacing: 0.5px;
+}
+
 .path-label {
     font-weight: bold;
     white-space: nowrap;
@@ -63,7 +73,6 @@
 }
 
 /* アイコン表示モード */
-/* アイコン表示モード */
 .icon-view {
     display: flex !important;
     flex-direction: column;
@@ -101,7 +110,6 @@
     margin-bottom: 5px;
 }
 
-/* 修正箇所：詳細表示モード (レイアウト崩れ防止版) */
 /* 修正箇所：詳細表示モード (レイアウト崩れ防止・省略対応版) */
 .details-view {
     display: grid !important;
