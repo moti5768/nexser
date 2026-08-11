@@ -16,6 +16,17 @@ let currentMystifyLines = 5; // ★追加: Mystifyの線の数（デフォルト
 let currentMystifyColor1 = "#00ff00"; // ★追加: Mystifyオブジェクト1の色
 let currentMystifyColor2 = "#00ffff"; // ★追加: Mystifyオブジェクト2の色
 
+// ★追加: Starfieldの設定キャッシュ
+let currentStarfieldCount = 200;
+let currentStarfieldSpeed = 4;
+let currentStarfieldColor = "#ffffff";
+
+// ★追加: 伝言板 (Marquee) の設定キャッシュ
+let currentMarqueeText = "伝言板";
+let currentMarqueeTextColor = "#ffffff";
+let currentMarqueeBgColor = "#000000";
+let currentMarqueeSpeed = 5;
+
 let currentPreviewCleanup = null;
 let currentFullscreenCleanup = null;
 
@@ -38,6 +49,19 @@ async function refreshSettings() {
     currentMystifyLines = Math.min(15, Math.max(1, rawLines));
     currentMystifyColor1 = (await loadSetting("screensaverColor_mystify_1")) || "#00ff00";
     currentMystifyColor2 = (await loadSetting("screensaverColor_mystify_2")) || "#00ffff";
+
+    const rawStarCount = parseInt(await loadSetting("screensaverStarfieldCount"), 10) || 200;
+    currentStarfieldCount = Math.min(1000, Math.max(10, rawStarCount));
+    const rawStarSpeed = parseInt(await loadSetting("screensaverStarfieldSpeed"), 10) || 4;
+    currentStarfieldSpeed = Math.min(20, Math.max(1, rawStarSpeed));
+    currentStarfieldColor = (await loadSetting("screensaverColor_starfield")) || "#ffffff";
+
+    // ★追加: 伝言板の設定読み込み
+    currentMarqueeText = (await loadSetting("screensaverMarqueeText")) ?? "伝言板";
+    currentMarqueeTextColor = (await loadSetting("screensaverColor_marquee_text")) || "#ffffff";
+    currentMarqueeBgColor = (await loadSetting("screensaverColor_marquee_bg")) || "#000000";
+    const rawMarqueeSpeed = parseInt(await loadSetting("screensaverMarqueeSpeed"), 10) || 5;
+    currentMarqueeSpeed = Math.min(10, Math.max(1, rawMarqueeSpeed));
 
     resetIdleTimer();
 }
@@ -99,6 +123,12 @@ function stopScreensaver() {
         screensaverLayer.parentNode.removeChild(screensaverLayer);
     }
     screensaverLayer = null;
+
+    // カーソル再描画の強制（ブラウザのバグ対策）
+    document.body.style.cursor = "default";
+    requestAnimationFrame(() => {
+        document.body.style.cursor = "";
+    });
 }
 
 /**
@@ -142,6 +172,39 @@ function renderScreensaver(container, type, isFullscreen) {
 
     if (type === "blank") {
         // 何もしない（背景が黒のままになる）
+    } else if (type === "marquee") {
+        // ★追加: Windows 3.1 風 伝言板 (Marquee)
+        const canvas = document.createElement("canvas");
+        canvas.width = getWidth();
+        canvas.height = getHeight();
+        canvas.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%;";
+        container.appendChild(canvas);
+
+        const ctx = canvas.getContext("2d");
+        const fontSize = isFullscreen ? 48 : 16;
+        let x = canvas.width;
+        const speed = isFullscreen ? currentMarqueeSpeed * 2 : Math.max(1, Math.floor(currentMarqueeSpeed / 2));
+
+        function animateMarquee() {
+            ctx.fillStyle = currentMarqueeBgColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = currentMarqueeTextColor;
+            ctx.font = `bold ${fontSize}px sans-serif`;
+            ctx.textBaseline = "middle";
+
+            ctx.fillText(currentMarqueeText, x, canvas.height / 2);
+
+            const textWidth = ctx.measureText(currentMarqueeText).width;
+            x -= speed;
+            if (x < -textWidth) {
+                x = canvas.width;
+            }
+
+            animationFrameId = requestAnimationFrame(animateMarquee);
+        }
+        animateMarquee();
+
     } else if (type === "text") {
         const textEl = document.createElement("div");
         textEl.textContent = "Nexser";
@@ -276,7 +339,11 @@ function renderScreensaver(container, type, isFullscreen) {
         container.appendChild(canvas);
 
         const ctx = canvas.getContext("2d");
-        const numStars = isFullscreen ? 200 : 50;
+
+        // ★修正: キャッシュされた設定値を反映（プレビュー時は少なめ・遅めに調整）
+        const numStars = isFullscreen ? currentStarfieldCount : Math.max(10, Math.floor(currentStarfieldCount / 4));
+        const moveSpeed = isFullscreen ? currentStarfieldSpeed : Math.max(1, Math.floor(currentStarfieldSpeed / 2));
+
         const stars = [];
 
         for (let i = 0; i < numStars; i++) {
@@ -294,10 +361,11 @@ function renderScreensaver(container, type, isFullscreen) {
             const cx = canvas.width / 2;
             const cy = canvas.height / 2;
 
-            ctx.fillStyle = "white";
+            // ★修正: 星の色を設定から反映
+            ctx.fillStyle = currentStarfieldColor;
             for (let i = 0; i < stars.length; i++) {
                 const s = stars[i];
-                s.z -= isFullscreen ? 4 : 2;
+                s.z -= moveSpeed;
                 if (s.z <= 0) {
                     s.z = canvas.width;
                     s.x = (Math.random() - 0.5) * canvas.width * 2;

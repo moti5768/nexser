@@ -646,6 +646,7 @@ export default async function SettingsApp(content) {
         const ssOptions = [
             { id: "none", label: "(None)" },
             { id: "blank", label: "Blank Screen" },
+            { id: "marquee", label: "伝言板 (Marquee)" },
             { id: "text", label: "3D Text" },
             { id: "mystify", label: "Mystify" },
             { id: "starfield", label: "Starfield (Win 3.1)" },
@@ -677,7 +678,80 @@ export default async function SettingsApp(content) {
         const renderColorSettings = async (type) => {
             ssOptionsBlock.innerHTML = ""; // 初期化
 
-            if (type === "text") {
+            if (type === "marquee") {
+                // ★追加: 伝言板の設定UI (メッセージ, 文字色, 背景色, 速度)
+                const textLabel = document.createElement("label");
+                textLabel.style.cssText = "font-size: 12px; display: flex; align-items: center; gap: 6px; margin-bottom: 6px;";
+                textLabel.textContent = "メッセージ: ";
+
+                const textInput = document.createElement("input");
+                textInput.type = "text";
+                textInput.value = (await loadSetting("screensaverMarqueeText")) ?? "伝言板";
+                textInput.style.flex = "1";
+
+                textInput.onchange = async () => {
+                    await saveSetting("screensaverMarqueeText", textInput.value);
+                    window.dispatchEvent(new Event("screensaver-settings-changed"));
+                    updatePreviewMonitor(type);
+                };
+                textLabel.appendChild(textInput);
+                ssOptionsBlock.appendChild(textLabel);
+
+                const textColorLabel = document.createElement("label");
+                textColorLabel.style.cssText = "font-size: 12px; display: flex; align-items: center; gap: 6px; margin-bottom: 6px;";
+                textColorLabel.textContent = "文字色: ";
+
+                const textColorInput = document.createElement("input");
+                textColorInput.type = "color";
+                textColorInput.value = (await loadSetting("screensaverColor_marquee_text")) || "#ffffff";
+
+                textColorInput.onchange = async () => {
+                    await saveSetting("screensaverColor_marquee_text", textColorInput.value);
+                    window.dispatchEvent(new Event("screensaver-settings-changed"));
+                    updatePreviewMonitor(type);
+                };
+                textColorLabel.appendChild(textColorInput);
+                ssOptionsBlock.appendChild(textColorLabel);
+
+                const bgColorLabel = document.createElement("label");
+                bgColorLabel.style.cssText = "font-size: 12px; display: flex; align-items: center; gap: 6px; margin-bottom: 6px;";
+                bgColorLabel.textContent = "背景色: ";
+
+                const bgColorInput = document.createElement("input");
+                bgColorInput.type = "color";
+                bgColorInput.value = (await loadSetting("screensaverColor_marquee_bg")) || "#000000";
+
+                bgColorInput.onchange = async () => {
+                    await saveSetting("screensaverColor_marquee_bg", bgColorInput.value);
+                    window.dispatchEvent(new Event("screensaver-settings-changed"));
+                    updatePreviewMonitor(type);
+                };
+                bgColorLabel.appendChild(bgColorInput);
+                ssOptionsBlock.appendChild(bgColorLabel);
+
+                const speedLabel = document.createElement("label");
+                speedLabel.style.cssText = "font-size: 12px; display: flex; align-items: center; gap: 6px;";
+                speedLabel.textContent = "速度 (1〜10): ";
+
+                const speedInput = document.createElement("input");
+                speedInput.type = "number";
+                speedInput.min = "1";
+                speedInput.max = "10";
+                speedInput.value = (await loadSetting("screensaverMarqueeSpeed")) || "5";
+                speedInput.style.width = "40px";
+
+                speedInput.onchange = async () => {
+                    let val = parseInt(speedInput.value, 10) || 5;
+                    val = Math.min(10, Math.max(1, val));
+                    speedInput.value = val;
+                    await saveSetting("screensaverMarqueeSpeed", val);
+                    window.dispatchEvent(new Event("screensaver-settings-changed"));
+                    updatePreviewMonitor(type);
+                };
+                speedLabel.appendChild(speedInput);
+                ssOptionsBlock.appendChild(speedLabel);
+
+            } else if (type === "text") {
                 const colorLabel = document.createElement("label");
                 colorLabel.style.cssText = "font-size: 12px; display: flex; align-items: center; gap: 6px;";
                 colorLabel.textContent = "テキスト色: ";
@@ -780,6 +854,67 @@ export default async function SettingsApp(content) {
                     colorLabel.appendChild(colorInput);
                     ssOptionsBlock.appendChild(colorLabel);
                 }
+            } else if (type === "starfield") {
+                // ★追加: Starfieldの設定UI
+                const countLabel = document.createElement("label");
+                countLabel.style.cssText = "font-size: 12px; display: flex; align-items: center; gap: 6px; margin-bottom: 6px;";
+                countLabel.textContent = "星の数 (10〜1000): ";
+
+                const countInput = document.createElement("input");
+                countInput.type = "number";
+                countInput.min = "10";
+                countInput.max = "1000";
+                countInput.value = (await loadSetting("screensaverStarfieldCount")) || "200";
+                countInput.style.width = "50px";
+
+                countInput.onchange = async () => {
+                    let val = parseInt(countInput.value, 10) || 200;
+                    val = Math.min(1000, Math.max(10, val));
+                    countInput.value = val;
+                    await saveSetting("screensaverStarfieldCount", val);
+                    window.dispatchEvent(new Event("screensaver-settings-changed"));
+                    updatePreviewMonitor(type);
+                };
+                countLabel.appendChild(countInput);
+                ssOptionsBlock.appendChild(countLabel);
+
+                const speedLabel = document.createElement("label");
+                speedLabel.style.cssText = "font-size: 12px; display: flex; align-items: center; gap: 6px; margin-bottom: 6px;";
+                speedLabel.textContent = "速度 (1〜20): ";
+
+                const speedInput = document.createElement("input");
+                speedInput.type = "number";
+                speedInput.min = "1";
+                speedInput.max = "20";
+                speedInput.value = (await loadSetting("screensaverStarfieldSpeed")) || "4";
+                speedInput.style.width = "40px";
+
+                speedInput.onchange = async () => {
+                    let val = parseInt(speedInput.value, 10) || 4;
+                    val = Math.min(20, Math.max(1, val));
+                    speedInput.value = val;
+                    await saveSetting("screensaverStarfieldSpeed", val);
+                    window.dispatchEvent(new Event("screensaver-settings-changed"));
+                    updatePreviewMonitor(type);
+                };
+                speedLabel.appendChild(speedInput);
+                ssOptionsBlock.appendChild(speedLabel);
+
+                const colorLabel = document.createElement("label");
+                colorLabel.style.cssText = "font-size: 12px; display: flex; align-items: center; gap: 6px;";
+                colorLabel.textContent = "星の色: ";
+
+                const colorInput = document.createElement("input");
+                colorInput.type = "color";
+                colorInput.value = (await loadSetting("screensaverColor_starfield")) || "#ffffff";
+
+                colorInput.onchange = async () => {
+                    await saveSetting("screensaverColor_starfield", colorInput.value);
+                    window.dispatchEvent(new Event("screensaver-settings-changed"));
+                    updatePreviewMonitor(type);
+                };
+                colorLabel.appendChild(colorInput);
+                ssOptionsBlock.appendChild(colorLabel);
             }
         };
 
@@ -790,6 +925,11 @@ export default async function SettingsApp(content) {
         const updatePreviewMonitor = async (type) => {
             if (isDestroyed) return;
             try {
+                // ★追加: screensaver.js 側の設定非同期読み込み完了を待つための微小待機
+                // (これを入れないと「1個前のデータ」がプレビューに反映されてしまうため)
+                await new Promise(resolve => setTimeout(resolve, 100));
+                if (isDestroyed) return;
+
                 // 古いプレビューが動いていれば先に停止する
                 if (currentPreviewCleanup) {
                     currentPreviewCleanup();
