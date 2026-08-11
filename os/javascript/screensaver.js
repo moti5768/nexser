@@ -12,6 +12,9 @@ let currentTextColor = "#ff0000"; // ★追加: テキスト色のキャッシ�
 let currentMazeWallColor = "#008080";
 let currentMazeFloorColor = "#333333";
 let currentMazeCeilingColor = "#555555";
+let currentMystifyLines = 5; // ★追加: Mystifyの線の数（デフォルト5）
+let currentMystifyColor1 = "#00ff00"; // ★追加: Mystifyオブジェクト1の色
+let currentMystifyColor2 = "#00ffff"; // ★追加: Mystifyオブジェクト2の色
 
 let currentPreviewCleanup = null;
 let currentFullscreenCleanup = null;
@@ -26,10 +29,15 @@ async function refreshSettings() {
 
     currentTextColor = (await loadSetting("screensaverColor_text")) || "#ff0000";
 
-    // ★変更: 3つの設定をそれぞれ読み込む
     currentMazeWallColor = (await loadSetting("screensaverColor_maze_wall")) || "#008080";
     currentMazeFloorColor = (await loadSetting("screensaverColor_maze_floor")) || "#333333";
     currentMazeCeilingColor = (await loadSetting("screensaverColor_maze_ceiling")) || "#555555";
+
+    // ★修正: Mystifyの設定を確実に最新化
+    const rawLines = parseInt(await loadSetting("screensaverMystifyLines"), 10) || 5;
+    currentMystifyLines = Math.min(15, Math.max(1, rawLines));
+    currentMystifyColor1 = (await loadSetting("screensaverColor_mystify_1")) || "#00ff00";
+    currentMystifyColor2 = (await loadSetting("screensaverColor_mystify_2")) || "#00ffff";
 
     resetIdleTimer();
 }
@@ -190,40 +198,66 @@ function renderScreensaver(container, type, isFullscreen) {
 
         const ctx = canvas.getContext("2d");
 
-        function createShape() {
+        function createShape(color) {
             const points = [];
             for (let i = 0; i < 4; i++) {
                 points.push({
                     x: Math.random() * canvas.width,
                     y: Math.random() * canvas.height,
-                    vx: (Math.random() - 0.5) * (isFullscreen ? 8 : 3),
-                    vy: (Math.random() - 0.5) * (isFullscreen ? 8 : 3)
+                    // 速度を少し速くして線と線の距離を広げる
+                    vx: (Math.random() - 0.5) * (isFullscreen ? 12 : 4),
+                    vy: (Math.random() - 0.5) * (isFullscreen ? 12 : 4)
                 });
             }
-            return { points, color: `hsl(${Math.random() * 360}, 100%, 50%)` };
+            // 履歴更新のタイミングを調整するためのフレームカウンターを追加
+            return { points, color, history: [], frameCount: 0 };
         }
 
-        const shape1 = createShape();
-        const shape2 = createShape();
+        // ★変更: 2つのオブジェクトにそれぞれ設定された色を適用
+        const shape1 = createShape(currentMystifyColor1);
+        const shape2 = createShape(currentMystifyColor2);
 
         function updateAndDraw(shape) {
-            ctx.beginPath();
-            ctx.moveTo(shape.points[0].x, shape.points[0].y);
             for (let i = 0; i < shape.points.length; i++) {
                 const p = shape.points[i];
                 p.x += p.vx;
                 p.y += p.vy;
                 if (p.x <= 0 || p.x >= canvas.width) p.vx *= -1;
                 if (p.y <= 0 || p.y >= canvas.height) p.vy *= -1;
-                ctx.lineTo(p.x, p.y);
             }
-            ctx.closePath();
-            ctx.strokeStyle = shape.color;
-            ctx.stroke();
+
+            // ★ 数フレームに1回だけ履歴を更新する（例: 2フレームに1回に間引く）
+            shape.frameCount++;
+            if (shape.frameCount % 2 === 0) {
+                const currentPoints = shape.points.map(p => ({ x: p.x, y: p.y }));
+                shape.history.unshift(currentPoints);
+                if (shape.history.length > currentMystifyLines) {
+                    shape.history.pop();
+                }
+            }
+
+            // 履歴にあるすべての図形を描画（古いものほど薄くする）
+            for (let hIndex = 0; hIndex < shape.history.length; hIndex++) {
+                const pts = shape.history[hIndex];
+
+                const alpha = 1 - (hIndex / shape.history.length);
+                ctx.globalAlpha = Math.max(0.05, alpha);
+
+                ctx.strokeStyle = shape.color;
+                ctx.beginPath();
+                ctx.moveTo(pts[0].x, pts[0].y);
+                for (let i = 1; i < pts.length; i++) {
+                    ctx.lineTo(pts[i].x, pts[i].y);
+                }
+                ctx.closePath();
+                ctx.stroke();
+            }
+            ctx.globalAlpha = 1.0;
         }
 
         function animateMystify() {
-            ctx.fillStyle = "rgba(0, 0, 0, 0.1)";
+            // 背景を黒でクリア（履歴ベースで正確に描画するため）
+            ctx.fillStyle = "black";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             updateAndDraw(shape1);

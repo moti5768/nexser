@@ -695,6 +695,64 @@ export default async function SettingsApp(content) {
                 colorLabel.appendChild(colorInput);
                 ssOptionsBlock.appendChild(colorLabel);
 
+            } else if (type === "mystify") {
+                // ★追加: 線の数（上限15まで）の設定UI
+                const linesLabel = document.createElement("label");
+                linesLabel.style.cssText = "font-size: 12px; display: flex; align-items: center; gap: 6px; margin-bottom: 6px;";
+                linesLabel.textContent = "線の数 (1〜15): ";
+
+                const linesInput = document.createElement("input");
+                linesInput.type = "number";
+                linesInput.min = "1";
+                linesInput.max = "15";
+                linesInput.value = (await loadSetting("screensaverMystifyLines")) || "5";
+                linesInput.style.width = "40px";
+
+                linesInput.onchange = async () => {
+                    let val = parseInt(linesInput.value, 10) || 5;
+                    val = Math.min(15, Math.max(1, val)); // 上限15、下限1に制限
+                    linesInput.value = val;
+                    await saveSetting("screensaverMystifyLines", val);
+                    window.dispatchEvent(new Event("screensaver-settings-changed"));
+                    updatePreviewMonitor(type);
+                };
+                linesLabel.appendChild(linesInput);
+                ssOptionsBlock.appendChild(linesLabel);
+
+                // ★追加: オブジェクト1の色設定UI
+                const color1Label = document.createElement("label");
+                color1Label.style.cssText = "font-size: 12px; display: flex; align-items: center; gap: 6px; margin-bottom: 4px;";
+                color1Label.textContent = "オブジェクト1の色: ";
+
+                const color1Input = document.createElement("input");
+                color1Input.type = "color";
+                color1Input.value = (await loadSetting("screensaverColor_mystify_1")) || "#00ff00";
+
+                color1Input.onchange = async () => {
+                    await saveSetting("screensaverColor_mystify_1", color1Input.value);
+                    window.dispatchEvent(new Event("screensaver-settings-changed"));
+                    updatePreviewMonitor(type);
+                };
+                color1Label.appendChild(color1Input);
+                ssOptionsBlock.appendChild(color1Label);
+
+                // ★追加: オブジェクト2の色設定UI
+                const color2Label = document.createElement("label");
+                color2Label.style.cssText = "font-size: 12px; display: flex; align-items: center; gap: 6px;";
+                color2Label.textContent = "オブジェクト2の色: ";
+
+                const color2Input = document.createElement("input");
+                color2Input.type = "color";
+                color2Input.value = (await loadSetting("screensaverColor_mystify_2")) || "#00ffff";
+
+                color2Input.onchange = async () => {
+                    await saveSetting("screensaverColor_mystify_2", color2Input.value);
+                    window.dispatchEvent(new Event("screensaver-settings-changed"));
+                    updatePreviewMonitor(type);
+                };
+                color2Label.appendChild(color2Input);
+                ssOptionsBlock.appendChild(color2Label);
+
             } else if (type === "maze") {
                 // ★追加: 迷路の場合は「壁」「床」「天井」の3つの設定を用意
                 const mazeSettings = [
@@ -760,7 +818,7 @@ export default async function SettingsApp(content) {
                     return;
                 }
 
-                // ★【追加】迷路の場合は保存されている色設定を読み込む
+                // ★ 各種タイプに応じた最新の設定値を読み込む
                 let options = {};
                 if (type === "maze") {
                     options = {
@@ -768,12 +826,17 @@ export default async function SettingsApp(content) {
                         floorColor: await loadSetting("screensaverColor_maze_floor") || "#333333",
                         ceilingColor: await loadSetting("screensaverColor_maze_ceiling") || "#555555"
                     };
+                } else if (type === "mystify") {
+                    options = {
+                        lines: parseInt(await loadSetting("screensaverMystifyLines"), 10) || 5,
+                        color1: (await loadSetting("screensaverColor_mystify_1")) || "#00ff00",
+                        color2: (await loadSetting("screensaverColor_mystify_2")) || "#00ffff"
+                    };
                 }
 
                 const { startPreview } = await import("../screensaver.js");
                 if (isDestroyed) return;
 
-                // ★【修正】第3引数に options を渡すように変更
                 currentPreviewCleanup = startPreview(monitorScreen, type, options);
             } catch (e) {
                 console.warn("プレビューの読み込みに失敗しました", e);
