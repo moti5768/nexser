@@ -30,18 +30,29 @@ async function getDB() {
     return dbPromise;
 }
 
+async function getStorageInfo() {
+    const fallbackQuota = 100 * 1024 * 1024 * 1024; // 100GB
+    if (navigator.storage && navigator.storage.estimate) {
+        try {
+            const { usage = 0, quota = fallbackQuota } = await navigator.storage.estimate();
+            return { usage, quota };
+        } catch (e) {
+            console.warn("Storage estimate failed:", e);
+        }
+    }
+    return { usage: 0, quota: fallbackQuota };
+}
+
+
 export async function saveSetting(key, value) {
     try {
         const db = await getDB();
 
-        if (navigator.storage && navigator.storage.estimate) {
-            const { usage, quota } = await navigator.storage.estimate();
-            // ★ 固定値ではなく quota を使用
-            if (usage >= quota * 0.95) {
-                const activeWin = document.querySelector(".window:not([style*='display: none'])");
-                alertWindow("ディスク領域不足のため、設定を保存できませんでした。", { parentWin: activeWin });
-                return false;
-            }
+        const { usage, quota } = await getStorageInfo();
+        if (usage >= quota * 0.95) {
+            const activeWin = document.querySelector(".window:not([style*='display: none'])");
+            alertWindow("ディスク領域不足のため、設定を保存できませんでした。", { parentWin: activeWin });
+            return false;
         }
 
         const tx = db.transaction(STORE, "readwrite");
@@ -54,12 +65,6 @@ export async function saveSetting(key, value) {
         return false;
     }
 }
-
-
-
-
-
-
 
 export async function loadSetting(key) {
     try {
@@ -85,49 +90,52 @@ export let desktopColor = null;
 const DEFAULT_COLOR = "darkblue";
 
 /**
- * 壁紙の表示形式を考慮して背景を適用する
+ * 指定された要素に壁紙の表示形式（wpStyle）に応じたスタイルを適用する
  */
+function applyBackgroundStyle(element, wpStyle) {
+    switch (wpStyle) {
+        case "center":
+            element.style.backgroundSize = "auto";
+            element.style.backgroundRepeat = "no-repeat";
+            element.style.backgroundPosition = "center";
+            break;
+        case "tile":
+            element.style.backgroundSize = "auto";
+            element.style.backgroundRepeat = "repeat";
+            element.style.backgroundPosition = "0 0";
+            break;
+        case "stretch":
+            element.style.backgroundSize = "100% 100%";
+            element.style.backgroundRepeat = "no-repeat";
+            element.style.backgroundPosition = "center";
+            break;
+        case "fit":
+            element.style.backgroundSize = "contain";
+            element.style.backgroundRepeat = "no-repeat";
+            element.style.backgroundPosition = "center";
+            break;
+        case "fill":
+        default:
+            element.style.backgroundSize = "cover";
+            element.style.backgroundRepeat = "no-repeat";
+            element.style.backgroundPosition = "center";
+            break;
+    }
+}
+
 async function applyDesktopBackground() {
     const desk = document.querySelector("#desktop");
     if (!desk) return;
 
     const color = await loadSetting("desktopColor");
     const wpUrl = await loadSetting("wallpaperUrl");
-    const wpStyle = await loadSetting("wallpaperStyle") || "fill"; // デフォルトは「画面に合わせる」
+    const wpStyle = await loadSetting("wallpaperStyle") || "fill";
 
-    // 初期化
     desk.style.backgroundImage = wpUrl ? `url(${wpUrl})` : "none";
     desk.style.backgroundColor = color || "";
 
-    // スタイルに応じたCSSの切り替え
-    switch (wpStyle) {
-        case "center": // 中央に表示
-            desk.style.backgroundSize = "auto";
-            desk.style.backgroundRepeat = "no-repeat";
-            desk.style.backgroundPosition = "center";
-            break;
-        case "tile": // 並べて表示
-            desk.style.backgroundSize = "auto";
-            desk.style.backgroundRepeat = "repeat";
-            desk.style.backgroundPosition = "0 0";
-            break;
-        case "stretch": // 拡大して表示（比率無視）
-            desk.style.backgroundSize = "100% 100%";
-            desk.style.backgroundRepeat = "no-repeat";
-            desk.style.backgroundPosition = "center";
-            break;
-        case "fit": // 全体を表示（比率維持・余白あり）
-            desk.style.backgroundSize = "contain";
-            desk.style.backgroundRepeat = "no-repeat";
-            desk.style.backgroundPosition = "center";
-            break;
-        case "fill": // 画面いっぱいに広げる（比率維持・現在のcover）
-        default:
-            desk.style.backgroundSize = "cover";
-            desk.style.backgroundRepeat = "no-repeat";
-            desk.style.backgroundPosition = "center";
-            break;
-    }
+    // 共通関数を呼び出し
+    applyBackgroundStyle(desk, wpStyle);
 }
 
 /**
@@ -173,41 +181,62 @@ loadSetting("widgetTool_isTaskbarPreviewEnabled").then(v => {
     }
 });
 
-window.addEventListener("setting-changed", async (e) => {
-    const key = e.detail?.key;
-    if (!key) return;
 
-    if (key === "titlebarColor" || key === "titlebarColor2") {
+
+const settingChangeHandlers = {
+    async titlebarColor() {
         themeColor = (await loadSetting("titlebarColor")) || "darkblue";
         themeColor2 = (await loadSetting("titlebarColor2")) || null;
         refreshTopWindow();
-    } else if (key === "desktopColor" || key === "wallpaperUrl" || key === "wallpaperStyle") {
+    },
+    async titlebarColor2() {
+        await this.titlebarColor();
+    },
+    async desktopColor() {
         applyDesktopBackground();
-    } else if (key === "windowAnimationEnabled") {
+    },
+    async wallpaperUrl() {
+        applyDesktopBackground();
+    },
+    async wallpaperStyle() {
+        applyDesktopBackground();
+    },
+    async windowAnimationEnabled() {
         let val = await loadSetting("windowAnimationEnabled");
         // もし過去のバグ等で文字列の "false" が保存されていた場合の保護
         if (val === "false") val = false;
         setWindowAnimationEnabled(val ?? true);
-    } else if (key === "showRecentItems") {
+    },
+    async showRecentItems() {
         window.showRecent = (await loadSetting("showRecentItems")) ?? true;
         window.dispatchEvent(new Event("recent-updated"));
-    } else if (key === "userName") {
+    },
+    async userName() {
         const newName = (await loadSetting("userName")) || "Admin";
         window.dispatchEvent(new CustomEvent("user-profile-updated", { detail: newName }));
-    } else if (key === "widgetTool_isPreviewEnabled") {
-        // ★ 追加: 設定変更時にプレビュー状態を即時反映
+    },
+    async widgetTool_isPreviewEnabled() {
         const val = await loadSetting("widgetTool_isPreviewEnabled");
         if (typeof window.setWindowPreviewEnabled === 'function') {
             window.setWindowPreviewEnabled(val ?? true);
         }
-    } else if (key === "widgetTool_isTaskbarPreviewEnabled") {
-        // ★ 追加: タスクバープレビュー設定変更の即時反映
+    },
+    async widgetTool_isTaskbarPreviewEnabled() {
         const val = await loadSetting("widgetTool_isTaskbarPreviewEnabled");
         if (typeof window.setTaskbarPreviewEnabled === 'function') {
             window.setTaskbarPreviewEnabled(val ?? true);
         }
     }
+};
+
+window.addEventListener("setting-changed", async (e) => {
+    const key = e.detail?.key;
+    if (key && settingChangeHandlers[key]) {
+        await settingChangeHandlers[key]();
+    }
 });
+
+
 export function refreshTopWindow() {
     const visibleWindows = Array.from(document.querySelectorAll(".window"))
         .filter(win => win.style.display !== "none" && win.dataset.minimized !== "true");
@@ -726,34 +755,7 @@ export default async function SettingsApp(content) {
 
                     if (wpUrl) {
                         monitorScreen.style.backgroundImage = `url(${wpUrl})`;
-                        switch (wpStyle) {
-                            case "center":
-                                monitorScreen.style.backgroundSize = "auto";
-                                monitorScreen.style.backgroundRepeat = "no-repeat";
-                                monitorScreen.style.backgroundPosition = "center";
-                                break;
-                            case "tile":
-                                monitorScreen.style.backgroundSize = "auto";
-                                monitorScreen.style.backgroundRepeat = "repeat";
-                                monitorScreen.style.backgroundPosition = "0 0";
-                                break;
-                            case "stretch":
-                                monitorScreen.style.backgroundSize = "100% 100%";
-                                monitorScreen.style.backgroundRepeat = "no-repeat";
-                                monitorScreen.style.backgroundPosition = "center";
-                                break;
-                            case "fit":
-                                monitorScreen.style.backgroundSize = "contain";
-                                monitorScreen.style.backgroundRepeat = "no-repeat";
-                                monitorScreen.style.backgroundPosition = "center";
-                                break;
-                            case "fill":
-                            default:
-                                monitorScreen.style.backgroundSize = "cover";
-                                monitorScreen.style.backgroundRepeat = "no-repeat";
-                                monitorScreen.style.backgroundPosition = "center";
-                                break;
-                        }
+                        applyBackgroundStyle(monitorScreen, wpStyle);
                     }
                     return;
                 }
@@ -1101,6 +1103,17 @@ export default async function SettingsApp(content) {
         root.append(label, clearBtn);
     }
 
+    // 単位変換
+    function formatBytes(bytes) {
+        if (bytes === 0) return "0.00 B";
+        const k = 1024;
+        const dm = 2;
+        const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        const res = parseFloat((bytes / Math.pow(k, i)).toFixed(dm));
+        return `${res.toFixed(dm)} ${sizes[i]}`;
+    }
+
     /* ---------- System ---------- */
     async function renderSystem(root) {
         root.innerHTML = "";
@@ -1114,17 +1127,6 @@ export default async function SettingsApp(content) {
         storageBox.innerHTML = "<i>Loading storage information...</i>";
 
         root.append(info, storageBox);
-
-        // 単位変換
-        function formatBytes(bytes) {
-            if (bytes === 0) return "0.00 B";
-            const k = 1024;
-            const dm = 2;
-            const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            const res = parseFloat((bytes / Math.pow(k, i)).toFixed(dm));
-            return `${res.toFixed(dm)} ${sizes[i]}`;
-        }
 
         // 個別ストアの削除機能
         async function clearStore(storeName) {
@@ -1143,6 +1145,25 @@ export default async function SettingsApp(content) {
 
         const encoder = new TextEncoder();
 
+        // ★ 改善点: サイズ計算のロジックを独立した関数として外に切り出し
+        function calculateItemSize(storeName, item) {
+            if (!item) return 0;
+
+            if (storeName === "files") {
+                if (item instanceof Blob) return item.size;
+                if (item instanceof ArrayBuffer) return item.byteLength;
+                if (typeof item === 'string') return encoder.encode(item).length;
+                return 0;
+            }
+
+            try {
+                const jsonString = JSON.stringify(item);
+                return jsonString ? encoder.encode(jsonString).length : 0;
+            } catch {
+                return 0;
+            }
+        }
+
         async function getStoreSizes() {
             try {
                 const db = await getDB();
@@ -1158,17 +1179,8 @@ export default async function SettingsApp(content) {
                         request.onsuccess = (event) => {
                             const cursor = event.target.result;
                             if (cursor) {
-                                const item = cursor.value;
-                                if (storeName === "files") {
-                                    if (item instanceof Blob) bytes += item.size;
-                                    else if (typeof item === 'string') bytes += encoder.encode(item).length;
-                                    else if (item instanceof ArrayBuffer) bytes += item.byteLength;
-                                } else {
-                                    try {
-                                        const jsonString = JSON.stringify(item);
-                                        if (jsonString) bytes += encoder.encode(jsonString).length;
-                                    } catch (e) { bytes += 0; }
-                                }
+                                // ★ 改善点: 切り出した関数を呼び出すだけになり、ネストが浅くスッキリします
+                                bytes += calculateItemSize(storeName, cursor.value);
                                 cursor.continue();
                             } else {
                                 resolve();
@@ -1177,10 +1189,13 @@ export default async function SettingsApp(content) {
                         request.onerror = () => reject(request.error);
                         tx.onabort = () => reject(new Error("Transaction aborted"));
                     });
-                    return { name: storeName, bytes };
+
+                    // ★ 改善点: Object.fromEntries 用に [キー, 値] の配列で直接返します
+                    return [storeName, bytes];
                 }));
 
-                return Object.fromEntries(results.map(r => [r.name, r.bytes]));
+                // ★ 改善点: .map() を使わずにそのまま渡せるようになります
+                return Object.fromEntries(results);
             } catch (e) {
                 console.error("[Settings] getStoreSizes failed:", e);
                 return {};
@@ -1191,13 +1206,7 @@ export default async function SettingsApp(content) {
             if (!document.body.contains(root) || currentTabId !== "system") return;
             const sizes = await getStoreSizes();
 
-            let quota = 0;
-            if (navigator.storage && navigator.storage.estimate) {
-                const estimate = await navigator.storage.estimate();
-                quota = estimate.quota;
-            } else {
-                quota = 100 * 1024 * 1024 * 1024;
-            }
+            const { quota } = await getStorageInfo();
 
             // 非同期処理を待っている間にタブが切り替わったり閉じられたら、処理を中断するガード
             if (!document.body.contains(storageBox) || currentTabId !== "system") return;
