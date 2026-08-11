@@ -6,7 +6,7 @@ let deletedDefaults = new Set();
 let isSaving = false;
 let isInitializing = false;
 const DEBUG_FS = false;
-const PROTECTED_KEYS = new Set(["type", "entry", "singleton", "shell", "target", "name", "system"]);
+const PROTECTED_KEYS = new Set(["type", "entry", "singleton", "shell", "target", "name", "system", "lastModified"]);
 
 // 1. ベースデータ
 const baseFS = {
