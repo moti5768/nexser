@@ -110,13 +110,10 @@
     margin-bottom: 5px;
 }
 
-/* 修正箇所：詳細表示モード (レイアウト崩れ防止・省略対応版) */
 .details-view {
-    display: grid !important;
-    /* 1列目:アイコン, 2列目:名前, 3列目:種類, 4列目:サイズ, 5列目:更新日時 を追加 */
-    grid-template-columns: 24px minmax(0, 1fr) 100px 80px 130px;
-    gap: 8px;
-    padding: 4px 12px;
+    display: flex !important;
+    padding: 2px 8px !important;
+    /* JS側の設定と完全に一致させる */
     border-bottom: 1px solid #eee;
     font-size: 12px;
     align-items: center;
@@ -229,4 +226,38 @@
 .ribbon-item:hover {
     background: darkblue;
     color: white;
+}
+
+.details-header-row {
+    /* 端っこに余白を作らないよう、パディングを 0 に戻す */
+    padding: 0 !important;
+    background: transparent !important;
+    border-bottom: none !important;
+    box-sizing: border-box;
+    display: flex;
+    width: 100%;
+}
+
+.details-header-row>div {
+    box-sizing: border-box;
+    -webkit-user-select: none;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    color: black;
+    background-color: #C3C7CB;
+    border: 1.5px solid #808080;
+    border-color: #fff #808080 #808080 #fff;
+    box-shadow: 0.5px 0.5px black;
+    cursor: pointer;
+    height: 22px;
+    /* 高さを固定してレイアウトを安定させる */
+    padding: 0 4px;
+}
+
+.details-header-row>div:active {
+    border: 1.5px solid;
+    border-color: #7a7a7a #fff #fff #7a7a7a;
+    box-shadow: 0.5px 0.5px 0 #000 inset;
+    box-sizing: border-box;
 }

@@ -341,6 +341,10 @@ export default async function Explorer(root, options = {}) {
     const rawHidden = await loadSetting("explorerShowHidden");
     let showHidden = rawHidden === true || rawHidden === "true";
 
+    // ★追加: 自動整列（ソート）用の状態管理
+    let sortKey = await loadSetting("explorerSortKey") || "name"; // 'name', 'type', 'size', 'date'
+    let sortOrder = await loadSetting("explorerSortOrder") || "asc"; // 'asc', 'desc'
+
     // 固定参照保持
     let listContainer, pathLabel, treeContainer;
 
@@ -872,6 +876,7 @@ export default async function Explorer(root, options = {}) {
                 btn.className = viewMode === mode ? "view-mode-btn selected" : "view-mode-btn";
                 btn.textContent = label;
                 btn.title = title;
+                btn.dataset.mode = mode; // ★どのモードのボタンか識別できるように追加
                 btn.style.padding = "2px 6px";
                 btn.style.marginRight = "4px";
 
@@ -1111,10 +1116,21 @@ export default async function Explorer(root, options = {}) {
         // --- render 関数の最後（364行目付近）に追加 ---
 
         // 現在の履歴スタックに応じて、ボタンの有効・無効を切り替える
-        // win（Explorerを動かしているウィンドウ）の中からボタンを探して更新します
         const bBtn = win?.querySelector(".explorer-header button:nth-child(1)");
         const fBtn = win?.querySelector(".explorer-header button:nth-child(2)");
         const uBtn = win?.querySelector(".up-button");
+
+        // ★追加: 右クリックメニュー等で表示形式が変更された際、ヘッダーのボタン選択状態を同期する
+        const viewControlsEl = win?.querySelector(".view-controls");
+        if (viewControlsEl) {
+            viewControlsEl.querySelectorAll(".view-mode-btn").forEach(b => {
+                if (b.dataset.mode === viewMode) {
+                    b.classList.add("selected");
+                } else {
+                    b.classList.remove("selected");
+                }
+            });
+        }
 
         if (bBtn) {
             // 履歴がなければ disabled にし、pointer_none クラスを付与する
@@ -1208,23 +1224,78 @@ export default async function Explorer(root, options = {}) {
             }
         };
 
-        // メタデータを除外し、フォルダ優先＆名前順にソートする配列を作成
-        const sortedNames = Object.keys(folder)
-            .filter(name => !isSystemMetaKey(name) && (showHidden || !folder[name].hidden)) // ★隠しファイル表示設定を考慮
-            .sort((a, b) => {
-                const isFolderA = folder[a].type === "folder";
-                const isFolderB = folder[b].type === "folder";
+        // ★改善: メタデータを除外し、ソート設定（自動整列）に基づいて配列を作成
+        const itemsList = await Promise.all(Object.keys(folder)
+            .filter(name => !isSystemMetaKey(name) && (showHidden || !folder[name].hidden))
+            .map(async name => {
+                const itemData = folder[name];
+                const childPath = currentPath ? `${currentPath}/${name}` : name;
+                const size = await calcNodeSize(itemData, childPath);
+                return { name, itemData, size };
+            }));
 
-                // フォルダを先頭にまとめる
-                if (isFolderA && !isFolderB) return -1;
-                if (!isFolderA && isFolderB) return 1;
+        const sortedItems = itemsList.sort((a, b) => {
+            const isFolderA = a.itemData.type === "folder";
+            const isFolderB = b.itemData.type === "folder";
 
-                // 同じタイプ同士なら名前順（日本語対応）でソート
-                return a.localeCompare(b, 'ja');
-            });
+            // Windows標準の挙動: 名前ソート以外でも基本的にフォルダを先頭にまとめる
+            if (isFolderA && !isFolderB) return -1;
+            if (!isFolderA && isFolderB) return 1;
 
-        for (const name of sortedNames) {
-            const itemData = folder[name];
+            let result = 0;
+            if (sortKey === "date") {
+                const dateA = a.itemData.lastModified || 0;
+                const dateB = b.itemData.lastModified || 0;
+                result = dateA - dateB;
+            } else if (sortKey === "size") {
+                result = a.size - b.size;
+            } else if (sortKey === "type") {
+                const typeA = a.itemData.type || "";
+                const typeB = b.itemData.type || "";
+                result = typeA.localeCompare(typeB, 'ja');
+                if (result === 0) result = a.name.localeCompare(b.name, 'ja');
+            } else {
+                result = a.name.localeCompare(b.name, 'ja');
+            }
+
+            return sortOrder === "asc" ? result : -result;
+        });
+
+        if (viewMode === "details") {
+            const headerRow = document.createElement("div");
+            headerRow.className = "details-header-row";
+            headerRow.style.cssText = "display: flex; padding: 4px 8px; border-bottom: 1px solid #ccc; background: #f8f9fa; font-size: 12px; position: sticky; top: 0; z-index: 10;";
+
+            const createColHeader = (text, key, flexStyle, padLeft) => {
+                const col = document.createElement("div");
+                // 展開（ソート）時の矢印マークを削除
+                col.textContent = text;
+                // 縦並び防止と列幅の固定化
+                col.style.cssText = `flex: ${flexStyle}; padding-left: ${padLeft}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; user-select: none;`;
+
+                // クリックでソート切り替え
+                col.onclick = async () => {
+                    if (sortKey === key) {
+                        sortOrder = sortOrder === "asc" ? "desc" : "asc";
+                    } else {
+                        sortKey = key;
+                        sortOrder = "asc";
+                    }
+                    await saveSetting("explorerSortKey", sortKey);
+                    await saveSetting("explorerSortOrder", sortOrder);
+                    render(currentPath);
+                };
+                return col;
+            };
+
+            headerRow.appendChild(createColHeader("名前", "name", "1 1 auto", "26px"));
+            headerRow.appendChild(createColHeader("種類", "type", "0 0 150px", "8px"));
+            headerRow.appendChild(createColHeader("サイズ", "size", "0 0 100px", "8px"));
+            headerRow.appendChild(createColHeader("更新日時", "date", "0 0 150px", "8px"));
+            fragment.appendChild(headerRow);
+        }
+
+        for (const { name, itemData, size: sizeValue } of sortedItems) {
             const childPath = currentPath ? `${currentPath}/${name}` : name;
 
             const item = document.createElement("div");
@@ -1246,8 +1317,13 @@ export default async function Explorer(root, options = {}) {
                     <div class="item-name-label">${name}</div>
                 `;
             } else if (viewMode === "details") {
-                const sizeValue = await calcNodeSize(itemData, childPath);
+                // ★改善: 事前計算された sizeValue を再利用（await を削除し高速化）
                 const size = formatSize(sizeValue);
+
+                // アイテムのレイアウトをFlexbox化してヘッダー列と幅を合わせるためのスタイル調整
+                item.style.display = "flex";
+                item.style.alignItems = "center";
+                item.style.padding = "2px 8px";
 
                 // type プロパティに応じて表示名を細かく分岐
                 let typeLabel = "ファイル";
@@ -1273,12 +1349,15 @@ export default async function Explorer(root, options = {}) {
                     ? new Date(itemData.lastModified).toLocaleDateString('ja-JP', dateOpts)
                     : '';
 
+                // flexプロパティとwhite-spaceで幅を固定し、縦並びを解消してヘッダーと位置を揃える
                 item.innerHTML = `
-        <span class="item-icon-small">${iconChar}</span>
-        <span class="item-name-text">${name}</span>
-        <span class="item-type-text">${typeLabel}</span>
-        <span class="item-size-text">${size}</span>
-        <span class="item-date-text">${modifiedStr}</span>
+        <div style="flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 6px; overflow: hidden;">
+            <span class="item-icon-small" style="flex-shrink: 0; display: flex; align-items: center; justify-content: center;">${iconChar}</span>
+            <span class="item-name-text" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${name}</span>
+        </div>
+        <span class="item-type-text" style="flex: 0 0 120px; padding-left: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${typeLabel}</span>
+        <span class="item-size-text" style="flex: 0 0 100px; padding-left: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${size}</span>
+        <span class="item-date-text" style="flex: 0 0 140px; padding-left: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${modifiedStr}</span>
     `;
             } else {
                 // リスト表示
@@ -1305,18 +1384,71 @@ export default async function Explorer(root, options = {}) {
         }
         listContainer.appendChild(fragment);
 
-        // 右クリック
+        // ★改善: context-menu.js の仕様に合わせた右クリックメニュー（背景とアイテムで切り替え）
         const contentEl = root.querySelector(".content") || root.closest(".window")?.querySelector(".content");
         if (contentEl) {
-            attachContextMenu(contentEl, () => {
-                const fileMenu = getExplorerMenus().find(m => m.title === "File");
-                if (!fileMenu) return [];
+            attachContextMenu(contentEl, (e) => {
+                const isInsideTrash = isTrashPath(currentPath);
+                const clickedItem = e.target.closest(".explorer-item");
 
-                return fileMenu.items.map(it => ({
+                // --- 1. 背景（何もアイテムがない場所）を右クリックした場合 ---
+                if (!clickedItem) {
+                    // 背景クリック時は選択を解除
+                    if (globalSelected.items.size > 0) {
+                        globalSelected.items.forEach(i => i.classList.remove("selected"));
+                        globalSelected.items.clear();
+                        globalSelected.lastSelected = null;
+                    }
+
+                    return [
+                        { label: `表示: 大アイコン ${viewMode === "icon" ? "✔" : ""}`, action: async () => { viewMode = "icon"; await saveSetting("explorerViewMode", viewMode); render(currentPath); } },
+                        { label: `表示: リスト ${viewMode === "list" ? "✔" : ""}`, action: async () => { viewMode = "list"; await saveSetting("explorerViewMode", viewMode); render(currentPath); } },
+                        { label: `表示: 詳細 ${viewMode === "details" ? "✔" : ""}`, action: async () => { viewMode = "details"; await saveSetting("explorerViewMode", viewMode); render(currentPath); } },
+                        { label: "---" }, // context-menu.js のセパレーター形式
+                        { label: `並べ替え: 名前 ${sortKey === "name" ? "●" : ""}`, action: async () => { sortKey = "name"; await saveSetting("explorerSortKey", sortKey); render(currentPath); } },
+                        { label: `並べ替え: 種類 ${sortKey === "type" ? "●" : ""}`, action: async () => { sortKey = "type"; await saveSetting("explorerSortKey", sortKey); render(currentPath); } },
+                        { label: `並べ替え: サイズ ${sortKey === "size" ? "●" : ""}`, action: async () => { sortKey = "size"; await saveSetting("explorerSortKey", sortKey); render(currentPath); } },
+                        { label: `並べ替え: 更新日時 ${sortKey === "date" ? "●" : ""}`, action: async () => { sortKey = "date"; await saveSetting("explorerSortKey", sortKey); render(currentPath); } },
+                        { label: `昇順 / 降順 (${sortOrder === "asc" ? "昇順" : "降順"})`, action: async () => { sortOrder = sortOrder === "asc" ? "desc" : "asc"; await saveSetting("explorerSortOrder", sortOrder); render(currentPath); } },
+                        { label: "---" },
+                        { label: "最新の情報に更新", action: () => render(currentPath) },
+                        { label: "---" },
+                        { label: "新規フォルダ", action: () => createNewItem(currentPath, listContainer, () => render(currentPath), "folder"), disabled: isInsideTrash },
+                        { label: "新規テキストファイル", action: () => createNewItem(currentPath, listContainer, () => render(currentPath), "file"), disabled: isInsideTrash }
+                    ];
+                }
+
+                // --- 2. アイテム上を右クリックした場合 ---
+                if (!globalSelected.items.has(clickedItem)) {
+                    globalSelected.items.forEach(i => i.classList.remove("selected"));
+                    globalSelected.items.clear();
+                    globalSelected.items.add(clickedItem);
+                    clickedItem.classList.add("selected");
+                    globalSelected.lastSelected = clickedItem;
+                }
+
+                const fileMenu = getExplorerMenus().find(m => m.title === "File");
+                const baseItems = fileMenu ? fileMenu.items.map(it => ({
                     label: it.label,
                     action: it.action,
                     disabled: typeof it.disabled === "function" ? it.disabled() : it.disabled
-                }));
+                })) : [];
+
+                const openItems = baseItems.filter(it => it.label === "開く" || it.label === "元に戻す" || it.label === "プログラムから開く");
+                const deleteItems = baseItems.filter(it => it.label === "選択アイテムを削除" || it.label === "完全に削除" || it.label === "ゴミ箱を空にする");
+                const propItems = baseItems.filter(it => it.label === "プロパティ");
+
+                const result = [...openItems];
+                if (deleteItems.length) {
+                    if (result.length) result.push({ label: "---" });
+                    result.push(...deleteItems);
+                }
+                if (propItems.length) {
+                    if (result.length) result.push({ label: "---" });
+                    result.push(...propItems);
+                }
+
+                return result;
             });
         }
 
