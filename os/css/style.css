@@ -962,3 +962,8 @@ progress::-webkit-progress-value {
 progress::-moz-progress-bar {
     background: darkblue;
 }
+
+/* 非アクティブなウィンドウ内のiframeはマウスクリックを無視し、親要素(window)に拾わせる */
+.window.inactive-window iframe {
+    pointer-events: none;
+}

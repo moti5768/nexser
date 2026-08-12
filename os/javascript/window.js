@@ -1368,8 +1368,14 @@ export function refreshTopWindow() {
             tb.style.background = themeColor2
                 ? `linear-gradient(90deg, ${themeColor || DEFAULT_COLOR}, ${themeColor2})`
                 : (themeColor || DEFAULT_COLOR);
+
+            // ★最前面になったら操作可能にする
+            win.classList.remove("inactive-window");
         } else {
             tb.style.background = DEFAULT_COLOR;
+
+            // ★最前面以外は inactive クラスをつける
+            win.classList.add("inactive-window");
         }
     });
 
