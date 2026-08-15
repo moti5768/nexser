@@ -43,25 +43,22 @@ function deleteFSItem(parentPath, itemName, rerender) {
             buttons: [
                 {
                     label: "削除",
+                    // 修正後
                     action: async () => {
                         const targetNode = resolveFS(parentPath);
                         if (targetNode && targetNode[itemName]) {
-                            const item = targetNode[itemName];
-                            // ゴミ箱内のアイテムが持つ originalPath から元のフルパスを復元
-                            const originalPath = item.originalPath ? `${item.originalPath}/${itemName}` : itemName;
-
-                            delete targetNode[itemName];
-
-                            // ★ 削除されたデフォルト項目として記録
-                            await markDefaultDeleted(originalPath);
+                            try {
+                                const item = targetNode[itemName];
+                                const originalPath = item.originalPath ? `${item.originalPath}/${itemName}` : itemName;
+                                delete targetNode[itemName];
+                                await markDefaultDeleted(originalPath);
+                            } catch (e) {
+                                // エラーをキャッチしてBSoDを防ぐ
+                                alertWindow(`「${itemName}」は保護されているため完全に削除できません。`);
+                            }
                         }
-
                         await forceSave();
-
-                        // 2. ウィンドウを先に閉じる（イベント発火時の干渉を防ぐ）
                         closeModal(win);
-
-                        // 3. システム全体に通知し、描画を更新
                         window.dispatchEvent(new Event("fs-updated"));
                         if (typeof rerender === 'function') rerender();
                     }
@@ -171,23 +168,30 @@ export function emptyTrash(rerender) {
                 label: "すべて削除",
                 action: async () => {
                     const latestTrash = resolveFS("Trash");
+                    let hasProtectedFiles = false; // 保護されたファイルがあったかどうかのフラグ
+
                     for (const key of keys) {
                         const item = latestTrash[key];
                         if (item) {
-                            const originalPath = item.originalPath ? `${item.originalPath}/${key}` : key;
-                            delete latestTrash[key];
-
-                            // ★ 個別にデフォルト削除として記録
-                            await markDefaultDeleted(originalPath);
+                            try {
+                                const originalPath = item.originalPath ? `${item.originalPath}/${key}` : key;
+                                delete latestTrash[key];
+                                await markDefaultDeleted(originalPath);
+                            } catch (e) {
+                                // システムファイルの場合は削除をスキップ
+                                hasProtectedFiles = true;
+                            }
                         }
                     }
 
                     await forceSave();
-
                     closeModal(win);
-
                     window.dispatchEvent(new Event("fs-updated"));
                     rerender?.();
+
+                    if (hasProtectedFiles) {
+                        alertWindow("一部のアイテムは保護されているため削除できませんでした。");
+                    }
                 }
             },
             {
@@ -1034,7 +1038,7 @@ export default async function Explorer(root, options = {}) {
                             updateStatusBarSummary(statusBar, folder);
                         }
 
-                        setupRibbon(win, () => currentPath, render, explorerMenus);
+                        setupRibbon(win, () => currentPath, render, getExplorerMenus());
                     }
                 }
             });
@@ -1229,7 +1233,7 @@ export default async function Explorer(root, options = {}) {
                 globalSelected.lastSelected = targetItem;
             }
 
-            setupRibbon(win, () => currentPath, render, explorerMenus);
+            setupRibbon(win, () => currentPath, render, getExplorerMenus());
 
             // ステータスバーの更新
             const statusBar = win?._statusBar;
@@ -1651,28 +1655,35 @@ export default async function Explorer(root, options = {}) {
                                     buttons: [
                                         {
                                             label: "削除",
+                                            // 修正後
                                             action: async () => {
                                                 const targetNode = resolveFS(currentPath);
+                                                let hasProtectedFiles = false;
+
                                                 if (targetNode) {
                                                     for (const name of itemNames) {
                                                         const item = targetNode[name];
                                                         if (item) {
-                                                            const originalPath = item.originalPath ? `${item.originalPath}/${name}` : name;
-                                                            delete targetNode[name];
-
-                                                            // ★ 削除されたデフォルト項目として記録
-                                                            await markDefaultDeleted(originalPath);
+                                                            try {
+                                                                const originalPath = item.originalPath ? `${item.originalPath}/${name}` : name;
+                                                                delete targetNode[name];
+                                                                await markDefaultDeleted(originalPath);
+                                                            } catch (e) {
+                                                                hasProtectedFiles = true;
+                                                            }
                                                         }
                                                     }
                                                 }
 
                                                 await forceSave();
-
                                                 if (confirmWin._modalOverlay) confirmWin._modalOverlay.remove();
                                                 confirmWin.remove();
-
                                                 window.dispatchEvent(new Event("fs-updated"));
                                                 render(currentPath);
+
+                                                if (hasProtectedFiles) {
+                                                    alertWindow("一部のアイテムは保護されているため削除できませんでした。");
+                                                }
                                             }
                                         },
                                         {
@@ -1736,7 +1747,7 @@ export default async function Explorer(root, options = {}) {
     }
 
     const explorerMenus = getExplorerMenus();
-    setupRibbon(win, () => currentPath, render, explorerMenus);
+    setupRibbon(win, () => currentPath, render, getExplorerMenus());
 
 
     render(currentPath);
