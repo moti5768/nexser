@@ -1366,7 +1366,7 @@ export default async function SettingsApp(content) {
                         request.onsuccess = (event) => {
                             const cursor = event.target.result;
                             if (cursor) {
-                                // ★ 改善点: 切り出した関数を呼び出すだけになり、ネストが浅くスッキリします
+                                // データをメモリに溜め込まず、1件ずつ順次処理して加算する
                                 bytes += calculateItemSize(storeName, cursor.value);
                                 cursor.continue();
                             } else {
@@ -1377,11 +1377,9 @@ export default async function SettingsApp(content) {
                         tx.onabort = () => reject(new Error("Transaction aborted"));
                     });
 
-                    // ★ 改善点: Object.fromEntries 用に [キー, 値] の配列で直接返します
                     return [storeName, bytes];
                 }));
 
-                // ★ 改善点: .map() を使わずにそのまま渡せるようになります
                 return Object.fromEntries(results);
             } catch (e) {
                 console.error("[Settings] getStoreSizes failed:", e);

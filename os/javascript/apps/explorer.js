@@ -2,7 +2,7 @@
 import { launch } from "../kernel.js";
 import { showModalWindow, alertWindow, bringToFront, progressWindow } from "../window.js";
 import { resolveFS, validateName, importFileSmart, getUniqueName } from "../fs-utils.js";
-import { FS, initFS, forceSave, markDefaultDeleted } from "../fs.js";
+import { FS, initFS, forceSave, markDefaultDeleted, setBulkUpdating } from "../fs.js";
 import { attachContextMenu } from "../context-menu.js";
 import { resolveAppByPath, getIcon } from "../file-associations.js";
 import { addRecent } from "../recent.js";
@@ -719,7 +719,6 @@ export default async function Explorer(root, options = {}) {
                 });
 
                 listContainer.style.opacity = "0.5";
-                listContainer.style.pointerEvents = "none";
 
                 let processedCount = 0;
 
@@ -773,6 +772,7 @@ export default async function Explorer(root, options = {}) {
                     }
                 };
 
+                setBulkUpdating(true);
                 // --- 5. 実行 ---
                 try {
                     for (const item of initialEntries) {
@@ -791,8 +791,8 @@ export default async function Explorer(root, options = {}) {
                     console.error("Drop processing failed:", err);
                     if (pg && typeof pg.close === "function") pg.close();
                 } finally {
+                    setBulkUpdating(false);
                     listContainer.style.opacity = "1";
-                    listContainer.style.pointerEvents = "auto";
 
                     // ==========================================
                     // ⭐ メモリ解放 (GCの促進)

@@ -3,6 +3,7 @@ import { FS, forceSave } from "../fs.js";
 import { resolveFS } from "../fs-utils.js";
 import { alertWindow } from "../window.js";
 import { getFileContent } from "../fs-db.js";
+import { FILE_ASSOCIATIONS } from "../file-associations.js";
 
 export default function main(content, options) {
     let currentAudio = null;
@@ -81,10 +82,15 @@ export default function main(content, options) {
     };
 
     // サブフォルダを再帰的に走査してファイルパス（folder/file.mp3）の配列を作る関数
+    // file-associations.js から AudioPlayer.app が割り当てられている拡張子を自動取得[cite: 3]
+    const audioExtensions = Object.keys(FILE_ASSOCIATIONS).filter(
+        ext => FILE_ASSOCIATIONS[ext] === "Programs/Applications/AudioPlayer.app"
+    );
+
     const collectAudioFiles = (node, currentPath = "", visited = new Set()) => {
         let files = [];
         if (!node || typeof node !== "object") return files;
-        if (visited.has(node)) return visited; // 循環参照防止
+        if (visited.has(node)) return visited;
         visited.add(node);
 
         for (const name in node) {
@@ -95,7 +101,11 @@ export default function main(content, options) {
             if (child && child.type === "folder") {
                 files = files.concat(collectAudioFiles(child, fullPath, visited));
             } else if (child && child.type === "file") {
-                files.push(fullPath);
+                const lowerName = name.toLowerCase();
+                // 音声用拡張子に一致するものだけをリストに追加[cite: 3]
+                if (audioExtensions.some(ext => lowerName.endsWith(ext))) {
+                    files.push(fullPath);
+                }
             }
         }
         return files;

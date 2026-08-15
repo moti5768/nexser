@@ -8,6 +8,11 @@ let isInitializing = false;
 const DEBUG_FS = false;
 const PROTECTED_KEYS = new Set(["type", "entry", "singleton", "shell", "target", "name", "system", "lastModified"]);
 
+export let isBulkUpdating = false;
+export function setBulkUpdating(flag) {
+    isBulkUpdating = flag;
+}
+
 // 1. ベースデータ
 const baseFS = {
     System: {
@@ -148,7 +153,8 @@ function wrapProxy(obj, path = "") {
             }
             target[prop] = value;
 
-            if (!isSaving && !isInitializing) { // ★ 修正: 初期化中は自動保存やイベント発火もブロック
+            // ✨ ここに !isBulkUpdating を追加
+            if (!isSaving && !isInitializing && !isBulkUpdating) {
                 scheduleSave();
                 window.dispatchEvent(new Event("fs-updated"));
             }
@@ -166,7 +172,8 @@ function wrapProxy(obj, path = "") {
                 target.lastModified = Date.now();
             }
 
-            if (!isSaving && !isInitializing) { // ★ 修正: 初期化中は保存もブロック
+            // ✨ ここにも !isBulkUpdating を追加
+            if (!isSaving && !isInitializing && !isBulkUpdating) {
                 scheduleSave();
                 window.dispatchEvent(new Event("fs-updated"));
             }

@@ -3,6 +3,7 @@ import { FS } from "../fs.js";
 import { resolveFS } from "../fs-utils.js";
 import { getFileContent } from "../fs-db.js";
 import { alertWindow, updateWindowTitle } from "../window.js";
+import { FILE_ASSOCIATIONS } from "../file-associations.js";
 
 /**
  * 高機能オーディオプレーヤー（エラーハンドリング・自動再生対策強化版）
@@ -87,6 +88,11 @@ export default function main(content, options) {
         return key === "type" || key === "system" || key === "originalPath" || key === "entry" || key === "singleton" || key === "target";
     };
 
+    // file-associations.js から AudioPlayer.app が割り当てられている拡張子を自動取得
+    const audioExtensions = Object.keys(FILE_ASSOCIATIONS).filter(
+        ext => FILE_ASSOCIATIONS[ext] === "Programs/Applications/AudioPlayer.app"
+    );
+
     const collectAudioFiles = (node, currentPath = "", visited = new Set()) => {
         let files = [];
         if (!node || typeof node !== "object") return files;
@@ -101,7 +107,11 @@ export default function main(content, options) {
             if (child && child.type === "folder") {
                 files = files.concat(collectAudioFiles(child, fullPath, visited));
             } else if (child && child.type === "file") {
-                files.push(fullPath);
+                const lowerName = name.toLowerCase();
+                // 音声用拡張子に一致するものだけをリストに追加
+                if (audioExtensions.some(ext => lowerName.endsWith(ext))) {
+                    files.push(fullPath);
+                }
             }
         }
         return files;
@@ -144,8 +154,22 @@ export default function main(content, options) {
     };
 
     const getSongList = () => {
-        const musicNode = resolveFS("Programs/Music");
-        return musicNode ? collectAudioFiles(musicNode) : [];
+        let searchNode = null;
+        let baseSearchPath = "";
+
+        if (currentPath) {
+            const parts = currentPath.split("/");
+            parts.pop(); // ファイル名を除去して親フォルダのパスにする
+            baseSearchPath = parts.join("/");
+            searchNode = resolveFS(baseSearchPath);
+        }
+
+        if (!searchNode) {
+            searchNode = resolveFS("Programs") || resolveFS("");
+            baseSearchPath = searchNode === resolveFS("Programs") ? "Programs" : "";
+        }
+
+        return searchNode ? collectAudioFiles(searchNode, baseSearchPath) : [];
     };
 
     const changeSong = (direction) => {
@@ -173,22 +197,15 @@ export default function main(content, options) {
 
         let targetPath = pathOrName || "";
 
-        // パスに "Programs/Music/" や "Music/" が重複して含まれている場合は削る
-        if (targetPath.startsWith("Programs/Music/")) {
-            targetPath = targetPath.replace("Programs/Music/", "");
-        } else if (targetPath.startsWith("Music/")) {
-            targetPath = targetPath.replace("Music/", "");
-        }
+        let fileNode = resolveFS(targetPath);
 
-        let fileNode = resolveFS(`Programs/Music/${targetPath}`);
-
-        // 直接見つからない場合、全ファイルから再帰検索する
-        if (!fileNode) {
+        // 直接見つからない場合、現在のプレイリストから再検索する
+        if (!fileNode && targetPath) {
             const songs = getSongList();
             const found = songs.find(p => p === targetPath || p.endsWith("/" + targetPath) || p.split("/").pop() === targetPath);
             if (found) {
                 targetPath = found;
-                fileNode = resolveFS(`Programs/Music/${targetPath}`);
+                fileNode = resolveFS(targetPath);
             }
         }
 
@@ -196,7 +213,7 @@ export default function main(content, options) {
         const fileName = targetPath ? targetPath.split("/").pop() : pathOrName;
 
         if (!fileNode) {
-            console.warn(`ファイルが見つかりません。探索パス: Programs/Music/${targetPath}`);
+            console.warn(`ファイルが見つかりません。探索パス: ${targetPath}`);
             alertWindow(`ファイルが見つかりません: ${fileName}`);
             isLoading = false;
             return;
@@ -204,7 +221,7 @@ export default function main(content, options) {
 
         let audioData = fileNode.content;
         if (audioData === "__EXTERNAL_DATA__") {
-            audioData = await getFileContent(`Programs/Music/${targetPath}`);
+            audioData = await getFileContent(targetPath);
         }
 
         if (!audioData) {

@@ -1,5 +1,5 @@
 // desktop.js
-import { FS, forceSave, markDefaultDeleted } from "./fs.js";
+import { FS, forceSave, markDefaultDeleted, setBulkUpdating } from "./fs.js";
 import { launch } from "./kernel.js";
 import { alertWindow, progressWindow } from "./window.js";
 import { resolveFS, validateName, importFileSmart, getUniqueName } from "./fs-utils.js";
@@ -611,7 +611,6 @@ export function buildDesktop() {
             });
 
             desktop.style.opacity = "0.5";
-            desktop.style.pointerEvents = "none";
             let processedCount = 0;
 
             const addFileToNode = async (file, targetNode) => {
@@ -661,6 +660,7 @@ export function buildDesktop() {
                 }
             };
 
+            setBulkUpdating(true);
             try {
                 for (const item of initialEntries) {
                     if (item instanceof File) {
@@ -678,9 +678,9 @@ export function buildDesktop() {
                 console.error("Drop processing failed:", err);
                 if (pg && typeof pg.close === "function") pg.close();
             } finally {
+                setBulkUpdating(false);
                 // 【修正】desktop.jsの正しいDOM要素を参照させる
                 desktop.style.opacity = "1";
-                desktop.style.pointerEvents = "auto";
 
                 // ==========================================
                 // ⭐ メモリ解放 (GCの促進)

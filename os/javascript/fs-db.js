@@ -1,6 +1,5 @@
 // fs-db.js
 import { openDB } from "./db.js";
-// 【改善】resolveFS のインポートは不要になったため削除し、クリーンにしました
 
 const STORE_KV = "kv";
 const STORE_FILES = "files"; // データ本体保存用
