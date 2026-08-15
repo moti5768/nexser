@@ -225,12 +225,12 @@ export function buildDesktop() {
         }
 
         items.push({
-            label: "新しいフォルダ",
+            label: "新規フォルダ",
             action: () => createNewItem("Desktop", iconsContainer, "folder")
         });
 
         items.push({
-            label: "新しいファイル",
+            label: "新規テキストファイル",
             action: () => createNewItem("Desktop", iconsContainer, "file")
         });
 
@@ -771,23 +771,18 @@ function createNewItem(currentPath, container, itemType = "folder") {
     if (createNewItem.isCreating) return;
     createNewItem.isCreating = true;
 
-    // 初期表示名の設定
-    let baseName = itemType === "folder" ? "新しいフォルダ" : "新しいテキスト.txt";
-    let defaultName = baseName;
-    let counter = 1;
-
-    // 重複チェック
-    while (folderNode[defaultName]) {
-        if (itemType === "folder") {
-            defaultName = `新しいフォルダ (${counter++})`;
-        } else {
-            defaultName = `新しいテキスト (${counter++}).txt`;
-        }
-    }
+    // 初期表示名の設定（getUniqueName を利用して重複をスマートに回避）
+    let baseName = itemType === "folder" ? "新規フォルダ" : "新しいテキスト.txt";
+    let defaultName = getUniqueName(folderNode, baseName);
 
     const iconDiv = document.createElement("div");
     iconDiv.className = "icon";
-    container.appendChild(iconDiv);
+
+    // ✨ 改善点①: 作成中もフォルダ/ファイルのアイコン（グラフィック）を表示する
+    const iconGraphic = document.createElement("div");
+    iconGraphic.className = "icon-graphic";
+    iconGraphic.textContent = itemType === "folder" ? "📁" : "📄";
+    iconDiv.appendChild(iconGraphic);
 
     const input = document.createElement("input");
     input.type = "text";
@@ -795,6 +790,7 @@ function createNewItem(currentPath, container, itemType = "folder") {
     input.style.cssText = "font-size:13px; text-align:left; width:auto; min-width:100px; z-index:10;";
     iconDiv.appendChild(input);
 
+    container.appendChild(iconDiv);
     input.focus();
 
     // ファイルの場合は拡張子の手前までを選択、フォルダは全選択
@@ -834,11 +830,8 @@ function createNewItem(currentPath, container, itemType = "folder") {
             return;
         }
 
-        let finalName = newName;
-        let idx = 1;
-        while (folderNode[finalName]) {
-            finalName = `${newName} (${idx++})`;
-        }
+        // ✨ 改善点②: 独自の while ループの代わりに getUniqueName を使用して統一感を持たせる
+        let finalName = getUniqueName(folderNode, newName);
 
         // 指定されたタイプで作成
         const now = Date.now();

@@ -59,8 +59,7 @@ function deleteFSItem(parentPath, itemName, rerender) {
                         await forceSave();
 
                         // 2. ウィンドウを先に閉じる（イベント発火時の干渉を防ぐ）
-                        if (win._modalOverlay) win._modalOverlay.remove();
-                        win.remove();
+                        closeModal(win);
 
                         // 3. システム全体に通知し、描画を更新
                         window.dispatchEvent(new Event("fs-updated"));
@@ -70,8 +69,7 @@ function deleteFSItem(parentPath, itemName, rerender) {
                 {
                     label: "キャンセル",
                     action: () => {
-                        if (win._modalOverlay) win._modalOverlay.remove();
-                        win.remove();
+                        closeModal(win);
                     }
                 }
             ]
@@ -186,8 +184,7 @@ export function emptyTrash(rerender) {
 
                     await forceSave();
 
-                    if (win._modalOverlay) win._modalOverlay.remove();
-                    win.remove();
+                    closeModal(win);
 
                     window.dispatchEvent(new Event("fs-updated"));
                     rerender?.();
@@ -196,8 +193,7 @@ export function emptyTrash(rerender) {
             {
                 label: "キャンセル",
                 action: () => {
-                    if (win._modalOverlay) win._modalOverlay.remove();
-                    win.remove();
+                    closeModal(win);
                 }
             }
         ]
@@ -212,7 +208,7 @@ function createNewItem(currentPath, listContainer, renderCallback, type = "folde
     createNewItem.isCreating = true;
 
     // 初期名の設定
-    let baseName = type === "folder" ? "新しいフォルダ" : "新しいテキスト.txt";
+    let baseName = type === "folder" ? "新規フォルダ" : "新しいテキスト.txt";
     let itemName = getUniqueName(folderNode, baseName);
 
     const itemDiv = document.createElement("div");
@@ -498,6 +494,9 @@ export default async function Explorer(root, options = {}) {
             // メタデータを除外してループ
             const entries = Object.entries(node).filter(([k, v]) => !isSystemMetaKey(k) && (showHidden || !v.hidden)); // ★隠しファイル表示設定を考慮
 
+            // ⭐ 改善1: メモリ上に一時的なDOMの格納庫（フラグメント）を作成
+            const fragment = document.createDocumentFragment();
+
             entries.forEach(([name, child], index) => {
                 const fullPath = path ? `${path}/${name}` : name;
 
@@ -514,7 +513,9 @@ export default async function Explorer(root, options = {}) {
                 item.className = "tree-item";
                 item.style.fontFamily = "Consolas, monospace";
                 item.style.cursor = "pointer";
-                parentEl.appendChild(item);
+
+                // ⭐ 改善2: 実際の画面（parentEl）ではなく、フラグメントに追加する
+                fragment.appendChild(item);
 
                 let arrowBtn, subContainer;
 
@@ -527,7 +528,9 @@ export default async function Explorer(root, options = {}) {
 
                     subContainer = document.createElement("div");
                     subContainer.style.marginLeft = "12px";
-                    parentEl.appendChild(subContainer);
+
+                    // ⭐ 改善3: こちらもフラグメントに追加する
+                    fragment.appendChild(subContainer);
 
                     if (currentPath.startsWith(fullPath)) {
                         subContainer.style.display = "block";
@@ -566,6 +569,9 @@ export default async function Explorer(root, options = {}) {
                     buildTree(child, subContainer, fullPath, depth + 1, prefix + (isLast ? "   " : "│  "), currentPath, visited);
                 }
             });
+
+            // ⭐ 改善4: ループがすべて終わった後、一括で実際の画面（親要素）に反映させる
+            parentEl.appendChild(fragment);
         }
 
         // 呼び出し側も visited をリセットするように変更
@@ -1005,6 +1011,9 @@ export default async function Explorer(root, options = {}) {
 
             content.appendChild(container);
 
+            // ⭐ 追加: 描画予約フラグ（イベントリスナーの外側、または同じスコープ内に定義）
+            let isRafScheduled = false;
+
             listContainer.addEventListener("click", e => {
                 if (wasDragging) return;
                 // クリック対象が explorer-item か、その内部かを判定
@@ -1026,7 +1035,6 @@ export default async function Explorer(root, options = {}) {
                         }
 
                         setupRibbon(win, () => currentPath, render, explorerMenus);
-
                     }
                 }
             });
@@ -1065,29 +1073,43 @@ export default async function Explorer(root, options = {}) {
 
                 if (isSelecting && selectionBox) {
                     e.preventDefault(); // デフォルトのテキスト選択や画像ドラッグを防ぐ
+
+                    // ⭐ 改善1: 既に次のフレーム描画が予約されている場合は、今回のイベント処理をスキップ
+                    if (isRafScheduled) return;
+                    isRafScheduled = true;
+
+                    // ⭐ 改善2: requestAnimationFrameの非同期処理内で使うため、現在のマウス座標とCtrlキー状態を変数に退避
                     const currentX = e.clientX;
                     const currentY = e.clientY;
-                    selectionBox.style.left = Math.min(startX, currentX) + "px";
-                    selectionBox.style.top = Math.min(startY, currentY) + "px";
-                    selectionBox.style.width = Math.abs(startX - currentX) + "px";
-                    selectionBox.style.height = Math.abs(startY - currentY) + "px";
+                    const isCtrlPressed = e.ctrlKey;
 
-                    const boxRect = selectionBox.getBoundingClientRect();
-                    const items = listContainer.querySelectorAll(".explorer-item");
+                    requestAnimationFrame(() => {
+                        selectionBox.style.left = Math.min(startX, currentX) + "px";
+                        selectionBox.style.top = Math.min(startY, currentY) + "px";
+                        selectionBox.style.width = Math.abs(startX - currentX) + "px";
+                        selectionBox.style.height = Math.abs(startY - currentY) + "px";
 
-                    items.forEach(item => {
-                        const itemRect = item.getBoundingClientRect();
-                        const isIntersecting = !(
-                            itemRect.right < boxRect.left || itemRect.left > boxRect.right ||
-                            itemRect.bottom < boxRect.top || itemRect.top > boxRect.bottom
-                        );
-                        if (isIntersecting) {
-                            item.classList.add("selected");
-                            globalSelected.items.add(item);
-                        } else if (!e.ctrlKey) {
-                            item.classList.remove("selected");
-                            globalSelected.items.delete(item);
-                        }
+                        const boxRect = selectionBox.getBoundingClientRect();
+                        const items = listContainer.querySelectorAll(".explorer-item");
+
+                        items.forEach(item => {
+                            const itemRect = item.getBoundingClientRect();
+                            const isIntersecting = !(
+                                itemRect.right < boxRect.left || itemRect.left > boxRect.right ||
+                                itemRect.bottom < boxRect.top || itemRect.top > boxRect.bottom
+                            );
+
+                            if (isIntersecting) {
+                                item.classList.add("selected");
+                                globalSelected.items.add(item);
+                            } else if (!isCtrlPressed) {
+                                item.classList.remove("selected");
+                                globalSelected.items.delete(item);
+                            }
+                        });
+
+                        // ⭐ 改善3: 描画処理が完了したらフラグを下ろし、次のmousemoveイベントを受け付けるようにする
+                        isRafScheduled = false;
                     });
                 }
             });
@@ -1107,8 +1129,7 @@ export default async function Explorer(root, options = {}) {
                     setTimeout(() => { wasDragging = false; }, 50);
                 }
             });
-
-        } // ← 初回生成 if (!listContainer) の終わり
+        }
 
         // 【改善】if-else分岐の外にまとめ、再描画・初回生成の両方で必ず実行させます
         if (treeContainer) createTreeDropdown(treeContainer, currentPath);
@@ -1593,12 +1614,12 @@ export default async function Explorer(root, options = {}) {
                         disabled: () => globalSelected.items.size === 0
                     },
                     {
-                        label: "新しいフォルダ",
+                        label: "新規フォルダ",
                         action: () => createNewItem(currentPath, listContainer, () => render(currentPath), "folder"),
                         disabled: () => isInsideTrash
                     },
                     {
-                        label: isInsideTrash ? "ゴミ箱を空にする" : "新しいファイル",
+                        label: isInsideTrash ? "ゴミ箱を空にする" : "新規テキストファイル",
                         action: () => {
                             if (isInsideTrash) {
                                 emptyTrash(() => render(currentPath));
@@ -1888,6 +1909,29 @@ export function openWithDialog(filePath, fileNode) {
     });
 }
 
+function closeModal(win) {
+    if (win?._modalOverlay) win._modalOverlay.remove();
+    win?.remove();
+}
+
+function getDecodedContent(content) {
+    if (typeof content !== "string") return "";
+    if (content.startsWith("data:")) {
+        try {
+            const base64Index = content.indexOf(";base64,");
+            if (base64Index !== -1) {
+                const base64 = content.substring(base64Index + 8);
+                const binary = atob(base64);
+                const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
+                return new TextDecoder().decode(bytes);
+            }
+        } catch (e) {
+            console.error("Base64 decode error:", e);
+        }
+    }
+    return content;
+}
+
 /**
  * アイテムのプロパティを表示する
  */
@@ -1897,25 +1941,6 @@ export async function showProperties(name, node, path) {
         bringToFront(propertyWindows[path]);
         return;
     }
-
-    // ⭐ 追加: Data URL (data:...;base64,...) をデコードして生のテキストを取得するヘルパー関数
-    const getDecodedContent = (content) => {
-        if (typeof content !== "string") return "";
-        if (content.startsWith("data:")) {
-            try {
-                const base64Index = content.indexOf(";base64,");
-                if (base64Index !== -1) {
-                    const base64 = content.substring(base64Index + 8);
-                    const binary = atob(base64);
-                    const bytes = Uint8Array.from(binary, c => c.charCodeAt(0));
-                    return new TextDecoder().decode(bytes);
-                }
-            } catch (e) {
-                console.error("Base64 decode error:", e);
-            }
-        }
-        return content;
-    };
 
     const size = await calcNodeSize(node, path);
     const formattedSize = formatSize(size);
@@ -2017,15 +2042,13 @@ export async function showProperties(name, node, path) {
                     window.dispatchEvent(new Event("fs-updated"));
                 }
 
-                if (win._modalOverlay) win._modalOverlay.remove();
-                win.remove();
+                closeModal(win);
             }
         },
         {
             label: "キャンセル",
             action: () => { // 引数をなくす
-                if (win._modalOverlay) win._modalOverlay.remove();
-                win.remove();
+                closeModal(win);
             }
         }
     ];

@@ -93,34 +93,17 @@ const DEFAULT_COLOR = "darkblue";
  * 指定された要素に壁紙の表示形式（wpStyle）に応じたスタイルを適用する
  */
 function applyBackgroundStyle(element, wpStyle) {
-    switch (wpStyle) {
-        case "center":
-            element.style.backgroundSize = "auto";
-            element.style.backgroundRepeat = "no-repeat";
-            element.style.backgroundPosition = "center";
-            break;
-        case "tile":
-            element.style.backgroundSize = "auto";
-            element.style.backgroundRepeat = "repeat";
-            element.style.backgroundPosition = "0 0";
-            break;
-        case "stretch":
-            element.style.backgroundSize = "100% 100%";
-            element.style.backgroundRepeat = "no-repeat";
-            element.style.backgroundPosition = "center";
-            break;
-        case "fit":
-            element.style.backgroundSize = "contain";
-            element.style.backgroundRepeat = "no-repeat";
-            element.style.backgroundPosition = "center";
-            break;
-        case "fill":
-        default:
-            element.style.backgroundSize = "cover";
-            element.style.backgroundRepeat = "no-repeat";
-            element.style.backgroundPosition = "center";
-            break;
-    }
+    const styles = {
+        center: { size: "auto", repeat: "no-repeat", pos: "center" },
+        tile: { size: "auto", repeat: "repeat", pos: "0 0" },
+        stretch: { size: "100% 100%", repeat: "no-repeat", pos: "center" },
+        fit: { size: "contain", repeat: "no-repeat", pos: "center" },
+        fill: { size: "cover", repeat: "no-repeat", pos: "center" }
+    };
+    const config = styles[wpStyle] || styles.fill;
+    element.style.backgroundSize = config.size;
+    element.style.backgroundRepeat = config.repeat;
+    element.style.backgroundPosition = config.pos;
 }
 
 async function applyDesktopBackground() {
@@ -216,18 +199,19 @@ const settingChangeHandlers = {
         window.dispatchEvent(new CustomEvent("user-profile-updated", { detail: newName }));
     },
     async widgetTool_isPreviewEnabled() {
-        const val = await loadSetting("widgetTool_isPreviewEnabled");
-        if (typeof window.setWindowPreviewEnabled === 'function') {
-            window.setWindowPreviewEnabled(val ?? true);
-        }
+        await handlePreviewSetting("widgetTool_isPreviewEnabled", window.setWindowPreviewEnabled);
     },
     async widgetTool_isTaskbarPreviewEnabled() {
-        const val = await loadSetting("widgetTool_isTaskbarPreviewEnabled");
-        if (typeof window.setTaskbarPreviewEnabled === 'function') {
-            window.setTaskbarPreviewEnabled(val ?? true);
-        }
+        await handlePreviewSetting("widgetTool_isTaskbarPreviewEnabled", window.setTaskbarPreviewEnabled);
     }
 };
+
+async function handlePreviewSetting(key, fn) {
+    const val = await loadSetting(key);
+    if (typeof fn === 'function') {
+        fn(val ?? true);
+    }
+}
 
 window.addEventListener("setting-changed", async (e) => {
     const key = e.detail?.key;

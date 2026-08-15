@@ -695,7 +695,7 @@ ${!options.hideStatus ? `
         setHandle(handles.topLeft, { left: "0", top: "0", width: "6px", height: "6px", cursor: "nwse-resize" });
         setHandle(handles.topRight, { right: "0", top: "0", width: "6px", height: "6px", cursor: "nesw-resize" });
         setHandle(handles.bottomLeft, { left: "0", bottom: "0", width: "6px", height: "6px", cursor: "nesw-resize" });
-        setHandle(handles.bottomRight, { right: "0", bottom: "0", width: "6px", height: "6px", cursor: "nwse-resize" });
+        setHandle(handles.bottomRight, { right: "0", bottom: "0", width: "15px", height: "15px", cursor: "nwse-resize" });
 
         let resizing = false, currentHandle, startX, startY, startRect;
         let didResize = false;

@@ -1,5 +1,6 @@
 // ribbon.js
 import { bringToFront } from "./window.js";
+import { hideContextMenu } from "./context-menu.js";
 
 export function setupRibbon(win, getCurrentPath, renderCallback, menus) {
     if (!win?._ribbon) return;
@@ -91,6 +92,9 @@ function addRibbonMenu(ribbon, title, items) {
             win._treePanel.style.display = "none";
         }
 
+        // ★追加: リボンを開く瞬間に右クリックメニューを閉じる
+        hideContextMenu();
+
         // 全ウィンドウのドロップダウンを閉じ、selected も解除
         closeAllRibbonDropdownsAndSelectedGlobal();
 
@@ -120,6 +124,9 @@ function addRibbonMenu(ribbon, title, items) {
         }
 
         if (anyOpen) {
+            // ★追加: リボンを切り替える瞬間に右クリックメニューを閉じる
+            hideContextMenu();
+
             // 全ウィンドウのドロップダウンを閉じ、selected も解除
             closeAllRibbonDropdownsAndSelectedGlobal();
 
@@ -179,7 +186,11 @@ document.addEventListener("mousedown", e => {
         || e.target.closest(".ribbon-dropdown")
         || e.target.closest(".ribbon-item");
     const isInsideTree = e.target.closest(".tree-container") || e.target.closest(".tree-panel");
-    if (isInsideTree) return;
+    const isInsideContextMenu = e.target.closest(".context-menu"); // ★追加
+
+    // ★追加: ツリー内またはコンテキストメニュー内をクリックした場合はリボン側の処理を無視する
+    if (isInsideTree || isInsideContextMenu) return;
+
     if (!isInsideRibbon) {
         closeAllRibbonDropdownsAndSelectedGlobal();
     }
