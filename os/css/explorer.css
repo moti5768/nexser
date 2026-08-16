@@ -79,12 +79,10 @@
     align-items: center;
     text-align: center;
     padding: 5px;
-    /* 10pxから少し詰める */
-    width: 100%;
-    /* JS側のGrid幅(100px)に従う */
-    height: 110px;
-    /* 115pxから95pxに短縮して余白をカット */
-    /* float: left; ← これを削除 */
+    width: 100px;
+    /* ★改善: 100%から固定幅に変更し、自由配置時の横広がりを防ぐ */
+    height: auto;
+    min-height: 85px;
     box-sizing: border-box;
     overflow: hidden;
 }

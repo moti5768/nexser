@@ -341,10 +341,15 @@ export default async function Explorer(root, options = {}) {
     const rawHidden = await loadSetting("explorerShowHidden");
     let showHidden = rawHidden === true || rawHidden === "true";
 
-    // ★追加: 自動整列（ソート）用の状態管理
     let sortKey = await loadSetting("explorerSortKey") || "name"; // 'name', 'type', 'size', 'date'
     let sortOrder = await loadSetting("explorerSortOrder") || "asc"; // 'asc', 'desc'
 
+    // ★追加: 自動整列のオン・オフ状態と座標保存用変数
+    let autoArrange = await loadSetting("explorerAutoArrange");
+    if (autoArrange === undefined) autoArrange = true;
+    let iconPositions = {};
+
+    // 固定参照保持
     // 固定参照保持
     let listContainer, pathLabel, treeContainer;
 
@@ -352,6 +357,24 @@ export default async function Explorer(root, options = {}) {
     let selectionBox = null;
     let startX, startY;
     let wasDragging = false;
+    let isRafScheduled = false; // ★表示切替時やドラッグ時にフラグが残る問題を解消するためトップレベルへ移動
+
+    // ★追加: 範囲選択の状態を完全にリセットする関数（青枠が出なくなる問題の根本解決）
+    const cancelSelection = () => {
+        startX = undefined;
+        startY = undefined;
+        isRafScheduled = false;
+
+        if (isSelecting) {
+            isSelecting = false;
+            if (selectionBox) {
+                selectionBox.remove();
+                selectionBox = null;
+            }
+            setupRibbon(win, () => currentPath, render, getExplorerMenus());
+            setTimeout(() => { wasDragging = false; }, 50);
+        }
+    };
 
     const navigateTo = (path, saveHistory = true) => {
         // console.log("移動先:", path, "現在の場所:", currentPath);
@@ -588,6 +611,11 @@ export default async function Explorer(root, options = {}) {
     // ------------------------
     const render = async (path) => {
         currentPath = path;
+
+        // ★追加: フォルダごとのアイコン座標設定を読み込み
+        const safePath = currentPath.replace(/\//g, "_") || "root";
+        iconPositions = await loadSetting(`explorerIconPositions_${safePath}`) || {};
+
         // 複数選択用の解除処理に修正
         if (globalSelected.items.size > 0) {
             globalSelected.items.forEach(i => i.classList.remove("selected"));
@@ -637,6 +665,30 @@ export default async function Explorer(root, options = {}) {
                 e.preventDefault();
                 e.stopPropagation();
                 listContainer.classList.remove("drag-over");
+
+                // ★追加: 自動整列オフ時のアイコン自由配置（移動）処理
+                try {
+                    const dataStr = e.dataTransfer.getData("text/plain");
+                    const data = dataStr ? JSON.parse(dataStr) : null;
+                    if (data && data.type === "explorer-icons" && viewMode === "icon" && !autoArrange) {
+                        const containerRect = listContainer.getBoundingClientRect();
+                        for (const info of data.draggedItems) {
+                            // ドロップ座標からオフセットを引き、スクロール量も加味して座標を計算
+                            const dropX = e.clientX - containerRect.left + listContainer.scrollLeft - info.offsetX;
+                            const dropY = e.clientY - containerRect.top + listContainer.scrollTop - info.offsetY;
+                            iconPositions[info.name] = { x: dropX, y: dropY };
+
+                            const el = listContainer.querySelector(`[data-name="${info.name}"]`);
+                            if (el) {
+                                el.style.left = `${dropX}px`;
+                                el.style.top = `${dropY}px`;
+                            }
+                        }
+                        const safePath = currentPath.replace(/\//g, "_") || "root";
+                        await saveSetting(`explorerIconPositions_${safePath}`, iconPositions);
+                        return; // ここで処理を終了する
+                    }
+                } catch (err) { }
 
                 const folderNode = resolveFS(currentPath);
                 if (!folderNode || folderNode.type !== "folder") return;
@@ -1015,9 +1067,6 @@ export default async function Explorer(root, options = {}) {
 
             content.appendChild(container);
 
-            // ⭐ 追加: 描画予約フラグ（イベントリスナーの外側、または同じスコープ内に定義）
-            let isRafScheduled = false;
-
             listContainer.addEventListener("click", e => {
                 if (wasDragging) return;
                 // クリック対象が explorer-item か、その内部かを判定
@@ -1045,7 +1094,15 @@ export default async function Explorer(root, options = {}) {
 
             listContainer.addEventListener("mousedown", (e) => {
                 if (e.button !== 0) return; // 左クリックのみ
-                // .explorer-item 上でも開始できるように判定を削除
+
+                // ★追加: アイテム（アイコンやテキスト）の上でクリックされた場合は範囲選択の開始座標を記録しない
+                // これにより、複数選択したアイテムをドラッグする際に選択が強制解除されるのを防ぎます
+                if (e.target.closest(".explorer-item")) {
+                    startX = undefined;
+                    startY = undefined;
+                    return;
+                }
+
                 startX = e.clientX;
                 startY = e.clientY;
                 isSelecting = false;
@@ -1088,6 +1145,10 @@ export default async function Explorer(root, options = {}) {
                     const isCtrlPressed = e.ctrlKey;
 
                     requestAnimationFrame(() => {
+                        if (!isSelecting || !selectionBox || startX === undefined) {
+                            isRafScheduled = false;
+                            return;
+                        }
                         selectionBox.style.left = Math.min(startX, currentX) + "px";
                         selectionBox.style.top = Math.min(startY, currentY) + "px";
                         selectionBox.style.width = Math.abs(startX - currentX) + "px";
@@ -1119,19 +1180,7 @@ export default async function Explorer(root, options = {}) {
             });
 
             document.addEventListener("mouseup", () => {
-                startX = undefined;
-                startY = undefined;
-
-                if (isSelecting) {
-                    isSelecting = false;
-                    if (selectionBox) selectionBox.remove();
-                    selectionBox = null;
-
-                    setupRibbon(win, () => currentPath, render, getExplorerMenus());
-
-                    // clickイベントが発火し終わった後にフラグを下ろす
-                    setTimeout(() => { wasDragging = false; }, 50);
-                }
+                cancelSelection(); // ★追加: 共通のキャンセル関数で確実に状態をリセット
             });
         }
 
@@ -1185,10 +1234,20 @@ export default async function Explorer(root, options = {}) {
 
         // レイアウトを初期化（アイコン表示の時はタイル状に並べる）
         if (viewMode === "icon") {
-            listContainer.style.display = "grid";
-            listContainer.style.gridTemplateColumns = "repeat(auto-fill, minmax(100px, 1fr))";
-            listContainer.style.gap = "4px";
-            listContainer.style.padding = "10px";
+            if (autoArrange) {
+                listContainer.style.display = "grid";
+                listContainer.style.gridTemplateColumns = "repeat(auto-fill, minmax(100px, 1fr))";
+                listContainer.style.gridAutoRows = "max-content"; // ★追加: 行の高さを内容に合わせる（上に詰める）
+                listContainer.style.alignContent = "start";       // ★追加: グリッド全体を上部に詰める
+                listContainer.style.gap = "4px";
+                listContainer.style.padding = "10px";
+                listContainer.style.position = "relative";
+            } else {
+                listContainer.style.display = "block";
+                listContainer.style.position = "relative";
+                listContainer.style.padding = "0";
+                listContainer.style.height = "100%"; // 自由配置のための領域確保
+            }
         } else {
             listContainer.style.display = "block";
             listContainer.style.padding = "0";
@@ -1337,6 +1396,25 @@ export default async function Explorer(root, options = {}) {
 
             // --- HTML構造の生成 ---
             if (viewMode === "icon") {
+                // ★追加: 自動整列オフの時、保存された座標があれば適用
+                if (!autoArrange) {
+                    item.style.position = "absolute";
+                    if (iconPositions[name]) {
+                        item.style.left = `${iconPositions[name].x}px`;
+                        item.style.top = `${iconPositions[name].y}px`;
+                    } else {
+                        // ドラッグ歴がないアイコンを重ならないように配置
+                        const iconIndex = sortedItems.findIndex(i => i.name === name);
+                        const rowHeight = 90;
+                        const colWidth = 100;
+                        const maxCols = Math.max(1, Math.floor((listContainer.clientWidth || 500) / colWidth));
+                        const row = Math.floor(iconIndex / maxCols);
+                        const col = iconIndex % maxCols;
+                        item.style.left = `${10 + col * colWidth}px`;
+                        item.style.top = `${10 + row * rowHeight}px`;
+                    }
+                }
+
                 item.innerHTML = `
                     <div class="item-icon-large">${iconChar}</div>
                     <div class="item-name-label">${name}</div>
@@ -1394,6 +1472,39 @@ export default async function Explorer(root, options = {}) {
 
             fragment.appendChild(item);
 
+            item.draggable = true;
+            item.addEventListener("dragstart", (e) => {
+                cancelSelection();
+                wasDragging = true;
+                // 未選択のアイテムをドラッグしようとした場合は単一選択扱いにする
+                if (!globalSelected.items.has(item)) {
+                    globalSelected.items.forEach(i => i.classList.remove("selected"));
+                    globalSelected.items.clear();
+                    globalSelected.items.add(item);
+                    item.classList.add("selected");
+                    globalSelected.lastSelected = item;
+                }
+
+                const draggedItemsInfo = Array.from(globalSelected.items).map(i => {
+                    const rect = i.getBoundingClientRect();
+                    return {
+                        name: i.dataset.name,
+                        offsetX: e.clientX - rect.left,
+                        offsetY: e.clientY - rect.top
+                    };
+                });
+
+                e.dataTransfer.setData("text/plain", JSON.stringify({
+                    type: "explorer-icons",
+                    draggedItems: draggedItemsInfo
+                }));
+                e.dataTransfer.effectAllowed = "move";
+            });
+
+            item.addEventListener("dragend", () => {
+                setTimeout(() => { wasDragging = false; }, 50);
+            });
+
             item.addEventListener("click", async e => {
                 if (wasDragging) return;
                 e.stopPropagation();
@@ -1429,7 +1540,38 @@ export default async function Explorer(root, options = {}) {
                         { label: `表示: 大アイコン ${viewMode === "icon" ? "✔" : ""}`, action: async () => { viewMode = "icon"; await saveSetting("explorerViewMode", viewMode); render(currentPath); } },
                         { label: `表示: リスト ${viewMode === "list" ? "✔" : ""}`, action: async () => { viewMode = "list"; await saveSetting("explorerViewMode", viewMode); render(currentPath); } },
                         { label: `表示: 詳細 ${viewMode === "details" ? "✔" : ""}`, action: async () => { viewMode = "details"; await saveSetting("explorerViewMode", viewMode); render(currentPath); } },
-                        { label: "---" }, // context-menu.js のセパレーター形式
+                        { label: "---" },
+                        {
+                            label: `自動整列 ${autoArrange ? "✔" : ""}`,
+                            action: async () => {
+                                const nextAutoArrange = !autoArrange;
+                                const safePath = currentPath.replace(/\//g, "_") || "root";
+
+                                if (autoArrange && !nextAutoArrange && viewMode === "icon") {
+                                    // ON から OFF: 現在の表示位置を座標として保存
+                                    const items = listContainer.querySelectorAll(".explorer-item");
+                                    const containerRect = listContainer.getBoundingClientRect();
+                                    iconPositions = {};
+                                    items.forEach(item => {
+                                        const name = item.dataset.name;
+                                        const rect = item.getBoundingClientRect();
+                                        iconPositions[name] = {
+                                            x: rect.left - containerRect.left + listContainer.scrollLeft,
+                                            y: rect.top - containerRect.top + listContainer.scrollTop
+                                        };
+                                    });
+                                    await saveSetting(`explorerIconPositions_${safePath}`, iconPositions);
+                                } else if (nextAutoArrange) {
+                                    // OFF から ON: 保存座標をクリア
+                                    iconPositions = {};
+                                    await saveSetting(`explorerIconPositions_${safePath}`, {});
+                                }
+                                autoArrange = nextAutoArrange;
+                                await saveSetting("explorerAutoArrange", autoArrange);
+                                render(currentPath);
+                            }
+                        },
+                        { label: "---" },
                         { label: `並べ替え: 名前 ${sortKey === "name" ? "●" : ""}`, action: async () => { sortKey = "name"; await saveSetting("explorerSortKey", sortKey); render(currentPath); } },
                         { label: `並べ替え: 種類 ${sortKey === "type" ? "●" : ""}`, action: async () => { sortKey = "type"; await saveSetting("explorerSortKey", sortKey); render(currentPath); } },
                         { label: `並べ替え: サイズ ${sortKey === "size" ? "●" : ""}`, action: async () => { sortKey = "size"; await saveSetting("explorerSortKey", sortKey); render(currentPath); } },
