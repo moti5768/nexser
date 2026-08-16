@@ -48,8 +48,33 @@ let history = [];
 let hIndex = 0;
 
 // ===== Utility Functions =====
-function scrollToBottom() { requestAnimationFrame(() => screen.scrollTop = screen.scrollHeight); }
-export function print(text = '') { screen.textContent += text + '\n'; scrollToBottom(); }
+let isScrolling = false;
+function scrollToBottom() {
+    // requestAnimationFrameが大量にキューに積まれるのを防ぐ間引き処理
+    if (!isScrolling) {
+        isScrolling = true;
+        requestAnimationFrame(() => {
+            screen.scrollTop = screen.scrollHeight;
+            isScrolling = false;
+        });
+    }
+}
+
+const MAX_LOG_LINES = 1000; // 画面に保持する最大ログ数（パフォーマンスに応じて調整してください）
+
+export function print(text = '') {
+    // 文字列の再代入（textContent +=）をやめ、新しいテキストノードだけを追加する
+    const textNode = document.createTextNode(text + '\n');
+    screen.appendChild(textNode);
+
+    // ログが増えすぎた場合、古いノードから削除してメモリを解放する
+    while (screen.childNodes.length > MAX_LOG_LINES) {
+        screen.firstChild.remove();
+    }
+
+    scrollToBottom();
+}
+
 function commonPrefix(arr) { if (!arr.length) return ''; let prefix = arr[0]; for (let i = 1; i < arr.length; i++) { while (!arr[i].startsWith(prefix)) { prefix = prefix.slice(0, -1); if (!prefix) return ''; } } return prefix; }
 
 // ===== Virtual File System Helpers (Integrated with fs-utils) =====
