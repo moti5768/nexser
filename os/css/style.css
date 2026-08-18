@@ -851,6 +851,7 @@ input[type="checkbox"]:checked::after {
 ::-webkit-scrollbar {
     display: block;
     width: 15px;
+    height: 15px;
 }
 
 ::-webkit-scrollbar-track {
@@ -864,33 +865,75 @@ input[type="checkbox"]:checked::after {
     border-color: #eee #333 #333 #eee;
 }
 
-::-webkit-scrollbar-button {
-    background: silver;
+/* --- 縦スクロール：上ボタン --- */
+::-webkit-scrollbar-button:vertical:decrement {
+    background: silver url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15"><polygon points="7.5,4 11,9 4,9" fill="black"/></svg>') no-repeat center center;
     border: 1.5px solid;
     border-color: #eee #333 #333 #eee;
+    height: 15px;
+}
+
+/* 押し込んだとき（凹む処理） */
+::-webkit-scrollbar-button:vertical:decrement:active {
+    border-color: #333 #eee #eee #333;
+    background-position: calc(50% + 1px) calc(50% + 1px);
+}
+
+/* --- 縦スクロール：下ボタン --- */
+::-webkit-scrollbar-button:vertical:increment {
+    background: silver url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15"><polygon points="4,6 11,6 7.5,11" fill="black"/></svg>') no-repeat center center;
+    border: 1.5px solid;
+    border-color: #eee #333 #333 #eee;
+    height: 15px;
+}
+
+/* 押し込んだとき（凹む処理） */
+::-webkit-scrollbar-button:vertical:increment:active {
+    border-color: #333 #eee #eee #333;
+    background-position: calc(50% + 1px) calc(50% + 1px);
+}
+
+/* --- 横スクロール：左ボタン --- */
+::-webkit-scrollbar-button:horizontal:decrement {
+    background: silver url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15"><polygon points="9,4 9,11 4,7.5" fill="black"/></svg>') no-repeat center center;
+    border: 1.5px solid;
+    border-color: #eee #333 #333 #eee;
+    width: 15px;
+}
+
+/* 押し込んだとき（凹む処理） */
+::-webkit-scrollbar-button:horizontal:decrement:active {
+    border-color: #333 #eee #eee #333;
+    background-position: calc(50% + 1px) calc(50% + 1px);
+}
+
+/* --- 横スクロール：右ボタン --- */
+::-webkit-scrollbar-button:horizontal:increment {
+    background: silver url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15"><polygon points="6,4 11,7.5 6,11" fill="black"/></svg>') no-repeat center center;
+    border: 1.5px solid;
+    border-color: #eee #333 #333 #eee;
+    width: 15px;
+}
+
+/* 押し込んだとき（凹む処理） */
+::-webkit-scrollbar-button:horizontal:increment:active {
+    border-color: #333 #eee #eee #333;
+    background-position: calc(50% + 1px) calc(50% + 1px);
 }
 
 ::-webkit-scrollbar-corner {
     background: silver;
 }
 
-body::-webkit-scrollbar {
-    display: none;
-    z-index: 1;
-}
-
-.scrollbar_none::-webkit-scrollbar {
-    display: none;
-    z-index: 1;
-}
-
+body::-webkit-scrollbar,
+.scrollbar_none::-webkit-scrollbar,
 #screen::-webkit-scrollbar {
     display: none;
     z-index: 1;
 }
 
 ::-webkit-resizer {
-    background: rgba();
+    background: transparent;
 }
 
 /* drag color */
