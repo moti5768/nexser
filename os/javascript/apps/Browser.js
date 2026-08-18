@@ -131,8 +131,12 @@ export default async function BrowserApp(root, options = {}) {
     }
     updateStatusBar();
 
+    // --- 履歴管理用変数 (各ウィンドウ/iframeごとに独立) ---
+    let historyList = [currentUrl];
+    let historyIndex = 0;
+
     // ナビゲーション実行関数
-    function navigate(targetUrl) {
+    function navigate(targetUrl, isHistoryNav = false) {
         let url = targetUrl.trim();
         if (!url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("about:")) {
             url = "https://" + url;
@@ -140,6 +144,14 @@ export default async function BrowserApp(root, options = {}) {
 
         // YouTubeのURL形式をembed用に変換
         url = convertYouTubeUrl(url);
+
+        // アドレスバーなどからの新規移動の場合、履歴を更新する
+        if (!isHistoryNav && url !== historyList[historyIndex]) {
+            // 現在のインデックスより先の履歴を削除し、新しいURLを追加
+            historyList = historyList.slice(0, historyIndex + 1);
+            historyList.push(url);
+            historyIndex++;
+        }
 
         addressInput.value = url;
         frame.src = url;
@@ -162,18 +174,20 @@ export default async function BrowserApp(root, options = {}) {
     });
 
     backBtn.addEventListener("click", () => {
-        try {
-            frame.contentWindow.history.back();
-        } catch (e) {
-            console.warn("Cannot access iframe history due to cross-origin restrictions.");
+        if (historyIndex > 0) {
+            historyIndex--;
+            navigate(historyList[historyIndex], true);
+        } else {
+            console.log("これ以上戻れません");
         }
     });
 
     forwardBtn.addEventListener("click", () => {
-        try {
-            frame.contentWindow.history.forward();
-        } catch (e) {
-            console.warn("Cannot access iframe history due to cross-origin restrictions.");
+        if (historyIndex < historyList.length - 1) {
+            historyIndex++;
+            navigate(historyList[historyIndex], true);
+        } else {
+            console.log("これ以上進めません");
         }
     });
 
