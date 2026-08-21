@@ -377,11 +377,14 @@ export default async function TextEditor(root, options = {}) {
             return;
         }
 
+        let lastSearchIndex = 0;
+
         // 2. 検索ウィンドウの作成
         const content = showModalWindow("検索", "検索文字列を入力してください", {
             parentWin: null, // モードレス
             buttons: [
-                { label: "検索", onClick: () => performSearch(input.value) },
+                { label: "検索", onClick: () => { lastSearchIndex = 0; performSearch(input.value); } },
+                { label: "次へ", onClick: () => performSearch(input.value) }, // ★追加: 次を検索
                 { label: "閉じる", onClick: () => closeSearch() }
             ],
             silent: true
@@ -449,8 +452,19 @@ export default async function TextEditor(root, options = {}) {
         function performSearch(query) {
             if (!query) return;
             const val = textarea.value;
-            const index = val.indexOf(query);
-            if (index === -1) return;
+
+            // ★変更: 前回見つけた位置（lastSearchIndex）の次から検索する
+            let index = val.indexOf(query, lastSearchIndex);
+
+            // 最後まで検索して見つからなかった場合は先頭に戻って再検索
+            if (index === -1) {
+                if (lastSearchIndex === 0) return; // そもそも存在しない場合
+                index = val.indexOf(query, 0);
+                if (index === -1) return;
+            }
+
+            // ★追加: 次回検索時のために位置を更新
+            lastSearchIndex = index + query.length;
 
             textarea.focus();
             textarea.setSelectionRange(index, index + query.length);
