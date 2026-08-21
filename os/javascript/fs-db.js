@@ -10,56 +10,48 @@ const LARGE_FILE_THRESHOLD = 100 * 1024;
 let saveChain = Promise.resolve();
 
 /* =========================
-   Low level API
+   Low level API (Refactored)
 ========================= */
 
-export async function dbDelete(key, storeName = STORE_KV) {
+// トランザクション処理の共通ラッパー
+async function withStore(storeName, mode, callback) {
     const db = await openDB();
     return new Promise((resolve, reject) => {
-        const tx = db.transaction(storeName, "readwrite");
+        const tx = db.transaction(storeName, mode);
         const store = tx.objectStore(storeName);
-        store.delete(key);
-        tx.oncomplete = () => resolve();
-        tx.onerror = () => reject(tx.error);
-    });
-}
+        let requestResult;
 
-async function dbGetAllKeys(storeName = STORE_FILES) {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-        const tx = db.transaction(storeName, "readonly");
-        const store = tx.objectStore(storeName);
-        const req = store.getAllKeys();
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error);
-    });
-}
-
-export async function dbSet(key, value, storeName = STORE_KV) {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-        const tx = db.transaction(storeName, "readwrite");
-        const store = tx.objectStore(storeName);
         try {
-            store.put(value, key);
+            const req = callback(store);
+            // get や getAllKeys などのリクエスト結果を保存
+            if (req && typeof req.onsuccess !== 'undefined') {
+                req.onsuccess = () => requestResult = req.result;
+            }
         } catch (e) {
             reject(new Error(`Storage failed in ${storeName}: ${e.message}`));
             return;
         }
-        tx.oncomplete = () => resolve();
+
+        // トランザクション完了時に解決 (安全確実なアプローチ)
+        tx.oncomplete = () => resolve(requestResult);
         tx.onerror = () => reject(tx.error);
     });
 }
 
+export async function dbDelete(key, storeName = STORE_KV) {
+    return withStore(storeName, "readwrite", store => store.delete(key));
+}
+
+async function dbGetAllKeys(storeName = STORE_FILES) {
+    return withStore(storeName, "readonly", store => store.getAllKeys());
+}
+
+export async function dbSet(key, value, storeName = STORE_KV) {
+    return withStore(storeName, "readwrite", store => store.put(value, key));
+}
+
 export async function dbGet(key, storeName = STORE_KV) {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-        const tx = db.transaction(storeName, "readonly");
-        const store = tx.objectStore(storeName);
-        const req = store.get(key);
-        req.onsuccess = () => resolve(req.result);
-        req.onerror = () => reject(req.error);
-    });
+    return withStore(storeName, "readonly", store => store.get(key));
 }
 
 /* =========================
@@ -120,6 +112,7 @@ export async function saveFS(fs) {
         }
 
         const db = await openDB();
+        // 複数ストアへの同時アクセスが必要なため、ここは共通関数を使わず専用のトランザクションを張る
         const tx = db.transaction([STORE_FILES, STORE_KV], "readwrite");
         const fileStore = tx.objectStore(STORE_FILES);
         const kvStore = tx.objectStore(STORE_KV);
@@ -144,12 +137,10 @@ export async function saveFS(fs) {
                 };
             });
 
-            // 【改善】typeに依存せず、オブジェクトツリーの構造そのものを抽出して堅牢化
             const activePaths = new Set();
             function collectActivePaths(node, currentPath = "") {
                 if (!node || typeof node !== "object") return;
                 for (const key in node) {
-                    // システム用キーや文字列データのキーはパスとみなさない
                     if (key === "type" || key === "system" || key === "content" || key === "size") continue;
 
                     const child = node[key];

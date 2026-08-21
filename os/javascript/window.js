@@ -1345,47 +1345,46 @@ export function progressWindow(title, itemName, options = {}) {
     };
 }
 
-/* ===== refreshTopWindow 更新 ===== */
+/* ===== refreshTopWindow 更新 (リファクタリング版) ===== */
 export function refreshTopWindow() {
-    const visibleWindows = Array.from(document.querySelectorAll(".window"))
-        .filter(win => win.style.visibility !== "hidden" && win.dataset.minimized !== "true");
+    const allWindows = Array.from(document.querySelectorAll(".window"));
 
-    let topWindow = null;
+    // 表示されているウィンドウを抽出
+    const visibleWindows = allWindows.filter(win =>
+        win.style.visibility !== "hidden" && win.dataset.minimized !== "true"
+    );
 
-    // モーダルがあれば最優先
-    const modalWin = visibleWindows.find(w => w._modal);
-    if (modalWin) topWindow = modalWin;
-    else if (visibleWindows.length) {
-        visibleWindows.sort((a, b) =>
-            parseInt(b.style.zIndex) - parseInt(a.style.zIndex)
-        );
-        topWindow = visibleWindows[0];
+    // 最前面のウィンドウを特定 (ソートを排除し reduce で最大値を検索して最適化)
+    let topWindow = visibleWindows.find(w => w._modal);
+    if (!topWindow && visibleWindows.length > 0) {
+        topWindow = visibleWindows.reduce((maxWin, currentWin) => {
+            const maxZ = parseInt(maxWin.style.zIndex) || 0;
+            const currentZ = parseInt(currentWin.style.zIndex) || 0;
+            return currentZ > maxZ ? currentWin : maxWin;
+        });
     }
 
-    document.querySelectorAll(".window .title-bar").forEach(tb => {
-        const win = tb.parentElement;
-        if (win === topWindow) {
-            tb.style.background = themeColor2
-                ? `linear-gradient(90deg, ${themeColor || DEFAULT_COLOR}, ${themeColor2})`
-                : (themeColor || DEFAULT_COLOR);
+    // 取得済みのウィンドウ配列をベースにDOM走査を削減
+    allWindows.forEach(win => {
+        const tb = win.querySelector(".title-bar");
+        if (!tb) return;
 
-            // ★最前面になったら操作可能にする
-            win.classList.remove("inactive-window");
-        } else {
-            tb.style.background = DEFAULT_COLOR;
+        const isTop = (win === topWindow);
 
-            // ★最前面以外は inactive クラスをつける
-            win.classList.add("inactive-window");
-        }
+        // 背景色の更新
+        tb.style.background = isTop
+            ? (themeColor2 ? `linear-gradient(90deg, ${themeColor || DEFAULT_COLOR}, ${themeColor2})` : (themeColor || DEFAULT_COLOR))
+            : DEFAULT_COLOR;
+
+        // ★最前面になったら操作可能にする（inactiveを外す）、最前面以外は inactive クラスをつける
+        win.classList.toggle("inactive-window", !isTop);
     });
 
+    // タスクバーボタンの更新
     taskbarButtons.forEach(btn => {
-        if (topWindow && btn._window === topWindow) btn.classList.add("selected");
-        else btn.classList.remove("selected");
+        btn.classList.toggle("selected", topWindow && btn._window === topWindow);
     });
 }
-
-
 
 /* =========================
    Window Control API
