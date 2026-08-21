@@ -1530,37 +1530,40 @@ export function closeWindowById(id) {
 }
 
 export function installWindowContextMenu(w) {
+    if (w.dataset.disableContextMenu === "true") return;
     const titleBar = w.querySelector(".title-bar");
     const taskbarBtn = w._taskbarBtn;
 
-    // 各ボタンの存在チェックと pointer_none 判定
     const minBtn = w.querySelector(".min-btn");
     const maxBtn = w.querySelector(".max-btn");
     const closeBtn = w.querySelector(".close-btn");
 
-    const minDisabled = minBtn && minBtn.classList.contains("pointer_none");
-    const maxDisabled = maxBtn && maxBtn.classList.contains("pointer_none");
-    const closeDisabled = closeBtn && closeBtn.classList.contains("pointer_none");
-
     // タイトルバー右クリック
     if (titleBar) {
-        attachContextMenu(titleBar, () => [
-            {
-                label: "最小化",
-                action: () => { if (!minDisabled) minBtn?.click(); },
-                disabled: minDisabled
-            },
-            {
-                label: "最大化 / 元のサイズに戻す",
-                action: () => { if (!maxDisabled) maxBtn?.click(); },
-                disabled: maxDisabled || w.dataset.minimized === "true"
-            },
-            {
-                label: "閉じる",
-                action: () => { if (!closeDisabled) closeBtn?.click(); },
-                disabled: closeDisabled
-            }
-        ]);
+        attachContextMenu(titleBar, () => {
+            // ★ メニューが開かれるたびに最新の状態を再評価する
+            const minDisabled = minBtn && minBtn.classList.contains("pointer_none");
+            const maxDisabled = maxBtn && maxBtn.classList.contains("pointer_none");
+            const closeDisabled = closeBtn && closeBtn.classList.contains("pointer_none");
+
+            return [
+                {
+                    label: "最小化",
+                    action: () => { if (!minDisabled) minBtn?.click(); },
+                    disabled: minDisabled
+                },
+                {
+                    label: "最大化 / 元のサイズに戻す",
+                    action: () => { if (!maxDisabled) maxBtn?.click(); },
+                    disabled: maxDisabled || w.dataset.minimized === "true"
+                },
+                {
+                    label: "閉じる",
+                    action: () => { if (!closeDisabled) closeBtn?.click(); },
+                    disabled: closeDisabled
+                }
+            ];
+        });
     }
 
     // タスクバー右クリック
@@ -1569,14 +1572,16 @@ export function installWindowContextMenu(w) {
             e.stopPropagation();
         });
         attachContextMenu(taskbarBtn, () => {
+            // ★ メニューが開かれるたびに最新の状態を再評価する
+            const minDisabled = minBtn && minBtn.classList.contains("pointer_none");
+            const maxDisabled = maxBtn && maxBtn.classList.contains("pointer_none");
+            const closeDisabled = closeBtn && closeBtn.classList.contains("pointer_none");
+
             const minimized = w.dataset.minimized === "true";
 
-            // ★ 右クリックでメニューを表示する時点でウィンドウを選択・最前面に
             if (!minimized) {
-                // ウィンドウ最前面に
                 bringToFront(w);
 
-                // タイトルバー色更新
                 document.querySelectorAll(".window .title-bar").forEach(tb => {
                     if (tb.parentElement === w) {
                         tb.style.background = themeColor2
@@ -1587,7 +1592,6 @@ export function installWindowContextMenu(w) {
                     }
                 });
 
-                // タスクバー選択状態更新
                 taskbarButtons.forEach(btn => btn.classList.remove("selected"));
                 taskbarBtn.classList.add("selected");
             }
