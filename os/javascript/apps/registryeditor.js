@@ -383,32 +383,34 @@ export default function RegistryEditor(root) {
     }
 
     async function refresh(forceReset = false) {
-        // 1. Promiseを返して、外部から await できるようにする
-        return new Promise(async (resolve, reject) => {
-            if (!document.body.contains(root) || isProcessing) return resolve();
+        // 早期リターン（async関数なのでそのままreturnでOK）
+        if (!document.body.contains(root) || isProcessing) return;
 
-            const snapshotStore = currentStore;
-            isProcessing = true;
+        const snapshotStore = currentStore;
+        isProcessing = true;
 
-            try {
-                const db = await getDB();
-                const tx = db.transaction(currentStore, "readonly");
-                const store = tx.objectStore(currentStore);
+        try {
+            // await できるものはそのまま待つ
+            const db = await getDB();
+            const tx = db.transaction(currentStore, "readonly");
+            const store = tx.objectStore(currentStore);
 
-                if (forceReset) {
-                    bodyEl.innerHTML = "";
-                    rowMap.clear();
-                }
+            if (forceReset) {
+                bodyEl.innerHTML = "";
+                rowMap.clear();
+            }
 
-                const dbKeys = new Set();
-                const visibleKeys = new Set();
-                let count = 0;
+            const dbKeys = new Set();
+            const visibleKeys = new Set();
+            let count = 0;
 
+            // ★コールバックベースの「カーソル処理」だけを Promise でラップして待機
+            await new Promise((resolve, reject) => {
                 const request = store.openCursor();
+
                 request.onsuccess = (e) => {
                     if (currentStore !== snapshotStore) {
-                        isProcessing = false;
-                        return resolve();
+                        return resolve(); // ストアが切り替わっていたら処理中断して抜ける
                     }
 
                     const cursor = e.target.result;
@@ -426,32 +428,43 @@ export default function RegistryEditor(root) {
                         }
                         cursor.continue();
                     } else {
-                        // カーソルが最後まで到達
-                        for (const [k, tr] of rowMap) {
-                            if (!dbKeys.has(k) || !visibleKeys.has(k)) {
-                                if (editingKey !== k) {
-                                    tr.remove();
-                                    rowMap.delete(k);
-                                }
-                            }
-                        }
-                        isProcessing = false;
-                        if (win && win._statusBar) {
-                            win._statusBar.textContent = `My Computer\\${currentStore} (${dbKeys.size} items)`;
-                        }
-                        resolve(); // ここで完了を通知！
+                        // カーソルが最後まで到達したら resolve して待機解除
+                        resolve();
                     }
                 };
+
                 request.onerror = (e) => {
-                    isProcessing = false;
-                    reject(e);
+                    reject(e); // エラー時は reject
                 };
-            } catch (e) {
-                isProcessing = false;
-                console.error("[Registry] Refresh error:", e);
-                reject(e);
+            });
+
+            // 待機中に別のストアに切り替わっていた場合は、後続のUI更新を行わずに終了
+            if (currentStore !== snapshotStore) {
+                return;
             }
-        });
+
+            // --- ここから下はカーソル処理がすべて終わった後の同期処理 ---
+
+            for (const [k, tr] of rowMap) {
+                if (!dbKeys.has(k) || !visibleKeys.has(k)) {
+                    if (editingKey !== k) {
+                        tr.remove();
+                        rowMap.delete(k);
+                    }
+                }
+            }
+
+            if (win && win._statusBar) {
+                win._statusBar.textContent = `My Computer\\${currentStore} (${dbKeys.size} items)`;
+            }
+
+        } catch (e) {
+            // DB取得やカーソル処理でエラーが起きた場合はここに入る
+            console.error("[Registry] Refresh error:", e);
+        } finally {
+            // ★成功しても、エラーが起きても、途中で return しても、必ず最後にフラグを下ろす
+            isProcessing = false;
+        }
     }
 
     function updateRow(key, keyStr, val) {
@@ -465,11 +478,17 @@ export default function RegistryEditor(root) {
                 <td style="padding:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; position:relative;"></td>
             `;
 
-            attachContextMenu(tr, () => [
-                { label: "Modify", action: () => enterEditMode(keyStr, "data") },
-                { label: "Rename", action: () => enterEditMode(keyStr, "name") },
-                { label: "Delete", action: () => deleteItem(keyStr) }
-            ]);
+            attachContextMenu(tr, (e) => {
+                // メニュー展開前に、対象の行を選択状態にする
+                if (selectedKey !== keyStr) {
+                    selectRow(keyStr);
+                }
+                return [
+                    { label: "Modify", action: () => enterEditMode(keyStr, "data") },
+                    { label: "Rename", action: () => enterEditMode(keyStr, "name") },
+                    { label: "Delete", action: () => deleteItem(keyStr) }
+                ];
+            });
 
             tr.ondblclick = () => enterEditMode(keyStr, "data");
             tr.onclick = () => selectRow(keyStr);
@@ -563,26 +582,24 @@ export default function RegistryEditor(root) {
                 refresh(true);
                 break;
 
+            // ▼ ArrowDown と ArrowUp の処理を統合 ▼
             case "ArrowDown":
+            case "ArrowUp": {
                 e.preventDefault();
-                // 選択されていない場合は1番目、選択中なら次へ
-                const nextIdx = currentIndex < visibleKeys.length - 1 ? currentIndex + 1 : currentIndex;
-                const nextKey = visibleKeys[nextIdx];
-                if (nextKey) {
-                    selectRow(nextKey);
-                    rowMap.get(nextKey)?.scrollIntoView({ block: "nearest" });
-                }
-                break;
+                const isDown = e.key === "ArrowDown";
 
-            case "ArrowUp":
-                e.preventDefault();
-                const prevIdx = currentIndex > 0 ? currentIndex - 1 : 0;
-                const prevKey = visibleKeys[prevIdx];
-                if (prevKey) {
-                    selectRow(prevKey);
-                    rowMap.get(prevKey)?.scrollIntoView({ block: "nearest" });
+                // 三項演算子と Math クラスを使ってインデックスを安全に計算
+                const targetIdx = isDown
+                    ? Math.min(currentIndex + 1, visibleKeys.length - 1)
+                    : Math.max(currentIndex - 1, 0);
+
+                const targetKey = visibleKeys[targetIdx];
+                if (targetKey) {
+                    selectRow(targetKey);
+                    rowMap.get(targetKey)?.scrollIntoView({ block: "nearest" });
                 }
                 break;
+            }
 
             case "ArrowLeft":
                 e.preventDefault();

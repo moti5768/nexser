@@ -857,10 +857,10 @@ function createNewItem(currentPath, container, itemType = "folder") {
         }
     });
 
+    // 💡 修正点: blur 時に入力をキャンセルして消すのではなく、finishEditing() を呼んで確定させる
     input.addEventListener("blur", () => {
         if (isShowingError || isCommitting) return;
-        iconDiv.remove();
-        createNewItem.isCreating = false;
+        finishEditing();
     });
 }
 
