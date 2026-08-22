@@ -1977,23 +1977,36 @@ export default async function Explorer(root, options = {}) {
 export async function calcNodeSize(node, path = "") {
     if (!node) return 0;
 
-    if (node.type === "file") {
-        if (typeof node.size === "number") return node.size;
-        if (node.content && node.content !== "__EXTERNAL_DATA__") {
-            return sharedTextEncoder.encode(node.content).length;
-        }
-        return 0;
-    }
+    try {
+        if (node.type === "file") {
+            // ① 既に size プロパティがある場合は即座に返す
+            if (typeof node.size === "number") return node.size;
 
-    if (node.type === "folder") {
-        const keys = Object.keys(node).filter(key => !IGNORED_METADATA_KEYS.has(key));
-        const sizes = await Promise.all(keys.map(key => {
-            const childNode = node[key];
-            if (!childNode) return 0;
-            const childPath = path ? `${path}/${key}` : key;
-            return calcNodeSize(childNode, childPath);
-        }));
-        return sizes.reduce((total, s) => total + s, 0);
+            // ② Blob / File オブジェクトの場合はその size を参照 (追加)
+            if (node.content instanceof Blob) return node.content.size;
+
+            // ③ 文字列の場合はクラッシュ防止のため TextEncoder を避けて .length にフォールバック
+            if (node.content && node.content !== "__EXTERNAL_DATA__") {
+                if (typeof node.content === "string") {
+                    return node.content.length;
+                }
+            }
+            return 0;
+        }
+
+        if (node.type === "folder") {
+            const keys = Object.keys(node).filter(key => !IGNORED_METADATA_KEYS.has(key));
+            const sizes = await Promise.all(keys.map(key => {
+                const childNode = node[key];
+                if (!childNode) return 0;
+                const childPath = path ? `${path}/${key}` : key;
+                return calcNodeSize(childNode, childPath);
+            }));
+            return sizes.reduce((total, s) => total + s, 0);
+        }
+    } catch (e) {
+        console.warn("calcNodeSize error:", path, e);
+        return node?.size || 0;
     }
     return 0;
 }
