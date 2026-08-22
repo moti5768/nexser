@@ -1,34 +1,10 @@
 // boot.js
 import { initFS } from './fs.js';
 import { buildDesktop } from './desktop.js';
-import { showBSOD } from './bsod.js';
 import { playSystemEventSound } from './kernel.js';
 import { resolveFS, normalizePath as fsNormalizePath } from './fs-utils.js';
 import { loadSetting } from "./apps/settings.js";
 import { initScreensaver } from "./screensaver.js";
-
-// ===== Global Error Handlers =====
-const CRITICAL_PREFIXES = ["BOOT_", "KERNEL_", "FS_", "0x"]; // 深刻とみなすエラーコード
-function isCriticalError(msg) {
-    // 深刻なエラーコードが含まれているか、または特定のスタックトレースを持つ場合のみTrue
-    return CRITICAL_PREFIXES.some(prefix => String(msg).includes(prefix));
-}
-window.addEventListener("unhandledrejection", (e) => {
-    const error = e.reason;
-    const msg = error?.message || String(error);
-    // 非同期エラーは予期せぬ場所で起きやすいため、原則BSODで保護
-    showBSOD(`UNHANDLED_REJECTION: ${msg}`, error);
-});
-window.addEventListener("error", (e) => {
-    const msg = e.error ? e.error.message : e.message;
-    if (isCriticalError(msg)) {
-        showBSOD(msg, e.error);
-    } else {
-        // 軽微なエラーはコンソールログのみ、またはアプリ内ウィンドウにエラー表示
-        console.warn("[System Notice] Non-critical error:", msg);
-        // ここで必要なら「警告ウィンドウ」を表示するUI関数を呼ぶ
-    }
-});
 
 // ===== Passive Event / Touch Defaults =====
 document.addEventListener('wheel', e => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
@@ -723,7 +699,7 @@ export async function bootOS() {
         const root = document.getElementById('os-root');
         if (root) root.style.display = 'block';
     } catch (e) {
-        showBSOD("BOOT_SELECTION_FAILED", e);
+        throw new Error(`BOOT_SELECTION_FAILED: ${e.message}`);
     }
 }
 

@@ -3,6 +3,7 @@ import { FS } from "./fs.js";
 import { buildDesktop } from "./desktop.js";
 import { buildStartMenu, refreshStartMenu } from "./startmenu.js";
 import { initTaskbar } from "./taskbar.js";
+import { showBSOD } from "./bsod.js";
 import {
     createWindow,
     removeAllTaskbarButtons,
@@ -26,6 +27,38 @@ const launching = new Set();          // ★ 起動レース防止 (維持)
 let pidCounter = 1;
 const processes = new Map();
 
+/* =========================
+   BSOD管理
+========================= */
+const CRITICAL_PREFIXES = ["BOOT_", "KERNEL_", "FS_", "0x"];
+function isCriticalError(msg) {
+    return CRITICAL_PREFIXES.some(prefix => String(msg).includes(prefix));
+}
+
+export function initSystemErrorHandler() {
+    // 非同期エラー（Promise拒否）
+    window.addEventListener("unhandledrejection", (e) => {
+        const error = e.reason;
+        const msg = error?.message || String(error);
+
+        // ★ 非同期側でも重大なエラーのときだけBSODにする
+        if (isCriticalError(msg)) {
+            showBSOD(`KERNEL_UNHANDLED_REJECTION: ${msg}`, error);
+        } else {
+            console.warn("[Kernel Notice] Non-critical unhandled rejection:", msg);
+        }
+    });
+
+    // 通常のエラー
+    window.addEventListener("error", (e) => {
+        const msg = e.error ? e.error.message : e.message;
+        if (isCriticalError(msg)) {
+            showBSOD(`KERNEL_FAULT: ${msg}`, e.error);
+        } else {
+            console.warn("[Kernel Notice] Non-critical exception caught:", msg);
+        }
+    });
+}
 /* =========================
    Metrics（CPU / Memory）
 ========================= */
@@ -88,7 +121,7 @@ async function safeImport(entry) {
 export async function initKernelAsync(progressCallback = () => { }) {
     const root = document.getElementById("os-root");
     if (!root) throw new Error("os-root not found");
-
+    initSystemErrorHandler();
     // 1. 基本構造の注入
     // 描画コストを下げるため、まずは最小限のHTMLを流し込む
     progressCallback("Initializing kernel structure...");

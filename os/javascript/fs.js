@@ -261,6 +261,8 @@ async function performSave() {
         if (DEBUG_FS) console.log("[FS] Save completed.");
     } catch (e) {
         console.error("[FS] Save failed:", e);
+        // ★ 変更: ディスクへの書き込みが完全に失敗した場合、OSの根幹に関わる致命的エラーとしてスローする
+        throw new Error(`FS_FATAL_WRITE_FAULT: ${e.message}`);
     } finally {
         isSaving = false;
     }
@@ -328,6 +330,8 @@ export async function initFS() {
         if (DEBUG_FS) console.log("[FS] System synchronized successfully.");
     } catch (e) {
         console.error("[FS] Restore failed", e);
+        // ★ 変更: 同期・復元に失敗した場合は致命的エラーとしてスローし、BSODを誘発する
+        throw new Error(`FS_FATAL_RESTORE_FAULT: ${e.message}`);
     } finally {
         isInitializing = false; // ★ 追加: 初期化終了
         isSaving = false;

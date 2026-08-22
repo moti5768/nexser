@@ -177,7 +177,10 @@ export async function saveFS(fs) {
             throw err;
         }
     }).catch(err => {
-        console.warn("[FS-DB] Save chain recovered from an error. Next save is permitted.", err);
+        console.error("[FS-DB] Save chain failed critically:", err);
+
+        // ★ エラーを上位へ再スローし、カーネルのBSOD連携を有効にする
+        throw err;
     });
 
     return saveChain;

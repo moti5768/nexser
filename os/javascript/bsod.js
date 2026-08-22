@@ -19,6 +19,14 @@ export function showBSOD(message, error = null) {
     if (isDead) return;
     isDead = true;
 
+    // 🔥 ブルースクリーン発生時に #os-root 要素のみを削除する
+    try {
+        const osRootEl = document.getElementById("os-root");
+        if (osRootEl) osRootEl.remove();
+    } catch (e) {
+        console.error("要素の削除に失敗しました:", e);
+    }
+
     window.onerror = null;
     window.onunhandledrejection = null;
 
