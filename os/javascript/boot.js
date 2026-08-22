@@ -793,22 +793,36 @@ export function showPromptScreen(logoffMessage = '') {
 export async function bootOS() {
     try {
         print("\nBoot sequence started...\n");
+
+        // 1. カーネル初期化
         const kernel = await import('./kernel.js');
         await kernel.initKernelAsync(msg => print(`[Kernel] ${msg}`));
+
+        // 2. 画面をCLIからGUIルート画面へ切替
+        screen.style.display = 'none';
+        const root = document.getElementById('os-root');
+        if (root) root.style.display = 'block';
+
+        // 3. 【Stage 1】デスクトップ（背景・アイコン）の構築
+        buildDesktop();
+        window.dispatchEvent(new Event("desktop-resize"));
+        print('[Desktop] Ready');
+
+        // 4. 【Stage 2】スタートメニュー & タスクバーの初期化
         const sm = await import('./startmenu.js');
         if (sm.startMenuReady) await sm.startMenuReady(msg => print(`[StartMenu] ${msg}`));
         print('[StartMenu] Ready');
+
+        // 5. システムサービスの起動
         try {
-            // 先頭でインポート済みの initScreensaver を直接実行する
             await initScreensaver();
             print('[Screensaver] Ready');
         } catch (ssErr) {
             console.warn("Screensaver failed to initialize:", ssErr);
         }
+
+        // 6. 起動音再生
         playSystemEventSound('startup');
-        screen.style.display = 'none';
-        const root = document.getElementById('os-root');
-        if (root) root.style.display = 'block';
     } catch (e) {
         throw new Error(`BOOT_SELECTION_FAILED: ${e.message}`);
     }
@@ -833,11 +847,7 @@ export async function bootOS() {
     const savedHeight = await loadSetting("taskbarHeight") || 40;
     document.documentElement.style.setProperty('--taskbar-height', `${savedHeight}px`);
 
-    // 4. デスクトップの構築
-    buildDesktop();
-    window.dispatchEvent(new Event("desktop-resize"));
-
-    // 5. AUTOBOOT.CFG の安全な実行
+    // 4. AUTOBOOT.CFG の安全な実行
     const config = getNodeByPath("C:/System/AUTOBOOT.CFG");
     if (config && config.type === 'file' && config.content.trim()) {
         print("Reading System Configuration...");
@@ -864,7 +874,7 @@ export async function bootOS() {
         }
     }
 
-    // 6. すべての処理が正常終了した場合のみプロンプトを表示
+    // 5. すべての処理が正常終了した場合のみプロンプトを表示
     prompt();
 })();
 
