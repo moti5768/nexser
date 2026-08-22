@@ -172,7 +172,12 @@ export async function saveFS(fs) {
             });
             console.log("[FS-DB] Atomic save completed.");
         } catch (err) {
-            tx.abort();
+            // ▼ 修正: トランザクションがすでに終了している場合の例外を防ぐため安全にラップする
+            try {
+                tx.abort();
+            } catch (abortErr) {
+                // すでに終了している場合は無視する
+            }
             console.error("[FS-DB] Save failed:", err);
             throw err;
         }

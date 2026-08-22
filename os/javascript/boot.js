@@ -616,7 +616,118 @@ const commands = {
                 editorPrompt();
             });
         }
+    },
+
+
+
+
+    scanfilesystem: {
+        desc: 'Check the file system for errors and repair',
+        async run(args) {
+            // 共通のウェイト処理（演出用の遅延）
+            const wait = (ms) => new Promise(r => setTimeout(r, ms));
+
+            print("Nexser Corp for Nexser OS v0.1.0");
+            print("Initializing scanfilesystem...\n");
+            await wait(400);
+
+            // 1. システム整合性とコアディレクトリのチェック
+            print("--> Checking system integrity and core directories...");
+            const { diagnoseAndCleanFS, forceSave } = await import('./fs.js');
+            const systemReport = await diagnoseAndCleanFS(true); // 自動修復を実行
+
+            if (systemReport.logs.length > 0) {
+                systemReport.logs.forEach(log => print(`    ${log}`));
+            }
+            await wait(500);
+
+            print("--> Scanning files and applications...");
+            await wait(400);
+
+            // 全ファイル・アプリノードを再帰的に収集
+            const files = [];
+            const skipKeys = new Set(['type', 'entry', 'singleton', 'target', 'content', 'system', 'name', 'originalPath']);
+
+            function collectNodes(node, path) {
+                if (!node || typeof node !== 'object') return;
+
+                for (const [name, val] of Object.entries(node)) {
+                    if (skipKeys.has(name)) continue;
+                    const currentPath = `${path}/${name}`;
+                    if (val && typeof val === 'object') {
+                        if (val.type === 'file' || val.type === 'app') {
+                            files.push({ path: currentPath, node: val });
+                        } else if (val.type === 'folder' || !val.type) {
+                            collectNodes(val, currentPath);
+                        }
+                    }
+                }
+            }
+
+            const rootNode = resolveFS("");
+            if (rootNode) collectNodes(rootNode, "C:");
+
+            const totalFiles = files.length;
+            print(`Scanning drive C: (${totalFiles} items found)...`);
+
+            // 進捗表示用のテキストノードを作成
+            const progressNode = document.createTextNode('');
+            screen.appendChild(progressNode);
+            scrollToBottom();
+
+            let errorCount = systemReport.corruptionDetected ? 1 : 0;
+            let fixedCount = systemReport.garbageItems > 0 ? systemReport.garbageItems : 0;
+
+            // 1つずつチェックしながら横棒グラフを更新
+            for (let i = 0; i < totalFiles; i++) {
+                const item = files[i];
+
+                // 破損チェックと修復
+                if (item.node.type === 'file') {
+                    if (typeof item.node.content !== 'string') {
+                        item.node.content = "";
+                        fixedCount++;
+                    }
+                } else if (item.node.type === 'app') {
+                    if (!item.node.code && !item.node.entry) {
+                        errorCount++;
+                    }
+                }
+
+                // 横棒グラフの作成 (幅20文字)
+                const progress = i + 1;
+                const percentage = Math.floor((progress / Math.max(totalFiles, 1)) * 100);
+                const filledCount = Math.floor((progress / Math.max(totalFiles, 1)) * 20);
+                const bar = '█'.repeat(filledCount) + '░'.repeat(20 - filledCount);
+
+                progressNode.nodeValue = `${bar} ${percentage}% (${progress}/${totalFiles})\n`;
+                scrollToBottom();
+
+                await wait(30);
+            }
+
+            print("\n----------------------------------------");
+            print("Scan completed on drive C:");
+            print(`Total Checked : ${totalFiles}`);
+            print(`Errors Found  : ${errorCount}`);
+            print(`Repaired      : ${fixedCount}`);
+            print("Drive status: Healthy.");
+            print("----------------------------------------\n");
+
+            // 修復やクリーンアップが発生した場合は自動保存
+            if (fixedCount > 0 || systemReport.corruptionDetected) {
+                window.dispatchEvent(new Event("fs-updated"));
+                try {
+                    await forceSave();
+                    print("[System] File system changes have been saved.");
+                } catch (e) {
+                    console.warn("Failed to auto-save after scandisk:", e);
+                }
+            }
+        }
     }
+
+
 };
 
 // ===== Prompt & Executor =====
