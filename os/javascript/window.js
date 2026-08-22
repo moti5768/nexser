@@ -33,7 +33,8 @@ function installGlobalMouseHandler() {
         if (
             e.target.closest(".modal-overlay") ||
             (win && win._modal) ||
-            e.target.closest(".context-menu")
+            e.target.closest(".context-menu") ||
+            e.target.closest(".taskbar-window-btn") // ★ ここを追加：タスクバーボタンならリセット処理をスキップ
         ) return;
 
         // ウィンドウ外なら色リセット
@@ -340,8 +341,6 @@ ${!options.hideStatus ? `
     });
     if (taskbarBtn) {
         taskbarBtn.onclick = () => {
-            taskbarButtons.forEach(btn => btn.classList.remove("selected"));
-            taskbarBtn.classList.add("selected");
 
             if (w.dataset.minimized === "true") {
                 if (w._animating) return; // アニメ中は無効化
@@ -350,6 +349,16 @@ ${!options.hideStatus ? `
                 const titleBar = w.querySelector(".title-bar");
                 const titleText = titleBar?.querySelector(".title-text");
                 if (!titleText) { w._animating = false; return; }
+
+                // ★【修正ポイント】アニメーション開始の瞬間に状態を解除し、即座にアクティブにする
+                w.dataset.minimized = "false";
+                bringToFront(w);
+                refreshTopWindow(w); // 独自追加した forcedTopWindow 対応版を呼び出し
+
+                taskbarButtons.forEach(btn => btn.classList.remove("selected"));
+                if (taskbarBtn) {
+                    taskbarBtn.classList.add("selected");
+                }
 
                 w.style.visibility = "hidden";
                 w.style.pointerEvents = "none";
@@ -368,9 +377,8 @@ ${!options.hideStatus ? `
                     () => {
                         w.style.visibility = "visible";
                         w.style.pointerEvents = "auto";
-                        w.dataset.minimized = "false";
+                        // ※ w.dataset.minimized と bringToFront は既に上で実行済みなので削除してOK
                         clone.remove();
-                        bringToFront(w);
                         w._animating = false;
                         scheduleRefreshTopWindow();
                     }
@@ -392,7 +400,7 @@ ${!options.hideStatus ? `
                 } else {
                     // 後ろにあるなら最前面へ持ってくる
                     bringToFront(w);
-                    scheduleRefreshTopWindow();
+                    refreshTopWindow(w);
                 }
             }
         };
@@ -1345,17 +1353,23 @@ export function progressWindow(title, itemName, options = {}) {
     };
 }
 
-/* ===== refreshTopWindow 更新 (リファクタリング版) ===== */
-export function refreshTopWindow() {
+/* ===== refreshTopWindow 更新 (修正版) ===== */
+export function refreshTopWindow(forcedTopWindow = null) {
     const allWindows = Array.from(document.querySelectorAll(".window"));
 
     // 表示されているウィンドウを抽出
     const visibleWindows = allWindows.filter(win =>
-        win.style.visibility !== "hidden" && win.dataset.minimized !== "true"
+        (win === forcedTopWindow) || (
+            win.style.visibility !== "hidden" &&
+            win.dataset.minimized !== "true"
+        ) || (
+            // ★追加: 最小化が解除されている（復元アニメーション中）ならアニメーション中でも含める
+            win.dataset.minimized === "false" && !win.hidden
+        )
     );
 
-    // 最前面のウィンドウを特定 (ソートを排除し reduce で最大値を検索して最適化)
-    let topWindow = visibleWindows.find(w => w._modal);
+    // 最前面のウィンドウを特定（forcedTopWindow があればそれを最優先）
+    let topWindow = forcedTopWindow || allWindows.find(w => w._modal);
     if (!topWindow && visibleWindows.length > 0) {
         topWindow = visibleWindows.reduce((maxWin, currentWin) => {
             const maxZ = parseInt(maxWin.style.zIndex) || 0;
@@ -1364,25 +1378,28 @@ export function refreshTopWindow() {
         });
     }
 
-    // 取得済みのウィンドウ配列をベースにDOM走査を削減
+    if (visibleWindows.length === 0 && !forcedTopWindow) {
+        topWindow = undefined;
+    }
+
+    // タイトルバーの背景色とinactive状態を更新
     allWindows.forEach(win => {
         const tb = win.querySelector(".title-bar");
         if (!tb) return;
 
-        const isTop = (win === topWindow);
+        const isTop = (topWindow && win === topWindow);
 
-        // 背景色の更新
         tb.style.background = isTop
             ? (themeColor2 ? `linear-gradient(90deg, ${themeColor || DEFAULT_COLOR}, ${themeColor2})` : (themeColor || DEFAULT_COLOR))
             : DEFAULT_COLOR;
 
-        // ★最前面になったら操作可能にする（inactiveを外す）、最前面以外は inactive クラスをつける
         win.classList.toggle("inactive-window", !isTop);
     });
 
-    // タスクバーボタンの更新
+    // タスクバーボタンの選択状態を同期
     taskbarButtons.forEach(btn => {
-        btn.classList.toggle("selected", topWindow && btn._window === topWindow);
+        const isSelected = Boolean(topWindow && btn._window === topWindow);
+        btn.classList.toggle("selected", isSelected);
     });
 }
 
@@ -1473,20 +1490,29 @@ export async function minimizeWindowById(id) {
     if (!win) return false;
 
     const w = win.el;
-    if (w.dataset.minimized === "true") return true;
+
+    // ★ 修正1: すでに最小化中、またはアニメーション中であれば処理を中断
+    if (w.dataset.minimized === "true" || w._animating) return true;
+    w._animating = true; // ★ フラグを立てる
+
     playSystemEventSound('minimize');
     const taskbarBtn = w._taskbarBtn;
+
     if (!taskbarBtn) {
-        // タスクバーがない場合は即時非表示（visibility に統一）
+        // タスクバーがない場合は即時非表示
         w.style.visibility = "hidden";
         w.dataset.minimized = "true";
+        w._animating = false; // ★ 忘れずにフラグを戻す
         scheduleRefreshTopWindow();
         return true;
     }
 
     const titleBar = w.querySelector(".title-bar");
     const titleText = titleBar?.querySelector(".title-text");
-    if (!titleText) return false;
+    if (!titleText) {
+        w._animating = false; // ★ 途中で抜ける場合もフラグを戻す
+        return false;
+    }
 
     const rect = taskbarBtn.getBoundingClientRect();
     const clone = createTitleClone(w, titleBar, titleText);
@@ -1499,6 +1525,7 @@ export async function minimizeWindowById(id) {
         clone.remove();
         w.dataset.minimized = "true";
         w.style.pointerEvents = "auto";
+        w._animating = false; // ★ アニメーション終了後にフラグを解除
         scheduleRefreshTopWindow();
     });
 
@@ -1581,19 +1608,7 @@ export function installWindowContextMenu(w) {
 
             if (!minimized) {
                 bringToFront(w);
-
-                document.querySelectorAll(".window .title-bar").forEach(tb => {
-                    if (tb.parentElement === w) {
-                        tb.style.background = themeColor2
-                            ? `linear-gradient(90deg, ${themeColor}, ${themeColor2})`
-                            : themeColor;
-                    } else {
-                        tb.style.background = "gray";
-                    }
-                });
-
-                taskbarButtons.forEach(btn => btn.classList.remove("selected"));
-                taskbarBtn.classList.add("selected");
+                scheduleRefreshTopWindow(); // ❌ 手動の背景色・selected操作を廃止し、これに一本化
             }
 
             return [

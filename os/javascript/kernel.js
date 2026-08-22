@@ -157,12 +157,11 @@ export async function initKernelAsync(progressCallback = () => { }) {
 }
 
 /* =========================
-   起動API（完全安定版）
+   起動API（リファクタリング版）
 ========================= */
 const tabAppInstances = new Map();
 
 export async function launch(path, options = {}) {
-    let win = null;
     if (typeof path !== "string") {
         errorWindow(`無効なパス: ${path}`, { taskbar: false });
         return;
@@ -178,281 +177,201 @@ export async function launch(path, options = {}) {
             return;
         }
 
-        if (item.type === "link") {
-            launching.delete(path);
-
-            // リンク先の存在チェックを追加
-            const targetItem = resolveFS(item.target);
-            if (!targetItem) {
-                // 参照先がない場合、Windows風の確認ダイアログを表示
-                confirmWindow(
-                    `問題のあるショートカット\n\nこのショートカットが参照している '${item.target}' は変更または移動されているか、存在しないため、正しく機能しません。\n\nこのショートカットを削除しますか？`,
-                    (result) => {
-                        if (result) {
-                            console.log(`ショートカットを削除します: ${path}`);
-                            // TODO: ここに実際の削除処理を追加（FSからの削除とデスクトップ更新）
-                        }
-                    },
-                    {
-                        width: 400,
-                        overlay: true
-                    }
-                );
-                return; // 起動を中断
-            }
-
-            // リンク先が存在する場合は通常起動
-            return await launch(item.target, { ...options, originalNode: item });
-        }
-
-        /* ================= タブ対応アプリのチェック ================= */
-        // すでにこのアプリ(item.entry)が起動しており、かつタブ形式をサポートしている場合
-        if (item.type === "app" && item.entry && tabAppInstances.has(item.entry)) {
-            const instance = tabAppInstances.get(item.entry);
-            if (document.body.contains(instance.win)) {
-                bringToFront(instance.win);
-                if (instance.win.dataset.minimized === "true") {
-                    instance.win._taskbarBtn?.click();
-                }
-
-                // アプリ側のハンドルに新しいファイルを開くよう指示
-                if (instance.handle && typeof instance.handle.openNewTab === 'function') {
-                    // options.path (開く対象ファイル) があればそれを渡す
-                    instance.handle.openNewTab(options.path || path);
-                    return; // 新規起動せずに終了
-                }
-            } else {
-                tabAppInstances.delete(item.entry); // ウィンドウが消えていれば登録解除
-            }
-        }
-
-        const isExplorer =
-            item.type === "app" &&
-            item.entry?.includes("explorer.js");
-
-        const uniqueKey =
-            options.uniqueKey ?? (item.singleton ? path : null);
-
-        let existingWin = null;
-        if (isExplorer)
-            existingWin = explorerWindows.get(options.path || "Desktop") || null;
-        else if (uniqueKey)
-            existingWin = processes.get(uniqueKey)?.window || null;
-
-        if (existingWin && document.body.contains(existingWin)) {
-            if (existingWin.dataset.minimized === "true")
-                existingWin._taskbarBtn?.click();
-            else
-                bringToFront(existingWin);
-            return;
-        }
-
-        if (isExplorer) explorerWindows.delete(options.path || "Desktop");
-        if (uniqueKey) processes.delete(uniqueKey);
-
-        /* ================= APP ================= */
-        /* ================= APP ================= */
-        if (item.type === "app") {
-            let appModule;
-
-            // ★ item.code を持つ動的アプリ（WidgetToolなど）の場合の処理
-            if (item.code) {
-                try {
-                    // 1. import文を取り除く
-                    const cleanCode = item.code.replace(/import\s+[\s\S]*?from\s+['"][^'"]+['"];?/g, '');
-
-                    // 2. export default の関数抽出またはラップ
-                    const executableCode = cleanCode
-                        .replace(/export\s+default\s+async\s+function/, 'window.__tempAppExport = async function')
-                        .replace(/export\s+default\s+function/, 'window.__tempAppExport = function');
-
-                    // 3. 必要なモジュールを外部から一括してインポート・注入する
-                    const { FS, forceSave } = await import("./fs.js");
-                    const { resolveFS } = await import("./fs-utils.js");
-                    const { updateWindowTitle, showModalWindow } = await import("./window.js");
-                    const { getFileContent } = await import("./fs-db.js");
-
-                    // スクリプトを実行してグローバルに登録させる
-                    const runScript = new Function(
-                        'FS', 'forceSave', 'resolveFS', 'updateWindowTitle', 'showModalWindow', 'getFileContent',
-                        executableCode
-                    );
-                    runScript(FS, forceSave, resolveFS, updateWindowTitle, showModalWindow, getFileContent);
-
-                    appModule = {
-                        default: window.__tempAppExport
-                    };
-                    window.__tempAppExport = undefined; // クリーンアップ
-
-                } catch (e) {
-                    console.error("Dynamic code evaluation failed:", e);
-                    throw new Error(`動的コードの解析に失敗しました: ${e.message}`);
-                }
-            } else {
-                // 従来の静的ファイル（entry）を使うアプリ
-                appModule = await safeImport(item.entry);
-            }
-
-            if (!appModule?.default)
-                throw new Error("アプリが正しくエクスポートされていません");
-
-            const displayName =
-                options?.path
-                    ? basename(options.path)
-                    : (options.showFullPath
-                        ? path
-                        : item.name || basename(path));
-
-            const content = createWindow(displayName, {
-                node: options.originalNode || item
-            });
-
-            win = content?.closest(".window");
-            if (!win || !document.body.contains(win))
-                throw new Error("Window creation failed");
-
-            let appHandle = null;
-
-            try {
-                // ★ アプリの戻り値（ハンドル）を受け取る
-                appHandle = await appModule.default(content, options);
-
-                // タブ対応アプリであれば登録
-                if (appHandle && appHandle.isTabApp) {
-                    tabAppInstances.set(item.entry, { win, handle: appHandle });
-                }
-
-                if (typeof win._applyRealIcon === "function") {
-                    win._applyRealIcon();
-                }
-            } catch (e) {
-                console.error("app runtime error:", e);
-                errorWindow(`アプリがクラッシュしました\n${e.message}`, { taskbar: false });
-                throw e;
-            }
-
-            addRecent(path);
-
-            const key = uniqueKey ?? `app:${path}:${Date.now()}`;
-            const pid = pidCounter++;
-
-            processes.set(key, {
-                pid,
-                path,
-                window: win,
-                handle: appHandle,
-                state: "normal",
-                startTime: performance.now(),
-                memory: 0,
-                cpu: 0
-            });
-
-            win.dataset.processKey = key;
-
-            const observer = new MutationObserver((mutations, obs) => {
-                if (!document.body.contains(win)) {
-                    obs.disconnect();
-                    if (processes.has(key)) {
-                        killProcess(key);
-                    }
-                }
-            });
-            observer.observe(document.body, { childList: true, subtree: true });
-            win._observer = observer;
-
-            win._cleanup = () => {
-                if (processes.has(key)) {
-                    killProcess(key);
-                }
-            };
-
-            if (isExplorer) {
-                explorerWindows.set(options.path || "Desktop", win);
-            }
-        }
-
-        /* ================= FILE ================= */
-        else if (item.type === "file") {
-            // file-associations から起動すべきアプリを取得
-            const appPath = resolveAppByPath(path);
-            if (appPath) {
-                // ファイルを開く場合は、そのアプリを「そのファイルパスを引数にして」起動する
-                launching.delete(path);
-                return await launch(appPath, { ...options, path: path });
-            }
-
-            // 対応アプリがない場合のフォールバック（fileviewer）
-            const mod = await safeImport("./apps/fileviewer.js");
-            if (!mod?.default) throw new Error("fileviewer export missing");
-
-            const content = createWindow(basename(path), { node: item });
-            win = content?.closest(".window");
-            if (!win) throw new Error("Window creation failed");
-
-            await mod.default(content, {
-                name: basename(path),
-                content: item.content
-            });
-
-            if (typeof win._applyRealIcon === "function") {
-                win._applyRealIcon();
-            }
-
-            const key = options.uniqueKey ?? `file:${path}:${Date.now()}`;
-            const pid = pidCounter++;
-
-            processes.set(key, {
-                pid,
-                path,
-                window: win,
-                state: "normal",
-                startTime: performance.now(),
-                memory: 0,
-                cpu: 0
-            });
-
-            win.dataset.processKey = key;
-
-            const observer = new MutationObserver((mutations, obs) => {
-                if (!document.body.contains(win)) {
-                    obs.disconnect();
-                    if (processes.has(key)) {
-                        killProcess(key);
-                    }
-                }
-            });
-            observer.observe(document.body, { childList: true, subtree: true });
-            win._observer = observer;
-
-            // ✅ APP側と同様に必ず killProcess を経由させる
-            win._cleanup = () => {
-                if (processes.has(key)) {
-                    killProcess(key);
-                }
-            };
-        }
-
-        /* ================= FOLDER ================= */
-        else if (item.type === "folder") {
-            await launch("Programs/Applications/Explorer.app", {
-                path,
-                parentCwd: options.parentCwd,
-                ribbonMenus: options.ribbonMenus,
-                showFullPath: options.showFullPath
-            });
-        }
-        else {
-            throw new Error(`不明なタイプ: ${item.type}`);
+        // タイプごとに処理を専用関数へ委譲してスッキリさせる
+        switch (item.type) {
+            case "link":
+                return await launchLink(item, path, options);
+            case "app":
+                return await launchApp(item, path, options);
+            case "file":
+                return await launchFile(item, path, options);
+            case "folder":
+                return await launchFolder(item, path, options);
+            default:
+                throw new Error(`不明なタイプ: ${item.type}`);
         }
 
     } catch (err) {
         console.error("Launch error:", err);
-        if (win) destroyWindow(win);
         errorWindow(`起動に失敗しました: ${path}\n${err.message}`, { taskbar: false });
     } finally {
         launching.delete(path);
         try { refreshStartMenu(); } catch { }
     }
+}
+
+/* --- 1. リンク起動の処理 --- */
+async function launchLink(item, path, options) {
+    const targetItem = resolveFS(item.target);
+    if (!targetItem) {
+        confirmWindow(
+            `問題のあるショートカット\n\nこのショートカットが参照している '${item.target}' は存在しません。\nこのショートカットを削除しますか？`,
+            (result) => {
+                if (result) console.log(`ショートカットを削除します: ${path}`);
+            },
+            { width: 400, overlay: true }
+        );
+        return;
+    }
+    // ロック解除は外側の launch() の finally に任せるため、ここでは削除しない
+    return await launch(item.target, { ...options, originalNode: item });
+}
+
+/* --- 2. フォルダ起動の処理 --- */
+async function launchFolder(item, path, options) {
+    return await launch("Programs/Applications/Explorer.app", {
+        path,
+        parentCwd: options.parentCwd,
+        ribbonMenus: options.ribbonMenus,
+        showFullPath: options.showFullPath
+    });
+}
+
+/* --- 3. ファイル起動の処理 --- */
+async function launchFile(item, path, options) {
+    const appPath = resolveAppByPath(path);
+    if (appPath) {
+        // 早期のロック解除はせず、外側の launch() の finally に任せるため削除
+        return await launch(appPath, { ...options, path: path });
+    }
+
+    const mod = await safeImport("./apps/fileviewer.js");
+    if (!mod?.default) throw new Error("fileviewer export missing");
+
+    const content = createWindow(basename(path), { node: item });
+    const win = content?.closest(".window");
+    if (!win) throw new Error("Window creation failed");
+
+    try {
+        await mod.default(content, { name: basename(path), content: item.content });
+        if (typeof win._applyRealIcon === "function") win._applyRealIcon();
+    } catch (e) {
+        // ★ ファイルビューアの初期化エラー時に中途半端なウィンドウを破棄する
+        if (typeof destroyWindow === "function" && win) {
+            destroyWindow(win);
+        }
+        throw e; // 上位の catch に委譲してエラーWindowを表示させる
+    }
+
+    registerProcess(win, options.uniqueKey ?? `file:${path}:${Date.now()}`, path, null);
+}
+
+/* --- 4. アプリ起動の処理 --- */
+async function launchApp(item, path, options) {
+    // タブ対応アプリのチェック
+    if (item.entry && tabAppInstances.has(item.entry)) {
+        const instance = tabAppInstances.get(item.entry);
+        if (document.body.contains(instance.win)) {
+            bringToFront(instance.win);
+            if (instance.win.dataset.minimized === "true") instance.win._taskbarBtn?.click();
+            if (instance.handle?.openNewTab) {
+                instance.handle.openNewTab(options.path || path);
+                return;
+            }
+        } else {
+            tabAppInstances.delete(item.entry);
+        }
+    }
+
+    const isExplorer = item.entry?.includes("explorer.js");
+    const uniqueKey = options.uniqueKey ?? (item.singleton ? path : null);
+    let existingWin = isExplorer ? explorerWindows.get(options.path || "Desktop") : (uniqueKey ? processes.get(uniqueKey)?.window : null);
+
+    if (existingWin && document.body.contains(existingWin)) {
+        if (existingWin.dataset.minimized === "true") existingWin._taskbarBtn?.click();
+        else bringToFront(existingWin);
+        return;
+    }
+
+    if (isExplorer) explorerWindows.delete(options.path || "Desktop");
+    if (uniqueKey) processes.delete(uniqueKey);
+
+    let appModule;
+    if (item.code) {
+        try {
+            const cleanCode = item.code.replace(/import\s+[\s\S]*?from\s+['"][^'"]+['"];?/g, '');
+            const executableCode = cleanCode
+                .replace(/export\s+default\s+async\s+function/, 'window.__tempAppExport = async function')
+                .replace(/export\s+default\s+function/, 'window.__tempAppExport = function');
+
+            const { FS, forceSave } = await import("./fs.js");
+            const { resolveFS } = await import("./fs-utils.js");
+            const { updateWindowTitle, showModalWindow } = await import("./window.js");
+            const { getFileContent } = await import("./fs-db.js");
+
+            const runScript = new Function(
+                'FS', 'forceSave', 'resolveFS', 'updateWindowTitle', 'showModalWindow', 'getFileContent',
+                executableCode
+            );
+            runScript(FS, forceSave, resolveFS, updateWindowTitle, showModalWindow, getFileContent);
+
+            appModule = { default: window.__tempAppExport };
+            window.__tempAppExport = undefined;
+        } catch (e) {
+            console.error("Dynamic code evaluation failed:", e);
+            throw new Error(`動的コードの解析に失敗しました: ${e.message}`);
+        }
+    } else {
+        appModule = await safeImport(item.entry);
+    }
+
+    if (!appModule?.default) throw new Error("アプリが正しくエクスポートされていません");
+
+    const displayName = options?.path ? basename(options.path) : (options.showFullPath ? path : item.name || basename(path));
+    const content = createWindow(displayName, { node: options.originalNode || item });
+    const win = content?.closest(".window");
+    if (!win) throw new Error("Window creation failed");
+
+    let appHandle = null;
+    try {
+        appHandle = await appModule.default(content, options);
+        if (appHandle?.isTabApp) tabAppInstances.set(item.entry, { win, handle: appHandle });
+        if (typeof win._applyRealIcon === "function") win._applyRealIcon();
+    } catch (e) {
+        console.error("app runtime error:", e);
+        // ★ エラー時に中途半端なウィンドウが残らないよう破棄する
+        if (typeof destroyWindow === "function" && win) {
+            destroyWindow(win);
+        }
+        errorWindow(`アプリがクラッシュしました\n${e.message}`, { taskbar: false });
+        throw e;
+    }
+
+    addRecent(path);
+    const key = uniqueKey ?? `app:${path}:${Date.now()}`;
+    registerProcess(win, key, path, appHandle);
+
+    if (isExplorer) explorerWindows.set(options.path || "Desktop", win);
+}
+
+/* --- 共通：プロセス登録とObserver設定のヘルパー --- */
+function registerProcess(win, key, path, handle) {
+    const pid = pidCounter++;
+    processes.set(key, {
+        pid,
+        path,
+        window: win,
+        handle,
+        state: "normal",
+        startTime: performance.now(),
+        memory: 0,
+        cpu: 0
+    });
+
+    win.dataset.processKey = key;
+
+    const observer = new MutationObserver((mutations, obs) => {
+        if (!document.body.contains(win)) {
+            obs.disconnect();
+            if (processes.has(key)) killProcess(key);
+        }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    win._observer = observer;
+
+    win._cleanup = () => {
+        if (processes.has(key)) killProcess(key);
+    };
 }
 
 
