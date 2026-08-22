@@ -85,6 +85,8 @@ export async function loadSetting(key) {
 ========================= */
 export let themeColor = "darkblue";
 export let themeColor2 = null;
+export let inactiveThemeColor = "gray";
+export let inactiveThemeColor2 = null;
 export let desktopColor = null;
 
 const DEFAULT_COLOR = "darkblue";
@@ -135,11 +137,15 @@ async function blobToDataURL(blob) {
 /* --- load on boot --- */
 Promise.all([
     loadSetting("titlebarColor"),
-    loadSetting("titlebarColor2")
-]).then(([color1, color2]) => {
+    loadSetting("titlebarColor2"),
+    loadSetting("inactiveTitlebarColor"),
+    loadSetting("inactiveTitlebarColor2")
+]).then(([color1, color2, inactColor1, inactColor2]) => {
     if (color1) themeColor = color1;
     if (color2) themeColor2 = color2;
-    if (color1 || color2) refreshTopWindow();
+    if (inactColor1) inactiveThemeColor = inactColor1;
+    if (inactColor2) inactiveThemeColor2 = inactColor2;
+    if (color1 || color2 || inactColor1 || inactColor2) refreshTopWindow();
 });
 
 loadSetting("showRecentItems").then(val => {
@@ -174,6 +180,14 @@ const settingChangeHandlers = {
     },
     async titlebarColor2() {
         await this.titlebarColor();
+    },
+    async inactiveTitlebarColor() {
+        inactiveThemeColor = (await loadSetting("inactiveTitlebarColor")) || "gray";
+        inactiveThemeColor2 = (await loadSetting("inactiveTitlebarColor2")) || null;
+        refreshTopWindow();
+    },
+    async inactiveTitlebarColor2() {
+        await this.inactiveTitlebarColor();
     },
     async desktopColor() {
         applyDesktopBackground();
@@ -233,12 +247,15 @@ export function refreshTopWindow() {
 
     document.querySelectorAll(".window .title-bar").forEach(tb => {
         if (tb.parentElement === topWindow) {
-            // ★ 2つ目の色が設定されていればグラデーションを適用
+            // アクティブウィンドウ
             tb.style.background = themeColor2
                 ? `linear-gradient(90deg, ${themeColor}, ${themeColor2})`
                 : themeColor;
         } else {
-            tb.style.background = "gray";
+            // ★ 非アクティブウィンドウ（設定があればグラデーション、なければグレー）
+            tb.style.background = inactiveThemeColor2
+                ? `linear-gradient(90deg, ${inactiveThemeColor}, ${inactiveThemeColor2})`
+                : (inactiveThemeColor || "gray");
         }
     });
 }
@@ -407,7 +424,7 @@ export default async function SettingsApp(content) {
             { c1: "#8A2BE2", c2: "#FF1493" }, // Purple-Pink
             { c1: "#32CD32", c2: "#00FA9A" }, // Green-SpringGreen
             { c1: "#2F4F4F", c2: "#A9A9A9" }, // Dark-Gray
-            { c1: "#02175e", c2: "#a3c1e2" }  //Windows98-theme
+            { c1: "#0A246A", c2: "#A6CAF0" }  //Windows2000-theme
         ];
 
         const gradPalette = document.createElement("div");
@@ -442,6 +459,63 @@ export default async function SettingsApp(content) {
         };
 
         block1.append(colorControls, palette, gradPalette, resetBtn);
+
+
+
+        /* ---- Inactive Titlebar Color (★追加) ---- */
+        const blockInactive = document.createElement("div");
+        blockInactive.style.marginTop = "12px";
+        blockInactive.innerHTML = `<div>Inactive Window Titlebar Color</div>`;
+
+        const inactColorInput1 = document.createElement("input");
+        inactColorInput1.type = "color";
+        inactColorInput1.value = inactiveThemeColor.startsWith("#") ? inactiveThemeColor : "#808080";
+
+        const inactEnableGradient = document.createElement("input");
+        inactEnableGradient.type = "checkbox";
+        inactEnableGradient.checked = !!inactiveThemeColor2;
+        inactEnableGradient.style.marginLeft = "8px";
+
+        const inactLabelGradient = document.createElement("span");
+        inactLabelGradient.textContent = " Gradient: ";
+        inactLabelGradient.style.marginLeft = "4px";
+        inactLabelGradient.style.fontSize = "13px";
+
+        const inactColorInput2 = document.createElement("input");
+        inactColorInput2.type = "color";
+        inactColorInput2.value = (inactiveThemeColor2 && inactiveThemeColor2.startsWith("#")) ? inactiveThemeColor2 : "#b5b5b5";
+        inactColorInput2.disabled = !inactEnableGradient.checked;
+
+        const updateInactiveTitlebar = async () => {
+            inactiveThemeColor = inactColorInput1.value;
+            inactiveThemeColor2 = inactEnableGradient.checked ? inactColorInput2.value : null;
+            await saveSetting("inactiveTitlebarColor", inactiveThemeColor);
+            await saveSetting("inactiveTitlebarColor2", inactiveThemeColor2);
+            refreshTopWindow();
+        };
+
+        inactColorInput1.oninput = updateInactiveTitlebar;
+        inactColorInput2.oninput = updateInactiveTitlebar;
+        inactEnableGradient.onchange = () => {
+            inactColorInput2.disabled = !inactEnableGradient.checked;
+            updateInactiveTitlebar();
+        };
+
+        const inactColorControls = document.createElement("div");
+        inactColorControls.style.margin = "4px 0";
+        inactColorControls.append(inactColorInput1, inactEnableGradient, inactLabelGradient, inactColorInput2);
+
+        // ★ 非アクティブ用リセットボタンを追加
+        const inactResetBtn = document.createElement("button");
+        inactResetBtn.textContent = "Reset Default";
+        inactResetBtn.onclick = () => {
+            inactColorInput1.value = "#808080";
+            inactEnableGradient.checked = false;
+            inactColorInput2.disabled = true;
+            updateInactiveTitlebar();
+        };
+
+        blockInactive.append(inactColorControls, inactResetBtn);
 
         /* ---- Desktop Background (Color & Image) ---- */
         const block2 = document.createElement("div");
@@ -550,7 +624,7 @@ export default async function SettingsApp(content) {
         animLabel.append(animToggle, document.createTextNode(" Enable Window Animations"));
         animBlock.appendChild(animLabel);
 
-        root.append(block1, block2, animBlock);
+        root.append(block1, blockInactive, block2, animBlock);
     }
 
     /* ---------- Screen Saver (新規タブ) 修正版 ---------- */

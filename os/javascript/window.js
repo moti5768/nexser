@@ -1,6 +1,6 @@
 // window.js
 import { saveWindowSize, loadWindowSize } from "./window-size-db.js";
-import { themeColor, themeColor2 } from "./apps/settings.js";
+import { themeColor, themeColor2, inactiveThemeColor, inactiveThemeColor2 } from "./apps/settings.js";
 import { attachContextMenu } from "./context-menu.js";
 import { setupRibbon } from "./ribbon.js";
 import { killProcess } from "./kernel.js";
@@ -34,15 +34,13 @@ function installGlobalMouseHandler() {
             e.target.closest(".modal-overlay") ||
             (win && win._modal) ||
             e.target.closest(".context-menu") ||
-            e.target.closest(".taskbar-window-btn") // ★ ここを追加：タスクバーボタンならリセット処理をスキップ
+            e.target.closest(".taskbar-window-btn")
         ) return;
 
-        // ウィンドウ外なら色リセット
-        const titles = document.getElementsByClassName("title-bar");
-        for (const tb of titles) {
-            tb.style.background = DEFAULT_COLOR;
+        // ★ ウィンドウ外（デスクトップなど）をクリックしたときのみ、すべてのウィンドウを非アクティブにする
+        if (!win) {
+            resetAllTitleBars();
         }
-        taskbarButtons.forEach(btn => btn.classList.remove("selected"));
     });
 
     // ★ 追加: iframe（クロスオリジン含む）クリック時の手前表示対応
@@ -65,8 +63,16 @@ function installGlobalMouseHandler() {
 
 /* ===== 全ウィンドウ色リセット ===== */
 export function resetAllTitleBars() {
-    document.querySelectorAll(".window .title-bar")
-        .forEach(tb => tb.style.background = DEFAULT_COLOR);
+    const inactiveBg = inactiveThemeColor2
+        ? `linear-gradient(90deg, ${inactiveThemeColor || DEFAULT_COLOR}, ${inactiveThemeColor2})`
+        : (inactiveThemeColor || DEFAULT_COLOR);
+
+    document.querySelectorAll(".window").forEach(win => {
+        const tb = win.querySelector(".title-bar");
+        if (tb) tb.style.background = inactiveBg;
+        win.classList.add("inactive-window");
+    });
+    taskbarButtons.forEach(btn => btn.classList.remove("selected"));
 }
 export function scheduleRefreshTopWindow() {
     if (refreshQueued) return;
@@ -1389,9 +1395,12 @@ export function refreshTopWindow(forcedTopWindow = null) {
 
         const isTop = (topWindow && win === topWindow);
 
+        // ★ アクティブ時と同様に、非アクティブ時もグラデーション（または非アクティブ用カラー）を適用する
         tb.style.background = isTop
             ? (themeColor2 ? `linear-gradient(90deg, ${themeColor || DEFAULT_COLOR}, ${themeColor2})` : (themeColor || DEFAULT_COLOR))
-            : DEFAULT_COLOR;
+            : (inactiveThemeColor2
+                ? `linear-gradient(90deg, ${inactiveThemeColor || DEFAULT_COLOR}, ${inactiveThemeColor2})`
+                : (inactiveThemeColor || DEFAULT_COLOR));
 
         win.classList.toggle("inactive-window", !isTop);
     });
