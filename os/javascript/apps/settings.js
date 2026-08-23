@@ -1425,40 +1425,31 @@ export default async function SettingsApp(content) {
             }
         }
 
+        // 【改善後】Settings.js 側での getStoreSizes の置き換え
         async function getStoreSizes() {
-            try {
-                const db = await getDB();
-                const storeNames = Array.from(db.objectStoreNames);
+            return new Promise((resolve) => {
+                // Workerのパスはプロジェクトの構成に合わせて調整してください
+                const worker = new Worker(new URL("./worker/settings-worker.js", import.meta.url), { type: "module" });
 
-                const results = await Promise.all(storeNames.map(async (storeName) => {
-                    let bytes = 0;
-                    const tx = db.transaction(storeName, "readonly");
-                    const store = tx.objectStore(storeName);
+                worker.onmessage = (e) => {
+                    worker.terminate(); // 処理が終わったらWorkerを破棄
+                    if (e.data.success) {
+                        resolve(e.data.sizes);
+                    } else {
+                        console.error("[Settings Worker] failed:", e.data.error);
+                        resolve({});
+                    }
+                };
 
-                    await new Promise((resolve, reject) => {
-                        const request = store.openCursor();
-                        request.onsuccess = (event) => {
-                            const cursor = event.target.result;
-                            if (cursor) {
-                                // データをメモリに溜め込まず、1件ずつ順次処理して加算する
-                                bytes += calculateItemSize(storeName, cursor.value);
-                                cursor.continue();
-                            } else {
-                                resolve();
-                            }
-                        };
-                        request.onerror = () => reject(request.error);
-                        tx.onabort = () => reject(new Error("Transaction aborted"));
-                    });
+                worker.onerror = (err) => {
+                    console.error("[Settings Worker] error:", err);
+                    worker.terminate();
+                    resolve({});
+                };
 
-                    return [storeName, bytes];
-                }));
-
-                return Object.fromEntries(results);
-            } catch (e) {
-                console.error("[Settings] getStoreSizes failed:", e);
-                return {};
-            }
+                // サイズ計算の実行を指示
+                worker.postMessage({ type: "GET_STORE_SIZES" });
+            });
         }
 
         async function renderStorage() {

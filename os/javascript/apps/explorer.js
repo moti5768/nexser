@@ -1971,44 +1971,86 @@ export default async function Explorer(root, options = {}) {
 
 }
 
-/**
- * 物理的な占有量をシミュレートして計算する
- */
-export async function calcNodeSize(node, path = "") {
-    if (!node) return 0;
+// 改善後 (Explorer.js 側の差し替え部分)
+let explorerWorker = null;
+let workerCallbackId = 0;
+const workerPendingRequests = new Map();
 
-    try {
-        if (node.type === "file") {
-            // ① 既に size プロパティがある場合は即座に返す
-            if (typeof node.size === "number") return node.size;
+function getExplorerWorker() {
+    if (!explorerWorker) {
+        explorerWorker = new Worker(new URL('./worker/explorer.worker.js', import.meta.url), { type: 'module' });
+        explorerWorker.onmessage = (e) => {
+            const { id, size } = e.data;
+            if (workerPendingRequests.has(id)) {
+                workerPendingRequests.get(id)(size);
+                workerPendingRequests.delete(id);
+            }
+        };
+    }
+    return explorerWorker;
+}
 
-            // ② Blob / File オブジェクトの場合はその size を参照 (追加)
-            if (node.content instanceof Blob) return node.content.size;
+export function calcNodeSize(node, path = "") {
+    return new Promise((resolve) => {
+        if (!node) {
+            resolve(0);
+            return;
+        }
 
-            // ③ 文字列の場合はクラッシュ防止のため TextEncoder を避けて .length にフォールバック
-            if (node.content && node.content !== "__EXTERNAL_DATA__") {
-                if (typeof node.content === "string") {
-                    return node.content.length;
+        // Blobが含まれている場合のフォールバック
+        if (node.content instanceof Blob) {
+            resolve(node.content.size);
+            return;
+        }
+
+        // 構造化クローンエラーを防ぎつつ、元のプロパティ構造を維持したまま安全なプレーンオブジェクトに変換
+        const sanitizeForWorker = (n) => {
+            if (!n || typeof n !== 'object') return n;
+
+            // 配列やプレーンオブジェクトを走査
+            const sanitized = Array.isArray(n) ? [] : {};
+
+            for (const key of Object.keys(n)) {
+                // 無視すべきメタデータや、関数・DOMなどのクローンできない要素をスキップ
+                if (typeof n[key] === 'function') continue;
+
+                // 子要素やオブジェクトの場合は再帰的にサニタイズ
+                if (n[key] && typeof n[key] === 'object') {
+                    // Blobはサイズだけ保持、またはそのまま除外（必要に応じて調整）
+                    if (n[key] instanceof Blob) {
+                        sanitized[key] = { type: 'file', size: n[key].size };
+                    } else {
+                        try {
+                            sanitized[key] = sanitizeForWorker(n[key]);
+                        } catch (e) {
+                            // 循環参照などでコピーできない場合はスキップ
+                            continue;
+                        }
+                    }
+                } else {
+                    // プリミティブ値（文字列、数値、真偽値など）はそのままコピー
+                    sanitized[key] = n[key];
                 }
             }
-            return 0;
-        }
+            return sanitized;
+        };
 
-        if (node.type === "folder") {
-            const keys = Object.keys(node).filter(key => !IGNORED_METADATA_KEYS.has(key));
-            const sizes = await Promise.all(keys.map(key => {
-                const childNode = node[key];
-                if (!childNode) return 0;
-                const childPath = path ? `${path}/${key}` : key;
-                return calcNodeSize(childNode, childPath);
-            }));
-            return sizes.reduce((total, s) => total + s, 0);
+        try {
+            const safeNodePayload = sanitizeForWorker(node);
+            const worker = getExplorerWorker();
+            const id = ++workerCallbackId;
+
+            workerPendingRequests.set(id, resolve);
+            worker.postMessage({ type: "CALC_SIZE", payload: { node: safeNodePayload, path }, id });
+        } catch (err) {
+            console.warn("Worker postMessage fallback used:", err);
+            if (node.type === "file") {
+                resolve(typeof node.size === "number" ? node.size : (node.content?.length || 0));
+            } else {
+                resolve(node.size || 0);
+            }
         }
-    } catch (e) {
-        console.warn("calcNodeSize error:", path, e);
-        return node?.size || 0;
-    }
-    return 0;
+    });
 }
 
 function formatSize(bytes) {

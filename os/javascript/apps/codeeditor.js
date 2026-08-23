@@ -405,55 +405,42 @@ export default function CodeEditor(root, options = {}) {
         unit: "#b5cea8",      // 単位 (px, rem)
         value: "#ce9178",     // プロパティの値 (文字列に近い扱い)
     };
-    // --- 共通のトークナイザー ---
+
+    /* =========================
+   Tokenizer & Syntax Utils (CodeEditor用に追加)
+========================= */
     function tokenize(line) {
-        // 演算子、括弧、文字列、コメント、単語、ドット、コロンを細かく分割
-        // これにより .log や :hover などを個別に判定可能にします
         return line.split(/(\/\/.+|\/\*[\s\S]*?\*\/|"(?:\\.|[^"])*"|'(?:\\.|[^'])*'|`[\s\S]*?`|<\/?[a-zA-Z0-9!.-]+|[\w$-]+|[{}().,;+\-*/&|=<>!\[\]:]|[\s]+)/).filter(Boolean);
     }
 
-    // --- トークンタイプ判定（文脈考慮・エラー防止完全版） ---
-    /**
-     * @param {string} token - 判定する単語
-     * @param {string} filePath - 拡張子判別用パス
-     * @param {number} index - tokens配列内の現在の位置 (デフォルト0)
-     * @param {Array} tokens - 現在の行の全トークン配列 (デフォルト空配列)
-     */
     function getTokenType(token, filePath, index = 0, tokens = []) {
         const t = token.trim();
         if (!t) return null;
         const ext = filePath ? filePath.split('.').pop().toLowerCase() : '';
 
-        // 前後のトークンを安全に取得（オプショナルチェイニング ?. で undefined エラーを完全防止）
         const next = tokens[index + 1]?.trim();
         const prev = tokens[index - 1]?.trim();
 
-        // --- 共通 (最優先) ---
         if (t.startsWith("//") || t.startsWith("/*")) return "comment";
         if (/^["'`]/.test(t)) return "string";
         if (/^[0-9]+(\.[0-9]+)?(px|rem|em|%|vh|vw|s|ms|deg)?$/.test(t)) return "number";
         if (/^[{}()\[\]]$/.test(t)) return "bracket";
         if (t === "." || t === "," || t === ";" || t === ":") return null;
 
-        // --- HTML ---
         if (ext === 'html' || ext === 'htm') {
             if (t.startsWith('<')) return "tag";
             if (t === '>') return "angle";
             if (t.startsWith('!')) return "doctype";
-            // 属性判定: 後ろに '=' が続く
             if (next === '=' && /^[a-zA-Z-]+$/.test(t)) return "attr";
         }
 
-        // --- CSS ---
         if (ext === 'css') {
             if (t.startsWith('.') || t.startsWith('#') || /^(html|body|div|span|a|h[1-6]|p|ul|li|section|header|footer|nav|main)$/.test(t)) {
                 return "selector";
             }
-            // プロパティ判定: 後ろに ':' がある
             if (next === ':' && /^[a-z-]+$/.test(t)) return "property";
         }
 
-        // --- JavaScript ---
         if (ext === 'js') {
             const keywords = /^(const|let|var|function|return|if|else|for|while|import|export|from|as|default|class|extends|constructor|static|get|set|async|await|new|this|super|try|catch|finally|throw|break|continue|switch|case|of|in|yield|delete|typeof|instanceof|void|null|undefined|true|false)$/;
             if (keywords.test(t)) return "keyword";
@@ -461,10 +448,7 @@ export default function CodeEditor(root, options = {}) {
             const builtins = /^(console|window|document|Math|Object|Array|String|Number|Boolean|Promise|JSON|Map|Set|Symbol|Error|Proxy|Reflect|setTimeout|setInterval|fetch)$/;
             if (builtins.test(t)) return "builtin";
 
-            // VS Code風: 関数呼び出し (後ろが '(')
             if (next === '(' && /^[a-zA-Z_$][\w$]*$/.test(t)) return "func";
-
-            // VS Code風: オブジェクトのプロパティ (前が '.')
             if (prev === '.' && /^[a-zA-Z_$][\w$]*$/.test(t)) return "property_js";
 
             if (/^[a-zA-Z_$][\w$]*$/.test(t)) return "variable";
@@ -474,71 +458,38 @@ export default function CodeEditor(root, options = {}) {
         return null;
     }
 
+
     // --- シンタックスハイライト適用メイン関数 ---
     let highlightTask = null;
 
-    function applySyntaxHighlight() {
-        if (highlightTask) {
-            cancelAnimationFrame(highlightTask);
-            highlightTask = null;
-        }
+    // 改善後: Web Workerを利用してメインスレッドをブロックしない
+    const syntaxWorker = new Worker(new URL('./worker/syntax.worker.js', import.meta.url), { type: 'module' });
 
+    // Workerから計算結果を受け取るリスナー
+    syntaxWorker.onmessage = (e) => {
+        if (typeof isDestroyed !== 'undefined' && isDestroyed) return;
+
+        // DOMへの反映（描画）のみをメインスレッドで行う
+        syntaxLayer.innerHTML = e.data.html;
+        syntaxLayer.scrollTop = textarea.scrollTop;
+        syntaxLayer.scrollLeft = textarea.scrollLeft;
+
+        if (!minimapUpdatePending) {
+            minimapUpdatePending = true;
+            requestAnimationFrame(() => {
+                updateMinimap();
+                minimapUpdatePending = false;
+            });
+        }
+    };
+
+    function applySyntaxHighlight() {
         const text = textarea.value;
-        const lines = text.split('\n');
-        const totalLines = lines.length;
         const currentPath = activeTab ? activeTab.path : "";
 
-        let currentLine = 0;
-        const chunkSize = 200;
-
-        // ★ htmlResult を文字列の連結ではなく配列に変更
-        const htmlBuffer = [];
-
-        function processChunk() {
-            if (typeof isDestroyed !== 'undefined' && isDestroyed) return;
-            if (activeTab && activeTab.path !== currentPath) return;
-
-            const end = Math.min(currentLine + chunkSize, totalLines);
-
-            for (let i = currentLine; i < end; i++) {
-                const line = lines[i];
-                const tokens = tokenize(line);
-
-                for (let j = 0; j < tokens.length; j++) {
-                    const token = tokens[j];
-                    if (!token) continue;
-
-                    const type = getTokenType(token, currentPath, j, tokens);
-                    const escaped = token.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-
-                    htmlBuffer.push(type ? `<span class="hl-${type}">${escaped}</span>` : escaped);
-                }
-                if (i < totalLines - 1) htmlBuffer.push("\n");
-            }
-
-            currentLine = end;
-
-            if (currentLine < totalLines) {
-                highlightTask = requestAnimationFrame(processChunk);
-            } else {
-                // ★ 最後に一度だけ join して DOM に反映
-                syntaxLayer.innerHTML = htmlBuffer.join("") + (text.endsWith('\n') ? ' ' : '');
-                syntaxLayer.scrollTop = textarea.scrollTop;
-                syntaxLayer.scrollLeft = textarea.scrollLeft;
-
-                if (!minimapUpdatePending) {
-                    minimapUpdatePending = true;
-                    requestAnimationFrame(() => {
-                        updateMinimap();
-                        minimapUpdatePending = false;
-                    });
-                }
-                highlightTask = null;
-            }
-        }
-        processChunk();
+        // 重いループ処理をWeb Workerへ丸投げする
+        syntaxWorker.postMessage({ text, currentPath });
     }
-
     // 行数を記録するための変数を関数の外側（CodeEditor関数内）に定義
     let lastLineCount = 0;
     function updateLineNumbers() {
@@ -599,9 +550,18 @@ export default function CodeEditor(root, options = {}) {
     const CHAR_W_PX = 1;
     let isDraggingMinimap = false;
 
+    let cachedLines = null;
+    let cachedText = "";
+
     function updateMinimap() {
         const text = textarea.value;
-        const lines = text.split("\n");
+
+        // テキストが変わっていなければ前回のデータを使い回す
+        if (text !== cachedText) {
+            cachedLines = text.split("\n");
+            cachedText = text;
+        }
+        const lines = cachedLines; // 使い回した配列を使う
         const lineCount = lines.length;
 
         const containerW = minimapContainer.clientWidth;
@@ -1020,6 +980,10 @@ export default function CodeEditor(root, options = {}) {
         // ★追加: ファイル全体での累積文字数を保持する変数
         let absoluteOffset = 0;
 
+        // 1. メモリ上に仮想的なDOMツリーの断片（フラグメント）を準備
+        const highlightFragment = document.createDocumentFragment();
+        const listFragment = document.createDocumentFragment();
+
         lines.forEach((line, i) => {
             let start = 0;
             let idx;
@@ -1027,8 +991,6 @@ export default function CodeEditor(root, options = {}) {
 
             while ((idx = lowerLine.indexOf(lowerQuery, start)) !== -1) {
                 matchCount++;
-
-                // ★追加: 行内の相対位置(idx)に、ここまでの累積文字数を足して絶対位置を計算
                 const absoluteIdx = absoluteOffset + idx;
 
                 // 画面上の黄色いハイライト
@@ -1047,13 +1009,13 @@ export default function CodeEditor(root, options = {}) {
                         backgroundColor: "rgba(255, 255, 0, 0.4)",
                         borderRadius: "2px"
                     });
-                    innerContainer.appendChild(div);
+                    highlightFragment.appendChild(div); // ⭕ フラグメントに溜める（DOM操作なし）
                 }
 
                 // サイドバーの該当行リストへの追加
                 if (searchResultsList && matchCount <= MAX_LIST_ITEMS) {
                     const item = document.createElement("div");
-                    const isSelected = i === selectedSearchLine; // ★
+                    const isSelected = i === selectedSearchLine;
 
                     Object.assign(item.style, {
                         padding: "4px 6px",
@@ -1063,13 +1025,11 @@ export default function CodeEditor(root, options = {}) {
                         overflow: "hidden",
                         textOverflow: "ellipsis",
                         fontSize: "12px",
-                        backgroundColor: isSelected ? "#333" : "transparent" // ★
+                        backgroundColor: isSelected ? "#333" : "transparent"
                     });
-                    item.setAttribute("data-selected", isSelected ? "true" : "false"); // ★
-
+                    item.setAttribute("data-selected", isSelected ? "true" : "false");
                     item.textContent = `${i + 1}: ${line.trim()}`;
 
-                    // ★修正: 選択中以外のみホバー色を変更
                     item.onmouseenter = () => { if (item.getAttribute("data-selected") !== "true") item.style.backgroundColor = "#2a2a2a"; };
                     item.onmouseleave = () => { if (item.getAttribute("data-selected") !== "true") item.style.backgroundColor = "transparent"; };
 
@@ -1078,19 +1038,24 @@ export default function CodeEditor(root, options = {}) {
                         textarea.setSelectionRange(absoluteIdx, absoluteIdx + query.length);
                         scrollToIndex(absoluteIdx);
                         searchIndex = absoluteIdx;
-                        // ★修正: リストの再構築を行わず、ハイライトの更新のみ行う
                         updateActiveLine();
                         updateSidebarSelection();
                     };
 
-                    searchResultsList.appendChild(item);
-                    searchResultsList.style.display = "block";
+                    listFragment.appendChild(item); // ⭕ フラグメントに溜める（DOM操作なし）
                 }
                 start = idx + query.length;
             }
-            // ★追加: ループの最後で、現在の行の文字数 ＋ 改行文字分(1文字) を加算
             absoluteOffset += line.length + 1;
         });
+
+        // 2. ループ終了後、DOMへの一括追加をそれぞれ1回だけ行う
+        innerContainer.appendChild(highlightFragment);
+
+        if (searchResultsList && matchCount > 0) {
+            searchResultsList.appendChild(listFragment);
+            searchResultsList.style.display = "block";
+        }
 
         if (searchStatus) {
             if (matchCount > 0) {

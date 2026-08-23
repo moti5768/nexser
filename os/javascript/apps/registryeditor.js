@@ -4,6 +4,15 @@ import { attachContextMenu } from "../context-menu.js";
 import { setupRibbon } from "../ribbon.js";
 import { taskbarButtons, alertWindow, errorWindow, confirmWindow } from "../window.js";
 
+// 【追加】Workerの管理用
+let worker = null;
+function getWorker() {
+    if (!worker) {
+        worker = new Worker(new URL('./worker/registry.worker.js', import.meta.url), { type: 'module' });
+    }
+    return worker;
+}
+
 export default function RegistryEditor(root) {
     const STORE_NAMES = ["settings", "files", "kv", "recent"];
     let currentStore = STORE_NAMES[0];
@@ -11,6 +20,8 @@ export default function RegistryEditor(root) {
     let isProcessing = false;
     let searchTerm = "";
     const MAX_VISIBLE_ITEMS = 500;
+
+    let currentRequestId = 0;
 
     const win = root.closest(".window");
     let editingKey = null; // インライン編集中のキーを保持
@@ -36,7 +47,7 @@ export default function RegistryEditor(root) {
 
     // --- UI初期化 ---
     root.innerHTML = `
-        <div class="registry-editor" style="display:flex; flex-direction:column; height:100%; font-size:12px; font-family: 'MS Sans Serif', sans-serif; background:#c0c0c0; user-select:none; position:relative;">
+        <div class="registry-editor" style="display:flex; flex-direction:column; height:100%; font-size:12px; font-family: 'MS Sans Serif', sans-serif; background:#c0c0c0; user-select:none;">
             <div style="padding:4px; display:flex; gap:5px; border-bottom:1px solid #808080; background:#eee; align-items:center;">
                 <span>Find:</span>
                 <input type="text" class="border" id="reg-search" style="flex:1; outline:none; padding:1px 3px; background:#fff;" placeholder="Search keys...">
@@ -47,7 +58,12 @@ export default function RegistryEditor(root) {
                     <ul style="list-style:none; padding-left:15px; margin:0;" id="reg-tree"></ul>
                 </div>
                 
-                <div style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
+                <!-- ▼ 右側エリアを position: relative にし、ここに Loading を内包 -->
+                <div style="flex:1; display:flex; flex-direction:column; overflow:hidden; position:relative;">
+                    <div id="reg-loading" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(192,192,192,0.6); z-index:100; justify-content:center; align-items:center; font-weight:bold;">
+                        Loading...
+                    </div>
+                    
                     <div style="background:#c0c0c0; flex-shrink:0; border-bottom:1px solid #808080;">
                         <div style="display: grid; grid-template-columns: 30% 20% 1fr; width: 100%; box-sizing: border-box; padding-right: var(--sb-width, 16px);">
                             <div style="background-color: #C3C7CB; border: 1.5px solid #808080; border-color: #fff #808080 #808080 #fff; box-shadow: 0.5px 0.5px black; padding:2px;">Name</div>
@@ -139,7 +155,6 @@ export default function RegistryEditor(root) {
             notifySystemChange(currentStore, key);
 
             updateRow(key, String(key), val);
-            setTimeout(() => refresh(false), 500);
         } catch (e) {
             errorWindow("保存に失敗しました: " + e.message, { parentWin: win });
         }
@@ -383,68 +398,66 @@ export default function RegistryEditor(root) {
     }
 
     async function refresh(forceReset = false) {
-        // 早期リターン（async関数なのでそのままreturnでOK）
-        if (!document.body.contains(root) || isProcessing) return;
+        if (!document.body.contains(root)) return;
 
+        // ▼ 【変更】呼び出しごとに固有の世代IDを発行し、古い処理の競合を防ぐ
+        const requestId = ++currentRequestId;
         const snapshotStore = currentStore;
         isProcessing = true;
 
+        // 【追加】読み込み開始時に待機画面を表示
+        const loadingEl = root.querySelector("#reg-loading");
+        if (loadingEl) loadingEl.style.display = "flex";
+
+        if (forceReset) {
+            bodyEl.innerHTML = "";
+            rowMap.clear();
+        }
+
+        const workerInstance = getWorker();
+
         try {
-            // await できるものはそのまま待つ
-            const db = await getDB();
-            const tx = db.transaction(currentStore, "readonly");
-            const store = tx.objectStore(currentStore);
-
-            if (forceReset) {
-                bodyEl.innerHTML = "";
-                rowMap.clear();
-            }
-
-            const dbKeys = new Set();
-            const visibleKeys = new Set();
-            let count = 0;
-
-            // ★コールバックベースの「カーソル処理」だけを Promise でラップして待機
-            await new Promise((resolve, reject) => {
-                const request = store.openCursor();
-
-                request.onsuccess = (e) => {
-                    if (currentStore !== snapshotStore) {
-                        return resolve(); // ストアが切り替わっていたら処理中断して抜ける
-                    }
-
-                    const cursor = e.target.result;
-                    if (cursor) {
-                        const keyStr = String(cursor.key);
-                        dbKeys.add(keyStr);
-
-                        if (count < MAX_VISIBLE_ITEMS) {
-                            const isMatch = !searchTerm || keyStr.toLowerCase().includes(searchTerm.toLowerCase());
-                            if (isMatch) {
-                                visibleKeys.add(keyStr);
-                                updateRow(cursor.key, keyStr, cursor.value);
-                                count++;
-                            }
-                        }
-                        cursor.continue();
-                    } else {
-                        // カーソルが最後まで到達したら resolve して待機解除
-                        resolve();
-                    }
+            // Workerへ処理を依頼し、結果を非同期で待機
+            const result = await new Promise((resolve, reject) => {
+                const handleMessage = (e) => {
+                    workerInstance.removeEventListener('message', handleMessage);
+                    resolve(e.data);
+                };
+                const handleError = (err) => {
+                    workerInstance.removeEventListener('error', handleError);
+                    reject(err);
                 };
 
-                request.onerror = (e) => {
-                    reject(e); // エラー時は reject
-                };
+                workerInstance.addEventListener('message', handleMessage);
+                workerInstance.addEventListener('error', handleError);
+
+                workerInstance.postMessage({
+                    storeName: currentStore,
+                    searchTerm: searchTerm,
+                    maxVisibleItems: MAX_VISIBLE_ITEMS
+                });
             });
 
-            // 待機中に別のストアに切り替わっていた場合は、後続のUI更新を行わずに終了
-            if (currentStore !== snapshotStore) {
-                return;
+            // ▼ 【変更】途中で新しいリクエストが発生していたり、ストアが切り替わっていればこの結果は破棄
+            if (requestId !== currentRequestId || currentStore !== snapshotStore) return;
+            if (!result.success) throw new Error(result.error);
+
+            const dbKeys = new Set(result.dbKeys);
+            const visibleKeys = new Set();
+
+            // 【改善】DocumentFragmentを使用してDOMへの挿入負荷を1回にまとめ、高速化
+            const fragment = document.createDocumentFragment();
+
+            result.items.forEach(item => {
+                visibleKeys.add(item.keyStr);
+                updateRow(item.key, item.keyStr, item.value, fragment);
+            });
+
+            if (fragment.children.length > 0) {
+                bodyEl.appendChild(fragment);
             }
 
-            // --- ここから下はカーソル処理がすべて終わった後の同期処理 ---
-
+            // 不要な行の削除
             for (const [k, tr] of rowMap) {
                 if (!dbKeys.has(k) || !visibleKeys.has(k)) {
                     if (editingKey !== k) {
@@ -459,15 +472,17 @@ export default function RegistryEditor(root) {
             }
 
         } catch (e) {
-            // DB取得やカーソル処理でエラーが起きた場合はここに入る
             console.error("[Registry] Refresh error:", e);
         } finally {
-            // ★成功しても、エラーが起きても、途中で return しても、必ず最後にフラグを下ろす
-            isProcessing = false;
+            // ▼ 【変更】現在進行中の「最新リクエスト」のときだけ、ローディング表示等を解除する
+            if (requestId === currentRequestId) {
+                isProcessing = false;
+                if (loadingEl) loadingEl.style.display = "none";
+            }
         }
     }
 
-    function updateRow(key, keyStr, val) {
+    function updateRow(key, keyStr, val, fragment = null) {
         let tr = rowMap.get(keyStr);
         if (!tr) {
             tr = document.createElement("tr");
@@ -492,8 +507,12 @@ export default function RegistryEditor(root) {
 
             tr.ondblclick = () => enterEditMode(keyStr, "data");
             tr.onclick = () => selectRow(keyStr);
-            if (!tr.parentElement) {
-                bodyEl.appendChild(tr); // 親がない（新規作成時）のみ追加
+
+            // 【改善】fragmentが指定されている場合はフラグメントに詰め、個別更新時は直接追加
+            if (fragment) {
+                fragment.appendChild(tr);
+            } else if (!tr.parentElement) {
+                bodyEl.appendChild(tr);
             }
             rowMap.set(keyStr, tr);
         }
