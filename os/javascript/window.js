@@ -347,29 +347,32 @@ ${!options.hideStatus ? `
     });
     if (taskbarBtn) {
         taskbarBtn.onclick = () => {
-
             if (w.dataset.minimized === "true") {
-                if (w._animating) return; // アニメ中は無効化
+                if (w._animating) return;
                 w._animating = true;
                 playSystemEventSound('restore');
                 const titleBar = w.querySelector(".title-bar");
                 const titleText = titleBar?.querySelector(".title-text");
                 if (!titleText) { w._animating = false; return; }
 
-                // ★【修正ポイント】アニメーション開始の瞬間に状態を解除し、即座にアクティブにする
+                const rect = taskbarBtn.getBoundingClientRect();
+
+                // 1. 【重要】チラつきを防ぐため、真っ先に本体を隠す
+                w.style.visibility = "hidden";
+                w.style.pointerEvents = "none";
                 w.dataset.minimized = "false";
+
+                // 2. 本体をアクティブ状態（青色）にする
+                // ※ 本体は隠れているので画面はカクつきません
                 bringToFront(w);
-                refreshTopWindow(w); // 独自追加した forcedTopWindow 対応版を呼び出し
+                refreshTopWindow(w);
 
                 taskbarButtons.forEach(btn => btn.classList.remove("selected"));
                 if (taskbarBtn) {
                     taskbarBtn.classList.add("selected");
                 }
 
-                w.style.visibility = "hidden";
-                w.style.pointerEvents = "none";
-
-                const rect = taskbarBtn.getBoundingClientRect();
+                // 3. アクティブ色になった状態でクローンを作る！
                 const clone = createTitleClone(w, titleBar, titleText);
                 Object.assign(clone.style, {
                     left: rect.left + "px",
@@ -377,34 +380,39 @@ ${!options.hideStatus ? `
                     width: rect.width + "px"
                 });
 
+                // 4. アニメーション実行
                 animateTitleClone(clone,
                     { left: w.offsetLeft, top: w.offsetTop, width: w.offsetWidth },
                     undefined,
                     () => {
-                        w.style.visibility = "visible";
+                        w.style.visibility = "visible"; // ここで本体を表示
                         w.style.pointerEvents = "auto";
-                        // ※ w.dataset.minimized と bringToFront は既に上で実行済みなので削除してOK
                         clone.remove();
                         w._animating = false;
+
+                        // アニメーション完了後にフォーカスを当てる
+                        if (!w.contains(document.activeElement)) {
+                            w.setAttribute("tabindex", "-1");
+                            w.focus();
+                        }
+
                         scheduleRefreshTopWindow();
                     }
                 );
             } else {
-                // 開いている全ウィンドウの中で自分が最前面(最大のZ-Index)か判定
+                // （else以下はご提示いただいたコードと同じでOKです）
                 const visibleWins = Array.from(document.querySelectorAll(".window"))
                     .filter(win => win.style.visibility !== "hidden" && win.dataset.minimized !== "true");
 
-                const maxZ = Math.max(...visibleWins.map(win => parseInt(win.style.zIndex) || 0));
+                const maxZ = Math.max(0, ...visibleWins.map(win => parseInt(win.style.zIndex) || 0));
                 const isTopMost = parseInt(w.style.zIndex) === maxZ;
 
                 if (isTopMost) {
-                    // すでに最前面なら最小化する（Windows特有の挙動）
                     const minBtn = w.querySelector(".min-btn");
                     if (minBtn && !minBtn.classList.contains("pointer_none")) {
                         minBtn.click();
                     }
                 } else {
-                    // 後ろにあるなら最前面へ持ってくる
                     bringToFront(w);
                     refreshTopWindow(w);
                 }
@@ -922,8 +930,10 @@ export function bringToFront(win) {
     const maxZ = wins.reduce((max, w) => Math.max(max, parseInt(w.style.zIndex) || 100), 100);
     win.style.zIndex = maxZ + 1;
     scheduleRefreshTopWindow();
-    if (!win.contains(document.activeElement)) {
-        win.setAttribute("tabindex", "-1"); // フォーカス可能にする
+
+    // 【改善】ウィンドウが非表示（最小化アニメーション中など）の場合はフォーカス移動をスキップする
+    if (!win.contains(document.activeElement) && win.style.visibility !== "hidden") {
+        win.setAttribute("tabindex", "-1");
         win.focus();
     }
 }

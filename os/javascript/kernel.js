@@ -295,8 +295,12 @@ async function launchApp(item, path, options) {
     if (item.entry && tabAppInstances.has(item.entry)) {
         const instance = tabAppInstances.get(item.entry);
         if (document.body.contains(instance.win)) {
-            bringToFront(instance.win);
-            if (instance.win.dataset.minimized === "true") instance.win._taskbarBtn?.click();
+            // 【改善】最小化されている場合は先に復元をトリガーし、そうでない場合のみ最前面へ
+            if (instance.win.dataset.minimized === "true") {
+                instance.win._taskbarBtn?.click();
+            } else {
+                bringToFront(instance.win);
+            }
             if (instance.handle?.openNewTab) {
                 instance.handle.openNewTab(options.path || path);
                 return;
