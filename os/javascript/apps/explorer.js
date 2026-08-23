@@ -1180,21 +1180,16 @@ export default async function Explorer(root, options = {}) {
             });
 
             document.addEventListener("mouseup", () => {
-                cancelSelection(); // ★追加: 共通のキャンセル関数で確実に状態をリセット
+                cancelSelection();
             });
         }
 
-        // 【改善】if-else分岐の外にまとめ、再描画・初回生成の両方で必ず実行させます
         if (treeContainer) createTreeDropdown(treeContainer, currentPath);
 
-        // --- render 関数の最後（364行目付近）に追加 ---
-
-        // 現在の履歴スタックに応じて、ボタンの有効・無効を切り替える
         const bBtn = win?.querySelector(".explorer-header button:nth-child(1)");
         const fBtn = win?.querySelector(".explorer-header button:nth-child(2)");
         const uBtn = win?.querySelector(".up-button");
 
-        // ★追加: 右クリックメニュー等で表示形式が変更された際、ヘッダーのボタン選択状態を同期する
         const viewControlsEl = win?.querySelector(".view-controls");
         if (viewControlsEl) {
             viewControlsEl.querySelectorAll(".view-mode-btn").forEach(b => {
@@ -1207,30 +1202,39 @@ export default async function Explorer(root, options = {}) {
         }
 
         if (bBtn) {
-            // 履歴がなければ disabled にし、pointer_none クラスを付与する
             const isBackDisabled = historyStack.length === 0;
             bBtn.disabled = isBackDisabled;
             bBtn.classList.toggle("pointer_none", isBackDisabled);
         }
 
         if (fBtn) {
-            // 進むスタックがなければ disabled にし、pointer_none クラスを付与する
             const isForwardDisabled = forwardStack.length === 0;
             fBtn.disabled = isForwardDisabled;
             fBtn.classList.toggle("pointer_none", isForwardDisabled);
         }
 
         if (uBtn) {
-            // フォルダ移動のたびにここが走り、最新の currentPath で判定される
             const isAtRoot = currentPath === "" || currentPath === "Desktop";
             uBtn.disabled = isAtRoot;
             uBtn.classList.toggle("pointer_none", isAtRoot);
         }
 
         // ファイル・フォルダリスト
-        listContainer.innerHTML = "";
         const folder = resolveFS(currentPath);
         if (!folder) return;
+
+        // ★ 改善: DOMをクリアする前に、awaitを含むデータの取得を先に終わらせる
+        const itemsList = await Promise.all(Object.keys(folder)
+            .filter(name => !isSystemMetaKey(name) && (showHidden || !folder[name].hidden))
+            .map(async name => {
+                const itemData = folder[name];
+                const childPath = currentPath ? `${currentPath}/${name}` : name;
+                const size = await calcNodeSize(itemData, childPath);
+                return { name, itemData, size };
+            }));
+
+        // ★ データが完全に揃ったここで、初めて画面をクリアする
+        listContainer.innerHTML = "";
 
         // レイアウトを初期化（アイコン表示の時はタイル状に並べる）
         if (viewMode === "icon") {
@@ -1308,15 +1312,7 @@ export default async function Explorer(root, options = {}) {
             }
         };
 
-        // ★改善: メタデータを除外し、ソート設定（自動整列）に基づいて配列を作成
-        const itemsList = await Promise.all(Object.keys(folder)
-            .filter(name => !isSystemMetaKey(name) && (showHidden || !folder[name].hidden))
-            .map(async name => {
-                const itemData = folder[name];
-                const childPath = currentPath ? `${currentPath}/${name}` : name;
-                const size = await calcNodeSize(itemData, childPath);
-                return { name, itemData, size };
-            }));
+        // (この下に itemsList を使って fragment に追加していく既存の処理が続きます...)
 
         const sortedItems = itemsList.sort((a, b) => {
             const isFolderA = a.itemData.type === "folder";
