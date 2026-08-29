@@ -54,8 +54,15 @@ export async function dbGet(key, storeName = STORE_KV) {
    FS API 内部ユーティリティ
 ========================= */
 
-function extractAndStrip(obj, path = "", largeFiles = new Map()) {
+function extractAndStrip(obj, path = "", largeFiles = new Map(), visited = new WeakSet()) {
     if (!obj || typeof obj !== "object") return obj;
+
+    // 【安全性向上】循環参照を検知して無限ループ（スタックオーバーフロー）を防止
+    if (visited.has(obj)) {
+        console.warn(`[FS-DB] Circular reference ignored at ${path}`);
+        return null;
+    }
+    visited.add(obj);
 
     if (obj instanceof Blob || obj instanceof ArrayBuffer || ArrayBuffer.isView(obj)) {
         return obj;
@@ -83,7 +90,8 @@ function extractAndStrip(obj, path = "", largeFiles = new Map()) {
 
         if (value !== null && typeof value === "object" && !isBlobOrBuffer) {
             const nextPath = path ? `${path}/${key}` : key;
-            copy[key] = extractAndStrip(value, nextPath, largeFiles);
+            // visited を引き継ぐ
+            copy[key] = extractAndStrip(value, nextPath, largeFiles, visited);
         } else {
             copy[key] = value;
         }

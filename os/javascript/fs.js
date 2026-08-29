@@ -145,6 +145,11 @@ function wrapProxy(obj, path = "") {
         },
 
         set(target, prop, value) {
+            // 【セキュリティ強化】プロトタイプ汚染攻撃をブロック
+            if (prop === '__proto__' || prop === 'constructor' || prop === 'prototype') {
+                return false;
+            }
+
             if (PROTECTED_KEYS.has(prop) && Object.hasOwn(target, prop)) return true;
 
             // ★ 修正: 初期化中 (isInitializing) は勝手に lastModified を更新しない

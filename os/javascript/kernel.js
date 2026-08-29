@@ -328,8 +328,8 @@ async function launchApp(item, path, options) {
         try {
             const cleanCode = item.code.replace(/import\s+[\s\S]*?from\s+['"][^'"]+['"];?/g, '');
             const executableCode = cleanCode
-                .replace(/export\s+default\s+async\s+function/, 'window.__tempAppExport = async function')
-                .replace(/export\s+default\s+function/, 'window.__tempAppExport = function');
+                .replace(/export\s+default\s+async\s+function\s*(\w*)/, 'return async function $1')
+                .replace(/export\s+default\s+function\s*(\w*)/, 'return function $1');
 
             const { FS, forceSave } = await import("./fs.js");
             const { resolveFS } = await import("./fs-utils.js");
@@ -340,10 +340,8 @@ async function launchApp(item, path, options) {
                 'FS', 'forceSave', 'resolveFS', 'updateWindowTitle', 'showModalWindow', 'getFileContent',
                 executableCode
             );
-            runScript(FS, forceSave, resolveFS, updateWindowTitle, showModalWindow, getFileContent);
 
-            appModule = { default: window.__tempAppExport };
-            window.__tempAppExport = undefined;
+            appModule = { default: runScript(FS, forceSave, resolveFS, updateWindowTitle, showModalWindow, getFileContent) };
         } catch (e) {
             console.error("Dynamic code evaluation failed:", e);
             throw new Error(`動的コードの解析に失敗しました: ${e.message}`);
@@ -623,11 +621,9 @@ export async function playSystemEventSound(eventName) {
                         if (err.name === "NotAllowedError") {
                             const playOnGesture = () => {
                                 audio.play();
-                                document.removeEventListener("click", playOnGesture);
-                                document.removeEventListener("keydown", playOnGesture);
                             };
-                            document.addEventListener("click", playOnGesture);
-                            document.addEventListener("keydown", playOnGesture);
+                            document.addEventListener("click", playOnGesture, { once: true });
+                            document.addEventListener("keydown", playOnGesture, { once: true });
                         }
                     });
                 }
@@ -638,11 +634,9 @@ export async function playSystemEventSound(eventName) {
             } catch (e) {
                 const playBeepOnGesture = () => {
                     startup_sound();
-                    document.removeEventListener("click", playBeepOnGesture);
-                    document.removeEventListener("keydown", playBeepOnGesture);
                 };
-                document.addEventListener("click", playBeepOnGesture);
-                document.addEventListener("keydown", playBeepOnGesture);
+                document.addEventListener("click", playBeepOnGesture, { once: true });
+                document.addEventListener("keydown", playBeepOnGesture, { once: true });
             }
         }
     } catch (e) {
