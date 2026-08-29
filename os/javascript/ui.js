@@ -1,12 +1,41 @@
 // ui.js
 let isGlobalMouseUpRegistered = false;
 let pressedEl = null;
+let globalTooltip = null;
+let tooltipTimer = null;
+let currentClientX = 0;
+let currentClientY = 0;
+
+const createTooltip = () => {
+    if (globalTooltip) return globalTooltip;
+    globalTooltip = document.createElement("div");
+    Object.assign(globalTooltip.style, {
+        position: "fixed",
+        backgroundColor: "#FFFFE1",
+        color: "#000000",
+        padding: "4px 8px",
+        fontSize: "11px",
+        borderRadius: "0px",
+        whiteSpace: "nowrap",
+        pointerEvents: "none",
+        display: "none",
+        zIndex: "99999",
+        border: "1px solid black"
+    });
+    document.body.appendChild(globalTooltip);
+    return globalTooltip;
+};
+
+const getTargetButton = (el) => {
+    if (!el || el === document || el === document.body) return null;
+    const target = el.closest('button, .button, .button2');
+    if (!target || target.classList.contains('win95-tab')) return null;
+    return target;
+};
 
 export function installDynamicButtonEffect() {
-    // 常に body を対象にする[cite: 1]
     const root = document.body;
 
-    // 再起動・再実行時のクリーンアップ[cite: 1]
     if (root._uiObserver) {
         root._uiObserver.disconnect();
         root._uiEffectInstalled = false;
@@ -15,42 +44,79 @@ export function installDynamicButtonEffect() {
     if (root._uiEffectInstalled) return;
     root._uiEffectInstalled = true;
 
-    // ボタン判定ロジック：標準のbuttonタグ、または特定のクラスを持つ要素（win95-tabは除外）
-    const getTargetButton = (el) => {
-        if (!el || el === document || el === document.body) return null;
-        const target = el.closest('button, .button, .button2');
-        // win95-tab クラスを持つ要素は除外する
-        if (!target || target.classList.contains('win95-tab')) {
-            return null;
-        }
-        return target;
-    };
+    const tooltip = createTooltip();
 
-    // --- マウスイベント (bodyで一括受信) ---[cite: 1]
+    // 追加: マウス移動時に常に最新の座標を更新
+    root.addEventListener("mousemove", e => {
+        currentClientX = e.clientX;
+        currentClientY = e.clientY;
+    });
+
     root.addEventListener("mousedown", e => {
         const el = getTargetButton(e.target);
         if (!el) return;
         pressedEl = el;
         el.classList.add("pressed");
+
+        clearTimeout(tooltipTimer);
+        tooltip.style.display = "none";
     });
 
     root.addEventListener("mouseover", e => {
         const el = getTargetButton(e.target);
-        if (!el) return;
-        if (el === pressedEl) {
+        if (el && el === pressedEl) {
             el.classList.add("pressed");
+        }
+
+        const tooltipTarget = e.target.closest("[data-tooltip]");
+        if (tooltipTarget) {
+            const text = tooltipTarget.getAttribute("data-tooltip");
+            if (text) {
+                clearTimeout(tooltipTimer);
+
+                // mouseover時の座標も念のため更新
+                currentClientX = e.clientX;
+                currentClientY = e.clientY;
+
+                tooltipTimer = setTimeout(() => {
+                    tooltip.textContent = text;
+                    tooltip.style.visibility = "hidden";
+                    tooltip.style.display = "block";
+
+                    // 最新の座標を使用
+                    let left = currentClientX + 12;
+                    let top = currentClientY + 20;
+
+                    if (left + tooltip.offsetWidth > window.innerWidth) {
+                        left = currentClientX - tooltip.offsetWidth - 12;
+                    }
+                    if (top + tooltip.offsetHeight > window.innerHeight) {
+                        top = currentClientY - tooltip.offsetHeight - 10;
+                    }
+
+                    tooltip.style.left = `${left}px`;
+                    tooltip.style.top = `${top}px`;
+                    tooltip.style.visibility = "visible";
+                }, 500);
+            }
         }
     });
 
     root.addEventListener("mouseout", e => {
         const el = getTargetButton(e.target);
-        if (!el) return;
-        if (el === pressedEl) {
+        if (el && el === pressedEl) {
             el.classList.remove("pressed");
+        }
+
+        const tooltipTarget = e.target.closest("[data-tooltip]");
+        if (tooltipTarget) {
+            const related = e.relatedTarget;
+            if (related && tooltipTarget.contains(related)) return;
+            clearTimeout(tooltipTimer);
+            tooltip.style.display = "none";
         }
     });
 
-    // --- グローバル mouseup (一生に一度だけ登録) ---[cite: 1]
     if (!isGlobalMouseUpRegistered) {
         document.addEventListener("mouseup", () => {
             if (pressedEl) {
@@ -61,7 +127,6 @@ export function installDynamicButtonEffect() {
         isGlobalMouseUpRegistered = true;
     }
 
-    // --- 特殊制御（スタートメニュー等） ---[cite: 1]
     const startMenu = document.getElementById("start-menu");
     const startBtn = document.getElementById("start-btn");
 

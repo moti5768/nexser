@@ -112,9 +112,9 @@ export function createWindow(title, options = {}) {
     <span class="window-icon" style="margin-right: 6px; font-size: 14px;">${initialIcon}</span>
     <span class="title-text" style="flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${title}</span>
     <div class="window-controls" style="display: flex; flex-shrink: 0;">
-        <button class="min-btn"></button>
-        <button class="max-btn"></button>
-        <button class="close-btn"></button>
+        <button class="min-btn" data-tooltip = "最小化"></button>
+        <button class="max-btn" data-tooltip = "最大化 / 元のサイズに戻す"></button>
+        <button class="close-btn" data-tooltip = "閉じる"></button>
     </div>
 </div>
 

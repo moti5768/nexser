@@ -128,7 +128,7 @@ export async function initKernelAsync(progressCallback = () => { }) {
     root.innerHTML = `
         <div id="desktop"></div>
         <div id="taskbar">
-            <button id="start-btn">Start</button>
+            <button id="start-btn" data-tooltip="スタート">Start</button>
         </div>
         <div id="start-menu"></div>
     `;

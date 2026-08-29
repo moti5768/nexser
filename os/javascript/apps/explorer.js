@@ -350,7 +350,6 @@ export default async function Explorer(root, options = {}) {
     let iconPositions = {};
 
     // 固定参照保持
-    // 固定参照保持
     let listContainer, pathLabel, treeContainer;
 
     let isSelecting = false;
@@ -441,7 +440,7 @@ export default async function Explorer(root, options = {}) {
     function createTreeDropdown(container, currentPath) {
         while (container.firstChild) container.removeChild(container.firstChild);
         container.classList.add("tree-container");
-
+        container.dataset.tooltip = "別のフォルダ / ファイルに移動する";
         const label = document.createElement("span");
         label.className = "tree-label";
         label.textContent = currentPath.split("/").pop();
@@ -898,7 +897,7 @@ export default async function Explorer(root, options = {}) {
             const upBtn = document.createElement("button");
             upBtn.className = "up-button"; // クラス名を追加
             upBtn.textContent = "↑";
-            upBtn.title = "上の階層へ";
+            upBtn.dataset.tooltip = "上の階層へ";
 
             upBtn.onclick = () => {
                 const pathParts = currentPath.split("/");
@@ -919,7 +918,7 @@ export default async function Explorer(root, options = {}) {
 
             const refreshBtn = document.createElement("button");
             refreshBtn.textContent = "↻"; // リフレッシュアイコン風
-            refreshBtn.title = "最新の情報に更新";
+            refreshBtn.dataset.tooltip = "最新の情報に更新";
             refreshBtn.style.flexShrink = "0";
             refreshBtn.onclick = () => render(currentPath);
 
@@ -937,7 +936,7 @@ export default async function Explorer(root, options = {}) {
                 const btn = document.createElement("button");
                 btn.className = viewMode === mode ? "view-mode-btn selected" : "view-mode-btn";
                 btn.textContent = label;
-                btn.title = title;
+                btn.dataset.tooltip = title;
                 btn.dataset.mode = mode; // ★どのモードのボタンか識別できるように追加
                 btn.style.padding = "2px 6px";
                 btn.style.marginRight = "4px";
