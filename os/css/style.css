@@ -22,6 +22,7 @@ body {
     color: white;
     padding: 12px;
     white-space: pre-wrap;
+    font-family: 'MS Gothic', monospace;
     font-size: 14px;
     z-index: 2000;
 
@@ -45,7 +46,7 @@ body {
     outline: none;
     color: #00ff66;
     caret-color: #00ff66;
-    font-family: Consolas, monospace;
+    font-family: 'MS Gothic', monospace;
     font-size: 14px;
     width: 100%;
 }
