@@ -12,7 +12,7 @@ import {
     confirmWindow,
     destroyWindow
 } from "./window.js";
-import { showPromptScreen } from "./boot.js";
+import { showPromptScreen, resetSystemVerification } from "./boot.js";
 import { startup_sound } from "./sounds.js";
 import { addRecent } from "./recent.js";
 import { installDynamicButtonEffect } from "./ui.js";
@@ -556,6 +556,12 @@ export async function logOff() {
         playSystemEventSound('logoff');
         resetUI();
         moduleCache.clear();
+
+        // ★追加: ログオフ時にシステムの検証状態をリセットする
+        if (typeof resetSystemVerification === "function") {
+            resetSystemVerification();
+        }
+
         showPromptScreen("nexser logoff");
     };
 

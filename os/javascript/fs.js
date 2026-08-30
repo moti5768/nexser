@@ -18,7 +18,7 @@ const baseFS = {
     System: {
         type: "folder",
         system: true,
-        "AUTOBOOT.CFG": { type: "file", system: true, content: "" },
+        "AUTOBOOT.CFG": { type: "file", system: true, content: "", hidden: true },
         "SoundConfig.json": { type: "file", system: true, content: "{}" }
     },
     Desktop: {

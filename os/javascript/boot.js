@@ -22,6 +22,7 @@ const screen = document.getElementById('screen');
 let cwd = 'C:/';
 let history = [];
 let hIndex = 0;
+let isSystemVerified = false;
 
 // ===== Utility Functions =====
 let isScrolling = false;
@@ -68,7 +69,71 @@ function getNodeByPath(path) {
 const commands = {
     help: { desc: 'Show available commands', run() { Object.entries(commands).forEach(([n, c]) => print(`${n.padEnd(12)} - ${c.desc}`)); } },
     cls: { desc: 'Clear screen', run() { screen.textContent = ''; } },
-    boot: { desc: 'Boot OS', async run() { await bootOS(); } },
+    system: {
+        desc: 'Verify file system integrity and hardware state',
+        async run() {
+            print("Checking hardware resources...");
+            print(`  Logical Cores: ${navigator.hardwareConcurrency || 'unknown'}`);
+            print(`  Approx. Memory: ${navigator.deviceMemory || 'unknown'} GB`);
+
+            print("Verifying file system integrity...");
+            const { diagnoseAndCleanFS } = await import('./fs.js');
+            const report = await diagnoseAndCleanFS(false);
+
+            if (report.corruptionDetected) {
+                print("  [ERROR] Core system data is missing or corrupted!");
+                report.logs.forEach(log => print(`    ${log}`));
+                print("  Run 'scanfilesystem' command to repair before booting.");
+                isSystemVerified = false;
+                return;
+            }
+
+            print(`  FS Status: OK. (Garbage items in Trash: ${report.garbageItems})`);
+
+            const sysFolder = resolveFS("System");
+            const hasConfig = sysFolder && sysFolder["Config.json"];
+            const hasSound = sysFolder && sysFolder["SoundConfig.json"];
+            print(`  Configurations: ${hasConfig ? 'Found' : 'Default'} / Audio: ${hasSound ? 'Found' : 'Default'}`);
+
+            print("System actual data verified. Ready to boot.");
+            isSystemVerified = true;
+        }
+    },
+
+    boot: {
+        desc: 'Verify system and boot OS',
+        async run() {
+            // 未検証の場合は自動でシステム診断・検証を実行する
+            if (!isSystemVerified) {
+                print("Checking hardware resources...");
+                print(`  Logical Cores: ${navigator.hardwareConcurrency || 'unknown'}`);
+                print(`  Approx. Memory: ${navigator.deviceMemory || 'unknown'} GB`);
+
+                print("Verifying file system integrity...");
+                const { diagnoseAndCleanFS } = await import('./fs.js');
+                const report = await diagnoseAndCleanFS(false);
+
+                if (report.corruptionDetected) {
+                    print("  [ERROR] Core system data is missing or corrupted!");
+                    report.logs.forEach(log => print(`    ${log}`));
+                    print(`  Run 'scanfilesystem' command to repair before booting.`);
+                    return;
+                }
+
+                print(`  FS Status: OK. (Garbage items in Trash: ${report.garbageItems})`);
+
+                const sysFolder = resolveFS("System");
+                const hasConfig = sysFolder && sysFolder["Config.json"];
+                const hasSound = sysFolder && sysFolder["SoundConfig.json"];
+                print(`  Configurations: ${hasConfig ? 'Found' : 'Default'} / Audio: ${hasSound ? 'Found' : 'Default'}`);
+
+                isSystemVerified = true;
+            }
+
+            print("Booting OS...");
+            await bootOS();
+        }
+    },
     version: { desc: 'Show version', run() { print('NEXSER CLI v1.0.0 (Stable)'); } },
     time: { desc: 'Show time', run() { print(new Date().toLocaleString()); } },
     whoami: { desc: 'Current user', run() { print('user'); } },
@@ -886,3 +951,7 @@ function bindScreenFocus() {
     });
 }
 bindScreenFocus();
+
+export function resetSystemVerification() {
+    isSystemVerified = false;
+}
