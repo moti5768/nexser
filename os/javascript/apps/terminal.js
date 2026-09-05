@@ -426,9 +426,82 @@ export default function TerminalApp(content) {
         },
 
         focus: { desc: "Focus window by id", run(args) { focusWindowById(Number(args[0])); } },
-        minimize: { desc: "Minimize window by id", async run(args) { await minimizeWindowById(Number(args[0])); } },
-        maximize: { desc: "Maximize window by id", async run(args) { await maximizeWindowById(Number(args[0])); } },
-        resetui: { desc: "Reset all windows and UI", run() { resetUI(); print("UI has been reset."); } },
+        minimize: {
+            desc: "Minimize window by id",
+            async run(args) {
+                const id = Number(args[0]);
+                if (Number.isNaN(id)) return print("Usage: minimize <id>");
+
+                const wins = getWindows();
+                const targetWin = wins.find(w => w.id === id);
+
+                if (!targetWin) {
+                    return print("Invalid window id");
+                }
+
+                // 最小化ボタンがガードされているかチェック
+                const minBtn = targetWin.el.querySelector(".min-btn");
+                if (minBtn && minBtn.classList.contains("pointer_none")) {
+                    return print(`Error: Window ${id} (${targetWin.title}) is protected and cannot be minimized.`, "#f00");
+                }
+
+                await minimizeWindowById(id);
+            }
+        },
+        maximize: {
+            desc: "Maximize window by id",
+            async run(args) {
+                const id = Number(args[0]);
+                if (Number.isNaN(id)) return print("Usage: maximize <id>");
+
+                const wins = getWindows();
+                const targetWin = wins.find(w => w.id === id);
+
+                if (!targetWin) {
+                    return print("Invalid window id");
+                }
+
+                // 最大化ボタンがガードされているかチェック
+                const maxBtn = targetWin.el.querySelector(".max-btn");
+                if (maxBtn && maxBtn.classList.contains("pointer_none")) {
+                    return print(`Error: Window ${id} (${targetWin.title}) is protected and cannot be maximized.`, "#f00");
+                }
+
+                await maximizeWindowById(id);
+            }
+        },
+        resetui: {
+            desc: "Reset all windows and UI",
+            run() {
+                const wins = getWindows();
+                let protectedCount = 0;
+
+                // 開いている全ウィンドウを個別にチェック
+                wins.forEach(w => {
+                    const closeBtn = w.el.querySelector(".close-btn");
+                    if (closeBtn && closeBtn.classList.contains("pointer_none")) {
+                        // 保護されているウィンドウはカウントだけしてスキップ
+                        protectedCount++;
+                    } else {
+                        // 保護されていないウィンドウは個別に閉じる
+                        try {
+                            closeWindowById(w.id);
+                        } catch (e) {
+                            // エラーは無視して続行
+                        }
+                    }
+                });
+
+                if (protectedCount > 0) {
+                    // 強制全リセット関数(resetUI)は呼ばず、結果だけを出力
+                    print(`UI partial reset: ${wins.length - protectedCount} windows closed, ${protectedCount} protected windows kept.`, "#ff0");
+                } else {
+                    // 保護されたウィンドウが1つもない場合は、本来の完全リセット処理を実行
+                    resetUI();
+                    print("UI has been reset.");
+                }
+            }
+        },
 
         touch: {
             desc: "Create empty file", run(args) {

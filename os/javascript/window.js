@@ -710,14 +710,14 @@ ${!options.hideStatus ? `
 
         const setHandle = (h, pos) => Object.assign(h.style, pos);
 
-        setHandle(handles.top, { top: "0", left: "3px", right: "3px", height: "3px", cursor: "ns-resize" });
-        setHandle(handles.bottom, { bottom: "0", left: "3px", right: "3px", height: "3px", cursor: "ns-resize" });
-        setHandle(handles.left, { left: "0", top: "3px", bottom: "3px", width: "3px", cursor: "ew-resize" });
-        setHandle(handles.right, { right: "0", top: "3px", bottom: "3px", width: "3px", cursor: "ew-resize" });
-        setHandle(handles.topLeft, { left: "0", top: "0", width: "6px", height: "6px", cursor: "nwse-resize" });
-        setHandle(handles.topRight, { right: "0", top: "0", width: "6px", height: "6px", cursor: "nesw-resize" });
-        setHandle(handles.bottomLeft, { left: "0", bottom: "0", width: "6px", height: "6px", cursor: "nesw-resize" });
-        setHandle(handles.bottomRight, { right: "0", bottom: "0", width: "15px", height: "15px", cursor: "nwse-resize" });
+        setHandle(handles.top, { top: "-6px", left: "0", right: "0", height: "10px", cursor: "ns-resize" });
+        setHandle(handles.bottom, { bottom: "-6px", left: "0", right: "0", height: "10px", cursor: "ns-resize" });
+        setHandle(handles.left, { left: "-6px", top: "0", bottom: "0", width: "10px", cursor: "ew-resize" });
+        setHandle(handles.right, { right: "-6px", top: "0", bottom: "0", width: "10px", cursor: "ew-resize" });
+        setHandle(handles.topLeft, { left: "-6px", top: "-6px", width: "14px", height: "14px", cursor: "nwse-resize" });
+        setHandle(handles.topRight, { right: "-6px", top: "-6px", width: "14px", height: "14px", cursor: "nesw-resize" });
+        setHandle(handles.bottomLeft, { left: "-6px", bottom: "-6px", width: "14px", height: "14px", cursor: "nesw-resize" });
+        setHandle(handles.bottomRight, { right: "-6px", bottom: "-6px", width: "20px", height: "20px", cursor: "nwse-resize" });
 
         let resizing = false, currentHandle, startX, startY, startRect;
         let didResize = false;
