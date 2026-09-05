@@ -51,12 +51,15 @@ export default function TerminalApp(content) {
        Utilities
     ========================= */
 
+    let isScrolling = false;
     function scrollToBottom() {
-        requestAnimationFrame(() => {
-            setTimeout(() => {
+        if (!isScrolling) {
+            isScrolling = true;
+            requestAnimationFrame(() => {
                 screen.scrollTop = screen.scrollHeight;
-            }, 50);
-        });
+                isScrolling = false;
+            });
+        }
     }
 
     // terminal.js の print 関数内を修正
@@ -303,17 +306,31 @@ export default function TerminalApp(content) {
         },
 
         tree: {
-            desc: "Show directory tree", run(args) {
-                const root = getNodeByPath(args[0]);
+            desc: "Show directory tree",
+            run(args) {
+                // 1. 引数がない場合は現在地（"."）を対象にするよう統一
+                const targetPath = normalizePath(args[0] || ".", cwd);
+                const fsSearchPath = targetPath === "C:/" ? "" : targetPath.replace(/^C:\//, "");
+                const root = resolveFS(fsSearchPath);
+
                 if (!root) return print("Path not found");
+                if (root.type === 'file') return print(args[0]);
+
                 function walk(node, indent = "") {
                     Object.entries(node).forEach(([name, value]) => {
-                        if (["type", "entry", "singleton", "target", "name", "system"].includes(name)) return;
+                        // 2. boot.js と同様に content や originalPath などのメタプロパティを除外
+                        if (["type", "entry", "singleton", "target", "content", "system", "name", "originalPath"].includes(name)) return;
+
                         print(indent + "├─ " + name);
-                        if (typeof value === "object" && value.type !== "file") walk(value, indent + "│  ");
+
+                        // 3. link や file 型のときは再帰しないように安全性を向上
+                        if (typeof value === "object" && value.type !== "file" && value.type !== "link") {
+                            walk(value, indent + "│  ");
+                        }
                     });
                 }
-                print(cwd);
+
+                print(targetPath);
                 walk(root);
             }
         },
