@@ -130,7 +130,7 @@ export default function RegistryEditor(root) {
                     const trimmed = rawVal.trim();
                     const lower = trimmed.toLowerCase();
 
-                    // 1. 真偽値 (Boolean) のチェックを追加 ★
+                    // 1. 真偽値 (Boolean) のチェックを追加
                     if (lower === "true") {
                         val = true;
                     } else if (lower === "false") {
@@ -191,24 +191,19 @@ export default function RegistryEditor(root) {
     async function renameItem(oldKey, newKey) {
         if (!newKey || oldKey === newKey) return refresh(false);
 
-        // --- 【完全ブロック】ここから ---
-        // 1. 変更元が fs なら拒否
         if (isProtected(currentStore, oldKey)) {
             return errorWindow(`'${oldKey}' はシステム保護された項目のため、名前を変更できません。`, { parentWin: win });
         }
 
-        // 2. 変更先を fs にしようとしても拒否（上書き・偽装防止）
         if (isProtected(currentStore, newKey)) {
             return errorWindow(`'${newKey}' はシステム予約済みの名前です。この名前に変更することはできません。`, { parentWin: win });
         }
-        // --- 【完全ブロック】ここまで ---
 
         try {
             const db = await getDB();
             const tx = db.transaction(currentStore, "readwrite");
             const store = tx.objectStore(currentStore);
 
-            // 重複チェック（既存の fs 以外のデータへの上書きも防止）
             const existing = await store.count(newKey);
             if (existing > 0) {
                 errorWindow(`Error: "${newKey}" already exists.`, { parentWin: win });
@@ -228,8 +223,8 @@ export default function RegistryEditor(root) {
                 tx.oncomplete = resolve;
                 tx.onerror = () => { throw tx.error; };
             });
-            notifySystemChange(currentStore, oldKey); // ★追加: 変更前のキー削除を通知
-            notifySystemChange(currentStore, newKey); // ★追加: 新規キーの追加を通知
+            notifySystemChange(currentStore, oldKey);
+            notifySystemChange(currentStore, newKey);
             selectedKey = newKey;
             refresh(true);
         } catch (e) {
@@ -287,7 +282,7 @@ export default function RegistryEditor(root) {
         input.onblur = () => finish(true);
         input.onkeydown = (e) => {
             if (e.key === "Enter") { e.preventDefault(); finish(true); }
-            if (e.key === "Escape") { e.preventDefault(); finish(false); } // 解除
+            if (e.key === "Escape") { e.preventDefault(); finish(false); }
         };
     }
 
@@ -298,39 +293,31 @@ export default function RegistryEditor(root) {
 
         try {
             const db = await getDB();
-
-            // 1. 【修正】確実に全キーを配列として取得する
             const txRead = db.transaction(currentStore, "readonly");
             const store = txRead.objectStore(currentStore);
 
-            // Promiseでラップして、IDBRequestの成功結果を待つ
             const allKeysArray = await new Promise((resolve, reject) => {
                 const request = store.getAllKeys();
                 request.onsuccess = () => resolve(request.result);
                 request.onerror = () => reject(request.error);
             });
 
-            // ここで安全に Set を生成
             const existingKeys = new Set(allKeysArray.map(String));
 
-            // 2. 重複チェック
             while (existingKeys.has(newKey) || isProtected(currentStore, newKey)) {
                 newKey = `${newKeyBase} #${counter++}`;
             }
 
             const targetKey = String(newKey);
 
-            // 3. 型に応じた初期値設定
             let initialValue = "";
             if (type === "REG_DWORD") initialValue = 0;
             if (type === "REG_JSON") initialValue = {};
 
-            // 4. DB書き込み
             const txWrite = db.transaction(currentStore, "readwrite");
             await txWrite.objectStore(currentStore).put(initialValue, targetKey);
             await txWrite.done;
 
-            // 5. UI更新
             await refresh(true);
 
             requestAnimationFrame(() => {
@@ -344,30 +331,54 @@ export default function RegistryEditor(root) {
         }
     }
 
-    // --- インポート / エクスポート ---
+    // --- インポート / エクスポート（Workerオフロード対応） ---
     async function exportRegistry() {
+        const loadingEl = root.querySelector("#reg-loading");
+        if (loadingEl) {
+            loadingEl.textContent = "Exporting data...";
+            loadingEl.style.display = "flex";
+        }
+
+        const workerInstance = getWorker();
+
         try {
-            const db = await getDB();
-            const tx = db.transaction(currentStore, "readonly");
-            const store = tx.objectStore(currentStore);
-            const allData = {};
-            const request = store.openCursor();
-            request.onsuccess = (e) => {
-                const cursor = e.target.result;
-                if (cursor) {
-                    if (!(cursor.value instanceof Blob)) allData[cursor.key] = cursor.value;
-                    cursor.continue();
-                } else {
-                    const blob = new Blob([JSON.stringify(allData, null, 2)], { type: "application/json" });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement("a");
-                    a.href = url;
-                    a.download = `nexser_${currentStore}_backup.json`;
-                    a.click();
-                }
-            };
+            const result = await new Promise((resolve, reject) => {
+                const handleMessage = (e) => {
+                    if (e.data.action === 'export') {
+                        workerInstance.removeEventListener('message', handleMessage);
+                        resolve(e.data);
+                    }
+                };
+                const handleError = (err) => {
+                    workerInstance.removeEventListener('error', handleError);
+                    reject(err);
+                };
+
+                workerInstance.addEventListener('message', handleMessage);
+                workerInstance.addEventListener('error', handleError);
+
+                workerInstance.postMessage({
+                    action: 'export',
+                    storeName: currentStore
+                });
+            });
+
+            if (!result.success) throw new Error(result.error);
+
+            const url = URL.createObjectURL(result.blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `nexser_${currentStore}_backup.json`;
+            a.click();
+            URL.revokeObjectURL(url);
         } catch (e) {
-            errorWindow("Export failed.", { parentWin: win });
+            console.error("[Registry] Export failed:", e);
+            errorWindow("Export failed: " + e.message, { parentWin: win });
+        } finally {
+            if (loadingEl) {
+                loadingEl.textContent = "Loading...";
+                loadingEl.style.display = "none";
+            }
         }
     }
 
@@ -377,19 +388,54 @@ export default function RegistryEditor(root) {
         input.accept = ".json";
         input.onchange = async (e) => {
             const file = e.target.files[0];
+            if (!file) return;
+
+            const loadingEl = root.querySelector("#reg-loading");
+            if (loadingEl) {
+                loadingEl.textContent = "Importing data...";
+                loadingEl.style.display = "flex";
+            }
+
             const reader = new FileReader();
             reader.onload = async (ev) => {
                 try {
-                    const data = JSON.parse(ev.target.result);
-                    const db = await getDB();
-                    const tx = db.transaction(currentStore, "readwrite");
-                    const store = tx.objectStore(currentStore);
-                    for (const [k, v] of Object.entries(data)) await store.put(v, k);
-                    await tx.done;
-                    refresh(true);
+                    const importData = JSON.parse(ev.target.result);
+                    const workerInstance = getWorker();
+
+                    const result = await new Promise((resolve, reject) => {
+                        const handleMessage = (e) => {
+                            if (e.data.action === 'import') {
+                                workerInstance.removeEventListener('message', handleMessage);
+                                resolve(e.data);
+                            }
+                        };
+                        const handleError = (err) => {
+                            workerInstance.removeEventListener('error', handleError);
+                            reject(err);
+                        };
+
+                        workerInstance.addEventListener('message', handleMessage);
+                        workerInstance.addEventListener('error', handleError);
+
+                        workerInstance.postMessage({
+                            action: 'import',
+                            storeName: currentStore,
+                            importData: importData
+                        });
+                    });
+
+                    if (!result.success) throw new Error(result.error);
+
+                    await refresh(true);
                     alertWindow("Import successful.", { parentWin: win });
                 } catch (err) {
-                    errorWindow("Invalid backup file.", { parentWin: win });
+                    console.error("[Registry] Import failed:", err);
+                    errorWindow("Invalid backup file or import failed: " + err.message, { parentWin: win });
+                } finally {
+                    if (loadingEl) {
+                        loadingEl.textContent = "Loading...";
+                        loadingEl.style.display = "none";
+                    }
                 }
             };
             reader.readAsText(file);
@@ -400,12 +446,10 @@ export default function RegistryEditor(root) {
     async function refresh(forceReset = false) {
         if (!document.body.contains(root)) return;
 
-        // ▼ 【変更】呼び出しごとに固有の世代IDを発行し、古い処理の競合を防ぐ
         const requestId = ++currentRequestId;
         const snapshotStore = currentStore;
         isProcessing = true;
 
-        // 【追加】読み込み開始時に待機画面を表示
         const loadingEl = root.querySelector("#reg-loading");
         if (loadingEl) loadingEl.style.display = "flex";
 
@@ -417,11 +461,13 @@ export default function RegistryEditor(root) {
         const workerInstance = getWorker();
 
         try {
-            // Workerへ処理を依頼し、結果を非同期で待機
             const result = await new Promise((resolve, reject) => {
                 const handleMessage = (e) => {
-                    workerInstance.removeEventListener('message', handleMessage);
-                    resolve(e.data);
+                    // デフォルトのfetchアクションまたはアクション指定なしのメッセージを待つ
+                    if (!e.data.action || e.data.action === 'fetch') {
+                        workerInstance.removeEventListener('message', handleMessage);
+                        resolve(e.data);
+                    }
                 };
                 const handleError = (err) => {
                     workerInstance.removeEventListener('error', handleError);
@@ -432,20 +478,19 @@ export default function RegistryEditor(root) {
                 workerInstance.addEventListener('error', handleError);
 
                 workerInstance.postMessage({
+                    action: 'fetch',
                     storeName: currentStore,
                     searchTerm: searchTerm,
                     maxVisibleItems: MAX_VISIBLE_ITEMS
                 });
             });
 
-            // ▼ 【変更】途中で新しいリクエストが発生していたり、ストアが切り替わっていればこの結果は破棄
             if (requestId !== currentRequestId || currentStore !== snapshotStore) return;
             if (!result.success) throw new Error(result.error);
 
             const dbKeys = new Set(result.dbKeys);
             const visibleKeys = new Set();
 
-            // 【改善】DocumentFragmentを使用してDOMへの挿入負荷を1回にまとめ、高速化
             const fragment = document.createDocumentFragment();
 
             result.items.forEach(item => {
@@ -457,7 +502,6 @@ export default function RegistryEditor(root) {
                 bodyEl.appendChild(fragment);
             }
 
-            // 不要な行の削除
             for (const [k, tr] of rowMap) {
                 if (!dbKeys.has(k) || !visibleKeys.has(k)) {
                     if (editingKey !== k) {
@@ -474,7 +518,6 @@ export default function RegistryEditor(root) {
         } catch (e) {
             console.error("[Registry] Refresh error:", e);
         } finally {
-            // ▼ 【変更】現在進行中の「最新リクエスト」のときだけ、ローディング表示等を解除する
             if (requestId === currentRequestId) {
                 isProcessing = false;
                 if (loadingEl) loadingEl.style.display = "none";
@@ -494,7 +537,6 @@ export default function RegistryEditor(root) {
             `;
 
             attachContextMenu(tr, (e) => {
-                // メニュー展開前に、対象の行を選択状態にする
                 if (selectedKey !== keyStr) {
                     selectRow(keyStr);
                 }
@@ -508,7 +550,6 @@ export default function RegistryEditor(root) {
             tr.ondblclick = () => enterEditMode(keyStr, "data");
             tr.onclick = () => selectRow(keyStr);
 
-            // 【改善】fragmentが指定されている場合はフラグメントに詰め、個別更新時は直接追加
             if (fragment) {
                 fragment.appendChild(tr);
             } else if (!tr.parentElement) {
@@ -518,7 +559,6 @@ export default function RegistryEditor(root) {
         }
 
         tr._val = val;
-        // 編集中の場合はテキスト更新をスキップ
         if (editingKey !== keyStr) {
             let typeStr = (typeof val === 'number') ? "REG_DWORD" : (val instanceof Blob) ? "REG_BINARY" : (typeof val === 'object') ? "REG_JSON" : "REG_SZ";
             let displayVal = (val instanceof Blob) ? `[Blob: ${val.size} bytes]` : (typeof val === 'object') ? JSON.stringify(val) : String(val);
@@ -573,7 +613,6 @@ export default function RegistryEditor(root) {
             {
                 title: "Edit",
                 items: [
-                    // 🟢 ここを変更：3種類のデータ型から選んで作成できるように分割
                     { label: "New String Value", action: () => createNew("REG_SZ") },
                     { label: "New DWORD Value", action: () => createNew("REG_DWORD") },
                     { label: "New JSON Value", action: () => createNew("REG_JSON") },
@@ -588,7 +627,7 @@ export default function RegistryEditor(root) {
     }
 
     mainView.onkeydown = (e) => {
-        if (editingKey) return; // 編集時は無効化
+        if (editingKey) return;
 
         const visibleKeys = Array.from(rowMap.keys());
         if (visibleKeys.length === 0) return;
@@ -601,13 +640,10 @@ export default function RegistryEditor(root) {
                 refresh(true);
                 break;
 
-            // ▼ ArrowDown と ArrowUp の処理を統合 ▼
             case "ArrowDown":
             case "ArrowUp": {
                 e.preventDefault();
                 const isDown = e.key === "ArrowDown";
-
-                // 三項演算子と Math クラスを使ってインデックスを安全に計算
                 const targetIdx = isDown
                     ? Math.min(currentIndex + 1, visibleKeys.length - 1)
                     : Math.max(currentIndex - 1, 0);
@@ -622,17 +658,11 @@ export default function RegistryEditor(root) {
 
             case "ArrowLeft":
                 e.preventDefault();
-
-                // 1. 選択状態を変数レベルで解除
                 selectedKey = null;
-
-                // 2. UI上のハイライトをすべてクリア
                 for (const [k, tr] of rowMap) {
                     tr.style.background = "";
                     tr.style.color = "";
                 }
-
-                // 3. 左側のメニューにフォーカスを戻す
                 treeContainer.focus();
                 break;
 
@@ -677,12 +707,9 @@ export default function RegistryEditor(root) {
         } else if (e.key === "ArrowUp") {
             e.preventDefault();
             nextIndex = Math.max(0, currentIndex - 1);
-        } else if (e.key === "Enter" || e.key === "ArrowRight") { // 右矢印を追加
+        } else if (e.key === "Enter" || e.key === "ArrowRight") {
             e.preventDefault();
-            // 右側ビューにフォーカスを当てる
             mainView.focus();
-
-            // すでにアイテムがある場合は、一番上のアイテムを選択状態にする
             const visibleKeys = Array.from(rowMap.keys());
             if (visibleKeys.length > 0) {
                 selectRow(visibleKeys[0]);
