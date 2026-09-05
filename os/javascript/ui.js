@@ -53,13 +53,13 @@ export function installDynamicButtonEffect() {
     });
 
     root.addEventListener("mousedown", e => {
+        clearTimeout(tooltipTimer);
+        tooltip.style.display = "none";
+
         const el = getTargetButton(e.target);
         if (!el) return;
         pressedEl = el;
         el.classList.add("pressed");
-
-        clearTimeout(tooltipTimer);
-        tooltip.style.display = "none";
     });
 
     root.addEventListener("mouseover", e => {
@@ -79,6 +79,9 @@ export function installDynamicButtonEffect() {
                 currentClientY = e.clientY;
 
                 tooltipTimer = setTimeout(() => {
+                    // 改善: タイマー発火時に要素がDOMから削除されていたら表示しない
+                    if (!tooltipTarget.isConnected) return;
+
                     tooltip.textContent = text;
                     tooltip.style.visibility = "hidden";
                     tooltip.style.display = "block";
@@ -99,6 +102,10 @@ export function installDynamicButtonEffect() {
                     tooltip.style.visibility = "visible";
                 }, 500);
             }
+        } else {
+            // 改善: ツールチップ対象外の要素へマウスが移動した場合も確実に消去
+            clearTimeout(tooltipTimer);
+            tooltip.style.display = "none";
         }
     });
 
