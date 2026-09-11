@@ -19,6 +19,9 @@ window.smallIcons = false;
    Start Menu Builder
 ===================================================== */
 export async function buildStartMenu() {
+    window.smallIcons = (await loadSetting("smallIcons")) ?? false;
+    window.showRecent = (await loadSetting("showRecentItems")) ?? true;
+
     const menu = document.getElementById("start-menu");
     if (!menu) return;
     menu.innerHTML = "";
@@ -26,29 +29,13 @@ export async function buildStartMenu() {
     // 設定クラスの付与（CSSでの制御用）
     menu.classList.toggle("small-icons", window.smallIcons);
 
-    // Programs
-    const programsRoot = document.createElement("div");
-    programsRoot.className = "start-item has-children";
-    programsRoot.textContent = "Programs";
+    // FSに定義されている StartMenu をルートとしてメニューを構築
+    const startMenuContainer = createMenu(FS.StartMenu, "StartMenu", menu);
+    while (startMenuContainer.firstChild) {
+        menu.appendChild(startMenuContainer.firstChild);
+    }
 
-    const programsMenu = createMenu(FS.Programs, "Programs", menu);
-    programsMenu.classList.add("submenu");
-    programsRoot.appendChild(programsMenu);
-
-    setupHover(programsRoot, programsMenu);
-    menu.appendChild(programsRoot);
-
-    // Separator
-    const hr = document.createElement("div");
-    hr.style.borderTop = "1px solid #333";
-    hr.style.margin = "6px 0";
-    menu.appendChild(hr);
-
-    // Desktop
-    const desktopMenu = createMenu(FS.Desktop, "Desktop", menu);
-    menu.appendChild(desktopMenu);
-
-    // Logoff
+    // ログオフボタン
     const logoffBtn = document.createElement("div");
     logoffBtn.className = "start-item danger";
     logoffBtn.textContent = "ログオフ";
@@ -60,7 +47,7 @@ export async function buildStartMenu() {
     };
     menu.appendChild(logoffBtn);
 
-    // Recent
+    // Recent (最近使った項目)
     if (window.showRecent !== false) {
         await buildRecentArea(menu);
     }
@@ -82,7 +69,7 @@ function createMenu(folder, basePath, menuRoot) {
         if (name === "type" || name === "system" || name === "lastModified") continue;
 
         const node = folder[name];
-        if (node.hidden) continue; // ★隠しファイルを除外
+        if (node.hidden) continue; // 隠しファイルを除外
 
         hasItems = true;
 
@@ -116,64 +103,73 @@ function createMenu(folder, basePath, menuRoot) {
         container.appendChild(item);
 
         const fullPath = `${basePath}/${name}`;
-        // 実際のタイプが "folder" の場合は、名前にドットがあっても "folder" として扱う
-        const effectiveType = (node.type === "folder")
+
+        // リンク先がフォルダである場合を考慮してタイプを解決
+        let targetNode = node;
+        let targetPath = fullPath;
+        let currentType = node.type;
+
+        if (currentType === "link") {
+            targetPath = node.target;
+            targetNode = resolveFS(targetPath);
+            if (targetNode) {
+                currentType = targetNode.type;
+            } else {
+                currentType = "broken-link";
+            }
+        }
+
+        const effectiveType = (currentType === "folder")
             ? "folder"
-            : (hasExtension(name) ? "file" : node.type);
+            : ((node.type === "folder") ? "folder" : (hasExtension(name) ? "file" : currentType));
 
         // 起動可能アイテムの処理
         if (["app", "link", "file"].includes(effectiveType)) {
             item.onclick = async () => {
-                let targetNode = node;
-                let targetPath = fullPath;
-                let currentType = targetNode.type;
+                let runNode = node;
+                let runPath = fullPath;
+                let runType = runNode.type;
 
-                if (currentType === "link") {
-                    targetPath = targetNode.target;
-                    targetNode = resolveFS(targetPath);
-                    if (!targetNode) {
-                        // 参照先がない場合、Windows風の確認ダイアログを表示
+                if (runType === "link") {
+                    runPath = runNode.target;
+                    runNode = resolveFS(runPath);
+                    if (!runNode) {
                         confirmWindow(
-                            `問題のあるショートカット\n\nこのショートカットが参照している '${targetPath}' は変更または移動されているか、存在しないため、正しく機能しません。\n\nこのショートカットを削除しますか？`,
+                            `問題のあるショートカット\n\nこのショートカットが参照している '${runPath}' は変更または移動されているか、存在しないため、正しく機能しません。\n\nこのショートカットを削除しますか？`,
                             (result) => {
                                 if (result) {
                                     console.log(`ショートカットを削除します: ${fullPath}`);
-                                    // TODO: ここに実際の削除処理を追加（FSからの削除とメニュー更新）
                                 }
                             },
-                            {
-                                width: 400,
-                                overlay: true
-                            }
+                            { width: 400, overlay: true }
                         );
-                        // スタートメニューを閉じる
                         menuRoot.style.display = "none";
                         if (startBtn) startBtn.classList.remove("pressed");
-                        return; // 起動を中断
+                        return;
                     }
-                    currentType = targetNode.type;
+                    runType = runNode.type;
                 }
 
-                switch (currentType) {
+                switch (runType) {
                     case "app":
-                        if (targetNode.shell) return;
-                        launch(targetPath, { path: targetPath, uniqueKey: targetPath });
-                        addRecent({ type: "app", path: targetPath });
+                        if (runNode.shell) return;
+                        launch(runPath, { path: runPath, uniqueKey: runPath });
+                        addRecent({ type: "app", path: runPath });
                         break;
                     case "file": {
-                        const appPath = resolveAppByPath(targetPath);
+                        const appPath = resolveAppByPath(runPath);
                         if (appPath) {
-                            launch(appPath, { path: targetPath, node: targetNode, uniqueKey: targetPath });
+                            launch(appPath, { path: runPath, node: runNode, uniqueKey: runPath });
                         } else {
                             const { openWithDialog } = await import("./apps/explorer.js");
-                            openWithDialog(targetPath, targetNode);
+                            openWithDialog(runPath, runNode);
                         }
-                        addRecent({ type: "file", path: targetPath });
+                        addRecent({ type: "file", path: runPath });
                         break;
                     }
                     case "folder":
-                        launch("Programs/Applications/Explorer.app", { path: targetPath, uniqueKey: targetPath });
-                        addRecent({ type: "folder", path: targetPath });
+                        launch("Programs/Applications/Explorer.app", { path: runPath, uniqueKey: runPath });
+                        addRecent({ type: "folder", path: runPath });
                         break;
                 }
 
@@ -182,9 +178,13 @@ function createMenu(folder, basePath, menuRoot) {
             };
         }
 
+        // フォルダ（またはフォルダを指すリンク）の場合のサブメニュー展開
         if (effectiveType === "folder") {
             item.classList.add("has-children");
-            const sub = createMenu(node, fullPath, menuRoot);
+            const subFolderNode = (node.type === "link") ? targetNode : node;
+            const subFolderPath = (node.type === "link") ? targetPath : fullPath;
+
+            const sub = createMenu(subFolderNode, subFolderPath, menuRoot);
             sub.classList.add("submenu");
             item.appendChild(sub);
             setupHover(item, sub);

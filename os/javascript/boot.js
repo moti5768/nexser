@@ -1,6 +1,5 @@
 // boot.js
 import { initFS } from './fs.js';
-import { buildDesktop } from './desktop.js';
 import { playSystemEventSound } from './kernel.js';
 import { resolveFS, normalizePath as fsNormalizePath } from './fs-utils.js';
 import { loadSetting } from "./apps/settings.js";
@@ -858,36 +857,38 @@ export function showPromptScreen(logoffMessage = '') {
 export async function bootOS() {
     try {
         print("\nBoot sequence started...\n");
-
-        // 1. カーネル初期化
         const kernel = await import('./kernel.js');
-        await kernel.initKernelAsync(msg => print(`[Kernel] ${msg}`));
+
+        // 1. カーネル空間の初期化 (DOM・エラーハンドリング)
+        await kernel.initKernelSpaceAsync(msg => print(`[Kernel] ${msg}`));
 
         // 2. 画面をCLIからGUIルート画面へ切替
         screen.style.display = 'none';
         const root = document.getElementById('os-root');
         if (root) root.style.display = 'block';
 
-        // 3. 【Stage 1】デスクトップ（背景・アイコン）の構築
-        buildDesktop();
+        // 3. 【Stage 1】システムUIシェル（タスクバー・スタートメニュー）の確立
+        await kernel.initShellAsync(msg => print(`[Shell] ${msg}`));
+
+        // 4. 【Stage 2】デスクトップビューの構築
+        await kernel.initDesktopAsync(msg => print(`[Desktop] ${msg}`));
         window.dispatchEvent(new Event("desktop-resize"));
-        print('[Desktop] Ready');
 
-        // 4. 【Stage 2】スタートメニュー & タスクバーの初期化
-        const sm = await import('./startmenu.js');
-        if (sm.startMenuReady) await sm.startMenuReady(msg => print(`[StartMenu] ${msg}`));
-        print('[StartMenu] Ready');
+        // 5. ユーザースペース（システム診断等）の初期化
+        await kernel.initUserSpaceAsync(msg => print(`[UserSpace] ${msg}`));
 
-        // 5. システムサービスの起動
+        // 6. システムサービスの起動 (エラー時のフェイルセーフ対応)
         try {
             await initScreensaver();
             print('[Screensaver] Ready');
         } catch (ssErr) {
-            console.warn("Screensaver failed to initialize:", ssErr);
+            print('[Screensaver] Skipped (Non-critical failure)');
+            console.warn("Screensaver failed to initialize, but boot will continue:", ssErr);
         }
 
-        // 6. 起動音再生
+        // 7. 起動音再生
         playSystemEventSound('startup');
+        print("OS Boot Completed Successfully.");
     } catch (e) {
         throw new Error(`BOOT_SELECTION_FAILED: ${e.message}`);
     }

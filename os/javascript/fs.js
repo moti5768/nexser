@@ -33,6 +33,15 @@ const baseFS = {
         "Soundsplayer.app": { type: "link", target: "Programs/Applications/Soundsplayer.app" },
         "Settings.app": { type: "link", target: "Programs/Applications/Settings.app" }
     },
+    StartMenu: {
+        type: "folder",
+        system: true,
+        Programs: { type: "link", target: "Programs", system: true },
+        ControlPanel: { type: "link", target: "Programs/ControlPanel", system: true },
+        Documents: { type: "link", target: "Programs/Documents" },
+        "Settings.app": { type: "link", target: "Programs/Applications/Settings.app" },
+        "Terminal.app": { type: "link", target: "Programs/Applications/Terminal.app" }
+    },
     Trash: { type: "folder", system: true },
     Programs: {
         type: "folder",
@@ -374,22 +383,20 @@ export async function diagnoseAndCleanFS(executeRepair = false) {
         }
     }
 
-    // 2. システムコアディレクトリのデータ破損チェック (Integrity Check)
-    const vitalNodes = ["System", "Desktop", "Programs"];
+    // 2. システムコアディレクトリのデータ破損チェック
+    const vitalNodes = ["System", "Desktop", "Programs", "StartMenu"];
     vitalNodes.forEach(node => {
         if (!FS[node] || FS[node].type !== "folder") {
             report.corruptionDetected = true;
             report.logs.push(`【警告】システム構造破損: '${node}' ディレクトリが不正、または消失しています。`);
 
-            // 修復実行フラグがある場合は FACTORY_FS から復元
             if (executeRepair) {
-                FS[node] = structuredClone(FACTORY_FS[node]); // ★ baseFS から FACTORY_FS に変更
+                FS[node] = structuredClone(FACTORY_FS[node]);
                 report.logs.push(`[修復] '${node}' ディレクトリを工場出荷時の状態に再生成しました。`);
             }
         }
     });
 
-    // 修復が行われた場合は即時保存して状態を確定
     if (executeRepair) {
         await forceSave();
         window.dispatchEvent(new Event("fs-updated"));

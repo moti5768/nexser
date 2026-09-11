@@ -118,13 +118,15 @@ async function safeImport(entry) {
 }
 
 /* ===== カーネル初期化 (最新・最適化版) ===== */
-export async function initKernelAsync(progressCallback = () => { }) {
+/* ===== カーネル初期化 (フェーズ分割・最適化版) ===== */
+
+// 1. カーネルスペース（DOM注入とエラー制御）
+export async function initKernelSpaceAsync(progressCallback = () => { }) {
     const root = document.getElementById("os-root");
     if (!root) throw new Error("os-root not found");
     initSystemErrorHandler();
-    // 1. 基本構造の注入
-    // 描画コストを下げるため、まずは最小限のHTMLを流し込む
-    progressCallback("Initializing kernel structure...");
+
+    progressCallback("Initializing Kernel Space (DOM & Error Handlers)...");
     root.innerHTML = `
         <div id="desktop"></div>
         <div id="taskbar">
@@ -132,50 +134,40 @@ export async function initKernelAsync(progressCallback = () => { }) {
         </div>
         <div id="start-menu"></div>
     `;
-
-    // ブラウザにDOMの反映とレイアウト計算の隙を与える（バックグラウンド処理化の肝）
     await new Promise(r => requestAnimationFrame(r));
+}
 
-    // 2. デスクトップ構築
-    // buildDesktop() が内部でアイコン配置などを行う際の計算時間を確保
-    progressCallback("Building Desktop icons and layout...");
-    buildDesktop();
-    await new Promise(r => requestAnimationFrame(r));
+// 2. システムシェル（タスクバー・スタートメニュー）※デスクトップより先に構築
+export async function initShellAsync(progressCallback = () => { }) {
+    progressCallback("Initializing System Shell (Taskbar & Start Menu)...");
 
-    // 3. スタートメニュー構築
-    progressCallback("Preparing Start Menu...");
     buildStartMenu();
-    // ここで一瞬待機を入れることで、メニューの重なり等の計算を安定させる
     await new Promise(r => setTimeout(r, 0));
 
-    // 4. タスクバー初期化
-    progressCallback("Initializing Taskbar...");
     initTaskbar();
     await new Promise(r => requestAnimationFrame(r));
 
-    // 5. UIエフェクトの適用
-    // ボタンの動的エフェクトなどは最後に適用し、操作可能になったことを示す
-    progressCallback("Applying dynamic UI effects...");
     installDynamicButtonEffect();
-
-    // 全てのレンダリングが完了するまで一拍置く
     await new Promise(r => requestAnimationFrame(r));
+}
 
-    // ==========================================
-    // 【追加】ブート時の自動システムスキャン (破損検知のお知らせ)
-    // ==========================================
+// 3. デスクトップビュー
+export async function initDesktopAsync(progressCallback = () => { }) {
+    progressCallback("Loading Desktop View...");
+    buildDesktop();
+    await new Promise(r => requestAnimationFrame(r));
+}
+
+// 4. ユーザースペース（システム診断など）
+export async function initUserSpaceAsync(progressCallback = () => { }) {
     progressCallback("Scanning system integrity...");
     try {
-        // 先ほど fs.js に作った診断関数を動的に読み込む
         const { diagnoseAndCleanFS } = await import("./fs.js");
-        const report = await diagnoseAndCleanFS(false); // 起動時はチェックのみ(false)
+        const report = await diagnoseAndCleanFS(false);
 
-        // もし System や Desktop が壊れていたら警告を出す
         if (report.corruptionDetected) {
-            // kernel.js 内にあるエラー音再生を呼び出す
             playSystemEventSound('error');
-
-            // window.js からインポートされている errorWindow でデスクトップにお知らせ
+            const { errorWindow } = await import("./window.js");
             errorWindow(
                 "【システム診断】\nシステムファイルの破損または消失を検出しました。\n\n一部の重要なフォルダが正常に読み込めない状態です。\n設定アプリ (Settings.app) の「System」タブから「Run Cleanup & Repair」を実行して修復してください。",
                 { title: "システム整合性チェック", taskbar: true }
@@ -184,8 +176,14 @@ export async function initKernelAsync(progressCallback = () => { }) {
     } catch (e) {
         console.warn("Boot-time system scan failed:", e);
     }
-    // ==========================================
+}
 
+// ★ 後方互換性維持：他のファイルから従来通り呼ばれても動作するようにする
+export async function initKernelAsync(progressCallback = () => { }) {
+    await initKernelSpaceAsync(progressCallback);
+    await initShellAsync(progressCallback); // シェルを先に
+    await initDesktopAsync(progressCallback); // デスクトップを後に
+    await initUserSpaceAsync(progressCallback);
     progressCallback("Kernel initialization complete!");
 }
 
