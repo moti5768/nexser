@@ -334,12 +334,102 @@ async function launchApp(item, path, options) {
             const { updateWindowTitle, showModalWindow } = await import("./window.js");
             const { getFileContent } = await import("./fs-db.js");
 
+            // 1. 再帰的・包含的な保護プロキシ（FSの全保護領域およびネスト構造に対応）
+            const RESTRICTED_DIRS = new Set(["System", "Kernel", "Config"]);
+
+            function createSecureFS(targetFS) {
+                const fsHandler = {
+                    get(target, prop) {
+                        if (typeof prop === "string" && RESTRICTED_DIRS.has(prop)) {
+                            // 保護対象ディレクトリはイミュータブルなコピー（読み取り専用）を返す
+                            return Object.freeze(JSON.parse(JSON.stringify(target[prop] || {})));
+                        }
+                        const res = Reflect.get(target, prop);
+                        // ネストされたオブジェクトにも再帰的に保護を適用
+                        if (res && typeof res === "object") {
+                            return new Proxy(res, fsHandler);
+                        }
+                        return res;
+                    },
+                    set(target, prop, value) {
+                        if (typeof prop === "string" && RESTRICTED_DIRS.has(prop)) {
+                            throw new Error(`[Security] Permission denied: Restricted directory '${prop}'`);
+                        }
+                        return Reflect.set(target, prop, value);
+                    },
+                    deleteProperty(target, prop) {
+                        if (typeof prop === "string" && RESTRICTED_DIRS.has(prop)) {
+                            throw new Error(`[Security] Permission denied: Cannot delete restricted directory '${prop}'`);
+                        }
+                        return Reflect.deleteProperty(target, prop);
+                    }
+                };
+                return new Proxy(targetFS, fsHandler);
+            }
+
+            const safeFS = createSecureFS(FS);
+
+            // 2. カーネルAPIの安全なラッパー
+            const safeUpdateWindowTitle = (title) => {
+                const sanitizedTitle = String(title || "")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#39;");
+                updateWindowTitle(sanitizedTitle);
+            };
+
+            // 3. アプリ専用コンテキスト
+            const appEnv = Object.freeze({
+                FS: safeFS,
+                forceSave,
+                resolveFS,
+                updateWindowTitle: safeUpdateWindowTitle,
+                showModalWindow,
+                getFileContent
+            });
+
+            // 4. Proxy + with ステートメントによる厳格なスコープ隔離（Sandbox）
+            const BLOCKED_GLOBALS = new Set([
+                "window", "document", "globalThis", "self", "top", "parent",
+                "localStorage", "sessionStorage", "indexedDB", "fetch",
+                "XMLHttpRequest", "WebSocket", "Worker", "Notification"
+            ]);
+
+            const sandboxHandler = {
+                has(target, key) {
+                    // 全ての変数参照をトラップしてサンドボックス内に引き込む
+                    return true;
+                },
+                get(target, key) {
+                    if (key === Symbol.unscopables) return undefined;
+                    // 提供明記された環境変数を優先返却
+                    if (key in target) return target[key];
+                    // 遮断対象のグローバル変数は undefined を返す
+                    if (BLOCKED_GLOBALS.has(key)) return undefined;
+                    // Functionコンストラクタ等のプロトタイプ経由の脱出を妨害
+                    if (key === "constructor") return undefined;
+
+                    return undefined;
+                }
+            };
+
+            const sandboxProxy = new Proxy(appEnv, sandboxHandler);
+
+            // with文を使用してスコープを完全に固定し、即時実行関数でラップする
             const runScript = new Function(
-                'FS', 'forceSave', 'resolveFS', 'updateWindowTitle', 'showModalWindow', 'getFileContent',
-                executableCode
+                'sandbox',
+                `
+    "use strict";
+    with (sandbox) {
+        return (function() {
+            ${executableCode}
+        })();
+    }
+    `
             );
 
-            appModule = { default: runScript(FS, forceSave, resolveFS, updateWindowTitle, showModalWindow, getFileContent) };
+            appModule = { default: runScript(sandboxProxy) };
         } catch (e) {
             console.error("Dynamic code evaluation failed:", e);
             throw new Error(`動的コードの解析に失敗しました: ${e.message}`);

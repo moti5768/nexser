@@ -136,6 +136,10 @@ function wrapProxy(obj, path = "") {
 
     const proxy = new Proxy(obj, {
         get(target, prop) {
+            if (prop === '__proto__' || prop === 'constructor' || prop === 'prototype') {
+                return undefined;
+            }
+
             const value = target[prop];
             if (typeof prop === "symbol") {
                 return target[prop];
