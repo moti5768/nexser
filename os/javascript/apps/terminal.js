@@ -62,13 +62,19 @@ export default function TerminalApp(content) {
         }
     }
 
-    // terminal.js の print 関数内を修正
-    function print(text = "", color = null, bg = null, size = null) {
+    // terminal.js の print 関数内を修正（描画した行DOMを返却＆スタイル追加）
+    function print(text = "", color = null, bg = null, size = null, opts = {}) {
         const line = document.createElement("div");
         line.textContent = text;
+        line.style.whiteSpace = "pre-wrap"; // 空白や連続スペースを保持
         if (color) line.style.color = color;
         if (bg) line.style.backgroundColor = bg;
         if (size) line.style.fontSize = size;
+
+        // 追加の文字プロパティ設定
+        if (opts.bold || opts.weight) line.style.fontWeight = opts.bold ? "bold" : opts.weight;
+        if (opts.italic || opts.style) line.style.fontStyle = opts.italic ? "italic" : opts.style;
+        if (opts.shadow || opts.glow) line.style.textShadow = (opts.shadow || opts.glow).replace(/_/g, " ");
 
         // input の「前」に挿入することで、入力欄が常に一番下になる
         screen.insertBefore(line, input.parentElement);
@@ -77,6 +83,9 @@ export default function TerminalApp(content) {
             screen.removeChild(screen.firstChild);
         }
         scrollToBottom();
+
+        // 後から1行を書き換えるためにDOM要素を返す
+        return line;
     }
 
     function commonPrefix(arr) {
@@ -632,20 +641,81 @@ export default function TerminalApp(content) {
         },
 
         run: {
-            desc: "Run script file",
+            desc: "Run script (start with #!js for pure JavaScript API mode)",
             async run(args) {
                 const file = args[0];
                 if (!file) return print("Usage: run <file>");
                 const node = getNodeByPath(file);
                 if (!node || node.type !== "file") return print("Script not found");
 
-                const lines = node.content.split("\n").map(l => l.trim()).filter(Boolean);
+                const rawContent = node.content.trim();
+
+                // ==========================================
+                // 究極拡張: 純粋な JS モード (ファイルの1行目が #!js の場合)
+                // ==========================================
+                if (rawContent.startsWith("#!js")) {
+                    const jsCode = rawContent.replace(/^#!js\n?/, "");
+
+                    // リアルタイムのキー入力を監視するリスナー
+                    const activeKeys = {};
+                    const keyHandler = (e) => {
+                        // 矢印キー等のデフォルトスクロールを防ぐ
+                        if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+                            e.preventDefault();
+                        }
+                        activeKeys[e.key.toLowerCase()] = e.type === "keydown";
+                    };
+                    window.addEventListener("keydown", keyHandler, { passive: false });
+                    window.addEventListener("keyup", keyHandler);
+
+                    // ユーザーの自作スクリプトに提供するターミナル専用API
+                    const api = {
+                        print: (text, color, bg, size, opts) => print(text, color, bg, size, opts || {}),
+                        sleep: (ms) => new Promise(r => setTimeout(r, ms)),
+                        clear: () => {
+                            const inputContainer = input.parentElement;
+                            screen.innerHTML = "";
+                            screen.appendChild(inputContainer);
+                        },
+                        createBlock: (rowCount, opts = {}) => {
+                            const rows = [];
+                            for (let i = 0; i < rowCount; i++) {
+                                rows.push(print("", opts.color, opts.bg, opts.size, opts));
+                            }
+                            return rows;
+                        },
+                        isKeyDown: (key) => !!activeKeys[key.toLowerCase()],
+                        args: args.slice(1)
+                    };
+
+                    try {
+                        input.blur(); // 入力カーソルを一時的に外す
+
+                        // 文字列から非同期関数を動的生成して実行
+                        const AsyncFunction = Object.getPrototypeOf(async function () { }).constructor;
+                        const func = new AsyncFunction(...Object.keys(api), jsCode);
+                        await func(...Object.values(api));
+
+                    } catch (err) {
+                        print(`JS Error: ${err.message}`, "#f00");
+                    } finally {
+                        // 実行終了後にキー監視を解除し、入力を復元
+                        window.removeEventListener("keydown", keyHandler);
+                        window.removeEventListener("keyup", keyHandler);
+                        input.focus();
+                    }
+                    return; // JSモード終了
+                }
+
+                // ==========================================
+                // 従来の行ベース簡易スクリプトモード (元コード準拠)
+                // ==========================================
+                const lines = rawContent.split("\n").map(l => l.trim()).filter(Boolean);
 
                 // 変数コンテキスト
                 const context = {};
 
                 for (const line of lines) {
-                    // print / sleep / cls は従来通り
                     const match = line.match(/^(\w+)\s*(.*)$/);
                     if (match) {
                         const cmd = match[1];
@@ -653,33 +723,99 @@ export default function TerminalApp(content) {
 
                         const args = [];
                         let color = null, bg = null, size = null;
+                        const opts = {};
 
                         rest.split(/\s+/).forEach(token => {
                             const cMatch = token.match(/^color=(.+)$/i);
                             const bgMatch = token.match(/^bg=(.+)$/i);
                             const sizeMatch = token.match(/^size=(.+)$/i);
+                            const wMatch = token.match(/^weight=(.+)$/i);
+                            const shMatch = token.match(/^(?:shadow|glow)=(.+)$/i);
+
                             if (cMatch) color = cMatch[1];
                             else if (bgMatch) bg = bgMatch[1];
                             else if (sizeMatch) size = sizeMatch[1];
+                            else if (wMatch) opts.weight = wMatch[1];
+                            else if (shMatch) opts.shadow = shMatch[1];
+                            else if (token.toLowerCase() === "bold") opts.bold = true;
+                            else if (token.toLowerCase() === "italic") opts.italic = true;
                             else args.push(token.replace(/^"|"$/g, ""));
                         });
 
-                        switch (cmd) {
-                            case "print":
-                                print(args.join(" "), color, bg, size);
-                                continue;
-                            case "sleep":
-                                await new Promise(r => setTimeout(r, Number(args[0]) || 300));
-                                continue;
-                            case "cls":
-                                screen.innerHTML = "";
-                                continue;
+                        // 昔のパソコン風 1行テキスト書き換えアニメーションコマンド群
+                        if (cmd === "print") {
+                            print(args.join(" "), color, bg, size, opts);
+                            continue;
+                        } else if (cmd === "sleep") {
+                            await new Promise(r => setTimeout(r, Number(args[0]) || 300));
+                            continue;
+                        } else if (cmd === "cls") {
+                            const inputContainer = input.parentElement;
+                            screen.innerHTML = "";
+                            screen.appendChild(inputContainer);
+                            continue;
+                        } else if (cmd === "type") {
+                            const text = args.join(" ");
+                            const lineEl = print("", color, bg, size, opts);
+                            const delay = Number(opts.speed) || 40;
+                            for (let i = 0; i <= text.length; i++) {
+                                lineEl.textContent = text.substring(0, i);
+                                scrollToBottom();
+                                await new Promise(r => setTimeout(r, delay));
+                            }
+                            continue;
+                        } else if (cmd === "spinner") {
+                            const duration = Number(args[0]) || 2000;
+                            const text = args.slice(1).join(" ");
+                            const frames = ["|", "/", "-", "\\"];
+                            const lineEl = print("", color, bg, size, opts);
+                            const startTime = Date.now();
+                            let idx = 0;
+                            while (Date.now() - startTime < duration) {
+                                lineEl.textContent = `${frames[idx % frames.length]} ${text}`;
+                                idx++;
+                                scrollToBottom();
+                                await new Promise(r => setTimeout(r, 100));
+                            }
+                            lineEl.textContent = `[OK] ${text}`;
+                            continue;
+                        } else if (cmd === "progress") {
+                            const duration = Number(args[0]) || 3000;
+                            const text = args.slice(1).join(" ");
+                            const lineEl = print("", color, bg, size, opts);
+                            const totalBlocks = 20;
+                            const startTime = Date.now();
+                            while (true) {
+                                const elapsed = Date.now() - startTime;
+                                const progress = Math.min(1, elapsed / duration);
+                                const filled = Math.floor(progress * totalBlocks);
+                                const bar = "=".repeat(filled) + (filled < totalBlocks ? ">" : "") + " ".repeat(Math.max(0, totalBlocks - filled - 1));
+                                const percent = Math.floor(progress * 100);
+                                lineEl.textContent = `[${bar}] ${percent}% ${text}`;
+                                scrollToBottom();
+                                if (progress >= 1) break;
+                                await new Promise(r => setTimeout(r, 80));
+                            }
+                            continue;
+                        } else if (cmd === "anim") {
+                            const rawFrames = args[0] ? args[0].split(",") : ["-", "\\", "|", "/"];
+                            const duration = Number(args[1]) || 2000;
+                            const text = args.slice(2).join(" ");
+                            const lineEl = print("", color, bg, size, opts);
+                            const startTime = Date.now();
+                            let idx = 0;
+                            while (Date.now() - startTime < duration) {
+                                lineEl.textContent = `${rawFrames[idx % rawFrames.length]} ${text}`;
+                                idx++;
+                                scrollToBottom();
+                                await new Promise(r => setTimeout(r, 150));
+                            }
+                            continue;
                         }
                     }
 
                     // 上記に該当しなければ JS 式として評価
                     try {
-                        // トークン分割
                         const tokens = line.split(/\s+/);
                         let jsTokens = [];
                         let color = null, bg = null, size = null;
@@ -695,20 +831,16 @@ export default function TerminalApp(content) {
                         });
 
                         const jsLine = jsTokens.join(" ");
-
-                        // context 内で eval
                         const keys = Object.keys(context);
                         const values = Object.values(context);
                         const func = new Function(...keys, `return ${jsLine}`);
                         const result = func(...values);
 
-                        // 代入式なら context に保存
                         if (jsLine.includes("=")) {
                             const [key, expr] = jsLine.split("=").map(s => s.trim());
                             context[key] = result;
                         }
 
-                        // 結果を print
                         print(result !== undefined ? result.toString() : "", color, bg, size);
 
                     } catch (err) {
@@ -756,6 +888,81 @@ export default function TerminalApp(content) {
                 createdFiles.splice(idx, 1);
                 print(`Deleted file: ${fullPath}`);
                 window.dispatchEvent(new Event("fs-updated"));
+            }
+        },
+
+        game: {
+            desc: "Start a retro ASCII dodge game",
+            async run() {
+                print("=== ASCII DODGER ===", "#0f0", null, "16px", { bold: true });
+                print("Controls: Left/Right Arrow Keys (or A/D) to Move. Press Q to Quit.", "#888");
+
+                const width = 20;
+                const height = 10;
+                let playerX = Math.floor(width / 2);
+                let obstacles = [];
+                let score = 0;
+                let gameOver = false;
+
+                const displayLine = print("", "#0f0", "black", "14px", { bold: true });
+                input.blur();
+
+                const keyHandler = (e) => {
+                    const k = e.key.toLowerCase();
+                    if (e.key === "ArrowLeft" || k === "a") { if (playerX > 0) playerX--; e.preventDefault(); }
+                    if (e.key === "ArrowRight" || k === "d") { if (playerX < width - 1) playerX++; e.preventDefault(); }
+                    if (k === "q" || e.key === "Escape") { gameOver = true; }
+                };
+
+                window.addEventListener("keydown", keyHandler);
+
+                while (!gameOver) {
+                    // 障害物の生成と落下
+                    if (Math.random() < 0.4) {
+                        obstacles.push({ x: Math.floor(Math.random() * width), y: 0 });
+                    }
+
+                    // 位置更新
+                    for (let obs of obstacles) {
+                        obs.y++;
+                    }
+
+                    // 衝突判定
+                    if (obstacles.some(o => o.x === playerX && o.y === height - 1)) {
+                        gameOver = true;
+                        break;
+                    }
+
+                    // 画面外の障害物を削除
+                    obstacles = obstacles.filter(o => o.y < height);
+                    score++;
+
+                    // 画面描画（文字列を作成して一括で書き換え）
+                    let screenText = `SCORE: ${score}\n+${"-".repeat(width)}+\n`;
+                    for (let y = 0; y < height; y++) {
+                        screenText += "|";
+                        for (let x = 0; x < width; x++) {
+                            if (y === height - 1 && x === playerX) {
+                                screenText += "A"; // 自機
+                            } else if (obstacles.some(o => o.x === x && o.y === y)) {
+                                screenText += "*"; // 障害物
+                            } else {
+                                screenText += " ";
+                            }
+                        }
+                        screenText += "|\n";
+                    }
+                    screenText += `+${"-".repeat(width)}+`;
+
+                    displayLine.textContent = screenText;
+                    scrollToBottom();
+
+                    await new Promise(r => setTimeout(r, 100)); // 描画速度
+                }
+
+                window.removeEventListener("keydown", keyHandler);
+                print(`\nGAME OVER! Final Score: ${score}`, "#f00", null, "16px", { bold: true });
+                input.focus();
             }
         }
 
