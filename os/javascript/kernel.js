@@ -325,27 +325,27 @@ async function launchApp(item, path, options) {
     if (item.code) {
         try {
             const cleanCode = item.code.replace(/import\s+[\s\S]*?from\s+['"][^'"]+['"];?/g, '');
+            // ★ 修正: export default を普通の関数定義に置換する
             const executableCode = cleanCode
-                .replace(/export\s+default\s+async\s+function\s*(\w*)/, 'return async function $1')
-                .replace(/export\s+default\s+function\s*(\w*)/, 'return function $1');
+                .replace(/export\s+default\s+async\s+function\s*(\w*)/, 'async function $1')
+                .replace(/export\s+default\s+function\s*(\w*)/, 'function $1');
 
             const { FS, forceSave } = await import("./fs.js");
             const { resolveFS } = await import("./fs-utils.js");
             const { updateWindowTitle, showModalWindow } = await import("./window.js");
             const { getFileContent } = await import("./fs-db.js");
 
-            // 1. 再帰的・包含的な保護プロキシ（FSの全保護領域およびネスト構造に対応）
+            // 1. システム領域（System, Kernel, Config）の勝手な書き換え・削除のみをブロックする安全なFS
             const RESTRICTED_DIRS = new Set(["System", "Kernel", "Config"]);
 
             function createSecureFS(targetFS) {
                 const fsHandler = {
                     get(target, prop) {
                         if (typeof prop === "string" && RESTRICTED_DIRS.has(prop)) {
-                            // 保護対象ディレクトリはイミュータブルなコピー（読み取り専用）を返す
+                            // 保護対象ディレクトリは読み取り専用のコピーを返す
                             return Object.freeze(JSON.parse(JSON.stringify(target[prop] || {})));
                         }
                         const res = Reflect.get(target, prop);
-                        // ネストされたオブジェクトにも再帰的に保護を適用
                         if (res && typeof res === "object") {
                             return new Proxy(res, fsHandler);
                         }
@@ -353,13 +353,13 @@ async function launchApp(item, path, options) {
                     },
                     set(target, prop, value) {
                         if (typeof prop === "string" && RESTRICTED_DIRS.has(prop)) {
-                            throw new Error(`[Security] Permission denied: Restricted directory '${prop}'`);
+                            throw new Error(`[Security] 許可されていない操作です: システム領域 '${prop}' を書き換えることはできません。`);
                         }
                         return Reflect.set(target, prop, value);
                     },
                     deleteProperty(target, prop) {
                         if (typeof prop === "string" && RESTRICTED_DIRS.has(prop)) {
-                            throw new Error(`[Security] Permission denied: Cannot delete restricted directory '${prop}'`);
+                            throw new Error(`[Security] 許可されていない操作です: システム領域 '${prop}' を削除することはできません。`);
                         }
                         return Reflect.deleteProperty(target, prop);
                     }
@@ -369,67 +369,23 @@ async function launchApp(item, path, options) {
 
             const safeFS = createSecureFS(FS);
 
-            // 2. カーネルAPIの安全なラッパー
-            const safeUpdateWindowTitle = (title) => {
+            const safeUpdateWindowTitle = (win, title, dirty) => {
                 const sanitizedTitle = String(title || "")
                     .replace(/</g, "&lt;")
-                    .replace(/>/g, "&gt;")
-                    .replace(/"/g, "&quot;")
-                    .replace(/'/g, "&#39;");
-                updateWindowTitle(sanitizedTitle);
+                    .replace(/>/g, "&gt;");
+                updateWindowTitle(win, sanitizedTitle, dirty);
             };
 
-            // 3. アプリ専用コンテキスト
-            const appEnv = Object.freeze({
-                FS: safeFS,
-                forceSave,
-                resolveFS,
-                updateWindowTitle: safeUpdateWindowTitle,
-                showModalWindow,
-                getFileContent
-            });
-
-            // 4. Proxy + with ステートメントによる厳格なスコープ隔離（Sandbox）
-            const BLOCKED_GLOBALS = new Set([
-                "window", "document", "globalThis", "self", "top", "parent",
-                "localStorage", "sessionStorage", "indexedDB", "fetch",
-                "XMLHttpRequest", "WebSocket", "Worker", "Notification"
-            ]);
-
-            const sandboxHandler = {
-                has(target, key) {
-                    // 全ての変数参照をトラップしてサンドボックス内に引き込む
-                    return true;
-                },
-                get(target, key) {
-                    if (key === Symbol.unscopables) return undefined;
-                    // 提供明記された環境変数を優先返却
-                    if (key in target) return target[key];
-                    // 遮断対象のグローバル変数は undefined を返す
-                    if (BLOCKED_GLOBALS.has(key)) return undefined;
-                    // Functionコンストラクタ等のプロトタイプ経由の脱出を妨害
-                    if (key === "constructor") return undefined;
-
-                    return undefined;
-                }
-            };
-
-            const sandboxProxy = new Proxy(appEnv, sandboxHandler);
-
-            // with文を使用してスコープを完全に固定し、即時実行関数でラップする
+            // 2. 引数を安全に渡しつつ、関数本体を正しく return するように修正
+            // 2. 引数を安全に渡しつつ、関数本体を正しく return するように修正
             const runScript = new Function(
-                'sandbox',
-                `
-    "use strict";
-    with (sandbox) {
-        return (function() {
-            ${executableCode}
-        })();
-    }
-    `
+                'FS', 'forceSave', 'resolveFS', 'updateWindowTitle', 'showModalWindow', 'getFileContent',
+                `return (${executableCode});`
             );
 
-            appModule = { default: runScript(sandboxProxy) };
+            appModule = {
+                default: runScript(safeFS, forceSave, resolveFS, safeUpdateWindowTitle, showModalWindow, getFileContent)
+            };
         } catch (e) {
             console.error("Dynamic code evaluation failed:", e);
             throw new Error(`動的コードの解析に失敗しました: ${e.message}`);
@@ -452,7 +408,6 @@ async function launchApp(item, path, options) {
         if (typeof win._applyRealIcon === "function") win._applyRealIcon();
     } catch (e) {
         console.error("app runtime error:", e);
-        // ★ エラー時に中途半端なウィンドウが残らないよう破棄する
         if (typeof destroyWindow === "function" && win) {
             destroyWindow(win);
         }
