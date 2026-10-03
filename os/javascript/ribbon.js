@@ -1,7 +1,4 @@
 // ribbon.js
-import { bringToFront } from "./window.js";
-import { hideContextMenu } from "./context-menu.js";
-
 export function setupRibbon(win, getCurrentPath, renderCallback, menus) {
     if (!win?._ribbon) return;
     const ribbon = win._ribbon;
@@ -79,65 +76,8 @@ function addRibbonMenu(ribbon, title, items) {
         });
     };
 
-    // ------------------------
-    // mousedown で開く（押した瞬間に開く）
-    // ------------------------
-    menu.addEventListener("mousedown", e => {
-        e.stopPropagation();
-        const startMenu = document.getElementById("start-menu");
-        if (startMenu) startMenu.style.display = "none";
-        const win = ribbon.closest(".window");
-        if (win) bringToFront(win);
-        if (win && win._treePanel) {
-            win._treePanel.style.display = "none";
-        }
-
-        // ★追加: リボンを開く瞬間に右クリックメニューを閉じる
-        hideContextMenu();
-
-        // 全ウィンドウのドロップダウンを閉じ、selected も解除
-        closeAllRibbonDropdownsAndSelectedGlobal();
-
-        // ★追加: 開く直前に disabled 状態を判定して反映
-        refreshItemsStatus();
-
-        // 今回のメニューだけ開く
-        dropdown.style.display = "block";
-
-        // 今回の ribbon 内だけ selected を付与
-        ribbon.querySelectorAll(".ribbon-menu").forEach(m => m.classList.remove("selected"));
-        menu.classList.add("selected");
-    });
-
-    // ------------------------
-    // ホバーで隣のリボンに移動しても切り替える
-    // ------------------------
-    menu.addEventListener("mouseenter", () => {
-        // ★配列化を避けて軽量化
-        const dropdowns = ribbon.querySelectorAll(".ribbon-dropdown");
-        let anyOpen = false;
-        for (let i = 0; i < dropdowns.length; i++) {
-            if (dropdowns[i].style.display === "block") {
-                anyOpen = true;
-                break;
-            }
-        }
-
-        if (anyOpen) {
-            // ★追加: リボンを切り替える瞬間に右クリックメニューを閉じる
-            hideContextMenu();
-
-            // 全ウィンドウのドロップダウンを閉じ、selected も解除
-            closeAllRibbonDropdownsAndSelectedGlobal();
-
-            // ★追加: 切り替わる直前に disabled 状態を判定して反映
-            refreshItemsStatus();
-
-            // 現在の ribbon 内だけ開く
-            dropdown.style.display = "block";
-            menu.classList.add("selected");
-        }
-    });
+    // ui.js のグローバルイベント側から開く直前に呼び出せるよう、要素に紐付け
+    menu._refreshStatus = refreshItemsStatus;
 }
 
 // ------------------------
@@ -150,8 +90,7 @@ function addRibbonItem(dropdown, item) {
     const isDisabled = typeof item.disabled === "function" ? item.disabled() : item.disabled;
     if (isDisabled) div.classList.add("pointer_none");
 
-    div.addEventListener("mousedown", e => e.stopPropagation());
-
+    // クリック時の処理（アクション実行とメニュー閉じる処理のみここで担保）
     div.addEventListener("click", e => {
         e.stopPropagation();
         if (!div.classList.contains("pointer_none")) {
@@ -166,32 +105,5 @@ function addRibbonItem(dropdown, item) {
     });
 
     dropdown.appendChild(div);
-    return div; // 要素を返して refreshItemsStatus で使えるようにする
+    return div;
 }
-
-// ------------------------
-// 全ウィンドウのドロップダウンと selected を閉じる
-// ------------------------
-function closeAllRibbonDropdownsAndSelectedGlobal() {
-    document.querySelectorAll(".ribbon-dropdown").forEach(dd => dd.style.display = "none");
-    document.querySelectorAll(".ribbon-menu").forEach(m => m.classList.remove("selected"));
-    document.querySelectorAll(".tree-panel").forEach(tp => tp.style.display = "none");
-}
-
-// ------------------------
-// 外側クリックで全て閉じる（グローバル）
-// ------------------------
-document.addEventListener("mousedown", e => {
-    const isInsideRibbon = e.target.closest(".ribbon-menu")
-        || e.target.closest(".ribbon-dropdown")
-        || e.target.closest(".ribbon-item");
-    const isInsideTree = e.target.closest(".tree-container") || e.target.closest(".tree-panel");
-    const isInsideContextMenu = e.target.closest(".context-menu"); // ★追加
-
-    // ★追加: ツリー内またはコンテキストメニュー内をクリックした場合はリボン側の処理を無視する
-    if (isInsideTree || isInsideContextMenu) return;
-
-    if (!isInsideRibbon) {
-        closeAllRibbonDropdownsAndSelectedGlobal();
-    }
-});
