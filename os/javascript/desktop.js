@@ -121,20 +121,103 @@ export function buildDesktop() {
             item.classList.remove("drag-target");
         });
 
-        item.addEventListener("drop", (e) => {
+        item.addEventListener("drop", async (e) => {
             e.preventDefault();
             item.classList.remove("drag-target");
 
             const dataStr = e.dataTransfer.getData("text/plain");
             try {
-                const data = JSON.parse(dataStr);
-                if (data && data.type === "desktop-icons") {
-                    // ★ 追加: 自動整列ONの場合のみ順序の入れ替えを行う
-                    // OFFの時はイベントの伝播を止めず、デスクトップ背景のDropイベント（座標移動）に処理を任せる
-                    if (autoArrange) {
-                        e.stopPropagation();
-                        reorderDesktopIcons(data.names, name);
+                const data = dataStr ? JSON.parse(dataStr) : null;
+                if (!data) return;
+
+                // ターゲットが「リンク（ショートカット）」の場合は実体を解決する
+                let targetType = node.type;
+                let targetNode = node;
+                if (targetType === "link") {
+                    const resolved = resolveFS(node.target);
+                    if (resolved && resolved.type === "folder") {
+                        targetType = "folder";
+                        targetNode = resolved;
                     }
+                }
+
+                // ドロップ先がフォルダ（実体またはフォルダへのリンク）の場合
+                if (targetType === "folder") {
+                    e.stopPropagation();
+                    const desktopFS = FS.Desktop;
+
+                    // エクスプローラーからドラッグされた場合
+                    if (data.type === "explorer-icons") {
+                        const sourcePath = data.sourcePath || "Desktop";
+                        const sourceFolder = resolveFS(sourcePath);
+                        if (!sourceFolder) return;
+
+                        for (const draggedInfo of data.draggedItems) {
+                            const itemName = draggedInfo.name;
+                            if (sourcePath === "Desktop" && itemName === name) continue;
+                            if (!sourceFolder[itemName]) continue;
+
+                            const uniqueTargetName = getUniqueName(targetNode, itemName);
+                            const sourceItemNode = sourceFolder[itemName];
+                            const sourceFullPath = `${sourcePath}/${itemName}`;
+
+                            let moved = false;
+                            try {
+                                delete sourceFolder[itemName];
+                                moved = true;
+                            } catch (err) {
+                                moved = false;
+                            }
+
+                            if (moved) {
+                                targetNode[uniqueTargetName] = sourceItemNode;
+                            } else {
+                                targetNode[uniqueTargetName] = {
+                                    type: "link",
+                                    target: sourceFullPath,
+                                    lastModified: Date.now()
+                                };
+                            }
+                        }
+                    }
+                    // デスクトップ内のアイコンからドラッグされた場合
+                    else if (data.type === "desktop-icons") {
+                        for (const itemName of data.names) {
+                            if (itemName === name || !desktopFS[itemName]) continue;
+
+                            const uniqueTargetName = getUniqueName(targetNode, itemName);
+                            const sourceItemNode = desktopFS[itemName];
+                            const sourceFullPath = `Desktop/${itemName}`;
+
+                            let moved = false;
+                            try {
+                                moved = delete desktopFS[itemName];
+                            } catch (e) {
+                                moved = false;
+                            }
+
+                            if (moved) {
+                                targetNode[uniqueTargetName] = sourceItemNode;
+                            } else {
+                                targetNode[uniqueTargetName] = {
+                                    type: "link",
+                                    target: sourceFullPath,
+                                    lastModified: Date.now()
+                                };
+                            }
+                        }
+                    }
+
+                    await forceSave();
+                    window.dispatchEvent(new Event("fs-updated"));
+                    buildDesktop();
+                    return;
+                }
+
+                // 通常の並び替え処理（自動整列ONの場合、デスクトップ内アイコン同士のみ）
+                if (data.type === "desktop-icons" && autoArrange) {
+                    e.stopPropagation();
+                    reorderDesktopIcons(data.names, name);
                 }
             } catch (err) { }
         });
@@ -147,17 +230,35 @@ export function buildDesktop() {
         // 右クリック
         attachContextMenu(item, () => [
             {
+                label: "開く",
+                action: () => openFSItem(name, node, "Desktop")
+            },
+            {
+                label: "ショートカットの作成",
+                action: async () => {
+                    const baseName = `${name} のショートカット`;
+                    const uniqueName = getUniqueName(FS.Desktop, baseName);
+                    FS.Desktop[uniqueName] = {
+                        type: "link",
+                        target: fullPath,
+                        lastModified: Date.now()
+                    };
+                    await forceSave();
+                    window.dispatchEvent(new Event("fs-updated"));
+                }
+            },
+            {
                 label: "削除",
                 action: () => deleteFSItem("Desktop", name)
             },
             {
                 label: "プログラムから開く",
-                disabled: () => node.type !== "file",
+                disabled: node.type !== "file",
                 action: () => {
                     if (node.type === "file") {
                         explorerOpenWithDialog(fullPath, node);
                     } else {
-                        alertWindow("システムエラー防止のため開けません", { width: 350, height: 110 });
+                        alertWindow("ファイル以外は開けません", { width: 350, height: 110 });
                     }
                 }
             },
@@ -281,14 +382,15 @@ export function buildDesktop() {
                     const itemsToDelete = Array.from(globalSelected.items).map(item => item.dataset.name);
                     globalSelected.items.clear();
 
-                    // 順番に確実に削除を処理
                     for (const name of itemsToDelete) {
-                        await deleteFSItem("Desktop", name, false);
-                        // ★ デフォルト項目の場合は削除されたことを記録
-                        await markDefaultDeleted(`Desktop/${name}`);
+                        // 削除関数の返り値（成功: true, 失敗/保護: false）を受け取る
+                        const success = await deleteFSItem("Desktop", name, false);
+                        if (success) {
+                            await markDefaultDeleted(`Desktop/${name}`);
+                        }
                     }
 
-                    await forceSave(); // ★ 確実に保存を待つ
+                    await forceSave();
                     window.dispatchEvent(new Event("fs-updated"));
                 }
             }
@@ -495,10 +597,55 @@ export function buildDesktop() {
             e.stopPropagation();
             desktop.classList.remove("drag-over");
 
-            // ★ 追加: 内部アイコンのドラッグ移動（自動整列OFF時）
+            // ⭐ 追加: エクスプローラーウィンドウからデスクトップへの移動処理
             const dataStr = e.dataTransfer.getData("text/plain");
             try {
-                const data = JSON.parse(dataStr);
+                const data = dataStr ? JSON.parse(dataStr) : null;
+                if (data && data.type === "explorer-icons") {
+                    const sourcePath = data.sourcePath || "Desktop";
+                    if (sourcePath !== "Desktop") {
+                        const sourceFolder = resolveFS(sourcePath);
+                        const targetFolderNode = FS.Desktop;
+                        if (sourceFolder && targetFolderNode) {
+                            for (const draggedInfo of data.draggedItems) {
+                                const itemName = draggedInfo.name;
+                                if (!sourceFolder[itemName]) continue;
+
+                                const uniqueTargetName = getUniqueName(targetFolderNode, itemName);
+                                const sourceItemNode = sourceFolder[itemName];
+                                const sourceFullPath = `${sourcePath}/${itemName}`;
+
+                                let moved = false;
+                                try {
+                                    delete sourceFolder[itemName];
+                                    moved = true;
+                                } catch (err) {
+                                    moved = false;
+                                }
+
+                                if (moved) {
+                                    targetFolderNode[uniqueTargetName] = sourceItemNode;
+                                } else {
+                                    targetFolderNode[uniqueTargetName] = {
+                                        type: "link",
+                                        target: sourceFullPath,
+                                        lastModified: Date.now()
+                                    };
+                                }
+                            }
+
+                            await forceSave();
+                            window.dispatchEvent(new Event("fs-updated"));
+                            buildDesktop();
+                            return;
+                        }
+                    }
+                }
+            } catch (err) { }
+
+            // ★ 追加: 内部アイコンのドラッグ移動（自動整列OFF時）
+            try {
+                const data = dataStr ? JSON.parse(dataStr) : null;
                 if (data && data.type === "desktop-icons" && !autoArrange) {
                     // ★ 修正: 個別のオフセット情報がある場合はそれを使用し、フォーメーションを維持する
                     if (data.draggedItems) {
@@ -1126,12 +1273,14 @@ function setupDesktopKeyboardNavigation() {
                     globalSelected.items.clear();
 
                     for (const name of itemsToDelete) {
-                        await deleteFSItem("Desktop", name, false);
-                        // ★ デフォルト項目の場合は削除されたことを記録
-                        await markDefaultDeleted(`Desktop/${name}`);
+                        // 削除が成功した場合のみマーク処理を実行
+                        const success = await deleteFSItem("Desktop", name, false);
+                        if (success) {
+                            await markDefaultDeleted(`Desktop/${name}`);
+                        }
                     }
 
-                    await forceSave(); // ★ 確実に保存を待つ
+                    await forceSave();
                     window.dispatchEvent(new Event("fs-updated"));
                 }
                 break;

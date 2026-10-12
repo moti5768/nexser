@@ -311,11 +311,18 @@ export function initTaskbar() {
             padding: "3px",
             whiteSpace: "nowrap",
             color: "black",
-            pointerEvents: "none",
             userSelect: "none",
+            cursor: "pointer"
         });
         trayArea.appendChild(clockLabel);
     }
+
+    clockLabel.addEventListener("dblclick", () => {
+        launch("Programs/Applications/Clock.app", {
+            path: "Programs/Applications/Clock.app",
+            uniqueKey: "Programs/Applications/Clock.app"
+        });
+    });
 
     function updateClockLabel(date) {
         let hours = date.getHours();

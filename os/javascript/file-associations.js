@@ -111,6 +111,15 @@ export function getIcon(name, node) {
 
     // 1. 特殊・基本フォルダ
     if (lowerName === "trash") return "🗑️";
+
+    // ★追加：リンク（ショートカット）であっても、参照先が Trash ならゴミ箱アイコンを返す
+    if (node && node.type === "link" && node.target) {
+        const targetLower = node.target.toLowerCase();
+        if (targetLower === "trash" || targetLower.startsWith("trash/")) {
+            return "🔗";
+        }
+    }
+
     if (node.type === "folder") return "📁";
     if (node.type === "link") return "🔗";
 

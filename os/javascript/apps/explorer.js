@@ -681,6 +681,54 @@ export default async function Explorer(root, options = {}) {
                 e.stopPropagation();
                 listContainer.classList.remove("drag-over");
 
+                // ⭐ 追加: 別ウィンドウ（別パス）からのエクスプローラー間アイテム移動処理
+                try {
+                    const dataStr = e.dataTransfer.getData("text/plain");
+                    const data = dataStr ? JSON.parse(dataStr) : null;
+                    if (data && data.type === "explorer-icons") {
+                        const sourcePath = data.sourcePath || currentPath;
+                        if (sourcePath !== currentPath) {
+                            const sourceFolder = resolveFS(sourcePath);
+                            const targetFolderNode = resolveFS(currentPath);
+                            if (sourceFolder && targetFolderNode) {
+                                for (const draggedInfo of data.draggedItems) {
+                                    const itemName = draggedInfo.name;
+                                    if (!sourceFolder[itemName]) continue;
+
+                                    const uniqueTargetName = getUniqueName(targetFolderNode, itemName);
+                                    const sourceItemNode = sourceFolder[itemName];
+                                    const sourceFullPath = sourcePath ? `${sourcePath}/${itemName}` : itemName;
+
+                                    // 削除処理（保護されている場合は strict モードで例外が発生するため try-catch で捕捉）
+                                    let moved = false;
+                                    try {
+                                        moved = delete sourceFolder[itemName];
+                                    } catch (e) {
+                                        moved = false;
+                                    }
+
+                                    if (moved) {
+                                        // 保護されていない通常ファイル/フォルダ：実体を移動
+                                        targetFolderNode[uniqueTargetName] = sourceItemNode;
+                                    } else {
+                                        // システム保護されているファイル/フォルダ：Windows同様にショートカットを作成
+                                        targetFolderNode[uniqueTargetName] = {
+                                            type: "link",
+                                            target: sourceFullPath,
+                                            lastModified: Date.now()
+                                        };
+                                    }
+                                }
+
+                                await forceSave();
+                                window.dispatchEvent(new Event("fs-updated"));
+                                render(currentPath);
+                                return;
+                            }
+                        }
+                    }
+                } catch (err) { }
+
                 // ★追加: 自動整列オフ時のアイコン自由配置（移動）処理
                 try {
                     const dataStr = e.dataTransfer.getData("text/plain");
@@ -702,6 +750,48 @@ export default async function Explorer(root, options = {}) {
                         const safePath = currentPath.replace(/\//g, "_") || "root";
                         await saveSetting(`explorerIconPositions_${safePath}`, iconPositions);
                         return; // ここで処理を終了する
+                    }
+                } catch (err) { }
+
+                // ⭐ 追加: デスクトップからエクスプローラーへのアイテム移動処理
+                try {
+                    const dataStr = e.dataTransfer.getData("text/plain");
+                    const data = dataStr ? JSON.parse(dataStr) : null;
+                    if (data && data.type === "desktop-icons") {
+                        const desktopFS = resolveFS("Desktop");
+                        const targetFolderNode = resolveFS(currentPath);
+                        if (desktopFS && targetFolderNode) {
+                            for (const itemName of data.names) {
+                                if (!desktopFS[itemName]) continue;
+
+                                const uniqueTargetName = getUniqueName(targetFolderNode, itemName);
+                                const sourceItemNode = desktopFS[itemName];
+                                const sourceFullPath = `Desktop/${itemName}`;
+
+                                // try-catch で保護
+                                let moved = false;
+                                try {
+                                    moved = delete desktopFS[itemName];
+                                } catch (e) {
+                                    moved = false;
+                                }
+
+                                if (moved) {
+                                    targetFolderNode[uniqueTargetName] = sourceItemNode;
+                                } else {
+                                    targetFolderNode[uniqueTargetName] = {
+                                        type: "link",
+                                        target: sourceFullPath,
+                                        lastModified: Date.now()
+                                    };
+                                }
+                            }
+
+                            await forceSave();
+                            window.dispatchEvent(new Event("fs-updated"));
+                            render(currentPath);
+                            return;
+                        }
                     }
                 } catch (err) { }
 
@@ -1075,31 +1165,6 @@ export default async function Explorer(root, options = {}) {
 
             content.appendChild(container);
 
-            listContainer.addEventListener("click", e => {
-                if (wasDragging) return;
-                // クリック対象が explorer-item か、その内部かを判定
-                const item = e.target.closest(".explorer-item");
-                if (!item) {
-                    // クリックがリスト外なら選択解除
-                    if (globalSelected.items.size > 0) {
-                        globalSelected.items.forEach(i => i.classList.remove("selected"));
-                        globalSelected.items.clear();
-                        globalSelected.lastSelected = null;
-                        globalSelected.window = null;
-
-                        // ステータスバー更新
-                        const statusBar = win?._statusBar;
-                        if (statusBar) {
-                            const folder = resolveFS(currentPath);
-                            // 空白をクリックしたら選択解除
-                            updateStatusBarSummary(statusBar, folder);
-                        }
-
-                        setupRibbon(win, () => currentPath, render, getExplorerMenus());
-                    }
-                }
-            });
-
             listContainer.addEventListener("mousedown", (e) => {
                 if (e.button !== 0) return; // 左クリックのみ
 
@@ -1190,6 +1255,48 @@ export default async function Explorer(root, options = {}) {
             document.addEventListener("mouseup", () => {
                 cancelSelection();
             });
+
+            // ⭐ 【追加・改善】各アイテムへの個別登録を廃止し、親コンテナでイベントを一括管理（イベント委譲）
+            if (!listContainer._delegationBound) {
+                listContainer._delegationBound = true;
+
+                listContainer.addEventListener("click", async e => {
+                    if (wasDragging) return;
+                    const item = e.target.closest(".explorer-item");
+
+                    if (!item) {
+                        if (globalSelected.items.size > 0) {
+                            globalSelected.items.forEach(i => i.classList.remove("selected"));
+                            globalSelected.items.clear();
+                            globalSelected.lastSelected = null;
+                            globalSelected.window = null;
+                            setupRibbon(win, () => currentPath, render, getExplorerMenus());
+
+                            const statusBar = win?._statusBar;
+                            if (statusBar) {
+                                updateStatusBarSummary(statusBar, resolveFS(currentPath));
+                            }
+                        }
+                        return;
+                    }
+
+                    e.stopPropagation();
+                    await selectItemUI(item, e);
+                    listContainer.focus();
+                });
+
+                listContainer.addEventListener("dblclick", (e) => {
+                    const item = e.target.closest(".explorer-item");
+                    if (!item) return;
+
+                    const name = item.dataset.name;
+                    const node = resolveFS(currentPath)?.[name];
+                    if (!node) return;
+
+                    openFSItem(name, node, currentPath);
+                });
+            }
+
         }
 
         if (treeContainer) createTreeDropdown(treeContainer, currentPath);
@@ -1237,7 +1344,16 @@ export default async function Explorer(root, options = {}) {
             .map(async name => {
                 const itemData = folder[name];
                 const childPath = currentPath ? `${currentPath}/${name}` : name;
-                const size = await calcNodeSize(itemData, childPath);
+
+                let size = 0;
+                if (viewMode === "details") {
+                    // 詳細表示モードの時のみ正確なサイズ（再帰計算含む）を取得
+                    size = await calcNodeSize(itemData, childPath);
+                } else if (itemData.type === "file") {
+                    // 詳細表示以外でファイルの場合は、Workerを通さず即座に取得
+                    size = typeof itemData.size === "number" ? itemData.size : (itemData.content?.length || 0);
+                }
+
                 return { name, itemData, size };
             }));
 
@@ -1500,6 +1616,7 @@ export default async function Explorer(root, options = {}) {
 
                 e.dataTransfer.setData("text/plain", JSON.stringify({
                     type: "explorer-icons",
+                    sourcePath: currentPath,
                     draggedItems: draggedItemsInfo
                 }));
                 e.dataTransfer.effectAllowed = "move";
@@ -1509,18 +1626,126 @@ export default async function Explorer(root, options = {}) {
                 setTimeout(() => { wasDragging = false; }, 50);
             });
 
-            item.addEventListener("click", async e => {
-                if (wasDragging) return;
-                e.stopPropagation();
-                await selectItemUI(item, e);
-                listContainer.focus();
-            });
+            // ⭐ 追加: 項目が「フォルダ」または「フォルダを指すショートカット(link)」の場合、ドロップを受け付けて移動する
+            let effectiveTargetType = itemData.type;
+            let effectiveTargetNode = itemData;
+            let effectiveChildPath = childPath;
 
-            item.addEventListener("dblclick", () => {
-                const node = resolveFS(currentPath)?.[name];
-                if (!node) return;
-                openFSItem(name, node, currentPath);
-            });
+            if (itemData.type === "link") {
+                const resolved = resolveFS(itemData.target);
+                if (resolved) {
+                    effectiveTargetType = resolved.type;
+                    effectiveTargetNode = resolved;
+                    effectiveChildPath = itemData.target;
+                }
+            }
+
+            if (effectiveTargetType === "folder") {
+                item.addEventListener("dragover", (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.dataTransfer.dropEffect = "move";
+                    item.classList.add("drag-target");
+                });
+
+                item.addEventListener("dragleave", (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    item.classList.remove("drag-target");
+                });
+
+                item.addEventListener("drop", async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    item.classList.remove("drag-target");
+
+                    const dataStr = e.dataTransfer.getData("text/plain");
+                    try {
+                        const data = JSON.parse(dataStr);
+                        if (data && data.type === "explorer-icons") {
+                            const sourcePath = data.sourcePath || currentPath;
+                            const sourceFolder = resolveFS(sourcePath);
+                            const targetFolderNode = resolveFS(effectiveChildPath);
+                            if (!sourceFolder || !targetFolderNode) return;
+
+                            for (const draggedInfo of data.draggedItems) {
+                                const itemName = draggedInfo.name;
+                                // 同じ場所かつ自分自身へのドロップはスキップ
+                                if (sourcePath === effectiveChildPath && itemName === name) continue;
+                                if (!sourceFolder[itemName]) continue;
+
+                                // 移動先での名前重複を避けるためユニーク名を取得
+                                const uniqueTargetName = getUniqueName(targetFolderNode, itemName);
+
+                                // データを移動先へコピーして元を削除（保護されている場合はショートカットにする）
+                                const sourceItemNode = sourceFolder[itemName];
+                                const sourceFullPath = sourcePath ? `${sourcePath}/${itemName}` : itemName;
+
+                                let moved = false;
+                                try {
+                                    moved = delete sourceFolder[itemName];
+                                } catch (e) {
+                                    moved = false;
+                                }
+
+                                if (moved) {
+                                    targetFolderNode[uniqueTargetName] = sourceItemNode;
+                                } else {
+                                    targetFolderNode[uniqueTargetName] = {
+                                        type: "link",
+                                        target: sourceFullPath,
+                                        lastModified: Date.now()
+                                    };
+                                }
+                            }
+
+                            await forceSave();
+                            window.dispatchEvent(new Event("fs-updated"));
+                            render(currentPath);
+                        }
+                        // ⭐ 追加: デスクトップからフォルダ上へのドロップ処理
+                        else if (data && data.type === "desktop-icons") {
+                            const desktopFS = resolveFS("Desktop");
+                            const targetFolderNode = resolveFS(effectiveChildPath);
+                            if (!desktopFS || !targetFolderNode) return;
+
+                            for (const itemName of data.names) {
+                                if (!desktopFS[itemName]) continue;
+
+                                const uniqueTargetName = getUniqueName(targetFolderNode, itemName);
+                                const sourceItemNode = desktopFS[itemName];
+                                const sourceFullPath = `Desktop/${itemName}`;
+
+                                let moved = false;
+                                try {
+                                    delete desktopFS[itemName];
+                                    moved = true;
+                                } catch (e) {
+                                    moved = false;
+                                }
+
+                                if (moved) {
+                                    targetFolderNode[uniqueTargetName] = sourceItemNode;
+                                } else {
+                                    targetFolderNode[uniqueTargetName] = {
+                                        type: "link",
+                                        target: sourceFullPath,
+                                        lastModified: Date.now()
+                                    };
+                                }
+                            }
+
+                            // ⭐ 追加: 保存と画面の更新処理
+                            await forceSave();
+                            window.dispatchEvent(new Event("fs-updated"));
+                            render(currentPath);
+                        }
+                    } catch (err) {
+                        console.error("Folder/Link drop move failed:", err);
+                    }
+                });
+            }
+
         }
         listContainer.appendChild(fragment);
 
@@ -1605,7 +1830,7 @@ export default async function Explorer(root, options = {}) {
                     disabled: typeof it.disabled === "function" ? it.disabled() : it.disabled
                 })) : [];
 
-                const openItems = baseItems.filter(it => it.label === "開く" || it.label === "元に戻す" || it.label === "プログラムから開く");
+                const openItems = baseItems.filter(it => it.label === "開く" || it.label === "元に戻す" || it.label === "プログラムから開く" || it.label === "ショートカットの作成");
                 const deleteItems = baseItems.filter(it => it.label === "選択アイテムを削除" || it.label === "完全に削除" || it.label === "ゴミ箱を空にする");
                 const propItems = baseItems.filter(it => it.label === "プロパティ");
 
@@ -1692,6 +1917,77 @@ export default async function Explorer(root, options = {}) {
                         const node = resolveFS(currentPath)?.[name];
                         if (node) openFSItem(name, node, currentPath);
                     });
+                }
+
+                if (e.key === "Delete") {
+                    e.preventDefault();
+                    if (globalSelected.items.size === 0) return;
+
+                    const itemNames = Array.from(globalSelected.items).map(item => item.dataset.name);
+                    globalSelected.items.clear();
+
+                    const isInsideTrash = isTrashPath(currentPath);
+
+                    if (isInsideTrash) {
+                        const msg = `
+                            <div style="padding:10px; font-size:13px;">
+                                選択した ${itemNames.length} 個のアイテムを完全に消去しますか？<br>
+                                <small style="color:#ff4444;">※この操作は取り消せません。</small>
+                            </div>`;
+
+                        const confirmWin = showModalWindow("完全削除の確認", msg, {
+                            width: 320,
+                            height: 200,
+                            taskbar: false,
+                            overlay: true,
+                            buttons: [
+                                {
+                                    label: "削除",
+                                    action: async () => {
+                                        const targetNode = resolveFS(currentPath);
+                                        let hasProtectedFiles = false;
+
+                                        if (targetNode) {
+                                            for (const name of itemNames) {
+                                                const item = targetNode[name];
+                                                if (item) {
+                                                    try {
+                                                        const originalPath = item.originalPath ? `${item.originalPath}/${name}` : name;
+                                                        delete targetNode[name];
+                                                        await markDefaultDeleted(originalPath);
+                                                    } catch (e) {
+                                                        hasProtectedFiles = true;
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        await forceSave();
+                                        if (confirmWin._modalOverlay) confirmWin._modalOverlay.remove();
+                                        confirmWin.remove();
+                                        window.dispatchEvent(new Event("fs-updated"));
+                                        render(currentPath);
+
+                                        if (hasProtectedFiles) {
+                                            alertWindow("一部のアイテムは保護されているため削除できませんでした。");
+                                        }
+                                    }
+                                },
+                                {
+                                    label: "キャンセル",
+                                    action: () => {
+                                        if (confirmWin._modalOverlay) confirmWin._modalOverlay.remove();
+                                        confirmWin.remove();
+                                    }
+                                }
+                            ]
+                        });
+                    } else {
+                        itemNames.forEach(name => {
+                            deleteFSItem(currentPath, name);
+                        });
+                        render(currentPath);
+                    }
                 }
             });
             listContainer._keydownBound = true;
@@ -1876,6 +2172,30 @@ export default async function Explorer(root, options = {}) {
                             }
                         },
                         disabled: () => globalSelected.items.size === 0
+                    },
+                    {
+                        label: "ショートカットの作成",
+                        action: async () => {
+                            if (globalSelected.items.size === 0) return;
+                            const folderNode = resolveFS(currentPath);
+                            if (!folderNode) return;
+
+                            globalSelected.items.forEach(selectedItem => {
+                                const name = selectedItem.dataset.name;
+                                const baseName = `${name} のショートカット`;
+                                const uniqueName = getUniqueName(folderNode, baseName);
+                                folderNode[uniqueName] = {
+                                    type: "link",
+                                    target: currentPath ? `${currentPath}/${name}` : name,
+                                    lastModified: Date.now()
+                                };
+                            });
+
+                            await forceSave();
+                            window.dispatchEvent(new Event("fs-updated"));
+                            render(currentPath);
+                        },
+                        disabled: () => globalSelected.items.size === 0 || isInsideTrash
                     },
                     {
                         label: "新規フォルダ",
@@ -2134,10 +2454,6 @@ export default async function Explorer(root, options = {}) {
     return {
         dispose: () => {
             window.removeEventListener("fs-updated", handleFsUpdated);
-            if (win._treePanel) {
-                win._treePanel.remove();
-                win._treePanel = null;
-            }
             if (win._treeOutsideClickHandler) {
                 document.removeEventListener("mousedown", win._treeOutsideClickHandler);
                 win._treeOutsideClickHandler = null;
