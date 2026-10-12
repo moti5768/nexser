@@ -662,6 +662,7 @@ export default function TerminalApp(content) {
                         // 矢印キー等のデフォルトスクロールを防ぐ
                         if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
                             e.preventDefault();
+                            e.stopPropagation();
                         }
                         activeKeys[e.key.toLowerCase()] = e.type === "keydown";
                     };
@@ -909,9 +910,9 @@ export default function TerminalApp(content) {
 
                 const keyHandler = (e) => {
                     const k = e.key.toLowerCase();
-                    if (e.key === "ArrowLeft" || k === "a") { if (playerX > 0) playerX--; e.preventDefault(); }
-                    if (e.key === "ArrowRight" || k === "d") { if (playerX < width - 1) playerX++; e.preventDefault(); }
-                    if (k === "q" || e.key === "Escape") { gameOver = true; }
+                    if (e.key === "ArrowLeft" || k === "a") { if (playerX > 0) playerX--; e.preventDefault(); e.stopPropagation(); }
+                    if (e.key === "ArrowRight" || k === "d") { if (playerX < width - 1) playerX++; e.preventDefault(); e.stopPropagation(); }
+                    if (k === "q" || e.key === "Escape") { gameOver = true; e.stopPropagation(); }
                 };
 
                 window.addEventListener("keydown", keyHandler);
@@ -996,7 +997,6 @@ export default function TerminalApp(content) {
 
         if (e.key === "Enter") {
             const cmd = input.value.trim();
-            if (!cmd) return;
             history.push(cmd);
             hIndex = history.length;
             print(cwd + "> " + cmd);
@@ -1005,8 +1005,14 @@ export default function TerminalApp(content) {
             scrollToBottom();
         }
 
-        if (e.key === "ArrowUp") { hIndex = Math.max(0, hIndex - 1); input.value = history[hIndex] || ""; }
-        if (e.key === "ArrowDown") { hIndex = Math.min(history.length, hIndex + 1); input.value = history[hIndex] || ""; }
+        if (e.key === "ArrowUp") {
+            hIndex = Math.max(0, hIndex - 1);
+            input.value = history[hIndex] || "";
+        }
+        if (e.key === "ArrowDown") {
+            hIndex = Math.min(history.length, hIndex + 1);
+            input.value = history[hIndex] || "";
+        }
 
         if (e.key === "Tab") {
             e.preventDefault();

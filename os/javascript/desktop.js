@@ -1011,7 +1011,7 @@ function setupDesktopKeyboardNavigation() {
 
         // 4. デスクトップまたはbody（どこも選んでいない状態）以外がアクティブなら無視
         // buildDesktop内で desktop.tabIndex = 0 を設定し、クリック時に .focus() させるのが前提
-        const isDesktopFocused = (active === desktop || active === document.body);
+        const isDesktopFocused = (active === desktop);
         if (!isDesktopFocused) return;
 
         // --- 移動ロジック開始 ---
