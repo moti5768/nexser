@@ -2195,9 +2195,15 @@ export default async function Explorer(root, options = {}) {
                                 const name = selectedItem.dataset.name;
                                 const baseName = `${name} のショートカット`;
                                 const uniqueName = getUniqueName(folderNode, baseName);
+
+                                const fullTargetPath = currentPath ? `${currentPath}/${name}` : name;
+                                const itemNode = resolveFS(currentPath)?.[name];
+                                // ★ 改善: 選択アイテムがリンクならその target を採用
+                                const realTargetPath = itemNode && itemNode.type === "link" ? itemNode.target : fullTargetPath;
+
                                 folderNode[uniqueName] = {
                                     type: "link",
-                                    target: currentPath ? `${currentPath}/${name}` : name,
+                                    target: realTargetPath,
                                     lastModified: Date.now()
                                 };
                             });

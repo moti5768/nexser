@@ -238,9 +238,14 @@ export function buildDesktop() {
                 action: async () => {
                     const baseName = `${name} のショートカット`;
                     const uniqueName = getUniqueName(FS.Desktop, baseName);
+
+                    // ★ 改善: すでにリンクの場合は、その実体 target を引き継ぐ
+                    const absoluteTargetPath = fullPath.startsWith("Desktop/") ? fullPath : `Desktop/${name}`;
+                    const realTargetPath = node.type === "link" ? node.target : absoluteTargetPath;
+
                     FS.Desktop[uniqueName] = {
                         type: "link",
-                        target: fullPath,
+                        target: realTargetPath,
                         lastModified: Date.now()
                     };
                     await forceSave();

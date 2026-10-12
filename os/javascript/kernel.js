@@ -245,7 +245,11 @@ async function launchLink(item, path, options) {
         return;
     }
     // ロック解除は外側の launch() の finally に任せるため、ここでは削除しない
-    return await launch(item.target, { ...options, originalNode: item });
+    return await launch(item.target, {
+        ...options,
+        originalNode: item,
+        uniqueKey: options.uniqueKey || item.target
+    });
 }
 
 /* --- 2. フォルダ起動の処理 --- */
