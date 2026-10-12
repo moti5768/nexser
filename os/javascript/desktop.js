@@ -248,6 +248,32 @@ export function buildDesktop() {
                 }
             },
             {
+                label: "選択アイテムを削除",
+                disabled: globalSelected.items.size === 0,
+                action: async () => {
+                    // 右クリックされたアイコンが選択状態に含まれていない場合は、そのアイコンを選択状態にする
+                    if (!globalSelected.items.has(item)) {
+                        selectIconUI(item);
+                    }
+
+                    if (globalSelected.items.size > 0) {
+                        const itemsToDelete = Array.from(globalSelected.items).map(i => i.dataset.name);
+                        globalSelected.items.clear();
+
+                        for (const name of itemsToDelete) {
+                            // 削除関数の返り値（成功: true, 失敗/保護: false）を受け取る
+                            const success = await deleteFSItem("Desktop", name, false);
+                            if (success) {
+                                await markDefaultDeleted(`Desktop/${name}`);
+                            }
+                        }
+
+                        await forceSave();
+                        window.dispatchEvent(new Event("fs-updated"));
+                    }
+                }
+            },
+            {
                 label: "削除",
                 action: () => deleteFSItem("Desktop", name)
             },

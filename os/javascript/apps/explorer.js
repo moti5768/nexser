@@ -683,6 +683,7 @@ export default async function Explorer(root, options = {}) {
 
                 // ⭐ 追加: 別ウィンドウ（別パス）からのエクスプローラー間アイテム移動処理
                 try {
+                    //[cite: 2]
                     const dataStr = e.dataTransfer.getData("text/plain");
                     const data = dataStr ? JSON.parse(dataStr) : null;
                     if (data && data.type === "explorer-icons") {
@@ -693,11 +694,18 @@ export default async function Explorer(root, options = {}) {
                             if (sourceFolder && targetFolderNode) {
                                 for (const draggedInfo of data.draggedItems) {
                                     const itemName = draggedInfo.name;
+                                    const sourceFullPath = sourcePath ? `${sourcePath}/${itemName}` : itemName;
+
+                                    // ⭐ 改善：ドロップ先が自分自身、あるいは自分のサブディレクトリ（配下）でないかを検証
+                                    if (currentPath === sourceFullPath || currentPath.startsWith(sourceFullPath + "/")) {
+                                        continue;
+                                    }
+
                                     if (!sourceFolder[itemName]) continue;
+                                    // ...削除して移動...
 
                                     const uniqueTargetName = getUniqueName(targetFolderNode, itemName);
                                     const sourceItemNode = sourceFolder[itemName];
-                                    const sourceFullPath = sourcePath ? `${sourcePath}/${itemName}` : itemName;
 
                                     // 削除処理（保護されている場合は strict モードで例外が発生するため try-catch で捕捉）
                                     let moved = false;
@@ -1668,18 +1676,20 @@ export default async function Explorer(root, options = {}) {
                             const targetFolderNode = resolveFS(effectiveChildPath);
                             if (!sourceFolder || !targetFolderNode) return;
 
+                            //[cite: 2]
                             for (const draggedInfo of data.draggedItems) {
                                 const itemName = draggedInfo.name;
-                                // 同じ場所かつ自分自身へのドロップはスキップ
-                                if (sourcePath === effectiveChildPath && itemName === name) continue;
+                                const sourceFullPath = sourcePath ? `${sourcePath}/${itemName}` : itemName;
+
+                                // ⭐ 改善：ドロップ先のパスが、ドラッグしているアイテム自身やその配下（サブフォルダ）である場合は処理をスキップ
+                                if (effectiveChildPath === sourceFullPath || effectiveChildPath.startsWith(sourceFullPath + "/")) {
+                                    continue;
+                                }
+
                                 if (!sourceFolder[itemName]) continue;
 
-                                // 移動先での名前重複を避けるためユニーク名を取得
                                 const uniqueTargetName = getUniqueName(targetFolderNode, itemName);
-
-                                // データを移動先へコピーして元を削除（保護されている場合はショートカットにする）
                                 const sourceItemNode = sourceFolder[itemName];
-                                const sourceFullPath = sourcePath ? `${sourcePath}/${itemName}` : itemName;
 
                                 let moved = false;
                                 try {
@@ -1687,6 +1697,7 @@ export default async function Explorer(root, options = {}) {
                                 } catch (e) {
                                     moved = false;
                                 }
+                                // ...
 
                                 if (moved) {
                                     targetFolderNode[uniqueTargetName] = sourceItemNode;
