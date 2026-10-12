@@ -1455,7 +1455,6 @@ export default async function SettingsApp(content) {
         async function renderStorage() {
             if (!document.body.contains(root) || currentTabId !== "system") return;
             const sizes = await getStoreSizes();
-
             const { quota } = await getStorageInfo();
 
             // 非同期処理を待っている間にタブが切り替わったり閉じられたら、処理を中断するガード
@@ -1484,7 +1483,6 @@ export default async function SettingsApp(content) {
                 const row = document.createElement("div");
                 row.style.cssText = "display:flex; justify-content:space-between; align-items:center; padding:4px 0; border-bottom:1px dashed #ccc;";
 
-                // ストア名の左側にカラーチップ（凡例）を表示するコンテナ
                 const nameWrapper = document.createElement("div");
                 nameWrapper.style.cssText = "display:flex; align-items:center;";
 
@@ -1527,7 +1525,7 @@ export default async function SettingsApp(content) {
             const circumference = 2 * Math.PI * innerRadius;
 
             // ==========================================
-            // 【修正】SVG円グラフの複数セグメント生成
+            // SVG円グラフの複数セグメント生成（小容量項目の視認性確保対応）
             // ==========================================
             let pieCircles = "";
             let cumulativeRatio = 0;
@@ -1535,37 +1533,41 @@ export default async function SettingsApp(content) {
 
             for (const [name, bytes] of Object.entries(sizes)) {
                 if (bytes > 0) {
-                    const itemRatio = bytes / quota;
+                    let itemRatio = bytes / quota;
+
+                    // 使用量が極端に少ない項目がグラフ上で潰れないよう、最小限の割合（例: 2.5%）を強制確保
+                    const minRatio = 0.025;
+                    if (itemRatio > 0 && itemRatio < minRatio) {
+                        itemRatio = minRatio;
+                    }
+
                     const itemLength = itemRatio * circumference;
-                    // stroke-dashoffsetを負の値にして開始位置をずらす
                     const offset = -(cumulativeRatio * circumference);
 
                     pieCircles += `
-                    <circle cx="16" cy="16" r="${innerRadius}" fill="none" 
-                            stroke="${storage_colors[pieColorIdx % storage_colors.length]}" 
-                            stroke-width="${strokeWidth}" 
-                            stroke-dasharray="${itemLength} ${circumference}" 
-                            stroke-dashoffset="${offset}" />`;
+            <circle cx="16" cy="16" r="${innerRadius}" fill="none" 
+                    stroke="${storage_colors[pieColorIdx % storage_colors.length]}" 
+                    stroke-width="${strokeWidth}" 
+                    stroke-dasharray="${itemLength} ${circumference}" 
+                    stroke-dashoffset="${offset}" />`;
 
                     cumulativeRatio += itemRatio;
                 }
-                // 0バイトでもインデックスを進め、リストと色を確実に同期させる
                 pieColorIdx++;
             }
 
             const pieContainer = document.createElement("div");
             pieContainer.style.cssText = "display:flex; justify-content:center; margin: 10px;";
-
             pieContainer.innerHTML = `
-            <svg width="100" height="100" viewBox="0 0 32 32" style="transform: rotate(-90deg);">
-                <!-- 空き容量 (マゼンタ背景) -->
-                <circle cx="16" cy="16" r="${radius}" fill="#FF00FF" />
-                <!-- 使用量 (各ストアごとの色分け) -->
-                ${pieCircles}
-                <!-- 枠線 -->
-                <circle cx="16" cy="16" r="${radius}" fill="none" stroke="#000" stroke-width="0.25" />
-            </svg>
-        `;
+        <svg width="100" height="100" viewBox="0 0 32 32" style="transform: rotate(-90deg);">
+            <!-- 空き容量 (マゼンタ背景) -->
+            <circle cx="16" cy="16" r="${radius}" fill="#FF00FF" />
+            <!-- 使用量 (各ストアごとの色分け) -->
+            ${pieCircles}
+            <!-- 枠線 -->
+            <circle cx="16" cy="16" r="${radius}" fill="none" stroke="#000" stroke-width="0.25" />
+        </svg>
+    `;
             frag.appendChild(pieContainer);
 
             const statsBox = document.createElement("div");
@@ -1573,22 +1575,22 @@ export default async function SettingsApp(content) {
             statsBox.style.background = "#fff";
             statsBox.className = "border";
             statsBox.innerHTML = `
-            <div style="display:flex; align-items:center; margin-bottom:6px; font-size:14px; color:#000080;">
-                <div style="width:12px; height:12px; background:#000080; margin-right:8px; border:1px solid #000;"></div>
-                <span style="flex:1;">Used space:</span>
-                <span style="font-weight:bold; font-family:monospace;">${formatBytes(virtualUsedBytes)}</span>
-            </div>
-            <div style="display:flex; align-items:center; margin-bottom:6px; font-size:14px; color:#FF00FF;">
-                <div style="width:12px; height:12px; background:#FF00FF; margin-right:8px; border:1px solid #000;"></div>
-                <span style="flex:1;">Free space:</span>
-                <span style="font-family:monospace;">${formatBytes(freeSpace)}</span>
-            </div>
-            <div style="border-top:1px solid #000; margin:6px 0;"></div>
-            <div style="display:flex; justify-content:space-between; font-size:15px; font-weight:bold;">
-                <span>Capacity:</span>
-                <span style="font-family:monospace;">${formatBytes(quota)}</span>
-            </div>
-        `;
+        <div style="display:flex; align-items:center; margin-bottom:6px; font-size:14px; color:#000080;">
+            <div style="width:12px; height:12px; background:#000080; margin-right:8px; border:1px solid #000;"></div>
+            <span style="flex:1;">Used space:</span>
+            <span style="font-weight:bold; font-family:monospace;">${formatBytes(virtualUsedBytes)}</span>
+        </div>
+        <div style="display:flex; align-items:center; margin-bottom:6px; font-size:14px; color:#FF00FF;">
+            <div style="width:12px; height:12px; background:#FF00FF; margin-right:8px; border:1px solid #000;"></div>
+            <span style="flex:1;">Free space:</span>
+            <span style="font-family:monospace;">${formatBytes(freeSpace)}</span>
+        </div>
+        <div style="border-top:1px solid #000; margin:6px 0;"></div>
+        <div style="display:flex; justify-content:space-between; font-size:15px; font-weight:bold;">
+            <span>Capacity:</span>
+            <span style="font-family:monospace;">${formatBytes(quota)}</span>
+        </div>
+    `;
             frag.appendChild(statsBox);
 
             const barContainer = document.createElement("div");
@@ -1598,9 +1600,6 @@ export default async function SettingsApp(content) {
             barBg.style.cssText = "width:100%; height:20px; background:#eee; position:relative; display:flex; overflow:hidden;";
             barBg.className = "border";
 
-            // ==========================================
-            // 【修正】棒グラフの色分けと同期修正
-            // ==========================================
             let barColorIdx = 0;
             for (const [name, bytes] of Object.entries(sizes)) {
                 if (bytes > 0) {
@@ -1614,12 +1613,11 @@ export default async function SettingsApp(content) {
 
                     barBg.appendChild(segment);
                 }
-                // 0バイトでもインデックスを進め、リスト・円グラフと色を完全に同期させる
                 barColorIdx++;
             }
 
             const gridOverlay = document.createElement("div");
-            gridOverlay.style.cssText = `position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: linear-gradient(90deg, rgba(255,255,255,0.2) 1px, transparent 1px); background-size: 5% 100%; pointer-events: none;`;
+            gridOverlay.style.cssText = "position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: linear-gradient(90deg, rgba(255,255,255,0.2) 1px, transparent 1px); background-size: 5% 100%; pointer-events: none;";
             barBg.appendChild(gridOverlay);
             barContainer.appendChild(barBg);
 
@@ -1634,34 +1632,29 @@ export default async function SettingsApp(content) {
             // ==========================================
             const toolsSection = document.createElement("div");
             toolsSection.style.cssText = "margin-top: 15px; border-top: 1px solid #666; padding-top: 10px;";
-
             toolsSection.innerHTML = `
-            <b style="display:block; margin-bottom:6px; font-size:13px;">System Tools</b>
-            <div style="display:flex; gap:6px; margin-bottom:8px;">
-                <button id="btn-scan" style="padding:4px 10px;">Scan System</button>
-                <button id="btn-clean" style="padding:4px 10px; background:#393; color:white;" disabled>Run Cleanup & Repair</button>
-            </div>
-            <div id="maintenance-console" style="background:#000; color:#0f0; font-family:monospace; font-size:11px; padding:6px; height:70px; overflow-y:auto; border:1px solid #666; border-radius:2px;">
-                システムは正常です。スキャンを実行してください。
-            </div>
-        `;
+        <b style="display:block; margin-bottom:6px; font-size:13px;">System Tools</b>
+        <div style="display:flex; gap:6px; margin-bottom:8px;">
+            <button id="btn-scan" style="padding:4px 10px;">Scan System</button>
+            <button id="btn-clean" style="padding:4px 10px; background:#393; color:white;" disabled>Run Cleanup & Repair</button>
+        </div>
+        <div id="maintenance-console" style="background:#000; color:#0f0; font-family:monospace; font-size:11px; padding:6px; height:70px; overflow-y:auto; border:1px solid #666; border-radius:2px;">
+            システムは正常です。スキャンを実行してください。
+        </div>
+    `;
             frag.appendChild(toolsSection);
 
-            // 動的処理用インポート
             const btnScan = toolsSection.querySelector("#btn-scan");
             const btnClean = toolsSection.querySelector("#btn-clean");
             const consoleBox = toolsSection.querySelector("#maintenance-console");
-
             let lastReport = null;
 
-            // スキャン処理
             btnScan.onclick = async () => {
                 consoleBox.innerHTML = "Scanning system structure and temporary files...";
                 const { diagnoseAndCleanFS } = await import("../fs.js");
 
-                // 読み込みフラグを考慮して少しウェイト(演出)
                 setTimeout(async () => {
-                    lastReport = await diagnoseAndCleanFS(false); // 診断のみ
+                    lastReport = await diagnoseAndCleanFS(false);
                     consoleBox.innerHTML = "";
 
                     if (lastReport.logs.length === 0) {
@@ -1670,7 +1663,6 @@ export default async function SettingsApp(content) {
                     } else {
                         consoleBox.innerHTML = "<b>◇ スキャン結果:</b><br>";
                         lastReport.logs.forEach(log => {
-                            // 警告メッセージを目立たせるアレンジ
                             if (log.includes("【警告】")) {
                                 const folderName = log.match(/'([^']+)'/)?.[1] || "不明なディレクトリ";
                                 consoleBox.innerHTML += `> <span style="color: #ff4d4d; font-weight: bold;">[破損検知] パス: C:/${folderName} が消失または不正です。</span><br>`;
@@ -1688,7 +1680,6 @@ export default async function SettingsApp(content) {
                 }, 600);
             };
 
-            // クリーニング＆修復実行
             btnClean.onclick = () => {
                 const msg = lastReport?.corruptionDetected
                     ? "データ破損が検出されています。システムファイルを復元し、ゴミ箱を空にしてもよろしいですか？"
@@ -1698,7 +1689,7 @@ export default async function SettingsApp(content) {
                     consoleBox.innerHTML = "Executing system maintenance...";
                     const { diagnoseAndCleanFS } = await import("../fs.js");
 
-                    const finalReport = await diagnoseAndCleanFS(true); // 実際に修復
+                    const finalReport = await diagnoseAndCleanFS(true);
 
                     consoleBox.innerHTML = "<b>[メンテナンス完了]</b><br>";
                     finalReport.logs.forEach(log => {
@@ -1710,13 +1701,11 @@ export default async function SettingsApp(content) {
                     consoleBox.innerHTML += "システム構造の最適化とクリーンアップが成功しました。";
                     btnClean.disabled = true;
 
-                    // 最近使った項目のクリーンアップも合わせて実行
                     if (finalReport.garbageItems > 0) {
-                        renderStorage(); // ストレージグラフを再描画
+                        renderStorage();
                     }
                 });
             };
-            // ==========================================
 
             storageBox.replaceChildren(frag);
         }
