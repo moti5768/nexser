@@ -1022,12 +1022,17 @@ function setupDesktopKeyboardNavigation() {
 
         const selectIcon = (targetEl) => {
             if (!targetEl) return;
-            // 全選択解除
+            // 既存の選択をすべて解除
             icons.forEach(el => el.classList.remove("selected"));
-            // 新規選択
+
+            // 新規選択状態を適用
             targetEl.classList.add("selected");
+            globalSelected.items.clear();
+            globalSelected.items.add(targetEl);
+            globalSelected.lastSelected = targetEl;
             globalSelected.item = targetEl;
             globalSelected.window = desktop;
+
             // 視界に入るようスクロール
             targetEl.scrollIntoView({ block: "nearest", inline: "nearest" });
         };
@@ -1063,6 +1068,21 @@ function setupDesktopKeyboardNavigation() {
         };
 
         // キー分岐
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
+            e.preventDefault();
+            globalSelected.items.clear();
+            icons.forEach(item => {
+                item.classList.add("selected");
+                globalSelected.items.add(item);
+            });
+            if (icons.length > 0) {
+                globalSelected.lastSelected = icons[icons.length - 1];
+            }
+            // 単一選択用の参照（互換性用）は複数選択時はnullにする、または必要に応じて調整
+            globalSelected.item = globalSelected.items.size === 1 ? Array.from(globalSelected.items)[0] : null;
+            return;
+        }
+
         switch (e.key) {
             case "ArrowRight":
                 e.preventDefault();

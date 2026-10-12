@@ -68,6 +68,7 @@ function addRibbonMenu(ribbon, title, items) {
     // 状態を最新に更新する関数
     const refreshItemsStatus = () => {
         itemEntries.forEach(entry => {
+            if (entry.data.label === "---") return;
             const isDisabled = typeof entry.data.disabled === "function"
                 ? entry.data.disabled()
                 : entry.data.disabled;
@@ -84,6 +85,19 @@ function addRibbonMenu(ribbon, title, items) {
 // Ribbon アイテム作成
 // ------------------------
 function addRibbonItem(dropdown, item) {
+
+    if (item.label === "---") {
+        const separator = createElementWithClass("div", "ribbon-separator");
+        Object.assign(separator.style, {
+            height: "1px",
+            borderTop: "1px solid #808080",
+            borderBottom: "1px solid #fff",
+            margin: "4px 2px"
+        });
+        dropdown.appendChild(separator);
+        return separator;
+    }
+
     const div = createElementWithClass("div", "ribbon-item", item.label);
 
     // 初回の状態設定

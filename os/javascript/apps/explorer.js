@@ -37,7 +37,7 @@ function deleteFSItem(parentPath, itemName, rerender) {
 
         const win = showModalWindow("完全削除の確認", msg, {
             width: 320,
-            height: 175,
+            height: 200,
             taskbar: false,
             overlay: true,
             buttons: [
@@ -350,7 +350,7 @@ export default async function Explorer(root, options = {}) {
     let iconPositions = {};
 
     // 固定参照保持
-    let listContainer, pathLabel, treeContainer;
+    let listContainer, pathLabel, treeContainer, searchInput;
 
     let isSelecting = false;
     let selectionBox = null;
@@ -376,16 +376,28 @@ export default async function Explorer(root, options = {}) {
     };
 
     const navigateTo = (path, saveHistory = true) => {
-        // console.log("移動先:", path, "現在の場所:", currentPath);
-        // 通常の移動時のみ、同じ場所への移動を無視する
-        // 履歴移動(saveHistory=false)の時は、強制的に再描画(render)させる
+        // パス末尾のスラッシュを正規化
+        if (path && path !== "" && path.endsWith("/")) {
+            path = path.replace(/\/+$/, "");
+        }
+
         if (saveHistory && path === currentPath) return;
+
+        // 【追加】ルート（""）以外の場合、移動先が「フォルダ」であることを厳格に検証する
+        if (path !== "") {
+            const targetNode = resolveFS(path);
+            if (!targetNode || targetNode.type !== "folder") {
+                alertWindow(`指定されたパス「${path}」はフォルダではないか、存在しません。`, { width: 350, height: 180, taskbar: false });
+                return; // ファイルやアプリのパスが渡された場合はここで移動を完全に阻止する
+            }
+        }
+
         if (saveHistory) {
             historyStack.push(currentPath);
             forwardStack = [];
         }
         currentPath = path;
-        render(currentPath); // これで確実に画面が更新される
+        render(currentPath);
     };
 
     // ------------------------
@@ -610,6 +622,10 @@ export default async function Explorer(root, options = {}) {
     // ------------------------
     const render = async (path) => {
         currentPath = path;
+
+        if (searchInput && document.activeElement !== searchInput) {
+            searchInput.value = "";
+        }
 
         // ★追加: フォルダごとのアイコン座標設定を読み込み
         const safePath = currentPath.replace(/\//g, "_") || "root";
@@ -1000,18 +1016,12 @@ export default async function Explorer(root, options = {}) {
                 }
             };
 
-            pathLabel = document.createElement("span");
-            pathLabel.className = "path-label";
-            pathLabel.style.whiteSpace = "nowrap";
-            pathLabel.style.overflow = "hidden";
-            pathLabel.style.textOverflow = "ellipsis";
-            // 2. 他のボタンは維持しつつ、パス表示部分だけを優先的に縮ませる設定
-            pathLabel.style.minWidth = "0px"; // ★重要: これがないとFlexbox内で限界まで縮みません
-            pathLabel.style.flexShrink = "1";
+            // span からコンテナ用の div に変更し、内部にテキスト表示用の span を配置
+            pathLabel = document.createElement("div");
+            pathLabel.className = "path-label-container border";
+            pathLabel.style.cssText = "flex: 1 1 0px; min-width: 0px; height: 24px; flex-shrink: 1; overflow: hidden; display: flex; align-items: center; cursor: text; background: #fff; box-sizing: border-box;";
 
-            // 3. Windowsのように、先頭（親階層）を「...」にして、末尾（現在のフォルダ）を残すテクニック
-            pathLabel.style.direction = "rtl";
-            pathLabel.style.textAlign = "left";
+            setupPathInput(pathLabel, currentPath, (newPath) => navigateTo(newPath), () => render(currentPath));
 
             treeContainer = document.createElement("div");
             treeContainer.className = "tree-container";
@@ -1027,28 +1037,27 @@ export default async function Explorer(root, options = {}) {
             header.appendChild(treeContainer);
             header.appendChild(pathLabel);
 
-            const searchInput = document.createElement("input");
+            searchInput = document.createElement("input");
             searchInput.type = "text";
             searchInput.placeholder = "検索...";
             searchInput.className = "explorer-search-input border";
-            // Windowsクラシック風のスタイル（適宜CSSへ移動してください）
             Object.assign(searchInput.style, {
                 width: "150px",
-                minWidth: "100px", // ★追加: 最小幅（これ以上は縮ませない）
+                minWidth: "100px",
                 marginLeft: "auto",
                 marginRight: "4px",
                 fontSize: "12px",
                 height: "18px",
-                flexShrink: "1"   // ★追加: 隙間が減った時に柔軟に縮むことを許可する
+                flexShrink: "1"
             });
 
             searchInput.addEventListener("keydown", (e) => {
                 if (e.key === "Enter") {
                     const query = searchInput.value.trim();
                     if (query) {
-                        renderSearchResults(query); // 検索結果描画へ
+                        renderSearchResults(query);
                     } else {
-                        render(currentPath); // 空なら通常表示に戻す
+                        render(currentPath);
                     }
                 }
             });
@@ -1654,6 +1663,25 @@ export default async function Explorer(root, options = {}) {
                     selectItem(currentIndex);
                 }
 
+                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
+                    e.preventDefault();
+                    globalSelected.items.clear();
+                    items.forEach(item => {
+                        item.classList.add("selected");
+                        globalSelected.items.add(item);
+                    });
+                    if (items.length > 0) {
+                        globalSelected.lastSelected = items[items.length - 1];
+                    }
+                    setupRibbon(win, () => currentPath, render, getExplorerMenus());
+
+                    const statusBar = win?._statusBar;
+                    if (statusBar) {
+                        statusBar.textContent = `${globalSelected.items.size} 個のアイテムを選択中`;
+                    }
+                    return;
+                }
+
                 if (e.key === "Enter") {
                     e.preventDefault();
                     if (globalSelected.items.size === 0) return;
@@ -1675,11 +1703,14 @@ export default async function Explorer(root, options = {}) {
 
     const renderSearchResults = async (query) => {
         listContainer.innerHTML = "";
-        pathLabel.textContent = `「${query}」の検索結果`;
 
-        // 現在のディレクトリ以下を検索（FS全体にしたい場合は resolveFS("") に変更）
+        if (pathLabel) {
+            setupPathInput(pathLabel, `検索: 「${query}」の検索結果`, (newPath) => navigateTo(newPath), () => render(currentPath));
+        }
+
+        // 現在のディレクトリ以下を検索
         const rootNode = resolveFS(currentPath);
-        const results = searchFS(rootNode, query, currentPath, showHidden); // ★ showHiddenを渡す
+        const results = searchFS(rootNode, query, currentPath, showHidden);
 
         if (results.length === 0) {
             listContainer.innerHTML = `<div style="padding:10px; font-size:12px; color:#666;">一致する項目はありません。</div>`;
@@ -1692,7 +1723,6 @@ export default async function Explorer(root, options = {}) {
             item.className = `explorer-item ${viewMode}-view`;
             item.dataset.name = res.name;
 
-            // ★追加: 検索結果でも隠しファイルの場合は半透明にする
             if (res.node.hidden) {
                 item.style.opacity = "0.5";
             }
@@ -1722,6 +1752,99 @@ export default async function Explorer(root, options = {}) {
             };
         });
     };
+
+
+
+
+
+
+    /**
+ * アドレスバーの表示とクリック時の入力切り替えをセットアップする共通関数
+ */
+    function setupPathInput(pathLabel, displayPath, onNavigate, onCancel) {
+        if (!pathLabel) return;
+        pathLabel.innerHTML = "";
+        const textSpan = document.createElement("span");
+        textSpan.style.cssText = "white-space: nowrap; overflow: hidden; text-overflow: ellipsis; direction: rtl; text-align: left; width: 100%; display: block; font-size: 16px; outline: none;";
+
+        // 検索結果表示文字列か、通常のパスかで表示方法を切り替え
+        if (displayPath.startsWith("検索:")) {
+            textSpan.textContent = displayPath;
+        } else {
+            textSpan.innerHTML = `<bdi dir="ltr">${displayPath}</bdi>`;
+        }
+        pathLabel.appendChild(textSpan);
+
+        // クリック時の入力欄切り替え処理
+        pathLabel.onclick = () => {
+            if (pathLabel.querySelector("input")) return;
+
+            const currentFullPath = displayPath.startsWith("検索:") ? "" : displayPath;
+            pathLabel.innerHTML = "";
+
+            const input = document.createElement("input");
+            input.type = "text";
+            input.value = currentFullPath;
+            input.style.cssText = "width: 100%; font-size: 16px; padding: 0px; outline: none; background: transparent; direction: ltr; text-align: left;";
+            pathLabel.appendChild(input);
+            input.focus();
+            input.select();
+
+            let isCommitted = false;
+
+            const commitChange = () => {
+                if (isCommitted) return;
+                isCommitted = true;
+
+                let newPath = input.value.trim();
+
+                if (newPath && newPath !== "" && newPath.endsWith("/")) {
+                    newPath = newPath.replace(/\/+$/, "");
+                }
+
+                if (newPath === "") {
+                    onNavigate(newPath);
+                    return;
+                }
+
+                const targetNode = resolveFS(newPath);
+
+                if (!targetNode) {
+                    alertWindow(`指定されたパス「${newPath}」は存在しません。`, { width: 350, height: 180, taskbar: false });
+                    onCancel();
+                    return;
+                }
+
+                if (targetNode.type === "folder") {
+                    onNavigate(newPath);
+                } else {
+                    const lastSlash = newPath.lastIndexOf('/');
+                    const parentPath = lastSlash !== -1 ? newPath.substring(0, lastSlash) : "";
+                    const itemName = lastSlash !== -1 ? newPath.substring(lastSlash + 1) : newPath;
+                    openFSItem(itemName, targetNode, parentPath);
+                    onCancel();
+                }
+            };
+
+            input.addEventListener("keydown", (e) => {
+                if (e.isComposing || e.keyCode === 229) return;
+                if (e.key === "Enter") {
+                    e.preventDefault();
+                    commitChange();
+                } else if (e.key === "Escape") {
+                    e.preventDefault();
+                    onCancel();
+                }
+            });
+
+            input.addEventListener("blur", () => {
+                setTimeout(() => {
+                    commitChange();
+                }, 100);
+            });
+        };
+    }
+
     // ------------------------
     // Ribbon
     // ------------------------
@@ -1786,13 +1909,12 @@ export default async function Explorer(root, options = {}) {
 
                                 const confirmWin = showModalWindow("完全削除の確認", msg, {
                                     width: 320,
-                                    height: 175,
+                                    height: 200,
                                     taskbar: false,
                                     overlay: true,
                                     buttons: [
                                         {
                                             label: "削除",
-                                            // 修正後
                                             action: async () => {
                                                 const targetNode = resolveFS(currentPath);
                                                 let hasProtectedFiles = false;
@@ -1879,6 +2001,68 @@ export default async function Explorer(root, options = {}) {
                         disabled: () => globalSelected.items.size === 0
                     }
                 ]
+            },
+            {
+                title: "View",
+                items: [
+                    {
+                        label: `表示: 大アイコン ${viewMode === "icon" ? "✔" : ""}`,
+                        action: async () => { viewMode = "icon"; await saveSetting("explorerViewMode", viewMode); render(currentPath); }
+                    },
+                    {
+                        label: `表示: リスト ${viewMode === "list" ? "✔" : ""}`,
+                        action: async () => { viewMode = "list"; await saveSetting("explorerViewMode", viewMode); render(currentPath); }
+                    },
+                    {
+                        label: `表示: 詳細 ${viewMode === "details" ? "✔" : ""}`,
+                        action: async () => { viewMode = "details"; await saveSetting("explorerViewMode", viewMode); render(currentPath); }
+                    },
+                    { label: "---" },
+                    {
+                        label: `自動整列 ${autoArrange ? "✔" : ""}`,
+                        action: async () => {
+                            const nextAutoArrange = !autoArrange;
+                            const safePath = currentPath.replace(/\//g, "_") || "root";
+
+                            if (autoArrange && !nextAutoArrange && viewMode === "icon") {
+                                const items = listContainer.querySelectorAll(".explorer-item");
+                                const containerRect = listContainer.getBoundingClientRect();
+                                iconPositions = {};
+                                items.forEach(item => {
+                                    const name = item.dataset.name;
+                                    const rect = item.getBoundingClientRect();
+                                    iconPositions[name] = {
+                                        x: rect.left - containerRect.left + listContainer.scrollLeft,
+                                        y: rect.top - containerRect.top + listContainer.scrollTop
+                                    };
+                                });
+                                await saveSetting(`explorerIconPositions_${safePath}`, iconPositions);
+                            } else if (nextAutoArrange) {
+                                iconPositions = {};
+                                await saveSetting(`explorerIconPositions_${safePath}`, {});
+                            }
+                            autoArrange = nextAutoArrange;
+                            await saveSetting("explorerAutoArrange", autoArrange);
+                            render(currentPath);
+                        }
+                    },
+                    { label: "---" },
+                    {
+                        label: "最新の情報に更新",
+                        action: () => render(currentPath)
+                    }
+                ]
+            },
+            {
+                title: "Sort",
+                items: [
+                    { label: `並べ替え: 名前 ${sortKey === "name" ? "●" : ""}`, action: async () => { sortKey = "name"; await saveSetting("explorerSortKey", sortKey); render(currentPath); } },
+                    { label: `並べ替え: 種類 ${sortKey === "type" ? "●" : ""}`, action: async () => { sortKey = "type"; await saveSetting("explorerSortKey", sortKey); render(currentPath); } },
+                    { label: `並べ替え: サイズ ${sortKey === "size" ? "●" : ""}`, action: async () => { sortKey = "size"; await saveSetting("explorerSortKey", sortKey); render(currentPath); } },
+                    { label: `並べ替え: 更新日時 ${sortKey === "date" ? "●" : ""}`, action: async () => { sortKey = "date"; await saveSetting("explorerSortKey", sortKey); render(currentPath); } },
+                    { label: "---" },
+                    { label: `昇順 / 降順 (${sortOrder === "asc" ? "昇順" : "降順"})`, action: async () => { sortOrder = sortOrder === "asc" ? "desc" : "asc"; await saveSetting("explorerSortOrder", sortOrder); render(currentPath); } }
+                ]
             }
         ];
     }
@@ -1941,8 +2125,9 @@ export default async function Explorer(root, options = {}) {
         }
 
         win.dataset.title = name;
+
         if (pathLabel) {
-            pathLabel.innerHTML = `<bdi dir="ltr">${path}</bdi>`;
+            setupPathInput(pathLabel, path, (newPath) => navigateTo(newPath), () => render(currentPath));
         }
     }
 

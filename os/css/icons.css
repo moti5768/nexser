@@ -40,12 +40,11 @@
     content: "";
     position: absolute;
     /* 親(error_icon)の中央に配置される */
-    width: 14px;
+    width: 16px;
     /* 24pxの円に対して14〜16pxくらいが綺麗 */
-    height: 2px;
+    height: 3px;
     /* 棒の太さ */
     background-color: white;
-    border-radius: 1px;
 }
 
 /* 45度ずつ傾けてバツにする */

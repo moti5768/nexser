@@ -4,6 +4,7 @@ import { playSystemEventSound } from './kernel.js';
 import { resolveFS, normalizePath as fsNormalizePath } from './fs-utils.js';
 import { loadSetting } from "./apps/settings.js";
 import { initScreensaver } from "./screensaver.js";
+import { showBSOD } from "./bsod.js";
 
 // ===== Passive Event / Touch Defaults =====
 document.addEventListener('wheel', e => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
