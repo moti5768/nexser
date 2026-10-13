@@ -185,9 +185,16 @@ export function buildDesktop() {
                         for (const itemName of data.names) {
                             if (itemName === name || !desktopFS[itemName]) continue;
 
+                            const sourceFullPath = `Desktop/${itemName}`;
+                            const targetFullPath = `Desktop/${name}`; // ドロップ先のフルパス
+
+                            // ★ 追加: 移動先が、移動元自身またはその子孫フォルダである場合は移動をブロック
+                            if (targetFullPath === sourceFullPath || targetFullPath.startsWith(sourceFullPath + "/")) {
+                                continue;
+                            }
+
                             const uniqueTargetName = getUniqueName(targetNode, itemName);
                             const sourceItemNode = desktopFS[itemName];
-                            const sourceFullPath = `Desktop/${itemName}`;
 
                             let moved = false;
                             try {
