@@ -693,7 +693,8 @@ export default async function Explorer(root, options = {}) {
 
                     // 共通関数を呼び出し、処理が行われたらここで終了
                     if (data && (data.type === "explorer-icons" || data.type === "desktop-icons")) {
-                        const handled = await handleItemDropMove(data, currentPath, currentPath, render);
+                        const isCopy = e.ctrlKey; // ★ 追加
+                        const handled = await handleItemDropMove(data, currentPath, currentPath, render, isCopy); // ★ 引数を追加
                         if (handled) return;
                     }
                 } catch (err) { }
@@ -1577,8 +1578,9 @@ export default async function Explorer(root, options = {}) {
                     try {
                         const data = dataStr ? JSON.parse(dataStr) : null;
                         if (data) {
+                            const isCopy = e.ctrlKey; // ★ 追加
                             // ターゲットパス（effectiveChildPath）を指定して共通関数を呼び出す
-                            await handleItemDropMove(data, effectiveChildPath, currentPath, render);
+                            await handleItemDropMove(data, effectiveChildPath, currentPath, render, isCopy); // ★ 引数を追加
                         }
                     } catch (err) {
                         console.error("Folder/Link drop move failed:", err);
@@ -1865,7 +1867,6 @@ export default async function Explorer(root, options = {}) {
         if (!validUrl) return false;
 
         let urlName = "新しいショートカット.url";
-        alert();
         try {
             const urlObj = new URL(validUrl);
             urlName = (urlObj.hostname).replace(/[\/\\?%*:|"<>]/g, "_") + ".url";
@@ -1890,52 +1891,67 @@ export default async function Explorer(root, options = {}) {
 
 
     /**
- * 共通のアイテム移動処理（エクスプローラー内 / デスクトップからのD&D共通）
- * @param {Object} data - dataTransferから取得したデータオブジェクト
- * @param {string} targetPath - 移動先のパス
- * @param {string} currentPath - 現在のパス
- * @param {Function} render - 再描画コールバック
- */
-    async function handleItemDropMove(data, targetPath, currentPath, render) {
-        if (!data) return;
+         * 共通のアイテム移動・コピー処理（エクスプローラー内 / デスクトップからのD&D共通）
+         * @param {Object} data - dataTransferから取得したデータオブジェクト[cite: 1]
+         * @param {string} targetPath - 移動先のパス[cite: 1]
+         * @param {string} currentPath - 現在のパス[cite: 1]
+         * @param {Function} render - 再描画コールバック[cite: 1]
+         * @param {boolean} [isCopy=false] - コピー操作かどうか
+         */
+    async function handleItemDropMove(data, targetPath, currentPath, render, isCopy = false) {
+        if (!data) return false;
         const targetFolderNode = resolveFS(targetPath);
-        if (!targetFolderNode || targetFolderNode.type !== "folder") return;
+        if (!targetFolderNode || targetFolderNode.type !== "folder") return false;
 
-        // 1. エクスプローラー内からのD&D移動
+        // 1. エクスプローラー内からのD&D（移動またはコピー）
         if (data.type === "explorer-icons") {
             const sourcePath = data.sourcePath || currentPath;
             const sourceFolder = resolveFS(sourcePath);
-            if (!sourceFolder) return;
+            if (!sourceFolder) return false;
 
             for (const draggedInfo of data.draggedItems) {
                 const itemName = draggedInfo.name;
                 const sourceFullPath = sourcePath ? `${sourcePath}/${itemName}` : itemName;
 
-                // 自己・子孫フォルダへの移動を防止
-                if (targetPath === sourceFullPath || targetPath.startsWith(sourceFullPath + "/")) {
-                    continue;
+                // 移動の場合：同一フォルダ内、または自分自身・子孫フォルダへのドロップは無効
+                if (!isCopy) {
+                    if (targetPath === sourcePath || targetPath === sourceFullPath || targetPath.startsWith(sourceFullPath + "/")) {
+                        continue;
+                    }
+                } else {
+                    // コピーの場合：自分自身や子孫フォルダへのコピーのみ無効（同一フォルダ内へのコピーは別名で許可）
+                    if (targetPath === sourceFullPath || targetPath.startsWith(sourceFullPath + "/")) {
+                        continue;
+                    }
                 }
 
                 if (!sourceFolder[itemName]) continue;
 
                 const uniqueTargetName = getUniqueName(targetFolderNode, itemName);
-                const sourceItemNode = sourceFolder[itemName];
+                // 参照汚染を防ぐため安全にディープコピー
+                const sourceItemNode = JSON.parse(JSON.stringify(sourceFolder[itemName]));
 
-                let moved = false;
-                try {
-                    moved = delete sourceFolder[itemName];
-                } catch (err) {
-                    moved = false;
-                }
-
-                if (moved) {
+                if (isCopy) {
+                    // コピー処理
                     targetFolderNode[uniqueTargetName] = sourceItemNode;
                 } else {
-                    targetFolderNode[uniqueTargetName] = {
-                        type: "link",
-                        target: sourceFullPath,
-                        lastModified: Date.now()
-                    };
+                    // 移動処理
+                    let moved = false;
+                    try {
+                        moved = delete sourceFolder[itemName];
+                    } catch (err) {
+                        moved = false;
+                    }
+
+                    if (moved) {
+                        targetFolderNode[uniqueTargetName] = sourceItemNode;
+                    } else {
+                        targetFolderNode[uniqueTargetName] = {
+                            type: "link",
+                            target: sourceFullPath,
+                            lastModified: Date.now()
+                        };
+                    }
                 }
             }
 
@@ -1944,39 +1960,48 @@ export default async function Explorer(root, options = {}) {
             render(currentPath);
             return true;
         }
-        // 2. デスクトップからのD&D移動
+        // 2. デスクトップからのD&D（移動またはコピー）
         else if (data.type === "desktop-icons") {
             const desktopFS = resolveFS("Desktop");
-            if (!desktopFS) return;
+            if (!desktopFS) return false;
 
             for (const itemName of data.names) {
                 if (!desktopFS[itemName]) continue;
 
                 const sourceFullPath = `Desktop/${itemName}`;
 
-                // 自己・子孫フォルダへの移動を防止
-                if (targetPath === sourceFullPath || targetPath.startsWith(sourceFullPath + "/")) {
+                // 移動の場合で、デスクトップからデスクトップ（同一場所）への移動ならスキップ
+                if (!isCopy && targetPath === "Desktop") {
+                    continue;
+                }
+
+                // 自分自身や子孫フォルダへの移動・コピーを防止
+                if (!isCopy && (targetPath === sourceFullPath || targetPath.startsWith(sourceFullPath + "/"))) {
                     continue;
                 }
 
                 const uniqueTargetName = getUniqueName(targetFolderNode, itemName);
-                const sourceItemNode = desktopFS[itemName];
+                const sourceItemNode = JSON.parse(JSON.stringify(desktopFS[itemName]));
 
-                let moved = false;
-                try {
-                    moved = delete desktopFS[itemName];
-                } catch (err) {
-                    moved = false;
-                }
-
-                if (moved) {
+                if (isCopy) {
                     targetFolderNode[uniqueTargetName] = sourceItemNode;
                 } else {
-                    targetFolderNode[uniqueTargetName] = {
-                        type: "link",
-                        target: sourceFullPath,
-                        lastModified: Date.now()
-                    };
+                    let moved = false;
+                    try {
+                        moved = delete desktopFS[itemName];
+                    } catch (err) {
+                        moved = false;
+                    }
+
+                    if (moved) {
+                        targetFolderNode[uniqueTargetName] = sourceItemNode;
+                    } else {
+                        targetFolderNode[uniqueTargetName] = {
+                            type: "link",
+                            target: sourceFullPath,
+                            lastModified: Date.now()
+                        };
+                    }
                 }
             }
 
@@ -2166,8 +2191,9 @@ export default async function Explorer(root, options = {}) {
                 try {
                     const data = dataStr ? JSON.parse(dataStr) : null;
                     if (data) {
+                        const isCopy = e.ctrlKey; // ★ 追加
                         // 共通関数を呼び出し
-                        await handleItemDropMove(data, targetPath, currentPath, render);
+                        await handleItemDropMove(data, targetPath, currentPath, render, isCopy); // ★ 引数を追加
                     }
                 } catch (err) {
                     console.error("Sidebar drop failed:", err);

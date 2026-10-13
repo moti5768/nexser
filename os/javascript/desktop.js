@@ -641,42 +641,44 @@ export function buildDesktop() {
                 const data = dataStr ? JSON.parse(dataStr) : null;
                 if (data && data.type === "explorer-icons") {
                     const sourcePath = data.sourcePath || "Desktop";
-                    if (sourcePath !== "Desktop") {
-                        const sourceFolder = resolveFS(sourcePath);
-                        const targetFolderNode = FS.Desktop;
-                        if (sourceFolder && targetFolderNode) {
-                            for (const draggedInfo of data.draggedItems) {
-                                const itemName = draggedInfo.name;
-                                if (!sourceFolder[itemName]) continue;
 
-                                const uniqueTargetName = getUniqueName(targetFolderNode, itemName);
-                                const sourceItemNode = sourceFolder[itemName];
-                                const sourceFullPath = `${sourcePath}/${itemName}`;
+                    // 同じ場所（DesktopからDesktopの背景）へのドロップは処理しない
+                    if (sourcePath === "Desktop") return;
 
-                                let moved = false;
-                                try {
-                                    delete sourceFolder[itemName];
-                                    moved = true;
-                                } catch (err) {
-                                    moved = false;
-                                }
+                    const sourceFolder = resolveFS(sourcePath);
+                    const targetFolderNode = FS.Desktop;
+                    if (sourceFolder && targetFolderNode) {
+                        for (const draggedInfo of data.draggedItems) {
+                            const itemName = draggedInfo.name;
+                            if (!sourceFolder[itemName]) continue;
 
-                                if (moved) {
-                                    targetFolderNode[uniqueTargetName] = sourceItemNode;
-                                } else {
-                                    targetFolderNode[uniqueTargetName] = {
-                                        type: "link",
-                                        target: sourceFullPath,
-                                        lastModified: Date.now()
-                                    };
-                                }
+                            const uniqueTargetName = getUniqueName(targetFolderNode, itemName);
+                            const sourceItemNode = sourceFolder[itemName];
+                            const sourceFullPath = `${sourcePath}/${itemName}`;
+
+                            let moved = false;
+                            try {
+                                delete sourceFolder[itemName];
+                                moved = true;
+                            } catch (err) {
+                                moved = false;
                             }
 
-                            await forceSave();
-                            window.dispatchEvent(new Event("fs-updated"));
-                            buildDesktop();
-                            return;
+                            if (moved) {
+                                targetFolderNode[uniqueTargetName] = sourceItemNode;
+                            } else {
+                                targetFolderNode[uniqueTargetName] = {
+                                    type: "link",
+                                    target: sourceFullPath,
+                                    lastModified: Date.now()
+                                };
+                            }
                         }
+
+                        await forceSave();
+                        window.dispatchEvent(new Event("fs-updated"));
+                        buildDesktop();
+                        return;
                     }
                 }
             } catch (err) { }
