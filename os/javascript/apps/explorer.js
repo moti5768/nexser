@@ -344,13 +344,17 @@ export default async function Explorer(root, options = {}) {
     let sortKey = await loadSetting("explorerSortKey") || "name"; // 'name', 'type', 'size', 'date'
     let sortOrder = await loadSetting("explorerSortOrder") || "asc"; // 'asc', 'desc'
 
+    // ★追加: 左ナビゲーション（サイドバー）の表示・非表示状態のロード
+    const rawSidebar = await loadSetting("explorerShowSidebar");
+    let showSidebar = rawSidebar === null ? true : (rawSidebar === true || rawSidebar === "true");
+
     // ★追加: 自動整列のオン・オフ状態と座標保存用変数
     let autoArrange = await loadSetting("explorerAutoArrange");
     if (autoArrange === undefined) autoArrange = true;
     let iconPositions = {};
 
     // 固定参照保持
-    let listContainer, pathLabel, treeContainer, searchInput;
+    let listContainer, pathLabel, treeContainer, searchInput, sidebarContainer;
 
     let isSelecting = false;
     let selectionBox = null;
@@ -652,6 +656,16 @@ export default async function Explorer(root, options = {}) {
             container.style.display = "flex";
             container.style.flexDirection = "column";
             container.style.height = "100%";
+
+            // ★追加: サイドバーとファイル一覧を横並びにするメインボディ
+            const mainBody = document.createElement("div");
+            mainBody.className = "explorer-main-body";
+            mainBody.style.cssText = "display: flex; flex: 1 1 auto; overflow: hidden; position: relative;";
+
+            // ★追加: 左ナビゲーション（サイドバー）のコンテナ
+            sidebarContainer = document.createElement("div");
+            sidebarContainer.className = "explorer-sidebar border";
+            sidebarContainer.style.cssText = `width: 200px; min-width: 150px; max-width: 300px; background: #f3f3f3; overflow-y: auto; flex-shrink: 0; display: ${showSidebar ? "block" : "none"}; padding: 0px; font-size: 12px; user-select: none;`;
 
             listContainer = document.createElement("div");
             listContainer.className = "explorer-list";
@@ -989,7 +1003,9 @@ export default async function Explorer(root, options = {}) {
                 }
             });
 
-            container.appendChild(listContainer);
+            mainBody.appendChild(sidebarContainer);
+            mainBody.appendChild(listContainer);
+            container.appendChild(mainBody);
 
             const header = document.createElement("div");
             header.className = "explorer-header scrollbar_none";
@@ -1777,6 +1793,15 @@ export default async function Explorer(root, options = {}) {
                     }
 
                     return [
+                        {
+                            label: `ナビゲーション ウィンドウ ${showSidebar ? "✔" : ""}`,
+                            action: async () => {
+                                showSidebar = !showSidebar;
+                                await saveSetting("explorerShowSidebar", showSidebar);
+                                render(currentPath);
+                            }
+                        },
+                        { label: "---" },
                         { label: `表示: 大アイコン ${viewMode === "icon" ? "✔" : ""}`, action: async () => { viewMode = "icon"; await saveSetting("explorerViewMode", viewMode); render(currentPath); } },
                         { label: `表示: リスト ${viewMode === "list" ? "✔" : ""}`, action: async () => { viewMode = "list"; await saveSetting("explorerViewMode", viewMode); render(currentPath); } },
                         { label: `表示: 詳細 ${viewMode === "details" ? "✔" : ""}`, action: async () => { viewMode = "details"; await saveSetting("explorerViewMode", viewMode); render(currentPath); } },
@@ -2006,7 +2031,73 @@ export default async function Explorer(root, options = {}) {
         requestAnimationFrame(() => {
             updateTitle_explorer(path);
         });
+        renderSidebar()
     };
+
+    // ★追加: 左ナビゲーションを描画・更新する関数
+    function renderSidebar() {
+        if (!sidebarContainer) return;
+        sidebarContainer.style.display = showSidebar ? "block" : "none";
+        if (!showSidebar) return;
+
+        sidebarContainer.innerHTML = "";
+
+        const createSidebarItem = (icon, label, targetPath) => {
+            const item = document.createElement("div");
+            item.className = "sidebar-item";
+            item.style.cssText = "display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: 4px; cursor: pointer; margin-bottom: 2px;";
+
+            if (currentPath === targetPath || (targetPath === "" && currentPath === "")) {
+                item.style.background = "#e5f3ff";
+            }
+
+            item.onmouseover = () => { if (currentPath !== targetPath) item.style.background = "#ececec"; };
+            item.onmouseout = () => { if (currentPath !== targetPath) item.style.background = "transparent"; };
+
+            const iconSpan = document.createElement("span");
+            iconSpan.textContent = icon;
+            iconSpan.style.fontSize = "16px";
+
+            const textSpan = document.createElement("span");
+            textSpan.textContent = label;
+            textSpan.style.whiteSpace = "nowrap";
+            textSpan.style.overflow = "hidden";
+            textSpan.style.textOverflow = "ellipsis";
+
+            item.appendChild(iconSpan);
+            item.appendChild(textSpan);
+
+            item.onclick = () => {
+                navigateTo(targetPath);
+            };
+
+            return item;
+        };
+
+        const quickAccessTitle = document.createElement("div");
+        quickAccessTitle.textContent = "クイック アクセス";
+        quickAccessTitle.className = "border2";
+        quickAccessTitle.style.cssText = "font-size: 11px; color: #000; padding: 2px 2px; font-weight: bold; background: #C3C7CB;";
+        sidebarContainer.appendChild(quickAccessTitle);
+
+        sidebarContainer.appendChild(createSidebarItem("🖥️", "PC", ""));
+        sidebarContainer.appendChild(createSidebarItem("💻", "デスクトップ", "Desktop"));
+        sidebarContainer.appendChild(createSidebarItem("🗑️", "ゴミ箱", "Trash"));
+
+        const rootNode = resolveFS("");
+        if (rootNode) {
+            const otherFolders = Object.keys(rootNode).filter(name => !isSystemMetaKey(name) && rootNode[name].type === "folder" && name !== "Desktop" && name !== "Trash");
+            if (otherFolders.length > 0) {
+                const divider = document.createElement("hr");
+                divider.style.cssText = "border: 0; border-top: 1px solid #e0e0e0; margin: 8px 4px;";
+                sidebarContainer.appendChild(divider);
+
+                otherFolders.forEach(folderName => {
+                    sidebarContainer.appendChild(createSidebarItem("📁", folderName, folderName));
+                });
+            }
+        }
+    }
 
     const renderSearchResults = async (query) => {
         listContainer.innerHTML = "";
@@ -2342,6 +2433,16 @@ export default async function Explorer(root, options = {}) {
             {
                 title: "View",
                 items: [
+                    {
+                        // ★追加: ナビゲーションウィンドウの表示切り替え
+                        label: `ナビゲーション ウィンドウ ${showSidebar ? "✔" : ""}`,
+                        action: async () => {
+                            showSidebar = !showSidebar;
+                            await saveSetting("explorerShowSidebar", showSidebar);
+                            render(currentPath);
+                        }
+                    },
+                    { label: "---" },
                     {
                         label: `表示: 大アイコン ${viewMode === "icon" ? "✔" : ""}`,
                         action: async () => { viewMode = "icon"; await saveSetting("explorerViewMode", viewMode); render(currentPath); }
