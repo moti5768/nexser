@@ -47,6 +47,25 @@
     padding: 0;
 }
 
+.explorer-main-body {
+    display: flex;
+    flex: 1 1 auto;
+    overflow: hidden;
+    position: relative;
+}
+
+.explorer-sidebar {
+    width: 200px;
+    min-width: 150px;
+    max-width: 300px;
+    overflow-y: auto;
+    flex-shrink: 0;
+    padding: 0px;
+    font-size: 12px;
+    user-select: none;
+    border-right: solid 1.5px black;
+}
+
 .explorer-list {
     -webkit-user-select: none;
     -moz-user-select: none;
@@ -62,7 +81,15 @@
 /* 修正箇所：既存の div 指定を詳細表示に干渉させないよう調整 */
 .explorer-list .explorer-item {
     cursor: pointer;
-    /* display: flex は各 view モード側で定義するためここでは指定しない */
+}
+
+.sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 4px;
+    cursor: pointer;
+    margin-bottom: 0px;
 }
 
 /* ファイル内容表示用 */
