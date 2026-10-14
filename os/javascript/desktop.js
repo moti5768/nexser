@@ -2,7 +2,7 @@
 import { FS, forceSave, markDefaultDeleted, setBulkUpdating } from "./fs.js";
 import { launch } from "./kernel.js";
 import { alertWindow, progressWindow } from "./window.js";
-import { resolveFS, validateName, importFileSmart, getUniqueName } from "./fs-utils.js";
+import { resolveFS, validateName, importFileSmart, getUniqueName, isDescendantOrSelf } from "./fs-utils.js";
 import { addRecent } from "./recent.js";
 import { attachContextMenu } from "./context-menu.js";
 import { resolveAppByPath, getIcon } from "./file-associations.js";
@@ -114,7 +114,9 @@ export function buildDesktop() {
         });
         item.addEventListener("dragover", (e) => {
             e.preventDefault();
-            item.classList.add("drag-target");
+            if (!item.classList.contains("drag-target")) {
+                item.classList.add("drag-target");
+            }
         });
 
         item.addEventListener("dragleave", () => {
@@ -126,6 +128,7 @@ export function buildDesktop() {
             item.classList.remove("drag-target");
 
             const dataStr = e.dataTransfer.getData("text/plain");
+            const isCopy = e.ctrlKey; // ★ 追加: Ctrlキーが押されているか判定
             try {
                 const data = dataStr ? JSON.parse(dataStr) : null;
                 if (!data) return;
@@ -133,11 +136,13 @@ export function buildDesktop() {
                 // ターゲットが「リンク（ショートカット）」の場合は実体を解決する
                 let targetType = node.type;
                 let targetNode = node;
+                let targetPath = `Desktop/${name}`; // ターゲットの実際のパス
                 if (targetType === "link") {
                     const resolved = resolveFS(node.target);
                     if (resolved && resolved.type === "folder") {
                         targetType = "folder";
                         targetNode = resolved;
+                        targetPath = node.target; // リンク先の実パス
                     }
                 }
 
@@ -145,6 +150,35 @@ export function buildDesktop() {
                 if (targetType === "folder") {
                     e.stopPropagation();
                     const desktopFS = FS.Desktop;
+
+                    // ⭐ IndexedDB上の実データを移動・コピーするためのAPIをインポート
+                    const { moveFileContent, copyFileContent } = await import("./fs-db.js");
+
+                    // ⭐ 再帰的に配下すべてのファイルの実データパスを移動またはコピーするヘルパー
+                    const processStorageRecursively = async (node, oldBasePath, newBasePath, isCopyMode, visited = new WeakSet(), depth = 0) => {
+                        if (!node || typeof node !== "object" || depth > 50) return;
+                        if (visited.has(node)) return; // 循環参照を検知してブロック
+                        visited.add(node);
+
+                        for (const key of Object.keys(node)) {
+                            if (key === "type" || key === "system" || key === "originalPath" || key === "lastModified") continue;
+                            const child = node[key];
+                            const oldSubPath = `${oldBasePath}/${key}`;
+                            const newSubPath = `${newBasePath}/${key}`;
+
+                            if (child && typeof child === "object") {
+                                if (child.type === "file" || child.type === "app") {
+                                    if (isCopyMode) {
+                                        await copyFileContent(oldSubPath, newSubPath);
+                                    } else {
+                                        await moveFileContent(oldSubPath, newSubPath);
+                                    }
+                                } else if (child.type === "folder") {
+                                    await processStorageRecursively(child, oldSubPath, newSubPath, isCopyMode, visited, depth + 1);
+                                }
+                            }
+                        }
+                    };
 
                     // エクスプローラーからドラッグされた場合
                     if (data.type === "explorer-icons") {
@@ -154,63 +188,107 @@ export function buildDesktop() {
 
                         for (const draggedInfo of data.draggedItems) {
                             const itemName = draggedInfo.name;
-                            if (sourcePath === "Desktop" && itemName === name) continue;
+                            const sourceFullPath = sourcePath ? `${sourcePath}/${itemName}` : itemName;
+
+                            // ⭐ 厳格なガードチェック：自分自身や子孫への移動・コピーは一律でブロック
+                            if (isDescendantOrSelf(sourceFullPath, targetPath)) {
+                                continue;
+                            }
+
+                            if (!isCopy && sourcePath === targetPath && itemName === name) continue;
                             if (!sourceFolder[itemName]) continue;
 
                             const uniqueTargetName = getUniqueName(targetNode, itemName);
-                            const sourceItemNode = sourceFolder[itemName];
-                            const sourceFullPath = `${sourcePath}/${itemName}`;
+                            const sourceItemNode = JSON.parse(JSON.stringify(sourceFolder[itemName]));
+                            const newTargetFullPath = `${targetPath}/${uniqueTargetName}`;
 
-                            let moved = false;
-                            try {
-                                delete sourceFolder[itemName];
-                                moved = true;
-                            } catch (err) {
-                                moved = false;
-                            }
-
-                            if (moved) {
+                            if (isCopy) {
+                                // ⭐ コピーの場合：IndexedDB上の実データを複製し、元データは削除しない
+                                if (sourceItemNode.type === "file" || sourceItemNode.type === "app") {
+                                    await copyFileContent(sourceFullPath, newTargetFullPath);
+                                } else if (sourceItemNode.type === "folder") {
+                                    await processStorageRecursively(sourceItemNode, sourceFullPath, newTargetFullPath, true);
+                                }
                                 targetNode[uniqueTargetName] = sourceItemNode;
                             } else {
-                                targetNode[uniqueTargetName] = {
-                                    type: "link",
-                                    target: sourceFullPath,
-                                    lastModified: Date.now()
-                                };
+                                // ⭐ 移動の場合：IndexedDB上の実データを新しいパスへ移行
+                                if (sourceItemNode.type === "file" || sourceItemNode.type === "app") {
+                                    await moveFileContent(sourceFullPath, newTargetFullPath);
+                                } else if (sourceItemNode.type === "folder") {
+                                    await processStorageRecursively(sourceItemNode, sourceFullPath, newTargetFullPath, false);
+                                }
+
+                                let moved = false;
+                                try {
+                                    delete sourceFolder[itemName];
+                                    moved = true;
+                                } catch (err) {
+                                    moved = false;
+                                }
+
+                                if (moved) {
+                                    targetNode[uniqueTargetName] = sourceItemNode;
+                                } else {
+                                    targetNode[uniqueTargetName] = {
+                                        type: "link",
+                                        target: sourceFullPath,
+                                        lastModified: Date.now()
+                                    };
+                                }
                             }
                         }
                     }
                     // デスクトップ内のアイコンからドラッグされた場合
                     else if (data.type === "desktop-icons") {
                         for (const itemName of data.names) {
-                            if (itemName === name || !desktopFS[itemName]) continue;
+                            if (!desktopFS[itemName]) continue;
 
                             const sourceFullPath = `Desktop/${itemName}`;
-                            const targetFullPath = `Desktop/${name}`; // ドロップ先のフルパス
+                            const targetFullPath = targetPath; // ドロップ先のフルパス
 
-                            // ★ 追加: 移動先が、移動元自身またはその子孫フォルダである場合は移動をブロック
-                            if (targetFullPath === sourceFullPath || targetFullPath.startsWith(sourceFullPath + "/")) {
+                            // ⭐ 厳格なガードチェック：自分自身や子孫フォルダへの移動・コピーを防止
+                            if (isDescendantOrSelf(sourceFullPath, targetFullPath)) {
                                 continue;
                             }
 
+                            if (!isCopy && itemName === name) continue;
+
                             const uniqueTargetName = getUniqueName(targetNode, itemName);
-                            const sourceItemNode = desktopFS[itemName];
+                            const sourceItemNode = JSON.parse(JSON.stringify(desktopFS[itemName]));
+                            const newTargetFullPath = `${targetPath}/${uniqueTargetName}`;
 
-                            let moved = false;
-                            try {
-                                moved = delete desktopFS[itemName];
-                            } catch (e) {
-                                moved = false;
-                            }
-
-                            if (moved) {
+                            if (isCopy) {
+                                // ⭐ コピーの場合：IndexedDB上の実データを複製し、元データは削除しない
+                                if (sourceItemNode.type === "file" || sourceItemNode.type === "app") {
+                                    await copyFileContent(sourceFullPath, newTargetFullPath);
+                                } else if (sourceItemNode.type === "folder") {
+                                    await processStorageRecursively(sourceItemNode, sourceFullPath, newTargetFullPath, true);
+                                }
                                 targetNode[uniqueTargetName] = sourceItemNode;
                             } else {
-                                targetNode[uniqueTargetName] = {
-                                    type: "link",
-                                    target: sourceFullPath,
-                                    lastModified: Date.now()
-                                };
+                                // ⭐ 移動の場合：IndexedDB上の実データを新しいパスへ移行
+                                if (sourceItemNode.type === "file" || sourceItemNode.type === "app") {
+                                    await moveFileContent(sourceFullPath, newTargetFullPath);
+                                } else if (sourceItemNode.type === "folder") {
+                                    await processStorageRecursively(sourceItemNode, sourceFullPath, newTargetFullPath, false);
+                                }
+
+                                let moved = false;
+                                try {
+                                    moved = delete desktopFS[itemName];
+                                } catch (e) {
+                                    moved = false;
+                                }
+
+                                if (moved) {
+                                    targetNode[uniqueTargetName] = sourceItemNode;
+                                } else {
+                                    targetNode[uniqueTargetName] = {
+                                        type: "link",
+                                        target: sourceFullPath,
+                                        lastModified: Date.now()
+                                    };
+                                }
                             }
                         }
                     }
@@ -621,7 +699,9 @@ export function buildDesktop() {
         desktop.addEventListener("dragover", (e) => {
             e.preventDefault();
             e.stopPropagation();
-            desktop.classList.add("drag-over"); // 視覚効果用のCSSクラス
+            if (!desktop.classList.contains("drag-over")) {
+                desktop.classList.add("drag-over");
+            }
         });
 
         desktop.addEventListener("dragleave", (e) => {
@@ -635,43 +715,91 @@ export function buildDesktop() {
             e.stopPropagation();
             desktop.classList.remove("drag-over");
 
-            // ⭐ 追加: エクスプローラーウィンドウからデスクトップへの移動処理
+            // ⭐ 追加: エクスプローラーウィンドウからデスクトップへの移動・コピー処理
             const dataStr = e.dataTransfer.getData("text/plain");
+            const isCopy = e.ctrlKey; // ★ 追加: Ctrlキーが押されているか判定
             try {
                 const data = dataStr ? JSON.parse(dataStr) : null;
                 if (data && data.type === "explorer-icons") {
                     const sourcePath = data.sourcePath || "Desktop";
 
-                    // 同じ場所（DesktopからDesktopの背景）へのドロップは処理しない
-                    if (sourcePath === "Desktop") return;
+                    // 移動の場合で、同じ場所（DesktopからDesktopの背景）へのドロップは処理しない（コピーなら許可）
+                    if (!isCopy && sourcePath === "Desktop") return;
 
                     const sourceFolder = resolveFS(sourcePath);
                     const targetFolderNode = FS.Desktop;
                     if (sourceFolder && targetFolderNode) {
+                        // ⭐ IndexedDB上の実データを移動・コピーするためのAPIをインポート
+                        const { moveFileContent, copyFileContent } = await import("./fs-db.js");
+
+                        // ⭐ 再帰的に配下すべてのファイルの実データパスを移動またはコピーするヘルパー
+                        const processStorageRecursively = async (node, oldBasePath, newBasePath, isCopyMode, visited = new WeakSet(), depth = 0) => {
+                            if (!node || typeof node !== "object" || depth > 50) return;
+                            if (visited.has(node)) return; // 循環参照を検知してブロック
+                            visited.add(node);
+
+                            for (const key of Object.keys(node)) {
+                                if (key === "type" || key === "system" || key === "originalPath" || key === "lastModified") continue;
+                                const child = node[key];
+                                const oldSubPath = `${oldBasePath}/${key}`;
+                                const newSubPath = `${newBasePath}/${key}`;
+
+                                if (child && typeof child === "object") {
+                                    if (child.type === "file" || child.type === "app") {
+                                        if (isCopyMode) {
+                                            await copyFileContent(oldSubPath, newSubPath);
+                                        } else {
+                                            await moveFileContent(oldSubPath, newSubPath);
+                                        }
+                                    } else if (child.type === "folder") {
+                                        await processStorageRecursively(child, oldSubPath, newSubPath, isCopyMode, visited, depth + 1);
+                                    }
+                                }
+                            }
+                        };
+
                         for (const draggedInfo of data.draggedItems) {
                             const itemName = draggedInfo.name;
                             if (!sourceFolder[itemName]) continue;
 
                             const uniqueTargetName = getUniqueName(targetFolderNode, itemName);
-                            const sourceItemNode = sourceFolder[itemName];
+                            const sourceItemNode = JSON.parse(JSON.stringify(sourceFolder[itemName]));
                             const sourceFullPath = `${sourcePath}/${itemName}`;
+                            const newTargetFullPath = `Desktop/${uniqueTargetName}`;
 
-                            let moved = false;
-                            try {
-                                delete sourceFolder[itemName];
-                                moved = true;
-                            } catch (err) {
-                                moved = false;
-                            }
-
-                            if (moved) {
+                            if (isCopy) {
+                                // ⭐ コピーの場合：IndexedDB上の実データを複製し、元データは削除しない
+                                if (sourceItemNode.type === "file" || sourceItemNode.type === "app") {
+                                    await copyFileContent(sourceFullPath, newTargetFullPath);
+                                } else if (sourceItemNode.type === "folder") {
+                                    await processStorageRecursively(sourceItemNode, sourceFullPath, newTargetFullPath, true);
+                                }
                                 targetFolderNode[uniqueTargetName] = sourceItemNode;
                             } else {
-                                targetFolderNode[uniqueTargetName] = {
-                                    type: "link",
-                                    target: sourceFullPath,
-                                    lastModified: Date.now()
-                                };
+                                // ⭐ 移動の場合：IndexedDB上の実データを Desktop 配下へ安全に移行
+                                if (sourceItemNode.type === "file" || sourceItemNode.type === "app") {
+                                    await moveFileContent(sourceFullPath, newTargetFullPath);
+                                } else if (sourceItemNode.type === "folder") {
+                                    await processStorageRecursively(sourceItemNode, sourceFullPath, newTargetFullPath, false);
+                                }
+
+                                let moved = false;
+                                try {
+                                    delete sourceFolder[itemName];
+                                    moved = true;
+                                } catch (err) {
+                                    moved = false;
+                                }
+
+                                if (moved) {
+                                    targetFolderNode[uniqueTargetName] = sourceItemNode;
+                                } else {
+                                    targetFolderNode[uniqueTargetName] = {
+                                        type: "link",
+                                        target: sourceFullPath,
+                                        lastModified: Date.now()
+                                    };
+                                }
                             }
                         }
 

@@ -125,6 +125,96 @@ export async function getFileContent(path) {
     return meta;
 }
 
+// =========================
+// 【追加】ファイル実データのコピー・移動用API
+// =========================
+
+/**
+ * ファイル実データを別のパスにコピーする
+ */
+export async function copyFileContent(oldPath, newPath) {
+    const meta = await dbGet(oldPath, STORE_FILES);
+    if (!meta) return;
+
+    // チャンク化されている場合は全チャンクを完全に取得し終えてから安全に一括書き込み
+    if (typeof meta === "object" && meta.__IS_CHUNKED__) {
+        const chunkPromises = [];
+        for (let i = 0; i < meta.totalChunks; i++) {
+            chunkPromises.push(dbGet(`${oldPath}__chunk_${i}`, STORE_FILES));
+        }
+        const chunks = await Promise.all(chunkPromises);
+
+        await withStore(STORE_FILES, "readwrite", store => {
+            store.put(meta, newPath);
+            chunks.forEach((chunk, i) => {
+                if (chunk !== undefined) {
+                    store.put(chunk, `${newPath}__chunk_${i}`);
+                }
+            });
+        });
+    } else {
+        await withStore(STORE_FILES, "readwrite", store => {
+            store.put(meta, newPath);
+        });
+    }
+}
+
+/**
+ * ファイル実データを安全に別のパスに移動（リネーム）する
+ */
+export async function moveFileContent(oldPath, newPath) {
+    if (oldPath === newPath) return;
+
+    const db = await openDB();
+
+    // 1. まずコピーを実行
+    try {
+        await copyFileContent(oldPath, newPath);
+    } catch (err) {
+        throw new Error(`Move failed during copy phase: ${err.message}`);
+    }
+
+    // 2. コピーが成功したことを検証してから、元データを削除
+    try {
+        const verifyMeta = await db.transaction(STORE_FILES, "readonly").objectStore(STORE_FILES).get(newPath);
+        if (verifyMeta !== undefined) {
+            await deleteFileContentRecursive(oldPath);
+        } else {
+            throw new Error("Copy verification failed. Aborting source deletion.");
+        }
+    } catch (err) {
+        console.error("[FS-DB] Safe move rollback/cleanup warning:", err);
+        throw err;
+    }
+}
+
+/**
+ * 指定パスおよび関連するチャンクデータを完全に削除する
+ */
+export async function deleteFileContentRecursive(path) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction([STORE_FILES], "readwrite");
+        const store = tx.objectStore(STORE_FILES);
+
+        store.delete(path);
+
+        // チャンクの全削除を試みる
+        const range = IDBKeyRange.bound(`${path}__chunk_0`, `${path}__chunk_\uffff`);
+        const req = store.openCursor(range);
+        req.onsuccess = (e) => {
+            const cursor = e.target.result;
+            if (cursor) {
+                store.delete(cursor.primaryKey);
+                cursor.continue();
+            }
+        };
+
+        tx.oncomplete = () => resolve();
+        tx.onerror = (e) => reject(tx.target.error);
+    });
+}
+
 export async function saveFS(fs) {
     saveChain = saveChain.then(async () => {
         if (navigator.storage && navigator.storage.estimate) {

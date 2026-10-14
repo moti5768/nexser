@@ -3,16 +3,16 @@ import { FS } from "./fs.js";
 
 /**
  * パスからファイルシステム上のノードを解決する
- * 【修正】visited を第4引数として引き継ぐことで、シンボリックリンクの循環参照による無限再帰（フリーズ）を完全に防止
+ * 【根本改善】同一パス解決セッション内での重複追跡を防ぎ、爆発的な負荷を防止する
  */
-export function resolveFS(path, cwd = "C:/", root = FS, visited = new Set()) {
+export function resolveFS(path, cwd = "C:/", root = FS, linkChainVisited = new Set()) {
     if (typeof path !== "string") return null;
 
     // パスを正規化してから処理
     const normalized = normalizePath(path, cwd);
     const parts = normalized.replace(/^C:\//, "").split("/").filter(Boolean);
 
-    let cur = root; // インポートした FS ではなく、引数の root を起点にする
+    let cur = root;
 
     for (const p of parts) {
         if (!cur || typeof cur !== "object") return null;
@@ -21,16 +21,26 @@ export function resolveFS(path, cwd = "C:/", root = FS, visited = new Set()) {
         // リンク解決のループ
         let linkSteps = 0;
         while (cur && cur.type === "link") {
-            // target が文字列でない場合、または既に解決済みのリンクオブジェクト（循環参照）、または単一コンテキストで深すぎる場合はリンク切れ(null)とする
-            if (typeof cur.target !== "string" || visited.has(cur) || linkSteps > 50) {
+            // target が文字列でない場合、または深すぎる場合 (上限を 10 に厳格化)
+            if (typeof cur.target !== "string" || linkSteps > 10) {
                 return null;
             }
 
-            // 現在のリンクオブジェクトを訪問済みリストに登録
-            visited.add(cur);
+            // 🔗 既にこのセッション内で訪れているリンクを検知した場合
+            if (linkChainVisited.has(cur)) {
+                break; // 無限ループや重複探索を完全に防ぐため即座に打ち切る
+            }
 
-            // 【修正の要】共有された巡回履歴（visited）を第4引数に渡して再帰し、システム全体でループを検知できるようにする
-            cur = resolveFS(cur.target, "C:/", root, visited);
+            // セッション全体を通して二度と同じリンクを辿らないよう追加（finallyでの削除を廃止）
+            linkChainVisited.add(cur);
+
+            const resolvedTarget = resolveFS(cur.target, "C:/", root, linkChainVisited);
+            if (resolvedTarget !== null) {
+                cur = resolvedTarget;
+            } else {
+                break;
+            }
+
             linkSteps++;
         }
 
@@ -205,4 +215,52 @@ export function getUniqueName(parentNode, idealName) {
     }
 
     return finalName;
+}
+
+/**
+ * 移動先が自分自身、その子孫、あるいはシンボリックリンク先の実体・子孫になっていないかを厳格にチェックする安全確認関数（完全リンク解決版）
+ * @param {string} sourcePath 移動元アイテムのフルパス (例: "Desktop/FolderA")
+ * @param {string} targetPath 移動先のフルパス (例: "Desktop/FolderA/SubFolder")
+ * @returns {boolean} 自分自身または子孫である場合は true (不正な移動)
+ */
+export function isDescendantOrSelf(sourcePath, targetPath) {
+    if (!sourcePath || !targetPath) return false;
+
+    // 🔗 パスの途中に含まれるリンク（ショートカット）をコンポーネントごとに実体へ展開し、
+    // 完全に解決された「物理パス（正規パス）」を取得するヘルパー
+    const getCanonicalPath = (p) => {
+        const norm = normalizePath(p);
+        const parts = norm.replace(/^C:\//, "").split("/").filter(Boolean);
+        let currentPath = "C:/";
+
+        for (const part of parts) {
+            const nextPath = `${currentPath}${currentPath.endsWith("/") ? "" : "/"}${part}`;
+            const node = resolveFS(nextPath);
+            // 途中にリンクがあれば、そのターゲット（実体）に置き換える
+            if (node && node.type === "link" && typeof node.target === "string") {
+                currentPath = normalizePath(node.target);
+            } else {
+                currentPath = nextPath;
+            }
+        }
+        return normalizePath(currentPath);
+    };
+
+    const sourceNorm = getCanonicalPath(sourcePath);
+    const targetNorm = getCanonicalPath(targetPath);
+
+    if (sourceNorm === targetNorm) return true;
+
+    // 解決済みの物理パス同士で祖先・子孫関係をチェック
+    let current = targetNorm;
+    let steps = 0;
+    while (current && steps < 100) {
+        if (current === sourceNorm) return true;
+        const lastSlash = current.lastIndexOf("/");
+        if (lastSlash === -1 || lastSlash <= 2) break;
+        current = current.substring(0, lastSlash);
+        steps++;
+    }
+
+    return false;
 }

@@ -1,7 +1,7 @@
 // Explorer.js
 import { launch } from "../kernel.js";
 import { showModalWindow, alertWindow, bringToFront, progressWindow } from "../window.js";
-import { resolveFS, validateName, importFileSmart, getUniqueName } from "../fs-utils.js";
+import { resolveFS, validateName, importFileSmart, getUniqueName, isDescendantOrSelf } from "../fs-utils.js";
 import { FS, initFS, forceSave, markDefaultDeleted, setBulkUpdating } from "../fs.js";
 import { attachContextMenu } from "../context-menu.js";
 import { resolveAppByPath, getIcon } from "../file-associations.js";
@@ -527,93 +527,100 @@ export default async function Explorer(root, options = {}) {
         }
 
         function buildTree(node, parentEl, path = "", depth = 0, prefix = "", currentPath = "", visited = new Set()) {
-            // 【重要】無限ループ防止: 既に訪れたオブジェクト（ノード）ならスキップ
+            // 【重要】無限ループ防止: 祖先チェーン内に既に存在する場合は逆流（無限ループ）を防ぐためにスキップ
             if (node && typeof node === "object") {
                 if (visited.has(node)) return;
                 visited.add(node);
             }
 
-            // メタデータを除外してループ
-            const entries = Object.entries(node).filter(([k, v]) => !isSystemMetaKey(k) && (showHidden || !v.hidden)); // ★隠しファイル表示設定を考慮
+            try {
+                // メタデータを除外してループ
+                const entries = Object.entries(node).filter(([k, v]) => !isSystemMetaKey(k) && (showHidden || !v.hidden)); // ★隠しファイル表示設定を考慮
 
-            // ⭐ 改善1: メモリ上に一時的なDOMの格納庫（フラグメント）を作成
-            const fragment = document.createDocumentFragment();
+                // ⭐ 改善1: メモリ上に一時的なDOMの格納庫（フラグメント）を作成
+                const fragment = document.createDocumentFragment();
 
-            entries.forEach(([name, child], index) => {
-                const fullPath = path ? `${path}/${name}` : name;
+                entries.forEach(([name, child], index) => {
+                    const fullPath = path ? `${path}/${name}` : name;
 
-                // 【重要】isFolder の判定を厳格にする (link は中身を追跡しない)
-                const isFolder = child.type === "folder";
+                    // 【重要】isFolder の判定を厳格にする (link は中身を追跡しない)
+                    const isFolder = child.type === "folder";
 
-                // 子要素があるか判定（メタデータ以外のキーがあるか）
-                const hasChildren = isFolder && Object.keys(child).some(k => !isSystemMetaKey(k));
+                    // 子要素があるか判定（メタデータ以外のキーがあるか）
+                    const hasChildren = isFolder && Object.keys(child).some(k => !isSystemMetaKey(k));
 
-                const isLast = index === entries.length - 1;
-                const newPrefix = prefix + (isLast ? "└─ " : "├─ ");
+                    const isLast = index === entries.length - 1;
+                    const newPrefix = prefix + (isLast ? "└─ " : "├─ ");
 
-                const item = document.createElement("div");
-                item.className = "tree-item";
-                item.style.fontFamily = "Consolas, monospace";
-                item.style.cursor = "pointer";
+                    const item = document.createElement("div");
+                    item.className = "tree-item";
+                    item.style.fontFamily = "Consolas, monospace";
+                    item.style.cursor = "pointer";
 
-                // ⭐ 改善2: 実際の画面（parentEl）ではなく、フラグメントに追加する
-                fragment.appendChild(item);
+                    // ⭐ 改善2: 実際の画面（parentEl）ではなく、フラグメントに追加する
+                    fragment.appendChild(item);
 
-                let arrowBtn, subContainer;
+                    let arrowBtn, subContainer;
 
-                if (hasChildren) {
-                    arrowBtn = document.createElement("button");
-                    arrowBtn.className = "tree-arrow";
-                    arrowBtn.textContent = "▶";
-                    arrowBtn.style.cssText = "margin-right:4px; font-family:Consolas, monospace; width:20px; height:20px; padding:0; line-height:18px; text-align:center;";
-                    item.appendChild(arrowBtn);
+                    if (hasChildren) {
+                        arrowBtn = document.createElement("button");
+                        arrowBtn.className = "tree-arrow";
+                        arrowBtn.textContent = "▶";
+                        arrowBtn.style.cssText = "margin-right:4px; font-family:Consolas, monospace; width:20px; height:20px; padding:0; line-height:18px; text-align:center;";
+                        item.appendChild(arrowBtn);
 
-                    subContainer = document.createElement("div");
-                    subContainer.style.marginLeft = "12px";
+                        subContainer = document.createElement("div");
+                        subContainer.style.marginLeft = "12px";
 
-                    // ⭐ 改善3: こちらもフラグメントに追加する
-                    fragment.appendChild(subContainer);
+                        // ⭐ 改善3: こちらもフラグメントに追加する
+                        fragment.appendChild(subContainer);
 
-                    if (currentPath.startsWith(fullPath)) {
-                        subContainer.style.display = "block";
-                        arrowBtn.textContent = "▼";
+                        if (currentPath.startsWith(fullPath)) {
+                            subContainer.style.display = "block";
+                            arrowBtn.textContent = "▼";
+                        } else {
+                            subContainer.style.display = "none";
+                        }
+
+                        arrowBtn.addEventListener("click", e => {
+                            e.stopPropagation();
+                            const expanded = subContainer.style.display === "block";
+                            subContainer.style.display = expanded ? "none" : "block";
+                            arrowBtn.textContent = expanded ? "▶" : "▼";
+                        });
                     } else {
-                        subContainer.style.display = "none";
+                        const spacer = document.createElement("span");
+                        spacer.style.display = "inline-block";
+                        spacer.style.width = "24px";
+                        item.appendChild(spacer);
                     }
 
-                    arrowBtn.addEventListener("click", e => {
+                    const text = document.createElement("span");
+                    text.textContent = newPrefix + name;
+                    item.appendChild(text);
+
+                    item.addEventListener("click", e => {
                         e.stopPropagation();
-                        const expanded = subContainer.style.display === "block";
-                        subContainer.style.display = expanded ? "none" : "block";
-                        arrowBtn.textContent = expanded ? "▶" : "▼";
+                        openFSItem(name, child, path || "");
+                        if (win._treePanel) {
+                            win._treePanel.style.display = "none";
+                        }
                     });
-                } else {
-                    const spacer = document.createElement("span");
-                    spacer.style.display = "inline-block";
-                    spacer.style.width = "24px";
-                    item.appendChild(spacer);
-                }
 
-                const text = document.createElement("span");
-                text.textContent = newPrefix + name;
-                item.appendChild(text);
-
-                item.addEventListener("click", e => {
-                    e.stopPropagation();
-                    openFSItem(name, child, path || "");
-                    if (win._treePanel) {
-                        win._treePanel.style.display = "none";
+                    // 再帰呼び出し時、visited セットを引き継ぐ
+                    if (hasChildren) {
+                        buildTree(child, subContainer, fullPath, depth + 1, prefix + (isLast ? "   " : "│  "), currentPath, visited);
                     }
                 });
 
-                // 再帰呼び出し時、visited セットを引き継ぐ
-                if (hasChildren) {
-                    buildTree(child, subContainer, fullPath, depth + 1, prefix + (isLast ? "   " : "│  "), currentPath, visited);
+                // ⭐ 改善4: ループがすべて終わった後、一括で実際の画面（親要素）に反映させる
+                parentEl.appendChild(fragment);
+            } finally {
+                // ★ 改善の核心: 再帰のスコープを抜けるときにセットから削除し、別枝からの正しい描画を許可する
+                if (node && typeof node === "object") {
+                    visited.delete(node);
                 }
-            });
-
-            // ⭐ 改善4: ループがすべて終わった後、一括で実際の画面（親要素）に反映させる
-            parentEl.appendChild(fragment);
+            }
         }
 
         // 呼び出し側も visited をリセットするように変更
@@ -673,7 +680,9 @@ export default async function Explorer(root, options = {}) {
             listContainer.addEventListener("dragover", (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                listContainer.classList.add("drag-over");
+                if (!listContainer.classList.contains("drag-over")) {
+                    listContainer.classList.add("drag-over");
+                }
             });
 
             listContainer.addEventListener("dragleave", (e) => {
@@ -1560,7 +1569,11 @@ export default async function Explorer(root, options = {}) {
                     e.preventDefault();
                     e.stopPropagation();
                     e.dataTransfer.dropEffect = "move";
-                    item.classList.add("drag-target");
+
+                    // すでにクラスがある場合は無駄なDOM操作を避ける
+                    if (!item.classList.contains("drag-target")) {
+                        item.classList.add("drag-target");
+                    }
                 });
 
                 item.addEventListener("dragleave", (e) => {
@@ -1882,60 +1895,107 @@ export default async function Explorer(root, options = {}) {
         return true;
     }
 
-
-
-
-
-
-
-
-
     /**
          * 共通のアイテム移動・コピー処理（エクスプローラー内 / デスクトップからのD&D共通）
-         * @param {Object} data - dataTransferから取得したデータオブジェクト[cite: 1]
-         * @param {string} targetPath - 移動先のパス[cite: 1]
-         * @param {string} currentPath - 現在のパス[cite: 1]
-         * @param {Function} render - 再描画コールバック[cite: 1]
-         * @param {boolean} [isCopy=false] - コピー操作かどうか
+         * @param {Object} data dataTransferから取得したデータオブジェクト
+         * @param {string} targetPath 移動先のパス
+         * @param {string} currentPath 現在のパス
+         * @param {Function} render 再描画コールバック
+         * @param {boolean} [isCopy=false] コピー操作かどうか
          */
     async function handleItemDropMove(data, targetPath, currentPath, render, isCopy = false) {
         if (!data) return false;
-        const targetFolderNode = resolveFS(targetPath);
+
+        // 🔗 リンク（ショートカット）や階層を完全にたどって物理パス（正規パス）に解決するヘルパー
+        const getEffectivePhysicalPath = (p) => {
+            if (!p) return "";
+            let current = p;
+            for (let i = 0; i < 10; i++) {
+                const node = resolveFS(current);
+                if (node && node.type === "link" && typeof node.target === "string") {
+                    current = node.target;
+                } else {
+                    break;
+                }
+            }
+            return current;
+        };
+
+        const effectiveTargetPath = getEffectivePhysicalPath(targetPath);
+        const targetFolderNode = resolveFS(effectiveTargetPath);
         if (!targetFolderNode || targetFolderNode.type !== "folder") return false;
 
-        // 1. エクスプローラー内からのD&D（移動またはコピー）
-        if (data.type === "explorer-icons") {
-            const sourcePath = data.sourcePath || currentPath;
-            const sourceFolder = resolveFS(sourcePath);
-            if (!sourceFolder) return false;
+        // fs-db.js から実データ操作関数をインポート
+        const { copyFileContent, moveFileContent } = await import("../fs-db.js");
 
-            for (const draggedInfo of data.draggedItems) {
-                const itemName = draggedInfo.name;
-                const sourceFullPath = sourcePath ? `${sourcePath}/${itemName}` : itemName;
+        // 再帰的に配下すべてのファイルの実データパスをコピー/移動するヘルパー
+        const processStorageRecursively = async (node, oldBasePath, newBasePath, isCopyMode, visited = new WeakSet(), depth = 0) => {
+            if (!node || typeof node !== "object" || depth > 50) return;
+            if (visited.has(node)) return; // 循環参照を検知してブロック
+            visited.add(node);
 
-                // 移動の場合：同一フォルダ内、または自分自身・子孫フォルダへのドロップは無効
-                if (!isCopy) {
-                    if (targetPath === sourcePath || targetPath === sourceFullPath || targetPath.startsWith(sourceFullPath + "/")) {
-                        continue;
-                    }
-                } else {
-                    // コピーの場合：自分自身や子孫フォルダへのコピーのみ無効（同一フォルダ内へのコピーは別名で許可）
-                    if (targetPath === sourceFullPath || targetPath.startsWith(sourceFullPath + "/")) {
-                        continue;
+            for (const key of Object.keys(node)) {
+                if (isSystemMetaKey(key)) continue;
+                const child = node[key];
+                const oldSubPath = `${oldBasePath}/${key}`;
+                const newSubPath = `${newBasePath}/${key}`;
+
+                if (child && typeof child === "object") {
+                    if (child.type === "file" || child.type === "app") {
+                        if (isCopyMode) {
+                            await copyFileContent(oldSubPath, newSubPath);
+                        } else {
+                            await moveFileContent(oldSubPath, newSubPath);
+                        }
+                    } else if (child.type === "folder") {
+                        await processStorageRecursively(child, oldSubPath, newSubPath, isCopyMode, visited, depth + 1);
                     }
                 }
+            }
+        };
 
-                if (!sourceFolder[itemName]) continue;
+        setBulkUpdating(true);
+        let hasModified = false;
+
+        try {
+            // 共通のアイテム処理用内部関数
+            const processDropItem = async (sourceFullPath, sourceFolder, itemName) => {
+                const effectiveSourcePath = getEffectivePhysicalPath(sourceFullPath);
+
+                // ⭐ 厳格なガードチェック：リンク先の実体も含めて自分自身や子孫への移動・コピーを完全ブロック
+                if (isDescendantOrSelf(effectiveSourcePath, effectiveTargetPath)) {
+                    return;
+                }
+
+                // 移動の場合で、同一フォルダ内（同じ場所へのドロップ）の場合はスキップ（物理パスベースで比較）
+                const parentOfSource = effectiveSourcePath.substring(0, effectiveSourcePath.lastIndexOf("/"));
+                if (!isCopy && effectiveTargetPath === parentOfSource) {
+                    return;
+                }
+
+                if (!sourceFolder[itemName]) return;
 
                 const uniqueTargetName = getUniqueName(targetFolderNode, itemName);
-                // 参照汚染を防ぐため安全にディープコピー
                 const sourceItemNode = JSON.parse(JSON.stringify(sourceFolder[itemName]));
+                const newTargetFullPath = effectiveTargetPath ? `${effectiveTargetPath}/${uniqueTargetName}` : uniqueTargetName;
 
                 if (isCopy) {
-                    // コピー処理
+                    // 【コピーの場合】IndexedDB上の実データも複製
+                    if (sourceItemNode.type === "file" || sourceItemNode.type === "app") {
+                        await copyFileContent(sourceFullPath, newTargetFullPath);
+                    } else if (sourceItemNode.type === "folder") {
+                        await processStorageRecursively(sourceItemNode, sourceFullPath, newTargetFullPath, true);
+                    }
                     targetFolderNode[uniqueTargetName] = sourceItemNode;
+                    hasModified = true;
                 } else {
-                    // 移動処理
+                    // 【移動の場合】IndexedDB上の実データも新しいパスへ移行
+                    if (sourceItemNode.type === "file" || sourceItemNode.type === "app") {
+                        await moveFileContent(sourceFullPath, newTargetFullPath);
+                    } else if (sourceItemNode.type === "folder") {
+                        await processStorageRecursively(sourceItemNode, sourceFullPath, newTargetFullPath, false);
+                    }
+
                     let moved = false;
                     try {
                         moved = delete sourceFolder[itemName];
@@ -1952,71 +2012,61 @@ export default async function Explorer(root, options = {}) {
                             lastModified: Date.now()
                         };
                     }
+                    hasModified = true;
+                }
+            };
+
+            // 1. エクスプローラー内からのD&D（移動またはコピー）
+            if (data.type === "explorer-icons") {
+                const sourcePath = data.sourcePath !== undefined ? data.sourcePath : currentPath;
+                const sourceFolder = resolveFS(sourcePath);
+                if (!sourceFolder) return false;
+
+                // 階層が深い順（子やファイルが先、親が後）にソートして処理
+                const sortedItems = [...data.draggedItems].sort((a, b) => {
+                    const pathA = sourcePath ? `${sourcePath}/${a.name}` : a.name;
+                    const pathB = sourcePath ? `${sourcePath}/${b.name}` : b.name;
+                    return pathB.split('/').length - pathA.split('/').length;
+                });
+
+                for (const draggedInfo of sortedItems) {
+                    const itemName = draggedInfo.name;
+                    const sourceFullPath = sourcePath ? `${sourcePath}/${itemName}` : itemName;
+                    await processDropItem(sourceFullPath, sourceFolder, itemName);
+                }
+            }
+            // 2. デスクトップからのD&D（移動またはコピー）
+            else if (data.type === "desktop-icons") {
+                const desktopFS = resolveFS("Desktop");
+                if (!desktopFS) return false;
+
+                const sortedNames = [...data.names].sort((a, b) => {
+                    const pathA = `Desktop/${a}`;
+                    const pathB = `Desktop/${b}`;
+                    return pathB.split('/').length - pathA.split('/').length;
+                });
+
+                for (const itemName of sortedNames) {
+                    if (!desktopFS[itemName]) continue;
+                    const sourceFullPath = `Desktop/${itemName}`;
+                    await processDropItem(sourceFullPath, desktopFS, itemName);
                 }
             }
 
-            await forceSave();
-            window.dispatchEvent(new Event("fs-updated"));
-            render(currentPath);
-            return true;
-        }
-        // 2. デスクトップからのD&D（移動またはコピー）
-        else if (data.type === "desktop-icons") {
-            const desktopFS = resolveFS("Desktop");
-            if (!desktopFS) return false;
-
-            for (const itemName of data.names) {
-                if (!desktopFS[itemName]) continue;
-
-                const sourceFullPath = `Desktop/${itemName}`;
-
-                // 移動の場合で、デスクトップからデスクトップ（同一場所）への移動ならスキップ
-                if (!isCopy && targetPath === "Desktop") {
-                    continue;
-                }
-
-                // 自分自身や子孫フォルダへの移動・コピーを防止
-                if (!isCopy && (targetPath === sourceFullPath || targetPath.startsWith(sourceFullPath + "/"))) {
-                    continue;
-                }
-
-                const uniqueTargetName = getUniqueName(targetFolderNode, itemName);
-                const sourceItemNode = JSON.parse(JSON.stringify(desktopFS[itemName]));
-
-                if (isCopy) {
-                    targetFolderNode[uniqueTargetName] = sourceItemNode;
-                } else {
-                    let moved = false;
-                    try {
-                        moved = delete desktopFS[itemName];
-                    } catch (err) {
-                        moved = false;
-                    }
-
-                    if (moved) {
-                        targetFolderNode[uniqueTargetName] = sourceItemNode;
-                    } else {
-                        targetFolderNode[uniqueTargetName] = {
-                            type: "link",
-                            target: sourceFullPath,
-                            lastModified: Date.now()
-                        };
-                    }
-                }
+            if (hasModified) {
+                await forceSave();
+                window.dispatchEvent(new Event("fs-updated"));
+                render(currentPath);
             }
-
-            await forceSave();
-            window.dispatchEvent(new Event("fs-updated"));
-            render(currentPath);
             return true;
+
+        } catch (err) {
+            console.error("Drop processing error:", err);
+            return false;
+        } finally {
+            setBulkUpdating(false);
         }
-        return false;
     }
-
-
-
-
-
 
     // ★追加: 左ナビゲーション（ツリー表示対応）を描画・更新する関数
     function renderSidebar() {
