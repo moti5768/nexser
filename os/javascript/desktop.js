@@ -138,11 +138,21 @@ export function buildDesktop() {
                 let targetNode = node;
                 let targetPath = `Desktop/${name}`; // ターゲットの実際のパス
                 if (targetType === "link") {
-                    const resolved = resolveFS(node.target);
-                    if (resolved && resolved.type === "folder") {
-                        targetType = "folder";
-                        targetNode = resolved;
-                        targetPath = node.target; // リンク先の実パス
+                    let currentTarget = node.target;
+                    let resolvedNode = null;
+                    for (let i = 0; i < 10; i++) {
+                        const nodeRes = resolveFS(currentTarget);
+                        if (nodeRes && nodeRes.type === "link" && typeof nodeRes.target === "string") {
+                            currentTarget = nodeRes.target;
+                        } else {
+                            resolvedNode = nodeRes;
+                            break;
+                        }
+                    }
+                    if (resolvedNode) {
+                        targetType = resolvedNode.type;
+                        targetNode = resolvedNode;
+                        targetPath = currentTarget;
                     }
                 }
 
@@ -240,6 +250,7 @@ export function buildDesktop() {
                     }
                     // デスクトップ内のアイコンからドラッグされた場合
                     else if (data.type === "desktop-icons") {
+                        const sourcePath = "Desktop";
                         for (const itemName of data.names) {
                             if (!desktopFS[itemName]) continue;
 
@@ -251,7 +262,7 @@ export function buildDesktop() {
                                 continue;
                             }
 
-                            if (!isCopy && itemName === name) continue;
+                            if (!isCopy && sourcePath === targetPath && itemName === name) continue;
 
                             const uniqueTargetName = getUniqueName(targetNode, itemName);
                             const sourceItemNode = JSON.parse(JSON.stringify(desktopFS[itemName]));
@@ -264,6 +275,7 @@ export function buildDesktop() {
                                 } else if (sourceItemNode.type === "folder") {
                                     await processStorageRecursively(sourceItemNode, sourceFullPath, newTargetFullPath, true);
                                 }
+                                // link（ショートカット）の場合は実データがないためそのまま複製を格納
                                 targetNode[uniqueTargetName] = sourceItemNode;
                             } else {
                                 // ⭐ 移動の場合：IndexedDB上の実データを新しいパスへ移行
@@ -272,6 +284,7 @@ export function buildDesktop() {
                                 } else if (sourceItemNode.type === "folder") {
                                     await processStorageRecursively(sourceItemNode, sourceFullPath, newTargetFullPath, false);
                                 }
+                                // link（ショートカット）の場合は実データがないためmoveFileContentは不要
 
                                 let moved = false;
                                 try {
@@ -283,9 +296,10 @@ export function buildDesktop() {
                                 if (moved) {
                                     targetNode[uniqueTargetName] = sourceItemNode;
                                 } else {
+                                    // ⭐ ショートカットの場合は元のリンク先（target）を維持して安全に移行する
                                     targetNode[uniqueTargetName] = {
                                         type: "link",
-                                        target: sourceFullPath,
+                                        target: sourceItemNode.type === "link" ? sourceItemNode.target : sourceFullPath,
                                         lastModified: Date.now()
                                     };
                                 }

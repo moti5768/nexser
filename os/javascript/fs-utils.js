@@ -5,7 +5,8 @@ import { FS } from "./fs.js";
  * パスからファイルシステム上のノードを解決する
  * 【根本改善】同一パス解決セッション内での重複追跡を防ぎ、爆発的な負荷を防止する
  */
-export function resolveFS(path, cwd = "C:/", root = FS, linkChainVisited = new Set()) {
+// 【改善後】
+export function resolveFS(path, cwd = "C:/", root = FS) {
     if (typeof path !== "string") return null;
 
     // パスを正規化してから処理
@@ -18,31 +19,8 @@ export function resolveFS(path, cwd = "C:/", root = FS, linkChainVisited = new S
         if (!cur || typeof cur !== "object") return null;
         cur = cur[p];
 
-        // リンク解決のループ
-        let linkSteps = 0;
-        while (cur && cur.type === "link") {
-            // target が文字列でない場合、または深すぎる場合 (上限を 10 に厳格化)
-            if (typeof cur.target !== "string" || linkSteps > 10) {
-                return null;
-            }
-
-            // 🔗 既にこのセッション内で訪れているリンクを検知した場合
-            if (linkChainVisited.has(cur)) {
-                break; // 無限ループや重複探索を完全に防ぐため即座に打ち切る
-            }
-
-            // セッション全体を通して二度と同じリンクを辿らないよう追加（finallyでの削除を廃止）
-            linkChainVisited.add(cur);
-
-            const resolvedTarget = resolveFS(cur.target, "C:/", root, linkChainVisited);
-            if (resolvedTarget !== null) {
-                cur = resolvedTarget;
-            } else {
-                break;
-            }
-
-            linkSteps++;
-        }
+        // ✨ 改善: ショートカット（type: "link"）を勝手に実体に展開せず、
+        // リンクオブジェクトのまま保持・返却する（Windowsの挙動に準拠）
 
         if (!cur) return null;
     }
@@ -226,32 +204,24 @@ export function getUniqueName(parentNode, idealName) {
 export function isDescendantOrSelf(sourcePath, targetPath) {
     if (!sourcePath || !targetPath) return false;
 
-    // 🔗 パスの途中に含まれるリンク（ショートカット）をコンポーネントごとに実体へ展開し、
-    // 完全に解決された「物理パス（正規パス）」を取得するヘルパー
-    const getCanonicalPath = (p) => {
-        const norm = normalizePath(p);
-        const parts = norm.replace(/^C:\//, "").split("/").filter(Boolean);
-        let currentPath = "C:/";
+    const sourceNode = resolveFS(sourcePath);
+    if (!sourceNode) return false;
 
-        for (const part of parts) {
-            const nextPath = `${currentPath}${currentPath.endsWith("/") ? "" : "/"}${part}`;
-            const node = resolveFS(nextPath);
-            // 途中にリンクがあれば、そのターゲット（実体）に置き換える
-            if (node && node.type === "link" && typeof node.target === "string") {
-                currentPath = normalizePath(node.target);
-            } else {
-                currentPath = nextPath;
-            }
-        }
-        return normalizePath(currentPath);
-    };
+    // ✨ Windowsの挙動に準拠: ショートカット（link）は単なるファイルであり、
+    // フォルダ構造上の実体ではないため、循環参照や子孫関係の対象外（常に false）とする
+    if (sourceNode.type === "link") {
+        return false;
+    }
 
-    const sourceNorm = getCanonicalPath(sourcePath);
-    const targetNorm = getCanonicalPath(targetPath);
+    if (sourceNode.type !== "folder") {
+        return false;
+    }
+
+    const sourceNorm = normalizePath(sourcePath);
+    const targetNorm = normalizePath(targetPath);
 
     if (sourceNorm === targetNorm) return true;
 
-    // 解決済みの物理パス同士で祖先・子孫関係をチェック
     let current = targetNorm;
     let steps = 0;
     while (current && steps < 100) {

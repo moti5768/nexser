@@ -1,4 +1,6 @@
 // file-associations.js
+// 現在開いているファイルのパスを保持するSet
+export const openedFilePaths = new Set();
 // 拡張子 → 起動アプリ対応表
 export const FILE_ASSOCIATIONS = {
     // text
@@ -106,7 +108,8 @@ export function resolveAppByPath(path) {
 /**
  * ファイルやアプリのアイコンを判定する関数
  */
-export function getIcon(name, node) {
+// ★ fullPath（その項目のフルパス）と currentPath（現在開いているパス）を受け取れるように引数を追加
+export function getIcon(name, node, fullPath = "", currentPath = "") {
     const lowerName = name.toLowerCase();
 
     // 1. 特殊・基本フォルダ
@@ -120,7 +123,25 @@ export function getIcon(name, node) {
         }
     }
 
-    if (node.type === "folder") return "📁";
+    // Windows風フォルダのアイコン判定
+    if (node && node.type === "folder") {
+        // ① 現在開いているフォルダの場合
+        if (fullPath && fullPath === currentPath) {
+            return "📂";
+        }
+
+        // ② 中身がある場合（メタデータ以外のキーが1つ以上あるか）
+        const hasChildren = Object.keys(node).some(k =>
+            k !== "type" && k !== "system" && k !== "originalPath" && k !== "lastModified" && k !== "hidden"
+        );
+        if (hasChildren) {
+            return "🗂️"; // 書類が入っているフォルダ
+        }
+
+        // ③ 空の場合
+        return "📁";
+    }
+
     if (node.type === "link") return "🔗";
 
     // 2. アプリケーションの判定

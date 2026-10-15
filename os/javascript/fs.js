@@ -36,8 +36,8 @@ const baseFS = {
     StartMenu: {
         type: "folder",
         system: true,
-        Programs: { type: "link", target: "Programs", system: true },
-        ControlPanel: { type: "link", target: "Programs/ControlPanel", system: true },
+        Programs: { type: "link", target: "Programs" },
+        ControlPanel: { type: "link", target: "Programs/ControlPanel" },
         Documents: { type: "link", target: "Programs/Documents" },
         "Settings.app": { type: "link", target: "Programs/Applications/Settings.app" },
         "Terminal.app": { type: "link", target: "Programs/Applications/Terminal.app" }

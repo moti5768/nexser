@@ -261,6 +261,13 @@ export async function saveFS(fs) {
                         if (child !== null && typeof child === "object") {
                             const fullPath = currentPath ? `${currentPath}/${key}` : key;
                             activePaths.add(fullPath);
+
+                            // ✨ Windowsの挙動に準拠: ショートカット（link）は単なるファイルなので、
+                            // フォルダとして中身を再帰的に走査・展開しない
+                            if (child.type === "link") {
+                                continue;
+                            }
+
                             collectActivePaths(child, fullPath);
                         }
                     }
