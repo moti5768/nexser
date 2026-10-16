@@ -5,6 +5,7 @@ import { resolveFS, normalizePath as fsNormalizePath } from './fs-utils.js';
 import { loadSetting } from "./apps/settings.js";
 import { initScreensaver } from "./screensaver.js";
 import { showBSOD } from "./bsod.js";
+import { resetWindowIdCounter } from './window.js';
 
 // ===== Passive Event / Touch Defaults =====
 document.addEventListener('wheel', e => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
@@ -850,6 +851,7 @@ export function showPromptScreen(logoffMessage = '') {
         root.innerHTML = '';
     }
     document.querySelectorAll('.window').forEach(w => w.remove());
+    resetWindowIdCounter();
     if (logoffMessage) print(logoffMessage);
     prompt();
 }

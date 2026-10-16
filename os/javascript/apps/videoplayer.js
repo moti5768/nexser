@@ -23,6 +23,7 @@ function showConfirm(root, message, onYes, onNo) {
 }
 
 export default function VideoPlayer(root, options = {}) {
+    let isDisposed = false;
     const { path } = options;
     const win = root.closest(".window");
     const titleEl = win?.querySelector(".title-text");
@@ -289,16 +290,19 @@ export default function VideoPlayer(root, options = {}) {
 
     const closeBtn = win?.querySelector(".close-btn");
 
-    function closeWindow() {
-        // リソースの確実な解放
+    const cleanup = () => {
+        if (isDisposed) return;
+        isDisposed = true;
         if (video.src && video.src.startsWith('blob:')) {
             URL.revokeObjectURL(video.src);
             video.src = "";
         }
         video.load();
         root.innerHTML = "";
+    };
 
-        // ウィンドウの削除（kernel側の MutationObserver や _cleanup が自動でプロセスを回収する）
+    function closeWindow() {
+        cleanup(); // ★ 重複コードをまとめ、ここで一括呼び出し
         if (win) {
             win.remove();
         }
@@ -333,22 +337,16 @@ export default function VideoPlayer(root, options = {}) {
 
     async function init() {
         if (filePath && fileNode) {
-            // もしデータが外部にあるなら事前に読み込んでおく
-            fileNode.content = await getFileContent(filePath);
-            // 実際のビデオ設定ロジックは refresh が持っているので、それを呼ぶだけでOK
+            const content = await getFileContent(filePath);
+            if (isDisposed) return; // 既に破棄されている場合は処理を中断
+            fileNode.content = content;
             refresh();
         }
     }
     init();
+
     return {
         isTabApp: false,
-        dispose: () => {
-            if (video.src && video.src.startsWith('blob:')) {
-                URL.revokeObjectURL(video.src);
-                video.src = "";
-            }
-            video.load();
-            root.innerHTML = "";
-        }
+        dispose: cleanup
     };
 }

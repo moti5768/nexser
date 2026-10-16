@@ -5,7 +5,8 @@ import {
     closeWindowById,
     focusWindowById,
     minimizeWindowById,
-    maximizeWindowById
+    maximizeWindowById,
+    createWindow
 } from "../window.js";
 import { resolveFS, normalizePath } from "../fs-utils.js";
 
@@ -416,86 +417,106 @@ export default function TerminalApp(content) {
             }
         },
 
-        ps: {
-            desc: "List windows", run() {
-                const wins = getWindows();
-                if (!wins.length) return print("No windows");
-                wins.forEach(w => print(`${w.id.toString().padEnd(3)} : ${w.title}`));
-            }
-        },
-
-        kill: {
-            desc: "Close window by id", run(args) {
-                const id = Number(args[0]);
-                if (Number.isNaN(id)) return print("Usage: kill <id>");
-
-                const wins = getWindows();
-                const targetWin = wins.find(w => w.id === id);
-
-                if (!targetWin) {
-                    return print("Invalid window id");
-                }
-
-                // 閉じるボタンがガード（pointer_none）されているかチェック
-                const closeBtn = targetWin.el.querySelector(".close-btn");
-                if (closeBtn && closeBtn.classList.contains("pointer_none")) {
-                    return print(`Error: Window ${id} (${targetWin.title}) is protected and cannot be closed.`, "#f00");
-                }
-
-                try {
-                    closeWindowById(id);
-                    print(`Window ${id} closed`);
-                } catch {
-                    print("Failed to close window");
-                }
-            }
-        },
-
-        focus: { desc: "Focus window by id", run(args) { focusWindowById(Number(args[0])); } },
-        minimize: {
-            desc: "Minimize window by id",
+        window: {
+            desc: "Manage windows (create, list, close, focus, min, max)",
             async run(args) {
-                const id = Number(args[0]);
-                if (Number.isNaN(id)) return print("Usage: minimize <id>");
+                const sub = (args[0] || "list").toLowerCase();
+                const subArgs = args.slice(1);
 
-                const wins = getWindows();
-                const targetWin = wins.find(w => w.id === id);
+                // ★ 入力されたID（"1" や "win_1"）を柔軟にマッチさせるヘルパー
+                const getTargetWin = (arg) => {
+                    if (!arg) return null;
+                    const wins = getWindows();
+                    return wins.find(w => w.id === arg || w.id === `win_${arg}` || w.id.replace("win_", "") === arg);
+                };
 
-                if (!targetWin) {
-                    return print("Invalid window id");
+                switch (sub) {
+                    case "create":
+                    case "new": {
+                        const title = subArgs.join(" ") || "New Window";
+                        const contentEl = createWindow(title, {
+                            width: "450px",
+                            height: "280px"
+                        });
+                        contentEl.innerHTML = `
+                            <div style="padding: 20px; color: #000; font-family: sans-serif;">
+                                <h3>${title}</h3>
+                                <p>Terminalから作成されたウィンドウです。</p>
+                            </div>
+                        `;
+                        print(`Window created: ${title}`);
+                        break;
+                    }
+                    case "list":
+                    case "ls": {
+                        const wins = getWindows();
+                        if (!wins.length) return print("No windows");
+                        wins.forEach(w => print(`${w.id.toString().padEnd(6)} : ${w.title} (${w.minimized ? "minimized" : "active"})`));
+                        break;
+                    }
+                    case "close":
+                    case "kill": {
+                        const targetWin = getTargetWin(subArgs[0]);
+                        if (!targetWin) return print("Usage: window close <id>");
+
+                        const closeBtn = targetWin.el.querySelector(".close-btn");
+                        if (closeBtn && closeBtn.classList.contains("pointer_none")) {
+                            return print(`Error: Window ${targetWin.id} (${targetWin.title}) is protected.`, "#f00");
+                        }
+
+                        try {
+                            closeWindowById(targetWin.id);
+                            print(`Window ${targetWin.id} closed`);
+                        } catch (e) {
+                            print(`Failed to close window: ${e.message}`, "#f00");
+                        }
+                        break;
+                    }
+                    case "focus": {
+                        const targetWin = getTargetWin(subArgs[0]);
+                        if (!targetWin) return print("Usage: window focus <id>");
+
+                        if (focusWindowById(targetWin.id)) {
+                            print(`Focused window ${targetWin.id}`);
+                        } else {
+                            print("Failed to focus window", "#f00");
+                        }
+                        break;
+                    }
+                    case "min":
+                    case "minimize": {
+                        const targetWin = getTargetWin(subArgs[0]);
+                        if (!targetWin) return print("Usage: window minimize <id>");
+
+                        const minBtn = targetWin.el.querySelector(".min-btn");
+                        if (minBtn && minBtn.classList.contains("pointer_none")) {
+                            return print(`Error: Window ${targetWin.id} is protected.`, "#f00");
+                        }
+
+                        await minimizeWindowById(targetWin.id);
+                        print(`Minimized window ${targetWin.id}`);
+                        break;
+                    }
+                    case "max":
+                    case "maximize": {
+                        const targetWin = getTargetWin(subArgs[0]);
+                        if (!targetWin) return print("Usage: window maximize <id>");
+
+                        const maxBtn = targetWin.el.querySelector(".max-btn");
+                        if (maxBtn && maxBtn.classList.contains("pointer_none")) {
+                            return print(`Error: Window ${targetWin.id} is protected.`, "#f00");
+                        }
+
+                        await maximizeWindowById(targetWin.id);
+                        print(`Maximized window ${targetWin.id}`);
+                        break;
+                    }
+                    default:
+                        print("Usage: window [create|list|close|focus|min|max] [id/title]");
                 }
-
-                // 最小化ボタンがガードされているかチェック
-                const minBtn = targetWin.el.querySelector(".min-btn");
-                if (minBtn && minBtn.classList.contains("pointer_none")) {
-                    return print(`Error: Window ${id} (${targetWin.title}) is protected and cannot be minimized.`, "#f00");
-                }
-
-                await minimizeWindowById(id);
             }
         },
-        maximize: {
-            desc: "Maximize window by id",
-            async run(args) {
-                const id = Number(args[0]);
-                if (Number.isNaN(id)) return print("Usage: maximize <id>");
 
-                const wins = getWindows();
-                const targetWin = wins.find(w => w.id === id);
-
-                if (!targetWin) {
-                    return print("Invalid window id");
-                }
-
-                // 最大化ボタンがガードされているかチェック
-                const maxBtn = targetWin.el.querySelector(".max-btn");
-                if (maxBtn && maxBtn.classList.contains("pointer_none")) {
-                    return print(`Error: Window ${id} (${targetWin.title}) is protected and cannot be maximized.`, "#f00");
-                }
-
-                await maximizeWindowById(id);
-            }
-        },
         resetui: {
             desc: "Reset all windows and UI",
             run() {

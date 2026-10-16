@@ -11,6 +11,7 @@ export const taskbarButtons = []; // 作られたボタンを全部保存
 let resizeCursor = "";
 const DEFAULT_COLOR = "gray";
 export let TOP_COLOR = "darkblue";
+let windowIdCounter = 0;
 /* ===== Animation Settings ===== */
 export const WINDOW_ANIMATION_DURATION = 250;
 export let ENABLE_WINDOW_ANIMATION = true;
@@ -86,6 +87,7 @@ export function scheduleRefreshTopWindow() {
 export function createWindow(title, options = {}) {
     const abortController = new AbortController();
     const { signal } = abortController;
+    const windowId = `win_${++windowIdCounter}`;
     // ★ グローバルイベントは1回だけ登録
     installGlobalMouseHandler();
 
@@ -96,6 +98,7 @@ export function createWindow(title, options = {}) {
 
     const w = document.createElement("div");
     w.className = "window";
+    w.dataset.windowId = windowId;
     w.dataset.title = title;
     w.style.position = "absolute";
     w.style.left = options.left || "100px";
@@ -207,7 +210,7 @@ ${!options.hideStatus ? `
         if (w.dataset.minimized === "true") restoreWindow();
     };
 
-    w.addEventListener("mousedown", focus);
+    w.addEventListener("mousedown", focus, { signal });
 
     /* ===== タスクバー ===== */
 
@@ -311,7 +314,7 @@ ${!options.hideStatus ? `
 
     // 外部から呼べるように要素に参照を持たせる
     w._destroy = destroy;
-    closeBtn.addEventListener("click", destroy);
+    closeBtn.addEventListener("click", destroy, { signal });
 
     /* ===== 最小化アニメーション ===== */
 
@@ -923,6 +926,10 @@ ${!options.hideStatus ? `
     return content;
 }
 
+export function resetWindowIdCounter() {
+    windowIdCounter = 0;
+}
+
 /* ===== ウィンドウ前面化 ===== */
 export function bringToFront(win) {
     if (!win) return;
@@ -1451,8 +1458,8 @@ export function updateWindowTitle(win, baseTitle, isDirty) {
 }
 
 export function getWindows() {
-    return Array.from(document.querySelectorAll(".window")).map((w, index) => ({
-        id: index,
+    return Array.from(document.querySelectorAll(".window")).map((w) => ({
+        id: w.dataset.windowId, // ★ 一意のIDを使う
         title: w.dataset.title || "Untitled",
         minimized: w.dataset.minimized === "true",
         zIndex: Number(w.style.zIndex || 0),
@@ -1497,19 +1504,18 @@ export function removeAllTaskbarButtons() {
 
 export function focusWindowById(id) {
     const list = getWindows();
-    const win = list[id];
+    const win = list.find(w => w.id === id); // ★ IDで正しく検索
     if (!win) return false;
-    win.el.dispatchEvent(new MouseEvent("mousedown"));
+    win.el.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
     return true;
 }
 
 export async function minimizeWindowById(id) {
     const list = getWindows();
-    const win = list[id];
+    const win = list.find(w => w.id === id); // ★ IDで正しく検索
     if (!win) return false;
 
     const w = win.el;
-
     // ★ 修正1: すでに最小化中、またはアニメーション中であれば処理を中断
     if (w.dataset.minimized === "true" || w._animating) return true;
     w._animating = true; // ★ フラグを立てる
@@ -1553,7 +1559,7 @@ export async function minimizeWindowById(id) {
 
 export function maximizeWindowById(id) {
     const list = getWindows();
-    const win = list[id];
+    const win = list.find(w => w.id === id); // ★ IDで正しく検索
     if (!win) return false;
 
     const btn = win.el.querySelector(".max-btn");
@@ -1562,15 +1568,13 @@ export function maximizeWindowById(id) {
 }
 
 export function closeWindowById(id) {
-    const wins = Array.from(document.querySelectorAll(".window"));
-    const target = wins[id];
-    if (!target) throw new Error("Invalid window id");
+    // ★ ID一致で確実に特定する
+    const target = document.querySelector(`.window[data-window-id="${id}"]`);
+    if (!target) throw new Error(`Invalid window id: ${id}`);
 
-    // 単なる remove() ではなく、定義したクリーンアップ関数を実行
     if (typeof target._destroy === "function") {
         target._destroy();
     } else {
-        // フォールバック
         target.remove();
     }
 }

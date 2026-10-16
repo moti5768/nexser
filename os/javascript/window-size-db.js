@@ -17,6 +17,7 @@ export async function saveWindowSize(key, size) {
                 resolve();
             };
             tx.onerror = () => reject(tx.error);
+            tx.onabort = () => reject(new Error("Transaction aborted"));
         });
         return true;
     } catch (e) {
