@@ -4,7 +4,7 @@ import { showModalWindow, alertWindow, bringToFront, progressWindow } from "../w
 import { resolveFS, validateName, importFileSmart, getUniqueName, isDescendantOrSelf } from "../fs-utils.js";
 import { FS, initFS, forceSave, markDefaultDeleted, setBulkUpdating } from "../fs.js";
 import { attachContextMenu } from "../context-menu.js";
-import { resolveAppByPath, getIcon } from "../file-associations.js";
+import { resolveAppByPath, getIcon, getDisplayFileName } from "../file-associations.js";
 import { addRecent } from "../recent.js";
 import { setupRibbon } from "../ribbon.js";
 import { saveSetting, loadSetting } from "./settings.js";
@@ -341,6 +341,9 @@ export default async function Explorer(root, options = {}) {
     const rawHidden = await loadSetting("explorerShowHidden");
     let showHidden = rawHidden === true || rawHidden === "true";
 
+    const rawShowExt = await loadSetting("explorerShowFileExtensions");
+    let showFileExtensions = rawShowExt === null ? true : (rawShowExt === true || rawShowExt === "true");
+
     let sortKey = await loadSetting("explorerSortKey") || "name"; // 'name', 'type', 'size', 'date'
     let sortOrder = await loadSetting("explorerSortOrder") || "asc"; // 'asc', 'desc'
 
@@ -361,6 +364,9 @@ export default async function Explorer(root, options = {}) {
     let startX, startY;
     let wasDragging = false;
     let isRafScheduled = false; // ★表示切替時やドラッグ時にフラグが残る問題を解消するためトップレベルへ移動
+
+    let handleGlobalMouseMove = null;
+    let handleGlobalMouseUp = null;
 
     // ★追加: 範囲選択の状態を完全にリセットする関数（青枠が出なくなる問題の根本解決）
     const cancelSelection = () => {
@@ -696,34 +702,27 @@ export default async function Explorer(root, options = {}) {
                 e.stopPropagation();
                 listContainer.classList.remove("drag-over");
 
-                try {
-                    const dataStr = e.dataTransfer.getData("text/plain");
-                    const data = dataStr ? JSON.parse(dataStr) : null;
+                const dataStr = e.dataTransfer.getData("text/plain");
 
-                    // 共通関数を呼び出し、処理が行われたらここで終了
-                    if (data && (data.type === "explorer-icons" || data.type === "desktop-icons")) {
-                        const isCopy = e.ctrlKey; // ★ 追加
-                        const handled = await handleItemDropMove(data, currentPath, currentPath, render, isCopy); // ★ 引数を追加
-                        if (handled) return;
-                    }
-                } catch (err) { }
-
-                // ★追加: 自動整列オフ時のアイコン自由配置（移動）処理
+                // ⭐ 1. 【最優先】自動整列オフ時のアイコン自由配置（移動）処理
                 try {
-                    const dataStr = e.dataTransfer.getData("text/plain");
                     const data = dataStr ? JSON.parse(dataStr) : null;
                     if (data && data.type === "explorer-icons" && viewMode === "icon" && !autoArrange) {
                         const containerRect = listContainer.getBoundingClientRect();
-                        for (const info of data.draggedItems) {
-                            const dropX = e.clientX - containerRect.left + listContainer.scrollLeft - info.offsetX;
-                            const dropY = e.clientY - containerRect.top + listContainer.scrollTop - info.offsetY;
-                            iconPositions[info.name] = { x: dropX, y: dropY };
+                        if (data.draggedItems) {
+                            data.draggedItems.forEach((info) => {
+                                // ⭕ 演算子が同じ行に綺麗に収まった正しい数式
+                                const dropX = e.clientX - containerRect.left + listContainer.scrollLeft - info.offsetX;
+                                const dropY = e.clientY - containerRect.top + listContainer.scrollTop - info.offsetY;
 
-                            const el = listContainer.querySelector(`[data-name="${info.name}"]`);
-                            if (el) {
-                                el.style.left = `${dropX}px`;
-                                el.style.top = `${dropY}px`;
-                            }
+                                iconPositions[info.name] = { x: dropX, y: dropY };
+
+                                const el = listContainer.querySelector(`[data-name="${info.name}"]`);
+                                if (el) {
+                                    el.style.left = `${dropX}px`;
+                                    el.style.top = `${dropY}px`;
+                                }
+                            });
                         }
                         const safePath = currentPath.replace(/\//g, "_") || "root";
                         await saveSetting(`explorerIconPositions_${safePath}`, iconPositions);
@@ -731,10 +730,20 @@ export default async function Explorer(root, options = {}) {
                     }
                 } catch (err) { }
 
+                // ⭐ 2. 共通関数（エクスプローラー間・デスクトップからの移動・コピー）
+                try {
+                    const data = dataStr ? JSON.parse(dataStr) : null;
+                    if (data && (data.type === "explorer-icons" || data.type === "desktop-icons")) {
+                        const isCopy = e.ctrlKey;
+                        const handled = await handleItemDropMove(data, currentPath, currentPath, render, isCopy);
+                        if (handled) return;
+                    }
+                } catch (err) { }
+
                 const folderNode = resolveFS(currentPath);
                 if (!folderNode || folderNode.type !== "folder") return;
 
-                // --- 1. ドロップされた直後のエントリを取得 ---
+                // --- 3. ドロップされた直後のエントリを取得 ---
                 const initialEntries = [];
                 let hasFiles = false;
                 if (e.dataTransfer.items) {
@@ -767,10 +776,10 @@ export default async function Explorer(root, options = {}) {
 
                 if (initialEntries.length === 0) return;
 
-                // --- 2. 総項目数をカウントする (フォルダ自体もカウントに含める) ---
+                // --- 4. 総項目数をカウントする (フォルダ自体もカウントに含める) ---
                 let totalFiles = 0;
                 const countEntries = async (entry) => {
-                    totalFiles++; // フォルダまたはファイルを1つとしてカウント
+                    totalFiles++;
                     if (entry.isDirectory) {
                         const reader = entry.createReader();
                         const getEntries = () => new Promise(res => reader.readEntries(res));
@@ -784,13 +793,12 @@ export default async function Explorer(root, options = {}) {
                     }
                 };
 
-                // 最初のスキャン
                 for (const ent of initialEntries) {
                     if (ent instanceof File) totalFiles++;
                     else await countEntries(ent);
                 }
 
-                // --- 3. プログレスウィンドウの生成 ---
+                // --- 5. プログレスウィンドウの生成 ---
                 const pg = progressWindow("コピー中...", "コピーの準備をしています...", {
                     width: 380,
                     height: 250,
@@ -802,9 +810,7 @@ export default async function Explorer(root, options = {}) {
                 let processedCount = 0;
 
                 const addFileToNode = async (file, targetNode) => {
-                    // 進捗更新 (processedCount はインクリメント前に渡してOK)
                     pg.update(processedCount, totalFiles, `${file.name} をコピーしています...`);
-
                     let targetName = getUniqueName(targetNode, file.name);
 
                     try {
@@ -833,7 +839,6 @@ export default async function Explorer(root, options = {}) {
                         };
                         const newDirNode = targetNode[dirName];
 
-                        // --- フォルダ作成自体を1カウントとして処理 ---
                         processedCount++;
                         pg.update(processedCount, totalFiles, `${dirName} を作成しています...`);
 
@@ -852,7 +857,6 @@ export default async function Explorer(root, options = {}) {
                 };
 
                 setBulkUpdating(true);
-                // --- 5. 実行 ---
                 try {
                     for (const item of initialEntries) {
                         if (item instanceof File) {
@@ -862,7 +866,6 @@ export default async function Explorer(root, options = {}) {
                         }
                     }
                     folderNode.lastModified = Date.now();
-                    // 最終更新 (これで確実に autoClose がトリガーされる)
                     pg.update(totalFiles, totalFiles, "すべての項目のコピーが完了しました。");
                     await forceSave();
 
@@ -873,13 +876,8 @@ export default async function Explorer(root, options = {}) {
                     setBulkUpdating(false);
                     listContainer.style.opacity = "1";
 
-                    // ==========================================
-                    // ⭐ メモリ解放 (GCの促進)
-                    // ==========================================
-                    // 1. 巨大なオブジェクトツリーの参照を切断
                     initialEntries.length = 0;
 
-                    // 2. ブラウザ側のD&Dキャッシュを強力にクリア
                     if (e.dataTransfer) {
                         if (typeof e.dataTransfer.clearData === 'function') {
                             e.dataTransfer.clearData();
@@ -892,8 +890,6 @@ export default async function Explorer(root, options = {}) {
                     window.dispatchEvent(new Event("fs-updated"));
                     render(currentPath);
 
-                    // 3. クロージャによるFileオブジェクト等のメモリ拘束（リーク）を防ぐため、
-                    // setTimeoutには必要な参照(pg)のみを引数として渡す
                     const closeProgress = (progressWindowObj) => {
                         if (progressWindowObj && typeof progressWindowObj.close === "function") {
                             progressWindowObj.close();
@@ -1106,7 +1102,7 @@ export default async function Explorer(root, options = {}) {
                 wasDragging = false;
             });
 
-            document.addEventListener("mousemove", (e) => {
+            handleGlobalMouseMove = (e) => {
                 if (startX === undefined || startY === undefined) return;
 
                 const dx = Math.abs(e.clientX - startX);
@@ -1174,11 +1170,14 @@ export default async function Explorer(root, options = {}) {
                         isRafScheduled = false;
                     });
                 }
-            });
+            };
 
-            document.addEventListener("mouseup", () => {
+            handleGlobalMouseUp = () => {
                 cancelSelection();
-            });
+            };
+
+            document.addEventListener("mousemove", handleGlobalMouseMove);
+            document.addEventListener("mouseup", handleGlobalMouseUp);
 
             // ⭐ 【追加・改善】各アイテムへの個別登録を廃止し、親コンテナでイベントを一括管理（イベント委譲）
             if (!listContainer._delegationBound) {
@@ -1438,6 +1437,9 @@ export default async function Explorer(root, options = {}) {
 
             const iconChar = getIcon(name, itemData, childPath, currentPath);
 
+            // ★ここで共通の表示名（拡張子非表示設定対応）を先に取得する
+            const displayName = getDisplayFileName(name, showFileExtensions);
+
             // --- HTML構造の生成 ---
             if (viewMode === "icon") {
                 // ★追加: 自動整列オフの時、保存された座標があれば適用
@@ -1454,6 +1456,8 @@ export default async function Explorer(root, options = {}) {
                         const maxCols = Math.max(1, Math.floor((listContainer.clientWidth || 500) / colWidth));
                         const row = Math.floor(iconIndex / maxCols);
                         const col = iconIndex % maxCols;
+
+                        // ⚠️ 演算子（*）を修正
                         item.style.left = `${10 + col * colWidth}px`;
                         item.style.top = `${10 + row * rowHeight}px`;
                     }
@@ -1461,7 +1465,7 @@ export default async function Explorer(root, options = {}) {
 
                 item.innerHTML = `
                     <div class="item-icon-large">${iconChar}</div>
-                    <div class="item-name-label">${name}</div>
+                    <div class="item-name-label">${displayName}</div>
                 `;
             } else if (viewMode === "details") {
                 // ★改善: 事前計算された sizeValue を再利用（await を削除し高速化）
@@ -1496,21 +1500,22 @@ export default async function Explorer(root, options = {}) {
                     ? new Date(itemData.lastModified).toLocaleDateString('ja-JP', dateOpts)
                     : '';
 
-                // flexプロパティとwhite-spaceで幅を固定し、縦並びを解消してヘッダーと位置を揃える
+                // ⚠️ ${name} を ${displayName} に変更
                 item.innerHTML = `
-        <div style="flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 6px; overflow: hidden;">
-            <span class="item-icon-small" style="flex-shrink: 0; display: flex; align-items: center; justify-content: center;">${iconChar}</span>
-            <span class="item-name-text" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${name}</span>
-        </div>
-        <span class="item-type-text" style="flex: 0 0 120px; padding-left: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${typeLabel}</span>
-        <span class="item-size-text" style="flex: 0 0 100px; padding-left: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${size}</span>
-        <span class="item-date-text" style="flex: 0 0 140px; padding-left: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${modifiedStr}</span>
-    `;
+                    <div style="flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 6px; overflow: hidden;">
+                        <span class="item-icon-small" style="flex-shrink: 0; display: flex; align-items: center; justify-content: center;">${iconChar}</span>
+                        <span class="item-name-text" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${displayName}</span>
+                    </div>
+                    <span class="item-type-text" style="flex: 0 0 120px; padding-left: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${typeLabel}</span>
+                    <span class="item-size-text" style="flex: 0 0 100px; padding-left: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${size}</span>
+                    <span class="item-date-text" style="flex: 0 0 140px; padding-left: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${modifiedStr}</span>
+                `;
             } else {
                 // リスト表示
+                // ⚠️ ${name} を ${displayName} に変更
                 item.innerHTML = `
                     <span class="item-icon-small">${iconChar}</span>
-                    <span class="item-name-text">${name}</span>
+                    <span class="item-name-text">${displayName}</span>
                 `;
             }
 
@@ -2314,10 +2319,11 @@ export default async function Explorer(root, options = {}) {
             }
 
             const iconChar = getIcon(res.name, res.node, res.path, currentPath);
+            const displayName = getDisplayFileName(res.name, showFileExtensions); // ★追加
 
             item.innerHTML = `
             <span class="item-icon-small">${iconChar}</span>
-            <span class="item-name-text">${res.name}</span>
+            <span class="item-name-text">${displayName}</span>
             <span style="color:#888; font-size:10px; margin-left:8px;">(${res.path})</span>
         `;
 
@@ -2630,6 +2636,15 @@ export default async function Explorer(root, options = {}) {
                             render(currentPath);
                         }
                     },
+                    {
+                        // ★追加: ファイル名拡張子の表示切り替えメニュー
+                        label: `ファイル名拡張子 ${showFileExtensions ? "✔" : ""}`,
+                        action: async () => {
+                            showFileExtensions = !showFileExtensions;
+                            await saveSetting("explorerShowFileExtensions", showFileExtensions);
+                            render(currentPath);
+                        }
+                    },
                     { label: "---" },
                     {
                         label: `表示: 大アイコン ${viewMode === "icon" ? "✔" : ""}`,
@@ -2710,11 +2725,6 @@ export default async function Explorer(root, options = {}) {
         });
     };
 
-    if (!win._fsWatcherInstalled) {
-        win._fsWatcherInstalled = true;
-        window.addEventListener("fs-updated", handleFsUpdated);
-    }
-
     function updateTitle_explorer(path) {
         if (!win) return;
 
@@ -2751,9 +2761,18 @@ export default async function Explorer(root, options = {}) {
         }
     }
 
+    if (!win._fsWatcherInstalled) {
+        win._fsWatcherInstalled = true;
+        window.addEventListener("fs-updated", handleFsUpdated);
+    }
+
     return {
         dispose: () => {
             window.removeEventListener("fs-updated", handleFsUpdated);
+
+            document.removeEventListener("mousemove", handleGlobalMouseMove);
+            document.removeEventListener("mouseup", handleGlobalMouseUp);
+
             if (win._treeOutsideClickHandler) {
                 document.removeEventListener("mousedown", win._treeOutsideClickHandler);
                 win._treeOutsideClickHandler = null;
@@ -2786,13 +2805,16 @@ function getExplorerWorker() {
     return explorerWorker;
 }
 
+// キャッシュ保持用のMap（パスと更新日時をキーにする）
+const nodeSizeCache = new Map();
+
 export function calcNodeSize(node, path = "") {
     return new Promise((resolve) => {
         if (!node) {
             resolve(0);
             return;
         }
-        // ⭐ 追加: ショートカット（link）の場合は実体を辿らず、リンク自体のサイズとする
+        // ⭐ ショートカット（link）の場合は実体を辿らず、リンク自体のサイズとする
         if (node.type === "link") {
             resolve(typeof node.target === "string" ? node.target.length : 0);
             return;
@@ -2800,6 +2822,13 @@ export function calcNodeSize(node, path = "") {
         // Blobが含まれている場合のフォールバック
         if (node.content instanceof Blob) {
             resolve(node.content.size);
+            return;
+        }
+
+        // ⭐ 更新日時を考慮したキャッシュキーで高速化
+        const cacheKey = `${path}_${node.lastModified || 0}`;
+        if (nodeSizeCache.has(cacheKey)) {
+            resolve(nodeSizeCache.get(cacheKey));
             return;
         }
 
@@ -2816,7 +2845,7 @@ export function calcNodeSize(node, path = "") {
 
                 // 子要素やオブジェクトの場合は再帰的にサニタイズ
                 if (n[key] && typeof n[key] === 'object') {
-                    // Blobはサイズだけ保持、またはそのまま除外（必要に応じて調整）
+                    // Blobはサイズだけ保持、またはそのまま除外
                     if (n[key] instanceof Blob) {
                         sanitized[key] = { type: 'file', size: n[key].size };
                     } else {
@@ -2840,15 +2869,19 @@ export function calcNodeSize(node, path = "") {
             const worker = getExplorerWorker();
             const id = ++workerCallbackId;
 
-            workerPendingRequests.set(id, resolve);
+            // ⭐ ワーカーの応答時にキャッシュへ保存してから解決する
+            workerPendingRequests.set(id, (size) => {
+                nodeSizeCache.set(cacheKey, size);
+                resolve(size);
+            });
             worker.postMessage({ type: "CALC_SIZE", payload: { node: safeNodePayload, path }, id });
         } catch (err) {
             console.warn("Worker postMessage fallback used:", err);
-            if (node.type === "file") {
-                resolve(typeof node.size === "number" ? node.size : (node.content?.length || 0));
-            } else {
-                resolve(node.size || 0);
-            }
+            const fallbackSize = node.type === "file"
+                ? (typeof node.size === "number" ? node.size : (node.content?.length || 0))
+                : (node.size || 0);
+            nodeSizeCache.set(cacheKey, fallbackSize);
+            resolve(fallbackSize);
         }
     });
 }

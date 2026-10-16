@@ -96,6 +96,18 @@ export function getExtension(path) {
     return path.slice(i).toLowerCase();
 }
 
+export function getDisplayFileName(name, showExtensions = true) {
+    if (!name || showExtensions) return name;
+    const ext = getExtension(name);
+    if (ext) {
+        const lastDot = name.lastIndexOf(".");
+        if (lastDot > 0) {
+            return name.substring(0, lastDot);
+        }
+    }
+    return name;
+}
+
 /**
  * 拡張子から起動アプリを取得
  */
