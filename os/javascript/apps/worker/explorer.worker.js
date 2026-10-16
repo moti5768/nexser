@@ -5,10 +5,15 @@ function calcNodeSizeWorker(node, path = "") {
     if (!node) return 0;
     try {
         if (node.type === "file") {
-            if (typeof node.size === "number") return node.size;
+            // ★ content（文字列やBlob）がある場合は、実際のデータ長を優先して計算する
             if (node.content && typeof node.content === "string") {
                 return node.content.length;
             }
+            if (node.content instanceof Blob) {
+                return node.content.size;
+            }
+            // contentがない場合のフォールバックとして node.size を確認
+            if (typeof node.size === "number") return node.size;
             return 0;
         }
         if (node.type === "folder") {

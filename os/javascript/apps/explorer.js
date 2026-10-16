@@ -644,6 +644,10 @@ export default async function Explorer(root, options = {}) {
             searchInput.value = "";
         }
 
+        // ★追加: デスクトップ側などでの変更を反映するため、拡張子表示設定を毎回ロードして同期する
+        const rawShowExt = await loadSetting("explorerShowFileExtensions");
+        showFileExtensions = rawShowExt === null ? true : (rawShowExt === true || rawShowExt === "true");
+
         // ★追加: フォルダごとのアイコン座標設定を読み込み
         const safePath = currentPath.replace(/\//g, "_") || "root";
         iconPositions = await loadSetting(`explorerIconPositions_${safePath}`) || {};
@@ -1261,35 +1265,54 @@ export default async function Explorer(root, options = {}) {
         const folder = resolveFS(currentPath);
         if (!folder) return;
 
-        // ★ 改善: DOMをクリアする前に、awaitを含むデータの取得を先に終わらせる
-        const itemsList = await Promise.all(Object.keys(folder)
+        const itemsList = Object.keys(folder)
             .filter(name => !isSystemMetaKey(name) && (showHidden || !folder[name].hidden))
-            .map(async name => {
+            .map(name => {
                 const itemData = folder[name];
-                const childPath = currentPath ? `${currentPath}/${name}` : name;
-
                 let size = 0;
-                if (viewMode === "details") {
-                    // 詳細表示モードの時のみ正確なサイズ（再帰計算含む）を取得
-                    size = await calcNodeSize(itemData, childPath);
-                } else if (itemData.type === "file") {
-                    // 詳細表示以外でファイルの場合は、Workerを通さず即座に取得
+
+                // ファイルの場合のみサイズを設定（フォルダはサイズを持たせない）
+                if (itemData.type === "file") {
                     size = typeof itemData.size === "number" ? itemData.size : (itemData.content?.length || 0);
                 }
 
                 return { name, itemData, size };
-            }));
+            });
 
-        // ★ データが完全に揃ったここで、初めて画面をクリアする
-        listContainer.innerHTML = "";
+        const sortedItems = itemsList.sort((a, b) => {
+            const isFolderA = a.itemData.type === "folder";
+            const isFolderB = b.itemData.type === "folder";
+
+            // Windows標準の挙動: 名前ソート以外でも基本的にフォルダを先頭にまとめる
+            if (isFolderA && !isFolderB) return -1;
+            if (!isFolderA && isFolderB) return 1;
+
+            let result = 0;
+            if (sortKey === "date") {
+                const dateA = a.itemData.lastModified || 0;
+                const dateB = b.itemData.lastModified || 0;
+                result = dateA - dateB;
+            } else if (sortKey === "size") {
+                result = a.size - b.size;
+            } else if (sortKey === "type") {
+                const typeA = a.itemData.type || "";
+                const typeB = b.itemData.type || "";
+                result = typeA.localeCompare(typeB, 'ja');
+                if (result === 0) result = a.name.localeCompare(b.name, 'ja');
+            } else {
+                result = a.name.localeCompare(b.name, 'ja');
+            }
+
+            return sortOrder === "asc" ? result : -result;
+        });
 
         // レイアウトを初期化（アイコン表示の時はタイル状に並べる）
         if (viewMode === "icon") {
             if (autoArrange) {
                 listContainer.style.display = "grid";
                 listContainer.style.gridTemplateColumns = "repeat(auto-fill, minmax(100px, 1fr))";
-                listContainer.style.gridAutoRows = "max-content"; // ★追加: 行の高さを内容に合わせる（上に詰める）
-                listContainer.style.alignContent = "start";       // ★追加: グリッド全体を上部に詰める
+                listContainer.style.gridAutoRows = "max-content";
+                listContainer.style.alignContent = "start";
                 listContainer.style.gap = "4px";
                 listContainer.style.padding = "10px";
                 listContainer.style.position = "relative";
@@ -1304,9 +1327,30 @@ export default async function Explorer(root, options = {}) {
             listContainer.style.padding = "0";
         }
 
+        // --- 1. 既存のDOM要素を Map で管理（全クリアせず差分更新するための準備） ---
+        const existingItemsMap = new Map();
+        listContainer.querySelectorAll(".explorer-item").forEach(el => {
+            existingItemsMap.set(el.dataset.name, el);
+        });
+
+        // 詳細表示の古いヘッダーがあれば一度除外して再配置
+        const oldHeader = listContainer.querySelector(".details-header-row");
+        if (oldHeader) oldHeader.remove();
+
+        const newElementSet = new Set(sortedItems.map(i => i.name));
+
+        // --- 2. 削除されたアイテムのDOMを削除 ---
+        existingItemsMap.forEach((el, name) => {
+            if (!newElementSet.has(name)) {
+                if (globalSelected.items.has(el)) globalSelected.items.delete(el);
+                el.remove();
+                existingItemsMap.delete(name);
+            }
+        });
+
         const fragment = document.createDocumentFragment();
 
-        // ▼ 変更：選択処理の共通化 (Ctrl/Shift 複数選択対応)
+        // ▼ 選択処理の共通化 (Ctrl/Shift 複数選択対応)
         const selectItemUI = async (targetItem, e) => {
             globalSelected.window = win;
             const itemsArray = Array.from(listContainer.querySelectorAll(".explorer-item"));
@@ -1359,35 +1403,6 @@ export default async function Explorer(root, options = {}) {
             }
         };
 
-        // (この下に itemsList を使って fragment に追加していく既存の処理が続きます...)
-
-        const sortedItems = itemsList.sort((a, b) => {
-            const isFolderA = a.itemData.type === "folder";
-            const isFolderB = b.itemData.type === "folder";
-
-            // Windows標準の挙動: 名前ソート以外でも基本的にフォルダを先頭にまとめる
-            if (isFolderA && !isFolderB) return -1;
-            if (!isFolderA && isFolderB) return 1;
-
-            let result = 0;
-            if (sortKey === "date") {
-                const dateA = a.itemData.lastModified || 0;
-                const dateB = b.itemData.lastModified || 0;
-                result = dateA - dateB;
-            } else if (sortKey === "size") {
-                result = a.size - b.size;
-            } else if (sortKey === "type") {
-                const typeA = a.itemData.type || "";
-                const typeB = b.itemData.type || "";
-                result = typeA.localeCompare(typeB, 'ja');
-                if (result === 0) result = a.name.localeCompare(b.name, 'ja');
-            } else {
-                result = a.name.localeCompare(b.name, 'ja');
-            }
-
-            return sortOrder === "asc" ? result : -result;
-        });
-
         if (viewMode === "details") {
             const headerRow = document.createElement("div");
             headerRow.className = "details-header-row";
@@ -1395,12 +1410,9 @@ export default async function Explorer(root, options = {}) {
 
             const createColHeader = (text, key, flexStyle, padLeft) => {
                 const col = document.createElement("div");
-                // 展開（ソート）時の矢印マークを削除
                 col.textContent = text;
-                // 縦並び防止と列幅の固定化
                 col.style.cssText = `flex: ${flexStyle}; padding-left: ${padLeft}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; user-select: none;`;
 
-                // クリックでソート切り替え
                 col.onclick = async () => {
                     if (sortKey === key) {
                         sortOrder = sortOrder === "asc" ? "desc" : "asc";
@@ -1422,34 +1434,66 @@ export default async function Explorer(root, options = {}) {
             fragment.appendChild(headerRow);
         }
 
+        // --- 3. ソート順に従って既存DOMを再利用・更新、または新規作成 ---
         for (const { name, itemData, size: sizeValue } of sortedItems) {
             const childPath = currentPath ? `${currentPath}/${name}` : name;
 
-            const item = document.createElement("div");
-            // viewMode に応じたクラスを確実に付与
-            item.className = `explorer-item ${viewMode}-view`;
-            item.dataset.name = name;
+            // 既存の要素があれば取得、なければ新規作成
+            let item = existingItemsMap.get(name);
+            const isNew = !item;
 
-            // ★追加: 隠しファイルの場合は半透明にする (Windows風)
-            if (itemData.hidden) {
-                item.style.opacity = "0.5";
+            if (isNew) {
+                item = document.createElement("div");
+                item.dataset.name = name;
+                item.draggable = true;
+
+                item.addEventListener("dragstart", (e) => {
+                    cancelSelection();
+                    wasDragging = true;
+                    if (!globalSelected.items.has(item)) {
+                        globalSelected.items.forEach(i => i.classList.remove("selected"));
+                        globalSelected.items.clear();
+                        globalSelected.items.add(item);
+                        item.classList.add("selected");
+                        globalSelected.lastSelected = item;
+                    }
+
+                    const draggedItemsInfo = Array.from(globalSelected.items).map(i => {
+                        const rect = i.getBoundingClientRect();
+                        return {
+                            name: i.dataset.name,
+                            offsetX: e.clientX - rect.left,
+                            offsetY: e.clientY - rect.top
+                        };
+                    });
+
+                    e.dataTransfer.setData("text/plain", JSON.stringify({
+                        type: "explorer-icons",
+                        sourcePath: currentPath,
+                        draggedItems: draggedItemsInfo
+                    }));
+                    e.dataTransfer.effectAllowed = "move";
+                });
+
+                item.addEventListener("dragend", () => {
+                    setTimeout(() => { wasDragging = false; }, 50);
+                });
             }
 
-            const iconChar = getIcon(name, itemData, childPath, currentPath);
+            item.className = `explorer-item ${viewMode}-view`;
+            item.style.opacity = itemData.hidden ? "0.5" : "1";
 
-            // ★ここで共通の表示名（拡張子非表示設定対応）を先に取得する
+            const iconChar = getIcon(name, itemData, childPath, currentPath);
             const displayName = getDisplayFileName(name, showFileExtensions);
 
             // --- HTML構造の生成 ---
             if (viewMode === "icon") {
-                // ★追加: 自動整列オフの時、保存された座標があれば適用
                 if (!autoArrange) {
                     item.style.position = "absolute";
                     if (iconPositions[name]) {
                         item.style.left = `${iconPositions[name].x}px`;
                         item.style.top = `${iconPositions[name].y}px`;
                     } else {
-                        // ドラッグ歴がないアイコンを重ならないように配置
                         const iconIndex = sortedItems.findIndex(i => i.name === name);
                         const rowHeight = 90;
                         const colWidth = 100;
@@ -1457,10 +1501,13 @@ export default async function Explorer(root, options = {}) {
                         const row = Math.floor(iconIndex / maxCols);
                         const col = iconIndex % maxCols;
 
-                        // ⚠️ 演算子（*）を修正
                         item.style.left = `${10 + col * colWidth}px`;
                         item.style.top = `${10 + row * rowHeight}px`;
                     }
+                } else {
+                    item.style.position = "";
+                    item.style.left = "";
+                    item.style.top = "";
                 }
 
                 item.innerHTML = `
@@ -1468,31 +1515,21 @@ export default async function Explorer(root, options = {}) {
                     <div class="item-name-label">${displayName}</div>
                 `;
             } else if (viewMode === "details") {
-                // ★改善: 事前計算された sizeValue を再利用（await を削除し高速化）
-                const size = formatSize(sizeValue);
-
-                // アイテムのレイアウトをFlexbox化してヘッダー列と幅を合わせるためのスタイル調整
+                const size = itemData.type === "folder" ? "" : formatSize(sizeValue);
                 item.style.display = "flex";
                 item.style.alignItems = "center";
                 item.style.padding = "2px 8px";
+                item.style.position = "";
+                item.style.left = "";
+                item.style.top = "";
 
-                // type プロパティに応じて表示名を細かく分岐
                 let typeLabel = "ファイル";
                 switch (itemData.type) {
-                    case "folder":
-                        typeLabel = "フォルダ";
-                        break;
-                    case "link":
-                        typeLabel = "ショートカット";
-                        break;
-                    case "app":
-                        typeLabel = "アプリ";
-                        break;
-                    case "file":
-                        typeLabel = "ファイル";
-                        break;
-                    default:
-                        typeLabel = "不明";
+                    case "folder": typeLabel = "フォルダ"; break;
+                    case "link": typeLabel = "ショートカット"; break;
+                    case "app": typeLabel = "アプリ"; break;
+                    case "file": typeLabel = "ファイル"; break;
+                    default: typeLabel = "不明";
                 }
 
                 const dateOpts = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' };
@@ -1500,7 +1537,6 @@ export default async function Explorer(root, options = {}) {
                     ? new Date(itemData.lastModified).toLocaleDateString('ja-JP', dateOpts)
                     : '';
 
-                // ⚠️ ${name} を ${displayName} に変更
                 item.innerHTML = `
                     <div style="flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 6px; overflow: hidden;">
                         <span class="item-icon-small" style="flex-shrink: 0; display: flex; align-items: center; justify-content: center;">${iconChar}</span>
@@ -1511,112 +1547,79 @@ export default async function Explorer(root, options = {}) {
                     <span class="item-date-text" style="flex: 0 0 140px; padding-left: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${modifiedStr}</span>
                 `;
             } else {
-                // リスト表示
-                // ⚠️ ${name} を ${displayName} に変更
+                item.style.position = "";
+                item.style.left = "";
+                item.style.top = "";
                 item.innerHTML = `
                     <span class="item-icon-small">${iconChar}</span>
                     <span class="item-name-text">${displayName}</span>
                 `;
             }
 
-            fragment.appendChild(item);
+            // 新規作成された要素の場合のみドロップ等のイベントを設定
+            if (isNew) {
+                let effectiveTargetType = itemData.type;
+                let effectiveTargetNode = itemData;
+                let effectiveChildPath = childPath;
 
-            item.draggable = true;
-            item.addEventListener("dragstart", (e) => {
-                cancelSelection();
-                wasDragging = true;
-                // 未選択のアイテムをドラッグしようとした場合は単一選択扱いにする
-                if (!globalSelected.items.has(item)) {
-                    globalSelected.items.forEach(i => i.classList.remove("selected"));
-                    globalSelected.items.clear();
-                    globalSelected.items.add(item);
-                    item.classList.add("selected");
-                    globalSelected.lastSelected = item;
-                }
-
-                const draggedItemsInfo = Array.from(globalSelected.items).map(i => {
-                    const rect = i.getBoundingClientRect();
-                    return {
-                        name: i.dataset.name,
-                        offsetX: e.clientX - rect.left,
-                        offsetY: e.clientY - rect.top
-                    };
-                });
-
-                e.dataTransfer.setData("text/plain", JSON.stringify({
-                    type: "explorer-icons",
-                    sourcePath: currentPath,
-                    draggedItems: draggedItemsInfo
-                }));
-                e.dataTransfer.effectAllowed = "move";
-            });
-
-            item.addEventListener("dragend", () => {
-                setTimeout(() => { wasDragging = false; }, 50);
-            });
-
-            // ⭐ 追加: 項目が「フォルダ」または「フォルダを指すショートカット(link)」の場合、ドロップを受け付けて移動する
-            let effectiveTargetType = itemData.type;
-            let effectiveTargetNode = itemData;
-            let effectiveChildPath = childPath;
-
-            if (itemData.type === "link") {
-                let currentTarget = itemData.target;
-                let resolvedNode = null;
-                for (let i = 0; i < 10; i++) {
-                    const node = resolveFS(currentTarget);
-                    if (node && node.type === "link" && typeof node.target === "string") {
-                        currentTarget = node.target;
-                    } else {
-                        resolvedNode = node;
-                        break;
-                    }
-                }
-                if (resolvedNode) {
-                    effectiveTargetType = resolvedNode.type;
-                    effectiveTargetNode = resolvedNode;
-                    effectiveChildPath = currentTarget;
-                }
-            }
-
-            if (effectiveTargetType === "folder" && effectiveTargetNode && effectiveTargetNode.type === "folder") {
-                item.addEventListener("dragover", (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    e.dataTransfer.dropEffect = "move";
-
-                    // すでにクラスがある場合は無駄なDOM操作を避ける
-                    if (!item.classList.contains("drag-target")) {
-                        item.classList.add("drag-target");
-                    }
-                });
-
-                item.addEventListener("dragleave", (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    item.classList.remove("drag-target");
-                });
-
-                item.addEventListener("drop", async (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    item.classList.remove("drag-target");
-
-                    const dataStr = e.dataTransfer.getData("text/plain");
-                    try {
-                        const data = dataStr ? JSON.parse(dataStr) : null;
-                        if (data) {
-                            const isCopy = e.ctrlKey; // ★ 追加
-                            // ターゲットパス（effectiveChildPath）を指定して共通関数を呼び出す
-                            await handleItemDropMove(data, effectiveChildPath, currentPath, render, isCopy); // ★ 引数を追加
+                if (itemData.type === "link") {
+                    let currentTarget = itemData.target;
+                    let resolvedNode = null;
+                    for (let i = 0; i < 10; i++) {
+                        const node = resolveFS(currentTarget);
+                        if (node && node.type === "link" && typeof node.target === "string") {
+                            currentTarget = node.target;
+                        } else {
+                            resolvedNode = node;
+                            break;
                         }
-                    } catch (err) {
-                        console.error("Folder/Link drop move failed:", err);
                     }
-                });
+                    if (resolvedNode) {
+                        effectiveTargetType = resolvedNode.type;
+                        effectiveTargetNode = resolvedNode;
+                        effectiveChildPath = currentTarget;
+                    }
+                }
+
+                if (effectiveTargetType === "folder" && effectiveTargetNode && effectiveTargetNode.type === "folder") {
+                    item.addEventListener("dragover", (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        e.dataTransfer.dropEffect = "move";
+                        if (!item.classList.contains("drag-target")) {
+                            item.classList.add("drag-target");
+                        }
+                    });
+
+                    item.addEventListener("dragleave", (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        item.classList.remove("drag-target");
+                    });
+
+                    item.addEventListener("drop", async (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        item.classList.remove("drag-target");
+
+                        const dataStr = e.dataTransfer.getData("text/plain");
+                        try {
+                            const data = dataStr ? JSON.parse(dataStr) : null;
+                            if (data) {
+                                const isCopy = e.ctrlKey;
+                                await handleItemDropMove(data, effectiveChildPath, currentPath, render, isCopy);
+                            }
+                        } catch (err) {
+                            console.error("Folder/Link drop move failed:", err);
+                        }
+                    });
+                }
             }
 
+            fragment.appendChild(item);
         }
+
+        // --- 4. コンテナへ適用（既存DOMが再利用され、順番通りに並び替えられる） ---
         listContainer.appendChild(fragment);
 
         // ★改善: context-menu.js の仕様に合わせた右クリックメニュー（背景とアイテムで切り替え）
@@ -1953,23 +1956,27 @@ export default async function Explorer(root, options = {}) {
             if (visited.has(node)) return; // 循環参照を検知してブロック
             visited.add(node);
 
-            for (const key of Object.keys(node)) {
-                if (isSystemMetaKey(key)) continue;
-                const child = node[key];
-                const oldSubPath = `${oldBasePath}/${key}`;
-                const newSubPath = `${newBasePath}/${key}`;
+            try {
+                for (const key of Object.keys(node)) {
+                    if (isSystemMetaKey(key)) continue;
+                    const child = node[key];
+                    const oldSubPath = `${oldBasePath}/${key}`;
+                    const newSubPath = `${newBasePath}/${key}`;
 
-                if (child && typeof child === "object") {
-                    if (child.type === "file" || child.type === "app") {
-                        if (isCopyMode) {
-                            await copyFileContent(oldSubPath, newSubPath);
-                        } else {
-                            await moveFileContent(oldSubPath, newSubPath);
+                    if (child && typeof child === "object") {
+                        if (child.type === "file" || child.type === "app") {
+                            if (isCopyMode) {
+                                await copyFileContent(oldSubPath, newSubPath);
+                            } else {
+                                await moveFileContent(oldSubPath, newSubPath);
+                            }
+                        } else if (child.type === "folder") {
+                            await processStorageRecursively(child, oldSubPath, newSubPath, isCopyMode, visited, depth + 1);
                         }
-                    } else if (child.type === "folder") {
-                        await processStorageRecursively(child, oldSubPath, newSubPath, isCopyMode, visited, depth + 1);
                     }
                 }
+            } finally {
+                visited.delete(node); // ⭐ 処理完了後に確実に解放してメモリリークを防ぐ
             }
         };
 
@@ -2642,6 +2649,10 @@ export default async function Explorer(root, options = {}) {
                         action: async () => {
                             showFileExtensions = !showFileExtensions;
                             await saveSetting("explorerShowFileExtensions", showFileExtensions);
+
+                            // ★追加: 設定変更をデスクトップや他のエクスプローラーウィンドウへ即時通知する
+                            window.dispatchEvent(new Event("fs-updated"));
+
                             render(currentPath);
                         }
                     },
@@ -2835,6 +2846,14 @@ export function calcNodeSize(node, path = "") {
         // 構造化クローンエラーを防ぎつつ、元のプロパティ構造を維持したまま安全なプレーンオブジェクトに変換
         const sanitizeForWorker = (n) => {
             if (!n || typeof n !== 'object') return n;
+
+            // ⭐ 【重要】ファイルノードの場合は巨大な content をクローンさせず、サイズのみに置き換えて DataCloneError を完全に防止する
+            if (n.type === "file") {
+                return {
+                    type: "file",
+                    size: typeof n.size === "number" ? n.size : (typeof n.content === "string" ? n.content.length : 0)
+                };
+            }
 
             // 配列やプレーンオブジェクトを走査
             const sanitized = Array.isArray(n) ? [] : {};

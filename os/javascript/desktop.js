@@ -5,7 +5,7 @@ import { alertWindow, progressWindow } from "./window.js";
 import { resolveFS, validateName, importFileSmart, getUniqueName, isDescendantOrSelf } from "./fs-utils.js";
 import { addRecent } from "./recent.js";
 import { attachContextMenu } from "./context-menu.js";
-import { resolveAppByPath, getIcon } from "./file-associations.js";
+import { resolveAppByPath, getIcon, getDisplayFileName } from "./file-associations.js";
 import { openWithDialog as explorerOpenWithDialog, showProperties } from "./apps/explorer.js";
 import { dbGet, dbSet } from "./fs-db.js";
 
@@ -13,6 +13,7 @@ import { dbGet, dbSet } from "./fs-db.js";
 let globalSelected = { items: new Set(), window: null, lastSelected: null };
 let autoArrange = true; // 自動整列フラグ
 let iconPositions = {}; // ★ 追加: 自動整列OFF時のアイコン座標データ
+let showFileExtensions = true; // ★ 追加: 拡張子表示設定
 
 (async () => {
     try {
@@ -22,7 +23,12 @@ let iconPositions = {}; // ★ 追加: 自動整列OFF時のアイコン座標�
         const savedPositions = await dbGet("desktop_iconsPositions", "settings");
         if (savedPositions) iconPositions = savedPositions;
 
-        // 読み込み完了後に再描画（既に構築済みの場合は新しい設定で上書き）
+        // ★ 追加: エクスプローラーと共通の拡張子表示設定をロード
+        const savedShowExt = await dbGet("explorerShowFileExtensions", "settings");
+        if (savedShowExt !== undefined) {
+            showFileExtensions = savedShowExt === true || savedShowExt === "true";
+        }
+
         const desktop = document.getElementById("desktop");
         if (desktop) buildDesktop();
     } catch (e) {
@@ -63,7 +69,7 @@ export function buildDesktop() {
 
         const iconLabel = document.createElement("div");
         iconLabel.className = "icon-label";
-        iconLabel.textContent = name;
+        iconLabel.textContent = getDisplayFileName(name, showFileExtensions);
 
         item.appendChild(iconGraphic);
         item.appendChild(iconLabel);
@@ -170,23 +176,27 @@ export function buildDesktop() {
                         if (visited.has(node)) return; // 循環参照を検知してブロック
                         visited.add(node);
 
-                        for (const key of Object.keys(node)) {
-                            if (key === "type" || key === "system" || key === "originalPath" || key === "lastModified") continue;
-                            const child = node[key];
-                            const oldSubPath = `${oldBasePath}/${key}`;
-                            const newSubPath = `${newBasePath}/${key}`;
+                        try {
+                            for (const key of Object.keys(node)) {
+                                if (key === "type" || key === "system" || key === "originalPath" || key === "lastModified") continue;
+                                const child = node[key];
+                                const oldSubPath = `${oldBasePath}/${key}`;
+                                const newSubPath = `${newBasePath}/${key}`;
 
-                            if (child && typeof child === "object") {
-                                if (child.type === "file" || child.type === "app") {
-                                    if (isCopyMode) {
-                                        await copyFileContent(oldSubPath, newSubPath);
-                                    } else {
-                                        await moveFileContent(oldSubPath, newSubPath);
+                                if (child && typeof child === "object") {
+                                    if (child.type === "file" || child.type === "app") {
+                                        if (isCopyMode) {
+                                            await copyFileContent(oldSubPath, newSubPath);
+                                        } else {
+                                            await moveFileContent(oldSubPath, newSubPath);
+                                        }
+                                    } else if (child.type === "folder") {
+                                        await processStorageRecursively(child, oldSubPath, newSubPath, isCopyMode, visited, depth + 1);
                                     }
-                                } else if (child.type === "folder") {
-                                    await processStorageRecursively(child, oldSubPath, newSubPath, isCopyMode, visited, depth + 1);
                                 }
                             }
+                        } finally {
+                            visited.delete(node); // ⭐ 処理完了後に確実に解放してメモリリークを防ぐ
                         }
                     };
 
@@ -463,6 +473,16 @@ export function buildDesktop() {
         items.push({
             label: "新規テキストファイル",
             action: () => createNewItem("Desktop", iconsContainer, "file")
+        });
+
+        items.push({
+            label: `ファイル名拡張子 ${showFileExtensions ? "✓" : ""}`,
+            action: async () => {
+                showFileExtensions = !showFileExtensions;
+                await dbSet("explorerShowFileExtensions", showFileExtensions, "settings");
+                window.dispatchEvent(new Event("fs-updated"));
+                buildDesktop();
+            }
         });
 
         items.push({
@@ -1311,7 +1331,16 @@ let desktopInitialized = false;
 function installDesktopWatcher() {
     if (desktopInitialized) return;
     desktopInitialized = true;
-    window.addEventListener("fs-updated", () => buildDesktop());
+    window.addEventListener("fs-updated", async () => {
+        // ★ 追加: 更新時に拡張子設定も再取得して同期する
+        try {
+            const savedShowExt = await dbGet("explorerShowFileExtensions", "settings");
+            if (savedShowExt !== undefined) {
+                showFileExtensions = savedShowExt === true || savedShowExt === "true";
+            }
+        } catch (e) { }
+        buildDesktop();
+    });
 }
 installDesktopWatcher();
 
