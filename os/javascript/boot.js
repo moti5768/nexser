@@ -860,10 +860,15 @@ export function showPromptScreen(logoffMessage = '') {
 export async function bootOS() {
     try {
         print("\nBoot sequence started...\n");
+
         const kernel = await import('./kernel.js');
 
         // 1. カーネル空間の初期化 (DOM・エラーハンドリング)
         await kernel.initKernelSpaceAsync(msg => print(`[Kernel] ${msg}`));
+
+        // カーネル初期化後、シェル構築前にタスクバーの高さを適用
+        const savedHeight = await loadSetting("taskbarHeight") || 40;
+        document.documentElement.style.setProperty('--taskbar-height', `${savedHeight}px`);
 
         // 2. 画面をCLIからGUIルート画面へ切替
         screen.style.display = 'none';
@@ -912,21 +917,20 @@ export async function bootOS() {
     await fsPromise;
     console.log("FS restored from DB");
 
-    // 3. 設定のロードと適用
-    const savedHeight = await loadSetting("taskbarHeight") || 40;
-    document.documentElement.style.setProperty('--taskbar-height', `${savedHeight}px`);
-
-    // 4. AUTOBOOT.CFG の安全な実行
+    // 3. AUTOBOOT.CFG の内容をチェックして 'boot' が含まれているか確認
     const config = getNodeByPath("C:/System/AUTOBOOT.CFG");
-    if (config && config.type === 'file' && config.content.trim()) {
+    const hasBoot = config && config.type === 'file' && config.content.split('\n').some(line => {
+        const trimmed = line.trim().toLowerCase();
+        return trimmed === 'boot' || trimmed.startsWith('boot ');
+    });
+
+    if (hasBoot) {
+        // 重複していた taskbarHeight のロード処理を削除し、直接スクリプト実行へ移行
         print("Reading System Configuration...");
         const script = config.content.split('\n').map(s => s.trim()).filter(Boolean);
 
         for (const line of script) {
-            // BSODが既に発生している場合は即座に中断
             if (screen.style.display === 'none') return;
-
-            // コマンドが 'crash' を含む場合は実行せず警告
             if (line.toLowerCase().includes('crash')) {
                 print(`[Security] Blocked suspicious command in AUTOBOOT.CFG: ${line}`);
                 continue;
@@ -934,17 +938,13 @@ export async function bootOS() {
 
             await new Promise(r => setTimeout(r, 30));
             print(`${cwd}> ${line}`);
-
-            // コマンド実行
             await runSilent(line);
-
-            // コマンド実行後に BSOD 発生なら処理を中断
             if (screen.style.display === 'none') return;
         }
+    } else {
+        // bootがない場合は即座にプロンプトを表示する
+        prompt();
     }
-
-    // 5. すべての処理が正常終了した場合のみプロンプトを表示
-    prompt();
 })();
 
 function bindScreenFocus() {

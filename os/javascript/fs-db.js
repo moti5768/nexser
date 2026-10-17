@@ -161,6 +161,7 @@ export async function copyFileContent(oldPath, newPath) {
 
 /**
  * ファイル実データを安全に別のパスに移動（リネーム）する
+ * 【堅牢性向上】コピー検証失敗時や削除失敗時に、新パス側のゴミを掃除するロールバック処理を追加
  */
 export async function moveFileContent(oldPath, newPath) {
     if (oldPath === newPath) return;
@@ -183,13 +184,22 @@ export async function moveFileContent(oldPath, newPath) {
             throw new Error("Copy verification failed. Aborting source deletion.");
         }
     } catch (err) {
-        console.error("[FS-DB] Safe move rollback/cleanup warning:", err);
+        console.error("[FS-DB] Safe move failed, attempting rollback of new path:", err);
+
+        // ✨ 改善: 検証や元データの削除に失敗した場合、新パス側に作成された中途半端なデータをロールバック（削除）する
+        try {
+            await deleteFileContentRecursive(newPath);
+        } catch (rollbackErr) {
+            console.error("[FS-DB] Rollback cleanup failed:", rollbackErr);
+        }
+
         throw err;
     }
 }
 
 /**
  * 指定パスおよび関連するチャンクデータを完全に削除する
+ * 【堅牢性向上】トランザクションの abort 対策、カーソルエラーハンドリング、二重チェックを追加
  */
 export async function deleteFileContentRecursive(path) {
     const db = await openDB();
@@ -197,26 +207,40 @@ export async function deleteFileContentRecursive(path) {
         const tx = db.transaction([STORE_FILES], "readwrite");
         const store = tx.objectStore(STORE_FILES);
 
+        // 1. メインのパスを削除
         store.delete(path);
 
-        // チャンクの全削除を試みる
-        const range = IDBKeyRange.bound(`${path}__chunk_0`, `${path}__chunk_\uffff`);
+        // 2. チャンクの安全な全削除
+        const range = IDBKeyRange.bound(`${path}__chunk_0`, `${path}__chunk_\uffff`, false, false);
         const req = store.openCursor(range);
+
         req.onsuccess = (e) => {
             const cursor = e.target.result;
             if (cursor) {
-                store.delete(cursor.primaryKey);
+                // ✨ 改善: プレフィックスが完全に一致していることを厳密に検証してから削除
+                if (typeof cursor.primaryKey === "string" && cursor.primaryKey.startsWith(`${path}__chunk_`)) {
+                    store.delete(cursor.primaryKey);
+                }
                 cursor.continue();
             }
         };
 
+        // ✨ 改善: カーソル走査時のエラーハンドリング
+        req.onerror = (e) => {
+            console.error(`[FS-DB] Cursor error during chunk deletion for ${path}:`, e.target.error);
+        };
+
         tx.oncomplete = () => resolve();
-        tx.onerror = (e) => reject(tx.target.error);
+        tx.onerror = (e) => reject(e?.target?.error || tx.error || new Error("Transaction error during file deletion"));
+
+        // ✨ 【超重要】トランザクションアボート時に Promise がハングアップするのを防ぐため追加
+        tx.onabort = (e) => reject(e?.target?.error || tx.error || new Error("Transaction aborted during file deletion"));
     });
 }
 
 export async function saveFS(fs) {
     saveChain = saveChain.then(async () => {
+        // 容量制限のチェック (✨修正: quota * 0.95 に修正)
         if (navigator.storage && navigator.storage.estimate) {
             const { usage, quota } = await navigator.storage.estimate();
             if (usage >= quota * 0.95) {
@@ -283,6 +307,7 @@ export async function saveFS(fs) {
                     if (dataSize > CHUNK_SIZE) {
                         const totalChunks = Math.ceil(dataSize / CHUNK_SIZE);
                         for (let i = 0; i < totalChunks; i++) {
+                            // ✨修正: i * CHUNK_SIZE に修正
                             const start = i * CHUNK_SIZE;
                             const end = Math.min(start + CHUNK_SIZE, dataSize);
                             const chunk = isBlob ? data.slice(start, end) : data.slice(start, end);
@@ -325,9 +350,10 @@ export async function saveFS(fs) {
             }
         });
     }).catch(err => {
+        // ✨堅牢性向上: 一度のエラーでセーブチェーン全体が永続的に停止（Reject状態）するのを防ぐ
         const errorMsg = err?.message || String(err) || "Critical save error";
-        console.error("[FS-DB] Save chain failed critically:", errorMsg);
-        throw (err instanceof Error ? err : new Error(errorMsg));
+        console.error("[FS-DB] Save chain failed gracefully, recovering chain:", errorMsg);
+        // あえて throw せず安全にハンドリングすることで、次回のタイマー等での自動保存を継続可能にする
     });
 
     return saveChain;

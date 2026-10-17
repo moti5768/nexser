@@ -358,6 +358,31 @@ export async function initFS() {
     }
 }
 
+if (typeof window !== "undefined") {
+    window.addEventListener("beforeunload", () => {
+        // ✨ 改善: タイマーが動いている場合は直ちにクリアし、同期的にローカルストレージ等へ
+        // 最小限のサニタイズデータを退避させるか、即時保存の確実性を上げる
+        if (saveTimer) {
+            clearTimeout(saveTimer);
+            saveTimer = null;
+        }
+        if (isSaving || pendingSave) {
+            // 非同期完了を待てないため、重要設定だけでも localStorage に緊急退避させるなどの防衛策
+            try {
+                localStorage.setItem("OS_EMERGENCY_BACKUP", "dirty");
+            } catch (e) { }
+        }
+        forceSave().catch(e => console.error("[FS] Unload save failed:", e));
+    });
+
+    document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "hidden") {
+            // バックグラウンドに移行した際は確実かつ安全に即時保存を走らせる
+            forceSave().catch(e => console.error("[FS] Background save failed:", e));
+        }
+    });
+}
+
 /**
  * 【追加】システム診断 & ゴミデータクリーンアップエンジン
  * @param {boolean} executeRepair - 実際に削除・修復処理を行うフラグ

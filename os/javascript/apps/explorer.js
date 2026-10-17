@@ -644,6 +644,10 @@ export default async function Explorer(root, options = {}) {
             searchInput.value = "";
         }
 
+        if (listContainer) {
+            listContainer.querySelectorAll(".no-result-message,.search-result-item").forEach(el => el.remove());
+        }
+
         // ★追加: デスクトップ側などでの変更を反映するため、拡張子表示設定を毎回ロードして同期する
         const rawShowExt = await loadSetting("explorerShowFileExtensions");
         showFileExtensions = rawShowExt === null ? true : (rawShowExt === true || rawShowExt === "true");
@@ -2311,14 +2315,14 @@ export default async function Explorer(root, options = {}) {
         const results = searchFS(rootNode, query, currentPath, showHidden);
 
         if (results.length === 0) {
-            listContainer.innerHTML = `<div style="padding:10px; font-size:12px; color:#666;">一致する項目はありません。</div>`;
+            listContainer.innerHTML = `<div class="no-result-message" style="padding:10px; font-size:12px; color:#666;">一致する項目はありません。</div>`;
             return;
         }
 
         // 検索結果の描画
         results.forEach(res => {
             const item = document.createElement("div");
-            item.className = `explorer-item ${viewMode}-view`;
+            item.className = `explorer-item search-result-item ${viewMode}-view`;
             item.dataset.name = res.name;
 
             if (res.node.hidden) {
