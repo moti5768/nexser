@@ -5,7 +5,6 @@ import { FS } from "./fs.js";
  * パスからファイルシステム上のノードを解決する
  * 【根本改善】同一パス解決セッション内での重複追跡を防ぎ、爆発的な負荷を防止する
  */
-// 【改善後】
 export function resolveFS(path, cwd = "C:/", root = FS) {
     if (typeof path !== "string") return null;
 

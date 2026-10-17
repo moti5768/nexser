@@ -316,16 +316,47 @@ body {
 #start-menu {
     position: fixed;
     left: 0;
-    width: 200px;
+    width: 220px;
+    /* 縦帯の分、全体幅を少し広げる (200px -> 220px) */
     background: #C3C7CB;
     border: 1px solid;
     border-color: #fff #404040 #404040 #fff;
     box-shadow: 1px 1px black;
     display: none;
     z-index: 1001;
-    padding: 2px;
+    padding: 2px 2px 2px 28px;
+    /* 左側に縦帯用の余白 28px を追加 */
     font-size: 13px;
     color: black;
+    box-sizing: border-box;
+    /* padding追加に伴うサイズ調整 */
+}
+
+/* 左側の縦帯（ブランドバー）を追加 */
+#start-menu::before {
+    content: "Nexser";
+    /* OSの名称に合わせて変更可能 */
+    position: absolute;
+    left: 2px;
+    top: 2px;
+    bottom: 2px;
+    width: 22px;
+    background: linear-gradient(to top, #00008b);
+    color: white;
+    font-weight: bold;
+    font-size: 14px;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: flex-start;
+    padding-top: 5px;
+    padding-right: 2px;
+    writing-mode: vertical-lr;
+    transform: rotate(180deg);
+    /* テキストを下から上へ読ませる */
+    user-select: none;
+    pointer-events: none;
+    box-sizing: border-box;
 }
 
 

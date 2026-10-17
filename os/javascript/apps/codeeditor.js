@@ -34,19 +34,58 @@ function getMimeType(name) {
     return "text/plain";
 }
 
+// 改善後（差し替え用）
+const previewCache = new Map();
+
 function collectFilesRecursive(basePath) {
+    const targetPath = basePath ? basePath.replace(/^\/+/, "") : "";
     const result = new Map();
-    function walk(path) {
-        const node = resolveFS(path);
-        if (!node) return;
-        for (const [name, child] of Object.entries(node)) {
-            if (name === "type") continue;
-            const fullPath = path ? `${path}/${name}` : name;
-            if (child.type === "folder") walk(fullPath);
-            else if (child.type === "file") result.set(fullPath, String(child.content ?? ""));
+    const visitedPaths = new Set();
+    const visitedNodes = new WeakSet(); // ⭐ オノード自体の循環参照を完全にブロック
+
+    function walk(path, depth = 0) {
+        if (depth > 12 || visitedPaths.has(path)) return;
+        visitedPaths.add(path);
+
+        let node = resolveFS(path);
+        if (!node || typeof node !== "object") return;
+
+        // 🔗 リンク（ショートカット）の場合は実体ノードを安全に解決
+        if (node.type === "link" && typeof node.target === "string") {
+            const targetNode = resolveFS(node.target);
+            if (targetNode) node = targetNode;
+        }
+
+        if (visitedNodes.has(node)) return;
+        visitedNodes.add(node);
+
+        try {
+            for (const [name, child] of Object.entries(node)) {
+                if (name === "type" || !child || typeof child !== "object") continue;
+                const fullPath = path ? `${path}/${name}` : name;
+
+                if (child.type === "folder") {
+                    walk(fullPath, depth + 1);
+                } else if (child.type === "file" || child.type === "app") {
+                    result.set(fullPath, String(child.content ?? ""));
+                } else if (child.type === "link" && typeof child.target === "string") {
+                    // リンク先がファイルの場合も考慮
+                    const resolvedTargetNode = resolveFS(child.target);
+                    if (resolvedTargetNode && resolvedTargetNode.type === "file") {
+                        result.set(fullPath, String(resolvedTargetNode.content ?? ""));
+                    }
+                }
+            }
+        } finally {
+            visitedNodes.delete(node); // 探索完了後に確実に解放
         }
     }
-    walk(basePath);
+
+    walk(targetPath);
+
+    if (result.size === 0 && targetPath !== "") {
+        walk("");
+    }
     return result;
 }
 
@@ -1279,66 +1318,79 @@ export default function CodeEditor(root, options = {}) {
     /* =========================
     Preview (最新版: img src & バイナリ対応)
  ========================= */
+    // CodeEditor関数の上部（他の変数宣言のあたり）に配置してください
+    let previewHtmlPath = null;
+    let lastHtmlBlobUrl = null;
+
     async function renderPreview() {
-        if (!previewIframe || !filePath) return;
+        if (!previewIframe || !filePath || isDestroyed) return;
 
-        // 1. 古いURLを一時保存（解放は後で行う）
         const oldBlobs = new Map(previewBlobMap);
-
         const baseDir = getDirPath(filePath);
         const fsFiles = collectFilesRecursive(baseDir);
         if (!fsFiles.size) return;
 
-        // 2. ★エディタのタブにある最新の内容を最優先で反映する
+        // エディタのタブにある最新の内容を最優先で反映
         tabs.forEach(t => {
             if (fsFiles.has(t.path)) {
                 fsFiles.set(t.path, t.content);
             }
         });
 
-        // プレビュー用マップをクリア
         previewBlobMap.clear();
 
-        // 3. 各ファイルの中身を確定させ Blob URL を生成
-        for (let [fullPath, content] of fsFiles.entries()) {
+        // 外部データ(__EXTERNAL_DATA__)の非同期ロード
+        const loadPromises = [];
+        for (const [fullPath, content] of fsFiles.entries()) {
             if (content === "__EXTERNAL_DATA__") {
-                try {
-                    content = await getFileContent(fullPath);
-                    const node = resolveFS(fullPath);
-                    if (node) node.content = content;
-                } catch (e) {
-                    console.error(`Preview load error: ${fullPath}`, e);
-                    content = "";
-                }
+                loadPromises.push(
+                    getFileContent(fullPath).then(realContent => {
+                        if (isDestroyed) return;
+                        const node = resolveFS(fullPath);
+                        if (node) node.content = realContent;
+                        fsFiles.set(fullPath, realContent);
+                    }).catch(e => {
+                        console.error(`Preview load error: ${fullPath}`, e);
+                        fsFiles.set(fullPath, "");
+                    })
+                );
             }
+        }
 
+        try {
+            await Promise.all(loadPromises);
+        } catch (err) {
+            console.error("Preview external data load failed:", err);
+        }
+
+        if (isDestroyed || !previewIframe) return;
+
+        // すべてのファイルの Blob URL を生成
+        for (let [fullPath, content] of fsFiles.entries()) {
             const name = fullPath.split("/").pop();
             const mime = getMimeType(name);
 
-            // --- 修正ポイント: バイナリデータの保護 ---
-            // 画像などのバイナリデータに対し String() を使うとデータが壊れるため
-            // 型を判定して適切に Blob 化する
             let blob;
             if (content instanceof Uint8Array || content instanceof ArrayBuffer || content instanceof Blob) {
                 blob = new Blob([content], { type: mime });
             } else {
-                // テキストデータの場合（HTML/CSS/JSなど）
                 blob = new Blob([String(content ?? "")], { type: mime });
             }
 
             const url = URL.createObjectURL(blob);
             previewBlobMap.set(fullPath, url);
-            fsFiles.set(fullPath, content); // 置換用に中身を保存
         }
 
-        const htmlPath = (activeTab?.path && /\.(html|htm)$/i.test(activeTab.path))
-            ? activeTab.path
-            : [...previewBlobMap.keys()].find(p => /\.(html|htm)$/i.test(p));
+        // アクティブなタブが HTML の場合はそれを優先し、違えば「直前にプレビューしていた HTML」を維持する
+        if (activeTab?.path && /\.(html|htm)$/i.test(activeTab.path)) {
+            previewHtmlPath = activeTab.path;
+        } else if (!previewHtmlPath || !fsFiles.has(previewHtmlPath)) {
+            previewHtmlPath = [...previewBlobMap.keys()].find(p => /\.(html|htm)$/i.test(p));
+        }
 
-        if (!htmlPath) return;
+        if (!previewHtmlPath) return;
 
-        let html = fsFiles.get(htmlPath);
-        // HTMLは文字列である必要がある
+        let html = fsFiles.get(previewHtmlPath);
         if (typeof html !== "string") {
             if (html instanceof Uint8Array) {
                 html = new TextDecoder().decode(html);
@@ -1347,48 +1399,49 @@ export default function CodeEditor(root, options = {}) {
             }
         }
 
-        // タイトル更新処理
+        // ウィンドウタイトルの更新
         const titleMatch = html.match(/<title>(.*?)<\/title>/i);
         const winTitleEl = previewWin?.querySelector(".title-text");
         if (winTitleEl) {
             winTitleEl.textContent = (titleMatch && titleMatch[1])
                 ? titleMatch[1]
-                : `Preview - ${activeTab?.name || "Untitled"}`;
+                : `Preview - ${previewHtmlPath.split("/").pop()}`;
         }
 
-        // 5. 相対パスを Blob URL に置換
-        // <img> の src, <link> の href, <script> の src などを置換
+        // HTML内の相対パス（src, href）を Blob URL に置換
         html = html.replace(/(src|href)=["']([^"']+)["']/gi, (match, attr, relPath) => {
-            // http, https, data: から始まる外部リンクやデータURLは置換しない
             if (/^(https?|data):/i.test(relPath)) return match;
-
-            const resolved = resolveRelativePath(htmlPath, relPath);
+            const resolved = resolveRelativePath(previewHtmlPath, relPath);
             const blobUrl = resolved ? previewBlobMap.get(resolved) : null;
             return blobUrl ? `${attr}="${blobUrl}"` : match;
         });
 
-        // 背景画像 (CSSのurl()) にも対応させる場合
+        // CSS内の url() の相対パスを置換
         html = html.replace(/url\(["']?([^"'\)]+)["']?\)/gi, (match, relPath) => {
             if (/^(https?|data):/i.test(relPath)) return match;
-            const resolved = resolveRelativePath(htmlPath, relPath);
+            const resolved = resolveRelativePath(previewHtmlPath, relPath);
             const blobUrl = resolved ? previewBlobMap.get(resolved) : null;
             return blobUrl ? `url("${blobUrl}")` : match;
         });
 
-        // 最終的なHTMLをBlob化
         const htmlBlobUrl = URL.createObjectURL(new Blob([html], { type: "text/html" }));
-        previewBlobMap.set("__html__", htmlBlobUrl);
 
-        // 6. 反映と後片付け
-        // ★追加: 非同期処理(await)の待機中にウィンドウが閉じられた場合のクラッシュを防止
-        if (!previewIframe) return;
+        if (!previewIframe || isDestroyed) {
+            URL.revokeObjectURL(htmlBlobUrl);
+            return;
+        }
 
         previewIframe.src = htmlBlobUrl;
+
+        // 読み込み完了後に古い Blob をすべて確実に解放（メモリリーク完全防止）
         previewIframe.onload = () => {
-            // 新しい内容が表示された後に古い URL を解放する
             for (const url of oldBlobs.values()) {
                 try { URL.revokeObjectURL(url); } catch { }
             }
+            if (lastHtmlBlobUrl) {
+                try { URL.revokeObjectURL(lastHtmlBlobUrl); } catch { }
+            }
+            lastHtmlBlobUrl = htmlBlobUrl;
         };
     }
 
@@ -1625,69 +1678,86 @@ export default function CodeEditor(root, options = {}) {
     sidebar.style.display = "none";
 
     /* =========================
-       FS変更 → タブ自動同期（修正版）
-    ========================== */
+           FS変更 → タブ自動同期（無限ループ防止ガード付き・修正版）
+        ========================== */
+    let isSyncingFS = false;
+
     function syncTabsWithFS() {
-        let activeTabWasUpdated = false;
+        // すでに同期処理中の場合はイベントの連鎖ループを防ぐため即座にリターン
+        if (isSyncingFS) return;
+        isSyncingFS = true;
 
-        for (let i = tabs.length - 1; i >= 0; i--) {
-            const tab = tabs[i];
-            const node = resolveFS(tab.path);
+        try {
+            let activeTabWasUpdated = false;
 
-            if (node) {
-                if (activeTab && tab.path === activeTab.path) {
-                    // nodeの内容がメモリ上のタブ内容と異なる場合、同期してフラグを立てる
-                    if (activeTab.content !== node.content) {
-                        activeTab.content = String(node.content ?? "");
-                        textarea.value = activeTab.content;
-                        activeTabWasUpdated = true;
+            // 【修正】tabs.length 1 のタイポを tabs.length - 1 に修正
+            for (let i = tabs.length - 1; i >= 0; i--) {
+                const tab = tabs[i];
+                const node = resolveFS(tab.path);
+
+                if (node) {
+                    if (activeTab && tab.path === activeTab.path) {
+                        // nodeの内容がメモリ上のタブ内容と異なる場合、同期してフラグを立てる
+                        if (activeTab.content !== node.content) {
+                            activeTab.content = String(node.content ?? "");
+                            textarea.value = activeTab.content;
+                            activeTabWasUpdated = true;
+                        }
                     }
+                    tab.node = node;
+                    tab.content = String(node.content ?? "");
+                } else {
+                    if (activeTab === tab) activeTab = null;
+                    tabs.splice(i, 1);
+                    activeTabWasUpdated = true; // タブが消滅した場合もUI更新が必要
                 }
-                tab.node = node;
-                tab.content = String(node.content ?? "");
-            } else {
-                if (activeTab === tab) activeTab = null;
-                tabs.splice(i, 1);
-                activeTabWasUpdated = true; // タブが消滅した場合もUI更新が必要
-            }
-        }
-
-        if (!activeTab && tabs.length) {
-            activeTab = tabs[0];
-            textarea.value = activeTab.content;
-            updateLineNumbers();
-            baseTitle = activeTab.name;
-            activeTabWasUpdated = true;
-        }
-
-        renderTabs();
-        updateTitle();
-
-        // ★ ハイライトの更新
-        if (activeTabWasUpdated) {
-            // シンタックスハイライトの再適用
-            applySyntaxHighlight();
-
-            // 検索中のワードがあれば、新しい内容に対してハイライトを再描画
-            if (searchQuery && searchQuery.trim() !== "") {
-                highlightSearchMatches(searchQuery);
-            } else {
-                clearErrorHighlights();
             }
 
-            // プレビューの更新
-            if (previewWin && document.body.contains(previewWin)) {
-                renderPreview();
+            if (!activeTab && tabs.length) {
+                activeTab = tabs[0];
+                textarea.value = activeTab.content;
+                updateLineNumbers();
+                baseTitle = activeTab.name;
+                activeTabWasUpdated = true;
             }
 
-            // ミニマップも更新
-            requestAnimationFrame(updateMinimap);
-        }
+            renderTabs();
+            updateTitle();
 
-        if (sidebar.style.display !== "none") {
-            renderSidebar();
+            // ★ ハイライトの更新
+            if (activeTabWasUpdated) {
+                // シンタックスハイライトの再適用
+                applySyntaxHighlight();
+
+                // 検索中のワードがあれば、新しい内容に対してハイライトを再描画
+                if (searchQuery && searchQuery.trim() !== "") {
+                    highlightSearchMatches(searchQuery);
+                } else {
+                    clearErrorHighlights();
+                }
+
+                // プレビューの更新
+                if (previewWin && document.body.contains(previewWin)) {
+                    renderPreview();
+                }
+
+                // ミニマップも更新
+                requestAnimationFrame(updateMinimap);
+            }
+
+            if (sidebar.style.display !== "none") {
+                renderSidebar();
+            }
+        } finally {
+            // 一定時間ロックを保持し、連続で発火するイベントループを遮断
+            setTimeout(() => {
+                isSyncingFS = false;
+            }, 50);
         }
     }
+
+    // イベントリスナーの登録
+    window.addEventListener("fs-updated", syncTabsWithFS);
 
     /* =========================
        Close & Cleanup
@@ -1795,13 +1865,16 @@ export default function CodeEditor(root, options = {}) {
         // 1. メインファイルの実体を取得
         if (fileNode.content === "__EXTERNAL_DATA__") {
             try {
-                fileNode.content = await getFileContent(filePath);
+                const realContent = await getFileContent(filePath);
+                if (isDestroyed) return; // ⭐ 既にエディタが閉じられていれば破棄
+
+                fileNode.content = realContent;
                 if (activeTab && activeTab.path === filePath) {
-                    activeTab.content = fileNode.content;
-                    textarea.value = fileNode.content;
-                    // ★追加: メインファイルの読み込みが完了した瞬間に更新
+                    activeTab.content = String(realContent ?? "");
+                    textarea.value = activeTab.content;
                     updateLineNumbers();
                     applySyntaxHighlight();
+                    requestAnimationFrame(updateMinimap);
                 }
             } catch (e) { console.error("Load error:", e); }
         }

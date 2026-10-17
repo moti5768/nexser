@@ -19,23 +19,21 @@ window.smallIcons = false;
    Start Menu Builder
 ===================================================== */
 export async function buildStartMenu() {
-    window.smallIcons = (await loadSetting("smallIcons")) ?? false;
-    window.showRecent = (await loadSetting("showRecentItems")) ?? true;
-
     const menu = document.getElementById("start-menu");
     if (!menu) return;
     menu.innerHTML = "";
 
-    // 設定クラスの付与（CSSでの制御用）
+    // 設定クラスの付与（CSSでの制御用：メモリ上のキャッシュを利用）
     menu.classList.toggle("small-icons", window.smallIcons);
 
-    // FSに定義されている StartMenu をルートとしてメニューを構築
+    // FSに定義されている StartMenu をルートとしてメニューを構築[cite: 3]
     const startMenuContainer = createMenu(FS.StartMenu, "StartMenu", menu);
-    while (startMenuContainer.firstChild) {
-        menu.appendChild(startMenuContainer.firstChild);
+    if (startMenuContainer) {
+        // ✨ 子要素をバラさず、コンテナごとメニューに追加する
+        menu.appendChild(startMenuContainer);
     }
 
-    // ログオフボタン
+    // ログオフボタン[cite: 3]
     const logoffBtn = document.createElement("div");
     logoffBtn.className = "start-item danger";
     logoffBtn.textContent = "ログオフ";
@@ -47,17 +45,96 @@ export async function buildStartMenu() {
     };
     menu.appendChild(logoffBtn);
 
-    // Recent (最近使った項目)
+    // Recent (最近使った項目)[cite: 3]
     if (window.showRecent !== false) {
         await buildRecentArea(menu);
     }
-}
 
+    // =====================================================
+    // ✨ メニュー全体（menu）に対するクリックイベントの一括委譲
+    // =====================================================
+    if (!menu.dataset.listenerAttached) {
+        menu.dataset.listenerAttached = "true";
+        menu.addEventListener("click", async (e) => {
+            const item = e.target.closest(".start-item");
+            if (!item || item.classList.contains("empty") || item.classList.contains("danger")) return;
+
+            e.stopPropagation();
+            const fullPath = item.dataset.path;
+            const name = item.dataset.name;
+            if (!fullPath) return;
+
+            const rawNode = resolveFS(fullPath);
+            if (!rawNode) return;
+
+            // リンクの安全な解決
+            let currentNode = rawNode;
+            let currentPath = fullPath;
+            const visited = new Set();
+
+            while (currentNode && currentNode.type === "link" && typeof currentNode.target === "string") {
+                if (visited.has(currentPath) || visited.size >= 10) {
+                    console.warn(`[StartMenu] Circular or deep link detected: ${currentPath}`);
+                    currentNode = null;
+                    break;
+                }
+                visited.add(currentPath);
+                currentPath = currentNode.target;
+                currentNode = resolveFS(currentPath);
+            }
+
+            let runNode = currentNode;
+            let runPath = currentPath;
+
+            if (!runNode) {
+                confirmWindow(
+                    `問題のあるショートカット\n\nこのショートカットが参照している '${runPath}' は変更または移動されているか、存在しないため、正しく機能しません。\n\nこのショートカットを削除しますか？`,
+                    (result) => {
+                        if (result) {
+                            console.log(`ショートカットを削除します: ${fullPath}`);
+                        }
+                    },
+                    { width: 400, overlay: true }
+                );
+                menu.style.display = "none";
+                if (startBtn) startBtn.classList.remove("pressed");
+                return;
+            }
+
+            const runType = runNode.type;
+
+            switch (runType) {
+                case "app":
+                    if (runNode.shell) return;
+                    launch(runPath, { path: runPath, uniqueKey: runPath });
+                    addRecent({ type: "app", path: runPath });
+                    break;
+                case "file": {
+                    const appPath = resolveAppByPath(runPath);
+                    if (appPath) {
+                        launch(appPath, { path: runPath, node: runNode, uniqueKey: runPath });
+                    } else {
+                        const { openWithDialog } = await import("./apps/explorer.js");
+                        openWithDialog(runPath, runNode);
+                    }
+                    addRecent({ type: "file", path: runPath });
+                    break;
+                }
+                case "folder":
+                    launch("Programs/Applications/Explorer.app", { path: runPath, uniqueKey: runPath });
+                    addRecent({ type: "folder", path: runPath });
+                    break;
+            }
+
+            menu.style.display = "none";
+            if (startBtn) startBtn.classList.remove("pressed");
+        });
+    }
+}
 /* =====================================================
-   Recursive Menu Generator (Fixed with Folder Recursion Guard)
+   Recursive Menu Generator (Optimized with Lazy Loading)
 ===================================================== */
 function createMenu(folder, basePath, menuRoot, visitedPaths = new Set()) {
-    // ✨ ガードに引っかかった場合は null を返す（不要なコンテナを作らない）
     if (visitedPaths.has(basePath) || visitedPaths.size > 20) {
         console.warn(`[StartMenu] Circular folder recursion detected: ${basePath}`);
         return null;
@@ -66,15 +143,14 @@ function createMenu(folder, basePath, menuRoot, visitedPaths = new Set()) {
     const container = document.createElement("div");
     container.className = "start-menu-level";
 
-    // スモールアイコン時はコンテナにクラス付与
     if (window.smallIcons) container.classList.add("small");
 
     const currentVisited = new Set(visitedPaths);
     currentVisited.add(basePath);
 
+    const fragment = document.createDocumentFragment();
     let hasItems = false;
 
-    // 🔗 どんなリンクも安全に実体まで解決するヘルパー関数（循環参照・無限ループ防止付き）
     function resolveLinkSafely(startNode, startPath) {
         let currentNode = startNode;
         let currentPath = startPath;
@@ -96,17 +172,20 @@ function createMenu(folder, basePath, menuRoot, visitedPaths = new Set()) {
         if (name === "type" || name === "system" || name === "lastModified") continue;
 
         const node = folder[name];
-        if (node.hidden) continue; // 隠しファイルを除外
+        if (node.hidden) continue;
 
         hasItems = true;
 
         const item = document.createElement("div");
         item.className = "start-item";
 
+        const fullPath = `${basePath}/${name}`;
+        item.dataset.path = fullPath;
+        item.dataset.name = name;
+
         const iconSpan = document.createElement("span");
         iconSpan.className = "icon";
 
-        // スモールアイコン設定に応じてサイズを変更
         const iconSize = window.smallIcons ? "14px" : "18px";
         const marginSize = window.smallIcons ? "6px" : "8px";
         Object.assign(iconSpan.style, {
@@ -120,87 +199,41 @@ function createMenu(folder, basePath, menuRoot, visitedPaths = new Set()) {
         iconSpan.textContent = getIcon(name, node);
         item.appendChild(iconSpan);
 
-        // テキストラベルの作成
         const textSpan = document.createElement("span");
         textSpan.className = "text";
         textSpan.textContent = name;
         if (window.smallIcons) textSpan.style.fontSize = "11px";
         item.appendChild(textSpan);
 
-        container.appendChild(item);
+        fragment.appendChild(item);
 
-        const fullPath = `${basePath}/${name}`;
-
-        // 安全にリンク先の実体を解決
         const resolved = resolveLinkSafely(node, fullPath);
         const targetNode = resolved.node;
         const targetPath = resolved.path;
 
         const effectiveType = targetNode ? targetNode.type : "broken";
 
-        // 起動可能・操作可能なアイテムのクリック処理
-        if (["app", "link", "file", "folder"].includes(node.type) || effectiveType !== "broken") {
-            item.onclick = async (e) => {
-                e.stopPropagation(); // イベントのバブリングを阻止し、親項目の同時起動を防ぐ
-                const clickResolved = resolveLinkSafely(node, fullPath);
-                let runNode = clickResolved.node;
-                let runPath = clickResolved.path;
-
-                // リンク切れの場合のエラーハンドリング
-                if (!runNode) {
-                    confirmWindow(
-                        `問題のあるショートカット\n\nこのショートカットが参照している '${runPath}' は変更または移動されているか、存在しないため、正しく機能しません。\n\nこのショートカットを削除しますか？`,
-                        (result) => {
-                            if (result) {
-                                console.log(`ショートカットを削除します: ${fullPath}`);
-                            }
-                        },
-                        { width: 400, overlay: true }
-                    );
-                    menuRoot.style.display = "none";
-                    if (startBtn) startBtn.classList.remove("pressed");
-                    return;
-                }
-
-                const runType = runNode.type;
-
-                switch (runType) {
-                    case "app":
-                        if (runNode.shell) return;
-                        launch(runPath, { path: runPath, uniqueKey: runPath });
-                        addRecent({ type: "app", path: runPath });
-                        break;
-                    case "file": {
-                        const appPath = resolveAppByPath(runPath);
-                        if (appPath) {
-                            launch(appPath, { path: runPath, node: runNode, uniqueKey: runPath });
-                        } else {
-                            const { openWithDialog } = await import("./apps/explorer.js");
-                            openWithDialog(runPath, runNode);
-                        }
-                        addRecent({ type: "file", path: runPath });
-                        break;
-                    }
-                    case "folder":
-                        launch("Programs/Applications/Explorer.app", { path: runPath, uniqueKey: runPath });
-                        addRecent({ type: "folder", path: runPath });
-                        break;
-                }
-
-                menuRoot.style.display = "none";
-                if (startBtn) startBtn.classList.remove("pressed");
-            };
-        }
-
-        // ✨ 解決後の実体がフォルダの場合、サブメニューが正常に生成された時だけ展開処理を行う
+        // フォルダの場合は初期構築せず、ホバー時に中身を作る「遅延ロード」のプレースホルダーを配置
         if (effectiveType === "folder" && targetNode) {
-            const sub = createMenu(targetNode, targetPath, menuRoot, currentVisited);
-            if (sub) {
-                item.classList.add("has-children");
-                sub.classList.add("submenu");
-                item.appendChild(sub);
-                setupHover(item, sub);
-            }
+            item.classList.add("has-children");
+
+            const subContainer = document.createElement("div");
+            subContainer.className = "start-menu-level submenu";
+            if (window.smallIcons) subContainer.classList.add("small");
+            subContainer.dataset.loaded = "false";
+            item.appendChild(subContainer);
+
+            // ホバー時に初めて子メニューを生成して流し込む
+            setupHover(item, subContainer, () => {
+                if (subContainer.dataset.loaded === "false") {
+                    subContainer.dataset.loaded = "true";
+                    const built = createMenu(targetNode, targetPath, menuRoot, currentVisited);
+                    if (built) {
+                        // ✨ コンテナごとそのまま配置する（バラバラに分解しない）
+                        subContainer.appendChild(built);
+                    }
+                }
+            });
         }
     }
 
@@ -208,19 +241,27 @@ function createMenu(folder, basePath, menuRoot, visitedPaths = new Set()) {
         const empty = document.createElement("div");
         empty.className = "start-item empty";
         empty.textContent = "(Empty)";
-        container.appendChild(empty);
+        fragment.appendChild(empty);
     }
+
+    container.appendChild(fragment);
+
+    // ※ 各コンテナごとの個別クリックイベントは削除し、大元の menu (menuRoot) で一括管理するように委譲しました[cite: 3]
 
     return container;
 }
 
 /* =====================================================
-   Hover helper / Recent Area / Launcher (維持)
+   Hover helper / Recent Area / Launcher
 ===================================================== */
-function setupHover(parent, submenu) {
+function setupHover(parent, submenu, onShow) {
     let hideTimer = null;
     const show = () => {
         clearTimeout(hideTimer);
+
+        // ✨ ホバーされた瞬間に遅延ロード（サブメニュー構築）を実行
+        if (onShow) onShow();
+
         submenu.style.display = "block";
         submenu.style.left = "";
         submenu.style.top = "";
