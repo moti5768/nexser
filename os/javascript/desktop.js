@@ -6,7 +6,7 @@ import { resolveFS, validateName, importFileSmart, getUniqueName, isDescendantOr
 import { addRecent } from "./recent.js";
 import { attachContextMenu } from "./context-menu.js";
 import { resolveAppByPath, getIcon, getDisplayFileName } from "./file-associations.js";
-import { openWithDialog as explorerOpenWithDialog, showProperties } from "./apps/explorer.js";
+import { openWithDialog as explorerOpenWithDialog, showProperties, emptyTrash } from "./apps/explorer.js";
 import { dbGet, dbSet } from "./fs-db.js";
 
 // 選択状態管理 (複数選択・範囲選択対応)
@@ -337,76 +337,86 @@ export function buildDesktop() {
         });
 
         // 右クリック
-        attachContextMenu(item, () => [
-            {
-                label: "開く",
-                action: () => openFSItem(name, node, "Desktop")
-            },
-            {
-                label: "ショートカットの作成",
-                action: async () => {
-                    const baseName = `${name} のショートカット`;
-                    const uniqueName = getUniqueName(FS.Desktop, baseName);
+        attachContextMenu(item, () => {
+            const isTrash = (name === "Trash");
+            return [
+                {
+                    label: "開く",
+                    action: () => openFSItem(name, node, "Desktop")
+                },
+                ...(isTrash ? [
+                    {
+                        label: "ゴミ箱を空にする",
+                        action: () => emptyTrash(() => buildDesktop())
+                    },
+                    { label: "---" }
+                ] : []),
+                {
+                    label: "ショートカットの作成",
+                    action: async () => {
+                        const baseName = `${name} のショートカット`;
+                        const uniqueName = getUniqueName(FS.Desktop, baseName);
 
-                    // ★ 改善: すでにリンクの場合は、その実体 target を引き継ぐ
-                    const absoluteTargetPath = fullPath.startsWith("Desktop/") ? fullPath : `Desktop/${name}`;
-                    const realTargetPath = node.type === "link" ? node.target : absoluteTargetPath;
+                        // ★ 改善: すでにリンクの場合は、その実体 target を引き継ぐ
+                        const absoluteTargetPath = fullPath.startsWith("Desktop/") ? fullPath : `Desktop/${name}`;
+                        const realTargetPath = node.type === "link" ? node.target : absoluteTargetPath;
 
-                    FS.Desktop[uniqueName] = {
-                        type: "link",
-                        target: realTargetPath,
-                        lastModified: Date.now()
-                    };
-                    await forceSave();
-                    window.dispatchEvent(new Event("fs-updated"));
-                }
-            },
-            {
-                label: "選択アイテムを削除",
-                disabled: globalSelected.items.size === 0,
-                action: async () => {
-                    // 右クリックされたアイコンが選択状態に含まれていない場合は、そのアイコンを選択状態にする
-                    if (!globalSelected.items.has(item)) {
-                        selectIconUI(item);
-                    }
-
-                    if (globalSelected.items.size > 0) {
-                        const itemsToDelete = Array.from(globalSelected.items).map(i => i.dataset.name);
-                        globalSelected.items.clear();
-
-                        for (const name of itemsToDelete) {
-                            // 削除関数の返り値（成功: true, 失敗/保護: false）を受け取る
-                            const success = await deleteFSItem("Desktop", name, false);
-                            if (success) {
-                                await markDefaultDeleted(`Desktop/${name}`);
-                            }
-                        }
-
+                        FS.Desktop[uniqueName] = {
+                            type: "link",
+                            target: realTargetPath,
+                            lastModified: Date.now()
+                        };
                         await forceSave();
                         window.dispatchEvent(new Event("fs-updated"));
                     }
-                }
-            },
-            {
-                label: "削除",
-                action: () => deleteFSItem("Desktop", name)
-            },
-            {
-                label: "プログラムから開く",
-                disabled: node.type !== "file",
-                action: () => {
-                    if (node.type === "file") {
-                        explorerOpenWithDialog(fullPath, node);
-                    } else {
-                        alertWindow("ファイル以外は開けません", { width: 350, height: 110 });
+                },
+                {
+                    label: "選択アイテムを削除",
+                    disabled: globalSelected.items.size === 0,
+                    action: async () => {
+                        // 右クリックされたアイコンが選択状態に含まれていない場合は、そのアイコンを選択状態にする
+                        if (!globalSelected.items.has(item)) {
+                            selectIconUI(item);
+                        }
+
+                        if (globalSelected.items.size > 0) {
+                            const itemsToDelete = Array.from(globalSelected.items).map(i => i.dataset.name);
+                            globalSelected.items.clear();
+
+                            for (const name of itemsToDelete) {
+                                // 削除関数の返り値（成功: true, 失敗/保護: false）を受け取る
+                                const success = await deleteFSItem("Desktop", name, false);
+                                if (success) {
+                                    await markDefaultDeleted(`Desktop/${name}`);
+                                }
+                            }
+
+                            await forceSave();
+                            window.dispatchEvent(new Event("fs-updated"));
+                        }
                     }
+                },
+                {
+                    label: "削除",
+                    action: () => deleteFSItem("Desktop", name)
+                },
+                {
+                    label: "プログラムから開く",
+                    disabled: node.type !== "file",
+                    action: () => {
+                        if (node.type === "file") {
+                            explorerOpenWithDialog(fullPath, node);
+                        } else {
+                            alertWindow("ファイル以外は開けません", { width: 350, height: 110 });
+                        }
+                    }
+                },
+                {
+                    label: "プロパティ",
+                    action: () => showProperties(name, node, fullPath)
                 }
-            },
-            {
-                label: "プロパティ",
-                action: () => showProperties(name, node, fullPath)
-            }
-        ]);
+            ];
+        });
 
         // ★ 追加: 自動整列OFFの時、メモリ上の座標データがあればスタイルに適用
         if (!autoArrange) {

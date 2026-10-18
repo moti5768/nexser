@@ -1128,9 +1128,11 @@ export default async function Explorer(root, options = {}) {
                         globalSelected.lastSelected = null;
                     }
 
+                    // 改善後：listContainer内に配置し、position: absoluteに変更
                     selectionBox = document.createElement("div");
-                    selectionBox.style.cssText = "position:fixed; border:1px solid #0078D7; background-color:rgba(0, 120, 215, 0.2); z-index:1000; pointer-events:none;";
-                    document.body.appendChild(selectionBox);
+                    selectionBox.style.cssText = "position:absolute; border:1px solid #0078D7; background-color:rgba(0, 120, 215, 0.2); z-index:1000; pointer-events:none;";
+                    listContainer.style.position = "relative"; // リストコンテナ側が基準位置になるように設定
+                    listContainer.appendChild(selectionBox);
                 }
 
                 if (isSelecting && selectionBox) {
@@ -1150,10 +1152,19 @@ export default async function Explorer(root, options = {}) {
                             isRafScheduled = false;
                             return;
                         }
-                        selectionBox.style.left = Math.min(startX, currentX) + "px";
-                        selectionBox.style.top = Math.min(startY, currentY) + "px";
-                        selectionBox.style.width = Math.abs(startX - currentX) + "px";
-                        selectionBox.style.height = Math.abs(startY - currentY) + "px";
+
+                        const containerRect = listContainer.getBoundingClientRect();
+
+                        // リストコンテナ内での相対座標に変換し、領域内にクランプ
+                        const relStartX = startX - containerRect.left + listContainer.scrollLeft;
+                        const relStartY = startY - containerRect.top + listContainer.scrollTop;
+                        const relCurrentX = Math.max(containerRect.left, Math.min(currentX, containerRect.right)) - containerRect.left + listContainer.scrollLeft;
+                        const relCurrentY = Math.max(containerRect.top, Math.min(currentY, containerRect.bottom)) - containerRect.top + listContainer.scrollTop;
+
+                        selectionBox.style.left = Math.min(relStartX, relCurrentX) + "px";
+                        selectionBox.style.top = Math.min(relStartY, relCurrentY) + "px";
+                        selectionBox.style.width = Math.abs(relStartX - relCurrentX) + "px";
+                        selectionBox.style.height = Math.abs(relStartY - relCurrentY) + "px";
 
                         const boxRect = selectionBox.getBoundingClientRect();
                         const items = listContainer.querySelectorAll(".explorer-item");
