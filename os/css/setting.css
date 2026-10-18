@@ -97,6 +97,27 @@ body {
     /* overflow を正しく効かせる */
 }
 
+/* table */
+
+tr {
+    border: solid 1px gray;
+}
+
+th {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    list-style: none;
+    color: black;
+    background-color: #C3C7CB;
+    border: 1.5px solid #808080;
+    border-color: #fff #808080 #808080 #fff;
+    box-shadow: 0.5px 0.5px black;
+    padding: 2px;
+    text-align: left;
+}
+
 /* フォーカス（キーボード操作風） */
 .win95-tab:focus-visible {
     outline: 1px dotted #000;

@@ -59,7 +59,6 @@ export default function RegistryEditor(root) {
                     <ul style="list-style:none; padding-left:15px; margin:0;" id="reg-tree"></ul>
                 </div>
                 
-                <!-- ▼ 右側エリアを position: relative にし、ここに Loading を内包 -->
                 <div style="flex:1; display:flex; flex-direction:column; overflow:hidden; position:relative;">
                     <div id="reg-loading" style="display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(192,192,192,0.6); z-index:100; justify-content:center; align-items:center; font-weight:bold;">
                         Loading...
