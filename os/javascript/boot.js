@@ -688,7 +688,7 @@ const commands = {
 
 
     scanfilesystem: {
-        desc: 'Check the file system for errors and repair',
+        desc: 'Check the file system for errors and repair (Usage: scanfilesystem [path])',
         async run(args) {
             // 共通のウェイト処理（演出用の遅延）
             const wait = (ms) => new Promise(r => setTimeout(r, ms));
@@ -710,6 +710,16 @@ const commands = {
             print("--> Scanning files and applications...");
             await wait(400);
 
+            // ★ 追加・変更: 引数（args[0]）から対象パスを特定する（未指定の場合は C:/ 全体）
+            const targetPathArg = args[0] || "C:/";
+            const targetPath = normalizePath(targetPathArg);
+            const fsSearchPath = targetPath === "C:/" ? "" : targetPath.replace(/^C:\//, "");
+            const targetNode = resolveFS(fsSearchPath);
+
+            if (!targetNode) {
+                return print(`Error: The system cannot find the path specified: ${targetPathArg}`);
+            }
+
             // 全ファイル・アプリノードを再帰的に収集
             const files = [];
             const skipKeys = new Set(['type', 'entry', 'singleton', 'target', 'content', 'system', 'name', 'originalPath']);
@@ -730,11 +740,16 @@ const commands = {
                 }
             }
 
-            const rootNode = resolveFS("");
-            if (rootNode) collectNodes(rootNode, "C:");
+            // ★ 変更: 指定された対象が単一ファイル、またはフォルダの場合に応じた収集
+            if (targetNode.type === 'file' || targetNode.type === 'app') {
+                files.push({ path: targetPath, node: targetNode });
+            } else {
+                const basePath = targetPath === "C:/" ? "C:" : targetPath.replace(/\/$/, "");
+                collectNodes(targetNode, basePath);
+            }
 
             const totalFiles = files.length;
-            print(`Scanning drive C: (${totalFiles} items found)...`);
+            print(`Scanning target ${targetPath} (${totalFiles} items found)...`);
 
             // 進捗表示用のテキストノードを作成
             const progressNode = document.createTextNode('');
@@ -773,11 +788,11 @@ const commands = {
             }
 
             print("\n----------------------------------------");
-            print("Scan completed on drive C:");
+            print(`Scan completed on ${targetPath}:`);
             print(`Total Checked : ${totalFiles}`);
             print(`Errors Found  : ${errorCount}`);
             print(`Repaired      : ${fixedCount}`);
-            print("Drive status: Healthy.");
+            print("Target status : Healthy.");
             print("----------------------------------------\n");
 
             // 修復やクリーンアップが発生した場合は自動保存
@@ -792,7 +807,6 @@ const commands = {
             }
         }
     }
-
 
 };
 
@@ -925,21 +939,31 @@ export async function bootOS() {
     });
 
     if (hasBoot) {
-        // 重複していた taskbarHeight のロード処理を削除し、直接スクリプト実行へ移行
         print("Reading System Configuration...");
         const script = config.content.split('\n').map(s => s.trim()).filter(Boolean);
 
-        for (const line of script) {
-            if (screen.style.display === 'none') return;
-            if (line.toLowerCase().includes('crash')) {
-                print(`[Security] Blocked suspicious command in AUTOBOOT.CFG: ${line}`);
-                continue;
-            }
+        try {
+            for (const line of script) {
+                if (screen.style.display === 'none') return;
+                if (line.toLowerCase().includes('crash')) {
+                    print(`[Security] Blocked suspicious command in AUTOBOOT.CFG: ${line}`);
+                    continue;
+                }
 
-            await new Promise(r => setTimeout(r, 30));
-            print(`${cwd}> ${line}`);
-            await runSilent(line);
-            if (screen.style.display === 'none') return;
+                await new Promise(r => setTimeout(r, 30));
+                print(`${cwd}> ${line}`);
+                await runSilent(line);
+                if (screen.style.display === 'none') return;
+            }
+        } catch (e) {
+            print(`\n[Boot Error] Failed to start: ${e.message}`);
+        } finally {
+            // エラーやブート失敗によりGUIに切り替わっていない場合はプロンプトを復旧
+            if (screen.style.display !== 'none') {
+                print("\nSystem boot interrupted or failed.");
+                print("Type 'scanfilesystem' to repair, or 'boot' to retry.\n");
+                prompt();
+            }
         }
     } else {
         // bootがない場合は即座にプロンプトを表示する

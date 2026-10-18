@@ -28,7 +28,8 @@ export default function RegistryEditor(root) {
 
     // --- システム保護用ヘルパー ---
     function isProtected(store, key) {
-        return store === "kv" && key === "fs";
+        // 【分割形式対応】従来の "fs" キーに加え、分割された "fs_" で始まるキーもすべて保護対象にする
+        return store === "kv" && (key === "fs" || (typeof key === "string" && key.startsWith("fs_")));
     }
     function notifySystemChange(store, key) {
         if (store === "settings") {
@@ -269,9 +270,9 @@ export default function RegistryEditor(root) {
 
             if (apply && newValue !== originalText) {
                 if (targetCol === "name") {
-                    await renameItem(keyStr, newValue);
+                    await renameItem(tr._key, newValue);
                 } else {
-                    await saveItem(keyStr, newValue);
+                    await saveItem(tr._key, newValue);
                 }
             } else {
                 refresh(false);
@@ -541,13 +542,13 @@ export default function RegistryEditor(root) {
                     selectRow(keyStr);
                 }
                 return [
-                    { label: "Modify", action: () => enterEditMode(keyStr, "data") },
-                    { label: "Rename", action: () => enterEditMode(keyStr, "name") },
-                    { label: "Delete", action: () => deleteItem(keyStr) }
+                    { label: "Modify", action: () => enterEditMode(tr._key, "data") }, // 【改善】
+                    { label: "Rename", action: () => enterEditMode(tr._key, "name") }, // 【改善】
+                    { label: "Delete", action: () => deleteItem(tr._key) }            // 【改善】元のキーで処理
                 ];
             });
 
-            tr.ondblclick = () => enterEditMode(keyStr, "data");
+            tr.ondblclick = () => enterEditMode(tr._key, "data"); // 【改善】
             tr.onclick = () => selectRow(keyStr);
 
             if (fragment) {
@@ -558,6 +559,7 @@ export default function RegistryEditor(root) {
             rowMap.set(keyStr, tr);
         }
 
+        tr._key = key;
         tr._val = val;
         if (editingKey !== keyStr) {
             let typeStr = (typeof val === 'number') ? "REG_DWORD" : (val instanceof Blob) ? "REG_BINARY" : (typeof val === 'object') ? "REG_JSON" : "REG_SZ";

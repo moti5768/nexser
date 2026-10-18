@@ -74,6 +74,14 @@ function extractAndStrip(obj, path = "", largeFiles = new Map(), visited = new W
 
     for (let i = 0; i < keys.length; i++) {
         const key = keys[i];
+
+        // ⭐ 【パフォーマンス向上】ファクトリー出荷時のシステムアプリなど、
+        // ユーザーが書き換えない不変領域は深い走査や二重クローンを避ける
+        if (key === "system" && obj.system === true && path.startsWith("Programs/Applications")) {
+            copy[key] = true;
+            continue;
+        }
+
         const value = obj[key];
 
         const isBlobOrBuffer = value instanceof Blob || value instanceof ArrayBuffer || ArrayBuffer.isView(value);
@@ -240,7 +248,7 @@ export async function deleteFileContentRecursive(path) {
 
 export async function saveFS(fs) {
     saveChain = saveChain.then(async () => {
-        // 容量制限のチェック (✨修正: quota * 0.95 に修正)
+        // 容量制限のチェック
         if (navigator.storage && navigator.storage.estimate) {
             const { usage, quota } = await navigator.storage.estimate();
             if (usage >= quota * 0.95) {
@@ -263,7 +271,7 @@ export async function saveFS(fs) {
 
         return new Promise((resolve, reject) => {
             tx.oncomplete = () => {
-                console.log("[FS-DB] Chunked atomic save completed.");
+                console.log("[FS-DB] Split-key atomic save completed.");
                 resolve();
             };
             tx.onerror = (event) => reject(tx.error || event?.target?.error || new Error("Save transaction error"));
@@ -286,8 +294,6 @@ export async function saveFS(fs) {
                             const fullPath = currentPath ? `${currentPath}/${key}` : key;
                             activePaths.add(fullPath);
 
-                            // ✨ Windowsの挙動に準拠: ショートカット（link）は単なるファイルなので、
-                            // フォルダとして中身を再帰的に走査・展開しない
                             if (child.type === "link") {
                                 continue;
                             }
@@ -300,6 +306,10 @@ export async function saveFS(fs) {
 
                 // ① 大容量データの分割（チャンク）書き込み
                 largeFiles.forEach((data, path) => {
+                    if (data === "__EXTERNAL_DATA__") {
+                        return;
+                    }
+
                     const isBlob = data instanceof Blob;
                     const isString = typeof data === "string";
                     const dataSize = isBlob ? data.size : (isString ? data.length : 0);
@@ -307,14 +317,12 @@ export async function saveFS(fs) {
                     if (dataSize > CHUNK_SIZE) {
                         const totalChunks = Math.ceil(dataSize / CHUNK_SIZE);
                         for (let i = 0; i < totalChunks; i++) {
-                            // ✨修正: i * CHUNK_SIZE に修正
                             const start = i * CHUNK_SIZE;
                             const end = Math.min(start + CHUNK_SIZE, dataSize);
                             const chunk = isBlob ? data.slice(start, end) : data.slice(start, end);
                             fileStore.put(chunk, `${path}__chunk_${i}`);
                         }
 
-                        // メタデータを元のキーに保存
                         fileStore.put({
                             __IS_CHUNKED__: true,
                             totalChunks,
@@ -322,38 +330,24 @@ export async function saveFS(fs) {
                             mimeType: isBlob ? data.type : ""
                         }, path);
                     } else {
-                        // 10MB以下の場合はそのまま保存
                         fileStore.put(data, path);
                     }
                 });
 
-                // ② システムツリーの書き込み
-                kvStore.put(cleanFS, FS_KEY);
+                // ② システムツリーの書き込み（★トップレベルごとに分割保存）
+                for (const topKey of Object.keys(cleanFS)) {
+                    // システムの必須キー以外を除外しないようそのまま保存
+                    kvStore.put(cleanFS[topKey], `fs_${topKey}`);
+                }
 
-                // ③ GC処理（孤立ファイル・孤立チャンクの削除）
-                const keysReq = fileStore.getAllKeys();
-                keysReq.onsuccess = () => {
-                    const allSavedPaths = keysReq.result || [];
-                    for (let i = 0; i < allSavedPaths.length; i++) {
-                        const savedPath = allSavedPaths[i];
-                        const basePath = savedPath.includes("__chunk_") ? savedPath.split("__chunk_")[0] : savedPath;
-
-                        if (largeFiles.has(basePath) || activePaths.has(basePath)) continue;
-
-                        fileStore.delete(savedPath);
-                        console.log(`[FS-DB] GC: Deleted orphaned file or chunk at ${savedPath}`);
-                    }
-                };
             } catch (err) {
                 try { tx.abort(); } catch (_) { }
                 reject(err || new Error("Unknown error during FS save"));
             }
         });
     }).catch(err => {
-        // ✨堅牢性向上: 一度のエラーでセーブチェーン全体が永続的に停止（Reject状態）するのを防ぐ
         const errorMsg = err?.message || String(err) || "Critical save error";
         console.error("[FS-DB] Save chain failed gracefully, recovering chain:", errorMsg);
-        // あえて throw せず安全にハンドリングすることで、次回のタイマー等での自動保存を継続可能にする
     });
 
     return saveChain;
@@ -361,8 +355,27 @@ export async function saveFS(fs) {
 
 export async function loadFS() {
     try {
-        const data = await dbGet(FS_KEY, STORE_KV);
-        return data || null;
+        // 過去の単一キー "fs" からのデータを保持している場合の互換性維持
+        const legacyData = await dbGet("fs", STORE_KV);
+        if (legacyData) {
+            return legacyData;
+        }
+
+        const topKeys = ["System", "Desktop", "StartMenu", "Trash", "Programs"];
+        const loadedFS = {};
+        let hasData = false;
+
+        // ★修正: 毎回安全な独立トランザクションを発行する dbGet を使用することで
+        // 「The transaction has finished」エラーを完全に防止します。
+        for (const key of topKeys) {
+            const subData = await dbGet(`fs_${key}`, STORE_KV);
+            if (subData) {
+                loadedFS[key] = subData;
+                hasData = true;
+            }
+        }
+
+        return hasData ? loadedFS : null;
     } catch (err) {
         console.error("[FS-DB] Load failed:", err?.message || err);
         return null;

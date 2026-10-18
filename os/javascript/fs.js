@@ -275,14 +275,19 @@ async function performSave() {
     isSaving = true;
     try {
         await saveFS(baseFS);
-
         if (DEBUG_FS) console.log("[FS] Save completed.");
     } catch (e) {
         console.error("[FS] Save failed:", e);
-        // ★ 変更: ディスクへの書き込みが完全に失敗した場合、OSの根幹に関わる致命的エラーとしてスローする
         throw new Error(`FS_FATAL_WRITE_FAULT: ${e.message}`);
     } finally {
         isSaving = false;
+
+        // ★ 修正: 保存中に新たな変更が保留されていた場合、自動で再保存を走らせる
+        if (pendingSave) {
+            pendingSave = false;
+            // タイマーを介さず即座に performSave を再実行、または scheduleSave() を呼ぶ
+            scheduleSave();
+        }
     }
 }
 /**
