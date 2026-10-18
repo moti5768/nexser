@@ -32,12 +32,12 @@ async function load() {
                     resolve(cache);
                 };
             });
-        } catch {
+        } catch (e) {
+            console.error("recent.js load failed:", e);
             cache = [];
             isLoaded = true;
             return cache;
         } finally {
-            // ロード完了後にキャッシュをクリア（再ロードに備えるため）
             loadPromise = null;
         }
     })();
@@ -49,17 +49,25 @@ async function save() {
     try {
         const db = await openDB();
         const tx = db.transaction(STORE, "readwrite");
-        tx.objectStore(STORE).put(cache, KEY);
-    } catch { }
+        const store = tx.objectStore(STORE);
+        store.put(cache, KEY);
+
+        // ★ 改善: トランザクションの完了を待つことで保存の確実性を向上
+        await new Promise((resolve, reject) => {
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+            tx.onabort = () => reject(new Error("Transaction aborted"));
+        });
+    } catch (e) {
+        console.error("recent.js save failed:", e);
+    }
 }
 
 export async function getRecent() {
-    // ★変更: cache.length（配列の長さ）ではなく、ロード済みフラグで判定
     if (!isLoaded) await load();
     return [...cache];
 }
 
-// ★ async にする
 export async function addRecent(item) {
     if (!item?.path || !item?.type) return;
 
@@ -68,7 +76,7 @@ export async function addRecent(item) {
     cache.unshift({
         path: item.path,
         type: item.type,
-        display: item.display ?? basename(item.path), // ←追加
+        display: item.display ?? basename(item.path),
         time: Date.now()
     });
     cache = cache.slice(0, MAX);
@@ -84,13 +92,24 @@ export async function clearRecent() {
     try {
         const db = await openDB();
         const tx = db.transaction(STORE, "readwrite");
-        tx.objectStore(STORE).put([], KEY);
-    } catch { }
+        const store = tx.objectStore(STORE);
+        store.put([], KEY);
+
+        await new Promise((resolve, reject) => {
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+        });
+    } catch (e) {
+        console.error("recent.js clearRecent failed:", e);
+    }
 
     window.dispatchEvent(new Event("recent-updated"));
 }
+
+// ★ 改善: イベント受信時に進行中のロードプロミスも破棄して競合を防ぐ
 window.addEventListener("recent-updated", () => {
     isLoaded = false;
+    loadPromise = null;
 });
 
 export async function removeRecent(path) {
