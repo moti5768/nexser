@@ -456,20 +456,41 @@ const commands = {
     },
 
     tree: {
-        desc: 'Show directory tree',
+        desc: 'Show directory tree (Usage: tree [path] [/d: folders only])',
         run(args) {
-            const targetPath = normalizePath(args[0] || ".");
+            // /d または -d オプションが含まれているかを判定し、パスの引数から除外する
+            const hasDirFlag = args.includes('/d') || args.includes('-d');
+            const cleanArgs = args.filter(arg => arg !== '/d' && arg !== '-d');
+
+            const targetPath = normalizePath(cleanArgs[0] || ".");
             const fsSearchPath = targetPath === "C:/" ? "" : targetPath.replace(/^C:\//, "");
             const root = resolveFS(fsSearchPath);
             if (!root) return print('Path not found');
+
             function walk(n, depth = 0, ind = '') {
+                // 除外すべきシステムプロパティ
+                const skipKeys = new Set(['type', 'entry', 'singleton', 'target', 'content', 'system', 'name', 'originalPath', 'hidden', 'lastModified']);
+
                 Object.entries(n).forEach(([name, val]) => {
-                    if (['type', 'entry', 'singleton', 'target', 'content', 'system', 'name'].includes(name)) return;
+                    if (skipKeys.has(name)) return;
+
+                    // フォルダであるかの判定（type が 'folder' または明示的なタイプがないオブジェクト）
+                    const isFolder = typeof val === 'object' && val && (val.type === 'folder' || !val.type);
+
+                    // フォルダのみ表示フラグが有効な場合で、かつフォルダでない場合はスキップ
+                    if (hasDirFlag && !isFolder) return;
+
                     print(ind + '├─ ' + name);
-                    if (typeof val === 'object' && val.type !== 'file' && val.type !== 'link') walk(val, depth + 1, ind + '│  ');
+
+                    // 子要素がフォルダの場合のみ再帰的に走査
+                    if (isFolder) {
+                        walk(val, depth + 1, ind + '│  ');
+                    }
                 });
             }
-            print(targetPath); walk(root);
+
+            print(targetPath);
+            walk(root);
         }
     },
 
