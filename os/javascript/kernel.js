@@ -56,6 +56,15 @@ export function initSystemErrorHandler() {
             showBSOD(`KERNEL_FAULT: ${msg}`, e.error);
         } else {
             console.warn("[Kernel Notice] Non-critical exception caught:", msg);
+
+            // エラーを発生させた要素からプロセスキー（processKey）を逆引きして該当アプリのみ終了
+            const targetWin = e.target?.closest ? e.target.closest(".window") : null;
+            if (targetWin && targetWin.dataset.processKey) {
+                const key = targetWin.dataset.processKey;
+                console.warn(`[Kernel] App error detected. Terminating process: ${key}`);
+                errorWindow(`アプリケーションエラーが発生したため終了しました。\n${msg}`, { taskbar: false });
+                killProcess(key);
+            }
         }
     });
 }
@@ -406,8 +415,22 @@ async function launchApp(item, path, options) {
     if (!win) throw new Error("Window creation failed");
 
     let appHandle = null;
+    const key = uniqueKey ?? `app:${path}:${Date.now()}`;
+    const pid = pidCounter++;
+
+    // アプリに与えるシステムコール API
+    const syscall = {
+        pid,
+        path,
+        exit: () => killProcess(key),
+        restart: () => restartProcess(key),
+        postMessage: (targetPid, message) => sendProcessMessage(pid, targetPid, message),
+        onMessage: null // アプリ側でメッセージ受信用コールバックをセット
+    };
+
     try {
-        appHandle = await appModule.default(content, options);
+        // 第2引数または第3引数に syscall を渡す
+        appHandle = await appModule.default(content, { ...options, syscall });
         if (appHandle?.isTabApp) tabAppInstances.set(item.entry, { win, handle: appHandle });
         if (typeof win._applyRealIcon === "function") win._applyRealIcon();
     } catch (e) {
@@ -420,7 +443,6 @@ async function launchApp(item, path, options) {
     }
 
     addRecent(path);
-    const key = uniqueKey ?? `app:${path}:${Date.now()}`;
     registerProcess(win, key, path, appHandle);
 
     if (isExplorer) explorerWindows.set(options.path || "Desktop", win);
@@ -458,16 +480,24 @@ function registerProcess(win, key, path, handle) {
 
 
 /* =========================
-   Process metrics updater
+   Watchdog & Process Metrics
 ========================= */
-
 setInterval(() => {
     const mem = getMemoryMB();
-    for (const proc of processes.values()) {
+    const now = performance.now();
+
+    for (const [key, proc] of processes.entries()) {
         proc.memory = mem;
         proc.cpu = cpuLoad;
+
+        // フリーズ監視（アプリ側で heartbeat が設定されている場合、あるいは長時間イベントループが停滞した場合）
+        if (proc.lastHeartbeat && (now - proc.lastHeartbeat > 10000)) {
+            console.error(`[Watchdog] Freeze detected in process ${proc.pid} (${proc.path}). Terminating.`);
+            killProcess(key);
+            errorWindow(`アプリケーション '${basename(proc.path)}' が応答しないため、強制終了しました。`, { taskbar: true });
+        }
     }
-}, 1000);
+}, 2000);
 
 
 /* ===== プロセス一覧 ===== */
@@ -521,39 +551,47 @@ export function killProcess(key) {
     const proc = processes.get(key);
     if (!proc) return false;
 
-    // ★ 修正: 多重呼び出しを完全に防ぐため、真っ先にプロセス一覧から除外する
     processes.delete(key);
 
     const win = proc.window;
     const handle = proc.handle;
 
     try {
-        // 1. アプリ側のクリーンアップ（タイマー停止、メモリ解放など）
-        if (handle && typeof handle.dispose === 'function') {
-            handle.dispose();
+        // 1. アプリ側の明示的クリーンアップ関数（dispose, unmount, destroyなど）
+        if (handle) {
+            if (typeof handle.dispose === 'function') handle.dispose();
+            if (typeof handle.destroy === 'function') handle.destroy();
+            if (typeof handle.unmount === 'function') handle.unmount();
         }
 
-        // (既存) DOMに紐づいた後方互換用のクリーンアップ
-        if (win?._cleanup) {
-            const cleanup = win._cleanup;
-            win._cleanup = null;
-            cleanup();
-        }
+        // 2. DOM内リスナー・タイマーの破棄
+        if (win) {
+            if (win._cleanup) {
+                const cleanup = win._cleanup;
+                win._cleanup = null;
+                try { cleanup(); } catch (_) { }
+            }
 
-        // 2. Observerを真っ先に切断
-        if (win?._observer) {
-            win._observer.disconnect();
-            win._observer = null;
-        }
+            if (win._observer) {
+                win._observer.disconnect();
+                win._observer = null;
+            }
 
-        // 3. タスクバーとウィンドウをUIから削除
-        if (win?._taskbarBtn) win._taskbarBtn.remove();
-        if (win) win.remove();
+            // イベントリスナーの参照切断のため内部要素を全クリア
+            win.innerHTML = "";
+
+            if (win._taskbarBtn) {
+                win._taskbarBtn.remove();
+                win._taskbarBtn = null;
+            }
+
+            win.remove();
+        }
 
     } catch (e) {
-        console.warn("Process cleanup failed:", e);
+        console.warn("Process cleanup warning:", e);
     } finally {
-        // エクスプローラー管理やタブ管理からの削除はそのまま実行
+        // 3. マップ構造からの参照完全削除（GCを有効化）
         for (const [path, w] of explorerWindows.entries()) {
             if (w === win) {
                 explorerWindows.delete(path);
@@ -566,6 +604,10 @@ export function killProcess(key) {
                 break;
             }
         }
+
+        // 参照解除
+        proc.window = null;
+        proc.handle = null;
     }
     return true;
 }
@@ -695,4 +737,93 @@ export async function playSystemEventSound(eventName) {
     } catch (e) {
         console.warn("Sound event failed", e);
     }
+}
+
+/* =========================
+   リネーム（名称変更）イベント検知
+========================= */
+if (typeof window !== "undefined") {
+    window.addEventListener("fs-renamed", (e) => {
+        const { oldPath, newPath } = e.detail || {};
+        if (!oldPath || !newPath) return;
+
+        for (const [key, proc] of processes.entries()) {
+            // パスが完全一致、または配下フォルダの場合にパスを更新
+            if (proc.path === oldPath || proc.path.startsWith(oldPath + "/")) {
+                const updatedPath = proc.path.replace(oldPath, newPath);
+                proc.path = updatedPath;
+
+                // ウィンドウタイトルの更新
+                if (proc.window) {
+                    const titleElem = proc.window.querySelector(".win-title, .title");
+                    if (titleElem) {
+                        titleElem.textContent = basename(updatedPath);
+                    }
+                }
+            }
+        }
+    });
+}
+
+/* =========================
+   Shell 制御 & プロセス再起動
+========================= */
+export const Shell = {
+    // Shell経由で安全にアプリを再起動
+    async restart(key) {
+        return await restartProcess(key);
+    },
+    // システムアクティビティの取得
+    getActiveProcesses() {
+        return getProcessList();
+    }
+};
+
+/**
+ * プロセスを安全に終了して再起動する
+ */
+export async function restartProcess(key) {
+    const proc = processes.get(key);
+    if (!proc) return false;
+
+    const savedPath = proc.path;
+    const savedWin = proc.window;
+
+    // 現在のプロセスをクリーンアップして終了
+    killProcess(key);
+
+    // わずかな遅延を挟んで再起動
+    await new Promise(r => setTimeout(r, 100));
+    console.log(`[Kernel/Shell] Restarting process: ${savedPath}`);
+    return await launch(savedPath);
+}
+
+/* =========================
+   プロセス間通信 (IPC / postMessage)
+========================= */
+export function sendProcessMessage(senderPid, targetPid, message) {
+    let targetProc = null;
+    for (const proc of processes.values()) {
+        if (proc.pid === targetPid) {
+            targetProc = proc;
+            break;
+        }
+    }
+
+    if (!targetProc) {
+        console.warn(`[IPC] Target PID ${targetPid} not found.`);
+        return false;
+    }
+
+    // 受信側アプリのハンドラを呼び出し
+    if (targetProc.handle && typeof targetProc.handle.onMessage === "function") {
+        try {
+            targetProc.handle.onMessage({ senderPid, data: message });
+            return true;
+        } catch (e) {
+            console.error(`[IPC] Error delivering message to PID ${targetPid}:`, e);
+            return false;
+        }
+    }
+    return false;
 }

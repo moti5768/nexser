@@ -1,5 +1,5 @@
 // TaskManager.js
-import { getProcessList, killProcess } from "../kernel.js";
+import { getProcessList, killProcess, restartProcess } from "../kernel.js";
 
 export default function TaskManager(root) {
 
@@ -16,7 +16,7 @@ export default function TaskManager(root) {
                         <th style="width:60px;">Up</th>
                         <th style="width:40px;">Z</th>
                         <th style="width:140px;">Path</th>
-                        <th style="width:60px;"></th>
+                        <th style="width:100px;"></th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -74,7 +74,13 @@ export default function TaskManager(root) {
                 btn.textContent = "終了";
                 btn.onclick = () => killProcess(p.key);
 
+                const restartBtn = document.createElement("button");
+                restartBtn.textContent = "再起動";
+                restartBtn.onclick = () => restartProcess(p.key);
+
                 tr.children[8].appendChild(btn);
+                tr.children[8].appendChild(restartBtn);
+
 
                 tbody.appendChild(tr);
                 rowMap.set(p.key, tr);

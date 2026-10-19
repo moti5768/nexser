@@ -186,9 +186,9 @@ export function buildDesktop() {
                                 if (child && typeof child === "object") {
                                     if (child.type === "file" || child.type === "app") {
                                         if (isCopyMode) {
-                                            await copyFileContent(oldSubPath, newSubPath);
+                                            await kernelAPI.db.copyFile(oldSubPath, newSubPath);
                                         } else {
-                                            await moveFileContent(oldSubPath, newSubPath);
+                                            await kernelAPI.db.moveFile(oldSubPath, newSubPath);
                                         }
                                     } else if (child.type === "folder") {
                                         await processStorageRecursively(child, oldSubPath, newSubPath, isCopyMode, visited, depth + 1);
@@ -791,9 +791,9 @@ export function buildDesktop() {
                                 if (child && typeof child === "object") {
                                     if (child.type === "file" || child.type === "app") {
                                         if (isCopyMode) {
-                                            await copyFileContent(oldSubPath, newSubPath);
+                                            await kernelAPI.db.copyFile(oldSubPath, newSubPath);
                                         } else {
-                                            await moveFileContent(oldSubPath, newSubPath);
+                                            await kernelAPI.db.moveFile(oldSubPath, newSubPath);
                                         }
                                     } else if (child.type === "folder") {
                                         await processStorageRecursively(child, oldSubPath, newSubPath, isCopyMode, visited, depth + 1);

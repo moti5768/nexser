@@ -324,7 +324,7 @@ export default function main(content, options) {
             const parts = path.split("/");
             const fileName = parts.pop();
             const parentPath = parts.length > 0 ? `Programs/Music/${parts.join("/")}` : "Programs/Music";
-            const parentNode = resolveFS(parentPath);
+            const parentNode = kernelAPI.fs.read(parentPath);
 
             if (parentNode && parentNode[fileName]) {
                 delete parentNode[fileName];

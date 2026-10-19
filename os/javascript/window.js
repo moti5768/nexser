@@ -938,7 +938,12 @@ export function bringToFront(win) {
     win.style.zIndex = maxZ + 1;
     scheduleRefreshTopWindow();
 
-    // 【改善】ウィンドウが非表示（最小化アニメーション中など）の場合はフォーカス移動をスキップする
+    if (win.dataset && win.dataset.processKey) {
+        window.dispatchEvent(new CustomEvent("window-activated", {
+            detail: { processKey: win.dataset.processKey }
+        }));
+    }
+
     if (!win.contains(document.activeElement) && win.style.visibility !== "hidden") {
         win.setAttribute("tabindex", "-1");
         win.focus();
