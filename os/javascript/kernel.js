@@ -414,14 +414,17 @@ async function launchApp(item, path, options) {
     const win = content?.closest(".window");
     if (!win) throw new Error("Window creation failed");
 
+    // ★ 改善: エクスプローラーなどで実際に開いているパスがあれば、それをプロセスのパスとして優先する
+    const processPath = (isExplorer && options.path) ? options.path : path;
+
     let appHandle = null;
-    const key = uniqueKey ?? `app:${path}:${Date.now()}`;
+    const key = uniqueKey ?? `app:${processPath}:${Date.now()}`;
     const pid = pidCounter++;
 
     // アプリに与えるシステムコール API
     const syscall = {
         pid,
-        path,
+        path: processPath, // ★ システムコール側も実際のパスに更新
         exit: () => killProcess(key),
         restart: () => restartProcess(key),
         postMessage: (targetPid, message) => sendProcessMessage(pid, targetPid, message),
@@ -442,8 +445,8 @@ async function launchApp(item, path, options) {
         throw e;
     }
 
-    addRecent(path);
-    registerProcess(win, key, path, appHandle);
+    addRecent(processPath);
+    registerProcess(win, key, processPath, appHandle); // ★ 登録されるパスを実際のパスに変更
 
     if (isExplorer) explorerWindows.set(options.path || "Desktop", win);
 }

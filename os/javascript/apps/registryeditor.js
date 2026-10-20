@@ -335,7 +335,7 @@ export default function RegistryEditor(root) {
     async function exportRegistry() {
         const loadingEl = root.querySelector("#reg-loading");
         if (loadingEl) {
-            loadingEl.textContent = "Exporting data...";
+            loadingEl.textContent = `Exporting ${currentStore}...`;
             loadingEl.style.display = "flex";
         }
 
@@ -368,7 +368,7 @@ export default function RegistryEditor(root) {
             const url = URL.createObjectURL(result.blob);
             const a = document.createElement("a");
             a.href = url;
-            a.download = `nexser_${currentStore}_backup.json`;
+            a.download = `nexser_${currentStore}_backup.json.gz`; // 圧縮形式に変更
             a.click();
             URL.revokeObjectURL(url);
         } catch (e) {
@@ -382,13 +382,69 @@ export default function RegistryEditor(root) {
         }
     }
 
+    async function exportAllRegistry() {
+        const loadingEl = root.querySelector("#reg-loading");
+        if (loadingEl) {
+            loadingEl.textContent = "Exporting all stores (split & compressed)...";
+            loadingEl.style.display = "flex";
+        }
+
+        const workerInstance = getWorker();
+
+        try {
+            const result = await new Promise((resolve, reject) => {
+                const handleMessage = (e) => {
+                    if (e.data.action === 'exportAll') {
+                        workerInstance.removeEventListener('message', handleMessage);
+                        resolve(e.data);
+                    }
+                };
+                const handleError = (err) => {
+                    workerInstance.removeEventListener('error', handleError);
+                    reject(err);
+                };
+
+                workerInstance.addEventListener('message', handleMessage);
+                workerInstance.addEventListener('error', handleError);
+
+                workerInstance.postMessage({
+                    action: 'exportAll',
+                    storeNames: STORE_NAMES
+                });
+            });
+
+            if (!result.success) throw new Error(result.error);
+
+            for (const [sName, blob] of Object.entries(result.results)) {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `nexser_${sName}_backup.json.gz`;
+                a.click();
+                URL.revokeObjectURL(url);
+                await new Promise(r => setTimeout(r, 300)); // 連続ダウンロードブロック回避用ウェイト
+            }
+            alertWindow("すべての日付ストアの分割エクスポートが完了しました。", { parentWin: win });
+        } catch (e) {
+            console.error("[Registry] Export All failed:", e);
+            errorWindow("Export All failed: " + e.message, { parentWin: win });
+        } finally {
+            if (loadingEl) {
+                loadingEl.textContent = "Loading...";
+                loadingEl.style.display = "none";
+            }
+        }
+    }
+
     async function importRegistry() {
         const input = document.createElement("input");
         input.type = "file";
-        input.accept = ".json";
+        input.accept = ".json.gz,.json";
+        input.multiple = true; // 複数ファイルの同時選択を有効化
+
         input.onchange = async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
+            const files = Array.from(e.target.files);
+            if (files.length === 0) return;
 
             const loadingEl = root.querySelector("#reg-loading");
             if (loadingEl) {
@@ -396,49 +452,59 @@ export default function RegistryEditor(root) {
                 loadingEl.style.display = "flex";
             }
 
-            const reader = new FileReader();
-            reader.onload = async (ev) => {
-                try {
-                    const importData = JSON.parse(ev.target.result);
-                    const workerInstance = getWorker();
+            try {
+                const importPayloads = [];
 
-                    const result = await new Promise((resolve, reject) => {
-                        const handleMessage = (e) => {
-                            if (e.data.action === 'import') {
-                                workerInstance.removeEventListener('message', handleMessage);
-                                resolve(e.data);
-                            }
-                        };
-                        const handleError = (err) => {
-                            workerInstance.removeEventListener('error', handleError);
-                            reject(err);
-                        };
-
-                        workerInstance.addEventListener('message', handleMessage);
-                        workerInstance.addEventListener('error', handleError);
-
-                        workerInstance.postMessage({
-                            action: 'import',
-                            storeName: currentStore,
-                            importData: importData
-                        });
-                    });
-
-                    if (!result.success) throw new Error(result.error);
-
-                    await refresh(true);
-                    alertWindow("Import successful.", { parentWin: win });
-                } catch (err) {
-                    console.error("[Registry] Import failed:", err);
-                    errorWindow("Invalid backup file or import failed: " + err.message, { parentWin: win });
-                } finally {
-                    if (loadingEl) {
-                        loadingEl.textContent = "Loading...";
-                        loadingEl.style.display = "none";
+                for (const file of files) {
+                    // ファイル名からどのストアのデータか自動判別（含まれない場合は現在のストア）
+                    let targetStore = currentStore;
+                    for (const name of STORE_NAMES) {
+                        if (file.name.includes(name)) {
+                            targetStore = name;
+                            break;
+                        }
                     }
+
+                    const arrayBuffer = await file.arrayBuffer();
+                    const blob = new Blob([arrayBuffer]);
+                    importPayloads.push({ storeName: targetStore, blob });
                 }
-            };
-            reader.readAsText(file);
+
+                const workerInstance = getWorker();
+                const result = await new Promise((resolve, reject) => {
+                    const handleMessage = (e) => {
+                        if (e.data.action === 'import') {
+                            workerInstance.removeEventListener('message', handleMessage);
+                            resolve(e.data);
+                        }
+                    };
+                    const handleError = (err) => {
+                        workerInstance.removeEventListener('error', handleError);
+                        reject(err);
+                    };
+
+                    workerInstance.addEventListener('message', handleMessage);
+                    workerInstance.addEventListener('error', handleError);
+
+                    workerInstance.postMessage({
+                        action: 'import',
+                        importPayloads: importPayloads
+                    });
+                });
+
+                if (!result.success) throw new Error(result.error);
+
+                await refresh(true);
+                alertWindow("すべてのファイルのインポートが正常に完了しました。", { parentWin: win });
+            } catch (err) {
+                console.error("[Registry] Import failed:", err);
+                errorWindow("バックアップファイルのインポートに失敗しました: " + err.message, { parentWin: win });
+            } finally {
+                if (loadingEl) {
+                    loadingEl.textContent = "Loading...";
+                    loadingEl.style.display = "none";
+                }
+            }
         };
         input.click();
     }
@@ -590,7 +656,8 @@ export default function RegistryEditor(root) {
                 title: "File",
                 items: [
                     { label: "Import...", action: () => importRegistry() },
-                    { label: "Export...", action: () => exportRegistry() },
+                    { label: "Export (Current)...", action: () => exportRegistry() },
+                    { label: "Export All (Split)...", action: () => exportAllRegistry() },
                     {
                         label: "Exit",
                         action: () => {
