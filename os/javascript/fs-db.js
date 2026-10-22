@@ -345,9 +345,25 @@ export async function saveFS(fs) {
                 reject(err || new Error("Unknown error during FS save"));
             }
         });
-    }).catch(err => {
+    }).catch(async err => {
         const errorMsg = err?.message || String(err) || "Critical save error";
-        console.error("[FS-DB] Save chain failed gracefully, recovering chain:", errorMsg);
+        console.error("[FS-DB] Save chain failed critically:", errorMsg);
+
+        // ★ 実行中にデータベースやボリュームが消失・削除された場合、強制的にBSODを発生させる
+        if (
+            errorMsg.includes("Storage failed") ||
+            errorMsg.includes("NotFoundError") ||
+            errorMsg.includes("not found") ||
+            errorMsg.includes("aborted") ||
+            errorMsg.includes("Versionchange")
+        ) {
+            try {
+                const { showBSOD } = await import("./bsod.js");
+                showBSOD("UNMOUNTABLE_BOOT_VOLUME", new Error("Runtime boot volume storage has been deleted or corrupted."));
+            } catch (bsodErr) {
+                console.error("Failed to trigger BSOD:", bsodErr);
+            }
+        }
     });
 
     return saveChain;

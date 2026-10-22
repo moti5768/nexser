@@ -338,6 +338,25 @@ export async function forceSave() {
 export async function initFS() {
     const saved = await loadFS();
 
+    // ★ Windowsと同じ仕様：IndexedDBの外（localStorage）で過去に起動した形跡があるかチェック
+    const hasInitializedBefore = localStorage.getItem("nexser_installed") === "true";
+
+    if (!saved) {
+        if (hasInitializedBefore) {
+            // 以前起動したことがあるのにストレージ（データ）が消えている ＝ ボリューム消失
+            console.error("[FS] Boot volume data is missing! Triggering BSOD.");
+            const { showBSOD } = await import("./bsod.js");
+            showBSOD("UNMOUNTABLE_BOOT_VOLUME", new Error("Boot volume could not be mounted or has been deleted."));
+            return;
+        } else {
+            // 本当の初回起動時のみ localStorage にフラグを書き込む
+            localStorage.setItem("nexser_installed", "true");
+        }
+    } else {
+        // データが存在する場合は確実にフラグを立てておく
+        localStorage.setItem("nexser_installed", "true");
+    }
+
     // 保存されていた削除済みデフォルト項目のリストを復元
     const savedDeletedDefaults = await dbGet("deleted_defaults", "kv");
     if (savedDeletedDefaults && Array.isArray(savedDeletedDefaults)) {
@@ -354,8 +373,8 @@ export async function initFS() {
         if (DEBUG_FS) console.log("[FS] System synchronized successfully.");
     } catch (e) {
         console.error("[FS] Restore failed", e);
-        // ★ 変更: 同期・復元に失敗した場合は致命的エラーとしてスローし、BSODを誘発する
-        throw new Error(`FS_FATAL_RESTORE_FAULT: ${e.message}`);
+        const { showBSOD } = await import("./bsod.js");
+        showBSOD("UNMOUNTABLE_BOOT_VOLUME", new Error(`FS_FATAL_RESTORE_FAULT: ${e.message}`));
     } finally {
         isInitializing = false; // ★ 追加: 初期化終了
         isSaving = false;
@@ -456,4 +475,40 @@ export async function markDefaultDeleted(path) {
         deletedDefaults.add(path);
         await dbSet("deleted_defaults", Array.from(deletedDefaults), "kv").catch(e => console.error(e));
     }
+}
+
+// =========================================
+// 【追加】バックグラウンド・ファイルシステム監視ウォッチドッグ
+// =========================================
+if (typeof window !== "undefined") {
+    // 3秒ごとにデータベースとファイルシステムの健全性をバックグラウンドで常時チェック
+    setInterval(async () => {
+        // 初期化中や保存中は誤検知を防ぐためスキップ
+        if (isInitializing || isSaving) return;
+
+        try {
+            const hasInstalled = localStorage.getItem("nexser_installed") === "true";
+            if (!hasInstalled) return;
+
+            // データベースから必須のシステムデータ（System）が取得できるかテスト
+            const { dbGet } = await import("./fs-db.js");
+            const sysData = await dbGet("fs_System", "kv");
+
+            // インストール済みフラグがあるのに、DB側のデータが外部から消去されている場合
+            if (!sysData) {
+                console.error("[FS Watchdog] Critical: Boot volume or database has been deleted externally!");
+                const { showBSOD } = await import("./bsod.js");
+                showBSOD("UNMOUNTABLE_BOOT_VOLUME", new Error("Runtime boot volume storage or database has been deleted."));
+            }
+        } catch (e) {
+            // IndexedDBへのアクセス障害やデータベースの破壊を検知した場合
+            console.error("[FS Watchdog] Critical: Storage access failure detected:", e);
+            try {
+                const { showBSOD } = await import("./bsod.js");
+                showBSOD("UNMOUNTABLE_BOOT_VOLUME", new Error(`Storage integrity fault: ${e.message || "Unknown error"}`));
+            } catch (bsodErr) {
+                console.error("Failed to trigger BSOD from watchdog:", bsodErr);
+            }
+        }
+    }, 3000); // 3秒間隔で常時監視
 }

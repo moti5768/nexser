@@ -12,6 +12,7 @@ let resizeCursor = "";
 const DEFAULT_COLOR = "gray";
 export let TOP_COLOR = "darkblue";
 let windowIdCounter = 0;
+const windowSizeCache = new Map();
 /* ===== Animation Settings ===== */
 export const WINDOW_ANIMATION_DURATION = 250;
 export let ENABLE_WINDOW_ANIMATION = true;
@@ -174,19 +175,31 @@ ${!options.hideStatus ? `
     }
     w._statusBar = w.querySelector(".window-statusbar");
     w._applyRealIcon();
-    /* ===== サイズ復元 ===== */
 
-    const sizeKey = title;   // 今回は title をキーにする（簡単）
+    /* ===== サイズ復元（メモリキャッシュから即時適用 ＆ 一意なキー化） ===== */
+    const sizeKey = options.sizeKey || options.processKey || title;
 
-    (async () => {
-        const size = await loadWindowSize(sizeKey);  // ✅ await で確実に取得
+    // 1. まずメモリキャッシュから即座に（同期的に）サイズを適用（タイムラグなし）
+    const cachedSize = windowSizeCache.get(sizeKey);
+    if (cachedSize) {
+        if (cachedSize.w) w.style.width = cachedSize.w + "px";
+        if (cachedSize.h) w.style.height = cachedSize.h + "px";
+        if (cachedSize.x !== undefined) w.style.left = cachedSize.x + "px";
+        if (cachedSize.y !== undefined) w.style.top = cachedSize.y + "px";
+    }
+
+    // 2. バックグラウンド（または初回起動時）のためにDBからもロードしてキャッシュを初期化
+    loadWindowSize(sizeKey).then(size => {
         if (!size) return;
-
-        if (size.w) w.style.width = size.w + "px";
-        if (size.h) w.style.height = size.h + "px";
-        if (size.x !== undefined) w.style.left = size.x + "px";
-        if (size.y !== undefined) w.style.top = size.y + "px";
-    })();
+        windowSizeCache.set(sizeKey, size);
+        // キャッシュが直近で取得できた場合で、まだユーザーが動かしていない初期状態なら適用
+        if (!cachedSize && w.isConnected) {
+            if (size.w) w.style.width = size.w + "px";
+            if (size.h) w.style.height = size.h + "px";
+            if (size.x !== undefined) w.style.left = size.x + "px";
+            if (size.y !== undefined) w.style.top = size.y + "px";
+        }
+    });
 
     /* ===== フォーカス & 復元 ===== */
 
@@ -681,7 +694,10 @@ ${!options.hideStatus ? `
                         x: Math.round(parseFloat(w.style.left) || 0),
                         y: Math.round(parseFloat(w.style.top) || 0)
                     };
-                    await saveWindowSize(sizeKey, data); //
+                    // メモリキャッシュを即座に更新
+                    windowSizeCache.set(sizeKey, data);
+                    // バックグラウンドでDBにも保存
+                    await saveWindowSize(sizeKey, data);
                 }
             }
             didMove = false;
@@ -893,6 +909,9 @@ ${!options.hideStatus ? `
                             x: Math.round(parseFloat(w.style.left) || 0),
                             y: Math.round(parseFloat(w.style.top) || 0)
                         };
+                        // メモリキャッシュを即座に更新
+                        windowSizeCache.set(sizeKey, data);
+                        // バックグラウンドでDBにも保存
                         await saveWindowSize(sizeKey, data);
                     }
                 }

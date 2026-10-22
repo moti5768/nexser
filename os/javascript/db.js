@@ -25,18 +25,23 @@ export function openDB() {
         req.onsuccess = () => {
             const db = req.result;
 
-            // 重要：接続が開かれた直後に他タブでの更新を検知する設定
             db.onversionchange = () => {
                 db.close();
+                dbPromise = null; // ★ 接続変更時はキャッシュをクリア
                 console.warn("[DB] Version changed in another tab. Connection closed.");
-                // アプリケーションの状態によっては、ここでUIに通知を出すのが理想
+            };
+
+            // ★ 追加: 接続が閉じられた時にもキャッシュを確実に破棄する
+            db.onclose = () => {
+                dbPromise = null;
+                console.warn("[DB] Database connection closed.");
             };
 
             resolve(db);
         };
 
         req.onerror = () => {
-            dbPromise = null; // 失敗時はキャッシュをクリアして再試行可能にする
+            dbPromise = null; // 失敗時はキャッシュをクリア
             reject(req.error);
         };
 

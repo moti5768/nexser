@@ -14,7 +14,7 @@ function getWorker() {
 }
 
 export default function RegistryEditor(root) {
-    const STORE_NAMES = ["settings", "files", "kv", "recent"];
+    const STORE_NAMES = ["settings", "files", "kv", "recent", "window-size"];
     let currentStore = STORE_NAMES[0];
     let dbPromise = null;
     let isProcessing = false;
