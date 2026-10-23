@@ -228,7 +228,10 @@ export function initTaskbar() {
     });
 
     // Startボタン配置
-    if (startBtn && startBtn.parentElement !== startArea) startArea.appendChild(startBtn);
+    if (startBtn) {
+        if (startBtn.parentElement !== startArea) startArea.appendChild(startBtn);
+        startBtn.style.fontWeight = "bold";
+    }
 
     // バージョン表示
     let versionLabel = taskbar.querySelector(".os-version-label");
