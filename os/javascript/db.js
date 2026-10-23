@@ -4,6 +4,9 @@ const DB_VERSION = 2;
 
 let dbPromise = null;
 
+/**
+ * データベース接続を取得する（Promiseをキャッシュして効率化）
+ */
 export function openDB() {
     if (dbPromise) return dbPromise;
 
@@ -25,13 +28,19 @@ export function openDB() {
         req.onsuccess = () => {
             const db = req.result;
 
+            // メインスレッド（windowが存在する環境）のみフラグをリセット
+            if (typeof window !== "undefined") {
+                window._dbBlockedAlertShown = false;
+            }
+
+            // 別タブでのバージョン変更時に接続を閉じる
             db.onversionchange = () => {
                 db.close();
-                dbPromise = null; // ★ 接続変更時はキャッシュをクリア
+                dbPromise = null;
                 console.warn("[DB] Version changed in another tab. Connection closed.");
             };
 
-            // ★ 追加: 接続が閉じられた時にもキャッシュを確実に破棄する
+            // 接続が閉じられた時にキャッシュを破棄
             db.onclose = () => {
                 dbPromise = null;
                 console.warn("[DB] Database connection closed.");
@@ -41,16 +50,15 @@ export function openDB() {
         };
 
         req.onerror = () => {
-            dbPromise = null; // 失敗時はキャッシュをクリア
+            dbPromise = null;
             reject(req.error);
         };
 
         req.onblocked = () => {
-            // 他のタブが古い接続を維持しているために、このタブの open が待たされている状態
             console.warn("[DB] Version upgrade blocked by other tabs.");
 
-            // confirmが何度も出ないように1度だけ実行する工夫
-            if (!window._dbBlockedAlertShown) {
+            // メインスレッドでのみリロード確認ダイアログを表示
+            if (typeof window !== "undefined" && !window._dbBlockedAlertShown) {
                 window._dbBlockedAlertShown = true;
                 if (confirm("システムの新しいバージョンを適用するために、ページをリロードする必要があります。\n今すぐリロードしますか？")) {
                     location.reload();

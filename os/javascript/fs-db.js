@@ -120,7 +120,7 @@ export async function getFileContent(path) {
     if (typeof meta === "object" && meta.__IS_CHUNKED__) {
         const chunkPromises = [];
         for (let i = 0; i < meta.totalChunks; i++) {
-            chunkPromises.push(dbGet(`${path}__chunk_${i}`, STORE_FILES));
+            chunkPromises.push(dbGet(`${path}/__chunk_${i}`, STORE_FILES)); // 変更: __chunk_ の前に / を追加
         }
         const chunks = await Promise.all(chunkPromises);
 
@@ -148,7 +148,7 @@ export async function copyFileContent(oldPath, newPath) {
     if (typeof meta === "object" && meta.__IS_CHUNKED__) {
         const chunkPromises = [];
         for (let i = 0; i < meta.totalChunks; i++) {
-            chunkPromises.push(dbGet(`${oldPath}__chunk_${i}`, STORE_FILES));
+            chunkPromises.push(dbGet(`${oldPath}/__chunk_${i}`, STORE_FILES));
         }
         const chunks = await Promise.all(chunkPromises);
 
@@ -156,7 +156,7 @@ export async function copyFileContent(oldPath, newPath) {
             store.put(meta, newPath);
             chunks.forEach((chunk, i) => {
                 if (chunk !== undefined) {
-                    store.put(chunk, `${newPath}__chunk_${i}`);
+                    store.put(chunk, `${newPath}/__chunk_${i}`); // 変更: /__chunk_ に修正
                 }
             });
         });
@@ -219,14 +219,14 @@ export async function deleteFileContentRecursive(path) {
         store.delete(path);
 
         // 2. チャンクの安全な全削除
-        const range = IDBKeyRange.bound(`${path}__chunk_0`, `${path}__chunk_\uffff`, false, false);
+        const range = IDBKeyRange.bound(`${path}/__chunk_0`, `${path}/__chunk_\uffff`, false, false); // 変更
         const req = store.openCursor(range);
 
         req.onsuccess = (e) => {
             const cursor = e.target.result;
             if (cursor) {
                 // ✨ 改善: プレフィックスが完全に一致していることを厳密に検証してから削除
-                if (typeof cursor.primaryKey === "string" && cursor.primaryKey.startsWith(`${path}__chunk_`)) {
+                if (typeof cursor.primaryKey === "string" && cursor.primaryKey.startsWith(`${path}/__chunk_`)) { // 変更
                     store.delete(cursor.primaryKey);
                 }
                 cursor.continue();
@@ -244,6 +244,23 @@ export async function deleteFileContentRecursive(path) {
         // ✨ 【超重要】トランザクションアボート時に Promise がハングアップするのを防ぐため追加
         tx.onabort = (e) => reject(e?.target?.error || tx.error || new Error("Transaction aborted during file deletion"));
     });
+}
+
+function collectValidFilePaths(obj, path = "", validPaths = new Set()) {
+    if (!obj || typeof obj !== "object") return validPaths;
+    for (const key of Object.keys(obj)) {
+        if (key === "type" || key === "system" || key === "originalPath" || key === "lastModified" || key === "hidden" || key === "target") continue;
+        const child = obj[key];
+        const currentPath = path ? `${path}/${key}` : key;
+        if (child && typeof child === "object") {
+            if (child.type === "file" || child.type === "app") {
+                validPaths.add(currentPath);
+            } else if (child.type === "folder") {
+                collectValidFilePaths(child, currentPath, validPaths);
+            }
+        }
+    }
+    return validPaths;
 }
 
 export async function saveFS(fs) {
@@ -271,7 +288,7 @@ export async function saveFS(fs) {
 
         return new Promise((resolve, reject) => {
             tx.oncomplete = () => {
-                console.log("[FS-DB] Split-key atomic save completed.");
+                console.log("[FS-DB] Split-key atomic save and GC completed.");
                 resolve();
             };
             tx.onerror = (event) => reject(tx.error || event?.target?.error || new Error("Save transaction error"));
@@ -283,28 +300,30 @@ export async function saveFS(fs) {
 
                 if (!cleanFS?.System) throw new Error("FS corruption detected.");
 
-                const activePaths = new Set();
-                function collectActivePaths(node, currentPath = "") {
-                    if (!node || typeof node !== "object") return;
-                    for (const key in node) {
-                        if (key === "type" || key === "system" || key === "content" || key === "size") continue;
+                // ① 現在のファイルシステム上に存在する有効なファイルパスを収集
+                const validFilePaths = collectValidFilePaths(cleanFS);
 
-                        const child = node[key];
-                        if (child !== null && typeof child === "object") {
-                            const fullPath = currentPath ? `${currentPath}/${key}` : key;
-                            activePaths.add(fullPath);
-
-                            if (child.type === "link") {
-                                continue;
-                            }
-
-                            collectActivePaths(child, fullPath);
+                // ② 【自動ガベージコレクション】 files ストアを走査し、ツリーから消滅した不要データ・チャンクを一括削除
+                const cursorReq = fileStore.openCursor();
+                cursorReq.onsuccess = (e) => {
+                    const cursor = e.target.result;
+                    if (cursor) {
+                        const key = cursor.primaryKey;
+                        let basePath = key;
+                        const chunkIndex = key.indexOf("/__chunk_");
+                        if (chunkIndex !== -1) {
+                            basePath = key.substring(0, chunkIndex);
                         }
-                    }
-                }
-                collectActivePaths(fs);
 
-                // ① 大容量データの分割（チャンク）書き込み
+                        // 有効なパスに含まれていない場合は物理削除
+                        if (!validFilePaths.has(basePath)) {
+                            fileStore.delete(key);
+                        }
+                        cursor.continue();
+                    }
+                };
+
+                // ③ 大容量データの分割（チャンク）書き込み
                 largeFiles.forEach((data, path) => {
                     if (data === "__EXTERNAL_DATA__") {
                         return;
@@ -320,7 +339,7 @@ export async function saveFS(fs) {
                             const start = i * CHUNK_SIZE;
                             const end = Math.min(start + CHUNK_SIZE, dataSize);
                             const chunk = isBlob ? data.slice(start, end) : data.slice(start, end);
-                            fileStore.put(chunk, `${path}__chunk_${i}`);
+                            fileStore.put(chunk, `${path}/__chunk_${i}`);
                         }
 
                         fileStore.put({
@@ -334,9 +353,8 @@ export async function saveFS(fs) {
                     }
                 });
 
-                // ② システムツリーの書き込み（★トップレベルごとに分割保存）
+                // ④ システムツリーの書き込み（トップレベルごとに分割保存）
                 for (const topKey of Object.keys(cleanFS)) {
-                    // システムの必須キー以外を除外しないようそのまま保存
                     kvStore.put(cleanFS[topKey], `fs_${topKey}`);
                 }
 
@@ -349,7 +367,7 @@ export async function saveFS(fs) {
         const errorMsg = err?.message || String(err) || "Critical save error";
         console.error("[FS-DB] Save chain failed critically:", errorMsg);
 
-        // ★ 実行中にデータベースやボリュームが消失・削除された場合、強制的にBSODを発生させる
+        // 実行中にデータベースやボリュームが消失・削除された場合、強制的にBSODを発生させる
         if (
             errorMsg.includes("Storage failed") ||
             errorMsg.includes("NotFoundError") ||

@@ -208,62 +208,69 @@ export const FS = wrapProxy(baseFS, "");
 
 // --- 同期（Sync）エンジン ---
 
-function deepSync(currentProxy, savedNode, defaultNode, path = "") {
-    for (const key in currentProxy) {
-        if (PROTECTED_KEYS.has(key)) continue;
-        if (savedNode && !(key in savedNode)) {
-            const curVal = currentProxy[key];
-            if (!curVal || !curVal.system) {
-                delete currentProxy[key];
+// ⭐ visited引数を追加し、WeakSetで循環参照をブロック
+function deepSync(currentProxy, savedNode, defaultNode, path = "", visited = new WeakSet()) {
+    if (!currentProxy || typeof currentProxy !== "object" || visited.has(currentProxy)) return;
+    visited.add(currentProxy);
 
-                // ★ 根本解決：デフォルトに存在していた項目が削除された場合、削除リストに記録して保存
-                const currentPath = path ? `${path}/${key}` : key;
-                if (defaultNode && defaultNode[key]) {
-                    deletedDefaults.add(currentPath);
-                    dbSet("deleted_defaults", Array.from(deletedDefaults), "kv").catch(e => console.error(e));
+    try {
+        for (const key in currentProxy) {
+            if (PROTECTED_KEYS.has(key)) continue;
+            if (savedNode && !(key in savedNode)) {
+                const curVal = currentProxy[key];
+                if (!curVal || !curVal.system) {
+                    delete currentProxy[key];
+
+                    const currentPath = path ? `${path}/${key}` : key;
+                    if (defaultNode && defaultNode[key]) {
+                        deletedDefaults.add(currentPath);
+                        dbSet("deleted_defaults", Array.from(deletedDefaults), "kv").catch(e => console.error(e));
+                    }
                 }
             }
         }
-    }
 
-    for (const key in savedNode) {
-        if (PROTECTED_KEYS.has(key)) continue;
+        for (const key in savedNode) {
+            if (PROTECTED_KEYS.has(key)) continue;
 
-        const savedValue = savedNode[key];
-        const defaultValue = defaultNode ? defaultNode[key] : null;
-        const currentPath = path ? `${path}/${key}` : key; // ★ パスを追跡
+            const savedValue = savedNode[key];
+            const defaultValue = defaultNode ? defaultNode[key] : null;
+            const currentPath = path ? `${path}/${key}` : key;
 
-        if (savedValue && typeof savedValue === 'object' && savedValue.type === 'folder') {
-            if (!currentProxy[key] || currentProxy[key].type !== 'folder') {
-                currentProxy[key] = { type: 'folder' };
-            }
-
-            // ★ 追加: フォルダ自身が持つプロパティ（hidden や originalPath など）を確実に引き継ぐ
-            for (const subKey in savedValue) {
-                if (PROTECTED_KEYS.has(subKey) || subKey === "hidden" || subKey === "originalPath") {
-                    currentProxy[key][subKey] = savedValue[subKey];
-                }
-            }
-
-            deepSync(currentProxy[key], savedValue, defaultValue, currentPath);
-        } else {
-            currentProxy[key] = savedValue;
-        }
-    }
-    if (defaultNode) {
-        for (const key in defaultNode) {
-            if (!(key in currentProxy)) {
-                const currentPath = path ? `${path}/${key}` : key;
-
-                // ★ 削除リストに含まれている場合は、デフォルトにあっても復活させない
-                if (deletedDefaults.has(currentPath)) {
-                    continue;
+            if (savedValue && typeof savedValue === 'object' && savedValue.type === 'folder') {
+                if (!currentProxy[key] || currentProxy[key].type !== 'folder') {
+                    currentProxy[key] = { type: 'folder' };
                 }
 
-                currentProxy[key] = structuredClone(defaultNode[key]);
-                if (DEBUG_FS) console.log(`[FS Update] New system item added: ${key}`);
+                for (const subKey in savedValue) {
+                    if (PROTECTED_KEYS.has(subKey) || subKey === "hidden" || subKey === "originalPath") {
+                        currentProxy[key][subKey] = savedValue[subKey];
+                    }
+                }
+
+                // 再帰呼び出し時に visited を引き継ぐ
+                deepSync(currentProxy[key], savedValue, defaultValue, currentPath, visited);
+            } else {
+                currentProxy[key] = savedValue;
             }
         }
+
+        if (defaultNode) {
+            for (const key in defaultNode) {
+                if (!(key in currentProxy)) {
+                    const currentPath = path ? `${path}/${key}` : key;
+
+                    if (deletedDefaults.has(currentPath)) {
+                        continue;
+                    }
+
+                    currentProxy[key] = structuredClone(defaultNode[key]);
+                    if (DEBUG_FS) console.log(`[FS Update] New system item added: ${key}`);
+                }
+            }
+        }
+    } finally {
+        visited.delete(currentProxy);
     }
 }
 
@@ -337,75 +344,51 @@ export async function forceSave() {
 
 export async function initFS() {
     const saved = await loadFS();
-
-    // ★ Windowsと同じ仕様：IndexedDBの外（localStorage）で過去に起動した形跡があるかチェック
     const hasInitializedBefore = localStorage.getItem("nexser_installed") === "true";
 
-    if (!saved) {
-        if (hasInitializedBefore) {
-            // 以前起動したことがあるのにストレージ（データ）が消えている ＝ ボリューム消失
-            console.error("[FS] Boot volume data is missing! Triggering BSOD.");
-            const { showBSOD } = await import("./bsod.js");
-            showBSOD("UNMOUNTABLE_BOOT_VOLUME", new Error("Boot volume could not be mounted or has been deleted."));
-            return;
-        } else {
-            // 本当の初回起動時のみ localStorage にフラグを書き込む
-            localStorage.setItem("nexser_installed", "true");
-        }
-    } else {
-        // データが存在する場合は確実にフラグを立てておく
-        localStorage.setItem("nexser_installed", "true");
+    // 1. ボリューム消失チェック（過去に起動した形跡があるのにデータが消えている場合）
+    if (!saved && hasInitializedBefore) {
+        console.error("[FS] Boot volume data is missing! Triggering BSOD.");
+        const { showBSOD } = await import("./bsod.js");
+        showBSOD("UNMOUNTABLE_BOOT_VOLUME", new Error("Boot volume could not be mounted or has been deleted."));
+        return;
     }
 
-    // 保存されていた削除済みデフォルト項目のリストを復元
+    // 2. 削除済みデフォルト項目の復元
     const savedDeletedDefaults = await dbGet("deleted_defaults", "kv");
     if (savedDeletedDefaults && Array.isArray(savedDeletedDefaults)) {
         deletedDefaults = new Set(savedDeletedDefaults);
     }
 
-    if (!saved) return;
-
-    // 初期化中は保存処理と自動更新を完全にブロックする
+    // 3. 初期化セッションの開始（保存・自動更新を一時ブロック）
     isSaving = true;
-    isInitializing = true; // ★ 追加: 初期化開始
+    isInitializing = true;
+
     try {
-        deepSync(FS, saved, FACTORY_FS, ""); // 空のパスから同期を開始
-        if (DEBUG_FS) console.log("[FS] System synchronized successfully.");
+        if (!saved) {
+            // === 【本当の初回起動時】 ===
+            localStorage.setItem("nexser_installed", "true");
+            if (DEBUG_FS) console.log("[FS] First-time boot: Initializing and saving factory data...");
+
+            // 初回のみ、メモリ上の初期データ（baseFS）をIndexedDBへ確実に書き込む
+            await performSave();
+        } else {
+            // === 【2回目以降の起動】 ===
+            localStorage.setItem("nexser_installed", "true");
+            deepSync(FS, saved, FACTORY_FS, "", new WeakSet());
+            if (DEBUG_FS) console.log("[FS] System synchronized successfully.");
+        }
     } catch (e) {
-        console.error("[FS] Restore failed", e);
+        console.error("[FS] Initialization/Restore failed:", e);
         const { showBSOD } = await import("./bsod.js");
         showBSOD("UNMOUNTABLE_BOOT_VOLUME", new Error(`FS_FATAL_RESTORE_FAULT: ${e.message}`));
     } finally {
-        isInitializing = false; // ★ 追加: 初期化終了
+        isInitializing = false;
         isSaving = false;
-        // 初期化が終わったら念のため一度だけ強制保存し、整合性を確定させる
+
+        // 最後に一度強制保存を行い、整合性を確定させる
         await performSave();
     }
-}
-
-if (typeof window !== "undefined") {
-    window.addEventListener("beforeunload", () => {
-        // ✨ 改善: タイマーが動いている場合は直ちにクリアし、同期的にローカルストレージ等へ
-        // 最小限のサニタイズデータを退避させるか、即時保存の確実性を上げる
-        if (saveTimer) {
-            clearTimeout(saveTimer);
-            saveTimer = null;
-        }
-        if (isSaving || pendingSave) {
-            // 非同期完了を待てないため、重要設定だけでも localStorage に緊急退避させるなどの防衛策
-            try {
-                localStorage.setItem("OS_EMERGENCY_BACKUP", "dirty");
-            } catch (e) { }
-        }
-        forceSave().catch(e => console.error("[FS] Unload save failed:", e));
-    });
-
-    document.addEventListener("visibilitychange", () => {
-        if (document.visibilityState === "hidden") {
-            // バックグラウンドに移行した際は確実かつ安全に即時保存を走らせる
-            forceSave().catch(e => console.error("[FS] Background save failed:", e));
-        }
-    });
 }
 
 /**
@@ -478,11 +461,40 @@ export async function markDefaultDeleted(path) {
 }
 
 // =========================================
-// 【追加】バックグラウンド・ファイルシステム監視ウォッチドッグ
+// ウィンドウ離脱・バックグラウンド・ウォッチドッグ統合管理
 // =========================================
+let watchdogInterval = null;
+
 if (typeof window !== "undefined") {
-    // 3秒ごとにデータベースとファイルシステムの健全性をバックグラウンドで常時チェック
-    setInterval(async () => {
+    // 1. ページ離脱時（beforeunload）の処理
+    window.addEventListener("beforeunload", () => {
+        // ウォッチドッグタイマーを確実にクリア
+        if (watchdogInterval) {
+            clearInterval(watchdogInterval);
+            watchdogInterval = null;
+        }
+
+        if (saveTimer) {
+            clearTimeout(saveTimer);
+            saveTimer = null;
+        }
+        if (isSaving || pendingSave) {
+            try {
+                localStorage.setItem("OS_EMERGENCY_BACKUP", "dirty");
+            } catch (e) { }
+        }
+        forceSave().catch(e => console.error("[FS] Unload save failed:", e));
+    });
+
+    // 2. バックグラウンド移行時（visibilitychange）の処理
+    document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "hidden") {
+            forceSave().catch(e => console.error("[FS] Background save failed:", e));
+        }
+    });
+
+    // 3. バックグラウンド・ファイルシステム監視ウォッチドッグ (3秒間隔)
+    watchdogInterval = setInterval(async () => {
         // 初期化中や保存中は誤検知を防ぐためスキップ
         if (isInitializing || isSaving) return;
 
@@ -510,5 +522,5 @@ if (typeof window !== "undefined") {
                 console.error("Failed to trigger BSOD from watchdog:", bsodErr);
             }
         }
-    }, 3000); // 3秒間隔で常時監視
+    }, 3000);
 }

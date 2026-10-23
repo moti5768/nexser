@@ -104,17 +104,20 @@ async function safeImport(entry) {
     if (moduleCache.has(entry)) return moduleCache.get(entry);
     if (importLocks.has(entry)) return importLocks.get(entry);
 
-    const timeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Timeout")), 10000)
-    );
-
     const promise = (async () => {
+        let timerId;
+        const timeout = new Promise((_, reject) => {
+            timerId = setTimeout(() => reject(new Error("Import Timeout")), 10000);
+        });
+
         try {
             // タイムアウト付きでインポート
             const mod = await Promise.race([import(entry), timeout]);
+            clearTimeout(timerId); // ★ 成功時にタイマーを確実にクリア
             moduleCache.set(entry, mod);
             return mod;
         } catch (e) {
+            clearTimeout(timerId); // ★ 失敗時もタイマーを確実にクリア
             console.error("import failed:", entry, e);
             throw e;
         } finally {
@@ -126,8 +129,7 @@ async function safeImport(entry) {
     return promise;
 }
 
-/* ===== カーネル初期化 (最新・最適化版) ===== */
-/* ===== カーネル初期化 (フェーズ分割・最適化版) ===== */
+/* ===== カーネル初期化 ===== */
 
 // 1. カーネルスペース（DOM注入とエラー制御）
 export async function initKernelSpaceAsync(progressCallback = () => { }) {

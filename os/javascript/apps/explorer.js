@@ -2807,6 +2807,17 @@ export default async function Explorer(root, options = {}) {
                 win._treePanel.remove();
                 win._treePanel = null;
             }
+
+            // ⭐ listContainer や sidebarContainer に紐づいたフラグやDOM要素を完全に解放し、メモリリークを防止
+            if (listContainer) {
+                listContainer._delegationBound = false;
+                listContainer._keydownBound = false;
+                listContainer.innerHTML = "";
+            }
+
+            if (sidebarContainer) {
+                sidebarContainer.innerHTML = "";
+            }
         }
     };
 
@@ -2840,7 +2851,7 @@ export function calcNodeSize(node, path = "") {
             resolve(0);
             return;
         }
-        // ⭐ ショートカット（link）の場合は実体を辿らず、リンク自体のサイズとする
+        // ショートカット（link）の場合は実体を辿らず、リンク自体のサイズとする
         if (node.type === "link") {
             resolve(typeof node.target === "string" ? node.target.length : 0);
             return;
@@ -2851,59 +2862,20 @@ export function calcNodeSize(node, path = "") {
             return;
         }
 
-        // ⭐ 更新日時を考慮したキャッシュキーで高速化
+        // 更新日時を考慮したキャッシュキーで高速化
         const cacheKey = `${path}_${node.lastModified || 0}`;
         if (nodeSizeCache.has(cacheKey)) {
             resolve(nodeSizeCache.get(cacheKey));
             return;
         }
 
-        // 構造化クローンエラーを防ぎつつ、元のプロパティ構造を維持したまま安全なプレーンオブジェクトに変換
-        const sanitizeForWorker = (n) => {
-            if (!n || typeof n !== 'object') return n;
-
-            // ⭐ 【重要】ファイルノードの場合は巨大な content をクローンさせず、サイズのみに置き換えて DataCloneError を完全に防止する
-            if (n.type === "file") {
-                return {
-                    type: "file",
-                    size: typeof n.size === "number" ? n.size : (typeof n.content === "string" ? n.content.length : 0)
-                };
-            }
-
-            // 配列やプレーンオブジェクトを走査
-            const sanitized = Array.isArray(n) ? [] : {};
-
-            for (const key of Object.keys(n)) {
-                // 無視すべきメタデータや、関数・DOMなどのクローンできない要素をスキップ
-                if (typeof n[key] === 'function') continue;
-
-                // 子要素やオブジェクトの場合は再帰的にサニタイズ
-                if (n[key] && typeof n[key] === 'object') {
-                    // Blobはサイズだけ保持、またはそのまま除外
-                    if (n[key] instanceof Blob) {
-                        sanitized[key] = { type: 'file', size: n[key].size };
-                    } else {
-                        try {
-                            sanitized[key] = sanitizeForWorker(n[key]);
-                        } catch (e) {
-                            // 循環参照などでコピーできない場合はスキップ
-                            continue;
-                        }
-                    }
-                } else {
-                    // プリミティブ値（文字列、数値、真偽値など）はそのままコピー
-                    sanitized[key] = n[key];
-                }
-            }
-            return sanitized;
-        };
-
         try {
+            // ⭐ 外出した関数を呼び出して安全なペイロードを作成
             const safeNodePayload = sanitizeForWorker(node);
             const worker = getExplorerWorker();
             const id = ++workerCallbackId;
 
-            // ⭐ ワーカーの応答時にキャッシュへ保存してから解決する
+            // ワーカーの応答時にキャッシュへ保存してから解決する
             workerPendingRequests.set(id, (size) => {
                 nodeSizeCache.set(cacheKey, size);
                 resolve(size);
@@ -2918,6 +2890,40 @@ export function calcNodeSize(node, path = "") {
             resolve(fallbackSize);
         }
     });
+}
+
+// ⭐ モジュールスコープに外出しして再利用性を向上
+function sanitizeForWorker(n) {
+    if (!n || typeof n !== 'object') return n;
+
+    // ファイルノードの場合は巨大な content をクローンさせず、サイズのみに置き換えて DataCloneError を防止
+    if (n.type === "file") {
+        return {
+            type: "file",
+            size: typeof n.size === "number" ? n.size : (typeof n.content === "string" ? n.content.length : 0)
+        };
+    }
+
+    const sanitized = Array.isArray(n) ? [] : {};
+
+    for (const key of Object.keys(n)) {
+        if (typeof n[key] === 'function') continue;
+
+        if (n[key] && typeof n[key] === 'object') {
+            if (n[key] instanceof Blob) {
+                sanitized[key] = { type: 'file', size: n[key].size };
+            } else {
+                try {
+                    sanitized[key] = sanitizeForWorker(n[key]);
+                } catch (e) {
+                    continue;
+                }
+            }
+        } else {
+            sanitized[key] = n[key];
+        }
+    }
+    return sanitized;
 }
 
 function formatSize(bytes) {
