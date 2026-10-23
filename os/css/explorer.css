@@ -96,7 +96,7 @@
 .file-content {
     white-space: pre-wrap;
     padding: 6px;
-    font-family: Consolas, monospace;
+    font-family: 'MS PGothic', 'MS Gothic', monospace;
 }
 
 /* アイコン表示モード */

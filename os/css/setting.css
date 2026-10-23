@@ -38,7 +38,7 @@ body {
 
 /* 共通タブ */
 .win95-tab {
-    font-family: "MS Sans Serif", Tahoma, sans-serif;
+    font-family: 'MS PGothic', 'MS Gothic', sans-serif;
     font-size: 12px;
     line-height: 1;
     padding: 4px 12px 3px;

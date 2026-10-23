@@ -11,7 +11,7 @@
 .terminal-screen {
     /* 画面全体として振る舞う */
     color: white;
-    font-family: 'MS Gothic', monospace;
+    font-family: 'MS PGothic', 'MS Gothic', monospace;
     font-size: 14px;
     padding: 4px;
     flex: 1;
@@ -23,7 +23,7 @@
     align-items: center;
     background: black;
     color: white;
-    font-family: 'MS Gothic', monospace;
+    font-family: 'MS PGothic', 'MS Gothic', monospace;
     margin-top: 4px;
 }
 
@@ -32,7 +32,7 @@
     color: #0f0;
     border: none;
     outline: none;
-    font-family: 'MS Gothic', monospace;
+    font-family: 'MS PGothic', 'MS Gothic', monospace;
     flex: 1;
     margin-left: 5px;
     /* プロンプトとの間隔 */
