@@ -1,0 +1,1983 @@
+// CodeEditor.js
+import { resolveFS } from "../fs-utils.js";
+import { createWindow, bringToFront, showModalWindow, updateWindowTitle } from "../window.js";
+import { setupRibbon } from "../ribbon.js";
+import { getFileContent } from "../fs-db.js";
+
+/* =========================
+   Preview Virtual FS Utils
+========================= */
+const previewBlobMap = new Map();
+// ファイルパス（ディレクトリパス）ごとのタブとサイドバー状態を保持
+const editorStateMap = new Map();
+const openedFolders = new Set();
+let searchQuery = "";
+let searchIndex = -1;
+let searchStatus = null; // ← 追加: findNext/findPrevious から参照可能
+let searchResultsList = null; // ← 追加: 検索結果リスト用コンテナ
+let selectedSearchLine = -1; // ★追加: 現在クリックされて選択されている行番号
+
+function createBlobURL(content, type) {
+    return URL.createObjectURL(new Blob([content], { type }));
+}
+
+function getMimeType(name) {
+    const n = name.toLowerCase();
+    if (n.endsWith(".html") || n.endsWith(".htm")) return "text/html";
+    if (n.endsWith(".css")) return "text/css";
+    if (n.endsWith(".js")) return "text/javascript";
+    if (n.endsWith(".json")) return "application/json";
+    if (n.endsWith(".png")) return "image/png";
+    if (n.endsWith(".jpg") || n.endsWith(".jpeg")) return "image/jpeg";
+    if (n.endsWith(".gif")) return "image/gif";
+    if (n.endsWith(".svg")) return "image/svg+xml";
+    return "text/plain";
+}
+
+// 改善後（差し替え用）
+const previewCache = new Map();
+
+function collectFilesRecursive(basePath) {
+    const targetPath = basePath ? basePath.replace(/^\/+/, "") : "";
+    const result = new Map();
+    const visitedPaths = new Set();
+    const visitedNodes = new WeakSet(); // ⭐ オノード自体の循環参照を完全にブロック
+
+    function walk(path, depth = 0) {
+        if (depth > 12 || visitedPaths.has(path)) return;
+        visitedPaths.add(path);
+
+        let node = resolveFS(path);
+        if (!node || typeof node !== "object") return;
+
+        // 🔗 リンク（ショートカット）の場合は実体ノードを安全に解決
+        if (node.type === "link" && typeof node.target === "string") {
+            const targetNode = resolveFS(node.target);
+            if (targetNode) node = targetNode;
+        }
+
+        if (visitedNodes.has(node)) return;
+        visitedNodes.add(node);
+
+        try {
+            for (const [name, child] of Object.entries(node)) {
+                if (name === "type" || !child || typeof child !== "object") continue;
+                const fullPath = path ? `${path}/${name}` : name;
+
+                if (child.type === "folder") {
+                    walk(fullPath, depth + 1);
+                } else if (child.type === "file" || child.type === "app") {
+                    result.set(fullPath, String(child.content ?? ""));
+                } else if (child.type === "link" && typeof child.target === "string") {
+                    // リンク先がファイルの場合も考慮
+                    const resolvedTargetNode = resolveFS(child.target);
+                    if (resolvedTargetNode && resolvedTargetNode.type === "file") {
+                        result.set(fullPath, String(resolvedTargetNode.content ?? ""));
+                    }
+                }
+            }
+        } finally {
+            visitedNodes.delete(node); // 探索完了後に確実に解放
+        }
+    }
+
+    walk(targetPath);
+
+    if (result.size === 0 && targetPath !== "") {
+        walk("");
+    }
+    return result;
+}
+
+function resolveRelativePath(fromPath, relative) {
+    if (!relative || relative.startsWith("blob:") || relative.startsWith("http") || relative.startsWith("data:")) return null;
+    const stack = fromPath.split("/").slice(0, -1);
+    const parts = relative.split("/");
+    for (const part of parts) {
+        if (!part || part === ".") continue;
+        if (part === "..") {
+            if (stack.length) stack.pop();
+        }
+        else stack.push(part);
+    }
+    return stack.join("/");
+}
+
+/* =========================
+   CodeEditor with Tabs + Sidebar
+========================= */
+export default function CodeEditor(root, options = {}) {
+    const { path } = options;
+    const win = root.closest(".window");
+    const titleEl = win?.querySelector(".title-text");
+
+    let filePath = path || null;
+    let fileNode = filePath ? resolveFS(filePath) : null;
+    let dirty = false;
+    const untitledId = Date.now().toString(36);
+    let baseTitle = filePath?.split("/").pop()?.trim() || `Untitled-${untitledId}`;
+    let isDestroyed = false;
+    let previewWin = null;
+    let previewIframe = null;
+    let minimapUpdatePending = false;
+    /* =========================
+       Tabs State
+    ========================== */
+    const tabs = [];
+    let activeTab = null;
+
+    /* =========================
+       Helpers
+    ========================== */
+    function isCodeFile(name) {
+        return /\.(html|htm|css|js|txt|json)$/i.test(name); // 拡張
+    }
+
+    function getDirPath(p) {
+        if (!p) return null;
+        const parts = p.split("/");
+        parts.pop();
+        return parts.join("/");
+    }
+
+    /* =========================
+        連携ファイルを tabs に追加 (最新安定版)
+    ========================== */
+    function addLinkedFilesToTabs(basePath, content, visited = new Set(), depth = 0) {
+        // 安全策：深すぎる再帰や中身がない場合は即終了
+        if (depth > 10 || !content || content === "__EXTERNAL_DATA__") return;
+
+        const currentDirPath = basePath || "";
+        const regex = /(src|href)=["']([^"']+)["']/gi;
+        let match;
+
+        while ((match = regex.exec(content))) {
+            const relPath = match[2];
+            const resolved = resolveRelativePath(currentDirPath, relPath);
+
+            // 無効なパス、または既に今回のスキャンで確認済みのパスはスキップ
+            if (!resolved || visited.has(resolved)) continue;
+
+            // 探索を開始する前に「訪問済み」として登録（循環参照対策）
+            visited.add(resolved);
+
+            const node = resolveFS(resolved);
+            if (!node || node.type !== "file") continue;
+
+            const fileName = resolved.split("/").pop();
+            if (!isCodeFile(fileName)) continue;
+
+            // タブに存在しない場合のみ追加
+            if (!tabs.some(t => t.path === resolved)) {
+                tabs.push({
+                    name: fileName,
+                    path: resolved,
+                    node,
+                    content: String(node.content ?? ""),
+                    dirty: false
+                });
+                // タブが増えたのでUI更新が必要であることをマーク（後でまとめて実行）
+            }
+
+            // 次の階層へ（再帰呼び出し）
+            const nextContent = String(node.content ?? "");
+            addLinkedFilesToTabs(getDirPath(resolved), nextContent, visited, depth + 1);
+        }
+    }
+
+    /* =========================
+       Load Sibling Files + Restore Tab Order
+    ========================== */
+    function loadSiblingFiles() {
+        if (!filePath) return;
+        const dirPath = getDirPath(filePath);
+        const dirNode = resolveFS(dirPath);
+        if (!dirNode) return;
+
+        const fileNames = Object.keys(dirNode)
+            .filter(k => k !== "type")
+            .filter(isCodeFile);
+        const savedState = editorStateMap.get(dirPath);
+        const order = savedState?.tabOrder || fileNames;
+
+        tabs.length = 0;
+        order.forEach(name => {
+            if (!fileNames.includes(name)) return;
+            const fullPath = `${dirPath}/${name}`;
+            const node = resolveFS(fullPath);
+            tabs.push({ name, path: fullPath, node, content: String(node?.content ?? ""), dirty: false });
+        });
+
+        activeTab = tabs.find(t => t.path === filePath) || tabs[0];
+
+        // サイドバー状態も復元 (改善前は毎回閉じていた)
+        if (savedState?.sidebarOpen) sidebar.style.display = "block";
+    }
+
+    /* =========================
+       UI
+    ========================== */
+    root.innerHTML = `
+<div class="tabbar" style="display:flex;background:#1b1b1b;border-bottom:1px solid #333;user-select:none;"></div>
+<div class="main-layout" style="display:flex;width:100%;height:calc(100% - 32px);overflow:hidden;background:#111;">
+    <div class="activity-bar" style="width:48px;background:#1a1a1a;display:flex;flex-direction:column;align-items:center;padding-top:5px;border-right:1px solid #111;flex-shrink:0;">
+        <div class="activity-icon search-trigger" title="Search" style="cursor:pointer;width:100%;height:48px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;border-left:2px solid transparent;">
+            <svg class="search-svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+        </div>
+    </div>
+    
+    <div class="sidebar" style="width:250px;background:#1a1a1a;color:#ccc;overflow:auto;display:none;border-right:1px solid #222;padding:0;box-sizing:border-box;flex-shrink:0;"></div>
+    
+  <div class="linenumbers" style="position:relative; width:52px; padding:10px 6px; box-sizing:border-box; text-align:right; color:#777; background:#1e1e1e; border-right:1px solid #2d2d2d; user-select:none; overflow:hidden; white-space:pre;">
+        <div class="active-line-number-highlight" style="position:absolute; right:6px; color:#c6c6c6; display:none; background:#1e1e1e; padding-left:10px;"></div>
+    </div>
+    
+<div class="codecontainer" style="position:relative;flex:1;display:flex;min-width:0;overflow:hidden;background:#111;">
+        <div class="active-line-layer" style="position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:0;overflow:hidden;">
+            <div class="active-line-bg" style="position:absolute;left:0;width:100%;background:rgba(255,255,255,0.08);display:none;"></div>
+        </div>
+        
+        <pre class="syntax-highlight" aria-hidden="true" style="z-index: 1;"></pre>
+        
+        <textarea class="codeeditor" spellcheck="false" wrap="off"></textarea>
+        
+        <div class="error-overlay" style="position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:2;"></div>
+    </div>
+
+    <div class="minimap-container" style="width:60px; background:#0d0d0d; border-left:1px solid #222; position:relative; flex-shrink:0; cursor:pointer; user-select:none;">
+        <canvas class="minimap-canvas" style="width:100%; height:100%; pointer-events:none;"></canvas>
+        <div class="minimap-slider" style="position:absolute; top:0; left:0; width:100%; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); pointer-events:none; box-sizing:border-box; z-index:3;"></div>
+    </div>
+</div>
+
+<style>
+/* 共通のフォント・レイアウト設定（極めて重要） */
+.codeeditor, .syntax-highlight, .linenumbers {
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace !important;
+    font-size: 14px !important;
+    line-height: 20px !important;
+    tab-size: 4 !important;
+    letter-spacing: 0px !important;
+    font-variant-ligatures: none !important;
+    -webkit-font-smoothing: antialiased;
+    overflow-anchor: none !important;
+}
+
+.codeeditor, .syntax-highlight {
+    padding: 10px !important; 
+    margin: 0 !important;
+    border: none !important;
+    box-sizing: border-box !important;
+    white-space: pre !important; /* 絶対に折り返さない */
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+    width: 100% !important;
+    height: 100% !important;
+    overflow-anchor: none !important;
+}
+
+/* 実際の入力用 textarea */
+.codeeditor {
+    position: absolute;
+    top: 0; left: 0;
+    z-index: 2;
+    background: transparent !important;
+    color: transparent !important; /* 文字自体は下のレイヤーで見せる */
+    caret-color: #fff; /* カーソルだけ表示 */
+    outline: none;
+    resize: none;
+    overflow: auto;
+    
+    /* 【根本修正1】ブラウザが勝手にスクロール位置を調整するのを防ぐ */
+    overflow-anchor: none !important;
+    
+    /* スクロールバーを隠す（同期のズレを防ぐため） */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+}
+
+.codeeditor::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
+}
+
+/* シンタックスハイライト表示層 */
+.syntax-highlight {
+    position: absolute;
+    top: 0; left: 0;
+    z-index: 1;
+    color: #eaeaea;
+    background: transparent !important;
+    
+    /* 【根本修正2】中身の高さに関わらず、コンテナのサイズに固定してJSでスクロール制御 */
+    overflow: hidden !important; 
+    pointer-events: none; /* マウス操作を透過させてtextareaに届かせる */
+    
+    /* transformボケ防止 */
+    will-change: transform, scroll-position;
+}
+
+/* 検索マッチ等のハイライト層がある場合も同様の設定にする */
+.highlight-layer {
+    position: absolute;
+    top: 0; left: 0;
+    z-index: 0;
+    width: 100% !important;
+    height: 100% !important;
+    overflow: hidden !important;
+    pointer-events: none;
+    white-space: pre !important;
+    padding: 10px !important;
+    box-sizing: border-box !important;
+}
+
+/* 共通項目 */
+.hl-keyword   { color: #569cd6; font-weight: bold; }
+.hl-string    { color: #ce9178; }
+.hl-comment   { color: #6a9955; font-style: italic; }
+.hl-number    { color: #b5cea8; }
+.hl-bracket   { color: #ffd700; }
+.hl-operator  { color: #d4d4d4; }
+.hl-angle     { color: #808080; }
+
+/* JavaScript */
+.hl-func        { color: #dcdcaa; } /* 関数名 */
+.hl-variable    { color: #9cdcfe; } /* 変数名 */
+.hl-property_js { color: #9cdcfe; } /* JSプロパティ */
+.hl-builtin     { color: #4fc1ff; } /* console等 */
+
+/* HTML */
+.hl-tag      { color: #569cd6; }
+.hl-attr     { color: #9cdcfe; }
+.hl-doctype  { color: #808080; }
+
+/* CSS */
+.hl-selector { color: #d7ba7d; }
+.hl-property { color: #9cdcfe; }
+.hl-unit     { color: #b5cea8; } /* 単位 (10pxなど) */
+.hl-value    { color: #ce9178; } /* CSSの値 */
+</style>
+`;
+
+    const tabbar = root.querySelector(".tabbar");
+    const textarea = root.querySelector(".codeeditor");
+    const lineNumbers = root.querySelector(".linenumbers");
+    const errorOverlay = root.querySelector(".error-overlay");
+    const sidebar = root.querySelector(".sidebar");
+    const syntaxLayer = root.querySelector(".syntax-highlight");
+
+    const activeLineLayer = root.querySelector(".active-line-layer");
+    const activeLineBg = root.querySelector(".active-line-bg");
+
+    const activeLineNumberHighlight = root.querySelector(".active-line-number-highlight"); // 上部で取得しておく
+
+    function updateActiveLine() {
+        if (!activeTab || !activeLineBg) return;
+        const start = textarea.selectionStart;
+        const textUpToCursor = textarea.value.slice(0, start);
+        const currentLine = textUpToCursor.split("\n").length - 1;
+
+        const computed = getComputedStyle(textarea);
+        const lineHeight = parseFloat(computed.lineHeight) || 20;
+        const paddingTop = parseFloat(computed.paddingTop) || 10;
+
+        const scrollTop = textarea.scrollTop;
+        const topPos = Math.round((currentLine * lineHeight) + paddingTop - scrollTop);
+
+        // エディタ行の背景 (VS Code風の繊細なボーダーと背景)
+        activeLineBg.style.top = topPos + "px";
+        activeLineBg.style.height = Math.round(lineHeight) + "px";
+        activeLineBg.style.border = "1px solid rgba(255, 255, 255, 0.1)"; // VS Codeのアクティブ行ボーダー
+        activeLineBg.style.boxSizing = "border-box";
+        activeLineBg.style.display = "block";
+
+        // 行番号のハイライト (O(1) でのDOM更新)
+        if (activeLineNumberHighlight) {
+            activeLineNumberHighlight.style.top = topPos + "px";
+            activeLineNumberHighlight.textContent = currentLine + 1;
+            activeLineNumberHighlight.style.display = "block";
+        }
+
+        selectedSearchLine = currentLine;
+    }
+
+    // ★追加: サイドバーの検索結果リストの選択状態を更新する関数
+    function updateSidebarSelection() {
+        if (!searchResultsList) return;
+        Array.from(searchResultsList.children).forEach(child => {
+            const lineStr = child.textContent.split(":")[0];
+            if (!lineStr) return;
+            const lineNum = parseInt(lineStr) - 1;
+            const isSelected = lineNum === selectedSearchLine;
+
+            child.style.backgroundColor = isSelected ? "#333" : "transparent";
+            child.setAttribute("data-selected", isSelected ? "true" : "false");
+        });
+    }
+
+    const COLORS = {
+        // 共通
+        keyword: "#569cd6",   // 制御構文 (if, function, class)
+        string: "#ce9178",    // 文字列
+        comment: "#6a9955",   // コメント
+        number: "#b5cea8",    // 数値
+        bracket: "#ffd700",   // 括弧類
+        operator: "#d4d4d4",  // 演算子 (+, -, =, &)
+
+        // JavaScript
+        func: "#dcdcaa",      // 関数名・メソッド名
+        variable: "#9cdcfe",  // 変数名 (def)
+        builtin: "#4fc1ff",   // 組み込みオブジェクト (console, Math)
+        property_js: "#9cdcfe", // オブジェクトのプロパティ
+
+        // HTML
+        tag: "#569cd6",       // タグ名 (div, html)
+        angle: "#808080",     // <, >
+        attr: "#9cdcfe",      // 属性名 (class, src)
+        doctype: "#808080",   // <!DOCTYPE>
+
+        // CSS
+        selector: "#d7ba7d",  // セレクタ (.class, #id, tag)
+        property: "#9cdcfe",  // プロパティ (color, margin)
+        unit: "#b5cea8",      // 単位 (px, rem)
+        value: "#ce9178",     // プロパティの値 (文字列に近い扱い)
+    };
+
+    /* =========================
+   Tokenizer & Syntax Utils (CodeEditor用に追加)
+========================= */
+    function tokenize(line) {
+        return line.split(/(\/\/.+|\/\*[\s\S]*?\*\/|"(?:\\.|[^"])*"|'(?:\\.|[^'])*'|`[\s\S]*?`|<\/?[a-zA-Z0-9!.-]+|[\w$-]+|[{}().,;+\-*/&|=<>!\[\]:]|[\s]+)/).filter(Boolean);
+    }
+
+    function getTokenType(token, filePath, index = 0, tokens = []) {
+        const t = token.trim();
+        if (!t) return null;
+        const ext = filePath ? filePath.split('.').pop().toLowerCase() : '';
+
+        const next = tokens[index + 1]?.trim();
+        const prev = tokens[index - 1]?.trim();
+
+        if (t.startsWith("//") || t.startsWith("/*")) return "comment";
+        if (/^["'`]/.test(t)) return "string";
+        if (/^[0-9]+(\.[0-9]+)?(px|rem|em|%|vh|vw|s|ms|deg)?$/.test(t)) return "number";
+        if (/^[{}()\[\]]$/.test(t)) return "bracket";
+        if (t === "." || t === "," || t === ";" || t === ":") return null;
+
+        if (ext === 'html' || ext === 'htm') {
+            if (t.startsWith('<')) return "tag";
+            if (t === '>') return "angle";
+            if (t.startsWith('!')) return "doctype";
+            if (next === '=' && /^[a-zA-Z-]+$/.test(t)) return "attr";
+        }
+
+        if (ext === 'css') {
+            if (t.startsWith('.') || t.startsWith('#') || /^(html|body|div|span|a|h[1-6]|p|ul|li|section|header|footer|nav|main)$/.test(t)) {
+                return "selector";
+            }
+            if (next === ':' && /^[a-z-]+$/.test(t)) return "property";
+        }
+
+        if (ext === 'js') {
+            const keywords = /^(const|let|var|function|return|if|else|for|while|import|export|from|as|default|class|extends|constructor|static|get|set|async|await|new|this|super|try|catch|finally|throw|break|continue|switch|case|of|in|yield|delete|typeof|instanceof|void|null|undefined|true|false)$/;
+            if (keywords.test(t)) return "keyword";
+
+            const builtins = /^(console|window|document|Math|Object|Array|String|Number|Boolean|Promise|JSON|Map|Set|Symbol|Error|Proxy|Reflect|setTimeout|setInterval|fetch)$/;
+            if (builtins.test(t)) return "builtin";
+
+            if (next === '(' && /^[a-zA-Z_$][\w$]*$/.test(t)) return "func";
+            if (prev === '.' && /^[a-zA-Z_$][\w$]*$/.test(t)) return "property_js";
+
+            if (/^[a-zA-Z_$][\w$]*$/.test(t)) return "variable";
+            if (/^[+\-*/&|=<>!%^]+$/.test(t)) return "operator";
+        }
+
+        return null;
+    }
+
+
+    // --- シンタックスハイライト適用メイン関数 ---
+    let highlightTask = null;
+
+    // 改善後: Web Workerを利用してメインスレッドをブロックしない
+    const syntaxWorker = new Worker(new URL('./worker/syntax.worker.js', import.meta.url), { type: 'module' });
+
+    // Workerから計算結果を受け取るリスナー
+    syntaxWorker.onmessage = (e) => {
+        if (typeof isDestroyed !== 'undefined' && isDestroyed) return;
+
+        // DOMへの反映（描画）のみをメインスレッドで行う
+        syntaxLayer.innerHTML = e.data.html;
+        syntaxLayer.scrollTop = textarea.scrollTop;
+        syntaxLayer.scrollLeft = textarea.scrollLeft;
+
+        if (!minimapUpdatePending) {
+            minimapUpdatePending = true;
+            requestAnimationFrame(() => {
+                updateMinimap();
+                minimapUpdatePending = false;
+            });
+        }
+    };
+
+    function applySyntaxHighlight() {
+        const text = textarea.value;
+        const currentPath = activeTab ? activeTab.path : "";
+
+        // 重いループ処理をWeb Workerへ丸投げする
+        syntaxWorker.postMessage({ text, currentPath });
+    }
+    // 行数を記録するための変数を関数の外側（CodeEditor関数内）に定義
+    let lastLineCount = 0;
+    function updateLineNumbers() {
+        const lines = textarea.value.split('\n').length;
+        if (lastLineCount === lines) return;
+        lastLineCount = lines;
+
+        // ★【高速化】ループ内での文字列結合を避け、配列を利用して一気に結合
+        lineNumbers.textContent = Array.from({ length: lines }, (_, i) => i + 1).join('\n') + '\n';
+    }
+
+    let highlightLayer = null;
+
+    textarea.addEventListener("scroll", () => {
+        const top = textarea.scrollTop;
+        const left = textarea.scrollLeft;
+
+        // 1. 同期が必要な要素をまとめて処理（DOMへのアクセスを最小限に）
+        lineNumbers.scrollTop = top;
+
+        if (syntaxLayer) {
+            syntaxLayer.scrollTop = top;
+            syntaxLayer.scrollLeft = left;
+        }
+
+        // 2. 検索レイヤーの同期 (transformではなくscrollTopを使う設計の方が安定します)
+        if (highlightLayer) {
+            // transformではなくscrollTopを使う方が、他のレイヤーとのズレ（ジッタ）が減ります
+            highlightLayer.scrollTop = top;
+            highlightLayer.scrollLeft = left;
+        }
+
+        if (activeLineLayer) {
+            activeLineLayer.scrollTop = top;
+        }
+
+        updateActiveLine();
+
+        // 3. ミニマップは「描画が必要な時だけ」呼ぶ
+        // すでに requestAnimationFrame が予約されていなければ予約する
+        if (!minimapUpdatePending) {
+            minimapUpdatePending = true;
+            requestAnimationFrame(() => {
+                updateMinimap();
+                minimapUpdatePending = false;
+            });
+        }
+    }, { passive: true }); // passive: true をつけるとスクロールが滑らかになります
+    /* =========================
+         Minimap Logic (Fixed for Sync & Resize)
+      ========================== */
+    const minimapCanvas = root.querySelector(".minimap-canvas");
+    const minimapCtx = minimapCanvas.getContext("2d");
+    const minimapSlider = root.querySelector(".minimap-slider");
+    const minimapContainer = root.querySelector(".minimap-container");
+
+    const LINE_H_PX = 2; // ミニマップ上の1行の高さ
+    const CHAR_W_PX = 1;
+    let isDraggingMinimap = false;
+
+    let cachedLines = null;
+    let cachedText = "";
+
+    function updateMinimap() {
+        const text = textarea.value;
+
+        // テキストが変わっていなければ前回のデータを使い回す
+        if (text !== cachedText) {
+            cachedLines = text.split("\n");
+            cachedText = text;
+        }
+        const lines = cachedLines; // 使い回した配列を使う
+        const lineCount = lines.length;
+
+        const containerW = minimapContainer.clientWidth;
+        const containerH = minimapContainer.clientHeight;
+        if (containerW === 0 || containerH === 0) return;
+
+        const dpr = window.devicePixelRatio || 1;
+        if (minimapCanvas.width !== containerW * dpr || minimapCanvas.height !== containerH * dpr) {
+            minimapCanvas.width = containerW * dpr;
+            minimapCanvas.height = containerH * dpr;
+            // CSS側で100%指定済みのため、styleのwidth/heightの上書きは不要
+        }
+
+        minimapCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        minimapCtx.clearRect(0, 0, containerW, containerH);
+
+        const scrollHeight = textarea.scrollHeight || 1;
+        const clientHeight = textarea.clientHeight || 1;
+        const scrollTop = textarea.scrollTop;
+        const maxScrollTop = Math.max(0, scrollHeight - clientHeight);
+        const scrollRatio = maxScrollTop > 0 ? scrollTop / maxScrollTop : 0;
+
+        const totalMinimapContentHeight = lineCount * LINE_H_PX;
+        let drawOffsetY = 0;
+        if (totalMinimapContentHeight > containerH) {
+            drawOffsetY = scrollRatio * (totalMinimapContentHeight - containerH);
+        }
+
+        // ★【劇的軽量化】描画すべき行（見えている範囲）の開始・終了インデックスを計算
+        const startIndex = Math.max(0, Math.floor(drawOffsetY / LINE_H_PX));
+        const endIndex = Math.min(lineCount, Math.ceil((drawOffsetY + containerH) / LINE_H_PX));
+
+        // 必要な範囲だけをループ処理する
+        for (let i = startIndex; i < endIndex; i++) {
+            const line = lines[i];
+            const y = (i * LINE_H_PX) - drawOffsetY;
+            let x = 4;
+
+            const tokens = tokenize(line);
+            for (let j = 0; j < tokens.length; j++) {
+                const token = tokens[j];
+                if (!token) continue;
+
+                if (token.trim() === "") {
+                    x += token.length * CHAR_W_PX;
+                } else {
+                    const type = getTokenType(token, activeTab?.path, j, tokens);
+                    minimapCtx.fillStyle = COLORS[type] || "#6db3d9";
+                    const tokenWidth = token.length * CHAR_W_PX;
+                    minimapCtx.fillRect(x, y, tokenWidth, LINE_H_PX - 0.5);
+                    x += tokenWidth;
+                }
+            }
+        }
+
+        const sliderHeight = Math.max(20, (clientHeight / scrollHeight) * containerH);
+        const sliderTop = scrollRatio * Math.max(0, containerH - sliderHeight);
+        minimapSlider.style.height = `${sliderHeight}px`;
+        minimapSlider.style.top = `${sliderTop}px`;
+    }
+
+    // --- イベント周りの修正 ---
+
+    const handleMinimapInput = (ev) => {
+        const rect = minimapContainer.getBoundingClientRect();
+        const containerH = minimapContainer.clientHeight;
+
+        // クリック位置（y）を取得し、コンテナ内での相対位置にする
+        let clickY = ev.clientY - rect.top;
+
+        // スライダーの現在の高さを取得
+        const sliderHeight = parseFloat(minimapSlider.style.height) || 20;
+
+        // スライダーの中心をクリック位置に持ってくるためのオフセット調整
+        let targetTop = clickY - (sliderHeight / 2);
+
+        // 境界チェック（0 ～ コンテナ高 - スライダー高）
+        const maxSliderTop = containerH - sliderHeight;
+        targetTop = Math.max(0, Math.min(targetTop, maxSliderTop));
+
+        // スライダーが動ける範囲の中での位置割合を計算
+        const scrollPercent = maxSliderTop > 0 ? targetTop / maxSliderTop : 0;
+
+        // エディタの最大スクロール距離にその割合を適用
+        const maxEditorScroll = textarea.scrollHeight - textarea.clientHeight;
+        textarea.scrollTop = scrollPercent * maxEditorScroll;
+    };
+
+    // リサイズ監視（ウィンドウサイズが変わっても見切れないようにする）
+    const ro = new ResizeObserver(() => {
+        requestAnimationFrame(updateMinimap);
+    });
+    ro.observe(minimapContainer);
+    ro.observe(textarea); // エディタ側のサイズ変更も監視
+
+    // ドラッグ操作
+    let minimapMouseMoveHandler = null;
+    let minimapMouseUpHandler = null;
+
+    minimapContainer.addEventListener("mousedown", (e) => {
+        isDraggingMinimap = true;
+        handleMinimapInput(e);
+
+        minimapMouseMoveHandler = (ev) => isDraggingMinimap && handleMinimapInput(ev);
+        minimapMouseUpHandler = () => {
+            isDraggingMinimap = false;
+            if (minimapMouseMoveHandler) window.removeEventListener("mousemove", minimapMouseMoveHandler);
+            if (minimapMouseUpHandler) window.removeEventListener("mouseup", minimapMouseUpHandler);
+            minimapMouseMoveHandler = null;
+            minimapMouseUpHandler = null;
+        };
+
+        window.addEventListener("mousemove", minimapMouseMoveHandler);
+        window.addEventListener("mouseup", minimapMouseUpHandler);
+    });
+
+    /* =========================
+       Tabs & Title
+    ========================== */
+    function updateTitle() {
+        // 1. アクティブなタブがない場合は実行しない
+        if (!activeTab) return;
+
+        // 2. 表示する名前を確定（名前がない場合は "Untitled"）
+        const displayName = activeTab.name || "Untitled";
+
+        // 3. window.js の共通関数を呼び出し、変更フラグ (dirty) を渡す
+        // これにより、タイトルバーに自動で "*" が付与されます
+        updateWindowTitle(win, displayName, activeTab.dirty);
+    }
+
+    function renderTabs() {
+        // 既存の構造を維持：一度リセットして全描画
+        tabbar.innerHTML = "";
+        tabs.forEach((tab, idx) => {
+            const el = document.createElement("div");
+            const isActive = tab === activeTab;
+            Object.assign(el.style, {
+                padding: "8px 12px", // 少し余白を広げる
+                cursor: "pointer",
+                borderRight: "1px solid #252526",
+                borderTop: isActive ? "2px solid #007acc" : "1px solid transparent", // アクティブ時の青ライン
+                background: isActive ? "#1e1e1e" : "#2d2d2d", // エディタ背景(#1e1e1e)と統一
+                color: isActive ? "#ffffff" : "#969696",
+                userSelect: "none",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                minWidth: "120px",
+                maxWidth: "200px",
+                overflow: "hidden"
+            });
+
+            const label = document.createElement("span");
+            label.textContent = tab.name + (tab.dirty ? " *" : "");
+            label.title = tab.name;
+            Object.assign(label.style, {
+                whiteSpace: "nowrap",      // 折り返さない
+                overflow: "hidden",        // はみ出た分を隠す
+                textOverflow: "ellipsis",  // 三点リーダーを表示
+                maxWidth: "120px"          // 省略を開始する最大幅（お好みで調整してください）
+            });
+
+            const closeBtn = document.createElement("span");
+            closeBtn.textContent = "✕";
+            Object.assign(closeBtn.style, {
+                fontSize: "12px",
+                opacity: 0.6,
+                cursor: "pointer"
+            });
+
+            closeBtn.onmouseenter = () => closeBtn.style.opacity = 1;
+            closeBtn.onmouseleave = () => closeBtn.style.opacity = 0.6;
+
+            closeBtn.onclick = e => {
+                e.stopPropagation();
+                requestCloseTab(tab);
+            };
+
+            el.append(label, closeBtn);
+
+            // ドラッグ並び替え
+            el.draggable = true;
+            el.addEventListener("dragstart", e =>
+                e.dataTransfer.setData("text/tabIndex", idx)
+            );
+            el.addEventListener("dragover", e => e.preventDefault());
+            el.addEventListener("drop", e => {
+                const fromIdx = parseInt(e.dataTransfer.getData("text/tabIndex"));
+                const toIdx = idx;
+                if (fromIdx !== toIdx) {
+                    const t = tabs.splice(fromIdx, 1)[0];
+                    tabs.splice(toIdx, 0, t);
+                    renderTabs();
+                }
+            });
+
+            el.onclick = () => switchTab(tab);
+            tabbar.appendChild(el);
+        });
+    }
+
+    function requestCloseTab(tab) {
+        if (tab.dirty) {
+            showConfirm(root,
+                `"${tab.name}" は未保存です。\n保存して閉じますか？`,
+                async () => {
+                    tab.node.content = tab.content;
+                    tab.dirty = false;
+                    closeTab(tab);
+                },
+                () => closeTab(tab)
+            );
+        } else {
+            closeTab(tab);
+        }
+    }
+
+    function closeTab(tab) {
+        const index = tabs.indexOf(tab);
+        if (index === -1) return;
+
+        const wasActive = tab === activeTab;
+        tabs.splice(index, 1);
+
+        if (wasActive) {
+            activeTab =
+                tabs[index] ||
+                tabs[index - 1] ||
+                null;
+
+            if (activeTab) {
+                textarea.value = activeTab.content;
+                baseTitle = activeTab.name;
+                filePath = activeTab.path;
+                fileNode = activeTab.node;
+            } else {
+                textarea.value = "";
+                baseTitle = "CodeEditor";
+                filePath = null;
+                fileNode = null;
+            }
+            updateLineNumbers();
+            applySyntaxHighlight(); // 閉じ終わった後の内容をハイライト
+            if (searchQuery) highlightSearchMatches(searchQuery);
+            requestAnimationFrame(updateMinimap);
+        }
+
+        // ★ 追加
+        dirty = activeTab?.dirty ?? false;
+
+        renderTabs();
+        updateTitle();
+        renderPreview();
+    }
+
+    function switchTab(tab) {
+        if (activeTab === tab) return;
+
+        // 1. 現在の状態を保存
+        if (activeTab) {
+            activeTab.content = textarea.value;
+            activeTab.scrollPos = {
+                top: textarea.scrollTop,
+                left: textarea.scrollLeft
+            };
+        }
+
+        // 進行中のハイライト処理を完全に止める
+        if (highlightTask) {
+            cancelAnimationFrame(highlightTask);
+            highlightTask = null;
+        }
+        clearTimeout(highlightTimer);
+
+        // 2. 【重要】タブ切り替え時のみ、表示レイヤーをクリアする
+        // これにより、新しいファイルが解析されるまで前のファイルの内容が見えるのを防ぎます
+        if (syntaxLayer) syntaxLayer.innerHTML = "";
+        if (lineNumbers) lineNumbers.innerHTML = "";
+
+        activeTab = tab;
+        const pos = tab.scrollPos || { top: 0, left: 0 };
+
+        // 3. 内容とスクロール位置の更新
+        textarea.value = tab.content;
+        textarea.scrollTop = pos.top;
+        textarea.scrollLeft = pos.left;
+
+        // 4. UI状態の更新
+        dirty = tab.dirty;
+        renderTabs();
+        updateTitle();
+        updateLineNumbers();
+
+        // 5. ハイライト処理を開始
+        // 前の回答で修正した「一気に反映するタイプ」の applySyntaxHighlight を呼び出す
+        applySyntaxHighlight();
+
+        // 6. スクロール位置の最終同期と表示の調整
+        requestAnimationFrame(() => {
+            // 各要素のスクロール位置を強制的に合わせる
+            textarea.scrollTop = pos.top;
+            textarea.scrollLeft = pos.left;
+
+            if (syntaxLayer) {
+                syntaxLayer.scrollTop = pos.top;
+                syntaxLayer.scrollLeft = pos.left;
+            }
+            if (lineNumbers) {
+                lineNumbers.scrollTop = pos.top;
+            }
+
+            if (typeof updateMinimap === "function") updateMinimap();
+        });
+
+        if (searchQuery) highlightSearchMatches(searchQuery);
+    }
+
+    /* =========================
+       初期ロード
+    ========================== */
+    loadSiblingFiles();
+    if (activeTab) {
+        const dirPath = getDirPath(activeTab.path);
+        addLinkedFilesToTabs(dirPath, activeTab.content);
+        renderTabs();
+        if (sidebar.style.display !== "none") renderSidebar();
+        renderPreview();
+    }
+    if (activeTab) textarea.value = activeTab.content;
+    updateLineNumbers();
+    renderTabs();
+    updateTitle();
+
+    /* =========================
+       Save (修正)
+    ========================== */
+    async function save() {
+        if (activeTab) {
+            // 1. エディタの現在の値をタブのコンテンツに反映
+            activeTab.content = textarea.value;
+
+            // 2. タブのノード（仮想FSのメモリ実体）にも反映
+            if (activeTab.node) {
+                activeTab.node.content = activeTab.content;
+            }
+        }
+
+        // 全てのタブの状態をクリーンにする
+        tabs.forEach(tab => {
+            if (tab.node) {
+                // 他のタブも一応同期
+                tab.node.content = tab.content;
+                tab.dirty = false;
+            }
+        });
+
+        dirty = false;
+        renderTabs();
+        updateTitle();
+
+        // 3. プレビューを即時実行
+        if (previewWin && document.body.contains(previewWin)) {
+            await renderPreview();
+        }
+
+        // 他のウィンドウ（ファイルマネージャー等）への通知
+        window.dispatchEvent(new Event("fs-updated"));
+    }
+
+    function highlightSearchMatches(query) {
+        // 1. 既存のハイライトと検索リストを完全にクリア
+        errorOverlay.innerHTML = "";
+        if (searchResultsList) {
+            searchResultsList.innerHTML = "";
+            searchResultsList.style.display = "none";
+        }
+
+        if (!query || query.trim() === "") {
+            if (searchStatus) searchStatus.textContent = "";
+            highlightLayer = null;
+            selectedSearchLine = -1;
+            return;
+        }
+
+        const text = textarea.value;
+        const lines = text.split("\n");
+        const computed = getComputedStyle(textarea);
+
+        const lineHeight = parseFloat(computed.lineHeight);
+        const paddingTop = parseFloat(computed.paddingTop);
+        const paddingLeft = parseFloat(computed.paddingLeft);
+        const tabSize = 4;
+
+        const innerContainer = document.createElement("div");
+        highlightLayer = innerContainer;
+
+        Object.assign(innerContainer.style, {
+            position: "absolute",
+            top: "0", left: "0", height: "100%", width: "100%",
+            overflow: "hidden", pointerEvents: "none", willChange: "scroll-position"
+        });
+
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        ctx.font = `${computed.fontWeight} ${computed.fontSize} ${computed.fontFamily}`;
+
+        const charWidth = ctx.measureText("M").width;
+        const lowerQuery = query.toLowerCase();
+        const matchWidth = query.length * charWidth;
+
+        let matchCount = 0;
+        const MAX_HIGHLIGHT_DOMS = 500;
+        const MAX_LIST_ITEMS = 100;
+
+        // ★追加: ファイル全体での累積文字数を保持する変数
+        let absoluteOffset = 0;
+
+        // 1. メモリ上に仮想的なDOMツリーの断片（フラグメント）を準備
+        const highlightFragment = document.createDocumentFragment();
+        const listFragment = document.createDocumentFragment();
+
+        lines.forEach((line, i) => {
+            let start = 0;
+            let idx;
+            const lowerLine = line.toLowerCase();
+
+            while ((idx = lowerLine.indexOf(lowerQuery, start)) !== -1) {
+                matchCount++;
+                const absoluteIdx = absoluteOffset + idx;
+
+                // 画面上の黄色いハイライト
+                if (matchCount <= MAX_HIGHLIGHT_DOMS) {
+                    const beforeText = line.substring(0, idx);
+                    const visualCharCount = beforeText.replace(/\t/g, ' '.repeat(tabSize)).length;
+                    const leftOffset = visualCharCount * charWidth;
+
+                    const div = document.createElement("div");
+                    Object.assign(div.style, {
+                        position: "absolute",
+                        left: Math.round(paddingLeft + leftOffset) + "px",
+                        top: Math.round((i * lineHeight) + paddingTop) + "px",
+                        width: Math.round(matchWidth) + "px",
+                        height: Math.round(lineHeight) + "px",
+                        backgroundColor: "rgba(255, 255, 0, 0.4)",
+                        borderRadius: "2px"
+                    });
+                    highlightFragment.appendChild(div); // ⭕ フラグメントに溜める（DOM操作なし）
+                }
+
+                // サイドバーの該当行リストへの追加
+                if (searchResultsList && matchCount <= MAX_LIST_ITEMS) {
+                    const item = document.createElement("div");
+                    const isSelected = i === selectedSearchLine;
+
+                    Object.assign(item.style, {
+                        padding: "4px 6px",
+                        cursor: "pointer",
+                        borderBottom: "1px solid #222",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        fontSize: "12px",
+                        backgroundColor: isSelected ? "#333" : "transparent"
+                    });
+                    item.setAttribute("data-selected", isSelected ? "true" : "false");
+                    item.textContent = `${i + 1}: ${line.trim()}`;
+
+                    item.onmouseenter = () => { if (item.getAttribute("data-selected") !== "true") item.style.backgroundColor = "#2a2a2a"; };
+                    item.onmouseleave = () => { if (item.getAttribute("data-selected") !== "true") item.style.backgroundColor = "transparent"; };
+
+                    item.onclick = () => {
+                        textarea.focus();
+                        textarea.setSelectionRange(absoluteIdx, absoluteIdx + query.length);
+                        scrollToIndex(absoluteIdx);
+                        searchIndex = absoluteIdx;
+                        updateActiveLine();
+                        updateSidebarSelection();
+                    };
+
+                    listFragment.appendChild(item); // ⭕ フラグメントに溜める（DOM操作なし）
+                }
+                start = idx + query.length;
+            }
+            absoluteOffset += line.length + 1;
+        });
+
+        // 2. ループ終了後、DOMへの一括追加をそれぞれ1回だけ行う
+        innerContainer.appendChild(highlightFragment);
+
+        if (searchResultsList && matchCount > 0) {
+            searchResultsList.appendChild(listFragment);
+            searchResultsList.style.display = "block";
+        }
+
+        if (searchStatus) {
+            if (matchCount > 0) {
+                searchStatus.style.color = "#aaa";
+                searchStatus.textContent = `${matchCount} 件見つかりました` + (matchCount > MAX_HIGHLIGHT_DOMS ? " (一部のみ強調)" : "");
+            } else {
+                searchStatus.style.color = "#f66";
+                searchStatus.textContent = `"${query}" は見つかりません`;
+            }
+        }
+
+        errorOverlay.appendChild(innerContainer);
+
+        if (highlightLayer) {
+            highlightLayer.scrollTop = textarea.scrollTop;
+            highlightLayer.scrollLeft = textarea.scrollLeft;
+        }
+    }
+
+
+    function scrollToIndex(index) {
+        const textUpToIndex = textarea.value.slice(0, index);
+        const lineNumber = textUpToIndex.split("\n").length - 1;
+        const lineHeight = parseFloat(getComputedStyle(textarea).lineHeight) || 18;
+        const paddingTop = parseFloat(getComputedStyle(textarea).paddingTop) || 0;
+
+        textarea.scrollTop = lineNumber * lineHeight - paddingTop;
+    }
+    function findNext() {
+        if (!searchQuery || !activeTab) return;
+
+        const text = textarea.value;
+        // 【圧倒的軽量化】検索のたびに毎回全文を小文字変換するのを防ぐため、一度だけ変数に格納
+        const lowerText = text.toLowerCase();
+        const lowerQuery = searchQuery.toLowerCase();
+
+        let startPos = searchIndex + 1;
+        if (startPos >= text.length) startPos = 0;
+
+        let index = lowerText.indexOf(lowerQuery, startPos);
+
+        if (index === -1) {
+            index = lowerText.indexOf(lowerQuery, 0);
+        }
+
+        if (index !== -1) {
+            textarea.setSelectionRange(index, index + searchQuery.length);
+            scrollToIndex(index);
+            searchIndex = index;
+            if (searchStatus) searchStatus.textContent = ""; // 見つかったのでクリア
+        } else {
+            searchIndex = -1;
+            if (searchStatus) searchStatus.textContent = `"${searchQuery}" は見つかりません`; // 見つからない場合
+        }
+
+        updateActiveLine();
+        updateSidebarSelection();
+    }
+
+    function findPrevious() {
+        if (!searchQuery || !activeTab) return;
+
+        const text = textarea.value;
+        // 【圧倒的軽量化】こちらも同様に変数に格納して再利用
+        const lowerText = text.toLowerCase();
+        const lowerQuery = searchQuery.toLowerCase();
+
+        let startPos = searchIndex - 1;
+        if (startPos < 0) startPos = text.length - 1;
+
+        let index = lowerText.lastIndexOf(lowerQuery, startPos);
+
+        if (index === -1) {
+            index = lowerText.lastIndexOf(lowerQuery, text.length);
+        }
+
+        if (index !== -1) {
+            textarea.setSelectionRange(index, index + searchQuery.length);
+            scrollToIndex(index);
+            searchIndex = index;
+            if (searchStatus) searchStatus.textContent = "";
+        } else {
+            searchIndex = -1;
+            if (searchStatus) searchStatus.textContent = `"${searchQuery}" は見つかりません`;
+        }
+        updateActiveLine();
+        updateSidebarSelection();
+    }
+
+    /* =========================
+       Error Highlight
+    ========================== */
+    function clearErrorHighlights() { errorOverlay.innerHTML = ""; }
+    function showErrors(errors = []) {
+        clearErrorHighlights();
+        const lineHeight = parseFloat(getComputedStyle(textarea).lineHeight) || 18;
+        errors.forEach(err => {
+            const div = document.createElement("div");
+            div.style.position = "absolute";
+            div.style.left = "0";
+            div.style.right = "0";
+            div.style.top = (err.line - 1) * lineHeight + "px";
+            div.style.height = lineHeight + "px";
+            div.style.backgroundColor = "rgba(255,0,0,0.3)";
+            errorOverlay.appendChild(div);
+        });
+    }
+
+    // CodeEditor関数内の上部（変数定義エリア）にタイマー変数を追加
+    let highlightTimer = null;
+
+    // --- 修正後の input イベント ---
+    textarea.addEventListener("input", () => {
+        if (!activeTab) return;
+        activeTab.content = textarea.value;
+
+        // 軽い処理（フラグ変更や行番号更新）は即座に行う
+        if (!activeTab.dirty) {
+            activeTab.dirty = true;
+            dirty = true;
+            renderTabs();
+        }
+        updateTitle();
+        updateLineNumbers();
+
+        // 重い処理（ハイライト、検索、ミニマップ）はタイマーで遅延実行
+        clearTimeout(highlightTimer);
+        highlightTimer = setTimeout(() => {
+            // 1. シンタックスハイライト
+            applySyntaxHighlight();
+
+            // 2. 検索ヒットのハイライト
+            if (searchQuery && searchQuery.trim() !== "") {
+                highlightSearchMatches(searchQuery);
+            } else {
+                clearErrorHighlights();
+                highlightLayer = null;
+            }
+
+            // 3. ミニマップの更新
+            requestAnimationFrame(updateMinimap);
+        }, 0); // 0ms 入力が止まったら実行
+    });
+
+    textarea.addEventListener("click", () => {
+        updateActiveLine();
+        updateSidebarSelection();
+    });
+
+    textarea.addEventListener("keyup", (e) => {
+        // 十字キーなどのカーソル移動で行が変わった場合
+        if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "Home", "End", "PageUp", "PageDown"].includes(e.key)) {
+            updateActiveLine();
+            updateSidebarSelection();
+        }
+    });
+
+    textarea.addEventListener("focus", updateActiveLine);
+
+    textarea.addEventListener("keydown", (e) => {
+        if (e.key === "Tab") {
+            e.preventDefault();
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+
+            // 選択範囲にタブ文字を挿入
+            textarea.setRangeText("\t", start, end, "end");
+
+            // 内容が変わったので input イベントを手動で発生させて dirty フラグを更新
+            textarea.dispatchEvent(new Event("input"));
+        }
+        if (e.key === "Enter") {
+            // 改行処理自体は textarea のデフォルト挙動に任せるため preventDefault はしません
+            requestAnimationFrame(() => {
+                updateActiveLine();
+                updateSidebarSelection();
+            });
+        }
+        if (e.key === "Backspace" || e.key === "Delete") {
+            requestAnimationFrame(() => {
+                updateActiveLine();
+                updateSidebarSelection();
+            });
+        }
+        if (e.ctrlKey && e.key === "f") {
+            e.preventDefault();
+
+            const q = prompt("検索");
+            if (!q) return;
+
+            searchQuery = q;
+            searchIndex = -1;
+            findNext();
+        }
+
+        if (e.key === "F3") {
+            e.preventDefault();
+            findNext();
+        }
+    });
+
+
+    /* =========================
+       Preview
+    ========================== */
+    function openPreview() {
+        if (previewWin && document.body.contains(previewWin)) { renderPreview(); bringToFront(previewWin); return; }
+        const content = createWindow("Preview", {
+            width: 800,
+            height: 520,
+            taskbar: false,
+            disableMinimize: true
+        });
+        previewWin = content.parentElement;
+        previewIframe = document.createElement("iframe");
+        Object.assign(previewIframe.style, { width: "100%", height: "100%", border: "none", background: "white", display: "block" });
+        content.appendChild(previewIframe);
+        renderPreview();
+    }
+
+    /* =========================
+    Preview (最新版: img src & バイナリ対応)
+ ========================= */
+    // CodeEditor関数の上部（他の変数宣言のあたり）に配置してください
+    let previewHtmlPath = null;
+    let lastHtmlBlobUrl = null;
+
+    async function renderPreview() {
+        if (!previewIframe || !filePath || isDestroyed) return;
+
+        const oldBlobs = new Map(previewBlobMap);
+        const baseDir = getDirPath(filePath);
+        const fsFiles = collectFilesRecursive(baseDir);
+        if (!fsFiles.size) return;
+
+        // エディタのタブにある最新の内容を最優先で反映
+        tabs.forEach(t => {
+            if (fsFiles.has(t.path)) {
+                fsFiles.set(t.path, t.content);
+            }
+        });
+
+        previewBlobMap.clear();
+
+        // 外部データ(__EXTERNAL_DATA__)の非同期ロード
+        const loadPromises = [];
+        for (const [fullPath, content] of fsFiles.entries()) {
+            if (content === "__EXTERNAL_DATA__") {
+                loadPromises.push(
+                    getFileContent(fullPath).then(realContent => {
+                        if (isDestroyed) return;
+                        const node = resolveFS(fullPath);
+                        if (node) node.content = realContent;
+                        fsFiles.set(fullPath, realContent);
+                    }).catch(e => {
+                        console.error(`Preview load error: ${fullPath}`, e);
+                        fsFiles.set(fullPath, "");
+                    })
+                );
+            }
+        }
+
+        try {
+            await Promise.all(loadPromises);
+        } catch (err) {
+            console.error("Preview external data load failed:", err);
+        }
+
+        if (isDestroyed || !previewIframe) return;
+
+        // すべてのファイルの Blob URL を生成
+        for (let [fullPath, content] of fsFiles.entries()) {
+            const name = fullPath.split("/").pop();
+            const mime = getMimeType(name);
+
+            let blob;
+            if (content instanceof Uint8Array || content instanceof ArrayBuffer || content instanceof Blob) {
+                blob = new Blob([content], { type: mime });
+            } else {
+                blob = new Blob([String(content ?? "")], { type: mime });
+            }
+
+            const url = URL.createObjectURL(blob);
+            previewBlobMap.set(fullPath, url);
+        }
+
+        // アクティブなタブが HTML の場合はそれを優先し、違えば「直前にプレビューしていた HTML」を維持する
+        if (activeTab?.path && /\.(html|htm)$/i.test(activeTab.path)) {
+            previewHtmlPath = activeTab.path;
+        } else if (!previewHtmlPath || !fsFiles.has(previewHtmlPath)) {
+            previewHtmlPath = [...previewBlobMap.keys()].find(p => /\.(html|htm)$/i.test(p));
+        }
+
+        if (!previewHtmlPath) return;
+
+        let html = fsFiles.get(previewHtmlPath);
+        if (typeof html !== "string") {
+            if (html instanceof Uint8Array) {
+                html = new TextDecoder().decode(html);
+            } else {
+                return;
+            }
+        }
+
+        // ウィンドウタイトルの更新
+        const titleMatch = html.match(/<title>(.*?)<\/title>/i);
+        const winTitleEl = previewWin?.querySelector(".title-text");
+        if (winTitleEl) {
+            winTitleEl.textContent = (titleMatch && titleMatch[1])
+                ? titleMatch[1]
+                : `Preview - ${previewHtmlPath.split("/").pop()}`;
+        }
+
+        // HTML内の相対パス（src, href）を Blob URL に置換
+        html = html.replace(/(src|href)=["']([^"']+)["']/gi, (match, attr, relPath) => {
+            if (/^(https?|data):/i.test(relPath)) return match;
+            const resolved = resolveRelativePath(previewHtmlPath, relPath);
+            const blobUrl = resolved ? previewBlobMap.get(resolved) : null;
+            return blobUrl ? `${attr}="${blobUrl}"` : match;
+        });
+
+        // CSS内の url() の相対パスを置換
+        html = html.replace(/url\(["']?([^"'\)]+)["']?\)/gi, (match, relPath) => {
+            if (/^(https?|data):/i.test(relPath)) return match;
+            const resolved = resolveRelativePath(previewHtmlPath, relPath);
+            const blobUrl = resolved ? previewBlobMap.get(resolved) : null;
+            return blobUrl ? `url("${blobUrl}")` : match;
+        });
+
+        const htmlBlobUrl = URL.createObjectURL(new Blob([html], { type: "text/html" }));
+
+        if (!previewIframe || isDestroyed) {
+            URL.revokeObjectURL(htmlBlobUrl);
+            return;
+        }
+
+        previewIframe.src = htmlBlobUrl;
+
+        // 読み込み完了後に古い Blob をすべて確実に解放（メモリリーク完全防止）
+        previewIframe.onload = () => {
+            for (const url of oldBlobs.values()) {
+                try { URL.revokeObjectURL(url); } catch { }
+            }
+            if (lastHtmlBlobUrl) {
+                try { URL.revokeObjectURL(lastHtmlBlobUrl); } catch { }
+            }
+            lastHtmlBlobUrl = htmlBlobUrl;
+        };
+    }
+
+    /* =========================
+       Sidebar
+    ========================== */
+    let sidebarRootDir = getDirPath(filePath) || filePath.split("/")[0];
+
+    function renderSidebar() {
+        sidebar.innerHTML = "";
+
+        // ===== VSCode風検索バー =====
+        const searchDiv = document.createElement("div");
+        searchDiv.style.padding = "4px 6px";
+        searchDiv.style.borderBottom = "1px solid #333";
+
+        const searchInput = document.createElement("input");
+        searchInput.type = "text";
+        searchInput.placeholder = "検索...";
+        Object.assign(searchInput.style, {
+            width: "100%",
+            padding: "4px",
+            boxSizing: "border-box",
+            background: "#222",
+            color: "#eee",
+            border: "1px solid #444",
+            borderRadius: "2px"
+        });
+
+        // 検索ステータス用
+        const statusDiv = document.createElement("div");
+        statusDiv.className = "search-status";
+        Object.assign(statusDiv.style, {
+            fontSize: "12px",
+            color: "#888", // 通常時はグレー
+            marginTop: "4px",
+            minHeight: "16px",
+            display: "flex",
+            justifyContent: "space-between" // 右側に件数を出すため
+        });
+        searchStatus = statusDiv;
+
+        const resultsDiv = document.createElement("div");
+        Object.assign(resultsDiv.style, {
+            maxHeight: "300px", // 必要に応じて調整
+            overflowY: "auto",
+            marginTop: "8px",
+            fontSize: "12px",
+            color: "#ccc",
+            display: "none", // 初期は非表示
+            borderBottom: "1px solid #333"
+        });
+        searchResultsList = resultsDiv;
+
+        searchDiv.appendChild(searchInput);
+        searchDiv.appendChild(statusDiv);
+        searchDiv.appendChild(searchResultsList);
+        sidebar.appendChild(searchDiv);
+
+        // Enter / Shift+Enter 検索
+        searchInput.addEventListener("keydown", (e) => {
+            if (!activeTab) return;
+            if (e.key === "Enter") {
+                e.preventDefault();
+                searchQuery = searchInput.value;
+                if (e.shiftKey) findPrevious();
+                else findNext();
+            }
+        });
+        // sidebar内のsearchInputのイベント
+        searchInput.addEventListener("input", () => {
+            searchQuery = searchInput.value;
+            selectedSearchLine = -1;
+
+            // 入力欄が空になったら、表示もハイライトも即座に消す
+            if (!searchQuery || searchQuery.trim() === "") {
+                clearErrorHighlights();
+                if (searchStatus) searchStatus.textContent = "";
+                // ★追加: 検索リストも非表示にしてクリアする
+                if (searchResultsList) {
+                    searchResultsList.innerHTML = "";
+                    searchResultsList.style.display = "none";
+                }
+                highlightLayer = null;
+            } else {
+                highlightSearchMatches(searchQuery);
+            }
+        });
+        if (!sidebarRootDir) return;
+
+        function buildTree(path, visited = new Set(), depth = 0) {
+            if (!path || visited.has(path) || depth > 20) return null;
+            visited.add(path);
+            const node = resolveFS(path);
+            if (!node) return null;
+            const treeNode = { name: path.split("/").pop(), path, type: node.type, children: [] };
+            if (node.type === "folder") {
+                for (const key of Object.keys(node)) {
+                    if (key === "type") continue;
+                    const childPath = path ? `${path}/${key}` : key;
+                    const childTree = buildTree(childPath, visited, depth + 1);
+                    if (childTree) treeNode.children.push(childTree);
+                }
+            }
+            return treeNode;
+        }
+
+        const treeRoot = buildTree(sidebarRootDir);
+        if (!treeRoot) return;
+
+        function createList(treeNode) {
+            const li = document.createElement("li");
+            li.textContent = treeNode.name;
+            li.style.cursor = treeNode.type === "file" ? "pointer" : "default";
+
+            if (treeNode.type === "file") {
+                li.onclick = async e => { // asyncを追加
+                    e.stopPropagation();
+                    let tab = tabs.find(t => t.path === treeNode.path);
+                    if (!tab) {
+                        const node = resolveFS(treeNode.path);
+                        if (!node) return;
+
+                        // ★ ここで実体を取得
+                        let content = node.content;
+                        if (content === "__EXTERNAL_DATA__") {
+                            try {
+                                content = await getFileContent(treeNode.path);
+                                node.content = content; // キャッシュに書き戻す
+                            } catch (err) {
+                                content = "Error loading file.";
+                            }
+                        }
+
+                        tab = { name: treeNode.name, path: treeNode.path, node, content: String(content ?? ""), dirty: false };
+                        tabs.push(tab);
+                    }
+                    switchTab(tab);
+                    renderTabs();
+                };
+            }
+
+            if (treeNode.children.length) {
+                const ul = document.createElement("ul");
+                ul.style.listStyle = "none";
+                ul.style.paddingLeft = "12px";
+                treeNode.children.forEach(child => ul.appendChild(createList(child)));
+                li.appendChild(ul);
+
+                if (treeNode.type === "folder") {
+                    li.style.cursor = "pointer";
+                    ul.style.display = openedFolders.has(treeNode.path) ? "block" : "none";
+                    li.onclick = e => {
+                        e.stopPropagation();
+                        const isOpen = ul.style.display !== "none";
+                        ul.style.display = isOpen ? "none" : "block";
+                        if (!isOpen) openedFolders.add(treeNode.path);
+                        else openedFolders.delete(treeNode.path);
+                    };
+                }
+            }
+            return li;
+        }
+
+        const ulRoot = document.createElement("ul");
+        ulRoot.style.listStyle = "none";
+        ulRoot.style.paddingLeft = "6px";
+        ulRoot.appendChild(createList(treeRoot));
+        sidebar.appendChild(ulRoot);
+    }
+    /* =========================
+           Activity Bar & Sidebar Logic
+        ========================== */
+    const searchTrigger = root.querySelector(".search-trigger");
+    const searchSvg = root.querySelector(".search-svg");
+
+    function toggleSidebarWithSearch() {
+        const isHidden = sidebar.style.display === "none";
+
+        if (isHidden) {
+            // サイドバーを開く
+            sidebar.style.display = "block";
+            searchTrigger.style.borderLeft = "2px solid #fff";
+            searchSvg.setAttribute("stroke", "#fff"); // アイコンを白に
+            renderSidebar();
+            // 検索窓へのフォーカス
+            setTimeout(() => sidebar.querySelector("input")?.focus(), 10);
+        } else {
+            // サイドバーを閉じる
+            sidebar.style.display = "none";
+            searchTrigger.style.borderLeft = "2px solid transparent";
+            searchSvg.setAttribute("stroke", "#888"); // アイコンをグレーに
+        }
+    }
+
+    // アイコンクリック
+    searchTrigger.addEventListener("click", toggleSidebarWithSearch);
+
+    // ホバーエフェクト（サイドバーが閉じている時だけ少し明るくする）
+    searchTrigger.onmouseenter = () => {
+        if (sidebar.style.display === "none") searchSvg.setAttribute("stroke", "#ccc");
+    };
+    searchTrigger.onmouseleave = () => {
+        if (sidebar.style.display === "none") searchSvg.setAttribute("stroke", "#888");
+    };
+    /* =========================
+       Ribbon
+    ========================== */
+    if (win) {
+        const reloadPreview = () => {
+            if (previewWin && document.body.contains(previewWin)) {
+                renderPreview(); // 既存のプレビューがあれば中身を更新
+                bringToFront(previewWin);
+            } else {
+                openPreview(); // なければ新規で開く
+            }
+        };
+        setupRibbon(win, () => filePath, null, [
+            {
+                title: "File", items: [
+                    { label: "Save", action: save },
+                    { label: "Preview", action: openPreview },
+                    { label: "Reload Preview", action: reloadPreview }
+                ]
+            },
+            {
+                title: "View", items: [
+                    { label: "Toggle Sidebar (Search)", action: toggleSidebarWithSearch }
+                ]
+            }
+        ]);
+    }
+
+    sidebar.style.display = "none";
+
+    /* =========================
+           FS変更 → タブ自動同期（無限ループ防止ガード付き・修正版）
+        ========================== */
+    let isSyncingFS = false;
+
+    function syncTabsWithFS() {
+        // すでに同期処理中の場合はイベントの連鎖ループを防ぐため即座にリターン
+        if (isSyncingFS) return;
+        isSyncingFS = true;
+
+        try {
+            let activeTabWasUpdated = false;
+
+            // 【修正】tabs.length 1 のタイポを tabs.length - 1 に修正
+            for (let i = tabs.length - 1; i >= 0; i--) {
+                const tab = tabs[i];
+                const node = resolveFS(tab.path);
+
+                if (node) {
+                    if (activeTab && tab.path === activeTab.path) {
+                        // nodeの内容がメモリ上のタブ内容と異なる場合、同期してフラグを立てる
+                        if (activeTab.content !== node.content) {
+                            activeTab.content = String(node.content ?? "");
+                            textarea.value = activeTab.content;
+                            activeTabWasUpdated = true;
+                        }
+                    }
+                    tab.node = node;
+                    tab.content = String(node.content ?? "");
+                } else {
+                    if (activeTab === tab) activeTab = null;
+                    tabs.splice(i, 1);
+                    activeTabWasUpdated = true; // タブが消滅した場合もUI更新が必要
+                }
+            }
+
+            if (!activeTab && tabs.length) {
+                activeTab = tabs[0];
+                textarea.value = activeTab.content;
+                updateLineNumbers();
+                baseTitle = activeTab.name;
+                activeTabWasUpdated = true;
+            }
+
+            renderTabs();
+            updateTitle();
+
+            // ★ ハイライトの更新
+            if (activeTabWasUpdated) {
+                // シンタックスハイライトの再適用
+                applySyntaxHighlight();
+
+                // 検索中のワードがあれば、新しい内容に対してハイライトを再描画
+                if (searchQuery && searchQuery.trim() !== "") {
+                    highlightSearchMatches(searchQuery);
+                } else {
+                    clearErrorHighlights();
+                }
+
+                // プレビューの更新
+                if (previewWin && document.body.contains(previewWin)) {
+                    renderPreview();
+                }
+
+                // ミニマップも更新
+                requestAnimationFrame(updateMinimap);
+            }
+
+            if (sidebar.style.display !== "none") {
+                renderSidebar();
+            }
+        } finally {
+            // 一定時間ロックを保持し、連続で発火するイベントループを遮断
+            setTimeout(() => {
+                isSyncingFS = false;
+            }, 50);
+        }
+    }
+
+    // イベントリスナーの登録
+    window.addEventListener("fs-updated", syncTabsWithFS);
+
+    /* =========================
+       Close & Cleanup
+    ========================== */
+    function requestClose() {
+        if (!dirty) { closeWin(); return; }
+        showModalWindow("Save Changes", "編集中の内容があります。\n保存しますか？", {
+            parentWin: win,
+            buttons: [
+                {
+                    label: "保存",
+                    onClick: async () => {
+                        await save();
+                        closeWin();
+                    }
+                },
+                {
+                    label: "保存しない",
+                    onClick: () => {
+                        dirty = false; // 破棄フラグ
+                        renderTabs();
+                        updateTitle();
+                        closeWin();
+                    }
+                },
+                {
+                    label: "キャンセル",
+                    onClick: () => {
+                        // 何もしない（ダイアログが閉じるだけ）
+                    }
+                }
+            ]
+        });
+    }
+    function closeWin() {
+        if (previewWin && document.body.contains(previewWin)) {
+            if (previewIframe) {
+                previewIframe.src = "about:blank"; // JSコンテキストを強制破棄
+                previewIframe = null;
+            }
+            previewWin.remove();
+            previewWin = null;
+        }
+        win?.querySelector(".close-btn")?.click();
+    }
+    const closeBtn = win?.querySelector(".close-btn");
+    closeBtn?.addEventListener("click", e => {
+        if (!dirty) return;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        requestClose();
+    }, true);
+
+    win?.addEventListener("keydown", e => {
+        if (e.altKey && e.key === "F4") { e.preventDefault(); requestClose(); }
+        if (e.ctrlKey && e.key.toLowerCase() === "s") { e.preventDefault(); save(); }
+        if (e.ctrlKey && e.key === "Enter") { e.preventDefault(); openPreview(); }
+        if (e.ctrlKey && e.key.toLowerCase() === "r") {
+            e.preventDefault();
+            if (previewWin && document.body.contains(previewWin)) {
+                renderPreview();
+            }
+        }
+    });
+
+    // クリーンアップ処理を関数化（kernelの killProcess から呼び出されます）
+    const cleanup = () => {
+        if (isDestroyed) return;
+        isDestroyed = true;
+
+        // 2. cleanup (dispose) 時にドラッグ中であれば強制解除
+        if (minimapMouseMoveHandler) window.removeEventListener("mousemove", minimapMouseMoveHandler);
+        if (minimapMouseUpHandler) window.removeEventListener("mouseup", minimapMouseUpHandler);
+
+        if (highlightTask) cancelAnimationFrame(highlightTask);
+        if (highlightTimer) clearTimeout(highlightTimer);
+
+        for (const url of previewBlobMap.values()) {
+            try { URL.revokeObjectURL(url); } catch { }
+        }
+        previewBlobMap.clear();
+
+        tabs.length = 0;
+        activeTab = null;
+
+        window.removeEventListener("fs-updated", syncTabsWithFS);
+        ro.disconnect();
+
+        if (previewWin) {
+            if (previewIframe) {
+                previewIframe.src = "about:blank";
+                previewIframe = null;
+            }
+            previewWin.remove();
+            previewWin = null;
+        }
+    };
+
+    /* =========================
+          実体取得を含む初期化処理
+       ========================== */
+    async function init() {
+        if (!filePath || !fileNode) return;
+
+        // 1. メインファイルの実体を取得
+        if (fileNode.content === "__EXTERNAL_DATA__") {
+            try {
+                const realContent = await getFileContent(filePath);
+                if (isDestroyed) return; // ⭐ 既にエディタが閉じられていれば破棄
+
+                fileNode.content = realContent;
+                if (activeTab && activeTab.path === filePath) {
+                    activeTab.content = String(realContent ?? "");
+                    textarea.value = activeTab.content;
+                    updateLineNumbers();
+                    applySyntaxHighlight();
+                    requestAnimationFrame(updateMinimap);
+                }
+            } catch (e) { console.error("Load error:", e); }
+        }
+
+        // 2. リンクされているファイルを再帰的に検索して tabs に追加
+        const dirPath = getDirPath(filePath);
+        addLinkedFilesToTabs(dirPath, fileNode.content);
+
+        // 3. 全てのタブをチェックし、__EXTERNAL_DATA__ が残っていれば取得
+        await Promise.all(tabs.map(async (tab) => {
+            if (tab.node && tab.node.content === "__EXTERNAL_DATA__") {
+                try {
+                    const content = await getFileContent(tab.path);
+                    tab.node.content = content;
+                    tab.content = content;
+
+                    if (activeTab === tab) {
+                        textarea.value = content;
+                        updateLineNumbers();
+                    }
+                } catch (e) {
+                    console.error(`Failed to load: ${tab.path}`, e);
+                }
+            }
+        }));
+
+        renderTabs();
+        updateTitle();
+        // ★追加: すべての初期化処理が終わった後、確実に行番号を最新にする
+        updateLineNumbers();
+        renderPreview();
+        applySyntaxHighlight();
+        requestAnimationFrame(updateMinimap);
+    }
+
+    // 実行
+    window.addEventListener("fs-updated", syncTabsWithFS);
+    init();
+    requestAnimationFrame(() => {
+        updateMinimap();
+    });
+    return {
+        isTabApp: true,
+        /**
+         * 外部（kernel）から新しいファイルを開くよう要求された時の処理
+         * @param {string} newFilePath - 開きたいファイルのフルパス
+         */
+        openNewTab: async (newFilePath) => {
+            const newNode = resolveFS(newFilePath);
+            if (!newNode || newNode.type !== "file") return;
+
+            // すでにタブが開いているか確認
+            const existingTab = tabs.find(t => t.path === newFilePath);
+            if (existingTab) {
+                // すでに開いていればそのタブを選択
+                activeTab = existingTab;
+            } else {
+                // 新しいタブとして追加
+                const newTab = {
+                    name: newFilePath.split("/").pop(),
+                    path: newFilePath,
+                    content: newNode.content,
+                    node: newNode,
+                    isModified: false
+                };
+
+                // もし content が "__EXTERNAL_DATA__" なら実体を取得
+                if (newNode.content === "__EXTERNAL_DATA__") {
+                    try {
+                        const realContent = await getFileContent(newFilePath);
+                        newTab.content = realContent;
+                        newNode.content = realContent;
+                    } catch (e) {
+                        console.error("Failed to load external data for new tab:", e);
+                    }
+                }
+
+                tabs.push(newTab);
+                activeTab = newTab;
+            }
+
+            // UIを更新
+            textarea.value = activeTab.content;
+            renderTabs();
+            updateTitle();
+            updateLineNumbers();
+            renderPreview();
+            applySyntaxHighlight();
+            requestAnimationFrame(updateMinimap);
+            // ウィンドウを前面に持ってくる（kernel側でも行っていますが念のため）
+            bringToFront(win);
+        },
+        dispose: cleanup
+    }
+}
+
+export function showConfirm(root, message, onYes, onNo) {
+    const parent = root.closest ? root.closest(".window") : null;
+    showModalWindow("Confirm", message, {
+        parentWin: parent,
+        buttons: [
+            { label: "はい", onClick: onYes },
+            { label: "いいえ", onClick: onNo }
+        ]
+    });
+}
