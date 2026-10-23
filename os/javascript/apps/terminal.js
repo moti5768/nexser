@@ -1019,6 +1019,31 @@ export default function TerminalApp(content) {
        Input Handling
     ========================= */
 
+    input.addEventListener("paste", async (e) => {
+        if (editorActive) return;
+
+        const pasteData = e.clipboardData.getData("text");
+        // 改行が含まれている場合のみ処理
+        if (pasteData && (pasteData.includes("\n") || pasteData.includes("\r"))) {
+            e.preventDefault(); // デフォルトの貼り付け動作を阻止
+
+            // 改行で分割し、空行や前後の空白を整理
+            const lines = pasteData.split(/\r?\n/);
+            input.value = ""; // 入力欄をクリア
+
+            for (const rawLine of lines) {
+                const cmd = rawLine.trim();
+                if (!cmd) continue; // 空行はスキップ
+
+                history.push(cmd);
+                hIndex = history.length;
+                print(cwd + "> " + cmd);
+                await exec(cmd); // 1行ずつ実行を待機
+                scrollToBottom();
+            }
+        }
+    });
+
     input.addEventListener("keydown", async e => {
         if (editorActive) {
             if (["Tab", "ArrowUp", "ArrowDown"].includes(e.key)) {
