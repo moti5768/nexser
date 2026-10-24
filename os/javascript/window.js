@@ -4,7 +4,7 @@ import { themeColor, themeColor2, inactiveThemeColor, inactiveThemeColor2 } from
 import { attachContextMenu } from "./context-menu.js";
 import { setupRibbon } from "./ribbon.js";
 import { killProcess } from "./kernel.js";
-import { playSystemEventSound } from './kernel.js';
+import { playSystemEventSound } from './sounds.js';
 import { getIcon } from "./file-associations.js";
 
 export const taskbarButtons = []; // 作られたボタンを全部保存

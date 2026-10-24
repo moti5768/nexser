@@ -1,5 +1,5 @@
 /* kernel.js : OSの中枢 */
-import { FS } from "./fs.js";
+import { playSystemEventSound } from './sounds.js';
 import { buildDesktop } from "./desktop.js";
 import { buildStartMenu, refreshStartMenu } from "./startmenu.js";
 import { initTaskbar } from "./taskbar.js";
@@ -13,7 +13,6 @@ import {
     destroyWindow
 } from "./window.js";
 import { showPromptScreen, resetSystemVerification } from "./boot.js";
-import { startup_sound } from "./sounds.js";
 import { addRecent } from "./recent.js";
 import { installDynamicButtonEffect } from "./ui.js";
 import { resolveFS, basename } from "./fs-utils.js";
@@ -672,75 +671,6 @@ export async function logOff() {
         );
     } else {
         performLogoff();
-    }
-}
-
-/**
- * FSに保存された音声データを再生する
- */
-export async function playSavedAudio(path) {
-    const file = resolveFS(`Programs/Music/${path}`);
-    if (file && file.content) {
-        let audioData = file.content;
-        if (audioData === "__EXTERNAL_DATA__") {
-            const { getFileContent } = await import("./fs-db.js");
-            audioData = await getFileContent(`Programs/Music/${path}`);
-        }
-        if (audioData) {
-            const audio = new Audio(audioData);
-            audio.play().catch(console.error);
-        }
-    }
-}
-
-/**
- * システムイベントに関連付けられた音声を再生する
- */
-export async function playSystemEventSound(eventName) {
-    try {
-        const configText = FS.System?.["SoundConfig.json"]?.content;
-        const config = JSON.parse(configText || "{}");
-        const path = config[eventName];
-
-        if (path) {
-            // resolveFS を使ってサブフォルダ階層のパスから安全にファイルを取得
-            const file = resolveFS(`Programs/Music/${path}`);
-            if (file) {
-                let audioData = file.content;
-
-                // 外部DBに保存されている実データを取得する
-                if (audioData === "__EXTERNAL_DATA__") {
-                    const { getFileContent } = await import("./fs-db.js");
-                    audioData = await getFileContent(`Programs/Music/${path}`);
-                }
-
-                if (audioData) {
-                    const audio = new Audio(audioData);
-                    audio.play().catch(err => {
-                        // オートプレイ制限 (NotAllowedError) への対処
-                        if (err.name === "NotAllowedError") {
-                            const playOnGesture = () => {
-                                audio.play();
-                            };
-                            document.addEventListener("click", playOnGesture, { once: true });
-                            document.addEventListener("keydown", playOnGesture, { once: true });
-                        }
-                    });
-                }
-            }
-        } else if (eventName === 'startup') {
-            try {
-                startup_sound();
-            } catch (e) {
-                const playBeepOnGesture = () => {
-                    startup_sound();
-                };
-                document.addEventListener("click", playBeepOnGesture, { once: true });
-                document.addEventListener("keydown", playBeepOnGesture, { once: true });
-            }
-        }
-    } catch (e) {
-        console.warn("Sound event failed", e);
     }
 }
 

@@ -1,6 +1,6 @@
 // boot.js
 import { initFS } from './fs.js';
-import { playSystemEventSound } from './kernel.js';
+import { playSystemEventSound } from './sounds.js';
 import { resolveFS, normalizePath as fsNormalizePath } from './fs-utils.js';
 import { loadSetting } from "./apps/settings.js";
 import { initScreensaver } from "./screensaver.js";
