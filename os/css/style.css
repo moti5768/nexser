@@ -954,11 +954,21 @@ input[type="checkbox"]:checked::after {
     background: silver;
 }
 
+/* Chrome, Safari, Edge用まとめ */
 body::-webkit-scrollbar,
-.scrollbar_none::-webkit-scrollbar,
-#screen::-webkit-scrollbar {
+#screen::-webkit-scrollbar,
+.scrollbar-none::-webkit-scrollbar {
     display: none;
-    z-index: 1;
+}
+
+/* Firefox & IE用まとめ */
+body,
+#screen,
+.scrollbar-none {
+    scrollbar-width: none;
+    /* Firefox用 */
+    -ms-overflow-style: none;
+    /* IE/旧Edge用 */
 }
 
 ::-webkit-resizer {
