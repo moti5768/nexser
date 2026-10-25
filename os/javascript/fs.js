@@ -13,6 +13,30 @@ export function setBulkUpdating(flag) {
     isBulkUpdating = flag;
 }
 
+// =========================================
+// 【NTFS風改善】ファイル排他ロック管理機構
+// =========================================
+const fileLocks = new Map(); // path -> { mode: "exclusive", pid: string }
+
+export function lockFile(path, mode = "exclusive", pid = "system") {
+    const current = fileLocks.get(path);
+    if (current && current.mode === "exclusive") {
+        console.warn(`[FS Lock] 共有違反: ${path} はすでにロックされています。`);
+        return false;
+    }
+    fileLocks.set(path, { mode, pid });
+    return true;
+}
+
+export function unlockFile(path, pid = "system") {
+    const current = fileLocks.get(path);
+    if (current && current.pid === pid) {
+        fileLocks.delete(path);
+        return true;
+    }
+    return false;
+}
+
 // 1. ベースデータ
 const baseFS = {
     System: {
@@ -159,20 +183,25 @@ function wrapProxy(obj, path = "") {
         },
 
         set(target, prop, value) {
-            // 【セキュリティ強化】プロトタイプ汚染攻撃をブロック
             if (prop === '__proto__' || prop === 'constructor' || prop === 'prototype') {
                 return false;
             }
 
             if (PROTECTED_KEYS.has(prop) && Object.hasOwn(target, prop)) return true;
 
-            // ★ 修正: 初期化中 (isInitializing) は勝手に lastModified を更新しない
+            // 【NTFS風改善】ファイルが排他ロックされている場合は書き込みを拒否
+            const currentPath = path ? `${path}/${prop}` : prop;
+            const lockInfo = fileLocks.get(currentPath);
+            if (lockInfo && lockInfo.mode === "exclusive") {
+                console.error(`[FS Error] 書き込み拒否: '${currentPath}' はロックされています。`);
+                return false;
+            }
+
             if (!isInitializing && prop !== "lastModified" && target[prop] !== value) {
                 target.lastModified = Date.now();
             }
             target[prop] = value;
 
-            // ✨ ここに !isBulkUpdating を追加
             if (!isSaving && !isInitializing && !isBulkUpdating) {
                 scheduleSave();
                 window.dispatchEvent(new Event("fs-updated"));
@@ -184,14 +213,21 @@ function wrapProxy(obj, path = "") {
             if (PROTECTED_KEYS.has(prop) || (target[prop] && target[prop].system === true)) {
                 return false;
             }
+
+            // 【NTFS風改善】削除時もロック中であればブロック
+            const currentPath = path ? `${path}/${prop}` : prop;
+            const lockInfo = fileLocks.get(currentPath);
+            if (lockInfo && lockInfo.mode === "exclusive") {
+                console.error(`[FS Error] 削除拒否: '${currentPath}' はロックされています。`);
+                return false;
+            }
+
             delete target[prop];
 
-            // ★ 修正: 初期化中は削除時も親の lastModified を更新しない
             if (!isInitializing) {
                 target.lastModified = Date.now();
             }
 
-            // ✨ ここにも !isBulkUpdating を追加
             if (!isSaving && !isInitializing && !isBulkUpdating) {
                 scheduleSave();
                 window.dispatchEvent(new Event("fs-updated"));
@@ -208,7 +244,6 @@ export const FS = wrapProxy(baseFS, "");
 
 // --- 同期（Sync）エンジン ---
 
-// ⭐ visited引数を追加し、WeakSetで循環参照をブロック
 function deepSync(currentProxy, savedNode, defaultNode, path = "", visited = new WeakSet()) {
     if (!currentProxy || typeof currentProxy !== "object" || visited.has(currentProxy)) return;
     visited.add(currentProxy);
@@ -248,7 +283,6 @@ function deepSync(currentProxy, savedNode, defaultNode, path = "", visited = new
                     }
                 }
 
-                // 再帰呼び出し時に visited を引き継ぐ
                 deepSync(currentProxy[key], savedValue, defaultValue, currentPath, visited);
             } else {
                 currentProxy[key] = savedValue;
@@ -276,9 +310,6 @@ function deepSync(currentProxy, savedNode, defaultNode, path = "", visited = new
 
 // --- 保存・初期化 ---
 
-/**
- * 実際の書き込み処理 (100%維持しつつ共通化)
- */
 async function performSave() {
     isSaving = true;
     try {
@@ -290,17 +321,13 @@ async function performSave() {
     } finally {
         isSaving = false;
 
-        // ★ 修正: 保存中に新たな変更が保留されていた場合、自動で再保存を走らせる
         if (pendingSave) {
             pendingSave = false;
-            // タイマーを介さず即座に performSave を再実行、または scheduleSave() を呼ぶ
             scheduleSave();
         }
     }
 }
-/**
- * 通常の遅延保存 (1秒待機)
- */
+
 let pendingSave = false;
 
 async function scheduleSave() {
@@ -322,18 +349,12 @@ async function scheduleSave() {
     }, 1000);
 }
 
-/**
- * 【追加・改善】強制即時保存 (リロード前の消失防止用、多重実行防止付き)
- */
 export async function forceSave() {
-    // 待機中のタイマーがあればクリアする
     if (saveTimer) {
         clearTimeout(saveTimer);
         saveTimer = null;
     }
 
-    // すでに別スレッド（非同期タスク）が保存実行中の場合は、
-    // 重複して performSave を呼ばずに pendingSave フラグを立てて終了する
     if (isSaving) {
         pendingSave = true;
         return;
@@ -346,7 +367,6 @@ export async function initFS() {
     const saved = await loadFS();
     const hasInitializedBefore = localStorage.getItem("nexser_installed") === "true";
 
-    // 1. ボリューム消失チェック（過去に起動した形跡があるのにデータが消えている場合）
     if (!saved && hasInitializedBefore) {
         console.error("[FS] Boot volume data is missing! Triggering BSOD.");
         const { showBSOD } = await import("./bsod.js");
@@ -354,26 +374,20 @@ export async function initFS() {
         return;
     }
 
-    // 2. 削除済みデフォルト項目の復元
     const savedDeletedDefaults = await dbGet("deleted_defaults", "kv");
     if (savedDeletedDefaults && Array.isArray(savedDeletedDefaults)) {
         deletedDefaults = new Set(savedDeletedDefaults);
     }
 
-    // 3. 初期化セッションの開始（保存・自動更新を一時ブロック）
     isSaving = true;
     isInitializing = true;
 
     try {
         if (!saved) {
-            // === 【本当の初回起動時】 ===
             localStorage.setItem("nexser_installed", "true");
             if (DEBUG_FS) console.log("[FS] First-time boot: Initializing and saving factory data...");
-
-            // 初回のみ、メモリ上の初期データ（baseFS）をIndexedDBへ確実に書き込む
             await performSave();
         } else {
-            // === 【2回目以降の起動】 ===
             localStorage.setItem("nexser_installed", "true");
             deepSync(FS, saved, FACTORY_FS, "", new WeakSet());
             if (DEBUG_FS) console.log("[FS] System synchronized successfully.");
@@ -385,33 +399,25 @@ export async function initFS() {
     } finally {
         isInitializing = false;
         isSaving = false;
-
-        // 最後に一度強制保存を行い、整合性を確定させる
         await performSave();
     }
 }
 
-/**
- * 【追加】システム診断 & ゴミデータクリーンアップエンジン
- * @param {boolean} executeRepair - 実際に削除・修復処理を行うフラグ
- */
 export async function diagnoseAndCleanFS(executeRepair = false) {
     const report = {
         garbageItems: 0,
-        garbageNames: [], // ★ 追加: 具体的な不要ファイル名のリスト
+        garbageNames: [],
         corruptionDetected: false,
         logs: []
     };
 
-    // 1. ゴミ箱 (Trash) のスキャン・クリーンアップ
     if (FS.Trash) {
         const trashKeys = Object.keys(FS.Trash).filter(key => !PROTECTED_KEYS.has(key));
         report.garbageItems += trashKeys.length;
-        report.garbageNames = trashKeys; // ★ 追加: 検出したファイル名を格納
+        report.garbageNames = trashKeys;
 
         if (executeRepair && trashKeys.length > 0) {
             trashKeys.forEach(key => {
-                // system属性を無視して強制安全削除
                 delete FS.Trash[key];
             });
             report.logs.push(`ゴミ箱から ${trashKeys.length} 個の項目を完全に削除しました。`);
@@ -420,7 +426,6 @@ export async function diagnoseAndCleanFS(executeRepair = false) {
         }
     }
 
-    // 2. システムコアディレクトリのデータ破損チェック
     const vitalNodes = ["System", "Desktop", "Programs", "StartMenu"];
     vitalNodes.forEach(node => {
         if (!FS[node] || FS[node].type !== "folder") {
@@ -453,22 +458,16 @@ export async function markDefaultDeleted(path) {
             break;
         }
     }
-    // ファクトリー側に実際に存在する項目であれば記録対象とする
     if (node) {
         deletedDefaults.add(path);
         await dbSet("deleted_defaults", Array.from(deletedDefaults), "kv").catch(e => console.error(e));
     }
 }
 
-// =========================================
-// ウィンドウ離脱・バックグラウンド・ウォッチドッグ統合管理
-// =========================================
 let watchdogInterval = null;
 
 if (typeof window !== "undefined") {
-    // 1. ページ離脱時（beforeunload）の処理
     window.addEventListener("beforeunload", () => {
-        // ウォッチドッグタイマーを確実にクリア
         if (watchdogInterval) {
             clearInterval(watchdogInterval);
             watchdogInterval = null;
@@ -486,34 +485,28 @@ if (typeof window !== "undefined") {
         forceSave().catch(e => console.error("[FS] Unload save failed:", e));
     });
 
-    // 2. バックグラウンド移行時（visibilitychange）の処理
     document.addEventListener("visibilitychange", () => {
         if (document.visibilityState === "hidden") {
             forceSave().catch(e => console.error("[FS] Background save failed:", e));
         }
     });
 
-    // 3. バックグラウンド・ファイルシステム監視ウォッチドッグ (3秒間隔)
     watchdogInterval = setInterval(async () => {
-        // 初期化中や保存中は誤検知を防ぐためスキップ
         if (isInitializing || isSaving) return;
 
         try {
             const hasInstalled = localStorage.getItem("nexser_installed") === "true";
             if (!hasInstalled) return;
 
-            // データベースから必須のシステムデータ（System）が取得できるかテスト
             const { dbGet } = await import("./fs-db.js");
             const sysData = await dbGet("fs_System", "kv");
 
-            // インストール済みフラグがあるのに、DB側のデータが外部から消去されている場合
             if (!sysData) {
                 console.error("[FS Watchdog] Critical: Boot volume or database has been deleted externally!");
                 const { showBSOD } = await import("./bsod.js");
                 showBSOD("UNMOUNTABLE_BOOT_VOLUME", new Error("Runtime boot volume storage or database has been deleted."));
             }
         } catch (e) {
-            // IndexedDBへのアクセス障害やデータベースの破壊を検知した場合
             console.error("[FS Watchdog] Critical: Storage access failure detected:", e);
             try {
                 const { showBSOD } = await import("./bsod.js");

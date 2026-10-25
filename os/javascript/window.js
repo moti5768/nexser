@@ -396,9 +396,18 @@ ${!options.hideStatus ? `
                     width: rect.width + "px"
                 });
 
-                // 4. アニメーション実行
+                // ★ ウィンドウのボーダー（枠線）の太さを取得して正確に計算に組み込む
+                const winStyle = window.getComputedStyle(w);
+                const borderLeft = parseFloat(winStyle.borderLeftWidth) || 0;
+                const borderTop = parseFloat(winStyle.borderTopWidth) || 0;
+
+                // 4. アニメーション実行（外枠位置からボーダー分を足し引きしてタイトルバーの正確な位置を算出）
                 animateTitleClone(clone,
-                    { left: w.offsetLeft, top: w.offsetTop, width: w.offsetWidth },
+                    {
+                        left: w.offsetLeft + borderLeft,
+                        top: w.offsetTop + borderTop,
+                        width: w.offsetWidth - (borderLeft * 2)
+                    },
                     undefined,
                     () => {
                         w.style.visibility = "visible"; // ここで本体を表示
@@ -974,19 +983,18 @@ export function bringToFront(win) {
 ========================= */
 
 function createTitleClone(w, titleBar, titleText) {
-    const rect = w.getBoundingClientRect();
+    const titleRect = titleBar.getBoundingClientRect(); // ★ タイトルバー自体の正確な座標を取得
     const clone = document.createElement("div");
 
-    // 1. タイトルバーとテキストの「計算済みスタイル」を精密に取得
     const titleBarStyles = getComputedStyle(titleBar);
     const titleTextStyles = getComputedStyle(titleText);
 
     Object.assign(clone.style, {
         position: "fixed",
-        left: rect.left + "px",
-        top: rect.top + "px",
-        width: rect.width + "px",
-        height: titleBar.offsetHeight + "px",
+        left: titleRect.left + "px",   // ★ タイトルバーの正確な左座標
+        top: titleRect.top + "px",     // ★ タイトルバーの正確な上座標
+        width: titleRect.width + "px", // ★ タイトルバーの正確な幅
+        height: titleRect.height + "px",
         background: titleBarStyles.background,
         color: titleBarStyles.color,
         display: "flex",
@@ -1001,11 +1009,11 @@ function createTitleClone(w, titleBar, titleText) {
     // 2. 内容をコピー
     clone.innerHTML = titleBar.innerHTML;
 
-    // 3. 【重要】複製されたテキスト要素に元のフォントを強制適用
+    // 3. 複製されたテキスト要素に元のフォントを強制適用
     const clonedText = clone.querySelector(".title-text");
     if (clonedText) {
         Object.assign(clonedText.style, {
-            font: titleTextStyles.font, // font-family, size, weightを一括適用
+            font: titleTextStyles.font,
             letterSpacing: titleTextStyles.letterSpacing,
             lineHeight: titleTextStyles.lineHeight,
             flex: "1",
@@ -1015,7 +1023,6 @@ function createTitleClone(w, titleBar, titleText) {
         });
     }
 
-    // 不要なコントロールを非表示
     const controls = clone.querySelector(".window-controls");
     if (controls) {
         controls.style.display = "none";
