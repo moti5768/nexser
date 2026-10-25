@@ -803,20 +803,19 @@ button,
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
-    list-style: none;
     display: inline-block;
-    color: black;
+    color: #000;
     background-color: #C3C7CB;
-    border: 1.5px solid #808080;
+    border: 1.5px solid;
     border-color: #fff #808080 #808080 #fff;
-    box-shadow: 0.5px 0.5px black;
+    box-shadow: 0.5px 0.5px #000;
     font-family: 'MS PGothic', 'MS Gothic', sans-serif;
+    box-sizing: border-box;
 }
 
 button.pressed,
 .button.pressed,
 .button2.pressed {
-    border: 1.5px solid;
     border-color: #7a7a7a #fff #fff #7a7a7a;
     box-shadow: 0.5px 0.5px 0 #000 inset;
     transform: translate(0.5px, 0.5px);
