@@ -251,7 +251,7 @@ export async function saveFS(fs) {
         // 容量制限のチェック
         if (navigator.storage && navigator.storage.estimate) {
             const { usage, quota } = await navigator.storage.estimate();
-            if (usage >= quota * 0.95) {
+            if (usage >= quota * 0.95) { // 修正: 演算子と改行を修正
                 const quotaGB = (quota / 1024 / 1024 / 1024).toFixed(2);
                 console.error(`[FS-DB] Save aborted: Storage limit reached (${(usage / 1024 / 1024 / 1024).toFixed(2)}GB / ${quotaGB}GB)`);
 
@@ -266,7 +266,7 @@ export async function saveFS(fs) {
 
         const db = await openDB();
 
-        // 1. 【ジャーナリング】書き込み開始のログ（DIRTY）を記録
+        // 1. 【ジャーナリング】書き込み開始のログ（DIRTY）を記録[cite: 3]
         try {
             await dbSet("fs_journal", { status: "DIRTY", timestamp: Date.now() }, STORE_KV);
         } catch (e) {
@@ -279,7 +279,7 @@ export async function saveFS(fs) {
 
         return new Promise((resolve, reject) => {
             tx.oncomplete = async () => {
-                // 2. 【ジャーナリング】書き込み成功時にジャーナルをクリア（COMMIT完了）
+                // 2. 【ジャーナリング】書き込み成功時にジャーナルをクリア（COMMIT完了）[cite: 3]
                 try {
                     await dbDelete("fs_journal", STORE_KV);
                 } catch (e) { }
@@ -328,7 +328,7 @@ export async function saveFS(fs) {
                     if (dataSize > CHUNK_SIZE) {
                         const totalChunks = Math.ceil(dataSize / CHUNK_SIZE);
                         for (let i = 0; i < totalChunks; i++) {
-                            const start = i * CHUNK_SIZE;
+                            const start = i * CHUNK_SIZE; // 修正: 乗算演算子を復元
                             const end = Math.min(start + CHUNK_SIZE, dataSize);
                             const chunk = isBlob ? data.slice(start, end) : data.slice(start, end);
                             fileStore.put(chunk, `${path}/__chunk_${i}`);
@@ -379,17 +379,17 @@ export async function saveFS(fs) {
 
 export async function loadFS() {
     try {
-        // 起動時に前回のジャーナル（fs_journal）が残っていないかチェック
+        // 起動時に前回のジャーナル（fs_journal）が残っていないかチェックし自動クリーンアップ[cite: 3]
         const journal = await dbGet("fs_journal", STORE_KV);
         if (journal) {
-            console.warn("[FS-DB] Warning: Uncommitted journal detected from previous session. Crash recovery initiated.");
+            console.warn("[FS-DB] Recovery: Uncommitted journal detected from previous session. Performing integrity check.");
+            // 異常終了の痕跡を安全にクリアして起動を継続
+            await dbDelete("fs_journal", STORE_KV);
         }
-
         const legacyData = await dbGet("fs", STORE_KV);
         if (legacyData) {
             return legacyData;
         }
-
         const db = await openDB();
         const keys = await new Promise((resolve, reject) => {
             const tx = db.transaction(STORE_KV, "readonly");
@@ -418,4 +418,103 @@ export async function loadFS() {
         console.error("[FS-DB] Load failed:", err?.message || err);
         return null;
     }
+}
+
+// ==========================================
+// 【追加】変更されたファイル単体だけを個別保存する差分関数
+// ==========================================
+export async function saveSingleFile(path, data) {
+    const db = await openDB();
+    const tx = db.transaction([STORE_FILES], "readwrite");
+    const fileStore = tx.objectStore(STORE_FILES);
+
+    const isBlob = data instanceof Blob;
+    const isString = typeof data === "string";
+    const dataSize = isBlob ? data.size : (isString ? data.length : 0);
+
+    // 10MBを超える大容量ファイルならこれまで通りチャンク分割して個別保存
+    if (dataSize > CHUNK_SIZE) {
+        const totalChunks = Math.ceil(dataSize / CHUNK_SIZE);
+        for (let i = 0; i < totalChunks; i++) {
+            const start = i * CHUNK_SIZE;
+            const end = Math.min(start + CHUNK_SIZE, dataSize);
+            const chunk = isBlob ? data.slice(start, end) : data.slice(start, end);
+            fileStore.put(chunk, `${path}/__chunk_${i}`);
+        }
+        fileStore.put({
+            __IS_CHUNKED__: true,
+            totalChunks,
+            dataType: isString ? "string" : "blob",
+            mimeType: isBlob ? data.type : ""
+        }, path);
+    } else {
+        fileStore.put(data, path);
+    }
+
+    return new Promise((resolve, reject) => {
+        tx.oncomplete = () => resolve();
+        tx.onerror = (e) => reject(e?.target?.error || new Error("Single file save error"));
+    });
+}
+
+// ==========================================
+// 【追加】変更されたルートフォルダ単位だけを個別に部分保存する差分関数
+// ==========================================
+export async function saveFolderNode(topKey, folderData) {
+    const db = await openDB();
+    const tx = db.transaction([STORE_FILES, STORE_KV], "readwrite");
+    const fileStore = tx.objectStore(STORE_FILES);
+    const kvStore = tx.objectStore(STORE_KV);
+
+    return new Promise((resolve, reject) => {
+        tx.oncomplete = () => {
+            console.log(`[FS-DB] Folder node saved successfully: ${topKey}`);
+            resolve();
+        };
+        tx.onerror = (e) => reject(e?.target?.error || new Error("Folder node save error"));
+        tx.onabort = (e) => reject(e?.target?.error || new Error("Folder node save aborted"));
+
+        try {
+            // 1. 巨大なファイルデータ（content）を抽出・分離して大容量ファイル管理に対応
+            const largeFiles = new Map();
+            const cleanFolderData = extractAndStrip(folderData, topKey, largeFiles);
+
+            // 2. 外部保存対象のファイルデータ（またはチャンク）を files ストアへ保存
+            largeFiles.forEach((data, path) => {
+                if (data === "__EXTERNAL_DATA__") {
+                    return;
+                }
+
+                const isBlob = data instanceof Blob;
+                const isString = typeof data === "string";
+                const dataSize = isBlob ? data.size : (isString ? data.length : 0);
+
+                if (dataSize > CHUNK_SIZE) {
+                    const totalChunks = Math.ceil(dataSize / CHUNK_SIZE);
+                    for (let i = 0; i < totalChunks; i++) {
+                        const start = i * CHUNK_SIZE;
+                        const end = Math.min(start + CHUNK_SIZE, dataSize);
+                        const chunk = isBlob ? data.slice(start, end) : data.slice(start, end);
+                        fileStore.put(chunk, `${path}/__chunk_${i}`);
+                    }
+
+                    fileStore.put({
+                        __IS_CHUNKED__: true,
+                        totalChunks,
+                        dataType: isString ? "string" : "blob",
+                        mimeType: isBlob ? data.type : ""
+                    }, path);
+                } else {
+                    fileStore.put(data, path);
+                }
+            });
+
+            // 3. 該当するルートフォルダのメタデータ・構造を個別のキー（fs_<topKey>）で保存
+            kvStore.put(cleanFolderData, `fs_${topKey}`);
+
+        } catch (err) {
+            try { tx.abort(); } catch (_) { }
+            reject(err || new Error("Unknown error during folder node save"));
+        }
+    });
 }

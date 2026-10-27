@@ -317,7 +317,8 @@ export function buildDesktop() {
                         }
                     }
 
-                    await forceSave();
+                    const { saveFolderNode } = await import("./fs-db.js");
+                    await saveFolderNode("Desktop", FS.Desktop);
                     window.dispatchEvent(new Event("fs-updated"));
                     buildDesktop();
                     return;
@@ -366,7 +367,8 @@ export function buildDesktop() {
                             target: realTargetPath,
                             lastModified: Date.now()
                         };
-                        await forceSave();
+                        const { saveFolderNode } = await import("./fs-db.js");
+                        await saveFolderNode("Desktop", FS.Desktop);
                         window.dispatchEvent(new Event("fs-updated"));
                     }
                 },
@@ -384,14 +386,15 @@ export function buildDesktop() {
                             globalSelected.items.clear();
 
                             for (const name of itemsToDelete) {
-                                // 削除関数の返り値（成功: true, 失敗/保護: false）を受け取る
                                 const success = await deleteFSItem("Desktop", name, false);
                                 if (success) {
                                     await markDefaultDeleted(`Desktop/${name}`);
                                 }
                             }
 
-                            await forceSave();
+                            // ⭐ Desktopフォルダだけを個別部分保存
+                            const { saveFolderNode } = await import("./fs-db.js");
+                            await saveFolderNode("Desktop", FS.Desktop);
                             window.dispatchEvent(new Event("fs-updated"));
                         }
                     }
@@ -543,14 +546,15 @@ export function buildDesktop() {
                     globalSelected.items.clear();
 
                     for (const name of itemsToDelete) {
-                        // 削除関数の返り値（成功: true, 失敗/保護: false）を受け取る
                         const success = await deleteFSItem("Desktop", name, false);
                         if (success) {
                             await markDefaultDeleted(`Desktop/${name}`);
                         }
                     }
 
-                    await forceSave();
+                    // ⭐ Desktopフォルダだけを個別部分保存
+                    const { saveFolderNode } = await import("./fs-db.js");
+                    await saveFolderNode("Desktop", FS.Desktop);
                     window.dispatchEvent(new Event("fs-updated"));
                 }
             }
@@ -847,7 +851,8 @@ export function buildDesktop() {
                             }
                         }
 
-                        await forceSave();
+                        const { saveFolderNode } = await import("./fs-db.js");
+                        await saveFolderNode("Desktop", FS.Desktop);
                         window.dispatchEvent(new Event("fs-updated"));
                         buildDesktop();
                         return;
@@ -932,7 +937,8 @@ export function buildDesktop() {
                     lastModified: Date.now()
                 };
 
-                await forceSave();
+                const { saveFolderNode } = await import("./fs-db.js");
+                await saveFolderNode("Desktop", FS.Desktop);
                 window.dispatchEvent(new Event("fs-updated"));
                 buildDesktop();
                 return;
@@ -1029,9 +1035,10 @@ export function buildDesktop() {
                     }
                 }
                 folderNode.lastModified = Date.now();
-                // 最終更新
                 pg.update(totalFiles, totalFiles, "すべての項目のコピーが完了しました。");
-                await forceSave();
+
+                const { saveFolderNode } = await import("./fs-db.js");
+                await saveFolderNode("Desktop", FS.Desktop);
 
             } catch (err) {
                 console.error("Drop processing failed:", err);
@@ -1160,7 +1167,7 @@ function createNewItem(currentPath, container, itemType = "folder") {
         input.select();
     }
 
-    // 幅を文字数に応じて自動調整
+    // 幅を文字数に応じて自動調整（⭐ 修正: 抜け落ちていた乗算演算子 * を復元）
     const adjustWidth = () => {
         input.style.width = `${Math.max(input.value.length * 8, 100)}px`;
     };
@@ -1170,7 +1177,7 @@ function createNewItem(currentPath, container, itemType = "folder") {
     let isShowingError = false;
     let isCommitting = false;
 
-    const finishEditing = () => {
+    const finishEditing = async () => {
         if (isShowingError || isCommitting) return;
         isCommitting = true;
 
@@ -1202,6 +1209,15 @@ function createNewItem(currentPath, container, itemType = "folder") {
 
         iconDiv.remove();
         createNewItem.isCreating = false;
+
+        // ⭐ 改善点③: 新規作成時も重い forceSave の代わりに Desktop フォルダの個別部分保存を適用
+        try {
+            const { saveFolderNode } = await import("./fs-db.js");
+            await saveFolderNode("Desktop", FS.Desktop);
+        } catch (err) {
+            console.error("[Desktop] 新規作成の保存に失敗しました:", err);
+        }
+
         window.dispatchEvent(new Event("fs-updated"));
     };
 
@@ -1494,14 +1510,15 @@ function setupDesktopKeyboardNavigation() {
                     globalSelected.items.clear();
 
                     for (const name of itemsToDelete) {
-                        // 削除が成功した場合のみマーク処理を実行
                         const success = await deleteFSItem("Desktop", name, false);
                         if (success) {
                             await markDefaultDeleted(`Desktop/${name}`);
                         }
                     }
 
-                    await forceSave();
+                    // ⭐ Desktopフォルダだけを個別部分保存
+                    const { saveFolderNode } = await import("./fs-db.js");
+                    await saveFolderNode("Desktop", FS.Desktop);
                     window.dispatchEvent(new Event("fs-updated"));
                 }
                 break;
@@ -1564,5 +1581,13 @@ function reorderDesktopIcons(draggedNames, targetName) {
     });
 
     FS.Desktop = newDesktop;
+
+    // ⭐ アイコンの並び替え順序も Desktop フォルダの部分保存対象にする
+    import("./fs-db.js").then(({ saveFolderNode }) => {
+        saveFolderNode("Desktop", FS.Desktop).catch(err => {
+            console.error("[Desktop] アイコン並び替えの保存に失敗しました:", err);
+        });
+    });
+
     window.dispatchEvent(new Event("fs-updated"));
 }

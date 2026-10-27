@@ -333,26 +333,40 @@ export default async function Explorer(root, options = {}) {
     const titleEl = win?.querySelector(".title-text");
     const taskBtn = win?._taskbarBtn;
 
-    await initFS();
     let currentPath = options.path || "Desktop";
     let historyStack = [];
     let forwardStack = [];
-    let viewMode = await loadSetting("explorerViewMode") || "list";
-    const rawHidden = await loadSetting("explorerShowHidden");
+
+    // ★ 変更点: 6つの設定読み込みを Promise.all で並列一括処理し、起動を高速化
+    const [
+        savedViewMode,
+        rawHidden,
+        rawShowExt,
+        savedSortKey,
+        savedSortOrder,
+        rawSidebar,
+        savedAutoArrange
+    ] = await Promise.all([
+        loadSetting("explorerViewMode"),
+        loadSetting("explorerShowHidden"),
+        loadSetting("explorerShowFileExtensions"),
+        loadSetting("explorerSortKey"),
+        loadSetting("explorerSortOrder"),
+        loadSetting("explorerShowSidebar"),
+        loadSetting("explorerAutoArrange")
+    ]);
+
+    let viewMode = savedViewMode || "list";
     let showHidden = rawHidden === true || rawHidden === "true";
-
-    const rawShowExt = await loadSetting("explorerShowFileExtensions");
     let showFileExtensions = rawShowExt === null ? true : (rawShowExt === true || rawShowExt === "true");
-
-    let sortKey = await loadSetting("explorerSortKey") || "name"; // 'name', 'type', 'size', 'date'
-    let sortOrder = await loadSetting("explorerSortOrder") || "asc"; // 'asc', 'desc'
+    let sortKey = savedSortKey || "name"; // 'name', 'type', 'size', 'date'
+    let sortOrder = savedSortOrder || "asc"; // 'asc', 'desc'
 
     // ★追加: 左ナビゲーション（サイドバー）の表示・非表示状態のロード
-    const rawSidebar = await loadSetting("explorerShowSidebar");
     let showSidebar = rawSidebar === null ? true : (rawSidebar === true || rawSidebar === "true");
 
     // ★追加: 自動整列のオン・オフ状態と座標保存用変数
-    let autoArrange = await loadSetting("explorerAutoArrange");
+    let autoArrange = savedAutoArrange;
     if (autoArrange === undefined) autoArrange = true;
     let iconPositions = {};
 
@@ -1277,22 +1291,26 @@ export default async function Explorer(root, options = {}) {
         }
 
         // ファイル・フォルダリスト
+        // 【改善後】メソッドチェーンを廃止し、1回のループ（for...in）で軽量に処理
         const folder = resolveFS(currentPath);
         if (!folder) return;
 
-        const itemsList = Object.keys(folder)
-            .filter(name => !isSystemMetaKey(name) && (showHidden || !folder[name].hidden))
-            .map(name => {
-                const itemData = folder[name];
-                let size = 0;
+        const itemsList = [];
+        for (const name in folder) {
+            if (isSystemMetaKey(name)) continue;
+            const itemData = folder[name];
+            if (!itemData) continue;
 
-                // ファイルの場合のみサイズを設定（フォルダはサイズを持たせない）
-                if (itemData.type === "file") {
-                    size = typeof itemData.size === "number" ? itemData.size : (itemData.content?.length || 0);
-                }
+            // 隠しファイル表示設定の適用
+            if (!showHidden && itemData.hidden) continue;
 
-                return { name, itemData, size };
-            });
+            let size = 0;
+            if (itemData.type === "file") {
+                size = typeof itemData.size === "number" ? itemData.size : (itemData.content?.length || 0);
+            }
+
+            itemsList.push({ name, itemData, size });
+        }
 
         const sortedItems = itemsList.sort((a, b) => {
             const isFolderA = a.itemData.type === "folder";
@@ -1450,7 +1468,8 @@ export default async function Explorer(root, options = {}) {
         }
 
         // --- 3. ソート順に従って既存DOMを再利用・更新、または新規作成 ---
-        for (const { name, itemData, size: sizeValue } of sortedItems) {
+        // index を取得するために entries() を使用し、findIndex を完全に排除 ($O(N)$ 化)
+        for (const [index, { name, itemData, size: sizeValue }] of sortedItems.entries()) {
             const childPath = currentPath ? `${currentPath}/${name}` : name;
 
             // 既存の要素があれば取得、なければ新規作成
@@ -1495,13 +1514,20 @@ export default async function Explorer(root, options = {}) {
                 });
             }
 
-            item.className = `explorer-item ${viewMode}-view`;
-            item.style.opacity = itemData.hidden ? "0.5" : "1";
+            const expectedClassName = `explorer-item ${viewMode}-view`;
+            if (item.className !== expectedClassName) {
+                item.className = expectedClassName;
+            }
+
+            const expectedOpacity = itemData.hidden ? "0.5" : "1";
+            if (item.style.opacity !== expectedOpacity) {
+                item.style.opacity = expectedOpacity;
+            }
 
             const iconChar = getIcon(name, itemData, childPath, currentPath);
             const displayName = getDisplayFileName(name, showFileExtensions);
 
-            // --- HTML構造の生成 ---
+            // --- HTML構造の生成（ビューモードに応じたレイアウト） ---
             if (viewMode === "icon") {
                 if (!autoArrange) {
                     item.style.position = "absolute";
@@ -1509,12 +1535,11 @@ export default async function Explorer(root, options = {}) {
                         item.style.left = `${iconPositions[name].x}px`;
                         item.style.top = `${iconPositions[name].y}px`;
                     } else {
-                        const iconIndex = sortedItems.findIndex(i => i.name === name);
                         const rowHeight = 90;
                         const colWidth = 100;
                         const maxCols = Math.max(1, Math.floor((listContainer.clientWidth || 500) / colWidth));
-                        const row = Math.floor(iconIndex / maxCols);
-                        const col = iconIndex % maxCols;
+                        const row = Math.floor(index / maxCols); // ★ findIndexを廃止し、ループのindexを直接利用
+                        const col = index % maxCols;
 
                         item.style.left = `${10 + col * colWidth}px`;
                         item.style.top = `${10 + row * rowHeight}px`;
@@ -1525,12 +1550,18 @@ export default async function Explorer(root, options = {}) {
                     item.style.top = "";
                 }
 
-                item.innerHTML = `
+                // 変更がある場合のみ innerHTML を更新
+                const newHTML = `
                     <div class="item-icon-large">${iconChar}</div>
                     <div class="item-name-label">${displayName}</div>
                 `;
+                if (item.innerHTML !== newHTML) {
+                    item.innerHTML = newHTML;
+                }
             } else if (viewMode === "details") {
                 const size = itemData.type === "folder" ? "" : formatSize(sizeValue);
+
+                // まとめてスタイル適用
                 item.style.display = "flex";
                 item.style.alignItems = "center";
                 item.style.padding = "2px 8px";
@@ -1552,7 +1583,7 @@ export default async function Explorer(root, options = {}) {
                     ? new Date(itemData.lastModified).toLocaleDateString('ja-JP', dateOpts)
                     : '';
 
-                item.innerHTML = `
+                const newHTML = `
                     <div style="flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 6px; overflow: hidden;">
                         <span class="item-icon-small" style="flex-shrink: 0; display: flex; align-items: center; justify-content: center;">${iconChar}</span>
                         <span class="item-name-text" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${displayName}</span>
@@ -1561,14 +1592,20 @@ export default async function Explorer(root, options = {}) {
                     <span class="item-size-text" style="flex: 0 0 100px; padding-left: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${size}</span>
                     <span class="item-date-text" style="flex: 0 0 140px; padding-left: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${modifiedStr}</span>
                 `;
+                if (item.innerHTML !== newHTML) {
+                    item.innerHTML = newHTML;
+                }
             } else {
                 item.style.position = "";
                 item.style.left = "";
                 item.style.top = "";
-                item.innerHTML = `
+                const newHTML = `
                     <span class="item-icon-small">${iconChar}</span>
                     <span class="item-name-text">${displayName}</span>
                 `;
+                if (item.innerHTML !== newHTML) {
+                    item.innerHTML = newHTML;
+                }
             }
 
             // 新規作成された要素の場合のみドロップ等のイベントを設定
@@ -1634,7 +1671,7 @@ export default async function Explorer(root, options = {}) {
             fragment.appendChild(item);
         }
 
-        // --- 4. コンテナへ適用（既存DOMが再利用され、順番通りに並び替えられる） ---
+        // --- 4. コンテナへ適用 ---
         listContainer.appendChild(fragment);
 
         // ★改善: context-menu.js の仕様に合わせた右クリックメニュー（背景とアイテムで切り替え）
@@ -2111,207 +2148,232 @@ export default async function Explorer(root, options = {}) {
         }
     }
 
-    // ★改善・最適化された左ナビゲーション（ツリー表示対応）を描画・更新する関数
+    // ==========================================
+    // サイドバー（左ナビゲーション）の最適化管理
+    // ==========================================
+    let sidebarInitialized = false;
+
+    // 1. ドラッグ＆ドロップ処理を共通化したヘルパー関数
+    const setupSidebarDrop = (itemEl, targetPath) => {
+        itemEl.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            e.dataTransfer.dropEffect = "move";
+            itemEl.style.background = "black";
+            itemEl.style.color = "white";
+        });
+
+        itemEl.addEventListener("dragleave", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            itemEl.style.background = (currentPath === targetPath) ? "navy" : "transparent";
+            itemEl.style.color = (currentPath === targetPath) ? "white" : "";
+        });
+
+        itemEl.addEventListener("drop", async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            itemEl.style.background = (currentPath === targetPath) ? "navy" : "transparent";
+            itemEl.style.color = (currentPath === targetPath) ? "white" : "";
+
+            const dataStr = e.dataTransfer.getData("text/plain");
+            try {
+                const data = dataStr ? JSON.parse(dataStr) : null;
+                if (data) {
+                    const isCopy = e.ctrlKey;
+                    await handleItemDropMove(data, targetPath, currentPath, render, isCopy);
+                }
+            } catch (err) {
+                console.error("Sidebar drop failed:", err);
+            }
+        });
+    };
+
+    // 2. 基本項目（PC、デスクトップ、ゴミ箱）を作成するヘルパー
+    const createBaseSidebarItem = (icon, label, targetPath) => {
+        const item = document.createElement("div");
+        item.className = "sidebar-item base-sidebar-item";
+        item.dataset.path = targetPath;
+        item.style.cssText = "display: flex; align-items: center; padding: 3px 6px; cursor: pointer; gap: 6px;";
+
+        item.onmouseover = () => { if (currentPath !== targetPath) item.style.background = "#ececec"; };
+        item.onmouseout = () => { if (currentPath !== targetPath) item.style.background = "transparent"; };
+
+        const iconSpan = document.createElement("span");
+        iconSpan.textContent = icon;
+        iconSpan.style.fontSize = "14px";
+
+        const textSpan = document.createElement("span");
+        textSpan.textContent = label;
+        textSpan.style.cssText = "white-space: nowrap; overflow: hidden; text-overflow: ellipsis;";
+
+        item.appendChild(iconSpan);
+        item.appendChild(textSpan);
+        item.onclick = () => navigateTo(targetPath);
+
+        setupSidebarDrop(item, targetPath);
+        return item;
+    };
+
+    // 3. Windows風ツリー構造を効率的に一括構築する関数（DocumentFragment活用）
+    const buildStaticSidebarTree = (node, parentEl, currentDir = "", depth = 0, visited = new Set()) => {
+        if (!node || typeof node !== "object" || visited.has(node) || depth > 6) return;
+        visited.add(node);
+
+        try {
+            const entries = Object.entries(node).filter(([k, v]) => !isSystemMetaKey(k) && v && v.type === "folder");
+            if (entries.length === 0) return;
+
+            const fragment = document.createDocumentFragment();
+
+            entries.forEach(([name, child]) => {
+                const fullPath = currentDir ? `${currentDir}/${name}` : name;
+
+                // ルート直下の "Desktop" と "Trash" はクイックアクセス側に表示済みのためスキップ
+                if (depth === 0 && (name === "Desktop" || name === "Trash")) return;
+
+                const hasChildren = Object.entries(child).some(([k, v]) => !isSystemMetaKey(k) && v && v.type === "folder");
+
+                const itemWrapper = document.createElement("div");
+                itemWrapper.dataset.path = fullPath;
+
+                const item = document.createElement("div");
+                item.className = "sidebar-item";
+                item.dataset.path = fullPath;
+
+                const paddingLeft = 8 + (depth * 14);
+                item.style.cssText = `display: flex; align-items: center; padding: 3px 4px; cursor: pointer; padding-left: ${paddingLeft}px; gap: 4px;`;
+
+                item.onmouseover = () => { if (currentPath !== fullPath) item.style.background = "#ececec"; };
+                item.onmouseout = () => { if (currentPath !== fullPath) item.style.background = "transparent"; };
+
+                const arrowSpan = document.createElement("span");
+                arrowSpan.className = "sidebar-arrow";
+                arrowSpan.style.cssText = "width: 14px; text-align: center; font-size: 9px; color: #555; flex-shrink: 0;";
+
+                let subContainer = null;
+                let isLoaded = false;
+
+                if (hasChildren) {
+                    arrowSpan.textContent = "▶";
+                    subContainer = document.createElement("div");
+                    subContainer.className = "sidebar-sub-container";
+                    subContainer.style.display = "none";
+                    subContainer.dataset.parent = fullPath;
+
+                    buildStaticSidebarTree(child, subContainer, fullPath, depth + 1, visited);
+
+                    arrowSpan.onclick = (e) => {
+                        e.stopPropagation();
+                        const isOpen = subContainer.style.display === "block";
+                        subContainer.style.display = isOpen ? "none" : "block";
+                        arrowSpan.textContent = isOpen ? "▶" : "▼";
+                    };
+                } else {
+                    arrowSpan.textContent = "";
+                }
+
+                const iconSpan = document.createElement("span");
+                iconSpan.textContent = getIcon(name, child, fullPath, currentPath);
+                iconSpan.style.fontSize = "14px";
+                iconSpan.style.flexShrink = "0";
+
+                const textSpan = document.createElement("span");
+                textSpan.textContent = name;
+                textSpan.style.cssText = "white-space: nowrap; overflow: hidden; text-overflow: ellipsis;";
+
+                item.appendChild(arrowSpan);
+                item.appendChild(iconSpan);
+                item.appendChild(textSpan);
+
+                item.onclick = () => navigateTo(fullPath);
+                setupSidebarDrop(item, fullPath);
+
+                itemWrapper.appendChild(item);
+                if (subContainer) itemWrapper.appendChild(subContainer);
+                fragment.appendChild(itemWrapper);
+            });
+
+            parentEl.appendChild(fragment);
+        } finally {
+            visited.delete(node);
+        }
+    };
+
+    // 4. パス変更時にDOMを壊さずハイライトと開閉状態のみを同期する超高速関数
+    const updateSidebarSelection = (activePath) => {
+        if (!sidebarContainer) return;
+
+        // 全項目のハイライトを一度リセット
+        sidebarContainer.querySelectorAll(".sidebar-item").forEach(el => {
+            el.style.background = "transparent";
+            el.style.color = "";
+        });
+
+        // 現在のパスに一致する項目をハイライト
+        const activeElements = sidebarContainer.querySelectorAll(`[data-path="${activePath}"]`);
+        activeElements.forEach(el => {
+            const itemEl = el.classList.contains("sidebar-item") ? el : el.querySelector(".sidebar-item");
+            if (itemEl) {
+                itemEl.style.background = "navy";
+                itemEl.style.color = "white";
+            }
+        });
+
+        // 祖先フォルダの展開状態を同期
+        let parts = activePath.split("/");
+        let accumulatedPath = "";
+        for (let i = 0; i < parts.length - 1; i++) {
+            accumulatedPath = accumulatedPath ? `${accumulatedPath}/${parts[i]}` : parts[i];
+            const sub = sidebarContainer.querySelector(`.sidebar-sub-container[data-parent="${accumulatedPath}"]`);
+            if (sub) {
+                sub.style.display = "block";
+                const wrapper = sub.previousElementSibling;
+                const arrow = wrapper?.querySelector(".sidebar-arrow");
+                if (arrow) arrow.textContent = "▼";
+            }
+        }
+    };
+
+    // 5. メインの renderSidebar 関数（Windows方式）
     function renderSidebar() {
         if (!sidebarContainer) return;
         sidebarContainer.style.display = showSidebar ? "block" : "none";
         if (!showSidebar) return;
 
-        // 一旦クリア
-        sidebarContainer.innerHTML = "";
+        // 初回のみツリーの骨組みを構築する
+        if (!sidebarInitialized) {
+            sidebarInitialized = true;
+            sidebarContainer.innerHTML = "";
 
-        // サイドバー全体のコンテナ（スクロール可能に設定）
-        const sidebarContent = document.createElement("div");
-        sidebarContent.style.cssText = "height: 100%; overflow-y: auto; font-size: 12px; user-select: none;";
+            const sidebarContent = document.createElement("div");
+            sidebarContent.style.cssText = "height: 100%; overflow-y: auto; font-size: 12px; user-select: none;";
 
-        // クイックアクセス風のヘッダー
-        const quickAccessTitle = document.createElement("div");
-        quickAccessTitle.textContent = "クイック アクセス";
-        quickAccessTitle.style.cssText = "font-size: 11px; color: #000; padding: 2px 2px; font-weight: bold; background-color: #C3C7CB; border: 1.5px solid #808080; border-color: #fff #808080 #808080 #fff; box-shadow: 0.5px 0.5px black; margin-bottom: 4px; display: flex; position: sticky; top: 0px; z-index: 10;";
-        sidebarContent.appendChild(quickAccessTitle);
+            const quickAccessTitle = document.createElement("div");
+            quickAccessTitle.textContent = "クイック アクセス";
+            quickAccessTitle.style.cssText = "font-size: 11px; color: #000; padding: 2px 2px; font-weight: bold; background-color: #C3C7CB; border: 1.5px solid #808080; border-color: #fff #808080 #808080 #fff; box-shadow: 0.5px 0.5px black; margin-bottom: 4px; display: flex; position: sticky; top: 0px; z-index: 10;";
+            sidebarContent.appendChild(quickAccessTitle);
 
-        // ドラッグ＆ドロップ処理を共通化したヘルパー関数
-        const setupSidebarDrop = (itemEl, targetPath) => {
-            itemEl.addEventListener("dragover", (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                e.dataTransfer.dropEffect = "move";
-                itemEl.style.background = "black";
-                itemEl.style.color = "white";
-            });
+            sidebarContent.appendChild(createBaseSidebarItem(getIcon("PC", resolveFS("")), "PC", ""));
+            sidebarContent.appendChild(createBaseSidebarItem(getIcon("Desktop", resolveFS("Desktop")), "デスクトップ", "Desktop"));
+            sidebarContent.appendChild(createBaseSidebarItem(getIcon("Trash", resolveFS("Trash")), "ゴミ箱", "Trash"));
 
-            itemEl.addEventListener("dragleave", (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                itemEl.style.background = (currentPath === targetPath) ? "navy" : "transparent";
-                itemEl.style.color = (currentPath === targetPath) ? "white" : "";
-            });
+            const divider = document.createElement("hr");
+            divider.style.cssText = "border: 0; border-top: 1.5px solid #e0e0e0; margin: 6px 4px;";
+            sidebarContent.appendChild(divider);
 
-            itemEl.addEventListener("drop", async (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                itemEl.style.background = (currentPath === targetPath) ? "navy" : "transparent";
-                itemEl.style.color = (currentPath === targetPath) ? "white" : "";
-
-                const dataStr = e.dataTransfer.getData("text/plain");
-                try {
-                    const data = dataStr ? JSON.parse(dataStr) : null;
-                    if (data) {
-                        const isCopy = e.ctrlKey;
-                        await handleItemDropMove(data, targetPath, currentPath, render, isCopy);
-                    }
-                } catch (err) {
-                    console.error("Sidebar drop failed:", err);
-                }
-            });
-        };
-
-        // 基本の固定項目を作成するヘルパー
-        const createBaseItem = (icon, label, targetPath) => {
-            const item = document.createElement("div");
-            item.className = "sidebar-item";
-            item.style.cssText = "display: flex; align-items: center; padding: 3px 6px; cursor: pointer; gap: 6px;";
-
-            const isActive = (currentPath === targetPath) || (targetPath === "" && currentPath === "");
-            if (isActive) {
-                item.style.background = "navy";
-                item.style.color = "white";
+            const treeRootContainer = document.createElement("div");
+            const rootNode = resolveFS("");
+            if (rootNode) {
+                buildStaticSidebarTree(rootNode, treeRootContainer, "", 0, new Set());
             }
 
-            item.onmouseover = () => { if (!isActive) item.style.background = "#ececec"; };
-            item.onmouseout = () => { if (!isActive) item.style.background = "transparent"; };
-
-            const iconSpan = document.createElement("span");
-            iconSpan.textContent = icon;
-            iconSpan.style.fontSize = "14px";
-
-            const textSpan = document.createElement("span");
-            textSpan.textContent = label;
-            textSpan.style.cssText = "white-space: nowrap; overflow: hidden; text-overflow: ellipsis;";
-
-            item.appendChild(iconSpan);
-            item.appendChild(textSpan);
-            item.onclick = () => navigateTo(targetPath);
-
-            setupSidebarDrop(item, targetPath);
-            return item;
-        };
-
-        sidebarContent.appendChild(createBaseItem(getIcon("PC", resolveFS("")), "PC", ""));
-        sidebarContent.appendChild(createBaseItem(getIcon("Desktop", resolveFS("Desktop")), "デスクトップ", "Desktop"));
-        sidebarContent.appendChild(createBaseItem(getIcon("Trash", resolveFS("Trash")), "ゴミ箱", "Trash"));
-
-        const divider = document.createElement("hr");
-        divider.style.cssText = "border: 0; border-top: 1.5px solid #e0e0e0; margin: 6px 4px;";
-        sidebarContent.appendChild(divider);
-
-        // ⭐ Windows風ツリー構造を効率的に構築する関数（DocumentFragmentを活用）
-        const buildSidebarTree = (node, parentEl, currentDir = "", depth = 0, visited = new Set()) => {
-            if (!node || typeof node !== "object") return;
-            if (visited.has(node)) return;
-            visited.add(node);
-
-            try {
-                // システムメタデータを除外し、フォルダのみを効率的に抽出
-                const entries = Object.entries(node).filter(([k, v]) => !isSystemMetaKey(k) && v && v.type === "folder");
-                if (entries.length === 0) return;
-
-                // DOM操作の負荷を抑えるためフラグメントを使用
-                const fragment = document.createDocumentFragment();
-
-                entries.forEach(([name, child]) => {
-                    const fullPath = currentDir ? `${currentDir}/${name}` : name;
-
-                    // ルート直下の "Desktop" と "Trash" はクイックアクセス側に表示済みのためスキップ
-                    if (depth === 0 && (name === "Desktop" || name === "Trash")) return;
-
-                    // 子フォルダ（さらに配下にフォルダを持つか）の存在確認
-                    const hasChildren = Object.entries(child).some(([k, v]) => !isSystemMetaKey(k) && v && v.type === "folder");
-
-                    const itemWrapper = document.createElement("div");
-
-                    const item = document.createElement("div");
-                    item.className = "sidebar-item";
-
-                    // バグ修正: パディング計算を修正
-                    const paddingLeft = 8 + (depth * 14);
-                    item.style.cssText = `display: flex; align-items: center; padding: 3px 4px; cursor: pointer; padding-left: ${paddingLeft}px; gap: 4px;`;
-
-                    const isItemActive = (currentPath === fullPath);
-                    if (isItemActive) {
-                        item.style.background = "navy";
-                        item.style.color = "white";
-                    }
-
-                    item.onmouseover = () => { if (!isItemActive) item.style.background = "#ececec"; };
-                    item.onmouseout = () => { if (!isItemActive) item.style.background = "transparent"; };
-
-                    // 展開・折りたたみ用の矢印ボタン
-                    const arrowSpan = document.createElement("span");
-                    arrowSpan.style.cssText = "width: 14px; text-align: center; font-size: 9px; color: #555; flex-shrink: 0;";
-
-                    let subContainer = null;
-
-                    if (hasChildren) {
-                        const isExpanded = currentPath.startsWith(fullPath);
-                        arrowSpan.textContent = isExpanded ? "▼" : "▶";
-
-                        arrowSpan.onclick = (e) => {
-                            e.stopPropagation();
-                            if (subContainer) {
-                                const isOpen = subContainer.style.display === "block";
-                                subContainer.style.display = isOpen ? "none" : "block";
-                                arrowSpan.textContent = isOpen ? "▶" : "▼";
-                            }
-                        };
-                    } else {
-                        arrowSpan.textContent = "";
-                    }
-
-                    const iconSpan = document.createElement("span");
-                    iconSpan.textContent = getIcon(name, child, fullPath, currentPath);
-                    iconSpan.style.fontSize = "14px";
-                    iconSpan.style.flexShrink = "0";
-
-                    const textSpan = document.createElement("span");
-                    textSpan.textContent = name;
-                    textSpan.style.cssText = "white-space: nowrap; overflow: hidden; text-overflow: ellipsis;";
-
-                    item.appendChild(arrowSpan);
-                    item.appendChild(iconSpan);
-                    item.appendChild(textSpan);
-
-                    item.onclick = () => navigateTo(fullPath);
-                    setupSidebarDrop(item, fullPath);
-
-                    itemWrapper.appendChild(item);
-
-                    // 子フォルダ用コンテナ
-                    if (hasChildren) {
-                        subContainer = document.createElement("div");
-                        subContainer.style.display = currentPath.startsWith(fullPath) ? "block" : "none";
-                        buildSidebarTree(child, subContainer, fullPath, depth + 1, visited);
-                        itemWrapper.appendChild(subContainer);
-                    }
-
-                    fragment.appendChild(itemWrapper);
-                });
-
-                parentEl.appendChild(fragment);
-            } finally {
-                visited.delete(node);
-            }
-        };
-
-        // ツリービューを生成してサイドバーコンテナに追加
-        const treeRootContainer = document.createElement("div");
-        const rootNode = resolveFS("");
-        if (rootNode) {
-            buildSidebarTree(rootNode, treeRootContainer, "", 0, new Set());
+            sidebarContent.appendChild(treeRootContainer);
+            sidebarContainer.appendChild(sidebarContent);
         }
 
-        sidebarContent.appendChild(treeRootContainer);
-        sidebarContainer.appendChild(sidebarContent);
+        // 2回目以降は全消去せず、選択状態とツリーの開閉状態の同期のみ行うため極めて高速になります
+        updateSidebarSelection(currentPath);
     }
 
     const renderSearchResults = async (query) => {
@@ -2515,7 +2577,20 @@ export default async function Explorer(root, options = {}) {
                                 };
                             });
 
-                            await forceSave();
+                            // ⭐ 変更のあったルートフォルダのみを個別部分保存
+                            const topKey = currentPath.split("/")[0];
+                            if (topKey) {
+                                const { saveFolderNode } = await import("../fs-db.js");
+                                const { FS } = await import("../fs-db.js");
+                                if (FS[topKey]) {
+                                    await saveFolderNode(topKey, FS[topKey]);
+                                } else {
+                                    await forceSave();
+                                }
+                            } else {
+                                await forceSave();
+                            }
+
                             window.dispatchEvent(new Event("fs-updated"));
                             render(currentPath);
                         },
@@ -3122,11 +3197,26 @@ export async function showProperties(name, node, path) {
                         isChanged = true;
                     }
                 }
-
                 // 変更があった場合のみシステムに更新を通知
                 if (isChanged) {
                     node.lastModified = Date.now();
-                    await forceSave();
+
+                    // ⭐ 改善: 全体保存 (forceSave) の代わりに、変更があったルートフォルダ単位のみを個別部分保存
+                    const topKey = path.split("/")[0];
+                    try {
+                        const { saveFolderNode } = await import("../fs-db.js"); // または fs-db.js からインポート
+                        // FS または baseFS の該当トップキーのデータを取得して部分保存
+                        const { FS } = await import("../fs-db.js");
+                        if (topKey && FS[topKey]) {
+                            await saveFolderNode(topKey, FS[topKey]);
+                        } else {
+                            await forceSave(); // フォールバック
+                        }
+                    } catch (e) {
+                        console.error("Failed to save folder node locally:", e);
+                        await forceSave(); // エラー時のフォールバック
+                    }
+
                     window.dispatchEvent(new Event("fs-updated"));
                 }
 

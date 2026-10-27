@@ -716,9 +716,8 @@ const commands = {
 
             print("Nexser Corp for Nexser OS v0.1.0");
             print("Initializing scanfilesystem...\n");
-            await wait(400);
 
-            // 1. システム整合性とコアディレクトリのチェック
+            // 1. システム整合性とコアディレクトリのチェック（ウェイト削除）
             print("--> Checking system integrity and core directories...");
             const { diagnoseAndCleanFS, forceSave } = await import('./fs.js');
             const systemReport = await diagnoseAndCleanFS(true); // 自動修復を実行
@@ -726,10 +725,8 @@ const commands = {
             if (systemReport.logs.length > 0) {
                 systemReport.logs.forEach(log => print(`    ${log}`));
             }
-            await wait(500);
 
             print("--> Scanning files and applications...");
-            await wait(400);
 
             // ★ 追加・変更: 引数（args[0]）から対象パスを特定する（未指定の場合は C:/ 全体）
             const targetPathArg = args[0] || "C:/";
@@ -780,11 +777,10 @@ const commands = {
             let errorCount = systemReport.corruptionDetected ? 1 : 0;
             let fixedCount = systemReport.garbageItems > 0 ? systemReport.garbageItems : 0;
 
-            // 1つずつチェックしながら横棒グラフを更新
+            // 一括で高速にチェックと修復を行う
             for (let i = 0; i < totalFiles; i++) {
                 const item = files[i];
 
-                // 破損チェックと修復
                 if (item.node.type === 'file') {
                     if (typeof item.node.content !== 'string') {
                         item.node.content = "";
@@ -795,18 +791,12 @@ const commands = {
                         errorCount++;
                     }
                 }
-
-                // 横棒グラフの作成 (幅20文字)
-                const progress = i + 1;
-                const percentage = Math.floor((progress / Math.max(totalFiles, 1)) * 100);
-                const filledCount = Math.floor((progress / Math.max(totalFiles, 1)) * 20);
-                const bar = '█'.repeat(filledCount) + '░'.repeat(20 - filledCount);
-
-                progressNode.nodeValue = `${bar} ${percentage}% (${progress}/${totalFiles})\n`;
-                scrollToBottom();
-
-                await wait(30);
             }
+
+            // 最終結果のプログレス表示
+            const bar = '█'.repeat(20);
+            progressNode.nodeValue = `${bar} 100% (${totalFiles}/${totalFiles})\n`;
+            scrollToBottom();
 
             print("\n----------------------------------------");
             print(`Scan completed on ${targetPath}:`);
@@ -946,7 +936,6 @@ export async function bootOS() {
     const lines = [document.title, "Copyright (C) 2026 Nexser Corp.", ""];
     for (const line of lines) {
         print(line);
-        await new Promise(r => setTimeout(r, 50));
     }
 
     await fsPromise;
@@ -970,9 +959,12 @@ export async function bootOS() {
                     print(`[Security] Blocked suspicious command in AUTOBOOT.CFG: ${line}`);
                     continue;
                 }
-
-                await new Promise(r => setTimeout(r, 30));
                 print(`${cwd}> ${line}`);
+                if (line.trim().toLowerCase() === 'boot') {
+                    isSystemVerified = true;
+                    await bootOS();
+                    return;
+                }
                 await runSilent(line);
                 if (screen.style.display === 'none') return;
             }

@@ -37,6 +37,15 @@ export function unlockFile(path, pid = "system") {
     return false;
 }
 
+export function unlockFilesByPath(pathPrefix) {
+    for (const [path, lockInfo] of fileLocks.entries()) {
+        if (path === pathPrefix || path.startsWith(pathPrefix + "/")) {
+            fileLocks.delete(path);
+            console.log(`[FS Lock] パス解放に伴いロックを自動解除しました: ${path}`);
+        }
+    }
+}
+
 // 1. ベースデータ
 const baseFS = {
     System: {
@@ -203,7 +212,30 @@ function wrapProxy(obj, path = "") {
             target[prop] = value;
 
             if (!isSaving && !isInitializing && !isBulkUpdating) {
-                scheduleSave();
+                if (prop === "content" && value !== "__EXTERNAL_DATA__") {
+                    import("./fs-db.js").then(db => {
+                        db.saveSingleFile(currentPath, value).catch(err => {
+                            console.error(`[FS] 個別ファイルの差分保存に失敗しました: ${currentPath}`, err);
+                        });
+                    });
+                }
+                else if (prop === "lastModified") {
+                    return true;
+                }
+                else {
+                    // ⭐ 【部分差分改善】全体保存の代わりに、変更があったルートフォルダ単位のみを個別保存する
+                    const topKey = currentPath.split("/")[0];
+                    import("./fs-db.js").then(db => {
+                        if (db.saveFolderNode && baseFS[topKey]) {
+                            db.saveFolderNode(topKey, baseFS[topKey]).catch(err => {
+                                console.error(`[FS] フォルダ部分保存に失敗しました: ${topKey}`, err);
+                            });
+                        } else {
+                            scheduleSave(); // フォールバック
+                        }
+                    });
+                }
+
                 window.dispatchEvent(new Event("fs-updated"));
             }
             return true;
@@ -214,7 +246,6 @@ function wrapProxy(obj, path = "") {
                 return false;
             }
 
-            // 【NTFS風改善】削除時もロック中であればブロック
             const currentPath = path ? `${path}/${prop}` : prop;
             const lockInfo = fileLocks.get(currentPath);
             if (lockInfo && lockInfo.mode === "exclusive") {
@@ -229,7 +260,18 @@ function wrapProxy(obj, path = "") {
             }
 
             if (!isSaving && !isInitializing && !isBulkUpdating) {
-                scheduleSave();
+                // ⭐ 【部分差分改善】削除時も全体保存を行わず、該当ルートフォルダのみを個別部分保存する
+                const topKey = currentPath.split("/")[0];
+                import("./fs-db.js").then(db => {
+                    if (db.saveFolderNode && baseFS[topKey]) {
+                        db.saveFolderNode(topKey, baseFS[topKey]).catch(err => {
+                            console.error(`[FS] 削除時のフォルダ部分保存に失敗しました: ${topKey}`, err);
+                        });
+                    } else {
+                        scheduleSave();
+                    }
+                });
+
                 window.dispatchEvent(new Event("fs-updated"));
             }
             return true;
@@ -308,9 +350,11 @@ function deepSync(currentProxy, savedNode, defaultNode, path = "", visited = new
     }
 }
 
-// --- 保存・初期化 ---
+// --- 保存・初期化 (Promiseチェーン版) ---
 
-async function performSave() {
+let currentSavePromise = Promise.resolve();
+
+async function executeSave() {
     isSaving = true;
     try {
         await saveFS(baseFS);
@@ -320,47 +364,39 @@ async function performSave() {
         throw new Error(`FS_FATAL_WRITE_FAULT: ${e.message}`);
     } finally {
         isSaving = false;
-
-        if (pendingSave) {
-            pendingSave = false;
-            scheduleSave();
-        }
     }
 }
-
-let pendingSave = false;
 
 async function scheduleSave() {
     if (saveTimer) return;
 
-    if (isSaving) {
-        pendingSave = true;
-        return;
-    }
-
-    saveTimer = setTimeout(async () => {
-        saveTimer = null;
-        await performSave();
-
-        if (pendingSave) {
-            pendingSave = false;
-            scheduleSave();
-        }
-    }, 1000);
+    return new Promise((resolve) => {
+        saveTimer = setTimeout(async () => {
+            saveTimer = null;
+            currentSavePromise = currentSavePromise.catch(() => { }).then(() => executeSave());
+            try {
+                await currentSavePromise;
+            } finally {
+                resolve();
+            }
+        }, 1000); // 通常の自動保存は1秒のデバウンス（遅延）を維持
+    });
 }
 
 export async function forceSave() {
+    // 予約されている通常の自動保存タイマーがあればクリアして今すぐ実行に切り替える
     if (saveTimer) {
         clearTimeout(saveTimer);
         saveTimer = null;
     }
 
-    if (isSaving) {
-        pendingSave = true;
-        return;
-    }
+    currentSavePromise = currentSavePromise.catch(() => { }).then(() => executeSave());
+    return currentSavePromise;
+}
 
-    await performSave();
+// 内部互換用
+async function performSave() {
+    return forceSave();
 }
 
 export async function initFS() {
@@ -399,7 +435,9 @@ export async function initFS() {
     } finally {
         isInitializing = false;
         isSaving = false;
-        await performSave();
+        if (!saved) {
+            await performSave();
+        }
     }
 }
 
@@ -477,7 +515,7 @@ if (typeof window !== "undefined") {
             clearTimeout(saveTimer);
             saveTimer = null;
         }
-        if (isSaving || pendingSave) {
+        if (isSaving) {
             try {
                 localStorage.setItem("OS_EMERGENCY_BACKUP", "dirty");
             } catch (e) { }

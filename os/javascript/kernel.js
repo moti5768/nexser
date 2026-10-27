@@ -549,7 +549,7 @@ export function getProcessList() {
 }
 
 /* =========================
-   killProcess（完全安全版）
+   killProcess（完全安全・ロック自動解放版）
 ========================= */
 export function killProcess(key) {
     const proc = processes.get(key);
@@ -559,8 +559,20 @@ export function killProcess(key) {
 
     const win = proc.window;
     const handle = proc.handle;
+    const procPath = proc.path; // プロセスが保持していたパス
 
     try {
+        // 【NTFS風改善】プロセス終了と同時に、ファイルロックを非同期で自動解放
+        if (procPath) {
+            import("./fs.js").then(({ unlockFilesByPath }) => {
+                if (typeof unlockFilesByPath === "function") {
+                    unlockFilesByPath(procPath);
+                }
+            }).catch(err => {
+                console.warn("[Kernel] Failed to release file locks on process termination:", err);
+            });
+        }
+
         // 1. アプリ側の明示的クリーンアップ関数（dispose, unmount, destroyなど）
         if (handle) {
             if (typeof handle.dispose === 'function') handle.dispose();
