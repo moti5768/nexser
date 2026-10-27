@@ -1,5 +1,4 @@
 // AudioPlayer.js
-import { FS } from "../fs.js";
 import { resolveFS } from "../fs-utils.js";
 import { getFileContent } from "../fs-db.js";
 import { alertWindow, updateWindowTitle } from "../window.js";
@@ -90,13 +89,13 @@ export default function main(content, options) {
 
     // file-associations.js から AudioPlayer.app が割り当てられている拡張子を自動取得
     const audioExtensions = Object.keys(FILE_ASSOCIATIONS).filter(
-        ext => FILE_ASSOCIATIONS[ext] === "Programs/Applications/AudioPlayer.app"
+        ext => FILE_ASSOCIATIONS[ext] === "C:/Programs/Applications/AudioPlayer.app"
     );
 
     const collectAudioFiles = (node, currentPath = "", visited = new Set()) => {
         let files = [];
         if (!node || typeof node !== "object") return files;
-        if (visited.has(node)) return visited;
+        if (visited.has(node)) return [];
         visited.add(node);
 
         for (const name in node) {
@@ -158,9 +157,8 @@ export default function main(content, options) {
         let baseSearchPath = "";
 
         if (currentPath) {
-            const parts = currentPath.split("/");
-            parts.pop(); // ファイル名を除去して親フォルダのパスにする
-            baseSearchPath = parts.join("/");
+            const lastSlashIndex = currentPath.lastIndexOf("/");
+            baseSearchPath = lastSlashIndex !== -1 ? currentPath.substring(0, lastSlashIndex) : "";
             searchNode = resolveFS(baseSearchPath);
         }
 

@@ -1149,7 +1149,7 @@ export default async function SettingsApp(content) {
             return files;
         };
 
-        const musicNode = resolveFS("Programs/Music");
+        const musicNode = resolveFS("C:/Programs/Music");
         const files = musicNode ? collectAudioFiles(musicNode) : [];
 
         // soundplayer.js と完全に一致させた全イベントリスト

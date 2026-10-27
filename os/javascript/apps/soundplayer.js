@@ -71,10 +71,12 @@ export default function main(content, options) {
     const loopCheckbox = container.querySelector("#loop-checkbox");
 
     // --- 初期化処理 ---
-    if (!FS.Programs.Music) FS.Programs.Music = { type: "folder" };
-    if (!FS.System) FS.System = { type: "folder" };
-    if (!FS.System["SoundConfig.json"]) {
-        FS.System["SoundConfig.json"] = { type: "file", content: "{}" };
+    if (!FS["C:"]) FS["C:"] = { type: "folder" };
+    if (!FS["C:"].Programs) FS["C:"].Programs = { type: "folder" };
+    if (!FS["C:"].Programs.Music) FS["C:"].Programs.Music = { type: "folder" };
+    if (!FS["C:"].System) FS["C:"].System = { type: "folder" };
+    if (!FS["C:"].System["SoundConfig.json"]) {
+        FS["C:"].System["SoundConfig.json"] = { type: "file", content: "{}" };
     }
 
     const isSystemMetaKey = (key) => {
@@ -84,13 +86,13 @@ export default function main(content, options) {
     // サブフォルダを再帰的に走査してファイルパス（folder/file.mp3）の配列を作る関数
     // file-associations.js から AudioPlayer.app が割り当てられている拡張子を自動取得[cite: 3]
     const audioExtensions = Object.keys(FILE_ASSOCIATIONS).filter(
-        ext => FILE_ASSOCIATIONS[ext] === "Programs/Applications/AudioPlayer.app"
+        ext => FILE_ASSOCIATIONS[ext] === "C:/Programs/Applications/AudioPlayer.app"
     );
 
     const collectAudioFiles = (node, currentPath = "", visited = new Set()) => {
         let files = [];
         if (!node || typeof node !== "object") return files;
-        if (visited.has(node)) return visited;
+        if (visited.has(node)) return [];
         visited.add(node);
 
         for (const name in node) {
@@ -113,12 +115,12 @@ export default function main(content, options) {
 
     const refresh = () => {
         listEl.innerHTML = "";
-        const musicNode = resolveFS("Programs/Music");
+        const musicNode = resolveFS("C:/Programs/Music");
         if (!musicNode) return;
 
         let config = {};
         try {
-            config = JSON.parse(FS.System["SoundConfig.json"].content || "{}");
+            config = JSON.parse(FS["C:"].System["SoundConfig.json"].content || "{}");
         } catch (e) {
             config = {};
         }
@@ -195,13 +197,13 @@ export default function main(content, options) {
     };
 
     // イベント割り当て変更
-    listEl.onchange = (e) => {
+    listEl.onchange = async (e) => {
         if (e.target.classList.contains("event-assign")) {
             const eventName = e.target.value;
             if (eventName === "ignore") return;
 
             const fileName = e.target.dataset.filename;
-            let config = JSON.parse(FS.System["SoundConfig.json"].content || "{}");
+            let config = JSON.parse(FS["C:"].System["SoundConfig.json"].content || "{}");
 
             Object.keys(config).forEach(key => {
                 if (config[key] === fileName) delete config[key];
@@ -211,7 +213,12 @@ export default function main(content, options) {
                 config[eventName] = fileName;
             }
 
-            FS.System["SoundConfig.json"].content = JSON.stringify(config, null, 2);
+            FS["C:"].System["SoundConfig.json"].content = JSON.stringify(config, null, 2);
+
+            // 追加: 即時保存とシステムへの変更通知
+            await forceSave?.();
+            window.dispatchEvent(new Event("fs-updated"));
+
             refresh();
         }
     };
@@ -245,7 +252,7 @@ export default function main(content, options) {
             });
         }
 
-        Object.assign(FS.Programs.Music, loadedFiles);
+        Object.assign(FS["C:"].Programs.Music, loadedFiles);
         await forceSave?.();
         window.dispatchEvent(new Event("fs-updated"));
         refresh();
@@ -276,7 +283,7 @@ export default function main(content, options) {
                 currentAudio.src = "";
             }
 
-            let fileNode = resolveFS(`Programs/Music/${path}`);
+            let fileNode = resolveFS(`C:/Programs/Music/${path}`);
             if (!fileNode) {
                 alertWindow("ファイルが見つかりませんでした。");
                 return;
@@ -284,7 +291,7 @@ export default function main(content, options) {
             let audioData = fileNode.content;
 
             if (audioData === "__EXTERNAL_DATA__") {
-                audioData = await getFileContent(`Programs/Music/${path}`);
+                audioData = await getFileContent(`C:/Programs/Music/${path}`);
             }
 
             if (!audioData) {
@@ -323,19 +330,19 @@ export default function main(content, options) {
 
             const parts = path.split("/");
             const fileName = parts.pop();
-            const parentPath = parts.length > 0 ? `Programs/Music/${parts.join("/")}` : "Programs/Music";
-            const parentNode = kernelAPI.fs.read(parentPath);
+            const parentPath = parts.length > 0 ? `C:/Programs/Music/${parts.join("/")}` : "C:/Programs/Music";
+            const parentNode = resolveFS(parentPath);
 
             if (parentNode && parentNode[fileName]) {
                 delete parentNode[fileName];
             }
 
-            let config = JSON.parse(FS.System["SoundConfig.json"].content || "{}");
+            let config = JSON.parse(FS["C:"].System["SoundConfig.json"].content || "{}");
             let changed = false;
             Object.keys(config).forEach(k => {
                 if (config[k] === path) { delete config[k]; changed = true; }
             });
-            if (changed) FS.System["SoundConfig.json"].content = JSON.stringify(config, null, 2);
+            if (changed) FS["C:"].System["SoundConfig.json"].content = JSON.stringify(config, null, 2);
 
             await forceSave?.();
             window.dispatchEvent(new Event("fs-updated"));
