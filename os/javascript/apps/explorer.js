@@ -1525,7 +1525,8 @@ export default async function Explorer(root, options = {}) {
             }
 
             const iconChar = getIcon(name, itemData, childPath, currentPath);
-            const displayName = getDisplayFileName(name, showFileExtensions);
+            const isFolder = itemData && itemData.type === "folder";
+            const displayName = isFolder ? name : getDisplayFileName(name, showFileExtensions);
 
             // --- HTML構造の生成（ビューモードに応じたレイアウト） ---
             if (viewMode === "icon") {
@@ -2403,7 +2404,8 @@ export default async function Explorer(root, options = {}) {
             }
 
             const iconChar = getIcon(res.name, res.node, res.path, currentPath);
-            const displayName = getDisplayFileName(res.name, showFileExtensions); // ★追加
+            const isFolder = res.node && res.node.type === "folder";
+            const displayName = isFolder ? res.name : getDisplayFileName(res.name, showFileExtensions);
 
             item.innerHTML = `
             <span class="item-icon-small">${iconChar}</span>

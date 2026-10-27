@@ -69,7 +69,9 @@ export function buildDesktop() {
 
         const iconLabel = document.createElement("div");
         iconLabel.className = "icon-label";
-        iconLabel.textContent = getDisplayFileName(name, showFileExtensions);
+        // フォルダの場合は拡張子非表示設定の対象外とする（Windowsの仕様）
+        const isFolder = node && node.type === "folder";
+        iconLabel.textContent = isFolder ? name : getDisplayFileName(name, showFileExtensions);
 
         item.appendChild(iconGraphic);
         item.appendChild(iconLabel);
