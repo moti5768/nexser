@@ -38,10 +38,14 @@ function getMimeType(name) {
 const previewCache = new Map();
 
 function collectFilesRecursive(basePath) {
-    const targetPath = basePath ? basePath.replace(/^\/+/, "") : "";
+    let targetPath = basePath ? basePath.replace(/^\/+/, "") : "";
+    if (targetPath && !targetPath.startsWith("C:") && !targetPath.startsWith("c:")) {
+        targetPath = `C:/${targetPath.replace(/^[\/\\]+/, "")}`;
+    }
+
     const result = new Map();
     const visitedPaths = new Set();
-    const visitedNodes = new WeakSet(); // ⭐ オノード自体の循環参照を完全にブロック
+    const visitedNodes = new WeakSet();
 
     function walk(path, depth = 0) {
         if (depth > 12 || visitedPaths.has(path)) return;

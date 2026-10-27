@@ -104,7 +104,7 @@ export default async function TextEditor(root, options = {}) {
     updateTitle();
 
     async function save() {
-        const desktop = resolveFS("Desktop");
+        const desktop = resolveFS("C:/Desktop");
         if (!desktop) { showWarning(root, "Desktop が見つかりません"); return; }
 
         const treatAsNew = !fileNode || (filePath && filePath.toLowerCase().endsWith("texteditor.app"));

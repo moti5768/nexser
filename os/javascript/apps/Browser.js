@@ -248,7 +248,7 @@ export default async function BrowserApp(root, options = {}) {
                     {
                         label: "Save Shortcut",
                         action: () => {
-                            const desktop = resolveFS("Desktop");
+                            const desktop = resolveFS("C:/Desktop");
                             if (!desktop) {
                                 alertWindow("Desktop が見つかりません", { parentWin: win });
                                 return;

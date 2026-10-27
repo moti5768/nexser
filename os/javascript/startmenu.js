@@ -26,8 +26,8 @@ export async function buildStartMenu() {
     // 設定クラスの付与（CSSでの制御用：メモリ上のキャッシュを利用）
     menu.classList.toggle("small-icons", window.smallIcons);
 
-    // FSに定義されている StartMenu をルートとしてメニューを構築[cite: 3]
-    const startMenuContainer = createMenu(FS.StartMenu, "StartMenu", menu);
+    // FSに定義されている C:/StartMenu をルートとしてメニューを構築
+    const startMenuContainer = createMenu(FS["C:"].StartMenu, "C:/StartMenu", menu);
     if (startMenuContainer) {
         // ✨ 子要素をバラさず、コンテナごとメニューに追加する
         menu.appendChild(startMenuContainer);
@@ -121,7 +121,7 @@ export async function buildStartMenu() {
                     break;
                 }
                 case "folder":
-                    launch("Programs/Applications/Explorer.app", { path: runPath, uniqueKey: runPath });
+                    launch("C:/Programs/Applications/Explorer.app", { path: runPath, uniqueKey: runPath });
                     addRecent({ type: "folder", path: runPath });
                     break;
             }
@@ -380,7 +380,7 @@ async function launchByType(type, path) {
             break;
         }
         case "folder":
-            launch("Programs/Applications/Explorer.app", { path, uniqueKey: path });
+            launch("C:/Programs/Applications/Explorer.app", { path, uniqueKey: path });
             addRecent(recentItem);
             break;
     }

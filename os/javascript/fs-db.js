@@ -95,9 +95,10 @@ function extractAndStrip(obj, path = "", largeFiles = new Map(), visited = new W
                 continue;
             }
         }
-
         if (value !== null && typeof value === "object" && !isBlobOrBuffer) {
-            const nextPath = path ? `${path}/${key}` : key;
+            // ⭐ スラッシュの重複を防ぎ、安全な階層パスを組み立てる
+            const cleanPath = path ? path.replace(/\/+$/, "") : "";
+            const nextPath = cleanPath ? `${cleanPath}/${key}` : key;
             copy[key] = extractAndStrip(value, nextPath, largeFiles, visited);
         } else {
             copy[key] = value;
@@ -294,7 +295,8 @@ export async function saveFS(fs) {
                 const largeFiles = new Map();
                 const cleanFS = extractAndStrip(fs, "", largeFiles);
 
-                if (!cleanFS?.System) throw new Error("FS corruption detected.");
+                // ✅ C: ドライブ配下に System が存在するかチェックするように修正
+                if (!cleanFS?.["C:"]?.System) throw new Error("FS corruption detected.");
 
                 const validFilePaths = collectValidFilePaths(cleanFS);
 
@@ -379,7 +381,7 @@ export async function saveFS(fs) {
 
 export async function loadFS() {
     try {
-        // 起動時に前回のジャーナル（fs_journal）が残っていないかチェックし自動クリーンアップ[cite: 3]
+        // 起動時に前回のジャーナル（fs_journal）が残っていないかチェックし自動クリーンアップ
         const journal = await dbGet("fs_journal", STORE_KV);
         if (journal) {
             console.warn("[FS-DB] Recovery: Uncommitted journal detected from previous session. Performing integrity check.");
@@ -388,6 +390,10 @@ export async function loadFS() {
         }
         const legacyData = await dbGet("fs", STORE_KV);
         if (legacyData) {
+            // 旧データがすでにCドライブ構造を持っていなければラップする
+            if (!legacyData["C:"]) {
+                return { "C:": legacyData };
+            }
             return legacyData;
         }
         const db = await openDB();
@@ -413,7 +419,25 @@ export async function loadFS() {
             }
         }
 
-        return hasData ? loadedFS : null;
+        if (hasData) {
+            // ✅ 旧構造のキー群が検出された場合はCドライブ配下に安全に移行
+            if (!loadedFS["C:"] && (loadedFS["System"] || loadedFS["Programs"] || loadedFS["Desktop"])) {
+                console.warn("[FS-DB] Legacy multi-key structure detected. Migrating to C: drive structure.");
+                const cDriveContent = {};
+                const topKeys = Object.keys(loadedFS);
+                for (const k of topKeys) {
+                    // ⚠️ ジャーナルなどの制御用キーがドライブ内に混入しないよう除外
+                    if (k === "journal" || k === "fs_journal") continue;
+
+                    cDriveContent[k] = loadedFS[k];
+                    delete loadedFS[k];
+                }
+                loadedFS["C:"] = cDriveContent;
+            }
+            return loadedFS;
+        }
+
+        return null;
     } catch (err) {
         console.error("[FS-DB] Load failed:", err?.message || err);
         return null;

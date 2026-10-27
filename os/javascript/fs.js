@@ -47,110 +47,109 @@ export function unlockFilesByPath(pathPrefix) {
 }
 
 // 1. ベースデータ
+// ✅ 改善後：Windows と同様に "C:" ドライブを明確なルートコンテナとし、その配下に体系化
 const baseFS = {
-    System: {
+    "C:": {
         type: "folder",
         system: true,
-        "AUTOBOOT.CFG": { type: "file", system: true, content: "", hidden: true },
-        "SoundConfig.json": { type: "file", system: true, content: "{}" }
-    },
-    Desktop: {
-        type: "folder",
-        system: true,
-        Trash: { type: "link", target: "Trash", system: true },
-        "My Computer": { type: "link", target: "Programs" },
-        "ControlPanel": { type: "link", target: "Programs/ControlPanel" },
-        Documents: { type: "link", target: "Programs/Documents" },
-        "Terminal.app": { type: "link", target: "Programs/Applications/Terminal.app" },
-        "Calc.app": { type: "link", target: "Programs/Applications/Calc.app" },
-        "Soundsplayer.app": { type: "link", target: "Programs/Applications/Soundsplayer.app" },
-        "Settings.app": { type: "link", target: "Programs/Applications/Settings.app" }
-    },
-    StartMenu: {
-        type: "folder",
-        system: true,
-        Programs: { type: "link", target: "Programs" },
-        ControlPanel: { type: "link", target: "Programs/ControlPanel" },
-        Documents: { type: "link", target: "Programs/Documents" },
-        "Settings.app": { type: "link", target: "Programs/Applications/Settings.app" },
-        "Terminal.app": { type: "link", target: "Programs/Applications/Terminal.app" }
-    },
-    Trash: { type: "folder", system: true },
-    Programs: {
-        type: "folder",
-        system: true,
-        Applications: {
+        System: {
             type: "folder",
             system: true,
-            "Calc.app": { type: "app", entry: "./apps/calc.js", system: true, singleton: true },
-            "TextEditor.app": { type: "app", entry: "./apps/texteditor.js", system: true },
-            "CodeEditor.app": { type: "app", entry: "./apps/codeeditor.js", system: true },
-            "ImageViewer.app": { type: "app", entry: "./apps/imageviewer.js", system: true },
-            "VideoPlayer.app": { type: "app", entry: "./apps/videoplayer.js", system: true },
-            "Clock.app": { type: "app", entry: "./apps/clock.js", system: true, singleton: true },
-            "Terminal.app": { type: "app", entry: "./apps/terminal.js", system: true, singleton: true },
-            "TaskManager.app": { type: "app", name: "Task Manager", entry: "./apps/taskmanager.js", system: true, singleton: true },
-            "Settings.app": { type: "app", entry: "./apps/settings.js", system: true, singleton: true },
-            "Explorer.app": { type: "app", entry: "./apps/explorer.js", system: true, shell: true, hidden: true },
-            "Soundsplayer.app": { type: "app", entry: "./apps/soundplayer.js", system: true },
-            "AudioPlayer.app": { type: "app", entry: "./apps/audioplayer.js", system: true },
-            "Paint.app": { type: "app", entry: "./apps/paint.js", system: true },
-            "RegistryEditor.app": { type: "app", entry: "./apps/registryeditor.js", system: true },
-            "SystemProperties.app": { type: "app", entry: "./apps/systemproperties.js", system: true },
-            "TaskbarProperties.app": { type: "app", entry: "./apps/taskbarproperties.js", system: true },
-            "PDFViewer.app": { type: "app", entry: "./apps/pdfviewer.js", system: true },
-            "Browser.app": { type: "app", entry: "./apps/Browser.js", system: true },
-            "Networkmonitor.app": { type: "app", entry: "./apps/network_monitor.js", system: true }
+            "AUTOBOOT.CFG": { type: "file", system: true, content: "", hidden: true },
+            "SoundConfig.json": { type: "file", system: true, content: "{}" }
         },
-        ControlPanel: {
+        Desktop: {
             type: "folder",
             system: true,
-            "TaskbarProperties.app": { type: "link", target: "Programs/Applications/TaskbarProperties.app" },
-            "SystemProperties.app": { type: "link", target: "Programs/Applications/SystemProperties.app" }
+            Trash: { type: "link", target: "C:/Trash", system: true },
+            "My Computer": { type: "link", target: "C:/Programs" },
+            "ControlPanel": { type: "link", target: "C:/Programs/ControlPanel" },
+            Documents: { type: "link", target: "C:/Programs/Documents" },
+            "Terminal.app": { type: "link", target: "C:/Programs/Applications/Terminal.app" },
+            "Calc.app": { type: "link", target: "C:/Programs/Applications/Calc.app" },
+            "Soundsplayer.app": { type: "link", target: "C:/Programs/Applications/Soundsplayer.app" },
+            "Settings.app": { type: "link", target: "C:/Programs/Applications/Settings.app" }
         },
-        Accessories: {
+        StartMenu: {
             type: "folder",
             system: true,
-            "Calc.app": { type: "link", target: "Programs/Applications/Calc.app" },
-            "TextEditor.app": { type: "link", target: "Programs/Applications/TextEditor.app" },
-            "Paint.app": { type: "link", target: "Programs/Applications/Paint.app" },
-            Games: {
+            Programs: { type: "link", target: "C:/Programs" },
+            ControlPanel: { type: "link", target: "C:/Programs/ControlPanel" },
+            Documents: { type: "link", target: "C:/Programs/Documents" },
+            "Settings.app": { type: "link", target: "C:/Programs/Applications/Settings.app" },
+            "Terminal.app": { type: "link", target: "C:/Programs/Applications/Terminal.app" }
+        },
+        Trash: { type: "folder", system: true },
+        Programs: {
+            type: "folder",
+            system: true,
+            Applications: {
                 type: "folder",
                 system: true,
-                "Tetris.app": { type: "app", entry: "./apps/games/tetris.js", system: true },
-                "Minesweeper.app": { type: "app", entry: "./apps/games/minesweeper.js", system: true }
+                "Calc.app": { type: "app", entry: "./apps/calc.js", system: true, singleton: true },
+                "TextEditor.app": { type: "app", entry: "./apps/texteditor.js", system: true },
+                "CodeEditor.app": { type: "app", entry: "./apps/codeeditor.js", system: true },
+                "ImageViewer.app": { type: "app", entry: "./apps/imageviewer.js", system: true },
+                "VideoPlayer.app": { type: "app", entry: "./apps/videoplayer.js", system: true },
+                "Clock.app": { type: "app", entry: "./apps/clock.js", system: true, singleton: true },
+                "Terminal.app": { type: "app", entry: "./apps/terminal.js", system: true, singleton: true },
+                "TaskManager.app": { type: "app", name: "Task Manager", entry: "./apps/taskmanager.js", system: true, singleton: true },
+                "Settings.app": { type: "app", entry: "./apps/settings.js", system: true, singleton: true },
+                "Explorer.app": { type: "app", entry: "./apps/explorer.js", system: true, shell: true, hidden: true },
+                "Soundsplayer.app": { type: "app", entry: "./apps/soundplayer.js", system: true },
+                "AudioPlayer.app": { type: "app", entry: "./apps/audioplayer.js", system: true },
+                "Paint.app": { type: "app", entry: "./apps/paint.js", system: true },
+                "RegistryEditor.app": { type: "app", entry: "./apps/registryeditor.js", system: true },
+                "SystemProperties.app": { type: "app", entry: "./apps/systemproperties.js", system: true },
+                "TaskbarProperties.app": { type: "app", entry: "./apps/taskbarproperties.js", system: true },
+                "PDFViewer.app": { type: "app", entry: "./apps/pdfviewer.js", system: true },
+                "Browser.app": { type: "app", entry: "./apps/Browser.js", system: true },
+                "Networkmonitor.app": { type: "app", entry: "./apps/network_monitor.js", system: true }
             },
-            Multimedia: {
+            ControlPanel: {
                 type: "folder",
                 system: true,
-                "CodeEditor.app": { type: "link", target: "Programs/Applications/CodeEditor.app" },
-                "ImageViewer.app": { type: "link", target: "Programs/Applications/ImageViewer.app" },
-                "PDFViewer.app": { type: "link", target: "Programs/Applications/PDFViewer.app" },
-                "VideoPlayer.app": { type: "link", target: "Programs/Applications/VideoPlayer.app" }
+                "TaskbarProperties.app": { type: "link", target: "C:/Programs/Applications/TaskbarProperties.app" },
+                "SystemProperties.app": { type: "link", target: "C:/Programs/Applications/SystemProperties.app" }
             },
-            Systemtools: {
+            Accessories: {
                 type: "folder",
                 system: true,
-                "Clock.app": { type: "link", target: "Programs/Applications/Clock.app" },
-                "Terminal.app": { type: "link", target: "Programs/Applications/Terminal.app" },
-                "TaskManager.app": { type: "link", target: "Programs/Applications/TaskManager.app" },
-                "RegistryEditor.app": { type: "link", target: "Programs/Applications/RegistryEditor.app" }
+                "Calc.app": { type: "link", target: "C:/Programs/Applications/Calc.app" },
+                "TextEditor.app": { type: "link", target: "C:/Programs/Applications/TextEditor.app" },
+                "Paint.app": { type: "link", target: "C:/Programs/Applications/Paint.app" },
+                Games: {
+                    type: "folder",
+                    system: true,
+                    "Tetris.app": { type: "app", entry: "./apps/games/tetris.js", system: true },
+                    "Minesweeper.app": { type: "app", entry: "./apps/games/minesweeper.js", system: true }
+                },
+                Multimedia: {
+                    type: "folder",
+                    system: true,
+                    "CodeEditor.app": { type: "link", target: "C:/Programs/Applications/CodeEditor.app" },
+                    "ImageViewer.app": { type: "link", target: "C:/Programs/Applications/ImageViewer.app" },
+                    "PDFViewer.app": { type: "link", target: "C:/Programs/Applications/PDFViewer.app" },
+                    "VideoPlayer.app": { type: "link", target: "C:/Programs/Applications/VideoPlayer.app" }
+                },
+                Systemtools: {
+                    type: "folder",
+                    system: true,
+                    "Clock.app": { type: "link", target: "C:/Programs/Applications/Clock.app" },
+                    "Terminal.app": { type: "link", target: "C:/Programs/Applications/Terminal.app" },
+                    "TaskManager.app": { type: "link", target: "C:/Programs/Applications/TaskManager.app" },
+                    "RegistryEditor.app": { type: "link", target: "C:/Programs/Applications/RegistryEditor.app" }
+                }
+            },
+            Documents: { type: "folder", system: true },
+            Music: { type: "folder", system: true },
+            Picture: { type: "folder", system: true },
+            Movie: { type: "folder", system: true },
+            Settings: {
+                type: "folder",
+                system: true,
+                "Settings.app": { type: "link", target: "C:/Programs/Applications/Settings.app" }
             }
-        },
-        Documents: {
-            type: "folder",
-            system: true
-        },
-        Music: { type: "folder", system: true },
-        Picture: {
-            type: "folder",
-            system: true
-        },
-        Movie: { type: "folder", system: true },
-        Settings: {
-            type: "folder",
-            system: true,
-            "Settings.app": { type: "link", target: "Programs/Applications/Settings.app" }
         }
     }
 };
@@ -449,14 +448,15 @@ export async function diagnoseAndCleanFS(executeRepair = false) {
         logs: []
     };
 
-    if (FS.Trash) {
-        const trashKeys = Object.keys(FS.Trash).filter(key => !PROTECTED_KEYS.has(key));
+    const trashNode = FS["C:"] ? FS["C:"].Trash : null;
+    if (trashNode) {
+        const trashKeys = Object.keys(trashNode).filter(key => !PROTECTED_KEYS.has(key));
         report.garbageItems += trashKeys.length;
         report.garbageNames = trashKeys;
 
         if (executeRepair && trashKeys.length > 0) {
             trashKeys.forEach(key => {
-                delete FS.Trash[key];
+                delete trashNode[key];
             });
             report.logs.push(`ゴミ箱から ${trashKeys.length} 個の項目を完全に削除しました。`);
         } else if (trashKeys.length > 0) {
@@ -464,20 +464,41 @@ export async function diagnoseAndCleanFS(executeRepair = false) {
         }
     }
 
+    if (!FS["C:"] || FS["C:"].type !== "folder") {
+        report.corruptionDetected = true;
+        report.logs.push(`【警告】システム構造破損: 'C:' ドライブが不正、または消失しています。`);
+        if (executeRepair) {
+            FS["C:"] = structuredClone(FACTORY_FS["C:"]);
+            report.logs.push(`[修復] 'C:' ドライブを工場出荷時の状態に再生成しました。`);
+        }
+    }
+
     const vitalNodes = ["System", "Desktop", "Programs", "StartMenu"];
+    let needsRepair = false;
+
     vitalNodes.forEach(node => {
-        if (!FS[node] || FS[node].type !== "folder") {
+        // ✅ C: ドライブ配下のフォルダ構造を検証
+        if (!FS["C:"] || !FS["C:"][node] || FS["C:"][node].type !== "folder") {
             report.corruptionDetected = true;
-            report.logs.push(`【警告】システム構造破損: '${node}' ディレクトリが不正、または消失しています。`);
+            report.logs.push(`【警告】システム構造破損: 'C:/${node}' ディレクトリが不正、または消失しています。`);
 
             if (executeRepair) {
-                FS[node] = structuredClone(FACTORY_FS[node]);
-                report.logs.push(`[修復] '${node}' ディレクトリを工場出荷時の状態に再生成しました。`);
+                needsRepair = true;
+                if (!FS["C:"]) FS["C:"] = { type: "folder", system: true };
+
+                // ⭐ 一括更新フラグを有効化して、個別の自動部分保存の頻発を抑制
+                setBulkUpdating(true);
+                try {
+                    FS["C:"][node] = structuredClone(FACTORY_FS["C:"][node]);
+                    report.logs.push(`[修復] 'C:/${node}' ディレクトリを工場出荷時の状態に再生成しました。`);
+                } finally {
+                    setBulkUpdating(false);
+                }
             }
         }
     });
 
-    if (executeRepair) {
+    if (executeRepair && needsRepair) {
         await forceSave();
         window.dispatchEvent(new Event("fs-updated"));
     }
@@ -486,8 +507,12 @@ export async function diagnoseAndCleanFS(executeRepair = false) {
 }
 
 export async function markDefaultDeleted(path) {
-    const parts = path.split("/");
-    let node = FACTORY_FS;
+    // 循環インポートを回避するため、実行時に動的インポートする
+    const { normalizePath } = await import("./fs-utils.js");
+    const normalized = normalizePath(path);
+
+    const parts = normalized.replace(/^C:\//, "").split("/").filter(Boolean);
+    let node = FACTORY_FS["C:"];
     for (const p of parts) {
         if (node && node[p]) {
             node = node[p];
@@ -497,7 +522,7 @@ export async function markDefaultDeleted(path) {
         }
     }
     if (node) {
-        deletedDefaults.add(path);
+        deletedDefaults.add(normalized);
         await dbSet("deleted_defaults", Array.from(deletedDefaults), "kv").catch(e => console.error(e));
     }
 }
@@ -537,7 +562,7 @@ if (typeof window !== "undefined") {
             if (!hasInstalled) return;
 
             const { dbGet } = await import("./fs-db.js");
-            const sysData = await dbGet("fs_System", "kv");
+            const sysData = await dbGet("fs_C:", "kv"); // ✅ C: ドライブの保存データを正しく参照
 
             if (!sysData) {
                 console.error("[FS Watchdog] Critical: Boot volume or database has been deleted externally!");

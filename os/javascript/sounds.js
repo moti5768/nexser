@@ -67,12 +67,12 @@ export const startup_sound = startupSound;
  * FSに保存された音声データを再生する
  */
 export async function playSavedAudio(path) {
-    const file = resolveFS(`Programs/Music/${path}`);
+    const file = resolveFS(`C:/Programs/Music/${path}`);
     if (file && file.content) {
         let audioData = file.content;
         if (audioData === "__EXTERNAL_DATA__") {
             const { getFileContent } = await import("./fs-db.js");
-            audioData = await getFileContent(`Programs/Music/${path}`);
+            audioData = await getFileContent(`C:/Programs/Music/${path}`);
         }
         if (audioData) {
             const audio = new Audio(audioData);
@@ -86,20 +86,18 @@ export async function playSavedAudio(path) {
  */
 export async function playSystemEventSound(eventName) {
     try {
-        const configText = FS.System?.["SoundConfig.json"]?.content;
+        const configText = FS["C:"]?.System?.["SoundConfig.json"]?.content;
         const config = JSON.parse(configText || "{}");
         const path = config[eventName];
 
         if (path) {
-            // resolveFS を使ってサブフォルダ階層のパスから安全にファイルを取得
-            const file = resolveFS(`Programs/Music/${path}`);
+            const file = resolveFS(`C:/Programs/Music/${path}`);
             if (file) {
                 let audioData = file.content;
 
-                // 外部DBに保存されている実データを取得する
                 if (audioData === "__EXTERNAL_DATA__") {
                     const { getFileContent } = await import("./fs-db.js");
-                    audioData = await getFileContent(`Programs/Music/${path}`);
+                    audioData = await getFileContent(`C:/Programs/Music/${path}`);
                 }
 
                 if (audioData) {

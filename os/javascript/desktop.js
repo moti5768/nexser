@@ -76,7 +76,7 @@ export function buildDesktop() {
         item.appendChild(iconGraphic);
         item.appendChild(iconLabel);
 
-        const fullPath = `Desktop/${name}`;
+        const fullPath = `C:/Desktop/${name}`;
 
         // 選択
         // 選択処理 (単一 / Ctrl / Shift 選択対応)
@@ -144,7 +144,7 @@ export function buildDesktop() {
                 // ターゲットが「リンク（ショートカット）」の場合は実体を解決する
                 let targetType = node.type;
                 let targetNode = node;
-                let targetPath = `Desktop/${name}`; // ターゲットの実際のパス
+                let targetPath = `C:/Desktop/${name}`; // ターゲットの実際のパス
                 if (targetType === "link") {
                     let currentTarget = node.target;
                     let resolvedNode = null;
@@ -167,7 +167,7 @@ export function buildDesktop() {
                 // ドロップ先がフォルダ（実体またはフォルダへのリンク）の場合
                 if (targetType === "folder") {
                     e.stopPropagation();
-                    const desktopFS = FS.Desktop;
+                    const desktopFS = FS["C:"].Desktop;
 
                     // ⭐ IndexedDB上の実データを移動・コピーするためのAPIをインポート
                     const { moveFileContent, copyFileContent } = await import("./fs-db.js");
@@ -204,7 +204,7 @@ export function buildDesktop() {
 
                     // エクスプローラーからドラッグされた場合
                     if (data.type === "explorer-icons") {
-                        const sourcePath = data.sourcePath || "Desktop";
+                        const sourcePath = data.sourcePath || "C:/Desktop";
                         const sourceFolder = resolveFS(sourcePath);
                         if (!sourceFolder) return;
 
@@ -262,11 +262,11 @@ export function buildDesktop() {
                     }
                     // デスクトップ内のアイコンからドラッグされた場合
                     else if (data.type === "desktop-icons") {
-                        const sourcePath = "Desktop";
+                        const sourcePath = "C:/Desktop";
                         for (const itemName of data.names) {
                             if (!desktopFS[itemName]) continue;
 
-                            const sourceFullPath = `Desktop/${itemName}`;
+                            const sourceFullPath = `C:/Desktop/${itemName}`;
                             const targetFullPath = targetPath; // ドロップ先のフルパス
 
                             // ⭐ 厳格なガードチェック：自分自身や子孫フォルダへの移動・コピーを防止
@@ -320,7 +320,7 @@ export function buildDesktop() {
                     }
 
                     const { saveFolderNode } = await import("./fs-db.js");
-                    await saveFolderNode("Desktop", FS.Desktop);
+                    await saveFolderNode("C:", FS["C:"]);
                     window.dispatchEvent(new Event("fs-updated"));
                     buildDesktop();
                     return;
@@ -336,16 +336,16 @@ export function buildDesktop() {
 
         // ダブルクリック
         item.addEventListener("dblclick", () => {
-            openFSItem(name, node, "Desktop");
+            openFSItem(name, node, "C:/Desktop");
         });
 
         // 右クリック
         attachContextMenu(item, () => {
-            const isTrash = (name === "Trash");
+            const isTrash = (name === "C:/Trash");
             return [
                 {
                     label: "開く",
-                    action: () => openFSItem(name, node, "Desktop")
+                    action: () => openFSItem(name, node, "C:/Desktop")
                 },
                 ...(isTrash ? [
                     {
@@ -358,19 +358,19 @@ export function buildDesktop() {
                     label: "ショートカットの作成",
                     action: async () => {
                         const baseName = `${name} のショートカット`;
-                        const uniqueName = getUniqueName(FS.Desktop, baseName);
+                        const uniqueName = getUniqueName(FS["C:"].Desktop, baseName);
 
                         // ★ 改善: すでにリンクの場合は、その実体 target を引き継ぐ
-                        const absoluteTargetPath = fullPath.startsWith("Desktop/") ? fullPath : `Desktop/${name}`;
+                        const absoluteTargetPath = fullPath.startsWith("C:/Desktop/") ? fullPath : `C:/Desktop/${name}`;
                         const realTargetPath = node.type === "link" ? node.target : absoluteTargetPath;
 
-                        FS.Desktop[uniqueName] = {
+                        FS["C:"].Desktop[uniqueName] = {
                             type: "link",
                             target: realTargetPath,
                             lastModified: Date.now()
                         };
                         const { saveFolderNode } = await import("./fs-db.js");
-                        await saveFolderNode("Desktop", FS.Desktop);
+                        await saveFolderNode("C:", FS["C:"]);
                         window.dispatchEvent(new Event("fs-updated"));
                     }
                 },
@@ -388,22 +388,22 @@ export function buildDesktop() {
                             globalSelected.items.clear();
 
                             for (const name of itemsToDelete) {
-                                const success = await deleteFSItem("Desktop", name, false);
+                                const success = await deleteFSItem("C:/Desktop", name, false);
                                 if (success) {
-                                    await markDefaultDeleted(`Desktop/${name}`);
+                                    await markDefaultDeleted(`C:/Desktop/${name}`);
                                 }
                             }
 
                             // ⭐ Desktopフォルダだけを個別部分保存
                             const { saveFolderNode } = await import("./fs-db.js");
-                            await saveFolderNode("Desktop", FS.Desktop);
+                            await saveFolderNode("C:", FS["C:"]);
                             window.dispatchEvent(new Event("fs-updated"));
                         }
                     }
                 },
                 {
                     label: "削除",
-                    action: () => deleteFSItem("Desktop", name)
+                    action: () => deleteFSItem("C:/Desktop", name)
                 },
                 {
                     label: "プログラムから開く",
@@ -431,7 +431,7 @@ export function buildDesktop() {
                 item.style.top = `${iconPositions[name].y}px`;
             } else {
                 // ドラッグ歴がないアイコンや新規作成アイコンを標準グリッド（縦並び）に配置
-                const iconNames = Object.keys(FS.Desktop).filter(k => k !== "type" && k !== "system");
+                const iconNames = Object.keys(FS["C:"].Desktop).filter(k => k !== "type" && k !== "system");
                 const iconIndex = iconNames.indexOf(name);
                 const rowHeight = 90;
                 const colWidth = 90;
@@ -448,10 +448,10 @@ export function buildDesktop() {
         return item; // ← appendしない
     }
 
-    // 🔥 ここでまとめて作る
-    for (const name in FS.Desktop) {
+    // 🔥 Cドライブ配下のデスクトップを走査するように修正
+    for (const name in FS["C:"].Desktop) {
         if (name === "type" || name === "system" || name === "lastModified") continue;
-        fragment.appendChild(createIcon(name, FS.Desktop[name]));
+        fragment.appendChild(createIcon(name, FS["C:"].Desktop[name]));
     }
 
     // 🔥 一括反映
@@ -461,7 +461,7 @@ export function buildDesktop() {
     // --------------------
     // 右クリックメニュー（デスクトップ）
     // --------------------
-    const desktopNode = FS.Desktop; // ← resolveFS削減
+    const desktopNode = FS["C:"].Desktop;
 
     attachContextMenu(desktop, (e) => {
         if (e.target.closest(".window")) return [];
@@ -475,19 +475,19 @@ export function buildDesktop() {
             if (node) {
                 items.push({
                     label: "開く",
-                    action: () => openFSItem(name, node, "Desktop")
+                    action: () => openFSItem(name, node, "C:/Desktop")
                 });
             }
         }
 
         items.push({
             label: "新規フォルダ",
-            action: () => createNewItem("Desktop", iconsContainer, "folder")
+            action: () => createNewItem("C:/Desktop", iconsContainer, "folder")
         });
 
         items.push({
             label: "新規テキストファイル",
-            action: () => createNewItem("Desktop", iconsContainer, "file")
+            action: () => createNewItem("C:/Desktop", iconsContainer, "file")
         });
 
         items.push({
@@ -548,15 +548,15 @@ export function buildDesktop() {
                     globalSelected.items.clear();
 
                     for (const name of itemsToDelete) {
-                        const success = await deleteFSItem("Desktop", name, false);
+                        const success = await deleteFSItem("C:/Desktop", name, false);
                         if (success) {
-                            await markDefaultDeleted(`Desktop/${name}`);
+                            await markDefaultDeleted(`C:/Desktop/${name}`);
                         }
                     }
 
                     // ⭐ Desktopフォルダだけを個別部分保存
                     const { saveFolderNode } = await import("./fs-db.js");
-                    await saveFolderNode("Desktop", FS.Desktop);
+                    await saveFolderNode("C:", FS["C:"]);
                     window.dispatchEvent(new Event("fs-updated"));
                 }
             }
@@ -565,7 +565,7 @@ export function buildDesktop() {
         if (globalSelected.item) {
             const name = globalSelected.item.dataset.name;
             const node = desktopNode[name];
-            const fullPath = `Desktop/${name}`;
+            const fullPath = `C:/Desktop/${name}`;
 
             items.push({
                 label: "プログラムから開く",
@@ -771,13 +771,13 @@ export function buildDesktop() {
             try {
                 const data = dataStr ? JSON.parse(dataStr) : null;
                 if (data && data.type === "explorer-icons") {
-                    const sourcePath = data.sourcePath || "Desktop";
+                    const sourcePath = data.sourcePath || "C:/Desktop";
 
                     // 移動の場合で、同じ場所（DesktopからDesktopの背景）へのドロップは処理しない（コピーなら許可）
                     if (!isCopy && sourcePath === "Desktop") return;
 
                     const sourceFolder = resolveFS(sourcePath);
-                    const targetFolderNode = FS.Desktop;
+                    const targetFolderNode = FS["C:"].Desktop;
                     if (sourceFolder && targetFolderNode) {
                         // ⭐ IndexedDB上の実データを移動・コピーするためのAPIをインポート
                         const { moveFileContent, copyFileContent } = await import("./fs-db.js");
@@ -815,7 +815,7 @@ export function buildDesktop() {
                             const uniqueTargetName = getUniqueName(targetFolderNode, itemName);
                             const sourceItemNode = JSON.parse(JSON.stringify(sourceFolder[itemName]));
                             const sourceFullPath = `${sourcePath}/${itemName}`;
-                            const newTargetFullPath = `Desktop/${uniqueTargetName}`;
+                            const newTargetFullPath = `C:/Desktop/${uniqueTargetName}`;
 
                             if (isCopy) {
                                 // ⭐ コピーの場合：IndexedDB上の実データを複製し、元データは削除しない
@@ -854,7 +854,7 @@ export function buildDesktop() {
                         }
 
                         const { saveFolderNode } = await import("./fs-db.js");
-                        await saveFolderNode("Desktop", FS.Desktop);
+                        await saveFolderNode("C:", FS["C:"]);
                         window.dispatchEvent(new Event("fs-updated"));
                         buildDesktop();
                         return;
@@ -889,7 +889,7 @@ export function buildDesktop() {
                 }
             } catch (err) { /* JSONパースエラー時は無視して通常のファイルドロップ処理へ */ }
 
-            const folderNode = FS.Desktop; // デスクトップの仮想FSノードを参照
+            const folderNode = FS["C:"].Desktop; // デスクトップの仮想FSノードを参照
             if (!folderNode) return;
 
             // ドロップされた直後のエントリを取得
@@ -940,7 +940,7 @@ export function buildDesktop() {
                 };
 
                 const { saveFolderNode } = await import("./fs-db.js");
-                await saveFolderNode("Desktop", FS.Desktop);
+                await saveFolderNode("C:", FS["C:"]);
                 window.dispatchEvent(new Event("fs-updated"));
                 buildDesktop();
                 return;
@@ -1040,7 +1040,7 @@ export function buildDesktop() {
                 pg.update(totalFiles, totalFiles, "すべての項目のコピーが完了しました。");
 
                 const { saveFolderNode } = await import("./fs-db.js");
-                await saveFolderNode("Desktop", FS.Desktop);
+                await saveFolderNode("C:", FS["C:"]);
 
             } catch (err) {
                 console.error("Drop processing failed:", err);
@@ -1215,7 +1215,7 @@ function createNewItem(currentPath, container, itemType = "folder") {
         // ⭐ 改善点③: 新規作成時も重い forceSave の代わりに Desktop フォルダの個別部分保存を適用
         try {
             const { saveFolderNode } = await import("./fs-db.js");
-            await saveFolderNode("Desktop", FS.Desktop);
+            await saveFolderNode("C:", FS["C:"]);
         } catch (err) {
             console.error("[Desktop] 新規作成の保存に失敗しました:", err);
         }
@@ -1249,7 +1249,7 @@ async function deleteFSItem(parentPath, itemName, dispatchEvent = true) {
     if (!parentNode || !parentNode[itemName]) return false;
 
     // --- ゴミ箱内からの完全消去の場合 ---
-    const isTrash = parentPath === "Trash" || parentPath.startsWith("Trash/");
+    const isTrash = parentPath === "C:/Trash" || parentPath.startsWith("Trash/");
     if (isTrash) {
         delete parentNode[itemName];
         if (dispatchEvent) {
@@ -1263,7 +1263,7 @@ async function deleteFSItem(parentPath, itemName, dispatchEvent = true) {
         const targetItemData = JSON.parse(JSON.stringify(parentNode[itemName]));
         targetItemData.originalPath = parentPath;
 
-        const trashNode = resolveFS("Trash");
+        const trashNode = resolveFS("C:/Trash");
         if (!trashNode) {
             delete parentNode[itemName];
             if (dispatchEvent) {
@@ -1331,7 +1331,7 @@ function openFSItem(name, node, parentPath) {
     // 4. フォルダの展開
     else if (type === "folder") {
         // Windowsは常に共通のエクスプローラーを起動
-        launch("Programs/Applications/Explorer.app", {
+        launch("C:/Programs/Applications/Explorer.app", {
             path: targetPath,
             uniqueKey: targetPath,
             showFullPath: true // Windowsらしくパスを表示
@@ -1500,9 +1500,9 @@ function setupDesktopKeyboardNavigation() {
                 if (globalSelected.item) {
                     e.preventDefault();
                     const name = globalSelected.item.dataset.name;
-                    const desktopNode = resolveFS("Desktop");
+                    const desktopNode = resolveFS("C:/Desktop");
                     const node = desktopNode ? desktopNode[name] : null;
-                    if (node) openFSItem(name, node, "Desktop");
+                    if (node) openFSItem(name, node, "C:/Desktop");
                 }
                 break;
             case "Delete":
@@ -1512,15 +1512,15 @@ function setupDesktopKeyboardNavigation() {
                     globalSelected.items.clear();
 
                     for (const name of itemsToDelete) {
-                        const success = await deleteFSItem("Desktop", name, false);
+                        const success = await deleteFSItem("C:/Desktop", name, false);
                         if (success) {
-                            await markDefaultDeleted(`Desktop/${name}`);
+                            await markDefaultDeleted(`C:/Desktop/${name}`);
                         }
                     }
 
                     // ⭐ Desktopフォルダだけを個別部分保存
                     const { saveFolderNode } = await import("./fs-db.js");
-                    await saveFolderNode("Desktop", FS.Desktop);
+                    await saveFolderNode("C:", FS["C:"]);
                     window.dispatchEvent(new Event("fs-updated"));
                 }
                 break;
@@ -1560,7 +1560,7 @@ export function autoArrangeIcons() {
 // ドラッグ移動によるデスクトップアイコン並び替え
 // --------------------
 function reorderDesktopIcons(draggedNames, targetName) {
-    const desktopFS = FS.Desktop;
+    const desktopFS = FS["C:"].Desktop;
     if (!desktopFS) return;
 
     const keys = Object.keys(desktopFS).filter(k => k !== "type" && k !== "system" && k !== "lastModified");
@@ -1582,11 +1582,11 @@ function reorderDesktopIcons(draggedNames, targetName) {
         if (desktopFS[k]) newDesktop[k] = desktopFS[k];
     });
 
-    FS.Desktop = newDesktop;
+    FS["C:"].Desktop = newDesktop;
 
-    // ⭐ アイコンの並び替え順序も Desktop フォルダの部分保存対象にする
+    // ⭐ アイコンの並び替え順序も C ドライブ全体の保存対象にする
     import("./fs-db.js").then(({ saveFolderNode }) => {
-        saveFolderNode("Desktop", FS.Desktop).catch(err => {
+        saveFolderNode("C:", FS["C:"]).catch(err => {
             console.error("[Desktop] アイコン並び替えの保存に失敗しました:", err);
         });
     });

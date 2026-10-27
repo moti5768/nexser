@@ -324,7 +324,7 @@ export default async function Paint(root, options = {}) {
        保存ロジック (オリジナル維持)
     ========================== */
     async function save() {
-        const desktop = resolveFS("Desktop");
+        const desktop = resolveFS("C:/Desktop");
         if (!desktop) { showWarning("Desktop が見つかりません"); return; }
         const dataUrl = canvas.toDataURL("image/png");
         const treatAsNew = !fileNode || (filePath && filePath.toLowerCase().endsWith(".app"));

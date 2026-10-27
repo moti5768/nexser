@@ -419,9 +419,8 @@ export default function TerminalApp(content) {
                         break;
 
                     case "folder":
-                        launch("Programs/Applications/Explorer.app", { path, parentCwd: cwd });
+                        launch("C:/Programs/Applications/Explorer.app", { path, parentCwd: cwd });
                         break;
-
                     default:
                         print(`Cannot open: unknown type ${node.type}`);
                 }

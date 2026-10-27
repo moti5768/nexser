@@ -264,7 +264,7 @@ async function launchLink(item, path, options) {
 
 /* --- 2. フォルダ起動の処理 --- */
 async function launchFolder(item, path, options) {
-    return await launch("Programs/Applications/Explorer.app", {
+    return await launch("C:/Programs/Applications/Explorer.app", {
         path,
         parentCwd: options.parentCwd,
         ribbonMenus: options.ribbonMenus,
@@ -324,7 +324,8 @@ async function launchApp(item, path, options) {
 
     const isExplorer = item.entry?.includes("explorer.js");
     const uniqueKey = options.uniqueKey ?? (item.singleton ? path : null);
-    let existingWin = isExplorer ? explorerWindows.get(options.path || "Desktop") : (uniqueKey ? processes.get(uniqueKey)?.window : null);
+    // ⭐ ここを "C:/Desktop" に変更
+    let existingWin = isExplorer ? explorerWindows.get(options.path || "C:/Desktop") : (uniqueKey ? processes.get(uniqueKey)?.window : null);
 
     if (existingWin && document.body.contains(existingWin)) {
         if (existingWin.dataset.minimized === "true") existingWin._taskbarBtn?.click();
@@ -332,7 +333,8 @@ async function launchApp(item, path, options) {
         return;
     }
 
-    if (isExplorer) explorerWindows.delete(options.path || "Desktop");
+    // ⭐ ここも "C:/Desktop" に変更
+    if (isExplorer) explorerWindows.delete(options.path || "C:/Desktop");
     if (uniqueKey) processes.delete(uniqueKey);
 
     let appModule;
@@ -349,31 +351,35 @@ async function launchApp(item, path, options) {
             const { updateWindowTitle, showModalWindow } = await import("./window.js");
             const { getFileContent } = await import("./fs-db.js");
 
-            // 1. システム領域（System, Kernel, Config）の勝手な書き換え・削除のみをブロックする安全なFS
-            const RESTRICTED_DIRS = new Set(["System", "Kernel", "Config"]);
+            // 1. システム領域（C: ドライブ配下の System, Programs）の勝手な書き換え・削除をブロックする安全なFS
+            const RESTRICTED_DIRS = new Set(["System", "Programs"]);
 
             function createSecureFS(targetFS) {
                 const fsHandler = {
-                    get(target, prop) {
-                        if (typeof prop === "string" && RESTRICTED_DIRS.has(prop)) {
-                            // 保護対象ディレクトリは読み取り専用のコピーを返す
-                            return Object.freeze(JSON.parse(JSON.stringify(target[prop] || {})));
+                    get(target, prop, receiver) {
+                        const res = Reflect.get(target, prop, receiver);
+
+                        // ⭐ C: ドライブ配下の制限フォルダへのアクセスをブロック・保護
+                        if (target === targetFS["C:"] && typeof prop === "string" && RESTRICTED_DIRS.has(prop)) {
+                            return Object.freeze(JSON.parse(JSON.stringify(res || {})));
                         }
-                        const res = Reflect.get(target, prop);
+
                         if (res && typeof res === "object") {
                             return new Proxy(res, fsHandler);
                         }
                         return res;
                     },
                     set(target, prop, value) {
-                        if (typeof prop === "string" && RESTRICTED_DIRS.has(prop)) {
-                            throw new Error(`[Security] 許可されていない操作です: システム領域 '${prop}' を書き換えることはできません。`);
+                        // ⭐ C: ドライブ配下の制限フォルダへの書き込みをブロック
+                        if (target === targetFS["C:"] && typeof prop === "string" && RESTRICTED_DIRS.has(prop)) {
+                            throw new Error(`[Security] 許可されていない操作です: システム領域 'C:/${prop}' を書き換えることはできません。`);
                         }
                         return Reflect.set(target, prop, value);
                     },
                     deleteProperty(target, prop) {
-                        if (typeof prop === "string" && RESTRICTED_DIRS.has(prop)) {
-                            throw new Error(`[Security] 許可されていない操作です: システム領域 '${prop}' を削除することはできません。`);
+                        // ⭐ C: ドライブ配下の制限フォルダの削除をブロック
+                        if (target === targetFS["C:"] && typeof prop === "string" && RESTRICTED_DIRS.has(prop)) {
+                            throw new Error(`[Security] 許可されていない操作です: システム領域 'C:/${prop}' を削除することはできません。`);
                         }
                         return Reflect.deleteProperty(target, prop);
                     }
@@ -390,7 +396,6 @@ async function launchApp(item, path, options) {
                 updateWindowTitle(win, sanitizedTitle, dirty);
             };
 
-            // 2. 引数を安全に渡しつつ、関数本体を正しく return するように修正
             // 2. 引数を安全に渡しつつ、関数本体を正しく return するように修正
             const runScript = new Function(
                 'FS', 'forceSave', 'resolveFS', 'updateWindowTitle', 'showModalWindow', 'getFileContent',
@@ -449,7 +454,7 @@ async function launchApp(item, path, options) {
     addRecent(processPath);
     registerProcess(win, key, processPath, appHandle); // ★ 登録されるパスを実際のパスに変更
 
-    if (isExplorer) explorerWindows.set(options.path || "Desktop", win);
+    if (isExplorer) explorerWindows.set(options.path || "C:/Desktop", win);
 }
 
 /* --- 共通：プロセス登録とObserver設定のヘルパー --- */

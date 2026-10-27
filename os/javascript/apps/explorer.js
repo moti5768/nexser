@@ -2,7 +2,7 @@
 import { launch } from "../kernel.js";
 import { showModalWindow, alertWindow, bringToFront, progressWindow } from "../window.js";
 import { resolveFS, validateName, importFileSmart, getUniqueName, isDescendantOrSelf } from "../fs-utils.js";
-import { FS, initFS, forceSave, markDefaultDeleted, setBulkUpdating } from "../fs.js";
+import { FS, forceSave, markDefaultDeleted, setBulkUpdating } from "../fs.js";
 import { attachContextMenu } from "../context-menu.js";
 import { resolveAppByPath, getIcon, getDisplayFileName } from "../file-associations.js";
 import { addRecent } from "../recent.js";
@@ -78,7 +78,7 @@ function deleteFSItem(parentPath, itemName, rerender) {
         const targetItemData = JSON.parse(JSON.stringify(parentNode[itemName]));
         targetItemData.originalPath = parentPath;
 
-        const trashNode = resolveFS("Trash");
+        const trashNode = resolveFS("C:/Trash");
         if (!trashNode) return;
 
         delete parentNode[itemName];
@@ -108,16 +108,16 @@ function deleteFSItem(parentPath, itemName, rerender) {
  * ゴミ箱から元に戻す機能
  */
 export function restoreFSItem(itemName, rerender) {
-    const trash = resolveFS("Trash");
+    const trash = resolveFS("C:/Trash");
     const item = trash[itemName];
     if (!item) return;
 
     // 1. 復元先のノードを取得。見つからなければ Desktop を代替にする
-    let destPath = item.originalPath || "Desktop";
+    let destPath = item.originalPath || "C:/Desktop";
     let destNode = resolveFS(destPath);
 
     if (!destNode) {
-        destPath = "Desktop";
+        destPath = "C:/Desktop";
         destNode = resolveFS(destPath);
     }
 
@@ -145,7 +145,7 @@ export function restoreFSItem(itemName, rerender) {
  * ゴミ箱を空にする機能
  */
 export function emptyTrash(rerender) {
-    const trash = resolveFS("Trash");
+    const trash = resolveFS("C:/Trash");
     if (!trash) return;
 
     const keys = Object.keys(trash).filter(key => !isSystemMetaKey(key));
@@ -167,7 +167,7 @@ export function emptyTrash(rerender) {
             {
                 label: "すべて削除",
                 action: async () => {
-                    const latestTrash = resolveFS("Trash");
+                    const latestTrash = resolveFS("C:/Trash");
                     let hasProtectedFiles = false; // 保護されたファイルがあったかどうかのフラグ
 
                     for (const key of keys) {
@@ -300,8 +300,11 @@ function createNewItem(currentPath, listContainer, renderCallback, type = "folde
 // ----------------------------------------------------------------
 // 共通ヘルパー関数（重複防止用）
 // ----------------------------------------------------------------
+// 改善後: スラッシュや大文字小文字の揺れを正規化して判定
 function isTrashPath(path) {
-    return path === "Trash" || path.startsWith("Trash/");
+    if (!path) return false;
+    const normalized = path.replace(/\\/g, "/").replace(/\/+$/, "").toLowerCase();
+    return normalized === "c:/trash" || normalized === "trash" || normalized.endsWith("/trash");
 }
 
 function isSystemMetaKey(key) {
@@ -333,7 +336,7 @@ export default async function Explorer(root, options = {}) {
     const titleEl = win?.querySelector(".title-text");
     const taskBtn = win?._taskbarBtn;
 
-    let currentPath = options.path || "Desktop";
+    let currentPath = options.path || "C:/Desktop";
     let historyStack = [];
     let forwardStack = [];
 
@@ -948,12 +951,16 @@ export default async function Explorer(root, options = {}) {
             upBtn.dataset.tooltip = "上の階層へ";
 
             upBtn.onclick = () => {
+                const isAtRoot = currentPath === "" || currentPath === "C:" || currentPath === "C" || currentPath === "C:/";
+                if (isAtRoot) return; // C: より上には行かない
                 const pathParts = currentPath.split("/");
                 if (pathParts.length > 1) {
                     pathParts.pop();
-                    navigateTo(pathParts.join("/"));
-                } else if (currentPath !== "") {
-                    navigateTo("");
+                    const nextPath = pathParts.join("/");
+                    // 配列の末尾が "C:" のみになった場合は "C:" にする
+                    navigateTo(nextPath === "C" ? "C:" : nextPath);
+                } else {
+                    navigateTo("C:");
                 }
             };
 
@@ -1285,7 +1292,7 @@ export default async function Explorer(root, options = {}) {
         }
 
         if (uBtn) {
-            const isAtRoot = currentPath === "" || currentPath === "Desktop";
+            const isAtRoot = currentPath === "" || currentPath === "C:" || currentPath === "C";
             uBtn.disabled = isAtRoot;
             uBtn.classList.toggle("pointer_none", isAtRoot);
         }
@@ -2118,7 +2125,7 @@ export default async function Explorer(root, options = {}) {
             }
             // 2. デスクトップからのD&D（移動またはコピー）
             else if (data.type === "desktop-icons") {
-                const desktopFS = resolveFS("Desktop");
+                const desktopFS = resolveFS("C:/Desktop");
                 if (!desktopFS) return false;
 
                 const sortedNames = [...data.names].sort((a, b) => {
@@ -2339,6 +2346,7 @@ export default async function Explorer(root, options = {}) {
     // 5. メインの renderSidebar 関数（Windows方式）
     function renderSidebar() {
         if (!sidebarContainer) return;
+        console.log("[Sidebar] C: drive node:", resolveFS("C:"));
         sidebarContainer.style.display = showSidebar ? "block" : "none";
         if (!showSidebar) return;
 
@@ -2355,18 +2363,18 @@ export default async function Explorer(root, options = {}) {
             quickAccessTitle.style.cssText = "font-size: 11px; color: #000; padding: 2px 2px; font-weight: bold; background-color: #C3C7CB; border: 1.5px solid #808080; border-color: #fff #808080 #808080 #fff; box-shadow: 0.5px 0.5px black; margin-bottom: 4px; display: flex; position: sticky; top: 0px; z-index: 10;";
             sidebarContent.appendChild(quickAccessTitle);
 
-            sidebarContent.appendChild(createBaseSidebarItem(getIcon("PC", resolveFS("")), "PC", ""));
-            sidebarContent.appendChild(createBaseSidebarItem(getIcon("Desktop", resolveFS("Desktop")), "デスクトップ", "Desktop"));
-            sidebarContent.appendChild(createBaseSidebarItem(getIcon("Trash", resolveFS("Trash")), "ゴミ箱", "Trash"));
+            sidebarContent.appendChild(createBaseSidebarItem(getIcon("PC", resolveFS("C:")), "PC", "C:"));
+            sidebarContent.appendChild(createBaseSidebarItem(getIcon("Desktop", resolveFS("C:/Desktop")), "デスクトップ", "C:/Desktop"));
+            sidebarContent.appendChild(createBaseSidebarItem(getIcon("Trash", resolveFS("C:/Trash")), "ゴミ箱", "C:/Trash"));
 
             const divider = document.createElement("hr");
             divider.style.cssText = "border: 0; border-top: 1.5px solid #e0e0e0; margin: 6px 4px;";
             sidebarContent.appendChild(divider);
 
             const treeRootContainer = document.createElement("div");
-            const rootNode = resolveFS("");
+            const rootNode = resolveFS("C:");
             if (rootNode) {
-                buildStaticSidebarTree(rootNode, treeRootContainer, "", 0, new Set());
+                buildStaticSidebarTree(rootNode, treeRootContainer, "C:", 0, new Set());
             }
 
             sidebarContent.appendChild(treeRootContainer);
@@ -2474,15 +2482,21 @@ export default async function Explorer(root, options = {}) {
                 if (isCommitted) return;
                 isCommitted = true;
 
-                let newPath = input.value.trim();
+                const rawValue = input.value;
+
+                // ⭐ 半角・全角スペース、タブ、改行をすべて除外して実質的な空かどうかを判定
+                const cleanCheck = rawValue ? rawValue.replace(/[\s\u3000]/g, "") : "";
+
+                if (!cleanCheck) {
+                    // 空白のみ、または何も入力されていない場合はルート「C:/」に移動する
+                    onNavigate("C:/");
+                    return;
+                }
+
+                let newPath = rawValue.trim();
 
                 if (newPath && newPath !== "" && newPath.endsWith("/")) {
                     newPath = newPath.replace(/\/+$/, "");
-                }
-
-                if (newPath === "") {
-                    onNavigate(newPath);
-                    return;
                 }
 
                 const targetNode = resolveFS(newPath);
@@ -2497,7 +2511,7 @@ export default async function Explorer(root, options = {}) {
                     onNavigate(newPath);
                 } else {
                     const lastSlash = newPath.lastIndexOf('/');
-                    const parentPath = lastSlash !== -1 ? newPath.substring(0, lastSlash) : "";
+                    const parentPath = lastSlash !== -1 ? newPath.substring(0, lastSlash) : "C:/";
                     const itemName = lastSlash !== -1 ? newPath.substring(lastSlash + 1) : newPath;
                     openFSItem(itemName, targetNode, parentPath);
                     onCancel();
@@ -3011,14 +3025,13 @@ function formatSize(bytes) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(i === 0 ? 0 : 1)) + " " + units[i];
 }
 
-// FS 内の全アプリを取得
 function getAllApps() {
     const apps = [];
-    const visited = new WeakSet(); // ⭐ 循環参照ガード用
+    const visited = new WeakSet();
 
     function traverse(node, path = "") {
         if (!node || typeof node !== "object" || visited.has(node)) return;
-        visited.add(node); // 既に訪れたノードならスキップして無限ループを防止
+        visited.add(node);
 
         for (const name in node) {
             if (name === "type") continue;
@@ -3027,7 +3040,6 @@ function getAllApps() {
 
             const fullPath = path ? `${path}/${name}` : name;
 
-            // child.type が "app" で、かつ名前が "Explorer.app" 以外を抽出
             if (child.type === "app") {
                 if (name !== "Explorer.app") {
                     apps.push({ name, path: fullPath });
@@ -3038,7 +3050,12 @@ function getAllApps() {
             }
         }
     }
-    traverse(FS);
+
+    // FS全体ではなく、"C:" ドライブを起点にする
+    const cDrive = resolveFS("C:");
+    if (cDrive) {
+        traverse(cDrive, "C:");
+    }
     return apps;
 }
 
@@ -3260,11 +3277,14 @@ export async function showProperties(name, node, path) {
 function searchFS(node, query, path = "", showHidden = false, visited = new WeakSet()) {
     let results = [];
 
-    // ⭐ 循環参照や重複探索を完全に防止するためのガード
+    // ⭐ 1. クエリが未定義、または空白のみの場合は即座に空配列を返して全ヒットを防止
+    if (!query || typeof query !== "string") return results;
+    const q = query.trim().toLowerCase();
+    if (!q) return results;
+
+    // ⭐ 2. 循環参照や重複探索を完全に防止するためのガード
     if (!node || typeof node !== "object" || visited.has(node)) return results;
     visited.add(node);
-
-    const q = query.toLowerCase();
 
     for (const name in node) {
         if (isSystemMetaKey(name)) continue;

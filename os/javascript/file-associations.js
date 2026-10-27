@@ -1,52 +1,53 @@
 // file-associations.js
+
 // 現在開いているファイルのパスを保持するSet
 export const openedFilePaths = new Set();
-// 拡張子 → 起動アプリ対応表
+
+// 拡張子 → 起動アプリ対応表 (C: ドライブの絶対パス構造に対応)
 export const FILE_ASSOCIATIONS = {
-    // text
-    ".txt": "Programs/Applications/TextEditor.app",
-    ".md": "Programs/Applications/TextEditor.app",
+    // Text
+    ".txt": "C:/Programs/Applications/TextEditor.app",
+    ".md": "C:/Programs/Applications/TextEditor.app",
 
-    // code
-    ".js": "Programs/Applications/CodeEditor.app",
-    ".ts": "Programs/Applications/CodeEditor.app",
-    ".json": "Programs/Applications/CodeEditor.app",
-    ".css": "Programs/Applications/CodeEditor.app",
-    ".scss": "Programs/Applications/CodeEditor.app",
-    ".vue": "Programs/Applications/CodeEditor.app",
-    ".html": "Programs/Applications/CodeEditor.app",
-    ".htm": "Programs/Applications/CodeEditor.app",
+    // Code
+    ".js": "C:/Programs/Applications/CodeEditor.app",
+    ".ts": "C:/Programs/Applications/CodeEditor.app",
+    ".json": "C:/Programs/Applications/CodeEditor.app",
+    ".css": "C:/Programs/Applications/CodeEditor.app",
+    ".scss": "C:/Programs/Applications/CodeEditor.app",
+    ".vue": "C:/Programs/Applications/CodeEditor.app",
+    ".html": "C:/Programs/Applications/CodeEditor.app",
+    ".htm": "C:/Programs/Applications/CodeEditor.app",
 
-    // images
-    ".png": "Programs/Applications/ImageViewer.app",
-    ".jpg": "Programs/Applications/ImageViewer.app",
-    ".jpeg": "Programs/Applications/ImageViewer.app",
-    ".gif": "Programs/Applications/ImageViewer.app",
-    ".webp": "Programs/Applications/ImageViewer.app",
+    // Images
+    ".png": "C:/Programs/Applications/ImageViewer.app",
+    ".jpg": "C:/Programs/Applications/ImageViewer.app",
+    ".jpeg": "C:/Programs/Applications/ImageViewer.app",
+    ".gif": "C:/Programs/Applications/ImageViewer.app",
+    ".webp": "C:/Programs/Applications/ImageViewer.app",
 
-    // paint
-    ".bmp": "Programs/Applications/Paint.app",
+    // Paint
+    ".bmp": "C:/Programs/Applications/Paint.app",
 
-    // video
-    ".mp4": "Programs/Applications/VideoPlayer.app",
-    ".webm": "Programs/Applications/VideoPlayer.app",
-    ".ogg": "Programs/Applications/VideoPlayer.app",
-    ".mov": "Programs/Applications/VideoPlayer.app",
-    ".mkv": "Programs/Applications/VideoPlayer.app",
+    // Video
+    ".mp4": "C:/Programs/Applications/VideoPlayer.app",
+    ".webm": "C:/Programs/Applications/VideoPlayer.app",
+    ".ogg": "C:/Programs/Applications/VideoPlayer.app",
+    ".mov": "C:/Programs/Applications/VideoPlayer.app",
+    ".mkv": "C:/Programs/Applications/VideoPlayer.app",
 
-    // audio
-    ".mp3": "Programs/Applications/AudioPlayer.app",
-    ".wav": "Programs/Applications/AudioPlayer.app",
-    ".m4a": "Programs/Applications/AudioPlayer.app",
-    ".flac": "Programs/Applications/AudioPlayer.app",
-    ".aac": "Programs/Applications/AudioPlayer.app",
+    // Audio
+    ".mp3": "C:/Programs/Applications/AudioPlayer.app",
+    ".wav": "C:/Programs/Applications/AudioPlayer.app",
+    ".m4a": "C:/Programs/Applications/AudioPlayer.app",
+    ".flac": "C:/Programs/Applications/AudioPlayer.app",
+    ".aac": "C:/Programs/Applications/AudioPlayer.app",
 
-    // pdf
-    ".pdf": "Programs/Applications/PDFViewer.app",
+    // PDF
+    ".pdf": "C:/Programs/Applications/PDFViewer.app",
 
-    // url
-    ".url": "Programs/Applications/Browser.app"
-
+    // URL
+    ".url": "C:/Programs/Applications/Browser.app"
 };
 
 /**
@@ -96,6 +97,9 @@ export function getExtension(path) {
     return path.slice(i).toLowerCase();
 }
 
+/**
+ * 拡張子を考慮した表示用ファイル名を取得
+ */
 export function getDisplayFileName(name, showExtensions = true) {
     if (!name || showExtensions) return name;
     const ext = getExtension(name);
@@ -120,19 +124,19 @@ export function resolveAppByPath(path) {
 /**
  * ファイルやアプリのアイコンを判定する関数
  */
-// ★ fullPath（その項目のフルパス）と currentPath（現在開いているパス）を受け取れるように引数を追加
 export function getIcon(name, node, fullPath = "", currentPath = "") {
     const lowerName = name.toLowerCase();
 
-    // 1. 特殊・基本フォルダ
+    // 1. 特殊・基本フォルダ名
     if (lowerName === "trash") return "🗑️";
 
-    // ★追加：リンク（ショートカット）であっても、参照先が Trash ならゴミ箱アイコンを返す
+    // リンク（ショートカット）の場合の判定
     if (node && node.type === "link" && node.target) {
         const targetLower = node.target.toLowerCase();
-        if (targetLower === "trash" || targetLower.startsWith("trash/")) {
-            return "🔗";
+        if (targetLower.includes("trash")) {
+            return "🗑️"; // ゴミ箱へのショートカット
         }
+        return "🔗"; // 一般的なショートカット
     }
 
     // Windows風フォルダのアイコン判定
@@ -147,20 +151,21 @@ export function getIcon(name, node, fullPath = "", currentPath = "") {
             k !== "type" && k !== "system" && k !== "originalPath" && k !== "lastModified" && k !== "hidden"
         );
         if (hasChildren) {
-            return "🗂️"; // 書類が入っているフォルダ
+            return "🗂️"; // 中身があるフォルダ
         }
 
         // ③ 空の場合
         return "📁";
     }
 
-    if (node.type === "link") return "🔗";
+    if (node && node.type === "link") return "🔗";
 
     // 2. アプリケーションの判定
-    if (node.type === "app") {
+    if (node && node.type === "app") {
         const entryPath = (node.entry || "").toLowerCase();
-        const matched = APP_KEYWORDS.find(item => lowerName.includes(item.key) || entryPath.includes(item.key));
-
+        const matched = APP_KEYWORDS.find(
+            item => lowerName.includes(item.key) || entryPath.includes(item.key)
+        );
         return matched ? matched.icon : "⚙️"; // アプリのデフォルト
     }
 
