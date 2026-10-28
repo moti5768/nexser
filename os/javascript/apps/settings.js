@@ -1118,14 +1118,15 @@ export default async function SettingsApp(content) {
         root.innerHTML = "<b>System Event Sounds</b><hr>";
 
         // FSとConfigの初期化
-        if (!FS.System) FS.System = { type: "folder" };
-        if (!FS.System["SoundConfig.json"]) {
-            FS.System["SoundConfig.json"] = { type: "file", content: "{}" };
+        if (!FS["C:"]) FS["C:"] = { type: "folder" };
+        if (!FS["C:"].System) FS["C:"].System = { type: "folder" };
+        if (!FS["C:"].System["SoundConfig.json"]) {
+            FS["C:"].System["SoundConfig.json"] = { type: "file", content: "{}" };
         }
 
         let config = {};
         try {
-            config = JSON.parse(FS.System["SoundConfig.json"].content || "{}");
+            config = JSON.parse(FS["C:"].System["SoundConfig.json"].content || "{}");
         } catch (e) {
             config = {};
         }
@@ -1221,7 +1222,11 @@ export default async function SettingsApp(content) {
 
             select.onchange = async () => {
                 config[ev.id] = select.value || undefined;
-                FS.System["SoundConfig.json"].content = JSON.stringify(config, null, 2);
+                // FS.System を FS["C:"].System に修正してパスを統一
+                if (!FS["C:"]) FS["C:"] = { type: "folder" };
+                if (!FS["C:"].System) FS["C:"].System = { type: "folder" };
+
+                FS["C:"].System["SoundConfig.json"].content = JSON.stringify(config, null, 2);
                 await forceSave?.();
                 window.dispatchEvent(new Event("fs-updated"));
             };

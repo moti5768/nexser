@@ -215,11 +215,12 @@ export default function main(content, options) {
 
             FS["C:"].System["SoundConfig.json"].content = JSON.stringify(config, null, 2);
 
-            // 追加: 即時保存とシステムへの変更通知
+            // ★まずはUIを即座に再描画して画面への反映を優先する
+            refresh();
+
+            // 保存や外部への通知はバックグラウンド（または後続）で行う
             await forceSave?.();
             window.dispatchEvent(new Event("fs-updated"));
-
-            refresh();
         }
     };
 

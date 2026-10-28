@@ -1,5 +1,4 @@
 // settings-worker.js (Web Worker側)
-// 注意: 外部の db.js から openDB がインポートできる環境であればそれを利用するか、直接 openDB を定義します
 import { openDB } from "../../db.js";
 
 const encoder = new TextEncoder();
