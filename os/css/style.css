@@ -228,6 +228,7 @@ body {
 #taskbar.vertical .taskbar-window-btn {
     width: 100%;
     margin: 2px 0;
+    flex: 0 0 26px;
 }
 
 /* 縦配置時はバージョンラベルを非表示にして崩れを防ぐ */
@@ -863,7 +864,10 @@ select {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    /* 長いタイトルを三点リーダーにする */
+}
+
+.taskbar-window-btn.icon-only .taskbar-text {
+    display: none;
 }
 
 /* button */
