@@ -188,9 +188,9 @@ export function buildDesktop() {
                                 if (child && typeof child === "object") {
                                     if (child.type === "file" || child.type === "app") {
                                         if (isCopyMode) {
-                                            await kernelAPI.db.copyFile(oldSubPath, newSubPath);
+                                            await copyFileContent(oldSubPath, newSubPath); // ⭕ 修正: fs-db.jsのcopyFileContentを使用
                                         } else {
-                                            await kernelAPI.db.moveFile(oldSubPath, newSubPath);
+                                            await moveFileContent(oldSubPath, newSubPath); // ⭕ 修正: fs-db.jsのmoveFileContentを使用
                                         }
                                     } else if (child.type === "folder") {
                                         await processStorageRecursively(child, oldSubPath, newSubPath, isCopyMode, visited, depth + 1);
@@ -797,9 +797,9 @@ export function buildDesktop() {
                                 if (child && typeof child === "object") {
                                     if (child.type === "file" || child.type === "app") {
                                         if (isCopyMode) {
-                                            await kernelAPI.db.copyFile(oldSubPath, newSubPath);
+                                            await copyFileContent(oldSubPath, newSubPath); // ⭕ 修正: fs-db.jsのcopyFileContentを使用
                                         } else {
-                                            await kernelAPI.db.moveFile(oldSubPath, newSubPath);
+                                            await moveFileContent(oldSubPath, newSubPath); // ⭕ 修正: fs-db.jsのmoveFileContentを使用
                                         }
                                     } else if (child.type === "folder") {
                                         await processStorageRecursively(child, oldSubPath, newSubPath, isCopyMode, visited, depth + 1);
@@ -1086,25 +1086,46 @@ export function buildDesktop() {
     window.dispatchEvent(new Event("desktop-ready"));
 }
 
-// タスクバー高さに応じてアイコン領域を調整
+// タスクバー高さ・配置に応じてアイコン領域を調整
 function adjustDesktopIconArea() {
     const desktop = document.getElementById("desktop");
     const iconsContainer = document.getElementById("desktop-icons");
     const taskbar = document.getElementById("taskbar");
     if (!desktop || !iconsContainer || !taskbar) return;
 
-    // 🔥 修正: タスクバーがウィンドウモードの場合はタスクバーの高さを考慮せず 0 にする
     const isWindowMode = taskbar.closest(".window") !== null;
-    const taskbarHeight = isWindowMode ? 0 : (taskbar.offsetHeight > 0 ? taskbar.offsetHeight : 40);
+    const rect = taskbar.getBoundingClientRect();
+
+    let t = 0, b = 0, l = 0, r = 0;
+
+    if (!isWindowMode) {
+        // タスクバーの配置（垂直か水平か、画面のどちら側にあるか）を判定して余白を割り当て
+        if (taskbar.classList.contains("vertical")) {
+            const taskbarWidth = rect.width || taskbar.offsetWidth || 40;
+            if (rect.left < window.innerWidth / 2) {
+                l = taskbarWidth; // 左配置
+            } else {
+                r = taskbarWidth; // 右配置
+            }
+        } else {
+            const taskbarHeight = rect.height || taskbar.offsetHeight || 40;
+            if (rect.top < window.innerHeight / 2) {
+                t = taskbarHeight; // 上配置
+            } else {
+                b = taskbarHeight; // 下配置
+            }
+        }
+    }
 
     iconsContainer.style.position = "absolute";
-    iconsContainer.style.top = "0";
-    iconsContainer.style.left = "0";
-    iconsContainer.style.right = "0";
-    iconsContainer.style.bottom = `${taskbarHeight}px`; // タスクバー分の余白 (ウィンドウモード時は 0px)
+    iconsContainer.style.top = `${t}px`;
+    iconsContainer.style.bottom = `${b}px`;
+    iconsContainer.style.left = `${l}px`;
+    iconsContainer.style.right = `${r}px`;
+
     iconsContainer.style.display = "flex";
 
-    // アイコンを「上から下」へ並べ、画面下まで到達したら「右」へ折り返す (Windows標準の挙動)
+    // アイコンを「上から下」へ並べ、画面端まで到達したら折り返す (Windows標準の挙動)
     iconsContainer.style.flexDirection = "column";
     iconsContainer.style.flexWrap = "wrap";
 
@@ -1112,7 +1133,6 @@ function adjustDesktopIconArea() {
     iconsContainer.style.padding = "10px"; // 内側余白
     iconsContainer.style.overflow = "auto";
 }
-
 // --------------------
 // 起動完了時やリサイズ時に確実に再計算させる仕組み
 // --------------------

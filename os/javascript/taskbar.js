@@ -51,9 +51,9 @@ function setupTaskbarContextMenu(targetElement) {
                 label: "タスクバーのプロパティ",
                 action: () => {
                     // エクスプローラーやデスクトップと同じ launch を使用する
-                    launch("Programs/Applications/TaskbarProperties.app", {
-                        path: "Programs/Applications/TaskbarProperties.app",
-                        uniqueKey: "Programs/Applications/TaskbarProperties.app"
+                    launch("C:/Programs/Applications/TaskbarProperties.app", {
+                        path: "C:/Programs/Applications/TaskbarProperties.app",
+                        uniqueKey: "C:/Programs/Applications/TaskbarProperties.app"
                     });
                 }
             }
@@ -88,7 +88,7 @@ export function initTaskbar() {
                 taskbarFloatingWindow = null;
 
                 // 事前に保存されたタスクバーの高さ（または現在の高さ）を確実に取得する
-                const savedHeight = await loadSetting("taskbarHeight");
+                const savedHeight = await loadSetting("taskbarSize");
                 const heightVal = savedHeight || taskbar.offsetHeight || 40;
                 const targetHeight = `${heightVal}px`;
                 const targetTop = `calc(100vh - ${targetHeight})`;
@@ -156,7 +156,7 @@ export function initTaskbar() {
                     taskbar.style.boxShadow = "";
 
                     // 保存された高さがある場合は復元
-                    loadSetting("taskbarHeight").then(savedHeight => {
+                    loadSetting("taskbarSize").then(savedHeight => {
                         if (savedHeight) {
                             taskbar.style.height = savedHeight + "px";
                             if (versionLabel) versionLabel.style.bottom = `${savedHeight}px`;
@@ -191,40 +191,35 @@ export function initTaskbar() {
     // タスクバー基本スタイル
     Object.assign(taskbar.style, {
         display: "flex",
-        alignItems: "flex-start",
-        transition: "none" // アニメーションはいらない
+        alignItems: "center",
+        transition: "none"
     });
 
-    // 各エリアのスタイル
+    // 各エリアのスタイル（中央揃えにし、縦横切り替えに対応）
     Object.assign(startArea.style, {
         display: "flex",
-        alignItems: "flex-start",
-        gap: "6px",
-        marginTop: "5px"
+        alignItems: "center",
+        gap: "4px"
     });
 
     Object.assign(buttonArea.style, {
         flex: "1 1 auto",
         minWidth: "0",
         display: "flex",
-        alignItems: "flex-start",
+        alignItems: "center",
         overflowX: "hidden",
-        overflowY: "hidden",
-        marginTop: "5px"
+        overflowY: "hidden"
     });
 
     Object.assign(trayArea.style, {
         display: "flex",
-        alignItems: "flex-start",
-        gap: "6px",
+        alignItems: "center",
+        gap: "4px",
         flexShrink: "0",
-        marginLeft: "10px",
-        marginRight: "0px",
         border: "1.5px solid",
         borderColor: "#7a7a7a #fff #fff #7a7a7a",
         boxShadow: "0.5px 0.5px 0 #000 inset",
-        transform: "translate(0.5px, 0.5px)",
-        marginTop: "5px"
+        padding: "2px"
     });
 
     // Startボタン配置
@@ -311,7 +306,7 @@ export function initTaskbar() {
         clockLabel.className = "taskbar-clock";
         Object.assign(clockLabel.style, {
             fontSize: "medium",
-            padding: "3px",
+            padding: "1.5px",
             whiteSpace: "nowrap",
             color: "black",
             userSelect: "none",
@@ -340,11 +335,15 @@ export function initTaskbar() {
     // 初期化: 設定の読み込みと時計の同期
     (async () => {
         try {
-
             const showClock = await loadSetting("showClock");
             if (showClock === false) {
                 trayArea.style.display = "none";
             }
+
+            // ★ 追加: 保存されたタスクバーの配置とサイズを読み込んで適用
+            const savedPos = await loadSetting("taskbarPosition") || "bottom";
+            const savedSize = await loadSetting("taskbarSize") || 40;
+            await applyTaskbarLayout(savedPos, savedSize);
 
             // Auto-hide 初期状態
             isAutoHide = await loadSetting("autoHide") || false;
@@ -407,142 +406,244 @@ export function initTaskbar() {
     }
 
     // ============================
-    // タスクバー上端リサイズ
+    // タスクバー配置・ドラッグ移動 & リサイズ制御
     // ============================
-    (async function enableTaskbarResize() {
-        const savedHeight = await loadSetting("taskbarHeight");
-        if (savedHeight) taskbar.style.height = savedHeight + "px";
+    let currentPosition = "bottom"; // "bottom" | "top" | "left" | "right"
+    let taskbarSize = 40; // 横配置時は height、縦配置時は width
 
+    async function applyTaskbarLayout(pos, size) {
+        currentPosition = pos || await loadSetting("taskbarPosition") || "bottom";
+        taskbarSize = size || await loadSetting("taskbarSize") || 40;
+
+        const isVert = currentPosition === "left" || currentPosition === "right";
+
+        // クラス設定と内部コンテナの向き・マージンの動的切り替え
+        if (isVert) {
+            taskbar.classList.add("vertical");
+            startArea.style.flexDirection = "column";
+            buttonArea.style.flexDirection = "column";
+            trayArea.style.flexDirection = "column";
+            trayArea.style.marginLeft = "0px";
+            trayArea.style.marginTop = "2px";
+        } else {
+            taskbar.classList.remove("vertical");
+            startArea.style.flexDirection = "row";
+            buttonArea.style.flexDirection = "row";
+            trayArea.style.flexDirection = "row";
+            trayArea.style.marginLeft = "10px";
+            trayArea.style.marginTop = "0px";
+        }
+
+        // 位置とサイズの適用
+        Object.assign(taskbar.style, {
+            top: (currentPosition === "bottom") ? "auto" : "0px",
+            bottom: (currentPosition === "top") ? "auto" : "0px",
+            left: (currentPosition === "right") ? "auto" : "0px",
+            right: (currentPosition === "left") ? "auto" : "0px",
+            width: isVert ? `${taskbarSize}px` : "100%",
+            height: isVert ? "100%" : `${taskbarSize}px`,
+            alignItems: isVert ? "stretch" : "flex-start" // ⭕ 上端基準（flex-start）にすることで、リサイズ後も常にタスクバーの上部ギリギリに配置される
+        });
+
+        // ★追加・修正: タスクバーの配置・サイズ変更に連動して最大化ウィンドウの大きさと位置を更新
+        document.querySelectorAll(".window.maximized").forEach(win => {
+            if (currentPosition === "bottom") {
+                Object.assign(win.style, { top: "0px", left: "0px", width: "100%", height: `calc(100% - ${taskbarSize}px)` });
+            } else if (currentPosition === "top") {
+                Object.assign(win.style, { top: `${taskbarSize}px`, left: "0px", width: "100%", height: `calc(100% - ${taskbarSize}px)` });
+            } else if (currentPosition === "left") {
+                Object.assign(win.style, { top: "0px", left: `${taskbarSize}px`, width: `calc(100% - ${taskbarSize}px)`, height: "100%" });
+            } else if (currentPosition === "right") {
+                Object.assign(win.style, { top: "0px", left: "0px", width: `calc(100% - ${taskbarSize}px)`, height: "100%" });
+            }
+        });
+
+        setupResizeHandle();
+        updateAutoHideEffect();
         window.dispatchEvent(new Event("desktop-resize"));
+    }
+
+    // リサイズハンドルの更新
+    let currentHandle = null;
+    function setupResizeHandle() {
+        if (currentHandle) currentHandle.remove();
 
         const handle = document.createElement("div");
-        Object.assign(handle.style, {
+        const isVert = currentPosition === "left" || currentPosition === "right";
+
+        const handleStyle = {
             position: "absolute",
-            top: "0", left: "0", right: "0", height: "6px",
-            cursor: "ns-resize", zIndex: "1000", background: "transparent"
-        });
+            zIndex: "1001",
+            background: "transparent",
+            cursor: isVert ? "ew-resize" : "ns-resize"
+        };
+
+        if (currentPosition === "bottom") Object.assign(handleStyle, { top: "0", left: "0", right: "0", height: "6px" });
+        if (currentPosition === "top") Object.assign(handleStyle, { bottom: "0", left: "0", right: "0", height: "6px" });
+        if (currentPosition === "left") Object.assign(handleStyle, { right: "0", top: "0", bottom: "0", width: "6px" });
+        if (currentPosition === "right") Object.assign(handleStyle, { left: "0", top: "0", bottom: "0", width: "6px" });
+
+        Object.assign(handle.style, handleStyle);
         taskbar.appendChild(handle);
+        currentHandle = handle;
 
-        let resizing = false, startY = 0, startHeight = 0;
-        let preview = null, shield = null;
+        bindResizeEvents(handle);
+    }
 
-        const MIN_HEIGHT = 40;
-        const MAX_HEIGHT = 320;
+    // ドラッグによる上下左右配置移動（ドッキング）
+    (function enableTaskbarDragPosition() {
+        let isDragging = false;
+        let dragPreview = null;
+        let targetPos = currentPosition;
 
-        handle.addEventListener("mousedown", e => {
-            if (isTaskbarWindowMode) return;
-            if (!e.target.closest("#start-btn") && !e.target.closest("#start-menu")) {
-                startBtn.classList.remove("pressed");
-                startMenu.style.display = "none";
-            }
-            e.preventDefault();
-            e.stopPropagation();
-            resizing = true;
-            startY = e.clientY;
-            startHeight = taskbar.offsetHeight;
+        taskbar.addEventListener("mousedown", e => {
+            if (e.target.closest("#start-btn") || e.target.closest(".taskbar-window-btn") || e.target === currentHandle || isTaskbarWindowMode) return;
+            isDragging = true;
 
-            shield = document.createElement("div");
-            Object.assign(shield.style, {
-                position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh",
-                zIndex: 9998, background: "transparent", cursor: "ns-resize"
-            });
-            document.body.appendChild(shield);
-
-            // ★ プレビュー設定が有効な時のみプレビュー枠を作成する
-            if (typeof ENABLE_TASKBAR_PREVIEW !== "undefined" ? ENABLE_TASKBAR_PREVIEW : true) {
-                preview = document.createElement("div");
-                Object.assign(preview.style, {
+            if (ENABLE_TASKBAR_PREVIEW) {
+                dragPreview = document.createElement("div");
+                Object.assign(dragPreview.style, {
                     position: "fixed",
-                    left: taskbar.getBoundingClientRect().left + "px",
-                    width: taskbar.offsetWidth + "px",
-                    height: startHeight + "px",
                     border: "2px solid white",
                     background: "transparent",
                     pointerEvents: "none",
                     zIndex: 9999,
-                    top: taskbar.getBoundingClientRect().top + "px",
                     mixBlendMode: "difference",
+                    transition: "none"
+                });
+                document.body.appendChild(dragPreview);
+            }
+        });
+
+        document.addEventListener("mousemove", e => {
+            if (!isDragging) return;
+
+            const w = window.innerWidth;
+            const h = window.innerHeight;
+            const x = e.clientX;
+            const y = e.clientY;
+
+            // マウスの位置から上下左右どの画面端に近いか計算
+            const dists = {
+                top: y,
+                bottom: h - y,
+                left: x,
+                right: w - x
+            };
+            targetPos = Object.keys(dists).reduce((a, b) => dists[a] < dists[b] ? a : b);
+
+            if (dragPreview) {
+                const previewRect = {
+                    top: { top: 0, left: 0, width: "100%", height: `${taskbarSize}px` },
+                    bottom: { top: `${h - taskbarSize}px`, left: 0, width: "100%", height: `${taskbarSize}px` },
+                    left: { top: 0, left: 0, width: `${taskbarSize}px`, height: "100%" },
+                    right: { top: 0, left: `${w - taskbarSize}px`, width: `${taskbarSize}px`, height: "100%" }
+                };
+                Object.assign(dragPreview.style, previewRect[targetPos]);
+            }
+        });
+
+        document.addEventListener("mouseup", async () => {
+            if (!isDragging) return;
+            isDragging = false;
+
+            if (dragPreview) {
+                dragPreview.remove();
+                dragPreview = null;
+            }
+
+            if (targetPos !== currentPosition) {
+                await saveSetting("taskbarPosition", targetPos);
+                applyTaskbarLayout(targetPos, taskbarSize);
+            }
+        });
+    })();
+
+    // 方向対応リサイズイベント処理
+    function bindResizeEvents(handle) {
+        let resizing = false, startX = 0, startY = 0, startSize = 0;
+        let preview = null, shield = null;
+        const MIN_SIZE = 40, MAX_SIZE = 320;
+
+        handle.addEventListener("mousedown", e => {
+            if (isTaskbarWindowMode) return;
+            e.preventDefault();
+            e.stopPropagation();
+
+            resizing = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            startSize = taskbarSize;
+
+            shield = document.createElement("div");
+            Object.assign(shield.style, {
+                position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh",
+                zIndex: 9998, background: "transparent",
+                cursor: (currentPosition === "left" || currentPosition === "right") ? "ew-resize" : "ns-resize"
+            });
+            document.body.appendChild(shield);
+
+            if (ENABLE_TASKBAR_PREVIEW) {
+                preview = document.createElement("div");
+                const rect = taskbar.getBoundingClientRect(); // ★ 現在のタスクバーの位置を取得
+                Object.assign(preview.style, {
+                    position: "fixed",
+                    left: `${rect.left}px`,   // ★ 初期位置を設定
+                    top: `${rect.top}px`,     // ★ 初期位置を設定
+                    width: `${rect.width}px`, // ★ 初期幅を設定
+                    height: `${rect.height}px`, // ★ 初期高さを設定
+                    border: "2px solid white",
+                    background: "transparent",
+                    pointerEvents: "none",
+                    zIndex: 9999,
+                    mixBlendMode: "difference"
                 });
                 document.body.appendChild(preview);
             }
-            document.body.style.userSelect = "none";
-            document.body.style.cursor = "ns-resize";
         });
 
-        let resizePreviewTicking = false;
         document.addEventListener("mousemove", e => {
-            // ★ previewの有無に関わらず、リサイズ中なら処理を続けるように変更
-            if (!resizing || resizePreviewTicking) return;
-            resizePreviewTicking = true;
+            if (!resizing) return;
 
-            requestAnimationFrame(() => {
-                let dy = startY - e.clientY;
-                let newHeight = Math.round((startHeight + dy) / 40) * 40;
-                newHeight = Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, newHeight));
+            let delta = 0;
+            if (currentPosition === "bottom") delta = startY - e.clientY;
+            if (currentPosition === "top") delta = e.clientY - startY;
+            if (currentPosition === "left") delta = e.clientX - startX;
+            if (currentPosition === "right") delta = startX - e.clientX;
 
-                if (preview) {
-                    const rect = taskbar.getBoundingClientRect();
-                    preview.style.height = newHeight + "px";
-                    preview.style.top = rect.bottom - newHeight + "px";
-                } else {
-                    // ★ プレビューが無効な場合は、タスクバー自体をリアルタイムにリサイズする
-                    if (newHeight !== taskbar.offsetHeight) {
-                        taskbar.style.height = newHeight + "px";
-                        if (versionLabel) versionLabel.style.bottom = `${newHeight}px`;
+            let newSize = Math.round((startSize + delta) / 40) * 40;
+            newSize = Math.min(MAX_SIZE, Math.max(MIN_SIZE, newSize));
 
-                        document.querySelectorAll(".window.maximized").forEach(win => {
-                            win.style.height = `calc(100% - ${newHeight}px)`;
-                        });
-                        updateAutoHideEffect();
-                        window.dispatchEvent(new Event("desktop-resize"));
-                    }
-                }
-                resizePreviewTicking = false;
-            });
+            if (preview) {
+                const rect = taskbar.getBoundingClientRect();
+                // ⭕ 下部配置時は下端を固定し、上方向（上側）へ自然に伸びるように rect.bottom を基準にする
+                if (currentPosition === "bottom") Object.assign(preview.style, { left: `${rect.left}px`, top: `${rect.bottom - newSize}px`, width: `${rect.width}px`, height: `${newSize}px` });
+                if (currentPosition === "top") Object.assign(preview.style, { left: `${rect.left}px`, top: "0px", width: `${rect.width}px`, height: `${newSize}px` });
+                if (currentPosition === "left") Object.assign(preview.style, { left: "0px", top: `${rect.top}px`, width: `${newSize}px`, height: `${rect.height}px` });
+                if (currentPosition === "right") Object.assign(preview.style, { left: `${rect.right - newSize}px`, top: `${rect.top}px`, width: `${newSize}px`, height: `${rect.height}px` });
+            } else {
+                applyTaskbarLayout(currentPosition, newSize);
+            }
         });
 
         document.addEventListener("mouseup", async () => {
             if (!resizing) return;
             resizing = false;
-            document.body.style.userSelect = "";
-            document.body.style.cursor = "";
 
             if (shield) { shield.remove(); shield = null; }
 
+            let finalSize = taskbarSize;
             if (preview) {
-                let finalHeight = parseInt(preview.style.height);
-                finalHeight = Math.round(finalHeight / 40) * 40;
-                finalHeight = Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, finalHeight));
-
-                if (finalHeight !== taskbar.offsetHeight) {
-                    taskbar.style.height = finalHeight + "px";
-                    if (versionLabel) versionLabel.style.bottom = `${finalHeight}px`;
-
-                    await saveSetting("taskbarHeight", finalHeight);
-
-                    // 設定画面側がこの変更を検知できるようにイベントを発行する
-                    window.dispatchEvent(new CustomEvent("taskbar-height-external-change", {
-                        detail: { height: finalHeight }
-                    }));
-
-                    document.querySelectorAll(".window.maximized").forEach(win => {
-                        win.style.height = `calc(100% - ${finalHeight}px)`;
-                    });
-                }
+                const isVert = currentPosition === "left" || currentPosition === "right";
+                finalSize = parseInt(isVert ? preview.style.width : preview.style.height);
                 preview.remove();
                 preview = null;
-                updateAutoHideEffect(); // 高さ変更に合わせて隠し位置も更新
-                window.dispatchEvent(new Event("desktop-resize"));
-            } else {
-                // ★ プレビュー無効時でも、マウスを離したタイミングで高さをDBに保存する
-                let finalHeight = taskbar.offsetHeight;
-                await saveSetting("taskbarHeight", finalHeight);
-                window.dispatchEvent(new CustomEvent("taskbar-height-external-change", {
-                    detail: { height: finalHeight }
-                }));
             }
+
+            await saveSetting("taskbarSize", finalSize);
+            applyTaskbarLayout(currentPosition, finalSize);
         });
-    })();
+    }
 
     // ウィンドウリサイズ時の各種位置補正（複数あった処理を統合＆軽量化）
     let resizeTicking = false;
@@ -563,7 +664,13 @@ export function initTaskbar() {
     // 設定変更イベントのハンドリング
     // ============================
     window.addEventListener("taskbar-style-changed", (e) => {
-        const { showClock, taskbarHeight, autoHide, smallIcons, taskbarWindowMode } = e.detail;
+        const { showClock, taskbarSize, taskbarPosition, autoHide, smallIcons, taskbarWindowMode } = e.detail;
+
+        // ⭕ タスクバーの位置変更の即時反映
+        if (taskbarPosition !== undefined && taskbarPosition !== currentPosition) {
+            applyTaskbarLayout(taskbarPosition, taskbarSize);
+        }
+
         // Auto-hide 設定の反映
         if (autoHide !== undefined) {
             isAutoHide = autoHide;
@@ -582,16 +689,8 @@ export function initTaskbar() {
             if (tray) tray.style.display = showClock ? "flex" : "none";
         }
 
-        // 高さ変更の即時反映
-        if (taskbarHeight !== undefined) {
-            taskbar.style.height = taskbarHeight + "px";
-            if (versionLabel) versionLabel.style.bottom = `${taskbarHeight}px`;
-
-            document.querySelectorAll(".window.maximized").forEach(win => {
-                win.style.height = `calc(100% - ${taskbarHeight}px)`;
-            });
-            updateAutoHideEffect(); // 隠し位置の再計算
-            window.dispatchEvent(new Event("desktop-resize"));
+        if (taskbarSize !== undefined) {
+            applyTaskbarLayout(currentPosition, taskbarSize);
         }
 
         // スモールアイコン設定 (startmenu.jsへの伝達)

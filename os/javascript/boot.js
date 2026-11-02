@@ -892,7 +892,7 @@ export async function bootOS() {
         await kernel.initKernelSpaceAsync(msg => print(`[Kernel] ${msg}`));
 
         // カーネル初期化後、シェル構築前にタスクバーの高さを適用
-        const savedHeight = await loadSetting("taskbarHeight") || 40;
+        const savedHeight = await loadSetting("taskbarSize") || 40;
         document.documentElement.style.setProperty('--taskbar-height', `${savedHeight}px`);
 
         // 2. 画面をCLIからGUIルート画面へ切替

@@ -22,7 +22,8 @@ export default async function TaskbarProperties(content) {
     const applyBtn = content.querySelector("#tp-apply");
 
     let tempSettings = {
-        taskbarHeight: await loadSetting("taskbarHeight") || 40,
+        taskbarSize: await loadSetting("taskbarSize") || 40,
+        taskbarPosition: await loadSetting("taskbarPosition") || "bottom",
         showClock: (await loadSetting("showClock")) !== false,
         smallIcons: await loadSetting("smallIcons") || false,
         autoHide: await loadSetting("autoHide") || false,
@@ -87,7 +88,7 @@ export default async function TaskbarProperties(content) {
             <div style="display: flex; flex-direction: column; gap: 15px;">
                 <div style="display: flex; gap: 10px;">
                     <div style="width: 140px; height: 100px; background: #008080; border: 2px inset #fff; position: relative; display: flex; align-items: flex-end; overflow: hidden;">
-                        <div id="tp-preview-bar" style="width: 100%; height: ${tempSettings.taskbarHeight / 4}px; background: #c0c0c0; border-top: 1px solid #fff; display: flex; align-items: center; padding: 0 2px; transform: ${tempSettings.autoHide ? 'translateY(80%)' : 'translateY(0)'}">
+                        <div id="tp-preview-bar" style="width: 100%; height: ${tempSettings.taskbarSize / 4}px; background: #c0c0c0; border-top: 1px solid #fff; display: flex; align-items: center; padding: 0 2px; transform: ${tempSettings.autoHide ? 'translateY(80%)' : 'translateY(0)'}">
                             <div style="width: 15px; height: 70%; background: #c0c0c0; border: 1px solid #808080;"></div>
                             <div style="flex: 1;"></div>
                             <div id="tp-preview-clock" style="width: 25px; height: 70%; border: 1px inset #fff; font-size: 6px; display: ${tempSettings.showClock ? 'flex' : 'none'}; align-items: center; justify-content: center;">12:00</div>
@@ -112,10 +113,19 @@ export default async function TaskbarProperties(content) {
                     </div>
                 </div>
                 <fieldset style="padding: 10px; border: 2px groove #fff;">
-                    <legend style="margin-left: 10px;" id="tp-size-legend">Taskbar Size (Current: ${tempSettings.taskbarHeight}px)</legend>
-                    <input type="range" id="tp-size-slider" min="40" max="320" step="40" value="${tempSettings.taskbarHeight}" style="width: 100%; cursor: pointer;">
+                    <legend style="margin-left: 10px;" id="tp-size-legend">Taskbar Size (Current: ${tempSettings.taskbarSize}px)</legend>
+                    <input type="range" id="tp-size-slider" min="40" max="320" step="40" value="${tempSettings.taskbarSize}" style="width: 100%; cursor: pointer;">
                     <div style="display: flex; justify-content: space-between; margin-top: 4px; color: #444;"><span>Thin</span><span>Thick</span></div>
                 </fieldset>
+                <div style="margin-top: 8px;">
+    <label style="display: block; margin-bottom: 4px;">Taskbar location on screen:</label>
+    <select id="tp-select-position" class="win95-select" style="width: 100%; padding: 2px;">
+        <option value="bottom" ${tempSettings.taskbarPosition === 'bottom' ? 'selected' : ''}>Bottom</option>
+        <option value="top" ${tempSettings.taskbarPosition === 'top' ? 'selected' : ''}>Top</option>
+        <option value="left" ${tempSettings.taskbarPosition === 'left' ? 'selected' : ''}>Left</option>
+        <option value="right" ${tempSettings.taskbarPosition === 'right' ? 'selected' : ''}>Right</option>
+    </select>
+</div>
             </div>
         `;
 
@@ -146,9 +156,14 @@ export default async function TaskbarProperties(content) {
             onSettingModified();
         };
 
+        root.querySelector("#tp-select-position").onchange = (e) => {
+            tempSettings.taskbarPosition = e.target.value;
+            onSettingModified();
+        };
+
         // UIと内部数値を同期する関数
-        const updateHeightUI = (val) => {
-            tempSettings.taskbarHeight = val;
+        const updateSizeUI = (val) => {
+            tempSettings.taskbarSize = val;
             slider.value = val;
             sizeLegend.textContent = `Taskbar Size (Current: ${val}px)`;
             if (previewBar) previewBar.style.height = (val / 4) + "px";
@@ -156,21 +171,16 @@ export default async function TaskbarProperties(content) {
 
         slider.oninput = (e) => {
             const val = parseInt(e.target.value);
-            updateHeightUI(val);
-            onSettingModified(); // ここで notifyStyleChange が呼ばれ本体に即反映される
+            updateSizeUI(val);
+            onSettingModified();
         };
-
-        // 【同期機能】タスクバー本体が直接リサイズされた時にスライダーを動かす
-        const handleExternalHeightChange = (e) => {
-            const newHeight = e.detail.height;
-            updateHeightUI(newHeight);
+        const handleExternalSizeChange = (e) => {
+            const newSize = e.detail.size || e.detail.height;
+            if (newSize) updateSizeUI(newSize);
         };
-
-        window.addEventListener("taskbar-height-external-change", handleExternalHeightChange);
-
-        // ★修正: タブ用のクリーンアップ関数を返す
+        window.addEventListener("taskbar-size-external-change", handleExternalSizeChange);
         return () => {
-            window.removeEventListener("taskbar-height-external-change", handleExternalHeightChange);
+            window.removeEventListener("taskbar-size-external-change", handleExternalHeightChange);
         };
     }
 
@@ -230,8 +240,8 @@ export default async function TaskbarProperties(content) {
         window.dispatchEvent(new CustomEvent("taskbar-style-changed", {
             detail: {
                 showClock: tempSettings.showClock,
-                // ウィンドウモードのときはタスクバーの高さを強制変更させないため、高さを送らないか制御する
-                taskbarHeight: tempSettings.taskbarWindowMode ? undefined : tempSettings.taskbarHeight,
+                taskbarSize: tempSettings.taskbarWindowMode ? undefined : tempSettings.taskbarSize,
+                taskbarPosition: tempSettings.taskbarPosition,
                 autoHide: tempSettings.autoHide,
                 smallIcons: tempSettings.smallIcons,
                 taskbarWindowMode: tempSettings.taskbarWindowMode
@@ -242,7 +252,8 @@ export default async function TaskbarProperties(content) {
     }
 
     async function saveAll() {
-        await saveSetting("taskbarHeight", tempSettings.taskbarHeight);
+        await saveSetting("taskbarSize", tempSettings.taskbarSize);
+        await saveSetting("taskbarPosition", tempSettings.taskbarPosition);
         await saveSetting("showClock", tempSettings.showClock);
         await saveSetting("smallIcons", tempSettings.smallIcons);
         await saveSetting("autoHide", tempSettings.autoHide);
@@ -277,21 +288,25 @@ export default async function TaskbarProperties(content) {
 
     async function handleCancel() {
         try {
-            const h = await loadSetting("taskbarHeight") || 40;
+            const sVal = await loadSetting("taskbarSize") || 40;
+            const p = await loadSetting("taskbarPosition") || "bottom";
             const c = (await loadSetting("showClock")) !== false;
             const a = await loadSetting("autoHide") || false;
             const s = await loadSetting("smallIcons") || false;
             const w = await loadSetting("taskbarWindowMode") || false;
 
-            tempSettings.taskbarHeight = h;
+            tempSettings.taskbarSize = sVal;
+            tempSettings.taskbarPosition = p;
             tempSettings.showClock = c;
             tempSettings.autoHide = a;
             tempSettings.smallIcons = s;
             tempSettings.taskbarWindowMode = w;
+
             const checkWindowMode = content.querySelector("#tp-check-windowmode");
             const checkAutoHide = content.querySelector("#tp-check-autohide");
             const checkClock = content.querySelector("#tp-check-clock");
             const checkSmall = content.querySelector("#tp-check-small");
+            const selectPos = content.querySelector("#tp-select-position"); // ⭕ 追加: 位置選択セレクトボックス
             const slider = content.querySelector("#tp-size-slider");
             const sizeLegend = content.querySelector("#tp-size-legend");
             const previewBar = content.querySelector("#tp-preview-bar");
@@ -301,10 +316,11 @@ export default async function TaskbarProperties(content) {
             if (checkAutoHide) checkAutoHide.checked = a;
             if (checkClock) checkClock.checked = c;
             if (checkSmall) checkSmall.checked = s;
-            if (slider) slider.value = h;
-            if (sizeLegend) sizeLegend.textContent = `Taskbar Size (Current: ${h}px)`;
+            if (selectPos) selectPos.value = p; // ⭕ 追加: セレクトボックスの選択を復元
+            if (slider) slider.value = sVal; // ⭕ sVal を使う
+            if (sizeLegend) sizeLegend.textContent = `Taskbar Size (Current: ${sVal}px)`; // ⭕ sVal
             if (previewBar) {
-                previewBar.style.height = (h / 4) + "px";
+                previewBar.style.height = (sVal / 4) + "px"; // ⭕ sVal
                 previewBar.style.transform = a ? 'translateY(80%)' : 'translateY(0)';
             }
             if (previewClock) {
@@ -312,7 +328,8 @@ export default async function TaskbarProperties(content) {
             }
             window.dispatchEvent(new CustomEvent("taskbar-style-changed", {
                 detail: {
-                    taskbarHeight: w ? undefined : h,
+                    taskbarSize: w ? undefined : sVal, // ⭕ taskbarSize に修正
+                    taskbarPosition: p,
                     showClock: c,
                     autoHide: a,
                     smallIcons: s,

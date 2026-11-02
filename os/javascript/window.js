@@ -456,20 +456,45 @@ ${!options.hideStatus ? `
         const desktop = document.getElementById("desktop");
         const rect = desktop.getBoundingClientRect();
 
-        // ★タスクバーの「現在見えている高さ」を計算
         const taskbar = document.getElementById("taskbar");
-        let taskbarVisibleHeight = 0;
+
+        // デフォルトの最大化領域（画面全体）
+        let targetLeft = 0;
+        let targetTop = 0;
+        let targetWidth = rect.width;
+        let targetHeight = rect.height;
+
+        // タスクバーの位置とサイズを動的に取得して最大化領域を計算する
         if (taskbar) {
-            // タスクバーがウィンドウモードの場合は、最大化時にタスクバーの高さを無視（0にする）
             const isWindowMode = taskbar.closest(".window") !== null;
 
             if (!isWindowMode) {
+                const tbRect = taskbar.getBoundingClientRect();
                 const style = window.getComputedStyle(taskbar);
-                // transform: translateY(...) の値を取得
                 const matrix = new WebKitCSSMatrix(style.transform);
                 const translateY = matrix.m42;
-                // 物理的な高さから沈んでいる分を引く
-                taskbarVisibleHeight = Math.max(0, taskbar.offsetHeight - translateY);
+                const translateX = matrix.m41;
+
+                // 上下左右のどこにタスクバーがあるかを判定して領域を調整
+                if (tbRect.top <= 0 && tbRect.height < tbRect.width) {
+                    // 上部配置 (Top)
+                    const visibleH = Math.max(0, taskbar.offsetHeight - Math.abs(translateY));
+                    targetTop = visibleH;
+                    targetHeight -= visibleH;
+                } else if (tbRect.bottom >= window.innerHeight && tbRect.height < tbRect.width) {
+                    // 下部配置 (Bottom)
+                    const visibleH = Math.max(0, taskbar.offsetHeight - Math.abs(translateY));
+                    targetHeight -= visibleH;
+                } else if (tbRect.left <= 0 && tbRect.width < tbRect.height) {
+                    // 左側配置 (Left)
+                    const visibleW = Math.max(0, taskbar.offsetWidth - Math.abs(translateX));
+                    targetLeft = visibleW;
+                    targetWidth -= visibleW;
+                } else if (tbRect.right >= window.innerWidth && tbRect.width < tbRect.height) {
+                    // 右側配置 (Right)
+                    const visibleW = Math.max(0, taskbar.offsetWidth - Math.abs(translateX));
+                    targetWidth -= visibleW;
+                }
             }
         }
 
@@ -489,28 +514,29 @@ ${!options.hideStatus ? `
                 w.dataset[`prev${prop}`] = w.style[prop.toLowerCase()]
             );
 
-            // 最大化のターゲット位置
+            // 計算された動的なターゲット位置を適用
             targetRect = {
-                left: 0,
-                top: 0,
-                width: rect.width
+                left: targetLeft,
+                top: targetTop,
+                width: targetWidth,
+                height: targetHeight
             };
         } else {
             playSystemEventSound('restore');
             targetRect = {
                 left: parseInt(w.dataset.prevLeft),
                 top: parseInt(w.dataset.prevTop),
-                width: parseInt(w.dataset.prevWidth)
+                width: parseInt(w.dataset.prevWidth),
+                height: parseInt(w.dataset.prevHeight)
             };
         }
 
         animateTitleClone(clone, targetRect, undefined, () => {
             if (!maximized) {
-                w.style.left = "0px";
-                w.style.top = "0px";
-                w.style.width = "100%";
-                // ★動的に計算した「見えている高さ」を差し引く
-                w.style.height = `calc(100% - ${taskbarVisibleHeight}px)`;
+                w.style.left = `${targetRect.left}px`;
+                w.style.top = `${targetRect.top}px`;
+                w.style.width = `${targetRect.width}px`;
+                w.style.height = `${targetRect.height}px`;
                 w.classList.add("maximized");
             } else {
                 w.style.left = w.dataset.prevLeft;
@@ -626,24 +652,38 @@ ${!options.hideStatus ? `
         const onPointerMove = (moveEv) => {
             if (!dragging) return;
 
+            let clientX = moveEv.clientX;
             let clientY = moveEv.clientY;
 
-            // ★ タスクバー自身のウィンドウモードでなければ、下端（タスクバーの位置）で止めようとする制限をかける
+            // ★ タスクバー自身のウィンドウモードでなければ、マウスカーソルがタスクバーに乗ったときの制限をかける
             if (w.dataset.title !== "Taskbar") {
                 const taskbar = document.getElementById("taskbar");
-                // タスクバーがウィンドウモード（親がウィンドウの中にある、または独自の判定）の場合は制限を無視する
+                // タスクバーがウィンドウモードの場合は制限を無視する
                 const isTaskbarWindowMode = taskbar && taskbar.closest(".window") !== null;
 
-                if (!isTaskbarWindowMode) {
-                    const taskbarTop = taskbar ? taskbar.getBoundingClientRect().top : Infinity;
+                if (taskbar && !isTaskbarWindowMode) {
+                    const tbRect = taskbar.getBoundingClientRect();
 
-                    if (clientY > taskbarTop - offsetY) {
-                        clientY = taskbarTop - offsetY;
+                    // マウスカーソルが上下左右のタスクバー領域に入った場合の制限
+                    if (tbRect.top <= 0 && tbRect.height < tbRect.width) {
+                        // 上部タスクバー
+                        if (clientY < tbRect.bottom) clientY = tbRect.bottom;
+                    } else if (tbRect.bottom >= window.innerHeight && tbRect.height < tbRect.width) {
+                        // 下部タスクバー
+                        if (clientY > tbRect.top) clientY = tbRect.top;
+                    }
+
+                    if (tbRect.left <= 0 && tbRect.width < tbRect.height) {
+                        // 左側タスクバー
+                        if (clientX < tbRect.right) clientX = tbRect.right;
+                    } else if (tbRect.right >= window.innerWidth && tbRect.width < tbRect.height) {
+                        // 右側タスクバー
+                        if (clientX > tbRect.left) clientX = tbRect.left;
                     }
                 }
             }
 
-            const dx = moveEv.clientX - downX;
+            const dx = clientX - downX;
             const dy = clientY - downY;
 
             // 閾値を超えたらプレビュー枠を作成
@@ -654,11 +694,15 @@ ${!options.hideStatus ? `
 
             if (!dragStarted) return;
 
-            let newLeft = moveEv.clientX - offsetX;
+            // 制限された clientX, clientY を基にウィンドウ（またはプレビュー）の座標を計算
+            let newLeft = clientX - offsetX;
             let newTop = clientY - offsetY;
 
             if (newTop < 0) {
                 newTop = 0;
+            }
+            if (newLeft < 0) {
+                newLeft = 0;
             }
 
             // プレビューがあればプレビューを動かし、なければウィンドウを直接動かす
@@ -856,17 +900,49 @@ ${!options.hideStatus ? `
                     if (newTop < 0) {
                         newTop = 0;
                     }
-                } else {
-                    const taskbarTop = taskbar ? taskbar.getBoundingClientRect().top : Infinity;
+                } else if (taskbar) {
+                    const tbRect = taskbar.getBoundingClientRect();
+                    const style = window.getComputedStyle(taskbar);
+                    const matrix = new WebKitCSSMatrix(style.transform);
+                    const translateY = matrix.m42;
+                    const translateX = matrix.m41;
 
-                    if (newTop < 0) {
-                        newTop = 0;
-                        newHeight = startRect.top + startRect.height;
+                    // 上下左右のタスクバー配置に応じたリサイズ・位置の制限
+                    if (tbRect.top <= 0 && tbRect.height < tbRect.width) {
+                        // Top配置
+                        const visibleH = Math.max(0, taskbar.offsetHeight - Math.abs(translateY));
+                        if (newTop < visibleH) {
+                            newHeight -= (visibleH - newTop);
+                            newTop = visibleH;
+                        }
+                    } else if (tbRect.bottom >= window.innerHeight && tbRect.height < tbRect.width) {
+                        // Bottom配置
+                        const visibleH = Math.max(0, taskbar.offsetHeight - Math.abs(translateY));
+                        const maxBottom = window.innerHeight - visibleH;
+                        if (newTop + newHeight > maxBottom) {
+                            newHeight = maxBottom - newTop;
+                        }
                     }
-                    if (newTop + newHeight > taskbarTop) {
-                        newHeight = taskbarTop - newTop;
+
+                    if (tbRect.left <= 0 && tbRect.width < tbRect.height) {
+                        // Left配置
+                        const visibleW = Math.max(0, taskbar.offsetWidth - Math.abs(translateX));
+                        if (newLeft < visibleW) {
+                            newWidth -= (visibleW - newLeft);
+                            newLeft = visibleW;
+                        }
+                    } else if (tbRect.right >= window.innerWidth && tbRect.width < tbRect.height) {
+                        // Right配置
+                        const visibleW = Math.max(0, taskbar.offsetWidth - Math.abs(translateX));
+                        const maxRight = window.innerWidth - visibleW;
+                        if (newLeft + newWidth > maxRight) {
+                            newWidth = maxRight - newLeft;
+                        }
                     }
                 }
+
+                if (newTop < 0) newTop = 0;
+                if (newLeft < 0) newLeft = 0;
 
                 // プレビューがあればプレビューを更新し、なければウィンドウを直接リサイズ
                 if (preview) {
@@ -1000,7 +1076,7 @@ function createTitleClone(w, titleBar, titleText) {
         display: "flex",
         alignItems: "center",
         padding: titleBarStyles.padding,
-        zIndex: parseInt(w.style.zIndex) + 1,
+        zIndex: Math.max(parseInt(w.style.zIndex) + 1, 10002),
         pointerEvents: "none",
         overflow: "hidden",
         boxSizing: "border-box"

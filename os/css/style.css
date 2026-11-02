@@ -158,18 +158,81 @@ body {
     -ms-user-select: none;
     user-select: none;
     background-color: #C3C7CB;
-    border-top: 1.5px solid whitesmoke;
-    border-bottom: 1.5px solid #333;
+    border: 1.5px solid;
+    border-color: whitesmoke #333 #333 whitesmoke;
     display: flex;
     position: fixed;
-    bottom: 0;
-    height: 40px;
-    width: 100%;
     box-sizing: border-box;
-    align-items: center;
-    padding: 0 10px;
+    padding: 5px;
     font-size: 13px;
-    z-index: 1;
+    z-index: 1000;
+    align-items: center;
+}
+
+/* 各エリアの共通ベース（横置き用） */
+.taskbar-start,
+.taskbar-buttons,
+.taskbar-tray {
+    display: flex;
+    align-items: center;
+}
+
+.taskbar-buttons {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.taskbar-tray {
+    flex-shrink: 0;
+    border: 1.5px solid;
+    border-color: #7a7a7a #fff #fff #7a7a7a;
+    box-shadow: 0.5px 0.5px 0 #000 inset;
+    padding: 0 4px;
+}
+
+/* 縦配置（left / right）時のレイアウト調整 */
+#taskbar.vertical {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 2px;
+}
+
+#taskbar.vertical .taskbar-start,
+#taskbar.vertical .taskbar-buttons,
+#taskbar.vertical .taskbar-tray {
+    flex-direction: column;
+    width: 100%;
+    align-items: stretch;
+    margin: 0;
+}
+
+#taskbar.vertical .taskbar-buttons {
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* タスクバーボタンの縦横切り替え対応 */
+.taskbar-window-btn {
+    display: inline-flex;
+    align-items: center;
+    height: 26px;
+    width: 135px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: left;
+    margin: 0 1px;
+}
+
+#taskbar.vertical .taskbar-window-btn {
+    width: 100%;
+    margin: 2px 0;
+}
+
+/* 縦配置時はバージョンラベルを非表示にして崩れを防ぐ */
+#taskbar.vertical .os-version-label {
+    display: none;
 }
 
 /* 選択状態（最前面） */
@@ -186,8 +249,17 @@ body {
 
 #start-btn {
     height: 26px;
-    padding: 0 10px;
+    padding: 0 8px;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#taskbar.vertical #start-btn {
+    width: 100%;
+    height: 28px;
+    padding: 0;
 }
 
 #start-btn.pressed {
@@ -197,7 +269,6 @@ body {
 
 #start-btn:active {
     outline: inherit;
-    /* もしくは pressed と同じ見た目にする */
     background: inherit;
 }
 
