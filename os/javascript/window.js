@@ -236,9 +236,9 @@ ${!options.hideStatus ? `
         taskbarBtn = document.createElement("button");
         taskbarBtn.className = "taskbar-window-btn button";
         taskbarBtn.innerHTML = `
-        <span class="taskbar-icon">${initialIcon}</span>
-        <span class="taskbar-text">${title}</span>
-    `;
+            <span class="taskbar-icon">${initialIcon}</span>
+            <span class="taskbar-text">${title}</span>
+        `;
         taskbarBtn.dataset.title = title;
 
         taskbarBtn._window = w;
@@ -1483,6 +1483,16 @@ export function progressWindow(title, itemName, options = {}) {
     };
 }
 
+export function updateAllTaskbarButtonModes() {
+    taskbarButtons.forEach(btn => {
+        if (btn.clientWidth < 35) {
+            btn.classList.add("icon-only");
+        } else {
+            btn.classList.remove("icon-only");
+        }
+    });
+}
+
 /* ===== refreshTopWindow 更新 (修正版) ===== */
 export function refreshTopWindow(forcedTopWindow = null) {
     const allWindows = Array.from(document.querySelectorAll(".window"));
@@ -1534,6 +1544,7 @@ export function refreshTopWindow(forcedTopWindow = null) {
         const isSelected = Boolean(topWindow && btn._window === topWindow);
         btn.classList.toggle("selected", isSelected);
     });
+    updateAllTaskbarButtonModes();
 }
 
 /* =========================

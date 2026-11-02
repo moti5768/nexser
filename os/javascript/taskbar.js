@@ -1,6 +1,6 @@
 // taskbar.js
 import { launch } from "./kernel.js";
-import { resetAllTitleBars, taskbarButtons, createWindow } from "./window.js";
+import { resetAllTitleBars, taskbarButtons, createWindow, updateAllTaskbarButtonModes } from "./window.js";
 import { hideContextMenu, attachContextMenu } from "./context-menu.js";
 import { clockDate } from "./apps/clock.js";  // ClockApp の currentDate を参照
 import { saveSetting, loadSetting } from "./apps/settings.js"; // 保存読み込み
@@ -460,6 +460,7 @@ export function initTaskbar() {
 
         setupResizeHandle();
         updateAutoHideEffect();
+        updateAllTaskbarButtonModes();
         window.dispatchEvent(new Event("desktop-resize"));
     }
 
@@ -667,6 +668,7 @@ export function initTaskbar() {
     // ウィンドウリサイズ時の各種位置補正（複数あった処理を統合＆軽量化）
     let resizeTicking = false;
     window.addEventListener("resize", () => {
+        updateAllTaskbarButtonModes();
         if (!resizeTicking) {
             requestAnimationFrame(() => {
                 updateVersionPosition();

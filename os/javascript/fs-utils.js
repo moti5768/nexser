@@ -57,7 +57,7 @@ export function normalizePath(path, cwd = "C:/") {
         }
         return stack[0] + "/" + stack.slice(1).join("/");
     }
-    return "C:/" + stack.join("/"); // ⭕ 正しく stack を結合する
+    return "C:/" + stack.join("/");
 }
 
 /**
