@@ -13,22 +13,20 @@ function dataURLToBlob(dataURL) {
     return new Blob([u8arr], { type: mime });
 }
 
-// 【追加】gzip圧縮ヘルパー
+// gzip圧縮ヘルパー
 async function compressObject(obj) {
     const jsonStr = JSON.stringify(obj);
     const stream = new Blob([jsonStr]).stream().pipeThrough(new CompressionStream('gzip'));
     return await new Response(stream).blob();
 }
 
-// 【追加】gzip解凍ヘルパー
+// gzip解凍ヘルパー
 async function decompressBlob(blob) {
     try {
-        // まず gzip 解凍を試みる
         const stream = blob.stream().pipeThrough(new DecompressionStream('gzip'));
         const text = await new Response(stream).text();
         return JSON.parse(text);
     } catch (err) {
-        // 解凍に失敗した場合（以前の非圧縮 .json ファイルなどの場合）、テキストとして読み込む
         try {
             const text = await blob.text();
             return JSON.parse(text);
@@ -96,7 +94,7 @@ async function importStoreEntries(db, storeName, importData) {
 }
 
 self.onmessage = async (e) => {
-    const { action = 'fetch', storeName, storeNames, searchTerm, maxVisibleItems, importPayloads } = e.data;
+    const { action = 'fetch', storeName, storeNames, searchTerm, maxVisibleItems = 500, importPayloads, currentPath = [] } = e.data;
     try {
         const db = await openDB();
 
@@ -114,16 +112,14 @@ self.onmessage = async (e) => {
             for (const sName of storeNames) {
                 const entries = await getStoreEntries(db, sName);
                 const compressedBlob = await compressObject(entries);
-                // Worker間転送のため、BlobをArrayBufferに変換またはそのまま送る
                 results[sName] = compressedBlob;
             }
             self.postMessage({ success: true, action: 'exportAll', results });
             return;
         }
 
-        // --- 3. インポート（単数または複数ファイルの同時復元対応） ---
+        // --- 3. インポート ---
         if (action === 'import') {
-            // payloads は [{ storeName, blob }] の配列
             for (const payload of importPayloads) {
                 const rawData = await decompressBlob(payload.blob);
                 if (!rawData || typeof rawData !== 'object') {
@@ -135,38 +131,83 @@ self.onmessage = async (e) => {
             return;
         }
 
-        // --- 4. デフォルト: 検索・表示用データの取得 ---
+        // --- 4. デフォルト: 階層パスに合わせたデータ取得（サブキー・値の両方に対応） ---
         const tx = db.transaction(storeName, "readonly");
         const store = tx.objectStore(storeName);
+
+        let targetData = null;
+
+        if (storeName === "kv") {
+            targetData = await new Promise((resolve) => {
+                // "fs_C:" または古い "fs" キーの双方をフォールバック考慮して確実に取得
+                const req = store.get("fs_C:");
+                req.onsuccess = (e) => {
+                    if (e.target.result) {
+                        resolve(e.target.result);
+                    } else {
+                        const req2 = store.get("fs");
+                        req2.onsuccess = (e2) => resolve(e2.target.result || null);
+                        req2.onerror = () => resolve(null);
+                    }
+                };
+                req.onerror = () => {
+                    const req2 = store.get("fs");
+                    req2.onsuccess = (e2) => resolve(e2.target.result || null);
+                    req2.onerror = () => resolve(null);
+                };
+            });
+        } else {
+            const storeRoot = {};
+            await new Promise((resolve) => {
+                const req = store.openCursor();
+                req.onsuccess = (event) => {
+                    const cursor = event.target.result;
+                    if (cursor) {
+                        storeRoot[String(cursor.key)] = cursor.value;
+                        cursor.continue();
+                    } else {
+                        resolve();
+                    }
+                };
+                req.onerror = () => resolve();
+            });
+            targetData = storeRoot;
+        }
+
+        // currentPath（例: ["C:", "Programs", "Applications"]）に沿ってオブジェクト階層を正確にドリルダウン
+        if (targetData && typeof targetData === "object") {
+            for (const p of currentPath) {
+                if (targetData[p] !== undefined && targetData[p] !== null) {
+                    targetData = targetData[p];
+                } else {
+                    targetData = null;
+                    break;
+                }
+            }
+        }
 
         const items = [];
         const dbKeys = [];
         let count = 0;
 
-        await new Promise((resolve, reject) => {
-            const request = store.openCursor();
-            request.onsuccess = (event) => {
-                const cursor = event.target.result;
-                if (cursor) {
-                    const keyStr = String(cursor.key);
-                    dbKeys.push(keyStr);
+        if (targetData && typeof targetData === "object") {
+            for (const [k, v] of Object.entries(targetData)) {
+                // システム管理用のメタプロパティはレジストリ値のリストから除外
+                if (["type", "system", "content", "target", "entry", "shell", "singleton", "lastModified", "hidden", "size"].includes(k)) continue;
 
-                    const isMatch = !searchTerm || keyStr.toLowerCase().includes(searchTerm.toLowerCase());
-                    if (isMatch && count < maxVisibleItems) {
-                        let val = cursor.value;
-                        if (typeof val === 'string' && val.length > 5000) {
-                            val = val.substring(0, 5000) + " ... (truncated due to large size)";
-                        }
-                        items.push({ key: cursor.key, keyStr: keyStr, value: val });
-                        count++;
+                dbKeys.push(k);
+
+                const isMatch = !searchTerm || k.toLowerCase().includes(searchTerm.toLowerCase());
+                if (isMatch && count < maxVisibleItems) {
+                    let val = v;
+                    if (typeof val === 'string' && val.length > 5000) {
+                        val = val.substring(0, 5000) + " ... (truncated due to large size)";
                     }
-                    cursor.continue();
-                } else {
-                    resolve();
+                    items.push({ key: k, keyStr: k, value: val });
+                    count++;
                 }
-            };
-            request.onerror = (err) => reject(err);
-        });
+            }
+        }
 
         self.postMessage({ success: true, action: 'fetch', storeName, items, dbKeys });
     } catch (err) {

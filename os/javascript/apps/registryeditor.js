@@ -3,8 +3,9 @@ import { openDB } from "../db.js";
 import { attachContextMenu } from "../context-menu.js";
 import { setupRibbon } from "../ribbon.js";
 import { taskbarButtons, alertWindow, errorWindow, confirmWindow } from "../window.js";
+import { getIcon } from "../file-associations.js";
+import { launch } from "../kernel.js";
 
-// 【追加】Workerの管理用
 let worker = null;
 function getWorker() {
     if (!worker) {
@@ -16,6 +17,7 @@ function getWorker() {
 export default function RegistryEditor(root) {
     const STORE_NAMES = ["settings", "files", "kv", "recent", "window-size"];
     let currentStore = STORE_NAMES[0];
+    let currentPath = [];
     let dbPromise = null;
     let isProcessing = false;
     let searchTerm = "";
@@ -514,6 +516,7 @@ export default function RegistryEditor(root) {
 
         const requestId = ++currentRequestId;
         const snapshotStore = currentStore;
+        const snapshotPath = [...currentPath]; // 現在の階層パスを保存
         isProcessing = true;
 
         const loadingEl = root.querySelector("#reg-loading");
@@ -527,10 +530,10 @@ export default function RegistryEditor(root) {
         const workerInstance = getWorker();
 
         try {
+            // ★ メインスレッドでの直接DBアクセスを廃止し、ワーカーに処理を委譲して非同期で結果を取得する
             const result = await new Promise((resolve, reject) => {
                 const handleMessage = (e) => {
-                    // デフォルトのfetchアクションまたはアクション指定なしのメッセージを待つ
-                    if (!e.data.action || e.data.action === 'fetch') {
+                    if (e.data.action === 'fetch' && e.data.storeName === snapshotStore) {
                         workerInstance.removeEventListener('message', handleMessage);
                         resolve(e.data);
                     }
@@ -546,20 +549,21 @@ export default function RegistryEditor(root) {
                 workerInstance.postMessage({
                     action: 'fetch',
                     storeName: currentStore,
+                    currentPath: snapshotPath,
                     searchTerm: searchTerm,
                     maxVisibleItems: MAX_VISIBLE_ITEMS
                 });
             });
 
-            if (requestId !== currentRequestId || currentStore !== snapshotStore) return;
             if (!result.success) throw new Error(result.error);
+            if (requestId !== currentRequestId || currentStore !== snapshotStore) return;
 
-            const dbKeys = new Set(result.dbKeys);
+            const items = result.items || [];
+            const dbKeys = new Set(items.map(i => i.keyStr));
             const visibleKeys = new Set();
-
             const fragment = document.createDocumentFragment();
 
-            result.items.forEach(item => {
+            items.forEach(item => {
                 visibleKeys.add(item.keyStr);
                 updateRow(item.key, item.keyStr, item.value, fragment);
             });
@@ -578,11 +582,13 @@ export default function RegistryEditor(root) {
             }
 
             if (win && win._statusBar) {
-                win._statusBar.textContent = `My Computer\\${currentStore} (${dbKeys.size} items)`;
+                const hkeyName = Object.keys(HKEY_MAPPING).find(k => HKEY_MAPPING[k] === currentStore) || currentStore;
+                const pathStr = snapshotPath.length > 0 ? `\\${snapshotPath.join("\\")}` : "";
+                win._statusBar.textContent = `コンピューター\\${hkeyName}${pathStr}`;
             }
 
-        } catch (e) {
-            console.error("[Registry] Refresh error:", e);
+        } catch (err) {
+            console.error("[Registry Debug] refresh error caught:", err);
         } finally {
             if (requestId === currentRequestId) {
                 isProcessing = false;
@@ -606,14 +612,25 @@ export default function RegistryEditor(root) {
                 if (selectedKey !== keyStr) {
                     selectRow(keyStr);
                 }
-                return [
-                    { label: "Modify", action: () => enterEditMode(tr._key, "data") }, // 【改善】
-                    { label: "Rename", action: () => enterEditMode(tr._key, "name") }, // 【改善】
-                    { label: "Delete", action: () => deleteItem(tr._key) }            // 【改善】元のキーで処理
-                ];
+                // 値がファイルシステムノード（app, file, folder）か判定
+                const isFsNode = tr._val && typeof tr._val === "object" && ["app", "file", "folder"].includes(tr._val.type);
+                const menuItems = [];
+
+                // ファイルやアプリの場合はコンテキストメニューの先頭に「Open」を追加
+                if (isFsNode) {
+                    menuItems.push({ label: "Open / 実行", action: () => openRegistryItem(tr._key, tr._val) });
+                }
+
+                menuItems.push(
+                    { label: "Modify", action: () => enterEditMode(tr._key, "data") },
+                    { label: "Rename", action: () => enterEditMode(tr._key, "name") },
+                    { label: "Delete", action: () => deleteItem(tr._key) }
+                );
+                return menuItems;
             });
 
-            tr.ondblclick = () => enterEditMode(tr._key, "data"); // 【改善】
+            // ダブルクリック時に単なる編集ではなく、openコマンドと同様に中身の表示やアプリ起動を行う
+            tr.ondblclick = () => openRegistryItem(tr._key, tr._val);
             tr.onclick = () => selectRow(keyStr);
 
             if (fragment) {
@@ -626,13 +643,48 @@ export default function RegistryEditor(root) {
 
         tr._key = key;
         tr._val = val;
+        // 改善後: Windowsレジストリと同じ表記ルール（既定値、数値の16進数併記、型アイコンなど）
         if (editingKey !== keyStr) {
-            let typeStr = (typeof val === 'number') ? "REG_DWORD" : (val instanceof Blob) ? "REG_BINARY" : (typeof val === 'object') ? "REG_JSON" : "REG_SZ";
-            let displayVal = (val instanceof Blob) ? `[Blob: ${val.size} bytes]` : (typeof val === 'object') ? JSON.stringify(val) : String(val);
+            let typeStr = "REG_SZ";
+            let displayVal = "";
 
-            tr.children[0].textContent = keyStr;
+            if (typeof val === 'number') {
+                typeStr = "REG_DWORD";
+                // Windows風に 10進数と16進数を併記 (例: 0x00000001 (1))
+                const hex = "0x" + val.toString(16).padStart(8, '0');
+                displayVal = `${hex} (${val})`;
+            } else if (val instanceof Blob) {
+                typeStr = "REG_BINARY";
+                displayVal = `バイナリ データ (${val.size} バイト)`;
+            } else if (Array.isArray(val)) {
+                typeStr = "REG_MULTI_SZ";
+                displayVal = val.join(" ");
+            } else if (typeof val === 'object' && val !== null) {
+                // ファイルシステムノードの場合の表示形式をわかりやすく調整
+                if (val.type === "file") {
+                    typeStr = "REG_FILE";
+                    displayVal = `[ファイル] ${val.content ? val.content.substring(0, 60) + "..." : "(空)"}`;
+                } else if (val.type === "app") {
+                    typeStr = "REG_APP";
+                    displayVal = `[アプリ] エントリ: ${val.entry}`;
+                } else if (val.type === "folder") {
+                    typeStr = "REG_FOLDER";
+                    displayVal = `[フォルダ]`;
+                } else {
+                    typeStr = "REG_JSON";
+                    displayVal = JSON.stringify(val);
+                }
+            } else {
+                typeStr = "REG_SZ";
+                displayVal = String(val ?? "(値の設定なし)");
+            }
+
+            // Windows標準: 空文字列または特定のキーは "(既定)" と表示
+            const displayName = (keyStr === "" || keyStr === "(Default)") ? "(既定)" : keyStr;
+
+            tr.children[0].textContent = displayName;
             tr.children[1].textContent = typeStr;
-            tr.children[2].textContent = displayVal.substring(0, 100);
+            tr.children[2].textContent = displayVal.substring(0, 120);
         }
 
         const isSelected = (selectedKey === keyStr);
@@ -744,53 +796,189 @@ export default function RegistryEditor(root) {
         }
     };
 
-    function buildTree() {
+    // 改善後: Windows標準の HKEY_* 構造にマッピングして親しみやすく体系化
+    const HKEY_MAPPING = {
+        "HKEY_CLASSES_ROOT": "files",
+        "HKEY_CURRENT_USER": "settings",
+        "HKEY_LOCAL_MACHINE": "kv",
+        "HKEY_USERS": "recent",
+        "HKEY_CURRENT_CONFIG": "window-size"
+    };
+
+    async function fetchStoreData(db, storeName) {
+        return new Promise(resolve => {
+            const tx = db.transaction(storeName, "readonly");
+            const store = tx.objectStore(storeName);
+            if (storeName === "kv") {
+                const req = store.get("fs_C:");
+                req.onsuccess = (e) => {
+                    if (e.target.result) {
+                        resolve(e.target.result);
+                    } else {
+                        const req2 = store.get("fs");
+                        req2.onsuccess = (e2) => resolve(e2.target.result || null);
+                        req2.onerror = () => resolve(null);
+                    }
+                };
+                req.onerror = () => {
+                    const req2 = store.get("fs");
+                    req2.onsuccess = (e2) => resolve(e2.target.result || null);
+                    req2.onerror = () => resolve(null);
+                };
+            } else {
+                const req = store.getAllKeys();
+                req.onsuccess = async () => {
+                    const keys = req.result;
+                    const obj = {};
+                    const safeKeys = Array.isArray(keys) ? keys : [];
+                    for (const k of safeKeys) {
+                        obj[k] = await store.get(k);
+                    }
+                    resolve(obj);
+                };
+                req.onerror = () => resolve(null);
+            }
+        });
+    }
+
+    async function buildTree() {
         treeEl.innerHTML = "";
-        STORE_NAMES.forEach(name => {
-            const li = document.createElement("li");
-            li.style.cssText = "cursor:pointer; padding:2px; white-space:nowrap;";
-            li.innerHTML = `📂 ${name}`;
-            li.onclick = () => {
-                currentStore = name;
+        const db = await getDB();
+
+        // トップノード「コンピューター」を配置
+        const computerLi = document.createElement("li");
+        computerLi.innerHTML = `<span class="toggle">▼</span> ${getIcon("Computer", { type: "folder" })} コンピューター`;
+        const rootUl = document.createElement("ul");
+        rootUl.style.cssText = "list-style:none; padding-left:15px; display:block; margin:0;";
+
+        for (const [hkeyName, storeName] of Object.entries(HKEY_MAPPING)) {
+            const storeData = await fetchStoreData(db, storeName);
+            const hasChildren = storeData && typeof storeData === "object" && Object.keys(storeData).length > 0;
+
+            const storeLi = document.createElement("li");
+            storeLi.tabIndex = 0;
+            storeLi.style.cssText = "cursor:pointer; padding:2px 0; white-space:nowrap; outline:none;";
+
+            // Windows標準のレジストリキーアイコン・表記に変更
+            storeLi.innerHTML = `<span class="toggle" style="display:inline-block; width:12px; text-align:center;">${hasChildren ? "▶" : ""}</span> ${getIcon(hkeyName, { type: "folder" })} ${hkeyName}`;
+
+            const ul = document.createElement("ul");
+            ul.style.cssText = "list-style:none; padding-left:15px; display:none; margin:0;";
+
+            if (hasChildren) {
+                renderSubTree(storeData, ul, storeName, "");
+            }
+
+            storeLi.onclick = (e) => {
+                e.stopPropagation();
+                currentStore = storeName;
+                currentPath = [];
                 selectedKey = null;
                 editingKey = null;
-                [...treeEl.children].forEach(el => { el.style.background = ""; el.style.color = ""; });
-                li.style.background = "#000080"; li.style.color = "#fff";
+
+                if (hasChildren) {
+                    const isExpanded = ul.style.display === "block";
+                    ul.style.display = isExpanded ? "none" : "block";
+                    storeLi.children[0].textContent = isExpanded ? "▶" : "▼";
+                }
+                highlightTreeItem(storeLi);
                 refresh(true);
             };
-            if (name === currentStore) { li.style.background = "#000080"; li.style.color = "#fff"; }
-            treeEl.appendChild(li);
+
+            storeLi.appendChild(ul);
+            rootUl.appendChild(storeLi);
+        }
+        computerLi.appendChild(rootUl);
+        treeEl.appendChild(computerLi);
+    }
+
+    // サブフォルダを再帰的に生成するヘルパー関数
+    function renderSubTree(nodeObj, parentUl, storeName, currentPathStr) {
+        if (!nodeObj || typeof nodeObj !== "object") return;
+
+        for (const [key, val] of Object.entries(nodeObj)) {
+            if (["type", "system", "content", "target", "entry", "shell", "singleton", "lastModified", "hidden"].includes(key)) continue;
+
+            const isFolder = val && typeof val === "object" && (val.type === "folder" || !val.type) && !Array.isArray(val) && !(val instanceof Blob);
+            if (!isFolder) continue;
+
+            const li = document.createElement("li");
+            li.tabIndex = 0;
+            li.style.cssText = "cursor:pointer; padding:1px 0; white-space:nowrap; outline:none;";
+
+            const subPath = currentPathStr ? `${currentPathStr}/${key}` : key;
+            const hasSubChildren = val && typeof val === "object" && Object.keys(val).some(k => !["type", "system", "content", "target", "entry", "shell"].includes(k));
+
+            li.innerHTML = `<span class="toggle" style="display:inline-block; width:12px; text-align:center;">${hasSubChildren ? "▶" : ""}</span> ${getIcon(key, val)} ${key}`;
+
+            const subUl = document.createElement("ul");
+            subUl.style.cssText = "list-style:none; padding-left:15px; display:none; margin:0;";
+
+            if (hasSubChildren) {
+                renderSubTree(val, subUl, storeName, subPath);
+            }
+
+            li.onclick = (e) => {
+                e.stopPropagation();
+                currentStore = storeName;
+                currentPath = subPath.split("/");
+                selectedKey = null;
+                editingKey = null;
+
+                if (hasSubChildren) {
+                    const isExpanded = subUl.style.display === "block";
+                    subUl.style.display = isExpanded ? "none" : "block";
+                    li.children[0].textContent = isExpanded ? "▶" : "▼";
+                }
+                highlightTreeItem(li);
+                refresh(true);
+            };
+
+            li.appendChild(subUl);
+            parentUl.appendChild(li);
+        }
+    }
+
+    function highlightTreeItem(targetLi) {
+        treeEl.querySelectorAll("li").forEach(li => {
+            li.style.background = "";
+            li.style.color = "";
         });
+        targetLi.style.background = "#000080";
+        targetLi.style.color = "#fff";
     }
 
     const treeContainer = root.querySelector("#reg-tree-container");
 
     treeContainer.onkeydown = (e) => {
-        const currentIndex = STORE_NAMES.indexOf(currentStore);
-        let nextIndex = currentIndex;
-
-        if (e.key === "ArrowDown") {
+        const activeEl = document.activeElement;
+        if (e.key === "ArrowRight") {
             e.preventDefault();
-            nextIndex = Math.min(STORE_NAMES.length - 1, currentIndex + 1);
-        } else if (e.key === "ArrowUp") {
-            e.preventDefault();
-            nextIndex = Math.max(0, currentIndex - 1);
-        } else if (e.key === "Enter" || e.key === "ArrowRight") {
-            e.preventDefault();
-            mainView.focus();
-            const visibleKeys = Array.from(rowMap.keys());
-            if (visibleKeys.length > 0) {
-                selectRow(visibleKeys[0]);
-                rowMap.get(visibleKeys[0])?.scrollIntoView({ block: "nearest" });
+            const toggle = activeEl?.querySelector(".toggle");
+            const subUl = activeEl?.querySelector("ul");
+            if (subUl && subUl.style.display === "none") {
+                subUl.style.display = "block";
+                if (toggle) toggle.textContent = "▼";
+            } else if (subUl && subUl.children.length > 0) {
+                // 子階層へフォーカス移動
+                subUl.children[0].focus?.();
+            } else {
+                // 右矢印で右ペイン（リストビュー）へ移動
+                mainView.focus();
+                const visibleKeys = Array.from(rowMap.keys());
+                if (visibleKeys.length > 0) selectRow(visibleKeys[0]);
             }
-            return;
-        } else {
-            return;
-        }
-
-        if (nextIndex !== currentIndex) {
-            const targetLi = treeEl.children[nextIndex];
-            if (targetLi) targetLi.click();
+        } else if (e.key === "ArrowLeft") {
+            e.preventDefault();
+            const subUl = activeEl?.querySelector("ul");
+            const toggle = activeEl?.querySelector(".toggle");
+            if (subUl && subUl.style.display === "block") {
+                subUl.style.display = "none";
+                if (toggle) toggle.textContent = "▶";
+            } else {
+                // 親階層へ移動
+                activeEl?.parentElement?.closest("li")?.focus?.();
+            }
         }
     };
 
@@ -805,4 +993,84 @@ export default function RegistryEditor(root) {
 
     buildTree();
     refresh();
+
+
+
+
+
+
+
+    async function openRegistryItem(key, val) {
+        if (!val) return enterEditMode(key, "data");
+
+        // 1. 画像などのバイナリデータ (Blob) の場合、プレビューを表示
+        if (val instanceof Blob) {
+            const url = URL.createObjectURL(val);
+            alertWindow(`<div style="text-align:center;"><img src="${url}" style="max-width:100%; max-height:250px; object-fit:contain;"/><p style="margin-top:8px;">サイズ: ${val.size} バイト</p></div>`, { title: `プレビュー: ${key}`, parentWin: win });
+            return;
+        }
+
+        // 2. JSONなどのオブジェクト / 配列の場合、見やすく整形して表示
+        if (typeof val === "object" && val !== null && !val.type) {
+            const jsonStr = JSON.stringify(val, null, 2);
+            alertWindow(`<pre style="max-height:300px; overflow:auto; font-family:monospace; margin:0; background:#fff; padding:4px;">${jsonStr}</pre>`, { title: `JSONビュー: ${key}`, parentWin: win });
+            return;
+        }
+
+        if (typeof val !== "object") {
+            enterEditMode(key, "data");
+            return;
+        }
+
+        switch (val.type) {
+            case "app": {
+                try {
+                    const appModule = await import(val.entry);
+                    appModule.default?.();
+                } catch (err) {
+                    errorWindow(`Failed to launch app: ${err.message}`, { parentWin: win });
+                }
+                break;
+            }
+            case "file": {
+                // 3. 外部ストレージに保存されているファイル (__EXTERNAL_DATA__) の場合、files ストアから実データを非同期取得
+                let contentToShow = val.content;
+                if (contentToShow === "__EXTERNAL_DATA__") {
+                    try {
+                        const db = await getDB();
+                        // 現在のパスを組み立てて files ストアから実体を取得
+                        const fullPath = [...currentPath, key].join("/");
+                        const tx = db.transaction("files", "readonly");
+                        const fileMeta = await tx.objectStore("files").get(fullPath);
+
+                        if (fileMeta instanceof Blob) {
+                            const url = URL.createObjectURL(fileMeta);
+                            alertWindow(`<div style="text-align:center;"><img src="${url}" style="max-width:100%; max-height:250px; object-fit:contain;"/><p style="margin-top:8px;">サイズ: ${fileMeta.size} バイト</p></div>`, { title: `ファイル: ${key}`, parentWin: win });
+                            return;
+                        } else if (typeof fileMeta === "string") {
+                            contentToShow = fileMeta;
+                        } else {
+                            contentToShow = "(外部バイナリデータまたは読み込み不可)";
+                        }
+                    } catch (e) {
+                        contentToShow = "(外部データの読み込みに失敗しました)";
+                    }
+                }
+
+                alertWindow(`[File Content: ${key}]\n\n${contentToShow || "(空のファイルです)"}`, { parentWin: win });
+                break;
+            }
+            case "folder": {
+                // ⭕ ファイル先頭でインポート済みの kernel.js の launch を直接使用する
+                launch("C:/Programs/Applications/Explorer.app", { path: `C:/${[...currentPath, key].join("/")}`, parentCwd: "C:/" });
+                break;
+            }
+            default: {
+                enterEditMode(key, "data");
+                break;
+            }
+        }
+    }
+
+
 }

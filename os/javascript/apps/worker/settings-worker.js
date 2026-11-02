@@ -1,4 +1,4 @@
-// settings-worker.js (Web Worker側)
+// settings-worker.js
 import { openDB } from "../../db.js";
 
 const encoder = new TextEncoder();

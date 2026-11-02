@@ -1,5 +1,4 @@
 // Network_Monitor.js
-
 export default async function NetworkMonitorApp(content) {
     content.innerHTML = `
         <div class="win95-tab-container" style="height:100%; display:flex; flex-direction:column;">
