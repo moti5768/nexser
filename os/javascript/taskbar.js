@@ -499,6 +499,7 @@ export function initTaskbar() {
         taskbar.addEventListener("mousedown", e => {
             if (e.target.closest("#start-btn") || e.target.closest(".taskbar-window-btn") || e.target === currentHandle || isTaskbarWindowMode) return;
             isDragging = true;
+            targetPos = currentPosition;
 
             if (ENABLE_TASKBAR_PREVIEW) {
                 dragPreview = document.createElement("div");
@@ -530,9 +531,10 @@ export function initTaskbar() {
                 left: x,
                 right: w - x
             };
-            targetPos = Object.keys(dists).reduce((a, b) => dists[a] < dists[b] ? a : b);
+            const newTargetPos = Object.keys(dists).reduce((a, b) => dists[a] < dists[b] ? a : b);
 
-            if (dragPreview) {
+            if (ENABLE_TASKBAR_PREVIEW && dragPreview) {
+                targetPos = newTargetPos;
                 const previewRect = {
                     top: { top: 0, left: 0, width: "100%", height: `${taskbarSize}px` },
                     bottom: { top: `${h - taskbarSize}px`, left: 0, width: "100%", height: `${taskbarSize}px` },
@@ -540,6 +542,22 @@ export function initTaskbar() {
                     right: { top: 0, left: `${w - taskbarSize}px`, width: `${taskbarSize}px`, height: "100%" }
                 };
                 Object.assign(dragPreview.style, previewRect[targetPos]);
+            } else {
+                // プレビューオフの場合：mousemove中はデスクトップを巻き込まず、タスクバーの見た目の位置だけを動かす
+                if (newTargetPos !== targetPos) {
+                    targetPos = newTargetPos;
+                    if (targetPos !== currentPosition) {
+                        const isVert = targetPos === "left" || targetPos === "right";
+                        Object.assign(taskbar.style, {
+                            top: (targetPos === "bottom") ? "auto" : "0px",
+                            bottom: (targetPos === "top") ? "auto" : "0px",
+                            left: (targetPos === "right") ? "auto" : "0px",
+                            right: (targetPos === "left") ? "auto" : "0px",
+                            width: isVert ? `${taskbarSize}px` : "100%",
+                            height: isVert ? "100%" : `${taskbarSize}px`
+                        });
+                    }
+                }
             }
         });
 
@@ -552,6 +570,7 @@ export function initTaskbar() {
                 dragPreview = null;
             }
 
+            // デスクトップの最大化ウィンドウの調整や設定保存など、全ての結果はmouseup時に確定
             if (targetPos !== currentPosition) {
                 await saveSetting("taskbarPosition", targetPos);
                 applyTaskbarLayout(targetPos, taskbarSize);
