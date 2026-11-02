@@ -701,9 +701,6 @@ ${!options.hideStatus ? `
             if (newTop < 0) {
                 newTop = 0;
             }
-            if (newLeft < 0) {
-                newLeft = 0;
-            }
 
             // プレビューがあればプレビューを動かし、なければウィンドウを直接動かす
             if (preview) {
