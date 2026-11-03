@@ -435,7 +435,14 @@ export function buildDesktop() {
                 const iconIndex = iconNames.indexOf(name);
                 const rowHeight = 90;
                 const colWidth = 90;
-                const maxRows = Math.max(1, Math.floor(((window.innerHeight || 600) - 60) / rowHeight));
+
+                // 🟢 改善: タスクバーの実際のサイズや配置エリアを考慮して利用可能な高さを算出
+                const taskbar = document.getElementById("taskbar");
+                let availableHeight = window.innerHeight;
+                if (taskbar && !taskbar.closest(".window") && !taskbar.classList.contains("vertical")) {
+                    availableHeight -= (taskbar.offsetHeight || 40);
+                }
+                const maxRows = Math.max(1, Math.floor((availableHeight - 40) / rowHeight));
 
                 const col = Math.floor(iconIndex / maxRows);
                 const row = iconIndex % maxRows;
@@ -866,17 +873,22 @@ export function buildDesktop() {
             try {
                 const data = dataStr ? JSON.parse(dataStr) : null;
                 if (data && data.type === "desktop-icons" && !autoArrange) {
+                    // 🟢 コンテナの現在位置（タスクバーを避けた領域の開始位置）を取得
+                    const iconsContainer = document.getElementById("desktop-icons");
+                    const containerRect = iconsContainer ? iconsContainer.getBoundingClientRect() : { left: 0, top: 0 };
+
                     // ★ 修正: 個別のオフセット情報がある場合はそれを使用し、フォーメーションを維持する
                     if (data.draggedItems) {
                         data.draggedItems.forEach((itemData) => {
-                            let newX = e.clientX - itemData.offsetX;
-                            let newY = e.clientY - itemData.offsetY;
+                            // 🟢 画面全体の座標から、アイコンコンテナのオフセット（タスクバー分）を引く
+                            let newX = e.clientX - itemData.offsetX - containerRect.left;
+                            let newY = e.clientY - itemData.offsetY - containerRect.top;
                             iconPositions[itemData.name] = { x: newX, y: newY };
                         });
                     } else {
                         // 古い形式のデータが来た場合のフォールバック処理
-                        let newX = e.clientX - (data.offsetX || 0);
-                        let newY = e.clientY - (data.offsetY || 0);
+                        let newX = e.clientX - (data.offsetX || 0) - containerRect.left;
+                        let newY = e.clientY - (data.offsetY || 0) - containerRect.top;
                         data.names.forEach((name, index) => {
                             iconPositions[name] = { x: newX + (index * 30), y: newY + (index * 30) };
                         });
@@ -1123,15 +1135,19 @@ function adjustDesktopIconArea() {
     iconsContainer.style.left = `${l}px`;
     iconsContainer.style.right = `${r}px`;
 
-    iconsContainer.style.display = "flex";
+    // 🟢 改善：自動整列ON/OFFに応じて表示方式を切り替え、自由配置を維持する
+    if (autoArrange) {
+        iconsContainer.style.display = "flex";
+        iconsContainer.style.flexDirection = "column";
+        iconsContainer.style.flexWrap = "wrap";
+        iconsContainer.style.alignContent = "flex-start";
+        iconsContainer.style.overflow = "auto";
+    } else {
+        iconsContainer.style.display = "block";
+        iconsContainer.style.overflow = "visible"; // 自由配置時ははみ出しを考慮
+    }
 
-    // アイコンを「上から下」へ並べ、画面端まで到達したら折り返す (Windows標準の挙動)
-    iconsContainer.style.flexDirection = "column";
-    iconsContainer.style.flexWrap = "wrap";
-
-    iconsContainer.style.alignContent = "flex-start";
     iconsContainer.style.padding = "10px"; // 内側余白
-    iconsContainer.style.overflow = "auto";
 }
 // --------------------
 // 起動完了時やリサイズ時に確実に再計算させる仕組み
