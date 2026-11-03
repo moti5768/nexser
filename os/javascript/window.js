@@ -235,6 +235,7 @@ ${!options.hideStatus ? `
 
         taskbarBtn = document.createElement("button");
         taskbarBtn.className = "taskbar-window-btn button";
+        taskbarBtn.dataset.tooltip = title; // ★ ツールチップ用にタイトルの設定を追加
         taskbarBtn.innerHTML = `
             <span class="taskbar-icon">${initialIcon}</span>
             <span class="taskbar-text">${title}</span>
@@ -425,14 +426,10 @@ ${!options.hideStatus ? `
                     }
                 );
             } else {
-                // （else以下はご提示いただいたコードと同じでOKです）
-                const visibleWins = Array.from(document.querySelectorAll(".window"))
-                    .filter(win => win.style.visibility !== "hidden" && win.dataset.minimized !== "true");
+                // 対象のウィンドウがアクティブ（非アクティブクラスを持っていない）であることを条件にする
+                const isActive = !w.classList.contains("inactive-window");
 
-                const maxZ = Math.max(0, ...visibleWins.map(win => parseInt(win.style.zIndex) || 0));
-                const isTopMost = parseInt(w.style.zIndex) === maxZ;
-
-                if (isTopMost) {
+                if (isActive) {
                     const minBtn = w.querySelector(".min-btn");
                     if (minBtn && !minBtn.classList.contains("pointer_none")) {
                         minBtn.click();
