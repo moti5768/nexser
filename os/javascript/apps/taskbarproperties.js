@@ -32,6 +32,20 @@ export default async function TaskbarProperties(content) {
 
     let isSaved = false;
 
+    const handleTaskbarStyleChanged = (e) => {
+        if (e.detail) {
+            if (e.detail.taskbarPosition) tempSettings.taskbarPosition = e.detail.taskbarPosition;
+            if (e.detail.taskbarSize) tempSettings.taskbarSize = e.detail.taskbarSize;
+            if (e.detail.autoHide !== undefined) tempSettings.autoHide = e.detail.autoHide;
+            if (e.detail.showClock !== undefined) tempSettings.showClock = e.detail.showClock;
+
+            // プロパティ画面が開いている場合は位置選択セレクトボックスの見た目も同期
+            const selectPos = content.querySelector("#tp-select-position");
+            if (selectPos && e.detail.taskbarPosition) selectPos.value = e.detail.taskbarPosition;
+        }
+    };
+    window.addEventListener("taskbar-style-changed", handleTaskbarStyleChanged);
+
     /* ---------- タブ定義 ---------- */
     const tabs = [
         { id: "options", label: "Taskbar Options", render: renderOptions },
@@ -52,7 +66,6 @@ export default async function TaskbarProperties(content) {
             btn.classList.toggle("inactive", !active);
         });
 
-        // ★修正: 前のタブのクリーンアップを実行して確実に破棄する
         if (activeCleanup) {
             activeCleanup();
             activeCleanup = null;
@@ -180,7 +193,7 @@ export default async function TaskbarProperties(content) {
         };
         window.addEventListener("taskbar-size-external-change", handleExternalSizeChange);
         return () => {
-            window.removeEventListener("taskbar-size-external-change", handleExternalHeightChange);
+            window.removeEventListener("taskbar-size-external-change", handleExternalSizeChange);
         };
     }
 
@@ -368,6 +381,7 @@ export default async function TaskbarProperties(content) {
     }
     return {
         dispose: () => {
+            window.removeEventListener("taskbar-style-changed", handleTaskbarStyleChanged);
             if (activeCleanup) {
                 activeCleanup();
                 activeCleanup = null;

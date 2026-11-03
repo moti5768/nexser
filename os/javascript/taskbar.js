@@ -34,6 +34,113 @@ function ensureTaskbarAreas(taskbar) {
         taskbar.appendChild(buttonArea);
     }
 
+    // ===== スクロールボタンと連動ロジックの追加 =====
+    let scrollPrevBtn = taskbar.querySelector(".taskbar-scroll-prev");
+    let scrollNextBtn = taskbar.querySelector(".taskbar-scroll-next");
+
+    if (!scrollPrevBtn) {
+        scrollPrevBtn = document.createElement("button");
+        scrollPrevBtn.className = "taskbar-scroll-btn taskbar-scroll-prev";
+        scrollPrevBtn.innerHTML = "◄";
+        taskbar.insertBefore(scrollPrevBtn, buttonArea);
+    }
+    if (!scrollNextBtn) {
+        scrollNextBtn = document.createElement("button");
+        scrollNextBtn.className = "taskbar-scroll-btn taskbar-scroll-next";
+        scrollNextBtn.innerHTML = "►";
+        taskbar.insertBefore(scrollNextBtn, buttonArea.nextSibling);
+    }
+
+    // スクロール状態（表示・非表示）の更新関数
+    function updateScrollButtonStates() {
+        const isVert = taskbar.classList.contains("vertical");
+        let hasOverflow = false;
+
+        if (isVert) {
+            hasOverflow = buttonArea.scrollHeight > buttonArea.clientHeight;
+            scrollPrevBtn.innerHTML = "▲";
+            scrollNextBtn.innerHTML = "▼";
+        } else {
+            hasOverflow = buttonArea.scrollWidth > buttonArea.clientWidth;
+            scrollPrevBtn.innerHTML = "◄";
+            scrollNextBtn.innerHTML = "►"
+        }
+
+        if (hasOverflow) {
+            scrollPrevBtn.classList.add("active");
+            scrollNextBtn.classList.add("active");
+        } else {
+            scrollPrevBtn.classList.remove("active");
+            scrollNextBtn.classList.remove("active");
+        }
+    }
+
+    // 1. ウィンドウのリサイズ時にスクロールボタンの状態を更新
+    window.addEventListener("resize", updateScrollButtonStates);
+
+    // 2. ボタンの追加・削除（子要素の増減）を検知して状態を更新
+    const mutationObserver = new MutationObserver(() => {
+        updateScrollButtonStates();
+    });
+    mutationObserver.observe(buttonArea, { childList: true });
+
+    // ★3. タスクバー自体の向き（verticalクラスの付与/削除）の変更を検知して更新
+    const taskbarClassObserver = new MutationObserver(() => {
+        updateScrollButtonStates();
+    });
+    taskbarClassObserver.observe(taskbar, { attributes: true, attributeFilter: ["class"] });
+
+    // 初期化時にも一度状態を反映
+    updateScrollButtonStates();
+
+    // 長押しによる連続スクロールの処理
+    let scrollInterval = null;
+
+    function startScrolling(direction) {
+        const isVert = taskbar.classList.contains("vertical");
+        const scrollAmount = 40; // 1回あたりのスクロールピクセル数
+
+        const doScroll = () => {
+            if (isVert) {
+                buttonArea.scrollTop += direction * scrollAmount;
+            } else {
+                buttonArea.scrollLeft += direction * scrollAmount;
+            }
+        };
+
+        doScroll();
+        scrollInterval = setInterval(doScroll, 80); // 80ms間隔で連続スクロール
+    }
+
+    function stopScrolling() {
+        if (scrollInterval) {
+            clearInterval(scrollInterval);
+            scrollInterval = null;
+        }
+    }
+
+    // スクロールボタンへのイベントリスナー登録（マウス＆タッチ対応）
+    [
+        { btn: scrollPrevBtn, dir: -1 },
+        { btn: scrollNextBtn, dir: 1 }
+    ].forEach(({ btn, dir }) => {
+        const handleStart = (e) => {
+            e.preventDefault();
+            startScrolling(dir);
+            btn.classList.add("pressed");
+        };
+        const handleEnd = () => {
+            stopScrolling();
+            btn.classList.remove("pressed");
+        };
+
+        btn.addEventListener("mousedown", handleStart);
+        btn.addEventListener("mouseup", handleEnd);
+        btn.addEventListener("mouseleave", handleEnd);
+        btn.addEventListener("touchstart", handleStart, { passive: false });
+        btn.addEventListener("touchend", handleEnd);
+    });
+
     if (!trayArea) {
         trayArea = document.createElement("div");
         trayArea.className = "taskbar-tray";
@@ -544,20 +651,18 @@ export function initTaskbar() {
                 };
                 Object.assign(dragPreview.style, previewRect[targetPos]);
             } else {
-                // プレビューオフの場合：mousemove中はデスクトップを巻き込まず、タスクバーの見た目の位置だけを動かす
+                // プレビューオフの場合：位置が変わるたびにタスクバーのスタイルをリアルタイムで更新
                 if (newTargetPos !== targetPos) {
                     targetPos = newTargetPos;
-                    if (targetPos !== currentPosition) {
-                        const isVert = targetPos === "left" || targetPos === "right";
-                        Object.assign(taskbar.style, {
-                            top: (targetPos === "bottom") ? "auto" : "0px",
-                            bottom: (targetPos === "top") ? "auto" : "0px",
-                            left: (targetPos === "right") ? "auto" : "0px",
-                            right: (targetPos === "left") ? "auto" : "0px",
-                            width: isVert ? `${taskbarSize}px` : "100%",
-                            height: isVert ? "100%" : `${taskbarSize}px`
-                        });
-                    }
+                    const isVert = targetPos === "left" || targetPos === "right";
+                    Object.assign(taskbar.style, {
+                        top: (targetPos === "bottom") ? "auto" : "0px",
+                        bottom: (targetPos === "top") ? "auto" : "0px",
+                        left: (targetPos === "right") ? "auto" : "0px",
+                        right: (targetPos === "left") ? "auto" : "0px",
+                        width: isVert ? `${taskbarSize}px` : "100%",
+                        height: isVert ? "100%" : `${taskbarSize}px`
+                    });
                 }
             }
         });
