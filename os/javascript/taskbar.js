@@ -549,10 +549,10 @@ export function initTaskbar() {
             right: (currentPosition === "left") ? "auto" : "0px",
             width: isVert ? `${taskbarSize}px` : "100%",
             height: isVert ? "100%" : `${taskbarSize}px`,
-            alignItems: isVert ? "stretch" : "flex-start" // ⭕ 上端基準（flex-start）にすることで、リサイズ後も常にタスクバーの上部ギリギリに配置される
+            alignItems: isVert ? "stretch" : "flex-start"
         });
 
-        // ★追加・修正: タスクバーの配置・サイズ変更に連動して最大化ウィンドウの大きさと位置を更新
+        // タスクバーの配置・サイズ変更に連動して最大化ウィンドウの大きさと位置を更新
         document.querySelectorAll(".window.maximized").forEach(win => {
             if (currentPosition === "bottom") {
                 Object.assign(win.style, { top: "0px", left: "0px", width: "100%", height: `calc(100% - ${taskbarSize}px)` });
@@ -571,8 +571,59 @@ export function initTaskbar() {
         window.dispatchEvent(new Event("desktop-resize"));
     }
 
-    // リサイズハンドルの更新
+    // ============================
+    // リサイズ関連の状態とグローバルリスナー（1度だけ登録）
+    // ============================
     let currentHandle = null;
+    let resizing = false;
+    let startX = 0, startY = 0, startSize = 0;
+    let resizePreview = null, resizeShield = null;
+    const MIN_SIZE = 40, MAX_SIZE = 320;
+
+    // リサイズ中のマウス移動イベント
+    document.addEventListener("mousemove", e => {
+        if (!resizing) return;
+
+        let delta = 0;
+        if (currentPosition === "bottom") delta = startY - e.clientY;
+        if (currentPosition === "top") delta = e.clientY - startY;
+        if (currentPosition === "left") delta = e.clientX - startX;
+        if (currentPosition === "right") delta = startX - e.clientX;
+
+        let newSize = Math.round((startSize + delta) / 40) * 40;
+        newSize = Math.min(MAX_SIZE, Math.max(MIN_SIZE, newSize));
+
+        if (resizePreview) {
+            const rect = taskbar.getBoundingClientRect();
+            if (currentPosition === "bottom") Object.assign(resizePreview.style, { left: `${rect.left}px`, top: `${rect.bottom - newSize}px`, width: `${rect.width}px`, height: `${newSize}px` });
+            if (currentPosition === "top") Object.assign(resizePreview.style, { left: `${rect.left}px`, top: "0px", width: `${rect.width}px`, height: `${newSize}px` });
+            if (currentPosition === "left") Object.assign(resizePreview.style, { left: "0px", top: `${rect.top}px`, width: `${newSize}px`, height: `${rect.height}px` });
+            if (currentPosition === "right") Object.assign(resizePreview.style, { left: `${rect.right - newSize}px`, top: `${rect.top}px`, width: `${newSize}px`, height: `${rect.height}px` });
+        } else {
+            applyTaskbarLayout(currentPosition, newSize);
+        }
+    });
+
+    // リサイズの終了イベント
+    document.addEventListener("mouseup", async () => {
+        if (!resizing) return;
+        resizing = false;
+
+        if (resizeShield) { resizeShield.remove(); resizeShield = null; }
+
+        let finalSize = taskbarSize;
+        if (resizePreview) {
+            const isVert = currentPosition === "left" || currentPosition === "right";
+            finalSize = parseInt(isVert ? resizePreview.style.width : resizePreview.style.height);
+            resizePreview.remove();
+            resizePreview = null;
+        }
+
+        await saveSetting("taskbarSize", finalSize);
+        applyTaskbarLayout(currentPosition, finalSize);
+    });
+
+    // リサイズハンドルの更新・生成
     function setupResizeHandle() {
         if (currentHandle) currentHandle.remove();
 
@@ -595,7 +646,43 @@ export function initTaskbar() {
         taskbar.appendChild(handle);
         currentHandle = handle;
 
-        bindResizeEvents(handle);
+        // ハンドルを押したときの開始処理のみを登録
+        handle.addEventListener("mousedown", e => {
+            if (isTaskbarWindowMode) return;
+            e.preventDefault();
+            e.stopPropagation();
+
+            resizing = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            startSize = taskbarSize;
+
+            resizeShield = document.createElement("div");
+            Object.assign(resizeShield.style, {
+                position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh",
+                zIndex: 9998, background: "transparent",
+                cursor: (currentPosition === "left" || currentPosition === "right") ? "ew-resize" : "ns-resize"
+            });
+            document.body.appendChild(resizeShield);
+
+            if (ENABLE_TASKBAR_PREVIEW) {
+                resizePreview = document.createElement("div");
+                const rect = taskbar.getBoundingClientRect();
+                Object.assign(resizePreview.style, {
+                    position: "fixed",
+                    left: `${rect.left}px`,
+                    top: `${rect.top}px`,
+                    width: `${rect.width}px`,
+                    height: `${rect.height}px`,
+                    border: "2px solid white",
+                    background: "transparent",
+                    pointerEvents: "none",
+                    zIndex: 9999,
+                    mixBlendMode: "difference"
+                });
+                document.body.appendChild(resizePreview);
+            }
+        });
     }
 
     // ドラッグによる上下左右配置移動（ドッキング）
@@ -651,7 +738,6 @@ export function initTaskbar() {
                 };
                 Object.assign(dragPreview.style, previewRect[targetPos]);
             } else {
-                // プレビューオフの場合：位置が変わるたびにタスクバーのスタイルをリアルタイムで更新
                 if (newTargetPos !== targetPos) {
                     targetPos = newTargetPos;
                     const isVert = targetPos === "left" || targetPos === "right";
@@ -676,99 +762,12 @@ export function initTaskbar() {
                 dragPreview = null;
             }
 
-            // デスクトップの最大化ウィンドウの調整や設定保存など、全ての結果はmouseup時に確定
             if (targetPos !== currentPosition) {
                 await saveSetting("taskbarPosition", targetPos);
                 applyTaskbarLayout(targetPos, taskbarSize);
             }
         });
     })();
-
-    // 方向対応リサイズイベント処理
-    function bindResizeEvents(handle) {
-        let resizing = false, startX = 0, startY = 0, startSize = 0;
-        let preview = null, shield = null;
-        const MIN_SIZE = 40, MAX_SIZE = 320;
-
-        handle.addEventListener("mousedown", e => {
-            if (isTaskbarWindowMode) return;
-            e.preventDefault();
-            e.stopPropagation();
-
-            resizing = true;
-            startX = e.clientX;
-            startY = e.clientY;
-            startSize = taskbarSize;
-
-            shield = document.createElement("div");
-            Object.assign(shield.style, {
-                position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh",
-                zIndex: 9998, background: "transparent",
-                cursor: (currentPosition === "left" || currentPosition === "right") ? "ew-resize" : "ns-resize"
-            });
-            document.body.appendChild(shield);
-
-            if (ENABLE_TASKBAR_PREVIEW) {
-                preview = document.createElement("div");
-                const rect = taskbar.getBoundingClientRect(); // ★ 現在のタスクバーの位置を取得
-                Object.assign(preview.style, {
-                    position: "fixed",
-                    left: `${rect.left}px`,   // ★ 初期位置を設定
-                    top: `${rect.top}px`,     // ★ 初期位置を設定
-                    width: `${rect.width}px`, // ★ 初期幅を設定
-                    height: `${rect.height}px`, // ★ 初期高さを設定
-                    border: "2px solid white",
-                    background: "transparent",
-                    pointerEvents: "none",
-                    zIndex: 9999,
-                    mixBlendMode: "difference"
-                });
-                document.body.appendChild(preview);
-            }
-        });
-
-        document.addEventListener("mousemove", e => {
-            if (!resizing) return;
-
-            let delta = 0;
-            if (currentPosition === "bottom") delta = startY - e.clientY;
-            if (currentPosition === "top") delta = e.clientY - startY;
-            if (currentPosition === "left") delta = e.clientX - startX;
-            if (currentPosition === "right") delta = startX - e.clientX;
-
-            let newSize = Math.round((startSize + delta) / 40) * 40;
-            newSize = Math.min(MAX_SIZE, Math.max(MIN_SIZE, newSize));
-
-            if (preview) {
-                const rect = taskbar.getBoundingClientRect();
-                // ⭕ 下部配置時は下端を固定し、上方向（上側）へ自然に伸びるように rect.bottom を基準にする
-                if (currentPosition === "bottom") Object.assign(preview.style, { left: `${rect.left}px`, top: `${rect.bottom - newSize}px`, width: `${rect.width}px`, height: `${newSize}px` });
-                if (currentPosition === "top") Object.assign(preview.style, { left: `${rect.left}px`, top: "0px", width: `${rect.width}px`, height: `${newSize}px` });
-                if (currentPosition === "left") Object.assign(preview.style, { left: "0px", top: `${rect.top}px`, width: `${newSize}px`, height: `${rect.height}px` });
-                if (currentPosition === "right") Object.assign(preview.style, { left: `${rect.right - newSize}px`, top: `${rect.top}px`, width: `${newSize}px`, height: `${rect.height}px` });
-            } else {
-                applyTaskbarLayout(currentPosition, newSize);
-            }
-        });
-
-        document.addEventListener("mouseup", async () => {
-            if (!resizing) return;
-            resizing = false;
-
-            if (shield) { shield.remove(); shield = null; }
-
-            let finalSize = taskbarSize;
-            if (preview) {
-                const isVert = currentPosition === "left" || currentPosition === "right";
-                finalSize = parseInt(isVert ? preview.style.width : preview.style.height);
-                preview.remove();
-                preview = null;
-            }
-
-            await saveSetting("taskbarSize", finalSize);
-            applyTaskbarLayout(currentPosition, finalSize);
-        });
-    }
 
     // ウィンドウリサイズ時の各種位置補正（複数あった処理を統合＆軽量化）
     let resizeTicking = false;

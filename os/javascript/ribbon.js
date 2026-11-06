@@ -3,9 +3,7 @@ export function setupRibbon(win, getCurrentPath, renderCallback, menus) {
     if (!win?._ribbon) return;
     const ribbon = win._ribbon;
     ribbon.innerHTML = "";
-
-    // --- ここから共通メニューの挿入 ---
-    const w = win; // 渡されたウィンドウを参照
+    const w = win;
     const systemMenus = [
         {
             title: "Window",
@@ -28,11 +26,7 @@ export function setupRibbon(win, getCurrentPath, renderCallback, menus) {
             ]
         }
     ];
-
-    // システムメニューとアプリ固有のメニューを結合
     const finalMenus = [...systemMenus, ...(menus || [])];
-    // --- ここまで ---
-
     finalMenus.forEach(menu => addRibbonMenu(ribbon, menu.title, menu.items));
 }
 
