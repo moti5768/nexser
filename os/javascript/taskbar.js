@@ -2,8 +2,8 @@
 import { launch } from "./kernel.js";
 import { resetAllTitleBars, taskbarButtons, createWindow, updateAllTaskbarButtonModes } from "./window.js";
 import { hideContextMenu, attachContextMenu } from "./context-menu.js";
-import { clockDate } from "./apps/clock.js";  // ClockApp の currentDate を参照
-import { saveSetting, loadSetting } from "./apps/settings.js"; // 保存読み込み
+import { clockDate } from "./apps/clock.js";
+import { saveSetting, loadSetting } from "./apps/settings.js";
 import { updateStartMenuPosition, buildStartMenu } from "./startmenu.js";
 
 export let ENABLE_TASKBAR_PREVIEW = true;

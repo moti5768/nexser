@@ -4,19 +4,13 @@ import { buildDesktop } from "./desktop.js";
 import { buildStartMenu, refreshStartMenu } from "./startmenu.js";
 import { initTaskbar } from "./taskbar.js";
 import { showBSOD } from "./bsod.js";
-import {
-    createWindow,
-    removeAllTaskbarButtons,
-    errorWindow,
-    bringToFront,
-    confirmWindow,
-    destroyWindow
-} from "./window.js";
 import { showPromptScreen, resetSystemVerification } from "./boot.js";
 import { addRecent } from "./recent.js";
 import { installDynamicButtonEffect } from "./ui.js";
 import { resolveFS, basename } from "./fs-utils.js";
 import { resolveAppByPath } from "./file-associations.js";
+
+const getWindowAPI = () => window.nexser?.windowAPI;
 
 const explorerWindows = new Map();
 const moduleCache = new Map();
@@ -61,7 +55,7 @@ export function initSystemErrorHandler() {
             if (targetWin && targetWin.dataset.processKey) {
                 const key = targetWin.dataset.processKey;
                 console.warn(`[Kernel] App error detected. Terminating process: ${key}`);
-                errorWindow(`アプリケーションエラーが発生したため終了しました。\n${msg}`, { taskbar: false });
+                getWindowAPI()?.errorWindow(`アプリケーションエラーが発生したため終了しました。\n${msg}`, { taskbar: false });
                 killProcess(key);
             }
         }
@@ -177,8 +171,7 @@ export async function initUserSpaceAsync(progressCallback = () => { }) {
 
         if (report.corruptionDetected) {
             playSystemEventSound('error');
-            const { errorWindow } = await import("./window.js");
-            errorWindow(
+            getWindowAPI()?.errorWindow(
                 "【システム診断】\nシステムファイルの破損または消失を検出しました。\n\n一部の重要なフォルダが正常に読み込めない状態です。\n設定アプリ (Settings.app) の「System」タブから「Run Cleanup & Repair」を実行して修復してください。",
                 { title: "システム整合性チェック", taskbar: true }
             );
@@ -204,7 +197,7 @@ const tabAppInstances = new Map();
 
 export async function launch(path, options = {}) {
     if (typeof path !== "string") {
-        errorWindow(`無効なパス: ${path}`, { taskbar: false });
+        getWindowAPI()?.errorWindow(`無効なパス: ${path}`, { taskbar: false });
         return;
     }
 
@@ -214,7 +207,7 @@ export async function launch(path, options = {}) {
     try {
         const item = resolveFS(path);
         if (!item) {
-            errorWindow(`対象が見つかりません: ${path}`, { taskbar: false });
+            getWindowAPI()?.errorWindow(`対象が見つかりません: ${path}`, { taskbar: false });
             return;
         }
 
@@ -234,7 +227,7 @@ export async function launch(path, options = {}) {
 
     } catch (err) {
         console.error("Launch error:", err);
-        errorWindow(`起動に失敗しました: ${path}\n${err.message}`, { taskbar: false });
+        getWindowAPI()?.errorWindow(`起動に失敗しました: ${path}\n${err.message}`, { taskbar: false });
     } finally {
         launching.delete(path);
         try { refreshStartMenu(); } catch { }
@@ -245,7 +238,7 @@ export async function launch(path, options = {}) {
 async function launchLink(item, path, options) {
     const targetItem = resolveFS(item.target);
     if (!targetItem) {
-        confirmWindow(
+        getWindowAPI()?.confirmWindow(
             `問題のあるショートカット\n\nこのショートカットが参照している '${item.target}' は存在しません。\nこのショートカットを削除しますか？`,
             (result) => {
                 if (result) console.log(`ショートカットを削除します: ${path}`);
@@ -283,7 +276,7 @@ async function launchFile(item, path, options) {
     const mod = await safeImport("./apps/fileviewer.js");
     if (!mod?.default) throw new Error("fileviewer export missing");
 
-    const content = createWindow(basename(path), { node: item });
+    const content = getWindowAPI()?.createWindow(basename(path), { node: item });
     const win = content?.closest(".window");
     if (!win) throw new Error("Window creation failed");
 
@@ -292,8 +285,8 @@ async function launchFile(item, path, options) {
         if (typeof win._applyRealIcon === "function") win._applyRealIcon();
     } catch (e) {
         // ★ ファイルビューアの初期化エラー時に中途半端なウィンドウを破棄する
-        if (typeof destroyWindow === "function" && win) {
-            destroyWindow(win);
+        if (typeof getWindowAPI()?.destroyWindow === "function" && win) {
+            getWindowAPI()?.destroyWindow(win);
         }
         throw e; // 上位の catch に委譲してエラーWindowを表示させる
     }
@@ -311,7 +304,7 @@ async function launchApp(item, path, options) {
             if (instance.win.dataset.minimized === "true") {
                 instance.win._taskbarBtn?.click();
             } else {
-                bringToFront(instance.win);
+                getWindowAPI()?.bringToFront(instance.win);
             }
             if (instance.handle?.openNewTab) {
                 instance.handle.openNewTab(options.path || path);
@@ -329,7 +322,7 @@ async function launchApp(item, path, options) {
 
     if (existingWin && document.body.contains(existingWin)) {
         if (existingWin.dataset.minimized === "true") existingWin._taskbarBtn?.click();
-        else bringToFront(existingWin);
+        else getWindowAPI()?.bringToFront(existingWin);
         return;
     }
 
@@ -348,8 +341,8 @@ async function launchApp(item, path, options) {
 
             const { FS, forceSave } = await import("./fs.js");
             const { resolveFS } = await import("./fs-utils.js");
-            const { updateWindowTitle, showModalWindow } = await import("./window.js");
             const { getFileContent } = await import("./fs-db.js");
+            const windowAPI = window.nexser?.windowAPI;
 
             // 1. システム領域（C: ドライブ配下の System, Programs）の勝手な書き換え・削除をブロックする安全なFS
             const RESTRICTED_DIRS = new Set(["System", "Programs"]);
@@ -393,17 +386,21 @@ async function launchApp(item, path, options) {
                 const sanitizedTitle = String(title || "")
                     .replace(/</g, "&lt;")
                     .replace(/>/g, "&gt;");
-                updateWindowTitle(win, sanitizedTitle, dirty);
+
+                // ⭐ 修正: windowAPI 経由で確実にタイトルを更新する
+                if (windowAPI && typeof windowAPI.updateWindowTitle === "function") {
+                    windowAPI.updateWindowTitle(win, sanitizedTitle, dirty);
+                }
             };
 
             // 2. 引数を安全に渡しつつ、関数本体を正しく return するように修正
             const runScript = new Function(
-                'FS', 'forceSave', 'resolveFS', 'updateWindowTitle', 'showModalWindow', 'getFileContent',
+                'FS', 'forceSave', 'resolveFS', 'windowAPI', 'getFileContent',
                 `return (${executableCode});`
             );
 
             appModule = {
-                default: runScript(safeFS, forceSave, resolveFS, safeUpdateWindowTitle, showModalWindow, getFileContent)
+                default: runScript(safeFS, forceSave, resolveFS, windowAPI, getFileContent)
             };
         } catch (e) {
             console.error("Dynamic code evaluation failed:", e);
@@ -416,7 +413,7 @@ async function launchApp(item, path, options) {
     if (!appModule?.default) throw new Error("アプリが正しくエクスポートされていません");
 
     const displayName = options?.path ? basename(options.path) : (options.showFullPath ? path : item.name || basename(path));
-    const content = createWindow(displayName, { node: options.originalNode || item });
+    const content = getWindowAPI()?.createWindow(displayName, { node: options.originalNode || item });
     const win = content?.closest(".window");
     if (!win) throw new Error("Window creation failed");
 
@@ -444,10 +441,10 @@ async function launchApp(item, path, options) {
         if (typeof win._applyRealIcon === "function") win._applyRealIcon();
     } catch (e) {
         console.error("app runtime error:", e);
-        if (typeof destroyWindow === "function" && win) {
-            destroyWindow(win);
+        if (typeof getWindowAPI()?.destroyWindow === "function" && win) {
+            getWindowAPI()?.destroyWindow(win);
         }
-        errorWindow(`アプリがクラッシュしました\n${e.message}`, { taskbar: false });
+        getWindowAPI()?.errorWindow(`アプリがクラッシュしました\n${e.message}`, { taskbar: false });
         throw e;
     }
 
@@ -503,7 +500,7 @@ setInterval(() => {
         if (proc.lastHeartbeat && (now - proc.lastHeartbeat > 10000)) {
             console.error(`[Watchdog] Freeze detected in process ${proc.pid} (${proc.path}). Terminating.`);
             killProcess(key);
-            errorWindow(`アプリケーション '${basename(proc.path)}' が応答しないため、強制終了しました。`, { taskbar: true });
+            getWindowAPI()?.errorWindow(`アプリケーション '${basename(proc.path)}' が応答しないため、強制終了しました。`, { taskbar: true });
         }
     }
 }, 2000);
@@ -650,7 +647,7 @@ export function resetUI() {
                 }
             });
 
-        removeAllTaskbarButtons();
+        getWindowAPI()?.removeAllTaskbarButtons();
 
         processes.clear();
         explorerWindows.clear();
@@ -676,7 +673,7 @@ export async function logOff() {
     };
 
     if (hasAnyWindow) {
-        confirmWindow(
+        getWindowAPI()?.confirmWindow(
             "開いているウィンドウがあります。すべて閉じてログオフしますか？",
             (result) => {
                 if (result) performLogoff();
@@ -707,9 +704,18 @@ if (typeof window !== "undefined") {
 
                 // ウィンドウタイトルの更新
                 if (proc.window) {
-                    const titleElem = proc.window.querySelector(".win-title, .title");
-                    if (titleElem) {
-                        titleElem.textContent = basename(updatedPath);
+                    const newTitle = basename(updatedPath);
+                    const windowAPI = getWindowAPI();
+
+                    // ウィンドウAPI経由でウィンドウとタスクバーを同時に更新
+                    if (windowAPI && typeof windowAPI.updateWindowTitle === "function") {
+                        windowAPI.updateWindowTitle(proc.window, newTitle, false);
+                    } else {
+                        // フォールバック
+                        const titleElem = proc.window.querySelector(".title-text");
+                        if (titleElem) {
+                            titleElem.textContent = newTitle;
+                        }
                     }
                 }
             }

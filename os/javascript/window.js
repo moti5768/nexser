@@ -1836,3 +1836,41 @@ export function destroyWindow(win) {
         win.remove();
     }
 }
+
+export function initWindowAPI() {
+    if (typeof window === "undefined") return;
+
+    // 1. 外部に公開しても安全な機能だけをまとめたオブジェクトを作成
+    const secureWindowAPI = {
+        createWindow: (title, options) => createWindow(title, options),
+        closeWindowById: (id) => closeWindowById(id),
+        minimizeWindowById: (id) => minimizeWindowById(id),
+        maximizeWindowById: (id) => maximizeWindowById(id),
+        focusWindowById: (id) => focusWindowById(id),
+        bringToFront: (win) => bringToFront(win),
+        destroyWindow: (win) => destroyWindow(win),
+        removeAllTaskbarButtons: () => removeAllTaskbarButtons(),
+        updateWindowTitle: (win, title, isDirty) => updateWindowTitle(win, title, isDirty),
+        getWindows: () => getWindows().map(({ el, ...rest }) => rest),
+        alertWindow: (message, options) => alertWindow(message, options),
+        errorWindow: (message, options) => errorWindow(message, options),
+        confirmWindow: (message, callback, options) => confirmWindow(message, callback, options),
+        setAnimationEnabled: (v) => setWindowAnimationEnabled(v),
+        setPreviewEnabled: (v) => setWindowPreviewEnabled(v)
+    };
+
+    // 2. Object.freeze() でプロパティの追加・削除・書き換えを完全に防止
+    Object.freeze(secureWindowAPI);
+
+    // 3. window.nexser 名前空間を安全に定義（すでに存在する場合は上書きされないよう配慮）
+    window.nexser = window.nexser || {};
+
+    // 4. Object.defineProperty を使って再定義・削除不可の安全なプロパティとして登録
+    Object.defineProperty(window.nexser, "windowAPI", {
+        value: secureWindowAPI,
+        writable: false,     // 書き換え不可
+        configurable: false, // 削除・再定義不可
+        enumerable: true     // 列挙可能
+    });
+}
+initWindowAPI()
