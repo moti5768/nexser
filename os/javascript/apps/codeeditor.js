@@ -685,14 +685,18 @@ export default function CodeEditor(root, options = {}) {
     let cachedText = "";
 
     function updateMinimap() {
+        if (!textarea || typeof textarea.value !== "string" || (typeof isDestroyed !== 'undefined' && isDestroyed)) {
+            return;
+        }
+
         const text = textarea.value;
 
         // テキストが変わっていなければ前回のデータを使い回す
         if (text !== cachedText) {
-            cachedLines = text.split("\n");
+            cachedLines = text ? text.split("\n") : [""];
             cachedText = text;
         }
-        const lines = cachedLines; // 使い回した配列を使う
+        const lines = cachedLines || [""];
         const lineCount = lines.length;
 
         const containerW = minimapContainer.clientWidth;
@@ -727,7 +731,7 @@ export default function CodeEditor(root, options = {}) {
 
         // 必要な範囲だけをループ処理する
         for (let i = startIndex; i < endIndex; i++) {
-            const line = lines[i];
+            const line = lines[i] || "";
             const y = (i * LINE_H_PX) - drawOffsetY;
             let x = 4;
 

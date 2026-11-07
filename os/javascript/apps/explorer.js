@@ -1,6 +1,5 @@
 // Explorer.js
 import { launch } from "../kernel.js";
-import { showModalWindow, alertWindow, bringToFront, progressWindow } from "../window.js";
 import { resolveFS, validateName, importFileSmart, getUniqueName, isDescendantOrSelf } from "../fs-utils.js";
 import { FS, forceSave, markDefaultDeleted, setBulkUpdating } from "../fs.js";
 import { attachContextMenu } from "../context-menu.js";
@@ -13,8 +12,6 @@ import { saveSetting, loadSetting } from "./settings.js";
 let globalSelected = { items: new Set(), window: null, lastSelected: null };
 // プロパティウィンドウの重複チェック用
 const propertyWindows = {};
-const sharedTextEncoder = new TextEncoder();
-const IGNORED_METADATA_KEYS = new Set(["type", "name", "size", "content", "entry", "singleton", "target"]);
 
 export function hasExtension(name) {
     return /\.[a-z0-9]+$/i.test(name);
@@ -35,7 +32,7 @@ function deleteFSItem(parentPath, itemName, rerender) {
                 <small style="color:#ff4444;">※この操作は取り消せません。</small>
             </div>`;
 
-        const win = showModalWindow("完全削除の確認", msg, {
+        const win = window.nexser?.windowAPI?.showModalWindow("完全削除の確認", msg, {
             width: 320,
             height: 200,
             taskbar: false,
@@ -54,7 +51,7 @@ function deleteFSItem(parentPath, itemName, rerender) {
                                 await markDefaultDeleted(originalPath);
                             } catch (e) {
                                 // エラーをキャッチしてBSoDを防ぐ
-                                alertWindow(`「${itemName}」は保護されているため完全に削除できません。`);
+                                window.nexser?.windowAPI?.alertWindow(`「${itemName}」は保護されているため完全に削除できません。`);
                             }
                         }
                         await forceSave();
@@ -100,7 +97,7 @@ function deleteFSItem(parentPath, itemName, rerender) {
         window.dispatchEvent(new Event("fs-updated"));
         rerender?.();
     } catch (e) {
-        alertWindow(`「${itemName}」は保護されているため削除できません。`);
+        window.nexser?.windowAPI?.alertWindow(`「${itemName}」は保護されているため削除できません。`);
     }
 }
 
@@ -151,7 +148,7 @@ export function emptyTrash(rerender) {
     const keys = Object.keys(trash).filter(key => !isSystemMetaKey(key));
 
     if (keys.length === 0) {
-        return alertWindow("ゴミ箱は空です。");
+        return window.nexser?.windowAPI?.alertWindow("ゴミ箱は空です。");
     }
 
     const msg = `
@@ -159,7 +156,7 @@ export function emptyTrash(rerender) {
             ゴミ箱にある ${keys.length} 個のアイテムをすべて完全に削除しますか？
         </div>`;
 
-    const win = showModalWindow("ゴミ箱を空にする", msg, {
+    const win = window.nexser?.windowAPI?.showModalWindow("ゴミ箱を空にする", msg, {
         width: 320,
         height: 175,
         overlay: true,
@@ -190,7 +187,7 @@ export function emptyTrash(rerender) {
                     rerender?.();
 
                     if (hasProtectedFiles) {
-                        alertWindow("一部のアイテムは保護されているため削除できませんでした。");
+                        window.nexser?.windowAPI?.alertWindow("一部のアイテムは保護されているため削除できませんでした。");
                     }
                 }
             },
@@ -260,7 +257,7 @@ function createNewItem(currentPath, listContainer, renderCallback, type = "folde
         if (error) {
             isCommitting = false;
             isShowingError = true;
-            alertWindow(error, { width: 360, height: 160, taskbar: false });
+            window.nexser?.windowAPI?.alertWindow(error, { width: 360, height: 160, taskbar: false });
             setTimeout(() => {
                 isShowingError = false;
                 input.focus();
@@ -414,7 +411,7 @@ export default async function Explorer(root, options = {}) {
         if (path !== "") {
             const targetNode = resolveFS(path);
             if (!targetNode || targetNode.type !== "folder") {
-                alertWindow(`指定されたパス「${path}」はフォルダではないか、存在しません。`, { width: 350, height: 180, taskbar: false });
+                window.nexser?.windowAPI?.alertWindow(`指定されたパス「${path}」はフォルダではないか、存在しません。`, { width: 350, height: 180, taskbar: false });
                 return; // ファイルやアプリのパスが渡された場合はここで移動を完全に阻止する
             }
         }
@@ -438,7 +435,7 @@ export default async function Explorer(root, options = {}) {
             targetPath = node.target;
             targetNode = resolveFS(targetPath);
             if (!targetNode) {
-                alertWindow(`リンク先「${targetPath}」が存在しません`, {
+                window.nexser?.windowAPI?.alertWindow(`リンク先「${targetPath}」が存在しません`, {
                     width: 360,
                     height: 160,
                     taskbar: false
@@ -523,7 +520,7 @@ export default async function Explorer(root, options = {}) {
             document.querySelectorAll(".ribbon-menu").forEach(m => m.classList.remove("selected"));
             positionTreePanel();
             const win = label.closest(".window");
-            if (win) bringToFront(win);
+            if (win) window.nexser?.windowAPI?.bringToFront(win);
             const isOpen = treePanel.style.display === "block";
             treePanel.style.display = isOpen ? "none" : "block";
         });
@@ -824,7 +821,7 @@ export default async function Explorer(root, options = {}) {
                 }
 
                 // --- 5. プログレスウィンドウの生成 ---
-                const pg = progressWindow("コピー中...", "コピーの準備をしています...", {
+                const pg = window.nexser?.windowAPI?.progressWindow("コピー中...", "コピーの準備をしています...", {
                     width: 380,
                     height: 250,
                     autoClose: true
@@ -1877,7 +1874,7 @@ export default async function Explorer(root, options = {}) {
                                 <small style="color:#ff4444;">※この操作は取り消せません。</small>
                             </div>`;
 
-                        const confirmWin = showModalWindow("完全削除の確認", msg, {
+                        const confirmWin = window.nexser?.windowAPI?.showModalWindow("完全削除の確認", msg, {
                             width: 320,
                             height: 200,
                             taskbar: false,
@@ -1911,7 +1908,7 @@ export default async function Explorer(root, options = {}) {
                                         render(currentPath);
 
                                         if (hasProtectedFiles) {
-                                            alertWindow("一部のアイテムは保護されているため削除できませんでした。");
+                                            window.nexser?.windowAPI?.alertWindow("一部のアイテムは保護されているため削除できませんでした。");
                                         }
                                     }
                                 },
@@ -2502,7 +2499,7 @@ export default async function Explorer(root, options = {}) {
                 const targetNode = resolveFS(newPath);
 
                 if (!targetNode) {
-                    alertWindow(`指定されたパス「${newPath}」は存在しません。`, { width: 350, height: 180, taskbar: false });
+                    window.nexser?.windowAPI?.alertWindow(`指定されたパス「${newPath}」は存在しません。`, { width: 350, height: 180, taskbar: false });
                     onCancel();
                     return;
                 }
@@ -2642,7 +2639,7 @@ export default async function Explorer(root, options = {}) {
                                         <small style="color:#ff4444;">※この操作は取り消せません。</small>
                                     </div>`;
 
-                                const confirmWin = showModalWindow("完全削除の確認", msg, {
+                                const confirmWin = window.nexser?.windowAPI?.showModalWindow("完全削除の確認", msg, {
                                     width: 320,
                                     height: 200,
                                     taskbar: false,
@@ -2676,7 +2673,7 @@ export default async function Explorer(root, options = {}) {
                                                 render(currentPath);
 
                                                 if (hasProtectedFiles) {
-                                                    alertWindow("一部のアイテムは保護されているため削除できませんでした。");
+                                                    window.nexser?.windowAPI?.alertWindow("一部のアイテムは保護されているため削除できませんでした。");
                                                 }
                                             }
                                         },
@@ -2711,7 +2708,7 @@ export default async function Explorer(root, options = {}) {
                             if (node && node.type === "file") {
                                 openWithDialog(`${currentPath}/${name}`, node);
                             } else {
-                                alertWindow("このアイテムはプログラムから開くことができません。");
+                                window.nexser?.windowAPI?.alertWindow("このアイテムはプログラムから開くことができません。");
                             }
                         },
                         disabled: () => {
@@ -3061,11 +3058,11 @@ function getAllApps() {
 
 export function openWithDialog(filePath, fileNode) {
     const apps = getAllApps();
-    if (apps.length === 0) return nexser.windowAPI.alertWindow("アプリがありません");
+    if (apps.length === 0) return nexser.windowAPI.window.nexser?.windowAPI?.alertWindow("アプリがありません");
 
     const fileName = filePath.split("/").pop();
 
-    const content = showModalWindow(`「${fileName}」を開くアプリを選択`, "", {
+    const content = window.nexser?.windowAPI?.showModalWindow(`「${fileName}」を開くアプリを選択`, "", {
         taskbar: false,
         width: 300,
         height: Math.min(400, apps.length * 40 + 60),
@@ -3120,7 +3117,7 @@ function getDecodedContent(content) {
 export async function showProperties(name, node, path) {
     // 1. 既に開いているかチェック
     if (propertyWindows[path]) {
-        bringToFront(propertyWindows[path]);
+        window.nexser?.windowAPI?.bringToFront(propertyWindows[path]);
         return;
     }
 
@@ -3250,7 +3247,7 @@ export async function showProperties(name, node, path) {
         }
     ];
 
-    const win = showModalWindow(`${name} のプロパティ`, msg, {
+    const win = window.nexser?.windowAPI?.showModalWindow(`${name} のプロパティ`, msg, {
         width: 350,
         height: 420, // isUrlでの高さ分岐を削除して固定
         taskbar: false,

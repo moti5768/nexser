@@ -1892,13 +1892,19 @@ export function initWindowAPI() {
         removeAllTaskbarButtons: () => removeAllTaskbarButtons(),
         updateWindowTitle: (win, title, isDirty) => updateWindowTitle(win, title, isDirty),
         getWindows: () => getWindows().map(({ el, ...rest }) => rest),
+
+        // ダイアログ・通知系ウィンドウ
+        showModalWindow: (title, message, options) => showModalWindow(title, message, options),
         alertWindow: (message, options) => alertWindow(message, options),
         errorWindow: (message, options) => errorWindow(message, options),
         confirmWindow: (message, callback, options) => confirmWindow(message, callback, options),
+        progressWindow: (title, itemName, options) => progressWindow(title, itemName, options),
+
+        // 設定系
         setAnimationEnabled: (v) => setWindowAnimationEnabled(v),
         setPreviewEnabled: (v) => setWindowPreviewEnabled(v),
 
-        // ★ 追加: イベント購読と拡張のためのメソッドを公開
+        // イベント購読と拡張のためのメソッドを公開
         on: (event, cb) => on(event, cb),
         off: (event, cb) => off(event, cb),
         registerExtension: (name, fn) => extendAPI(name, fn),
