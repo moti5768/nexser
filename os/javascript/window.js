@@ -175,6 +175,7 @@ ${!options.hideStatus ? `
     }
     w._statusBar = w.querySelector(".window-statusbar");
     w._applyRealIcon();
+    emit("windowCreated", { windowId, title, element: w, options });
 
     /* ===== サイズ復元（メモリキャッシュから即時適用 ＆ 一意なキー化） ===== */
     const sizeKey = options.sizeKey || options.processKey || title;
@@ -310,7 +311,7 @@ ${!options.hideStatus ? `
                 w.remove();
             }
         }
-
+        emit("windowDestroyed", { windowId: w.dataset.windowId, title: w.dataset.title, element: w });
         scheduleRefreshTopWindow();
     };
 
@@ -1071,7 +1072,7 @@ export function bringToFront(win) {
     const maxZ = wins.reduce((max, w) => Math.max(max, parseInt(w.style.zIndex) || 100), 100);
     win.style.zIndex = maxZ + 1;
     scheduleRefreshTopWindow();
-
+    emit("windowActivated", { windowId: win.dataset.windowId, title: win.dataset.title, element: win });
     if (win.dataset && win.dataset.processKey) {
         window.dispatchEvent(new CustomEvent("window-activated", {
             detail: { processKey: win.dataset.processKey }
@@ -1837,6 +1838,45 @@ export function destroyWindow(win) {
     }
 }
 
+
+
+
+
+
+
+
+
+
+
+/* =========================
+   Event & Extension System
+========================= */
+const eventListeners = new Map();
+const customExtensions = {};
+
+export function on(event, callback) {
+    if (!eventListeners.has(event)) eventListeners.set(event, new Set());
+    eventListeners.get(event).add(callback);
+    return () => off(event, callback);
+}
+
+export function off(event, callback) {
+    eventListeners.get(event)?.delete(callback);
+}
+
+export function emit(event, detail) {
+    eventListeners.get(event)?.forEach(cb => {
+        try { cb(detail); } catch (e) { console.error(`Error in event listener (${event}):`, e); }
+    });
+}
+
+export function extendAPI(name, fn) {
+    if (customExtensions[name]) {
+        console.warn(`Extension "${name}" is already registered. Overwriting.`);
+    }
+    customExtensions[name] = fn;
+}
+
 export function initWindowAPI() {
     if (typeof window === "undefined") return;
 
@@ -1856,7 +1896,17 @@ export function initWindowAPI() {
         errorWindow: (message, options) => errorWindow(message, options),
         confirmWindow: (message, callback, options) => confirmWindow(message, callback, options),
         setAnimationEnabled: (v) => setWindowAnimationEnabled(v),
-        setPreviewEnabled: (v) => setWindowPreviewEnabled(v)
+        setPreviewEnabled: (v) => setWindowPreviewEnabled(v),
+
+        // ★ 追加: イベント購読と拡張のためのメソッドを公開
+        on: (event, cb) => on(event, cb),
+        off: (event, cb) => off(event, cb),
+        registerExtension: (name, fn) => extendAPI(name, fn),
+
+        // 追加された独自拡張メソッド群にアクセスするためのプロキシ
+        get extra() {
+            return { ...customExtensions };
+        }
     };
 
     // 2. Object.freeze() でプロパティの追加・削除・書き換えを完全に防止

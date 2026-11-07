@@ -165,18 +165,31 @@ export default function TaskManager(content) {
                 killProcess(selectedKey);
                 selectedKey = null;
             } else {
-                alert("終了するプロセスを選択してください。");
+                nexser.windowAPI.alertWindow("終了するプロセスを選択してください。");
             }
         };
 
         refresh();
+        // 定期ポーリングによるバックアップ更新
         timer = setInterval(refresh, 1000);
+
+        // ウィンドウAPIのイベントを購読して即時反映（タイムラグを解消）[cite: 1, 3]
+        const unsubs = [];
+        if (window.nexser?.windowAPI && typeof window.nexser.windowAPI.on === "function") {
+            const api = window.nexser.windowAPI;
+            unsubs.push(api.on("windowCreated", () => refresh()));
+            unsubs.push(api.on("windowDestroyed", () => refresh()));
+            unsubs.push(api.on("windowActivated", () => refresh()));
+        }
 
         function stopTimer() {
             if (timer) {
                 clearInterval(timer);
                 timer = null;
             }
+            // 登録したイベントリスナーを確実に解除（メモリリーク防止）
+            unsubs.forEach(unsub => unsub?.());
+            unsubs.length = 0;
         }
 
         root._cleanup = () => {
@@ -244,7 +257,6 @@ export default function TaskManager(content) {
         }
     };
 
-    // 初期版の優れた MutationObserver によるウィンドウ破棄監視を復活
     if (win) {
         observer = new MutationObserver(() => {
             if (!document.body.contains(win)) {

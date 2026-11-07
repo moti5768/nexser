@@ -255,12 +255,7 @@ export async function saveFS(fs) {
             if (usage >= quota * 0.95) { // 修正: 演算子と改行を修正
                 const quotaGB = (quota / 1024 / 1024 / 1024).toFixed(2);
                 console.error(`[FS-DB] Save aborted: Storage limit reached (${(usage / 1024 / 1024 / 1024).toFixed(2)}GB / ${quotaGB}GB)`);
-
-                import("./window.js").then(m => {
-                    m.alertWindow?.(`ディスク領域不足: ブラウザの制限 (${quotaGB}GB) に達したため、保存できません。`, { title: "システム エラー" });
-                }).catch(() => {
-                    alert("ディスク領域不足です。");
-                });
+                nexser.windowAPI.alertWindow?.(`ディスク領域不足: ブラウザの制限 (${quotaGB}GB) に達したため、保存できません。`, { title: "システム エラー" });
                 return;
             }
         }

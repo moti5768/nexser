@@ -3061,7 +3061,7 @@ function getAllApps() {
 
 export function openWithDialog(filePath, fileNode) {
     const apps = getAllApps();
-    if (apps.length === 0) return alert("アプリがありません");
+    if (apps.length === 0) return nexser.windowAPI.alertWindow("アプリがありません");
 
     const fileName = filePath.split("/").pop();
 

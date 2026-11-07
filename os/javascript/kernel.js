@@ -9,6 +9,9 @@ import { addRecent } from "./recent.js";
 import { installDynamicButtonEffect } from "./ui.js";
 import { resolveFS, basename } from "./fs-utils.js";
 import { resolveAppByPath } from "./file-associations.js";
+import { dbGet, dbSet } from "./fs-db.js";
+
+const LOG_STORAGE_KEY = "nexser_system_logs_v1";
 
 const getWindowAPI = () => window.nexser?.windowAPI;
 
@@ -48,7 +51,16 @@ export function initSystemErrorHandler() {
         if (isCriticalError(msg)) {
             showBSOD(`KERNEL_FAULT: ${msg}`, e.error);
         } else {
-            console.warn("[Kernel Notice] Non-critical exception caught:", msg);
+            window.dispatchEvent(new CustomEvent("nexser-system-log", {
+                detail: {
+                    category: "System",
+                    level: "Warning",
+                    source: "KernelErrorHandler",
+                    eventId: 2001,
+                    taskCategory: "Exception Handling",
+                    description: `Non-critical exception caught: ${msg}`
+                }
+            }));
 
             // エラーを発生させた要素からプロセスキー（processKey）を逆引きして該当アプリのみ終了
             const targetWin = e.target?.closest ? e.target.closest(".window") : null;
@@ -439,6 +451,7 @@ async function launchApp(item, path, options) {
         appHandle = await appModule.default(content, { ...options, syscall });
         if (appHandle?.isTabApp) tabAppInstances.set(item.entry, { win, handle: appHandle });
         if (typeof win._applyRealIcon === "function") win._applyRealIcon();
+        logSystemEvent("Application", "Information", basename(processPath), 1000, "App Lifecycle", `アプリケーション '${basename(processPath)}' が正常に起動しました (PID: ${pid})`);
     } catch (e) {
         console.error("app runtime error:", e);
         if (typeof getWindowAPI()?.destroyWindow === "function" && win) {
@@ -557,14 +570,15 @@ export function killProcess(key) {
     const proc = processes.get(key);
     if (!proc) return false;
 
-    processes.delete(key);
-
+    const pid = proc.pid;
+    const procName = basename(proc.path);
     const win = proc.window;
     const handle = proc.handle;
-    const procPath = proc.path; // プロセスが保持していたパス
+    const procPath = proc.path;
+
+    processes.delete(key);
 
     try {
-        // 【NTFS風改善】プロセス終了と同時に、ファイルロックを非同期で自動解放
         if (procPath) {
             import("./fs.js").then(({ unlockFilesByPath }) => {
                 if (typeof unlockFilesByPath === "function") {
@@ -575,14 +589,12 @@ export function killProcess(key) {
             });
         }
 
-        // 1. アプリ側の明示的クリーンアップ関数（dispose, unmount, destroyなど）
         if (handle) {
             if (typeof handle.dispose === 'function') handle.dispose();
             if (typeof handle.destroy === 'function') handle.destroy();
             if (typeof handle.unmount === 'function') handle.unmount();
         }
 
-        // 2. DOM内リスナー・タイマーの破棄
         if (win) {
             if (win._cleanup) {
                 const cleanup = win._cleanup;
@@ -595,7 +607,6 @@ export function killProcess(key) {
                 win._observer = null;
             }
 
-            // イベントリスナーの参照切断のため内部要素を全クリア
             win.innerHTML = "";
 
             if (win._taskbarBtn) {
@@ -609,7 +620,6 @@ export function killProcess(key) {
     } catch (e) {
         console.warn("Process cleanup warning:", e);
     } finally {
-        // 3. マップ構造からの参照完全削除（GCを有効化）
         for (const [path, w] of explorerWindows.entries()) {
             if (w === win) {
                 explorerWindows.delete(path);
@@ -623,10 +633,21 @@ export function killProcess(key) {
             }
         }
 
-        // 参照解除
         proc.window = null;
         proc.handle = null;
     }
+
+    // ★ 修正: アプリケーションの終了なのでカテゴリを "Application" に変更し、
+    // ログオフ時の一斉終了でイベントが埋もれないように正確なソース名で通知します
+    logSystemEvent(
+        "Application",
+        "Information",
+        procName,
+        1002,
+        "App Lifecycle",
+        `アプリケーション '${procName}' (PID: ${pid}) が正常に終了しました。`
+    );
+
     return true;
 }
 
@@ -654,17 +675,67 @@ export function resetUI() {
     } catch { }
 }
 
-/* ===== ログオフ (維持) ===== */
+/* ===== ログオフ ===== */
 export async function logOff() {
     const windows = document.querySelectorAll(".window");
     const hasAnyWindow = windows.length > 0;
 
-    const performLogoff = () => {
+    const performLogoff = async () => {
         playSystemEventSound('logoff');
+
+        try {
+            // 1. 現在開いている（これから終了する）プロセスの一覧を取得
+            const activeProcs = getProcessList();
+
+            // 2. IndexedDB から現在のログデータを取得（なければ初期構造）
+            let allLogs = (await dbGet(LOG_STORAGE_KEY, "kv")) || {
+                System: [],
+                Application: [],
+                Security: []
+            };
+
+            const nowTime = new Date().toLocaleTimeString();
+            const nowTimestamp = Date.now();
+
+            // 3. ログオフのシステムログを追加
+            allLogs.System.unshift({
+                level: "Information",
+                time: nowTime,
+                timestamp: nowTimestamp,
+                source: "SessionManager",
+                eventId: 1004,
+                category: "Logoff",
+                description: "ユーザーがシステムからログオフしました。"
+            });
+
+            // 4. 開いていた全アプリの終了ログを Application カテゴリに追加
+            activeProcs.forEach(proc => {
+                allLogs.Application.unshift({
+                    level: "Information",
+                    time: nowTime,
+                    timestamp: nowTimestamp,
+                    source: proc.name,
+                    eventId: 1002,
+                    category: "App Lifecycle",
+                    description: `アプリケーション '${proc.name}' (PID: ${proc.pid}) が正常に終了しました。`
+                });
+            });
+
+            // 5. 最大保持数（500件）の制限を適用
+            if (allLogs.System.length > 500) allLogs.System.length = 500;
+            if (allLogs.Application.length > 500) allLogs.Application.length = 500;
+
+            // ★ 6. すべての終了ログがストレージに書き込まれ完了するのを完全に待つ
+            await dbSet(LOG_STORAGE_KEY, allLogs, "kv");
+
+        } catch (e) {
+            console.error("[Kernel] Failed to save logoff and exit logs to DB:", e);
+        }
+
+        // 7. 書き込みが100%完了したことが保証された後にUIをリセットして画面遷移
         resetUI();
         moduleCache.clear();
 
-        // ★追加: ログオフ時にシステムの検証状態をリセットする
         if (typeof resetSystemVerification === "function") {
             resetSystemVerification();
         }
@@ -784,4 +855,10 @@ export function sendProcessMessage(senderPid, targetPid, message) {
         }
     }
     return false;
+}
+
+export function logSystemEvent(category, level, source, eventId, taskCategory, description) {
+    window.dispatchEvent(new CustomEvent("nexser-system-log", {
+        detail: { category, level, source, eventId, taskCategory, description }
+    }));
 }

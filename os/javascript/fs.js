@@ -104,7 +104,8 @@ const baseFS = {
                 "TaskbarProperties.app": { type: "app", entry: "./apps/taskbarproperties.js", system: true },
                 "PDFViewer.app": { type: "app", entry: "./apps/pdfviewer.js", system: true },
                 "Browser.app": { type: "app", entry: "./apps/Browser.js", system: true },
-                "Networkmonitor.app": { type: "app", entry: "./apps/network_monitor.js", system: true }
+                "Networkmonitor.app": { type: "app", entry: "./apps/network_monitor.js", system: true },
+                "Eventlog.app": { type: "app", entry: "./apps/eventlog.js", system: true }
             },
             ControlPanel: {
                 type: "folder",

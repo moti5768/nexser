@@ -225,7 +225,7 @@ export default async function TaskbarProperties(content) {
                     const { clearRecent } = await import("./recent.js");
                     await clearRecent();
                     window.dispatchEvent(new Event("recent-updated"));
-                    alert("Documents menu cleared.");
+                    nexser.windowAPI.alertWindow("Documents menu cleared.");
                 }
             } catch (e) {
                 console.warn("履歴のクリアに失敗しました", e);
@@ -235,7 +235,6 @@ export default async function TaskbarProperties(content) {
         root.querySelector("#tp-sm-advanced").onclick = async () => {
             try {
                 const { launch } = await import("./kernel.js");
-                // 修正: "explorer"という曖昧な指定をやめ、直接対象のフォルダパスを渡す
                 launch("C:/Windows/Start Menu/Programs");
             } catch (e) {
                 console.warn("エクスプローラーの起動に失敗しました", e);
