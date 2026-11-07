@@ -1,13 +1,5 @@
 // Terminal.js
 import { launch, logOff, resetUI } from "../kernel.js";
-import {
-    getWindows,
-    closeWindowById,
-    focusWindowById,
-    minimizeWindowById,
-    maximizeWindowById,
-    createWindow
-} from "../window.js";
 import { resolveFS, normalizePath } from "../fs-utils.js";
 
 export default function TerminalApp(content) {
@@ -167,7 +159,7 @@ export default function TerminalApp(content) {
         exit: {
             desc: "Close terminal",
             run() {
-                const wins = getWindows();
+                const wins = window.nexser?.windowAPI.getWindows();
 
                 // 1. content の参照一致、または DOM の包含関係で自分を探す
                 const myWin = wins.find(w =>
@@ -176,12 +168,12 @@ export default function TerminalApp(content) {
                 );
 
                 if (myWin) {
-                    closeWindowById(myWin.id);
+                    window.nexser?.windowAPI.closeWindowById(myWin.id);
                 } else {
                     // 2. 万が一見つからない場合は、タイトルが "Terminal" のものを探す（予備策）
                     const terminalWin = wins.find(w => w.title?.includes("Terminal"));
                     if (terminalWin) {
-                        closeWindowById(terminalWin.id);
+                        window.nexser?.windowAPI.closeWindowById(terminalWin.id);
                     } else {
                         print("Error: Could not find terminal window instance.", "#f00");
                     }
@@ -436,7 +428,7 @@ export default function TerminalApp(content) {
                 // ★ 入力されたID（"1" や "win_1"）を柔軟にマッチさせるヘルパー
                 const getTargetWin = (arg) => {
                     if (!arg) return null;
-                    const wins = getWindows();
+                    const wins = window.nexser?.windowAPI.getWindows();
                     return wins.find(w => w.id === arg || w.id === `win_${arg}` || w.id.replace("win_", "") === arg);
                 };
 
@@ -444,7 +436,7 @@ export default function TerminalApp(content) {
                     case "create":
                     case "new": {
                         const title = subArgs.join(" ") || "New Window";
-                        const contentEl = createWindow(title, {
+                        const contentEl = window.nexser?.windowAPI.createWindow(title, {
                             width: "450px",
                             height: "280px"
                         });
@@ -459,7 +451,7 @@ export default function TerminalApp(content) {
                     }
                     case "list":
                     case "ls": {
-                        const wins = getWindows();
+                        const wins = window.nexser?.windowAPI.getWindows();
                         if (!wins.length) return print("No windows");
                         wins.forEach(w => print(`${w.id.toString().padEnd(6)} : ${w.title} (${w.minimized ? "minimized" : "active"})`));
                         break;
@@ -475,7 +467,7 @@ export default function TerminalApp(content) {
                         }
 
                         try {
-                            closeWindowById(targetWin.id);
+                            window.nexser?.windowAPI.closeWindowById(targetWin.id);
                             print(`Window ${targetWin.id} closed`);
                         } catch (e) {
                             print(`Failed to close window: ${e.message}`, "#f00");
@@ -486,7 +478,7 @@ export default function TerminalApp(content) {
                         const targetWin = getTargetWin(subArgs[0]);
                         if (!targetWin) return print("Usage: window focus <id>");
 
-                        if (focusWindowById(targetWin.id)) {
+                        if (window.nexser?.windowAPI.focusWindowById(targetWin.id)) {
                             print(`Focused window ${targetWin.id}`);
                         } else {
                             print("Failed to focus window", "#f00");
@@ -503,7 +495,7 @@ export default function TerminalApp(content) {
                             return print(`Error: Window ${targetWin.id} is protected.`, "#f00");
                         }
 
-                        await minimizeWindowById(targetWin.id);
+                        await window.nexser?.windowAPI.minimizeWindowById(targetWin.id);
                         print(`Minimized window ${targetWin.id}`);
                         break;
                     }
@@ -517,7 +509,7 @@ export default function TerminalApp(content) {
                             return print(`Error: Window ${targetWin.id} is protected.`, "#f00");
                         }
 
-                        await maximizeWindowById(targetWin.id);
+                        await window.nexser?.windowAPI.maximizeWindowById(targetWin.id);
                         print(`Maximized window ${targetWin.id}`);
                         break;
                     }
@@ -530,7 +522,7 @@ export default function TerminalApp(content) {
         resetui: {
             desc: "Reset all windows and UI",
             run() {
-                const wins = getWindows();
+                const wins = window.nexser?.windowAPI.getWindows();
                 let protectedCount = 0;
 
                 // 開いている全ウィンドウを個別にチェック
@@ -542,7 +534,7 @@ export default function TerminalApp(content) {
                     } else {
                         // 保護されていないウィンドウは個別に閉じる
                         try {
-                            closeWindowById(w.id);
+                            window.nexser?.windowAPI.closeWindowById(w.id);
                         } catch (e) {
                             // エラーは無視して続行
                         }

@@ -1,12 +1,10 @@
 // startmenu.js
 import { FS } from "./fs.js";
 import { launch, logOff } from "./kernel.js";
-import { confirmWindow } from "./window.js";
 import { getRecent, addRecent, removeRecent } from "./recent.js";
 import { resolveFS } from "./fs-utils.js";
 import { resolveAppByPath, getIcon } from "./file-associations.js";
 import { basename } from "./fs-utils.js";
-import { hasExtension } from "./apps/explorer.js";
 import { loadSetting } from "./apps/settings.js";
 
 const startBtn = document.getElementById("start-btn");
@@ -87,7 +85,7 @@ export async function buildStartMenu() {
             let runPath = currentPath;
 
             if (!runNode) {
-                confirmWindow(
+                window.nexser?.windowAPI.confirmWindow(
                     `問題のあるショートカット\n\nこのショートカットが参照している '${runPath}' は変更または移動されているか、存在しないため、正しく機能しません。\n\nこのショートカットを削除しますか？`,
                     (result) => {
                         if (result) {
@@ -347,7 +345,7 @@ async function launchByType(type, path) {
 
     // ★ノードが存在しない（リンク切れなど）の場合はエラーダイアログを出す
     if (!node) {
-        confirmWindow(
+        window.nexser?.windowAPI.confirmWindow(
             `ショートカット エラー\n\nこの項目 '${path}' は既に削除されたか、利用できません。\n\n「最近使った項目」から削除しますか？`,
             async (result) => {
                 if (result) {

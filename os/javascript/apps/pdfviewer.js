@@ -1,17 +1,16 @@
 // PDFViewer.js
 import { resolveFS } from "../fs-utils.js";
-import { createWindow, bringToFront, showModalWindow, alertWindow, taskbarButtons, updateWindowTitle } from "../window.js";
 import { setupRibbon } from "../ribbon.js";
 import { getFileContent } from "../fs-db.js";
 
 function showWarning(root, message) {
     const win = root.closest(".window");
-    alertWindow(message, { parentWin: win });
+    window.nexser?.windowAPI.alertWindow(message, { parentWin: win });
 }
 
 function showConfirm(root, message, onYes, onNo) {
     const win = root.closest(".window");
-    showModalWindow("Confirm", message, {
+    window.nexser?.windowAPI.showModalWindow("Confirm", message, {
         parentWin: win,
         iconClass: "warning_icon",
         buttons: [
@@ -85,7 +84,7 @@ export default function PDFViewer(root, options = {}) {
     }
 
     function updateTitle() {
-        updateWindowTitle(win, baseTitle, dirty);
+        window.nexser?.windowAPI.updateWindowTitle(win, baseTitle, dirty);
     }
 
     /* =========================
@@ -166,10 +165,9 @@ export default function PDFViewer(root, options = {}) {
             return;
         }
 
-        /* 新規保存プロンプト (★ここを修正しました) */
         async function askFileName(defaultName) {
             return new Promise(resolve => {
-                const content = showModalWindow("新規保存", "PDFのファイル名を入力してください", {
+                const content = window.nexser?.windowAPI.showModalWindow("新規保存", "PDFのファイル名を入力してください", {
                     parentWin: win,
                     silent: true,
                     buttons: [

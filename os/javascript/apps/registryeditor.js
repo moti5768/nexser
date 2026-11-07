@@ -2,7 +2,7 @@
 import { openDB } from "../db.js";
 import { attachContextMenu } from "../context-menu.js";
 import { setupRibbon } from "../ribbon.js";
-import { taskbarButtons, alertWindow, errorWindow, confirmWindow } from "../window.js";
+import { taskbarButtons } from "../window.js";
 import { getIcon } from "../file-associations.js";
 import { launch } from "../kernel.js";
 
@@ -111,7 +111,7 @@ export default function RegistryEditor(root) {
 
     async function saveItem(key, rawVal, forcedType = null) {
         if (isProtected(currentStore, key)) {
-            confirmWindow("警告: ファイルシステムの構造を直接編集すると、OSが起動しなくなる恐れがあります。本当に続行しますか？", async (result) => {
+            window.nexser?.windowAPI.confirmWindow("警告: ファイルシステムの構造を直接編集すると、OSが起動しなくなる恐れがあります。本当に続行しますか？", async (result) => {
                 if (result) await performSave(key, rawVal, forcedType);
             }, { parentWin: win });
             return;
@@ -124,7 +124,7 @@ export default function RegistryEditor(root) {
             let val = rawVal;
             if (forcedType === "REG_JSON") {
                 try { val = JSON.parse(rawVal); }
-                catch (e) { return errorWindow("Invalid JSON format.", { parentWin: win }); }
+                catch (e) { return window.nexser?.windowAPI.errorWindow("Invalid JSON format.", { parentWin: win }); }
             } else if (forcedType === "REG_DWORD") {
                 val = Number(rawVal);
             } else {
@@ -158,16 +158,16 @@ export default function RegistryEditor(root) {
 
             updateRow(key, String(key), val);
         } catch (e) {
-            errorWindow("保存に失敗しました: " + e.message, { parentWin: win });
+            window.nexser?.windowAPI.errorWindow("保存に失敗しました: " + e.message, { parentWin: win });
         }
     }
 
     async function deleteItem(key) {
         if (isProtected(currentStore, key)) {
-            return errorWindow(`'${key}' はシステムに必須のコンポーネントであるため、削除できません。`, { parentWin: win });
+            return window.nexser?.windowAPI.errorWindow(`'${key}' はシステムに必須のコンポーネントであるため、削除できません。`, { parentWin: win });
         }
 
-        confirmWindow(`このアイテムを削除してもよろしいですか? "${key}"`, async (result) => {
+        window.nexser?.windowAPI.confirmWindow(`このアイテムを削除してもよろしいですか? "${key}"`, async (result) => {
             if (!result) return;
             try {
                 const db = await getDB();
@@ -185,7 +185,7 @@ export default function RegistryEditor(root) {
                 refresh(false);
             } catch (e) {
                 console.error("[Registry] Delete failed:", e);
-                errorWindow("削除に失敗しました。", { parentWin: win });
+                window.nexser?.windowAPI.errorWindow("削除に失敗しました。", { parentWin: win });
             }
         }, { parentWin: win });
     }
@@ -194,11 +194,11 @@ export default function RegistryEditor(root) {
         if (!newKey || oldKey === newKey) return refresh(false);
 
         if (isProtected(currentStore, oldKey)) {
-            return errorWindow(`'${oldKey}' はシステム保護された項目のため、名前を変更できません。`, { parentWin: win });
+            return window.nexser?.windowAPI.errorWindow(`'${oldKey}' はシステム保護された項目のため、名前を変更できません。`, { parentWin: win });
         }
 
         if (isProtected(currentStore, newKey)) {
-            return errorWindow(`'${newKey}' はシステム予約済みの名前です。この名前に変更することはできません。`, { parentWin: win });
+            return window.nexser?.windowAPI.errorWindow(`'${newKey}' はシステム予約済みの名前です。この名前に変更することはできません。`, { parentWin: win });
         }
 
         try {
@@ -208,7 +208,7 @@ export default function RegistryEditor(root) {
 
             const existing = await store.count(newKey);
             if (existing > 0) {
-                errorWindow(`Error: "${newKey}" already exists.`, { parentWin: win });
+                window.nexser?.windowAPI.errorWindow(`Error: "${newKey}" already exists.`, { parentWin: win });
                 return refresh(false);
             }
 
@@ -231,7 +231,7 @@ export default function RegistryEditor(root) {
             refresh(true);
         } catch (e) {
             console.error("Rename failed:", e);
-            errorWindow("Rename failed: " + e.message, { parentWin: win });
+            window.nexser?.windowAPI.errorWindow("Rename failed: " + e.message, { parentWin: win });
             refresh(false);
         }
     }
@@ -245,7 +245,7 @@ export default function RegistryEditor(root) {
 
         const val = tr._val;
         if (targetCol === "data" && val instanceof Blob) {
-            return alertWindow("Binary data (REG_BINARY) editing is not supported.", { parentWin: win });
+            return window.nexser?.windowAPI.alertWindow("Binary data (REG_BINARY) editing is not supported.", { parentWin: win });
         }
 
         editingKey = keyStr;
@@ -329,7 +329,7 @@ export default function RegistryEditor(root) {
 
         } catch (e) {
             console.error("Create failed:", e);
-            errorWindow("作成に失敗しました: " + e.message, { parentWin: win });
+            window.nexser?.windowAPI.errorWindow("作成に失敗しました: " + e.message, { parentWin: win });
         }
     }
 
@@ -375,7 +375,7 @@ export default function RegistryEditor(root) {
             URL.revokeObjectURL(url);
         } catch (e) {
             console.error("[Registry] Export failed:", e);
-            errorWindow("Export failed: " + e.message, { parentWin: win });
+            window.nexser?.windowAPI.errorWindow("Export failed: " + e.message, { parentWin: win });
         } finally {
             if (loadingEl) {
                 loadingEl.textContent = "Loading...";
@@ -426,10 +426,10 @@ export default function RegistryEditor(root) {
                 URL.revokeObjectURL(url);
                 await new Promise(r => setTimeout(r, 300)); // 連続ダウンロードブロック回避用ウェイト
             }
-            alertWindow("すべての日付ストアの分割エクスポートが完了しました。", { parentWin: win });
+            window.nexser?.windowAPI.alertWindow("すべての日付ストアの分割エクスポートが完了しました。", { parentWin: win });
         } catch (e) {
             console.error("[Registry] Export All failed:", e);
-            errorWindow("Export All failed: " + e.message, { parentWin: win });
+            window.nexser?.windowAPI.errorWindow("Export All failed: " + e.message, { parentWin: win });
         } finally {
             if (loadingEl) {
                 loadingEl.textContent = "Loading...";
@@ -497,10 +497,10 @@ export default function RegistryEditor(root) {
                 if (!result.success) throw new Error(result.error);
 
                 await refresh(true);
-                alertWindow("すべてのファイルのインポートが正常に完了しました。", { parentWin: win });
+                window.nexser?.windowAPI.alertWindow("すべてのファイルのインポートが正常に完了しました。", { parentWin: win });
             } catch (err) {
                 console.error("[Registry] Import failed:", err);
-                errorWindow("バックアップファイルのインポートに失敗しました: " + err.message, { parentWin: win });
+                window.nexser?.windowAPI.errorWindow("バックアップファイルのインポートに失敗しました: " + err.message, { parentWin: win });
             } finally {
                 if (loadingEl) {
                     loadingEl.textContent = "Loading...";
@@ -1006,14 +1006,14 @@ export default function RegistryEditor(root) {
         // 1. 画像などのバイナリデータ (Blob) の場合、プレビューを表示
         if (val instanceof Blob) {
             const url = URL.createObjectURL(val);
-            alertWindow(`<div style="text-align:center;"><img src="${url}" style="max-width:100%; max-height:250px; object-fit:contain;"/><p style="margin-top:8px;">サイズ: ${val.size} バイト</p></div>`, { title: `プレビュー: ${key}`, parentWin: win });
+            window.nexser?.windowAPI.alertWindow(`<div style="text-align:center;"><img src="${url}" style="max-width:100%; max-height:250px; object-fit:contain;"/><p style="margin-top:8px;">サイズ: ${val.size} バイト</p></div>`, { title: `プレビュー: ${key}`, parentWin: win });
             return;
         }
 
         // 2. JSONなどのオブジェクト / 配列の場合、見やすく整形して表示
         if (typeof val === "object" && val !== null && !val.type) {
             const jsonStr = JSON.stringify(val, null, 2);
-            alertWindow(`<pre style="max-height:300px; overflow:auto; font-family:monospace; margin:0; background:#fff; padding:4px;">${jsonStr}</pre>`, { title: `JSONビュー: ${key}`, parentWin: win });
+            window.nexser?.windowAPI.alertWindow(`<pre style="max-height:300px; overflow:auto; font-family:monospace; margin:0; background:#fff; padding:4px;">${jsonStr}</pre>`, { title: `JSONビュー: ${key}`, parentWin: win });
             return;
         }
 
@@ -1028,7 +1028,7 @@ export default function RegistryEditor(root) {
                     const appModule = await import(val.entry);
                     appModule.default?.();
                 } catch (err) {
-                    errorWindow(`Failed to launch app: ${err.message}`, { parentWin: win });
+                    window.nexser?.windowAPI.errorWindow(`Failed to launch app: ${err.message}`, { parentWin: win });
                 }
                 break;
             }
@@ -1045,7 +1045,7 @@ export default function RegistryEditor(root) {
 
                         if (fileMeta instanceof Blob) {
                             const url = URL.createObjectURL(fileMeta);
-                            alertWindow(`<div style="text-align:center;"><img src="${url}" style="max-width:100%; max-height:250px; object-fit:contain;"/><p style="margin-top:8px;">サイズ: ${fileMeta.size} バイト</p></div>`, { title: `ファイル: ${key}`, parentWin: win });
+                            window.nexser?.windowAPI.alertWindow(`<div style="text-align:center;"><img src="${url}" style="max-width:100%; max-height:250px; object-fit:contain;"/><p style="margin-top:8px;">サイズ: ${fileMeta.size} バイト</p></div>`, { title: `ファイル: ${key}`, parentWin: win });
                             return;
                         } else if (typeof fileMeta === "string") {
                             contentToShow = fileMeta;
@@ -1057,7 +1057,7 @@ export default function RegistryEditor(root) {
                     }
                 }
 
-                alertWindow(`[File Content: ${key}]\n\n${contentToShow || "(空のファイルです)"}`, { parentWin: win });
+                window.nexser?.windowAPI.alertWindow(`[File Content: ${key}]\n\n${contentToShow || "(空のファイルです)"}`, { parentWin: win });
                 break;
             }
             case "folder": {

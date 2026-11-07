@@ -1,6 +1,6 @@
 // TextEditor.js
 import { resolveFS } from "../fs-utils.js";
-import { createWindow, bringToFront, showModalWindow, alertWindow, centerWindowOptions, taskbarButtons, updateWindowTitle } from "../window.js";
+import { centerWindowOptions } from "../window.js";
 import { setupRibbon } from "../ribbon.js";
 import { getFileContent } from "../fs-db.js";
 
@@ -8,12 +8,12 @@ let activeSearchWin = null;
 
 function showWarning(root, message) {
     const win = root.closest(".window");
-    alertWindow(message, { parentWin: win });
+    window.nexser?.windowAPI.alertWindow(message, { parentWin: win });
 }
 
 function showConfirm(root, message, onYes, onNo) {
     const win = root.closest(".window");
-    showModalWindow("Confirm", message, {
+    window.nexser?.windowAPI.showModalWindow("Confirm", message, {
         parentWin: win,
         iconClass: "warning_icon",
         buttons: [
@@ -99,7 +99,7 @@ export default async function TextEditor(root, options = {}) {
     applyStyle();
 
     function updateTitle() {
-        updateWindowTitle(win, baseTitle, dirty);
+        window.nexser?.windowAPI.updateWindowTitle(win, baseTitle, dirty);
     }
     updateTitle();
 
@@ -126,7 +126,7 @@ export default async function TextEditor(root, options = {}) {
         let finalName = baseTitle;
         async function askFileName(defaultName) {
             return new Promise(resolve => {
-                const content = showModalWindow("新規保存", "ファイル名を入力してください", {
+                const content = window.nexser?.windowAPI.showModalWindow("新規保存", "ファイル名を入力してください", {
                     parentWin: win,
                     silent: true,
                     buttons: [
@@ -371,7 +371,7 @@ export default async function TextEditor(root, options = {}) {
 
         // 1. 既存の検索ウィンドウがあれば最前面に持ってきて終了
         if (activeSearchWin && document.body.contains(activeSearchWin)) {
-            bringToFront(activeSearchWin);
+            window.nexser?.windowAPI.bringToFront(activeSearchWin);
             const existingInput = activeSearchWin.querySelector("input[type='text']");
             if (existingInput) existingInput.focus();
             return;
@@ -380,7 +380,7 @@ export default async function TextEditor(root, options = {}) {
         let lastSearchIndex = 0;
 
         // 2. 検索ウィンドウの作成
-        const content = showModalWindow("検索", "検索文字列を入力してください", {
+        const content = window.nexser?.windowAPI.showModalWindow("検索", "検索文字列を入力してください", {
             parentWin: null, // モードレス
             buttons: [
                 { label: "検索", onClick: () => { lastSearchIndex = 0; performSearch(input.value); } },
@@ -504,11 +504,11 @@ let activeColorPicker = null;
 export function showColorPicker(title, initialColor = "#ffffff", onSelect, parentWin) {
     // 1. 既存チェック（変数名を整理）
     if (activeColorPicker && document.body.contains(activeColorPicker)) {
-        bringToFront(activeColorPicker);
+        window.nexser?.windowAPI.bringToFront(activeColorPicker);
         return activeColorPicker.querySelector(".content");
     }
 
-    const content = showModalWindow(title || "Color Picker", "色を選択してください", {
+    const content = window.nexser?.windowAPI.showModalWindow(title || "Color Picker", "色を選択してください", {
         parentWin: null,
         width: 320,
         height: 200,
@@ -576,7 +576,7 @@ export function showColorPicker(title, initialColor = "#ffffff", onSelect, paren
 
     document.body.appendChild(win);
     activeColorPicker = win;
-    bringToFront(win);
+    window.nexser?.windowAPI.bringToFront(win);
 
     // 親ウィンドウが消えたらカラーピッカーも閉じる
     let observer = null;

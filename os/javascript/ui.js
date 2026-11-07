@@ -1,5 +1,4 @@
 // ui.js
-import { bringToFront } from "./window.js";
 import { hideContextMenu } from "./context-menu.js";
 
 let isGlobalMouseUpRegistered = false;
@@ -101,7 +100,7 @@ export function installDynamicButtonEffect() {
 
                         const win = ribbonMenu.closest(".window");
                         if (win) {
-                            bringToFront(win);
+                            window.nexser?.windowAPI.bringToFront(win);
                             if (win._treePanel) win._treePanel.style.display = "none";
                         }
                         hideContextMenu();

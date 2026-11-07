@@ -1,7 +1,6 @@
 // AudioPlayer.js
 import { resolveFS } from "../fs-utils.js";
 import { getFileContent } from "../fs-db.js";
-import { alertWindow, updateWindowTitle } from "../window.js";
 import { FILE_ASSOCIATIONS } from "../file-associations.js";
 
 /**
@@ -212,7 +211,7 @@ export default function main(content, options) {
 
         if (!fileNode) {
             console.warn(`ファイルが見つかりません。探索パス: ${targetPath}`);
-            alertWindow(`ファイルが見つかりません: ${fileName}`);
+            window.nexser?.windowAPI.alertWindow(`ファイルが見つかりません: ${fileName}`);
             isLoading = false;
             return;
         }
@@ -223,7 +222,7 @@ export default function main(content, options) {
         }
 
         if (!audioData) {
-            alertWindow("再生データの読み込みに失敗しました。");
+            window.nexser?.windowAPI.alertWindow("再生データの読み込みに失敗しました。");
             isLoading = false;
             return;
         }
@@ -233,7 +232,7 @@ export default function main(content, options) {
             currentAudio.volume = currentVolume;
             volSlider.value = currentVolume;
             if (titleEl) titleEl.innerText = fileName;
-            updateWindowTitle(win, fileName, false);
+            window.nexser?.windowAPI.updateWindowTitle(win, fileName, false);
 
             currentAudio.onloadedmetadata = () => {
                 durTimeEl.innerText = formatTime(currentAudio.duration);
@@ -253,7 +252,7 @@ export default function main(content, options) {
 
             currentAudio.onerror = (e) => {
                 console.error("Audio element error:", e);
-                alertWindow(`音声のデコードに失敗しました: ${fileName}`);
+                window.nexser?.windowAPI.alertWindow(`音声のデコードに失敗しました: ${fileName}`);
             };
 
             currentAudio.onended = () => {
@@ -275,7 +274,7 @@ export default function main(content, options) {
             await currentAudio.play();
         } catch (e) {
             console.error("Playback failed:", e);
-            alertWindow("再生がブロックされたか、ファイル形式が不正です。再生ボタンを押してやり直してください。");
+            window.nexser?.windowAPI.alertWindow("再生がブロックされたか、ファイル形式が不正です。再生ボタンを押してやり直してください。");
         } finally {
             isLoading = false;
         }
@@ -298,7 +297,7 @@ export default function main(content, options) {
         if (currentAudio.paused) {
             currentAudio.play().catch(e => {
                 console.warn("再生できません:", e);
-                alertWindow("このファイルは再生できません。");
+                window.nexser?.windowAPI.alertWindow("このファイルは再生できません。");
             });
         } else {
             currentAudio.pause();

@@ -113,8 +113,8 @@ export function createWindow(title, options = {}) {
 
     w.innerHTML = `
 <div class="title-bar" style="display: flex; align-items: center; padding: 0 5px;">
-    <span class="window-icon" style="margin-right: 6px; font-size: 14px;">${initialIcon}</span>
-    <span class="title-text" style="flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${title}</span>
+    <span class="window-icon" style="margin-right: 6px; font-size: 14px;"></span>
+    <span class="title-text" style="flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></span>
     <div class="window-controls" style="display: flex; flex-shrink: 0;">
         <button class="min-btn" data-tooltip = "最小化"></button>
         <button class="max-btn" data-tooltip = "最大化 / 元のサイズに戻す"></button>
@@ -139,6 +139,12 @@ ${!options.hideStatus ? `
     Ready
 </div>` : ""}
 `;
+
+    const iconEl = w.querySelector(".window-icon");
+    if (iconEl) iconEl.textContent = initialIcon;
+
+    const titleTextEl = w.querySelector(".title-text");
+    if (titleTextEl) titleTextEl.textContent = title;
 
     w._applyRealIcon = () => {
         if (!w.isConnected) return; // すでに閉じられていたら何もしない
@@ -193,13 +199,14 @@ ${!options.hideStatus ? `
     loadWindowSize(sizeKey).then(size => {
         if (!size) return;
         windowSizeCache.set(sizeKey, size);
-        // キャッシュが直近で取得できた場合で、まだユーザーが動かしていない初期状態なら適用
         if (!cachedSize && w.isConnected) {
             if (size.w) w.style.width = size.w + "px";
             if (size.h) w.style.height = size.h + "px";
             if (size.x !== undefined) w.style.left = size.x + "px";
             if (size.y !== undefined) w.style.top = size.y + "px";
         }
+    }).catch(err => {
+        console.warn(`Failed to load window size for key "${sizeKey}":`, err);
     });
 
     /* ===== フォーカス & 復元 ===== */
@@ -236,12 +243,19 @@ ${!options.hideStatus ? `
 
         taskbarBtn = document.createElement("button");
         taskbarBtn.className = "taskbar-window-btn button";
-        taskbarBtn.dataset.tooltip = title; // ★ ツールチップ用にタイトルの設定を追加
-        taskbarBtn.innerHTML = `
-            <span class="taskbar-icon">${initialIcon}</span>
-            <span class="taskbar-text">${title}</span>
-        `;
+        taskbarBtn.dataset.tooltip = title;
         taskbarBtn.dataset.title = title;
+
+        const tbIconSpan = document.createElement("span");
+        tbIconSpan.className = "taskbar-icon";
+        tbIconSpan.textContent = initialIcon;
+
+        const tbTextSpan = document.createElement("span");
+        tbTextSpan.className = "taskbar-text";
+        tbTextSpan.textContent = title; // textContentで安全に代入
+
+        taskbarBtn.appendChild(tbIconSpan);
+        taskbarBtn.appendChild(tbTextSpan);
 
         taskbarBtn._window = w;
         w._taskbarBtn = taskbarBtn;
@@ -1353,7 +1367,11 @@ export function showModalWindow(title, message, options = {}) {
 
     let iconHtml = "";
     if (options.iconClass) {
-        const iconChar = options.iconClass === "warning_icon" ? "!" : "";
+        let iconChar = "";
+        if (options.iconClass === "warning_icon") iconChar = "!";
+        else if (options.iconClass === "info_icon") iconChar = "i";
+        else if (options.iconClass === "question_icon") iconChar = "?";
+
         iconHtml = `<div class="${options.iconClass}" style="top: 20px;">${iconChar}</div>`;
     }
 
@@ -1361,12 +1379,20 @@ export function showModalWindow(title, message, options = {}) {
     content.innerHTML = `
         <div style="flex: 1; padding: 20px 15px; display: flex; align-items: flex-start;">
             ${iconHtml}
-            <div style="${textMargin} line-height: 1.4; word-break: break-all;">
-                ${message}
-            </div>
+            <div class="modal-message-container" style="${textMargin} line-height: 1.4; word-break: break-all;"></div>
         </div>
         <div class="button-container" style="text-align:center; padding-bottom:10px; padding-top:5px;"></div>
     `;
+
+    const msgContainer = content.querySelector(".modal-message-container");
+    if (msgContainer) {
+        // ✅ options.isHtml が明示的に true の場合のみ innerHTML を許可
+        if (typeof message === "string" && options.isHtml === true) {
+            msgContainer.innerHTML = message; // プロパティ画面などのHTMLレイアウトを通す
+        } else {
+            msgContainer.textContent = message; // 通常のテキストは安全にテキストとして代入
+        }
+    }
 
     const container = content.querySelector(".button-container");
     (options.buttons || [{ label: "OK", onClick: null }]).forEach(btn => {
@@ -1409,13 +1435,43 @@ export function errorWindow(message, options = {}) {
     });
 }
 
+/* ===== 新規追加：情報ウィンドウ (iマーク) ===== */
+export function infoWindow(message, options = {}) {
+    if (options.silent !== true) {
+        playSystemEventSound('notify');
+    }
+
+    return showModalWindow("Information", message, {
+        ...options,
+        iconClass: "info_icon", // 青色の情報アイコンを適用
+        silent: true
+    });
+}
+
+/* ===== 新規追加：質問ウィンドウ (?マーク) ===== */
+export function questionWindow(message, callback, options = {}) {
+    if (options.silent !== true) {
+        playSystemEventSound('notify');
+    }
+
+    return showModalWindow("Question", message, {
+        ...options,
+        iconClass: "question_icon", // 緑色の質問アイコンを適用
+        buttons: [
+            { label: "はい", onClick: () => { if (typeof callback === "function") callback(true); } },
+            { label: "いいえ", onClick: () => { if (typeof callback === "function") callback(false); } }
+        ],
+        silent: true
+    });
+}
+
 export function confirmWindow(message, callback, options = {}) {
     return showModalWindow("Confirm", message, {
         ...options,
         iconClass: "warning_icon", // 確認ダイアログも警告アイコンを使用
         buttons: [
-            { label: "はい", onClick: () => callback(true) },
-            { label: "いいえ", onClick: () => callback(false) }
+            { label: "はい", onClick: () => { if (typeof callback === "function") callback(true); } },
+            { label: "いいえ", onClick: () => { if (typeof callback === "function") callback(false); } }
         ]
     });
 }
@@ -1442,9 +1498,7 @@ export function progressWindow(title, itemName, options = {}) {
     // 2. ウィンドウ内部のレイアウト（Windows風）
     content.innerHTML = `
         <div style="padding: 15px; font-size: 12px; font-family: 'MS Sans Serif', Tahoma, sans-serif; color: #000; user-select: none;">
-            <div class="pg-item-name" style="margin-bottom: 10px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                ${itemName}
-            </div>
+            <div class="pg-item-name" style="margin-bottom: 10px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
             
             <div style="height: 26px; border: 1px solid #808080; background: #fff; box-shadow: inset 1px 1px #000; margin-bottom: 10px; position: relative;">
                 <div class="pg-bar" style="height: 100%; width: 0%; background: #000080; transition: width 0.2s;"></div>
@@ -1457,6 +1511,10 @@ export function progressWindow(title, itemName, options = {}) {
             </div>
         </div>
     `;
+
+    // textContent を使って安全にアイテム名を挿入
+    const itemNameEl = content.querySelector(".pg-item-name");
+    if (itemNameEl) itemNameEl.textContent = itemName;
 
     const bar = content.querySelector(".pg-bar");
     const percentText = content.querySelector(".pg-percent");
@@ -1652,9 +1710,10 @@ export function removeAllTaskbarButtons() {
 }
 
 export function focusWindowById(id) {
+    if (typeof id !== "string" && typeof id !== "number") return false;
     const list = getWindows();
-    const win = list.find(w => w.id === id); // ★ IDで正しく検索
-    if (!win) return false;
+    const win = list.find(w => w.id === String(id)); // ★ IDで正しく検索
+    if (!win || !win.el) return false;
     win.el.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
     return true;
 }
@@ -1897,6 +1956,8 @@ export function initWindowAPI() {
         showModalWindow: (title, message, options) => showModalWindow(title, message, options),
         alertWindow: (message, options) => alertWindow(message, options),
         errorWindow: (message, options) => errorWindow(message, options),
+        infoWindow: (message, options) => infoWindow(message, options),
+        questionWindow: (message, callback, options) => questionWindow(message, callback, options),
         confirmWindow: (message, callback, options) => confirmWindow(message, callback, options),
         progressWindow: (title, itemName, options) => progressWindow(title, itemName, options),
 

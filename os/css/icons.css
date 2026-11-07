@@ -11,7 +11,7 @@
     background: yellow;
     color: black;
     position: absolute;
-    left: 5px;
+    left: 10px;
     text-align: center;
     justify-content: center;
     text-shadow: 0.3px 0 0 black, -0.3px 0 0 black, 0 0.3px 0 black, 0 -0.3px 0 black;
@@ -31,7 +31,7 @@
     background: #FF0033;
     border-radius: 20px;
     position: absolute;
-    left: 2px;
+    left: 10px;
     top: 46.5px;
     /* テキスト用の設定（font-sizeやtext-shadowなど）は不要になったので削除 */
 }
@@ -55,4 +55,45 @@
 
 .error_icon::after {
     transform: rotate(-45deg);
+}
+
+
+
+
+.info_icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 24px;
+    width: 24px;
+    border: solid 1px #000080;
+    box-shadow: 1.5px 1.5px dimgray;
+    background: #0000FF;
+    color: white;
+    font-weight: bold;
+    font-family: 'Times New Roman', serif;
+    font-size: 16px;
+    border-radius: 20px;
+    position: absolute;
+    left: 10px;
+    top: 20px;
+}
+
+.question_icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 24px;
+    width: 24px;
+    border: solid 1px white;
+    box-shadow: 1.5px 1.5px dimgray;
+    background: white;
+    color: blue;
+    font-weight: bold;
+    font-family: sans-serif;
+    font-size: 15px;
+    border-radius: 20px;
+    position: absolute;
+    left: 10px;
+    top: 20px;
 }

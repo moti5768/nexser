@@ -1,7 +1,7 @@
 // Settings.js
 import { openDB } from "../db.js";
 import { clearRecent } from "../recent.js";
-import { setWindowAnimationEnabled, alertWindow, confirmWindow } from "../window.js";
+import { setWindowAnimationEnabled } from "../window.js";
 import { FS, forceSave } from "../fs.js";
 import { resolveFS } from "../fs-utils.js";
 import { getFileContent } from "../fs-db.js";
@@ -10,7 +10,7 @@ const STORE = "settings";
 
 function showConfirm(root, message, onYes, onNo) {
     const win = root.closest(".window");
-    confirmWindow(message, (result) => {
+    window.nexser?.windowAPI.confirmWindow(message, (result) => {
         if (result) onYes?.();
         else onNo?.();
     }, { parentWin: win });
@@ -18,7 +18,7 @@ function showConfirm(root, message, onYes, onNo) {
 
 function showAlert(root, message) {
     const win = root.closest(".window");
-    alertWindow(message, { parentWin: win });
+    window.nexser?.windowAPI.alertWindow(message, { parentWin: win });
 }
 
 /* =========================
@@ -51,7 +51,7 @@ export async function saveSetting(key, value) {
         const { usage, quota } = await getStorageInfo();
         if (usage >= quota * 0.95) {
             const activeWin = document.querySelector(".window:not([style*='display: none'])");
-            alertWindow("ディスク領域不足のため、設定を保存できませんでした。", { parentWin: activeWin });
+            window.nexser?.windowAPI.alertWindow("ディスク領域不足のため、設定を保存できませんでした。", { parentWin: activeWin });
             return false;
         }
 

@@ -37,6 +37,7 @@ function deleteFSItem(parentPath, itemName, rerender) {
             height: 200,
             taskbar: false,
             overlay: true,
+            isHtml: true,
             buttons: [
                 {
                     label: "削除",
@@ -160,6 +161,7 @@ export function emptyTrash(rerender) {
         width: 320,
         height: 175,
         overlay: true,
+        isHtml: true,
         buttons: [
             {
                 label: "すべて削除",
@@ -1879,6 +1881,7 @@ export default async function Explorer(root, options = {}) {
                             height: 200,
                             taskbar: false,
                             overlay: true,
+                            isHtml: true,
                             buttons: [
                                 {
                                     label: "削除",
@@ -2644,6 +2647,7 @@ export default async function Explorer(root, options = {}) {
                                     height: 200,
                                     taskbar: false,
                                     overlay: true,
+                                    isHtml: true,
                                     buttons: [
                                         {
                                             label: "削除",
@@ -3068,6 +3072,7 @@ export function openWithDialog(filePath, fileNode) {
         height: Math.min(400, apps.length * 40 + 60),
         overlay: true,
         silent: true,
+        isHtml: true,
         buttons: []
     });
 
@@ -3253,6 +3258,7 @@ export async function showProperties(name, node, path) {
         taskbar: false,
         overlay: false,
         silent: true,
+        isHtml: true,
         buttons: dialogButtons // ⭐ 統合したボタンを適用
     });
 

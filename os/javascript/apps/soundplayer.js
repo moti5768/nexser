@@ -1,7 +1,6 @@
 // soundplayer.js
 import { FS, forceSave } from "../fs.js";
 import { resolveFS } from "../fs-utils.js";
-import { alertWindow } from "../window.js";
 import { getFileContent } from "../fs-db.js";
 import { FILE_ASSOCIATIONS } from "../file-associations.js";
 
@@ -235,7 +234,7 @@ export default function main(content, options) {
 
         for (const file of files) {
             if (!allowedExtensions.exec(file.name)) {
-                alertWindow(`ファイル「${file.name}」はサポートされていない形式です。`);
+                window.nexser?.windowAPI.alertWindow(`ファイル「${file.name}」はサポートされていない形式です。`);
                 continue;
             }
 
@@ -286,7 +285,7 @@ export default function main(content, options) {
 
             let fileNode = resolveFS(`C:/Programs/Music/${path}`);
             if (!fileNode) {
-                alertWindow("ファイルが見つかりませんでした。");
+                window.nexser?.windowAPI.alertWindow("ファイルが見つかりませんでした。");
                 return;
             }
             let audioData = fileNode.content;
@@ -296,7 +295,7 @@ export default function main(content, options) {
             }
 
             if (!audioData) {
-                alertWindow("データの取得に失敗しました。");
+                window.nexser?.windowAPI.alertWindow("データの取得に失敗しました。");
                 return;
             }
 
@@ -308,7 +307,7 @@ export default function main(content, options) {
             };
             currentAudio.play().catch(err => {
                 console.error("Playback error:", err);
-                alertWindow("再生に失敗しました。");
+                window.nexser?.windowAPI.alertWindow("再生に失敗しました。");
             });
         }
 

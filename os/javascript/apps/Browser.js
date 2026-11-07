@@ -1,6 +1,5 @@
 // Browser.js
 import { resolveFS } from "../fs-utils.js";
-import { createWindow, bringToFront, showModalWindow, alertWindow, centerWindowOptions, taskbarButtons, updateWindowTitle } from "../window.js";
 import { setupRibbon } from "../ribbon.js";
 import { getFileContent } from "../fs-db.js";
 
@@ -121,7 +120,7 @@ export default async function BrowserApp(root, options = {}) {
     const dropZone = root.querySelector(".browser-dropzone");
 
     function updateTitle() {
-        updateWindowTitle(win, `${baseTitle} - ${addressInput.value}`, false);
+        window.nexser?.windowAPI.updateWindowTitle(win, `${baseTitle} - ${addressInput.value}`, false);
     }
     updateTitle();
 
@@ -250,7 +249,7 @@ export default async function BrowserApp(root, options = {}) {
                         action: () => {
                             const desktop = resolveFS("C:/Desktop");
                             if (!desktop) {
-                                alertWindow("Desktop が見つかりません", { parentWin: win });
+                                window.nexser?.windowAPI.alertWindow("Desktop が見つかりません", { parentWin: win });
                                 return;
                             }
                             let finalName = `${baseTitle.replace(/\.[^/.]+$/, "")}.url`;
@@ -262,7 +261,7 @@ export default async function BrowserApp(root, options = {}) {
                                 content: `[InternetShortcut]\nURL=${addressInput.value}`
                             };
                             window.dispatchEvent(new Event("fs-updated"));
-                            alertWindow("デスクトップにショートカットを保存しました", { parentWin: win });
+                            window.nexser?.windowAPI.alertWindow("デスクトップにショートカットを保存しました", { parentWin: win });
                         }
                     }
                 ]

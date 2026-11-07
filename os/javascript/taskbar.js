@@ -1,6 +1,6 @@
 // taskbar.js
 import { launch } from "./kernel.js";
-import { resetAllTitleBars, taskbarButtons, createWindow, updateAllTaskbarButtonModes } from "./window.js";
+import { resetAllTitleBars, taskbarButtons, updateAllTaskbarButtonModes } from "./window.js";
 import { hideContextMenu, attachContextMenu } from "./context-menu.js";
 import { clockDate } from "./apps/clock.js";
 import { saveSetting, loadSetting } from "./apps/settings.js";
@@ -201,7 +201,7 @@ export function initTaskbar() {
                 const targetTop = `calc(100vh - ${targetHeight})`;
 
                 // 1. window.js の機能を使って本物のウィンドウを作成
-                const content = createWindow("Taskbar", {
+                const content = window.nexser?.windowAPI.createWindow("Taskbar", {
                     width: "100%",
                     height: targetHeight,
                     left: "0px",

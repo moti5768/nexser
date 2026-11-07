@@ -1,7 +1,6 @@
 // desktop.js
 import { FS, forceSave, markDefaultDeleted, setBulkUpdating } from "./fs.js";
 import { launch } from "./kernel.js";
-import { alertWindow, progressWindow } from "./window.js";
 import { resolveFS, validateName, importFileSmart, getUniqueName, isDescendantOrSelf } from "./fs-utils.js";
 import { addRecent } from "./recent.js";
 import { attachContextMenu } from "./context-menu.js";
@@ -412,7 +411,7 @@ export function buildDesktop() {
                         if (node.type === "file") {
                             explorerOpenWithDialog(fullPath, node);
                         } else {
-                            alertWindow("ファイル以外は開けません", { width: 350, height: 110 });
+                            window.nexser?.windowAPI.alertWindow("ファイル以外は開けません", { width: 350, height: 110 });
                         }
                     }
                 },
@@ -581,7 +580,7 @@ export function buildDesktop() {
                     if (node.type === "file") {
                         explorerOpenWithDialog(fullPath, node);
                     } else {
-                        alertWindow("ファイル以外は開けません", { width: 300, height: 110 });
+                        window.nexser?.windowAPI.alertWindow("ファイル以外は開けません", { width: 300, height: 110 });
                     }
                 }
             });
@@ -983,7 +982,7 @@ export function buildDesktop() {
             }
 
             // プログレスウィンドウの生成
-            const pg = progressWindow("コピー中...", "コピーの準備をしています...", {
+            const pg = window.nexser?.windowAPI.progressWindow("コピー中...", "コピーの準備をしています...", {
                 width: 380,
                 height: 250,
                 autoClose: true
@@ -1226,7 +1225,7 @@ function createNewItem(currentPath, container, itemType = "folder") {
         if (error) {
             isCommitting = false;
             isShowingError = true;
-            alertWindow(error, { width: 360, height: 160, taskbar: false });
+            window.nexser?.windowAPI.alertWindow(error, { width: 360, height: 160, taskbar: false });
             setTimeout(() => {
                 isShowingError = false;
                 input.focus();
@@ -1331,7 +1330,7 @@ async function deleteFSItem(parentPath, itemName, dispatchEvent = true) {
         return true;
     } catch (e) {
         console.warn(`[Desktop Guard] 削除拒否: ${itemName}`);
-        alertWindow(`「${itemName}」は保護されているため削除できません。`, {
+        window.nexser?.windowAPI.alertWindow(`「${itemName}」は保護されているため削除できません。`, {
             title: "システム保護",
             width: 350,
             height: 160
@@ -1340,7 +1339,6 @@ async function deleteFSItem(parentPath, itemName, dispatchEvent = true) {
     }
 }
 
-// 修正後の openFSItem
 function openFSItem(name, node, parentPath) {
     let targetNode = node;
     let targetPath = `${parentPath}/${name}`;
@@ -1350,7 +1348,7 @@ function openFSItem(name, node, parentPath) {
         targetPath = targetNode.target;
         targetNode = resolveFS(targetPath);
         if (!targetNode) {
-            alertWindow("リンク先が見つかりません。");
+            window.nexser?.windowAPI.alertWindow("リンク先が見つかりません。");
             return;
         }
     }

@@ -1,6 +1,5 @@
 // Paint.js
 import { resolveFS } from "../fs-utils.js";
-import { showModalWindow, alertWindow, updateWindowTitle } from "../window.js";
 import { setupRibbon } from "../ribbon.js";
 import { getFileContent } from "../fs-db.js";
 import { showColorPicker } from "./texteditor.js";
@@ -36,11 +35,11 @@ export default async function Paint(root, options = {}) {
        ユーティリティ
     ========================== */
     function updateTitle() {
-        updateWindowTitle(win, filePath?.split("/").pop() || "Untitled.png", dirty);
+        window.nexser?.windowAPI.updateWindowTitle(win, filePath?.split("/").pop() || "Untitled.png", dirty);
     }
 
     function showWarning(message) {
-        alertWindow(message, { parentWin: win });
+        window.nexser?.windowAPI.alertWindow(message, { parentWin: win });
     }
 
     function updateStatus(x, y) {
@@ -337,7 +336,7 @@ export default async function Paint(root, options = {}) {
         }
 
         const finalName = await new Promise(resolve => {
-            const content = showModalWindow("新規保存", "ファイル名を入力してください", {
+            const content = window.nexser?.windowAPI.showModalWindow("新規保存", "ファイル名を入力してください", {
                 parentWin: win, silent: true,
                 buttons: [
                     { label: "OK", onClick: () => resolve(content.querySelector(".modal-prompt-input")?.value) },
@@ -409,7 +408,7 @@ export default async function Paint(root, options = {}) {
                     {
                         label: "Clear",
                         action: () => {
-                            showModalWindow("キャンバスのクリア", "白紙に戻しますか？", {
+                            window.nexser?.windowAPI.showModalWindow("キャンバスのクリア", "白紙に戻しますか？", {
                                 parentWin: win, iconClass: "warning_icon",
                                 buttons: [
                                     {
@@ -445,7 +444,7 @@ export default async function Paint(root, options = {}) {
             closeBtn.addEventListener("click", e => {
                 if (!dirty) return;
                 e.preventDefault(); e.stopImmediatePropagation();
-                showModalWindow("Confirm", "変更内容を保存しますか？", {
+                window.nexser?.windowAPI.showModalWindow("Confirm", "変更内容を保存しますか？", {
                     parentWin: win, iconClass: "warning_icon",
                     buttons: [
                         { label: "はい", onClick: async () => { await save(); dirty = false; closeBtn.click(); } },

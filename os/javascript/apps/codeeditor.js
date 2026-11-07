@@ -1,6 +1,5 @@
 // CodeEditor.js
 import { resolveFS } from "../fs-utils.js";
-import { createWindow, bringToFront, showModalWindow, updateWindowTitle } from "../window.js";
 import { setupRibbon } from "../ribbon.js";
 import { getFileContent } from "../fs-db.js";
 
@@ -827,7 +826,7 @@ export default function CodeEditor(root, options = {}) {
 
         // 3. window.js の共通関数を呼び出し、変更フラグ (dirty) を渡す
         // これにより、タイトルバーに自動で "*" が付与されます
-        updateWindowTitle(win, displayName, activeTab.dirty);
+        window.nexser?.windowAPI.updateWindowTitle(win, displayName, activeTab.dirty);
     }
 
     function renderTabs() {
@@ -1627,8 +1626,8 @@ export default function CodeEditor(root, options = {}) {
        Preview
     ========================== */
     function openPreview() {
-        if (previewWin && document.body.contains(previewWin)) { renderPreview(); bringToFront(previewWin); return; }
-        const content = createWindow("Preview", {
+        if (previewWin && document.body.contains(previewWin)) { renderPreview(); window.nexser?.windowAPI.bringToFront(previewWin); return; }
+        const content = window.nexser?.windowAPI.createWindow("Preview", {
             width: 800,
             height: 520,
             taskbar: false,
@@ -1980,7 +1979,7 @@ export default function CodeEditor(root, options = {}) {
         const reloadPreview = () => {
             if (previewWin && document.body.contains(previewWin)) {
                 renderPreview(); // 既存のプレビューがあれば中身を更新
-                bringToFront(previewWin);
+                window.nexser?.windowAPI.bringToFront(previewWin);
             } else {
                 openPreview(); // なければ新規で開く
             }
@@ -2091,7 +2090,7 @@ export default function CodeEditor(root, options = {}) {
     ========================== */
     function requestClose() {
         if (!dirty) { closeWin(); return; }
-        showModalWindow("Save Changes", "編集中の内容があります。\n保存しますか？", {
+        window.nexser?.windowAPI.showModalWindow("Save Changes", "編集中の内容があります。\n保存しますか？", {
             parentWin: win,
             buttons: [
                 {
@@ -2293,7 +2292,7 @@ export default function CodeEditor(root, options = {}) {
             applySyntaxHighlight();
             requestAnimationFrame(updateMinimap);
             // ウィンドウを前面に持ってくる（kernel側でも行っていますが念のため）
-            bringToFront(win);
+            window.nexser?.windowAPI.bringToFront(win);
         },
         dispose: cleanup
     }
@@ -2301,7 +2300,7 @@ export default function CodeEditor(root, options = {}) {
 
 export function showConfirm(root, message, onYes, onNo) {
     const parent = root.closest ? root.closest(".window") : null;
-    showModalWindow("Confirm", message, {
+    window.nexser?.windowAPI.showModalWindow("Confirm", message, {
         parentWin: parent,
         buttons: [
             { label: "はい", onClick: onYes },
