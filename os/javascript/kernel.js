@@ -10,6 +10,7 @@ import { installDynamicButtonEffect } from "./ui.js";
 import { resolveFS, basename } from "./fs-utils.js";
 import { resolveAppByPath } from "./file-associations.js";
 import { dbGet, dbSet } from "./fs-db.js";
+import { setKernelWindowCreator, createWindow as createRawWindow } from "./window.js";
 
 const LOG_STORAGE_KEY = "nexser_system_logs_v1";
 
@@ -136,11 +137,31 @@ async function safeImport(entry) {
 
 /* ===== カーネル初期化 ===== */
 
+/**
+ * カーネルを介してウィンドウを生成し、プロセス管理へ自動登録する
+ */
+export function createKernelWindow(title, options = {}) {
+    // windowAPI を経由せず、直接オリジナルの createWindow を呼び出して無限ループを回避
+    const content = createRawWindow(title, options);
+    const win = content?.closest(".window");
+
+    // 2. プロセスキーが指定されている場合はカーネルのプロセス管理に自動登録
+    if (win && options.processKey) {
+        registerProcess(win, options.processKey, options.path || "", options.handle || null);
+    }
+
+    return content;
+}
+
 // 1. カーネルスペース（DOM注入とエラー制御）
 export async function initKernelSpaceAsync(progressCallback = () => { }) {
     const root = document.getElementById("os-root");
     if (!root) throw new Error("os-root not found");
     initSystemErrorHandler();
+
+    setKernelWindowCreator((title, options) => {
+        return createKernelWindow(title, options);
+    });
 
     progressCallback("Initializing Kernel Space (DOM & Error Handlers)...");
     root.innerHTML = `

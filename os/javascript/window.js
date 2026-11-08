@@ -1897,16 +1897,6 @@ export function destroyWindow(win) {
     }
 }
 
-
-
-
-
-
-
-
-
-
-
 /* =========================
    Event & Extension System
 ========================= */
@@ -1936,12 +1926,32 @@ export function extendAPI(name, fn) {
     customExtensions[name] = fn;
 }
 
+/* =========================
+   Kernel Integration Hook
+========================= */
+let kernelWindowCreator = null;
+
+/**
+ * カーネル側からウィンドウ生成の仲介関数を注入する
+ * （循環参照を回避しつつ、カーネル経由での作成を強制するため）
+ */
+export function setKernelWindowCreator(fn) {
+    kernelWindowCreator = fn;
+}
+
 export function initWindowAPI() {
     if (typeof window === "undefined") return;
 
     // 1. 外部に公開しても安全な機能だけをまとめたオブジェクトを作成
     const secureWindowAPI = {
-        createWindow: (title, options) => createWindow(title, options),
+        // ★ カーネル経由のクリエイターが登録されている場合はそちらを経由し、
+        // 未登録の場合のみ window.js 内の元の createWindow を直接呼び出す
+        createWindow: (title, options) => {
+            if (kernelWindowCreator) {
+                return kernelWindowCreator(title, options);
+            }
+            return createWindow(title, options);
+        },
         closeWindowById: (id) => closeWindowById(id),
         minimizeWindowById: (id) => minimizeWindowById(id),
         maximizeWindowById: (id) => maximizeWindowById(id),
@@ -1990,4 +2000,4 @@ export function initWindowAPI() {
         enumerable: true     // 列挙可能
     });
 }
-initWindowAPI()
+initWindowAPI();
