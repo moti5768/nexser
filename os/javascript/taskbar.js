@@ -446,7 +446,14 @@ export function initTaskbar() {
             if (showClock === false) {
                 trayArea.style.display = "none";
             }
-
+            const savedSmallIcons = await loadSetting("smallIcons");
+            if (savedSmallIcons) {
+                window.smallIcons = true;
+                const startMenu = document.getElementById("start-menu");
+                if (startMenu) {
+                    startMenu.classList.add("small-icons");
+                }
+            }
             // ★ 追加: 保存されたタスクバーの配置とサイズを読み込んで適用
             const savedPos = await loadSetting("taskbarPosition") || "bottom";
             const savedSize = await loadSetting("taskbarSize") || 40;
@@ -692,7 +699,7 @@ export function initTaskbar() {
         let targetPos = currentPosition;
 
         taskbar.addEventListener("mousedown", e => {
-            if (e.target.closest("#start-btn") || e.target.closest(".taskbar-window-btn") || e.target === currentHandle || isTaskbarWindowMode) return;
+            if (e.target.closest("#start-btn") || e.target.closest(".taskbar-window-btn") || e.target.closest(".taskbar-ime-toolbar") || e.target === currentHandle || isTaskbarWindowMode) return;
             isDragging = true;
             targetPos = currentPosition;
 
@@ -820,8 +827,17 @@ export function initTaskbar() {
 
         // スモールアイコン設定 (startmenu.jsへの伝達)
         if (smallIcons !== undefined) {
-            window.smallIcons = smallIcons;
-            if (typeof buildStartMenu === "function") buildStartMenu();
+            window.smallIcons = Boolean(smallIcons);
+
+            // 明示的にCSSクラスもトグルして即時反映させる
+            const startMenu = document.getElementById("start-menu");
+            if (startMenu) {
+                startMenu.classList.toggle("small-icons", window.smallIcons);
+            }
+
+            if (typeof buildStartMenu === "function") {
+                buildStartMenu();
+            }
         }
     });
 

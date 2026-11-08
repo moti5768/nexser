@@ -107,6 +107,14 @@ export function createWindow(title, options = {}) {
     w.dataset.title = title;
     w.style.position = "absolute";
 
+    const isFrameless = options.frameless === true;
+    if (isFrameless) {
+        w.classList.add("frameless-window");
+        w.style.border = "none";
+        w.style.background = "transparent";
+        w.style.boxShadow = "none";
+    }
+
     // ▼ 改善後：斜め配置 ＆ 端に達したときの折り返しロジック
     if (windowCascadeCount * CASCADE_STEP > MAX_CASCADE_OFFSET) {
         windowCascadeCount = 0;
@@ -122,7 +130,10 @@ export function createWindow(title, options = {}) {
     const initialIcon = "📄";
     const finalIcon = getIcon(title, options.node || { type: "app" });
 
-    w.innerHTML = `
+    if (isFrameless) {
+        w.innerHTML = `<div class="content" style="width:100%; height:100%; padding:0; border:none; background:transparent; position:relative; overflow:hidden;"></div>`;
+    } else {
+        w.innerHTML = `
 <div class="title-bar" style="display: flex; align-items: center; padding: 0 5px;">
     <span class="window-icon" style="margin-right: 6px; font-size: 14px;"></span>
     <span class="title-text" style="flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></span>
@@ -150,6 +161,7 @@ ${!options.hideStatus ? `
     Ready
 </div>` : ""}
 `;
+    }
 
     const iconEl = w.querySelector(".window-icon");
     if (iconEl) iconEl.textContent = initialIcon;
@@ -248,8 +260,8 @@ ${!options.hideStatus ? `
 
     const taskbar = document.getElementById("taskbar");
     let taskbarBtn = null; // 初期値は null
-
-    if (taskbar && options.taskbar !== false) {
+    const shouldCreateTaskbarBtn = options.taskbar !== false && !isFrameless;
+    if (taskbar && shouldCreateTaskbarBtn) {
         w.dataset.taskbar = "true";
 
         taskbarBtn = document.createElement("button");
@@ -294,7 +306,7 @@ ${!options.hideStatus ? `
     const maxBtn = w.querySelector(".max-btn");
 
     if (options.disableControls) {
-        [minBtn, maxBtn].forEach(btn => btn.classList.add("pointer_none"));
+        [minBtn, maxBtn].forEach(btn => btn?.classList.add("pointer_none"));
     }
 
     if (options.disableMinimize) {
@@ -342,13 +354,13 @@ ${!options.hideStatus ? `
 
     // 外部から呼べるように要素に参照を持たせる
     w._destroy = destroy;
-    closeBtn.addEventListener("click", destroy, { signal });
+    closeBtn?.addEventListener("click", destroy, { signal });
 
     /* ===== 最小化アニメーション ===== */
 
     w._animating = false; // 共通フラグ
 
-    minBtn.addEventListener("click", () => {
+    minBtn?.addEventListener("click", () => {
         if (w.dataset.minimized === "true" || w._animating) return;
         w._animating = true;
         playSystemEventSound('minimize');
@@ -565,7 +577,7 @@ ${!options.hideStatus ? `
         });
     }
 
-    maxBtn.addEventListener("click", toggleMaximize);
+    maxBtn?.addEventListener("click", toggleMaximize);
 
     /* ===== 共通プレビュー ===== */
 
@@ -611,192 +623,194 @@ ${!options.hideStatus ? `
     let latestClientX = 0;
     let latestClientY = 0;
 
-    titleBar.addEventListener("pointerdown", e => {
-        // マウスの場合は左クリック(0)のみ反応させる。タッチは常に通す
-        if (e.pointerType === "mouse" && e.button !== 0) return;
+    if (titleBar) {
+        titleBar.addEventListener("pointerdown", e => {
+            // マウスの場合は左クリック(0)のみ反応させる。タッチは常に通す
+            if (e.pointerType === "mouse" && e.button !== 0) return;
 
-        // --- ダブルタップ / ダブルクリック 判定 ---
-        const now = Date.now();
-        const DOUBLE_TAP_DELAY = 300; // 300ms 以内ならダブルとみなす
+            // --- ダブルタップ / ダブルクリック 判定 ---
+            const now = Date.now();
+            const DOUBLE_TAP_DELAY = 300; // 300ms 以内ならダブルとみなす
 
-        if (now - lastTap < DOUBLE_TAP_DELAY) {
-            // ダブル操作確定時の処理
-            if (e.target.closest(".window-controls")) return;
-            e.stopPropagation();
+            if (now - lastTap < DOUBLE_TAP_DELAY) {
+                // ダブル操作確定時の処理
+                if (e.target.closest(".window-controls")) return;
+                e.stopPropagation();
 
-            if (!options.disableControls) {
-                toggleMaximize();
+                if (!options.disableControls) {
+                    toggleMaximize();
+                }
+
+                // ダブルタップ成功時は lastTap をリセットして3連タップを防止
+                lastTap = 0;
+                return;
             }
+            lastTap = now;
 
-            // ダブルタップ成功時は lastTap をリセットして3連タップを防止
-            lastTap = 0;
-            return;
-        }
-        lastTap = now;
+            if (e.target.closest(".window-controls") || e.target.closest(".resize-handle") || maximized) return;
 
-        if (e.target.closest(".window-controls") || e.target.closest(".resize-handle") || maximized) return;
+            dragging = true;
+            dragStarted = false;
+            didMove = false;
+            focus();
 
-        dragging = true;
-        dragStarted = false;
-        didMove = false;
-        focus();
+            const dragShield = document.createElement("div");
+            Object.assign(dragShield.style, {
+                position: "fixed",
+                top: 0, left: 0,
+                width: "100vw", height: "100vh",
+                zIndex: 9998,
+                background: "transparent"
+            });
+            document.body.appendChild(dragShield);
 
-        const dragShield = document.createElement("div");
-        Object.assign(dragShield.style, {
-            position: "fixed",
-            top: 0, left: 0,
-            width: "100vw", height: "100vh",
-            zIndex: 9998,
-            background: "transparent"
-        });
-        document.body.appendChild(dragShield);
+            downX = e.clientX;
+            downY = e.clientY;
+            const rect = w.getBoundingClientRect();
+            offsetX = e.clientX - rect.left;
+            offsetY = e.clientY - rect.top;
 
-        downX = e.clientX;
-        downY = e.clientY;
-        const rect = w.getBoundingClientRect();
-        offsetX = e.clientX - rect.left;
-        offsetY = e.clientY - rect.top;
+            document.body.style.userSelect = "none";
 
-        document.body.style.userSelect = "none";
+            // 他のウィンドウを操作不能にする
+            document.querySelectorAll(".window").forEach(win => {
+                if (win !== w) win.style.pointerEvents = "none";
+            });
 
-        // 他のウィンドウを操作不能にする
-        document.querySelectorAll(".window").forEach(win => {
-            if (win !== w) win.style.pointerEvents = "none";
-        });
-
-        // ドラッグ中のみ動く関数 (pointermove) - rAFで最適化
-        const onPointerMove = (moveEv) => {
-            if (!dragging) return;
-
-            latestClientX = moveEv.clientX;
-            latestClientY = moveEv.clientY;
-
-            // すでに次のフレーム描画が予約されている場合は重複して予約しない
-            if (rafId) return;
-
-            rafId = requestAnimationFrame(() => {
-                rafId = null;
+            // ドラッグ中のみ動く関数 (pointermove) - rAFで最適化
+            const onPointerMove = (moveEv) => {
                 if (!dragging) return;
 
-                let clientX = latestClientX;
-                let clientY = latestClientY;
+                latestClientX = moveEv.clientX;
+                latestClientY = moveEv.clientY;
 
-                // ★ タスクバー自身のウィンドウモードでなければ、マウスカーソルがタスクバーに乗ったときの制限をかける
-                if (w.dataset.title !== "Taskbar") {
-                    const taskbar = document.getElementById("taskbar");
-                    // タスクバーがウィンドウモードの場合は制限を無視する
-                    const isTaskbarWindowMode = taskbar && taskbar.closest(".window") !== null;
+                // すでに次のフレーム描画が予約されている場合は重複して予約しない
+                if (rafId) return;
 
-                    if (taskbar && !isTaskbarWindowMode) {
-                        const tbRect = taskbar.getBoundingClientRect();
+                rafId = requestAnimationFrame(() => {
+                    rafId = null;
+                    if (!dragging) return;
 
-                        // マウスカーソルが上下左右のタスクバー領域に入った場合の制限
-                        if (tbRect.top <= 0 && tbRect.height < tbRect.width) {
-                            // 上部タスクバー
-                            if (clientY < tbRect.bottom) clientY = tbRect.bottom;
-                        } else if (tbRect.bottom >= window.innerHeight && tbRect.height < tbRect.width) {
-                            // 下部タスクバー
-                            if (clientY > tbRect.top) clientY = tbRect.top;
-                        }
+                    let clientX = latestClientX;
+                    let clientY = latestClientY;
 
-                        if (tbRect.left <= 0 && tbRect.width < tbRect.height) {
-                            // 左側タスクバー
-                            if (clientX < tbRect.right) clientX = tbRect.right;
-                        } else if (tbRect.right >= window.innerWidth && tbRect.width < tbRect.height) {
-                            // 右側タスクバー
-                            if (clientX > tbRect.left) clientX = tbRect.left;
+                    // ★ タスクバー自身のウィンドウモードでなければ、マウスカーソルがタスクバーに乗ったときの制限をかける
+                    if (w.dataset.title !== "Taskbar") {
+                        const taskbar = document.getElementById("taskbar");
+                        // タスクバーがウィンドウモードの場合は制限を無視する
+                        const isTaskbarWindowMode = taskbar && taskbar.closest(".window") !== null;
+
+                        if (taskbar && !isTaskbarWindowMode) {
+                            const tbRect = taskbar.getBoundingClientRect();
+
+                            // マウスカーソルが上下左右のタスクバー領域に入った場合の制限
+                            if (tbRect.top <= 0 && tbRect.height < tbRect.width) {
+                                // 上部タスクバー
+                                if (clientY < tbRect.bottom) clientY = tbRect.bottom;
+                            } else if (tbRect.bottom >= window.innerHeight && tbRect.height < tbRect.width) {
+                                // 下部タスクバー
+                                if (clientY > tbRect.top) clientY = tbRect.top;
+                            }
+
+                            if (tbRect.left <= 0 && tbRect.width < tbRect.height) {
+                                // 左側タスクバー
+                                if (clientX < tbRect.right) clientX = tbRect.right;
+                            } else if (tbRect.right >= window.innerWidth && tbRect.width < tbRect.height) {
+                                // 右側タスクバー
+                                if (clientX > tbRect.left) clientX = tbRect.left;
+                            }
                         }
                     }
+
+                    const dx = clientX - downX;
+                    const dy = clientY - downY;
+
+                    // 閾値を超えたらプレビュー枠を作成
+                    if (!dragStarted && (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD)) {
+                        dragStarted = true;
+                        createPreview();
+                    }
+
+                    if (!dragStarted) return;
+
+                    // 制限された clientX, clientY を基にウィンドウ（またはプレビュー）の座標を計算
+                    let newLeft = clientX - offsetX;
+                    let newTop = clientY - offsetY;
+
+                    if (newTop < 0) {
+                        newTop = 0;
+                    }
+
+                    // プレビューがあればプレビューを動かし、なければウィンドウを直接動かす
+                    if (preview) {
+                        preview.style.left = `${newLeft}px`;
+                        preview.style.top = `${newTop}px`;
+                    } else {
+                        w.style.left = `${newLeft}px`;
+                        w.style.top = `${newTop}px`;
+                    }
+                    didMove = true;
+                });
+            };
+
+            // 解除処理 (pointerup / pointercancel)
+            const endDrag = async () => {
+                document.removeEventListener("pointermove", onPointerMove);
+                window.removeEventListener("blur", endDrag);
+
+                // 予約されていた rAF が残っていれば確実にキャンセルする
+                if (rafId) {
+                    cancelAnimationFrame(rafId);
+                    rafId = null;
                 }
 
-                const dx = clientX - downX;
-                const dy = clientY - downY;
+                if (!dragging) return;
 
-                // 閾値を超えたらプレビュー枠を作成
-                if (!dragStarted && (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD)) {
-                    dragStarted = true;
-                    createPreview();
-                }
+                // 操作制限の解除
+                document.querySelectorAll(".window").forEach(win => win.style.pointerEvents = "auto");
+                document.body.style.userSelect = "";
 
-                if (!dragStarted) return;
-
-                // 制限された clientX, clientY を基にウィンドウ（またはプレビュー）の座標を計算
-                let newLeft = clientX - offsetX;
-                let newTop = clientY - offsetY;
-
-                if (newTop < 0) {
-                    newTop = 0;
-                }
-
-                // プレビューがあればプレビューを動かし、なければウィンドウを直接動かす
                 if (preview) {
-                    preview.style.left = `${newLeft}px`;
-                    preview.style.top = `${newTop}px`;
-                } else {
-                    w.style.left = `${newLeft}px`;
-                    w.style.top = `${newTop}px`;
+                    if (preview.parentElement) {
+                        w.style.left = preview.style.left;
+                        w.style.top = preview.style.top;
+                    }
+                    preview.remove();
+                    preview = null;
                 }
-                didMove = true;
-            });
-        };
+                dragShield.remove();
+                dragging = false;
+                dragStarted = false;
 
-        // 解除処理 (pointerup / pointercancel)
-        const endDrag = async () => {
-            document.removeEventListener("pointermove", onPointerMove);
-            window.removeEventListener("blur", endDrag);
-
-            // 予約されていた rAF が残っていれば確実にキャンセルする
-            if (rafId) {
-                cancelAnimationFrame(rafId);
-                rafId = null;
-            }
-
-            if (!dragging) return;
-
-            // 操作制限の解除
-            document.querySelectorAll(".window").forEach(win => win.style.pointerEvents = "auto");
-            document.body.style.userSelect = "";
-
-            if (preview) {
-                if (preview.parentElement) {
-                    w.style.left = preview.style.left;
-                    w.style.top = preview.style.top;
+                // 位置保存
+                if (didMove && !maximized && !w.classList.contains("maximized")) {
+                    if (!options.skipSave) {
+                        const data = {
+                            w: w.offsetWidth,
+                            h: w.offsetHeight,
+                            x: Math.round(parseFloat(w.style.left) || 0),
+                            y: Math.round(parseFloat(w.style.top) || 0)
+                        };
+                        // メモリキャッシュを即座に更新
+                        windowSizeCache.set(sizeKey, data);
+                        // バックグラウンドでDBにも保存
+                        await saveWindowSize(sizeKey, data);
+                    }
                 }
-                preview.remove();
-                preview = null;
-            }
-            dragShield.remove();
-            dragging = false;
-            dragStarted = false;
+                didMove = false;
+                scheduleRefreshTopWindow();
+            };
 
-            // 位置保存
-            if (didMove && !maximized && !w.classList.contains("maximized")) {
-                if (!options.skipSave) {
-                    const data = {
-                        w: w.offsetWidth,
-                        h: w.offsetHeight,
-                        x: Math.round(parseFloat(w.style.left) || 0),
-                        y: Math.round(parseFloat(w.style.top) || 0)
-                    };
-                    // メモリキャッシュを即座に更新
-                    windowSizeCache.set(sizeKey, data);
-                    // バックグラウンドでDBにも保存
-                    await saveWindowSize(sizeKey, data);
-                }
-            }
-            didMove = false;
-            scheduleRefreshTopWindow();
-        };
-
-        // リスナーを pointer 系に変更
-        document.addEventListener("pointermove", onPointerMove);
-        document.addEventListener("pointerup", endDrag, { capture: true, once: true });
-        document.addEventListener("pointercancel", endDrag, { capture: true, once: true }); // タッチ中断用
-        window.addEventListener("blur", endDrag, { once: true });
-    });
+            // リスナーを pointer 系に変更
+            document.addEventListener("pointermove", onPointerMove);
+            document.addEventListener("pointerup", endDrag, { capture: true, once: true });
+            document.addEventListener("pointercancel", endDrag, { capture: true, once: true }); // タッチ中断用
+            window.addEventListener("blur", endDrag, { once: true });
+        });
+    }
 
     /* ===== リサイズ ===== */
-    if (!options.disableResize) {
+    if (!options.disableResize && !isFrameless) {
         const minWidth = 200, minHeight = 110;
         const directions = ["top", "bottom", "left", "right", "topLeft", "topRight", "bottomLeft", "bottomRight"];
         const handles = {};
@@ -1092,9 +1106,9 @@ export function resetWindowIdCounter() {
 
 /* ===== ウィンドウ前面化 ===== */
 export function bringToFront(win) {
-    if (!win) return;
-    const wins = Array.from(document.querySelectorAll(".window"));
-    const maxZ = wins.reduce((max, w) => Math.max(max, parseInt(w.style.zIndex) || 100), 100);
+    if (!win || win.classList.contains("ime-toolbar-window")) return; // ⭐ ツールバーならスルー
+    const wins = Array.from(document.querySelectorAll(".window:not(.ime-toolbar-window)")); // ⭐ ツールバーを除外
+    const maxZ = wins.reduce((max, w) => Math.max(max, parseInt(w.style.zIndex) || 0), 0);
     win.style.zIndex = maxZ + 1;
     scheduleRefreshTopWindow();
     emit("windowActivated", { windowId: win.dataset.windowId, title: win.dataset.title, element: win });
@@ -1604,7 +1618,7 @@ export function updateAllTaskbarButtonModes() {
 
 /* ===== refreshTopWindow 更新 (修正版) ===== */
 export function refreshTopWindow(forcedTopWindow = null) {
-    const allWindows = Array.from(document.querySelectorAll(".window"));
+    const allWindows = Array.from(document.querySelectorAll(".window:not(.ime-toolbar-window)"));
 
     // 表示されているウィンドウを抽出
     const visibleWindows = allWindows.filter(win =>

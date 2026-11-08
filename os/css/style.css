@@ -164,7 +164,7 @@ body {
     word-break: break-all;
     background-color: darkblue;
     padding: 3px 4px;
-    z-index: 100;
+    z-index: 1;
     text-align: center;
 }
 

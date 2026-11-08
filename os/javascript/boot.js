@@ -910,6 +910,8 @@ export async function bootOS() {
         // 5. ユーザースペース（システム診断等）の初期化
         await kernel.initUserSpaceAsync(msg => print(`[UserSpace] ${msg}`));
 
+        await kernel.launchShellApps();
+
         // 6. システムサービスの起動 (エラー時のフェイルセーフ対応)
         try {
             await initScreensaver();

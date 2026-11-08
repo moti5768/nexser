@@ -50,7 +50,18 @@ export default async function EventLogApp(content) {
     let isAutoRefreshEnabled = true;
 
     const logListener = async (e) => {
-        const { category = "System", level = "Information", source = "Unknown", eventId = 1000, taskCategory = "General", description = "" } = e.detail || {};
+        const detail = e.detail || {};
+        const category = detail.category || "Application"; // シェルアプリは原則 Application
+        const level = detail.level || "Information";
+        const source = detail.source || "Unknown";
+        const eventId = detail.eventId || 1000;
+        const taskCategory = detail.taskCategory || "App Lifecycle";
+        const description = detail.description || "";
+
+        // 明示的に shell フラグと状態を安全に評価
+        const isShell = Boolean(detail.isShell || source.toLowerCase().includes("toolbar"));
+        const state = detail.state || (isShell ? "shell" : "normal");
+
         if (!allLogs[category]) allLogs[category] = [];
 
         allLogs[category].unshift({
@@ -60,12 +71,14 @@ export default async function EventLogApp(content) {
             source,
             eventId,
             category: taskCategory,
+            isShell,
+            state,
             description
         });
 
         if (allLogs[category].length > 500) allLogs[category].pop();
 
-        // ★ 3. 確実にストレージへ書き込みが完了してから次へ進むようにする
+        // 確実にストレージへ書き込みが完了してから次へ進む
         await saveLogs();
 
         const activeTabBtn = tabsEl.querySelector(".win95-tab.active");
@@ -205,21 +218,24 @@ export default async function EventLogApp(content) {
             const winAPI = window.nexser?.windowAPI;
             const modalTitle = `イベント プロパティ (${category} - ID: ${log.eventId})`;
 
+            const processStateText = log.state || (log.isShell ? "shell" : "normal");
+
             const detailHtml = `
-                <div style="padding: 12px; font-size: 11px; font-family: 'MS Sans Serif', Tahoma, sans-serif; display: flex; flex-direction: column; gap: 8px; height: 100%;">
-                    <div style="display: grid; grid-template-columns: 100px 1fr; gap: 4px; background: #C0C0C0; padding: 6px; border: 1px solid #808080;">
-                        <strong>ログの種類:</strong> <span>${log.level}</span>
-                        <strong>日時:</strong> <span>${log.time}</span>
-                        <strong>ソース:</strong> <span>${log.source}</span>
-                        <strong>イベント ID:</strong> <span style="font-family:monospace;">${log.eventId}</span>
-                        <strong>カテゴリ:</strong> <span>${log.category}</span>
-                    </div>
-                    <div style="font-weight: bold; margin-top: 4px;">説明:</div>
-                    <div style="flex: 1; background: #FFF; border: 1px solid #808080; padding: 6px; font-family: monospace; white-space: pre-wrap; overflow: auto; min-height: 80px;">
-                        ${log.description}
-                    </div>
-                </div>
-            `;
+    <div style="padding: 12px; font-size: 11px; font-family: 'MS Sans Serif', Tahoma, sans-serif; display: flex; flex-direction: column; gap: 8px; height: 100%;">
+        <div style="display: grid; grid-template-columns: 100px 1fr; gap: 4px; background: #C0C0C0; padding: 6px; border: 1px solid #808080;">
+            <strong>ログの種類:</strong> <span>${log.level}</span>
+            <strong>日時:</strong> <span>${log.time}</span>
+            <strong>ソース:</strong> <span>${log.source}</span>
+            <strong>イベント ID:</strong> <span style="font-family:monospace;">${log.eventId}</span>
+            <strong>カテゴリ:</strong> <span>${log.category}</span>
+            <strong>プロセス状態:</strong> <span style="font-weight:bold; color:${processStateText === 'shell' ? '#000080' : '#000'};">${processStateText}</span>
+        </div>
+        <div style="font-weight: bold; margin-top: 4px;">説明:</div>
+        <div style="flex: 1; background: #FFF; border: 1px solid #808080; padding: 6px; font-family: monospace; white-space: pre-wrap; overflow: auto; min-height: 80px;">
+            ${log.description}
+        </div>
+    </div>
+`;
 
             if (winAPI && typeof winAPI.createWindow === "function") {
                 const modalContent = winAPI.createWindow(modalTitle, {
@@ -266,14 +282,18 @@ export default async function EventLogApp(content) {
 
                 const shortDesc = log.description.length > 50 ? log.description.substring(0, 50) + "..." : log.description;
 
+                const shellBadge = log.isShell || log.state === "shell"
+                    ? `<span style="background:#000080; color:#fff; font-size:9px; padding:1px 3px; margin-left:4px; border-radius:2px;">Shell</span>`
+                    : "";
+
                 tr.innerHTML = `
-                    <td style="padding:2px 6px; border-right:1px solid #E0E0E0;">${levelIcon} ${log.level}</td>
-                    <td style="padding:2px 6px; border-right:1px solid #E0E0E0; white-space:nowrap;">${log.time}</td>
-                    <td style="padding:2px 6px; border-right:1px solid #E0E0E0; overflow:hidden; text-overflow:ellipsis;" title="${log.source}">${log.source}</td>
-                    <td style="padding:2px 6px; border-right:1px solid #E0E0E0; font-family:monospace;">${log.eventId}</td>
-                    <td style="padding:2px 6px; border-right:1px solid #E0E0E0; overflow:hidden; text-overflow:ellipsis;" title="${log.category}">${log.category}</td>
-                    <td style="padding:2px 6px; overflow:hidden; text-overflow:ellipsis;" title="${log.description}">${shortDesc}</td>
-                `;
+    <td style="padding:2px 6px; border-right:1px solid #E0E0E0;">${levelIcon} ${log.level}</td>
+    <td style="padding:2px 6px; border-right:1px solid #E0E0E0; white-space:nowrap;">${log.time}</td>
+    <td style="padding:2px 6px; border-right:1px solid #E0E0E0; overflow:hidden; text-overflow:ellipsis;" title="${log.source}">${log.source}${shellBadge}</td>
+    <td style="padding:2px 6px; border-right:1px solid #E0E0E0; font-family:monospace;">${log.eventId}</td>
+    <td style="padding:2px 6px; border-right:1px solid #E0E0E0; overflow:hidden; text-overflow:ellipsis;" title="${log.category}">${log.category}</td>
+    <td style="padding:2px 6px; overflow:hidden; text-overflow:ellipsis;" title="${log.description}">${shortDesc}</td>
+`;
 
                 tr.onclick = () => {
                     [...tbody.children].forEach(r => {

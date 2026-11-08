@@ -25,7 +25,7 @@ export default async function TaskbarProperties(content) {
         taskbarSize: await loadSetting("taskbarSize") || 40,
         taskbarPosition: await loadSetting("taskbarPosition") || "bottom",
         showClock: (await loadSetting("showClock")) !== false,
-        smallIcons: await loadSetting("smallIcons") || false,
+        smallIcons: Boolean(await loadSetting("smallIcons")),
         autoHide: await loadSetting("autoHide") || false,
         taskbarWindowMode: await loadSetting("taskbarWindowMode") || false
     };
@@ -304,7 +304,7 @@ export default async function TaskbarProperties(content) {
             const p = await loadSetting("taskbarPosition") || "bottom";
             const c = (await loadSetting("showClock")) !== false;
             const a = await loadSetting("autoHide") || false;
-            const s = await loadSetting("smallIcons") || false;
+            const s = Boolean(await loadSetting("smallIcons"));
             const w = await loadSetting("taskbarWindowMode") || false;
 
             tempSettings.taskbarSize = sVal;

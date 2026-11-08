@@ -95,7 +95,7 @@ const baseFS = {
                 "Terminal.app": { type: "app", entry: "./apps/terminal.js", system: true, singleton: true },
                 "TaskManager.app": { type: "app", name: "Task Manager", entry: "./apps/taskmanager.js", system: true, singleton: true },
                 "Settings.app": { type: "app", entry: "./apps/settings.js", system: true, singleton: true },
-                "Explorer.app": { type: "app", entry: "./apps/explorer.js", system: true, shell: true, hidden: true },
+                "Explorer.app": { type: "app", entry: "./apps/explorer.js", system: true, hidden: true },
                 "Soundsplayer.app": { type: "app", entry: "./apps/soundplayer.js", system: true },
                 "AudioPlayer.app": { type: "app", entry: "./apps/audioplayer.js", system: true },
                 "Paint.app": { type: "app", entry: "./apps/paint.js", system: true },
@@ -105,7 +105,8 @@ const baseFS = {
                 "PDFViewer.app": { type: "app", entry: "./apps/pdfviewer.js", system: true },
                 "Browser.app": { type: "app", entry: "./apps/Browser.js", system: true },
                 "Networkmonitor.app": { type: "app", entry: "./apps/network_monitor.js", system: true },
-                "Eventlog.app": { type: "app", entry: "./apps/eventlog.js", system: true }
+                "Eventlog.app": { type: "app", entry: "./apps/eventlog.js", system: true },
+                "Toolbar.app": { type: "app", entry: "./apps/toolbar.js", system: true, frameless: true, singleton: true, shell: true }
             },
             ControlPanel: {
                 type: "folder",
@@ -327,7 +328,22 @@ function deepSync(currentProxy, savedNode, defaultNode, path = "", visited = new
 
                 deepSync(currentProxy[key], savedValue, defaultValue, currentPath, visited);
             } else {
-                currentProxy[key] = savedValue;
+                // ⭐ システムアイテム（system: true）の同期処理：コード側の定義を完全にマスターとする
+                if (defaultValue && typeof defaultValue === 'object' && defaultValue.system) {
+                    if (defaultValue.type === 'file') {
+                        // ファイル（AUTOBOOT.CFG等）の場合：コード側をベースにしつつ、ユーザーが保存した content は維持する
+                        currentProxy[key] = {
+                            ...defaultValue,
+                            content: savedValue && savedValue.content !== undefined ? savedValue.content : defaultValue.content
+                        };
+                    } else {
+                        // アプリ等のシステムアイテム：コード側（FACTORY_FS）の定義で完全に強制上書きする（frameless等の変更を即時反映）
+                        currentProxy[key] = structuredClone(defaultValue);
+                    }
+                } else {
+                    // システム外のユーザーファイルなどは保存データをそのまま反映
+                    currentProxy[key] = savedValue;
+                }
             }
         }
 

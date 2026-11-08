@@ -174,6 +174,26 @@ export async function initKernelSpaceAsync(progressCallback = () => { }) {
     await new Promise(r => requestAnimationFrame(r));
 }
 
+// ⭐ shell: true を持つアプリケーションを自動起動するヘルパー関数
+export async function launchShellApps() {
+    try {
+        const { FS } = await import("./fs.js");
+        const applications = FS["C:"]?.Programs?.Applications;
+        if (!applications) return;
+
+        for (const [appName, appObj] of Object.entries(applications)) {
+            // shell: true が設定されているアプリを自動起動対象とする
+            if (appObj && appObj.shell && appObj.type === "app") {
+                const appPath = `C:/Programs/Applications/${appName}`;
+                console.log(`[Kernel] Launching shell app: ${appPath}`);
+                await launch(appPath);
+            }
+        }
+    } catch (e) {
+        console.error("[Kernel] Failed to launch shell apps:", e);
+    }
+}
+
 // 2. システムシェル（タスクバー・スタートメニュー）※デスクトップより先に構築
 export async function initShellAsync(progressCallback = () => { }) {
     progressCallback("Initializing System Shell (Taskbar & Start Menu)...");
@@ -446,7 +466,18 @@ async function launchApp(item, path, options) {
     if (!appModule?.default) throw new Error("アプリが正しくエクスポートされていません");
 
     const displayName = options?.path ? basename(options.path) : (options.showFullPath ? path : item.name || basename(path));
-    const content = getWindowAPI()?.createWindow(displayName, { node: options.originalNode || item });
+
+    // ⭐ toolbar.js に限定せず、item.frameless の設定を汎用的に反映
+    const isFrameless = Boolean(item.frameless || options.frameless);
+
+    const isShell = Boolean(item.shell || options.shell);
+
+    const content = getWindowAPI()?.createWindow(displayName, {
+        node: options.originalNode || item,
+        frameless: isFrameless,
+        hideRibbon: isFrameless,
+        hideStatus: isFrameless
+    });
     const win = content?.closest(".window");
     if (!win) throw new Error("Window creation failed");
 
@@ -468,11 +499,57 @@ async function launchApp(item, path, options) {
     };
 
     try {
-        // 第2引数または第3引数に syscall を渡す
         appHandle = await appModule.default(content, { ...options, syscall });
         if (appHandle?.isTabApp) tabAppInstances.set(item.entry, { win, handle: appHandle });
         if (typeof win._applyRealIcon === "function") win._applyRealIcon();
-        logSystemEvent("Application", "Information", basename(processPath), 1000, "App Lifecycle", `アプリケーション '${basename(processPath)}' が正常に起動しました (PID: ${pid})`);
+
+        const processState = isShell ? "shell" : "normal";
+        const logCategory = "Application";
+        const logSource = basename(processPath);
+        const logDesc = `アプリケーション '${logSource}' (PID: ${pid}) が正常に起動しました。`;
+
+        // 1. リアルタイム更新通知用のカスタムイベント発火
+        logSystemEvent(
+            logCategory,
+            "Information",
+            logSource,
+            1000,
+            "App Lifecycle",
+            logDesc,
+            {
+                isShell: isShell,
+                state: processState
+            }
+        );
+
+        // 2. イベントログ画面が開いていなくても確実に IndexedDB へ直接保存する
+        try {
+            const { dbGet, dbSet } = await import("./fs-db.js");
+            let allLogs = (await dbGet(LOG_STORAGE_KEY, "kv")) || {
+                System: [],
+                Application: [],
+                Security: []
+            };
+
+            if (!allLogs[logCategory]) allLogs[logCategory] = [];
+
+            allLogs[logCategory].unshift({
+                level: "Information",
+                time: new Date().toLocaleTimeString(),
+                timestamp: Date.now(),
+                source: logSource,
+                eventId: 1000,
+                category: "App Lifecycle",
+                isShell,
+                state: processState,
+                description: logDesc
+            });
+
+            if (allLogs[logCategory].length > 500) allLogs[logCategory].pop();
+            await dbSet(LOG_STORAGE_KEY, allLogs, "kv");
+        } catch (dbErr) {
+            console.warn("[Kernel] Direct log persistence failed:", dbErr);
+        }
     } catch (e) {
         console.error("app runtime error:", e);
         if (typeof getWindowAPI()?.destroyWindow === "function" && win) {
@@ -483,25 +560,25 @@ async function launchApp(item, path, options) {
     }
 
     addRecent(processPath);
-    registerProcess(win, key, processPath, appHandle); // ★ 登録されるパスを実際のパスに変更
+    registerProcess(win, key, processPath, appHandle, isShell);
 
     if (isExplorer) explorerWindows.set(options.path || "C:/Desktop", win);
 }
 
 /* --- 共通：プロセス登録とObserver設定のヘルパー --- */
-function registerProcess(win, key, path, handle) {
+function registerProcess(win, key, path, handle, isShell = false) {
     const pid = pidCounter++;
     processes.set(key, {
         pid,
         path,
         window: win,
         handle,
-        state: "normal",
+        state: isShell ? "shell" : "normal", // ⭐ シェルアプリの場合は状態を "shell" に設定
+        isShell,
         startTime: performance.now(),
         memory: 0,
         cpu: 0
     });
-
     win.dataset.processKey = key;
 
     const observer = new MutationObserver((mutations, obs) => {
@@ -522,7 +599,7 @@ function registerProcess(win, key, path, handle) {
 /* =========================
    Watchdog & Process Metrics
 ========================= */
-setInterval(() => {
+setInterval(async () => {
     const mem = getMemoryMB();
     const now = performance.now();
 
@@ -530,8 +607,8 @@ setInterval(() => {
         proc.memory = mem;
         proc.cpu = cpuLoad;
 
-        // フリーズ監視（アプリ側で heartbeat が設定されている場合、あるいは長時間イベントループが停滞した場合）
-        if (proc.lastHeartbeat && (now - proc.lastHeartbeat > 10000)) {
+        // フリーズ監視（アプリ側で heartbeat が設定されている場合）
+        if (proc.lastHeartbeat && ((now - proc.lastHeartbeat) > 10000)) {
             console.error(`[Watchdog] Freeze detected in process ${proc.pid} (${proc.path}). Terminating.`);
             killProcess(key);
             getWindowAPI()?.errorWindow(`アプリケーション '${basename(proc.path)}' が応答しないため、強制終了しました。`, { taskbar: true });
@@ -738,7 +815,9 @@ export async function logOff() {
                     source: proc.name,
                     eventId: 1002,
                     category: "App Lifecycle",
-                    description: `アプリケーション '${proc.name}' (PID: ${proc.pid}) が正常に終了しました。`
+                    isShell: proc.isShell,
+                    state: proc.state,
+                    description: `アプリケーション '${proc.name}' (PID: ${proc.pid}) [State: ${proc.state}] が正常に終了しました。`
                 });
             });
 
@@ -878,8 +957,8 @@ export function sendProcessMessage(senderPid, targetPid, message) {
     return false;
 }
 
-export function logSystemEvent(category, level, source, eventId, taskCategory, description) {
+export function logSystemEvent(category, level, source, eventId, taskCategory, description, extra = {}) {
     window.dispatchEvent(new CustomEvent("nexser-system-log", {
-        detail: { category, level, source, eventId, taskCategory, description }
+        detail: { category, level, source, eventId, taskCategory, description, ...extra }
     }));
 }

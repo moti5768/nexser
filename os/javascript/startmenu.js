@@ -8,7 +8,6 @@ import { basename } from "./fs-utils.js";
 import { loadSetting } from "./apps/settings.js";
 
 const startBtn = document.getElementById("start-btn");
-let recentListenerInstalled = false;
 
 // グローバルな状態管理用 (スモールアイコン)
 window.smallIcons = false;
@@ -19,9 +18,14 @@ window.smallIcons = false;
 export async function buildStartMenu() {
     const menu = document.getElementById("start-menu");
     if (!menu) return;
+
+    // ✨ 【改善】再ロード時や初回ビルド時に IndexedDB から最新の設定を確実に取得して同期する
+    window.smallIcons = Boolean(await loadSetting("smallIcons"));
+    window.showRecent = (await loadSetting("showRecentItems")) ?? true;
+
     menu.innerHTML = "";
 
-    // 設定クラスの付与（CSSでの制御用：メモリ上のキャッシュを利用）
+    // 設定クラスの付与（CSSでの制御用）
     menu.classList.toggle("small-icons", window.smallIcons);
 
     // FSに定義されている C:/StartMenu をルートとしてメニューを構築
@@ -409,10 +413,12 @@ window.addEventListener("taskbar-style-changed", (e) => {
 ===================================================== */
 async function initSettings() {
     window.showRecent = (await loadSetting("showRecentItems")) ?? true;
-    window.smallIcons = (await loadSetting("smallIcons")) ?? false;
+    // 改善: Boolean() で囲み、設定値（true/false）を確実に真偽値として保持する
+    window.smallIcons = Boolean(await loadSetting("smallIcons"));
 }
 
 export async function startMenuReady() {
+    // 改善: 必ず設定の読み込みを完全に待ってからメニューを初回ビルドする
     await initSettings();
     await buildStartMenu();
 }
