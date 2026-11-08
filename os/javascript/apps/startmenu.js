@@ -104,7 +104,6 @@ export async function buildStartMenu() {
 
             switch (runType) {
                 case "app":
-                    if (runNode.shell) return;
                     launch(runPath, { path: runPath, uniqueKey: runPath });
                     addRecent({ type: "app", path: runPath });
                     break;
