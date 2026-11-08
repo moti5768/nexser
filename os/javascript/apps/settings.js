@@ -1504,13 +1504,22 @@ export default async function SettingsApp(content) {
                 rightSide.style.alignItems = "center";
                 rightSide.innerHTML = `<span style='margin-right:8px; font-size: 12px;'>${formatBytes(bytes)}</span>`;
 
-                if (name !== "settings") {
+                // 🔴 【改善】settings だけでなく、ファイルシステムの中核である kv や files ストアもクリアされないよう保護
+                const PROTECTED_STORES = new Set(["settings", "kv", "files"]);
+
+                if (!PROTECTED_STORES.has(name)) {
                     const delBtn = document.createElement("button");
                     delBtn.textContent = "Clear";
                     delBtn.style.fontSize = "12px";
                     delBtn.style.padding = "0 4px";
                     delBtn.onclick = () => clearStore(name);
                     rightSide.appendChild(delBtn);
+                } else {
+                    // 保護されているストアの場合は「Protected」と表示して視覚的に安全性を確保
+                    const protectedLabel = document.createElement("span");
+                    protectedLabel.textContent = "Protected";
+                    protectedLabel.style.cssText = "font-size: 11px; color: #808080; font-style: italic;";
+                    rightSide.appendChild(protectedLabel);
                 }
 
                 row.append(nameWrapper, rightSide);

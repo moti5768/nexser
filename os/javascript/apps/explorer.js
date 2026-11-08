@@ -3062,7 +3062,7 @@ function getAllApps() {
 
 export function openWithDialog(filePath, fileNode) {
     const apps = getAllApps();
-    if (apps.length === 0) return nexser.windowAPI.window.nexser?.windowAPI?.alertWindow("アプリがありません");
+    if (apps.length === 0) return window.nexser?.windowAPI?.alertWindow("アプリがありません");
 
     const fileName = filePath.split("/").pop();
 
@@ -3078,12 +3078,27 @@ export function openWithDialog(filePath, fileNode) {
 
     content.innerHTML = "";
     apps.forEach(app => {
+        const appNode = resolveFS(app.path);
+        const appIcon = getIcon(app.name, appNode, app.path);
+
         const btn = document.createElement("button");
-        btn.textContent = app.name;
-        Object.assign(btn.style, { display: "block", width: "100%", margin: "4px 0", padding: "6px 0" });
+        // 元のボタンのスタイリングをベースに、アイコンとテキストを横並び配置
+        btn.style.cssText = "display: flex; align-items: center; gap: 8px; width: 100%; margin: 4px 0; padding: 6px 10px; text-align: left; cursor: pointer;";
+
+        const iconSpan = document.createElement("span");
+        iconSpan.textContent = appIcon;
+        iconSpan.style.cssText = "font-size: 16px; flex-shrink: 0;";
+
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = app.name.replace(/\.app$/i, "");
+        nameSpan.style.cssText = "overflow: hidden; text-overflow: ellipsis; white-space: nowrap;";
+
+        btn.appendChild(iconSpan);
+        btn.appendChild(nameSpan);
+
         btn.onclick = () => {
             launch(app.path, { path: filePath, node: fileNode, uniqueKey: filePath });
-            const win = content.parentElement;
+            const win = content.closest(".window") || content.parentElement;
             if (win) {
                 win.remove();
                 win._modalOverlay?.remove();

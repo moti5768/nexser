@@ -159,21 +159,18 @@ export default function TerminalApp(content) {
         exit: {
             desc: "Close terminal",
             run() {
-                const wins = window.nexser?.windowAPI.getWindows();
+                // DOMの親要素から直接自分のウィンドウを特定する
+                const myWindowEl = content.closest(".window");
 
-                // 1. content の参照一致、または DOM の包含関係で自分を探す
-                const myWin = wins.find(w =>
-                    w.content === content ||
-                    w.content?.contains(content)
-                );
-
-                if (myWin) {
-                    window.nexser?.windowAPI.closeWindowById(myWin.id);
+                if (myWindowEl && myWindowEl.dataset.windowId) {
+                    window.nexser?.windowAPI.closeWindowById(myWindowEl.dataset.windowId);
                 } else {
-                    // 2. 万が一見つからない場合は、タイトルが "Terminal" のものを探す（予備策）
-                    const terminalWin = wins.find(w => w.title?.includes("Terminal"));
-                    if (terminalWin) {
-                        window.nexser?.windowAPI.closeWindowById(terminalWin.id);
+                    // フォールバック：DOMからタイトルに "Terminal" が含まれるものを探す
+                    const terminalEl = Array.from(document.querySelectorAll(".window"))
+                        .find(w => w.dataset.title?.includes("Terminal"));
+
+                    if (terminalEl && terminalEl.dataset.windowId) {
+                        window.nexser?.windowAPI.closeWindowById(terminalEl.dataset.windowId);
                     } else {
                         print("Error: Could not find terminal window instance.", "#f00");
                     }
@@ -425,11 +422,14 @@ export default function TerminalApp(content) {
                 const sub = (args[0] || "list").toLowerCase();
                 const subArgs = args.slice(1);
 
-                // ★ 入力されたID（"1" や "win_1"）を柔軟にマッチさせるヘルパー
-                const getTargetWin = (arg) => {
+                // ★ DOMから直接、入力されたID（"1" や "win_1"）に一致するウィンドウ要素を探すヘルパー
+                const getTargetWinEl = (arg) => {
                     if (!arg) return null;
-                    const wins = window.nexser?.windowAPI.getWindows();
-                    return wins.find(w => w.id === arg || w.id === `win_${arg}` || w.id.replace("win_", "") === arg);
+                    const winEls = Array.from(document.querySelectorAll(".window"));
+                    return winEls.find(w => {
+                        const id = w.dataset.windowId;
+                        return id === arg || id === `win_${arg}` || id.replace("win_", "") === arg;
+                    });
                 };
 
                 switch (sub) {
@@ -451,6 +451,7 @@ export default function TerminalApp(content) {
                     }
                     case "list":
                     case "ls": {
+                        // list のみ、el が不要な windowAPI.getWindows() をそのまま活用
                         const wins = window.nexser?.windowAPI.getWindows();
                         if (!wins.length) return print("No windows");
                         wins.forEach(w => print(`${w.id.toString().padEnd(6)} : ${w.title} (${w.minimized ? "minimized" : "active"})`));
@@ -458,28 +459,32 @@ export default function TerminalApp(content) {
                     }
                     case "close":
                     case "kill": {
-                        const targetWin = getTargetWin(subArgs[0]);
-                        if (!targetWin) return print("Usage: window close <id>");
+                        const targetEl = getTargetWinEl(subArgs[0]);
+                        if (!targetEl) return print("Usage: window close <id>");
 
-                        const closeBtn = targetWin.el.querySelector(".close-btn");
+                        const windowId = targetEl.dataset.windowId;
+                        const title = targetEl.dataset.title || "Untitled";
+                        const closeBtn = targetEl.querySelector(".close-btn");
+
                         if (closeBtn && closeBtn.classList.contains("pointer_none")) {
-                            return print(`Error: Window ${targetWin.id} (${targetWin.title}) is protected.`, "#f00");
+                            return print(`Error: Window ${windowId} (${title}) is protected.`, "#f00");
                         }
 
                         try {
-                            window.nexser?.windowAPI.closeWindowById(targetWin.id);
-                            print(`Window ${targetWin.id} closed`);
+                            window.nexser?.windowAPI.closeWindowById(windowId);
+                            print(`Window ${windowId} closed`);
                         } catch (e) {
                             print(`Failed to close window: ${e.message}`, "#f00");
                         }
                         break;
                     }
                     case "focus": {
-                        const targetWin = getTargetWin(subArgs[0]);
-                        if (!targetWin) return print("Usage: window focus <id>");
+                        const targetEl = getTargetWinEl(subArgs[0]);
+                        if (!targetEl) return print("Usage: window focus <id>");
 
-                        if (window.nexser?.windowAPI.focusWindowById(targetWin.id)) {
-                            print(`Focused window ${targetWin.id}`);
+                        const windowId = targetEl.dataset.windowId;
+                        if (window.nexser?.windowAPI.focusWindowById(windowId)) {
+                            print(`Focused window ${windowId}`);
                         } else {
                             print("Failed to focus window", "#f00");
                         }
@@ -487,30 +492,34 @@ export default function TerminalApp(content) {
                     }
                     case "min":
                     case "minimize": {
-                        const targetWin = getTargetWin(subArgs[0]);
-                        if (!targetWin) return print("Usage: window minimize <id>");
+                        const targetEl = getTargetWinEl(subArgs[0]);
+                        if (!targetEl) return print("Usage: window minimize <id>");
 
-                        const minBtn = targetWin.el.querySelector(".min-btn");
+                        const windowId = targetEl.dataset.windowId;
+                        const minBtn = targetEl.querySelector(".min-btn");
+
                         if (minBtn && minBtn.classList.contains("pointer_none")) {
-                            return print(`Error: Window ${targetWin.id} is protected.`, "#f00");
+                            return print(`Error: Window ${windowId} is protected.`, "#f00");
                         }
 
-                        await window.nexser?.windowAPI.minimizeWindowById(targetWin.id);
-                        print(`Minimized window ${targetWin.id}`);
+                        await window.nexser?.windowAPI.minimizeWindowById(windowId);
+                        print(`Minimized window ${windowId}`);
                         break;
                     }
                     case "max":
                     case "maximize": {
-                        const targetWin = getTargetWin(subArgs[0]);
-                        if (!targetWin) return print("Usage: window maximize <id>");
+                        const targetEl = getTargetWinEl(subArgs[0]);
+                        if (!targetEl) return print("Usage: window maximize <id>");
 
-                        const maxBtn = targetWin.el.querySelector(".max-btn");
+                        const windowId = targetEl.dataset.windowId;
+                        const maxBtn = targetEl.querySelector(".max-btn");
+
                         if (maxBtn && maxBtn.classList.contains("pointer_none")) {
-                            return print(`Error: Window ${targetWin.id} is protected.`, "#f00");
+                            return print(`Error: Window ${windowId} is protected.`, "#f00");
                         }
 
-                        await window.nexser?.windowAPI.maximizeWindowById(targetWin.id);
-                        print(`Maximized window ${targetWin.id}`);
+                        await window.nexser?.windowAPI.maximizeWindowById(windowId);
+                        print(`Maximized window ${windowId}`);
                         break;
                     }
                     default:
@@ -522,19 +531,22 @@ export default function TerminalApp(content) {
         resetui: {
             desc: "Reset all windows and UI",
             run() {
-                const wins = window.nexser?.windowAPI.getWindows();
+                // セキュリティ制限で getWindows() には el が含まれないため、DOMから直接取得する
+                const winElements = Array.from(document.querySelectorAll(".window"));
                 let protectedCount = 0;
 
                 // 開いている全ウィンドウを個別にチェック
-                wins.forEach(w => {
-                    const closeBtn = w.el.querySelector(".close-btn");
+                winElements.forEach(winEl => {
+                    const closeBtn = winEl.querySelector(".close-btn");
+                    const windowId = winEl.dataset.windowId;
+
                     if (closeBtn && closeBtn.classList.contains("pointer_none")) {
                         // 保護されているウィンドウはカウントだけしてスキップ
                         protectedCount++;
                     } else {
                         // 保護されていないウィンドウは個別に閉じる
                         try {
-                            window.nexser?.windowAPI.closeWindowById(w.id);
+                            window.nexser?.windowAPI.closeWindowById(windowId);
                         } catch (e) {
                             // エラーは無視して続行
                         }
@@ -542,8 +554,9 @@ export default function TerminalApp(content) {
                 });
 
                 if (protectedCount > 0) {
-                    // 強制全リセット関数(resetUI)は呼ばず、結果だけを出力
-                    print(`UI partial reset: ${wins.length - protectedCount} windows closed, ${protectedCount} protected windows kept.`, "#ff0");
+                    // 修正：テンプレートリテラルの計算ミスと改行を修正
+                    const closedCount = winElements.length - protectedCount;
+                    print(`UI partial reset: ${closedCount} windows closed, ${protectedCount} protected windows kept.`, "#ff0");
                 } else {
                     // 保護されたウィンドウが1つもない場合は、本来の完全リセット処理を実行
                     resetUI();

@@ -13,6 +13,10 @@ const DEFAULT_COLOR = "gray";
 export let TOP_COLOR = "darkblue";
 let windowIdCounter = 0;
 const windowSizeCache = new Map();
+/* ===== ウィンドウの斜め配置（カスケード）設定 ===== */
+let windowCascadeCount = 0;
+const CASCADE_STEP = 28;         // ずらすピクセル幅
+const MAX_CASCADE_OFFSET = 350;  // 画面端（最大オフセット）に達したら折り返す限界値
 /* ===== Animation Settings ===== */
 export const WINDOW_ANIMATION_DURATION = 250;
 export let ENABLE_WINDOW_ANIMATION = true;
@@ -102,8 +106,15 @@ export function createWindow(title, options = {}) {
     w.dataset.windowId = windowId;
     w.dataset.title = title;
     w.style.position = "absolute";
-    w.style.left = options.left || "100px";
-    w.style.top = options.top || "100px";
+
+    // ▼ 改善後：斜め配置 ＆ 端に達したときの折り返しロジック
+    if (windowCascadeCount * CASCADE_STEP > MAX_CASCADE_OFFSET) {
+        windowCascadeCount = 0;
+    }
+    const defaultOffset = windowCascadeCount++ * CASCADE_STEP;
+
+    w.style.left = options.left || `${100 + defaultOffset}px`;
+    w.style.top = options.top || `${100 + defaultOffset}px`;
     w.style.width = options.width || "650px";
     w.style.height = options.height || "350px";
     bringToFront(w);
@@ -1273,9 +1284,15 @@ export function showModalWindow(title, message, options = {}) {
     const winWidth = options.width || 340;
     const winHeight = options.height || 160;
 
-    // 既存の createWindow 関数を利用 (外部定義済みと想定)
+    // ★ 変更点: options.cascade が true の場合は中央配置オプションをバイパスし、
+    // createWindow 側のカスケード（斜め配置）位置を活かす
+    const positionOpts = options.cascade === true
+        ? { width: winWidth + "px", height: winHeight + "px" }
+        : centerWindowOptions(winWidth, winHeight, parentWin);
+
+    // 既存の createWindow 関数を利用
     const content = createWindow(title, {
-        ...centerWindowOptions(winWidth, winHeight, parentWin),
+        ...positionOpts,
         taskbar: (options.taskbar !== undefined) ? options.taskbar : false,
         disableControls: true,
         hideRibbon: true,
@@ -1303,7 +1320,10 @@ export function showModalWindow(title, message, options = {}) {
     document.body.appendChild(win);
 
     // --- 5. 配置（ポジショニング）の最適化 ---
-    if (parentWin) {
+    // ★ 変更点: cascade が true の場合は中央寄せの上書き処理をスキップ
+    if (options.cascade === true) {
+        // createWindow が計算したカスケード位置をそのまま維持
+    } else if (parentWin) {
         parentWin.style.pointerEvents = "none"; // 親をロック
 
         const rect = parentWin.getBoundingClientRect();
