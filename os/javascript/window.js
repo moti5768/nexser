@@ -113,6 +113,7 @@ export function createWindow(title, options = {}) {
         w.style.border = "none";
         w.style.background = "transparent";
         w.style.boxShadow = "none";
+        w.style.pointerEvents = "none";
     }
 
     // ▼ 改善後：斜め配置 ＆ 端に達したときの折り返しロジック
@@ -131,7 +132,7 @@ export function createWindow(title, options = {}) {
     const finalIcon = getIcon(title, options.node || { type: "app" });
 
     if (isFrameless) {
-        w.innerHTML = `<div class="content" style="width:100%; height:100%; padding:0; border:none; background:transparent; position:relative; overflow:hidden;"></div>`;
+        w.innerHTML = `<div class="content" style="width:100%; height:100%; padding:0; border:none; background:transparent; position:relative; overflow:hidden; pointer-events: auto;"></div>`;
     } else {
         w.innerHTML = `
 <div class="title-bar" style="display: flex; align-items: center; padding: 0 5px;">

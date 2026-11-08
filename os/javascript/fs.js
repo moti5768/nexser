@@ -106,7 +106,8 @@ const baseFS = {
                 "Browser.app": { type: "app", entry: "./apps/Browser.js", system: true },
                 "Networkmonitor.app": { type: "app", entry: "./apps/network_monitor.js", system: true },
                 "Eventlog.app": { type: "app", entry: "./apps/eventlog.js", system: true },
-                "Toolbar.app": { type: "app", entry: "./apps/toolbar.js", system: true, frameless: true, singleton: true, shell: true }
+                "Toolbar.app": { type: "app", entry: "./apps/toolbar.js", system: true, frameless: true, singleton: true, shell: true },
+                "Startmenu.app": { type: "app", entry: "./apps/startmenu.js", system: true, frameless: true, singleton: true, shell: true }
             },
             ControlPanel: {
                 type: "folder",

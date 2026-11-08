@@ -529,7 +529,7 @@ export default function TerminalApp(content) {
         },
 
         resetui: {
-            desc: "Reset all windows and UI",
+            desc: "Reset all windows and UI (Warning: shell will also terminate)",
             run() {
                 // セキュリティ制限で getWindows() には el が含まれないため、DOMから直接取得する
                 const winElements = Array.from(document.querySelectorAll(".window"));

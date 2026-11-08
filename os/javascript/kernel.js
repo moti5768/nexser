@@ -1,7 +1,6 @@
 /* kernel.js : OSの中枢 */
 import { playSystemEventSound } from './sounds.js';
 import { buildDesktop } from "./desktop.js";
-import { buildStartMenu, refreshStartMenu } from "./startmenu.js";
 import { initTaskbar } from "./taskbar.js";
 import { showBSOD } from "./bsod.js";
 import { showPromptScreen, resetSystemVerification } from "./boot.js";
@@ -198,11 +197,19 @@ export async function launchShellApps() {
 export async function initShellAsync(progressCallback = () => { }) {
     progressCallback("Initializing System Shell (Taskbar & Start Menu)...");
 
-    buildStartMenu();
-    await new Promise(r => setTimeout(r, 0));
-
-    initTaskbar();
+    // ⭕ await を追加し、タスクバーの設定・レイアウト適用が完全に完了するのを待つ
+    await initTaskbar();
     await new Promise(r => requestAnimationFrame(r));
+
+    try {
+        const { startMenuReady } = await import("./apps/startmenu.js");
+        if (typeof startMenuReady === "function") {
+            await startMenuReady(); // タスクバーの位置・サイズが確定した状態でスタートメニューを初期化する
+        }
+    } catch (e) {
+        console.warn("[Kernel] StartMenu failed to initialize:", e);
+    }
+    await new Promise(r => setTimeout(r, 0));
 
     installDynamicButtonEffect();
     await new Promise(r => requestAnimationFrame(r));
@@ -283,7 +290,10 @@ export async function launch(path, options = {}) {
         getWindowAPI()?.errorWindow(`起動に失敗しました: ${path}\n${err.message}`, { taskbar: false });
     } finally {
         launching.delete(path);
-        try { refreshStartMenu(); } catch { }
+        try {
+            // ✨ カスタムイベントを発行してスタートメニュー側に更新を伝える
+            window.dispatchEvent(new CustomEvent("request-refresh-start-menu"));
+        } catch { }
     }
 }
 
@@ -775,8 +785,16 @@ export function resetUI() {
 
 /* ===== ログオフ ===== */
 export async function logOff() {
+    // 1. すべてのウィンドウ要素を取得し、シェルアプリ（isShell）以外の通常ウィンドウのみを抽出する
     const windows = document.querySelectorAll(".window");
-    const hasAnyWindow = windows.length > 0;
+    const activeNormalWindows = Array.from(windows).filter(w => {
+        const key = w.dataset.processKey;
+        const proc = processes.get(key);
+        // プロセス管理外のウィンドウ、またはシェルアプリ（isShell: true）でないものを「確認対象のウィンドウ」とする
+        return !proc || !proc.isShell;
+    });
+
+    const hasNormalWindow = activeNormalWindows.length > 0;
 
     const performLogoff = async () => {
         playSystemEventSound('logoff');
@@ -807,7 +825,10 @@ export async function logOff() {
             });
 
             // 4. 開いていた全アプリの終了ログを Application カテゴリに追加
+            // ※ shell アプリ（isShell が true のもの）の終了ログは無視する
             activeProcs.forEach(proc => {
+                if (proc.isShell) return; // shellアプリはスキップ
+
                 allLogs.Application.unshift({
                     level: "Information",
                     time: nowTime,
@@ -843,9 +864,10 @@ export async function logOff() {
         showPromptScreen("nexser logoff");
     };
 
-    if (hasAnyWindow) {
+    // 2. 通常のアプリウィンドウが開いている場合のみ確認ウィンドウを表示する
+    if (hasNormalWindow) {
         getWindowAPI()?.confirmWindow(
-            "開いているウィンドウがあります。すべて閉じてログオフしますか？",
+            "開いているアプリケーションがあります。すべて閉じてログオフしますか？",
             (result) => {
                 if (result) performLogoff();
             },
