@@ -30,6 +30,13 @@ function getMimeType(name) {
     if (n.endsWith(".jpg") || n.endsWith(".jpeg")) return "image/jpeg";
     if (n.endsWith(".gif")) return "image/gif";
     if (n.endsWith(".svg")) return "image/svg+xml";
+    if (n.endsWith(".webp")) return "image/webp";
+    if (n.endsWith(".avif")) return "image/avif";
+    if (n.endsWith(".mp4")) return "video/mp4";
+    if (n.endsWith(".webm")) return "video/webm";
+    if (n.endsWith(".ogg") || n.endsWith(".ogv")) return "video/ogg";
+    if (n.endsWith(".mp3")) return "audio/mpeg";
+    if (n.endsWith(".wav")) return "audio/wav";
     return "text/plain";
 }
 
@@ -70,12 +77,12 @@ function collectFilesRecursive(basePath) {
                 if (child.type === "folder") {
                     walk(fullPath, depth + 1);
                 } else if (child.type === "file" || child.type === "app") {
-                    result.set(fullPath, String(child.content ?? ""));
+                    // バイナリやDataURLをそのまま保持するため String() で囲まない
+                    result.set(fullPath, child.content ?? "");
                 } else if (child.type === "link" && typeof child.target === "string") {
-                    // リンク先がファイルの場合も考慮
                     const resolvedTargetNode = resolveFS(child.target);
                     if (resolvedTargetNode && resolvedTargetNode.type === "file") {
-                        result.set(fullPath, String(resolvedTargetNode.content ?? ""));
+                        result.set(fullPath, resolvedTargetNode.content ?? "");
                     }
                 }
             }
@@ -92,8 +99,14 @@ function collectFilesRecursive(basePath) {
     return result;
 }
 
-function resolveRelativePath(fromPath, relative) {
-    if (!relative || relative.startsWith("blob:") || relative.startsWith("http") || relative.startsWith("data:")) return null;
+function resolveRelativePath(fromPath, relative, rootDir = "C:") {
+    if (!relative || /^(https?|data|blob|#):/i.test(relative)) return null;
+
+    // ルートからの絶対パス（例: "/images/video.mp4"）に対応
+    if (relative.startsWith("/")) {
+        return `${rootDir}${relative}`;
+    }
+
     const stack = fromPath.split("/").slice(0, -1);
     const parts = relative.split("/");
     for (const part of parts) {
@@ -490,7 +503,8 @@ export default function CodeEditor(root, options = {}) {
             const keywords = /^(const|let|var|function|return|if|else|for|while|import|export|from|as|default|class|extends|constructor|static|get|set|async|await|new|this|super|try|catch|finally|throw|break|continue|switch|case|of|in|yield|delete|typeof|instanceof|void|null|undefined|true|false)$/;
             if (keywords.test(t)) return "keyword";
 
-            const builtins = /^(console|window|document|Math|Object|Array|String|Number|Boolean|Promise|JSON|Map|Set|Symbol|Error|Proxy|Reflect|setTimeout|setInterval|fetch)$/;
+            // nexserやAPIを組み込みオブジェクト（builtin）として認識させる
+            const builtins = /^(console|window|document|Math|Object|Array|String|Number|Boolean|Promise|JSON|Map|Set|Symbol|Error|Proxy|Reflect|setTimeout|setInterval|fetch|nexser|API)$/;
             if (builtins.test(t)) return "builtin";
 
             if (next === '(' && /^[a-zA-Z_$][\w$]*$/.test(t)) return "func";
@@ -591,7 +605,13 @@ export default function CodeEditor(root, options = {}) {
         // 2. JavaScriptの構文チェック
         else if (isJsContent) {
             try {
-                const cleanText = text.replace(/^\s*(import|export)\b/gm, '// $1');
+                // import文やexport文を安全に置換・除去してnew Functionを通す
+                const cleanText = text
+                    .replace(/^\s*import\b.*;?$/gm, '') // import文を削除
+                    .replace(/^\s*export\s+default\b/gm, 'const __default_export__ =') // export defaultを置換
+                    .replace(/^\s*export\s+(function|class|const|let|var)\b/gm, '$1') // export 宣言を通常宣言に
+                    .replace(/^\s*export\s*\{[^}]*\};?/gm, ''); // export { ... } を削除
+
                 new Function(cleanText);
                 clearErrorHighlights();
             } catch (e) {
@@ -1690,6 +1710,23 @@ export default function CodeEditor(root, options = {}) {
 
         if (isDestroyed || !previewIframe) return;
 
+        // Data URLをバイナリ（Blob）に変換するヘルパー関数
+        function dataURLToBlob(dataurl) {
+            try {
+                const arr = dataurl.split(',');
+                const mime = arr[0].match(/:(.*?);/)[1];
+                const bstr = atob(arr[1]);
+                let n = bstr.length;
+                const u8arr = new Uint8Array(n);
+                while (n--) {
+                    u8arr[n] = bstr.charCodeAt(n);
+                }
+                return new Blob([u8arr], { type: mime });
+            } catch (e) {
+                return new Blob([dataurl], { type: "text/plain" });
+            }
+        }
+
         // すべてのファイルの Blob URL を生成
         for (let [fullPath, content] of fsFiles.entries()) {
             const name = fullPath.split("/").pop();
@@ -1698,6 +1735,9 @@ export default function CodeEditor(root, options = {}) {
             let blob;
             if (content instanceof Uint8Array || content instanceof ArrayBuffer || content instanceof Blob) {
                 blob = new Blob([content], { type: mime });
+            } else if (typeof content === "string" && content.startsWith("data:")) {
+                // ★ Data URLの場合は正しくバイナリBlobに変換する
+                blob = dataURLToBlob(content);
             } else {
                 blob = new Blob([String(content ?? "")], { type: mime });
             }
@@ -1724,6 +1764,28 @@ export default function CodeEditor(root, options = {}) {
             }
         }
 
+        // ★追加: iframe内から親ウィンドウのOS APIを直接呼び出せるようにブリッジを自動注入
+        const bridgeScript = `
+        <script>
+            try {
+                if (window.parent && window.parent.nexser) {
+                    window.nexser = window.parent.nexser;
+                    window.API = window.parent.nexser.windowAPI;
+                }
+            } catch (e) {
+                console.warn("Failed to bridge nexser API:", e);
+            }
+        </script>
+        `;
+
+        if (/<head>/i.test(html)) {
+            html = html.replace(/<head>/i, `<head>${bridgeScript}`);
+        } else if (/<html>/i.test(html)) {
+            html = html.replace(/<html>/i, `<html><head>${bridgeScript}</head>`);
+        } else {
+            html = bridgeScript + html;
+        }
+
         // ウィンドウタイトルの更新
         const titleMatch = html.match(/<title>(.*?)<\/title>/i);
         const winTitleEl = previewWin?.querySelector(".title-text");
@@ -1733,9 +1795,9 @@ export default function CodeEditor(root, options = {}) {
                 : `Preview - ${previewHtmlPath.split("/").pop()}`;
         }
 
-        // HTML内の相対パス（src, href）を Blob URL に置換
-        html = html.replace(/(src|href)=["']([^"']+)["']/gi, (match, attr, relPath) => {
-            if (/^(https?|data):/i.test(relPath)) return match;
+        // HTML内の相対パス（src, href, poster）を Blob URL に置換
+        html = html.replace(/(src|href|poster)=["']([^"']+)["']/gi, (match, attr, relPath) => {
+            if (/^(https?|data|blob):/i.test(relPath)) return match;
             const resolved = resolveRelativePath(previewHtmlPath, relPath);
             const blobUrl = resolved ? previewBlobMap.get(resolved) : null;
             return blobUrl ? `${attr}="${blobUrl}"` : match;

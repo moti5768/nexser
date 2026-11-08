@@ -1,7 +1,6 @@
 // Settings.js
 import { openDB } from "../db.js";
 import { clearRecent } from "../recent.js";
-import { setWindowAnimationEnabled } from "../window.js";
 import { FS, forceSave } from "../fs.js";
 import { resolveFS } from "../fs-utils.js";
 import { getFileContent } from "../fs-db.js";
@@ -153,7 +152,7 @@ loadSetting("showRecentItems").then(val => {
 });
 
 loadSetting("windowAnimationEnabled").then(v => {
-    setWindowAnimationEnabled(v ?? true);
+    window.nexser?.windowAPI.setAnimationEnabled(v ?? true);
 });
 
 loadSetting("widgetTool_isPreviewEnabled").then(v => {
@@ -202,7 +201,7 @@ const settingChangeHandlers = {
         let val = await loadSetting("windowAnimationEnabled");
         // もし過去のバグ等で文字列の "false" が保存されていた場合の保護
         if (val === "false") val = false;
-        setWindowAnimationEnabled(val ?? true);
+        window.nexser?.windowAPI.setAnimationEnabled(val ?? true);
     },
     async showRecentItems() {
         window.showRecent = (await loadSetting("showRecentItems")) ?? true;
@@ -616,7 +615,7 @@ export default async function SettingsApp(content) {
         animToggle.type = "checkbox";
         animToggle.checked = (await loadSetting("windowAnimationEnabled")) ?? true;
         animToggle.onchange = async () => {
-            setWindowAnimationEnabled(animToggle.checked);
+            window.nexser?.windowAPI.setAnimationEnabled(animToggle.checked);
             await saveSetting("windowAnimationEnabled", animToggle.checked);
         };
 
@@ -1323,7 +1322,7 @@ export default async function SettingsApp(content) {
 
                     // --- UIの更新 ---
                     applyDesktopBackground();
-                    setWindowAnimationEnabled(true);
+                    window.nexser?.windowAPI.setWindowAnimationEnabled(true);
                     refreshTopWindow();
                     window.dispatchEvent(new Event("recent-updated"));
 
