@@ -5,8 +5,6 @@ import { resolveFS, basename } from "../fs-utils.js";
 import { resolveAppByPath, getIcon } from "../file-associations.js";
 import { loadSetting } from "./settings.js";
 
-const startBtn = document.getElementById("start-btn");
-
 // グローバルな状態管理用 (スモールアイコン)
 window.smallIcons = false;
 
@@ -14,8 +12,13 @@ window.smallIcons = false;
    Start Menu Builder
 ===================================================== */
 export async function buildStartMenu() {
-    const menu = document.getElementById("start-menu");
-    if (!menu) return;
+    let menu = document.getElementById("start-menu");
+    if (!menu) {
+        menu = document.createElement("div");
+        menu.id = "start-menu";
+        const root = document.getElementById("os-root") || document.body;
+        root.appendChild(menu);
+    }
 
     window.smallIcons = Boolean(await loadSetting("smallIcons"));
     window.showRecent = (await loadSetting("showRecentItems")) ?? true;
@@ -40,6 +43,7 @@ export async function buildStartMenu() {
         } catch (e) {
             console.error("[StartMenu] Failed to log off:", e);
         }
+        const startBtn = document.getElementById("start-btn");
         if (startBtn) startBtn.classList.remove("pressed");
         if (menu) menu.style.display = "none";
     };
@@ -94,6 +98,7 @@ export async function buildStartMenu() {
                     { width: 400, overlay: true }
                 );
                 menu.style.display = "none";
+                const startBtn = document.getElementById("start-btn");
                 if (startBtn) startBtn.classList.remove("pressed");
                 return;
             }
@@ -125,6 +130,7 @@ export async function buildStartMenu() {
             }
 
             menu.style.display = "none";
+            const startBtn = document.getElementById("start-btn");
             if (startBtn) startBtn.classList.remove("pressed");
         });
     }
@@ -377,7 +383,7 @@ async function launchByType(type, path) {
 }
 
 /* =====================================================
-   Refresh & Settings Listener
+   Refresh & Settings Listener (クリーンアップ対応版)
 ===================================================== */
 let refreshTimer = null;
 export function refreshStartMenu() {
@@ -409,19 +415,43 @@ function handleTaskbarStyleChanged(e) {
 
 let listenersInitialized = false;
 
+// リスナー解除に対応できるよう名前付き関数として定義
+const onFsUpdated = refreshStartMenu;
+const onRecentUpdated = refreshStartMenu;
+const onRequestPositionUpdate = updateStartMenuPosition;
+const onRequestRefresh = refreshStartMenu;
+const onTaskbarStyleChanged = handleTaskbarStyleChanged;
+const onWindowResize = updateStartMenuPosition;
+const onWindowScroll = updateStartMenuPosition;
+
 function initGlobalListeners() {
     if (listenersInitialized) return;
     listenersInitialized = true;
 
-    window.addEventListener("fs-updated", refreshStartMenu);
-    window.addEventListener("recent-updated", refreshStartMenu);
-    window.addEventListener("request-start-menu-position-update", updateStartMenuPosition);
-    window.addEventListener("request-refresh-start-menu", refreshStartMenu);
-    window.addEventListener("taskbar-style-changed", handleTaskbarStyleChanged);
+    window.addEventListener("fs-updated", onFsUpdated);
+    window.addEventListener("recent-updated", onRecentUpdated);
+    window.addEventListener("request-start-menu-position-update", onRequestPositionUpdate);
+    window.addEventListener("request-refresh-start-menu", onRequestRefresh);
+    window.addEventListener("taskbar-style-changed", onTaskbarStyleChanged);
+    window.addEventListener("resize", onWindowResize);
+    window.addEventListener("scroll", onWindowScroll);
+}
+
+function removeGlobalListeners() {
+    if (!listenersInitialized) return;
+    listenersInitialized = false;
+
+    window.removeEventListener("fs-updated", onFsUpdated);
+    window.removeEventListener("recent-updated", onRecentUpdated);
+    window.removeEventListener("request-start-menu-position-update", onRequestPositionUpdate);
+    window.removeEventListener("request-refresh-start-menu", onRequestRefresh);
+    window.removeEventListener("taskbar-style-changed", onTaskbarStyleChanged);
+    window.removeEventListener("resize", onWindowResize);
+    window.removeEventListener("scroll", onWindowScroll);
 }
 
 /* =====================================================
-   Start Menu 位置更新（タスクバーの縦横判定および横方向展開対応版）
+   Start Menu 位置更新（演算子正常化版）
 ===================================================== */
 export function updateStartMenuPosition() {
     const menu = document.getElementById("start-menu");
@@ -501,9 +531,6 @@ export function updateStartMenuPosition() {
     });
 }
 
-window.addEventListener("resize", updateStartMenuPosition);
-window.addEventListener("scroll", updateStartMenuPosition);
-
 // ✨ カーネルからアプリとして呼び出された際のデフォルトエクスポートとクリーンアップ（dispose）
 export default async function startMenuApp(content, options) {
     await startMenuReady();
@@ -514,11 +541,13 @@ export default async function startMenuApp(content, options) {
     return {
         isTabApp: false,
         dispose: () => {
-            // スタートメニューを空にして隠す
+            // 1. 登録したすべてのグローバルリスナーを確実に解除
+            removeGlobalListeners();
+
+            // 2. スタートメニューのDOM要素自体を完全に削除する
             const menu = document.getElementById("start-menu");
             if (menu) {
-                menu.innerHTML = "";
-                menu.style.display = "none";
+                menu.remove();
             }
         }
     };

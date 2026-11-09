@@ -476,6 +476,14 @@ export async function initTaskbar() {
             e.preventDefault();
             e.stopPropagation();
 
+            const startMenu = document.getElementById("start-menu");
+            if (startMenu) {
+                startMenu.style.display = "none";
+            }
+            if (startBtn) {
+                startBtn.classList.remove("pressed");
+            }
+
             resizing = true;
             startX = e.clientX;
             startY = e.clientY;
@@ -625,16 +633,19 @@ export async function initTaskbar() {
         document.querySelectorAll(".ribbon-dropdown").forEach(dd => dd.style.display = "none");
         document.querySelectorAll(".ribbon-menu").forEach(m => m.classList.remove("selected"));
     }
-
     // ============================
     // Startボタン & グローバルクリック制御
     // ============================
-    if (startBtn && startMenu) {
+    if (startBtn) {
         startBtn.addEventListener("mousedown", e => {
             e.stopPropagation();
-            if (!startMenu.children || startMenu.children.length === 0) {
+
+            // スタートメニューが存在しない（終了している）場合は、勝手に再生成せず、見た目も変えない
+            const startMenu = document.getElementById("start-menu");
+            if (!startMenu) {
                 return;
             }
+
             hideContextMenu();
             closeAllRibbonsGlobal();
             document.querySelectorAll(".tree-panel").forEach(tp => tp.style.display = "none");
@@ -642,8 +653,11 @@ export async function initTaskbar() {
             const open = startMenu.style.display === "block";
             startMenu.style.display = open ? "none" : "block";
 
+            // ✨ メニューが存在する場合のみ、開閉状態に応じて pressed クラスをトグルする
+            startBtn.classList.toggle("pressed", !open);
+
             if (!open) {
-                // ✨ イベント経由でスタートメニュー側に位置更新を通知する
+                // イベント経由でスタートメニュー側に位置更新を通知する
                 window.dispatchEvent(new CustomEvent("request-start-menu-position-update"));
             }
 
@@ -652,9 +666,11 @@ export async function initTaskbar() {
         });
 
         document.addEventListener("mousedown", e => {
-            if (!e.target.closest("#start-btn") && !e.target.closest("#start-menu")) {
+            const startMenu = document.getElementById("start-menu");
+            // 外部クリック、またはスタートボタン再クリック等でメニューが閉じる（存在しない）場合に pressed を解除
+            if (!e.target.closest("#start-btn") && (!startMenu || !e.target.closest("#start-menu"))) {
                 startBtn.classList.remove("pressed");
-                startMenu.style.display = "none";
+                if (startMenu) startMenu.style.display = "none";
             }
             if (!e.target.closest(".ribbon-menu") && !e.target.closest(".ribbon-dropdown")) {
                 closeAllRibbonsGlobal();

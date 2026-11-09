@@ -168,7 +168,6 @@ export async function initKernelSpaceAsync(progressCallback = () => { }) {
         <div id="taskbar">
             <button id="start-btn" data-tooltip="スタート">Start</button>
         </div>
-        <div id="start-menu"></div>
     `;
     await new Promise(r => requestAnimationFrame(r));
 }
@@ -753,7 +752,11 @@ export function killProcess(key) {
         procName,
         1002,
         "App Lifecycle",
-        `アプリケーション '${procName}' (PID: ${pid}) が正常に終了しました。`
+        `アプリケーション '${procName}' (PID: ${pid}) が正常に終了しました。`,
+        {
+            isShell: proc.isShell,
+            state: proc.state
+        }
     );
 
     return true;

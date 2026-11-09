@@ -59,7 +59,7 @@ export default async function EventLogApp(content) {
         const description = detail.description || "";
 
         // 明示的に shell フラグと状態を安全に評価
-        const isShell = Boolean(detail.isShell || source.toLowerCase().includes("toolbar"));
+        const isShell = Boolean(detail.isShell || detail.state === "shell");
         const state = detail.state || (isShell ? "shell" : "normal");
 
         if (!allLogs[category]) allLogs[category] = [];

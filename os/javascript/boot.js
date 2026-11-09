@@ -534,13 +534,45 @@ const commands = {
             return new Promise((resolve) => {
                 const input = document.createElement("input");
                 input.type = "file";
-                input.accept = ".nexser,.js,.json";
+                // 1. スマホでカスタム拡張子がグレーアウトするのを防ぎ、あらゆるファイルを許容
+                input.accept = ".nexser,.js,.json,text/plain,application/json,*/*";
+
+                // 2. iOS Safari対策: 一度DOMに非表示で追加する
+                input.style.display = 'none';
+                document.body.appendChild(input);
+
+                let isResolved = false;
+                const cleanup = () => {
+                    if (input.parentNode) {
+                        input.parentNode.removeChild(input);
+                    }
+                    window.removeEventListener('focus', handleFocus);
+                };
+
+                const finish = () => {
+                    if (!isResolved) {
+                        isResolved = true;
+                        cleanup();
+                        resolve();
+                    }
+                };
+
+                // 3. スマホでキャンセルした際、onchangeが発火しない対策（フォーカス復帰時に未選択なら終了）
+                const handleFocus = () => {
+                    setTimeout(() => {
+                        if (!input.files || input.files.length === 0) {
+                            print("Installation cancelled.");
+                            finish();
+                        }
+                    }, 300);
+                };
+                window.addEventListener('focus', handleFocus);
 
                 input.onchange = async (e) => {
                     const file = e.target.files[0];
                     if (!file) {
                         print("Installation cancelled.");
-                        resolve();
+                        finish();
                         return;
                     }
 
@@ -611,10 +643,11 @@ const commands = {
                         } catch (err) {
                             print(`Error: Installation failed (${err.message})`);
                         }
-                        resolve();
+                        finish();
                     };
                     reader.readAsText(file);
                 };
+
                 input.click();
             });
         }

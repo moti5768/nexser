@@ -89,7 +89,6 @@ export default function ToolbarApp(content, options) {
             position: relative;
         ">
             <div class="ime-drag-handle button" style="
-                cursor: move; 
                 padding: 0 6px; 
                 background: #808080; 
                 color: #ffffff; 
@@ -317,6 +316,13 @@ export default function ToolbarApp(content, options) {
         startX = clientX;
         startY = clientY;
 
+        const winWidth = win ? (win.offsetWidth || 250) : 250;
+        const winHeight = win ? (win.offsetHeight || 40) : 40;
+
+        // はみ出る前の有効な位置を保持する変数（初期位置をセット）
+        let lastValidLeft = win ? parseFloat(win.style.left) || 0 : 0;
+        let lastValidTop = win ? parseFloat(win.style.top) || 0 : 0;
+
         if (win) {
             window.nexser?.windowAPI?.bringToFront(win);
             const rect = win.getBoundingClientRect();
@@ -335,45 +341,38 @@ export default function ToolbarApp(content, options) {
                 let newLeft = curLeft + dx;
                 let newTop = curTop + dy;
 
-                // 画面外へのハミ出し・タスクバーより下への移動防止制限
+                // ⭐ 縦方向（上下）のタスクバーや画面外へのハミ出し防止制限
                 if (newTop < 0) newTop = 0;
 
                 const taskbar = document.getElementById("taskbar");
                 if (taskbar) {
                     const tbRect = taskbar.getBoundingClientRect();
-                    const winHeight = win.offsetHeight || 40;
-                    const winWidth = win.offsetWidth || 240;
 
-                    // 下部タスクバーの場合、タスクバーより下（上端より下）へ移動させない
+                    // 下部タスクバーの場合、タスクバーより下へ移動させない
                     if (tbRect.top > 0 && tbRect.top < window.innerHeight && tbRect.height < tbRect.width) {
                         if (newTop + winHeight > tbRect.top) {
                             newTop = tbRect.top - winHeight;
                         }
                     }
-                    // 上部タスクバーの場合
+                    // 上部タスクバーの場合、タスクバーより上へ移動させない
                     else if (tbRect.top <= 0 && tbRect.height < tbRect.width) {
                         if (newTop < tbRect.bottom) {
                             newTop = tbRect.bottom;
                         }
                     }
-                    // 左側タスクバーの場合
-                    if (tbRect.left <= 0 && tbRect.width < tbRect.height) {
-                        if (newLeft < tbRect.right) {
-                            newLeft = tbRect.right;
-                        }
-                    }
-                    // 右側タスクバーの場合
-                    else if (tbRect.right >= window.innerWidth && tbRect.width < tbRect.height) {
-                        if (newLeft + winWidth > tbRect.left) {
-                            newLeft = tbRect.left - winWidth;
-                        }
-                    }
                 }
 
+                // ⭐ 横方向（左右）は制限せず、自由にハミ出して動かせるようにする
                 win.style.left = `${newLeft}px`;
                 win.style.top = `${newTop}px`;
                 startX = moveEv.clientX;
                 startY = moveEv.clientY;
+
+                // ⭐ ツールバー本体が画面の横方向（左右）に完全に収まっている場合は、「安全な位置」として常時更新
+                if (newLeft >= 0 && newLeft + winWidth <= window.innerWidth) {
+                    lastValidLeft = newLeft;
+                    lastValidTop = newTop;
+                }
 
                 // mousemove中にもタスクバーとの交差を判定し、重なったら即時統合する
                 if (checkTaskbarIntersection(moveEv.clientX, moveEv.clientY)) {
@@ -393,7 +392,15 @@ export default function ToolbarApp(content, options) {
             document.removeEventListener("pointerup", onPointerUp);
 
             if (!isIntegrated && win) {
-                // ⭐ ドラッグ終了時に位置を保存
+                const currentLeft = parseFloat(win.style.left) || 0;
+
+                // ⭐ mouseupした時に画面の横方向（左右）からはみ出ていたら、はみ出る前の安全な位置に戻す
+                if (currentLeft < 0 || currentLeft + winWidth > window.innerWidth) {
+                    win.style.left = `${lastValidLeft}px`;
+                    win.style.top = `${lastValidTop}px`;
+                }
+
+                // ドラッグ終了時（または復元後）の位置を保存
                 saveSetting("toolbarLeft", parseFloat(win.style.left) || 0);
                 saveSetting("toolbarTop", parseFloat(win.style.top) || 0);
             }
