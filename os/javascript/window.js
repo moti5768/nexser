@@ -1710,35 +1710,55 @@ export function getWindows() {
 }
 
 /**
- * タスクバーのモード変更（ウィンドウモードのON/OFFなど）に伴い、
- * 最大化中のウィンドウの高さを再計算して適用する
+ * タスクバーのモード変更や位置変更に伴い、
+ * 最大化中のウィンドウの位置とサイズを再計算して適用する
  */
 export function refreshMaximizedWindows() {
     const maximizedWindows = document.querySelectorAll(".window.maximized");
 
     maximizedWindows.forEach(w => {
-        // タスクバーの「現在見えている高さ」を再計算
         const taskbar = document.getElementById("taskbar");
-        let taskbarVisibleHeight = 0;
-
-        if (taskbar) {
-            const isWindowMode = taskbar.closest(".window") !== null || taskbar.dataset.windowMode === "true";
-
-            if (isWindowMode) {
-                taskbarVisibleHeight = 0; // ウィンドウモード時は高さを0（フル100%）にする
-            } else {
-                const style = window.getComputedStyle(taskbar);
-                const matrix = new WebKitCSSMatrix(style.transform);
-                const translateY = matrix.m42;
-                taskbarVisibleHeight = Math.max(0, taskbar.offsetHeight - translateY);
-            }
+        if (!taskbar) {
+            Object.assign(w.style, { top: "0px", left: "0px", width: "100%", height: "100%" });
+            return;
         }
 
-        // 高さを再設定
-        w.style.height = `calc(100% - ${taskbarVisibleHeight}px)`;
+        const isWindowMode = taskbar.closest(".window") !== null || taskbar.dataset.windowMode === "true";
+        if (isWindowMode) {
+            Object.assign(w.style, { top: "0px", left: "0px", width: "100%", height: "100%" });
+            return;
+        }
+
+        const tbRect = taskbar.getBoundingClientRect();
+        const style = window.getComputedStyle(taskbar);
+        const matrix = new WebKitCSSMatrix(style.transform);
+        const translateY = matrix.m42;
+        const translateX = matrix.m41;
+
+        // タスクバーの上下左右の配置を判定して最大化領域を正しく再計算
+        if (tbRect.top <= 0 && tbRect.height < tbRect.width) {
+            // 上部配置 (Top)
+            const visibleH = Math.max(0, taskbar.offsetHeight - Math.abs(translateY));
+            Object.assign(w.style, { top: `${visibleH}px`, left: "0px", width: "100%", height: `calc(100% - ${visibleH}px)` });
+        } else if (tbRect.bottom >= window.innerHeight && tbRect.height < tbRect.width) {
+            // 下部配置 (Bottom)
+            const visibleH = Math.max(0, taskbar.offsetHeight - Math.abs(translateY));
+            Object.assign(w.style, { top: "0px", left: "0px", width: "100%", height: `calc(100% - ${visibleH}px)` });
+        } else if (tbRect.left <= 0 && tbRect.width < tbRect.height) {
+            // 左側配置 (Left)
+            const visibleW = Math.max(0, taskbar.offsetWidth - Math.abs(translateX));
+            Object.assign(w.style, { top: "0px", left: `${visibleW}px`, width: `calc(100% - ${visibleW}px)`, height: "100%" });
+        } else if (tbRect.right >= window.innerWidth && tbRect.width < tbRect.height) {
+            // 右側配置 (Right)
+            const visibleW = Math.max(0, taskbar.offsetWidth - Math.abs(translateX));
+            Object.assign(w.style, { top: "0px", left: "0px", width: `calc(100% - ${visibleW}px)`, height: "100%" });
+        } else {
+            // フォールバック（下部配置扱い）
+            const visibleH = Math.max(0, taskbar.offsetHeight - Math.abs(translateY));
+            Object.assign(w.style, { top: "0px", left: "0px", width: "100%", height: `calc(100% - ${visibleH}px)` });
+        }
     });
 }
-
 export function removeAllTaskbarButtons() {
     taskbarButtons.forEach(btn => btn.remove());
     taskbarButtons.length = 0;
