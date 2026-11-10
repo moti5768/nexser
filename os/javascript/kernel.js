@@ -569,13 +569,13 @@ async function launchApp(item, path, options) {
     }
 
     addRecent(processPath);
-    registerProcess(win, key, processPath, appHandle, isShell);
+    registerProcess(win, key, processPath, appHandle, isShell, options);
 
     if (isExplorer) explorerWindows.set(options.path || "C:/Desktop", win);
 }
 
 /* --- 共通：プロセス登録とObserver設定のヘルパー --- */
-function registerProcess(win, key, path, handle, isShell = false) {
+function registerProcess(win, key, path, handle, isShell = false, options = {}) {
     const pid = pidCounter++;
     processes.set(key, {
         pid,
@@ -584,6 +584,7 @@ function registerProcess(win, key, path, handle, isShell = false) {
         handle,
         state: isShell ? "shell" : "normal", // ⭐ シェルアプリの場合は状態を "shell" に設定
         isShell,
+        options, // ⭐ 起動時のオプション（frameless設定など）をそのまま保持
         startTime: performance.now(),
         memory: 0,
         cpu: 0
@@ -941,15 +942,24 @@ export async function restartProcess(key) {
     if (!proc) return false;
 
     const savedPath = proc.path;
-    const savedWin = proc.window;
+
+    // ⭐ プロセスに保存されていた options をベースに、必要なフラグを確実に組み立てる
+    const savedOptions = {
+        ...(proc.options || {}),
+        frameless: Boolean(proc.options?.frameless || proc.isShell),
+        hideRibbon: Boolean(proc.options?.frameless || proc.isShell),
+        hideStatus: Boolean(proc.options?.frameless || proc.isShell),
+        uniqueKey: key
+    };
 
     // 現在のプロセスをクリーンアップして終了
     killProcess(key);
 
-    // わずかな遅延を挟んで再起動
     await new Promise(r => setTimeout(r, 100));
-    console.log(`[Kernel/Shell] Restarting process: ${savedPath}`);
-    return await launch(savedPath);
+    console.log(`[Kernel/Shell] Restarting process with saved options:`, savedPath, savedOptions);
+
+    // ⭐ 保存したオプションを引き継いで再launchする
+    return await launch(savedPath, savedOptions);
 }
 
 /* =========================

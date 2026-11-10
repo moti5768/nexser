@@ -13,14 +13,12 @@ function dataURLToBlob(dataURL) {
     return new Blob([u8arr], { type: mime });
 }
 
-// gzip圧縮ヘルパー
 async function compressObject(obj) {
     const jsonStr = JSON.stringify(obj);
     const stream = new Blob([jsonStr]).stream().pipeThrough(new CompressionStream('gzip'));
     return await new Response(stream).blob();
 }
 
-// gzip解凍ヘルパー
 async function decompressBlob(blob) {
     try {
         const stream = blob.stream().pipeThrough(new DecompressionStream('gzip'));
@@ -36,7 +34,6 @@ async function decompressBlob(blob) {
     }
 }
 
-// ストアデータの取得とBlobシリアライズを行う内部関数
 async function getStoreEntries(db, storeName) {
     const tx = db.transaction(storeName, "readonly");
     const store = tx.objectStore(storeName);
@@ -67,7 +64,6 @@ async function getStoreEntries(db, storeName) {
     return entries;
 }
 
-// ストアへのデータ書き込み（インポート）を行う内部関数
 async function importStoreEntries(db, storeName, importData) {
     const entries = Object.entries(importData);
     const BATCH_SIZE = 500;
@@ -93,20 +89,32 @@ async function importStoreEntries(db, storeName, importData) {
     }
 }
 
+function getNestedNodeByPath(rootNode, pathArr) {
+    let current = rootNode;
+    if (!current || typeof current !== "object") return null;
+
+    for (const p of pathArr) {
+        if (current[p] !== undefined && current[p] !== null && typeof current[p] === "object") {
+            current = current[p];
+        } else {
+            return null;
+        }
+    }
+    return current;
+}
+
 self.onmessage = async (e) => {
-    const { action = 'fetch', storeName, storeNames, searchTerm, maxVisibleItems = 500, importPayloads, currentPath = [] } = e.data;
+    const { action = 'fetch', storeName, storeNames, searchTerm, maxVisibleItems = 500, importPayloads, currentPath = [], requestId } = e.data;
     try {
         const db = await openDB();
 
-        // --- 1. 個別エクスポート (圧縮形式 .json.gz) ---
         if (action === 'export') {
             const entries = await getStoreEntries(db, storeName);
             const compressedBlob = await compressObject(entries);
-            self.postMessage({ success: true, action: 'export', storeName, blob: compressedBlob });
+            self.postMessage({ success: true, action: 'export', requestId, storeName, blob: compressedBlob });
             return;
         }
 
-        // --- 2. 全てのエクスポート (ストアごとに分割して圧縮) ---
         if (action === 'exportAll') {
             const results = {};
             for (const sName of storeNames) {
@@ -114,11 +122,10 @@ self.onmessage = async (e) => {
                 const compressedBlob = await compressObject(entries);
                 results[sName] = compressedBlob;
             }
-            self.postMessage({ success: true, action: 'exportAll', results });
+            self.postMessage({ success: true, action: 'exportAll', requestId, results });
             return;
         }
 
-        // --- 3. インポート ---
         if (action === 'import') {
             for (const payload of importPayloads) {
                 const rawData = await decompressBlob(payload.blob);
@@ -127,19 +134,67 @@ self.onmessage = async (e) => {
                 }
                 await importStoreEntries(db, payload.storeName, rawData);
             }
-            self.postMessage({ success: true, action: 'import' });
+            self.postMessage({ success: true, action: 'import', requestId });
             return;
         }
 
-        // --- 4. デフォルト: 階層パスに合わせたデータ取得（サブキー・値の両方に対応） ---
+        if (action === 'getSubTree') {
+            console.log("[Worker] getSubTree called with storeName:", storeName, "currentPath:", currentPath); // ⭐ 追加
+            let subFolders = [];
+            if (storeName === "kv") {
+                const tx = db.transaction(storeName, "readonly");
+                const store = tx.objectStore(storeName);
+
+                const rawFs = await new Promise((resolve) => {
+                    const req = store.get("fs_C:");
+                    req.onsuccess = (e) => {
+                        if (e.target.result) {
+                            resolve(e.target.result);
+                        } else {
+                            const req2 = store.get("fs");
+                            req2.onsuccess = (e2) => resolve(e2.target.result || null);
+                            req2.onerror = () => resolve(null);
+                        }
+                    };
+                    req.onerror = () => {
+                        const req2 = store.get("fs");
+                        req2.onsuccess = (e2) => resolve(e2.target.result || null);
+                        req2.onerror = () => resolve(null);
+                    };
+                });
+
+                const targetNode = getNestedNodeByPath(rawFs, currentPath);
+                console.log("[Worker Debug] rawFs:", rawFs); // ⭐ 追加
+                console.log("[Worker Debug] targetNode:", targetNode);
+
+                if (targetNode && typeof targetNode === "object") {
+                    for (const [k, v] of Object.entries(targetNode)) {
+                        if (["type", "system", "content", "target", "entry", "shell", "singleton", "lastModified", "hidden", "size"].includes(k)) continue;
+
+                        if (v && typeof v === "object" && !Array.isArray(v) && !(v instanceof Blob)) {
+                            const type = v.type;
+                            if (type !== "file" && type !== "app" && type !== "link") {
+                                subFolders.push(k);
+                            }
+                        }
+                    }
+                }
+            }
+            console.log("[Worker] resolved subFolders:", subFolders); // ⭐ 追加
+            self.postMessage({ success: true, action: 'getSubTree', requestId, storeName, subFolders });
+            return;
+        }
+
+        // --- データ取得の最適化 ---
         const tx = db.transaction(storeName, "readonly");
         const store = tx.objectStore(storeName);
 
-        let targetData = null;
+        const items = [];
+        const dbKeys = [];
+        let count = 0;
 
         if (storeName === "kv") {
-            targetData = await new Promise((resolve) => {
-                // "fs_C:" または古い "fs" キーの双方をフォールバック考慮して確実に取得
+            const rawFs = await new Promise((resolve) => {
                 const req = store.get("fs_C:");
                 req.onsuccess = (e) => {
                     if (e.target.result) {
@@ -156,14 +211,70 @@ self.onmessage = async (e) => {
                     req2.onerror = () => resolve(null);
                 };
             });
+
+            const targetNode = getNestedNodeByPath(rawFs, currentPath);
+
+            if (targetNode && typeof targetNode === "object") {
+                for (const [k, v] of Object.entries(targetNode)) {
+                    if (["type", "system", "content", "target", "entry", "shell", "singleton", "lastModified", "hidden", "size"].includes(k)) continue;
+
+                    dbKeys.push(k);
+
+                    const isMatch = !searchTerm || k.toLowerCase().includes(searchTerm.toLowerCase());
+                    if (isMatch && count < maxVisibleItems) {
+                        let val = v;
+                        if (val && typeof val === 'object' && val.type === "file") {
+                            val = {
+                                type: "file",
+                                size: val.size || (typeof val.content === "string" ? val.content.length : 0),
+                                content: typeof val.content === "string" && val.content.length > 1000
+                                    ? val.content.substring(0, 1000) + " ... (truncated)"
+                                    : val.content
+                            };
+                        } else if (typeof val === 'string' && val.length > 5000) {
+                            val = val.substring(0, 5000) + " ... (truncated due to large size)";
+                        }
+
+                        items.push({ key: k, keyStr: k, value: val });
+                        count++;
+                    }
+                }
+            }
         } else {
-            const storeRoot = {};
+            // ⭐ 修正: filesストア（HKEY_CLASSES_ROOT）の場合はパス区切りが "/"、それ以外は "."
+            const delimiter = storeName === "files" ? "/" : ".";
+            const prefix = currentPath.join(delimiter);
+
             await new Promise((resolve) => {
                 const req = store.openCursor();
                 req.onsuccess = (event) => {
                     const cursor = event.target.result;
                     if (cursor) {
-                        storeRoot[String(cursor.key)] = cursor.value;
+                        const keyStr = String(cursor.key);
+
+                        let displayKey = keyStr;
+                        if (prefix) {
+                            const checkPrefix = prefix + delimiter;
+                            if (!keyStr.startsWith(checkPrefix)) {
+                                cursor.continue();
+                                return;
+                            }
+                            displayKey = keyStr.substring(checkPrefix.length);
+                        }
+
+                        if (displayKey && !displayKey.includes(".") && !displayKey.includes("/")) {
+                            dbKeys.push(displayKey);
+
+                            const isMatch = !searchTerm || displayKey.toLowerCase().includes(searchTerm.toLowerCase());
+                            if (isMatch && count < maxVisibleItems) {
+                                let val = cursor.value;
+                                if (typeof val === 'string' && val.length > 5000) {
+                                    val = val.substring(0, 5000) + " ... (truncated)";
+                                }
+                                items.push({ key: cursor.key, keyStr: displayKey, value: val });
+                                count++;
+                            }
+                        }
                         cursor.continue();
                     } else {
                         resolve();
@@ -171,46 +282,10 @@ self.onmessage = async (e) => {
                 };
                 req.onerror = () => resolve();
             });
-            targetData = storeRoot;
         }
 
-        // currentPath（例: ["C:", "Programs", "Applications"]）に沿ってオブジェクト階層を正確にドリルダウン
-        if (targetData && typeof targetData === "object") {
-            for (const p of currentPath) {
-                if (targetData[p] !== undefined && targetData[p] !== null) {
-                    targetData = targetData[p];
-                } else {
-                    targetData = null;
-                    break;
-                }
-            }
-        }
-
-        const items = [];
-        const dbKeys = [];
-        let count = 0;
-
-        if (targetData && typeof targetData === "object") {
-            for (const [k, v] of Object.entries(targetData)) {
-                // システム管理用のメタプロパティはレジストリ値のリストから除外
-                if (["type", "system", "content", "target", "entry", "shell", "singleton", "lastModified", "hidden", "size"].includes(k)) continue;
-
-                dbKeys.push(k);
-
-                const isMatch = !searchTerm || k.toLowerCase().includes(searchTerm.toLowerCase());
-                if (isMatch && count < maxVisibleItems) {
-                    let val = v;
-                    if (typeof val === 'string' && val.length > 5000) {
-                        val = val.substring(0, 5000) + " ... (truncated due to large size)";
-                    }
-                    items.push({ key: k, keyStr: k, value: val });
-                    count++;
-                }
-            }
-        }
-
-        self.postMessage({ success: true, action: 'fetch', storeName, items, dbKeys });
+        self.postMessage({ success: true, action: 'fetch', requestId, storeName, items, dbKeys });
     } catch (err) {
-        self.postMessage({ success: false, action: e.data.action || 'fetch', error: err.message });
+        self.postMessage({ success: false, action: e.data.action || 'fetch', requestId, error: err.message });
     }
 };

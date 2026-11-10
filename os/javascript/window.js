@@ -124,8 +124,13 @@ export function createWindow(title, options = {}) {
 
     w.style.left = options.left || `${100 + defaultOffset}px`;
     w.style.top = options.top || `${100 + defaultOffset}px`;
-    w.style.width = options.width || "650px";
-    w.style.height = options.height || "350px";
+    if (isFrameless) {
+        w.style.width = options.width || "auto";
+        w.style.height = options.height || "auto";
+    } else {
+        w.style.width = options.width || "650px";
+        w.style.height = options.height || "350px";
+    }
     bringToFront(w);
 
     const initialIcon = "📄";

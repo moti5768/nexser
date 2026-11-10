@@ -8,8 +8,11 @@ import { launch } from "../kernel.js";
 
 let worker = null;
 function getWorker() {
+    // ⭐ ワーカーのキャッシュを防ぐために一意のクエリを付与
     if (!worker) {
-        worker = new Worker(new URL('./worker/registry.worker.js', import.meta.url), { type: 'module' });
+        const workerUrl = new URL('./worker/registry.worker.js', import.meta.url);
+        workerUrl.searchParams.append('v', Date.now());
+        worker = new Worker(workerUrl, { type: 'module' });
     }
     return worker;
 }
@@ -24,13 +27,12 @@ export default function RegistryEditor(root) {
     const MAX_VISIBLE_ITEMS = 500;
 
     let currentRequestId = 0;
+    let treeRequestId = 0
 
     const win = root.closest(".window");
-    let editingKey = null; // インライン編集中のキーを保持
+    let editingKey = null;
 
-    // --- システム保護用ヘルパー ---
     function isProtected(store, key) {
-        // 【分割形式対応】従来の "fs" キーに加え、分割された "fs_" で始まるキーもすべて保護対象にする
         return store === "kv" && (key === "fs" || (typeof key === "string" && key.startsWith("fs_")));
     }
     function notifySystemChange(store, key) {
@@ -48,7 +50,6 @@ export default function RegistryEditor(root) {
         return dbPromise;
     }
 
-    // --- UI初期化 ---
     root.innerHTML = `
         <div class="registry-editor" style="display:flex; flex-direction:column; height:100%; font-size:12px; font-family: 'MS Sans Serif', sans-serif; background:#c0c0c0; user-select:none;">
             <div style="padding:4px; display:flex; gap:5px; border-bottom:1px solid #808080; background:#eee; align-items:center;">
@@ -56,7 +57,7 @@ export default function RegistryEditor(root) {
                 <input type="text" class="border" id="reg-search" style="flex:1; outline:none; padding:1px 3px; background:#fff;" placeholder="Search keys...">
             </div>
             <div style="display:flex; flex:1; overflow:hidden;">
-                <div class="reg-left border" id="reg-tree-container" tabindex="0" style="width:160px; background:#fff; overflow-y:auto; padding:4px; border-right: 1px solid #808080;">
+                <div class="reg-left border" id="reg-tree-container" tabindex="0" style="width:160px; background:#fff; overflow-y:auto; overflow-x:auto; padding:4px; border-right: 1px solid #808080;">
                     <div style="font-weight:bold; margin-bottom:4px;">💻 My Computer</div>
                     <ul style="list-style:none; padding-left:15px; margin:0;" id="reg-tree"></ul>
                 </div>
@@ -91,7 +92,6 @@ export default function RegistryEditor(root) {
         </div>
     `;
 
-    // スクロールバーの幅を動的に取得してヘッダーを補正する処理を追加
     setTimeout(() => {
         const view = root.querySelector("#reg-main-view");
         if (view) {
@@ -106,8 +106,6 @@ export default function RegistryEditor(root) {
     const searchInput = root.querySelector("#reg-search");
     const rowMap = new Map();
     let selectedKey = null;
-
-    // --- データ操作ロジック ---
 
     async function saveItem(key, rawVal, forcedType = null) {
         if (isProtected(currentStore, key)) {
@@ -132,18 +130,13 @@ export default function RegistryEditor(root) {
                     const trimmed = rawVal.trim();
                     const lower = trimmed.toLowerCase();
 
-                    // 1. 真偽値 (Boolean) のチェックを追加
                     if (lower === "true") {
                         val = true;
                     } else if (lower === "false") {
                         val = false;
-                    }
-                    // 2. JSON (Object/Array) のチェック
-                    else if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+                    } else if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
                         try { val = JSON.parse(trimmed); } catch (e) { val = trimmed; }
-                    }
-                    // 3. 数値 (Number) のチェック
-                    else if (trimmed !== "" && !isNaN(Number(trimmed))) {
+                    } else if (trimmed !== "" && !isNaN(Number(trimmed))) {
                         val = trimmed.includes('.') ? parseFloat(trimmed) : parseInt(trimmed, 10);
                     }
                 }
@@ -155,7 +148,6 @@ export default function RegistryEditor(root) {
             await tx.done;
 
             notifySystemChange(currentStore, key);
-
             updateRow(key, String(key), val);
         } catch (e) {
             window.nexser?.windowAPI.errorWindow("保存に失敗しました: " + e.message, { parentWin: win });
@@ -236,7 +228,6 @@ export default function RegistryEditor(root) {
         }
     }
 
-    // --- インライン編集モード ---
     function enterEditMode(keyStr, targetCol) {
         if (editingKey) return;
 
@@ -311,7 +302,6 @@ export default function RegistryEditor(root) {
             }
 
             const targetKey = String(newKey);
-
             let initialValue = "";
             if (type === "REG_DWORD") initialValue = 0;
             if (type === "REG_JSON") initialValue = {};
@@ -333,7 +323,6 @@ export default function RegistryEditor(root) {
         }
     }
 
-    // --- インポート / エクスポート（Workerオフロード対応） ---
     async function exportRegistry() {
         const loadingEl = root.querySelector("#reg-loading");
         if (loadingEl) {
@@ -370,7 +359,7 @@ export default function RegistryEditor(root) {
             const url = URL.createObjectURL(result.blob);
             const a = document.createElement("a");
             a.href = url;
-            a.download = `nexser_${currentStore}_backup.json.gz`; // 圧縮形式に変更
+            a.download = `nexser_${currentStore}_backup.json.gz`;
             a.click();
             URL.revokeObjectURL(url);
         } catch (e) {
@@ -424,7 +413,7 @@ export default function RegistryEditor(root) {
                 a.download = `nexser_${sName}_backup.json.gz`;
                 a.click();
                 URL.revokeObjectURL(url);
-                await new Promise(r => setTimeout(r, 300)); // 連続ダウンロードブロック回避用ウェイト
+                await new Promise(r => setTimeout(r, 300));
             }
             window.nexser?.windowAPI.alertWindow("すべての日付ストアの分割エクスポートが完了しました。", { parentWin: win });
         } catch (e) {
@@ -442,7 +431,7 @@ export default function RegistryEditor(root) {
         const input = document.createElement("input");
         input.type = "file";
         input.accept = ".json.gz,.json";
-        input.multiple = true; // 複数ファイルの同時選択を有効化
+        input.multiple = true;
 
         input.onchange = async (e) => {
             const files = Array.from(e.target.files);
@@ -458,7 +447,6 @@ export default function RegistryEditor(root) {
                 const importPayloads = [];
 
                 for (const file of files) {
-                    // ファイル名からどのストアのデータか自動判別（含まれない場合は現在のストア）
                     let targetStore = currentStore;
                     for (const name of STORE_NAMES) {
                         if (file.name.includes(name)) {
@@ -516,7 +504,7 @@ export default function RegistryEditor(root) {
 
         const requestId = ++currentRequestId;
         const snapshotStore = currentStore;
-        const snapshotPath = [...currentPath]; // 現在の階層パスを保存
+        const snapshotPath = [...currentPath];
         isProcessing = true;
 
         const loadingEl = root.querySelector("#reg-loading");
@@ -530,10 +518,10 @@ export default function RegistryEditor(root) {
         const workerInstance = getWorker();
 
         try {
-            // ★ メインスレッドでの直接DBアクセスを廃止し、ワーカーに処理を委譲して非同期で結果を取得する
             const result = await new Promise((resolve, reject) => {
                 const handleMessage = (e) => {
-                    if (e.data.action === 'fetch' && e.data.storeName === snapshotStore) {
+                    // ⭐ リクエストID（requestId）が完全に一致するものだけを受け取る（他の処理との混信を防止）
+                    if (e.data.action === 'fetch' && e.data.requestId === requestId) {
                         workerInstance.removeEventListener('message', handleMessage);
                         resolve(e.data);
                     }
@@ -548,6 +536,7 @@ export default function RegistryEditor(root) {
 
                 workerInstance.postMessage({
                     action: 'fetch',
+                    requestId: requestId, // ⭐ ワーカーへリクエストIDを送信
                     storeName: currentStore,
                     currentPath: snapshotPath,
                     searchTerm: searchTerm,
@@ -556,6 +545,7 @@ export default function RegistryEditor(root) {
             });
 
             if (!result.success) throw new Error(result.error);
+            // 途中で別のフォルダに移動していたり、リクエストが古くなっている場合は描画を破棄
             if (requestId !== currentRequestId || currentStore !== snapshotStore) return;
 
             const items = result.items || [];
@@ -602,21 +592,26 @@ export default function RegistryEditor(root) {
         if (!tr) {
             tr = document.createElement("tr");
             tr.style.cursor = "default";
+            // ⭐ 修正: td自体には overflow: hidden を持たせず、中に div を挟む
             tr.innerHTML = `
-                <td style="border-right:1px solid gray; padding:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; position:relative;"></td>
-                <td style="border-right:1px solid gray; padding:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#666;"></td>
-                <td style="padding:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; position:relative;"></td>
-            `;
+            <td style="border-right:1px solid gray; padding:0; position:relative;">
+                <div style="padding:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; width:100%; box-sizing:border-box;"></div>
+            </td>
+            <td style="border-right:1px solid gray; padding:0; position:relative;">
+                <div style="padding:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; width:100%; box-sizing:border-box; color:#666;"></div>
+            </td>
+            <td style="padding:0; position:relative;">
+                <div style="padding:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; width:100%; box-sizing:border-box;"></div>
+            </td>
+        `;
 
             attachContextMenu(tr, (e) => {
                 if (selectedKey !== keyStr) {
                     selectRow(keyStr);
                 }
-                // 値がファイルシステムノード（app, file, folder）か判定
                 const isFsNode = tr._val && typeof tr._val === "object" && ["app", "file", "folder"].includes(tr._val.type);
                 const menuItems = [];
 
-                // ファイルやアプリの場合はコンテキストメニューの先頭に「Open」を追加
                 if (isFsNode) {
                     menuItems.push({ label: "Open / 実行", action: () => openRegistryItem(tr._key, tr._val) });
                 }
@@ -629,7 +624,6 @@ export default function RegistryEditor(root) {
                 return menuItems;
             });
 
-            // ダブルクリック時に単なる編集ではなく、openコマンドと同様に中身の表示やアプリ起動を行う
             tr.ondblclick = () => openRegistryItem(tr._key, tr._val);
             tr.onclick = () => selectRow(keyStr);
 
@@ -643,14 +637,12 @@ export default function RegistryEditor(root) {
 
         tr._key = key;
         tr._val = val;
-        // 改善後: Windowsレジストリと同じ表記ルール（既定値、数値の16進数併記、型アイコンなど）
         if (editingKey !== keyStr) {
             let typeStr = "REG_SZ";
             let displayVal = "";
 
             if (typeof val === 'number') {
                 typeStr = "REG_DWORD";
-                // Windows風に 10進数と16進数を併記 (例: 0x00000001 (1))
                 const hex = "0x" + val.toString(16).padStart(8, '0');
                 displayVal = `${hex} (${val})`;
             } else if (val instanceof Blob) {
@@ -660,7 +652,6 @@ export default function RegistryEditor(root) {
                 typeStr = "REG_MULTI_SZ";
                 displayVal = val.join(" ");
             } else if (typeof val === 'object' && val !== null) {
-                // ファイルシステムノードの場合の表示形式をわかりやすく調整
                 if (val.type === "file") {
                     typeStr = "REG_FILE";
                     displayVal = `[ファイル] ${val.content ? val.content.substring(0, 60) + "..." : "(空)"}`;
@@ -679,17 +670,26 @@ export default function RegistryEditor(root) {
                 displayVal = String(val ?? "(値の設定なし)");
             }
 
-            // Windows標準: 空文字列または特定のキーは "(既定)" と表示
             const displayName = (keyStr === "" || keyStr === "(Default)") ? "(既定)" : keyStr;
 
-            tr.children[0].textContent = displayName;
-            tr.children[1].textContent = typeStr;
-            tr.children[2].textContent = displayVal.substring(0, 120);
+            // ⭐ 修正: 内部のdivに対してテキストを設定
+            tr.children[0].firstElementChild.textContent = displayName;
+            tr.children[1].firstElementChild.textContent = typeStr;
+            tr.children[2].firstElementChild.textContent = displayVal.substring(0, 120);
         }
 
         const isSelected = (selectedKey === keyStr);
         tr.style.background = isSelected ? "#000080" : "";
         tr.style.color = isSelected ? "#fff" : "";
+
+        // ⭐ 修正: tdと内部divの両方に背景・文字色を正しく適用
+        Array.from(tr.children).forEach((td, idx) => {
+            td.style.background = isSelected ? "#000080" : "";
+            const innerDiv = td.firstElementChild;
+            if (innerDiv) {
+                innerDiv.style.color = isSelected ? "#fff" : (idx === 1 ? "#666" : "");
+            }
+        });
     }
 
     function selectRow(keyStr) {
@@ -701,7 +701,6 @@ export default function RegistryEditor(root) {
         }
     }
 
-    // --- イベント・リボン設定 ---
     if (win) {
         setupRibbon(win, () => `My Computer\\${currentStore}`, () => refresh(true), [
             {
@@ -736,7 +735,6 @@ export default function RegistryEditor(root) {
                     { label: "New String Value", action: () => createNew("REG_SZ") },
                     { label: "New DWORD Value", action: () => createNew("REG_DWORD") },
                     { label: "New JSON Value", action: () => createNew("REG_JSON") },
-
                     { label: "Modify", action: () => { if (selectedKey) enterEditMode(selectedKey, "data"); } },
                     { label: "Rename", action: () => { if (selectedKey) enterEditMode(selectedKey, "name"); } },
                     { label: "Delete", action: () => { if (selectedKey) deleteItem(selectedKey); } },
@@ -759,7 +757,6 @@ export default function RegistryEditor(root) {
                 e.preventDefault();
                 refresh(true);
                 break;
-
             case "ArrowDown":
             case "ArrowUp": {
                 e.preventDefault();
@@ -775,7 +772,6 @@ export default function RegistryEditor(root) {
                 }
                 break;
             }
-
             case "ArrowLeft":
                 e.preventDefault();
                 selectedKey = null;
@@ -785,18 +781,15 @@ export default function RegistryEditor(root) {
                 }
                 treeContainer.focus();
                 break;
-
             case "Delete":
                 if (selectedKey) deleteItem(selectedKey);
                 break;
-
             case "Enter":
                 if (selectedKey) enterEditMode(selectedKey, "data");
                 break;
         }
     };
 
-    // 改善後: Windows標準の HKEY_* 構造にマッピングして親しみやすく体系化
     const HKEY_MAPPING = {
         "HKEY_CLASSES_ROOT": "files",
         "HKEY_CURRENT_USER": "settings",
@@ -805,82 +798,161 @@ export default function RegistryEditor(root) {
         "HKEY_CURRENT_CONFIG": "window-size"
     };
 
-    async function fetchStoreData(db, storeName) {
-        return new Promise(resolve => {
-            const tx = db.transaction(storeName, "readonly");
-            const store = tx.objectStore(storeName);
+
+    async function loadSubTree(storeName, currentPathArr, parentUl) {
+        parentUl.innerHTML = '<li style="color:#666; padding-left:10px;">Loading...</li>';
+        const reqId = ++treeRequestId; // ⭐ 追加：一意のリクエストIDを生成
+
+        const subFolders = new Set();
+        const db = await getDB();
+        const workerInstance = getWorker();
+
+        try {
             if (storeName === "kv") {
-                const req = store.get("fs_C:");
-                req.onsuccess = (e) => {
-                    if (e.target.result) {
-                        resolve(e.target.result);
-                    } else {
-                        const req2 = store.get("fs");
-                        req2.onsuccess = (e2) => resolve(e2.target.result || null);
-                        req2.onerror = () => resolve(null);
-                    }
-                };
-                req.onerror = () => {
-                    const req2 = store.get("fs");
-                    req2.onsuccess = (e2) => resolve(e2.target.result || null);
-                    req2.onerror = () => resolve(null);
-                };
+                // --- 1. kvストア（ファイルシステム）の場合：ワーカー経由で安全にノードを取得 ---
+                const result = await new Promise((resolve, reject) => {
+                    const handleMessage = (e) => {
+                        if (e.data.action === 'getSubTree' && e.data.storeName === storeName && e.data.requestId === reqId) {
+                            workerInstance.removeEventListener('message', handleMessage);
+                            console.log("[MainThread] getSubTree response received:", e.data); // ⭐ 追加
+                            resolve(e.data);
+                        }
+                    };
+                    workerInstance.addEventListener('message', handleMessage);
+                    workerInstance.postMessage({
+                        action: 'getSubTree',
+                        requestId: reqId,
+                        storeName: storeName,
+                        currentPath: currentPathArr
+                    });
+                });
+
+                if (result.success && result.subFolders) {
+                    result.subFolders.forEach(folderName => subFolders.add(folderName));
+                }
             } else {
-                const req = store.getAllKeys();
-                req.onsuccess = async () => {
-                    const keys = req.result;
-                    const obj = {};
-                    const safeKeys = Array.isArray(keys) ? keys : [];
-                    for (const k of safeKeys) {
-                        obj[k] = await store.get(k);
+                // --- 2. その他のストア（settings, files等）の場合：getAllKeys() を使用 ---
+                const tx = db.transaction(storeName, "readonly");
+                const store = tx.objectStore(storeName);
+
+                const keys = await new Promise((resolve) => {
+                    const req = store.getAllKeys();
+                    req.onsuccess = () => resolve(req.result || []);
+                    req.onerror = () => resolve([]);
+                });
+
+                // ⭐ 修正: filesストア（HKEY_CLASSES_ROOT）はパス区切りが "/" なので、ストアに応じて切り替える
+                const delimiter = storeName === "files" ? "/" : ".";
+                const prefix = currentPathArr.join(delimiter);
+
+                for (const k of keys) {
+                    const keyStr = String(k);
+                    let relativePath = keyStr;
+
+                    if (prefix) {
+                        const checkPrefix = prefix + delimiter;
+                        if (!keyStr.startsWith(checkPrefix)) continue;
+                        relativePath = keyStr.substring(checkPrefix.length);
                     }
-                    resolve(obj);
-                };
-                req.onerror = () => resolve(null);
+
+                    if (relativePath) {
+                        let folderName = "";
+
+                        if (relativePath.startsWith(delimiter)) {
+                            folderName = relativePath;
+                        } else {
+                            const parts = relativePath.split(/[\.\/]/);
+                            folderName = parts[0];
+                        }
+
+                        if (folderName) {
+                            subFolders.add(folderName);
+                        }
+                    }
+                }
             }
-        });
+        } catch (err) {
+            console.error("[Registry] loadSubTree error:", err);
+        }
+
+        parentUl.innerHTML = "";
+
+        if (subFolders.size === 0) {
+            parentUl.innerHTML = '<li style="color:#808080; padding-left:10px;">(空)</li>';
+            return;
+        }
+
+        for (const folderName of subFolders) {
+            const li = document.createElement("li");
+            li.tabIndex = 0;
+            li.style.cssText = "cursor:pointer; padding:1px 0; white-space:nowrap; outline:none; display:inline-block; min-width:100%;";
+
+            const nextPathArr = [...currentPathArr, folderName];
+            li.innerHTML = `<span class="toggle" style="display:inline-block; width:12px; text-align:center;">▶</span> ${getIcon(folderName, { type: "folder" })} ${folderName}`;
+
+            const subUl = document.createElement("ul");
+            subUl.style.cssText = "list-style:none; padding-left:15px; display:none; margin:0;";
+
+            li.onclick = async (e) => {
+                e.stopPropagation();
+                currentStore = storeName;
+                currentPath = nextPathArr;
+                selectedKey = null;
+                editingKey = null;
+
+                const isExpanded = subUl.style.display === "block";
+                if (!isExpanded && subUl.children.length === 0) {
+                    // ⭐ フォルダが展開されたタイミングでのみ子階層を動的ロード
+                    await loadSubTree(storeName, nextPathArr, subUl);
+                }
+
+                subUl.style.display = isExpanded ? "none" : "block";
+                li.children[0].textContent = isExpanded ? "▶" : "▼";
+
+                highlightTreeItem(li);
+                refresh(true);
+            };
+
+            li.appendChild(subUl);
+            parentUl.appendChild(li);
+        }
     }
 
     async function buildTree() {
         treeEl.innerHTML = "";
         const db = await getDB();
 
-        // トップノード「コンピューター」を配置
         const computerLi = document.createElement("li");
         computerLi.innerHTML = `<span class="toggle">▼</span> ${getIcon("Computer", { type: "folder" })} コンピューター`;
         const rootUl = document.createElement("ul");
         rootUl.style.cssText = "list-style:none; padding-left:15px; display:block; margin:0;";
 
         for (const [hkeyName, storeName] of Object.entries(HKEY_MAPPING)) {
-            const storeData = await fetchStoreData(db, storeName);
-            const hasChildren = storeData && typeof storeData === "object" && Object.keys(storeData).length > 0;
-
             const storeLi = document.createElement("li");
             storeLi.tabIndex = 0;
-            storeLi.style.cssText = "cursor:pointer; padding:2px 0; white-space:nowrap; outline:none;";
+            storeLi.style.cssText = "cursor:pointer; padding:2px 0; white-space:nowrap; outline:none; display:inline-block; min-width:100%;";
 
-            // Windows標準のレジストリキーアイコン・表記に変更
-            storeLi.innerHTML = `<span class="toggle" style="display:inline-block; width:12px; text-align:center;">${hasChildren ? "▶" : ""}</span> ${getIcon(hkeyName, { type: "folder" })} ${hkeyName}`;
+            storeLi.innerHTML = `<span class="toggle" style="display:inline-block; width:12px; text-align:center;">▶</span> ${getIcon(hkeyName, { type: "folder" })} ${hkeyName}`;
 
             const ul = document.createElement("ul");
             ul.style.cssText = "list-style:none; padding-left:15px; display:none; margin:0;";
 
-            if (hasChildren) {
-                renderSubTree(storeData, ul, storeName, "");
-            }
-
-            storeLi.onclick = (e) => {
+            storeLi.onclick = async (e) => {
                 e.stopPropagation();
                 currentStore = storeName;
                 currentPath = [];
                 selectedKey = null;
                 editingKey = null;
 
-                if (hasChildren) {
-                    const isExpanded = ul.style.display === "block";
-                    ul.style.display = isExpanded ? "none" : "block";
-                    storeLi.children[0].textContent = isExpanded ? "▶" : "▼";
+                const isExpanded = ul.style.display === "block";
+                if (!isExpanded && ul.children.length === 0) {
+                    // ⭐ HKEYがクリックされたときのみトップレベルをロード
+                    await loadSubTree(storeName, [], ul);
                 }
+
+                ul.style.display = isExpanded ? "none" : "block";
+                storeLi.children[0].textContent = isExpanded ? "▶" : "▼";
+
                 highlightTreeItem(storeLi);
                 refresh(true);
             };
@@ -890,53 +962,6 @@ export default function RegistryEditor(root) {
         }
         computerLi.appendChild(rootUl);
         treeEl.appendChild(computerLi);
-    }
-
-    // サブフォルダを再帰的に生成するヘルパー関数
-    function renderSubTree(nodeObj, parentUl, storeName, currentPathStr) {
-        if (!nodeObj || typeof nodeObj !== "object") return;
-
-        for (const [key, val] of Object.entries(nodeObj)) {
-            if (["type", "system", "content", "target", "entry", "shell", "singleton", "lastModified", "hidden"].includes(key)) continue;
-
-            const isFolder = val && typeof val === "object" && (val.type === "folder" || !val.type) && !Array.isArray(val) && !(val instanceof Blob);
-            if (!isFolder) continue;
-
-            const li = document.createElement("li");
-            li.tabIndex = 0;
-            li.style.cssText = "cursor:pointer; padding:1px 0; white-space:nowrap; outline:none;";
-
-            const subPath = currentPathStr ? `${currentPathStr}/${key}` : key;
-            const hasSubChildren = val && typeof val === "object" && Object.keys(val).some(k => !["type", "system", "content", "target", "entry", "shell"].includes(k));
-
-            li.innerHTML = `<span class="toggle" style="display:inline-block; width:12px; text-align:center;">${hasSubChildren ? "▶" : ""}</span> ${getIcon(key, val)} ${key}`;
-
-            const subUl = document.createElement("ul");
-            subUl.style.cssText = "list-style:none; padding-left:15px; display:none; margin:0;";
-
-            if (hasSubChildren) {
-                renderSubTree(val, subUl, storeName, subPath);
-            }
-
-            li.onclick = (e) => {
-                e.stopPropagation();
-                currentStore = storeName;
-                currentPath = subPath.split("/");
-                selectedKey = null;
-                editingKey = null;
-
-                if (hasSubChildren) {
-                    const isExpanded = subUl.style.display === "block";
-                    subUl.style.display = isExpanded ? "none" : "block";
-                    li.children[0].textContent = isExpanded ? "▶" : "▼";
-                }
-                highlightTreeItem(li);
-                refresh(true);
-            };
-
-            li.appendChild(subUl);
-            parentUl.appendChild(li);
-        }
     }
 
     function highlightTreeItem(targetLi) {
@@ -960,10 +985,8 @@ export default function RegistryEditor(root) {
                 subUl.style.display = "block";
                 if (toggle) toggle.textContent = "▼";
             } else if (subUl && subUl.children.length > 0) {
-                // 子階層へフォーカス移動
                 subUl.children[0].focus?.();
             } else {
-                // 右矢印で右ペイン（リストビュー）へ移動
                 mainView.focus();
                 const visibleKeys = Array.from(rowMap.keys());
                 if (visibleKeys.length > 0) selectRow(visibleKeys[0]);
@@ -976,7 +999,6 @@ export default function RegistryEditor(root) {
                 subUl.style.display = "none";
                 if (toggle) toggle.textContent = "▶";
             } else {
-                // 親階層へ移動
                 activeEl?.parentElement?.closest("li")?.focus?.();
             }
         }
@@ -994,23 +1016,15 @@ export default function RegistryEditor(root) {
     buildTree();
     refresh();
 
-
-
-
-
-
-
     async function openRegistryItem(key, val) {
         if (!val) return enterEditMode(key, "data");
 
-        // 1. 画像などのバイナリデータ (Blob) の場合、プレビューを表示
         if (val instanceof Blob) {
             const url = URL.createObjectURL(val);
             window.nexser?.windowAPI.alertWindow(`<div style="text-align:center;"><img src="${url}" style="max-width:100%; max-height:250px; object-fit:contain;"/><p style="margin-top:8px;">サイズ: ${val.size} バイト</p></div>`, { title: `プレビュー: ${key}`, parentWin: win });
             return;
         }
 
-        // 2. JSONなどのオブジェクト / 配列の場合、見やすく整形して表示
         if (typeof val === "object" && val !== null && !val.type) {
             const jsonStr = JSON.stringify(val, null, 2);
             window.nexser?.windowAPI.alertWindow(`<pre style="max-height:300px; overflow:auto; font-family:monospace; margin:0; background:#fff; padding:4px;">${jsonStr}</pre>`, { title: `JSONビュー: ${key}`, parentWin: win });
@@ -1033,12 +1047,10 @@ export default function RegistryEditor(root) {
                 break;
             }
             case "file": {
-                // 3. 外部ストレージに保存されているファイル (__EXTERNAL_DATA__) の場合、files ストアから実データを非同期取得
                 let contentToShow = val.content;
                 if (contentToShow === "__EXTERNAL_DATA__") {
                     try {
                         const db = await getDB();
-                        // 現在のパスを組み立てて files ストアから実体を取得
                         const fullPath = [...currentPath, key].join("/");
                         const tx = db.transaction("files", "readonly");
                         const fileMeta = await tx.objectStore("files").get(fullPath);
@@ -1061,7 +1073,6 @@ export default function RegistryEditor(root) {
                 break;
             }
             case "folder": {
-                // ⭕ ファイル先頭でインポート済みの kernel.js の launch を直接使用する
                 launch("C:/Programs/Applications/Explorer.app", { path: `C:/${[...currentPath, key].join("/")}`, parentCwd: "C:/" });
                 break;
             }
@@ -1071,6 +1082,4 @@ export default function RegistryEditor(root) {
             }
         }
     }
-
-
 }
