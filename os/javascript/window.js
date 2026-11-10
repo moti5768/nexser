@@ -113,7 +113,8 @@ export function createWindow(title, options = {}) {
         w.style.border = "none";
         w.style.background = "transparent";
         w.style.boxShadow = "none";
-        w.style.pointerEvents = "none";
+        // 💡 改善: 他の復元ロジック等で外枠が auto に書き換わるのを徹底防衛
+        w.style.setProperty("pointer-events", "none", "important");
     }
 
     // ▼ 改善後：斜め配置 ＆ 端に達したときの折り返しロジック
@@ -135,9 +136,9 @@ export function createWindow(title, options = {}) {
 
     const initialIcon = "📄";
     const finalIcon = getIcon(title, options.node || { type: "app" });
-
     if (isFrameless) {
-        w.innerHTML = `<div class="content" style="width:100%; height:100%; padding:0; border:none; background:transparent; position:relative; overflow:hidden; pointer-events: auto;"></div>`;
+        // 💡 改善: 内部コンテンツは pointer-events: auto を強固に保障
+        w.innerHTML = `<div class="content" style="width:100%; height:100%; padding:0; border:none; background:transparent; position:relative; overflow:hidden; pointer-events: auto !important;"></div>`;
     } else {
         w.innerHTML = `
 <div class="title-bar" style="display: flex; align-items: center; padding: 0 5px;">
@@ -242,7 +243,10 @@ ${!options.hideStatus ? `
 
     const restoreWindow = () => {
         w.style.visibility = "visible";
-        w.style.pointerEvents = "auto";
+        // 💡 改善: フレームレスウィンドウの場合は外枠の pointer-events を auto に戻さない
+        if (!isFrameless) {
+            w.style.pointerEvents = "auto";
+        }
         w.dataset.minimized = "false";
 
         const input = w.querySelector("input, textarea");
@@ -388,7 +392,9 @@ ${!options.hideStatus ? `
                 clone.remove();
                 w.style.visibility = "hidden";
                 w.dataset.minimized = "true";
-                w.style.pointerEvents = "auto";
+                if (!isFrameless) {
+                    w.style.pointerEvents = "auto";
+                }
                 w._animating = false;
                 scheduleRefreshTopWindow();
             }
@@ -444,7 +450,9 @@ ${!options.hideStatus ? `
                     undefined,
                     () => {
                         w.style.visibility = "visible"; // ここで本体を表示
-                        w.style.pointerEvents = "auto";
+                        if (!isFrameless) {
+                            w.style.pointerEvents = "auto";
+                        }
                         clone.remove();
                         w._animating = false;
 
@@ -576,7 +584,9 @@ ${!options.hideStatus ? `
             }
 
             clone.remove();
-            w.style.pointerEvents = "auto";
+            if (!isFrameless) {
+                w.style.pointerEvents = "auto";
+            }
             w._animating = false;
             maximized = !maximized;
             scheduleRefreshTopWindow();
@@ -773,7 +783,11 @@ ${!options.hideStatus ? `
                 if (!dragging) return;
 
                 // 操作制限の解除
-                document.querySelectorAll(".window").forEach(win => win.style.pointerEvents = "auto");
+                document.querySelectorAll(".window").forEach(win => {
+                    if (!win.classList.contains("frameless-window")) {
+                        win.style.pointerEvents = "auto";
+                    }
+                });
                 document.body.style.userSelect = "";
 
                 if (preview) {
@@ -1042,7 +1056,11 @@ ${!options.hideStatus ? `
 
                 if (!resizing) return;
 
-                document.querySelectorAll(".window").forEach(win => win.style.pointerEvents = "auto");
+                document.querySelectorAll(".window").forEach(win => {
+                    if (!win.classList.contains("frameless-window")) {
+                        win.style.pointerEvents = "auto";
+                    }
+                });
                 document.body.style.userSelect = "";
                 document.body.style.cursor = "";
                 resizeCursor = "";
@@ -1817,7 +1835,9 @@ export async function minimizeWindowById(id) {
     animateTitleClone(clone, { left: rect.left, top: rect.top, width: rect.width }, undefined, () => {
         clone.remove();
         w.dataset.minimized = "true";
-        w.style.pointerEvents = "auto";
+        if (!isFrameless) {
+            w.style.pointerEvents = "auto";
+        }
         w._animating = false; // ★ アニメーション終了後にフラグを解除
         scheduleRefreshTopWindow();
     });
