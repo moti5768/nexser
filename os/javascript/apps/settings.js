@@ -144,7 +144,7 @@ Promise.all([
     if (color2) themeColor2 = color2;
     if (inactColor1) inactiveThemeColor = inactColor1;
     if (inactColor2) inactiveThemeColor2 = inactColor2;
-    if (color1 || color2 || inactColor1 || inactColor2) refreshTopWindow();
+    if (color1 || color2 || inactColor1 || inactColor2) window.nexser?.windowAPI.refreshTopWindow();
 });
 
 loadSetting("showRecentItems").then(val => {
@@ -175,7 +175,7 @@ const settingChangeHandlers = {
     async titlebarColor() {
         themeColor = (await loadSetting("titlebarColor")) || "darkblue";
         themeColor2 = (await loadSetting("titlebarColor2")) || null;
-        refreshTopWindow();
+        window.nexser?.windowAPI.refreshTopWindow();
     },
     async titlebarColor2() {
         await this.titlebarColor();
@@ -183,7 +183,7 @@ const settingChangeHandlers = {
     async inactiveTitlebarColor() {
         inactiveThemeColor = (await loadSetting("inactiveTitlebarColor")) || "gray";
         inactiveThemeColor2 = (await loadSetting("inactiveTitlebarColor2")) || null;
-        refreshTopWindow();
+        window.nexser?.windowAPI.refreshTopWindow();
     },
     async inactiveTitlebarColor2() {
         await this.inactiveTitlebarColor();
@@ -232,32 +232,6 @@ window.addEventListener("setting-changed", async (e) => {
         await settingChangeHandlers[key]();
     }
 });
-
-
-export function refreshTopWindow() {
-    const visibleWindows = Array.from(document.querySelectorAll(".window"))
-        .filter(win => win.style.display !== "none" && win.dataset.minimized !== "true");
-
-    let topWindow = null;
-    if (visibleWindows.length) {
-        visibleWindows.sort((a, b) => parseInt(b.style.zIndex) - parseInt(a.style.zIndex));
-        topWindow = visibleWindows[0];
-    }
-
-    document.querySelectorAll(".window .title-bar").forEach(tb => {
-        if (tb.parentElement === topWindow) {
-            // アクティブウィンドウ
-            tb.style.background = themeColor2
-                ? `linear-gradient(90deg, ${themeColor}, ${themeColor2})`
-                : themeColor;
-        } else {
-            // ★ 非アクティブウィンドウ（設定があればグラデーション、なければグレー）
-            tb.style.background = inactiveThemeColor2
-                ? `linear-gradient(90deg, ${inactiveThemeColor}, ${inactiveThemeColor2})`
-                : (inactiveThemeColor || "gray");
-        }
-    });
-}
 
 /* =========================
    Settings App (Tabs)
@@ -394,7 +368,7 @@ export default async function SettingsApp(content) {
             themeColor2 = enableGradient.checked ? colorInput2.value : null;
             await saveSetting("titlebarColor", themeColor);
             await saveSetting("titlebarColor2", themeColor2);
-            refreshTopWindow();
+            window.nexser?.windowAPI.refreshTopWindow();
         };
 
         colorInput1.oninput = updateTitlebar;
@@ -490,7 +464,7 @@ export default async function SettingsApp(content) {
             inactiveThemeColor2 = inactEnableGradient.checked ? inactColorInput2.value : null;
             await saveSetting("inactiveTitlebarColor", inactiveThemeColor);
             await saveSetting("inactiveTitlebarColor2", inactiveThemeColor2);
-            refreshTopWindow();
+            window.nexser?.windowAPI.refreshTopWindow();
         };
 
         inactColorInput1.oninput = updateInactiveTitlebar;
@@ -1323,7 +1297,7 @@ export default async function SettingsApp(content) {
                     // --- UIの更新 ---
                     applyDesktopBackground();
                     window.nexser?.windowAPI.setWindowAnimationEnabled(true);
-                    refreshTopWindow();
+                    window.nexser?.windowAPI.refreshTopWindow();
                     window.dispatchEvent(new Event("recent-updated"));
 
                     // 【修正】renderGeneral(content) を呼ぶとタブ領域ごと消える可能性があるため、

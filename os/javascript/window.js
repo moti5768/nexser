@@ -1919,7 +1919,7 @@ export function installWindowContextMenu(w) {
 
             if (!minimized) {
                 bringToFront(w);
-                scheduleRefreshTopWindow(); // ❌ 手動の背景色・selected操作を廃止し、これに一本化
+                scheduleRefreshTopWindow();
             }
 
             return [
@@ -2041,6 +2041,9 @@ export function initWindowAPI() {
         removeAllTaskbarButtons: () => removeAllTaskbarButtons(),
         updateWindowTitle: (win, title, isDirty) => updateWindowTitle(win, title, isDirty),
         getWindows: () => getWindows().map(({ el, ...rest }) => rest),
+
+        refreshTopWindow: (forcedTopWindow) => refreshTopWindow(forcedTopWindow),
+        scheduleRefreshTopWindow: () => scheduleRefreshTopWindow(),
 
         // ダイアログ・通知系ウィンドウ
         showModalWindow: (title, message, options) => showModalWindow(title, message, options),
