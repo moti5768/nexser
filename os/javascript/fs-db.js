@@ -3,7 +3,6 @@ import { openDB } from "./db.js";
 
 const STORE_KV = "kv";
 const STORE_FILES = "files";
-const FS_KEY = "fs";
 
 const LARGE_FILE_THRESHOLD = 100 * 1024; // 100KB以上を外部保存
 const CHUNK_SIZE = 10 * 1024 * 1024;     // 10MBごとに分割

@@ -104,18 +104,16 @@ export async function buildStartMenu() {
             }
 
             const runType = runNode.type;
-            // ✨ 起動処理も動的インポート化
-            const { launch } = await import("../kernel.js");
 
             switch (runType) {
                 case "app":
-                    launch(runPath, { path: runPath, uniqueKey: runPath });
+                    await window.nexser?.kernelAPI?.launch(runPath, { path: runPath, uniqueKey: runPath });
                     addRecent({ type: "app", path: runPath });
                     break;
                 case "file": {
                     const appPath = resolveAppByPath(runPath);
                     if (appPath) {
-                        launch(appPath, { path: runPath, node: runNode, uniqueKey: runPath });
+                        await window.nexser?.kernelAPI?.launch(appPath, { path: runPath, node: runNode, uniqueKey: runPath });
                     } else {
                         const { openWithDialog } = await import("./explorer.js");
                         openWithDialog(runPath, runNode);
@@ -124,7 +122,7 @@ export async function buildStartMenu() {
                     break;
                 }
                 case "folder":
-                    launch("C:/Programs/Applications/Explorer.app", { path: runPath, uniqueKey: runPath });
+                    await window.nexser?.kernelAPI?.launch("C:/Programs/Applications/Explorer.app", { path: runPath, uniqueKey: runPath });
                     addRecent({ type: "folder", path: runPath });
                     break;
             }
@@ -357,18 +355,18 @@ async function launchByType(type, path) {
 
     let effectiveType = type === "link" ? node.type : type;
     const recentItem = { type: node.type, path: path, display: basename(path) };
-    const { launch } = await import("../kernel.js");
 
     switch (effectiveType) {
         case "app":
             if (node.shell) return;
-            launch(path, { path, uniqueKey: path });
+            await window.nexser?.kernelAPI?.launch(path, { path, uniqueKey: path });
             addRecent(recentItem);
             break;
         case "file": {
             const appPath = resolveAppByPath(path);
-            if (appPath) launch(appPath, { path, node, uniqueKey: path });
-            else {
+            if (appPath) {
+                await window.nexser?.kernelAPI?.launch(appPath, { path, node, uniqueKey: path });
+            } else {
                 const { openWithDialog } = await import("./explorer.js");
                 openWithDialog(path, node);
             }
@@ -376,7 +374,7 @@ async function launchByType(type, path) {
             break;
         }
         case "folder":
-            launch("C:/Programs/Applications/Explorer.app", { path, uniqueKey: path });
+            await window.nexser?.kernelAPI?.launch("C:/Programs/Applications/Explorer.app", { path, uniqueKey: path });
             addRecent(recentItem);
             break;
     }

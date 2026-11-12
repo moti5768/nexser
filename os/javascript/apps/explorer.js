@@ -1,5 +1,4 @@
 // Explorer.js
-import { launch } from "../kernel.js";
 import { resolveFS, validateName, importFileSmart, getUniqueName, isDescendantOrSelf } from "../fs-utils.js";
 import { FS, forceSave, markDefaultDeleted, setBulkUpdating } from "../fs.js";
 import { attachContextMenu } from "../context-menu.js";
@@ -103,17 +102,18 @@ function deleteFSItem(parentPath, itemName, rerender) {
 }
 
 /**
- * ゴミ箱から元に戻す機能
+ * ゴミ箱から元に戻す機能（実データおよび元のパスへの復元に対応）
  */
-export function restoreFSItem(itemName, rerender) {
+export async function restoreFSItem(itemName, rerender) {
     const trash = resolveFS("C:/Trash");
     const item = trash[itemName];
     if (!item) return;
 
-    // 1. 復元先のノードを取得。見つからなければ Desktop を代替にする
-    let destPath = item.originalPath || "C:/Desktop";
-    let destNode = resolveFS(destPath);
+    // 1. 復元先のパスとノードを正確に解決する
+    let destPath = item.originalPath;
+    let destNode = destPath ? resolveFS(destPath) : null;
 
+    // 元のフォルダが削除されている等の理由で見つからない場合のみ Desktop を代替にする
     if (!destNode) {
         destPath = "C:/Desktop";
         destNode = resolveFS(destPath);
@@ -123,16 +123,65 @@ export function restoreFSItem(itemName, rerender) {
         const data = JSON.parse(JSON.stringify(item));
         delete data.originalPath;
 
-        // 2. 復元先での名前重複を回避するロジックを追加
-        // ゴミ箱用につけた「Date.now()_」プレフィックスがあれば除去して綺麗にする（任意）
+        // ゴミ箱用につけた「Date.now()_」プレフィックスがあれば除去
         let cleanName = itemName.replace(/^\d+_/, "");
 
-        // 既存のヘルパー関数を使用して重複を回避
+        // 復元先での名前重複を回避
         let finalName = getUniqueName(destNode, cleanName);
 
-        // 3. データの移動を実行
+        const trashFullPath = `C:/Trash/${itemName}`;
+        const destFullPath = `${destPath}/${finalName}`;
+
+        // 2. IndexedDB上のファイル実データ（Blob等）も、仮想ツリーと同じ元のパスへ確実に連動移動する
+        const { moveFileContent, saveFolderNode } = await import("../fs-db.js");
+        const processStorageRecursively = async (node, oldBasePath, newBasePath, visited = new WeakSet(), depth = 0) => {
+            if (!node || typeof node !== "object" || depth > 50) return;
+            if (visited.has(node)) return;
+            visited.add(node);
+            try {
+                for (const key of Object.keys(node)) {
+                    if (key === "type" || key === "system" || key === "originalPath" || key === "lastModified") continue;
+                    const child = node[key];
+                    const oldSubPath = `${oldBasePath}/${key}`;
+                    const newSubPath = `${newBasePath}/${key}`;
+                    if (child && typeof child === "object") {
+                        if (child.type === "file" || child.type === "app") {
+                            await moveFileContent(oldSubPath, newSubPath);
+                        } else if (child.type === "folder") {
+                            await processStorageRecursively(child, oldSubPath, newSubPath, visited, depth + 1);
+                        }
+                    }
+                }
+            } finally {
+                visited.delete(node);
+            }
+        };
+
+        try {
+            if (data.type === "file" || data.type === "app") {
+                await moveFileContent(trashFullPath, destFullPath);
+            } else if (data.type === "folder") {
+                await processStorageRecursively(item, trashFullPath, destFullPath);
+            }
+        } catch (err) {
+            console.error("[FS] 復元時の実データ移動に失敗しました:", err);
+        }
+
+        // 3. 仮想ファイルシステム上のツリーを更新
         destNode[finalName] = data;
         delete trash[itemName];
+
+        // 4. 変更のあったルートフォルダ（C:）を部分保存して永続化
+        const topKey = destPath.split("/")[0];
+        try {
+            if (topKey && FS[topKey]) {
+                await saveFolderNode(topKey, FS[topKey]);
+            } else {
+                await forceSave();
+            }
+        } catch (e) {
+            await forceSave();
+        }
 
         rerender?.();
         window.dispatchEvent(new Event("fs-updated"));
@@ -453,13 +502,13 @@ export default async function Explorer(root, options = {}) {
                 navigateTo(targetPath);
                 break;
             case "app":
-                launch(targetPath, { path: targetPath, uniqueKey: targetPath });
+                window.nexser?.kernelAPI.launch(targetPath, { path: targetPath, uniqueKey: targetPath });
                 break;
             case "file": {
                 const appPath = resolveAppByPath(targetPath);
                 if (appPath) {
                     // 既に関連付けられているアプリがある場合
-                    launch(appPath, { path: targetPath, node: targetNode, uniqueKey: targetPath });
+                    window.nexser?.kernelAPI.launch(appPath, { path: targetPath, node: targetNode, uniqueKey: targetPath });
                 } else {
                     if (targetNode.type === "file") {
                         openWithDialog(targetPath, targetNode);
@@ -3096,7 +3145,7 @@ export function openWithDialog(filePath, fileNode) {
         btn.appendChild(nameSpan);
 
         btn.onclick = () => {
-            launch(app.path, { path: filePath, node: fileNode, uniqueKey: filePath });
+            window.nexser?.kernelAPI.launch(app.path, { path: filePath, node: fileNode, uniqueKey: filePath });
             const win = content.closest(".window") || content.parentElement;
             if (win) {
                 win.remove();

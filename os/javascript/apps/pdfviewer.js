@@ -323,7 +323,6 @@ export default function PDFViewer(root, options = {}) {
         }
     }
 
-    // 【追加】kernel.js 側へハンドルを返却する
     return {
         dispose
     };

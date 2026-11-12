@@ -4,7 +4,6 @@ import { attachContextMenu } from "../context-menu.js";
 import { setupRibbon } from "../ribbon.js";
 import { taskbarButtons } from "../window.js";
 import { getIcon } from "../file-associations.js";
-import { launch } from "../kernel.js";
 
 let worker = null;
 function getWorker() {
@@ -1073,7 +1072,7 @@ export default function RegistryEditor(root) {
                 break;
             }
             case "folder": {
-                launch("C:/Programs/Applications/Explorer.app", { path: `C:/${[...currentPath, key].join("/")}`, parentCwd: "C:/" });
+                window.nexser?.kernelAPI.launch("C:/Programs/Applications/Explorer.app", { path: `C:/${[...currentPath, key].join("/")}`, parentCwd: "C:/" });
                 break;
             }
             default: {

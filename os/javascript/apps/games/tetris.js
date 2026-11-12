@@ -540,7 +540,6 @@ export default function TetrisApp(content, options) {
 
     content.addEventListener("keydown", handleKeyDown);
 
-    // ★ kernel.js からの killProcess(key) 呼び出しと連携するdisposeオブジェクトを返却
     return {
         dispose: () => {
             // 1. ループタイマーを完全に停止してゾンビ処理を防止

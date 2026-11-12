@@ -522,7 +522,6 @@ export default function MinesweeperApp(content, options) {
     // 初期化時はメニュー1を表示
     showMenu1();
 
-    // ★ kernel.js からの killProcess(key) 呼び出しと連携するdisposeオブジェクトを返却[cite: 1]
     return {
         dispose: () => {
             // タイマーを完全に停止してゾンビ処理を防止[cite: 1]

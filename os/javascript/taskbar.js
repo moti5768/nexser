@@ -1,5 +1,4 @@
 // taskbar.js
-import { launch } from "./kernel.js";
 import { resetAllTitleBars, taskbarButtons, updateAllTaskbarButtonModes } from "./window.js";
 import { hideContextMenu, attachContextMenu } from "./context-menu.js";
 import { clockDate } from "./apps/clock.js";
@@ -157,7 +156,7 @@ function setupTaskbarContextMenu(targetElement) {
                 label: "タスクバーのプロパティ",
                 action: () => {
                     // エクスプローラーやデスクトップと同じ launch を使用する
-                    launch("C:/Programs/Applications/TaskbarProperties.app", {
+                    window.nexser?.kernelAPI.launch("C:/Programs/Applications/TaskbarProperties.app", {
                         path: "C:/Programs/Applications/TaskbarProperties.app",
                         uniqueKey: "C:/Programs/Applications/TaskbarProperties.app"
                     });
@@ -422,7 +421,7 @@ export async function initTaskbar() {
     }
 
     clockLabel.addEventListener("dblclick", () => {
-        launch("Programs/Applications/Clock.app", {
+        window.nexser?.kernelAPI.launch("Programs/Applications/Clock.app", {
             path: "Programs/Applications/Clock.app",
             uniqueKey: "Programs/Applications/Clock.app"
         });

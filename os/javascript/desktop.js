@@ -1,6 +1,5 @@
 // desktop.js
 import { FS, forceSave, markDefaultDeleted, setBulkUpdating } from "./fs.js";
-import { launch } from "./kernel.js";
 import { resolveFS, validateName, importFileSmart, getUniqueName, isDescendantOrSelf } from "./fs-utils.js";
 import { addRecent } from "./recent.js";
 import { attachContextMenu } from "./context-menu.js";
@@ -1359,13 +1358,13 @@ function openFSItem(name, node, parentPath) {
 
     // 3. アプリケーションの実行
     if (type === "app") {
-        launch(targetPath, { path: targetPath, uniqueKey: targetPath });
+        window.nexser?.kernelAPI.launch(targetPath, { path: targetPath, uniqueKey: targetPath });
         addRecent({ type: "app", path: targetPath });
     }
     // 4. フォルダの展開
     else if (type === "folder") {
         // Windowsは常に共通のエクスプローラーを起動
-        launch("C:/Programs/Applications/Explorer.app", {
+        window.nexser?.kernelAPI.launch("C:/Programs/Applications/Explorer.app", {
             path: targetPath,
             uniqueKey: targetPath,
             showFullPath: true // Windowsらしくパスを表示
@@ -1376,7 +1375,7 @@ function openFSItem(name, node, parentPath) {
     else if (type === "file") {
         if (associatedApp) {
             // 関連付けがあればそのアプリで起動
-            launch(associatedApp, { path: targetPath, node: targetNode, uniqueKey: targetPath });
+            window.nexser?.kernelAPI.launch(associatedApp, { path: targetPath, node: targetNode, uniqueKey: targetPath });
         } else {
             // ⭐ 簡易ビューアではなく、Explorerと同じ「アプリ選択ダイアログ」を出す
             explorerOpenWithDialog(targetPath, targetNode);

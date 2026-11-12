@@ -152,17 +152,82 @@ export function createKernelWindow(title, options = {}) {
     return content;
 }
 
+/* =========================
+   Secure Kernel API
+========================= */
+export function initKernelAPI() {
+    if (typeof window === "undefined") return;
+
+    const secureKernelAPI = {
+        // ★ import なしで外部からアプリやファイル・フォルダを起動できるように launch を追加
+        launch: async (path, options) => {
+            return await launch(path, options);
+        },
+        getProcessList: () => {
+            return Array.from(processes.values()).map(proc => ({
+                pid: proc.pid,
+                path: proc.path,
+                name: basename(proc.path),
+                state: proc.state,
+                uptime: Math.floor((performance.now() - proc.startTime) / 1000),
+                memory: proc.memory,
+                cpu: proc.cpu
+            }));
+        },
+        sendMessage: (senderPid, targetPid, message) => {
+            return sendProcessMessage(senderPid, targetPid, message);
+        },
+        logSystemEvent: (category, level, source, eventId, taskCategory, description, extra) => {
+            return logSystemEvent(category, level, source, eventId, taskCategory, description, extra);
+        }
+    };
+
+    Object.freeze(secureKernelAPI);
+
+    window.nexser = window.nexser || {};
+
+    // すでに定義されている場合の重複エラーを防ぐため try-catch で保護
+    try {
+        Object.defineProperty(window.nexser, "kernelAPI", {
+            value: secureKernelAPI,
+            writable: false,
+            configurable: true, // 再定義を許可
+            enumerable: true
+        });
+    } catch (e) {
+        // 万が一再定義できない環境の場合は直接プロパティに代入
+        window.nexser.kernelAPI = secureKernelAPI;
+    }
+}
+
 // 1. カーネルスペース（DOM注入とエラー制御）
 export async function initKernelSpaceAsync(progressCallback = () => { }) {
     const root = document.getElementById("os-root");
     if (!root) throw new Error("os-root not found");
+
+    // ⭐ 再boot時にPIDカウンターやプロセス管理の状態を完全にリセット
+    pidCounter = 1;
+    processes.clear();
+    explorerWindows.clear();
+
     initSystemErrorHandler();
+    initKernelAPI(); // ⭐ カーネルAPIの初期化と凍結登録
 
     setKernelWindowCreator((title, options) => {
         return createKernelWindow(title, options);
     });
 
     progressCallback("Initializing Kernel Space (DOM & Error Handlers)...");
+
+    logSystemEvent(
+        "System",
+        "Information",
+        "Kernel",
+        1003,
+        "System Initialization",
+        "カーネルが初期化され、システムが起動（または再起動）しました。"
+    );
+
     root.innerHTML = `
         <div id="desktop"></div>
         <div id="taskbar">
@@ -362,7 +427,7 @@ async function launchApp(item, path, options) {
     if (item.entry && tabAppInstances.has(item.entry)) {
         const instance = tabAppInstances.get(item.entry);
         if (document.body.contains(instance.win)) {
-            // 【改善】最小化されている場合は先に復元をトリガーし、そうでない場合のみ最前面へ
+            // 最小化されている場合は先に復元をトリガーし、そうでない場合のみ最前面へ
             if (instance.win.dataset.minimized === "true") {
                 instance.win._taskbarBtn?.click();
             } else {
@@ -379,7 +444,6 @@ async function launchApp(item, path, options) {
 
     const isExplorer = item.entry?.includes("explorer.js");
     const uniqueKey = options.uniqueKey ?? (item.singleton ? path : null);
-    // ⭐ ここを "C:/Desktop" に変更
     let existingWin = isExplorer ? explorerWindows.get(options.path || "C:/Desktop") : (uniqueKey ? processes.get(uniqueKey)?.window : null);
 
     if (existingWin && document.body.contains(existingWin)) {
@@ -388,15 +452,34 @@ async function launchApp(item, path, options) {
         return;
     }
 
-    // ⭐ ここも "C:/Desktop" に変更
     if (isExplorer) explorerWindows.delete(options.path || "C:/Desktop");
     if (uniqueKey) processes.delete(uniqueKey);
 
+    // ==========================================
+    // 1. 変数をここで一度だけ一意に定義する
+    // ==========================================
+    const displayName = options?.path ? basename(options.path) : (options.showFullPath ? path : item.name || basename(path));
+    const isFrameless = Boolean(item.frameless || options.frameless);
+    const isShell = Boolean(item.shell || options.shell);
+    const processPath = (isExplorer && options.path) ? options.path : path;
+    const key = uniqueKey ?? `app:${processPath}:${Date.now()}`;
+    const pid = pidCounter++; // プロセスIDの採番
+
+    // ==========================================
+    // 2. サードパーティー（動的コード）用の制限されたサンドボックス Syscall
+    // ==========================================
+    const sandboxSyscall = Object.freeze({
+        pid,
+        path: processPath,
+        exit: () => killProcess(key),
+        postMessage: (targetPid, message) => sendProcessMessage(pid, targetPid, message)
+    });
+
     let appModule;
+
     if (item.code) {
         try {
             const cleanCode = item.code.replace(/import\s+[\s\S]*?from\s+['"][^'"]+['"];?/g, '');
-            // ★ 修正: export default を普通の関数定義に置換する
             const executableCode = cleanCode
                 .replace(/export\s+default\s+async\s+function\s*(\w*)/, 'async function $1')
                 .replace(/export\s+default\s+function\s*(\w*)/, 'function $1');
@@ -406,33 +489,27 @@ async function launchApp(item, path, options) {
             const { getFileContent } = await import("./fs-db.js");
             const windowAPI = window.nexser?.windowAPI;
 
-            // 1. システム領域（C: ドライブ配下の System, Programs）の勝手な書き換え・削除をブロックする安全なFS
             const RESTRICTED_DIRS = new Set(["System", "Programs"]);
 
             function createSecureFS(targetFS) {
                 const fsHandler = {
                     get(target, prop, receiver) {
                         const res = Reflect.get(target, prop, receiver);
-
-                        // ⭐ C: ドライブ配下の制限フォルダへのアクセスをブロック・保護
                         if (target === targetFS["C:"] && typeof prop === "string" && RESTRICTED_DIRS.has(prop)) {
                             return Object.freeze(JSON.parse(JSON.stringify(res || {})));
                         }
-
                         if (res && typeof res === "object") {
                             return new Proxy(res, fsHandler);
                         }
                         return res;
                     },
                     set(target, prop, value) {
-                        // ⭐ C: ドライブ配下の制限フォルダへの書き込みをブロック
                         if (target === targetFS["C:"] && typeof prop === "string" && RESTRICTED_DIRS.has(prop)) {
                             throw new Error(`[Security] 許可されていない操作です: システム領域 'C:/${prop}' を書き換えることはできません。`);
                         }
                         return Reflect.set(target, prop, value);
                     },
                     deleteProperty(target, prop) {
-                        // ⭐ C: ドライブ配下の制限フォルダの削除をブロック
                         if (target === targetFS["C:"] && typeof prop === "string" && RESTRICTED_DIRS.has(prop)) {
                             throw new Error(`[Security] 許可されていない操作です: システム領域 'C:/${prop}' を削除することはできません。`);
                         }
@@ -444,25 +521,14 @@ async function launchApp(item, path, options) {
 
             const safeFS = createSecureFS(FS);
 
-            const safeUpdateWindowTitle = (win, title, dirty) => {
-                const sanitizedTitle = String(title || "")
-                    .replace(/</g, "&lt;")
-                    .replace(/>/g, "&gt;");
-
-                // ⭐ 修正: windowAPI 経由で確実にタイトルを更新する
-                if (windowAPI && typeof windowAPI.updateWindowTitle === "function") {
-                    windowAPI.updateWindowTitle(win, sanitizedTitle, dirty);
-                }
-            };
-
-            // 2. 引数を安全に渡しつつ、関数本体を正しく return するように修正
+            // 動的コード側には安全な sandboxSyscall のみをバインド
             const runScript = new Function(
-                'FS', 'forceSave', 'resolveFS', 'windowAPI', 'getFileContent',
+                'FS', 'forceSave', 'resolveFS', 'windowAPI', 'getFileContent', 'syscall',
                 `return (${executableCode});`
             );
 
             appModule = {
-                default: runScript(safeFS, forceSave, resolveFS, windowAPI, getFileContent)
+                default: runScript(safeFS, forceSave, resolveFS, windowAPI, getFileContent, sandboxSyscall)
             };
         } catch (e) {
             console.error("Dynamic code evaluation failed:", e);
@@ -474,13 +540,9 @@ async function launchApp(item, path, options) {
 
     if (!appModule?.default) throw new Error("アプリが正しくエクスポートされていません");
 
-    const displayName = options?.path ? basename(options.path) : (options.showFullPath ? path : item.name || basename(path));
-
-    // ⭐ toolbar.js に限定せず、item.frameless の設定を汎用的に反映
-    const isFrameless = Boolean(item.frameless || options.frameless);
-
-    const isShell = Boolean(item.shell || options.shell);
-
+    // ==========================================
+    // 3. ウィンドウ生成とシステムコールの割り当て
+    // ==========================================
     const content = getWindowAPI()?.createWindow(displayName, {
         node: options.originalNode || item,
         frameless: isFrameless,
@@ -490,21 +552,16 @@ async function launchApp(item, path, options) {
     const win = content?.closest(".window");
     if (!win) throw new Error("Window creation failed");
 
-    // ★ 改善: エクスプローラーなどで実際に開いているパスがあれば、それをプロセスのパスとして優先する
-    const processPath = (isExplorer && options.path) ? options.path : path;
-
     let appHandle = null;
-    const key = uniqueKey ?? `app:${processPath}:${Date.now()}`;
-    const pid = pidCounter++;
 
-    // アプリに与えるシステムコール API
-    const syscall = {
+    // 動的コード（サードパーティー）には sandboxSyscall、通常のシステムアプリにはフル機能の syscall を割り当て
+    const syscall = item.code ? sandboxSyscall : {
         pid,
-        path: processPath, // ★ システムコール側も実際のパスに更新
+        path: processPath,
         exit: () => killProcess(key),
         restart: () => restartProcess(key),
         postMessage: (targetPid, message) => sendProcessMessage(pid, targetPid, message),
-        onMessage: null // アプリ側でメッセージ受信用コールバックをセット
+        onMessage: null
     };
 
     try {
@@ -784,6 +841,9 @@ export function resetUI() {
 
         processes.clear();
         explorerWindows.clear();
+
+        // ⭐ UIリセット時にもPIDカウンターを1に巻き戻す
+        pidCounter = 1;
     } catch { }
 }
 

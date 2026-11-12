@@ -1,5 +1,5 @@
 // Terminal.js
-import { launch, logOff, resetUI } from "../kernel.js";
+import { logOff, resetUI } from "../kernel.js";
 import { resolveFS, normalizePath } from "../fs-utils.js";
 
 export default function TerminalApp(content) {
@@ -366,7 +366,7 @@ export default function TerminalApp(content) {
                     case "app":
                     case "file":
                     case "folder":
-                        launch(finalPath, { parentCwd: cwd });
+                        window.nexser?.kernelAPI.launch(finalPath, { parentCwd: cwd });
                         break;
                     default:
                         print(`不明なタイプ: ${finalNode.type}`);
@@ -408,7 +408,7 @@ export default function TerminalApp(content) {
                         break;
 
                     case "folder":
-                        launch("C:/Programs/Applications/Explorer.app", { path, parentCwd: cwd });
+                        window.nexser?.kernelAPI.launch("C:/Programs/Applications/Explorer.app", { path, parentCwd: cwd });
                         break;
                     default:
                         print(`Cannot open: unknown type ${node.type}`);
