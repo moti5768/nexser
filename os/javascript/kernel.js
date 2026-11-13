@@ -463,7 +463,7 @@ async function launchApp(item, path, options) {
     const isShell = Boolean(item.shell || options.shell);
     const processPath = (isExplorer && options.path) ? options.path : path;
     const key = uniqueKey ?? `app:${processPath}:${Date.now()}`;
-    const pid = pidCounter++; // プロセスIDの採番
+    const pid = pidCounter++;
 
     // ==========================================
     // 2. サードパーティー（動的コード）用の制限されたサンドボックス Syscall
@@ -626,28 +626,29 @@ async function launchApp(item, path, options) {
     }
 
     addRecent(processPath);
-    registerProcess(win, key, processPath, appHandle, isShell, options);
+    registerProcess(win, key, processPath, appHandle, isShell, options, pid);
 
     if (isExplorer) explorerWindows.set(options.path || "C:/Desktop", win);
 }
 
 /* --- 共通：プロセス登録とObserver設定のヘルパー --- */
-function registerProcess(win, key, path, handle, isShell = false, options = {}) {
-    const pid = pidCounter++;
+function registerProcess(win, key, path, handle, isShell = false, options = {}, forcedPid = null) {
+    const pid = forcedPid !== null ? forcedPid : pidCounter++; // ⭐二重採番を完全に防止
     processes.set(key, {
         pid,
         path,
         window: win,
         handle,
-        state: isShell ? "shell" : "normal", // ⭐ シェルアプリの場合は状態を "shell" に設定
+        state: isShell ? "shell" : "normal",
         isShell,
-        options, // ⭐ 起動時のオプション（frameless設定など）をそのまま保持
+        options,
         startTime: performance.now(),
         memory: 0,
         cpu: 0
     });
     win.dataset.processKey = key;
 
+    // (以降のObserver設定などはそのまま)
     const observer = new MutationObserver((mutations, obs) => {
         if (!document.body.contains(win)) {
             obs.disconnect();
@@ -849,25 +850,51 @@ export function resetUI() {
 
 /* ===== ログオフ ===== */
 export async function logOff() {
-    // 1. すべてのウィンドウ要素を取得し、シェルアプリ（isShell）以外の通常ウィンドウのみを抽出する
     const windows = document.querySelectorAll(".window");
     const activeNormalWindows = Array.from(windows).filter(w => {
         const key = w.dataset.processKey;
         const proc = processes.get(key);
-        // プロセス管理外のウィンドウ、またはシェルアプリ（isShell: true）でないものを「確認対象のウィンドウ」とする
         return !proc || !proc.isShell;
     });
 
     const hasNormalWindow = activeNormalWindows.length > 0;
 
     const performLogoff = async () => {
+        window.nexser = window.nexser || {};
+        window.nexser.isLoggingOff = true;
         playSystemEventSound('logoff');
+        // デスクトップのアイコン群（#desktop-icons）とタスクバーを即座に非表示にする
+        const desktopIcons = document.getElementById("desktop-icons");
+        const taskbar = document.getElementById("taskbar");
+        if (desktopIcons) desktopIcons.style.display = "none";
+        if (taskbar) taskbar.style.visibility = "hidden";
+
+        // 進捗ウィンドウ（ステータス表示用）
+        const progressWin = getWindowAPI()?.progressWindow("nexser", "システムを終了しています...", {
+            allowCancel: false,
+            taskbar: false,
+            width: 380,
+            height: 250
+        });
+
+        if (progressWin) progressWin.update(10, 100, "ファイルシステムの書き込み完了を待機中...");
 
         try {
-            // 1. 現在開いている（これから終了する）プロセスの一覧を取得
-            const activeProcs = getProcessList();
+            // ⭐ 【追加】ファイルシステムやデータベースへの書き込みが進行中であれば、完了するまでログオフを遅らせる
+            const { waitForSaveCompletion } = await import("./fs.js");
+            await waitForSaveCompletion();
 
-            // 2. IndexedDB から現在のログデータを取得（なければ初期構造）
+            if (progressWin) progressWin.update(25, 100, "すべてのプロセスとシェルを終了中...");
+
+            // 1. 現在開いている全プロセス（シェル含む）の一覧を取得して完全終了
+            const activeProcs = getProcessList();
+            activeProcs.forEach(proc => {
+                killProcess(proc.key);
+            });
+
+            if (progressWin) progressWin.update(40, 100, "システムログをデータベースに書き込み中...");
+
+            // 2. IndexedDB から現在のログデータを取得・更新
             let allLogs = (await dbGet(LOG_STORAGE_KEY, "kv")) || {
                 System: [],
                 Application: [],
@@ -877,7 +904,6 @@ export async function logOff() {
             const nowTime = new Date().toLocaleTimeString();
             const nowTimestamp = Date.now();
 
-            // 3. ログオフのシステムログを追加
             allLogs.System.unshift({
                 level: "Information",
                 time: nowTime,
@@ -888,11 +914,7 @@ export async function logOff() {
                 description: "ユーザーがシステムからログオフしました。"
             });
 
-            // 4. 開いていた全アプリの終了ログを Application カテゴリに追加
-            // ※ shell アプリ（isShell が true のもの）の終了ログは無視する
             activeProcs.forEach(proc => {
-                if (proc.isShell) return; // shellアプリはスキップ
-
                 allLogs.Application.unshift({
                     level: "Information",
                     time: nowTime,
@@ -902,22 +924,47 @@ export async function logOff() {
                     category: "App Lifecycle",
                     isShell: proc.isShell,
                     state: proc.state,
-                    description: `アプリケーション '${proc.name}' (PID: ${proc.pid}) [State: ${proc.state}] が正常に終了しました。`
+                    description: `アプリケーション/シェル '${proc.name}' (PID: ${proc.pid}) が正常に終了しました。`
                 });
             });
 
-            // 5. 最大保持数（500件）の制限を適用
             if (allLogs.System.length > 500) allLogs.System.length = 500;
             if (allLogs.Application.length > 500) allLogs.Application.length = 500;
 
-            // ★ 6. すべての終了ログがストレージに書き込まれ完了するのを完全に待つ
             await dbSet(LOG_STORAGE_KEY, allLogs, "kv");
 
+            if (progressWin) progressWin.update(70, 100, "ファイルシステムのデータベース整合性を検証中...");
+
+            // 3. データベースおよびファイルシステムの書き込み完了を強制保障（forceSave）
+            const { forceSave, diagnoseAndCleanFS } = await import("./fs.js");
+            await forceSave();
+
+            // 4. 実際にファイルデータベース（IndexedDB）の整合性を診断・修復
+            const fsReport = await diagnoseAndCleanFS(true);
+            if (fsReport.corruptionDetected) {
+                console.warn("[Logoff] ファイルシステムの破損を検知し、修復を実行しました。", fsReport.logs);
+            }
+
+            // 5. データベースに実際にデータが正しく書き込まれているかを最終確認（DB確認）
+            const verifiedLog = await dbGet(LOG_STORAGE_KEY, "kv");
+            if (!verifiedLog) {
+                throw new Error("データベースへのログ書き込み検証に失敗しました。");
+            }
+
+            // ⭐ 100%到達時にメッセージを変更し、少しウェイトを入れてからログオフへ移行
+            if (progressWin) {
+                progressWin.update(100, 100, "nexserをログオフしています...");
+                await new Promise(r => setTimeout(r, 600)); // 0.6秒間メッセージを表示
+            }
+
         } catch (e) {
-            console.error("[Kernel] Failed to save logoff and exit logs to DB:", e);
+            console.error("[Kernel] ログオフ時のデータ保存・データベース検証に失敗しました:", e);
         }
 
-        // 7. 書き込みが100%完了したことが保証された後にUIをリセットして画面遷移
+        if (progressWin) {
+            progressWin.close();
+        }
+
         resetUI();
         moduleCache.clear();
 
@@ -928,12 +975,13 @@ export async function logOff() {
         showPromptScreen("nexser logoff");
     };
 
-    // 2. 通常のアプリウィンドウが開いている場合のみ確認ウィンドウを表示する
     if (hasNormalWindow) {
         getWindowAPI()?.confirmWindow(
-            "開いているアプリケーションがあります。すべて閉じてログオフしますか？",
-            (result) => {
-                if (result) performLogoff();
+            "システムをログオフし、すべてのプロセスを終了しますか？",
+            async (result) => {
+                if (result) {
+                    await performLogoff();
+                }
             },
             {
                 width: 380,
@@ -941,7 +989,7 @@ export async function logOff() {
             },
         );
     } else {
-        performLogoff();
+        await performLogoff();
     }
 }
 
@@ -1052,8 +1100,39 @@ export function sendProcessMessage(senderPid, targetPid, message) {
     return false;
 }
 
-export function logSystemEvent(category, level, source, eventId, taskCategory, description, extra = {}) {
+export async function logSystemEvent(category, level, source, eventId, taskCategory, description, extra = {}) {
+    const logEntry = {
+        level,
+        time: new Date().toLocaleTimeString(),
+        timestamp: Date.now(),
+        source,
+        eventId,
+        category: taskCategory,
+        description,
+        ...extra
+    };
+
+    // 1. リアルタイムで開いている画面への通知
     window.dispatchEvent(new CustomEvent("nexser-system-log", {
-        detail: { category, level, source, eventId, taskCategory, description, ...extra }
+        detail: { category, ...logEntry }
     }));
+
+    // 2. 画面が開いていなくても確実に IndexedDB へ直接保存する
+    try {
+        let allLogs = (await dbGet(LOG_STORAGE_KEY, "kv")) || {
+            System: [],
+            Application: [],
+            Security: []
+        };
+
+        if (!allLogs[category]) allLogs[category] = [];
+        allLogs[category].unshift(logEntry);
+
+        // 最大保持数500件を超えたら古いものを削除
+        if (allLogs[category].length > 500) allLogs[category].pop();
+
+        await dbSet(LOG_STORAGE_KEY, allLogs, "kv");
+    } catch (e) {
+        console.warn("[Kernel] Failed to persist logSystemEvent to DB:", e);
+    }
 }

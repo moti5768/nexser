@@ -421,9 +421,9 @@ export async function initTaskbar() {
     }
 
     clockLabel.addEventListener("dblclick", () => {
-        window.nexser?.kernelAPI.launch("Programs/Applications/Clock.app", {
-            path: "Programs/Applications/Clock.app",
-            uniqueKey: "Programs/Applications/Clock.app"
+        window.nexser?.kernelAPI.launch("C:/Programs/Applications/Clock.app", {
+            path: "C:/Programs/Applications/Clock.app",
+            uniqueKey: "C:/Programs/Applications/Clock.app"
         });
     });
 

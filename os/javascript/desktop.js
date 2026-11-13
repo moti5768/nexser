@@ -1393,6 +1393,9 @@ function installDesktopWatcher() {
     if (desktopInitialized) return;
     desktopInitialized = true;
     window.addEventListener("fs-updated", async () => {
+        // ⭐ ログオフ中（システム終了処理中）はデスクトップの再描画を行わない
+        if (window.nexser?.isLoggingOff) return;
+
         // ★ 追加: 更新時に拡張子設定も再取得して同期する
         try {
             const savedShowExt = await dbGet("explorerShowFileExtensions", "settings");

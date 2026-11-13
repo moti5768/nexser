@@ -234,7 +234,7 @@ export default async function TaskbarProperties(content) {
 
         root.querySelector("#tp-sm-advanced").onclick = async () => {
             try {
-                await window.nexser?.kernelAPI?.launch("C:/Windows/Start Menu/Programs");
+                await window.nexser?.kernelAPI?.launch("C:/StartMenu");
             } catch (e) {
                 console.warn("エクスプローラーの起動に失敗しました", e);
             }

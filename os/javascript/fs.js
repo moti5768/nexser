@@ -400,6 +400,19 @@ async function scheduleSave() {
     });
 }
 
+export async function waitForSaveCompletion() {
+    if (saveTimer) {
+        // 自動保存のデバウンス待ち中なら、今すぐ強制保存に切り替えてその完了を待つ
+        await forceSave();
+    }
+    // すでに保存処理中（isSaving）であれば、終わるまで小刻みに待機
+    while (isSaving) {
+        await new Promise(r => setTimeout(r, 100));
+    }
+    // 最後にセーブチェーン全体の完了を保証
+    await currentSavePromise;
+}
+
 export async function forceSave() {
     // 予約されている通常の自動保存タイマーがあればクリアして今すぐ実行に切り替える
     if (saveTimer) {
@@ -417,13 +430,30 @@ async function performSave() {
 }
 
 export async function initFS() {
-    const saved = await loadFS();
+    let saved = null;
+    let retries = 3;
+
+    while (retries > 0) {
+        try {
+            saved = await loadFS();
+            if (saved) break;
+        } catch (err) {
+            console.warn(`[FS] Load attempt failed, retries left: ${retries - 1}`, err);
+        }
+        retries--;
+        if (retries > 0) {
+            await new Promise(r => setTimeout(r, 250));
+        }
+    }
+
     const hasInitializedBefore = localStorage.getItem("nexser_installed") === "true";
 
+    // 🛡️ 【改善策】過去にインストールした形跡があるのにデータが取得できない場合、
+    // 誤って初期化（上書き）されるのを防ぐため、BSODを表示してデータを保護する
     if (!saved && hasInitializedBefore) {
-        console.error("[FS] Boot volume data is missing! Triggering BSOD.");
+        console.error("[FS] Critical: Existing database could not be loaded. Aborting to prevent data loss.");
         const { showBSOD } = await import("./bsod.js");
-        showBSOD("UNMOUNTABLE_BOOT_VOLUME", new Error("Boot volume could not be mounted or has been deleted."));
+        showBSOD("UNMOUNTABLE_BOOT_VOLUME", new Error("ストレージからのデータ読み込みに失敗しました。データを保護するため起動を中断します。"));
         return;
     }
 
@@ -437,6 +467,7 @@ export async function initFS() {
 
     try {
         if (!saved) {
+            // ⭐ 本当に初回の起動時（インストール履歴がない場合）のみ初期化
             localStorage.setItem("nexser_installed", "true");
             if (DEBUG_FS) console.log("[FS] First-time boot: Initializing and saving factory data...");
             await performSave();
@@ -452,7 +483,7 @@ export async function initFS() {
     } finally {
         isInitializing = false;
         isSaving = false;
-        if (!saved) {
+        if (!saved && !hasInitializedBefore) {
             await performSave();
         }
     }

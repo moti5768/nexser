@@ -6,6 +6,7 @@ import { loadSetting } from "./apps/settings.js";
 import { initScreensaver } from "./screensaver.js";
 import { showBSOD } from "./bsod.js";
 import { resetWindowIdCounter } from './window.js';
+import { logSystemEvent } from './kernel.js';
 
 // ===== Passive Event / Touch Defaults =====
 document.addEventListener('wheel', e => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });
@@ -910,6 +911,9 @@ export function showPromptScreen(logoffMessage = '') {
     }
     document.querySelectorAll('.window').forEach(w => w.remove());
     resetWindowIdCounter();
+    if (window.nexser) {
+        window.nexser.isLoggingOff = false;
+    }
     if (logoffMessage) print(logoffMessage);
     prompt();
 }
@@ -918,6 +922,10 @@ export function showPromptScreen(logoffMessage = '') {
 export async function bootOS() {
     try {
         print("\nBoot sequence started...\n");
+
+        if (window.nexser) {
+            window.nexser.isLoggingOff = false;
+        }
 
         const kernel = await import('./kernel.js');
 
@@ -957,6 +965,18 @@ export async function bootOS() {
         // 7. 起動音再生
         playSystemEventSound('startup');
         print("OS Boot Completed Successfully.");
+        try {
+            logSystemEvent(
+                "System",
+                "Information",
+                "OSBootstrapper",
+                1000,
+                "System Startup",
+                "Nexser OS が正常に起動し、システムサービスが初期化されました。"
+            );
+        } catch (logErr) {
+            console.warn("[Boot] Failed to log boot event:", logErr);
+        }
     } catch (e) {
         throw new Error(`BOOT_SELECTION_FAILED: ${e.message}`);
     }
