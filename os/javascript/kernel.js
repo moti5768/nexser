@@ -848,39 +848,59 @@ export function resetUI() {
     } catch { }
 }
 
-/* ===== ログオフ ===== */
+/* ===== ログオフ（完全統合・シェル完全除外版） ===== */
 export async function logOff() {
     const windows = document.querySelectorAll(".window");
+
+    // 💡 ドキュメント上のウィンドウおよびプロセス管理から「シェル」を完全に除外して判定
     const activeNormalWindows = Array.from(windows).filter(w => {
         const key = w.dataset.processKey;
         const proc = processes.get(key);
-        return !proc || !proc.isShell;
+        if (!proc) return true; // プロセス未登録は通常ウィンドウ扱い
+
+        // isShell フラグ、またはアプリ名に toolbar / startmenu が含まれる場合はシェルとみなして除外
+        if (proc.isShell) return false;
+        const lowerPath = (proc.path || "").toLowerCase();
+        if (lowerPath.includes("toolbar") || lowerPath.includes("startmenu")) return false;
+
+        return true;
     });
 
-    const hasNormalWindow = activeNormalWindows.length > 0;
+    const userApps = activeNormalWindows.map(w => {
+        const key = w.dataset.processKey;
+        const proc = processes.get(key);
+        return {
+            name: proc ? basename(proc.path) : (w.dataset.title || "不明なアプリ"),
+            pid: proc ? proc.pid : "?",
+            uptime: proc ? Math.floor((performance.now() - proc.startTime) / 1000) : 0
+        };
+    });
+
+    const hasNormalWindow = userApps.length > 0;
 
     const performLogoff = async () => {
         window.nexser = window.nexser || {};
         window.nexser.isLoggingOff = true;
         playSystemEventSound('logoff');
+
         // デスクトップのアイコン群（#desktop-icons）とタスクバーを即座に非表示にする
         const desktopIcons = document.getElementById("desktop-icons");
         const taskbar = document.getElementById("taskbar");
         if (desktopIcons) desktopIcons.style.display = "none";
         if (taskbar) taskbar.style.visibility = "hidden";
 
-        // 進捗ウィンドウ（ステータス表示用）
-        const progressWin = getWindowAPI()?.progressWindow("nexser", "システムを終了しています...", {
+        // 詳細なステータスを表示するプログレスウィンドウ
+        const progressWin = getWindowAPI()?.progressWindow("nexser ログオフ マネージャー", "セッションを安全に終了しています...", {
             allowCancel: false,
             taskbar: false,
-            width: 380,
-            height: 250
+            width: 440,
+            height: 200
         });
 
         if (progressWin) progressWin.update(10, 100, "ファイルシステムの書き込み完了を待機中...");
 
         try {
-            // ⭐ 【追加】ファイルシステムやデータベースへの書き込みが進行中であれば、完了するまでログオフを遅らせる
+            // ⭐ ファイルシステムやデータベースへの書き込み完了を待機
             const { waitForSaveCompletion } = await import("./fs.js");
             await waitForSaveCompletion();
 
@@ -945,7 +965,7 @@ export async function logOff() {
                 console.warn("[Logoff] ファイルシステムの破損を検知し、修復を実行しました。", fsReport.logs);
             }
 
-            // 5. データベースに実際にデータが正しく書き込まれているかを最終確認（DB確認）
+            // 5. データベースに実際にデータが正しく書き込まれているかを最終確認
             const verifiedLog = await dbGet(LOG_STORAGE_KEY, "kv");
             if (!verifiedLog) {
                 throw new Error("データベースへのログ書き込み検証に失敗しました。");
@@ -975,18 +995,27 @@ export async function logOff() {
         showPromptScreen("nexser logoff");
     };
 
+    // 通常のアプリケーションウィンドウが開いている場合のみ、実行中アプリの一覧付き確認ダイアログを表示
     if (hasNormalWindow) {
+        const appListHtml = userApps.map(app => `<div style="padding: 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">• ${app.name} <span style="color: #666; font-size: 11px;">(PID: ${app.pid}, 稼働: ${app.uptime}秒)</span></div>`).join("");
+
+        const confirmMessage = `以下のアプリケーションが実行中です。システムをログオフすると、未保存のデータが失われる可能性があります。<br><br>` +
+            `<b>終了予定のプロセス (${userApps.length}件):</b>` +
+            `<div style="max-height: 120px; overflow-y: auto; background: #ffffff; padding: 8px; margin: 6px 0; font-size: 12px; border-radius: 3px; border: 1px inset #808080; text-align: left;">${appListHtml}</div>` +
+            `本当にシステムをログオフしますか？`;
+
         getWindowAPI()?.confirmWindow(
-            "システムをログオフし、すべてのプロセスを終了しますか？",
+            confirmMessage,
             async (result) => {
                 if (result) {
                     await performLogoff();
                 }
             },
             {
-                width: 380,
-                overlay: true
-            },
+                width: 460,
+                overlay: true,
+                isHtml: true // HTMLタグを有効化して綺麗なリストを表示
+            }
         );
     } else {
         await performLogoff();
