@@ -526,7 +526,7 @@ const commands = {
     // --- インストール・エディタ系 ---
 
     add: {
-        desc: 'Install a .nexser or .js package (Usage: add Programs)',
+        desc: 'Install one or more .nexser or .js packages (Usage: add Programs)',
         async run(args) {
             if (args[0] !== "Programs") {
                 return print("Usage: add Programs");
@@ -535,6 +535,7 @@ const commands = {
             return new Promise((resolve) => {
                 const input = document.createElement("input");
                 input.type = "file";
+                input.multiple = true; // ★ 複数ファイルの選択を有効化
                 // 1. スマホでカスタム拡張子がグレーアウトするのを防ぎ、あらゆるファイルを許容
                 input.accept = ".nexser,.js,.json,text/plain,application/json,*/*";
 
@@ -570,20 +571,30 @@ const commands = {
                 window.addEventListener('focus', handleFocus);
 
                 input.onchange = async (e) => {
-                    const file = e.target.files[0];
-                    if (!file) {
+                    const files = Array.from(e.target.files);
+                    if (files.length === 0) {
                         print("Installation cancelled.");
                         finish();
                         return;
                     }
 
-                    print(`Reading package: ${file.name}...`);
-                    const reader = new FileReader();
-                    reader.onload = async (ev) => {
-                        try {
-                            let nexserData;
-                            const textContent = ev.target.result;
+                    print(`Starting installation of ${files.length} file(s)...`);
+                    let successCount = 0;
 
+                    // ★ 選択されたファイルを1つずつ順番に処理
+                    for (const file of files) {
+                        try {
+                            print(`Reading package: ${file.name}...`);
+
+                            // FileReaderをPromiseでラップして同期的に処理
+                            const textContent = await new Promise((res, rej) => {
+                                const reader = new FileReader();
+                                reader.onload = (ev) => res(ev.target.result);
+                                reader.onerror = (err) => rej(err);
+                                reader.readAsText(file);
+                            });
+
+                            let nexserData;
                             if (file.name.endsWith('.js') || !textContent.trim().startsWith('{')) {
                                 nexserData = {
                                     type: "app",
@@ -620,7 +631,8 @@ const commands = {
                                     code: codeContent,
                                     windowOptions: nexserData.windowOptions || {}
                                 };
-                                print(`[App] Installed with dynamic code support: ${appNodeName}`);
+                                print(`  [App] Installed: ${appNodeName}`);
+                                successCount++;
                             }
 
                             if (nexserData.settings) {
@@ -632,21 +644,30 @@ const commands = {
                                     const currentConfig = JSON.parse(systemFolder["Config.json"].content || "{}");
                                     const mergedConfig = { ...currentConfig, ...nexserData.settings };
                                     systemFolder["Config.json"].content = JSON.stringify(mergedConfig, null, 2);
-                                    print("[System] Global settings updated.");
+                                    print(`  [System] Global settings updated from ${file.name}.`);
                                 }
                             }
 
-                            window.dispatchEvent(new Event("fs-updated"));
+                        } catch (err) {
+                            print(`  [Error] Failed to install ${file.name} (${err.message})`);
+                        }
+                    }
+
+                    // 全ファイルのループ終了後にまとめて保存とイベント発火を行う
+                    if (successCount > 0) {
+                        window.dispatchEvent(new Event("fs-updated"));
+                        try {
                             const { forceSave } = await import('./fs.js');
                             await forceSave();
-                            print("Installation complete. You can now launch it from the Start Menu or Explorer.");
-
-                        } catch (err) {
-                            print(`Error: Installation failed (${err.message})`);
+                            print(`\nInstallation complete. Successfully installed ${successCount}/${files.length} file(s). You can now launch them from the Start Menu or Explorer.`);
+                        } catch (e) {
+                            console.warn("Failed to auto-save after multi-install:", e);
                         }
-                        finish();
-                    };
-                    reader.readAsText(file);
+                    } else {
+                        print("\nInstallation finished with no files successfully installed.");
+                    }
+
+                    finish();
                 };
 
                 input.click();

@@ -1332,7 +1332,11 @@ export function showModalWindow(title, message, options = {}) {
     const content = createWindow(title, {
         ...positionOpts,
         taskbar: (options.taskbar !== undefined) ? options.taskbar : false,
-        disableControls: true,
+        // ★ 修正: ダイアログでも個別のボタン制御（最小化・最大化・閉じる）を有効化できるように修正
+        disableControls: options.disableControls !== undefined ? options.disableControls : false,
+        disableMinimize: options.disableMinimize,
+        disableMaximize: options.disableMaximize,
+        disableClose: options.disableClose,
         hideRibbon: true,
         hideStatus: true,
         skipSave: true,
@@ -1365,7 +1369,7 @@ export function showModalWindow(title, message, options = {}) {
         parentWin.style.pointerEvents = "none"; // 親をロック
 
         const rect = parentWin.getBoundingClientRect();
-        const left = rect.left + (rect.width - winWidth) / 2;
+        const left = rect.left + (rect.width - winWidth) / 2; // ★ 修正: 演算子（-）を復元
         const top = rect.top + (rect.height / 2); // 一旦中央点へ配置
 
         win.style.left = `${left}px`;
@@ -1465,7 +1469,15 @@ export function showModalWindow(title, message, options = {}) {
 
     // 右上の [x] ボタン等がある場合のハンドリング
     const closeBtn = win.querySelector(".close-btn");
-    if (closeBtn) closeBtn.onclick = () => closeDialog();
+    if (closeBtn) {
+        closeBtn.onclick = () => {
+            // ⭐ ログオフ中、または閉じる操作が禁止されている場合は閉じさせない
+            if (window.nexser?.isLoggingOff || options.disableClose) {
+                return;
+            }
+            closeDialog();
+        };
+    }
 
     return content;
 }
@@ -1540,12 +1552,17 @@ export function progressWindow(title, itemName, options = {}) {
     const startTime = performance.now(); // 残り時間計算の開始点
 
     // 1. showModalWindow を使用してウィンドウを生成
-    // これにより、既存のモーダルロジックやタスクバー連携がそのまま機能します
+    // ★ 修正: 無効化オプション（disableMinimize, disableMaximize, disableClose, disableControls）を確実に渡す
     const content = showModalWindow(title, "", {
         ...options,
         width: winWidth,
         height: winHeight,
         silent: true,
+        // モーダルウィンドウ側でコントロールを強制無効化されないよう、optionsの指定を優先・マージする
+        disableControls: options.disableControls !== undefined ? options.disableControls : false,
+        disableMinimize: options.disableMinimize,
+        disableMaximize: options.disableMaximize,
+        disableClose: options.disableClose,
         // キャンセルボタンが必要な場合に備えて設定
         buttons: options.allowCancel ? [{ label: "キャンセル", onClick: options.onCancel || null }] : (options.buttons || []),
     });

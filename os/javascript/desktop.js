@@ -1393,8 +1393,12 @@ function installDesktopWatcher() {
     if (desktopInitialized) return;
     desktopInitialized = true;
     window.addEventListener("fs-updated", async () => {
-        // ⭐ ログオフ中（システム終了処理中）はデスクトップの再描画を行わない
+        // ⭐ 1. ログオフ中であれば一切再描画を行わない
         if (window.nexser?.isLoggingOff) return;
+
+        // ⭐ 2. デスクトップのアイコンコンテナが非表示にされている場合は再描画をスキップ
+        const iconsContainer = document.getElementById("desktop-icons");
+        if (iconsContainer && iconsContainer.style.display === "none") return;
 
         // ★ 追加: 更新時に拡張子設定も再取得して同期する
         try {
@@ -1407,7 +1411,6 @@ function installDesktopWatcher() {
     });
 }
 installDesktopWatcher();
-
 // --------------------
 // キーボードナビゲーションの実装
 // --------------------

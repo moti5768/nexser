@@ -1163,7 +1163,6 @@ export default function CodeEditor(root, options = {}) {
             await renderPreview();
         }
 
-        // 他のウィンドウ（ファイルマネージャー等）への通知
         window.dispatchEvent(new Event("fs-updated"));
     }
 

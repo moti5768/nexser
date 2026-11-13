@@ -848,8 +848,14 @@ export function resetUI() {
     } catch { }
 }
 
-/* ===== ログオフ（完全統合・シェル完全除外版） ===== */
+/* =========================
+   ログオフ（完全統合・シェル完全除外版）
+========================= */
 export async function logOff() {
+    // ⭐ ログオフ処理が呼ばれた瞬間に最速でフラグを立てて、すべての再描画をブロックする
+    window.nexser = window.nexser || {};
+    window.nexser.isLoggingOff = true;
+
     const windows = document.querySelectorAll(".window");
 
     // 💡 ドキュメント上のウィンドウおよびプロセス管理から「シェル」を完全に除外して判定
@@ -879,8 +885,6 @@ export async function logOff() {
     const hasNormalWindow = userApps.length > 0;
 
     const performLogoff = async () => {
-        window.nexser = window.nexser || {};
-        window.nexser.isLoggingOff = true;
         playSystemEventSound('logoff');
 
         // デスクトップのアイコン群（#desktop-icons）とタスクバーを即座に非表示にする
@@ -890,11 +894,13 @@ export async function logOff() {
         if (taskbar) taskbar.style.visibility = "hidden";
 
         // 詳細なステータスを表示するプログレスウィンドウ
-        const progressWin = getWindowAPI()?.progressWindow("nexser ログオフ マネージャー", "セッションを安全に終了しています...", {
+        const progressWin = getWindowAPI()?.progressWindow("nexser ログオフ", "セッションを安全に終了しています...", {
             allowCancel: false,
             taskbar: false,
             width: 440,
-            height: 200
+            height: 200,
+            disableControls: true, // 最小化・最大化ボタンを無効化
+            disableClose: true     // 閉じるボタンを無効化
         });
 
         if (progressWin) progressWin.update(10, 100, "ファイルシステムの書き込み完了を待機中...");
@@ -1009,6 +1015,9 @@ export async function logOff() {
             async (result) => {
                 if (result) {
                     await performLogoff();
+                } else {
+                    // キャンセルされた場合はログオフフラグを戻す
+                    window.nexser.isLoggingOff = false;
                 }
             },
             {
