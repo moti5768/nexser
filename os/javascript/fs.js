@@ -58,6 +58,14 @@ export function unlockFilesByPath(pathPrefix) {
     }
 }
 
+export function isFileLocked(pathPrefix) {
+    for (const [path, lock] of fileLocks.entries()) {
+        if (lock.mode === "exclusive" && (path === pathPrefix || path.startsWith(pathPrefix + "/"))) {
+            return true;
+        }
+    }
+    return false;
+}
 // 1. ベースデータ
 const baseFS = {
     "C:": {
@@ -519,6 +527,23 @@ function deepSync(currentProxy, savedNode, defaultNode, path = "", visited = new
                             if (nextSize !== undefined) {
                                 currentProxy[key].size = nextSize;
                             }
+                            hasChanges = true;
+                        }
+                    } else if (defaultValue.type === "link") {
+                        const nextTarget =
+                            savedValue && typeof savedValue.target === "string"
+                                ? savedValue.target
+                                : defaultValue.target;
+                        const isSame =
+                            existing &&
+                            existing.type === "link" &&
+                            existing.target === nextTarget;
+
+                        if (!isSame) {
+                            currentProxy[key] = {
+                                ...structuredClone(defaultValue),
+                                target: nextTarget
+                            };
                             hasChanges = true;
                         }
                     } else {

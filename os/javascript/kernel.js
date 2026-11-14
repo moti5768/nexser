@@ -1347,32 +1347,85 @@ export async function logOff() {
 if (typeof window !== "undefined") {
     window.addEventListener("fs-renamed", (e) => {
         const { oldPath, newPath } = e.detail || {};
-        if (!oldPath || !newPath) return;
+        if (!oldPath || !newPath || oldPath === newPath) return;
 
-        for (const [key, proc] of processes.entries()) {
-            // パスが完全一致、または配下フォルダの場合にパスを更新
+        const replacePrefix = (targetPath) => {
+            if (targetPath === oldPath) return newPath;
+            if (targetPath.startsWith(oldPath + "/")) {
+                return newPath + targetPath.slice(oldPath.length);
+            }
+            return targetPath;
+        };
+
+        // 1. explorerWindows マップ（開いているフォルダ管理）のキーを同期
+        for (const [expPath, expWin] of Array.from(explorerWindows.entries())) {
+            if (expPath === oldPath || expPath.startsWith(oldPath + "/")) {
+                const updatedExpPath = replacePrefix(expPath);
+                explorerWindows.delete(expPath);
+                if (expWin && document.body.contains(expWin)) {
+                    explorerWindows.set(updatedExpPath, expWin);
+                }
+            }
+        }
+
+        // 2. processes マップ・再起動オプション・ウィンドウ・タスクバーを同期
+        const renamedNode = resolveFS(newPath);
+        const windowAPI = getWindowAPI();
+
+        for (const [key, proc] of Array.from(processes.entries())) {
             if (proc.path === oldPath || proc.path.startsWith(oldPath + "/")) {
-                const updatedPath = proc.path.replace(oldPath, newPath);
+                const updatedPath = replacePrefix(proc.path);
                 proc.path = updatedPath;
 
-                // ウィンドウタイトルの更新
-                if (proc.window) {
-                    const newTitle = basename(updatedPath);
-                    const windowAPI = getWindowAPI();
+                // 再起動（restartProcess）に備えて proc.options 内のパス情報も更新
+                if (proc.options && typeof proc.options === "object") {
+                    if (typeof proc.options.path === "string") {
+                        proc.options.path = replacePrefix(proc.options.path);
+                    }
+                    if (typeof proc.options.uniqueKey === "string") {
+                        proc.options.uniqueKey = replacePrefix(proc.options.uniqueKey);
+                    }
+                }
 
-                    // ウィンドウAPI経由でウィンドウとタスクバーを同時に更新
+                // プロセス管理キー自体が旧パスベースの場合は新パスへ付け替え（二重起動防止）
+                if (key === oldPath || key.startsWith(oldPath + "/")) {
+                    const updatedKey = replacePrefix(key);
+                    processes.delete(key);
+                    processes.set(updatedKey, proc);
+                    if (proc.window) {
+                        proc.window.dataset.processKey = updatedKey;
+                    }
+                }
+
+                // 対象ウィンドウ・タスクバーボタンのタイトルとアイコンを更新
+                if (proc.window && document.body.contains(proc.window)) {
+                    const newTitle = basename(updatedPath);
+                    const targetNode = updatedPath === newPath ? renamedNode : resolveFS(updatedPath);
+
                     if (windowAPI && typeof windowAPI.updateWindowTitle === "function") {
-                        windowAPI.updateWindowTitle(proc.window, newTitle, false);
+                        windowAPI.updateWindowTitle(proc.window, newTitle, false, targetNode);
                     } else {
-                        // フォールバック
+                        proc.window.dataset.title = newTitle;
                         const titleElem = proc.window.querySelector(".title-text");
-                        if (titleElem) {
-                            titleElem.textContent = newTitle;
+                        if (titleElem) titleElem.textContent = newTitle;
+                    }
+
+                    // アプリ／エクスプローラー側がリネーム通知ハンドラを持っていれば通知
+                    if (proc.handle && typeof proc.handle.onRename === "function") {
+                        try {
+                            proc.handle.onRename({ oldPath, newPath, updatedPath });
+                        } catch (err) {
+                            console.warn("[Kernel] handle.onRename error:", err);
                         }
                     }
                 }
             }
         }
+
+        // 3. タスクマネージャー等のプロセス一覧UIに即時反映を通知
+        window.dispatchEvent(new CustomEvent("process-updated", {
+            detail: { oldPath, newPath }
+        }));
     });
 }
 

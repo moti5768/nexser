@@ -354,3 +354,141 @@ export function createUrlShortcutNode(urlToSave, targetFolderNode) {
     };
     return true;
 }
+
+// ========================================================
+// OS共通 クリップボード管理（Desktop / Explorer 横断）
+// ========================================================
+let osClipboard = null; // { mode: "copy" | "cut", sourcePath: string, names: string[] }
+
+export function setFSClipboard(mode, sourcePath, names) {
+    if (!Array.isArray(names) || names.length === 0) return;
+    const cleanPath = (sourcePath || "C:/Desktop").replace(/\\/g, "/").replace(/\/+$/, "");
+    osClipboard = {
+        mode,
+        sourcePath: cleanPath,
+        names: [...names]
+    };
+    window.dispatchEvent(new Event("clipboard-updated"));
+}
+
+export function getFSClipboard() {
+    return osClipboard;
+}
+
+export function clearFSClipboard() {
+    if (!osClipboard) return;
+    osClipboard = null;
+    window.dispatchEvent(new Event("clipboard-updated"));
+}
+
+export function isPathCutInClipboard(parentPath, itemName) {
+    if (!osClipboard || osClipboard.mode !== "cut") return false;
+    const cleanPath = (parentPath || "").replace(/\\/g, "/").replace(/\/+$/, "");
+    return osClipboard.sourcePath === cleanPath && osClipboard.names.includes(itemName);
+}
+
+// ========================================================
+// 共通アイテムリネーム処理（仮想FS + IndexedDB実データ + ウィンドウ連動）
+// ========================================================
+export async function renameFSItem(parentPath, oldName, rawNewName) {
+    const cleanParent = (parentPath || "C:/Desktop").replace(/\\/g, "/").replace(/\/+$/, "");
+    const parentNode = resolveFS(cleanParent);
+    if (!parentNode || !parentNode[oldName]) {
+        return { ok: false, error: "対象アイテムが見つかりません。" };
+    }
+
+    const newName = (rawNewName || "").trim();
+    if (!newName || newName === oldName) {
+        return { ok: true, unchanged: true };
+    }
+
+    const validationError = validateName(newName);
+    if (validationError) {
+        return { ok: false, error: validationError };
+    }
+
+    const rawItem = parentNode[oldName];
+    if (rawItem.system === true) {
+        return { ok: false, error: `「${oldName}」はシステム保護されているため名前を変更できません。` };
+    }
+
+    const hasConflict = Object.keys(parentNode).some(
+        k => !isSystemMetaKey(k) && k !== oldName && k.toLowerCase() === newName.toLowerCase()
+    );
+    if (hasConflict) {
+        return { ok: false, error: `同じ名前の項目「${newName}」が既に存在します。` };
+    }
+
+    const oldFullPath = `${cleanParent}/${oldName}`;
+    const newFullPath = `${cleanParent}/${newName}`;
+
+    const { forceSave, markDefaultDeleted, unmarkDefaultDeleted, setBulkUpdating, isFileLocked } = await import("./fs.js");
+    const { moveFileContent, deleteFileContentRecursive } = await import("./fs-db.js");
+
+    if (isFileLocked(oldFullPath)) {
+        return { ok: false, error: `「${oldName}」または配下のファイルが使用中のため名前を変更できません。` };
+    }
+
+    const clonedNode = cloneFSNode(rawItem);
+    clonedNode.lastModified = Date.now();
+
+    const updateLinksRecursively = (node, visited = new WeakSet()) => {
+        if (!node || typeof node !== "object" || visited.has(node)) return;
+        visited.add(node);
+        for (const key of Object.keys(node)) {
+            if (isSystemMetaKey(key)) continue;
+            const child = node[key];
+            if (!child || typeof child !== "object") continue;
+            if (child.type === "link" && typeof child.target === "string") {
+                if (child.target === oldFullPath) {
+                    child.target = newFullPath;
+                } else if (child.target.startsWith(oldFullPath + "/")) {
+                    child.target = newFullPath + child.target.slice(oldFullPath.length);
+                }
+            } else if (child.type === "folder") {
+                updateLinksRecursively(child, visited);
+            }
+        }
+    };
+
+    setBulkUpdating(true);
+    try {
+        if (clonedNode.type === "file" || clonedNode.type === "app") {
+            await moveFileContent(oldFullPath, newFullPath);
+        } else if (clonedNode.type === "folder") {
+            await processStorageRecursively(rawItem, oldFullPath, newFullPath, false);
+        }
+
+        let deleted = false;
+        try {
+            deleted = delete parentNode[oldName];
+        } catch (_) {
+            deleted = false;
+        }
+
+        if (!deleted) {
+            if (clonedNode.type === "file" || clonedNode.type === "app") {
+                await moveFileContent(newFullPath, oldFullPath).catch(() => deleteFileContentRecursive(newFullPath));
+            } else if (clonedNode.type === "folder") {
+                await processStorageRecursively(rawItem, newFullPath, oldFullPath, false).catch(() => deleteFileContentRecursive(newFullPath));
+            }
+            return { ok: false, error: `「${oldName}」は使用中または保護されているため名前を変更できません。` };
+        }
+
+        parentNode[newName] = clonedNode;
+        updateLinksRecursively(FS["C:"]);
+        await markDefaultDeleted(oldFullPath);
+        await unmarkDefaultDeleted(newFullPath);
+        await forceSave();
+    } catch (err) {
+        return { ok: false, error: `名前の変更中にエラーが発生しました: ${err.message}` };
+    } finally {
+        setBulkUpdating(false);
+    }
+
+    window.dispatchEvent(new CustomEvent("fs-renamed", {
+        detail: { oldPath: oldFullPath, newPath: newFullPath, oldName, newName }
+    }));
+    window.dispatchEvent(new Event("fs-updated"));
+    return { ok: true, newName };
+}

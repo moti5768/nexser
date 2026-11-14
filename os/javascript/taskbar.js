@@ -76,11 +76,15 @@ function ensureTaskbarAreas(taskbar) {
     // 1. ウィンドウのリサイズ時にスクロールボタンの状態を更新
     window.addEventListener("resize", updateScrollButtonStates);
 
-    // 2. ボタンの追加・削除（子要素の増減）を検知して状態を更新
+    // 2. ボタンの追加・削除・タイトル文字の変更を検知して状態を更新
     const mutationObserver = new MutationObserver(() => {
         updateScrollButtonStates();
     });
-    mutationObserver.observe(buttonArea, { childList: true });
+    mutationObserver.observe(buttonArea, {
+        childList: true,
+        subtree: true,
+        characterData: true
+    });
 
     // ★3. タスクバー自体の向き（verticalクラスの付与/削除）の変更を検知して更新
     const taskbarClassObserver = new MutationObserver(() => {

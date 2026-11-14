@@ -11,7 +11,12 @@ import {
     resolveLinkTarget,
     clearSystemProtection,
     processStorageRecursively,
-    createUrlShortcutNode
+    createUrlShortcutNode,
+    renameFSItem,
+    setFSClipboard,
+    getFSClipboard,
+    clearFSClipboard,
+    isPathCutInClipboard
 } from "./fs-utils.js";
 import { addRecent } from "./recent.js";
 import { attachContextMenu } from "./context-menu.js";
@@ -242,6 +247,7 @@ export function buildDesktop() {
         }
 
         item.classList.remove("selected");
+        item.style.opacity = isPathCutInClipboard("C:/Desktop", name) ? "0.5" : "1";
 
         // グラフィックとラベルを最新状態に同期
         const iconGraphic = item.querySelector(".icon-graphic");
@@ -380,6 +386,22 @@ export function buildDesktop() {
                         { label: "---" }
                     ] : []),
                     {
+                        label: "切り取り",
+                        disabled: currentNode.system === true,
+                        action: () => {
+                            const names = getSelectedDesktopNames(item);
+                            setFSClipboard("cut", "C:/Desktop", names);
+                        }
+                    },
+                    {
+                        label: "コピー",
+                        action: () => {
+                            const names = getSelectedDesktopNames(item);
+                            setFSClipboard("copy", "C:/Desktop", names);
+                        }
+                    },
+                    { label: "---" },
+                    {
                         label: "ショートカットの作成",
                         action: async () => {
                             const baseName = `${name} のショートカット`;
@@ -393,6 +415,11 @@ export function buildDesktop() {
                             };
                             window.dispatchEvent(new Event("fs-updated"));
                         }
+                    },
+                    {
+                        label: "名前の変更",
+                        disabled: currentNode.system === true,
+                        action: () => startDesktopInlineRename(item, name)
                     },
                     {
                         label: "選択アイテムを削除",
@@ -478,6 +505,34 @@ export function buildDesktop() {
                 }
             }
 
+            const clip = getFSClipboard();
+            items.push({
+                label: "貼り付け",
+                disabled: !clip || clip.names.length === 0,
+                action: () => pasteClipboardToDesktop()
+            });
+
+            items.push({ label: "---" });
+
+            items.push({
+                label: "並べ替え: 名前",
+                action: () => sortDesktopIcons("name")
+            });
+            items.push({
+                label: "並べ替え: 種類",
+                action: () => sortDesktopIcons("type")
+            });
+            items.push({
+                label: "並べ替え: サイズ",
+                action: () => sortDesktopIcons("size")
+            });
+            items.push({
+                label: "並べ替え: 更新日時",
+                action: () => sortDesktopIcons("date")
+            });
+
+            items.push({ label: "---" });
+
             items.push({
                 label: "新規フォルダ",
                 action: () => createNewItem("C:/Desktop", document.getElementById("desktop-icons"), "folder")
@@ -486,6 +541,12 @@ export function buildDesktop() {
             items.push({
                 label: "新規テキストファイル",
                 action: () => createNewItem("C:/Desktop", document.getElementById("desktop-icons"), "file")
+            });
+
+            items.push({
+                label: "アイコンを等間隔に整列",
+                disabled: autoArrange,
+                action: () => snapDesktopIconsToGrid()
             });
 
             items.push({
@@ -1417,6 +1478,40 @@ function setupDesktopKeyboardNavigation() {
             return;
         }
 
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "c") {
+            if (globalSelected.items.size > 0) {
+                e.preventDefault();
+                const names = Array.from(globalSelected.items).map(el => el.dataset.name);
+                setFSClipboard("copy", "C:/Desktop", names);
+            }
+            return;
+        }
+
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "x") {
+            if (globalSelected.items.size > 0) {
+                e.preventDefault();
+                const desktopNode = FS["C:"]?.Desktop;
+                const names = Array.from(globalSelected.items)
+                    .map(el => el.dataset.name)
+                    .filter(n => desktopNode?.[n]?.system !== true);
+                if (names.length > 0) setFSClipboard("cut", "C:/Desktop", names);
+            }
+            return;
+        }
+
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "v") {
+            e.preventDefault();
+            await pasteClipboardToDesktop();
+            return;
+        }
+
+        if (e.key === "F2" && globalSelected.items.size === 1) {
+            e.preventDefault();
+            const targetEl = Array.from(globalSelected.items)[0];
+            startDesktopInlineRename(targetEl, targetEl.dataset.name);
+            return;
+        }
+
         switch (e.key) {
             case "ArrowRight":
                 e.preventDefault();
@@ -1527,3 +1622,187 @@ function reorderDesktopIcons(draggedNames, targetName) {
     // C:/Desktop のメタデータ（children順序）のみをピンポイント差分保存
     reorderNodeKeys("C:/Desktop", remainingKeys);
 }
+
+// --------------------
+// デスクトップ用 補助関数（リネーム・貼り付け・並べ替え・グリッド整列）
+// --------------------
+function getSelectedDesktopNames(fallbackItem) {
+    if (globalSelected.items.size > 0 && globalSelected.items.has(fallbackItem)) {
+        return Array.from(globalSelected.items).map(el => el.dataset.name);
+    }
+    return [fallbackItem.dataset.name];
+}
+
+async function pasteClipboardToDesktop() {
+    const clip = getFSClipboard();
+    const desktopNode = FS["C:"]?.Desktop;
+    if (!clip || !desktopNode) return;
+
+    const payload = {
+        type: "explorer-icons",
+        sourcePath: clip.sourcePath,
+        draggedItems: clip.names.map(name => ({ name }))
+    };
+    const isCopy = clip.mode === "copy";
+    const ok = await transferItemsToTarget(payload, "C:/Desktop", desktopNode, isCopy);
+    if (ok && !isCopy) {
+        clearFSClipboard();
+    }
+}
+
+function startDesktopInlineRename(iconEl, oldName) {
+    const node = FS["C:"]?.Desktop?.[oldName];
+    if (!node || node.system === true) {
+        window.nexser?.windowAPI?.alertWindow(`「${oldName}」は保護されているため名前を変更できません。`, { width: 350, height: 140 });
+        return;
+    }
+
+    const labelEl = iconEl.querySelector(".icon-label");
+    if (!labelEl || iconEl.querySelector("input")) return;
+
+    const originalText = labelEl.textContent;
+    labelEl.style.display = "none";
+
+    const input = document.createElement("input");
+    input.type = "text";
+    input.value = oldName;
+    input.style.cssText = "font-size:12px; text-align:center; width:96px; z-index:20; margin-top:2px;";
+    iconEl.appendChild(input);
+    input.focus();
+
+    const dotIndex = oldName.lastIndexOf(".");
+    if (node.type !== "folder" && dotIndex > 0) {
+        input.setSelectionRange(0, dotIndex);
+    } else {
+        input.select();
+    }
+
+    let isDone = false;
+    let isAlerting = false;
+
+    const cleanup = () => {
+        input.remove();
+        labelEl.style.display = "";
+    };
+
+    const commit = async () => {
+        if (isDone || isAlerting) return;
+        const nextName = input.value.trim();
+        if (!nextName || nextName === oldName) {
+            isDone = true;
+            cleanup();
+            return;
+        }
+
+        const res = await renameFSItem("C:/Desktop", oldName, nextName);
+        if (!res.ok) {
+            isAlerting = true;
+            window.nexser?.windowAPI?.alertWindow(res.error, { width: 360, height: 160, taskbar: false });
+            setTimeout(() => {
+                isAlerting = false;
+                input.focus();
+            }, 0);
+            return;
+        }
+
+        isDone = true;
+        cleanup();
+    };
+
+    input.addEventListener("mousedown", e => e.stopPropagation());
+    input.addEventListener("click", e => e.stopPropagation());
+    input.addEventListener("dblclick", e => e.stopPropagation());
+    input.addEventListener("keydown", e => {
+        e.stopPropagation();
+        if (e.key === "Enter") {
+            e.preventDefault();
+            commit();
+        } else if (e.key === "Escape") {
+            isDone = true;
+            cleanup();
+        }
+    });
+    input.addEventListener("blur", commit);
+}
+
+function sortDesktopIcons(sortBy) {
+    const desktopFS = FS["C:"]?.Desktop;
+    if (!desktopFS) return;
+
+    const keys = Object.keys(desktopFS).filter(k => !isSystemMetaKey(k));
+    keys.sort((a, b) => {
+        const nodeA = desktopFS[a];
+        const nodeB = desktopFS[b];
+        const isFolderA = nodeA?.type === "folder";
+        const isFolderB = nodeB?.type === "folder";
+        if (isFolderA !== isFolderB) return isFolderA ? -1 : 1;
+
+        if (sortBy === "size") {
+            return (nodeA?.size || 0) - (nodeB?.size || 0);
+        }
+        if (sortBy === "date") {
+            return (nodeB?.lastModified || 0) - (nodeA?.lastModified || 0);
+        }
+        if (sortBy === "type") {
+            const cmp = (nodeA?.type || "").localeCompare(nodeB?.type || "", "ja");
+            if (cmp !== 0) return cmp;
+        }
+        return a.localeCompare(b, "ja");
+    });
+
+    reorderNodeKeys("C:/Desktop", keys);
+    if (!autoArrange) {
+        snapDesktopIconsToGrid(keys);
+    }
+}
+
+async function snapDesktopIconsToGrid(orderedNames = null) {
+    const desktopFS = FS["C:"]?.Desktop;
+    const iconsContainer = document.getElementById("desktop-icons");
+    if (!desktopFS || !iconsContainer) return;
+
+    const names = orderedNames || Object.keys(desktopFS).filter(k => !isSystemMetaKey(k));
+    const colWidth = 90;
+    const rowHeight = 90;
+    const maxRows = Math.max(1, Math.floor((iconsContainer.clientHeight - 20) / rowHeight));
+    const occupied = new Set();
+    const nextPositions = {};
+
+    names.forEach((name, idx) => {
+        const cur = iconPositions[name];
+        let col = cur ? Math.max(0, Math.round((cur.x - 10) / colWidth)) : Math.floor(idx / maxRows);
+        let row = cur ? Math.max(0, Math.min(maxRows - 1, Math.round((cur.y - 10) / rowHeight))) : (idx % maxRows);
+
+        while (occupied.has(`${col},${row}`)) {
+            row++;
+            if (row >= maxRows) {
+                row = 0;
+                col++;
+            }
+        }
+        occupied.add(`${col},${row}`);
+        nextPositions[name] = { x: 10 + col * colWidth, y: 10 + row * rowHeight };
+    });
+
+    iconPositions = nextPositions;
+    await dbSet("desktop_iconsPositions", iconPositions, "settings");
+    buildDesktop();
+}
+
+window.addEventListener("fs-renamed", async (e) => {
+    const { oldPath, oldName, newName } = e.detail || {};
+    if (oldPath === `C:/Desktop/${oldName}` && !autoArrange && iconPositions[oldName]) {
+        iconPositions[newName] = iconPositions[oldName];
+        delete iconPositions[oldName];
+        await dbSet("desktop_iconsPositions", iconPositions, "settings");
+        buildDesktop();
+    }
+});
+
+window.addEventListener("clipboard-updated", () => {
+    const iconsContainer = document.getElementById("desktop-icons");
+    if (!iconsContainer) return;
+    iconsContainer.querySelectorAll(".icon").forEach(el => {
+        el.style.opacity = isPathCutInClipboard("C:/Desktop", el.dataset.name) ? "0.5" : "1";
+    });
+});

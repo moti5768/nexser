@@ -176,13 +176,16 @@ ${!options.hideStatus ? `
     const titleTextEl = w.querySelector(".title-text");
     if (titleTextEl) titleTextEl.textContent = title;
 
-    w._applyRealIcon = () => {
+    w._applyRealIcon = (newTitle = null, newNode = null) => {
         if (!w.isConnected) return; // すでに閉じられていたら何もしない
+        const resolvedIcon = (newTitle || newNode)
+            ? getIcon(newTitle || w.dataset.title || title, newNode || options.node || { type: "file" })
+            : finalIcon;
         const iconEl = w.querySelector(".window-icon");
-        if (iconEl) iconEl.textContent = finalIcon;
+        if (iconEl) iconEl.textContent = resolvedIcon;
         if (w._taskbarBtn && w._taskbarBtn.isConnected) {
             const tbIcon = w._taskbarBtn.querySelector(".taskbar-icon");
-            if (tbIcon) tbIcon.textContent = finalIcon;
+            if (tbIcon) tbIcon.textContent = resolvedIcon;
         }
     };
 
@@ -1286,13 +1289,13 @@ export function showModalWindow(title, message, options = {}) {
     }
 
     // --- 2. 重複表示の防止 ---
-    if (parentWin) {
+    if (parentWin && message) {
         if (!parentWin._activeDialogs) parentWin._activeDialogs = new Set();
 
         // 同じメッセージのダイアログが既に開いていれば、その要素を探して返す
         if (parentWin._activeDialogs.has(message)) {
             const existingWin = Array.from(document.querySelectorAll(".window"))
-                .find(w => w.innerText.includes(message)); // メッセージ内容で検索
+                .find(w => w._modal && w.innerText.includes(message)); // モーダル限定でメッセージ内容を検索
             return existingWin ? existingWin.querySelector(".content") : null;
         }
         parentWin._activeDialogs.add(message);
@@ -1400,7 +1403,7 @@ export function showModalWindow(title, message, options = {}) {
     // --- 6. 終了処理の定義 ---
     const closeDialog = (callback) => {
         if (parentWin) {
-            parentWin._activeDialogs.delete(message);
+            if (message) parentWin._activeDialogs?.delete(message);
             parentWin.style.pointerEvents = "auto"; // ロック解除
         }
         if (win._observer) win._observer.disconnect();
@@ -1409,6 +1412,7 @@ export function showModalWindow(title, message, options = {}) {
         scheduleRefreshTopWindow();
         if (typeof callback === "function") callback();
     };
+    win._closeDialog = closeDialog;
 
     // 親ウィンドウがDOMから削除されたら、モーダルも道連れで消す
     if (parentWin) {
@@ -1595,6 +1599,9 @@ export function progressWindow(title, itemName, options = {}) {
         const closeBtn = win.querySelector(".close-btn");
         if (closeBtn) closeBtn.classList.remove("pointer_none");
 
+        if (typeof win._closeDialog === "function") {
+            win._closeDialog();
+        }
         if (typeof win._destroy === "function") {
             win._destroy();
         }
@@ -1717,10 +1724,11 @@ export function refreshTopWindow(forcedTopWindow = null) {
 /**
  * ウィンドウとタスクバーのタイトルを同期して更新する
  */
-export function updateWindowTitle(win, baseTitle, isDirty) {
+export function updateWindowTitle(win, baseTitle, isDirty, newNode = null) {
     if (!win) return;
 
     const titleText = isDirty ? `${baseTitle} *` : baseTitle;
+    win.dataset.title = titleText;
 
     // 1. ウィンドウ本体のタイトルバーを更新
     const titleEl = win.querySelector(".title-text");
@@ -1728,15 +1736,23 @@ export function updateWindowTitle(win, baseTitle, isDirty) {
         titleEl.textContent = titleText;
     }
 
-    // 2. タスクバーのボタンを更新
-    // taskbarButtons 配列から、このウィンドウに対応するボタンを探す
-    const btn = taskbarButtons.find(b => b._window === win);
+    // 2. タスクバーのボタン（表示テキスト・ツールチップ・データ属性）を更新
+    const btn = taskbarButtons.find(b => b._window === win) || win._taskbarBtn;
     if (btn) {
+        btn.dataset.tooltip = titleText;
+        btn.dataset.title = titleText;
         const textEl = btn.querySelector(".taskbar-text");
         if (textEl) {
             textEl.textContent = titleText;
         }
     }
+
+    // 3. リネーム等でノード情報が渡された場合はアイコンも再評価して同期
+    if (newNode && typeof win._applyRealIcon === "function") {
+        win._applyRealIcon(baseTitle, newNode);
+    }
+
+    updateAllTaskbarButtonModes();
 }
 
 export function getWindows() {
@@ -1852,7 +1868,7 @@ export async function minimizeWindowById(id) {
     animateTitleClone(clone, { left: rect.left, top: rect.top, width: rect.width }, undefined, () => {
         clone.remove();
         w.dataset.minimized = "true";
-        if (!isFrameless) {
+        if (!w.classList.contains("frameless-window")) {
             w.style.pointerEvents = "auto";
         }
         w._animating = false; // ★ アニメーション終了後にフラグを解除
@@ -1981,14 +1997,17 @@ if (typeof window !== "undefined") {
 export function destroyWindow(win) {
     if (!win) return;
 
-    // カーネルのプロセスとして管理されている場合はカーネルに委譲
+    // createWindow で定義された共通破棄処理（リスナー解除・タスクバーボタン削除・プロセス終了）を実行
+    if (typeof win._destroy === "function") {
+        win._destroy();
+        return;
+    }
+
     if (win.dataset && win.dataset.processKey) {
         killProcess(win.dataset.processKey);
         return;
     }
 
-    // プロセス管理外の場合は単に remove するだけ
-    // ※ taskbarButtons 配列からの削除などは、すべて cleanupObserver が自動処理するためコードを削減
     if (win.isConnected) {
         win.remove();
     }
@@ -2056,7 +2075,7 @@ export function initWindowAPI() {
         bringToFront: (win) => bringToFront(win),
         destroyWindow: (win) => destroyWindow(win),
         removeAllTaskbarButtons: () => removeAllTaskbarButtons(),
-        updateWindowTitle: (win, title, isDirty) => updateWindowTitle(win, title, isDirty),
+        updateWindowTitle: (win, title, isDirty, newNode) => updateWindowTitle(win, title, isDirty, newNode),
         getWindows: () => getWindows().map(({ el, ...rest }) => rest),
 
         refreshTopWindow: (forcedTopWindow) => refreshTopWindow(forcedTopWindow),

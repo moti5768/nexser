@@ -10,7 +10,12 @@ import {
     resolveLinkTarget,
     clearSystemProtection,
     processStorageRecursively,
-    createUrlShortcutNode
+    createUrlShortcutNode,
+    renameFSItem,
+    setFSClipboard,
+    getFSClipboard,
+    clearFSClipboard,
+    isPathCutInClipboard
 } from "../fs-utils.js";
 import { FS, forceSave, markDefaultDeleted, unmarkDefaultDeleted, setBulkUpdating } from "../fs.js";
 import { copyFileContent, moveFileContent, deleteFileContentRecursive } from "../fs-db.js";
@@ -1596,7 +1601,8 @@ export default async function Explorer(root, options = {}) {
                 item.className = expectedClassName;
             }
 
-            const expectedOpacity = itemData.hidden ? "0.5" : "1";
+            const isCut = isPathCutInClipboard(currentPath, name);
+            const expectedOpacity = (itemData.hidden || isCut) ? "0.5" : "1";
             if (item.style.opacity !== expectedOpacity) {
                 item.style.opacity = expectedOpacity;
             }
@@ -1809,6 +1815,12 @@ export default async function Explorer(root, options = {}) {
                             }
                         },
                         { label: "---" },
+                        {
+                            label: "貼り付け",
+                            disabled: isInsideTrash || !getFSClipboard(),
+                            action: () => pasteClipboardToExplorer()
+                        },
+                        { label: "---" },
                         { label: "新規フォルダ", action: () => createNewItem(currentPath, listContainer, () => render(currentPath), "folder"), disabled: isInsideTrash },
                         { label: "新規テキストファイル", action: () => createNewItem(currentPath, listContainer, () => render(currentPath), "file"), disabled: isInsideTrash }
                     ];
@@ -1830,11 +1842,16 @@ export default async function Explorer(root, options = {}) {
                     disabled: typeof it.disabled === "function" ? it.disabled() : it.disabled
                 })) : [];
 
-                const openItems = baseItems.filter(it => it.label === "開く" || it.label === "元に戻す" || it.label === "プログラムから開く" || it.label === "ショートカットの作成");
+                const openItems = baseItems.filter(it => it.label === "開く" || it.label === "元に戻す" || it.label === "プログラムから開く");
+                const editItems = baseItems.filter(it => it.label === "切り取り" || it.label === "コピー" || it.label === "ショートカットの作成" || it.label === "名前の変更");
                 const deleteItems = baseItems.filter(it => it.label === "選択アイテムを削除" || it.label === "完全に削除" || it.label === "ゴミ箱を空にする");
                 const propItems = baseItems.filter(it => it.label === "プロパティ");
 
                 const result = [...openItems];
+                if (editItems.length) {
+                    if (result.length) result.push({ label: "---" });
+                    result.push(...editItems);
+                }
                 if (deleteItems.length) {
                     if (result.length) result.push({ label: "---" });
                     result.push(...deleteItems);
@@ -1899,6 +1916,54 @@ export default async function Explorer(root, options = {}) {
                     const statusBar = win?._statusBar;
                     if (statusBar) {
                         statusBar.textContent = `${globalSelected.items.size} 個のアイテムを選択中`;
+                    }
+                    return;
+                }
+
+                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "c") {
+                    if (globalSelected.items.size > 0 && !isTrashPath(currentPath)) {
+                        e.preventDefault();
+                        const names = Array.from(globalSelected.items).map(el => el.dataset.name);
+                        setFSClipboard("copy", currentPath, names);
+                    }
+                    return;
+                }
+
+                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "x") {
+                    if (globalSelected.items.size > 0 && !isTrashPath(currentPath)) {
+                        e.preventDefault();
+                        const folderNode = resolveFS(currentPath);
+                        const names = Array.from(globalSelected.items)
+                            .map(el => el.dataset.name)
+                            .filter(n => folderNode?.[n]?.system !== true);
+                        if (names.length > 0) setFSClipboard("cut", currentPath, names);
+                    }
+                    return;
+                }
+
+                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "v") {
+                    if (!isTrashPath(currentPath)) {
+                        e.preventDefault();
+                        await pasteClipboardToExplorer();
+                    }
+                    return;
+                }
+
+                if (e.key === "F2" && globalSelected.items.size === 1 && !isTrashPath(currentPath)) {
+                    e.preventDefault();
+                    const targetEl = Array.from(globalSelected.items)[0];
+                    startExplorerInlineRename(targetEl, targetEl.dataset.name);
+                    return;
+                }
+
+                if ((e.altKey && e.key === "ArrowUp") || e.key === "Backspace") {
+                    const isAtRoot = currentPath === "" || currentPath === "C:" || currentPath === "C" || currentPath === "C:/";
+                    if (!isAtRoot) {
+                        e.preventDefault();
+                        const parts = currentPath.split("/");
+                        parts.pop();
+                        const nextPath = parts.join("/");
+                        navigateTo(nextPath === "C" ? "C:" : nextPath);
                     }
                     return;
                 }
@@ -2159,6 +2224,90 @@ export default async function Explorer(root, options = {}) {
         } finally {
             setBulkUpdating(false);
         }
+    }
+
+    async function pasteClipboardToExplorer() {
+        const clip = getFSClipboard();
+        if (!clip || isTrashPath(currentPath)) return;
+
+        const payload = {
+            type: "explorer-icons",
+            sourcePath: clip.sourcePath,
+            draggedItems: clip.names.map(name => ({ name }))
+        };
+        const isCopy = clip.mode === "copy";
+        const ok = await handleItemDropMove(payload, currentPath, currentPath, render, isCopy);
+        if (ok && !isCopy) {
+            clearFSClipboard();
+        }
+    }
+
+    function startExplorerInlineRename(itemEl, oldName) {
+        const node = resolveFS(currentPath)?.[oldName];
+        if (!node || node.system === true) {
+            window.nexser?.windowAPI?.alertWindow(`「${oldName}」は保護されているため名前を変更できません。`, { width: 350, height: 140, taskbar: false });
+            return;
+        }
+
+        const labelEl = itemEl.querySelector(".item-name-label, .item-name-text");
+        if (!labelEl || itemEl.querySelector("input")) return;
+
+        labelEl.style.display = "none";
+        const input = document.createElement("input");
+        input.type = "text";
+        input.value = oldName;
+        input.style.cssText = "font-size:12px; padding:1px 4px; width:140px; max-width:90%; z-index:20;";
+        labelEl.parentElement.insertBefore(input, labelEl);
+        input.focus();
+
+        const dotIndex = oldName.lastIndexOf(".");
+        if (node.type !== "folder" && dotIndex > 0) {
+            input.setSelectionRange(0, dotIndex);
+        } else {
+            input.select();
+        }
+
+        let isDone = false;
+        let isAlerting = false;
+
+        const commit = async () => {
+            if (isDone || isAlerting) return;
+            const nextName = input.value.trim();
+            if (!nextName || nextName === oldName) {
+                isDone = true;
+                render(currentPath);
+                return;
+            }
+
+            const res = await renameFSItem(currentPath, oldName, nextName);
+            if (!res.ok) {
+                isAlerting = true;
+                window.nexser?.windowAPI?.alertWindow(res.error, { width: 360, height: 160, taskbar: false });
+                setTimeout(() => {
+                    isAlerting = false;
+                    input.focus();
+                }, 0);
+                return;
+            }
+
+            isDone = true;
+            render(currentPath);
+        };
+
+        input.addEventListener("mousedown", e => e.stopPropagation());
+        input.addEventListener("click", e => e.stopPropagation());
+        input.addEventListener("dblclick", e => e.stopPropagation());
+        input.addEventListener("keydown", e => {
+            e.stopPropagation();
+            if (e.key === "Enter") {
+                e.preventDefault();
+                commit();
+            } else if (e.key === "Escape") {
+                isDone = true;
+                render(currentPath);
+            }
+        });
+        input.addEventListener("blur", commit);
     }
 
     // ==========================================
@@ -2435,15 +2584,47 @@ export default async function Explorer(root, options = {}) {
     function setupPathInput(pathLabel, displayPath, onNavigate, onCancel) {
         if (!pathLabel) return;
         pathLabel.innerHTML = "";
-        const textSpan = document.createElement("span");
-        textSpan.style.cssText = "white-space: nowrap; overflow: hidden; text-overflow: ellipsis; direction: rtl; text-align: left; width: 100%; display: block; font-size: 16px; outline: none;";
 
         if (displayPath.startsWith("検索:")) {
+            const textSpan = document.createElement("span");
+            textSpan.style.cssText = "white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; display: block; font-size: 13px; padding: 0 6px;";
             textSpan.textContent = displayPath;
+            pathLabel.appendChild(textSpan);
         } else {
-            textSpan.innerHTML = `<bdi dir="ltr">${displayPath}</bdi>`;
+            const crumbWrap = document.createElement("div");
+            crumbWrap.style.cssText = "display: flex; align-items: center; gap: 2px; padding: 0 4px; height: 100%; overflow: hidden; flex-shrink: 0;";
+
+            const parts = displayPath.replace(/\\/g, "/").split("/").filter(Boolean);
+            let accPath = "";
+
+            parts.forEach((part, idx) => {
+                accPath = idx === 0 ? part : `${accPath}/${part}`;
+                const targetJumpPath = idx === 0 && part.endsWith(":") ? `${part}/` : accPath;
+
+                const segBtn = document.createElement("span");
+                segBtn.textContent = part;
+                segBtn.style.cssText = "font-size: 13px; padding: 1px 5px; cursor: pointer; white-space: nowrap; border: 1.5px solid transparent;";
+                segBtn.onmouseover = () => { segBtn.style.background = "#C3C7CB"; segBtn.classList.add("button"); };
+                segBtn.onmouseout = () => { segBtn.style.background = "transparent"; segBtn.classList.remove("button"); };
+                segBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    onNavigate(targetJumpPath);
+                };
+                crumbWrap.appendChild(segBtn);
+
+                if (idx < parts.length - 1) {
+                    const sep = document.createElement("span");
+                    sep.textContent = "›";
+                    sep.style.cssText = "color: #666; font-size: 13px; user-select: none;";
+                    crumbWrap.appendChild(sep);
+                }
+            });
+
+            const spacer = document.createElement("div");
+            spacer.style.cssText = "flex: 1 1 auto; height: 100%; min-width: 16px;";
+            pathLabel.appendChild(crumbWrap);
+            pathLabel.appendChild(spacer);
         }
-        pathLabel.appendChild(textSpan);
 
         pathLabel.onclick = () => {
             if (pathLabel.querySelector("input")) return;
@@ -2555,6 +2736,43 @@ export default async function Explorer(root, options = {}) {
                             }
                         },
                         disabled: () => globalSelected.items.size === 0
+                    },
+                    {
+                        label: "切り取り",
+                        action: () => {
+                            const folderNode = resolveFS(currentPath);
+                            const names = Array.from(globalSelected.items)
+                                .map(el => el.dataset.name)
+                                .filter(n => folderNode?.[n]?.system !== true);
+                            if (names.length > 0) setFSClipboard("cut", currentPath, names);
+                        },
+                        disabled: () => globalSelected.items.size === 0 || isInsideTrash
+                    },
+                    {
+                        label: "コピー",
+                        action: () => {
+                            const names = Array.from(globalSelected.items).map(el => el.dataset.name);
+                            if (names.length > 0) setFSClipboard("copy", currentPath, names);
+                        },
+                        disabled: () => globalSelected.items.size === 0 || isInsideTrash
+                    },
+                    {
+                        label: "貼り付け",
+                        action: () => pasteClipboardToExplorer(),
+                        disabled: () => isInsideTrash || !getFSClipboard()
+                    },
+                    {
+                        label: "名前の変更",
+                        action: () => {
+                            if (globalSelected.items.size !== 1) return;
+                            const targetEl = Array.from(globalSelected.items)[0];
+                            startExplorerInlineRename(targetEl, targetEl.dataset.name);
+                        },
+                        disabled: () => {
+                            if (globalSelected.items.size !== 1 || isInsideTrash) return true;
+                            const name = Array.from(globalSelected.items)[0].dataset.name;
+                            return resolveFS(currentPath)?.[name]?.system === true;
+                        }
                     },
                     {
                         label: "ショートカットの作成",
@@ -2860,15 +3078,38 @@ export default async function Explorer(root, options = {}) {
         }
     }
 
+    const handleFsRenamed = async (e) => {
+        const { oldPath, oldName, newName } = e.detail || {};
+        if (oldPath === `${currentPath}/${oldName}` && !autoArrange && viewMode === "icon" && iconPositions[oldName]) {
+            iconPositions[newName] = iconPositions[oldName];
+            delete iconPositions[oldName];
+            const safePath = currentPath.replace(/\//g, "_") || "root";
+            await saveSetting(`explorerIconPositions_${safePath}`, iconPositions);
+        }
+    };
+
     if (!win._fsWatcherInstalled) {
         win._fsWatcherInstalled = true;
+        window.addEventListener("fs-renamed", handleFsRenamed);
         window.addEventListener("fs-updated", handleFsUpdated);
+        window.addEventListener("clipboard-updated", handleFsUpdated);
     }
 
     return {
+        onRename: ({ oldPath, newPath, updatedPath }) => {
+            const replacePrefix = (p) => (p === oldPath ? newPath : (p.startsWith(oldPath + "/") ? newPath + p.slice(oldPath.length) : p));
+            historyStack = historyStack.map(replacePrefix);
+            forwardStack = forwardStack.map(replacePrefix);
+            currentPath = updatedPath;
+            sidebarInitialized = false;
+            updateTitle_explorer(currentPath);
+            render(currentPath);
+        },
         dispose: () => {
             cancelSelection();
+            window.removeEventListener("fs-renamed", handleFsRenamed);
             window.removeEventListener("fs-updated", handleFsUpdated);
+            window.removeEventListener("clipboard-updated", handleFsUpdated);
 
             document.removeEventListener("mousemove", handleGlobalMouseMove);
             document.removeEventListener("mouseup", handleGlobalMouseUp);
