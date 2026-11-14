@@ -1,5 +1,5 @@
 // desktop.js
-import { FS, forceSave, markDefaultDeleted, setBulkUpdating } from "./fs.js";
+import { FS, forceSave, markDefaultDeleted, unmarkDefaultDeleted, setBulkUpdating, reorderNodeKeys } from "./fs.js";
 import { resolveFS, validateName, importFileSmart, getUniqueName, isDescendantOrSelf } from "./fs-utils.js";
 import { addRecent } from "./recent.js";
 import { attachContextMenu } from "./context-menu.js";
@@ -28,7 +28,7 @@ let showFileExtensions = true; // ★ 追加: 拡張子表示設定
         }
 
         const desktop = document.getElementById("desktop");
-        if (desktop) buildDesktop();
+        if (desktop && !window.nexser?.isBooting) buildDesktop();
     } catch (e) {
         console.warn("デスクトップ設定の読み込みに失敗しました:", e);
     }
@@ -116,7 +116,7 @@ export function buildDesktop() {
                 names: draggedNames,
                 draggedItems: draggedItemsInfo // 各アイコン個別のオフセット情報を追加
             }));
-            e.dataTransfer.effectAllowed = "move";
+            e.dataTransfer.effectAllowed = "copyMove";
         });
         item.addEventListener("dragover", (e) => {
             e.preventDefault();
@@ -168,7 +168,23 @@ export function buildDesktop() {
                     const desktopFS = FS["C:"].Desktop;
 
                     // ⭐ IndexedDB上の実データを移動・コピーするためのAPIをインポート
-                    const { moveFileContent, copyFileContent } = await import("./fs-db.js");
+                    const { moveFileContent, copyFileContent, deleteFileContentRecursive } = await import("./fs-db.js");
+
+                    // ⭐ コピー時にシステム保護フラグを解除して通常アイテム化するヘルパー（Windows仕様）
+                    const clearSystemProtectionRecursively = (node, visited = new WeakSet()) => {
+                        if (!node || typeof node !== "object" || visited.has(node)) return;
+                        visited.add(node);
+                        if ("system" in node) {
+                            delete node.system;
+                        }
+                        for (const key of Object.keys(node)) {
+                            if (key === "type" || key === "system" || key === "originalPath" || key === "lastModified") continue;
+                            const child = node[key];
+                            if (child && typeof child === "object") {
+                                clearSystemProtectionRecursively(child, visited);
+                            }
+                        }
+                    };
 
                     // ⭐ 再帰的に配下すべてのファイルの実データパスを移動またはコピーするヘルパー
                     const processStorageRecursively = async (node, oldBasePath, newBasePath, isCopyMode, visited = new WeakSet(), depth = 0) => {
@@ -186,9 +202,9 @@ export function buildDesktop() {
                                 if (child && typeof child === "object") {
                                     if (child.type === "file" || child.type === "app") {
                                         if (isCopyMode) {
-                                            await copyFileContent(oldSubPath, newSubPath); // ⭕ 修正: fs-db.jsのcopyFileContentを使用
+                                            await copyFileContent(oldSubPath, newSubPath);
                                         } else {
-                                            await moveFileContent(oldSubPath, newSubPath); // ⭕ 修正: fs-db.jsのmoveFileContentを使用
+                                            await moveFileContent(oldSubPath, newSubPath);
                                         }
                                     } else if (child.type === "folder") {
                                         await processStorageRecursively(child, oldSubPath, newSubPath, isCopyMode, visited, depth + 1);
@@ -200,125 +216,187 @@ export function buildDesktop() {
                         }
                     };
 
-                    // エクスプローラーからドラッグされた場合
-                    if (data.type === "explorer-icons") {
-                        const sourcePath = data.sourcePath || "C:/Desktop";
-                        const sourceFolder = resolveFS(sourcePath);
-                        if (!sourceFolder) return;
+                    setBulkUpdating(true);
+                    try {
+                        const isDroppingToTrash = targetPath.toLowerCase() === "c:/trash";
+                        const effectiveIsCopy = isDroppingToTrash ? false : isCopy;
 
-                        for (const draggedInfo of data.draggedItems) {
-                            const itemName = draggedInfo.name;
-                            const sourceFullPath = sourcePath ? `${sourcePath}/${itemName}` : itemName;
+                        // エクスプローラーからドラッグされた場合
+                        if (data.type === "explorer-icons") {
+                            const sourcePath = data.sourcePath || "C:/Desktop";
+                            const sourceFolder = resolveFS(sourcePath);
+                            if (!sourceFolder) return;
 
-                            // ⭐ 厳格なガードチェック：自分自身や子孫への移動・コピーは一律でブロック
-                            if (isDescendantOrSelf(sourceFullPath, targetPath)) {
-                                continue;
-                            }
+                            for (const draggedInfo of data.draggedItems) {
+                                const itemName = draggedInfo.name;
+                                const sourceFullPath = sourcePath ? `${sourcePath}/${itemName}` : itemName;
 
-                            if (!isCopy && sourcePath === targetPath && itemName === name) continue;
-                            if (!sourceFolder[itemName]) continue;
-
-                            const uniqueTargetName = getUniqueName(targetNode, itemName);
-                            const sourceItemNode = JSON.parse(JSON.stringify(sourceFolder[itemName]));
-                            const newTargetFullPath = `${targetPath}/${uniqueTargetName}`;
-
-                            if (isCopy) {
-                                // ⭐ コピーの場合：IndexedDB上の実データを複製し、元データは削除しない
-                                if (sourceItemNode.type === "file" || sourceItemNode.type === "app") {
-                                    await copyFileContent(sourceFullPath, newTargetFullPath);
-                                } else if (sourceItemNode.type === "folder") {
-                                    await processStorageRecursively(sourceItemNode, sourceFullPath, newTargetFullPath, true);
-                                }
-                                targetNode[uniqueTargetName] = sourceItemNode;
-                            } else {
-                                // ⭐ 移動の場合：IndexedDB上の実データを新しいパスへ移行
-                                if (sourceItemNode.type === "file" || sourceItemNode.type === "app") {
-                                    await moveFileContent(sourceFullPath, newTargetFullPath);
-                                } else if (sourceItemNode.type === "folder") {
-                                    await processStorageRecursively(sourceItemNode, sourceFullPath, newTargetFullPath, false);
+                                // ⭐ 厳格なガードチェック：自分自身や子孫への移動・コピーは一律でブロック
+                                if (isDescendantOrSelf(sourceFullPath, targetPath)) {
+                                    continue;
                                 }
 
-                                let moved = false;
-                                try {
-                                    delete sourceFolder[itemName];
-                                    moved = true;
-                                } catch (err) {
-                                    moved = false;
+                                if (!effectiveIsCopy && sourcePath === targetPath && itemName === name) continue;
+                                if (!sourceFolder[itemName]) continue;
+                                if (isDroppingToTrash && sourceFolder[itemName].system === true) continue;
+
+                                const normalizedSourcePath = sourcePath.replace(/\\/g, "/").replace(/\/+$/, "").toLowerCase();
+                                const isTakingOutFromTrash = (normalizedSourcePath === "c:/trash" || normalizedSourcePath === "trash") && !isDroppingToTrash;
+                                const cleanBaseName = isTakingOutFromTrash ? itemName.replace(/^\d+_/, "") : itemName;
+
+                                let uniqueTargetName = getUniqueName(targetNode, cleanBaseName);
+                                if (isDroppingToTrash && targetNode[itemName]) {
+                                    let counter = 1;
+                                    const baseName = `${Date.now()}_${itemName}`;
+                                    uniqueTargetName = baseName;
+                                    while (targetNode[uniqueTargetName]) {
+                                        uniqueTargetName = `${baseName}_${counter++}`;
+                                    }
                                 }
 
-                                if (moved) {
+                                const sourceItemNode = JSON.parse(JSON.stringify(sourceFolder[itemName]));
+                                if (isDroppingToTrash) {
+                                    sourceItemNode.originalPath = sourcePath;
+                                    await markDefaultDeleted(sourceFullPath);
+                                } else if (isTakingOutFromTrash) {
+                                    delete sourceItemNode.originalPath;
+                                }
+                                const newTargetFullPath = `${targetPath}/${uniqueTargetName}`;
+
+                                if (isTakingOutFromTrash) {
+                                    await unmarkDefaultDeleted(newTargetFullPath);
+                                }
+
+                                if (effectiveIsCopy) {
+                                    // ⭐ コピーの場合：フォルダ内の保護アイテムも除外して複製
+                                    if (sourceItemNode.type === "folder") {
+                                        stripProtectedChildren(sourceItemNode);
+                                    }
+                                    if (sourceItemNode.type === "file" || sourceItemNode.type === "app") {
+                                        await copyFileContent(sourceFullPath, newTargetFullPath);
+                                    } else if (sourceItemNode.type === "folder") {
+                                        await processStorageRecursively(sourceItemNode, sourceFullPath, newTargetFullPath, true);
+                                    }
                                     targetNode[uniqueTargetName] = sourceItemNode;
                                 } else {
-                                    targetNode[uniqueTargetName] = {
-                                        type: "link",
-                                        target: sourceFullPath,
-                                        lastModified: Date.now()
-                                    };
+                                    // ⭐ 移動の場合：IndexedDB上の実データを新しいパスへ移行
+                                    if (sourceItemNode.type === "file" || sourceItemNode.type === "app") {
+                                        await moveFileContent(sourceFullPath, newTargetFullPath);
+                                    } else if (sourceItemNode.type === "folder") {
+                                        await processStorageRecursively(sourceItemNode, sourceFullPath, newTargetFullPath, false);
+                                    }
+
+                                    let moved = false;
+                                    try {
+                                        moved = delete sourceFolder[itemName];
+                                    } catch (err) {
+                                        moved = false;
+                                    }
+
+                                    if (moved) {
+                                        targetNode[uniqueTargetName] = sourceItemNode;
+                                    } else {
+                                        if (sourceItemNode.type === "file" || sourceItemNode.type === "app") {
+                                            await moveFileContent(newTargetFullPath, sourceFullPath).catch(() => deleteFileContentRecursive(newTargetFullPath));
+                                        } else if (sourceItemNode.type === "folder") {
+                                            await processStorageRecursively(sourceItemNode, newTargetFullPath, sourceFullPath, false).catch(() => deleteFileContentRecursive(newTargetFullPath));
+                                        }
+
+                                        targetNode[uniqueTargetName] = {
+                                            type: "link",
+                                            target: sourceItemNode.type === "link" ? sourceItemNode.target : sourceFullPath,
+                                            lastModified: Date.now()
+                                        };
+                                    }
                                 }
                             }
                         }
-                    }
-                    // デスクトップ内のアイコンからドラッグされた場合
-                    else if (data.type === "desktop-icons") {
-                        const sourcePath = "C:/Desktop";
-                        for (const itemName of data.names) {
-                            if (!desktopFS[itemName]) continue;
+                        // デスクトップ内のアイコンからドラッグされた場合
+                        else if (data.type === "desktop-icons") {
+                            const sourcePath = "C:/Desktop";
+                            for (const itemName of data.names) {
+                                if (!desktopFS[itemName]) continue;
+                                if ((effectiveIsCopy || isDroppingToTrash) && desktopFS[itemName].system === true) continue;
 
-                            const sourceFullPath = `C:/Desktop/${itemName}`;
-                            const targetFullPath = targetPath; // ドロップ先のフルパス
+                                const sourceFullPath = `C:/Desktop/${itemName}`;
+                                const targetFullPath = targetPath; // ドロップ先のフルパス
 
-                            // ⭐ 厳格なガードチェック：自分自身や子孫フォルダへの移動・コピーを防止
-                            if (isDescendantOrSelf(sourceFullPath, targetFullPath)) {
-                                continue;
-                            }
-
-                            if (!isCopy && sourcePath === targetPath && itemName === name) continue;
-
-                            const uniqueTargetName = getUniqueName(targetNode, itemName);
-                            const sourceItemNode = JSON.parse(JSON.stringify(desktopFS[itemName]));
-                            const newTargetFullPath = `${targetPath}/${uniqueTargetName}`;
-
-                            if (isCopy) {
-                                // ⭐ コピーの場合：IndexedDB上の実データを複製し、元データは削除しない
-                                if (sourceItemNode.type === "file" || sourceItemNode.type === "app") {
-                                    await copyFileContent(sourceFullPath, newTargetFullPath);
-                                } else if (sourceItemNode.type === "folder") {
-                                    await processStorageRecursively(sourceItemNode, sourceFullPath, newTargetFullPath, true);
-                                }
-                                // link（ショートカット）の場合は実データがないためそのまま複製を格納
-                                targetNode[uniqueTargetName] = sourceItemNode;
-                            } else {
-                                // ⭐ 移動の場合：IndexedDB上の実データを新しいパスへ移行
-                                if (sourceItemNode.type === "file" || sourceItemNode.type === "app") {
-                                    await moveFileContent(sourceFullPath, newTargetFullPath);
-                                } else if (sourceItemNode.type === "folder") {
-                                    await processStorageRecursively(sourceItemNode, sourceFullPath, newTargetFullPath, false);
-                                }
-                                // link（ショートカット）の場合は実データがないためmoveFileContentは不要
-
-                                let moved = false;
-                                try {
-                                    moved = delete desktopFS[itemName];
-                                } catch (e) {
-                                    moved = false;
+                                // ⭐ 厳格なガードチェック：自分自身や子孫フォルダへの移動・コピーを防止
+                                if (isDescendantOrSelf(sourceFullPath, targetFullPath)) {
+                                    continue;
                                 }
 
-                                if (moved) {
+                                if (!effectiveIsCopy && sourcePath === targetPath && itemName === name) continue;
+
+                                let uniqueTargetName = getUniqueName(targetNode, itemName);
+                                if (isDroppingToTrash && targetNode[itemName]) {
+                                    let counter = 1;
+                                    const baseName = `${Date.now()}_${itemName}`;
+                                    uniqueTargetName = baseName;
+                                    while (targetNode[uniqueTargetName]) {
+                                        uniqueTargetName = `${baseName}_${counter++}`;
+                                    }
+                                }
+
+                                const sourceItemNode = JSON.parse(JSON.stringify(desktopFS[itemName]));
+                                if (isDroppingToTrash) {
+                                    sourceItemNode.originalPath = sourcePath;
+                                    await markDefaultDeleted(sourceFullPath);
+                                }
+                                const newTargetFullPath = `${targetPath}/${uniqueTargetName}`;
+
+                                if (effectiveIsCopy) {
+                                    // ⭐ コピーの場合：フォルダ内の保護アイテムも除外して複製
+                                    if (sourceItemNode.type === "folder") {
+                                        stripProtectedChildren(sourceItemNode);
+                                    }
+                                    if (sourceItemNode.type === "file" || sourceItemNode.type === "app") {
+                                        await copyFileContent(sourceFullPath, newTargetFullPath);
+                                    } else if (sourceItemNode.type === "folder") {
+                                        await processStorageRecursively(sourceItemNode, sourceFullPath, newTargetFullPath, true);
+                                    }
+                                    // link（ショートカット）の場合は実データがないためそのまま複製を格納
                                     targetNode[uniqueTargetName] = sourceItemNode;
                                 } else {
-                                    // ⭐ ショートカットの場合は元のリンク先（target）を維持して安全に移行する
-                                    targetNode[uniqueTargetName] = {
-                                        type: "link",
-                                        target: sourceItemNode.type === "link" ? sourceItemNode.target : sourceFullPath,
-                                        lastModified: Date.now()
-                                    };
+                                    // ⭐ 移動の場合：IndexedDB上の実データを新しいパスへ移行
+                                    if (sourceItemNode.type === "file" || sourceItemNode.type === "app") {
+                                        await moveFileContent(sourceFullPath, newTargetFullPath);
+                                    } else if (sourceItemNode.type === "folder") {
+                                        await processStorageRecursively(sourceItemNode, sourceFullPath, newTargetFullPath, false);
+                                    }
+
+                                    let moved = false;
+                                    try {
+                                        moved = delete desktopFS[itemName];
+                                    } catch (e) {
+                                        moved = false;
+                                    }
+
+                                    if (moved) {
+                                        targetNode[uniqueTargetName] = sourceItemNode;
+                                    } else {
+                                        if (sourceItemNode.type === "file" || sourceItemNode.type === "app") {
+                                            await moveFileContent(newTargetFullPath, sourceFullPath).catch(() => deleteFileContentRecursive(newTargetFullPath));
+                                        } else if (sourceItemNode.type === "folder") {
+                                            await processStorageRecursively(sourceItemNode, newTargetFullPath, sourceFullPath, false).catch(() => deleteFileContentRecursive(newTargetFullPath));
+                                        }
+
+                                        // ⭐ ショートカットの場合は元のリンク先（target）を維持して安全に移行する
+                                        targetNode[uniqueTargetName] = {
+                                            type: "link",
+                                            target: sourceItemNode.type === "link" ? sourceItemNode.target : sourceFullPath,
+                                            lastModified: Date.now()
+                                        };
+                                    }
                                 }
                             }
                         }
+
+                        await forceSave();
+                    } finally {
+                        setBulkUpdating(false);
                     }
 
-                    const { saveFolderNode } = await import("./fs-db.js");
-                    await saveFolderNode("C:", FS["C:"]);
                     window.dispatchEvent(new Event("fs-updated"));
                     buildDesktop();
                     return;
@@ -339,7 +417,7 @@ export function buildDesktop() {
 
         // 右クリック
         attachContextMenu(item, () => {
-            const isTrash = (name === "C:/Trash");
+            const isTrash = (name === "C:/Trash") || (node.type === "link" && typeof node.target === "string" && node.target.toLowerCase() === "c:/trash");
             return [
                 {
                     label: "開く",
@@ -367,8 +445,6 @@ export function buildDesktop() {
                             target: realTargetPath,
                             lastModified: Date.now()
                         };
-                        const { saveFolderNode } = await import("./fs-db.js");
-                        await saveFolderNode("C:", FS["C:"]);
                         window.dispatchEvent(new Event("fs-updated"));
                     }
                 },
@@ -384,24 +460,33 @@ export function buildDesktop() {
                         if (globalSelected.items.size > 0) {
                             const itemsToDelete = Array.from(globalSelected.items).map(i => i.dataset.name);
                             globalSelected.items.clear();
+                            globalSelected.item = null;
 
-                            for (const name of itemsToDelete) {
-                                const success = await deleteFSItem("C:/Desktop", name, false);
-                                if (success) {
-                                    await markDefaultDeleted(`C:/Desktop/${name}`);
+                            setBulkUpdating(true);
+                            try {
+                                for (const targetName of itemsToDelete) {
+                                    const success = await deleteFSItem("C:/Desktop", targetName, false);
+                                    if (success) {
+                                        await markDefaultDeleted(`C:/Desktop/${targetName}`);
+                                    }
                                 }
+                                await forceSave();
+                            } finally {
+                                setBulkUpdating(false);
                             }
 
-                            // ⭐ Desktopフォルダだけを個別部分保存
-                            const { saveFolderNode } = await import("./fs-db.js");
-                            await saveFolderNode("C:", FS["C:"]);
                             window.dispatchEvent(new Event("fs-updated"));
                         }
                     }
                 },
                 {
                     label: "削除",
-                    action: () => deleteFSItem("C:/Desktop", name)
+                    action: async () => {
+                        const success = await deleteFSItem("C:/Desktop", name);
+                        if (success) {
+                            await markDefaultDeleted(`C:/Desktop/${name}`);
+                        }
+                    }
                 },
                 {
                     label: "プログラムから開く",
@@ -551,17 +636,21 @@ export function buildDesktop() {
                 if (globalSelected.items.size > 0) {
                     const itemsToDelete = Array.from(globalSelected.items).map(item => item.dataset.name);
                     globalSelected.items.clear();
+                    globalSelected.item = null;
 
-                    for (const name of itemsToDelete) {
-                        const success = await deleteFSItem("C:/Desktop", name, false);
-                        if (success) {
-                            await markDefaultDeleted(`C:/Desktop/${name}`);
+                    setBulkUpdating(true);
+                    try {
+                        for (const name of itemsToDelete) {
+                            const success = await deleteFSItem("C:/Desktop", name, false);
+                            if (success) {
+                                await markDefaultDeleted(`C:/Desktop/${name}`);
+                            }
                         }
+                        await forceSave();
+                    } finally {
+                        setBulkUpdating(false);
                     }
 
-                    // ⭐ Desktopフォルダだけを個別部分保存
-                    const { saveFolderNode } = await import("./fs-db.js");
-                    await saveFolderNode("C:", FS["C:"]);
                     window.dispatchEvent(new Event("fs-updated"));
                 }
             }
@@ -779,13 +868,30 @@ export function buildDesktop() {
                     const sourcePath = data.sourcePath || "C:/Desktop";
 
                     // 移動の場合で、同じ場所（DesktopからDesktopの背景）へのドロップは処理しない（コピーなら許可）
-                    if (!isCopy && sourcePath === "Desktop") return;
+                    if (!isCopy && (sourcePath === "C:/Desktop" || sourcePath === "Desktop")) return;
 
                     const sourceFolder = resolveFS(sourcePath);
                     const targetFolderNode = FS["C:"].Desktop;
                     if (sourceFolder && targetFolderNode) {
                         // ⭐ IndexedDB上の実データを移動・コピーするためのAPIをインポート
-                        const { moveFileContent, copyFileContent } = await import("./fs-db.js");
+                        const { moveFileContent, copyFileContent, deleteFileContentRecursive } = await import("./fs-db.js");
+
+                        // ⭐ コピー時にフォルダ配下のシステム保護アイテムを除外するヘルパー
+                        const stripProtectedChildren = (node, visited = new WeakSet()) => {
+                            if (!node || typeof node !== "object" || visited.has(node)) return;
+                            visited.add(node);
+                            for (const key of Object.keys(node)) {
+                                if (key === "type" || key === "system" || key === "originalPath" || key === "lastModified") continue;
+                                const child = node[key];
+                                if (child && typeof child === "object") {
+                                    if (child.system === true) {
+                                        delete node[key];
+                                    } else if (child.type === "folder") {
+                                        stripProtectedChildren(child, visited);
+                                    }
+                                }
+                            }
+                        };
 
                         // ⭐ 再帰的に配下すべてのファイルの実データパスを移動またはコピーするヘルパー
                         const processStorageRecursively = async (node, oldBasePath, newBasePath, isCopyMode, visited = new WeakSet(), depth = 0) => {
@@ -793,73 +899,103 @@ export function buildDesktop() {
                             if (visited.has(node)) return; // 循環参照を検知してブロック
                             visited.add(node);
 
-                            for (const key of Object.keys(node)) {
-                                if (key === "type" || key === "system" || key === "originalPath" || key === "lastModified") continue;
-                                const child = node[key];
-                                const oldSubPath = `${oldBasePath}/${key}`;
-                                const newSubPath = `${newBasePath}/${key}`;
+                            try {
+                                for (const key of Object.keys(node)) {
+                                    if (key === "type" || key === "system" || key === "originalPath" || key === "lastModified") continue;
+                                    const child = node[key];
+                                    const oldSubPath = `${oldBasePath}/${key}`;
+                                    const newSubPath = `${newBasePath}/${key}`;
 
-                                if (child && typeof child === "object") {
-                                    if (child.type === "file" || child.type === "app") {
-                                        if (isCopyMode) {
-                                            await copyFileContent(oldSubPath, newSubPath); // ⭕ 修正: fs-db.jsのcopyFileContentを使用
-                                        } else {
-                                            await moveFileContent(oldSubPath, newSubPath); // ⭕ 修正: fs-db.jsのmoveFileContentを使用
+                                    if (child && typeof child === "object") {
+                                        if (isCopyMode && child.system === true) continue;
+                                        if (child.type === "file" || child.type === "app") {
+                                            if (isCopyMode) {
+                                                await copyFileContent(oldSubPath, newSubPath);
+                                            } else {
+                                                await moveFileContent(oldSubPath, newSubPath);
+                                            }
+                                        } else if (child.type === "folder") {
+                                            await processStorageRecursively(child, oldSubPath, newSubPath, isCopyMode, visited, depth + 1);
                                         }
-                                    } else if (child.type === "folder") {
-                                        await processStorageRecursively(child, oldSubPath, newSubPath, isCopyMode, visited, depth + 1);
                                     }
                                 }
+                            } finally {
+                                visited.delete(node);
                             }
                         };
 
-                        for (const draggedInfo of data.draggedItems) {
-                            const itemName = draggedInfo.name;
-                            if (!sourceFolder[itemName]) continue;
+                        const normalizedSourcePath = sourcePath.replace(/\\/g, "/").replace(/\/+$/, "").toLowerCase();
+                        const isTakingOutFromTrash = normalizedSourcePath === "c:/trash" || normalizedSourcePath === "trash";
 
-                            const uniqueTargetName = getUniqueName(targetFolderNode, itemName);
-                            const sourceItemNode = JSON.parse(JSON.stringify(sourceFolder[itemName]));
-                            const sourceFullPath = `${sourcePath}/${itemName}`;
-                            const newTargetFullPath = `C:/Desktop/${uniqueTargetName}`;
+                        setBulkUpdating(true);
+                        try {
+                            for (const draggedInfo of data.draggedItems) {
+                                const itemName = draggedInfo.name;
+                                if (!sourceFolder[itemName]) continue;
+                                if (isCopy && sourceFolder[itemName].system === true) continue;
 
-                            if (isCopy) {
-                                // ⭐ コピーの場合：IndexedDB上の実データを複製し、元データは削除しない
-                                if (sourceItemNode.type === "file" || sourceItemNode.type === "app") {
-                                    await copyFileContent(sourceFullPath, newTargetFullPath);
-                                } else if (sourceItemNode.type === "folder") {
-                                    await processStorageRecursively(sourceItemNode, sourceFullPath, newTargetFullPath, true);
+                                const cleanBaseName = isTakingOutFromTrash ? itemName.replace(/^\d+_/, "") : itemName;
+                                const uniqueTargetName = getUniqueName(targetFolderNode, cleanBaseName);
+                                const sourceItemNode = JSON.parse(JSON.stringify(sourceFolder[itemName]));
+                                if (isTakingOutFromTrash) {
+                                    delete sourceItemNode.originalPath;
                                 }
-                                targetFolderNode[uniqueTargetName] = sourceItemNode;
-                            } else {
-                                // ⭐ 移動の場合：IndexedDB上の実データを Desktop 配下へ安全に移行
-                                if (sourceItemNode.type === "file" || sourceItemNode.type === "app") {
-                                    await moveFileContent(sourceFullPath, newTargetFullPath);
-                                } else if (sourceItemNode.type === "folder") {
-                                    await processStorageRecursively(sourceItemNode, sourceFullPath, newTargetFullPath, false);
+                                const sourceFullPath = `${sourcePath}/${itemName}`;
+                                const newTargetFullPath = `C:/Desktop/${uniqueTargetName}`;
+
+                                if (isTakingOutFromTrash) {
+                                    await unmarkDefaultDeleted(newTargetFullPath);
                                 }
 
-                                let moved = false;
-                                try {
-                                    delete sourceFolder[itemName];
-                                    moved = true;
-                                } catch (err) {
-                                    moved = false;
-                                }
-
-                                if (moved) {
+                                if (isCopy) {
+                                    // ⭐ コピーの場合：フォルダ内の保護アイテムも除外して複製
+                                    if (sourceItemNode.type === "folder") {
+                                        stripProtectedChildren(sourceItemNode);
+                                    }
+                                    if (sourceItemNode.type === "file" || sourceItemNode.type === "app") {
+                                        await copyFileContent(sourceFullPath, newTargetFullPath);
+                                    } else if (sourceItemNode.type === "folder") {
+                                        await processStorageRecursively(sourceItemNode, sourceFullPath, newTargetFullPath, true);
+                                    }
                                     targetFolderNode[uniqueTargetName] = sourceItemNode;
                                 } else {
-                                    targetFolderNode[uniqueTargetName] = {
-                                        type: "link",
-                                        target: sourceFullPath,
-                                        lastModified: Date.now()
-                                    };
+                                    // ⭐ 移動の場合：IndexedDB上の実データを Desktop 配下へ安全に移行
+                                    if (sourceItemNode.type === "file" || sourceItemNode.type === "app") {
+                                        await moveFileContent(sourceFullPath, newTargetFullPath);
+                                    } else if (sourceItemNode.type === "folder") {
+                                        await processStorageRecursively(sourceItemNode, sourceFullPath, newTargetFullPath, false);
+                                    }
+
+                                    let moved = false;
+                                    try {
+                                        moved = delete sourceFolder[itemName];
+                                    } catch (err) {
+                                        moved = false;
+                                    }
+
+                                    if (moved) {
+                                        targetFolderNode[uniqueTargetName] = sourceItemNode;
+                                    } else {
+                                        if (sourceItemNode.type === "file" || sourceItemNode.type === "app") {
+                                            await moveFileContent(newTargetFullPath, sourceFullPath).catch(() => deleteFileContentRecursive(newTargetFullPath));
+                                        } else if (sourceItemNode.type === "folder") {
+                                            await processStorageRecursively(sourceItemNode, newTargetFullPath, sourceFullPath, false).catch(() => deleteFileContentRecursive(newTargetFullPath));
+                                        }
+
+                                        targetFolderNode[uniqueTargetName] = {
+                                            type: "link",
+                                            target: sourceItemNode.type === "link" ? sourceItemNode.target : sourceFullPath,
+                                            lastModified: Date.now()
+                                        };
+                                    }
                                 }
                             }
+
+                            await forceSave();
+                        } finally {
+                            setBulkUpdating(false);
                         }
 
-                        const { saveFolderNode } = await import("./fs-db.js");
-                        await saveFolderNode("C:", FS["C:"]);
                         window.dispatchEvent(new Event("fs-updated"));
                         buildDesktop();
                         return;
@@ -949,8 +1085,6 @@ export function buildDesktop() {
                     lastModified: Date.now()
                 };
 
-                const { saveFolderNode } = await import("./fs-db.js");
-                await saveFolderNode("C:", FS["C:"]);
                 window.dispatchEvent(new Event("fs-updated"));
                 buildDesktop();
                 return;
@@ -1048,9 +1182,7 @@ export function buildDesktop() {
                 }
                 folderNode.lastModified = Date.now();
                 pg.update(totalFiles, totalFiles, "すべての項目のコピーが完了しました。");
-
-                const { saveFolderNode } = await import("./fs-db.js");
-                await saveFolderNode("C:", FS["C:"]);
+                await forceSave();
 
             } catch (err) {
                 console.error("Drop processing failed:", err);
@@ -1092,7 +1224,11 @@ export function buildDesktop() {
         });
     } // ⭐ ガード処理はここまで
 
-    requestAnimationFrame(adjustDesktopIconArea);
+    if (window.nexser?.isBooting) {
+        iconsContainer.style.display = "none";
+    } else {
+        requestAnimationFrame(adjustDesktopIconArea);
+    }
     window.dispatchEvent(new Event("desktop-ready"));
 }
 
@@ -1102,6 +1238,11 @@ function adjustDesktopIconArea() {
     const iconsContainer = document.getElementById("desktop-icons");
     const taskbar = document.getElementById("taskbar");
     if (!desktop || !iconsContainer || !taskbar) return;
+
+    if (window.nexser?.isBooting) {
+        iconsContainer.style.display = "none";
+        return;
+    }
 
     const isWindowMode = taskbar.closest(".window") !== null;
     const rect = taskbar.getBoundingClientRect();
@@ -1246,14 +1387,6 @@ function createNewItem(currentPath, container, itemType = "folder") {
         iconDiv.remove();
         createNewItem.isCreating = false;
 
-        // ⭐ 改善点③: 新規作成時も重い forceSave の代わりに Desktop フォルダの個別部分保存を適用
-        try {
-            const { saveFolderNode } = await import("./fs-db.js");
-            await saveFolderNode("C:", FS["C:"]);
-        } catch (err) {
-            console.error("[Desktop] 新規作成の保存に失敗しました:", err);
-        }
-
         window.dispatchEvent(new Event("fs-updated"));
     };
 
@@ -1282,48 +1415,125 @@ async function deleteFSItem(parentPath, itemName, dispatchEvent = true) {
     const parentNode = resolveFS(parentPath);
     if (!parentNode || !parentNode[itemName]) return false;
 
+    const normalizedParent = parentPath.replace(/\\/g, "/").replace(/\/+$/, "").toLowerCase();
+    const isTrash =
+        normalizedParent === "c:/trash" ||
+        normalizedParent === "trash" ||
+        normalizedParent.startsWith("c:/trash/") ||
+        normalizedParent.startsWith("trash/");
+
     // --- ゴミ箱内からの完全消去の場合 ---
-    const isTrash = parentPath === "C:/Trash" || parentPath.startsWith("Trash/");
     if (isTrash) {
-        delete parentNode[itemName];
-        if (dispatchEvent) {
-            await forceSave(); // ★ 確実に保存を待つ
-            window.dispatchEvent(new Event("fs-updated"));
+        try {
+            const rawItem = parentNode[itemName];
+            if (rawItem?.system === true) {
+                throw new Error("Protected system item");
+            }
+            const success = delete parentNode[itemName];
+            if (!success) throw new Error("Blocked by Proxy");
+
+            const { deleteFileContentRecursive } = await import("./fs-db.js");
+            const trashItemPath = `${parentPath.replace(/\/+$/, "")}/${itemName}`;
+            await deleteFileContentRecursive(trashItemPath);
+
+            if (dispatchEvent) {
+                await forceSave();
+                window.dispatchEvent(new Event("fs-updated"));
+            }
+            return true;
+        } catch (e) {
+            console.warn(`[Desktop Guard] 完全削除拒否: ${itemName}`);
+            window.nexser?.windowAPI.alertWindow(`「${itemName}」は保護されているため削除できません。`, {
+                title: "システム保護",
+                width: 350,
+                height: 160
+            });
+            return false;
         }
-        return true;
     }
 
+    // --- 通常フォルダからゴミ箱への移動の場合 ---
     try {
-        const targetItemData = JSON.parse(JSON.stringify(parentNode[itemName]));
+        const rawItem = parentNode[itemName];
+        if (!rawItem) return false;
+
+        // システム保護アイテムは実データ退避前にブロック
+        if (rawItem.system === true) {
+            throw new Error("Protected system item");
+        }
+
+        const targetItemData = JSON.parse(JSON.stringify(rawItem));
         targetItemData.originalPath = parentPath;
 
         const trashNode = resolveFS("C:/Trash");
         if (!trashNode) {
-            delete parentNode[itemName];
+            const success = delete parentNode[itemName];
+            if (!success) throw new Error("Blocked by Proxy");
             if (dispatchEvent) {
-                await forceSave(); // ★ 確実に保存を待つ
+                await forceSave();
                 window.dispatchEvent(new Event("fs-updated"));
             }
             return true;
         }
 
-        const success = delete parentNode[itemName];
-        if (!success) throw new Error("Blocked by Proxy");
-
         let targetName = itemName;
         if (trashNode[itemName]) {
             let counter = 1;
-            let baseName = `${Date.now()}_${itemName}`;
+            const baseName = `${Date.now()}_${itemName}`;
             targetName = baseName;
             while (trashNode[targetName]) {
                 targetName = `${baseName}_${counter++}`;
             }
         }
 
+        // 100KB超などの外部実データ（STORE_FILES）をゴミ箱パスへ退避
+        const { moveFileContent, deleteFileContentRecursive } = await import("./fs-db.js");
+        const moveStorageRecursively = async (node, oldBase, newBase, visited = new WeakSet(), depth = 0) => {
+            if (!node || typeof node !== "object" || depth > 50 || visited.has(node)) return;
+            visited.add(node);
+            try {
+                for (const key of Object.keys(node)) {
+                    if (key === "type" || key === "system" || key === "originalPath" || key === "lastModified") continue;
+                    const child = node[key];
+                    if (child && typeof child === "object") {
+                        const oldSub = `${oldBase}/${key}`;
+                        const newSub = `${newBase}/${key}`;
+                        if (child.type === "file" || child.type === "app") {
+                            await moveFileContent(oldSub, newSub);
+                        } else if (child.type === "folder") {
+                            await moveStorageRecursively(child, oldSub, newSub, visited, depth + 1);
+                        }
+                    }
+                }
+            } finally {
+                visited.delete(node);
+            }
+        };
+
+        const sourceFullPath = `${parentPath}/${itemName}`;
+        const trashFullPath = `C:/Trash/${targetName}`;
+
+        if (targetItemData.type === "file" || targetItemData.type === "app") {
+            await moveFileContent(sourceFullPath, trashFullPath);
+        } else if (targetItemData.type === "folder") {
+            await moveStorageRecursively(rawItem, sourceFullPath, trashFullPath);
+        }
+
+        // 仮想FSツリーから削除（排他ロック等で拒否された場合は実データを元のパスへロールバック）
+        const success = delete parentNode[itemName];
+        if (!success) {
+            if (targetItemData.type === "file" || targetItemData.type === "app") {
+                await moveFileContent(trashFullPath, sourceFullPath).catch(() => deleteFileContentRecursive(trashFullPath));
+            } else if (targetItemData.type === "folder") {
+                await moveStorageRecursively(rawItem, trashFullPath, sourceFullPath).catch(() => deleteFileContentRecursive(trashFullPath));
+            }
+            throw new Error("Blocked by Proxy or File Lock");
+        }
+
         trashNode[targetName] = targetItemData;
 
         if (dispatchEvent) {
-            await forceSave(); // ★ 確実に保存を待つ
+            await forceSave();
             window.dispatchEvent(new Event("fs-updated"));
         }
         return true;
@@ -1549,17 +1759,21 @@ function setupDesktopKeyboardNavigation() {
                     e.preventDefault();
                     const itemsToDelete = Array.from(globalSelected.items).map(item => item.dataset.name);
                     globalSelected.items.clear();
+                    globalSelected.item = null;
 
-                    for (const name of itemsToDelete) {
-                        const success = await deleteFSItem("C:/Desktop", name, false);
-                        if (success) {
-                            await markDefaultDeleted(`C:/Desktop/${name}`);
+                    setBulkUpdating(true);
+                    try {
+                        for (const name of itemsToDelete) {
+                            const success = await deleteFSItem("C:/Desktop", name, false);
+                            if (success) {
+                                await markDefaultDeleted(`C:/Desktop/${name}`);
+                            }
                         }
+                        await forceSave();
+                    } finally {
+                        setBulkUpdating(false);
                     }
 
-                    // ⭐ Desktopフォルダだけを個別部分保存
-                    const { saveFolderNode } = await import("./fs-db.js");
-                    await saveFolderNode("C:", FS["C:"]);
                     window.dispatchEvent(new Event("fs-updated"));
                 }
                 break;
@@ -1615,20 +1829,6 @@ function reorderDesktopIcons(draggedNames, targetName) {
         remainingKeys.push(...draggedNames);
     }
 
-    // FSオブジェクトのプロパティ順序を再構築
-    const newDesktop = { type: desktopFS.type, system: desktopFS.system };
-    remainingKeys.forEach(k => {
-        if (desktopFS[k]) newDesktop[k] = desktopFS[k];
-    });
-
-    FS["C:"].Desktop = newDesktop;
-
-    // ⭐ アイコンの並び替え順序も C ドライブ全体の保存対象にする
-    import("./fs-db.js").then(({ saveFolderNode }) => {
-        saveFolderNode("C:", FS["C:"]).catch(err => {
-            console.error("[Desktop] アイコン並び替えの保存に失敗しました:", err);
-        });
-    });
-
-    window.dispatchEvent(new Event("fs-updated"));
+    // C:/Desktop のメタデータ（children順序）のみをピンポイント差分保存
+    reorderNodeKeys("C:/Desktop", remainingKeys);
 }

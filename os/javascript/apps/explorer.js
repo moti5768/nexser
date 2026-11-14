@@ -1,6 +1,6 @@
 // Explorer.js
 import { resolveFS, validateName, importFileSmart, getUniqueName, isDescendantOrSelf } from "../fs-utils.js";
-import { FS, forceSave, markDefaultDeleted, setBulkUpdating } from "../fs.js";
+import { FS, forceSave, markDefaultDeleted, unmarkDefaultDeleted, setBulkUpdating } from "../fs.js";
 import { attachContextMenu } from "../context-menu.js";
 import { resolveAppByPath, getIcon, getDisplayFileName } from "../file-associations.js";
 import { addRecent } from "../recent.js";
@@ -19,9 +19,9 @@ export function hasExtension(name) {
 // ------------------------
 // 共通関数
 // ------------------------
-function deleteFSItem(parentPath, itemName, rerender) {
+async function deleteFSItem(parentPath, itemName, rerender, dispatchEvent = true) {
     const parentNode = resolveFS(parentPath);
-    if (!parentNode || !parentNode[itemName]) return;
+    if (!parentNode || !parentNode[itemName]) return false;
 
     // --- ゴミ箱内からの完全消去の場合 ---
     if (isTrashPath(parentPath)) {
@@ -40,14 +40,27 @@ function deleteFSItem(parentPath, itemName, rerender) {
             buttons: [
                 {
                     label: "削除",
-                    // 修正後
                     action: async () => {
                         const targetNode = resolveFS(parentPath);
                         if (targetNode && targetNode[itemName]) {
                             try {
                                 const item = targetNode[itemName];
-                                const originalPath = item.originalPath ? `${item.originalPath}/${itemName}` : itemName;
-                                delete targetNode[itemName];
+                                if (item.system === true) {
+                                    throw new Error("Protected system item");
+                                }
+
+                                // ゴミ箱での衝突回避用プレフィックス（Date.now()_）を除去して元のパスを特定
+                                const cleanName = itemName.replace(/^\d+_/, "");
+                                const originalPath = item.originalPath ? `${item.originalPath}/${cleanName}` : cleanName;
+                                const trashItemPath = parentPath ? `${parentPath}/${itemName}` : `C:/Trash/${itemName}`;
+
+                                const deleted = delete targetNode[itemName];
+                                if (!deleted) throw new Error("Blocked by Proxy");
+
+                                // IndexedDB上の大容量実データも再帰的に完全消去
+                                const { deleteFileContentRecursive } = await import("../fs-db.js");
+                                await deleteFileContentRecursive(trashItemPath);
+
                                 await markDefaultDeleted(originalPath);
                             } catch (e) {
                                 // エラーをキャッチしてBSoDを防ぐ
@@ -56,8 +69,10 @@ function deleteFSItem(parentPath, itemName, rerender) {
                         }
                         await forceSave();
                         closeModal(win);
-                        window.dispatchEvent(new Event("fs-updated"));
-                        if (typeof rerender === 'function') rerender();
+                        if (dispatchEvent) {
+                            window.dispatchEvent(new Event("fs-updated"));
+                        }
+                        if (typeof rerender === "function") rerender();
                     }
                 },
                 {
@@ -68,87 +83,51 @@ function deleteFSItem(parentPath, itemName, rerender) {
                 }
             ]
         });
-        return;
+        return true;
     }
 
+    // --- 通常フォルダからゴミ箱への移動の場合 ---
     try {
-        const targetItemData = JSON.parse(JSON.stringify(parentNode[itemName]));
-        targetItemData.originalPath = parentPath;
+        const rawItem = parentNode[itemName];
+        if (!rawItem) return false;
+
+        // システム保護アイテムは実データ退避前にブロック
+        if (rawItem.system === true) {
+            throw new Error("Protected system item");
+        }
 
         const trashNode = resolveFS("C:/Trash");
-        if (!trashNode) return;
+        if (!trashNode) return false;
 
-        delete parentNode[itemName];
+        const targetItemData = JSON.parse(JSON.stringify(rawItem));
+        targetItemData.originalPath = parentPath;
 
         let targetName = itemName;
-
         if (trashNode[itemName]) {
             let counter = 1;
-            // Date.now() が同一ミリ秒で衝突する可能性を考慮し、whileで確実に回避
-            let baseName = `${Date.now()}_${itemName}`;
+            const baseName = `${Date.now()}_${itemName}`;
             targetName = baseName;
             while (trashNode[targetName]) {
                 targetName = `${baseName}_${counter++}`;
             }
         }
 
-        trashNode[targetName] = targetItemData;
-
-        window.dispatchEvent(new Event("fs-updated"));
-        rerender?.();
-    } catch (e) {
-        window.nexser?.windowAPI?.alertWindow(`「${itemName}」は保護されているため削除できません。`);
-    }
-}
-
-/**
- * ゴミ箱から元に戻す機能（実データおよび元のパスへの復元に対応）
- */
-export async function restoreFSItem(itemName, rerender) {
-    const trash = resolveFS("C:/Trash");
-    const item = trash[itemName];
-    if (!item) return;
-
-    // 1. 復元先のパスとノードを正確に解決する
-    let destPath = item.originalPath;
-    let destNode = destPath ? resolveFS(destPath) : null;
-
-    // 元のフォルダが削除されている等の理由で見つからない場合のみ Desktop を代替にする
-    if (!destNode) {
-        destPath = "C:/Desktop";
-        destNode = resolveFS(destPath);
-    }
-
-    if (destNode) {
-        const data = JSON.parse(JSON.stringify(item));
-        delete data.originalPath;
-
-        // ゴミ箱用につけた「Date.now()_」プレフィックスがあれば除去
-        let cleanName = itemName.replace(/^\d+_/, "");
-
-        // 復元先での名前重複を回避
-        let finalName = getUniqueName(destNode, cleanName);
-
-        const trashFullPath = `C:/Trash/${itemName}`;
-        const destFullPath = `${destPath}/${finalName}`;
-
-        // 2. IndexedDB上のファイル実データ（Blob等）も、仮想ツリーと同じ元のパスへ確実に連動移動する
-        const { moveFileContent, saveFolderNode } = await import("../fs-db.js");
-        const processStorageRecursively = async (node, oldBasePath, newBasePath, visited = new WeakSet(), depth = 0) => {
-            if (!node || typeof node !== "object" || depth > 50) return;
-            if (visited.has(node)) return;
+        // 100KB超などの外部実データ（STORE_FILES）をゴミ箱パスへ退避
+        const { moveFileContent, deleteFileContentRecursive } = await import("../fs-db.js");
+        const moveStorageRecursively = async (node, oldBase, newBase, visited = new WeakSet(), depth = 0) => {
+            if (!node || typeof node !== "object" || depth > 50 || visited.has(node)) return;
             visited.add(node);
             try {
                 for (const key of Object.keys(node)) {
-                    if (key === "type" || key === "system" || key === "originalPath" || key === "lastModified") continue;
+                    if (isSystemMetaKey(key)) continue;
                     const child = node[key];
-                    const oldSubPath = `${oldBasePath}/${key}`;
-                    const newSubPath = `${newBasePath}/${key}`;
                     if (child && typeof child === "object") {
+                        const oldSub = `${oldBase}/${key}`;
+                        const newSub = `${newBase}/${key}`;
                         if (child.type === "file" || child.type === "app") {
-                            await moveFileContent(oldSubPath, newSubPath);
+                            await moveFileContent(oldSub, newSub);
                         } else if (child.type === "folder") {
-                            await processStorageRecursively(child, oldSubPath, newSubPath, visited, depth + 1);
+                            await moveStorageRecursively(child, oldSub, newSub, visited, depth + 1);
                         }
                     }
                 }
@@ -157,35 +136,163 @@ export async function restoreFSItem(itemName, rerender) {
             }
         };
 
-        try {
-            if (data.type === "file" || data.type === "app") {
-                await moveFileContent(trashFullPath, destFullPath);
-            } else if (data.type === "folder") {
-                await processStorageRecursively(item, trashFullPath, destFullPath);
-            }
-        } catch (err) {
-            console.error("[FS] 復元時の実データ移動に失敗しました:", err);
+        const sourceFullPath = parentPath ? `${parentPath}/${itemName}` : itemName;
+        const trashFullPath = `C:/Trash/${targetName}`;
+
+        if (targetItemData.type === "file" || targetItemData.type === "app") {
+            await moveFileContent(sourceFullPath, trashFullPath);
+        } else if (targetItemData.type === "folder") {
+            await moveStorageRecursively(rawItem, sourceFullPath, trashFullPath);
         }
 
-        // 3. 仮想ファイルシステム上のツリーを更新
-        destNode[finalName] = data;
-        delete trash[itemName];
-
-        // 4. 変更のあったルートフォルダ（C:）を部分保存して永続化
-        const topKey = destPath.split("/")[0];
-        try {
-            if (topKey && FS[topKey]) {
-                await saveFolderNode(topKey, FS[topKey]);
-            } else {
-                await forceSave();
+        // 仮想FSツリーから削除（排他ロック等で拒否された場合は実データを元のパスへロールバック）
+        const deleted = delete parentNode[itemName];
+        if (!deleted) {
+            if (targetItemData.type === "file" || targetItemData.type === "app") {
+                await moveFileContent(trashFullPath, sourceFullPath).catch(() => deleteFileContentRecursive(trashFullPath));
+            } else if (targetItemData.type === "folder") {
+                await moveStorageRecursively(rawItem, trashFullPath, sourceFullPath).catch(() => deleteFileContentRecursive(trashFullPath));
             }
-        } catch (e) {
+            throw new Error("Blocked by Proxy or File Lock");
+        }
+
+        trashNode[targetName] = targetItemData;
+
+        // デフォルトアイテムがゴミ箱へ移動された場合、再起動時の自動復活（二重増殖）を防止
+        await markDefaultDeleted(sourceFullPath);
+
+        // 実データ退避と仮想FS更新の整合性を保つため、単体削除時は即座に永続化
+        if (dispatchEvent) {
             await forceSave();
+            window.dispatchEvent(new Event("fs-updated"));
         }
+        rerender?.();
+        return true;
+    } catch (e) {
+        window.nexser?.windowAPI?.alertWindow(`「${itemName}」は保護されているため削除できません。`);
+        return false;
+    }
+}
 
+/**
+ * ゴミ箱から元に戻す機能（実データおよび元のパスへの復元に対応）
+ */
+export async function restoreFSItem(itemName, rerender, dispatchEvent = true) {
+    const trash = resolveFS("C:/Trash");
+    if (!trash) return false;
+    const item = trash[itemName];
+    if (!item) return false;
+
+    // 1. 復元先のパスとノードを正規化して解決する（途中の親フォルダが消えている場合は自動再生成）
+    let destPath = item.originalPath
+        ? item.originalPath.replace(/\\/g, "/").replace(/\/+$/, "")
+        : "";
+    let destNode = destPath ? resolveFS(destPath) : null;
+
+    if ((!destNode || destNode.type !== "folder") && destPath.startsWith("C:/")) {
+        const parts = destPath.split("/").filter(Boolean);
+        let cur = FS;
+        let canRecreate = true;
+        for (const part of parts) {
+            if (!cur[part]) {
+                cur[part] = { type: "folder", lastModified: Date.now() };
+            } else if (cur[part].type !== "folder") {
+                canRecreate = false;
+                break;
+            }
+            cur = cur[part];
+        }
+        if (canRecreate) {
+            destNode = cur;
+        }
+    }
+
+    // どうしても復元先を解決できない場合のみ Desktop を代替にする
+    if (!destNode || destNode.type !== "folder") {
+        destPath = "C:/Desktop";
+        destNode = resolveFS(destPath);
+    }
+    if (!destNode) return false;
+
+    const data = JSON.parse(JSON.stringify(item));
+    delete data.originalPath;
+
+    // ゴミ箱用につけた「Date.now()_」プレフィックスがあれば除去
+    const cleanName = itemName.replace(/^\d+_/, "");
+
+    // 復元先での名前重複を回避
+    const finalName = getUniqueName(destNode, cleanName);
+
+    const trashFullPath = `C:/Trash/${itemName}`;
+    const destFullPath = `${destPath}/${finalName}`;
+
+    // 2. IndexedDB上のファイル実データ（Blob等）も、仮想ツリーと同じ元のパスへ確実に連動移動する
+    const { moveFileContent } = await import("../fs-db.js");
+    const processStorageRecursively = async (node, oldBasePath, newBasePath, visited = new WeakSet(), depth = 0) => {
+        if (!node || typeof node !== "object" || depth > 50) return;
+        if (visited.has(node)) return;
+        visited.add(node);
+        try {
+            for (const key of Object.keys(node)) {
+                if (isSystemMetaKey(key)) continue;
+                const child = node[key];
+                const oldSubPath = `${oldBasePath}/${key}`;
+                const newSubPath = `${newBasePath}/${key}`;
+                if (child && typeof child === "object") {
+                    if (child.type === "file" || child.type === "app") {
+                        await moveFileContent(oldSubPath, newSubPath);
+                    } else if (child.type === "folder") {
+                        await processStorageRecursively(child, oldSubPath, newSubPath, visited, depth + 1);
+                    }
+                }
+            }
+        } finally {
+            visited.delete(node);
+        }
+    };
+
+    try {
+        if (data.type === "file" || data.type === "app") {
+            await moveFileContent(trashFullPath, destFullPath);
+        } else if (data.type === "folder") {
+            await processStorageRecursively(data, trashFullPath, destFullPath);
+        }
+    } catch (err) {
+        console.error("[FS] 復元時の実データ移動に失敗しました:", err);
+        window.nexser?.windowAPI?.alertWindow(`「${cleanName}」の実データ復元に失敗したため、処理を中断しました。`);
+        return false;
+    }
+
+    // 3. 仮想ファイルシステム上のツリーを更新（ゴミ箱から削除してから復元先へ格納）
+    let removedFromTrash = false;
+    try {
+        removedFromTrash = delete trash[itemName];
+    } catch (e) {
+        removedFromTrash = false;
+    }
+    if (!removedFromTrash) {
+        if (data.type === "file" || data.type === "app") {
+            await moveFileContent(destFullPath, trashFullPath).catch(() => { });
+        } else if (data.type === "folder") {
+            await processStorageRecursively(data, destFullPath, trashFullPath).catch(() => { });
+        }
+        return false;
+    }
+
+    destNode[finalName] = data;
+    await unmarkDefaultDeleted(destFullPath);
+
+    // 4. 単体復元時のみ即座に永続化と画面更新を通知
+    if (dispatchEvent) {
+        try {
+            await forceSave();
+        } catch (e) {
+            console.error("[FS] 復元時の保存に失敗しました:", e);
+        }
         rerender?.();
         window.dispatchEvent(new Event("fs-updated"));
     }
+    return true;
 }
 
 /**
@@ -216,23 +323,36 @@ export function emptyTrash(rerender) {
                 label: "すべて削除",
                 action: async () => {
                     const latestTrash = resolveFS("C:/Trash");
+                    const { deleteFileContentRecursive } = await import("../fs-db.js");
                     let hasProtectedFiles = false; // 保護されたファイルがあったかどうかのフラグ
 
-                    for (const key of keys) {
-                        const item = latestTrash[key];
-                        if (item) {
-                            try {
-                                const originalPath = item.originalPath ? `${item.originalPath}/${key}` : key;
-                                delete latestTrash[key];
-                                await markDefaultDeleted(originalPath);
-                            } catch (e) {
-                                // システムファイルの場合は削除をスキップ
-                                hasProtectedFiles = true;
+                    setBulkUpdating(true);
+                    try {
+                        for (const key of keys) {
+                            const item = latestTrash[key];
+                            if (item) {
+                                try {
+                                    if (item.system === true) {
+                                        throw new Error("Protected system item");
+                                    }
+                                    const cleanName = key.replace(/^\d+_/, "");
+                                    const originalPath = item.originalPath ? `${item.originalPath}/${cleanName}` : cleanName;
+                                    const deleted = delete latestTrash[key];
+                                    if (!deleted) throw new Error("Blocked by Proxy");
+
+                                    await deleteFileContentRecursive(`C:/Trash/${key}`);
+                                    await markDefaultDeleted(originalPath);
+                                } catch (e) {
+                                    // システムファイルの場合は削除をスキップ
+                                    hasProtectedFiles = true;
+                                }
                             }
                         }
-                    }
 
-                    await forceSave();
+                        await forceSave();
+                    } finally {
+                        setBulkUpdating(false);
+                    }
                     closeModal(win);
                     window.dispatchEvent(new Event("fs-updated"));
                     rerender?.();
@@ -384,7 +504,7 @@ export default async function Explorer(root, options = {}) {
     const titleEl = win?.querySelector(".title-text");
     const taskBtn = win?._taskbarBtn;
 
-    let currentPath = options.path || "C:/Desktop";
+    let currentPath = (options.path || "C:/Desktop").replace(/\/+$/, "") || "C:";
     let historyStack = [];
     let forwardStack = [];
 
@@ -1560,7 +1680,7 @@ export default async function Explorer(root, options = {}) {
                         sourcePath: currentPath,
                         draggedItems: draggedItemsInfo
                     }));
-                    e.dataTransfer.effectAllowed = "move";
+                    e.dataTransfer.effectAllowed = "copyMove";
                 });
 
                 item.addEventListener("dragend", () => {
@@ -1692,7 +1812,7 @@ export default async function Explorer(root, options = {}) {
                     item.addEventListener("dragover", (e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        e.dataTransfer.dropEffect = "move";
+                        e.dataTransfer.dropEffect = e.ctrlKey ? "copy" : "move";
                         if (!item.classList.contains("drag-target")) {
                             item.classList.add("drag-target");
                         }
@@ -1847,7 +1967,7 @@ export default async function Explorer(root, options = {}) {
         }
 
         if (!listContainer._keydownBound) {
-            listContainer.addEventListener("keydown", e => {
+            listContainer.addEventListener("keydown", async e => {
                 e.stopPropagation();
                 const items = Array.from(listContainer.querySelectorAll(".explorer-item"));
                 if (!items.length) return;
@@ -1935,24 +2055,38 @@ export default async function Explorer(root, options = {}) {
                                     label: "削除",
                                     action: async () => {
                                         const targetNode = resolveFS(currentPath);
+                                        const { deleteFileContentRecursive } = await import("../fs-db.js");
                                         let hasProtectedFiles = false;
 
-                                        if (targetNode) {
-                                            for (const name of itemNames) {
-                                                const item = targetNode[name];
-                                                if (item) {
-                                                    try {
-                                                        const originalPath = item.originalPath ? `${item.originalPath}/${name}` : name;
-                                                        delete targetNode[name];
-                                                        await markDefaultDeleted(originalPath);
-                                                    } catch (e) {
-                                                        hasProtectedFiles = true;
+                                        setBulkUpdating(true);
+                                        try {
+                                            if (targetNode) {
+                                                for (const name of itemNames) {
+                                                    const item = targetNode[name];
+                                                    if (item) {
+                                                        try {
+                                                            if (item.system === true) {
+                                                                throw new Error("Protected system item");
+                                                            }
+                                                            const cleanName = name.replace(/^\d+_/, "");
+                                                            const originalPath = item.originalPath ? `${item.originalPath}/${cleanName}` : cleanName;
+                                                            const deleted = delete targetNode[name];
+                                                            if (!deleted) throw new Error("Blocked by Proxy");
+
+                                                            await deleteFileContentRecursive(`${currentPath}/${name}`);
+                                                            await markDefaultDeleted(originalPath);
+                                                        } catch (e) {
+                                                            hasProtectedFiles = true;
+                                                        }
                                                     }
                                                 }
                                             }
+
+                                            await forceSave();
+                                        } finally {
+                                            setBulkUpdating(false);
                                         }
 
-                                        await forceSave();
                                         if (confirmWin._modalOverlay) confirmWin._modalOverlay.remove();
                                         confirmWin.remove();
                                         window.dispatchEvent(new Event("fs-updated"));
@@ -1973,9 +2107,16 @@ export default async function Explorer(root, options = {}) {
                             ]
                         });
                     } else {
-                        itemNames.forEach(name => {
-                            deleteFSItem(currentPath, name);
-                        });
+                        setBulkUpdating(true);
+                        try {
+                            for (const name of itemNames) {
+                                await deleteFSItem(currentPath, name, null, false);
+                            }
+                            await forceSave();
+                        } finally {
+                            setBulkUpdating(false);
+                        }
+                        window.dispatchEvent(new Event("fs-updated"));
                         render(currentPath);
                     }
                 }
@@ -2055,8 +2196,28 @@ export default async function Explorer(root, options = {}) {
         const targetFolderNode = resolveFS(effectiveTargetPath);
         if (!targetFolderNode || targetFolderNode.type !== "folder") return false;
 
+        // ゴミ箱へのドロップ時はWindows同様にコピーではなく移動扱いとする
+        const isDroppingToTrash = isTrashPath(effectiveTargetPath);
+        const effectiveIsCopy = isDroppingToTrash ? false : isCopy;
+
         // fs-db.js から実データ操作関数をインポート
-        const { copyFileContent, moveFileContent } = await import("../fs-db.js");
+        const { copyFileContent, moveFileContent, deleteFileContentRecursive } = await import("../fs-db.js");
+
+        // コピー時にフォルダ配下のシステム保護フラグを解除して通常アイテム化するヘルパー（Windows仕様）
+        const clearSystemProtectionRecursively = (node, visited = new WeakSet()) => {
+            if (!node || typeof node !== "object" || visited.has(node)) return;
+            visited.add(node);
+            if ("system" in node) {
+                delete node.system;
+            }
+            for (const key of Object.keys(node)) {
+                if (isSystemMetaKey(key)) continue;
+                const child = node[key];
+                if (child && typeof child === "object") {
+                    clearSystemProtectionRecursively(child, visited);
+                }
+            }
+        };
 
         // 再帰的に配下すべてのファイルの実データパスをコピー/移動するヘルパー
         const processStorageRecursively = async (node, oldBasePath, newBasePath, isCopyMode, visited = new WeakSet(), depth = 0) => {
@@ -2094,27 +2255,55 @@ export default async function Explorer(root, options = {}) {
         try {
             // 共通のアイテム処理用内部関数
             const processDropItem = async (sourceFullPath, sourceFolder, itemName) => {
-                if (!sourceFolder[itemName]) return;
+                const rawSourceItem = sourceFolder[itemName];
+                if (!rawSourceItem) return;
 
-                // ⭐ 修正: ショートカット（link）の場合に実体パスに変換せず、
-                // ショートカット自体のパス（sourceFullPath）のまま循環参照チェックを行う
-                // （※ fs-utils.js 側の isDescendantOrSelf で sourceNode.type === "link" の場合は早期リターンするため安全に通ります）
+                // システム保護アイテムのゴミ箱への移動はブロック（コピーは許可して保護フラグを解除）
+                if (isDroppingToTrash && rawSourceItem.system === true) {
+                    return;
+                }
+
+                // 循環参照チェック（自分自身や子孫へのドロップ防止）
                 if (isDescendantOrSelf(sourceFullPath, effectiveTargetPath)) {
                     return;
                 }
 
                 // 移動の場合で、同一フォルダ内（同じ場所へのドロップ）の場合はスキップ
                 const parentOfSource = sourceFullPath.substring(0, sourceFullPath.lastIndexOf("/"));
-                if (!isCopy && effectiveTargetPath === parentOfSource) {
+                if (!effectiveIsCopy && effectiveTargetPath === parentOfSource) {
                     return;
                 }
 
-                const uniqueTargetName = getUniqueName(targetFolderNode, itemName);
-                const sourceItemNode = JSON.parse(JSON.stringify(sourceFolder[itemName]));
+                const isTakingOutFromTrash = isTrashPath(parentOfSource) && !isDroppingToTrash;
+                const cleanBaseName = isTakingOutFromTrash ? itemName.replace(/^\d+_/, "") : itemName;
+
+                let uniqueTargetName = getUniqueName(targetFolderNode, cleanBaseName);
+                if (isDroppingToTrash && targetFolderNode[itemName]) {
+                    let counter = 1;
+                    const baseName = `${Date.now()}_${itemName}`;
+                    uniqueTargetName = baseName;
+                    while (targetFolderNode[uniqueTargetName]) {
+                        uniqueTargetName = `${baseName}_${counter++}`;
+                    }
+                }
+
+                const sourceItemNode = JSON.parse(JSON.stringify(rawSourceItem));
+                if (isDroppingToTrash) {
+                    sourceItemNode.originalPath = parentOfSource || "C:";
+                    await markDefaultDeleted(sourceFullPath);
+                } else if (isTakingOutFromTrash) {
+                    delete sourceItemNode.originalPath;
+                }
+
                 const newTargetFullPath = effectiveTargetPath ? `${effectiveTargetPath}/${uniqueTargetName}` : uniqueTargetName;
 
-                if (isCopy) {
-                    // 【コピーの場合】
+                if (isTakingOutFromTrash) {
+                    await unmarkDefaultDeleted(newTargetFullPath);
+                }
+
+                if (effectiveIsCopy) {
+                    // 【コピーの場合】システム保護フラグを解除して通常アイテムとして複製
+                    clearSystemProtectionRecursively(sourceItemNode);
                     if (sourceItemNode.type === "file" || sourceItemNode.type === "app") {
                         await copyFileContent(sourceFullPath, newTargetFullPath);
                     } else if (sourceItemNode.type === "folder") {
@@ -2142,6 +2331,13 @@ export default async function Explorer(root, options = {}) {
                     if (moved) {
                         targetFolderNode[uniqueTargetName] = sourceItemNode;
                     } else {
+                        // 削除が拒否された場合は、移動済みの実データを元のパスへロールバック
+                        if (sourceItemNode.type === "file" || sourceItemNode.type === "app") {
+                            await moveFileContent(newTargetFullPath, sourceFullPath).catch(() => deleteFileContentRecursive(newTargetFullPath));
+                        } else if (sourceItemNode.type === "folder") {
+                            await processStorageRecursively(sourceItemNode, newTargetFullPath, sourceFullPath, false).catch(() => deleteFileContentRecursive(newTargetFullPath));
+                        }
+
                         targetFolderNode[uniqueTargetName] = {
                             type: "link",
                             target: sourceItemNode.type === "link" ? sourceItemNode.target : sourceFullPath,
@@ -2177,14 +2373,14 @@ export default async function Explorer(root, options = {}) {
                 if (!desktopFS) return false;
 
                 const sortedNames = [...data.names].sort((a, b) => {
-                    const pathA = `Desktop/${a}`;
-                    const pathB = `Desktop/${b}`;
+                    const pathA = `C:/Desktop/${a}`;
+                    const pathB = `C:/Desktop/${b}`;
                     return pathB.split('/').length - pathA.split('/').length;
                 });
 
                 for (const itemName of sortedNames) {
                     if (!desktopFS[itemName]) continue;
-                    const sourceFullPath = `Desktop/${itemName}`;
+                    const sourceFullPath = `C:/Desktop/${itemName}`;
                     await processDropItem(sourceFullPath, desktopFS, itemName);
                 }
             }
@@ -2596,16 +2792,23 @@ export default async function Explorer(root, options = {}) {
                 items: [
                     {
                         label: isInsideTrash ? "元に戻す" : "開く",
-                        action: () => {
+                        action: async () => {
                             if (globalSelected.items.size === 0) return;
 
                             const items = Array.from(globalSelected.items);
 
                             if (isInsideTrash) {
-                                // ゴミ箱内ならループでまとめて復元してから最後に1回再描画
-                                items.forEach(selectedItem => {
-                                    restoreFSItem(selectedItem.dataset.name);
-                                });
+                                const itemNames = items.map(el => el.dataset.name);
+                                setBulkUpdating(true);
+                                try {
+                                    for (const name of itemNames) {
+                                        await restoreFSItem(name, null, false);
+                                    }
+                                    await forceSave();
+                                } finally {
+                                    setBulkUpdating(false);
+                                }
+                                window.dispatchEvent(new Event("fs-updated"));
                                 render(currentPath);
                             } else {
                                 items.forEach(selectedItem => {
@@ -2641,20 +2844,7 @@ export default async function Explorer(root, options = {}) {
                                 };
                             });
 
-                            // ⭐ 変更のあったルートフォルダのみを個別部分保存
-                            const topKey = currentPath.split("/")[0];
-                            if (topKey) {
-                                const { saveFolderNode } = await import("../fs-db.js");
-                                const { FS } = await import("../fs-db.js");
-                                if (FS[topKey]) {
-                                    await saveFolderNode(topKey, FS[topKey]);
-                                } else {
-                                    await forceSave();
-                                }
-                            } else {
-                                await forceSave();
-                            }
-
+                            // Proxyが自動保存するため、明示的な保存呼び出しは不要
                             window.dispatchEvent(new Event("fs-updated"));
                             render(currentPath);
                         },
@@ -2677,7 +2867,7 @@ export default async function Explorer(root, options = {}) {
                     },
                     {
                         label: isInsideTrash ? "完全に削除" : "選択アイテムを削除",
-                        action: () => {
+                        action: async () => {
                             if (globalSelected.items.size === 0) return;
 
                             const itemNames = Array.from(globalSelected.items).map(item => item.dataset.name);
@@ -2701,24 +2891,38 @@ export default async function Explorer(root, options = {}) {
                                             label: "削除",
                                             action: async () => {
                                                 const targetNode = resolveFS(currentPath);
+                                                const { deleteFileContentRecursive } = await import("../fs-db.js");
                                                 let hasProtectedFiles = false;
 
-                                                if (targetNode) {
-                                                    for (const name of itemNames) {
-                                                        const item = targetNode[name];
-                                                        if (item) {
-                                                            try {
-                                                                const originalPath = item.originalPath ? `${item.originalPath}/${name}` : name;
-                                                                delete targetNode[name];
-                                                                await markDefaultDeleted(originalPath);
-                                                            } catch (e) {
-                                                                hasProtectedFiles = true;
+                                                setBulkUpdating(true);
+                                                try {
+                                                    if (targetNode) {
+                                                        for (const name of itemNames) {
+                                                            const item = targetNode[name];
+                                                            if (item) {
+                                                                try {
+                                                                    if (item.system === true) {
+                                                                        throw new Error("Protected system item");
+                                                                    }
+                                                                    const cleanName = name.replace(/^\d+_/, "");
+                                                                    const originalPath = item.originalPath ? `${item.originalPath}/${cleanName}` : cleanName;
+                                                                    const deleted = delete targetNode[name];
+                                                                    if (!deleted) throw new Error("Blocked by Proxy");
+
+                                                                    await deleteFileContentRecursive(`${currentPath}/${name}`);
+                                                                    await markDefaultDeleted(originalPath);
+                                                                } catch (e) {
+                                                                    hasProtectedFiles = true;
+                                                                }
                                                             }
                                                         }
                                                     }
+
+                                                    await forceSave();
+                                                } finally {
+                                                    setBulkUpdating(false);
                                                 }
 
-                                                await forceSave();
                                                 if (confirmWin._modalOverlay) confirmWin._modalOverlay.remove();
                                                 confirmWin.remove();
                                                 window.dispatchEvent(new Event("fs-updated"));
@@ -2739,10 +2943,16 @@ export default async function Explorer(root, options = {}) {
                                     ]
                                 });
                             } else {
-                                // 通常フォルダ：ゴミ箱へ一括移動して最後に1回再描画
-                                itemNames.forEach(name => {
-                                    deleteFSItem(currentPath, name);
-                                });
+                                setBulkUpdating(true);
+                                try {
+                                    for (const name of itemNames) {
+                                        await deleteFSItem(currentPath, name, null, false);
+                                    }
+                                    await forceSave();
+                                } finally {
+                                    setBulkUpdating(false);
+                                }
+                                window.dispatchEvent(new Event("fs-updated"));
                                 render(currentPath);
                             }
                         },
@@ -3284,23 +3494,6 @@ export async function showProperties(name, node, path) {
                 // 変更があった場合のみシステムに更新を通知
                 if (isChanged) {
                     node.lastModified = Date.now();
-
-                    // ⭐ 改善: 全体保存 (forceSave) の代わりに、変更があったルートフォルダ単位のみを個別部分保存
-                    const topKey = path.split("/")[0];
-                    try {
-                        const { saveFolderNode } = await import("../fs-db.js"); // または fs-db.js からインポート
-                        // FS または baseFS の該当トップキーのデータを取得して部分保存
-                        const { FS } = await import("../fs-db.js");
-                        if (topKey && FS[topKey]) {
-                            await saveFolderNode(topKey, FS[topKey]);
-                        } else {
-                            await forceSave(); // フォールバック
-                        }
-                    } catch (e) {
-                        console.error("Failed to save folder node locally:", e);
-                        await forceSave(); // エラー時のフォールバック
-                    }
-
                     window.dispatchEvent(new Event("fs-updated"));
                 }
 

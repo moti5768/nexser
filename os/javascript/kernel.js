@@ -144,6 +144,11 @@ export function createKernelWindow(title, options = {}) {
     const content = createRawWindow(title, options);
     const win = content?.closest(".window");
 
+    // 起動完了の一斉描画までシェルウィンドウが1フレームでもチラつくのを防ぐ
+    if (win && window.nexser?.isBooting && !options._modal) {
+        win.style.visibility = "hidden";
+    }
+
     // 2. プロセスキーが指定されている場合はカーネルのプロセス管理に自動登録
     if (win && options.processKey) {
         registerProcess(win, options.processKey, options.path || "", options.handle || null);
@@ -237,23 +242,85 @@ export async function initKernelSpaceAsync(progressCallback = () => { }) {
     await new Promise(r => requestAnimationFrame(r));
 }
 
-// ⭐ shell: true を持つアプリケーションを自動起動するヘルパー関数
-export async function launchShellApps() {
+/**
+ * 仮想ファイルシステム（FS）の実データ統計を走査して取得
+ */
+function collectFSActualStats(rootNode) {
+    const stats = { folders: 0, files: 0, apps: 0, links: 0, externalFiles: 0 };
+    const skipKeys = new Set([
+        "type", "entry", "singleton", "shell", "system", "lastModified",
+        "hidden", "originalPath", "size", "content", "name", "target", "code", "windowOptions", "frameless"
+    ]);
+    const visited = new WeakSet();
+
+    function walk(node) {
+        if (!node || typeof node !== "object" || visited.has(node)) return;
+        visited.add(node);
+
+        for (const [key, val] of Object.entries(node)) {
+            if (skipKeys.has(key) || !val || typeof val !== "object") continue;
+            if (val.type === "folder") {
+                stats.folders++;
+                walk(val);
+            } else if (val.type === "file") {
+                stats.files++;
+                if (val.content === "__EXTERNAL_DATA__") stats.externalFiles++;
+            } else if (val.type === "app") {
+                stats.apps++;
+                if (val.content === "__EXTERNAL_DATA__") stats.externalFiles++;
+            } else if (val.type === "link") {
+                stats.links++;
+            }
+        }
+    }
+
+    if (rootNode) walk(rootNode);
+    return stats;
+}
+
+/**
+ * ブラウザの IndexedDB / ストレージ実使用量（MB）を取得
+ */
+async function getStorageUsageText() {
+    try {
+        if (navigator.storage?.estimate) {
+            const { usage, quota } = await navigator.storage.estimate();
+            if (typeof usage === "number") {
+                const usedMB = (usage / (1024 * 1024)).toFixed(2);
+                const quotaGB = typeof quota === "number" ? ` / ${(quota / (1024 * 1024 * 1024)).toFixed(1)} GB` : "";
+                return `${usedMB} MB${quotaGB}`;
+            }
+        }
+    } catch (_) { }
+    return "計測不可";
+}
+
+// ⭐ shell: true を持つアプリケーションを自動起動するヘルパー関数（進捗通知対応）
+export async function launchShellApps(onProgress = null) {
     try {
         const { FS } = await import("./fs.js");
         const applications = FS["C:"]?.Programs?.Applications;
-        if (!applications) return;
+        if (!applications) return [];
 
-        for (const [appName, appObj] of Object.entries(applications)) {
-            // shell: true が設定されているアプリを自動起動対象とする
-            if (appObj && appObj.shell && appObj.type === "app") {
-                const appPath = `C:/Programs/Applications/${appName}`;
-                console.log(`[Kernel] Launching shell app: ${appPath}`);
-                await launch(appPath);
+        const shellEntries = Object.entries(applications).filter(
+            ([, appObj]) => appObj && appObj.shell && appObj.type === "app"
+        );
+
+        const launchedList = [];
+        for (let i = 0; i < shellEntries.length; i++) {
+            const [appName] = shellEntries[i];
+            const appPath = `C:/Programs/Applications/${appName}`;
+            if (typeof onProgress === "function") {
+                onProgress(appName, appPath, i + 1, shellEntries.length);
             }
+            console.log(`[Kernel] Launching shell app: ${appPath}`);
+            await launch(appPath);
+            launchedList.push(appName);
         }
+        return launchedList;
     } catch (e) {
         console.error("[Kernel] Failed to launch shell apps:", e);
+        return [];
     }
 }
 
@@ -283,6 +350,10 @@ export async function initShellAsync(progressCallback = () => { }) {
 export async function initDesktopAsync(progressCallback = () => { }) {
     progressCallback("Loading Desktop View...");
     buildDesktop();
+    if (window.nexser?.isBooting) {
+        const iconsContainer = document.getElementById("desktop-icons");
+        if (iconsContainer) iconsContainer.style.display = "none";
+    }
     await new Promise(r => requestAnimationFrame(r));
 }
 
@@ -302,6 +373,215 @@ export async function initUserSpaceAsync(progressCallback = () => { }) {
         }
     } catch (e) {
         console.warn("Boot-time system scan failed:", e);
+    }
+}
+
+// 5. ブート優先実行用の統合起動シーケンス（実データ連携・詳細表示版）
+export async function bootKernelSequenceAsync({ screen, initFS, loadSetting, initScreensaver, print = () => { } }) {
+    window.nexser = window.nexser || {};
+    window.nexser.isLoggingOff = false;
+    window.nexser.isBooting = true;
+
+    let progressWin = null;
+    let inputShield = null;
+
+    try {
+        // 1. カーネル空間初期化（#desktop と #taskbar のDOM生成、windowAPI確定）
+        await initKernelSpaceAsync(msg => print(`[Kernel] ${msg}`));
+
+        // 2. boot直後にCUI非表示・desktop表示・taskbar非表示へ即切替
+        if (screen) screen.style.display = "none";
+        const root = document.getElementById("os-root");
+        if (root) root.style.display = "block";
+
+        const taskbar = document.getElementById("taskbar");
+        if (taskbar) {
+            taskbar.style.visibility = "hidden";
+            taskbar.style.pointerEvents = "none";
+        }
+
+        // 起動音が鳴る前のあらゆる操作（デスクトップ・シェルアプリ等）を物理的に遮断するシールド
+        inputShield = document.createElement("div");
+        inputShield.id = "boot-input-shield";
+        Object.assign(inputShield.style, {
+            position: "fixed",
+            inset: "0",
+            zIndex: "99990",
+            background: "transparent",
+            pointerEvents: "all",
+            cursor: "wait"
+        });
+        document.body.appendChild(inputShield);
+
+        // 3. 起動読み込みプログレスバーウィンドウを表示（autoClose: false で手動破棄を完全制御）
+        progressWin = getWindowAPI()?.progressWindow(
+            "Nexser OS の起動",
+            "カーネル空間を初期化しています...",
+            {
+                allowCancel: false,
+                autoClose: false,
+                taskbar: false,
+                width: 480,
+                disableControls: true,
+                disableClose: true
+            }
+        );
+        if (progressWin?.win) {
+            progressWin.win.style.zIndex = "99999";
+        }
+
+        // 4. DBからファイルシステムを読み込み、実データ件数・容量を表示
+        progressWin?.update(
+            12,
+            100,
+            "IndexedDB ストア (kv / files) へ接続中...",
+            "[1/6] ファイルシステムをマウントしています..."
+        );
+        await initFS(msg => progressWin?.update(24, 100, msg));
+
+        const { FS, diagnoseAndCleanFS } = await import("./fs.js");
+        const fsStats = collectFSActualStats(FS["C:"]);
+        const storageUsage = await getStorageUsageText();
+
+        progressWin?.update(
+            36,
+            100,
+            `ドライブ C: 復元完了 (使用容量: ${storageUsage})\nフォルダ: ${fsStats.folders}件 / ファイル: ${fsStats.files}件 / アプリ: ${fsStats.apps}件 (外部実データ: ${fsStats.externalFiles}件)`,
+            "[2/6] システムシェルとタスクバーを構築しています..."
+        );
+
+        // 5. システムシェル（タスクバー・スタートメニュー）の構築（実設定値を反映）
+        const savedPos = (await loadSetting("taskbarPosition")) || "bottom";
+        const savedHeight = (await loadSetting("taskbarSize")) || 40;
+        const isWinMode = Boolean(await loadSetting("taskbarWindowMode"));
+        document.documentElement.style.setProperty('--taskbar-height', `${savedHeight}px`);
+
+        progressWin?.update(
+            48,
+            100,
+            `配置: ${savedPos} / 高さ: ${savedHeight}px / ウィンドウモード: ${isWinMode ? "有効" : "無効"}\nスタートメニューとダイナミックUIを初期化中...`
+        );
+        await initShellAsync(msg => print(`[Shell] ${msg}`));
+
+        // 6. デスクトップビューの構築（実アイコン件数を表示）
+        const desktopKeys = FS["C:"]?.Desktop
+            ? Object.keys(FS["C:"].Desktop).filter(k => !["type", "system", "lastModified"].includes(k))
+            : [];
+        progressWin?.update(
+            62,
+            100,
+            `パス: C:/Desktop (${desktopKeys.length} 個のデスクトップ項目を配置中)\nアイコンキャッシュとレイアウトを適用しています...`,
+            "[3/6] デスクトップ環境を準備しています..."
+        );
+        await initDesktopAsync(msg => print(`[Desktop] ${msg}`));
+
+        // 7. ユーザースペース（システム整合性診断・実レポート表示）
+        progressWin?.update(
+            74,
+            100,
+            "検証対象: C:/System, C:/Programs, C:/Desktop, C:/StartMenu\n外部データリンク (__EXTERNAL_DATA__) の整合性を確認中...",
+            "[4/6] システム整合性を診断しています..."
+        );
+        const report = await diagnoseAndCleanFS(false);
+        if (report.corruptionDetected) {
+            playSystemEventSound('error');
+            getWindowAPI()?.errorWindow(
+                "【システム診断】\nシステムファイルの破損または消失を検出しました。\n\n一部の重要なフォルダが正常に読み込めない状態です。\n設定アプリ (Settings.app) の「System」タブから「Run Cleanup & Repair」を実行して修復してください。",
+                { title: "システム整合性チェック", taskbar: true }
+            );
+        }
+        progressWin?.update(
+            82,
+            100,
+            `診断結果: ${report.corruptionDetected ? "不整合を検出（要修復）" : "すべてのシステム領域が正常"}\nゴミ箱 (C:/Trash) 内のアイテム: ${report.garbageItems}件`
+        );
+
+        // 8. シェルアプリ（Toolbar / Startmenu 等）とスクリーンセーバーの起動
+        const launchedShells = await launchShellApps((appName, appPath, idx, total) => {
+            const pct = 82 + Math.round((idx / Math.max(1, total)) * 10);
+            progressWin?.update(
+                pct,
+                100,
+                `対象 (${idx}/${total}): ${appPath}\n現在の稼働プロセス数: ${processes.size}件`,
+                "[5/6] 常駐シェルサービスを起動しています..."
+            );
+        });
+
+        progressWin?.update(
+            95,
+            100,
+            `起動済みシェル: ${launchedShells.length > 0 ? launchedShells.join(", ") : "なし"}\nスクリーンセーバー監視サービスを初期化中...`,
+            "[6/6] システムサービスを最終調整しています..."
+        );
+        try {
+            await initScreensaver();
+            print('[Screensaver] Ready');
+        } catch (ssErr) {
+            print('[Screensaver] Skipped (Non-critical failure)');
+            console.warn("Screensaver failed to initialize, but boot will continue:", ssErr);
+        }
+
+        progressWin?.update(
+            100,
+            100,
+            `稼働プロセス: ${processes.size}件 / ストレージ: ${storageUsage}\nすべての初期化が完了しました。デスクトップを表示します...`,
+            "Nexser OS の起動完了"
+        );
+        await new Promise(r => setTimeout(r, 250));
+
+        // 9. プログレスバーを完全破棄し、すべてを一斉描画・操作解禁
+        if (progressWin) {
+            progressWin.close();
+            progressWin = null;
+        }
+        if (inputShield) {
+            inputShield.remove();
+            inputShield = null;
+        }
+
+        window.nexser.isBooting = false;
+
+        const iconsContainer = document.getElementById("desktop-icons");
+        if (iconsContainer) {
+            iconsContainer.style.display = "";
+        }
+        window.dispatchEvent(new Event("desktop-resize"));
+
+        const currentTaskbar = document.getElementById("taskbar");
+        if (currentTaskbar) {
+            currentTaskbar.style.visibility = "visible";
+            currentTaskbar.style.pointerEvents = "auto";
+            const floatingTbWin = currentTaskbar.closest(".window");
+            if (floatingTbWin) {
+                floatingTbWin.style.visibility = "visible";
+                floatingTbWin.style.pointerEvents = "auto";
+            }
+        }
+
+        document.querySelectorAll("#os-root .window").forEach(win => {
+            win.style.visibility = "visible";
+        });
+
+        // 10. すべて描画・操作解禁した直後に起動音を再生
+        playSystemEventSound('startup');
+        print("OS Boot Completed Successfully.");
+        try {
+            logSystemEvent(
+                "System",
+                "Information",
+                "OSBootstrapper",
+                1000,
+                "System Startup",
+                `Nexser OS が正常に起動しました (フォルダ: ${fsStats.folders}, ファイル: ${fsStats.files}, アプリ: ${fsStats.apps})。`
+            );
+        } catch (logErr) {
+            console.warn("[Boot] Failed to log boot event:", logErr);
+        }
+    } catch (e) {
+        window.nexser.isBooting = false;
+        if (progressWin) progressWin.close();
+        if (inputShield) inputShield.remove();
+        throw e;
     }
 }
 
@@ -854,6 +1134,7 @@ export function resetUI() {
 export async function logOff() {
     // ⭐ ログオフ処理が呼ばれた瞬間に最速でフラグを立てて、すべての再描画をブロックする
     window.nexser = window.nexser || {};
+    window.nexser.isBooting = false;
     window.nexser.isLoggingOff = true;
 
     const windows = document.querySelectorAll(".window");
@@ -887,40 +1168,90 @@ export async function logOff() {
     const performLogoff = async () => {
         playSystemEventSound('logoff');
 
-        // デスクトップのアイコン群（#desktop-icons）とタスクバーを即座に非表示にする
+        // デスクトップアイコン群・タスクバー（ウィンドウモード含む）を即座に非表示化
         const desktopIcons = document.getElementById("desktop-icons");
         const taskbar = document.getElementById("taskbar");
         if (desktopIcons) desktopIcons.style.display = "none";
-        if (taskbar) taskbar.style.visibility = "hidden";
+        if (taskbar) {
+            taskbar.style.visibility = "hidden";
+            const floatingTbWin = taskbar.closest(".window");
+            if (floatingTbWin) floatingTbWin.style.visibility = "hidden";
+        }
 
-        // 詳細なステータスを表示するプログレスウィンドウ
-        const progressWin = getWindowAPI()?.progressWindow("nexser ログオフ", "セッションを安全に終了しています...", {
-            allowCancel: false,
-            taskbar: false,
-            width: 440,
-            height: 200,
-            disableControls: true, // 最小化・最大化ボタンを無効化
-            disableClose: true     // 閉じるボタンを無効化
+        // ログオフ中の誤操作を防ぐシールド
+        const logoffShield = document.createElement("div");
+        logoffShield.id = "logoff-input-shield";
+        Object.assign(logoffShield.style, {
+            position: "fixed",
+            inset: "0",
+            zIndex: "99990",
+            background: "transparent",
+            pointerEvents: "all",
+            cursor: "wait"
         });
+        document.body.appendChild(logoffShield);
 
-        if (progressWin) progressWin.update(10, 100, "ファイルシステムの書き込み完了を待機中...");
+        const progressWin = getWindowAPI()?.progressWindow(
+            "Nexser OS ログオフ",
+            "セッション終了処理を開始しています...",
+            {
+                allowCancel: false,
+                autoClose: false,
+                taskbar: false,
+                width: 480,
+                disableControls: true,
+                disableClose: true
+            }
+        );
+        if (progressWin?.win) {
+            progressWin.win.style.zIndex = "99999";
+        }
 
         try {
-            // ⭐ ファイルシステムやデータベースへの書き込み完了を待機
-            const { waitForSaveCompletion } = await import("./fs.js");
+            // 1. 未保存の差分保存完了を待機
+            progressWin?.update(
+                12,
+                100,
+                "バックグラウンド書き込みキューの完了を待機中...",
+                "[1/5] 未保存データをストレージへフラッシュしています..."
+            );
+            const { waitForSaveCompletion, forceSave, diagnoseAndCleanFS } = await import("./fs.js");
             await waitForSaveCompletion();
 
-            if (progressWin) progressWin.update(25, 100, "すべてのプロセスとシェルを終了中...");
-
-            // 1. 現在開いている全プロセス（シェル含む）の一覧を取得して完全終了
+            // 2. 稼働中の全プロセス（アプリ・シェル）を実データ表示しながら終了
             const activeProcs = getProcessList();
-            activeProcs.forEach(proc => {
-                killProcess(proc.key);
-            });
+            const totalProcs = activeProcs.length;
 
-            if (progressWin) progressWin.update(40, 100, "システムログをデータベースに書き込み中...");
+            if (totalProcs === 0) {
+                progressWin?.update(
+                    35,
+                    100,
+                    "終了対象のアクティブプロセスはありません。",
+                    "[2/5] プロセス終了完了"
+                );
+            } else {
+                for (let i = 0; i < totalProcs; i++) {
+                    const proc = activeProcs[i];
+                    const pct = 15 + Math.round(((i + 1) / totalProcs) * 25);
+                    const procType = proc.state === "shell" ? "システムシェル" : "アプリケーション";
+                    progressWin?.update(
+                        pct,
+                        100,
+                        `終了中 (${i + 1}/${totalProcs}): ${proc.name} [${procType}]\nPID: ${proc.pid} / 稼働時間: ${proc.uptime}秒 / パス: ${proc.path}`,
+                        "[2/5] 実行中のプロセスを終了しています..."
+                    );
+                    killProcess(proc.key);
+                }
+            }
 
-            // 2. IndexedDB から現在のログデータを取得・更新
+            // 3. システムログを IndexedDB へ書き込み
+            progressWin?.update(
+                50,
+                100,
+                `対象ストア: ${LOG_STORAGE_KEY}\nセッション終了および ${totalProcs} 件のプロセス終了イベントを記録中...`,
+                "[3/5] イベントログをデータベースへ保存しています..."
+            );
+
             let allLogs = (await dbGet(LOG_STORAGE_KEY, "kv")) || {
                 System: [],
                 Application: [],
@@ -937,7 +1268,7 @@ export async function logOff() {
                 source: "SessionManager",
                 eventId: 1004,
                 category: "Logoff",
-                description: "ユーザーがシステムからログオフしました。"
+                description: `ユーザーがシステムからログオフしました (終了プロセス: ${totalProcs}件)。`
             });
 
             activeProcs.forEach(proc => {
@@ -959,36 +1290,42 @@ export async function logOff() {
 
             await dbSet(LOG_STORAGE_KEY, allLogs, "kv");
 
-            if (progressWin) progressWin.update(70, 100, "ファイルシステムのデータベース整合性を検証中...");
+            progressWin?.update(
+                64,
+                100,
+                `ログ保存完了 (累計保持件数: System ${allLogs.System.length}件 / Application ${allLogs.Application.length}件)\nファイルシステムの最終同期を実行中...`,
+                "[4/5] ファイルシステムの整合性を検証しています..."
+            );
 
-            // 3. データベースおよびファイルシステムの書き込み完了を強制保障（forceSave）
-            const { forceSave, diagnoseAndCleanFS } = await import("./fs.js");
+            // 4. DB強制保存と整合性診断・修復
             await forceSave();
-
-            // 4. 実際にファイルデータベース（IndexedDB）の整合性を診断・修復
             const fsReport = await diagnoseAndCleanFS(true);
             if (fsReport.corruptionDetected) {
                 console.warn("[Logoff] ファイルシステムの破損を検知し、修復を実行しました。", fsReport.logs);
             }
 
-            // 5. データベースに実際にデータが正しく書き込まれているかを最終確認
+            // 5. DB書き込み最終検証と使用容量確認
             const verifiedLog = await dbGet(LOG_STORAGE_KEY, "kv");
             if (!verifiedLog) {
                 throw new Error("データベースへのログ書き込み検証に失敗しました。");
             }
 
-            // ⭐ 100%到達時にメッセージを変更し、少しウェイトを入れてからログオフへ移行
-            if (progressWin) {
-                progressWin.update(100, 100, "nexserをログオフしています...");
-                await new Promise(r => setTimeout(r, 600)); // 0.6秒間メッセージを表示
-            }
+            const storageUsage = await getStorageUsageText();
+            progressWin?.update(
+                100,
+                100,
+                `整合性検証: ${fsReport.corruptionDetected ? "破損を自動修復済み" : "正常"} / ストレージ使用量: ${storageUsage}\nすべてのセッションデータが安全に保存されました。`,
+                "[5/5] Nexser OS からログオフしています..."
+            );
+            await new Promise(r => setTimeout(r, 450));
 
         } catch (e) {
             console.error("[Kernel] ログオフ時のデータ保存・データベース検証に失敗しました:", e);
-        }
-
-        if (progressWin) {
-            progressWin.close();
+        } finally {
+            if (progressWin) {
+                progressWin.close();
+            }
+            logoffShield.remove();
         }
 
         resetUI();

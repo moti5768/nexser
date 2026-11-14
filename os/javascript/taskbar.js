@@ -619,8 +619,17 @@ export async function initTaskbar() {
         console.error("[Taskbar] Initialization error:", err);
         updateClockLabel(new Date());
     } finally {
-        // すべてのレイアウト・位置の適用が完了したら表示する
-        taskbar.style.visibility = "visible";
+        if (window.nexser?.isBooting) {
+            taskbar.style.visibility = "hidden";
+            taskbar.style.pointerEvents = "none";
+            if (taskbarFloatingWindow) {
+                taskbarFloatingWindow.style.visibility = "hidden";
+                taskbarFloatingWindow.style.pointerEvents = "none";
+            }
+        } else {
+            taskbar.style.visibility = "visible";
+            taskbar.style.pointerEvents = "auto";
+        }
     }
 
     // ClockApp からの即時更新イベント

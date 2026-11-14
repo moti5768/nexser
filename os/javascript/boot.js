@@ -105,37 +105,12 @@ const commands = {
     boot: {
         desc: 'Verify system and boot OS',
         async run() {
-            // 未検証の場合は自動でシステム診断・検証を実行する
-            if (!isSystemVerified) {
-                print("Checking hardware resources...");
-                print(`  Logical Cores: ${navigator.hardwareConcurrency || 'unknown'}`);
-                print(`  Approx. Memory: ${navigator.deviceMemory || 'unknown'} GB`);
-
-                print("Verifying file system integrity...");
-                const { diagnoseAndCleanFS } = await import('./fs.js');
-                const report = await diagnoseAndCleanFS(false);
-
-                if (report.corruptionDetected) {
-                    print("  [ERROR] Core system data is missing or corrupted!");
-                    report.logs.forEach(log => print(`    ${log}`));
-                    print(`  Run 'scanfilesystem' command to repair before booting.`);
-                    return;
-                }
-
-                print(`  FS Status: OK. (Garbage items in Trash: ${report.garbageItems})`);
-
-                const sysFolder = resolveFS("System");
-                const hasConfig = sysFolder && sysFolder["Config.json"];
-                const hasSound = sysFolder && sysFolder["SoundConfig.json"];
-                print(`  Configurations: ${hasConfig ? 'Found' : 'Default'} / Audio: ${hasSound ? 'Found' : 'Default'}`);
-
-                isSystemVerified = true;
-            }
-
+            isSystemVerified = true;
             print("Booting OS...");
             await bootOS();
         }
     },
+
     version: { desc: 'Show version', run() { print('NEXSER CLI v1.0.0 (Stable)'); } },
     time: { desc: 'Show time', run() { print(new Date().toLocaleString()); } },
     whoami: { desc: 'Current user', run() { print('user'); } },
@@ -764,28 +739,13 @@ const commands = {
 
 
     scanfilesystem: {
-        desc: 'Check the file system for errors and repair (Usage: scanfilesystem [path])',
+        desc: 'Check the file system & DB key structure for errors (Usage: scanfilesystem [path])',
         async run(args) {
-            // 共通のウェイト処理（演出用の遅延）
-            const wait = (ms) => new Promise(r => setTimeout(r, ms));
+            print("Nexser Corp for Nexser OS v0.2.0 - Fast Structure Scanner");
 
-            print("Nexser Corp for Nexser OS v0.1.0");
-            print("Initializing scanfilesystem...\n");
-
-            // 1. システム整合性とコアディレクトリのチェック（ウェイト削除）
-            print("--> Checking system integrity and core directories...");
-            const { diagnoseAndCleanFS, forceSave } = await import('./fs.js');
-            const systemReport = await diagnoseAndCleanFS(true); // 自動修復を実行
-
-            if (systemReport.logs.length > 0) {
-                systemReport.logs.forEach(log => print(`    ${log}`));
-            }
-
-            print("--> Scanning files and applications...");
-
-            // ★ 追加・変更: 引数（args[0]）から対象パスを特定する（未指定の場合は C:/ 全体）
             const targetPathArg = args[0] || "C:/";
             const targetPath = normalizePath(targetPathArg);
+            const targetPrefix = targetPath === "C:/" ? "C:" : targetPath.replace(/\/$/, "");
             const fsSearchPath = targetPath === "C:/" ? "" : targetPath.replace(/^C:\//, "");
             const targetNode = resolveFS(fsSearchPath);
 
@@ -793,104 +753,237 @@ const commands = {
                 return print(`Error: The system cannot find the path specified: ${targetPathArg}`);
             }
 
-            // 全ファイル・アプリノードを再帰的に収集
-            const files = [];
-            const skipKeys = new Set(['type', 'entry', 'singleton', 'target', 'content', 'system', 'name', 'originalPath']);
+            print(`Target: ${targetPath}\n`);
 
-            function collectNodes(node, path) {
-                if (!node || typeof node !== 'object') return;
-
-                for (const [name, val] of Object.entries(node)) {
-                    if (skipKeys.has(name)) continue;
-                    const currentPath = `${path}/${name}`;
-                    if (val && typeof val === 'object') {
-                        if (val.type === 'file' || val.type === 'app') {
-                            files.push({ path: currentPath, node: val });
-                        } else if (val.type === 'folder' || !val.type) {
-                            collectNodes(val, currentPath);
-                        }
-                    }
-                }
-            }
-
-            // ★ 変更: 指定された対象が単一ファイル、またはフォルダの場合に応じた収集
-            if (targetNode.type === 'file' || targetNode.type === 'app') {
-                files.push({ path: targetPath, node: targetNode });
-            } else {
-                const basePath = targetPath === "C:/" ? "C:" : targetPath.replace(/\/$/, "");
-                collectNodes(targetNode, basePath);
-            }
-
-            const totalFiles = files.length;
-            print(`Scanning target ${targetPath} (${totalFiles} items found)...`);
-
-            // 進捗表示用のテキストノードを作成
+            // 全工程を統合表示するテキスト進捗バーノード
             const progressNode = document.createTextNode('');
             screen.appendChild(progressNode);
             scrollToBottom();
 
-            let errorCount = systemReport.corruptionDetected ? 1 : 0;
-            let fixedCount = systemReport.garbageItems > 0 ? systemReport.garbageItems : 0;
+            const BAR_WIDTH = 24;
+            const updateProgress = (percent, statusText) => {
+                const clamped = Math.max(0, Math.min(100, Math.round(percent)));
+                const filled = Math.round((clamped / 100) * BAR_WIDTH);
+                const bar = '█'.repeat(filled) + '░'.repeat(BAR_WIDTH - filled);
+                progressNode.nodeValue = `[${bar}] ${String(clamped).padStart(3)}% | ${statusText}\n`;
+                scrollToBottom();
+            };
 
-            // 一括で高速にチェックと修復を行う
-            for (let i = 0; i < totalFiles; i++) {
-                const item = files[i];
+            const repairLogs = [];
+            let errorCount = 0;
+            let fixedCount = 0;
+            let needsFullSync = false;
 
-                if (item.node.type === 'file') {
-                    if (typeof item.node.content !== 'string') {
-                        item.node.content = "";
+            // 1. コアディレクトリ構造チェック (0% -> 15%)
+            updateProgress(5, "Checking core directory structure...");
+            const { FS, forceSave } = await import('./fs.js');
+            const { openDB } = await import('./db.js');
+
+            if (!FS["C:"] || FS["C:"].type !== "folder") {
+                FS["C:"] = { type: "folder", system: true };
+                errorCount++;
+                fixedCount++;
+                needsFullSync = true;
+                repairLogs.push("[Repaired] Recreated root drive C:");
+            }
+            for (const dir of ["System", "Desktop", "Programs", "StartMenu", "Trash"]) {
+                if (!FS["C:"][dir] || FS["C:"][dir].type !== "folder") {
+                    FS["C:"][dir] = { type: "folder", system: true };
+                    errorCount++;
+                    fixedCount++;
+                    needsFullSync = true;
+                    repairLogs.push(`[Repaired] Recreated missing system folder: C:/${dir}`);
+                }
+            }
+            updateProgress(15, "Core directory structure verified.");
+
+            // 2. IndexedDB キー一覧の取得・実データは一切読み込まない (15% -> 35%)
+            updateProgress(20, "Reading IndexedDB key index (kv / files)...");
+            const db = await openDB();
+            const { kvKeys, fileKeys } = await new Promise((resolve, reject) => {
+                const tx = db.transaction(["kv", "files"], "readonly");
+                const kvReq = tx.objectStore("kv").getAllKeys();
+                const fileReq = tx.objectStore("files").getAllKeys();
+                let k = [], f = [];
+                kvReq.onsuccess = () => { k = kvReq.result; };
+                fileReq.onsuccess = () => { f = fileReq.result; };
+                tx.oncomplete = () => resolve({ kvKeys: k, fileKeys: f });
+                tx.onerror = () => reject(tx.error);
+            });
+
+            const kvNodeSet = new Set(
+                kvKeys
+                    .filter(k => typeof k === "string" && k.startsWith("fs_node:"))
+                    .map(k => k.slice("fs_node:".length))
+            );
+            const fileKeySet = new Set(fileKeys.filter(k => typeof k === "string"));
+            updateProgress(35, `IndexedDB keys loaded (kv: ${kvNodeSet.size}, files: ${fileKeySet.size})`);
+
+            // 3. 対象ノード一覧の収集 (35% -> 45%)
+            updateProgress(40, `Collecting nodes under ${targetPath}...`);
+            const items = [];
+            const stats = { folders: 0, files: 0, externalFiles: 0, apps: 0, links: 0, brokenLinks: 0, unsyncedKv: 0 };
+
+            const collectItems = (node, currentPath, visited = new WeakSet()) => {
+                if (!node || typeof node !== "object" || visited.has(node)) return;
+                visited.add(node);
+
+                if (!kvNodeSet.has(currentPath)) {
+                    stats.unsyncedKv++;
+                }
+
+                for (const [name, val] of Object.entries(node)) {
+                    if (!val || typeof val !== "object" || Array.isArray(val) || val instanceof Blob || val instanceof ArrayBuffer) continue;
+                    if (typeof val.type !== "string") continue;
+
+                    const itemPath = `${currentPath}/${name}`;
+                    items.push({ path: itemPath, node: val });
+                    if (val.type === "folder") {
+                        collectItems(val, itemPath, visited);
+                    } else if (!kvNodeSet.has(itemPath)) {
+                        stats.unsyncedKv++;
+                    }
+                }
+            };
+
+            if (targetNode.type && targetNode.type !== "folder") {
+                items.push({ path: targetPrefix, node: targetNode });
+                if (!kvNodeSet.has(targetPrefix)) stats.unsyncedKv++;
+            } else {
+                collectItems(targetNode, targetPrefix);
+            }
+
+            // 4. ノード構造・リンク整合性スキャン (45% -> 90%)
+            const totalItems = items.length;
+            const yieldInterval = Math.max(50, Math.floor(totalItems / 20));
+
+            for (let i = 0; i < totalItems; i++) {
+                const { path: itemPath, node: item } = items[i];
+
+                if (item.type === "folder") {
+                    stats.folders++;
+                } else if (item.type === "file") {
+                    stats.files++;
+                    if (item.content === "__EXTERNAL_DATA__") {
+                        stats.externalFiles++;
+                        if (!fileKeySet.has(itemPath)) {
+                            errorCount++;
+                            item.content = "";
+                            item.size = 0;
+                            fixedCount++;
+                            repairLogs.push(`[Repaired] Missing DB key for external file: ${itemPath}`);
+                        }
+                    } else if (typeof item.content !== "string") {
+                        item.content = "";
+                        item.size = 0;
                         fixedCount++;
+                        repairLogs.push(`[Repaired] Normalized invalid content: ${itemPath}`);
                     }
-                } else if (item.node.type === 'app') {
-                    if (!item.node.code && !item.node.entry) {
+                } else if (item.type === "app") {
+                    stats.apps++;
+                    if (item.content === "__EXTERNAL_DATA__") {
+                        stats.externalFiles++;
+                        if (!fileKeySet.has(itemPath)) {
+                            errorCount++;
+                            item.content = "";
+                            item.size = 0;
+                            fixedCount++;
+                            repairLogs.push(`[Repaired] Missing DB key for external app: ${itemPath}`);
+                        }
+                    }
+                    if (!item.code && !item.entry) {
                         errorCount++;
+                        repairLogs.push(`[Error] Missing entry/code in app: ${itemPath}`);
                     }
+                } else if (item.type === "link") {
+                    stats.links++;
+                    const linkTarget = typeof item.target === "string" ? item.target.replace(/^C:\//, "") : "";
+                    if (!item.target || !resolveFS(linkTarget)) {
+                        stats.brokenLinks++;
+                        repairLogs.push(`[Notice] Broken link: ${itemPath} -> ${item.target || "(none)"}`);
+                    }
+                }
+
+                if (i % yieldInterval === 0 || i === totalItems - 1) {
+                    const scanPct = 45 + Math.round(((i + 1) / Math.max(1, totalItems)) * 45);
+                    updateProgress(scanPct, `Scanning nodes (${i + 1}/${totalItems}): ${itemPath}`);
+                    await new Promise(r => requestAnimationFrame(r));
                 }
             }
 
-            // 最終結果のプログレス表示
-            const bar = '█'.repeat(20);
-            progressNode.nodeValue = `${bar} 100% (${totalFiles}/${totalFiles})\n`;
-            scrollToBottom();
+            if (stats.unsyncedKv > 0) {
+                needsFullSync = true;
+                fixedCount += stats.unsyncedKv;
+                repairLogs.push(`[Repaired] Re-queued ${stats.unsyncedKv} unsynced KV node(s).`);
+            }
+
+            // 5. 修復内容のDB保存 (90% -> 100%)
+            if (fixedCount > 0 || needsFullSync) {
+                updateProgress(95, "Committing structure repairs to IndexedDB...");
+                window.dispatchEvent(new Event("fs-updated"));
+                try {
+                    await forceSave(needsFullSync);
+                    repairLogs.push("[System] Structure changes saved to IndexedDB.");
+                } catch (e) {
+                    console.warn("Failed to auto-save after scanfilesystem:", e);
+                    repairLogs.push(`[Error] Auto-save failed: ${e.message}`);
+                }
+            }
+
+            updateProgress(100, `Completed (${totalItems}/${totalItems} nodes checked)`);
+
+            if (repairLogs.length > 0) {
+                print("");
+                repairLogs.forEach(log => print(`  ${log}`));
+            }
 
             print("\n----------------------------------------");
             print(`Scan completed on ${targetPath}:`);
-            print(`Total Checked : ${totalFiles}`);
+            print(`Folders       : ${stats.folders}`);
+            print(`Files         : ${stats.files} (External DB: ${stats.externalFiles})`);
+            print(`Apps / Links  : ${stats.apps} apps / ${stats.links} links${stats.brokenLinks > 0 ? ` (Broken: ${stats.brokenLinks})` : ""}`);
+            print(`DB Keys       : kv=${kvNodeSet.size} nodes / files=${fileKeySet.size} keys`);
+            print(`Total Checked : ${totalItems} nodes`);
             print(`Errors Found  : ${errorCount}`);
             print(`Repaired      : ${fixedCount}`);
-            print("Target status : Healthy.");
+            print(`Target status : ${errorCount === 0 ? "Healthy" : (fixedCount >= errorCount ? "Repaired" : "Needs Attention")}`);
             print("----------------------------------------\n");
-
-            // 修復やクリーンアップが発生した場合は自動保存
-            if (fixedCount > 0 || systemReport.corruptionDetected) {
-                window.dispatchEvent(new Event("fs-updated"));
-                try {
-                    await forceSave();
-                    print("[System] File system changes have been saved.");
-                } catch (e) {
-                    console.warn("Failed to auto-save after scandisk:", e);
-                }
-            }
         }
     }
 
 };
 
 // ===== Prompt & Executor =====
+// ===== Prompt & Executor =====
+function focusCmdInput() {
+    if (!screen || screen.style.display === 'none') return;
+    const input = screen.querySelector('#cmd');
+    if (input) {
+        input.disabled = false;
+        input.readOnly = false;
+        input.focus();
+    }
+}
+
 export function prompt() {
-    if (screen.style.display === 'none') return;
+    if (!screen || screen.style.display === 'none') return;
+    // 古い入力行やID重複を完全に除去
+    screen.querySelectorAll('#input-line').forEach(el => el.remove());
+
     const line = document.createElement('div');
     line.id = 'input-line';
-    line.innerHTML = `${cwd}> <input id="cmd" autocomplete="off">`;
+    line.innerHTML = `${cwd}> <input id="cmd" autocomplete="off" spellcheck="false" style="background:transparent; color:inherit; border:none; outline:none; font:inherit; width:calc(100% - 80px); min-width:120px;">`;
     screen.appendChild(line);
     scrollToBottom();
     const input = line.querySelector('#cmd');
-    input.focus();
+    focusCmdInput();
+    requestAnimationFrame(focusCmdInput);
+
     input.onkeydown = e => {
         if (e.key === 'Enter') {
             const cmd = input.value.trim();
             if (cmd) { history.push(cmd); hIndex = history.length; }
-            screen.removeChild(line);
+            if (line.parentNode === screen) screen.removeChild(line);
             print(`${cwd}> ${cmd}`);
             exec(cmd);
         }
@@ -919,11 +1012,12 @@ async function runSilent(cmdLine) {
 
 async function exec(cmdLine) {
     await runSilent(cmdLine);
-    if (screen.style.display !== 'none') prompt();
+    if (screen && screen.style.display !== 'none') prompt();
 }
 
 // ===== Screen Control =====
 export function showPromptScreen(logoffMessage = '') {
+    document.getElementById('boot-input-shield')?.remove();
     screen.style.display = 'block';
     const root = document.getElementById('os-root');
     if (root) {
@@ -932,139 +1026,109 @@ export function showPromptScreen(logoffMessage = '') {
     }
     document.querySelectorAll('.window').forEach(w => w.remove());
     resetWindowIdCounter();
-    if (window.nexser) {
-        window.nexser.isLoggingOff = false;
-    }
+    window.nexser = window.nexser || {};
+    window.nexser.isLoggingOff = false;
+    window.nexser.isBooting = false;
     if (logoffMessage) print(logoffMessage);
     prompt();
+    setTimeout(focusCmdInput, 50);
 }
 
 // ===== Boot Sequence =====
 export async function bootOS() {
     try {
         print("\nBoot sequence started...\n");
-
-        if (window.nexser) {
-            window.nexser.isLoggingOff = false;
-        }
-
         const kernel = await import('./kernel.js');
-
-        // 1. カーネル空間の初期化 (DOM・エラーハンドリング)
-        await kernel.initKernelSpaceAsync(msg => print(`[Kernel] ${msg}`));
-
-        // カーネル初期化後、シェル構築前にタスクバーの高さを適用
-        const savedHeight = await loadSetting("taskbarSize") || 40;
-        document.documentElement.style.setProperty('--taskbar-height', `${savedHeight}px`);
-
-        // 2. 画面をCLIからGUIルート画面へ切替
-        screen.style.display = 'none';
-        const root = document.getElementById('os-root');
-        if (root) root.style.display = 'block';
-
-        // 3. 【Stage 1】システムUIシェル（タスクバー・スタートメニュー）の確立
-        await kernel.initShellAsync(msg => print(`[Shell] ${msg}`));
-
-        // 4. 【Stage 2】デスクトップビューの構築
-        await kernel.initDesktopAsync(msg => print(`[Desktop] ${msg}`));
-        window.dispatchEvent(new Event("desktop-resize"));
-
-        // 5. ユーザースペース（システム診断等）の初期化
-        await kernel.initUserSpaceAsync(msg => print(`[UserSpace] ${msg}`));
-
-        await kernel.launchShellApps();
-
-        // 6. システムサービスの起動 (エラー時のフェイルセーフ対応)
-        try {
-            await initScreensaver();
-            print('[Screensaver] Ready');
-        } catch (ssErr) {
-            print('[Screensaver] Skipped (Non-critical failure)');
-            console.warn("Screensaver failed to initialize, but boot will continue:", ssErr);
-        }
-
-        // 7. 起動音再生
-        playSystemEventSound('startup');
-        print("OS Boot Completed Successfully.");
-        try {
-            logSystemEvent(
-                "System",
-                "Information",
-                "OSBootstrapper",
-                1000,
-                "System Startup",
-                "Nexser OS が正常に起動し、システムサービスが初期化されました。"
-            );
-        } catch (logErr) {
-            console.warn("[Boot] Failed to log boot event:", logErr);
-        }
+        await kernel.bootKernelSequenceAsync({
+            screen,
+            initFS,
+            loadSetting,
+            initScreensaver,
+            print
+        });
     } catch (e) {
+        if (screen) screen.style.display = 'block';
+        const root = document.getElementById('os-root');
+        if (root) root.style.display = 'none';
         throw new Error(`BOOT_SELECTION_FAILED: ${e.message}`);
     }
 }
 
 // ===== BIOS (ページロード時) =====
 (async function initBIOS() {
-    // 1. ファイルシステムの初期化
-    const fsPromise = initFS().catch(e => console.warn("FS load failed", e));
-
-    // 2. BIOS起動メッセージ表示
+    // 1. BIOS起動メッセージ表示
     const lines = [document.title, "Copyright (C) 2026 Nexser Corp.", ""];
     for (const line of lines) {
         print(line);
     }
 
-    await fsPromise;
-    console.log("FS restored from DB");
-
-    // 3. AUTOBOOT.CFG の内容をチェックして 'boot' が含まれているか確認
-    const config = getNodeByPath("C:/System/AUTOBOOT.CFG");
-    const hasBoot = config && config.type === 'file' && config.content.split('\n').some(line => {
-        const trimmed = line.trim().toLowerCase();
+    // 2. 全DBロード(initFS)より先に AUTOBOOT.CFG の1キーだけを最優先チェック
+    const { fastCheckAutoBoot } = await import('./fs-db.js');
+    const autoBootContent = await fastCheckAutoBoot();
+    const script = autoBootContent
+        ? autoBootContent
+            .split('\n')
+            .map(s => s.trim())
+            .filter(line => line && !line.startsWith('//') && !line.startsWith('#'))
+        : [];
+    const hasBoot = script.some(line => {
+        const trimmed = line.toLowerCase();
         return trimmed === 'boot' || trimmed.startsWith('boot ');
     });
 
     if (hasBoot) {
-        print("Reading System Configuration...");
-        const script = config.content.split('\n').map(s => s.trim()).filter(Boolean);
-
+        print("Booting Nexser OS...");
         try {
-            for (const line of script) {
-                if (screen.style.display === 'none') return;
-                if (line.toLowerCase().includes('crash')) {
-                    print(`[Security] Blocked suspicious command in AUTOBOOT.CFG: ${line}`);
-                    continue;
+            const preBootCommands = script.filter(line => line.toLowerCase() !== 'boot');
+            if (preBootCommands.length > 0) {
+                await initFS();
+                for (const line of preBootCommands) {
+                    if (line.toLowerCase().includes('crash')) {
+                        print(`[Security] Blocked suspicious command in AUTOBOOT.CFG: ${line}`);
+                        continue;
+                    }
+                    print(`${cwd}> ${line}`);
+                    await runSilent(line);
                 }
-                print(`${cwd}> ${line}`);
-                if (line.trim().toLowerCase() === 'boot') {
-                    isSystemVerified = true;
-                    await bootOS();
-                    return;
-                }
-                await runSilent(line);
-                if (screen.style.display === 'none') return;
             }
+
+            // boot を最優先実行し、残りのDB読み込みと初期化はプログレスバーウィンドウ内で進行
+            isSystemVerified = true;
+            await bootOS();
+            return;
         } catch (e) {
+            screen.style.display = 'block';
+            const root = document.getElementById('os-root');
+            if (root) root.style.display = 'none';
             print(`\n[Boot Error] Failed to start: ${e.message}`);
-        } finally {
-            // エラーやブート失敗によりGUIに切り替わっていない場合はプロンプトを復旧
-            if (screen.style.display !== 'none') {
-                print("\nSystem boot interrupted or failed.");
-                print("Type 'scanfilesystem' to repair, or 'boot' to retry.\n");
-                prompt();
-            }
+            print("Type 'scanfilesystem' to repair, or 'boot' to retry.\n");
+            prompt();
         }
     } else {
-        // bootがない場合は即座にプロンプトを表示する
+        // bootがない場合はバックグラウンドでFS読み込みを開始しつつ即座にプロンプト表示
+        initFS().catch(e => console.warn("FS load failed", e));
         prompt();
     }
 })();
 
 function bindScreenFocus() {
     if (!screen) return;
-    screen.addEventListener('click', () => {
-        const input = document.getElementById('cmd');
-        if (input) input.focus();
+
+    // #screen だけでなく、CUI表示中の画面全体のクリック・タップで #cmd へフォーカスを復元する
+    document.addEventListener('click', () => {
+        if (screen.style.display === 'none') return;
+        const selection = window.getSelection();
+        if (selection && selection.toString().length > 0) return;
+        focusCmdInput();
+    });
+
+    // フォーカスが外れた状態でキーが押された場合も自動フォーカスして入力を取りこぼさない
+    document.addEventListener('keydown', (e) => {
+        if (screen.style.display === 'none') return;
+        const active = document.activeElement;
+        if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA')) return;
+        if (e.ctrlKey || e.metaKey || e.altKey) return;
+        focusCmdInput();
     });
 }
 bindScreenFocus();

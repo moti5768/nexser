@@ -4,6 +4,9 @@ import { resolveFS } from "./fs-utils.js";
 
 let audioCtx = null;
 
+// 再生中のオーディオインスタンスを保持するセット（GCによる音声途切れ・未再生を防止）
+const activeAudios = new Set();
+
 /**
  * AudioContextを安全に取得・初期化（シングルトン化 ＆ 自動再生ポリシー対策）
  */
@@ -76,7 +79,16 @@ export async function playSavedAudio(path) {
         }
         if (audioData) {
             const audio = new Audio(audioData);
-            audio.play().catch(console.error);
+
+            // GCによる破棄を防ぐためSetに保持し、終了時に削除
+            activeAudios.add(audio);
+            audio.onended = () => activeAudios.delete(audio);
+            audio.onerror = () => activeAudios.delete(audio);
+
+            audio.play().catch(err => {
+                activeAudios.delete(audio);
+                console.error(err);
+            });
         }
     }
 }
@@ -102,11 +114,22 @@ export async function playSystemEventSound(eventName) {
 
                 if (audioData) {
                     const audio = new Audio(audioData);
+
+                    // GCによる破棄を防ぐためSetに保持し、終了時に削除
+                    activeAudios.add(audio);
+                    audio.onended = () => activeAudios.delete(audio);
+                    audio.onerror = () => activeAudios.delete(audio);
+
                     audio.play().catch(err => {
+                        activeAudios.delete(audio);
                         // オートプレイ制限 (NotAllowedError) への対処
                         if (err.name === "NotAllowedError") {
                             const playOnGesture = () => {
-                                audio.play();
+                                audio.play().then(() => {
+                                    activeAudios.add(audio);
+                                }).catch(() => {
+                                    activeAudios.delete(audio);
+                                });
                             };
                             document.addEventListener("click", playOnGesture, { once: true });
                             document.addEventListener("keydown", playOnGesture, { once: true });

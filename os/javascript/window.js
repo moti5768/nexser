@@ -1547,47 +1547,40 @@ export function confirmWindow(message, callback, options = {}) {
 }
 
 export function progressWindow(title, itemName, options = {}) {
-    const winWidth = options.width || 380;
-    const winHeight = options.height || 180;
+    const winWidth = options.width || 420;
     const startTime = performance.now(); // 残り時間計算の開始点
 
-    // 1. showModalWindow を使用してウィンドウを生成
-    // ★ 修正: 無効化オプション（disableMinimize, disableMaximize, disableClose, disableControls）を確実に渡す
+    // height 未指定時は showModalWindow 側の自動高さ調整（height: auto）を有効にする
     const content = showModalWindow(title, "", {
         ...options,
         width: winWidth,
-        height: winHeight,
+        height: options.height || undefined,
         silent: true,
-        // モーダルウィンドウ側でコントロールを強制無効化されないよう、optionsの指定を優先・マージする
         disableControls: options.disableControls !== undefined ? options.disableControls : false,
         disableMinimize: options.disableMinimize,
         disableMaximize: options.disableMaximize,
         disableClose: options.disableClose,
-        // キャンセルボタンが必要な場合に備えて設定
         buttons: options.allowCancel ? [{ label: "キャンセル", onClick: options.onCancel || null }] : (options.buttons || []),
     });
 
-    // 実際のウィンドウ外枠要素を取得
     const win = content.parentElement;
 
-    // 2. ウィンドウ内部のレイアウト（Windows風）
     content.innerHTML = `
         <div style="padding: 15px; font-size: 12px; font-family: 'MS Sans Serif', Tahoma, sans-serif; color: #000; user-select: none;">
             <div class="pg-item-name" style="margin-bottom: 10px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"></div>
             
-            <div style="height: 26px; border: 1px solid #808080; background: #fff; box-shadow: inset 1px 1px #000; margin-bottom: 10px; position: relative;">
-                <div class="pg-bar" style="height: 100%; width: 0%; background: #000080; transition: width 0.2s;"></div>
+            <div style="height: 24px; border: 1px solid #808080; background: #fff; box-shadow: inset 1px 1px #000; margin-bottom: 10px; position: relative;">
+                <div class="pg-bar" style="height: 100%; width: 0%; background: #000080; transition: width 0.15s;"></div>
             </div>
 
-            <div style="display: grid; grid-template-columns: 80px 1fr; gap: 4px; color: #404040; line-height: 1.4;">
-                <span>進捗率:</span>   <span class="pg-percent">0%</span>
-                <span>詳細:</span>     <span class="pg-detail">準備中...</span>
+            <div style="display: grid; grid-template-columns: 76px 1fr; gap: 6px 4px; color: #303030; line-height: 1.45; align-items: start;">
+                <span>進捗率:</span>   <span class="pg-percent" style="font-weight: bold;">0%</span>
+                <span>詳細:</span>     <span class="pg-detail" style="white-space: pre-line; word-break: break-word;">準備中...</span>
                 <span>残り時間:</span> <span class="pg-time">計算中...</span>
             </div>
         </div>
     `;
 
-    // textContent を使って安全にアイテム名を挿入
     const itemNameEl = content.querySelector(".pg-item-name");
     if (itemNameEl) itemNameEl.textContent = itemName;
 
@@ -1596,54 +1589,61 @@ export function progressWindow(title, itemName, options = {}) {
     const detailText = content.querySelector(".pg-detail");
     const timeText = content.querySelector(".pg-time");
 
+    // disableClose: true でも確実にイベント・オーバーレイ・DOMを破棄するクローズ処理
+    const forceClose = () => {
+        if (!win) return;
+        const closeBtn = win.querySelector(".close-btn");
+        if (closeBtn) closeBtn.classList.remove("pointer_none");
+
+        if (typeof win._destroy === "function") {
+            win._destroy();
+        }
+        if (win._modalOverlay && win._modalOverlay.isConnected) {
+            win._modalOverlay.remove();
+        }
+        if (win.isConnected) {
+            win.remove();
+        }
+        scheduleRefreshTopWindow();
+    };
+
     return {
-        /**
-         * 進捗状況を更新するメソッド
-         * @param {number} current - 現在値
-         * @param {number} total - 最大値
-         * @param {string} detail - 詳細テキスト（例: "5.2MB / 10MB"）
-         */
-        update: (current, total = 100, detail = "") => {
-            // ウィンドウが閉じられていたら処理しない
+        win,
+        setItemName: (text) => {
+            if (itemNameEl && win?.isConnected) {
+                itemNameEl.textContent = text;
+            }
+        },
+        update: (current, total = 100, detail = "", newItemName = null) => {
             if (!win || !win.isConnected) return;
 
-            const p = Math.max(0, Math.min(100, (current / total) * 100));
+            if (newItemName && itemNameEl) {
+                itemNameEl.textContent = newItemName;
+            }
 
-            // バーとパーセントの更新
+            const p = Math.max(0, Math.min(100, (current / total) * 100));
             bar.style.width = `${p}%`;
             percentText.textContent = `${Math.round(p)}%`;
             if (detail) detailText.textContent = detail;
 
-            // 残り時間の計算ロジック
-            const elapsed = (performance.now() - startTime) / 1000; // 経過秒
+            const elapsed = (performance.now() - startTime) / 1000;
             if (p > 5) {
-                // (経過時間 / 現在の進捗率) - 経過時間 = 残り時間
                 const remaining = (elapsed / (p / 100)) - elapsed;
                 if (remaining > 60) {
                     timeText.textContent = `約 ${Math.floor(remaining / 60)}分 ${Math.round(remaining % 60)}秒`;
                 } else {
-                    timeText.textContent = `約 ${Math.round(remaining)}秒`;
+                    timeText.textContent = `約 ${Math.max(1, Math.round(remaining))}秒`;
                 }
             }
 
-            // 100%に達したら自動で閉じる
             if (p >= 100) {
                 timeText.textContent = "完了しました";
                 if (options.autoClose !== false) {
-                    setTimeout(() => {
-                        if (win && win.isConnected) {
-                            // window.jsのクリーンアップ関数を実行（タスクバーボタン等も消去される）
-                            if (typeof win._destroy === "function") win._destroy();
-                            else win.remove();
-                        }
-                    }, 800); // 完了を確認できるように少し待機
+                    setTimeout(forceClose, 800);
                 }
             }
         },
-        // 手動で閉じたい場合用
-        close: () => {
-            if (win && typeof win._destroy === "function") win._destroy();
-        }
+        close: forceClose
     };
 }
 

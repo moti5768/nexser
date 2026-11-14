@@ -4,6 +4,8 @@ import { attachContextMenu } from "../context-menu.js";
 import { setupRibbon } from "../ribbon.js";
 import { taskbarButtons } from "../window.js";
 import { getIcon } from "../file-associations.js";
+import { resolveFS } from "../fs-utils.js";
+import { getFileContent } from "../fs-db.js";
 
 let worker = null;
 function getWorker() {
@@ -31,16 +33,65 @@ export default function RegistryEditor(root) {
     const win = root.closest(".window");
     let editingKey = null;
 
-    function isProtected(store, key) {
-        return store === "kv" && (key === "fs" || (typeof key === "string" && key.startsWith("fs_")));
+    function isProtected(store, key, val = null) {
+        if (store !== "kv") return false;
+        if (currentPath.length === 0) {
+            return key === "C:" || key === "deleted_defaults" || key === "fs_journal" ||
+                (typeof key === "string" && (key === "fs" || key.startsWith("fs_")));
+        }
+        // 階層内の場合は system: true のノードを保護対象とする
+        const tr = rowMap.get(String(key));
+        const targetVal = val || tr?._val;
+        return Boolean(targetVal && typeof targetVal === "object" && targetVal.system === true);
     }
+
     function notifySystemChange(store, key) {
         if (store === "settings") {
             window.dispatchEvent(new CustomEvent("setting-changed", { detail: { key } }));
         } else if (store === "recent") {
             window.dispatchEvent(new Event("recent-updated"));
-        } else if (store === "files") {
+        } else if (store === "files" || store === "kv") {
             window.dispatchEvent(new Event("fs-updated"));
+        }
+    }
+
+    // Worker への汎用リクエスト送信ヘルパー
+    function sendWorkerRequest(payload) {
+        const workerInstance = getWorker();
+        const reqId = ++currentRequestId;
+        return new Promise((resolve, reject) => {
+            const handleMessage = (e) => {
+                if (e.data.action === payload.action && e.data.requestId === reqId) {
+                    workerInstance.removeEventListener("message", handleMessage);
+                    resolve(e.data);
+                }
+            };
+            const handleError = (err) => {
+                workerInstance.removeEventListener("error", handleError);
+                reject(err);
+            };
+            workerInstance.addEventListener("message", handleMessage);
+            workerInstance.addEventListener("error", handleError);
+            workerInstance.postMessage({ ...payload, requestId: reqId });
+        });
+    }
+
+    // kv ストア（fs_node:*）変更時にメモリ上の FS ツリーも同期
+    function syncMemoryFS(op, key, extra = {}) {
+        if (currentStore !== "kv" || currentPath.length === 0) return;
+        const parentPath = currentPath.join("/");
+        const parentNode = resolveFS(parentPath);
+        if (!parentNode || typeof parentNode !== "object") return;
+
+        if (op === "save" && extra.value && typeof extra.value === "object") {
+            parentNode[key] = structuredClone(extra.value);
+        } else if (op === "create" && extra.value && typeof extra.value === "object") {
+            parentNode[key] = structuredClone(extra.value);
+        } else if (op === "delete") {
+            delete parentNode[key];
+        } else if (op === "rename" && extra.newKey && parentNode[key]) {
+            parentNode[extra.newKey] = parentNode[key];
+            delete parentNode[key];
         }
     }
 
@@ -141,13 +192,31 @@ export default function RegistryEditor(root) {
                 }
             }
 
-            const db = await getDB();
-            const tx = db.transaction(currentStore, "readwrite");
-            await tx.objectStore(currentStore).put(val, key);
-            await tx.done;
+            let normalizedVal = val;
+            if (currentStore === "kv") {
+                const res = await sendWorkerRequest({
+                    action: "kvSaveNode",
+                    currentPath: [...currentPath],
+                    key,
+                    value: val
+                });
+                if (!res.success) throw new Error(res.error);
+
+                if (currentPath.length > 0 || key === "C:") {
+                    normalizedVal = (val && typeof val === "object" && !Array.isArray(val))
+                        ? { ...val, lastModified: Date.now() }
+                        : { type: "file", content: String(val ?? ""), lastModified: Date.now() };
+                }
+                syncMemoryFS("save", key, { value: normalizedVal });
+            } else {
+                const db = await getDB();
+                const tx = db.transaction(currentStore, "readwrite");
+                await tx.objectStore(currentStore).put(val, key);
+                await tx.done;
+            }
 
             notifySystemChange(currentStore, key);
-            updateRow(key, String(key), val);
+            updateRow(key, String(key), normalizedVal);
         } catch (e) {
             window.nexser?.windowAPI.errorWindow("保存に失敗しました: " + e.message, { parentWin: win });
         }
@@ -155,17 +224,31 @@ export default function RegistryEditor(root) {
 
     async function deleteItem(key) {
         if (isProtected(currentStore, key)) {
-            return window.nexser?.windowAPI.errorWindow(`'${key}' はシステムに必須のコンポーネントであるため、削除できません。`, { parentWin: win });
+            return window.nexser?.windowAPI.errorWindow(`'${key}' はシステム保護されたコンポーネントであるため、削除できません。`, { parentWin: win });
         }
 
         window.nexser?.windowAPI.confirmWindow(`このアイテムを削除してもよろしいですか? "${key}"`, async (result) => {
             if (!result) return;
             try {
-                const db = await getDB();
-                const tx = db.transaction(currentStore, "readwrite");
-                await tx.objectStore(currentStore).delete(key);
+                if (currentStore === "kv") {
+                    const res = await sendWorkerRequest({
+                        action: "kvDeleteNode",
+                        currentPath: [...currentPath],
+                        key
+                    });
+                    if (!res.success) throw new Error(res.error);
+                    syncMemoryFS("delete", key);
+                } else if (currentStore === "files") {
+                    const { deleteFileContentRecursive } = await import("../fs-db.js");
+                    await deleteFileContentRecursive(String(key));
+                } else {
+                    const db = await getDB();
+                    const tx = db.transaction(currentStore, "readwrite");
+                    await tx.objectStore(currentStore).delete(key);
+                    await tx.done;
+                }
+
                 notifySystemChange(currentStore, key);
-                await tx.done;
 
                 const tr = rowMap.get(String(key));
                 if (tr) {
@@ -176,7 +259,7 @@ export default function RegistryEditor(root) {
                 refresh(false);
             } catch (e) {
                 console.error("[Registry] Delete failed:", e);
-                window.nexser?.windowAPI.errorWindow("削除に失敗しました。", { parentWin: win });
+                window.nexser?.windowAPI.errorWindow("削除に失敗しました: " + e.message, { parentWin: win });
             }
         }, { parentWin: win });
     }
@@ -193,29 +276,41 @@ export default function RegistryEditor(root) {
         }
 
         try {
-            const db = await getDB();
-            const tx = db.transaction(currentStore, "readwrite");
-            const store = tx.objectStore(currentStore);
+            if (currentStore === "kv") {
+                const res = await sendWorkerRequest({
+                    action: "kvRenameNode",
+                    currentPath: [...currentPath],
+                    oldKey,
+                    newKey
+                });
+                if (!res.success) throw new Error(res.error);
+                syncMemoryFS("rename", oldKey, { newKey });
+            } else {
+                const db = await getDB();
+                const tx = db.transaction(currentStore, "readwrite");
+                const store = tx.objectStore(currentStore);
 
-            const existing = await store.count(newKey);
-            if (existing > 0) {
-                window.nexser?.windowAPI.errorWindow(`Error: "${newKey}" already exists.`, { parentWin: win });
-                return refresh(false);
+                const existing = await store.count(newKey);
+                if (existing > 0) {
+                    window.nexser?.windowAPI.errorWindow(`Error: "${newKey}" already exists.`, { parentWin: win });
+                    return refresh(false);
+                }
+
+                const val = await new Promise((resolve, reject) => {
+                    const req = store.get(oldKey);
+                    req.onsuccess = () => resolve(req.result);
+                    req.onerror = () => reject(req.error);
+                });
+
+                await store.put(val, newKey);
+                await store.delete(oldKey);
+
+                await new Promise((resolve) => {
+                    tx.oncomplete = resolve;
+                    tx.onerror = () => { throw tx.error; };
+                });
             }
 
-            const val = await new Promise((resolve, reject) => {
-                const req = store.get(oldKey);
-                req.onsuccess = () => resolve(req.result);
-                req.onerror = () => reject(req.error);
-            });
-
-            await store.put(val, newKey);
-            await store.delete(oldKey);
-
-            await new Promise((resolve) => {
-                tx.oncomplete = resolve;
-                tx.onerror = () => { throw tx.error; };
-            });
             notifySystemChange(currentStore, oldKey);
             notifySystemChange(currentStore, newKey);
             selectedKey = newKey;
@@ -234,8 +329,13 @@ export default function RegistryEditor(root) {
         if (!tr) return;
 
         const val = tr._val;
-        if (targetCol === "data" && val instanceof Blob) {
-            return window.nexser?.windowAPI.alertWindow("Binary data (REG_BINARY) editing is not supported.", { parentWin: win });
+        if (targetCol === "data") {
+            if (val instanceof Blob || val?.__IS_CHUNKED__ || val?.content === "__EXTERNAL_DATA__") {
+                return window.nexser?.windowAPI.alertWindow("外部保存・バイナリデータ (REG_BINARY / EXTERNAL) の直接編集はサポートされていません。", { parentWin: win });
+            }
+            if (val?._truncated) {
+                return window.nexser?.windowAPI.alertWindow("データサイズが大きいため省略表示されています。破損防止のため直接編集は無効化されています。", { parentWin: win });
+            }
         }
 
         editingKey = keyStr;
@@ -279,36 +379,56 @@ export default function RegistryEditor(root) {
     }
 
     async function createNew(type = "REG_SZ") {
-        let newKeyBase = "New Value";
-        let newKey = newKeyBase;
-        let counter = 1;
-
         try {
-            const db = await getDB();
-            const txRead = db.transaction(currentStore, "readonly");
-            const store = txRead.objectStore(currentStore);
+            let targetKey = "New Value";
 
-            const allKeysArray = await new Promise((resolve, reject) => {
-                const request = store.getAllKeys();
-                request.onsuccess = () => resolve(request.result);
-                request.onerror = () => reject(request.error);
-            });
+            if (currentStore === "kv") {
+                const res = await sendWorkerRequest({
+                    action: "kvCreateNode",
+                    currentPath: [...currentPath],
+                    valueType: type
+                });
+                if (!res.success) throw new Error(res.error);
+                targetKey = res.createdKey;
 
-            const existingKeys = new Set(allKeysArray.map(String));
+                if (currentPath.length > 0) {
+                    const initMeta = type === "REG_FOLDER"
+                        ? { type: "folder", lastModified: Date.now() }
+                        : { type: "file", content: "", size: 0, lastModified: Date.now() };
+                    syncMemoryFS("create", targetKey, { value: initMeta });
+                }
+            } else {
+                let newKeyBase = "New Value";
+                let newKey = newKeyBase;
+                let counter = 1;
 
-            while (existingKeys.has(newKey) || isProtected(currentStore, newKey)) {
-                newKey = `${newKeyBase} #${counter++}`;
+                const db = await getDB();
+                const txRead = db.transaction(currentStore, "readonly");
+                const store = txRead.objectStore(currentStore);
+
+                const allKeysArray = await new Promise((resolve, reject) => {
+                    const request = store.getAllKeys();
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+
+                const existingKeys = new Set(allKeysArray.map(String));
+
+                while (existingKeys.has(newKey) || isProtected(currentStore, newKey)) {
+                    newKey = `${newKeyBase} #${counter++}`;
+                }
+
+                targetKey = String(newKey);
+                let initialValue = "";
+                if (type === "REG_DWORD") initialValue = 0;
+                if (type === "REG_JSON") initialValue = {};
+
+                const txWrite = db.transaction(currentStore, "readwrite");
+                await txWrite.objectStore(currentStore).put(initialValue, targetKey);
+                await txWrite.done;
             }
 
-            const targetKey = String(newKey);
-            let initialValue = "";
-            if (type === "REG_DWORD") initialValue = 0;
-            if (type === "REG_JSON") initialValue = {};
-
-            const txWrite = db.transaction(currentStore, "readwrite");
-            await txWrite.objectStore(currentStore).put(initialValue, targetKey);
-            await txWrite.done;
-
+            notifySystemChange(currentStore, targetKey);
             await refresh(true);
 
             requestAnimationFrame(() => {
@@ -651,15 +771,21 @@ export default function RegistryEditor(root) {
                 typeStr = "REG_MULTI_SZ";
                 displayVal = val.join(" ");
             } else if (typeof val === 'object' && val !== null) {
-                if (val.type === "file") {
+                if (val.__IS_CHUNKED__) {
+                    typeStr = "REG_CHUNKED";
+                    displayVal = `[分割データ] ${val.totalChunks} チャンク (${val.dataType || "binary"})`;
+                } else if (val.type === "file") {
                     typeStr = "REG_FILE";
-                    displayVal = `[ファイル] ${val.content ? val.content.substring(0, 60) + "..." : "(空)"}`;
+                    displayVal = `[ファイル] ${val.content ? String(val.content).substring(0, 60) + "..." : "(空)"}`;
                 } else if (val.type === "app") {
                     typeStr = "REG_APP";
                     displayVal = `[アプリ] エントリ: ${val.entry}`;
                 } else if (val.type === "folder") {
                     typeStr = "REG_FOLDER";
                     displayVal = `[フォルダ]`;
+                } else if (val.type === "link") {
+                    typeStr = "REG_LINK";
+                    displayVal = `[ショートカット] -> ${val.target || ""}`;
                 } else {
                     typeStr = "REG_JSON";
                     displayVal = JSON.stringify(val);
@@ -671,17 +797,33 @@ export default function RegistryEditor(root) {
 
             const displayName = (keyStr === "" || keyStr === "(Default)") ? "(既定)" : keyStr;
 
-            // ⭐ 修正: 内部のdivに対してテキストを設定
-            tr.children[0].firstElementChild.textContent = displayName;
-            tr.children[1].firstElementChild.textContent = typeStr;
-            tr.children[2].firstElementChild.textContent = displayVal.substring(0, 120);
+            // 編集モード（enterEditMode）で内部のdivが消去されていた場合は再生成する
+            const cellStyles = [
+                "padding:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; width:100%; box-sizing:border-box;",
+                "padding:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; width:100%; box-sizing:border-box; color:#666;",
+                "padding:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; width:100%; box-sizing:border-box;"
+            ];
+            const cellTexts = [displayName, typeStr, displayVal.substring(0, 120)];
+
+            Array.from(tr.children).forEach((td, idx) => {
+                let innerDiv = td.firstElementChild;
+                if (!innerDiv || innerDiv.tagName !== "DIV") {
+                    td.innerHTML = "";
+                    innerDiv = document.createElement("div");
+                    innerDiv.style.cssText = cellStyles[idx];
+                    td.appendChild(innerDiv);
+                }
+                innerDiv.textContent = cellTexts[idx];
+            });
         }
 
-        const isSelected = (selectedKey === keyStr);
+        applyRowSelectionStyle(tr, selectedKey === keyStr);
+    }
+
+    function applyRowSelectionStyle(tr, isSelected) {
         tr.style.background = isSelected ? "#000080" : "";
         tr.style.color = isSelected ? "#fff" : "";
 
-        // ⭐ 修正: tdと内部divの両方に背景・文字色を正しく適用
         Array.from(tr.children).forEach((td, idx) => {
             td.style.background = isSelected ? "#000080" : "";
             const innerDiv = td.firstElementChild;
@@ -694,9 +836,7 @@ export default function RegistryEditor(root) {
     function selectRow(keyStr) {
         selectedKey = keyStr;
         for (const [k, tr] of rowMap) {
-            const isSelected = (k === keyStr);
-            tr.style.background = isSelected ? "#000080" : "";
-            tr.style.color = isSelected ? "#fff" : "";
+            applyRowSelectionStyle(tr, k === keyStr);
         }
     }
 
@@ -731,6 +871,7 @@ export default function RegistryEditor(root) {
             {
                 title: "Edit",
                 items: [
+                    { label: "New Folder (Key)", action: () => createNew("REG_FOLDER") },
                     { label: "New String Value", action: () => createNew("REG_SZ") },
                     { label: "New DWORD Value", action: () => createNew("REG_DWORD") },
                     { label: "New JSON Value", action: () => createNew("REG_JSON") },
@@ -773,11 +914,7 @@ export default function RegistryEditor(root) {
             }
             case "ArrowLeft":
                 e.preventDefault();
-                selectedKey = null;
-                for (const [k, tr] of rowMap) {
-                    tr.style.background = "";
-                    tr.style.color = "";
-                }
+                selectRow(null);
                 treeContainer.focus();
                 break;
             case "Delete":
@@ -844,8 +981,11 @@ export default function RegistryEditor(root) {
                 const delimiter = storeName === "files" ? "/" : ".";
                 const prefix = currentPathArr.join(delimiter);
 
+                const isFilesStore = storeName === "files";
                 for (const k of keys) {
                     const keyStr = String(k);
+                    if (isFilesStore && keyStr.includes("/__chunk_")) continue;
+
                     let relativePath = keyStr;
 
                     if (prefix) {
@@ -855,15 +995,11 @@ export default function RegistryEditor(root) {
                     }
 
                     if (relativePath) {
-                        let folderName = "";
+                        const parts = isFilesStore ? relativePath.split("/") : relativePath.split(/[\.\/]/);
+                        // files ストアはファイル葉ノードをツリーフォルダとして展開しない
+                        if (isFilesStore && parts.length <= 1) continue;
 
-                        if (relativePath.startsWith(delimiter)) {
-                            folderName = relativePath;
-                        } else {
-                            const parts = relativePath.split(/[\.\/]/);
-                            folderName = parts[0];
-                        }
-
+                        const folderName = parts[0];
                         if (folderName) {
                             subFolders.add(folderName);
                         }
@@ -1049,17 +1185,17 @@ export default function RegistryEditor(root) {
                 let contentToShow = val.content;
                 if (contentToShow === "__EXTERNAL_DATA__") {
                     try {
-                        const db = await getDB();
-                        const fullPath = [...currentPath, key].join("/");
-                        const tx = db.transaction("files", "readonly");
-                        const fileMeta = await tx.objectStore("files").get(fullPath);
+                        const rawFullPath = [...currentPath, key].join("/");
+                        const fullPath = rawFullPath.startsWith("C:") ? rawFullPath : `C:/${rawFullPath}`;
+                        // getFileContent を使用して分割チャンク（__IS_CHUNKED__）も自動結合して取得
+                        const fileData = await getFileContent(fullPath);
 
-                        if (fileMeta instanceof Blob) {
-                            const url = URL.createObjectURL(fileMeta);
-                            window.nexser?.windowAPI.alertWindow(`<div style="text-align:center;"><img src="${url}" style="max-width:100%; max-height:250px; object-fit:contain;"/><p style="margin-top:8px;">サイズ: ${fileMeta.size} バイト</p></div>`, { title: `ファイル: ${key}`, parentWin: win });
+                        if (fileData instanceof Blob) {
+                            const url = URL.createObjectURL(fileData);
+                            window.nexser?.windowAPI.alertWindow(`<div style="text-align:center;"><img src="${url}" style="max-width:100%; max-height:250px; object-fit:contain;"/><p style="margin-top:8px;">サイズ: ${fileData.size} バイト</p></div>`, { title: `ファイル: ${key}`, parentWin: win });
                             return;
-                        } else if (typeof fileMeta === "string") {
-                            contentToShow = fileMeta;
+                        } else if (typeof fileData === "string") {
+                            contentToShow = fileData;
                         } else {
                             contentToShow = "(外部バイナリデータまたは読み込み不可)";
                         }
@@ -1072,7 +1208,9 @@ export default function RegistryEditor(root) {
                 break;
             }
             case "folder": {
-                window.nexser?.kernelAPI.launch("C:/Programs/Applications/Explorer.app", { path: `C:/${[...currentPath, key].join("/")}`, parentCwd: "C:/" });
+                const rawFolderPath = [...currentPath, key].join("/");
+                const targetFolderPath = rawFolderPath.startsWith("C:") ? rawFolderPath : `C:/${rawFolderPath}`;
+                window.nexser?.kernelAPI.launch("C:/Programs/Applications/Explorer.app", { path: targetFolderPath, parentCwd: "C:/" });
                 break;
             }
             default: {

@@ -83,7 +83,6 @@ export default function main(content, options) {
     };
 
     // サブフォルダを再帰的に走査してファイルパス（folder/file.mp3）の配列を作る関数
-    // file-associations.js から AudioPlayer.app が割り当てられている拡張子を自動取得[cite: 3]
     const audioExtensions = Object.keys(FILE_ASSOCIATIONS).filter(
         ext => FILE_ASSOCIATIONS[ext] === "C:/Programs/Applications/AudioPlayer.app"
     );
@@ -103,7 +102,6 @@ export default function main(content, options) {
                 files = files.concat(collectAudioFiles(child, fullPath, visited));
             } else if (child && child.type === "file") {
                 const lowerName = name.toLowerCase();
-                // 音声用拡張子に一致するものだけをリストに追加[cite: 3]
                 if (audioExtensions.some(ext => lowerName.endsWith(ext))) {
                     files.push(fullPath);
                 }
@@ -202,7 +200,12 @@ export default function main(content, options) {
             if (eventName === "ignore") return;
 
             const fileName = e.target.dataset.filename;
-            let config = JSON.parse(FS["C:"].System["SoundConfig.json"].content || "{}");
+            let config = {};
+            try {
+                config = JSON.parse(FS["C:"].System["SoundConfig.json"].content || "{}");
+            } catch (err) {
+                config = {};
+            }
 
             Object.keys(config).forEach(key => {
                 if (config[key] === fileName) delete config[key];
@@ -214,12 +217,14 @@ export default function main(content, options) {
 
             FS["C:"].System["SoundConfig.json"].content = JSON.stringify(config, null, 2);
 
-            // ★まずはUIを即座に再描画して画面への反映を優先する
-            refresh();
-
-            // 保存や外部への通知はバックグラウンド（または後続）で行う
+            // 保存処理とイベント伝播を確実に完了させる
             await forceSave?.();
             window.dispatchEvent(new Event("fs-updated"));
+
+            // 非同期で安全にUIを再描画する
+            setTimeout(() => {
+                refresh();
+            }, 0);
         }
     };
 

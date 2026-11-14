@@ -1111,7 +1111,7 @@ export default async function SettingsApp(content) {
             visited.add(node);
 
             for (const name in node) {
-                if (["type", "system", "originalPath", "entry", "singleton", "target"].includes(name)) continue;
+                if (["type", "system", "originalPath", "entry", "singleton", "target", "lastModified", "hidden", "size", "content"].includes(name)) continue;
                 const child = node[name];
                 const fullPath = currentPath ? `${currentPath}/${name}` : name;
                 if (child && child.type === "folder") {
@@ -1174,14 +1174,14 @@ export default async function SettingsApp(content) {
                     previewAudio = null;
                 }
 
-                const path = `Programs/Music/${selectedFile}`;
-                const fileNode = resolveFS(path);
+                const relPath = `Programs/Music/${selectedFile}`;
+                const fileNode = resolveFS(relPath);
                 if (!fileNode) return;
 
-                // 非同期でのデータ取得 (soundplayer.js と同じロジック)
+                // 新DB形式の files ストアは "C:/..." フルパスをキーとするため C:/ を付与して取得
                 let audioData = fileNode.content;
                 if (audioData === "__EXTERNAL_DATA__") {
-                    audioData = await getFileContent(path);
+                    audioData = await getFileContent(`C:/${relPath}`);
                 }
 
                 if (!audioData) {
@@ -1363,9 +1363,38 @@ export default async function SettingsApp(content) {
         storageBox.style.marginTop = "10px";
         storageBox.style.borderTop = "1px solid #666";
         storageBox.style.paddingTop = "6px";
-        storageBox.innerHTML = "<i>Loading storage information...</i>";
 
         root.append(info, storageBox);
+
+        let activeStorageWorker = null;
+
+        // 進捗バーUI生成ヘルパー
+        function showStorageProgress() {
+            storageBox.innerHTML = `
+                <div style="padding: 8px; background: #c0c0c0; border: 1px inset #808080;">
+                    <div id="storage-progress-label" style="font-size: 12px; margin-bottom: 4px; font-weight: bold;">
+                        ストレージ情報を読み込み中... (0%)
+                    </div>
+                    <div style="width: 100%; height: 16px; background: #fff; border: 1px inset #808080; padding: 1px; box-sizing: border-box;">
+                        <div id="storage-progress-bar" style="width: 0%; height: 100%; background: #000080; transition: width 0.12s linear;"></div>
+                    </div>
+                    <div id="storage-progress-detail" style="font-size: 11px; color: #333; margin-top: 4px; font-family: monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        Initializing storage scanner...
+                    </div>
+                </div>
+            `;
+            return {
+                update(percent, detail) {
+                    const labelEl = storageBox.querySelector("#storage-progress-label");
+                    const barEl = storageBox.querySelector("#storage-progress-bar");
+                    const detailEl = storageBox.querySelector("#storage-progress-detail");
+                    const clamped = Math.max(0, Math.min(100, Math.round(percent)));
+                    if (labelEl) labelEl.textContent = `ストレージ情報を読み込み中... (${clamped}%)`;
+                    if (barEl) barEl.style.width = `${clamped}%`;
+                    if (detailEl && detail) detailEl.textContent = detail;
+                }
+            };
+        }
 
         // 個別ストアの削除機能
         async function clearStore(storeName) {
@@ -1382,57 +1411,55 @@ export default async function SettingsApp(content) {
             });
         }
 
-        const encoder = new TextEncoder();
-
-        // ★ 改善点: サイズ計算のロジックを独立した関数として外に切り出し
-        function calculateItemSize(storeName, item) {
-            if (!item) return 0;
-
-            if (storeName === "files") {
-                if (item instanceof Blob) return item.size;
-                if (item instanceof ArrayBuffer) return item.byteLength;
-                if (typeof item === 'string') return encoder.encode(item).length;
-                return 0;
+        // Worker 経由で新DB形式のサイズ・内訳とリアルタイム進捗を取得
+        async function getStoreSizes(onProgress) {
+            if (activeStorageWorker) {
+                activeStorageWorker.terminate();
+                activeStorageWorker = null;
             }
 
-            try {
-                const jsonString = JSON.stringify(item);
-                return jsonString ? encoder.encode(jsonString).length : 0;
-            } catch {
-                return 0;
-            }
-        }
-
-        // 【改善後】Settings.js 側での getStoreSizes の置き換え
-        async function getStoreSizes() {
             return new Promise((resolve) => {
-                // Workerのパスはプロジェクトの構成に合わせて調整してください
                 const worker = new Worker(new URL("./worker/settings-worker.js", import.meta.url), { type: "module" });
+                activeStorageWorker = worker;
 
                 worker.onmessage = (e) => {
-                    worker.terminate(); // 処理が終わったらWorkerを破棄
-                    if (e.data.success) {
-                        resolve(e.data.sizes);
+                    const msg = e.data;
+                    if (msg.type === "PROGRESS") {
+                        onProgress?.(msg.percent, msg.detail);
+                        return;
+                    }
+
+                    worker.terminate();
+                    if (activeStorageWorker === worker) activeStorageWorker = null;
+
+                    if (msg.success) {
+                        resolve({ sizes: msg.sizes || {}, breakdown: msg.breakdown || {} });
                     } else {
-                        console.error("[Settings Worker] failed:", e.data.error);
-                        resolve({});
+                        console.error("[Settings Worker] failed:", msg.error);
+                        resolve({ sizes: {}, breakdown: {} });
                     }
                 };
 
                 worker.onerror = (err) => {
                     console.error("[Settings Worker] error:", err);
                     worker.terminate();
-                    resolve({});
+                    if (activeStorageWorker === worker) activeStorageWorker = null;
+                    resolve({ sizes: {}, breakdown: {} });
                 };
 
-                // サイズ計算の実行を指示
                 worker.postMessage({ type: "GET_STORE_SIZES" });
             });
         }
 
         async function renderStorage() {
             if (!document.body.contains(root) || currentTabId !== "system") return;
-            const sizes = await getStoreSizes();
+
+            const progressUI = showStorageProgress();
+            const { sizes, breakdown } = await getStoreSizes((pct, detail) => {
+                if (document.body.contains(storageBox) && currentTabId === "system") {
+                    progressUI.update(pct, detail);
+                }
+            });
             const { quota } = await getStorageInfo();
 
             // 非同期処理を待っている間にタブが切り替わったり閉じられたら、処理を中断するガード
@@ -1462,7 +1489,10 @@ export default async function SettingsApp(content) {
                 row.style.cssText = "display:flex; justify-content:space-between; align-items:center; padding:4px 0; border-bottom:1px dashed #ccc;";
 
                 const nameWrapper = document.createElement("div");
-                nameWrapper.style.cssText = "display:flex; align-items:center;";
+                nameWrapper.style.cssText = "display:flex; flex-direction:column;";
+
+                const nameTop = document.createElement("div");
+                nameTop.style.cssText = "display:flex; align-items:center;";
 
                 const colorChip = document.createElement("div");
                 colorChip.style.cssText = `width: 10px; height: 10px; background-color: ${currentColor}; margin-right: 6px; border: 1px solid #000; flex-shrink: 0;`;
@@ -1471,7 +1501,21 @@ export default async function SettingsApp(content) {
                 nameSpan.textContent = name;
                 nameSpan.style.fontWeight = "bold";
 
-                nameWrapper.append(colorChip, nameSpan);
+                nameTop.append(colorChip, nameSpan);
+                nameWrapper.appendChild(nameTop);
+
+                // 新DB形式のメタデータ内訳をサブテキスト表示
+                if (name === "kv" && typeof breakdown.kvNodes === "number") {
+                    const sub = document.createElement("span");
+                    sub.style.cssText = "font-size: 10px; color: #555; margin-left: 16px;";
+                    sub.textContent = `階層ノード (fs_node): ${breakdown.kvNodes}件 (${formatBytes(breakdown.kvNodeBytes || 0)})`;
+                    nameWrapper.appendChild(sub);
+                } else if (name === "files" && typeof breakdown.externalFileCount === "number") {
+                    const sub = document.createElement("span");
+                    sub.style.cssText = "font-size: 10px; color: #555; margin-left: 16px;";
+                    sub.textContent = `外部実データ: ${breakdown.externalFileCount}件 / チャンク: ${breakdown.chunkCount || 0}個`;
+                    nameWrapper.appendChild(sub);
+                }
 
                 const rightSide = document.createElement("div");
                 rightSide.style.display = "flex";
@@ -1752,10 +1796,13 @@ export default async function SettingsApp(content) {
             updateInfo();
         }, 5000);
 
-        // ★【大修正】root._cleanup ではなく bodyEl._cleanup に書き換える
         bodyEl._cleanup = () => {
             clearInterval(infoTimer);
             if (storageUpdateTimer) clearTimeout(storageUpdateTimer);
+            if (activeStorageWorker) {
+                activeStorageWorker.terminate();
+                activeStorageWorker = null;
+            }
             window.removeEventListener("fs-updated", onFsUpdated);
         };
 
