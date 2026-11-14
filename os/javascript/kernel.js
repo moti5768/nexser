@@ -1360,7 +1360,9 @@ export async function logOff() {
             {
                 width: 460,
                 overlay: true,
-                isHtml: true // HTMLタグを有効化して綺麗なリストを表示
+                isHtml: true,
+                taskbar: false,
+                disableControls: true
             }
         );
     } else {
