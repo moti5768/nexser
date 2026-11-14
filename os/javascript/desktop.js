@@ -1,17 +1,30 @@
 // desktop.js
 import { FS, forceSave, markDefaultDeleted, unmarkDefaultDeleted, setBulkUpdating, reorderNodeKeys } from "./fs.js";
-import { resolveFS, validateName, importFileSmart, getUniqueName, isDescendantOrSelf } from "./fs-utils.js";
+import {
+    resolveFS,
+    validateName,
+    importFileSmart,
+    getUniqueName,
+    isDescendantOrSelf,
+    isSystemMetaKey,
+    cloneFSNode,
+    resolveLinkTarget,
+    clearSystemProtection,
+    processStorageRecursively,
+    createUrlShortcutNode
+} from "./fs-utils.js";
 import { addRecent } from "./recent.js";
 import { attachContextMenu } from "./context-menu.js";
 import { resolveAppByPath, getIcon, getDisplayFileName } from "./file-associations.js";
 import { openWithDialog as explorerOpenWithDialog, showProperties, emptyTrash } from "./apps/explorer.js";
-import { dbGet, dbSet } from "./fs-db.js";
+import { dbGet, dbSet, moveFileContent, copyFileContent, deleteFileContentRecursive } from "./fs-db.js";
+import { applyDesktopBackground } from "./apps/settings.js";
 
 // 選択状態管理 (複数選択・範囲選択対応)
 let globalSelected = { items: new Set(), window: null, lastSelected: null };
 let autoArrange = true; // 自動整列フラグ
-let iconPositions = {}; // ★ 追加: 自動整列OFF時のアイコン座標データ
-let showFileExtensions = true; // ★ 追加: 拡張子表示設定
+let iconPositions = {}; // 自動整列OFF時のアイコン座標データ
+let showFileExtensions = true; // 拡張子表示設定
 
 (async () => {
     try {
@@ -21,7 +34,7 @@ let showFileExtensions = true; // ★ 追加: 拡張子表示設定
         const savedPositions = await dbGet("desktop_iconsPositions", "settings");
         if (savedPositions) iconPositions = savedPositions;
 
-        // ★ 追加: エクスプローラーと共通の拡張子表示設定をロード
+        // エクスプローラーと共通の拡張子表示設定をロード
         const savedShowExt = await dbGet("explorerShowFileExtensions", "settings");
         if (savedShowExt !== undefined) {
             showFileExtensions = savedShowExt === true || savedShowExt === "true";
@@ -35,6 +48,133 @@ let showFileExtensions = true; // ★ 追加: 拡張子表示設定
 })();
 
 // --------------------
+// 共通: アイテム移動・コピー処理（デスクトップ背景・フォルダアイコン共通）
+// --------------------
+async function transferItemsToTarget(data, targetPath, targetNode, isCopy) {
+    if (!data || !targetNode || targetNode.type !== "folder") return false;
+
+    const isDroppingToTrash = targetPath.toLowerCase() === "c:/trash";
+    const effectiveIsCopy = isDroppingToTrash ? false : isCopy;
+
+    let itemEntries = [];
+    let sourcePath = "";
+
+    if (data.type === "explorer-icons") {
+        sourcePath = (data.sourcePath || "C:/Desktop").replace(/\\/g, "/").replace(/\/+$/, "");
+        itemEntries = (data.draggedItems || []).map(info => info.name);
+    } else if (data.type === "desktop-icons") {
+        sourcePath = "C:/Desktop";
+        itemEntries = data.names || [];
+    } else {
+        return false;
+    }
+
+    const sourceFolder = resolveFS(sourcePath);
+    if (!sourceFolder) return false;
+
+    const normalizedSourcePath = sourcePath.toLowerCase();
+    const isTakingOutFromTrash = (normalizedSourcePath === "c:/trash" || normalizedSourcePath === "trash") && !isDroppingToTrash;
+
+    let hasModified = false;
+    setBulkUpdating(true);
+    try {
+        for (const itemName of itemEntries) {
+            const rawItem = sourceFolder[itemName];
+            if (!rawItem) continue;
+
+            const sourceFullPath = sourcePath ? `${sourcePath}/${itemName}` : itemName;
+
+            // 自分自身や子孫フォルダへの移動・コピーを防止
+            if (isDescendantOrSelf(sourceFullPath, targetPath)) continue;
+
+            // 移動の場合、同じフォルダへのドロップはスキップ
+            if (!effectiveIsCopy && sourcePath === targetPath) continue;
+
+            // ゴミ箱への移動時はシステム保護アイテムをスキップ
+            if (isDroppingToTrash && rawItem.system === true) continue;
+
+            const cleanBaseName = isTakingOutFromTrash ? itemName.replace(/^\d+_/, "") : itemName;
+            let uniqueTargetName = getUniqueName(targetNode, cleanBaseName);
+
+            if (isDroppingToTrash && targetNode[itemName]) {
+                let counter = 1;
+                const baseName = `${Date.now()}_${itemName}`;
+                uniqueTargetName = baseName;
+                while (targetNode[uniqueTargetName]) {
+                    uniqueTargetName = `${baseName}_${counter++}`;
+                }
+            }
+
+            const clonedNode = cloneFSNode(rawItem);
+            if (isDroppingToTrash) {
+                clonedNode.originalPath = sourcePath;
+                await markDefaultDeleted(sourceFullPath);
+            } else if (isTakingOutFromTrash) {
+                delete clonedNode.originalPath;
+            }
+
+            const newTargetFullPath = `${targetPath}/${uniqueTargetName}`;
+            if (isTakingOutFromTrash) {
+                await unmarkDefaultDeleted(newTargetFullPath);
+            }
+
+            if (effectiveIsCopy) {
+                clearSystemProtection(clonedNode);
+                if (clonedNode.type === "file" || clonedNode.type === "app") {
+                    await copyFileContent(sourceFullPath, newTargetFullPath);
+                } else if (clonedNode.type === "folder") {
+                    await processStorageRecursively(clonedNode, sourceFullPath, newTargetFullPath, true);
+                }
+                targetNode[uniqueTargetName] = clonedNode;
+                hasModified = true;
+            } else {
+                if (clonedNode.type === "file" || clonedNode.type === "app") {
+                    await moveFileContent(sourceFullPath, newTargetFullPath);
+                } else if (clonedNode.type === "folder") {
+                    await processStorageRecursively(clonedNode, sourceFullPath, newTargetFullPath, false);
+                }
+
+                let moved = false;
+                try {
+                    moved = delete sourceFolder[itemName];
+                } catch (_) {
+                    moved = false;
+                }
+
+                if (moved) {
+                    targetNode[uniqueTargetName] = clonedNode;
+                } else {
+                    if (clonedNode.type === "file" || clonedNode.type === "app") {
+                        await moveFileContent(newTargetFullPath, sourceFullPath).catch(() => deleteFileContentRecursive(newTargetFullPath));
+                    } else if (clonedNode.type === "folder") {
+                        await processStorageRecursively(clonedNode, newTargetFullPath, sourceFullPath, false).catch(() => deleteFileContentRecursive(newTargetFullPath));
+                    }
+
+                    targetNode[uniqueTargetName] = {
+                        type: "link",
+                        target: clonedNode.type === "link" ? clonedNode.target : sourceFullPath,
+                        lastModified: Date.now()
+                    };
+                }
+                hasModified = true;
+            }
+        }
+
+        if (hasModified) {
+            await forceSave();
+        }
+    } finally {
+        setBulkUpdating(false);
+    }
+
+    if (hasModified) {
+        window.dispatchEvent(new Event("fs-updated"));
+        buildDesktop();
+    }
+    return hasModified;
+}
+
+// --------------------
 // デスクトップ描画
 // --------------------
 export function buildDesktop() {
@@ -43,8 +183,8 @@ export function buildDesktop() {
     const desktop = document.getElementById("desktop");
     if (!desktop) return;
 
-    // ★ 追加：デスクトップ自身がキーボードフォーカスを受け取れるようにする
     desktop.tabIndex = 0;
+    applyDesktopBackground();
 
     let iconsContainer = document.getElementById("desktop-icons");
     if (!iconsContainer) {
@@ -53,634 +193,399 @@ export function buildDesktop() {
         desktop.appendChild(iconsContainer);
     }
 
-    // 🔥 追加：Fragmentでまとめて描画
+    const desktopFS = FS["C:"]?.Desktop;
+    if (!desktopFS) return;
+
+    const validNames = Object.keys(desktopFS).filter(k => !isSystemMetaKey(k));
+    const validNameSet = new Set(validNames);
+
+    // 既存DOM要素を再利用するためのマップを作成し、削除済みアイコンのみ除去
+    const existingIconsMap = new Map();
+    iconsContainer.querySelectorAll(".icon").forEach(el => {
+        const iconName = el.dataset.name;
+        if (!validNameSet.has(iconName)) {
+            el.remove();
+        } else {
+            existingIconsMap.set(iconName, el);
+        }
+    });
+
     const fragment = document.createDocumentFragment();
 
-    function createIcon(name, node) {
-        const item = document.createElement("div");
-        item.className = "icon";
-        item.dataset.name = name;
+    // 自動整列OFF時の初期グリッド計算用パラメータをループ外で1回だけ算出
+    const taskbar = document.getElementById("taskbar");
+    let availableHeight = window.innerHeight;
+    if (taskbar && !taskbar.closest(".window") && !taskbar.classList.contains("vertical")) {
+        availableHeight -= (taskbar.offsetHeight || 40);
+    }
+    const rowHeight = 90;
+    const colWidth = 90;
+    const maxRows = Math.max(1, Math.floor((availableHeight - 40) / rowHeight));
 
-        const iconGraphic = document.createElement("div");
-        iconGraphic.className = "icon-graphic";
-        iconGraphic.textContent = getIcon(name, node);
+    function syncIconElement(name, node, iconIndex) {
+        let item = existingIconsMap.get(name);
+        const isNew = !item;
 
-        const iconLabel = document.createElement("div");
-        iconLabel.className = "icon-label";
-        // フォルダの場合は拡張子非表示設定の対象外とする（Windowsの仕様）
+        if (isNew) {
+            item = document.createElement("div");
+            item.className = "icon";
+            item.dataset.name = name;
+
+            const iconGraphic = document.createElement("div");
+            iconGraphic.className = "icon-graphic";
+
+            const iconLabel = document.createElement("div");
+            iconLabel.className = "icon-label";
+
+            item.appendChild(iconGraphic);
+            item.appendChild(iconLabel);
+        }
+
+        item.classList.remove("selected");
+
+        // グラフィックとラベルを最新状態に同期
+        const iconGraphic = item.querySelector(".icon-graphic");
+        const iconLabel = item.querySelector(".icon-label");
+        const expectedIcon = getIcon(name, node);
+        if (iconGraphic && iconGraphic.textContent !== expectedIcon) {
+            iconGraphic.textContent = expectedIcon;
+        }
         const isFolder = node && node.type === "folder";
-        iconLabel.textContent = isFolder ? name : getDisplayFileName(name, showFileExtensions);
+        const expectedLabel = isFolder ? name : getDisplayFileName(name, showFileExtensions);
+        if (iconLabel && iconLabel.textContent !== expectedLabel) {
+            iconLabel.textContent = expectedLabel;
+        }
 
-        item.appendChild(iconGraphic);
-        item.appendChild(iconLabel);
-
-        const fullPath = `C:/Desktop/${name}`;
-
-        // 選択
-        // 選択処理 (単一 / Ctrl / Shift 選択対応)
-        item.addEventListener("click", e => {
-            if (selState.wasDragging) return;
-            e.stopPropagation();
-            selectIconUI(item, e);
-        });
-
-        // ★ 追加: 未選択のアイコンを右クリックした際、Windows同様にそのアイコンを選択状態にする（バグ防止）
-        item.addEventListener("mousedown", e => {
-            if (e.button === 2) { // 右クリック
-                if (!globalSelected.items.has(item)) {
-                    selectIconUI(item, e);
-                }
-            }
-        });
-
-        // 複数アイコンのドラッグ＆ドロップ移動機能
-        item.draggable = true;
-        item.addEventListener("dragstart", (e) => {
-            if (!globalSelected.items.has(item)) {
-                selectIconUI(item, e);
-            }
-
-            // ★ 修正: 複数選択されたすべてのアイコンのオフセット情報を計算して保持
-            const draggedItemsInfo = Array.from(globalSelected.items).map(i => {
-                const rect = i.getBoundingClientRect();
-                return {
-                    name: i.dataset.name,
-                    offsetX: e.clientX - rect.left,
-                    offsetY: e.clientY - rect.top
-                };
-            });
-            const draggedNames = draggedItemsInfo.map(i => i.name);
-
-            e.dataTransfer.setData("text/plain", JSON.stringify({
-                type: "desktop-icons",
-                names: draggedNames,
-                draggedItems: draggedItemsInfo // 各アイコン個別のオフセット情報を追加
-            }));
-            e.dataTransfer.effectAllowed = "copyMove";
-        });
-        item.addEventListener("dragover", (e) => {
-            e.preventDefault();
-            if (!item.classList.contains("drag-target")) {
-                item.classList.add("drag-target");
-            }
-        });
-
-        item.addEventListener("dragleave", () => {
-            item.classList.remove("drag-target");
-        });
-
-        item.addEventListener("drop", async (e) => {
-            e.preventDefault();
-            item.classList.remove("drag-target");
-
-            const dataStr = e.dataTransfer.getData("text/plain");
-            const isCopy = e.ctrlKey; // ★ 追加: Ctrlキーが押されているか判定
-            try {
-                const data = dataStr ? JSON.parse(dataStr) : null;
-                if (!data) return;
-
-                // ターゲットが「リンク（ショートカット）」の場合は実体を解決する
-                let targetType = node.type;
-                let targetNode = node;
-                let targetPath = `C:/Desktop/${name}`; // ターゲットの実際のパス
-                if (targetType === "link") {
-                    let currentTarget = node.target;
-                    let resolvedNode = null;
-                    for (let i = 0; i < 10; i++) {
-                        const nodeRes = resolveFS(currentTarget);
-                        if (nodeRes && nodeRes.type === "link" && typeof nodeRes.target === "string") {
-                            currentTarget = nodeRes.target;
-                        } else {
-                            resolvedNode = nodeRes;
-                            break;
-                        }
-                    }
-                    if (resolvedNode) {
-                        targetType = resolvedNode.type;
-                        targetNode = resolvedNode;
-                        targetPath = currentTarget;
-                    }
-                }
-
-                // ドロップ先がフォルダ（実体またはフォルダへのリンク）の場合
-                if (targetType === "folder") {
-                    e.stopPropagation();
-                    const desktopFS = FS["C:"].Desktop;
-
-                    // ⭐ IndexedDB上の実データを移動・コピーするためのAPIをインポート
-                    const { moveFileContent, copyFileContent, deleteFileContentRecursive } = await import("./fs-db.js");
-
-                    // ⭐ コピー時にシステム保護フラグを解除して通常アイテム化するヘルパー（Windows仕様）
-                    const clearSystemProtectionRecursively = (node, visited = new WeakSet()) => {
-                        if (!node || typeof node !== "object" || visited.has(node)) return;
-                        visited.add(node);
-                        if ("system" in node) {
-                            delete node.system;
-                        }
-                        for (const key of Object.keys(node)) {
-                            if (key === "type" || key === "system" || key === "originalPath" || key === "lastModified") continue;
-                            const child = node[key];
-                            if (child && typeof child === "object") {
-                                clearSystemProtectionRecursively(child, visited);
-                            }
-                        }
-                    };
-
-                    // ⭐ 再帰的に配下すべてのファイルの実データパスを移動またはコピーするヘルパー
-                    const processStorageRecursively = async (node, oldBasePath, newBasePath, isCopyMode, visited = new WeakSet(), depth = 0) => {
-                        if (!node || typeof node !== "object" || depth > 50) return;
-                        if (visited.has(node)) return; // 循環参照を検知してブロック
-                        visited.add(node);
-
-                        try {
-                            for (const key of Object.keys(node)) {
-                                if (key === "type" || key === "system" || key === "originalPath" || key === "lastModified") continue;
-                                const child = node[key];
-                                const oldSubPath = `${oldBasePath}/${key}`;
-                                const newSubPath = `${newBasePath}/${key}`;
-
-                                if (child && typeof child === "object") {
-                                    if (child.type === "file" || child.type === "app") {
-                                        if (isCopyMode) {
-                                            await copyFileContent(oldSubPath, newSubPath);
-                                        } else {
-                                            await moveFileContent(oldSubPath, newSubPath);
-                                        }
-                                    } else if (child.type === "folder") {
-                                        await processStorageRecursively(child, oldSubPath, newSubPath, isCopyMode, visited, depth + 1);
-                                    }
-                                }
-                            }
-                        } finally {
-                            visited.delete(node); // ⭐ 処理完了後に確実に解放してメモリリークを防ぐ
-                        }
-                    };
-
-                    setBulkUpdating(true);
-                    try {
-                        const isDroppingToTrash = targetPath.toLowerCase() === "c:/trash";
-                        const effectiveIsCopy = isDroppingToTrash ? false : isCopy;
-
-                        // エクスプローラーからドラッグされた場合
-                        if (data.type === "explorer-icons") {
-                            const sourcePath = data.sourcePath || "C:/Desktop";
-                            const sourceFolder = resolveFS(sourcePath);
-                            if (!sourceFolder) return;
-
-                            for (const draggedInfo of data.draggedItems) {
-                                const itemName = draggedInfo.name;
-                                const sourceFullPath = sourcePath ? `${sourcePath}/${itemName}` : itemName;
-
-                                // ⭐ 厳格なガードチェック：自分自身や子孫への移動・コピーは一律でブロック
-                                if (isDescendantOrSelf(sourceFullPath, targetPath)) {
-                                    continue;
-                                }
-
-                                if (!effectiveIsCopy && sourcePath === targetPath && itemName === name) continue;
-                                if (!sourceFolder[itemName]) continue;
-                                if (isDroppingToTrash && sourceFolder[itemName].system === true) continue;
-
-                                const normalizedSourcePath = sourcePath.replace(/\\/g, "/").replace(/\/+$/, "").toLowerCase();
-                                const isTakingOutFromTrash = (normalizedSourcePath === "c:/trash" || normalizedSourcePath === "trash") && !isDroppingToTrash;
-                                const cleanBaseName = isTakingOutFromTrash ? itemName.replace(/^\d+_/, "") : itemName;
-
-                                let uniqueTargetName = getUniqueName(targetNode, cleanBaseName);
-                                if (isDroppingToTrash && targetNode[itemName]) {
-                                    let counter = 1;
-                                    const baseName = `${Date.now()}_${itemName}`;
-                                    uniqueTargetName = baseName;
-                                    while (targetNode[uniqueTargetName]) {
-                                        uniqueTargetName = `${baseName}_${counter++}`;
-                                    }
-                                }
-
-                                const sourceItemNode = JSON.parse(JSON.stringify(sourceFolder[itemName]));
-                                if (isDroppingToTrash) {
-                                    sourceItemNode.originalPath = sourcePath;
-                                    await markDefaultDeleted(sourceFullPath);
-                                } else if (isTakingOutFromTrash) {
-                                    delete sourceItemNode.originalPath;
-                                }
-                                const newTargetFullPath = `${targetPath}/${uniqueTargetName}`;
-
-                                if (isTakingOutFromTrash) {
-                                    await unmarkDefaultDeleted(newTargetFullPath);
-                                }
-
-                                if (effectiveIsCopy) {
-                                    // ⭐ コピーの場合：フォルダ内の保護アイテムも除外して複製
-                                    if (sourceItemNode.type === "folder") {
-                                        stripProtectedChildren(sourceItemNode);
-                                    }
-                                    if (sourceItemNode.type === "file" || sourceItemNode.type === "app") {
-                                        await copyFileContent(sourceFullPath, newTargetFullPath);
-                                    } else if (sourceItemNode.type === "folder") {
-                                        await processStorageRecursively(sourceItemNode, sourceFullPath, newTargetFullPath, true);
-                                    }
-                                    targetNode[uniqueTargetName] = sourceItemNode;
-                                } else {
-                                    // ⭐ 移動の場合：IndexedDB上の実データを新しいパスへ移行
-                                    if (sourceItemNode.type === "file" || sourceItemNode.type === "app") {
-                                        await moveFileContent(sourceFullPath, newTargetFullPath);
-                                    } else if (sourceItemNode.type === "folder") {
-                                        await processStorageRecursively(sourceItemNode, sourceFullPath, newTargetFullPath, false);
-                                    }
-
-                                    let moved = false;
-                                    try {
-                                        moved = delete sourceFolder[itemName];
-                                    } catch (err) {
-                                        moved = false;
-                                    }
-
-                                    if (moved) {
-                                        targetNode[uniqueTargetName] = sourceItemNode;
-                                    } else {
-                                        if (sourceItemNode.type === "file" || sourceItemNode.type === "app") {
-                                            await moveFileContent(newTargetFullPath, sourceFullPath).catch(() => deleteFileContentRecursive(newTargetFullPath));
-                                        } else if (sourceItemNode.type === "folder") {
-                                            await processStorageRecursively(sourceItemNode, newTargetFullPath, sourceFullPath, false).catch(() => deleteFileContentRecursive(newTargetFullPath));
-                                        }
-
-                                        targetNode[uniqueTargetName] = {
-                                            type: "link",
-                                            target: sourceItemNode.type === "link" ? sourceItemNode.target : sourceFullPath,
-                                            lastModified: Date.now()
-                                        };
-                                    }
-                                }
-                            }
-                        }
-                        // デスクトップ内のアイコンからドラッグされた場合
-                        else if (data.type === "desktop-icons") {
-                            const sourcePath = "C:/Desktop";
-                            for (const itemName of data.names) {
-                                if (!desktopFS[itemName]) continue;
-                                if ((effectiveIsCopy || isDroppingToTrash) && desktopFS[itemName].system === true) continue;
-
-                                const sourceFullPath = `C:/Desktop/${itemName}`;
-                                const targetFullPath = targetPath; // ドロップ先のフルパス
-
-                                // ⭐ 厳格なガードチェック：自分自身や子孫フォルダへの移動・コピーを防止
-                                if (isDescendantOrSelf(sourceFullPath, targetFullPath)) {
-                                    continue;
-                                }
-
-                                if (!effectiveIsCopy && sourcePath === targetPath && itemName === name) continue;
-
-                                let uniqueTargetName = getUniqueName(targetNode, itemName);
-                                if (isDroppingToTrash && targetNode[itemName]) {
-                                    let counter = 1;
-                                    const baseName = `${Date.now()}_${itemName}`;
-                                    uniqueTargetName = baseName;
-                                    while (targetNode[uniqueTargetName]) {
-                                        uniqueTargetName = `${baseName}_${counter++}`;
-                                    }
-                                }
-
-                                const sourceItemNode = JSON.parse(JSON.stringify(desktopFS[itemName]));
-                                if (isDroppingToTrash) {
-                                    sourceItemNode.originalPath = sourcePath;
-                                    await markDefaultDeleted(sourceFullPath);
-                                }
-                                const newTargetFullPath = `${targetPath}/${uniqueTargetName}`;
-
-                                if (effectiveIsCopy) {
-                                    // ⭐ コピーの場合：フォルダ内の保護アイテムも除外して複製
-                                    if (sourceItemNode.type === "folder") {
-                                        stripProtectedChildren(sourceItemNode);
-                                    }
-                                    if (sourceItemNode.type === "file" || sourceItemNode.type === "app") {
-                                        await copyFileContent(sourceFullPath, newTargetFullPath);
-                                    } else if (sourceItemNode.type === "folder") {
-                                        await processStorageRecursively(sourceItemNode, sourceFullPath, newTargetFullPath, true);
-                                    }
-                                    // link（ショートカット）の場合は実データがないためそのまま複製を格納
-                                    targetNode[uniqueTargetName] = sourceItemNode;
-                                } else {
-                                    // ⭐ 移動の場合：IndexedDB上の実データを新しいパスへ移行
-                                    if (sourceItemNode.type === "file" || sourceItemNode.type === "app") {
-                                        await moveFileContent(sourceFullPath, newTargetFullPath);
-                                    } else if (sourceItemNode.type === "folder") {
-                                        await processStorageRecursively(sourceItemNode, sourceFullPath, newTargetFullPath, false);
-                                    }
-
-                                    let moved = false;
-                                    try {
-                                        moved = delete desktopFS[itemName];
-                                    } catch (e) {
-                                        moved = false;
-                                    }
-
-                                    if (moved) {
-                                        targetNode[uniqueTargetName] = sourceItemNode;
-                                    } else {
-                                        if (sourceItemNode.type === "file" || sourceItemNode.type === "app") {
-                                            await moveFileContent(newTargetFullPath, sourceFullPath).catch(() => deleteFileContentRecursive(newTargetFullPath));
-                                        } else if (sourceItemNode.type === "folder") {
-                                            await processStorageRecursively(sourceItemNode, newTargetFullPath, sourceFullPath, false).catch(() => deleteFileContentRecursive(newTargetFullPath));
-                                        }
-
-                                        // ⭐ ショートカットの場合は元のリンク先（target）を維持して安全に移行する
-                                        targetNode[uniqueTargetName] = {
-                                            type: "link",
-                                            target: sourceItemNode.type === "link" ? sourceItemNode.target : sourceFullPath,
-                                            lastModified: Date.now()
-                                        };
-                                    }
-                                }
-                            }
-                        }
-
-                        await forceSave();
-                    } finally {
-                        setBulkUpdating(false);
-                    }
-
-                    window.dispatchEvent(new Event("fs-updated"));
-                    buildDesktop();
-                    return;
-                }
-
-                // 通常の並び替え処理（自動整列ONの場合、デスクトップ内アイコン同士のみ）
-                if (data.type === "desktop-icons" && autoArrange) {
-                    e.stopPropagation();
-                    reorderDesktopIcons(data.names, name);
-                }
-            } catch (err) { }
-        });
-
-        // ダブルクリック
-        item.addEventListener("dblclick", () => {
-            openFSItem(name, node, "C:/Desktop");
-        });
-
-        // 右クリック
-        attachContextMenu(item, () => {
-            const isTrash = (name === "C:/Trash") || (node.type === "link" && typeof node.target === "string" && node.target.toLowerCase() === "c:/trash");
-            return [
-                {
-                    label: "開く",
-                    action: () => openFSItem(name, node, "C:/Desktop")
-                },
-                ...(isTrash ? [
-                    {
-                        label: "ゴミ箱を空にする",
-                        action: () => emptyTrash(() => buildDesktop())
-                    },
-                    { label: "---" }
-                ] : []),
-                {
-                    label: "ショートカットの作成",
-                    action: async () => {
-                        const baseName = `${name} のショートカット`;
-                        const uniqueName = getUniqueName(FS["C:"].Desktop, baseName);
-
-                        // ★ 改善: すでにリンクの場合は、その実体 target を引き継ぐ
-                        const absoluteTargetPath = fullPath.startsWith("C:/Desktop/") ? fullPath : `C:/Desktop/${name}`;
-                        const realTargetPath = node.type === "link" ? node.target : absoluteTargetPath;
-
-                        FS["C:"].Desktop[uniqueName] = {
-                            type: "link",
-                            target: realTargetPath,
-                            lastModified: Date.now()
-                        };
-                        window.dispatchEvent(new Event("fs-updated"));
-                    }
-                },
-                {
-                    label: "選択アイテムを削除",
-                    disabled: globalSelected.items.size === 0,
-                    action: async () => {
-                        // 右クリックされたアイコンが選択状態に含まれていない場合は、そのアイコンを選択状態にする
-                        if (!globalSelected.items.has(item)) {
-                            selectIconUI(item);
-                        }
-
-                        if (globalSelected.items.size > 0) {
-                            const itemsToDelete = Array.from(globalSelected.items).map(i => i.dataset.name);
-                            globalSelected.items.clear();
-                            globalSelected.item = null;
-
-                            setBulkUpdating(true);
-                            try {
-                                for (const targetName of itemsToDelete) {
-                                    const success = await deleteFSItem("C:/Desktop", targetName, false);
-                                    if (success) {
-                                        await markDefaultDeleted(`C:/Desktop/${targetName}`);
-                                    }
-                                }
-                                await forceSave();
-                            } finally {
-                                setBulkUpdating(false);
-                            }
-
-                            window.dispatchEvent(new Event("fs-updated"));
-                        }
-                    }
-                },
-                {
-                    label: "削除",
-                    action: async () => {
-                        const success = await deleteFSItem("C:/Desktop", name);
-                        if (success) {
-                            await markDefaultDeleted(`C:/Desktop/${name}`);
-                        }
-                    }
-                },
-                {
-                    label: "プログラムから開く",
-                    disabled: node.type !== "file",
-                    action: () => {
-                        if (node.type === "file") {
-                            explorerOpenWithDialog(fullPath, node);
-                        } else {
-                            window.nexser?.windowAPI.alertWindow("ファイル以外は開けません", { width: 350, height: 110 });
-                        }
-                    }
-                },
-                {
-                    label: "プロパティ",
-                    action: () => showProperties(name, node, fullPath)
-                }
-            ];
-        });
-
-        // ★ 追加: 自動整列OFFの時、メモリ上の座標データがあればスタイルに適用
+        // 配置スタイルの適用
         if (!autoArrange) {
             item.style.position = "absolute";
             if (iconPositions[name]) {
                 item.style.left = `${iconPositions[name].x}px`;
                 item.style.top = `${iconPositions[name].y}px`;
             } else {
-                // ドラッグ歴がないアイコンや新規作成アイコンを標準グリッド（縦並び）に配置
-                const iconNames = Object.keys(FS["C:"].Desktop).filter(k => k !== "type" && k !== "system");
-                const iconIndex = iconNames.indexOf(name);
-                const rowHeight = 90;
-                const colWidth = 90;
-
-                // 🟢 改善: タスクバーの実際のサイズや配置エリアを考慮して利用可能な高さを算出
-                const taskbar = document.getElementById("taskbar");
-                let availableHeight = window.innerHeight;
-                if (taskbar && !taskbar.closest(".window") && !taskbar.classList.contains("vertical")) {
-                    availableHeight -= (taskbar.offsetHeight || 40);
-                }
-                const maxRows = Math.max(1, Math.floor((availableHeight - 40) / rowHeight));
-
                 const col = Math.floor(iconIndex / maxRows);
                 const row = iconIndex % maxRows;
-
                 item.style.left = `${10 + col * colWidth}px`;
                 item.style.top = `${10 + row * rowHeight}px`;
             }
+        } else {
+            item.style.position = "";
+            item.style.left = "";
+            item.style.top = "";
         }
 
-        return item; // ← appendしない
+        // イベントリスナーは新規生成時のみバインド（実行時に最新の desktopFS[name] を参照）
+        if (isNew) {
+            const fullPath = `C:/Desktop/${name}`;
+
+            item.addEventListener("click", e => {
+                if (selState.wasDragging) return;
+                e.stopPropagation();
+                selectIconUI(item, e);
+            });
+
+            item.addEventListener("mousedown", e => {
+                if (e.button === 2 && !globalSelected.items.has(item)) {
+                    selectIconUI(item, e);
+                }
+            });
+
+            item.draggable = true;
+            item.addEventListener("dragstart", (e) => {
+                if (!globalSelected.items.has(item)) {
+                    selectIconUI(item, e);
+                }
+
+                const draggedItemsInfo = Array.from(globalSelected.items).map(i => {
+                    const rect = i.getBoundingClientRect();
+                    return {
+                        name: i.dataset.name,
+                        offsetX: e.clientX - rect.left,
+                        offsetY: e.clientY - rect.top
+                    };
+                });
+
+                e.dataTransfer.setData("text/plain", JSON.stringify({
+                    type: "desktop-icons",
+                    names: draggedItemsInfo.map(i => i.name),
+                    draggedItems: draggedItemsInfo
+                }));
+                e.dataTransfer.effectAllowed = "copyMove";
+            });
+
+            item.addEventListener("dragover", (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = e.ctrlKey ? "copy" : "move";
+                if (!item.classList.contains("drag-target")) {
+                    item.classList.add("drag-target");
+                }
+            });
+
+            item.addEventListener("dragleave", () => {
+                item.classList.remove("drag-target");
+            });
+
+            item.addEventListener("drop", async (e) => {
+                item.classList.remove("drag-target");
+                const currentNode = FS["C:"]?.Desktop?.[name];
+                if (!currentNode) return;
+
+                const dataStr = e.dataTransfer.getData("text/plain");
+                let data = null;
+                try {
+                    data = dataStr ? JSON.parse(dataStr) : null;
+                } catch (_) {
+                    return;
+                }
+                if (!data) return;
+
+                const resolved = resolveLinkTarget(currentNode, fullPath);
+                if (resolved.node && resolved.node.type === "folder") {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    await transferItemsToTarget(data, resolved.path, resolved.node, e.ctrlKey);
+                    return;
+                }
+
+                // フォルダ以外へのドロップ：自動整列ONなら並び替え、OFFなら背景ドロップへバブルアップして自由配置
+                if (data.type === "desktop-icons" && autoArrange) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    reorderDesktopIcons(data.names, name);
+                }
+            });
+
+            item.addEventListener("dblclick", () => {
+                const currentNode = FS["C:"]?.Desktop?.[name];
+                if (currentNode) openFSItem(name, currentNode, "C:/Desktop");
+            });
+
+            attachContextMenu(item, () => {
+                const currentNode = FS["C:"]?.Desktop?.[name];
+                if (!currentNode) return [];
+
+                const isTrash = (name === "C:/Trash") ||
+                    (currentNode.type === "link" && typeof currentNode.target === "string" && currentNode.target.toLowerCase() === "c:/trash");
+
+                return [
+                    {
+                        label: "開く",
+                        action: () => openFSItem(name, currentNode, "C:/Desktop")
+                    },
+                    ...(isTrash ? [
+                        {
+                            label: "ゴミ箱を空にする",
+                            action: () => emptyTrash(() => buildDesktop())
+                        },
+                        { label: "---" }
+                    ] : []),
+                    {
+                        label: "ショートカットの作成",
+                        action: async () => {
+                            const baseName = `${name} のショートカット`;
+                            const uniqueName = getUniqueName(FS["C:"].Desktop, baseName);
+                            const realTargetPath = currentNode.type === "link" ? currentNode.target : fullPath;
+
+                            FS["C:"].Desktop[uniqueName] = {
+                                type: "link",
+                                target: realTargetPath,
+                                lastModified: Date.now()
+                            };
+                            window.dispatchEvent(new Event("fs-updated"));
+                        }
+                    },
+                    {
+                        label: "選択アイテムを削除",
+                        disabled: globalSelected.items.size === 0,
+                        action: async () => {
+                            if (!globalSelected.items.has(item)) {
+                                selectIconUI(item);
+                            }
+                            if (globalSelected.items.size > 0) {
+                                const itemsToDelete = Array.from(globalSelected.items).map(i => i.dataset.name);
+                                globalSelected.items.clear();
+                                globalSelected.item = null;
+
+                                setBulkUpdating(true);
+                                try {
+                                    for (const targetName of itemsToDelete) {
+                                        await deleteFSItem("C:/Desktop", targetName, false);
+                                    }
+                                    await forceSave();
+                                } finally {
+                                    setBulkUpdating(false);
+                                }
+                                window.dispatchEvent(new Event("fs-updated"));
+                            }
+                        }
+                    },
+                    {
+                        label: "削除",
+                        action: async () => {
+                            await deleteFSItem("C:/Desktop", name);
+                        }
+                    },
+                    {
+                        label: "プログラムから開く",
+                        disabled: currentNode.type !== "file",
+                        action: () => {
+                            if (currentNode.type === "file") {
+                                explorerOpenWithDialog(fullPath, currentNode);
+                            } else {
+                                window.nexser?.windowAPI.alertWindow("ファイル以外は開けません", { width: 350, height: 110 });
+                            }
+                        }
+                    },
+                    {
+                        label: "プロパティ",
+                        action: () => showProperties(name, currentNode, fullPath)
+                    }
+                ];
+            });
+        }
+
+        return item;
     }
 
-    // 🔥 Cドライブ配下のデスクトップを走査するように修正
-    for (const name in FS["C:"].Desktop) {
-        if (name === "type" || name === "system" || name === "lastModified") continue;
-        fragment.appendChild(createIcon(name, FS["C:"].Desktop[name]));
-    }
+    validNames.forEach((name, idx) => {
+        fragment.appendChild(syncIconElement(name, desktopFS[name], idx));
+    });
 
-    // 🔥 一括反映
-    iconsContainer.innerHTML = "";
     iconsContainer.appendChild(fragment);
 
     // --------------------
-    // 右クリックメニュー（デスクトップ）
+    // 右クリックメニュー（デスクトップ：多重登録防止）
     // --------------------
-    const desktopNode = FS["C:"].Desktop;
+    if (!desktop._contextMenuInstalled) {
+        desktop._contextMenuInstalled = true;
 
-    attachContextMenu(desktop, (e) => {
-        if (e.target.closest(".window")) return [];
+        attachContextMenu(desktop, (e) => {
+            if (e.target.closest(".window")) return [];
+            const desktopNode = FS["C:"]?.Desktop;
+            if (!desktopNode) return [];
 
-        const items = [];
+            const items = [];
 
-        if (globalSelected.item) {
-            const name = globalSelected.item.dataset.name;
-            const node = desktopNode[name];
+            if (globalSelected.item) {
+                const name = globalSelected.item.dataset.name;
+                const node = desktopNode[name];
 
-            if (node) {
-                items.push({
-                    label: "開く",
-                    action: () => openFSItem(name, node, "C:/Desktop")
-                });
+                if (node) {
+                    items.push({
+                        label: "開く",
+                        action: () => openFSItem(name, node, "C:/Desktop")
+                    });
+                }
             }
-        }
 
-        items.push({
-            label: "新規フォルダ",
-            action: () => createNewItem("C:/Desktop", iconsContainer, "folder")
-        });
+            items.push({
+                label: "新規フォルダ",
+                action: () => createNewItem("C:/Desktop", document.getElementById("desktop-icons"), "folder")
+            });
 
-        items.push({
-            label: "新規テキストファイル",
-            action: () => createNewItem("C:/Desktop", iconsContainer, "file")
-        });
+            items.push({
+                label: "新規テキストファイル",
+                action: () => createNewItem("C:/Desktop", document.getElementById("desktop-icons"), "file")
+            });
 
-        items.push({
-            label: `ファイル名拡張子 ${showFileExtensions ? "✓" : ""}`,
-            action: async () => {
-                showFileExtensions = !showFileExtensions;
-                await dbSet("explorerShowFileExtensions", showFileExtensions, "settings");
-                window.dispatchEvent(new Event("fs-updated"));
-                buildDesktop();
-            }
-        });
+            items.push({
+                label: `ファイル名拡張子 ${showFileExtensions ? "✓" : ""}`,
+                action: async () => {
+                    showFileExtensions = !showFileExtensions;
+                    await dbSet("explorerShowFileExtensions", showFileExtensions, "settings");
+                    window.dispatchEvent(new Event("fs-updated"));
+                    buildDesktop();
+                }
+            });
 
-        items.push({
-            label: `自動整列 ${autoArrange ? "✓" : ""}`,
-            action: () => {
-                const nextAutoArrange = !autoArrange;
+            items.push({
+                label: `自動整列 ${autoArrange ? "✓" : ""}`,
+                action: () => {
+                    const nextAutoArrange = !autoArrange;
 
-                // ★ 改善: 自動整列ONからOFFに切り替える際、現在のFlexbox上の表示位置を座標データとして保存する
-                if (autoArrange && !nextAutoArrange) {
-                    const iconsContainer = document.getElementById("desktop-icons");
-                    if (iconsContainer) {
-                        const containerRect = iconsContainer.getBoundingClientRect();
-                        const icons = iconsContainer.querySelectorAll(".icon");
+                    if (autoArrange && !nextAutoArrange) {
+                        const currentIconsContainer = document.getElementById("desktop-icons");
+                        if (currentIconsContainer) {
+                            const containerRect = currentIconsContainer.getBoundingClientRect();
+                            const icons = currentIconsContainer.querySelectorAll(".icon");
+                            iconPositions = {};
+                            icons.forEach(icon => {
+                                const name = icon.dataset.name;
+                                const rect = icon.getBoundingClientRect();
+                                iconPositions[name] = {
+                                    x: rect.left - containerRect.left,
+                                    y: rect.top - containerRect.top
+                                };
+                            });
+                            dbSet("desktop_iconsPositions", iconPositions, "settings").catch(err => console.error(err));
+                        }
+                    }
+
+                    autoArrange = nextAutoArrange;
+                    dbSet("desktop_autoArrange", autoArrange, "settings").catch(err => console.error(err));
+
+                    if (autoArrange) {
                         iconPositions = {};
-                        icons.forEach(icon => {
-                            const name = icon.dataset.name;
-                            const rect = icon.getBoundingClientRect();
-                            iconPositions[name] = {
-                                x: rect.left - containerRect.left,
-                                y: rect.top - containerRect.top
-                            };
-                        });
-                        dbSet("desktop_iconsPositions", iconPositions, "settings").catch(e => console.error(e));
+                        dbSet("desktop_iconsPositions", {}, "settings").catch(err => console.error(err));
+                    }
+
+                    autoArrangeIcons();
+                    buildDesktop();
+                }
+            });
+
+            items.push({
+                label: "選択アイテムを削除",
+                disabled: globalSelected.items.size === 0,
+                action: async () => {
+                    if (globalSelected.items.size > 0) {
+                        const itemsToDelete = Array.from(globalSelected.items).map(item => item.dataset.name);
+                        globalSelected.items.clear();
+                        globalSelected.item = null;
+
+                        setBulkUpdating(true);
+                        try {
+                            for (const name of itemsToDelete) {
+                                await deleteFSItem("C:/Desktop", name, false);
+                            }
+                            await forceSave();
+                        } finally {
+                            setBulkUpdating(false);
+                        }
+
+                        window.dispatchEvent(new Event("fs-updated"));
                     }
                 }
+            });
 
-                autoArrange = nextAutoArrange;
-                // 状態をDBの settings ストアへ保存
-                dbSet("desktop_autoArrange", autoArrange, "settings").catch(e => console.error(e));
+            if (globalSelected.item) {
+                const name = globalSelected.item.dataset.name;
+                const node = desktopNode[name];
+                const fullPath = `C:/Desktop/${name}`;
 
-                // 自動整列がONになったら、保存されているアイコンの自由配置データを消去する
-                if (autoArrange) {
-                    iconPositions = {};
-                    dbSet("desktop_iconsPositions", {}, "settings").catch(e => console.error(e));
-                }
-
-                autoArrangeIcons();
-                buildDesktop(); // 配置方法が変わるため強制再描画
-            }
-        });
-
-        items.push({
-            label: "選択アイテムを削除",
-            disabled: globalSelected.items.size === 0,
-            action: async () => {
-                if (globalSelected.items.size > 0) {
-                    const itemsToDelete = Array.from(globalSelected.items).map(item => item.dataset.name);
-                    globalSelected.items.clear();
-                    globalSelected.item = null;
-
-                    setBulkUpdating(true);
-                    try {
-                        for (const name of itemsToDelete) {
-                            const success = await deleteFSItem("C:/Desktop", name, false);
-                            if (success) {
-                                await markDefaultDeleted(`C:/Desktop/${name}`);
+                if (node) {
+                    items.push({
+                        label: "プログラムから開く",
+                        disabled: node.type !== "file",
+                        action: () => {
+                            if (node.type === "file") {
+                                explorerOpenWithDialog(fullPath, node);
+                            } else {
+                                window.nexser?.windowAPI.alertWindow("ファイル以外は開けません", { width: 300, height: 110 });
                             }
                         }
-                        await forceSave();
-                    } finally {
-                        setBulkUpdating(false);
-                    }
+                    });
 
-                    window.dispatchEvent(new Event("fs-updated"));
+                    items.push({
+                        label: "プロパティ",
+                        action: () => showProperties(name, node, fullPath)
+                    });
                 }
             }
+
+            return items;
         });
-
-        if (globalSelected.item) {
-            const name = globalSelected.item.dataset.name;
-            const node = desktopNode[name];
-            const fullPath = `C:/Desktop/${name}`;
-
-            items.push({
-                label: "プログラムから開く",
-                disabled: node.type !== "file",
-                action: () => {
-                    if (node.type === "file") {
-                        explorerOpenWithDialog(fullPath, node);
-                    } else {
-                        window.nexser?.windowAPI.alertWindow("ファイル以外は開けません", { width: 300, height: 110 });
-                    }
-                }
-            });
-
-            items.push({
-                label: "プロパティ",
-                action: () => showProperties(name, node, fullPath)
-            });
-        }
-
-        return items;
-    });
+    }
 
     // --------------------
     // 選択UI共通関数 (Ctrl/Shift/単一選択対応)
@@ -718,7 +623,6 @@ export function buildDesktop() {
             globalSelected.lastSelected = targetItem;
         }
 
-        // 単一選択メニュー（開く・プロパティ等）との互換性を保持
         globalSelected.item = globalSelected.items.size === 1 ? Array.from(globalSelected.items)[0] : null;
     };
 
@@ -739,7 +643,6 @@ export function buildDesktop() {
     if (!window._desktopSelectionGuard) {
         window._desktopSelectionGuard = true;
 
-        // 1. デスクトップ以外の場所をクリックした時の選択解除
         document.addEventListener("mousedown", (e) => {
             if (e.button !== 0) return;
             if (e.target.closest(".icon") || e.target.closest(".context-menu")) return;
@@ -754,7 +657,6 @@ export function buildDesktop() {
             }
         });
 
-        // 2. マウス移動時の範囲選択ボックスの描画とアイコン判定
         document.addEventListener("mousemove", (e) => {
             if (selState.startX === undefined || selState.startY === undefined) return;
             const dx = Math.abs(e.clientX - selState.startX);
@@ -804,7 +706,6 @@ export function buildDesktop() {
             }
         });
 
-        // 3. マウスを離した時の処理
         document.addEventListener("mouseup", () => {
             selState.startX = undefined;
             selState.startY = undefined;
@@ -817,14 +718,13 @@ export function buildDesktop() {
         });
     }
 
-    // デスクトップ上の mousedown（範囲選択の起点 ＆ フォーカス用）
     if (!desktop._mousedownInstalled) {
         desktop._mousedownInstalled = true;
         desktop.addEventListener("mousedown", (e) => {
             if (e.button !== 0 || e.target.closest(".window")) return;
             if (e.target.closest(".icon")) return;
 
-            desktop.focus(); // キーボード操作のためにフォーカスを当てる
+            desktop.focus();
 
             selState.startX = e.clientX;
             selState.startY = e.clientY;
@@ -834,15 +734,15 @@ export function buildDesktop() {
     }
 
     // ────────────────────────────────────────────────────────
-    // 🔥 追加：外部からのファイルドロップ受付機能
+    // 外部およびエクスプローラーからのファイルドロップ受付機能
     // ────────────────────────────────────────────────────────
-    // ⭐ 修正：イベントリスナーの多重登録を防ぐガードを追加
     if (!desktop._dndInstalled) {
         desktop._dndInstalled = true;
 
         desktop.addEventListener("dragover", (e) => {
             e.preventDefault();
             e.stopPropagation();
+            e.dataTransfer.dropEffect = e.ctrlKey ? "copy" : "move";
             if (!desktop.classList.contains("drag-over")) {
                 desktop.classList.add("drag-over");
             }
@@ -859,192 +759,56 @@ export function buildDesktop() {
             e.stopPropagation();
             desktop.classList.remove("drag-over");
 
-            // ⭐ 追加: エクスプローラーウィンドウからデスクトップへの移動・コピー処理
+            const folderNode = FS["C:"]?.Desktop;
+            if (!folderNode) return;
+
             const dataStr = e.dataTransfer.getData("text/plain");
-            const isCopy = e.ctrlKey; // ★ 追加: Ctrlキーが押されているか判定
+            let parsedData = null;
             try {
-                const data = dataStr ? JSON.parse(dataStr) : null;
-                if (data && data.type === "explorer-icons") {
-                    const sourcePath = data.sourcePath || "C:/Desktop";
+                parsedData = dataStr ? JSON.parse(dataStr) : null;
+            } catch (_) { }
 
-                    // 移動の場合で、同じ場所（DesktopからDesktopの背景）へのドロップは処理しない（コピーなら許可）
-                    if (!isCopy && (sourcePath === "C:/Desktop" || sourcePath === "Desktop")) return;
+            // 1. エクスプローラーからの移動・コピー、またはデスクトップ内別フォルダからの移動・コピー
+            if (parsedData && parsedData.type === "explorer-icons") {
+                await transferItemsToTarget(parsedData, "C:/Desktop", folderNode, e.ctrlKey);
+                return;
+            }
 
-                    const sourceFolder = resolveFS(sourcePath);
-                    const targetFolderNode = FS["C:"].Desktop;
-                    if (sourceFolder && targetFolderNode) {
-                        // ⭐ IndexedDB上の実データを移動・コピーするためのAPIをインポート
-                        const { moveFileContent, copyFileContent, deleteFileContentRecursive } = await import("./fs-db.js");
+            // 2. デスクトップ内アイコンの自由配置（自動整列OFF時）
+            if (parsedData && parsedData.type === "desktop-icons") {
+                if (!autoArrange) {
+                    const currentIconsContainer = document.getElementById("desktop-icons");
+                    const containerRect = currentIconsContainer ? currentIconsContainer.getBoundingClientRect() : { left: 0, top: 0 };
+                    const scrollLeft = currentIconsContainer?.scrollLeft || 0;
+                    const scrollTop = currentIconsContainer?.scrollTop || 0;
 
-                        // ⭐ コピー時にフォルダ配下のシステム保護アイテムを除外するヘルパー
-                        const stripProtectedChildren = (node, visited = new WeakSet()) => {
-                            if (!node || typeof node !== "object" || visited.has(node)) return;
-                            visited.add(node);
-                            for (const key of Object.keys(node)) {
-                                if (key === "type" || key === "system" || key === "originalPath" || key === "lastModified") continue;
-                                const child = node[key];
-                                if (child && typeof child === "object") {
-                                    if (child.system === true) {
-                                        delete node[key];
-                                    } else if (child.type === "folder") {
-                                        stripProtectedChildren(child, visited);
-                                    }
-                                }
-                            }
-                        };
-
-                        // ⭐ 再帰的に配下すべてのファイルの実データパスを移動またはコピーするヘルパー
-                        const processStorageRecursively = async (node, oldBasePath, newBasePath, isCopyMode, visited = new WeakSet(), depth = 0) => {
-                            if (!node || typeof node !== "object" || depth > 50) return;
-                            if (visited.has(node)) return; // 循環参照を検知してブロック
-                            visited.add(node);
-
-                            try {
-                                for (const key of Object.keys(node)) {
-                                    if (key === "type" || key === "system" || key === "originalPath" || key === "lastModified") continue;
-                                    const child = node[key];
-                                    const oldSubPath = `${oldBasePath}/${key}`;
-                                    const newSubPath = `${newBasePath}/${key}`;
-
-                                    if (child && typeof child === "object") {
-                                        if (isCopyMode && child.system === true) continue;
-                                        if (child.type === "file" || child.type === "app") {
-                                            if (isCopyMode) {
-                                                await copyFileContent(oldSubPath, newSubPath);
-                                            } else {
-                                                await moveFileContent(oldSubPath, newSubPath);
-                                            }
-                                        } else if (child.type === "folder") {
-                                            await processStorageRecursively(child, oldSubPath, newSubPath, isCopyMode, visited, depth + 1);
-                                        }
-                                    }
-                                }
-                            } finally {
-                                visited.delete(node);
-                            }
-                        };
-
-                        const normalizedSourcePath = sourcePath.replace(/\\/g, "/").replace(/\/+$/, "").toLowerCase();
-                        const isTakingOutFromTrash = normalizedSourcePath === "c:/trash" || normalizedSourcePath === "trash";
-
-                        setBulkUpdating(true);
-                        try {
-                            for (const draggedInfo of data.draggedItems) {
-                                const itemName = draggedInfo.name;
-                                if (!sourceFolder[itemName]) continue;
-                                if (isCopy && sourceFolder[itemName].system === true) continue;
-
-                                const cleanBaseName = isTakingOutFromTrash ? itemName.replace(/^\d+_/, "") : itemName;
-                                const uniqueTargetName = getUniqueName(targetFolderNode, cleanBaseName);
-                                const sourceItemNode = JSON.parse(JSON.stringify(sourceFolder[itemName]));
-                                if (isTakingOutFromTrash) {
-                                    delete sourceItemNode.originalPath;
-                                }
-                                const sourceFullPath = `${sourcePath}/${itemName}`;
-                                const newTargetFullPath = `C:/Desktop/${uniqueTargetName}`;
-
-                                if (isTakingOutFromTrash) {
-                                    await unmarkDefaultDeleted(newTargetFullPath);
-                                }
-
-                                if (isCopy) {
-                                    // ⭐ コピーの場合：フォルダ内の保護アイテムも除外して複製
-                                    if (sourceItemNode.type === "folder") {
-                                        stripProtectedChildren(sourceItemNode);
-                                    }
-                                    if (sourceItemNode.type === "file" || sourceItemNode.type === "app") {
-                                        await copyFileContent(sourceFullPath, newTargetFullPath);
-                                    } else if (sourceItemNode.type === "folder") {
-                                        await processStorageRecursively(sourceItemNode, sourceFullPath, newTargetFullPath, true);
-                                    }
-                                    targetFolderNode[uniqueTargetName] = sourceItemNode;
-                                } else {
-                                    // ⭐ 移動の場合：IndexedDB上の実データを Desktop 配下へ安全に移行
-                                    if (sourceItemNode.type === "file" || sourceItemNode.type === "app") {
-                                        await moveFileContent(sourceFullPath, newTargetFullPath);
-                                    } else if (sourceItemNode.type === "folder") {
-                                        await processStorageRecursively(sourceItemNode, sourceFullPath, newTargetFullPath, false);
-                                    }
-
-                                    let moved = false;
-                                    try {
-                                        moved = delete sourceFolder[itemName];
-                                    } catch (err) {
-                                        moved = false;
-                                    }
-
-                                    if (moved) {
-                                        targetFolderNode[uniqueTargetName] = sourceItemNode;
-                                    } else {
-                                        if (sourceItemNode.type === "file" || sourceItemNode.type === "app") {
-                                            await moveFileContent(newTargetFullPath, sourceFullPath).catch(() => deleteFileContentRecursive(newTargetFullPath));
-                                        } else if (sourceItemNode.type === "folder") {
-                                            await processStorageRecursively(sourceItemNode, newTargetFullPath, sourceFullPath, false).catch(() => deleteFileContentRecursive(newTargetFullPath));
-                                        }
-
-                                        targetFolderNode[uniqueTargetName] = {
-                                            type: "link",
-                                            target: sourceItemNode.type === "link" ? sourceItemNode.target : sourceFullPath,
-                                            lastModified: Date.now()
-                                        };
-                                    }
-                                }
-                            }
-
-                            await forceSave();
-                        } finally {
-                            setBulkUpdating(false);
-                        }
-
-                        window.dispatchEvent(new Event("fs-updated"));
-                        buildDesktop();
-                        return;
-                    }
-                }
-            } catch (err) { }
-
-            // ★ 追加: 内部アイコンのドラッグ移動（自動整列OFF時）
-            try {
-                const data = dataStr ? JSON.parse(dataStr) : null;
-                if (data && data.type === "desktop-icons" && !autoArrange) {
-                    // 🟢 コンテナの現在位置（タスクバーを避けた領域の開始位置）を取得
-                    const iconsContainer = document.getElementById("desktop-icons");
-                    const containerRect = iconsContainer ? iconsContainer.getBoundingClientRect() : { left: 0, top: 0 };
-
-                    // ★ 修正: 個別のオフセット情報がある場合はそれを使用し、フォーメーションを維持する
-                    if (data.draggedItems) {
-                        data.draggedItems.forEach((itemData) => {
-                            // 🟢 画面全体の座標から、アイコンコンテナのオフセット（タスクバー分）を引く
-                            let newX = e.clientX - itemData.offsetX - containerRect.left;
-                            let newY = e.clientY - itemData.offsetY - containerRect.top;
+                    if (parsedData.draggedItems) {
+                        parsedData.draggedItems.forEach((itemData) => {
+                            const newX = Math.max(0, e.clientX - itemData.offsetX - containerRect.left + scrollLeft);
+                            const newY = Math.max(0, e.clientY - itemData.offsetY - containerRect.top + scrollTop);
                             iconPositions[itemData.name] = { x: newX, y: newY };
                         });
                     } else {
-                        // 古い形式のデータが来た場合のフォールバック処理
-                        let newX = e.clientX - (data.offsetX || 0) - containerRect.left;
-                        let newY = e.clientY - (data.offsetY || 0) - containerRect.top;
-                        data.names.forEach((name, index) => {
+                        const newX = Math.max(0, e.clientX - (parsedData.offsetX || 0) - containerRect.left + scrollLeft);
+                        const newY = Math.max(0, e.clientY - (parsedData.offsetY || 0) - containerRect.top + scrollTop);
+                        parsedData.names.forEach((name, index) => {
                             iconPositions[name] = { x: newX + (index * 30), y: newY + (index * 30) };
                         });
                     }
 
-                    // メモリの座標を更新し、DBの settings ストアに非同期で保存
                     await dbSet("desktop_iconsPositions", iconPositions, "settings");
-                    buildDesktop(); // 再描画して新しい位置を反映
-                    return; // ここで処理を終了し、外部ファイルドロップの処理は行わない
+                    buildDesktop();
                 }
-            } catch (err) { /* JSONパースエラー時は無視して通常のファイルドロップ処理へ */ }
+                return;
+            }
 
-            const folderNode = FS["C:"].Desktop; // デスクトップの仮想FSノードを参照
-            if (!folderNode) return;
-
-            // ドロップされた直後のエントリを取得
+            // 3. 外部ファイル・フォルダのドロップ受付
             const initialEntries = [];
             let hasFiles = false;
             if (e.dataTransfer.items) {
                 for (let i = 0; i < e.dataTransfer.items.length; i++) {
                     const item = e.dataTransfer.items[i];
-                    if (item.kind === 'file') {
+                    if (item.kind === "file") {
                         hasFiles = true;
                         const entry = item.webkitGetAsEntry();
                         if (entry) initialEntries.push(entry);
@@ -1055,36 +819,13 @@ export function buildDesktop() {
                 initialEntries.push(...Array.from(e.dataTransfer.files));
             }
 
-            // ⭐ 追加: URLがドロップされた場合の処理
+            // 4. URLドロップ時の .url ショートカット生成
             const uriList = e.dataTransfer.getData("text/uri-list");
             const textPlain = e.dataTransfer.getData("text/plain");
             const urlToSave = uriList || textPlain;
 
-            if (!hasFiles && urlToSave && urlToSave.startsWith("http")) {
-                let urlName = "新しいショートカット.url";
-                try {
-                    const urlObj = new URL(urlToSave);
-                    urlName = (urlObj.hostname).replace(/[\/\\?%*:|"<>]/g, "_") + ".url";
-                } catch (err) { }
-
-                // 重複回避
-                const dotIdx = urlName.lastIndexOf(".");
-                const base = dotIdx !== -1 ? urlName.substring(0, dotIdx) : urlName;
-                const ext = dotIdx !== -1 ? urlName.substring(dotIdx) : "";
-                let idx = 1;
-                let finalName = urlName;
-                while (folderNode[finalName]) {
-                    finalName = `${base} (${idx++})${ext}`;
-                }
-
-                // Windows仕様のURLファイルとして保存
-                folderNode[finalName] = {
-                    type: "file",
-                    content: `[InternetShortcut]\nURL=${urlToSave}`,
-                    size: urlToSave.length + 21,
-                    lastModified: Date.now()
-                };
-
+            if (!hasFiles && urlToSave && createUrlShortcutNode(urlToSave, folderNode)) {
+                await forceSave();
                 window.dispatchEvent(new Event("fs-updated"));
                 buildDesktop();
                 return;
@@ -1092,7 +833,6 @@ export function buildDesktop() {
 
             if (initialEntries.length === 0) return;
 
-            // 総項目数をカウント（プログレスバー用）
             let totalFiles = 0;
             const countEntries = async (entry) => {
                 totalFiles++;
@@ -1114,7 +854,6 @@ export function buildDesktop() {
                 else await countEntries(ent);
             }
 
-            // プログレスウィンドウの生成
             const pg = window.nexser?.windowAPI.progressWindow("コピー中...", "コピーの準備をしています...", {
                 width: 380,
                 height: 250,
@@ -1126,7 +865,7 @@ export function buildDesktop() {
 
             const addFileToNode = async (file, targetNode) => {
                 pg.update(processedCount, totalFiles, `${file.name} をコピーしています...`);
-                let targetName = getUniqueName(targetNode, file.name);
+                const targetName = getUniqueName(targetNode, file.name);
 
                 try {
                     const content = await importFileSmart(file);
@@ -1147,7 +886,7 @@ export function buildDesktop() {
                     const file = await new Promise(res => entry.file(res));
                     await addFileToNode(file, targetNode);
                 } else if (entry.isDirectory) {
-                    let dirName = getUniqueName(targetNode, entry.name);
+                    const dirName = getUniqueName(targetNode, entry.name);
                     targetNode[dirName] = {
                         type: "folder",
                         lastModified: Date.now()
@@ -1183,37 +922,26 @@ export function buildDesktop() {
                 folderNode.lastModified = Date.now();
                 pg.update(totalFiles, totalFiles, "すべての項目のコピーが完了しました。");
                 await forceSave();
-
             } catch (err) {
                 console.error("Drop processing failed:", err);
                 if (pg && typeof pg.close === "function") pg.close();
             } finally {
                 setBulkUpdating(false);
-                // 【修正】desktop.jsの正しいDOM要素を参照させる
                 desktop.style.opacity = "1";
-
-                // ==========================================
-                // ⭐ メモリ解放 (GCの促進)
-                // ==========================================
-                // 1. 巨大なオブジェクトツリーの参照を切断
                 initialEntries.length = 0;
 
-                // 2. ブラウザ側のD&Dキャッシュを強力にクリア
                 if (e.dataTransfer) {
-                    if (typeof e.dataTransfer.clearData === 'function') {
+                    if (typeof e.dataTransfer.clearData === "function") {
                         e.dataTransfer.clearData();
                     }
-                    if (e.dataTransfer.items && typeof e.dataTransfer.items.clear === 'function') {
-                        try { e.dataTransfer.items.clear(); } catch (err) { }
+                    if (e.dataTransfer.items && typeof e.dataTransfer.items.clear === "function") {
+                        try { e.dataTransfer.items.clear(); } catch (_) { }
                     }
                 }
 
                 window.dispatchEvent(new Event("fs-updated"));
-                // 【修正】desktop.jsの正しい再描画関数を呼ぶ
                 buildDesktop();
 
-                // 3. クロージャによるFileオブジェクト等のメモリ拘束（リーク）を防ぐため、
-                // setTimeoutには必要な参照(pg)のみを引数として渡す
                 const closeProgress = (progressWindowObj) => {
                     if (progressWindowObj && typeof progressWindowObj.close === "function") {
                         progressWindowObj.close();
@@ -1222,13 +950,14 @@ export function buildDesktop() {
                 setTimeout(closeProgress, 500, pg);
             }
         });
-    } // ⭐ ガード処理はここまで
+    }
 
     if (window.nexser?.isBooting) {
         iconsContainer.style.display = "none";
     } else {
         requestAnimationFrame(adjustDesktopIconArea);
     }
+
     window.dispatchEvent(new Event("desktop-ready"));
 }
 
@@ -1274,7 +1003,7 @@ function adjustDesktopIconArea() {
     iconsContainer.style.left = `${l}px`;
     iconsContainer.style.right = `${r}px`;
 
-    // 🟢 改善：自動整列ON/OFFに応じて表示方式を切り替え、自由配置を維持する
+    // 自動整列ON/OFFに応じて表示方式を切り替え、自由配置を維持する
     if (autoArrange) {
         iconsContainer.style.display = "flex";
         iconsContainer.style.flexDirection = "column";
@@ -1288,19 +1017,17 @@ function adjustDesktopIconArea() {
 
     iconsContainer.style.padding = "10px"; // 内側余白
 }
+
 // --------------------
 // 起動完了時やリサイズ時に確実に再計算させる仕組み
 // --------------------
-// 🔥 修正点3: 画面が非表示から表示に切り替わった瞬間を検知してレイアウトを直す
 if (!window._desktopResizeObserver) {
     window._desktopResizeObserver = new ResizeObserver(() => {
         adjustDesktopIconArea();
     });
-    // 画面全体(body)のサイズや表示状態の変化を監視
     window._desktopResizeObserver.observe(document.body);
 }
 
-// 既存のイベントリスナー（これは残しておいてOKです）
 window.addEventListener("desktop-resize", adjustDesktopIconArea);
 
 // --------------------
@@ -1314,14 +1041,14 @@ function createNewItem(currentPath, container, itemType = "folder") {
     if (createNewItem.isCreating) return;
     createNewItem.isCreating = true;
 
-    // 初期表示名の設定（getUniqueName を利用して重複をスマートに回避）
+    // 初期表示名の設定
     let baseName = itemType === "folder" ? "新規フォルダ" : "新しいテキスト.txt";
     let defaultName = getUniqueName(folderNode, baseName);
 
     const iconDiv = document.createElement("div");
     iconDiv.className = "icon";
 
-    // ✨ 改善点①: 作成中もフォルダ/ファイルのアイコン（グラフィック）を表示する
+    // 作成中もフォルダ/ファイルのアイコン（グラフィック）を表示する
     const iconGraphic = document.createElement("div");
     iconGraphic.className = "icon-graphic";
     iconGraphic.textContent = itemType === "folder" ? "📁" : "📄";
@@ -1344,7 +1071,7 @@ function createNewItem(currentPath, container, itemType = "folder") {
         input.select();
     }
 
-    // 幅を文字数に応じて自動調整（⭐ 修正: 抜け落ちていた乗算演算子 * を復元）
+    // 幅を文字数に応じて自動調整
     const adjustWidth = () => {
         input.style.width = `${Math.max(input.value.length * 8, 100)}px`;
     };
@@ -1373,7 +1100,6 @@ function createNewItem(currentPath, container, itemType = "folder") {
             return;
         }
 
-        // ✨ 改善点②: 独自の while ループの代わりに getUniqueName を使用して統一感を持たせる
         let finalName = getUniqueName(folderNode, newName);
 
         // 指定されたタイプで作成
@@ -1401,7 +1127,7 @@ function createNewItem(currentPath, container, itemType = "folder") {
         }
     });
 
-    // 💡 修正点: blur 時に入力をキャンセルして消すのではなく、finishEditing() を呼んで確定させる
+    // blur 時に入力を確定させる
     input.addEventListener("blur", () => {
         if (isShowingError || isCommitting) return;
         finishEditing();
@@ -1429,12 +1155,16 @@ async function deleteFSItem(parentPath, itemName, dispatchEvent = true) {
             if (rawItem?.system === true) {
                 throw new Error("Protected system item");
             }
+
+            const cleanName = itemName.replace(/^\d+_/, "");
+            const originalPath = rawItem.originalPath ? `${rawItem.originalPath}/${cleanName}` : cleanName;
+
             const success = delete parentNode[itemName];
             if (!success) throw new Error("Blocked by Proxy");
 
-            const { deleteFileContentRecursive } = await import("./fs-db.js");
             const trashItemPath = `${parentPath.replace(/\/+$/, "")}/${itemName}`;
             await deleteFileContentRecursive(trashItemPath);
+            await markDefaultDeleted(originalPath);
 
             if (dispatchEvent) {
                 await forceSave();
@@ -1462,13 +1192,17 @@ async function deleteFSItem(parentPath, itemName, dispatchEvent = true) {
             throw new Error("Protected system item");
         }
 
-        const targetItemData = JSON.parse(JSON.stringify(rawItem));
-        targetItemData.originalPath = parentPath;
+        const cleanParentPath = parentPath.replace(/\/+$/, "");
+        const sourceFullPath = `${cleanParentPath}/${itemName}`;
+
+        const targetItemData = cloneFSNode(rawItem);
+        targetItemData.originalPath = cleanParentPath;
 
         const trashNode = resolveFS("C:/Trash");
         if (!trashNode) {
             const success = delete parentNode[itemName];
             if (!success) throw new Error("Blocked by Proxy");
+            await markDefaultDeleted(sourceFullPath);
             if (dispatchEvent) {
                 await forceSave();
                 window.dispatchEvent(new Event("fs-updated"));
@@ -1486,37 +1220,12 @@ async function deleteFSItem(parentPath, itemName, dispatchEvent = true) {
             }
         }
 
-        // 100KB超などの外部実データ（STORE_FILES）をゴミ箱パスへ退避
-        const { moveFileContent, deleteFileContentRecursive } = await import("./fs-db.js");
-        const moveStorageRecursively = async (node, oldBase, newBase, visited = new WeakSet(), depth = 0) => {
-            if (!node || typeof node !== "object" || depth > 50 || visited.has(node)) return;
-            visited.add(node);
-            try {
-                for (const key of Object.keys(node)) {
-                    if (key === "type" || key === "system" || key === "originalPath" || key === "lastModified") continue;
-                    const child = node[key];
-                    if (child && typeof child === "object") {
-                        const oldSub = `${oldBase}/${key}`;
-                        const newSub = `${newBase}/${key}`;
-                        if (child.type === "file" || child.type === "app") {
-                            await moveFileContent(oldSub, newSub);
-                        } else if (child.type === "folder") {
-                            await moveStorageRecursively(child, oldSub, newSub, visited, depth + 1);
-                        }
-                    }
-                }
-            } finally {
-                visited.delete(node);
-            }
-        };
-
-        const sourceFullPath = `${parentPath}/${itemName}`;
         const trashFullPath = `C:/Trash/${targetName}`;
 
         if (targetItemData.type === "file" || targetItemData.type === "app") {
             await moveFileContent(sourceFullPath, trashFullPath);
         } else if (targetItemData.type === "folder") {
-            await moveStorageRecursively(rawItem, sourceFullPath, trashFullPath);
+            await processStorageRecursively(rawItem, sourceFullPath, trashFullPath, false);
         }
 
         // 仮想FSツリーから削除（排他ロック等で拒否された場合は実データを元のパスへロールバック）
@@ -1525,12 +1234,13 @@ async function deleteFSItem(parentPath, itemName, dispatchEvent = true) {
             if (targetItemData.type === "file" || targetItemData.type === "app") {
                 await moveFileContent(trashFullPath, sourceFullPath).catch(() => deleteFileContentRecursive(trashFullPath));
             } else if (targetItemData.type === "folder") {
-                await moveStorageRecursively(rawItem, trashFullPath, sourceFullPath).catch(() => deleteFileContentRecursive(trashFullPath));
+                await processStorageRecursively(rawItem, trashFullPath, sourceFullPath, false).catch(() => deleteFileContentRecursive(trashFullPath));
             }
             throw new Error("Blocked by Proxy or File Lock");
         }
 
         trashNode[targetName] = targetItemData;
+        await markDefaultDeleted(sourceFullPath);
 
         if (dispatchEvent) {
             await forceSave();
@@ -1549,51 +1259,43 @@ async function deleteFSItem(parentPath, itemName, dispatchEvent = true) {
 }
 
 function openFSItem(name, node, parentPath) {
-    let targetNode = node;
-    let targetPath = `${parentPath}/${name}`;
+    const resolved = resolveLinkTarget(node, `${parentPath}/${name}`);
+    const targetNode = resolved.node;
+    const targetPath = resolved.path;
 
-    // 1. ショートカットの解決 (Windowsは常にリンク先を追う)
-    if (targetNode.type === "link") {
-        targetPath = targetNode.target;
-        targetNode = resolveFS(targetPath);
-        if (!targetNode) {
-            window.nexser?.windowAPI.alertWindow("リンク先が見つかりません。");
-            return;
-        }
+    if (!targetNode) {
+        window.nexser?.windowAPI.alertWindow("リンク先が見つかりません。");
+        return;
     }
 
-    // 2. 実行タイプの特定
+    // 実行タイプの特定
     const type = targetNode.type;
     const associatedApp = resolveAppByPath(targetPath);
 
-    // 3. アプリケーションの実行
+    // アプリケーションの実行
     if (type === "app") {
         window.nexser?.kernelAPI.launch(targetPath, { path: targetPath, uniqueKey: targetPath });
         addRecent({ type: "app", path: targetPath });
     }
-    // 4. フォルダの展開
+    // フォルダの展開
     else if (type === "folder") {
-        // Windowsは常に共通のエクスプローラーを起動
         window.nexser?.kernelAPI.launch("C:/Programs/Applications/Explorer.app", {
             path: targetPath,
             uniqueKey: targetPath,
-            showFullPath: true // Windowsらしくパスを表示
+            showFullPath: true
         });
         addRecent({ type: "folder", path: targetPath });
     }
-    // 5. ファイルの実行
+    // ファイルの実行
     else if (type === "file") {
         if (associatedApp) {
-            // 関連付けがあればそのアプリで起動
             window.nexser?.kernelAPI.launch(associatedApp, { path: targetPath, node: targetNode, uniqueKey: targetPath });
         } else {
-            // ⭐ 簡易ビューアではなく、Explorerと同じ「アプリ選択ダイアログ」を出す
             explorerOpenWithDialog(targetPath, targetNode);
         }
         addRecent({ type: "file", path: targetPath });
     }
 }
-
 
 // --------------------
 // FS更新監視
@@ -1603,14 +1305,14 @@ function installDesktopWatcher() {
     if (desktopInitialized) return;
     desktopInitialized = true;
     window.addEventListener("fs-updated", async () => {
-        // ⭐ 1. ログオフ中であれば一切再描画を行わない
+        // ログオフ中であれば一切再描画を行わない
         if (window.nexser?.isLoggingOff) return;
 
-        // ⭐ 2. デスクトップのアイコンコンテナが非表示にされている場合は再描画をスキップ
+        // デスクトップのアイコンコンテナが非表示にされている場合は再描画をスキップ
         const iconsContainer = document.getElementById("desktop-icons");
         if (iconsContainer && iconsContainer.style.display === "none") return;
 
-        // ★ 追加: 更新時に拡張子設定も再取得して同期する
+        // 更新時に拡張子設定も再取得して同期する
         try {
             const savedShowExt = await dbGet("explorerShowFileExtensions", "settings");
             if (savedShowExt !== undefined) {
@@ -1621,6 +1323,7 @@ function installDesktopWatcher() {
     });
 }
 installDesktopWatcher();
+
 // --------------------
 // キーボードナビゲーションの実装
 // --------------------
@@ -1632,6 +1335,7 @@ function setupDesktopKeyboardNavigation() {
     document.addEventListener("keydown", async (e) => {
         // --- ガード処理：デスクトップがアクティブか判定 ---
         const active = document.activeElement;
+        if (!active) return;
 
         // 1. 入力欄（リネーム中など）にフォーカスがある場合は即座に終了
         if (active.tagName === "INPUT" || active.tagName === "TEXTAREA") return;
@@ -1644,8 +1348,7 @@ function setupDesktopKeyboardNavigation() {
         const iconsContainer = document.getElementById("desktop-icons");
         if (!desktop || !iconsContainer) return;
 
-        // 4. デスクトップまたはbody（どこも選んでいない状態）以外がアクティブなら無視
-        // buildDesktop内で desktop.tabIndex = 0 を設定し、クリック時に .focus() させるのが前提
+        // 4. デスクトップがアクティブな場合のみ処理
         const isDesktopFocused = (active === desktop);
         if (!isDesktopFocused) return;
 
@@ -1657,10 +1360,8 @@ function setupDesktopKeyboardNavigation() {
 
         const selectIcon = (targetEl) => {
             if (!targetEl) return;
-            // 既存の選択をすべて解除
             icons.forEach(el => el.classList.remove("selected"));
 
-            // 新規選択状態を適用
             targetEl.classList.add("selected");
             globalSelected.items.clear();
             globalSelected.items.add(targetEl);
@@ -1668,11 +1369,10 @@ function setupDesktopKeyboardNavigation() {
             globalSelected.item = targetEl;
             globalSelected.window = desktop;
 
-            // 視界に入るようスクロール
             targetEl.scrollIntoView({ block: "nearest", inline: "nearest" });
         };
 
-        // 物理的な距離で最適なアイコンを探す（ご提示のロジックを完全維持）
+        // 物理的な距離で最適なアイコンを探す
         const getNearestIcon = (currentEl, direction) => {
             const currentRect = currentEl.getBoundingClientRect();
             const currentCenterX = currentRect.left + currentRect.width / 2;
@@ -1703,7 +1403,7 @@ function setupDesktopKeyboardNavigation() {
         };
 
         // キー分岐
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a") {
             e.preventDefault();
             globalSelected.items.clear();
             icons.forEach(item => {
@@ -1713,7 +1413,6 @@ function setupDesktopKeyboardNavigation() {
             if (icons.length > 0) {
                 globalSelected.lastSelected = icons[icons.length - 1];
             }
-            // 単一選択用の参照（互換性用）は複数選択時はnullにする、または必要に応じて調整
             globalSelected.item = globalSelected.items.size === 1 ? Array.from(globalSelected.items)[0] : null;
             return;
         }
@@ -1746,12 +1445,16 @@ function setupDesktopKeyboardNavigation() {
                 }
                 break;
             case "Enter":
-                if (globalSelected.item) {
+                if (globalSelected.items.size > 0) {
                     e.preventDefault();
-                    const name = globalSelected.item.dataset.name;
                     const desktopNode = resolveFS("C:/Desktop");
-                    const node = desktopNode ? desktopNode[name] : null;
-                    if (node) openFSItem(name, node, "C:/Desktop");
+                    if (desktopNode) {
+                        globalSelected.items.forEach(selectedEl => {
+                            const name = selectedEl.dataset.name;
+                            const node = desktopNode[name];
+                            if (node) openFSItem(name, node, "C:/Desktop");
+                        });
+                    }
                 }
                 break;
             case "Delete":
@@ -1764,10 +1467,7 @@ function setupDesktopKeyboardNavigation() {
                     setBulkUpdating(true);
                     try {
                         for (const name of itemsToDelete) {
-                            const success = await deleteFSItem("C:/Desktop", name, false);
-                            if (success) {
-                                await markDefaultDeleted(`C:/Desktop/${name}`);
-                            }
+                            await deleteFSItem("C:/Desktop", name, false);
                         }
                         await forceSave();
                     } finally {
@@ -1783,12 +1483,7 @@ function setupDesktopKeyboardNavigation() {
     isDesktopKeyHandlerAttached = true;
 }
 
-// 最後に実行
 setupDesktopKeyboardNavigation();
-
-// タスクバーの高さが変わったらアイコン領域を再調整
-window.addEventListener("desktop-resize", adjustDesktopIconArea);
-
 
 // --------------------
 // 自動整列処理
@@ -1804,7 +1499,7 @@ export function autoArrangeIcons() {
         iconsContainer.style.flexWrap = "wrap";
         iconsContainer.style.alignContent = "flex-start";
     } else {
-        // ★ 追加: 自動整列OFF時は自由配置にするためFlexを解除
+        // 自動整列OFF時は自由配置にするためFlexを解除
         iconsContainer.style.display = "block";
     }
 }
@@ -1816,7 +1511,7 @@ function reorderDesktopIcons(draggedNames, targetName) {
     const desktopFS = FS["C:"].Desktop;
     if (!desktopFS) return;
 
-    const keys = Object.keys(desktopFS).filter(k => k !== "type" && k !== "system" && k !== "lastModified");
+    const keys = Object.keys(desktopFS).filter(k => !isSystemMetaKey(k));
     const draggedSet = new Set(draggedNames);
 
     // 移動先の位置を特定して順番を差し替え

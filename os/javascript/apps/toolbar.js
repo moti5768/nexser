@@ -4,23 +4,34 @@ import { saveSetting, loadSetting } from "./settings.js";
 export default function ToolbarApp(content, options) {
     if (!content) return;
 
-    const win = content.parentElement;
-    let unsubCreated = null;
-    let unsubActivated = null;
+    // 確実にウィンドウ外枠(.window)を取得する
+    const win = content.closest(".window") || content.parentElement;
 
     if (win) {
         win.classList.add("ime-toolbar-window");
-        // 保存キャッシュによる上書きを防ぐため !important で強制固定（高さ40px・幅250px）
+        // サイズのみ !important で固定（高さ40px・幅250px）
         win.style.setProperty('width', '250px', 'important');
         win.style.setProperty('height', '40px', 'important');
         win.style.setProperty('min-height', '40px', 'important');
         win.style.setProperty('max-height', '40px', 'important');
 
-        // ⭐ 十分に大きな固定 z-index を付与（常に手前に表示され、ウィンドウシステムの邪魔もしない）
-        win.style.setProperty('z-index', '99999', 'important');
+        // 他のあらゆる通常ウィンドウ・ダイアログより手前に表示される最上位 z-index を付与
+        win.style.setProperty('z-index', '2147483000', 'important');
     }
 
-    // ⭐ 保存された位置と統合状態の非同期復元処理
+    // 画面内にツールバー座標を収める補正関数
+    const clampToolbarPosition = (left, top) => {
+        const winWidth = 250;
+        const winHeight = 40;
+        const maxLeft = Math.max(0, window.innerWidth - winWidth);
+        const maxTop = Math.max(0, window.innerHeight - winHeight);
+        return {
+            left: Math.min(Math.max(0, left), maxLeft),
+            top: Math.min(Math.max(0, top), maxTop)
+        };
+    };
+
+    // 保存された位置と統合状態の非同期復元処理
     (async () => {
         const isIntegratedSaved = await loadSetting("toolbarIntegrated");
         const savedLeft = await loadSetting("toolbarLeft");
@@ -33,10 +44,9 @@ export default function ToolbarApp(content, options) {
             let targetTop = savedTop;
 
             if (targetLeft === null || targetTop === null) {
-                // 保存データがない場合はタスクバーに被らない画面右下の初期位置を動的計算
                 const winWidth = 250;
                 const winHeight = 40;
-                const margin = 0; // 画面端やタスクバーからの余白
+                const margin = 0;
 
                 const taskbar = document.getElementById("taskbar");
                 targetLeft = window.innerWidth - winWidth - margin;
@@ -44,27 +54,23 @@ export default function ToolbarApp(content, options) {
 
                 if (taskbar) {
                     const tbRect = taskbar.getBoundingClientRect();
-                    // タスクバーが下部にある場合
                     if (tbRect.top > 0 && tbRect.height < tbRect.width) {
                         targetTop = tbRect.top - winHeight - margin;
-                    }
-                    // タスクバーが上部にある場合
-                    else if (tbRect.top <= 0 && tbRect.height < tbRect.width) {
+                    } else if (tbRect.top <= 0 && tbRect.height < tbRect.width) {
                         targetTop = tbRect.bottom + margin;
-                    }
-                    // タスクバーが右側にある場合
-                    else if (tbRect.left > 0 && tbRect.width < tbRect.height) {
+                    } else if (tbRect.left > 0 && tbRect.width < tbRect.height) {
                         targetLeft = tbRect.left - winWidth - margin;
-                    }
-                    // タスクバーが左側にある場合
-                    else if (tbRect.left <= 0 && tbRect.width < tbRect.height) {
+                    } else if (tbRect.left <= 0 && tbRect.width < tbRect.height) {
                         targetLeft = tbRect.right + margin;
                     }
                 }
             }
 
-            win.style.setProperty('left', `${Math.max(0, targetLeft)}px`, 'important');
-            win.style.setProperty('top', `${Math.max(0, targetTop)}px`, 'important');
+            // ドラッグ移動を阻害しないよう !important は付けずに設定する
+            const clamped = clampToolbarPosition(targetLeft, targetTop);
+            win.style.left = `${clamped.left}px`;
+            win.style.top = `${clamped.top}px`;
+            win.style.setProperty('z-index', '2147483000', 'important');
         }
     })();
 
@@ -541,6 +547,18 @@ export default function ToolbarApp(content, options) {
         }
     }
 
+    // ブラウザリサイズ時に画面外へ隠れないよう位置を自動補正
+    const onWindowResize = () => {
+        if (!isIntegrated && win) {
+            const curLeft = parseFloat(win.style.left) || 0;
+            const curTop = parseFloat(win.style.top) || 0;
+            const clamped = clampToolbarPosition(curLeft, curTop);
+            win.style.left = `${clamped.left}px`;
+            win.style.top = `${clamped.top}px`;
+        }
+    };
+    window.addEventListener("resize", onWindowResize);
+
     // 初期状態の反映
     updateImeState(false);
 
@@ -549,6 +567,7 @@ export default function ToolbarApp(content, options) {
             document.removeEventListener("click", onDocumentClick);
             document.removeEventListener("compositionstart", onCompositionStart);
             document.removeEventListener("compositionend", onCompositionEnd);
+            window.removeEventListener("resize", onWindowResize);
             if (integratedElement) integratedElement.remove();
             if (menuPopup) menuPopup.remove();
             console.log("Toolbar app resources released completely.");

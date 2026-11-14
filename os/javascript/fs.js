@@ -496,24 +496,44 @@ function deepSync(currentProxy, savedNode, defaultNode, path = "", visited = new
                     hasChanges = true;
                 }
             } else {
-                // システムアイテム（system: true）の同期処理：コード側の定義をマスターとする
+                // システムアイテム（system: true）の同期処理：実際に差分があるときだけ保存フラグを立てる
                 if (defaultValue && typeof defaultValue === "object" && defaultValue.system) {
+                    const existing = currentProxy[key];
                     if (defaultValue.type === "file") {
                         const nextContent =
                             savedValue && savedValue.content !== undefined
                                 ? savedValue.content
                                 : defaultValue.content;
-                        currentProxy[key] = {
-                            ...defaultValue,
-                            content: nextContent
-                        };
-                        if (savedValue && savedValue.size !== undefined) {
-                            currentProxy[key].size = savedValue.size;
+                        const nextSize = savedValue?.size;
+                        const isSame =
+                            existing &&
+                            existing.type === "file" &&
+                            existing.content === nextContent &&
+                            existing.size === nextSize;
+
+                        if (!isSame) {
+                            currentProxy[key] = {
+                                ...defaultValue,
+                                content: nextContent
+                            };
+                            if (nextSize !== undefined) {
+                                currentProxy[key].size = nextSize;
+                            }
+                            hasChanges = true;
                         }
                     } else {
-                        currentProxy[key] = structuredClone(defaultValue);
+                        const isSame =
+                            existing &&
+                            existing.type === defaultValue.type &&
+                            existing.entry === defaultValue.entry &&
+                            Boolean(existing.shell) === Boolean(defaultValue.shell) &&
+                            Boolean(existing.frameless) === Boolean(defaultValue.frameless);
+
+                        if (!isSame) {
+                            currentProxy[key] = structuredClone(defaultValue);
+                            hasChanges = true;
+                        }
                     }
-                    hasChanges = true;
                 } else {
                     currentProxy[key] = savedValue;
                 }

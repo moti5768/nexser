@@ -1,14 +1,25 @@
 // Explorer.js
-import { resolveFS, validateName, importFileSmart, getUniqueName, isDescendantOrSelf } from "../fs-utils.js";
+import {
+    resolveFS,
+    validateName,
+    importFileSmart,
+    getUniqueName,
+    isDescendantOrSelf,
+    isSystemMetaKey,
+    cloneFSNode,
+    resolveLinkTarget,
+    clearSystemProtection,
+    processStorageRecursively,
+    createUrlShortcutNode
+} from "../fs-utils.js";
 import { FS, forceSave, markDefaultDeleted, unmarkDefaultDeleted, setBulkUpdating } from "../fs.js";
+import { copyFileContent, moveFileContent, deleteFileContentRecursive } from "../fs-db.js";
 import { attachContextMenu } from "../context-menu.js";
 import { resolveAppByPath, getIcon, getDisplayFileName } from "../file-associations.js";
 import { addRecent } from "../recent.js";
 import { setupRibbon } from "../ribbon.js";
 import { saveSetting, loadSetting } from "./settings.js";
 
-// 複数選択・範囲選択に対応
-let globalSelected = { items: new Set(), window: null, lastSelected: null };
 // プロパティウィンドウの重複チェック用
 const propertyWindows = {};
 
@@ -58,7 +69,6 @@ async function deleteFSItem(parentPath, itemName, rerender, dispatchEvent = true
                                 if (!deleted) throw new Error("Blocked by Proxy");
 
                                 // IndexedDB上の大容量実データも再帰的に完全消去
-                                const { deleteFileContentRecursive } = await import("../fs-db.js");
                                 await deleteFileContentRecursive(trashItemPath);
 
                                 await markDefaultDeleted(originalPath);
@@ -99,7 +109,7 @@ async function deleteFSItem(parentPath, itemName, rerender, dispatchEvent = true
         const trashNode = resolveFS("C:/Trash");
         if (!trashNode) return false;
 
-        const targetItemData = JSON.parse(JSON.stringify(rawItem));
+        const targetItemData = cloneFSNode(rawItem);
         targetItemData.originalPath = parentPath;
 
         let targetName = itemName;
@@ -112,37 +122,13 @@ async function deleteFSItem(parentPath, itemName, rerender, dispatchEvent = true
             }
         }
 
-        // 100KB超などの外部実データ（STORE_FILES）をゴミ箱パスへ退避
-        const { moveFileContent, deleteFileContentRecursive } = await import("../fs-db.js");
-        const moveStorageRecursively = async (node, oldBase, newBase, visited = new WeakSet(), depth = 0) => {
-            if (!node || typeof node !== "object" || depth > 50 || visited.has(node)) return;
-            visited.add(node);
-            try {
-                for (const key of Object.keys(node)) {
-                    if (isSystemMetaKey(key)) continue;
-                    const child = node[key];
-                    if (child && typeof child === "object") {
-                        const oldSub = `${oldBase}/${key}`;
-                        const newSub = `${newBase}/${key}`;
-                        if (child.type === "file" || child.type === "app") {
-                            await moveFileContent(oldSub, newSub);
-                        } else if (child.type === "folder") {
-                            await moveStorageRecursively(child, oldSub, newSub, visited, depth + 1);
-                        }
-                    }
-                }
-            } finally {
-                visited.delete(node);
-            }
-        };
-
         const sourceFullPath = parentPath ? `${parentPath}/${itemName}` : itemName;
         const trashFullPath = `C:/Trash/${targetName}`;
 
         if (targetItemData.type === "file" || targetItemData.type === "app") {
             await moveFileContent(sourceFullPath, trashFullPath);
         } else if (targetItemData.type === "folder") {
-            await moveStorageRecursively(rawItem, sourceFullPath, trashFullPath);
+            await processStorageRecursively(rawItem, sourceFullPath, trashFullPath, false);
         }
 
         // 仮想FSツリーから削除（排他ロック等で拒否された場合は実データを元のパスへロールバック）
@@ -151,7 +137,7 @@ async function deleteFSItem(parentPath, itemName, rerender, dispatchEvent = true
             if (targetItemData.type === "file" || targetItemData.type === "app") {
                 await moveFileContent(trashFullPath, sourceFullPath).catch(() => deleteFileContentRecursive(trashFullPath));
             } else if (targetItemData.type === "folder") {
-                await moveStorageRecursively(rawItem, trashFullPath, sourceFullPath).catch(() => deleteFileContentRecursive(trashFullPath));
+                await processStorageRecursively(rawItem, trashFullPath, sourceFullPath, false).catch(() => deleteFileContentRecursive(trashFullPath));
             }
             throw new Error("Blocked by Proxy or File Lock");
         }
@@ -214,7 +200,7 @@ export async function restoreFSItem(itemName, rerender, dispatchEvent = true) {
     }
     if (!destNode) return false;
 
-    const data = JSON.parse(JSON.stringify(item));
+    const data = cloneFSNode(item);
     delete data.originalPath;
 
     // ゴミ箱用につけた「Date.now()_」プレフィックスがあれば除去
@@ -227,35 +213,11 @@ export async function restoreFSItem(itemName, rerender, dispatchEvent = true) {
     const destFullPath = `${destPath}/${finalName}`;
 
     // 2. IndexedDB上のファイル実データ（Blob等）も、仮想ツリーと同じ元のパスへ確実に連動移動する
-    const { moveFileContent } = await import("../fs-db.js");
-    const processStorageRecursively = async (node, oldBasePath, newBasePath, visited = new WeakSet(), depth = 0) => {
-        if (!node || typeof node !== "object" || depth > 50) return;
-        if (visited.has(node)) return;
-        visited.add(node);
-        try {
-            for (const key of Object.keys(node)) {
-                if (isSystemMetaKey(key)) continue;
-                const child = node[key];
-                const oldSubPath = `${oldBasePath}/${key}`;
-                const newSubPath = `${newBasePath}/${key}`;
-                if (child && typeof child === "object") {
-                    if (child.type === "file" || child.type === "app") {
-                        await moveFileContent(oldSubPath, newSubPath);
-                    } else if (child.type === "folder") {
-                        await processStorageRecursively(child, oldSubPath, newSubPath, visited, depth + 1);
-                    }
-                }
-            }
-        } finally {
-            visited.delete(node);
-        }
-    };
-
     try {
         if (data.type === "file" || data.type === "app") {
             await moveFileContent(trashFullPath, destFullPath);
         } else if (data.type === "folder") {
-            await processStorageRecursively(data, trashFullPath, destFullPath);
+            await processStorageRecursively(data, trashFullPath, destFullPath, false);
         }
     } catch (err) {
         console.error("[FS] 復元時の実データ移動に失敗しました:", err);
@@ -274,7 +236,7 @@ export async function restoreFSItem(itemName, rerender, dispatchEvent = true) {
         if (data.type === "file" || data.type === "app") {
             await moveFileContent(destFullPath, trashFullPath).catch(() => { });
         } else if (data.type === "folder") {
-            await processStorageRecursively(data, destFullPath, trashFullPath).catch(() => { });
+            await processStorageRecursively(data, destFullPath, trashFullPath, false).catch(() => { });
         }
         return false;
     }
@@ -323,7 +285,6 @@ export function emptyTrash(rerender) {
                 label: "すべて削除",
                 action: async () => {
                     const latestTrash = resolveFS("C:/Trash");
-                    const { deleteFileContentRecursive } = await import("../fs-db.js");
                     let hasProtectedFiles = false; // 保護されたファイルがあったかどうかのフラグ
 
                     setBulkUpdating(true);
@@ -468,15 +429,10 @@ function createNewItem(currentPath, listContainer, renderCallback, type = "folde
 // ----------------------------------------------------------------
 // 共通ヘルパー関数（重複防止用）
 // ----------------------------------------------------------------
-// 改善後: スラッシュや大文字小文字の揺れを正規化して判定
 function isTrashPath(path) {
     if (!path) return false;
     const normalized = path.replace(/\\/g, "/").replace(/\/+$/, "").toLowerCase();
     return normalized === "c:/trash" || normalized === "trash" || normalized.endsWith("/trash");
-}
-
-function isSystemMetaKey(key) {
-    return key === "type" || key === "system" || key === "originalPath" || key === "lastModified";
 }
 
 function updateStatusBarSummary(statusBar, folderNode) {
@@ -504,11 +460,14 @@ export default async function Explorer(root, options = {}) {
     const titleEl = win?.querySelector(".title-text");
     const taskBtn = win?._taskbarBtn;
 
+    // ウィンドウごとに独立した選択状態を保持（複数ウィンドウ同時操作時の競合を防止）
+    const globalSelected = { items: new Set(), window: win, lastSelected: null };
+
     let currentPath = (options.path || "C:/Desktop").replace(/\/+$/, "") || "C:";
     let historyStack = [];
     let forwardStack = [];
 
-    // ★ 変更点: 6つの設定読み込みを Promise.all で並列一括処理し、起動を高速化
+    // 6つの設定読み込みを Promise.all で並列一括処理し、起動を高速化
     const [
         savedViewMode,
         rawHidden,
@@ -533,10 +492,10 @@ export default async function Explorer(root, options = {}) {
     let sortKey = savedSortKey || "name"; // 'name', 'type', 'size', 'date'
     let sortOrder = savedSortOrder || "asc"; // 'asc', 'desc'
 
-    // ★追加: 左ナビゲーション（サイドバー）の表示・非表示状態のロード
+    // 左ナビゲーション（サイドバー）の表示・非表示状態のロード
     let showSidebar = rawSidebar === null ? true : (rawSidebar === true || rawSidebar === "true");
 
-    // ★追加: 自動整列のオン・オフ状態と座標保存用変数
+    // 自動整列のオン・オフ状態と座標保存用変数
     let autoArrange = savedAutoArrange;
     if (autoArrange === undefined) autoArrange = true;
     let iconPositions = {};
@@ -548,12 +507,12 @@ export default async function Explorer(root, options = {}) {
     let selectionBox = null;
     let startX, startY;
     let wasDragging = false;
-    let isRafScheduled = false; // ★表示切替時やドラッグ時にフラグが残る問題を解消するためトップレベルへ移動
+    let isRafScheduled = false;
 
     let handleGlobalMouseMove = null;
     let handleGlobalMouseUp = null;
 
-    // ★追加: 範囲選択の状態を完全にリセットする関数（青枠が出なくなる問題の根本解決）
+    // 範囲選択の状態を完全にリセットする関数
     const cancelSelection = () => {
         startX = undefined;
         startY = undefined;
@@ -571,19 +530,17 @@ export default async function Explorer(root, options = {}) {
     };
 
     const navigateTo = (path, saveHistory = true) => {
-        // パス末尾のスラッシュを正規化
         if (path && path !== "" && path.endsWith("/")) {
             path = path.replace(/\/+$/, "");
         }
 
         if (saveHistory && path === currentPath) return;
 
-        // 【追加】ルート（""）以外の場合、移動先が「フォルダ」であることを厳格に検証する
         if (path !== "") {
             const targetNode = resolveFS(path);
             if (!targetNode || targetNode.type !== "folder") {
                 window.nexser?.windowAPI?.alertWindow(`指定されたパス「${path}」はフォルダではないか、存在しません。`, { width: 350, height: 180, taskbar: false });
-                return; // ファイルやアプリのパスが渡された場合はここで移動を完全に阻止する
+                return;
             }
         }
 
@@ -599,23 +556,21 @@ export default async function Explorer(root, options = {}) {
     // ダブルクリック・アドレスバー共通ロジック
     // ------------------------
     function openFSItem(name, node, parentPath) {
-        let targetPath = parentPath ? `${parentPath}/${name}` : name;
-        let targetNode = node;
+        const initialPath = parentPath ? `${parentPath}/${name}` : name;
+        const resolved = resolveLinkTarget(node, initialPath);
+        const targetNode = resolved.node;
+        const targetPath = resolved.path;
 
-        if (node.type === "link") {
-            targetPath = node.target;
-            targetNode = resolveFS(targetPath);
-            if (!targetNode) {
-                window.nexser?.windowAPI?.alertWindow(`リンク先「${targetPath}」が存在しません`, {
-                    width: 360,
-                    height: 160,
-                    taskbar: false
-                });
-                return;
-            }
+        if (!targetNode) {
+            window.nexser?.windowAPI?.alertWindow(`リンク先「${targetPath}」が存在しません`, {
+                width: 360,
+                height: 160,
+                taskbar: false
+            });
+            return;
         }
 
-        let effectiveType = targetNode.type;
+        const effectiveType = targetNode.type;
 
         switch (effectiveType) {
             case "folder":
@@ -627,12 +582,9 @@ export default async function Explorer(root, options = {}) {
             case "file": {
                 const appPath = resolveAppByPath(targetPath);
                 if (appPath) {
-                    // 既に関連付けられているアプリがある場合
                     window.nexser?.kernelAPI.launch(appPath, { path: targetPath, node: targetNode, uniqueKey: targetPath });
-                } else {
-                    if (targetNode.type === "file") {
-                        openWithDialog(targetPath, targetNode);
-                    }
+                } else if (targetNode.type === "file") {
+                    openWithDialog(targetPath, targetNode);
                 }
                 break;
             }
@@ -695,14 +647,12 @@ export default async function Explorer(root, options = {}) {
             treePanel.style.display = isOpen ? "none" : "block";
         });
 
-        // explorer.js の _treeOutsideHandlerInstalled 部分
         if (!win._treeOutsideHandlerInstalled) {
             win._treeOutsideHandlerInstalled = true;
             win._treeOutsideClickHandler = e => {
                 const treePanel = win._treePanel;
                 if (!treePanel || treePanel.style.display === "none") return;
 
-                // 「これら以外」をクリックしたら閉じる判定を明確化
                 const isSafeElement =
                     e.target.closest(".tree-container") ||
                     e.target.closest(".tree-panel") ||
@@ -717,26 +667,18 @@ export default async function Explorer(root, options = {}) {
         }
 
         function buildTree(node, parentEl, path = "", depth = 0, prefix = "", currentPath = "", visited = new Set()) {
-            // 【重要】無限ループ防止: 祖先チェーン内に既に存在する場合は逆流（無限ループ）を防ぐためにスキップ
             if (node && typeof node === "object") {
                 if (visited.has(node)) return;
                 visited.add(node);
             }
 
             try {
-                // メタデータを除外してループ
-                const entries = Object.entries(node).filter(([k, v]) => !isSystemMetaKey(k) && (showHidden || !v.hidden)); // ★隠しファイル表示設定を考慮
-
-                // ⭐ 改善1: メモリ上に一時的なDOMの格納庫（フラグメント）を作成
+                const entries = Object.entries(node).filter(([k, v]) => !isSystemMetaKey(k) && (showHidden || !v.hidden));
                 const fragment = document.createDocumentFragment();
 
                 entries.forEach(([name, child], index) => {
                     const fullPath = path ? `${path}/${name}` : name;
-
-                    // 【重要】isFolder の判定を厳格にする (link は中身を追跡しない)
                     const isFolder = child.type === "folder";
-
-                    // 子要素があるか判定（メタデータ以外のキーがあるか）
                     const hasChildren = isFolder && Object.keys(child).some(k => !isSystemMetaKey(k));
 
                     const isLast = index === entries.length - 1;
@@ -747,7 +689,6 @@ export default async function Explorer(root, options = {}) {
                     item.style.fontFamily = "Consolas, monospace";
                     item.style.cursor = "pointer";
 
-                    // ⭐ 改善2: 実際の画面（parentEl）ではなく、フラグメントに追加する
                     fragment.appendChild(item);
 
                     let arrowBtn, subContainer;
@@ -762,7 +703,6 @@ export default async function Explorer(root, options = {}) {
                         subContainer = document.createElement("div");
                         subContainer.style.marginLeft = "12px";
 
-                        // ⭐ 改善3: こちらもフラグメントに追加する
                         fragment.appendChild(subContainer);
 
                         if (currentPath.startsWith(fullPath)) {
@@ -797,25 +737,20 @@ export default async function Explorer(root, options = {}) {
                         }
                     });
 
-                    // 再帰呼び出し時、visited セットを引き継ぐ
                     if (hasChildren) {
                         buildTree(child, subContainer, fullPath, depth + 1, prefix + (isLast ? "   " : "│  "), currentPath, visited);
                     }
                 });
 
-                // ⭐ 改善4: ループがすべて終わった後、一括で実際の画面（親要素）に反映させる
                 parentEl.appendChild(fragment);
             } finally {
-                // ★ 改善の核心: 再帰のスコープを抜けるときにセットから削除し、別枝からの正しい描画を許可する
                 if (node && typeof node === "object") {
                     visited.delete(node);
                 }
             }
         }
 
-        // 呼び出し側も visited をリセットするように変更
         buildTree(FS, treePanel, "", 0, "", currentPath, new Set());
-
     }
 
     // ------------------------
@@ -832,15 +767,15 @@ export default async function Explorer(root, options = {}) {
             listContainer.querySelectorAll(".no-result-message,.search-result-item").forEach(el => el.remove());
         }
 
-        // ★追加: デスクトップ側などでの変更を反映するため、拡張子表示設定を毎回ロードして同期する
+        // 拡張子表示設定を毎回ロードして同期
         const rawShowExt = await loadSetting("explorerShowFileExtensions");
         showFileExtensions = rawShowExt === null ? true : (rawShowExt === true || rawShowExt === "true");
 
-        // ★追加: フォルダごとのアイコン座標設定を読み込み
+        // フォルダごとのアイコン座標設定を読み込み
         const safePath = currentPath.replace(/\//g, "_") || "root";
         iconPositions = await loadSetting(`explorerIconPositions_${safePath}`) || {};
 
-        // 複数選択用の解除処理に修正
+        // 複数選択解除
         if (globalSelected.items.size > 0) {
             globalSelected.items.forEach(i => i.classList.remove("selected"));
             globalSelected.items.clear();
@@ -848,7 +783,6 @@ export default async function Explorer(root, options = {}) {
             globalSelected.window = null;
         }
 
-        // 最後に1回だけリボンをセットアップする
         setupRibbon(win, () => currentPath, render, getExplorerMenus());
 
         // 初回生成
@@ -859,11 +793,9 @@ export default async function Explorer(root, options = {}) {
             const container = document.createElement("div");
             container.className = "explorer-container";
 
-            // ★追加: サイドバーとファイル一覧を横並びにするメインボディ
             const mainBody = document.createElement("div");
             mainBody.className = "explorer-main-body";
 
-            // ★追加: 左ナビゲーション（サイドバー）のコンテナ
             sidebarContainer = document.createElement("div");
             sidebarContainer.className = "explorer-sidebar";
             sidebarContainer.style.cssText = `display: ${showSidebar ? "block" : "none"};`;
@@ -896,14 +828,13 @@ export default async function Explorer(root, options = {}) {
 
                 const dataStr = e.dataTransfer.getData("text/plain");
 
-                // ⭐ 1. 【最優先】自動整列オフ時のアイコン自由配置（移動）処理
+                // 1. 【最優先】自動整列オフ時のアイコン自由配置（移動）処理
                 try {
                     const data = dataStr ? JSON.parse(dataStr) : null;
                     if (data && data.type === "explorer-icons" && viewMode === "icon" && !autoArrange) {
                         const containerRect = listContainer.getBoundingClientRect();
                         if (data.draggedItems) {
                             data.draggedItems.forEach((info) => {
-                                // ⭕ 演算子が同じ行に綺麗に収まった正しい数式
                                 const dropX = e.clientX - containerRect.left + listContainer.scrollLeft - info.offsetX;
                                 const dropY = e.clientY - containerRect.top + listContainer.scrollTop - info.offsetY;
 
@@ -922,7 +853,7 @@ export default async function Explorer(root, options = {}) {
                     }
                 } catch (err) { }
 
-                // ⭐ 2. 共通関数（エクスプローラー間・デスクトップからの移動・コピー）
+                // 2. 共通関数（エクスプローラー間・デスクトップからの移動・コピー）
                 try {
                     const data = dataStr ? JSON.parse(dataStr) : null;
                     if (data && (data.type === "explorer-icons" || data.type === "desktop-icons")) {
@@ -935,13 +866,13 @@ export default async function Explorer(root, options = {}) {
                 const folderNode = resolveFS(currentPath);
                 if (!folderNode || folderNode.type !== "folder") return;
 
-                // --- 3. ドロップされた直後のエントリを取得 ---
+                // 3. ドロップされた直後のエントリを取得
                 const initialEntries = [];
                 let hasFiles = false;
                 if (e.dataTransfer.items) {
                     for (let i = 0; i < e.dataTransfer.items.length; i++) {
                         const item = e.dataTransfer.items[i];
-                        if (item.kind === 'file') {
+                        if (item.kind === "file") {
                             hasFiles = true;
                             const entry = item.webkitGetAsEntry();
                             if (entry) initialEntries.push(entry);
@@ -952,13 +883,13 @@ export default async function Explorer(root, options = {}) {
                     initialEntries.push(...Array.from(e.dataTransfer.files));
                 }
 
-                // ⭐ 追加: URLがドロップされた場合の処理
+                // URLがドロップされた場合の処理（fs-utils.js共通ヘルパー）
                 const uriList = e.dataTransfer.getData("text/uri-list");
                 const textPlain = e.dataTransfer.getData("text/plain");
                 const urlToSave = uriList || textPlain;
 
                 if (!hasFiles && urlToSave) {
-                    if (createUrlShortcut(urlToSave, folderNode)) {
+                    if (createUrlShortcutNode(urlToSave, folderNode)) {
                         await forceSave();
                         window.dispatchEvent(new Event("fs-updated"));
                         render(currentPath);
@@ -968,7 +899,7 @@ export default async function Explorer(root, options = {}) {
 
                 if (initialEntries.length === 0) return;
 
-                // --- 4. 総項目数をカウントする (フォルダ自体もカウントに含める) ---
+                // 4. 総項目数をカウントする
                 let totalFiles = 0;
                 const countEntries = async (entry) => {
                     totalFiles++;
@@ -990,7 +921,7 @@ export default async function Explorer(root, options = {}) {
                     else await countEntries(ent);
                 }
 
-                // --- 5. プログレスウィンドウの生成 ---
+                // 5. プログレスウィンドウの生成
                 const pg = window.nexser?.windowAPI?.progressWindow("コピー中...", "コピーの準備をしています...", {
                     width: 380,
                     height: 250,
@@ -1060,7 +991,6 @@ export default async function Explorer(root, options = {}) {
                     folderNode.lastModified = Date.now();
                     pg.update(totalFiles, totalFiles, "すべての項目のコピーが完了しました。");
                     await forceSave();
-
                 } catch (err) {
                     console.error("Drop processing failed:", err);
                     if (pg && typeof pg.close === "function") pg.close();
@@ -1071,10 +1001,10 @@ export default async function Explorer(root, options = {}) {
                     initialEntries.length = 0;
 
                     if (e.dataTransfer) {
-                        if (typeof e.dataTransfer.clearData === 'function') {
+                        if (typeof e.dataTransfer.clearData === "function") {
                             e.dataTransfer.clearData();
                         }
-                        if (e.dataTransfer.items && typeof e.dataTransfer.items.clear === 'function') {
+                        if (e.dataTransfer.items && typeof e.dataTransfer.items.clear === "function") {
                             try { e.dataTransfer.items.clear(); } catch (err) { }
                         }
                     }
@@ -1107,24 +1037,21 @@ export default async function Explorer(root, options = {}) {
             const backBtn = document.createElement("button");
             backBtn.textContent = "←";
             backBtn.style.flexShrink = "0";
-            // 初期状態は履歴がないので無効化しておく
             backBtn.disabled = historyStack.length === 0;
             backBtn.classList.toggle("pointer_none", historyStack.length === 0);
 
-
             const upBtn = document.createElement("button");
-            upBtn.className = "up-button"; // クラス名を追加
+            upBtn.className = "up-button";
             upBtn.textContent = "↑";
             upBtn.dataset.tooltip = "上の階層へ";
 
             upBtn.onclick = () => {
                 const isAtRoot = currentPath === "" || currentPath === "C:" || currentPath === "C" || currentPath === "C:/";
-                if (isAtRoot) return; // C: より上には行かない
+                if (isAtRoot) return;
                 const pathParts = currentPath.split("/");
                 if (pathParts.length > 1) {
                     pathParts.pop();
                     const nextPath = pathParts.join("/");
-                    // 配列の末尾が "C:" のみになった場合は "C:" にする
                     navigateTo(nextPath === "C" ? "C:" : nextPath);
                 } else {
                     navigateTo("C:");
@@ -1134,15 +1061,17 @@ export default async function Explorer(root, options = {}) {
             const forwardBtn = document.createElement("button");
             forwardBtn.textContent = "→";
             forwardBtn.style.flexShrink = "0";
-            // 初期状態は進む先がないので無効化しておく
             forwardBtn.disabled = forwardStack.length === 0;
             forwardBtn.classList.toggle("pointer_none", forwardStack.length === 0);
 
             const refreshBtn = document.createElement("button");
-            refreshBtn.textContent = "↻"; // リフレッシュアイコン風
+            refreshBtn.textContent = "↻";
             refreshBtn.dataset.tooltip = "最新の情報に更新";
             refreshBtn.style.flexShrink = "0";
-            refreshBtn.onclick = () => render(currentPath);
+            refreshBtn.onclick = () => {
+                sidebarInitialized = false;
+                render(currentPath);
+            };
 
             const viewControls = document.createElement("div");
             viewControls.className = "view-controls";
@@ -1153,13 +1082,12 @@ export default async function Explorer(root, options = {}) {
             viewControls.style.marginTop = "4px";
             viewControls.style.flexShrink = "0";
 
-            // ボタン生成用の共通関数
             const createViewModeBtn = (label, mode, title) => {
                 const btn = document.createElement("button");
                 btn.className = viewMode === mode ? "view-mode-btn selected" : "view-mode-btn";
                 btn.textContent = label;
                 btn.dataset.tooltip = title;
-                btn.dataset.mode = mode; // ★どのモードのボタンか識別できるように追加
+                btn.dataset.mode = mode;
                 btn.style.padding = "2px 6px";
                 btn.style.marginRight = "4px";
 
@@ -1170,17 +1098,15 @@ export default async function Explorer(root, options = {}) {
                         b.classList.remove("selected");
                     });
                     btn.classList.add("selected");
-                    render(currentPath); // モードを保存して再描画
+                    render(currentPath);
                 };
                 return btn;
             };
 
-            // 3つのボタンを生成
             const listBtn = createViewModeBtn("目", "list", "リスト表示");
             const iconBtn = createViewModeBtn("⊞", "icon", "アイコン表示");
             const detailBtn = createViewModeBtn("≡", "details", "詳細表示");
 
-            // ★ 追加: 隠しファイルの表示切り替えUI
             const hiddenContainer = document.createElement("label");
             hiddenContainer.style.display = "flex";
             hiddenContainer.style.alignItems = "center";
@@ -1194,8 +1120,8 @@ export default async function Explorer(root, options = {}) {
             hiddenCheckbox.style.marginRight = "4px";
             hiddenCheckbox.onchange = async () => {
                 showHidden = hiddenCheckbox.checked;
-                await saveSetting("explorerShowHidden", showHidden); // 状態を保存
-                render(currentPath); // すぐに反映
+                await saveSetting("explorerShowHidden", showHidden);
+                render(currentPath);
             };
 
             hiddenContainer.appendChild(hiddenCheckbox);
@@ -1204,7 +1130,7 @@ export default async function Explorer(root, options = {}) {
             viewControls.appendChild(listBtn);
             viewControls.appendChild(iconBtn);
             viewControls.appendChild(detailBtn);
-            viewControls.appendChild(hiddenContainer); // ★ 追加
+            viewControls.appendChild(hiddenContainer);
 
             backBtn.onclick = () => {
                 if (historyStack.length > 0) {
@@ -1222,7 +1148,6 @@ export default async function Explorer(root, options = {}) {
                 }
             };
 
-            // span からコンテナ用の div に変更し、内部にテキスト表示用の span を配置
             pathLabel = document.createElement("div");
             pathLabel.className = "path-label-container border";
             pathLabel.style.cssText = "flex: 1 1 0px; min-width: 0px; height: 24px; flex-shrink: 1; overflow: hidden; display: flex; align-items: center; cursor: text; background: #fff; box-sizing: border-box;";
@@ -1282,10 +1207,8 @@ export default async function Explorer(root, options = {}) {
             content.appendChild(container);
 
             listContainer.addEventListener("mousedown", (e) => {
-                if (e.button !== 0) return; // 左クリックのみ
+                if (e.button !== 0) return;
 
-                // ★追加: アイテム（アイコンやテキスト）の上でクリックされた場合は範囲選択の開始座標を記録しない
-                // これにより、複数選択したアイテムをドラッグする際に選択が強制解除されるのを防ぎます
                 if (e.target.closest(".explorer-item")) {
                     startX = undefined;
                     startY = undefined;
@@ -1304,33 +1227,28 @@ export default async function Explorer(root, options = {}) {
                 const dx = Math.abs(e.clientX - startX);
                 const dy = Math.abs(e.clientY - startY);
 
-                // 3px以上マウスが動いたらドラッグ(範囲選択)開始と判定
                 if (!isSelecting && (dx > 3 || dy > 3)) {
                     isSelecting = true;
                     wasDragging = true;
 
-                    // Ctrlキーを押していない場合は既存の選択をクリア
                     if (!e.ctrlKey) {
                         globalSelected.items.forEach(i => i.classList.remove("selected"));
                         globalSelected.items.clear();
                         globalSelected.lastSelected = null;
                     }
 
-                    // 改善後：listContainer内に配置し、position: absoluteに変更
                     selectionBox = document.createElement("div");
                     selectionBox.style.cssText = "position:absolute; border:1px solid #0078D7; background-color:rgba(0, 120, 215, 0.2); z-index:1000; pointer-events:none;";
-                    listContainer.style.position = "relative"; // リストコンテナ側が基準位置になるように設定
+                    listContainer.style.position = "relative";
                     listContainer.appendChild(selectionBox);
                 }
 
                 if (isSelecting && selectionBox) {
-                    e.preventDefault(); // デフォルトのテキスト選択や画像ドラッグを防ぐ
+                    e.preventDefault();
 
-                    // ⭐ 改善1: 既に次のフレーム描画が予約されている場合は、今回のイベント処理をスキップ
                     if (isRafScheduled) return;
                     isRafScheduled = true;
 
-                    // ⭐ 改善2: requestAnimationFrameの非同期処理内で使うため、現在のマウス座標とCtrlキー状態を変数に退避
                     const currentX = e.clientX;
                     const currentY = e.clientY;
                     const isCtrlPressed = e.ctrlKey;
@@ -1343,7 +1261,6 @@ export default async function Explorer(root, options = {}) {
 
                         const containerRect = listContainer.getBoundingClientRect();
 
-                        // リストコンテナ内での相対座標に変換し、領域内にクランプ
                         const relStartX = startX - containerRect.left + listContainer.scrollLeft;
                         const relStartY = startY - containerRect.top + listContainer.scrollTop;
                         const relCurrentX = Math.max(containerRect.left, Math.min(currentX, containerRect.right)) - containerRect.left + listContainer.scrollLeft;
@@ -1373,7 +1290,6 @@ export default async function Explorer(root, options = {}) {
                             }
                         });
 
-                        // ⭐ 改善3: 描画処理が完了したらフラグを下ろし、次のmousemoveイベントを受け付けるようにする
                         isRafScheduled = false;
                     });
                 }
@@ -1386,7 +1302,6 @@ export default async function Explorer(root, options = {}) {
             document.addEventListener("mousemove", handleGlobalMouseMove);
             document.addEventListener("mouseup", handleGlobalMouseUp);
 
-            // ⭐ 【追加・改善】各アイテムへの個別登録を廃止し、親コンテナでイベントを一括管理（イベント委譲）
             if (!listContainer._delegationBound) {
                 listContainer._delegationBound = true;
 
@@ -1426,7 +1341,6 @@ export default async function Explorer(root, options = {}) {
                     openFSItem(name, node, currentPath);
                 });
             }
-
         }
 
         if (treeContainer) createTreeDropdown(treeContainer, currentPath);
@@ -1465,7 +1379,6 @@ export default async function Explorer(root, options = {}) {
         }
 
         // ファイル・フォルダリスト
-        // 【改善後】メソッドチェーンを廃止し、1回のループ（for...in）で軽量に処理
         const folder = resolveFS(currentPath);
         if (!folder) return;
 
@@ -1475,7 +1388,6 @@ export default async function Explorer(root, options = {}) {
             const itemData = folder[name];
             if (!itemData) continue;
 
-            // 隠しファイル表示設定の適用
             if (!showHidden && itemData.hidden) continue;
 
             let size = 0;
@@ -1490,7 +1402,6 @@ export default async function Explorer(root, options = {}) {
             const isFolderA = a.itemData.type === "folder";
             const isFolderB = b.itemData.type === "folder";
 
-            // Windows標準の挙動: 名前ソート以外でも基本的にフォルダを先頭にまとめる
             if (isFolderA && !isFolderB) return -1;
             if (!isFolderA && isFolderB) return 1;
 
@@ -1504,16 +1415,15 @@ export default async function Explorer(root, options = {}) {
             } else if (sortKey === "type") {
                 const typeA = a.itemData.type || "";
                 const typeB = b.itemData.type || "";
-                result = typeA.localeCompare(typeB, 'ja');
-                if (result === 0) result = a.name.localeCompare(b.name, 'ja');
+                result = typeA.localeCompare(typeB, "ja");
+                if (result === 0) result = a.name.localeCompare(b.name, "ja");
             } else {
-                result = a.name.localeCompare(b.name, 'ja');
+                result = a.name.localeCompare(b.name, "ja");
             }
 
             return sortOrder === "asc" ? result : -result;
         });
 
-        // レイアウトを初期化（アイコン表示の時はタイル状に並べる）
         if (viewMode === "icon") {
             if (autoArrange) {
                 listContainer.style.display = "grid";
@@ -1527,26 +1437,25 @@ export default async function Explorer(root, options = {}) {
                 listContainer.style.display = "block";
                 listContainer.style.position = "relative";
                 listContainer.style.padding = "0";
-                listContainer.style.height = "100%"; // 自由配置のための領域確保
+                listContainer.style.height = "100%";
             }
         } else {
             listContainer.style.display = "block";
             listContainer.style.padding = "0";
         }
 
-        // --- 1. 既存のDOM要素を Map で管理（全クリアせず差分更新するための準備） ---
+        // 1. 既存のDOM要素を Map で管理（差分更新）
         const existingItemsMap = new Map();
         listContainer.querySelectorAll(".explorer-item").forEach(el => {
             existingItemsMap.set(el.dataset.name, el);
         });
 
-        // 詳細表示の古いヘッダーがあれば一度除外して再配置
         const oldHeader = listContainer.querySelector(".details-header-row");
         if (oldHeader) oldHeader.remove();
 
         const newElementSet = new Set(sortedItems.map(i => i.name));
 
-        // --- 2. 削除されたアイテムのDOMを削除 ---
+        // 2. 削除されたアイテムのDOMを削除
         existingItemsMap.forEach((el, name) => {
             if (!newElementSet.has(name)) {
                 if (globalSelected.items.has(el)) globalSelected.items.delete(el);
@@ -1557,13 +1466,12 @@ export default async function Explorer(root, options = {}) {
 
         const fragment = document.createDocumentFragment();
 
-        // ▼ 選択処理の共通化 (Ctrl/Shift 複数選択対応)
+        // 選択処理の共通化 (Ctrl/Shift 複数選択対応)
         const selectItemUI = async (targetItem, e) => {
             globalSelected.window = win;
             const itemsArray = Array.from(listContainer.querySelectorAll(".explorer-item"));
 
             if (e && e.ctrlKey) {
-                // Ctrlキー: 個別追加・解除
                 if (globalSelected.items.has(targetItem)) {
                     globalSelected.items.delete(targetItem);
                     targetItem.classList.remove("selected");
@@ -1573,7 +1481,6 @@ export default async function Explorer(root, options = {}) {
                 }
                 globalSelected.lastSelected = targetItem;
             } else if (e && e.shiftKey && globalSelected.lastSelected) {
-                // Shiftキー: 範囲選択
                 const startIdx = itemsArray.indexOf(globalSelected.lastSelected);
                 const endIdx = itemsArray.indexOf(targetItem);
                 const [min, max] = [Math.min(startIdx, endIdx), Math.max(startIdx, endIdx)];
@@ -1586,7 +1493,6 @@ export default async function Explorer(root, options = {}) {
                     itemsArray[i].classList.add("selected");
                 }
             } else {
-                // 通常クリック: 単一選択
                 globalSelected.items.forEach(i => i.classList.remove("selected"));
                 globalSelected.items.clear();
                 globalSelected.items.add(targetItem);
@@ -1596,7 +1502,6 @@ export default async function Explorer(root, options = {}) {
 
             setupRibbon(win, () => currentPath, render, getExplorerMenus());
 
-            // ステータスバーの更新
             const statusBar = win?._statusBar;
             if (statusBar && globalSelected.items.size === 1) {
                 const targetName = targetItem.dataset.name;
@@ -1641,12 +1546,10 @@ export default async function Explorer(root, options = {}) {
             fragment.appendChild(headerRow);
         }
 
-        // --- 3. ソート順に従って既存DOMを再利用・更新、または新規作成 ---
-        // index を取得するために entries() を使用し、findIndex を完全に排除 ($O(N)$ 化)
+        // 3. ソート順に従って既存DOMを再利用・更新、または新規作成
         for (const [index, { name, itemData, size: sizeValue }] of sortedItems.entries()) {
             const childPath = currentPath ? `${currentPath}/${name}` : name;
 
-            // 既存の要素があれば取得、なければ新規作成
             let item = existingItemsMap.get(name);
             const isNew = !item;
 
@@ -1702,7 +1605,6 @@ export default async function Explorer(root, options = {}) {
             const isFolder = itemData && itemData.type === "folder";
             const displayName = isFolder ? name : getDisplayFileName(name, showFileExtensions);
 
-            // --- HTML構造の生成（ビューモードに応じたレイアウト） ---
             if (viewMode === "icon") {
                 if (!autoArrange) {
                     item.style.position = "absolute";
@@ -1713,7 +1615,7 @@ export default async function Explorer(root, options = {}) {
                         const rowHeight = 90;
                         const colWidth = 100;
                         const maxCols = Math.max(1, Math.floor((listContainer.clientWidth || 500) / colWidth));
-                        const row = Math.floor(index / maxCols); // ★ findIndexを廃止し、ループのindexを直接利用
+                        const row = Math.floor(index / maxCols);
                         const col = index % maxCols;
 
                         item.style.left = `${10 + col * colWidth}px`;
@@ -1725,7 +1627,6 @@ export default async function Explorer(root, options = {}) {
                     item.style.top = "";
                 }
 
-                // 変更がある場合のみ innerHTML を更新
                 const newHTML = `
                     <div class="item-icon-large">${iconChar}</div>
                     <div class="item-name-label">${displayName}</div>
@@ -1736,7 +1637,6 @@ export default async function Explorer(root, options = {}) {
             } else if (viewMode === "details") {
                 const size = itemData.type === "folder" ? "" : formatSize(sizeValue);
 
-                // まとめてスタイル適用
                 item.style.display = "flex";
                 item.style.alignItems = "center";
                 item.style.padding = "2px 8px";
@@ -1753,10 +1653,10 @@ export default async function Explorer(root, options = {}) {
                     default: typeLabel = "不明";
                 }
 
-                const dateOpts = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' };
+                const dateOpts = { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" };
                 const modifiedStr = itemData.lastModified
-                    ? new Date(itemData.lastModified).toLocaleDateString('ja-JP', dateOpts)
-                    : '';
+                    ? new Date(itemData.lastModified).toLocaleDateString("ja-JP", dateOpts)
+                    : "";
 
                 const newHTML = `
                     <div style="flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 6px; overflow: hidden;">
@@ -1783,82 +1683,69 @@ export default async function Explorer(root, options = {}) {
                 }
             }
 
-            // 新規作成された要素の場合のみドロップ等のイベントを設定
+            // 新規作成された要素の場合のみドロップ等のイベントを設定（実行時に最新のノードを参照）
             if (isNew) {
-                let effectiveTargetType = itemData.type;
-                let effectiveTargetNode = itemData;
-                let effectiveChildPath = childPath;
+                item.addEventListener("dragover", (e) => {
+                    const currentItemNode = resolveFS(currentPath)?.[name];
+                    if (!currentItemNode) return;
+                    const resolved = resolveLinkTarget(currentItemNode, childPath);
+                    if (!resolved.node || resolved.node.type !== "folder") return;
 
-                if (itemData.type === "link") {
-                    let currentTarget = itemData.target;
-                    let resolvedNode = null;
-                    for (let i = 0; i < 10; i++) {
-                        const node = resolveFS(currentTarget);
-                        if (node && node.type === "link" && typeof node.target === "string") {
-                            currentTarget = node.target;
-                        } else {
-                            resolvedNode = node;
-                            break;
-                        }
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.dataTransfer.dropEffect = e.ctrlKey ? "copy" : "move";
+                    if (!item.classList.contains("drag-target")) {
+                        item.classList.add("drag-target");
                     }
-                    if (resolvedNode) {
-                        effectiveTargetType = resolvedNode.type;
-                        effectiveTargetNode = resolvedNode;
-                        effectiveChildPath = currentTarget;
+                });
+
+                item.addEventListener("dragleave", (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    item.classList.remove("drag-target");
+                });
+
+                item.addEventListener("drop", async (e) => {
+                    item.classList.remove("drag-target");
+                    const currentItemNode = resolveFS(currentPath)?.[name];
+                    if (!currentItemNode) return;
+
+                    const resolved = resolveLinkTarget(currentItemNode, childPath);
+                    if (!resolved.node || resolved.node.type !== "folder") return;
+
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    const dataStr = e.dataTransfer.getData("text/plain");
+                    try {
+                        const data = dataStr ? JSON.parse(dataStr) : null;
+                        if (data) {
+                            const isCopy = e.ctrlKey;
+                            await handleItemDropMove(data, resolved.path, currentPath, render, isCopy);
+                        }
+                    } catch (err) {
+                        console.error("Folder/Link drop move failed:", err);
                     }
-                }
-
-                if (effectiveTargetType === "folder" && effectiveTargetNode && effectiveTargetNode.type === "folder") {
-                    item.addEventListener("dragover", (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        e.dataTransfer.dropEffect = e.ctrlKey ? "copy" : "move";
-                        if (!item.classList.contains("drag-target")) {
-                            item.classList.add("drag-target");
-                        }
-                    });
-
-                    item.addEventListener("dragleave", (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        item.classList.remove("drag-target");
-                    });
-
-                    item.addEventListener("drop", async (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        item.classList.remove("drag-target");
-
-                        const dataStr = e.dataTransfer.getData("text/plain");
-                        try {
-                            const data = dataStr ? JSON.parse(dataStr) : null;
-                            if (data) {
-                                const isCopy = e.ctrlKey;
-                                await handleItemDropMove(data, effectiveChildPath, currentPath, render, isCopy);
-                            }
-                        } catch (err) {
-                            console.error("Folder/Link drop move failed:", err);
-                        }
-                    });
-                }
+                });
             }
 
             fragment.appendChild(item);
         }
 
-        // --- 4. コンテナへ適用 ---
+        // 4. コンテナへ適用
         listContainer.appendChild(fragment);
 
-        // ★改善: context-menu.js の仕様に合わせた右クリックメニュー（背景とアイテムで切り替え）
+        // 右クリックメニュー（背景とアイテムで切り替え）
         const contentEl = root.querySelector(".content") || root.closest(".window")?.querySelector(".content");
-        if (contentEl) {
+        if (contentEl && !contentEl._contextMenuInstalled) {
+            contentEl._contextMenuInstalled = true;
+
             attachContextMenu(contentEl, (e) => {
                 const isInsideTrash = isTrashPath(currentPath);
                 const clickedItem = e.target.closest(".explorer-item");
 
-                // --- 1. 背景（何もアイテムがない場所）を右クリックした場合 ---
+                // 1. 背景（何もアイテムがない場所）を右クリックした場合
                 if (!clickedItem) {
-                    // 背景クリック時は選択を解除
                     if (globalSelected.items.size > 0) {
                         globalSelected.items.forEach(i => i.classList.remove("selected"));
                         globalSelected.items.clear();
@@ -1886,7 +1773,6 @@ export default async function Explorer(root, options = {}) {
                                 const safePath = currentPath.replace(/\//g, "_") || "root";
 
                                 if (autoArrange && !nextAutoArrange && viewMode === "icon") {
-                                    // ON から OFF: 現在の表示位置を座標として保存
                                     const items = listContainer.querySelectorAll(".explorer-item");
                                     const containerRect = listContainer.getBoundingClientRect();
                                     iconPositions = {};
@@ -1900,7 +1786,6 @@ export default async function Explorer(root, options = {}) {
                                     });
                                     await saveSetting(`explorerIconPositions_${safePath}`, iconPositions);
                                 } else if (nextAutoArrange) {
-                                    // OFF から ON: 保存座標をクリア
                                     iconPositions = {};
                                     await saveSetting(`explorerIconPositions_${safePath}`, {});
                                 }
@@ -1916,14 +1801,20 @@ export default async function Explorer(root, options = {}) {
                         { label: `並べ替え: 更新日時 ${sortKey === "date" ? "●" : ""}`, action: async () => { sortKey = "date"; await saveSetting("explorerSortKey", sortKey); render(currentPath); } },
                         { label: `昇順 / 降順 (${sortOrder === "asc" ? "昇順" : "降順"})`, action: async () => { sortOrder = sortOrder === "asc" ? "desc" : "asc"; await saveSetting("explorerSortOrder", sortOrder); render(currentPath); } },
                         { label: "---" },
-                        { label: "最新の情報に更新", action: () => render(currentPath) },
+                        {
+                            label: "最新の情報に更新",
+                            action: () => {
+                                sidebarInitialized = false;
+                                render(currentPath);
+                            }
+                        },
                         { label: "---" },
                         { label: "新規フォルダ", action: () => createNewItem(currentPath, listContainer, () => render(currentPath), "folder"), disabled: isInsideTrash },
                         { label: "新規テキストファイル", action: () => createNewItem(currentPath, listContainer, () => render(currentPath), "file"), disabled: isInsideTrash }
                     ];
                 }
 
-                // --- 2. アイテム上を右クリックした場合 ---
+                // 2. アイテム上を右クリックした場合
                 if (!globalSelected.items.has(clickedItem)) {
                     globalSelected.items.forEach(i => i.classList.remove("selected"));
                     globalSelected.items.clear();
@@ -1959,10 +1850,7 @@ export default async function Explorer(root, options = {}) {
 
         // ステータスバー
         const statusBar = win?._statusBar;
-        if (statusBar) {
-            // ⭐ 何か選択されている間は上書きしない
-            if (globalSelected.items.size > 0) return;
-            // 最後にステータスバーを更新
+        if (statusBar && globalSelected.items.size === 0) {
             updateStatusBarSummary(statusBar, folder);
         }
 
@@ -1972,7 +1860,6 @@ export default async function Explorer(root, options = {}) {
                 const items = Array.from(listContainer.querySelectorAll(".explorer-item"));
                 if (!items.length) return;
 
-                // 複数選択されている場合は最初の要素を起点にする
                 const firstSelected = Array.from(globalSelected.items)[0];
                 let currentIndex = items.findIndex(el => el === firstSelected);
 
@@ -1981,7 +1868,7 @@ export default async function Explorer(root, options = {}) {
                     const item = items[index];
                     if (!item) return;
 
-                    await selectItemUI(item, null); // キー操作は単一選択扱い
+                    await selectItemUI(item, null);
                     item.scrollIntoView({ block: "nearest" });
                 }
 
@@ -1997,7 +1884,7 @@ export default async function Explorer(root, options = {}) {
                     selectItem(currentIndex);
                 }
 
-                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
+                if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a") {
                     e.preventDefault();
                     globalSelected.items.clear();
                     items.forEach(item => {
@@ -2020,7 +1907,6 @@ export default async function Explorer(root, options = {}) {
                     e.preventDefault();
                     if (globalSelected.items.size === 0) return;
 
-                    // エンターキーで選択されているアイテムをすべて開く
                     globalSelected.items.forEach(selectedItem => {
                         const name = selectedItem.dataset.name;
                         const node = resolveFS(currentPath)?.[name];
@@ -2055,7 +1941,6 @@ export default async function Explorer(root, options = {}) {
                                     label: "削除",
                                     action: async () => {
                                         const targetNode = resolveFS(currentPath);
-                                        const { deleteFileContentRecursive } = await import("../fs-db.js");
                                         let hasProtectedFiles = false;
 
                                         setBulkUpdating(true);
@@ -2126,153 +2011,36 @@ export default async function Explorer(root, options = {}) {
         requestAnimationFrame(() => {
             updateTitle_explorer(path);
         });
-        renderSidebar()
+        renderSidebar();
     };
 
-
-    function createUrlShortcut(urlToSave, targetFolderNode) {
-        if (!urlToSave) return false;
-
-        // 改行やコメント行（#）を考慮して有効なURLを抽出
-        const lines = urlToSave.split(/\r?\n/);
-        let validUrl = "";
-        for (const line of lines) {
-            const trimmed = line.trim();
-            if (trimmed && !trimmed.startsWith("#") && trimmed.startsWith("http")) {
-                validUrl = trimmed;
-                break;
-            }
-        }
-
-        if (!validUrl) return false;
-
-        let urlName = "新しいショートカット.url";
-        try {
-            const urlObj = new URL(validUrl);
-            urlName = (urlObj.hostname).replace(/[\/\\?%*:|"<>]/g, "_") + ".url";
-        } catch (err) { }
-
-        const finalName = getUniqueName(targetFolderNode, urlName);
-        targetFolderNode[finalName] = {
-            type: "file",
-            content: `[InternetShortcut]\nURL=${validUrl}`,
-            size: validUrl.length + 21,
-            lastModified: Date.now()
-        };
-        return true;
-    }
-
     /**
-         * 共通のアイテム移動・コピー処理（エクスプローラー内 / デスクトップからのD&D共通）
-         * @param {Object} data dataTransferから取得したデータオブジェクト
-         * @param {string} targetPath 移動先のパス
-         * @param {string} currentPath 現在のパス
-         * @param {Function} render 再描画コールバック
-         * @param {boolean} [isCopy=false] コピー操作かどうか
-         */
+     * 共通のアイテム移動・コピー処理（エクスプローラー内 / デスクトップからのD&D共通）
+     */
     async function handleItemDropMove(data, targetPath, currentPath, render, isCopy = false) {
         if (!data) return false;
 
-        // 🔗 循環参照や無限ループを確実に防ぐ安全なリンク解決ヘルパー
-        const getEffectivePhysicalPath = (p) => {
-            if (!p) return "";
-            let current = p;
-            const visited = new Set(); // ⭐ 訪問済みを記録して無限ループをブロック
-            for (let i = 0; i < 10; i++) {
-                if (visited.has(current)) break;
-                visited.add(current);
-
-                const node = resolveFS(current);
-                if (node && node.type === "link" && typeof node.target === "string") {
-                    current = node.target;
-                } else {
-                    break;
-                }
-            }
-            return current;
-        };
-
-        const effectiveTargetPath = getEffectivePhysicalPath(targetPath);
-        const targetFolderNode = resolveFS(effectiveTargetPath);
+        const resolved = resolveLinkTarget(targetPath);
+        const effectiveTargetPath = resolved.path;
+        const targetFolderNode = resolved.node;
         if (!targetFolderNode || targetFolderNode.type !== "folder") return false;
 
-        // ゴミ箱へのドロップ時はWindows同様にコピーではなく移動扱いとする
         const isDroppingToTrash = isTrashPath(effectiveTargetPath);
         const effectiveIsCopy = isDroppingToTrash ? false : isCopy;
-
-        // fs-db.js から実データ操作関数をインポート
-        const { copyFileContent, moveFileContent, deleteFileContentRecursive } = await import("../fs-db.js");
-
-        // コピー時にフォルダ配下のシステム保護フラグを解除して通常アイテム化するヘルパー（Windows仕様）
-        const clearSystemProtectionRecursively = (node, visited = new WeakSet()) => {
-            if (!node || typeof node !== "object" || visited.has(node)) return;
-            visited.add(node);
-            if ("system" in node) {
-                delete node.system;
-            }
-            for (const key of Object.keys(node)) {
-                if (isSystemMetaKey(key)) continue;
-                const child = node[key];
-                if (child && typeof child === "object") {
-                    clearSystemProtectionRecursively(child, visited);
-                }
-            }
-        };
-
-        // 再帰的に配下すべてのファイルの実データパスをコピー/移動するヘルパー
-        const processStorageRecursively = async (node, oldBasePath, newBasePath, isCopyMode, visited = new WeakSet(), depth = 0) => {
-            if (!node || typeof node !== "object" || depth > 50) return;
-            if (visited.has(node)) return; // 循環参照を検知してブロック
-            visited.add(node);
-
-            try {
-                for (const key of Object.keys(node)) {
-                    if (isSystemMetaKey(key)) continue;
-                    const child = node[key];
-                    const oldSubPath = `${oldBasePath}/${key}`;
-                    const newSubPath = `${newBasePath}/${key}`;
-
-                    if (child && typeof child === "object") {
-                        if (child.type === "file" || child.type === "app") {
-                            if (isCopyMode) {
-                                await copyFileContent(oldSubPath, newSubPath);
-                            } else {
-                                await moveFileContent(oldSubPath, newSubPath);
-                            }
-                        } else if (child.type === "folder") {
-                            await processStorageRecursively(child, oldSubPath, newSubPath, isCopyMode, visited, depth + 1);
-                        }
-                    }
-                }
-            } finally {
-                visited.delete(node); // ⭐ 処理完了後に確実に解放してメモリリークを防ぐ
-            }
-        };
 
         setBulkUpdating(true);
         let hasModified = false;
 
         try {
-            // 共通のアイテム処理用内部関数
             const processDropItem = async (sourceFullPath, sourceFolder, itemName) => {
                 const rawSourceItem = sourceFolder[itemName];
                 if (!rawSourceItem) return;
 
-                // システム保護アイテムのゴミ箱への移動はブロック（コピーは許可して保護フラグを解除）
-                if (isDroppingToTrash && rawSourceItem.system === true) {
-                    return;
-                }
+                if (isDroppingToTrash && rawSourceItem.system === true) return;
+                if (isDescendantOrSelf(sourceFullPath, effectiveTargetPath)) return;
 
-                // 循環参照チェック（自分自身や子孫へのドロップ防止）
-                if (isDescendantOrSelf(sourceFullPath, effectiveTargetPath)) {
-                    return;
-                }
-
-                // 移動の場合で、同一フォルダ内（同じ場所へのドロップ）の場合はスキップ
                 const parentOfSource = sourceFullPath.substring(0, sourceFullPath.lastIndexOf("/"));
-                if (!effectiveIsCopy && effectiveTargetPath === parentOfSource) {
-                    return;
-                }
+                if (!effectiveIsCopy && effectiveTargetPath === parentOfSource) return;
 
                 const isTakingOutFromTrash = isTrashPath(parentOfSource) && !isDroppingToTrash;
                 const cleanBaseName = isTakingOutFromTrash ? itemName.replace(/^\d+_/, "") : itemName;
@@ -2287,7 +2055,7 @@ export default async function Explorer(root, options = {}) {
                     }
                 }
 
-                const sourceItemNode = JSON.parse(JSON.stringify(rawSourceItem));
+                const sourceItemNode = cloneFSNode(rawSourceItem);
                 if (isDroppingToTrash) {
                     sourceItemNode.originalPath = parentOfSource || "C:";
                     await markDefaultDeleted(sourceFullPath);
@@ -2302,36 +2070,31 @@ export default async function Explorer(root, options = {}) {
                 }
 
                 if (effectiveIsCopy) {
-                    // 【コピーの場合】システム保護フラグを解除して通常アイテムとして複製
-                    clearSystemProtectionRecursively(sourceItemNode);
+                    clearSystemProtection(sourceItemNode);
                     if (sourceItemNode.type === "file" || sourceItemNode.type === "app") {
                         await copyFileContent(sourceFullPath, newTargetFullPath);
                     } else if (sourceItemNode.type === "folder") {
                         await processStorageRecursively(sourceItemNode, sourceFullPath, newTargetFullPath, true);
                     }
-                    // link の場合は実データコピー不要なのでそのままオブジェクトを代入
                     targetFolderNode[uniqueTargetName] = sourceItemNode;
                     hasModified = true;
                 } else {
-                    // 【移動の場合】
                     if (sourceItemNode.type === "file" || sourceItemNode.type === "app") {
                         await moveFileContent(sourceFullPath, newTargetFullPath);
                     } else if (sourceItemNode.type === "folder") {
                         await processStorageRecursively(sourceItemNode, sourceFullPath, newTargetFullPath, false);
                     }
-                    // link の場合は実データ移行不要
 
                     let moved = false;
                     try {
                         moved = delete sourceFolder[itemName];
-                    } catch (err) {
+                    } catch (_) {
                         moved = false;
                     }
 
                     if (moved) {
                         targetFolderNode[uniqueTargetName] = sourceItemNode;
                     } else {
-                        // 削除が拒否された場合は、移動済みの実データを元のパスへロールバック
                         if (sourceItemNode.type === "file" || sourceItemNode.type === "app") {
                             await moveFileContent(newTargetFullPath, sourceFullPath).catch(() => deleteFileContentRecursive(newTargetFullPath));
                         } else if (sourceItemNode.type === "folder") {
@@ -2354,11 +2117,10 @@ export default async function Explorer(root, options = {}) {
                 const sourceFolder = resolveFS(sourcePath);
                 if (!sourceFolder) return false;
 
-                // 階層が深い順（子やファイルが先、親が後）にソートして処理
                 const sortedItems = [...data.draggedItems].sort((a, b) => {
                     const pathA = sourcePath ? `${sourcePath}/${a.name}` : a.name;
                     const pathB = sourcePath ? `${sourcePath}/${b.name}` : b.name;
-                    return pathB.split('/').length - pathA.split('/').length;
+                    return pathB.split("/").length - pathA.split("/").length;
                 });
 
                 for (const draggedInfo of sortedItems) {
@@ -2375,7 +2137,7 @@ export default async function Explorer(root, options = {}) {
                 const sortedNames = [...data.names].sort((a, b) => {
                     const pathA = `C:/Desktop/${a}`;
                     const pathB = `C:/Desktop/${b}`;
-                    return pathB.split('/').length - pathA.split('/').length;
+                    return pathB.split("/").length - pathA.split("/").length;
                 });
 
                 for (const itemName of sortedNames) {
@@ -2391,7 +2153,6 @@ export default async function Explorer(root, options = {}) {
                 render(currentPath);
             }
             return true;
-
         } catch (err) {
             console.error("Drop processing error:", err);
             return false;
@@ -2405,12 +2166,11 @@ export default async function Explorer(root, options = {}) {
     // ==========================================
     let sidebarInitialized = false;
 
-    // 1. ドラッグ＆ドロップ処理を共通化したヘルパー関数
     const setupSidebarDrop = (itemEl, targetPath) => {
         itemEl.addEventListener("dragover", (e) => {
             e.preventDefault();
             e.stopPropagation();
-            e.dataTransfer.dropEffect = "move";
+            e.dataTransfer.dropEffect = e.ctrlKey ? "copy" : "move";
             itemEl.style.background = "black";
             itemEl.style.color = "white";
         });
@@ -2441,7 +2201,6 @@ export default async function Explorer(root, options = {}) {
         });
     };
 
-    // 2. 基本項目（PC、デスクトップ、ゴミ箱）を作成するヘルパー
     const createBaseSidebarItem = (icon, label, targetPath) => {
         const item = document.createElement("div");
         item.className = "sidebar-item base-sidebar-item";
@@ -2467,7 +2226,6 @@ export default async function Explorer(root, options = {}) {
         return item;
     };
 
-    // 3. Windows風ツリー構造を効率的に一括構築する関数（DocumentFragment活用）
     const buildStaticSidebarTree = (node, parentEl, currentDir = "", depth = 0, visited = new Set()) => {
         if (!node || typeof node !== "object" || visited.has(node) || depth > 6) return;
         visited.add(node);
@@ -2481,7 +2239,6 @@ export default async function Explorer(root, options = {}) {
             entries.forEach(([name, child]) => {
                 const fullPath = currentDir ? `${currentDir}/${name}` : name;
 
-                // ルート直下の "Desktop" と "Trash" はクイックアクセス側に表示済みのためスキップ
                 if (depth === 0 && (name === "Desktop" || name === "Trash")) return;
 
                 const hasChildren = Object.entries(child).some(([k, v]) => !isSystemMetaKey(k) && v && v.type === "folder");
@@ -2504,7 +2261,6 @@ export default async function Explorer(root, options = {}) {
                 arrowSpan.style.cssText = "width: 14px; text-align: center; font-size: 9px; color: #555; flex-shrink: 0;";
 
                 let subContainer = null;
-                let isLoaded = false;
 
                 if (hasChildren) {
                     arrowSpan.textContent = "▶";
@@ -2552,17 +2308,14 @@ export default async function Explorer(root, options = {}) {
         }
     };
 
-    // 4. パス変更時にDOMを壊さずハイライトと開閉状態のみを同期する超高速関数
     const updateSidebarSelection = (activePath) => {
         if (!sidebarContainer) return;
 
-        // 全項目のハイライトを一度リセット
         sidebarContainer.querySelectorAll(".sidebar-item").forEach(el => {
             el.style.background = "transparent";
             el.style.color = "";
         });
 
-        // 現在のパスに一致する項目をハイライト
         const activeElements = sidebarContainer.querySelectorAll(`[data-path="${activePath}"]`);
         activeElements.forEach(el => {
             const itemEl = el.classList.contains("sidebar-item") ? el : el.querySelector(".sidebar-item");
@@ -2572,7 +2325,6 @@ export default async function Explorer(root, options = {}) {
             }
         });
 
-        // 祖先フォルダの展開状態を同期
         let parts = activePath.split("/");
         let accumulatedPath = "";
         for (let i = 0; i < parts.length - 1; i++) {
@@ -2587,14 +2339,11 @@ export default async function Explorer(root, options = {}) {
         }
     };
 
-    // 5. メインの renderSidebar 関数（Windows方式）
     function renderSidebar() {
         if (!sidebarContainer) return;
-        console.log("[Sidebar] C: drive node:", resolveFS("C:"));
         sidebarContainer.style.display = showSidebar ? "block" : "none";
         if (!showSidebar) return;
 
-        // 初回のみツリーの骨組みを構築する
         if (!sidebarInitialized) {
             sidebarInitialized = true;
             sidebarContainer.innerHTML = "";
@@ -2625,7 +2374,6 @@ export default async function Explorer(root, options = {}) {
             sidebarContainer.appendChild(sidebarContent);
         }
 
-        // 2回目以降は全消去せず、選択状態とツリーの開閉状態の同期のみ行うため極めて高速になります
         updateSidebarSelection(currentPath);
     }
 
@@ -2636,7 +2384,6 @@ export default async function Explorer(root, options = {}) {
             setupPathInput(pathLabel, `検索: 「${query}」の検索結果`, (newPath) => navigateTo(newPath), () => render(currentPath));
         }
 
-        // 現在のディレクトリ以下を検索
         const rootNode = resolveFS(currentPath);
         const results = searchFS(rootNode, query, currentPath, showHidden);
 
@@ -2645,7 +2392,6 @@ export default async function Explorer(root, options = {}) {
             return;
         }
 
-        // 検索結果の描画
         results.forEach(res => {
             const item = document.createElement("div");
             item.className = `explorer-item search-result-item ${viewMode}-view`;
@@ -2660,10 +2406,10 @@ export default async function Explorer(root, options = {}) {
             const displayName = isFolder ? res.name : getDisplayFileName(res.name, showFileExtensions);
 
             item.innerHTML = `
-            <span class="item-icon-small">${iconChar}</span>
-            <span class="item-name-text">${displayName}</span>
-            <span style="color:#888; font-size:10px; margin-left:8px;">(${res.path})</span>
-        `;
+                <span class="item-icon-small">${iconChar}</span>
+                <span class="item-name-text">${displayName}</span>
+                <span style="color:#888; font-size:10px; margin-left:8px;">(${res.path})</span>
+            `;
 
             listContainer.appendChild(item);
 
@@ -2677,27 +2423,21 @@ export default async function Explorer(root, options = {}) {
             };
 
             item.ondblclick = () => {
-                const parentPath = res.path.split('/').slice(0, -1).join('/');
+                const parentPath = res.path.split("/").slice(0, -1).join("/");
                 openFSItem(res.name, res.node, parentPath);
             };
         });
     };
 
-
-
-
-
-
     /**
- * アドレスバーの表示とクリック時の入力切り替えをセットアップする共通関数
- */
+     * アドレスバーの表示とクリック時の入力切り替えをセットアップする共通関数
+     */
     function setupPathInput(pathLabel, displayPath, onNavigate, onCancel) {
         if (!pathLabel) return;
         pathLabel.innerHTML = "";
         const textSpan = document.createElement("span");
         textSpan.style.cssText = "white-space: nowrap; overflow: hidden; text-overflow: ellipsis; direction: rtl; text-align: left; width: 100%; display: block; font-size: 16px; outline: none;";
 
-        // 検索結果表示文字列か、通常のパスかで表示方法を切り替え
         if (displayPath.startsWith("検索:")) {
             textSpan.textContent = displayPath;
         } else {
@@ -2705,7 +2445,6 @@ export default async function Explorer(root, options = {}) {
         }
         pathLabel.appendChild(textSpan);
 
-        // クリック時の入力欄切り替え処理
         pathLabel.onclick = () => {
             if (pathLabel.querySelector("input")) return;
 
@@ -2727,12 +2466,9 @@ export default async function Explorer(root, options = {}) {
                 isCommitted = true;
 
                 const rawValue = input.value;
-
-                // ⭐ 半角・全角スペース、タブ、改行をすべて除外して実質的な空かどうかを判定
                 const cleanCheck = rawValue ? rawValue.replace(/[\s\u3000]/g, "") : "";
 
                 if (!cleanCheck) {
-                    // 空白のみ、または何も入力されていない場合はルート「C:/」に移動する
                     onNavigate("C:/");
                     return;
                 }
@@ -2754,7 +2490,7 @@ export default async function Explorer(root, options = {}) {
                 if (targetNode.type === "folder") {
                     onNavigate(newPath);
                 } else {
-                    const lastSlash = newPath.lastIndexOf('/');
+                    const lastSlash = newPath.lastIndexOf("/");
                     const parentPath = lastSlash !== -1 ? newPath.substring(0, lastSlash) : "C:/";
                     const itemName = lastSlash !== -1 ? newPath.substring(lastSlash + 1) : newPath;
                     openFSItem(itemName, targetNode, parentPath);
@@ -2834,7 +2570,6 @@ export default async function Explorer(root, options = {}) {
 
                                 const fullTargetPath = currentPath ? `${currentPath}/${name}` : name;
                                 const itemNode = resolveFS(currentPath)?.[name];
-                                // ★ 改善: 選択アイテムがリンクならその target を採用
                                 const realTargetPath = itemNode && itemNode.type === "link" ? itemNode.target : fullTargetPath;
 
                                 folderNode[uniqueName] = {
@@ -2844,7 +2579,6 @@ export default async function Explorer(root, options = {}) {
                                 };
                             });
 
-                            // Proxyが自動保存するため、明示的な保存呼び出しは不要
                             window.dispatchEvent(new Event("fs-updated"));
                             render(currentPath);
                         },
@@ -2873,7 +2607,6 @@ export default async function Explorer(root, options = {}) {
                             const itemNames = Array.from(globalSelected.items).map(item => item.dataset.name);
 
                             if (isInsideTrash) {
-                                // ゴミ箱内：確認ダイアログを1回だけ表示し、一括で完全削除する
                                 const msg = `
                                     <div style="padding:10px; font-size:13px;">
                                         選択した ${itemNames.length} 個のアイテムを完全に消去しますか？<br>
@@ -2891,7 +2624,6 @@ export default async function Explorer(root, options = {}) {
                                             label: "削除",
                                             action: async () => {
                                                 const targetNode = resolveFS(currentPath);
-                                                const { deleteFileContentRecursive } = await import("../fs-db.js");
                                                 let hasProtectedFiles = false;
 
                                                 setBulkUpdating(true);
@@ -3000,7 +2732,6 @@ export default async function Explorer(root, options = {}) {
                 title: "View",
                 items: [
                     {
-                        // ★追加: ナビゲーションウィンドウの表示切り替え
                         label: `ナビゲーション ウィンドウ ${showSidebar ? "✔" : ""}`,
                         action: async () => {
                             showSidebar = !showSidebar;
@@ -3009,15 +2740,11 @@ export default async function Explorer(root, options = {}) {
                         }
                     },
                     {
-                        // ★追加: ファイル名拡張子の表示切り替えメニュー
                         label: `ファイル名拡張子 ${showFileExtensions ? "✔" : ""}`,
                         action: async () => {
                             showFileExtensions = !showFileExtensions;
                             await saveSetting("explorerShowFileExtensions", showFileExtensions);
-
-                            // ★追加: 設定変更をデスクトップや他のエクスプローラーウィンドウへ即時通知する
                             window.dispatchEvent(new Event("fs-updated"));
-
                             render(currentPath);
                         }
                     },
@@ -3066,7 +2793,10 @@ export default async function Explorer(root, options = {}) {
                     { label: "---" },
                     {
                         label: "最新の情報に更新",
-                        action: () => render(currentPath)
+                        action: () => {
+                            sidebarInitialized = false;
+                            render(currentPath);
+                        }
                     }
                 ]
             },
@@ -3084,9 +2814,7 @@ export default async function Explorer(root, options = {}) {
         ];
     }
 
-    const explorerMenus = getExplorerMenus();
     setupRibbon(win, () => currentPath, render, getExplorerMenus());
-
 
     render(currentPath);
 
@@ -3096,6 +2824,7 @@ export default async function Explorer(root, options = {}) {
         renderScheduled = true;
         const pathToRender = currentPath;
         requestAnimationFrame(() => {
+            sidebarInitialized = false;
             render(pathToRender);
             renderScheduled = false;
         });
@@ -3104,23 +2833,17 @@ export default async function Explorer(root, options = {}) {
     function updateTitle_explorer(path) {
         if (!win) return;
 
-        // 現在のパスから名前とノード情報を取得
         const name = path.split("/").pop() || path;
         const node = resolveFS(path);
+        const iconChar = node ? getIcon(name, node, path, currentPath) : "📁";
 
-        // 1. アイコンを取得（path と currentPath を渡すことで、現在開いているフォルダなら 📂、中身があれば 🗂️ になる）
-        let iconChar = node ? getIcon(name, node, path, currentPath) : "📁";
-
-        // 1. ウィンドウタイトルのテキストを更新
         if (titleEl) titleEl.textContent = name;
 
-        // 2. ウィンドウタイトルのアイコンを更新
         const windowIcon = win.querySelector(".window-icon");
         if (windowIcon) {
             windowIcon.textContent = iconChar;
         }
 
-        // 3. タスクバーの更新
         if (taskBtn) {
             const iconSpan = taskBtn.querySelector(".taskbar-icon");
             const textSpan = taskBtn.querySelector(".taskbar-text");
@@ -3144,6 +2867,7 @@ export default async function Explorer(root, options = {}) {
 
     return {
         dispose: () => {
+            cancelSelection();
             window.removeEventListener("fs-updated", handleFsUpdated);
 
             document.removeEventListener("mousemove", handleGlobalMouseMove);
@@ -3158,7 +2882,6 @@ export default async function Explorer(root, options = {}) {
                 win._treePanel = null;
             }
 
-            // ⭐ listContainer や sidebarContainer に紐づいたフラグやDOM要素を完全に解放し、メモリリークを防止
             if (listContainer) {
                 listContainer._delegationBound = false;
                 listContainer._keydownBound = false;
@@ -3170,17 +2893,15 @@ export default async function Explorer(root, options = {}) {
             }
         }
     };
-
 }
 
-// 改善後 (Explorer.js 側の差し替え部分)
 let explorerWorker = null;
 let workerCallbackId = 0;
 const workerPendingRequests = new Map();
 
 function getExplorerWorker() {
     if (!explorerWorker) {
-        explorerWorker = new Worker(new URL('./worker/explorer.worker.js', import.meta.url), { type: 'module' });
+        explorerWorker = new Worker(new URL("./worker/explorer.worker.js", import.meta.url), { type: "module" });
         explorerWorker.onmessage = (e) => {
             const { id, size } = e.data;
             if (workerPendingRequests.has(id)) {
@@ -3192,7 +2913,6 @@ function getExplorerWorker() {
     return explorerWorker;
 }
 
-// キャッシュ保持用のMap（パスと更新日時をキーにする）
 const nodeSizeCache = new Map();
 
 export function calcNodeSize(node, path = "") {
@@ -3201,18 +2921,15 @@ export function calcNodeSize(node, path = "") {
             resolve(0);
             return;
         }
-        // ショートカット（link）の場合は実体を辿らず、リンク自体のサイズとする
         if (node.type === "link") {
             resolve(typeof node.target === "string" ? node.target.length : 0);
             return;
         }
-        // Blobが含まれている場合のフォールバック
         if (node.content instanceof Blob) {
             resolve(node.content.size);
             return;
         }
 
-        // 更新日時を考慮したキャッシュキーで高速化
         const cacheKey = `${path}_${node.lastModified || 0}`;
         if (nodeSizeCache.has(cacheKey)) {
             resolve(nodeSizeCache.get(cacheKey));
@@ -3220,12 +2937,10 @@ export function calcNodeSize(node, path = "") {
         }
 
         try {
-            // ⭐ 外出した関数を呼び出して安全なペイロードを作成
             const safeNodePayload = sanitizeForWorker(node);
             const worker = getExplorerWorker();
             const id = ++workerCallbackId;
 
-            // ワーカーの応答時にキャッシュへ保存してから解決する
             workerPendingRequests.set(id, (size) => {
                 nodeSizeCache.set(cacheKey, size);
                 resolve(size);
@@ -3242,11 +2957,9 @@ export function calcNodeSize(node, path = "") {
     });
 }
 
-// ⭐ モジュールスコープに外出しして再利用性を向上
 function sanitizeForWorker(n) {
-    if (!n || typeof n !== 'object') return n;
+    if (!n || typeof n !== "object") return n;
 
-    // ファイルノードの場合は巨大な content をクローンさせず、サイズのみに置き換えて DataCloneError を防止
     if (n.type === "file") {
         return {
             type: "file",
@@ -3257,11 +2970,11 @@ function sanitizeForWorker(n) {
     const sanitized = Array.isArray(n) ? [] : {};
 
     for (const key of Object.keys(n)) {
-        if (typeof n[key] === 'function') continue;
+        if (typeof n[key] === "function") continue;
 
-        if (n[key] && typeof n[key] === 'object') {
+        if (n[key] && typeof n[key] === "object") {
             if (n[key] instanceof Blob) {
-                sanitized[key] = { type: 'file', size: n[key].size };
+                sanitized[key] = { type: "file", size: n[key].size };
             } else {
                 try {
                     sanitized[key] = sanitizeForWorker(n[key]);
@@ -3303,14 +3016,12 @@ function getAllApps() {
                 if (name !== "Explorer.app") {
                     apps.push({ name, path: fullPath });
                 }
-            }
-            else if (child.type === "folder") {
+            } else if (child.type === "folder") {
                 traverse(child, fullPath);
             }
         }
     }
 
-    // FS全体ではなく、"C:" ドライブを起点にする
     const cDrive = resolveFS("C:");
     if (cDrive) {
         traverse(cDrive, "C:");
@@ -3340,7 +3051,6 @@ export function openWithDialog(filePath, fileNode) {
         const appIcon = getIcon(app.name, appNode, app.path);
 
         const btn = document.createElement("button");
-        // 元のボタンのスタイリングをベースに、アイコンとテキストを横並び配置
         btn.style.cssText = "display: flex; align-items: center; gap: 8px; width: 100%; margin: 4px 0; padding: 6px 10px; text-align: left; cursor: pointer;";
 
         const iconSpan = document.createElement("span");
@@ -3393,7 +3103,6 @@ function getDecodedContent(content) {
  * アイテムのプロパティを表示する
  */
 export async function showProperties(name, node, path) {
-    // 1. 既に開いているかチェック
     if (propertyWindows[path]) {
         window.nexser?.windowAPI?.bringToFront(propertyWindows[path]);
         return;
@@ -3401,25 +3110,22 @@ export async function showProperties(name, node, path) {
 
     const size = await calcNodeSize(node, path);
     const formattedSize = formatSize(size);
-    const parentPath = path.split('/').slice(0, -1).join('/') || "(root)";
+    const parentPath = path.split("/").slice(0, -1).join("/") || "(root)";
     const iconChar = getIcon(name, node, path);
 
-    // URLファイルかの判定とURL文字列の抽出
     const isUrl = name.toLowerCase().endsWith(".url") && node.type === "file";
     let urlValue = "";
 
-    // ⭐ 変更: Data URL の場合でもデコードしてテキスト化してから読み取る
     const rawContent = getDecodedContent(node.content);
     if (isUrl && typeof rawContent === "string") {
         const match = rawContent.match(/URL=(.+)/i);
         urlValue = match ? match[1].trim() : rawContent.trim();
     }
 
-    // 更新日時のフォーマット処理を追加
-    const dateOpts = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+    const dateOpts = { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" };
     const modifiedStr = node.lastModified
-        ? new Date(node.lastModified).toLocaleDateString('ja-JP', dateOpts)
-        : '不明';
+        ? new Date(node.lastModified).toLocaleDateString("ja-JP", dateOpts)
+        : "不明";
 
     const msg = `
         <div style="padding:15px; font-size:12px; line-height:1.8; user-select:none; font-family: 'Segoe UI', Tahoma, sans-serif;">
@@ -3430,11 +3136,8 @@ export async function showProperties(name, node, path) {
             <hr style="border:0; border-top:1px solid #dfdfdf; margin: 0 0 10px 0;">
             
             <table style="width:100%; border-collapse:collapse;">
-                <tr><td style="width:85px; color:#333;">ファイルの種類:</td><td style="color:#000;">${node.type === 'folder' ? 'ファイル フォルダー' : (node.type || '不明')}</td></tr>
-                
-                <!-- ▼ 修正：URLの場合はただの文字ではなく input フィールド（id="prop-url-input"）にする -->
-                ${isUrl ? `<tr><td style="color:#333;">URL:</td><td><input type="text" id="prop-url-input" value="${urlValue}" style="width:100%; border:1px solid #ccc; padding:2px;"></td></tr>` : ''}
-                
+                <tr><td style="width:85px; color:#333;">ファイルの種類:</td><td style="color:#000;">${node.type === "folder" ? "ファイル フォルダー" : (node.type || "不明")}</td></tr>
+                ${isUrl ? `<tr><td style="color:#333;">URL:</td><td><input type="text" id="prop-url-input" value="${urlValue}" style="width:100%; border:1px solid #ccc; padding:2px;"></td></tr>` : ""}
                 <tr><td style="color:#333;">場所:</td><td style="color:#000;">${parentPath}</td></tr>
                 <tr><td style="color:#333;">サイズ:</td><td style="color:#000;">${formattedSize} (${size.toLocaleString()} バイト)</td></tr>
             </table>
@@ -3447,16 +3150,14 @@ export async function showProperties(name, node, path) {
             </table>
         </div>`;
 
-    // ⭐ 追加: URLかどうかでボタンの構成を切り替える
     const dialogButtons = [
         {
             label: "OK",
-            action: async () => { // 引数をなくす
+            action: async () => {
                 let isChanged = false;
 
-                // 1. URLの保存処理 (URLファイルの場合のみ実行)
                 if (isUrl) {
-                    const input = win.querySelector("#prop-url-input"); // スコープ内の win を直接参照
+                    const input = win.querySelector("#prop-url-input");
                     if (input && input.value !== urlValue) {
                         const newContentText = `[InternetShortcut]\r\nURL=${input.value}\r\n`;
 
@@ -3479,8 +3180,7 @@ export async function showProperties(name, node, path) {
                     }
                 }
 
-                // 2. 隠しファイル属性の保存処理
-                const hiddenCheckbox = win.querySelector("#prop-hidden-checkbox"); // スコープ内の win を直接参照
+                const hiddenCheckbox = win.querySelector("#prop-hidden-checkbox");
                 if (hiddenCheckbox) {
                     if (hiddenCheckbox.checked !== !!node.hidden) {
                         if (hiddenCheckbox.checked) {
@@ -3491,7 +3191,7 @@ export async function showProperties(name, node, path) {
                         isChanged = true;
                     }
                 }
-                // 変更があった場合のみシステムに更新を通知
+
                 if (isChanged) {
                     node.lastModified = Date.now();
                     window.dispatchEvent(new Event("fs-updated"));
@@ -3502,7 +3202,7 @@ export async function showProperties(name, node, path) {
         },
         {
             label: "キャンセル",
-            action: () => { // 引数をなくす
+            action: () => {
                 closeModal(win);
             }
         }
@@ -3510,38 +3210,33 @@ export async function showProperties(name, node, path) {
 
     const win = window.nexser?.windowAPI?.showModalWindow(`${name} のプロパティ`, msg, {
         width: 350,
-        height: 420, // isUrlでの高さ分岐を削除して固定
+        height: 420,
         taskbar: false,
         overlay: false,
         silent: true,
         isHtml: true,
-        buttons: dialogButtons // ⭐ 統合したボタンを適用
+        buttons: dialogButtons
     });
 
-    // 2. 管理リストに登録
     propertyWindows[path] = win;
 
-    // 3. ウィンドウがDOMから消えたら自動でリストから削除する
     const observer = new MutationObserver(() => {
         if (!document.body.contains(win)) {
             delete propertyWindows[path];
-            observer.disconnect(); // 監視を終了
+            observer.disconnect();
         }
     });
 
-    // ウィンドウが所属する親要素（bodyなど）を監視
     observer.observe(document.body, { childList: true });
 }
 
 function searchFS(node, query, path = "", showHidden = false, visited = new WeakSet()) {
     let results = [];
 
-    // ⭐ 1. クエリが未定義、または空白のみの場合は即座に空配列を返して全ヒットを防止
     if (!query || typeof query !== "string") return results;
     const q = query.trim().toLowerCase();
     if (!q) return results;
 
-    // ⭐ 2. 循環参照や重複探索を完全に防止するためのガード
     if (!node || typeof node !== "object" || visited.has(node)) return results;
     visited.add(node);
 
@@ -3549,16 +3244,14 @@ function searchFS(node, query, path = "", showHidden = false, visited = new Weak
         if (isSystemMetaKey(name)) continue;
         const child = node[name];
         if (!child || typeof child !== "object") continue;
-        if (!showHidden && child.hidden) continue; // 隠しファイル表示設定を考慮
+        if (!showHidden && child.hidden) continue;
 
         const fullPath = path ? `${path}/${name}` : name;
 
-        // 名前が一致（部分一致）
         if (name.toLowerCase().includes(q)) {
             results.push({ name, node: child, path: fullPath });
         }
 
-        // フォルダの場合のみ再帰的に探す（※リンク type: "link" はフォルダとして再帰させない）
         if (child.type === "folder") {
             results = results.concat(searchFS(child, query, fullPath, showHidden, visited));
         }

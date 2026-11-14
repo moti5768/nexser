@@ -209,3 +209,148 @@ export function isDescendantOrSelf(sourcePath, targetPath) {
 
     return false;
 }
+
+
+
+
+
+// ========================================================
+// 以下、Desktop / Explorer 共通FS操作ユーティリティ
+// ========================================================
+
+const META_KEYS = new Set(["type", "system", "originalPath", "lastModified"]);
+
+/**
+ * フォルダ内のメタデータキー（子ノード以外）かどうかを判定
+ */
+export function isSystemMetaKey(key) {
+    return META_KEYS.has(key);
+}
+
+/**
+ * ProxyラップされたFSノードを、DataCloneErrorやBlob破壊を起こさずに安全にディープクローンする
+ */
+export function cloneFSNode(node, visited = new WeakMap()) {
+    if (node === null || typeof node !== "object") return node;
+    if (node instanceof Blob || node instanceof ArrayBuffer || ArrayBuffer.isView(node)) {
+        return node;
+    }
+    if (visited.has(node)) return visited.get(node);
+
+    const copy = Array.isArray(node) ? [] : {};
+    visited.set(node, copy);
+
+    for (const key of Object.keys(node)) {
+        copy[key] = cloneFSNode(node[key], visited);
+    }
+    return copy;
+}
+
+/**
+ * ショートカット（link）を循環参照ガード付きで最終的な実体パス・ノードまで解決する
+ */
+export function resolveLinkTarget(pathOrNode, initialPath = "", maxDepth = 10) {
+    let currentPath = typeof pathOrNode === "string" ? pathOrNode : initialPath;
+    let currentNode = typeof pathOrNode === "string" ? resolveFS(pathOrNode) : pathOrNode;
+    const visited = new Set();
+
+    for (let i = 0; i < maxDepth; i++) {
+        if (!currentNode || currentNode.type !== "link" || typeof currentNode.target !== "string") {
+            break;
+        }
+        if (visited.has(currentNode.target)) {
+            return { node: null, path: currentNode.target }; // 循環リンク検知
+        }
+        visited.add(currentNode.target);
+        currentPath = currentNode.target;
+        currentNode = resolveFS(currentPath);
+    }
+
+    return { node: currentNode, path: currentPath };
+}
+
+/**
+ * コピー時にノードおよび配下のシステム保護フラグ（system）を再帰的に解除する
+ */
+export function clearSystemProtection(node, visited = new WeakSet()) {
+    if (!node || typeof node !== "object" || visited.has(node)) return;
+    visited.add(node);
+
+    if ("system" in node) {
+        delete node.system;
+    }
+
+    for (const key of Object.keys(node)) {
+        if (isSystemMetaKey(key)) continue;
+        const child = node[key];
+        if (child && typeof child === "object") {
+            clearSystemProtection(child, visited);
+        }
+    }
+}
+
+/**
+ * IndexedDB（STORE_FILES）上の実データを再帰的にコピーまたは移動する
+ */
+export async function processStorageRecursively(node, oldBasePath, newBasePath, isCopyMode, visited = new WeakSet(), depth = 0) {
+    if (!node || typeof node !== "object" || depth > 50 || visited.has(node)) return;
+    visited.add(node);
+
+    const { copyFileContent, moveFileContent } = await import("./fs-db.js");
+
+    try {
+        for (const key of Object.keys(node)) {
+            if (isSystemMetaKey(key)) continue;
+            const child = node[key];
+            if (!child || typeof child !== "object") continue;
+
+            const oldSubPath = `${oldBasePath}/${key}`;
+            const newSubPath = `${newBasePath}/${key}`;
+
+            if (child.type === "file" || child.type === "app") {
+                if (isCopyMode) {
+                    await copyFileContent(oldSubPath, newSubPath);
+                } else {
+                    await moveFileContent(oldSubPath, newSubPath);
+                }
+            } else if (child.type === "folder") {
+                await processStorageRecursively(child, oldSubPath, newSubPath, isCopyMode, visited, depth + 1);
+            }
+        }
+    } finally {
+        visited.delete(node);
+    }
+}
+
+/**
+ * ドロップされたURL文字列から .url ショートカットファイルを生成する
+ */
+export function createUrlShortcutNode(urlToSave, targetFolderNode) {
+    if (!urlToSave || !targetFolderNode) return false;
+
+    const lines = urlToSave.split(/\r?\n/);
+    let validUrl = "";
+    for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed && !trimmed.startsWith("#") && /^https?:\/\//i.test(trimmed)) {
+            validUrl = trimmed;
+            break;
+        }
+    }
+    if (!validUrl) return false;
+
+    let urlName = "新しいショートカット.url";
+    try {
+        const urlObj = new URL(validUrl);
+        urlName = urlObj.hostname.replace(/[\/\\?%*:|"<>]/g, "_") + ".url";
+    } catch (_) { }
+
+    const finalName = getUniqueName(targetFolderNode, urlName);
+    targetFolderNode[finalName] = {
+        type: "file",
+        content: `[InternetShortcut]\nURL=${validUrl}`,
+        size: validUrl.length + 21,
+        lastModified: Date.now()
+    };
+    return true;
+}

@@ -854,8 +854,8 @@ async function launchApp(item, path, options) {
         const logSource = basename(processPath);
         const logDesc = `アプリケーション '${logSource}' (PID: ${pid}) が正常に起動しました。`;
 
-        // 1. リアルタイム更新通知用のカスタムイベント発火
-        logSystemEvent(
+        // イベント通知と IndexedDB 永続化を logSystemEvent に一本化（重複保存・競合防止）
+        await logSystemEvent(
             logCategory,
             "Information",
             logSource,
@@ -867,35 +867,6 @@ async function launchApp(item, path, options) {
                 state: processState
             }
         );
-
-        // 2. イベントログ画面が開いていなくても確実に IndexedDB へ直接保存する
-        try {
-            const { dbGet, dbSet } = await import("./fs-db.js");
-            let allLogs = (await dbGet(LOG_STORAGE_KEY, "kv")) || {
-                System: [],
-                Application: [],
-                Security: []
-            };
-
-            if (!allLogs[logCategory]) allLogs[logCategory] = [];
-
-            allLogs[logCategory].unshift({
-                level: "Information",
-                time: new Date().toLocaleTimeString(),
-                timestamp: Date.now(),
-                source: logSource,
-                eventId: 1000,
-                category: "App Lifecycle",
-                isShell,
-                state: processState,
-                description: logDesc
-            });
-
-            if (allLogs[logCategory].length > 500) allLogs[logCategory].pop();
-            await dbSet(LOG_STORAGE_KEY, allLogs, "kv");
-        } catch (dbErr) {
-            console.warn("[Kernel] Direct log persistence failed:", dbErr);
-        }
     } catch (e) {
         console.error("app runtime error:", e);
         if (typeof getWindowAPI()?.destroyWindow === "function" && win) {

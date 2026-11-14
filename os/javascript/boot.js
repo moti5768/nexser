@@ -1,12 +1,10 @@
 // boot.js
 import { initFS } from './fs.js';
-import { playSystemEventSound } from './sounds.js';
 import { resolveFS, normalizePath as fsNormalizePath } from './fs-utils.js';
 import { loadSetting } from "./apps/settings.js";
 import { initScreensaver } from "./screensaver.js";
 import { showBSOD } from "./bsod.js";
 import { resetWindowIdCounter } from './window.js';
-import { logSystemEvent } from './kernel.js';
 
 // ===== Passive Event / Touch Defaults =====
 document.addEventListener('wheel', e => { if (e.ctrlKey) e.preventDefault(); }, { passive: false });

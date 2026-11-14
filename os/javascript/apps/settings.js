@@ -56,7 +56,11 @@ export async function saveSetting(key, value) {
 
         const tx = db.transaction(STORE, "readwrite");
         tx.objectStore(STORE).put(structuredClone(value), key);
-        await tx.complete;
+        await new Promise((resolve, reject) => {
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => reject(tx.error);
+            tx.onabort = () => reject(tx.error);
+        });
         window.dispatchEvent(new CustomEvent("setting-changed", { detail: { key } }));
         return true;
     } catch (e) {
@@ -107,7 +111,7 @@ function applyBackgroundStyle(element, wpStyle) {
     element.style.backgroundPosition = config.pos;
 }
 
-async function applyDesktopBackground() {
+export async function applyDesktopBackground() {
     const desk = document.querySelector("#desktop");
     if (!desk) return;
 
