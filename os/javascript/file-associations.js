@@ -46,6 +46,10 @@ export const FILE_ASSOCIATIONS = {
     // PDF
     ".pdf": "C:/Programs/Applications/PDFViewer.app",
 
+    //.spreadsheet
+    ".nxs": "C:/Programs/Applications/Spreadsheet.app",
+    ".csv": "C:/Programs/Applications/Spreadsheet.app",
+
     // URL
     ".url": "C:/Programs/Applications/Browser.app"
 };

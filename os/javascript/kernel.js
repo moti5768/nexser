@@ -31,7 +31,12 @@ function isCriticalError(msg) {
     return CRITICAL_PREFIXES.some(prefix => String(msg).includes(prefix));
 }
 
+let systemErrorHandlerInstalled = false;
+
 export function initSystemErrorHandler() {
+    if (systemErrorHandlerInstalled) return;
+    systemErrorHandlerInstalled = true;
+
     // 非同期エラー（Promise拒否）
     window.addEventListener("unhandledrejection", (e) => {
         const error = e.reason;
@@ -1102,11 +1107,11 @@ export function resetUI() {
 /* =========================
    ログオフ（完全統合・シェル完全除外版）
 ========================= */
+let isLogoffPromptOpen = false;
+
 export async function logOff() {
-    // ⭐ ログオフ処理が呼ばれた瞬間に最速でフラグを立てて、すべての再描画をブロックする
     window.nexser = window.nexser || {};
-    window.nexser.isBooting = false;
-    window.nexser.isLoggingOff = true;
+    if (window.nexser.isLoggingOff || isLogoffPromptOpen) return;
 
     const windows = document.querySelectorAll(".window");
 
@@ -1137,6 +1142,8 @@ export async function logOff() {
     const hasNormalWindow = userApps.length > 0;
 
     const performLogoff = async () => {
+        window.nexser.isBooting = false;
+        window.nexser.isLoggingOff = true;
         playSystemEventSound('logoff');
 
         // デスクトップアイコン群・タスクバー（ウィンドウモード含む）を即座に非表示化
@@ -1311,21 +1318,20 @@ export async function logOff() {
 
     // 通常のアプリケーションウィンドウが開いている場合のみ、実行中アプリの一覧付き確認ダイアログを表示
     if (hasNormalWindow) {
+        isLogoffPromptOpen = true;
         const appListHtml = userApps.map(app => `<div style="padding: 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">• ${app.name} <span style="color: #666; font-size: 11px;">(PID: ${app.pid}, 稼働: ${app.uptime}秒)</span></div>`).join("");
 
         const confirmMessage = `以下のアプリケーションが実行中です。システムをログオフすると、未保存のデータが失われる可能性があります。<br><br>` +
             `<b>終了予定のプロセス (${userApps.length}件):</b>` +
-            `<div style="max-height: 120px; overflow-y: auto; background: #ffffff; padding: 8px; margin: 6px 0; font-size: 12px; border-radius: 3px; border: 1px inset #808080; text-align: left;">${appListHtml}</div>` +
+            `<div style="max-height: 120px; overflow-y: auto; background: #ffffff; padding: 8px; margin: 6px 0; font-size: 12px; border: 1px inset #808080; text-align: left;">${appListHtml}</div>` +
             `本当にシステムをログオフしますか？`;
 
         getWindowAPI()?.confirmWindow(
             confirmMessage,
             async (result) => {
+                isLogoffPromptOpen = false;
                 if (result) {
                     await performLogoff();
-                } else {
-                    // キャンセルされた場合はログオフフラグを戻す
-                    window.nexser.isLoggingOff = false;
                 }
             },
             {
@@ -1333,7 +1339,8 @@ export async function logOff() {
                 overlay: true,
                 isHtml: true,
                 taskbar: false,
-                disableControls: true
+                disableControls: true,
+                onClose: () => { isLogoffPromptOpen = false; }
             }
         );
     } else {

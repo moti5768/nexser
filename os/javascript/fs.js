@@ -125,6 +125,7 @@ const baseFS = {
                 "Browser.app": { type: "app", entry: "./apps/Browser.js", system: true },
                 "Networkmonitor.app": { type: "app", entry: "./apps/network_monitor.js", system: true },
                 "Eventlog.app": { type: "app", entry: "./apps/eventlog.js", system: true },
+                "Spreadsheet.app": { type: "app", name: "Spreadsheet", entry: "./apps/spreadsheet.js", system: true },
                 "Toolbar.app": { type: "app", entry: "./apps/toolbar.js", system: true, frameless: true, singleton: true, shell: true },
                 "Startmenu.app": { type: "app", entry: "./apps/startmenu.js", system: true, frameless: true, singleton: true, shell: true }
             },
@@ -161,6 +162,9 @@ const baseFS = {
                     "Terminal.app": { type: "link", target: "C:/Programs/Applications/Terminal.app" },
                     "TaskManager.app": { type: "link", target: "C:/Programs/Applications/TaskManager.app" },
                     "RegistryEditor.app": { type: "link", target: "C:/Programs/Applications/RegistryEditor.app" }
+                },
+                Office: {
+                    "Spreadsheet.app": { type: "link", target: "C:/Programs/Applications/Spreadsheet.app" }
                 }
             },
             Documents: { type: "folder", system: true },

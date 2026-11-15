@@ -331,10 +331,10 @@ export default function RegistryEditor(root) {
         const val = tr._val;
         if (targetCol === "data") {
             if (val instanceof Blob || val?.__IS_CHUNKED__ || val?.content === "__EXTERNAL_DATA__") {
-                return window.nexser?.windowAPI.alertWindow("外部保存・バイナリデータ (REG_BINARY / EXTERNAL) の直接編集はサポートされていません。", { parentWin: win });
+                return window.nexser?.windowAPI.alertWindow("外部保存・バイナリデータ (REG_BINARY / EXTERNAL) の直接編集はサポートされていません。", { title: "システム", parentWin: win });
             }
             if (val?._truncated) {
-                return window.nexser?.windowAPI.alertWindow("データサイズが大きいため省略表示されています。破損防止のため直接編集は無効化されています。", { parentWin: win });
+                return window.nexser?.windowAPI.alertWindow("データサイズが大きいため省略表示されています。破損防止のため直接編集は無効化されています。", { title: "システム", parentWin: win });
             }
         }
 
@@ -1204,7 +1204,7 @@ export default function RegistryEditor(root) {
                     }
                 }
 
-                window.nexser?.windowAPI.alertWindow(`[File Content: ${key}]\n\n${contentToShow || "(空のファイルです)"}`, { parentWin: win });
+                window.nexser?.windowAPI.alertWindow(`[File Content: ${key}]\n\n${contentToShow || "(空のファイルです)"}`, { title: "registryeditor", parentWin: win });
                 break;
             }
             case "folder": {

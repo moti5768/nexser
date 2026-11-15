@@ -6,12 +6,12 @@ import { basename, importFileSmart } from "../fs-utils.js";
 
 function showWarning(root, message) {
     const win = root.closest(".window");
-    window.nexser?.windowAPI.alertWindow(message, { parentWin: win });
+    window.nexser?.windowAPI.alertWindow(message, { title: "videoplayer", parentWin: win });
 }
 
 function showConfirm(root, message, onYes, onNo) {
     const win = root.closest(".window");
-    window.nexser?.windowAPI.showModalWindow("Confirm", message, {
+    window.nexser?.windowAPI.showModalWindow("videoplayer", message, {
         parentWin: win,
         iconClass: "warning_icon",
         buttons: [

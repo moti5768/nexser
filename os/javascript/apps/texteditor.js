@@ -8,12 +8,12 @@ let activeSearchWin = null;
 
 function showWarning(root, message) {
     const win = root.closest(".window");
-    window.nexser?.windowAPI.alertWindow(message, { parentWin: win });
+    window.nexser?.windowAPI.alertWindow(message, { title: "texteditor", parentWin: win });
 }
 
 function showConfirm(root, message, onYes, onNo) {
     const win = root.closest(".window");
-    window.nexser?.windowAPI.showModalWindow("Confirm", message, {
+    window.nexser?.windowAPI.showModalWindow("texteditor", message, {
         parentWin: win,
         iconClass: "warning_icon",
         buttons: [

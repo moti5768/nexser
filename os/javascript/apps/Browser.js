@@ -249,7 +249,7 @@ export default async function BrowserApp(root, options = {}) {
                         action: () => {
                             const desktop = resolveFS("C:/Desktop");
                             if (!desktop) {
-                                window.nexser?.windowAPI.alertWindow("Desktop が見つかりません", { parentWin: win });
+                                window.nexser?.windowAPI.alertWindow("Desktop が見つかりません", { title: "システム", parentWin: win });
                                 return;
                             }
                             let finalName = `${baseTitle.replace(/\.[^/.]+$/, "")}.url`;
@@ -261,7 +261,7 @@ export default async function BrowserApp(root, options = {}) {
                                 content: `[InternetShortcut]\nURL=${addressInput.value}`
                             };
                             window.dispatchEvent(new Event("fs-updated"));
-                            window.nexser?.windowAPI.alertWindow("デスクトップにショートカットを保存しました", { parentWin: win });
+                            window.nexser?.windowAPI.alertWindow("デスクトップにショートカットを保存しました", { title: "システム", parentWin: win });
                         }
                     }
                 ]

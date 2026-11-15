@@ -15,11 +15,6 @@ function showConfirm(root, message, onYes, onNo) {
     }, { parentWin: win });
 }
 
-function showAlert(root, message) {
-    const win = root.closest(".window");
-    window.nexser?.windowAPI.alertWindow(message, { parentWin: win });
-}
-
 /* =========================
    DB
 ========================= */
@@ -50,7 +45,7 @@ export async function saveSetting(key, value) {
         const { usage, quota } = await getStorageInfo();
         if (usage >= quota * 0.95) {
             const activeWin = document.querySelector(".window:not([style*='display: none'])");
-            window.nexser?.windowAPI.alertWindow("ディスク領域不足のため、設定を保存できませんでした。", { parentWin: activeWin });
+            window.nexser?.windowAPI.alertWindow("ディスク領域不足のため、設定を保存できませんでした。", { title: "nexser", parentWin: activeWin });
             return false;
         }
 
@@ -567,7 +562,10 @@ export default async function SettingsApp(content) {
                 const dataUrl = await blobToDataURL(file);
                 await saveSetting("wallpaperUrl", dataUrl);
                 applyDesktopBackground();
-                showAlert(content, "Wallpaper updated.");
+                window.nexser?.windowAPI.alertWindow("Wallpaper updated.", {
+                    title: "Settings",
+                    parentWin: content.closest(".window")
+                });
             };
             input.click();
         };
@@ -1244,23 +1242,34 @@ export default async function SettingsApp(content) {
             // --- バリデーション追加 ---
             const newName = nameInput.value.trim(); // 前後の空白を削除
 
+            const parentWin = root.closest(".window");
+
             if (newName === "") {
                 // 空欄の場合は警告を出して中断
-                showAlert(root, "名前を入力してください。空欄にすることはできません。");
+                window.nexser?.windowAPI.alertWindow("名前を入力してください。空欄にすることはできません。", {
+                    title: "Settings",
+                    parentWin
+                });
                 // 入力欄をリセット（任意）
                 nameInput.value = (await loadSetting("userName")) || "Admin";
                 return;
             }
 
             if (newName.length > 20) {
-                showAlert(root, "名前が長すぎます（20文字以内）。");
+                window.nexser?.windowAPI.alertWindow("名前が長すぎます（20文字以内）。", {
+                    title: "Settings",
+                    parentWin
+                });
                 return;
             }
             // ------------------------
 
             await saveSetting("userName", newName);
             window.dispatchEvent(new CustomEvent("user-profile-updated", { detail: newName }));
-            showAlert(root, "User profile saved.");
+            window.nexser?.windowAPI.alertWindow("User profile saved.", {
+                title: "Settings",
+                parentWin
+            });
         };
 
         root.append(label, nameInput, saveBtn);
@@ -1306,7 +1315,10 @@ export default async function SettingsApp(content) {
 
                     // 【修正】renderGeneral(content) を呼ぶとタブ領域ごと消える可能性があるため、
                     // 成功メッセージのみを表示し、必要であればUIの状態を個別に更新する
-                    showAlert(content, "全ての設定が初期化されました。");
+                    window.nexser?.windowAPI.alertWindow("全ての設定が初期化されました。", {
+                        title: "Settings",
+                        parentWin: content.closest(".window")
+                    });
 
                     // querySelectorを使わず、すぐ下で定義されている toggle 変数自身を直接操作する
                     // （※ブロックスコープの外の toggle 要素を安全に更新）
@@ -1314,7 +1326,10 @@ export default async function SettingsApp(content) {
 
                 } catch (e) {
                     console.error("Reset failed:", e);
-                    showAlert(content, "初期化に失敗しました");
+                    window.nexser?.windowAPI.alertWindow("初期化に失敗しました", {
+                        title: "Settings",
+                        parentWin: content.closest(".window")
+                    });
                 }
             });
         };
@@ -1402,15 +1417,22 @@ export default async function SettingsApp(content) {
 
         // 個別ストアの削除機能
         async function clearStore(storeName) {
+            const parentWin = root.closest(".window");
             showConfirm(root, `${storeName} のデータをすべて削除しますか？`, async () => {
                 try {
                     const db = await getDB();
                     const tx = db.transaction(storeName, "readwrite");
                     await tx.objectStore(storeName).clear();
-                    showAlert(root, `${storeName} を空にしました。`);
+                    window.nexser?.windowAPI.alertWindow(`${storeName} を空にしました。`, {
+                        title: "Settings",
+                        parentWin
+                    });
                     renderStorage();
                 } catch (e) {
-                    showAlert(root, "削除に失敗しました。");
+                    window.nexser?.windowAPI.alertWindow("削除に失敗しました。", {
+                        title: "Settings",
+                        parentWin
+                    });
                 }
             });
         }

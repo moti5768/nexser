@@ -79,7 +79,7 @@ async function deleteFSItem(parentPath, itemName, rerender, dispatchEvent = true
                                 await markDefaultDeleted(originalPath);
                             } catch (e) {
                                 // エラーをキャッチしてBSoDを防ぐ
-                                window.nexser?.windowAPI?.alertWindow(`「${itemName}」は保護されているため完全に削除できません。`);
+                                window.nexser?.windowAPI?.alertWindow(`「${itemName}」は保護されているため完全に削除できません。`, { title: "システム保護" });
                             }
                         }
                         await forceSave();
@@ -160,7 +160,7 @@ async function deleteFSItem(parentPath, itemName, rerender, dispatchEvent = true
         rerender?.();
         return true;
     } catch (e) {
-        window.nexser?.windowAPI?.alertWindow(`「${itemName}」は保護されているため削除できません。`);
+        window.nexser?.windowAPI?.alertWindow(`「${itemName}」は保護されているため削除できません。`, { title: "システム保護" });
         return false;
     }
 }
@@ -226,7 +226,7 @@ export async function restoreFSItem(itemName, rerender, dispatchEvent = true) {
         }
     } catch (err) {
         console.error("[FS] 復元時の実データ移動に失敗しました:", err);
-        window.nexser?.windowAPI?.alertWindow(`「${cleanName}」の実データ復元に失敗したため、処理を中断しました。`);
+        window.nexser?.windowAPI?.errorWindow(`「${cleanName}」の実データ復元に失敗したため、処理を中断しました。`);
         return false;
     }
 
@@ -272,7 +272,7 @@ export function emptyTrash(rerender) {
     const keys = Object.keys(trash).filter(key => !isSystemMetaKey(key));
 
     if (keys.length === 0) {
-        return window.nexser?.windowAPI?.alertWindow("ゴミ箱は空です。");
+        return window.nexser?.windowAPI?.alertWindow("ゴミ箱は空です。", { title: "explorer" });
     }
 
     const msg = `
@@ -324,7 +324,7 @@ export function emptyTrash(rerender) {
                     rerender?.();
 
                     if (hasProtectedFiles) {
-                        window.nexser?.windowAPI?.alertWindow("一部のアイテムは保護されているため削除できませんでした。");
+                        window.nexser?.windowAPI?.alertWindow("一部のアイテムは保護されているため削除できませんでした。", { title: "システム保護" });
                     }
                 }
             },
@@ -394,7 +394,7 @@ function createNewItem(currentPath, listContainer, renderCallback, type = "folde
         if (error) {
             isCommitting = false;
             isShowingError = true;
-            window.nexser?.windowAPI?.alertWindow(error, { width: 360, height: 160, taskbar: false });
+            window.nexser?.windowAPI?.alertWindow(error, { width: 360, height: 160 });
             setTimeout(() => {
                 isShowingError = false;
                 input.focus();
@@ -544,7 +544,7 @@ export default async function Explorer(root, options = {}) {
         if (path !== "") {
             const targetNode = resolveFS(path);
             if (!targetNode || targetNode.type !== "folder") {
-                window.nexser?.windowAPI?.alertWindow(`指定されたパス「${path}」はフォルダではないか、存在しません。`, { width: 350, height: 180, taskbar: false });
+                window.nexser?.windowAPI?.alertWindow(`指定されたパス「${path}」はフォルダではないか、存在しません。`, { title: "explorer", width: 350, height: 180 });
                 return;
             }
         }
@@ -568,6 +568,7 @@ export default async function Explorer(root, options = {}) {
 
         if (!targetNode) {
             window.nexser?.windowAPI?.alertWindow(`リンク先「${targetPath}」が存在しません`, {
+                title: "explorer",
                 width: 360,
                 height: 160,
                 taskbar: false
@@ -2043,7 +2044,7 @@ export default async function Explorer(root, options = {}) {
                                         render(currentPath);
 
                                         if (hasProtectedFiles) {
-                                            window.nexser?.windowAPI?.alertWindow("一部のアイテムは保護されているため削除できませんでした。");
+                                            window.nexser?.windowAPI?.alertWindow("一部のアイテムは保護されているため削除できませんでした。", { title: "システム保護" });
                                         }
                                     }
                                 },
@@ -2245,7 +2246,7 @@ export default async function Explorer(root, options = {}) {
     function startExplorerInlineRename(itemEl, oldName) {
         const node = resolveFS(currentPath)?.[oldName];
         if (!node || node.system === true) {
-            window.nexser?.windowAPI?.alertWindow(`「${oldName}」は保護されているため名前を変更できません。`, { width: 350, height: 140, taskbar: false });
+            window.nexser?.windowAPI?.alertWindow(`「${oldName}」は保護されているため名前を変更できません。`, { title: "システム保護", width: 350, height: 140 });
             return;
         }
 
@@ -2282,7 +2283,7 @@ export default async function Explorer(root, options = {}) {
             const res = await renameFSItem(currentPath, oldName, nextName);
             if (!res.ok) {
                 isAlerting = true;
-                window.nexser?.windowAPI?.alertWindow(res.error, { width: 360, height: 160, taskbar: false });
+                window.nexser?.windowAPI?.alertWindow(res.error, { width: 360, height: 160 });
                 setTimeout(() => {
                     isAlerting = false;
                     input.focus();
@@ -2640,11 +2641,29 @@ export default async function Explorer(root, options = {}) {
             input.focus();
             input.select();
 
-            let isCommitted = false;
+            let isFinished = false;
+
+            const cleanup = () => {
+                document.removeEventListener("mousedown", handleOutsideMouseDown, true);
+            };
+
+            // 編集をキャンセルして即座にボタン（パンくず）モードへ戻す
+            const cancelEdit = () => {
+                if (isFinished) return;
+                isFinished = true;
+                cleanup();
+
+                if (displayPath.startsWith("検索:")) {
+                    onCancel();
+                } else {
+                    setupPathInput(pathLabel, displayPath, onNavigate, onCancel);
+                }
+            };
 
             const commitChange = () => {
-                if (isCommitted) return;
-                isCommitted = true;
+                if (isFinished) return;
+                isFinished = true;
+                cleanup();
 
                 const rawValue = input.value;
                 const cleanCheck = rawValue ? rawValue.replace(/[\s\u3000]/g, "") : "";
@@ -2663,13 +2682,22 @@ export default async function Explorer(root, options = {}) {
                 const targetNode = resolveFS(newPath);
 
                 if (!targetNode) {
-                    window.nexser?.windowAPI?.alertWindow(`指定されたパス「${newPath}」は存在しません。`, { width: 350, height: 180, taskbar: false });
+                    window.nexser?.windowAPI?.alertWindow(`指定されたパス「${newPath}」はフォルダではないか、存在しません。`, {
+                        title: "explorer",
+                        width: 350,
+                        height: 180
+                    });
                     onCancel();
                     return;
                 }
 
                 if (targetNode.type === "folder") {
-                    onNavigate(newPath);
+                    if (newPath === currentPath) {
+                        // 同じパスのまま Enter された場合は navigateTo が早期リターンするため直接ボタン表示へ戻す
+                        setupPathInput(pathLabel, newPath, onNavigate, onCancel);
+                    } else {
+                        onNavigate(newPath);
+                    }
                 } else {
                     const lastSlash = newPath.lastIndexOf("/");
                     const parentPath = lastSlash !== -1 ? newPath.substring(0, lastSlash) : "C:/";
@@ -2679,6 +2707,14 @@ export default async function Explorer(root, options = {}) {
                 }
             };
 
+            // 他のエリアのクリックをキャプチャ段階で検知し、確実にボタンモードへ戻す
+            const handleOutsideMouseDown = (e) => {
+                if (!pathLabel.contains(e.target)) {
+                    cancelEdit();
+                }
+            };
+            document.addEventListener("mousedown", handleOutsideMouseDown, true);
+
             input.addEventListener("keydown", (e) => {
                 if (e.isComposing || e.keyCode === 229) return;
                 if (e.key === "Enter") {
@@ -2686,14 +2722,12 @@ export default async function Explorer(root, options = {}) {
                     commitChange();
                 } else if (e.key === "Escape") {
                     e.preventDefault();
-                    onCancel();
+                    cancelEdit();
                 }
             });
 
             input.addEventListener("blur", () => {
-                setTimeout(() => {
-                    commitChange();
-                }, 100);
+                cancelEdit();
             });
         };
     }
@@ -2879,7 +2913,7 @@ export default async function Explorer(root, options = {}) {
                                                 render(currentPath);
 
                                                 if (hasProtectedFiles) {
-                                                    window.nexser?.windowAPI?.alertWindow("一部のアイテムは保護されているため削除できませんでした。");
+                                                    window.nexser?.windowAPI?.alertWindow("一部のアイテムは保護されているため削除できませんでした。", { title: "システム保護" });
                                                 }
                                             }
                                         },
@@ -2920,7 +2954,7 @@ export default async function Explorer(root, options = {}) {
                             if (node && node.type === "file") {
                                 openWithDialog(`${currentPath}/${name}`, node);
                             } else {
-                                window.nexser?.windowAPI?.alertWindow("このアイテムはプログラムから開くことができません。");
+                                window.nexser?.windowAPI?.alertWindow("このアイテムはプログラムから開くことができません。", { title: "explorer" });
                             }
                         },
                         disabled: () => {
@@ -3272,7 +3306,7 @@ function getAllApps() {
 
 export function openWithDialog(filePath, fileNode) {
     const apps = getAllApps();
-    if (apps.length === 0) return window.nexser?.windowAPI?.alertWindow("アプリがありません");
+    if (apps.length === 0) return window.nexser?.windowAPI?.alertWindow("アプリがありません", { title: "explorer" });
 
     const fileName = filePath.split("/").pop();
 
@@ -3453,6 +3487,7 @@ export async function showProperties(name, node, path) {
         width: 350,
         height: 420,
         taskbar: false,
+        disableControls: true,
         overlay: false,
         silent: true,
         isHtml: true,

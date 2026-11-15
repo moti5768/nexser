@@ -305,7 +305,7 @@ export async function saveNodeDiff(rootFS, dirtyPaths = [], deletedPaths = [], m
                 const quotaGB = (quota / 1024 / 1024 / 1024).toFixed(2);
                 console.error(`[FS-DB] Save aborted: Storage limit reached (${(usage / 1024 / 1024 / 1024).toFixed(2)}GB / ${quotaGB}GB)`);
                 if (typeof nexser !== "undefined" && nexser.windowAPI?.alertWindow) {
-                    nexser.windowAPI.alertWindow(`ディスク領域不足: ブラウザの制限 (${quotaGB}GB) に達したため、保存できません。`, { title: "システム エラー" });
+                    nexser.windowAPI.alertWindow(`ディスク領域不足: ブラウザの制限 (${quotaGB}GB) に達したため、保存できません。`, { title: "nexser" });
                 }
                 return;
             }
@@ -415,7 +415,7 @@ export async function saveFS(fs) {
                 const quotaGB = (quota / 1024 / 1024 / 1024).toFixed(2);
                 console.error(`[FS-DB] Save aborted: Storage limit reached (${(usage / 1024 / 1024 / 1024).toFixed(2)}GB / ${quotaGB}GB)`);
                 if (typeof nexser !== "undefined" && nexser.windowAPI?.alertWindow) {
-                    nexser.windowAPI.alertWindow(`ディスク領域不足: ブラウザの制限 (${quotaGB}GB) に達したため、保存できません。`, { title: "システム エラー" });
+                    nexser.windowAPI.alertWindow(`ディスク領域不足: ブラウザの制限 (${quotaGB}GB) に達したため、保存できません。`, { title: "nexser" });
                 }
                 return;
             }

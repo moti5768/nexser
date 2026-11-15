@@ -271,7 +271,7 @@ export default function ToolbarApp(content, options) {
         const action = e.target.getAttribute("data-action");
         if (action) {
             console.log(`IME Menu Action: ${action}`);
-            alert(`[IME模擬機能] ${e.target.textContent} が選択されました。`);
+            alert(`[IME模擬機能] ${e.target.textContent} が選択されました。`, { title: "システム" });
         }
         closeMenu();
     };

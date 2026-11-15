@@ -165,7 +165,7 @@ export default function TaskManager(content) {
                 killProcess(selectedKey);
                 selectedKey = null;
             } else {
-                nexser.windowAPI.alertWindow("終了するプロセスを選択してください。");
+                nexser.windowAPI.alertWindow("終了するプロセスを選択してください。", { title: "taskmanager" });
             }
         };
 

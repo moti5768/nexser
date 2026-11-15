@@ -211,7 +211,7 @@ export default function main(content, options) {
 
         if (!fileNode) {
             console.warn(`ファイルが見つかりません。探索パス: ${targetPath}`);
-            window.nexser?.windowAPI.alertWindow(`ファイルが見つかりません: ${fileName}`);
+            window.nexser?.windowAPI.alertWindow(`ファイルが見つかりません: ${fileName}`, { title: "audioplayer" });
             isLoading = false;
             return;
         }
@@ -222,7 +222,7 @@ export default function main(content, options) {
         }
 
         if (!audioData) {
-            window.nexser?.windowAPI.alertWindow("再生データの読み込みに失敗しました。");
+            window.nexser?.windowAPI.alertWindow("再生データの読み込みに失敗しました。", { title: "audioplayer" });
             isLoading = false;
             return;
         }
@@ -252,7 +252,7 @@ export default function main(content, options) {
 
             currentAudio.onerror = (e) => {
                 console.error("Audio element error:", e);
-                window.nexser?.windowAPI.alertWindow(`音声のデコードに失敗しました: ${fileName}`);
+                window.nexser?.windowAPI.alertWindow(`音声のデコードに失敗しました: ${fileName}`, { title: "audioplayer" });
             };
 
             currentAudio.onended = () => {
@@ -274,7 +274,7 @@ export default function main(content, options) {
             await currentAudio.play();
         } catch (e) {
             console.error("Playback failed:", e);
-            window.nexser?.windowAPI.alertWindow("再生がブロックされたか、ファイル形式が不正です。再生ボタンを押してやり直してください。");
+            window.nexser?.windowAPI.alertWindow("再生がブロックされたか、ファイル形式が不正です。再生ボタンを押してやり直してください。", { title: "audioplayer" });
         } finally {
             isLoading = false;
         }
@@ -297,7 +297,7 @@ export default function main(content, options) {
         if (currentAudio.paused) {
             currentAudio.play().catch(e => {
                 console.warn("再生できません:", e);
-                window.nexser?.windowAPI.alertWindow("このファイルは再生できません。");
+                window.nexser?.windowAPI.alertWindow("このファイルは再生できません。", { title: "audioplayer" });
             });
         } else {
             currentAudio.pause();

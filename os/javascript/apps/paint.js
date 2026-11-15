@@ -39,7 +39,7 @@ export default async function Paint(root, options = {}) {
     }
 
     function showWarning(message) {
-        window.nexser?.windowAPI.alertWindow(message, { parentWin: win });
+        window.nexser?.windowAPI.alertWindow(message, { title: "paint", parentWin: win });
     }
 
     function updateStatus(x, y) {
@@ -444,7 +444,7 @@ export default async function Paint(root, options = {}) {
             closeBtn.addEventListener("click", e => {
                 if (!dirty) return;
                 e.preventDefault(); e.stopImmediatePropagation();
-                window.nexser?.windowAPI.showModalWindow("Confirm", "変更内容を保存しますか？", {
+                window.nexser?.windowAPI.showModalWindow("paint", "変更内容を保存しますか？", {
                     parentWin: win, iconClass: "warning_icon",
                     buttons: [
                         { label: "はい", onClick: async () => { await save(); dirty = false; closeBtn.click(); } },

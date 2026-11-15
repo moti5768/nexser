@@ -239,7 +239,7 @@ export default function main(content, options) {
 
         for (const file of files) {
             if (!allowedExtensions.exec(file.name)) {
-                window.nexser?.windowAPI.alertWindow(`ファイル「${file.name}」はサポートされていない形式です。`);
+                window.nexser?.windowAPI.alertWindow(`ファイル「${file.name}」はサポートされていない形式です。`, { title: "soundplayer" });
                 continue;
             }
 
@@ -290,7 +290,7 @@ export default function main(content, options) {
 
             let fileNode = resolveFS(`C:/Programs/Music/${path}`);
             if (!fileNode) {
-                window.nexser?.windowAPI.alertWindow("ファイルが見つかりませんでした。");
+                window.nexser?.windowAPI.alertWindow("ファイルが見つかりませんでした。", { title: "soundplayer" });
                 return;
             }
             let audioData = fileNode.content;
@@ -300,7 +300,7 @@ export default function main(content, options) {
             }
 
             if (!audioData) {
-                window.nexser?.windowAPI.alertWindow("データの取得に失敗しました。");
+                window.nexser?.windowAPI.alertWindow("データの取得に失敗しました。", { title: "soundplayer" });
                 return;
             }
 
@@ -312,7 +312,7 @@ export default function main(content, options) {
             };
             currentAudio.play().catch(err => {
                 console.error("Playback error:", err);
-                window.nexser?.windowAPI.alertWindow("再生に失敗しました。");
+                window.nexser?.windowAPI.alertWindow("再生に失敗しました。", { title: "soundplayer" });
             });
         }
 

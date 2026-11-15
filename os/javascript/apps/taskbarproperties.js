@@ -225,7 +225,7 @@ export default async function TaskbarProperties(content) {
                     const { clearRecent } = await import("./recent.js");
                     await clearRecent();
                     window.dispatchEvent(new Event("recent-updated"));
-                    nexser.windowAPI.alertWindow("Documents menu cleared.");
+                    nexser.windowAPI.alertWindow("Documents menu cleared.", { title: "taskbarproperties" });
                 }
             } catch (e) {
                 console.warn("履歴のクリアに失敗しました", e);

@@ -2361,7 +2361,7 @@ export default function CodeEditor(root, options = {}) {
 
 export function showConfirm(root, message, onYes, onNo) {
     const parent = root.closest ? root.closest(".window") : null;
-    window.nexser?.windowAPI.showModalWindow("Confirm", message, {
+    window.nexser?.windowAPI.showModalWindow("codeeditor", message, {
         parentWin: parent,
         buttons: [
             { label: "はい", onClick: onYes },

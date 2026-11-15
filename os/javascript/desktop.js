@@ -459,7 +459,7 @@ export function buildDesktop() {
                             if (currentNode.type === "file") {
                                 explorerOpenWithDialog(fullPath, currentNode);
                             } else {
-                                window.nexser?.windowAPI.alertWindow("ファイル以外は開けません", { width: 350, height: 110 });
+                                window.nexser?.windowAPI.alertWindow("ファイル以外は開けません", { title: "システム", width: 350, height: 110 });
                             }
                         }
                     },
@@ -632,7 +632,7 @@ export function buildDesktop() {
                             if (node.type === "file") {
                                 explorerOpenWithDialog(fullPath, node);
                             } else {
-                                window.nexser?.windowAPI.alertWindow("ファイル以外は開けません", { width: 300, height: 110 });
+                                window.nexser?.windowAPI.alertWindow("ファイル以外は開けません", { title: "システム", width: 300, height: 110 });
                             }
                         }
                     });
@@ -1153,7 +1153,7 @@ function createNewItem(currentPath, container, itemType = "folder") {
         if (error) {
             isCommitting = false;
             isShowingError = true;
-            window.nexser?.windowAPI.alertWindow(error, { width: 360, height: 160, taskbar: false });
+            window.nexser?.windowAPI.alertWindow(error, { width: 360, height: 160 });
             setTimeout(() => {
                 isShowingError = false;
                 input.focus();
@@ -1234,7 +1234,7 @@ async function deleteFSItem(parentPath, itemName, dispatchEvent = true) {
             return true;
         } catch (e) {
             console.warn(`[Desktop Guard] 完全削除拒否: ${itemName}`);
-            window.nexser?.windowAPI.alertWindow(`「${itemName}」は保護されているため削除できません。`, {
+            window.nexser?.windowAPI.alertWindow(`「${itemName}」は保護されているため削除できません`, {
                 title: "システム保護",
                 width: 350,
                 height: 160
@@ -1325,7 +1325,9 @@ function openFSItem(name, node, parentPath) {
     const targetPath = resolved.path;
 
     if (!targetNode) {
-        window.nexser?.windowAPI.alertWindow("リンク先が見つかりません。");
+        window.nexser?.windowAPI.alertWindow("リンク先が見つかりません。", {
+            title: "システム",
+        });
         return;
     }
 
@@ -1653,7 +1655,7 @@ async function pasteClipboardToDesktop() {
 function startDesktopInlineRename(iconEl, oldName) {
     const node = FS["C:"]?.Desktop?.[oldName];
     if (!node || node.system === true) {
-        window.nexser?.windowAPI?.alertWindow(`「${oldName}」は保護されているため名前を変更できません。`, { width: 350, height: 140 });
+        window.nexser?.windowAPI?.alertWindow(`「${oldName}」は保護されているため名前を変更できません。`, { title: "システム保護", width: 350, height: 140 });
         return;
     }
 
@@ -1697,7 +1699,7 @@ function startDesktopInlineRename(iconEl, oldName) {
         const res = await renameFSItem("C:/Desktop", oldName, nextName);
         if (!res.ok) {
             isAlerting = true;
-            window.nexser?.windowAPI?.alertWindow(res.error, { width: 360, height: 160, taskbar: false });
+            window.nexser?.windowAPI?.alertWindow(res.error, { width: 360, height: 160 });
             setTimeout(() => {
                 isAlerting = false;
                 input.focus();
