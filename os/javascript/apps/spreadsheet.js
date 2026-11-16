@@ -340,10 +340,11 @@ const SCOPED_CSS = `
     z-index: 7;
 }
 
-.nexser-spreadsheet-app td.fill-edge-top { border-top: 2px dashed #005a9e !important; }
-.nexser-spreadsheet-app td.fill-edge-bottom { border-bottom: 2px dashed #005a9e !important; }
-.nexser-spreadsheet-app td.fill-edge-left { border-left: 2px dashed #005a9e !important; }
-.nexser-spreadsheet-app td.fill-edge-right { border-right: 2px dashed #005a9e !important; }
+.nexser-spreadsheet-app td.fill-selected { background-color: rgba(0, 90, 158, 0.08); }
+.nexser-spreadsheet-app td.fill-edge-top { border-top: 3px dashed #005a9e !important; }
+.nexser-spreadsheet-app td.fill-edge-bottom { border-bottom: 3px dashed #005a9e !important; }
+.nexser-spreadsheet-app td.fill-edge-left { border-left: 3px dashed #005a9e !important; }
+.nexser-spreadsheet-app td.fill-edge-right { border-right: 3px dashed #005a9e !important; }
 
 .nexser-spreadsheet-app .merge-highlight {
     outline: 3.5px dashed red !important;

@@ -164,6 +164,8 @@ const baseFS = {
                     "RegistryEditor.app": { type: "link", target: "C:/Programs/Applications/RegistryEditor.app" }
                 },
                 Office: {
+                    type: "folder",
+                    system: true,
                     "Spreadsheet.app": { type: "link", target: "C:/Programs/Applications/Spreadsheet.app" }
                 }
             },
