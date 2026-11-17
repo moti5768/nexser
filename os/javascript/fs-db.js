@@ -1,5 +1,6 @@
 // fs-db.js
 import { openDB } from "./db.js";
+import { isChildNodeObject } from "./fs-utils.js";
 
 const STORE_KV = "kv";
 const STORE_FILES = "files";
@@ -64,17 +65,6 @@ function resolveNodeByPath(rootFS, path) {
         cur = cur[part];
     }
     return cur || null;
-}
-
-function isChildNodeObject(val) {
-    return (
-        val !== null &&
-        typeof val === "object" &&
-        !(val instanceof Blob) &&
-        !(val instanceof ArrayBuffer) &&
-        !ArrayBuffer.isView(val) &&
-        typeof val.type === "string"
-    );
 }
 
 /**

@@ -228,6 +228,21 @@ export function isSystemMetaKey(key) {
 }
 
 /**
+ * 値が仮想FSの子ノード（folder / file / app / link など type を持つオブジェクト）かどうかを判定
+ */
+const VALID_NODE_TYPES = new Set(["folder", "file", "app", "link"]);
+
+export function isChildNodeObject(val) {
+    return (
+        val !== null &&
+        typeof val === "object" &&
+        !(val instanceof Blob) &&
+        !(val instanceof ArrayBuffer) &&
+        !ArrayBuffer.isView(val) &&
+        VALID_NODE_TYPES.has(val.type)
+    );
+}
+/**
  * ProxyラップされたFSノードを、DataCloneErrorやBlob破壊を起こさずに安全にディープクローンする
  */
 export function cloneFSNode(node, visited = new WeakMap()) {
@@ -283,7 +298,7 @@ export function clearSystemProtection(node, visited = new WeakSet()) {
     for (const key of Object.keys(node)) {
         if (isSystemMetaKey(key)) continue;
         const child = node[key];
-        if (child && typeof child === "object") {
+        if (isChildNodeObject(child)) {
             clearSystemProtection(child, visited);
         }
     }
@@ -302,7 +317,7 @@ export async function processStorageRecursively(node, oldBasePath, newBasePath, 
         for (const key of Object.keys(node)) {
             if (isSystemMetaKey(key)) continue;
             const child = node[key];
-            if (!child || typeof child !== "object") continue;
+            if (!isChildNodeObject(child)) continue;
 
             const oldSubPath = `${oldBasePath}/${key}`;
             const newSubPath = `${newBasePath}/${key}`;
@@ -413,7 +428,7 @@ export async function renameFSItem(parentPath, oldName, rawNewName) {
     }
 
     const hasConflict = Object.keys(parentNode).some(
-        k => !isSystemMetaKey(k) && k !== oldName && k.toLowerCase() === newName.toLowerCase()
+        k => !isSystemMetaKey(k) && isChildNodeObject(parentNode[k]) && k !== oldName && k.toLowerCase() === newName.toLowerCase()
     );
     if (hasConflict) {
         return { ok: false, error: `同じ名前の項目「${newName}」が既に存在します。` };
@@ -438,7 +453,7 @@ export async function renameFSItem(parentPath, oldName, rawNewName) {
         for (const key of Object.keys(node)) {
             if (isSystemMetaKey(key)) continue;
             const child = node[key];
-            if (!child || typeof child !== "object") continue;
+            if (!isChildNodeObject(child)) continue;
             if (child.type === "link" && typeof child.target === "string") {
                 if (child.target === oldFullPath) {
                     child.target = newFullPath;

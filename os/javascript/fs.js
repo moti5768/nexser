@@ -7,6 +7,7 @@ import {
     saveNodeDiff,
     LARGE_FILE_THRESHOLD
 } from "./fs-db.js";
+import { normalizePath, isChildNodeObject } from "./fs-utils.js";
 
 let saveTimer = null;
 let deletedDefaults = new Set();
@@ -28,30 +29,47 @@ export function setBulkUpdating(flag) {
 // =========================================
 // 【NTFS風改善】ファイル排他ロック管理機構
 // =========================================
-const fileLocks = new Map(); // path -> { mode: "exclusive", pid: string }
+const fileLocks = new Map(); // normalizedPath -> { mode: "exclusive", pid: string }
 
 export function lockFile(path, mode = "exclusive", pid = "system") {
-    const current = fileLocks.get(path);
+    const normPath = normalizePath(path);
+    const ownerPid = String(pid);
+    const current = fileLocks.get(normPath);
+
     if (current && current.mode === "exclusive") {
-        console.warn(`[FS Lock] 共有違反: ${path} はすでにロックされています。`);
+        // 同一プロセスによる再ロックは許可
+        if (current.pid === ownerPid) return true;
+        console.warn(`[FS Lock] 共有違反: ${normPath} はすでにロックされています (PID: ${current.pid})。`);
         return false;
     }
-    fileLocks.set(path, { mode, pid });
+    fileLocks.set(normPath, { mode, pid: ownerPid });
     return true;
 }
 
 export function unlockFile(path, pid = "system") {
-    const current = fileLocks.get(path);
-    if (current && current.pid === pid) {
-        fileLocks.delete(path);
+    const normPath = normalizePath(path);
+    const current = fileLocks.get(normPath);
+    if (current && current.pid === String(pid)) {
+        fileLocks.delete(normPath);
         return true;
     }
     return false;
 }
 
+export function unlockFilesByPid(pid) {
+    const ownerPid = String(pid);
+    for (const [path, lock] of fileLocks.entries()) {
+        if (lock.pid === ownerPid) {
+            fileLocks.delete(path);
+            console.log(`[FS Lock] プロセス終了 (PID: ${ownerPid}) に伴いロックを自動解除しました: ${path}`);
+        }
+    }
+}
+
 export function unlockFilesByPath(pathPrefix) {
+    const normPrefix = normalizePath(pathPrefix);
     for (const [path] of fileLocks.entries()) {
-        if (path === pathPrefix || path.startsWith(pathPrefix + "/")) {
+        if (path === normPrefix || path.startsWith(normPrefix + "/")) {
             fileLocks.delete(path);
             console.log(`[FS Lock] パス解放に伴いロックを自動解除しました: ${path}`);
         }
@@ -59,8 +77,9 @@ export function unlockFilesByPath(pathPrefix) {
 }
 
 export function isFileLocked(pathPrefix) {
+    const normPrefix = normalizePath(pathPrefix);
     for (const [path, lock] of fileLocks.entries()) {
-        if (lock.mode === "exclusive" && (path === pathPrefix || path.startsWith(pathPrefix + "/"))) {
+        if (lock.mode === "exclusive" && (path === normPrefix || path.startsWith(normPrefix + "/"))) {
             return true;
         }
     }
@@ -383,13 +402,7 @@ function wrapProxy(obj, path = "") {
                 }
 
                 // 子ノード（folder / file / app / link）の追加・置換か、ノード内プロパティ変更かを判定
-                const isChildNode =
-                    cleanValue &&
-                    typeof cleanValue === "object" &&
-                    !(cleanValue instanceof Blob) &&
-                    !(cleanValue instanceof ArrayBuffer) &&
-                    !ArrayBuffer.isView(cleanValue) &&
-                    "type" in cleanValue;
+                const isChildNode = isChildNodeObject(cleanValue);
 
                 if (isChildNode) {
                     // 該当階層（および新規フォルダなら配下）と直近の親フォルダの2階層だけを差分登録
@@ -421,13 +434,7 @@ function wrapProxy(obj, path = "") {
             }
 
             const prevVal = target[prop];
-            const isChildNode =
-                prevVal &&
-                typeof prevVal === "object" &&
-                !(prevVal instanceof Blob) &&
-                !(prevVal instanceof ArrayBuffer) &&
-                !ArrayBuffer.isView(prevVal) &&
-                "type" in prevVal;
+            const isChildNode = isChildNodeObject(prevVal);
 
             delete target[prop];
 
@@ -765,7 +772,7 @@ export async function diagnoseAndCleanFS(executeRepair = false) {
     // 1. ゴミ箱内のアイテムを完全に空にする（実データ削除 + デフォルト削除マーク付き）
     const trashNode = FS["C:"] ? FS["C:"].Trash : null;
     if (trashNode) {
-        const trashKeys = Object.keys(trashNode).filter(key => !PROTECTED_KEYS.has(key));
+        const trashKeys = Object.keys(trashNode).filter(key => isChildNodeObject(trashNode[key]));
         report.garbageItems += trashKeys.length;
         report.garbageNames = trashKeys;
 
@@ -844,9 +851,9 @@ export async function diagnoseAndCleanFS(executeRepair = false) {
 
         try {
             for (const key of Object.keys(node)) {
-                if (PROTECTED_KEYS.has(key) || key === "hidden" || key === "originalPath" || key === "size" || key === "content") continue;
+                if (PROTECTED_KEYS.has(key)) continue;
                 const child = node[key];
-                if (!child || typeof child !== "object") continue;
+                if (!isChildNodeObject(child)) continue;
 
                 const childPath = `${currentPath}/${key}`;
 

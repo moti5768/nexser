@@ -6,7 +6,7 @@ import { showBSOD } from "./bsod.js";
 import { showPromptScreen, resetSystemVerification } from "./boot.js";
 import { addRecent } from "./recent.js";
 import { installDynamicButtonEffect } from "./ui.js";
-import { resolveFS, basename } from "./fs-utils.js";
+import { resolveFS, basename, normalizePath, cloneFSNode, isChildNodeObject } from "./fs-utils.js";
 import { resolveAppByPath } from "./file-associations.js";
 import { dbGet, dbSet } from "./fs-db.js";
 import { setKernelWindowCreator, createWindow as createRawWindow } from "./window.js";
@@ -33,6 +33,26 @@ function isCriticalError(msg) {
 
 let systemErrorHandlerInstalled = false;
 
+function findProcessKeyByError(e) {
+    // 1. DOM要素（画像・スクリプト読み込み失敗など）からウィンドウを逆引き
+    const targetWin = e.target instanceof Element ? e.target.closest(".window") : null;
+    if (targetWin?.dataset?.processKey) {
+        return targetWin.dataset.processKey;
+    }
+
+    // 2. JS実行時エラーのソースファイルURL（e.filename）から稼働中アプリを逆引き
+    if (e.filename) {
+        for (const [key, proc] of processes.entries()) {
+            if (proc.isShell) continue; // シェルは誤爆終了させない
+            const entryName = proc.entry ? basename(proc.entry) : "";
+            if (entryName && e.filename.includes(entryName)) {
+                return key;
+            }
+        }
+    }
+    return null;
+}
+
 export function initSystemErrorHandler() {
     if (systemErrorHandlerInstalled) return;
     systemErrorHandlerInstalled = true;
@@ -42,7 +62,6 @@ export function initSystemErrorHandler() {
         const error = e.reason;
         const msg = error?.message || String(error);
 
-        // ★ 非同期側でも重大なエラーのときだけBSODにする
         if (isCriticalError(msg)) {
             showBSOD(`KERNEL_UNHANDLED_REJECTION: ${msg}`, error);
         } else {
@@ -50,34 +69,31 @@ export function initSystemErrorHandler() {
         }
     });
 
-    // 通常のエラー
+    // 通常のエラー（キャプチャフェーズで要素読み込みエラーも捕捉）
     window.addEventListener("error", (e) => {
-        const msg = e.error ? e.error.message : e.message;
+        const msg = e.error ? e.error.message : (e.message || "Resource load error");
         if (isCriticalError(msg)) {
             showBSOD(`KERNEL_FAULT: ${msg}`, e.error);
         } else {
-            window.dispatchEvent(new CustomEvent("nexser-system-log", {
-                detail: {
-                    category: "System",
-                    level: "Warning",
-                    source: "KernelErrorHandler",
-                    eventId: 2001,
-                    taskCategory: "Exception Handling",
-                    description: `Non-critical exception caught: ${msg}`
-                }
-            }));
+            logSystemEvent(
+                "System",
+                "Warning",
+                "KernelErrorHandler",
+                2001,
+                "Exception Handling",
+                `Non-critical exception caught: ${msg}`
+            );
 
-            // エラーを発生させた要素からプロセスキー（processKey）を逆引きして該当アプリのみ終了
-            const targetWin = e.target?.closest ? e.target.closest(".window") : null;
-            if (targetWin && targetWin.dataset.processKey) {
-                const key = targetWin.dataset.processKey;
+            const key = findProcessKeyByError(e);
+            if (key && processes.has(key)) {
                 console.warn(`[Kernel] App error detected. Terminating process: ${key}`);
                 getWindowAPI()?.errorWindow(`アプリケーションエラーが発生したため終了しました。\n${msg}`, { taskbar: false });
                 killProcess(key);
             }
         }
-    });
+    }, true);
 }
+
 /* =========================
    Metrics（CPU / Memory）
 ========================= */
@@ -252,18 +268,14 @@ export async function initKernelSpaceAsync(progressCallback = () => { }) {
  */
 function collectFSActualStats(rootNode) {
     const stats = { folders: 0, files: 0, apps: 0, links: 0, externalFiles: 0 };
-    const skipKeys = new Set([
-        "type", "entry", "singleton", "shell", "system", "lastModified",
-        "hidden", "originalPath", "size", "content", "name", "target", "code", "windowOptions", "frameless"
-    ]);
     const visited = new WeakSet();
 
     function walk(node) {
         if (!node || typeof node !== "object" || visited.has(node)) return;
         visited.add(node);
 
-        for (const [key, val] of Object.entries(node)) {
-            if (skipKeys.has(key) || !val || typeof val !== "object") continue;
+        for (const val of Object.values(node)) {
+            if (!isChildNodeObject(val)) continue;
             if (val.type === "folder") {
                 stats.folders++;
                 walk(val);
@@ -300,27 +312,42 @@ async function getStorageUsageText() {
     return "計測不可";
 }
 
-// ⭐ shell: true を持つアプリケーションを自動起動するヘルパー関数（進捗通知対応）
+// ⭐ FS上で shell: true が定義されたアプリケーションを再帰探索して自動起動する
 export async function launchShellApps(onProgress = null) {
     try {
         const { FS } = await import("./fs.js");
-        const applications = FS["C:"]?.Programs?.Applications;
-        if (!applications) return [];
+        const programsRoot = FS["C:"]?.Programs;
+        if (!programsRoot) return [];
 
-        const shellEntries = Object.entries(applications).filter(
-            ([, appObj]) => appObj && appObj.shell && appObj.type === "app"
-        );
+        const shellEntries = [];
+        const visited = new WeakSet();
+
+        function collectShellApps(node, currentPath) {
+            if (!node || typeof node !== "object" || visited.has(node)) return;
+            visited.add(node);
+
+            for (const [name, child] of Object.entries(node)) {
+                if (!child || typeof child !== "object" || typeof child.type !== "string") continue;
+                const childPath = `${currentPath}/${name}`;
+                if (child.type === "app" && child.shell === true) {
+                    shellEntries.push({ name, path: childPath });
+                } else if (child.type === "folder") {
+                    collectShellApps(child, childPath);
+                }
+            }
+        }
+
+        collectShellApps(programsRoot, "C:/Programs");
 
         const launchedList = [];
         for (let i = 0; i < shellEntries.length; i++) {
-            const [appName] = shellEntries[i];
-            const appPath = `C:/Programs/Applications/${appName}`;
+            const { name, path: appPath } = shellEntries[i];
             if (typeof onProgress === "function") {
-                onProgress(appName, appPath, i + 1, shellEntries.length);
+                onProgress(name, appPath, i + 1, shellEntries.length);
             }
             console.log(`[Kernel] Launching shell app: ${appPath}`);
             await launch(appPath);
-            launchedList.push(appName);
+            launchedList.push(name);
         }
         return launchedList;
     } catch (e) {
@@ -329,23 +356,12 @@ export async function launchShellApps(onProgress = null) {
     }
 }
 
-// 2. システムシェル（タスクバー・スタートメニュー）※デスクトップより先に構築
+// 2. システムシェル基盤（タスクバー・UIエフェクト）構築 ※個別シェルアプリは FS 定義から launchShellApps で起動
 export async function initShellAsync(progressCallback = () => { }) {
-    progressCallback("Initializing System Shell (Taskbar & Start Menu)...");
+    progressCallback("Initializing System Shell (Taskbar & UI Effects)...");
 
-    // ⭕ await を追加し、タスクバーの設定・レイアウト適用が完全に完了するのを待つ
     await initTaskbar();
     await new Promise(r => requestAnimationFrame(r));
-
-    try {
-        const { startMenuReady } = await import("./apps/startmenu.js");
-        if (typeof startMenuReady === "function") {
-            await startMenuReady(); // タスクバーの位置・サイズが確定した状態でスタートメニューを初期化する
-        }
-    } catch (e) {
-        console.warn("[Kernel] StartMenu failed to initialize:", e);
-    }
-    await new Promise(r => setTimeout(r, 0));
 
     installDynamicButtonEffect();
     await new Promise(r => requestAnimationFrame(r));
@@ -604,12 +620,13 @@ export async function initKernelAsync(progressCallback = () => { }) {
 ========================= */
 const tabAppInstances = new Map();
 
-export async function launch(path, options = {}) {
-    if (typeof path !== "string") {
-        getWindowAPI()?.errorWindow(`無効なパス: ${path}`, { taskbar: false });
+export async function launch(rawPath, options = {}) {
+    if (typeof rawPath !== "string" || !rawPath.trim()) {
+        getWindowAPI()?.errorWindow(`無効なパス: ${rawPath}`, { taskbar: false });
         return;
     }
 
+    const path = normalizePath(rawPath);
     if (launching.has(path)) return;
     launching.add(path);
 
@@ -620,7 +637,6 @@ export async function launch(path, options = {}) {
             return;
         }
 
-        // タイプごとに処理を専用関数へ委譲してスッキリさせる
         switch (item.type) {
             case "link":
                 return await launchLink(item, path, options);
@@ -633,14 +649,12 @@ export async function launch(path, options = {}) {
             default:
                 throw new Error(`不明なタイプ: ${item.type}`);
         }
-
     } catch (err) {
         console.error("Launch error:", err);
         getWindowAPI()?.errorWindow(`起動に失敗しました: ${path}\n${err.message}`, { taskbar: false });
     } finally {
         launching.delete(path);
         try {
-            // ✨ カスタムイベントを発行してスタートメニュー側に更新を伝える
             window.dispatchEvent(new CustomEvent("request-refresh-start-menu"));
         } catch { }
     }
@@ -741,23 +755,77 @@ async function launchApp(item, path, options) {
     if (uniqueKey) processes.delete(uniqueKey);
 
     // ==========================================
-    // 1. 変数をここで一度だけ一意に定義する
+    // 1. 変数とプロセス管理リソースコンテナの定義
     // ==========================================
     const displayName = options?.path ? basename(options.path) : (options.showFullPath ? path : item.name || basename(path));
     const isFrameless = Boolean(item.frameless || options.frameless);
     const isShell = Boolean(item.shell || options.shell);
-    const processPath = (isExplorer && options.path) ? options.path : path;
+    const processPath = (isExplorer && options.path) ? normalizePath(options.path) : path;
     const key = uniqueKey ?? `app:${processPath}:${Date.now()}`;
     const pid = pidCounter++;
+
+    const resources = {
+        timeouts: new Set(),
+        intervals: new Set(),
+        listeners: []
+    };
+
+    const baseSyscall = {
+        pid,
+        path: processPath,
+        exit: () => killProcess(key),
+        postMessage: (targetPid, message) => sendProcessMessage(pid, targetPid, message),
+        onMessage: null,
+        heartbeat: () => {
+            const p = processes.get(key);
+            if (p) p.lastHeartbeat = performance.now();
+        },
+        setTimeout: (fn, delay, ...args) => {
+            const id = setTimeout(() => {
+                resources.timeouts.delete(id);
+                fn(...args);
+            }, delay);
+            resources.timeouts.add(id);
+            return id;
+        },
+        clearTimeout: (id) => {
+            resources.timeouts.delete(id);
+            clearTimeout(id);
+        },
+        setInterval: (fn, delay, ...args) => {
+            const id = setInterval(fn, delay, ...args);
+            resources.intervals.add(id);
+            return id;
+        },
+        clearInterval: (id) => {
+            resources.intervals.delete(id);
+            clearInterval(id);
+        },
+        addWindowListener: (type, listener, opts) => {
+            window.addEventListener(type, listener, opts);
+            resources.listeners.push({ type, listener, opts });
+        },
+        removeWindowListener: (type, listener, opts) => {
+            window.removeEventListener(type, listener, opts);
+            resources.listeners = resources.listeners.filter(
+                l => !(l.type === type && l.listener === listener)
+            );
+        },
+        lockFile: async (targetPath, mode = "exclusive") => {
+            const { lockFile } = await import("./fs.js");
+            return lockFile(normalizePath(targetPath), mode, String(pid));
+        },
+        unlockFile: async (targetPath) => {
+            const { unlockFile } = await import("./fs.js");
+            return unlockFile(normalizePath(targetPath), String(pid));
+        }
+    };
 
     // ==========================================
     // 2. サードパーティー（動的コード）用の制限されたサンドボックス Syscall
     // ==========================================
-    const sandboxSyscall = Object.freeze({
-        pid,
-        path: processPath,
-        exit: () => killProcess(key),
-        postMessage: (targetPid, message) => sendProcessMessage(pid, targetPid, message)
+    const sandboxSyscall = Object.seal({
+        ...baseSyscall
     });
 
     let appModule;
@@ -781,7 +849,7 @@ async function launchApp(item, path, options) {
                     get(target, prop, receiver) {
                         const res = Reflect.get(target, prop, receiver);
                         if (target === targetFS["C:"] && typeof prop === "string" && RESTRICTED_DIRS.has(prop)) {
-                            return Object.freeze(JSON.parse(JSON.stringify(res || {})));
+                            return Object.freeze(cloneFSNode(res || {}));
                         }
                         if (res && typeof res === "object") {
                             return new Proxy(res, fsHandler);
@@ -806,7 +874,6 @@ async function launchApp(item, path, options) {
 
             const safeFS = createSecureFS(FS);
 
-            // 動的コード側には安全な sandboxSyscall のみをバインド
             const runScript = new Function(
                 'FS', 'forceSave', 'resolveFS', 'windowAPI', 'getFileContent', 'syscall',
                 `return (${executableCode});`
@@ -839,72 +906,70 @@ async function launchApp(item, path, options) {
 
     let appHandle = null;
 
-    // 動的コード（サードパーティー）には sandboxSyscall、通常のシステムアプリにはフル機能の syscall を割り当て
     const syscall = item.code ? sandboxSyscall : {
-        pid,
-        path: processPath,
-        exit: () => killProcess(key),
-        restart: () => restartProcess(key),
-        postMessage: (targetPid, message) => sendProcessMessage(pid, targetPid, message),
-        onMessage: null
+        ...baseSyscall,
+        restart: () => restartProcess(key)
     };
+
+    // 起動中の例外時もリソース回収できるよう先に仮登録
+    registerProcess(win, key, processPath, null, isShell, options, pid, {
+        entry: item.entry || "",
+        syscall,
+        resources
+    });
 
     try {
         appHandle = await appModule.default(content, { ...options, syscall });
+        const proc = processes.get(key);
+        if (proc) proc.handle = appHandle;
+
         if (appHandle?.isTabApp) tabAppInstances.set(item.entry, { win, handle: appHandle });
         if (typeof win._applyRealIcon === "function") win._applyRealIcon();
 
         const processState = isShell ? "shell" : "normal";
-        const logCategory = "Application";
         const logSource = basename(processPath);
-        const logDesc = `アプリケーション '${logSource}' (PID: ${pid}) が正常に起動しました。`;
-
-        // イベント通知と IndexedDB 永続化を logSystemEvent に一本化（重複保存・競合防止）
         await logSystemEvent(
-            logCategory,
+            "Application",
             "Information",
             logSource,
             1000,
             "App Lifecycle",
-            logDesc,
-            {
-                isShell: isShell,
-                state: processState
-            }
+            `アプリケーション '${logSource}' (PID: ${pid}) が正常に起動しました。`,
+            { isShell, state: processState }
         );
     } catch (e) {
         console.error("app runtime error:", e);
-        if (typeof getWindowAPI()?.destroyWindow === "function" && win) {
-            getWindowAPI()?.destroyWindow(win);
-        }
+        killProcess(key);
         getWindowAPI()?.errorWindow(`アプリがクラッシュしました\n${e.message}`, { taskbar: false });
         throw e;
     }
 
     addRecent(processPath);
-    registerProcess(win, key, processPath, appHandle, isShell, options, pid);
 
     if (isExplorer) explorerWindows.set(options.path || "C:/Desktop", win);
 }
 
 /* --- 共通：プロセス登録とObserver設定のヘルパー --- */
-function registerProcess(win, key, path, handle, isShell = false, options = {}, forcedPid = null) {
-    const pid = forcedPid !== null ? forcedPid : pidCounter++; // ⭐二重採番を完全に防止
+function registerProcess(win, key, path, handle, isShell = false, options = {}, forcedPid = null, meta = {}) {
+    const pid = forcedPid !== null ? forcedPid : pidCounter++;
     processes.set(key, {
         pid,
         path,
+        entry: meta.entry || "",
         window: win,
         handle,
+        syscall: meta.syscall || null,
+        resources: meta.resources || null,
         state: isShell ? "shell" : "normal",
         isShell,
         options,
         startTime: performance.now(),
+        lastHeartbeat: null,
         memory: 0,
         cpu: 0
     });
     win.dataset.processKey = key;
 
-    // (以降のObserver設定などはそのまま)
     const observer = new MutationObserver((mutations, obs) => {
         if (!document.body.contains(win)) {
             obs.disconnect();
@@ -997,19 +1062,34 @@ export function killProcess(key) {
     const win = proc.window;
     const handle = proc.handle;
     const procPath = proc.path;
+    const resources = proc.resources;
 
     processes.delete(key);
 
     try {
-        if (procPath) {
-            import("./fs.js").then(({ unlockFilesByPath }) => {
-                if (typeof unlockFilesByPath === "function") {
-                    unlockFilesByPath(procPath);
-                }
-            }).catch(err => {
-                console.warn("[Kernel] Failed to release file locks on process termination:", err);
+        // 1. プロセスが保持していたタイマー・イベントリスナーを強制回収
+        if (resources) {
+            resources.timeouts?.forEach(id => clearTimeout(id));
+            resources.intervals?.forEach(id => clearInterval(id));
+            resources.listeners?.forEach(({ type, listener, opts }) => {
+                try { window.removeEventListener(type, listener, opts); } catch (_) { }
             });
+            resources.timeouts?.clear();
+            resources.intervals?.clear();
+            resources.listeners.length = 0;
         }
+
+        // 2. PID単位およびパス単位でファイルロックを自動解放
+        import("./fs.js").then((fsMod) => {
+            if (typeof fsMod.unlockFilesByPid === "function") {
+                fsMod.unlockFilesByPid(String(pid));
+            }
+            if (procPath && typeof fsMod.unlockFilesByPath === "function") {
+                fsMod.unlockFilesByPath(procPath);
+            }
+        }).catch(err => {
+            console.warn("[Kernel] Failed to release file locks on process termination:", err);
+        });
 
         if (handle) {
             if (typeof handle.dispose === 'function') handle.dispose();
@@ -1098,6 +1178,7 @@ export function resetUI() {
 
         processes.clear();
         explorerWindows.clear();
+        tabAppInstances.clear();
 
         // ⭐ UIリセット時にもPIDカウンターを1に巻き戻す
         pidCounter = 1;
@@ -1115,18 +1196,12 @@ export async function logOff() {
 
     const windows = document.querySelectorAll(".window");
 
-    // 💡 ドキュメント上のウィンドウおよびプロセス管理から「シェル」を完全に除外して判定
+    // 💡 FS上の shell: true 定義から引き継がれた proc.isShell でシェルを除外
     const activeNormalWindows = Array.from(windows).filter(w => {
         const key = w.dataset.processKey;
         const proc = processes.get(key);
-        if (!proc) return true; // プロセス未登録は通常ウィンドウ扱い
-
-        // isShell フラグ、またはアプリ名に toolbar / startmenu が含まれる場合はシェルとみなして除外
-        if (proc.isShell) return false;
-        const lowerPath = (proc.path || "").toLowerCase();
-        if (lowerPath.includes("toolbar") || lowerPath.includes("startmenu")) return false;
-
-        return true;
+        if (!proc) return true;
+        return !proc.isShell;
     });
 
     const userApps = activeNormalWindows.map(w => {
@@ -1222,7 +1297,7 @@ export async function logOff() {
                 }
             }
 
-            // 3. システムログを IndexedDB へ書き込み
+            // 3. セッション終了ログを直列キュー経由で IndexedDB へ書き込み（各プロセス終了ログは killProcess 側で記録済み）
             progressWin?.update(
                 50,
                 100,
@@ -1230,48 +1305,20 @@ export async function logOff() {
                 "[3/5] イベントログをデータベースへ保存しています..."
             );
 
-            let allLogs = (await dbGet(LOG_STORAGE_KEY, "kv")) || {
-                System: [],
-                Application: [],
-                Security: []
-            };
+            await logSystemEvent(
+                "System",
+                "Information",
+                "SessionManager",
+                1004,
+                "Logoff",
+                `ユーザーがシステムからログオフしました (終了プロセス: ${totalProcs}件)。`
+            );
 
-            const nowTime = new Date().toLocaleTimeString();
-            const nowTimestamp = Date.now();
-
-            allLogs.System.unshift({
-                level: "Information",
-                time: nowTime,
-                timestamp: nowTimestamp,
-                source: "SessionManager",
-                eventId: 1004,
-                category: "Logoff",
-                description: `ユーザーがシステムからログオフしました (終了プロセス: ${totalProcs}件)。`
-            });
-
-            activeProcs.forEach(proc => {
-                allLogs.Application.unshift({
-                    level: "Information",
-                    time: nowTime,
-                    timestamp: nowTimestamp,
-                    source: proc.name,
-                    eventId: 1002,
-                    category: "App Lifecycle",
-                    isShell: proc.isShell,
-                    state: proc.state,
-                    description: `アプリケーション/シェル '${proc.name}' (PID: ${proc.pid}) が正常に終了しました。`
-                });
-            });
-
-            if (allLogs.System.length > 500) allLogs.System.length = 500;
-            if (allLogs.Application.length > 500) allLogs.Application.length = 500;
-
-            await dbSet(LOG_STORAGE_KEY, allLogs, "kv");
-
+            const allLogs = (await dbGet(LOG_STORAGE_KEY, "kv")) || { System: [], Application: [] };
             progressWin?.update(
                 64,
                 100,
-                `ログ保存完了 (累計保持件数: System ${allLogs.System.length}件 / Application ${allLogs.Application.length}件)\nファイルシステムの最終同期を実行中...`,
+                `ログ保存完了 (累計保持件数: System ${allLogs.System?.length || 0}件 / Application ${allLogs.Application?.length || 0}件)\nファイルシステムの最終同期を実行中...`,
                 "[4/5] ファイルシステムの整合性を検証しています..."
             );
 
@@ -1394,9 +1441,17 @@ if (typeof window !== "undefined") {
                     }
                 }
 
-                // プロセス管理キー自体が旧パスベースの場合は新パスへ付け替え（二重起動防止）
+                // プロセス管理キー自体が旧パスベース（または file:旧パス:...）の場合は新パスへ付け替え
                 if (key === oldPath || key.startsWith(oldPath + "/")) {
                     const updatedKey = replacePrefix(key);
+                    processes.delete(key);
+                    processes.set(updatedKey, proc);
+                    if (proc.window) {
+                        proc.window.dataset.processKey = updatedKey;
+                    }
+                } else if (key.startsWith(`file:${oldPath}:`) || key.startsWith(`file:${oldPath}/`)) {
+                    const suffix = key.slice(5);
+                    const updatedKey = `file:${replacePrefix(suffix)}`;
                     processes.delete(key);
                     processes.set(updatedKey, proc);
                     if (proc.window) {
@@ -1495,10 +1550,14 @@ export function sendProcessMessage(senderPid, targetPid, message) {
         return false;
     }
 
-    // 受信側アプリのハンドラを呼び出し
-    if (targetProc.handle && typeof targetProc.handle.onMessage === "function") {
+    // syscall.onMessage と handle.onMessage の両方をサポート
+    const handler =
+        (typeof targetProc.syscall?.onMessage === "function" && targetProc.syscall.onMessage) ||
+        (typeof targetProc.handle?.onMessage === "function" && targetProc.handle.onMessage);
+
+    if (handler) {
         try {
-            targetProc.handle.onMessage({ senderPid, data: message });
+            handler({ senderPid, data: message });
             return true;
         } catch (e) {
             console.error(`[IPC] Error delivering message to PID ${targetPid}:`, e);
@@ -1508,7 +1567,9 @@ export function sendProcessMessage(senderPid, targetPid, message) {
     return false;
 }
 
-export async function logSystemEvent(category, level, source, eventId, taskCategory, description, extra = {}) {
+let logWriteChain = Promise.resolve();
+
+export function logSystemEvent(category, level, source, eventId, taskCategory, description, extra = {}) {
     const logEntry = {
         level,
         time: new Date().toLocaleTimeString(),
@@ -1525,8 +1586,8 @@ export async function logSystemEvent(category, level, source, eventId, taskCateg
         detail: { category, ...logEntry }
     }));
 
-    // 2. 画面が開いていなくても確実に IndexedDB へ直接保存する
-    try {
+    // 2. 直列化キューで IndexedDB へ書き込み（連続ログ時の上書き消失を防止）
+    logWriteChain = logWriteChain.then(async () => {
         let allLogs = (await dbGet(LOG_STORAGE_KEY, "kv")) || {
             System: [],
             Application: [],
@@ -1536,11 +1597,12 @@ export async function logSystemEvent(category, level, source, eventId, taskCateg
         if (!allLogs[category]) allLogs[category] = [];
         allLogs[category].unshift(logEntry);
 
-        // 最大保持数500件を超えたら古いものを削除
-        if (allLogs[category].length > 500) allLogs[category].pop();
+        if (allLogs[category].length > 500) allLogs[category].length = 500;
 
         await dbSet(LOG_STORAGE_KEY, allLogs, "kv");
-    } catch (e) {
+    }).catch(e => {
         console.warn("[Kernel] Failed to persist logSystemEvent to DB:", e);
-    }
+    });
+
+    return logWriteChain;
 }
