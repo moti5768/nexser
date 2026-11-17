@@ -301,7 +301,7 @@ const SCOPED_CSS = `
     color: #000;
 }
 
-/* ----- スプレッドシート本体（横スクロールバーは下部タブバーへ分離） ----- */
+/* ----- スプレッドシート本体（ブラウザ標準の縦・横スクロールバー） ----- */
 .nexser-spreadsheet-app .ss-spreadsheet-container {
     flex: 1 1 auto;
     min-width: 0;
@@ -310,15 +310,36 @@ const SCOPED_CSS = `
     border-left: 1px solid #808080;
     border-right: 1px solid #808080;
     background-color: #fff;
+    overflow-x: scroll;
     overflow-y: auto;
-    overflow-x: hidden;
+    scrollbar-width: auto;
     position: relative;
+}
+
+/* 共通CSSのスクロールバー非表示ルールを上書き */
+.nexser-spreadsheet-app .ss-spreadsheet-container::-webkit-scrollbar {
+    display: block;
+    width: 14px;
+    height: 14px;
+}
+.nexser-spreadsheet-app .ss-spreadsheet-container::-webkit-scrollbar-track {
+    background: #dfdfdf;
+    border: 1px solid #a0a0a0;
+}
+.nexser-spreadsheet-app .ss-spreadsheet-container::-webkit-scrollbar-thumb {
+    background: #c3c7cb;
+    border: 1px solid;
+    border-color: #fff #404040 #404040 #fff;
+}
+.nexser-spreadsheet-app .ss-spreadsheet-container::-webkit-scrollbar-corner {
+    background: #c3c7cb;
 }
 
 .nexser-spreadsheet-app .ss-spreadsheet-content {
     transform-origin: top left;
-    display: block;
-    width: fit-content;
+    display: inline-block;
+    width: max-content;
+    min-width: max-content;
     position: relative;
 }
 
@@ -621,6 +642,14 @@ const SCOPED_CSS = `
 .nexser-spreadsheet-app .pulldown_menu li.button:hover {
     background: #000080;
     color: #fff;
+}
+
+.nexser-spreadsheet-app .pulldown_menu li.ss-menu-sep {
+    height: 1px;
+    margin: 3px 2px;
+    background-color: #808080;
+    border-bottom: 1px solid #fff;
+    pointer-events: none;
 }
 
 /* style.css 共通の .button に対するレイアウト補正（th の table-cell 維持） */
@@ -1574,8 +1603,11 @@ export default async function initSpreadsheetApp(content, options = {}) {
     content.style.overflow = "hidden";
     content.style.display = "flex";
     content.style.flexDirection = "column";
+    content.style.flex = "1 1 auto";
     content.style.width = "100%";
     content.style.height = "100%";
+    content.style.minWidth = "0";
+    content.style.minHeight = "0";
 
     content.innerHTML = `
     <div class="nexser-spreadsheet-app" tabindex="-1">
@@ -1621,11 +1653,13 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     <!-- 1. クリップボード -->
                     <div class="ss-ribbon-group">
                         <div class="ss-ribbon-group-body">
-                            <div class="pulldown_menu_parent">
+                           <div class="pulldown_menu_parent">
                                 <span class="button pulldown_btn" title="貼り付けオプション">📋 貼り付け ▼</span>
-                                <ul class="pulldown_menu" style="min-width:165px;">
+                                <ul class="pulldown_menu" style="min-width:195px;">
                                     <li class="button" data-action="paste">貼り付け (Ctrl+V)</li>
                                     <li class="button" data-action="paste-values">値のみ貼り付け (Ctrl+Shift+V)</li>
+                                    <li class="button" data-action="paste-formats">書式のみ貼り付け</li>
+                                    <li class="button" data-action="paste-transpose">行列を入れ替えて貼り付け</li>
                                 </ul>
                             </div>
                             <span class="button" data-action="cut" title="切り取り (Ctrl+X)">✂ 切り取り</span>
@@ -2140,9 +2174,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
             </div>
         </div>
 
-        <!-- Excel準拠：シートタブ一覧 ＆ 横スクロールバー 同一エリア配置 -->
-        <div class="ss-bottom-bar">
-            <div class="ss-tabs-region">
+       <!-- Excel準拠：シートタブ一覧 ＆ ズームバー 同一エリア配置 -->
+        <div class="ss-bottom-bar" style="justify-content:space-between; padding-right:8px;">
+            <div class="ss-tabs-region" style="flex:1 1 auto; max-width:none;">
                 <div class="ss-tab-nav-btns">
                     <span class="button ss-tab-nav-btn" data-tab-scroll="left" title="前のシートタブへスクロール">◀</span>
                     <span class="button ss-tab-nav-btn" data-tab-scroll="right" title="次のシートタブへスクロール">▶</span>
@@ -2152,17 +2186,15 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 </div>
                 <span class="button ss-sheet-add-btn" title="新しいシートを追加">＋</span>
             </div>
-            <div class="ss-bottom-splitter" title="ドラッグでシートタブと横スクロールバーの幅を調整">⋮</div>
-            <div class="ss-h-scrollbar-track">
-                <div class="ss-h-scrollbar-spacer"></div>
+            <div style="display:inline-flex; align-items:center; gap:6px; flex-shrink:0;">
+                <label style="font-size:11px;">拡大率:</label>
+                <input type="range" class="ss-zoom-slider" min="20" max="200" value="100" step="5">
+                <span class="ss-zoom-display" style="min-width:38px; font-weight:bold;">100%</span>
             </div>
         </div>
 
-        <!-- フッターズーム＆ステータスバー -->
+        <!-- フッターステータスバー -->
         <div class="ss-zoom-toolbar">
-            <label class="border" style="padding:1px 4px;">拡大率:</label>
-            <input type="range" class="ss-zoom-slider" min="20" max="200" value="100" step="5">
-            <span class="ss-zoom-display" style="min-width:38px;">100%</span>
             <span class="border" style="padding:1px 6px;">状態: <span class="ss-loadingstate">準備完了</span></span>
             <div class="ss-progress-container" style="display:inline-block; width:100px; height:14px; border:1px solid #808080; background:#f0f0f0;">
                 <div class="ss-progress-bar" style="height:100%; width:0%; background:#107c41;"></div>
@@ -2691,58 +2723,19 @@ export default async function initSpreadsheetApp(content, options = {}) {
     // =========================================================
     // 行・列の生成とリサイズハンドル（<colgroup> + 明示的テーブル幅）
     // =========================================================
+    let cachedTableWidth = 0;
     const hScrollTrack = appRoot.querySelector(".ss-h-scrollbar-track");
     const hScrollSpacer = appRoot.querySelector(".ss-h-scrollbar-spacer");
     let syncingHScroll = false;
 
-    let cachedTableWidth = 0;
-
-    function syncHorizontalScrollbar() {
-        if (!hScrollTrack || !hScrollSpacer) return;
-        const zoom = parseFloat(spreadsheetContent.style.zoom || "1") || 1;
-        const rawW = cachedTableWidth || table.offsetWidth;
-        const contentW = Math.round(rawW * zoom);
-        const viewW = container.clientWidth;
-        const overflowW = Math.max(0, contentW - viewW);
-        hScrollSpacer.style.width = `${hScrollTrack.clientWidth + overflowW}px`;
-    }
-
-    if (hScrollTrack) {
-        let hScrollRaf = null;
-        hScrollTrack.addEventListener("scroll", () => {
-            if (syncingHScroll) return;
-            if (hScrollRaf) cancelAnimationFrame(hScrollRaf);
-            hScrollRaf = requestAnimationFrame(() => {
-                syncingHScroll = true;
-                container.scrollLeft = hScrollTrack.scrollLeft;
-                syncingHScroll = false;
-                hScrollRaf = null;
-            });
-        }, { passive: true, signal });
-
-        container.addEventListener("scroll", () => {
-            if (syncingHScroll) return;
-            if (hScrollTrack.scrollLeft !== container.scrollLeft) {
-                syncingHScroll = true;
-                hScrollTrack.scrollLeft = container.scrollLeft;
-                syncingHScroll = false;
-            }
-        }, { passive: true, signal });
-
-        container.addEventListener("wheel", (e) => {
-            if (e.ctrlKey || e.metaKey) {
-                e.preventDefault();
-                const cur = parseInt(zoomSlider?.value || "100", 10) || 100;
-                const next = Math.max(20, Math.min(200, cur + (e.deltaY < 0 ? 10 : -10)));
-                setZoom(next);
-                return;
-            }
-            const deltaX = e.deltaX !== 0 ? e.deltaX : (e.shiftKey ? e.deltaY : 0);
-            if (deltaX === 0) return;
+    container.addEventListener("wheel", (e) => {
+        if (e.ctrlKey || e.metaKey) {
             e.preventDefault();
-            hScrollTrack.scrollLeft += deltaX;
-        }, { passive: false, signal });
-    }
+            const cur = parseInt(zoomSlider?.value || "100", 10) || 100;
+            const next = Math.max(20, Math.min(200, cur + (e.deltaY < 0 ? 10 : -10)));
+            setZoom(next);
+        }
+    }, { passive: false, signal });
 
     function syncTableWidth() {
         let total = 0;
@@ -2751,7 +2744,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         }
         cachedTableWidth = total;
         table.style.width = `${total}px`;
-        syncHorizontalScrollbar();
+        spreadsheetContent.style.width = `${total}px`;
     }
 
     function setColumnWidth(colIndex, widthPx) {
@@ -3059,6 +3052,31 @@ export default async function initSpreadsheetApp(content, options = {}) {
         }, { signal });
     }
 
+    const baseTdTemplate = document.createElement("td");
+    baseTdTemplate.tabIndex = -1;
+    baseTdTemplate.contentEditable = "false";
+
+    let cachedRowTemplate = null;
+    let cachedRowTemplateCols = -1;
+
+    function getRowTemplate(colLen) {
+        if (cachedRowTemplate && cachedRowTemplateCols === colLen) {
+            return cachedRowTemplate;
+        }
+        const tr = document.createElement("tr");
+        const th = document.createElement("th");
+        th.className = "row_number button";
+        tr.appendChild(th);
+        for (let c = 0; c < colLen; c++) {
+            const td = baseTdTemplate.cloneNode(false);
+            td.dataset.col = String(c);
+            tr.appendChild(td);
+        }
+        cachedRowTemplate = tr;
+        cachedRowTemplateCols = colLen;
+        return tr;
+    }
+
     function loadColumnsSync(count) {
         if (count <= 0) return;
         const start = currentColumns;
@@ -3081,14 +3099,18 @@ export default async function initSpreadsheetApp(content, options = {}) {
         theadRow.appendChild(headerFrag);
 
         for (const row of tbody.rows) {
-            const r = row.cells[0].textContent;
-            let newColsHTML = "";
+            const rStr = row.dataset.row || row.cells[0].textContent;
+            const rowFrag = document.createDocumentFragment();
             for (let c = start; c < end; c++) {
-                newColsHTML += `<td tabindex="-1" contenteditable="false" data-row="${r}" data-col="${c}"></td>`;
+                const td = baseTdTemplate.cloneNode(false);
+                td.dataset.row = rStr;
+                td.dataset.col = String(c);
+                rowFrag.appendChild(td);
             }
-            row.insertAdjacentHTML("beforeend", newColsHTML);
+            row.appendChild(rowFrag);
         }
         currentColumns = end;
+        cachedRowTemplate = null;
         syncTableWidth();
         if (freezeRows > 0 || freezeCols > 0) applyFreezePanes();
     }
@@ -3096,15 +3118,18 @@ export default async function initSpreadsheetApp(content, options = {}) {
     function loadRowsSync(count) {
         if (count <= 0) return;
         const frag = document.createDocumentFragment();
+        const template = getRowTemplate(currentColumns);
+
         for (let i = 0; i < count; i++, rowCount++) {
-            const tr = document.createElement("tr");
-            tr.dataset.row = String(rowCount);
-            let cellsHTML = `<th class="row_number button">${rowCount}</th>`;
-            for (let c = 0; c < currentColumns; c++) {
-                cellsHTML += `<td tabindex="-1" contenteditable="false" data-row="${rowCount}" data-col="${c}"></td>`;
+            const rStr = String(rowCount);
+            const tr = template.cloneNode(true);
+            tr.dataset.row = rStr;
+            const cells = tr.children;
+            cells[0].textContent = rStr;
+            for (let c = 1; c < cells.length; c++) {
+                cells[c].dataset.row = rStr;
             }
-            tr.innerHTML = cellsHTML;
-            attachRowResizeHandle(tr.cells[0], tr);
+            attachRowResizeHandle(cells[0], tr);
             frag.appendChild(tr);
         }
         tbody.appendChild(frag);
@@ -3393,8 +3418,8 @@ export default async function initSpreadsheetApp(content, options = {}) {
         return `[${matrix.join(",")}]`;
     }
 
-    const CROSS_SHEET_RANGE_REGEX = /(?:'([^']+)'|([A-Za-z0-9_\u3040-\u30FF\u4E00-\u9FAF]+))!(\$?[A-Z]+\$?\d+):(\$?[A-Z]+\$?\d+)/g;
-    const CROSS_SHEET_CELL_REGEX = /(?:'([^']+)'|([A-Za-z0-9_\u3040-\u30FF\u4E00-\u9FAF]+))!(\$?[A-Z]+\$?\d+)/g;
+    const CROSS_SHEET_RANGE_REGEX = /(?:'([^']+)'|([A-Za-z0-9_\u3040-\u30FF\u4E00-\u9FAF]+))!(\$?[A-Za-z]+\$?\d+):(\$?[A-Za-z]+\$?\d+)/g;
+    const CROSS_SHEET_CELL_REGEX = /(?:'([^']+)'|([A-Za-z0-9_\u3040-\u30FF\u4E00-\u9FAF]+))!(\$?[A-Za-z]+\$?\d+)/g;
 
     function evaluateFormula(formula, visited = new Set(), contextSheetIdx = activeSheetIndex) {
         if (!formula) return formula;
@@ -3415,11 +3440,40 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 return token;
             });
 
+            // Excelの文字列結合演算子（&）を括弧ネスト対応で CONCAT(...) に変換
+            const convertExcelConcat = (src) => {
+                const parts = [];
+                let current = "";
+                let depth = 0;
+                for (let i = 0; i < src.length; i++) {
+                    const ch = src[i];
+                    if (ch === "(") {
+                        depth++;
+                        current += ch;
+                    } else if (ch === ")") {
+                        depth = Math.max(0, depth - 1);
+                        current += ch;
+                    } else if (ch === "&" && src[i + 1] !== "&" && src[i - 1] !== "&" && depth === 0) {
+                        parts.push(current.trim());
+                        current = "";
+                    } else {
+                        current += ch;
+                    }
+                }
+                parts.push(current.trim());
+
+                const processed = parts.map(part =>
+                    part.replace(/\(([^()]+)\)/g, (m, inner) =>
+                        /(?<!&)&(?!&)/.test(inner) ? `(${convertExcelConcat(inner)})` : m
+                    )
+                );
+                return processed.length > 1 ? `CONCAT(${processed.join(", ")})` : processed[0];
+            };
+
             // Excel演算子・リテラル・関数名の大文字正規化（<>, &, 単独=, %, TRUE/FALSE, sum( -> SUM(）
-            expr = expr
+            expr = convertExcelConcat(expr)
                 .replace(/<>/g, "!==")
                 .replace(/(?<![<>!=])=(?!=)/g, "==")
-                .replace(/(?<!&)&(?!&)/g, "+")
                 .replace(/(\d+(?:\.\d+)?)%/g, "($1/100)")
                 .replace(/\bTRUE\b/gi, "true")
                 .replace(/\bFALSE\b/gi, "false")
@@ -3438,7 +3492,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 const sName = qName ?? plainName;
                 const sIdx = sheets.findIndex(s => s.name === sName);
                 if (sIdx === -1) return "0";
-                const m = cellRef.match(/^\$?([A-Z]+)\$?(\d+)$/);
+                const m = cellRef.match(/^\$?([A-Za-z]+)\$?(\d+)$/);
                 if (!m) return "0";
                 const val = getSheetCellValue(sIdx, parseInt(m[2], 10), columnLettersToIndex(m[1]), visited);
                 return toJSValueLiteral(val, true);
@@ -3736,13 +3790,86 @@ export default async function initSpreadsheetApp(content, options = {}) {
         return matrix[0]?.[0] ?? "";
     }
 
+    function extractLocalFormulaDependencies(formula) {
+        const deps = new Set();
+        if (!formula || formula[0] !== "=") return deps;
+
+        // 文字列リテラルと他シート参照（Sheet2!A1等）を除外して自シート参照のみ抽出
+        const cleaned = formula
+            .substring(1)
+            .replace(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'(?!\s*!)/g, "")
+            .replace(/(?:'[^']+'|[A-Za-z0-9_\u3040-\u30FF\u4E00-\u9FAF]+)!\$?[A-Za-z]+\$?\d+(?::\$?[A-Za-z]+\$?\d+)?/g, "");
+
+        // 範囲参照（A1:B5）の展開
+        const withoutRanges = cleaned.replace(RANGE_REF_REGEX, (match) => {
+            const [sRef, eRef] = match.split(":");
+            const s = parseCellReference(sRef.toUpperCase());
+            const e = parseCellReference(eRef.toUpperCase());
+            if (s && e) {
+                const r0 = Math.min(s.row, e.row), r1 = Math.max(s.row, e.row);
+                const c0 = Math.min(s.col, e.col), c1 = Math.max(s.col, e.col);
+                if ((r1 - r0 + 1) * (c1 - c0 + 1) <= 2000) {
+                    for (let r = r0; r <= r1; r++) {
+                        for (let c = c0; c <= c1; c++) {
+                            deps.add(`${r},${c}`);
+                        }
+                    }
+                }
+            }
+            return " ";
+        });
+
+        // 単一セル参照（A1）の抽出
+        withoutRanges.replace(SINGLE_REF_REGEX, (_, _absC, colLetters, _absR, rowStr) => {
+            deps.add(`${parseInt(rowStr, 10)},${columnLettersToIndex(colLetters)}`);
+            return "";
+        });
+
+        return deps;
+    }
+
+    function sortFormulaCellsTopologically(formulaCells) {
+        const cellMap = new Map();
+        for (const cell of formulaCells) {
+            cellMap.set(`${cell.dataset.row},${cell.dataset.col}`, cell);
+        }
+
+        const visited = new Set();
+        const visiting = new Set();
+        const sorted = [];
+
+        const visit = (key) => {
+            if (visited.has(key) || visiting.has(key)) return;
+            const cell = cellMap.get(key);
+            if (!cell) return;
+
+            visiting.add(key);
+            const deps = extractLocalFormulaDependencies(cell.dataset.formula);
+            for (const depKey of deps) {
+                if (cellMap.has(depKey)) {
+                    visit(depKey);
+                }
+            }
+            visiting.delete(key);
+            visited.add(key);
+            sorted.push(cell);
+        };
+
+        for (const key of cellMap.keys()) {
+            visit(key);
+        }
+        return sorted;
+    }
+
     function updateAllFormulas() {
         formulaEvalCache.clear();
         isBatchRecalculating = true;
         try {
             recalculateBackgroundSheets();
-            const formulaCells = Array.from(tbody.querySelectorAll("td[data-formula]"));
-            formulaCells.forEach(cell => {
+            const rawFormulaCells = Array.from(tbody.querySelectorAll("td[data-formula]"));
+            const orderedCells = sortFormulaCellsTopologically(rawFormulaCells);
+
+            orderedCells.forEach(cell => {
                 if (cell.isContentEditable) return;
                 const r = parseInt(cell.dataset.row, 10);
                 const c = parseInt(cell.dataset.col, 10);
@@ -4202,6 +4329,54 @@ export default async function initSpreadsheetApp(content, options = {}) {
         return null;
     }
 
+    function handleF4ReferenceToggle(e) {
+        if (e.key !== "F4") return false;
+        if (document.activeElement === formulaBarInput && formulaBarInput.value.trim().startsWith("=")) {
+            e.preventDefault();
+            e.stopPropagation();
+            const pos = formulaBarInput.selectionStart ?? formulaBarInput.value.length;
+            const toggled = cycleAbsoluteReference(formulaBarInput.value, pos);
+            if (toggled) {
+                formulaBarInput.value = toggled.text;
+                formulaBarInput.setSelectionRange(toggled.caret, toggled.caret);
+                if (activeCell) activeCell.textContent = toggled.text;
+                highlightCalculationRange(toggled.text.trim());
+            }
+            return true;
+        }
+        if (activeCell && activeCell.isContentEditable && activeCell.textContent.trim().startsWith("=")) {
+            e.preventDefault();
+            e.stopPropagation();
+            const sel = window.getSelection();
+            const caretPos = (sel && sel.rangeCount > 0) ? sel.getRangeAt(0).endOffset : activeCell.textContent.length;
+            const toggled = cycleAbsoluteReference(activeCell.textContent, caretPos);
+            if (toggled) {
+                activeCell.textContent = toggled.text;
+                formulaBarInput.value = toggled.text;
+                const textNode = activeCell.firstChild;
+                if (textNode && sel) {
+                    const range = document.createRange();
+                    const safeOffset = Math.min(toggled.caret, textNode.textContent.length);
+                    range.setStart(textNode, safeOffset);
+                    range.collapse(true);
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                }
+                highlightCalculationRange(toggled.text.trim());
+            }
+            return true;
+        }
+        return false;
+    }
+
+    formulaBarInput.addEventListener("keydown", (e) => {
+        handleF4ReferenceToggle(e);
+    }, { capture: true, signal });
+
+    tbody.addEventListener("keydown", (e) => {
+        handleF4ReferenceToggle(e);
+    }, { capture: true, signal });
+
     function insertCellReference(ref) {
         if (!ref) return;
         if (document.activeElement === formulaBarInput) {
@@ -4437,9 +4612,102 @@ export default async function initSpreadsheetApp(content, options = {}) {
         updateFillHandle();
     }
 
+    function findDataEdgeCoord(startRow, startCol, dRow, dCol) {
+        const maxR = Math.max(1, rowCount - 1);
+        const maxC = Math.max(0, currentColumns - 1);
+        const isCellFilled = (r, c) => {
+            const cell = peekCell(r, c);
+            if (!cell) return false;
+            const visible = cell.style.display === "none" ? getVisibleCell(r, c) : cell;
+            if (!visible) return false;
+            return Boolean(visible.dataset.formula || (visible.dataset.rawValue ?? visible.textContent).trim() !== "");
+        };
+
+        let r = startRow;
+        let c = startCol;
+        const nextR = r + dRow;
+        const nextC = c + dCol;
+        if (nextR < 1 || nextR > maxR || nextC < 0 || nextC > maxC) {
+            return { row: r, col: c };
+        }
+
+        const curFilled = isCellFilled(r, c);
+        const nextFilled = isCellFilled(nextR, nextC);
+
+        if (curFilled && nextFilled) {
+            while (r + dRow >= 1 && r + dRow <= maxR && c + dCol >= 0 && c + dCol <= maxC && isCellFilled(r + dRow, c + dCol)) {
+                r += dRow;
+                c += dCol;
+            }
+        } else {
+            r = nextR;
+            c = nextC;
+            while (r + dRow >= 1 && r + dRow <= maxR && c + dCol >= 0 && c + dCol <= maxC && !isCellFilled(r, c)) {
+                r += dRow;
+                c += dCol;
+            }
+        }
+        return { row: r, col: c };
+    }
+
+    appRoot.addEventListener("keydown", (e) => {
+        if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+        if (activeCell?.isContentEditable || document.activeElement === formulaBarInput || document.activeElement === selectedCellsDisplay) return;
+        if (document.activeElement?.closest(".floating-textbox")) return;
+
+        const dirMap = {
+            ArrowUp: [-1, 0],
+            ArrowDown: [1, 0],
+            ArrowLeft: [0, -1],
+            ArrowRight: [0, 1]
+        };
+        const delta = dirMap[e.key];
+        if (!delta || !activeCell) return;
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        const baseR = parseInt(activeCell.dataset.row, 10);
+        const baseC = parseInt(activeCell.dataset.col, 10);
+        const anchor = (e.shiftKey && selectionEnd) ? selectionEnd : { row: baseR, col: baseC };
+        const dest = findDataEdgeCoord(anchor.row, anchor.col, delta[0], delta[1]);
+
+        if (e.shiftKey) {
+            selectionStart = { row: baseR, col: baseC };
+            selectionEnd = dest;
+            updateSelection();
+            updateFillHandle();
+            getVisibleCell(dest.row, dest.col)?.scrollIntoView({ block: "nearest", inline: "nearest" });
+        } else {
+            selectionStart = dest;
+            selectionEnd = dest;
+            navigateToCell(dest.row, dest.col);
+        }
+    }, { capture: true, signal });
+
     // =========================================================
     // 範囲選択・フィルハンドル
     // =========================================================
+    function getSelectedRangeBounds() {
+        const selected = Array.from(tbody.querySelectorAll("td.selected")).filter(
+            td => td.style.display !== "none" && td.closest("tr")?.style.display !== "none"
+        );
+        const targets = selected.length ? selected : (activeCell ? [activeCell] : []);
+        if (!targets.length) return null;
+
+        let minRow = Infinity, maxRow = -Infinity, minCol = Infinity, maxCol = -Infinity;
+        targets.forEach(c => {
+            const r0 = +c.dataset.row, c0 = +c.dataset.col;
+            const r1 = r0 + (+c.getAttribute("rowspan") || 1) - 1;
+            const c1 = c0 + (+c.getAttribute("colspan") || 1) - 1;
+            minRow = Math.min(minRow, r0);
+            maxRow = Math.max(maxRow, r1);
+            minCol = Math.min(minCol, c0);
+            maxCol = Math.max(maxCol, c1);
+        });
+        return expandBoundsForMergedCells({ minRow, maxRow, minCol, maxCol });
+    }
+
     function expandBoundsForMergedCells(bounds) {
         let { minRow, maxRow, minCol, maxCol } = bounds;
         let expanded = true;
@@ -5196,7 +5464,12 @@ export default async function initSpreadsheetApp(content, options = {}) {
         debouncedSaveState();
     }
 
-    async function pasteClipboardData(valuesOnly = false) {
+    async function pasteClipboardData(pasteOption = false) {
+        const mode = typeof pasteOption === "string" ? pasteOption : (pasteOption ? "values" : "all");
+        const valuesOnly = mode === "values";
+        const formatsOnly = mode === "formats";
+        const isTranspose = mode === "transpose";
+
         const selected = Array.from(tbody.querySelectorAll("td.selected"));
         let targetCell = activeCell;
         if (selected.length) {
@@ -5226,27 +5499,41 @@ export default async function initSpreadsheetApp(content, options = {}) {
             const normExt = externalText.replace(/\r\n/g, "\n").replace(/\r/g, "\n").replace(/\n$/, "");
             const normInt = (clipboardData?.tsvText ?? "").replace(/\r\n/g, "\n").replace(/\r/g, "\n").replace(/\n$/, "");
             if (!clipboardData || normExt !== normInt) {
-                pasteExternalTSVMatrix(parseTSVToMatrix(externalText), selected, targetRow, targetCol);
+                let matrix = parseTSVToMatrix(externalText);
+                if (isTranspose && matrix.length > 0) {
+                    const maxCols = Math.max(...matrix.map(r => r.length));
+                    matrix = Array.from({ length: maxCols }, (_, c) => matrix.map(r => r[c] ?? ""));
+                }
+                pasteExternalTSVMatrix(matrix, selected, targetRow, targetCol);
                 return;
             }
         }
 
         if (!clipboardData) return;
 
+        // 行列入れ替え時は2次元配列を転置する
+        let activeData = clipboardData.data;
+        if (isTranspose && Array.isArray(activeData[0])) {
+            const srcRows = activeData.length;
+            const srcCols = activeData[0].length;
+            activeData = Array.from({ length: srcCols }, (_, c) =>
+                Array.from({ length: srcRows }, (__, r) => activeData[r][c])
+            );
+        }
+
         const rowDelta = targetRow - clipboardData.startRow;
         const colDelta = targetCol - clipboardData.startCol;
 
-        // 貼り付け先に結合セルが重なる場合は本物のExcel同様に中止
-        const pasteHeight = Array.isArray(clipboardData.data[0])
-            ? (clipboardData.data.length === 1 && clipboardData.data[0].length === 1 && selected.length > 1
+        const pasteHeight = Array.isArray(activeData[0])
+            ? (activeData.length === 1 && activeData[0].length === 1 && selected.length > 1
                 ? 1
-                : clipboardData.data.length)
-            : Math.max(...clipboardData.data.map(i => i.row - clipboardData.startRow + 1));
-        const pasteWidth = Array.isArray(clipboardData.data[0])
-            ? (clipboardData.data.length === 1 && clipboardData.data[0].length === 1 && selected.length > 1
+                : activeData.length)
+            : Math.max(...activeData.map(i => (isTranspose ? i.col - clipboardData.startCol : i.row - clipboardData.startRow) + 1));
+        const pasteWidth = Array.isArray(activeData[0])
+            ? (activeData.length === 1 && activeData[0].length === 1 && selected.length > 1
                 ? 1
-                : clipboardData.data[0].length)
-            : Math.max(...clipboardData.data.map(i => i.col - clipboardData.startCol + 1));
+                : activeData[0].length)
+            : Math.max(...activeData.map(i => (isTranspose ? i.row - clipboardData.startRow : i.col - clipboardData.startCol) + 1));
 
         if (selected.length <= 1 || pasteHeight > 1 || pasteWidth > 1) {
             const pasteBounds = {
@@ -5269,7 +5556,31 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 setCellFormattedValue(dest, resolvedVal);
                 return;
             }
-            const newFormula = item.formula ? adjustFormula(item.formula, clipboardData.isCut ? 0 : rOff, clipboardData.isCut ? 0 : cOff) : "";
+            if (formatsOnly) {
+                if (item.numFormat) dest.dataset.numFormat = item.numFormat;
+                else delete dest.dataset.numFormat;
+                if (item.decimalPlaces !== undefined && item.decimalPlaces !== "") dest.dataset.decimalPlaces = item.decimalPlaces;
+                else delete dest.dataset.decimalPlaces;
+                applyCellStyleData(dest, item.styleObj);
+                const curRaw = dest.dataset.formula ? evaluateFormula(dest.dataset.formula) : (dest.dataset.rawValue ?? dest.textContent);
+                setCellFormattedValue(dest, curRaw);
+                return;
+            }
+            const newFormula = item.formula
+                ? (clipboardData.isCut
+                    ? adjustMovedFormulaSelf(
+                        item.formula,
+                        {
+                            minRow: clipboardData.startRow,
+                            maxRow: clipboardData.startRow + pasteHeight - 1,
+                            minCol: clipboardData.startCol,
+                            maxCol: clipboardData.startCol + pasteWidth - 1
+                        },
+                        rowDelta,
+                        colDelta
+                    )
+                    : adjustFormula(item.formula, rOff, cOff))
+                : "";
             if (item.numFormat) dest.dataset.numFormat = item.numFormat;
             else delete dest.dataset.numFormat;
             if (item.decimalPlaces !== undefined && item.decimalPlaces !== "") dest.dataset.decimalPlaces = item.decimalPlaces;
@@ -5316,22 +5627,24 @@ export default async function initSpreadsheetApp(content, options = {}) {
             }
         };
 
-        if (Array.isArray(clipboardData.data[0])) {
-            if (clipboardData.data.length === 1 && clipboardData.data[0].length === 1 && selected.length > 1) {
-                const item = clipboardData.data[0][0];
+        if (Array.isArray(activeData[0])) {
+            if (activeData.length === 1 && activeData[0].length === 1 && selected.length > 1) {
+                const item = activeData[0][0];
                 selected.forEach(dest => {
                     applyCellData(dest, item, (+dest.dataset.row) - clipboardData.startRow, (+dest.dataset.col) - clipboardData.startCol);
                 });
             } else {
-                clipboardData.data.forEach((rowArr, r) => {
+                activeData.forEach((rowArr, r) => {
                     rowArr.forEach((item, c) => {
                         applyCellData(getCell(targetRow + r, targetCol + c), item, rowDelta, colDelta);
                     });
                 });
             }
         } else {
-            clipboardData.data.forEach(item => {
-                const dest = getCell(targetRow + (item.row - clipboardData.startRow), targetCol + (item.col - clipboardData.startCol));
+            activeData.forEach(item => {
+                const rOff = isTranspose ? (item.col - clipboardData.startCol) : (item.row - clipboardData.startRow);
+                const cOff = isTranspose ? (item.row - clipboardData.startRow) : (item.col - clipboardData.startCol);
+                const dest = getCell(targetRow + rOff, targetCol + cOff);
                 applyCellData(dest, item, rowDelta, colDelta);
             });
         }
@@ -5359,6 +5672,8 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     delete src.dataset.formula;
                     delete src.dataset.rawValue;
                     delete src.dataset.numFormat;
+                    delete src.dataset.decimalPlaces;
+                    delete src.dataset.dropdownList;
                     if (!valuesOnly) src.removeAttribute("style");
                 }
 
@@ -7896,16 +8211,23 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 copySelectedCells(false);
                 break;
             case "paste":
-                await pasteClipboardData(false);
+                await pasteClipboardData("all");
                 break;
             case "paste-values":
-                await pasteClipboardData(true);
+                await pasteClipboardData("values");
+                break;
+            case "paste-formats":
+                await pasteClipboardData("formats");
+                break;
+            case "paste-transpose":
+                await pasteClipboardData("transpose");
                 break;
             case "format-painter": {
                 const btn = appRoot.querySelector(".ss-format-painter-btn");
                 if (formatPainterSnapshot) {
                     formatPainterSnapshot = null;
                     btn?.classList.remove("selected");
+                    loadingstate.textContent = "準備完了";
                 } else if (activeCell) {
                     formatPainterSnapshot = {
                         styleObj: extractCellStyleObject(activeCell),
@@ -7914,6 +8236,37 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     };
                     btn?.classList.add("selected");
                     loadingstate.textContent = "書式コピー待機中（貼り付け先セルを選択）";
+
+                    const onApplyFormatPainter = (ev) => {
+                        if (!formatPainterSnapshot) return;
+                        if (ev.target.closest(".ss-format-painter-btn")) return;
+                        const td = ev.target.closest("td");
+                        if (!td || !tbody.contains(td)) {
+                            formatPainterSnapshot = null;
+                            btn?.classList.remove("selected");
+                            loadingstate.textContent = "準備完了";
+                            return;
+                        }
+                        const snap = formatPainterSnapshot;
+                        formatPainterSnapshot = null;
+                        btn?.classList.remove("selected");
+
+                        const targets = getTargetCells();
+                        targets.forEach(dest => {
+                            if (snap.numFormat) dest.dataset.numFormat = snap.numFormat;
+                            else delete dest.dataset.numFormat;
+                            if (snap.decimalPlaces !== "") dest.dataset.decimalPlaces = snap.decimalPlaces;
+                            else delete dest.dataset.decimalPlaces;
+                            applyCellStyleData(dest, snap.styleObj);
+                            const raw = dest.dataset.formula ? evaluateFormula(dest.dataset.formula) : (dest.dataset.rawValue ?? dest.textContent);
+                            setCellFormattedValue(dest, raw);
+                        });
+                        updateToolbarState();
+                        setDirtyState(true);
+                        debouncedSaveState();
+                        loadingstate.textContent = "準備完了";
+                    };
+                    document.addEventListener("mouseup", onApplyFormatPainter, { once: true, signal });
                 }
                 break;
             }
@@ -8769,40 +9122,122 @@ export default async function initSpreadsheetApp(content, options = {}) {
         debouncedSaveState();
     }
 
-    function redirectFormulasForMovedRange(srcBounds, rowDelta, colDelta, excludeBounds = null) {
-        const isInMovedBox = (r, c) =>
-            r >= srcBounds.minRow && r <= srcBounds.maxRow &&
-            c >= srcBounds.minCol && c <= srcBounds.maxCol;
+    function isCoordInBounds(row, col, bounds) {
+        return row >= bounds.minRow && row <= bounds.maxRow &&
+            col >= bounds.minCol && col <= bounds.maxCol;
+    }
 
-        tbody.querySelectorAll("td[data-formula]").forEach(td => {
-            if (excludeBounds) {
-                const tr = parseInt(td.dataset.row, 10);
-                const tc = parseInt(td.dataset.col, 10);
-                if (tr >= excludeBounds.minRow && tr <= excludeBounds.maxRow && tc >= excludeBounds.minCol && tc <= excludeBounds.maxCol) {
-                    return;
+    function isRangeWithinBounds(r1, c1, r2, c2, bounds) {
+        const minR = Math.min(r1, r2), maxR = Math.max(r1, r2);
+        const minC = Math.min(c1, c2), maxC = Math.max(c1, c2);
+        return minR >= bounds.minRow && maxR <= bounds.maxRow &&
+            minC >= bounds.minCol && maxC <= bounds.maxCol;
+    }
+
+    // 移動していない「他セル」の数式参照を移動先へ追従（重なり・二重置換防止）
+    function isCoordInBounds(row, col, bounds) {
+        return row >= bounds.minRow && row <= bounds.maxRow &&
+            col >= bounds.minCol && col <= bounds.maxCol;
+    }
+
+    function isRangeWithinBounds(r1, c1, r2, c2, bounds) {
+        const minR = Math.min(r1, r2), maxR = Math.max(r1, r2);
+        const minC = Math.min(c1, c2), maxC = Math.max(c1, c2);
+        return minR >= bounds.minRow && maxR <= bounds.maxRow &&
+            minC >= bounds.minCol && maxC <= bounds.maxCol;
+    }
+
+    // 移動したセル「自身」の数式調整（移動ブロック内の参照のみシフトし、外部参照は固定維持）
+    function adjustMovedFormulaSelf(formula, srcBounds, rowDelta, colDelta) {
+        if (!formula || formula[0] !== "=") return formula;
+        const stringLiterals = [];
+        const masked = formula.substring(1).replace(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'(?!\s*!)/g, (m) => {
+            const token = `__MOV_SELF_${stringLiterals.length}__`;
+            stringLiterals.push(m);
+            return token;
+        });
+
+        // シート名プレフィックス(Sheet2! 等)付きの参照と、単一/範囲参照を一括処理
+        const tokenRegex = /((?:'[^']+'|[A-Za-z0-9_\u3040-\u30FF\u4E00-\u9FAF]+)!)?(?<![A-Za-z0-9_])(\$?)([A-Za-z]+)(\$?)(\d+)(?::(\$?)([A-Za-z]+)(\$?)(\d+))?(?!\s*!)/g;
+        const replaced = masked.replace(tokenRegex, (match, sheetPrefix, aC1, col1, aR1, row1, aC2, col2, aR2, row2) => {
+            // 他シートへの参照は移動しない
+            if (sheetPrefix) return match;
+
+            const c1 = columnLettersToIndex(col1);
+            const r1 = parseInt(row1, 10);
+
+            if (col2 !== undefined) {
+                const c2 = columnLettersToIndex(col2);
+                const r2 = parseInt(row2, 10);
+                if (isRangeWithinBounds(r1, c1, r2, c2, srcBounds)) {
+                    const nc1 = Math.max(0, c1 + colDelta);
+                    const nr1 = Math.max(1, r1 + rowDelta);
+                    const nc2 = Math.max(0, c2 + colDelta);
+                    const nr2 = Math.max(1, r2 + rowDelta);
+                    return `${aC1}${getColumnName(nc1)}${aR1}${nr1}:${aC2}${getColumnName(nc2)}${aR2}${nr2}`;
                 }
+                return match;
+            } else {
+                if (isCoordInBounds(r1, c1, srcBounds)) {
+                    const nc1 = Math.max(0, c1 + colDelta);
+                    const nr1 = Math.max(1, r1 + rowDelta);
+                    return `${aC1}${getColumnName(nc1)}${aR1}${nr1}`;
+                }
+                return match;
             }
-            const f = td.dataset.formula;
-            if (!f || !f.startsWith("=")) return;
+        });
 
-            let updated = f.substring(1).replace(/(\$?)([A-Z]+)(\$?)(\d+):(\$?)([A-Z]+)(\$?)(\d+)/g, (m, aC1, col1, aR1, row1, aC2, col2, aR2, row2) => {
-                const c1 = columnLettersToIndex(col1), r1 = parseInt(row1, 10);
-                const c2 = columnLettersToIndex(col2), r2 = parseInt(row2, 10);
-                if (isInMovedBox(r1, c1) && isInMovedBox(r2, c2)) {
-                    return `${aC1}${getColumnName(c1 + colDelta)}${aR1}${r1 + rowDelta}:${aC2}${getColumnName(c2 + colDelta)}${aR2}${r2 + rowDelta}`;
-                }
-                return m;
+        return "=" + replaced.replace(/__MOV_SELF_(\d+)__/g, (_, idx) => stringLiterals[Number(idx)]);
+    }
+
+    // 移動していない「他セル」の数式参照を移動先へ追従（重なり・二重置換防止）
+    function redirectFormulasForMovedRange(srcBounds, rowDelta, colDelta, destBounds) {
+        if (rowDelta === 0 && colDelta === 0) return;
+
+        const rewriteFormula = (formula) => {
+            if (!formula || formula[0] !== "=") return formula;
+            const stringLiterals = [];
+            const masked = formula.substring(1).replace(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'(?!\s*!)/g, (m) => {
+                const token = `__REDIR_STR_${stringLiterals.length}__`;
+                stringLiterals.push(m);
+                return token;
             });
 
-            updated = updated.replace(/(\$?)([A-Z]+)(\$?)(\d+)/g, (m, aC, col, aR, row) => {
-                const c = columnLettersToIndex(col), r = parseInt(row, 10);
-                if (isInMovedBox(r, c)) {
-                    return `${aC}${getColumnName(c + colDelta)}${aR}${r + rowDelta}`;
+            const tokenRegex = /(?<![A-Za-z0-9_!])(\$?)([A-Z]+)(\$?)(\d+)(?::(\$?)([A-Z]+)(\$?)(\d+))?/g;
+            const replaced = masked.replace(tokenRegex, (match, aC1, col1, aR1, row1, aC2, col2, aR2, row2) => {
+                const c1 = columnLettersToIndex(col1);
+                const r1 = parseInt(row1, 10);
+
+                if (col2 !== undefined) {
+                    const c2 = columnLettersToIndex(col2);
+                    const r2 = parseInt(row2, 10);
+                    if (isRangeWithinBounds(r1, c1, r2, c2, srcBounds)) {
+                        const nc1 = Math.max(0, c1 + colDelta);
+                        const nr1 = Math.max(1, r1 + rowDelta);
+                        const nc2 = Math.max(0, c2 + colDelta);
+                        const nr2 = Math.max(1, r2 + rowDelta);
+                        return `${aC1}${getColumnName(nc1)}${aR1}${nr1}:${aC2}${getColumnName(nc2)}${aR2}${nr2}`;
+                    }
+                    return match;
+                } else {
+                    if (isCoordInBounds(r1, c1, srcBounds)) {
+                        const nc1 = Math.max(0, c1 + colDelta);
+                        const nr1 = Math.max(1, r1 + rowDelta);
+                        return `${aC1}${getColumnName(nc1)}${aR1}${nr1}`;
+                    }
+                    return match;
                 }
-                return m;
             });
 
-            td.dataset.formula = "=" + updated;
+            return "=" + replaced.replace(/__REDIR_STR_(\d+)__/g, (_, idx) => stringLiterals[Number(idx)]);
+        };
+
+        // アクティブシートの「移動先範囲外」にある数式セルのみを更新
+        tbody.querySelectorAll("td[data-formula]").forEach(td => {
+            const r = parseInt(td.dataset.row, 10);
+            const c = parseInt(td.dataset.col, 10);
+            if (destBounds && isCoordInBounds(r, c, destBounds)) return;
+            td.dataset.formula = rewriteFormula(td.dataset.formula);
         });
     }
 
@@ -10039,7 +10474,6 @@ export default async function initSpreadsheetApp(content, options = {}) {
             container.style.overflowX = "hidden";
             requestAnimationFrame(() => {
                 refreshVisibleRows();
-                syncHorizontalScrollbar();
             });
         }
     }
@@ -10049,7 +10483,6 @@ export default async function initSpreadsheetApp(content, options = {}) {
         containerResizeObserver = new ResizeObserver(() => {
             if (!isWindowMinimizedOrHidden()) {
                 refreshVisibleRows();
-                syncHorizontalScrollbar();
             }
         });
         containerResizeObserver.observe(container);
@@ -10105,7 +10538,6 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 const relX = ev.clientX - barRect.left;
                 const pct = Math.min(82, Math.max(18, (relX / barRect.width) * 100));
                 tabsRegion.style.flexBasis = `${pct}%`;
-                syncHorizontalScrollbar();
             };
             const onUp = () => {
                 document.removeEventListener("mousemove", onMove);
@@ -10155,7 +10587,6 @@ export default async function initSpreadsheetApp(content, options = {}) {
         spreadsheetContent.style.zoom = String(zoomValue / 100);
         zoomSlider.value = String(zoomValue);
         zoomDisplay.textContent = `${zoomValue}%`;
-        syncHorizontalScrollbar();
         if (changed && !silent) {
             setDirtyState(true);
             debouncedSaveState();
