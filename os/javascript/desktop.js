@@ -422,34 +422,26 @@ export function buildDesktop() {
                         action: () => startDesktopInlineRename(item, name)
                     },
                     {
-                        label: "選択アイテムを削除",
-                        disabled: globalSelected.items.size === 0,
+                        label: "削除",
+                        disabled: currentNode.system === true && globalSelected.items.size <= 1,
                         action: async () => {
                             if (!globalSelected.items.has(item)) {
                                 selectIconUI(item);
                             }
-                            if (globalSelected.items.size > 0) {
-                                const itemsToDelete = Array.from(globalSelected.items).map(i => i.dataset.name);
-                                globalSelected.items.clear();
-                                globalSelected.item = null;
+                            const itemsToDelete = Array.from(globalSelected.items).map(i => i.dataset.name);
+                            globalSelected.items.clear();
+                            globalSelected.item = null;
 
-                                setBulkUpdating(true);
-                                try {
-                                    for (const targetName of itemsToDelete) {
-                                        await deleteFSItem("C:/Desktop", targetName, false);
-                                    }
-                                    await forceSave();
-                                } finally {
-                                    setBulkUpdating(false);
+                            setBulkUpdating(true);
+                            try {
+                                for (const targetName of itemsToDelete) {
+                                    await deleteFSItem("C:/Desktop", targetName, false);
                                 }
-                                window.dispatchEvent(new Event("fs-updated"));
+                                await forceSave();
+                            } finally {
+                                setBulkUpdating(false);
                             }
-                        }
-                    },
-                    {
-                        label: "削除",
-                        action: async () => {
-                            await deleteFSItem("C:/Desktop", name);
+                            window.dispatchEvent(new Event("fs-updated"));
                         }
                     },
                     {
@@ -774,6 +766,9 @@ export function buildDesktop() {
                 selState.isSelecting = false;
                 if (selState.selectionBox) selState.selectionBox.remove();
                 selState.selectionBox = null;
+                const selectedArray = Array.from(globalSelected.items);
+                globalSelected.item = selectedArray.length === 1 ? selectedArray[0] : null;
+                globalSelected.lastSelected = selectedArray.length > 0 ? selectedArray[selectedArray.length - 1] : null;
                 setTimeout(() => { selState.wasDragging = false; }, 50);
             }
         });
@@ -1098,9 +1093,8 @@ function createNewItem(currentPath, container, itemType = "folder") {
     const folderNode = resolveFS(currentPath);
     if (!folderNode || !container) return;
 
-    // 二重作成防止（フラグ管理）
-    if (createNewItem.isCreating) return;
-    createNewItem.isCreating = true;
+    // 二重作成防止（DOM上の入力欄有無で判定し、フラグ残留によるブロックを防止）
+    if (container.querySelector("input")) return;
 
     // 初期表示名の設定
     let baseName = itemType === "folder" ? "新規フォルダ" : "新しいテキスト.txt";
@@ -1139,11 +1133,14 @@ function createNewItem(currentPath, container, itemType = "folder") {
     adjustWidth();
     input.addEventListener("input", adjustWidth);
 
-    let isShowingError = false;
     let isCommitting = false;
 
+    const cleanup = () => {
+        iconDiv.remove();
+    };
+
     const finishEditing = async () => {
-        if (isShowingError || isCommitting) return;
+        if (isCommitting) return;
         isCommitting = true;
 
         let newName = input.value.trim() || defaultName;
@@ -1151,13 +1148,8 @@ function createNewItem(currentPath, container, itemType = "folder") {
         // バリデーション (fs-utils.js)
         const error = validateName(newName);
         if (error) {
-            isCommitting = false;
-            isShowingError = true;
+            cleanup();
             window.nexser?.windowAPI.alertWindow(error, { width: 360, height: 160 });
-            setTimeout(() => {
-                isShowingError = false;
-                input.focus();
-            }, 0);
             return;
         }
 
@@ -1171,26 +1163,26 @@ function createNewItem(currentPath, container, itemType = "folder") {
             folderNode[finalName] = { type: "file", content: "", lastModified: now };
         }
 
-        iconDiv.remove();
-        createNewItem.isCreating = false;
-
+        cleanup();
         window.dispatchEvent(new Event("fs-updated"));
     };
 
     input.addEventListener("keydown", e => {
+        e.stopPropagation();
+        if (e.isComposing || e.keyCode === 229) return;
         if (e.key === "Enter") {
             e.preventDefault();
             finishEditing();
         } else if (e.key === "Escape") {
+            e.preventDefault();
             isCommitting = true;
-            iconDiv.remove();
-            createNewItem.isCreating = false;
+            cleanup();
         }
     });
 
     // blur 時に入力を確定させる
     input.addEventListener("blur", () => {
-        if (isShowingError || isCommitting) return;
+        if (isCommitting) return;
         finishEditing();
     });
 }
@@ -1689,6 +1681,8 @@ function startDesktopInlineRename(iconEl, oldName) {
 
     const commit = async () => {
         if (isDone || isAlerting) return;
+        isAlerting = true;
+
         const nextName = input.value.trim();
         if (!nextName || nextName === oldName) {
             isDone = true;
@@ -1697,18 +1691,12 @@ function startDesktopInlineRename(iconEl, oldName) {
         }
 
         const res = await renameFSItem("C:/Desktop", oldName, nextName);
-        if (!res.ok) {
-            isAlerting = true;
-            window.nexser?.windowAPI?.alertWindow(res.error, { width: 360, height: 160 });
-            setTimeout(() => {
-                isAlerting = false;
-                input.focus();
-            }, 0);
-            return;
-        }
-
         isDone = true;
         cleanup();
+
+        if (!res.ok) {
+            window.nexser?.windowAPI?.alertWindow(res.error, { width: 360, height: 160 });
+        }
     };
 
     input.addEventListener("mousedown", e => e.stopPropagation());
@@ -1716,10 +1704,12 @@ function startDesktopInlineRename(iconEl, oldName) {
     input.addEventListener("dblclick", e => e.stopPropagation());
     input.addEventListener("keydown", e => {
         e.stopPropagation();
+        if (e.isComposing || e.keyCode === 229) return;
         if (e.key === "Enter") {
             e.preventDefault();
             commit();
         } else if (e.key === "Escape") {
+            e.preventDefault();
             isDone = true;
             cleanup();
         }

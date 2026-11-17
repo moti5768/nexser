@@ -41,6 +41,63 @@ function createElementWithClass(tag, className, text) {
 }
 
 // ------------------------
+// サブメニューホバー展開制御
+// ------------------------
+function setupSubmenuHover(parentItem, submenu) {
+    let hideTimer = null;
+
+    const show = () => {
+        clearTimeout(hideTimer);
+        if (parentItem.classList.contains("pointer_none")) return;
+
+        const siblingContainer = parentItem.parentElement;
+        if (siblingContainer) {
+            siblingContainer.querySelectorAll(":scope > .ribbon-item > .ribbon-submenu").forEach(el => {
+                if (el !== submenu) el.style.display = "none";
+            });
+        }
+
+        submenu.style.display = "block";
+        submenu.style.left = "100%";
+        submenu.style.top = "-2px";
+
+        const rect = submenu.getBoundingClientRect();
+        const parentRect = parentItem.getBoundingClientRect();
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+
+        if (rect.right > vw) {
+            submenu.style.left = `-${rect.width}px`;
+            if (submenu.getBoundingClientRect().left < 0) {
+                submenu.style.left = `-${parentRect.left}px`;
+            }
+        }
+        if (rect.bottom > vh) {
+            const overflow = rect.bottom - vh;
+            const offset = Math.min(overflow + 8, parentRect.top);
+            submenu.style.top = `-${offset}px`;
+        }
+    };
+
+    const scheduleHide = () => {
+        clearTimeout(hideTimer);
+        hideTimer = setTimeout(() => {
+            submenu.style.display = "none";
+        }, 180);
+    };
+
+    const isInside = (el) => el && (parentItem.contains(el) || submenu.contains(el));
+    parentItem.addEventListener("mouseenter", show);
+    submenu.addEventListener("mouseenter", show);
+    parentItem.addEventListener("mouseleave", (e) => {
+        if (!isInside(e.relatedTarget)) scheduleHide();
+    });
+    submenu.addEventListener("mouseleave", (e) => {
+        if (!isInside(e.relatedTarget)) scheduleHide();
+    });
+}
+
+// ------------------------
 // Ribbon メニュー作成
 // ------------------------
 function addRibbonMenu(ribbon, title, items) {
@@ -49,37 +106,27 @@ function addRibbonMenu(ribbon, title, items) {
     menu.appendChild(span);
 
     const dropdown = createElementWithClass("div", "ribbon-dropdown");
+    const refreshers = [];
 
-    // アイテムを作成し、後で状態更新するために要素とデータを紐付けて保持
-    const itemEntries = items.map(it => {
-        const div = addRibbonItem(dropdown, it);
-        return { el: div, data: it };
+    (items || []).forEach(it => {
+        addRibbonItem(dropdown, it, refreshers);
     });
 
     menu.appendChild(dropdown);
     ribbon.appendChild(menu);
 
-    // 状態を最新に更新する関数
-    const refreshItemsStatus = () => {
-        itemEntries.forEach(entry => {
-            if (entry.data.label === "---") return;
-            const isDisabled = typeof entry.data.disabled === "function"
-                ? entry.data.disabled()
-                : entry.data.disabled;
-
-            entry.el.classList.toggle("pointer_none", !!isDisabled);
+    menu._refreshStatus = () => {
+        refreshers.forEach(fn => fn());
+        dropdown.querySelectorAll(".ribbon-submenu").forEach(sub => {
+            sub.style.display = "none";
         });
     };
-
-    // ui.js のグローバルイベント側から開く直前に呼び出せるよう、要素に紐付け
-    menu._refreshStatus = refreshItemsStatus;
 }
 
 // ------------------------
-// Ribbon アイテム作成
+// Ribbon アイテム作成（多階層サブメニュー対応）
 // ------------------------
-function addRibbonItem(dropdown, item) {
-
+function addRibbonItem(container, item, refreshers = []) {
     if (item.label === "---") {
         const separator = createElementWithClass("div", "ribbon-separator");
         Object.assign(separator.style, {
@@ -88,30 +135,77 @@ function addRibbonItem(dropdown, item) {
             borderBottom: "1px solid #fff",
             margin: "4px 2px"
         });
-        dropdown.appendChild(separator);
+        container.appendChild(separator);
         return separator;
     }
 
-    const div = createElementWithClass("div", "ribbon-item", item.label);
-
-    // 初回の状態設定
-    const isDisabled = typeof item.disabled === "function" ? item.disabled() : item.disabled;
-    if (isDisabled) div.classList.add("pointer_none");
-
-    // クリック時の処理（アクション実行とメニュー閉じる処理のみここで担保）
-    div.addEventListener("click", e => {
-        e.stopPropagation();
-        if (!div.classList.contains("pointer_none")) {
-            item.action();
-
-            const parentDropdown = div.closest(".ribbon-dropdown");
-            if (parentDropdown) parentDropdown.style.display = "none";
-
-            const parentMenu = div.closest(".ribbon-menu");
-            if (parentMenu) parentMenu.classList.remove("selected");
-        }
+    const div = createElementWithClass("div", "ribbon-item");
+    Object.assign(div.style, {
+        position: "relative",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: "12px"
     });
 
-    dropdown.appendChild(div);
+    const labelSpan = document.createElement("span");
+    labelSpan.textContent = item.label;
+    div.appendChild(labelSpan);
+
+    const subItems = Array.isArray(item.items) ? item.items : (Array.isArray(item.children) ? item.children : null);
+
+    const updateStatus = () => {
+        const isDisabled = typeof item.disabled === "function" ? item.disabled() : item.disabled;
+        div.classList.toggle("pointer_none", !!isDisabled);
+    };
+    updateStatus();
+    refreshers.push(updateStatus);
+
+    if (subItems && subItems.length > 0) {
+        div.classList.add("has-children");
+        const arrow = document.createElement("span");
+        arrow.textContent = "▶";
+        arrow.style.fontSize = "9px";
+        arrow.style.opacity = "0.85";
+        div.appendChild(arrow);
+
+        const submenu = createElementWithClass("div", "ribbon-dropdown ribbon-submenu");
+        Object.assign(submenu.style, {
+            display: "none",
+            position: "absolute",
+            top: "-2px",
+            left: "100%",
+            minWidth: "185px",
+            zIndex: "1000"
+        });
+
+        subItems.forEach(subIt => addRibbonItem(submenu, subIt, refreshers));
+        div.appendChild(submenu);
+        setupSubmenuHover(div, submenu);
+
+        div.addEventListener("click", (e) => {
+            e.stopPropagation();
+            if (!div.classList.contains("pointer_none")) {
+                submenu.style.display = submenu.style.display === "block" ? "none" : "block";
+            }
+        });
+    } else {
+        div.addEventListener("click", e => {
+            e.stopPropagation();
+            if (!div.classList.contains("pointer_none")) {
+                if (typeof item.action === "function") item.action();
+
+                const rootDropdown = div.closest(".ribbon-menu")?.querySelector(".ribbon-dropdown");
+                if (rootDropdown) {
+                    rootDropdown.querySelectorAll(".ribbon-submenu").forEach(s => { s.style.display = "none"; });
+                    rootDropdown.style.display = "none";
+                }
+                const parentMenu = div.closest(".ribbon-menu");
+                if (parentMenu) parentMenu.classList.remove("selected");
+            }
+        });
+    }
+
+    container.appendChild(div);
     return div;
 }

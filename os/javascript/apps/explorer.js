@@ -342,8 +342,7 @@ function createNewItem(currentPath, listContainer, renderCallback, type = "folde
     const folderNode = resolveFS(currentPath);
     if (!folderNode || !listContainer) return;
 
-    if (listContainer.querySelector("input") || createNewItem.isCreating) return;
-    createNewItem.isCreating = true;
+    if (listContainer.querySelector("input")) return;
 
     // 初期名の設定
     let baseName = type === "folder" ? "新規フォルダ" : "新しいテキスト.txt";
@@ -375,35 +374,26 @@ function createNewItem(currentPath, listContainer, renderCallback, type = "folde
         input.select();
     }
 
-    let isShowingError = false;
     let isCommitting = false;
 
-    input.addEventListener("blur", () => {
-        if (isShowingError || isCommitting) return;
-        // 入力途中でフォーカスが外れた場合は、削除せずに入力を確定(保存)させる
-        finishEditing();
-    });
+    const cleanup = () => {
+        itemDiv.remove();
+    };
 
     const finishEditing = () => {
-        if (isShowingError || isCommitting) return;
+        if (isCommitting) return;
         isCommitting = true;
 
         let newName = input.value.trim() || itemName;
         const error = validateName(newName);
 
         if (error) {
-            isCommitting = false;
-            isShowingError = true;
+            cleanup();
             window.nexser?.windowAPI?.alertWindow(error, { width: 360, height: 160 });
-            setTimeout(() => {
-                isShowingError = false;
-                input.focus();
-            }, 0);
             return;
         }
 
-        itemDiv.remove();
-        createNewItem.isCreating = false;
+        cleanup();
 
         let finalName = getUniqueName(folderNode, newName);
 
@@ -419,14 +409,22 @@ function createNewItem(currentPath, listContainer, renderCallback, type = "folde
         window.dispatchEvent(new Event("fs-updated"));
     };
 
+    input.addEventListener("blur", () => {
+        if (isCommitting) return;
+        // 入力途中でフォーカスが外れた場合は、削除せずに入力を確定(保存)させる
+        finishEditing();
+    });
+
     input.addEventListener("keydown", e => {
+        e.stopPropagation();
+        if (e.isComposing || e.keyCode === 229) return;
         if (e.key === "Enter") {
             e.preventDefault();
             finishEditing();
-        }
-        if (e.key === "Escape") {
-            itemDiv.remove();
-            createNewItem.isCreating = false;
+        } else if (e.key === "Escape") {
+            e.preventDefault();
+            isCommitting = true;
+            cleanup();
         }
     });
 }
@@ -841,8 +839,8 @@ export default async function Explorer(root, options = {}) {
                         const containerRect = listContainer.getBoundingClientRect();
                         if (data.draggedItems) {
                             data.draggedItems.forEach((info) => {
-                                const dropX = e.clientX - containerRect.left + listContainer.scrollLeft - info.offsetX;
-                                const dropY = e.clientY - containerRect.top + listContainer.scrollTop - info.offsetY;
+                                const dropX = Math.max(0, e.clientX - containerRect.left + listContainer.scrollLeft - info.offsetX);
+                                const dropY = Math.max(0, e.clientY - containerRect.top + listContainer.scrollTop - info.offsetY);
 
                                 iconPositions[info.name] = { x: dropX, y: dropY };
 
@@ -1189,6 +1187,7 @@ export default async function Explorer(root, options = {}) {
             });
 
             searchInput.addEventListener("keydown", (e) => {
+                if (e.isComposing || e.keyCode === 229) return;
                 if (e.key === "Enter") {
                     const query = searchInput.value.trim();
                     if (query) {
@@ -1529,7 +1528,7 @@ export default async function Explorer(root, options = {}) {
             const createColHeader = (text, key, flexStyle, padLeft) => {
                 const col = document.createElement("div");
                 col.textContent = text;
-                col.style.cssText = `flex: ${flexStyle}; padding-left: ${padLeft}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; user-select: none;`;
+                col.style.cssText = `flex: ${flexStyle}; min-width: 0; padding-left: ${padLeft}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; user-select: none;`;
 
                 col.onclick = async () => {
                     if (sortKey === key) {
@@ -1545,10 +1544,10 @@ export default async function Explorer(root, options = {}) {
                 return col;
             };
 
-            headerRow.appendChild(createColHeader("名前", "name", "1 1 auto", "26px"));
-            headerRow.appendChild(createColHeader("種類", "type", "0 0 150px", "8px"));
+            headerRow.appendChild(createColHeader("名前", "name", "1 1 auto", "34px"));
+            headerRow.appendChild(createColHeader("種類", "type", "0 0 130px", "8px"));
             headerRow.appendChild(createColHeader("サイズ", "size", "0 0 100px", "8px"));
-            headerRow.appendChild(createColHeader("更新日時", "date", "0 0 150px", "8px"));
+            headerRow.appendChild(createColHeader("更新日時", "date", "0 0 140px", "8px"));
             fragment.appendChild(headerRow);
         }
 
@@ -1666,13 +1665,13 @@ export default async function Explorer(root, options = {}) {
                     : "";
 
                 const newHTML = `
-                    <div style="flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 6px; overflow: hidden;">
+                    <div style="flex: 1 1 auto; min-width: 0; padding: 0 4px 0 8px; display: flex; align-items: center; gap: 6px; overflow: hidden;">
                         <span class="item-icon-small" style="flex-shrink: 0; display: flex; align-items: center; justify-content: center;">${iconChar}</span>
-                        <span class="item-name-text" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${displayName}</span>
+                        <span class="item-name-text">${displayName}</span>
                     </div>
-                    <span class="item-type-text" style="flex: 0 0 120px; padding-left: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${typeLabel}</span>
-                    <span class="item-size-text" style="flex: 0 0 100px; padding-left: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${size}</span>
-                    <span class="item-date-text" style="flex: 0 0 140px; padding-left: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${modifiedStr}</span>
+                    <span class="item-type-text" style="flex: 0 0 130px; padding-left: 8px;">${typeLabel}</span>
+                    <span class="item-size-text" style="flex: 0 0 100px; padding-left: 8px;">${size}</span>
+                    <span class="item-date-text" style="flex: 0 0 140px; padding-left: 8px;">${modifiedStr}</span>
                 `;
                 if (item.innerHTML !== newHTML) {
                     item.innerHTML = newHTML;
@@ -1890,15 +1889,15 @@ export default async function Explorer(root, options = {}) {
                     item.scrollIntoView({ block: "nearest" });
                 }
 
-                if (e.key === "ArrowDown") {
+                if (e.key === "ArrowDown" || e.key === "ArrowRight") {
                     e.preventDefault();
-                    currentIndex = (currentIndex + 1) % items.length;
+                    currentIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % items.length;
                     selectItem(currentIndex);
                 }
 
-                if (e.key === "ArrowUp") {
+                if (e.key === "ArrowUp" || e.key === "ArrowLeft") {
                     e.preventDefault();
-                    currentIndex = (currentIndex - 1 + items.length) % items.length;
+                    currentIndex = currentIndex === -1 ? items.length - 1 : (currentIndex - 1 + items.length) % items.length;
                     selectItem(currentIndex);
                 }
 
@@ -2273,6 +2272,8 @@ export default async function Explorer(root, options = {}) {
 
         const commit = async () => {
             if (isDone || isAlerting) return;
+            isAlerting = true;
+
             const nextName = input.value.trim();
             if (!nextName || nextName === oldName) {
                 isDone = true;
@@ -2281,18 +2282,12 @@ export default async function Explorer(root, options = {}) {
             }
 
             const res = await renameFSItem(currentPath, oldName, nextName);
-            if (!res.ok) {
-                isAlerting = true;
-                window.nexser?.windowAPI?.alertWindow(res.error, { width: 360, height: 160 });
-                setTimeout(() => {
-                    isAlerting = false;
-                    input.focus();
-                }, 0);
-                return;
-            }
-
             isDone = true;
             render(currentPath);
+
+            if (!res.ok) {
+                window.nexser?.windowAPI?.alertWindow(res.error, { width: 360, height: 160 });
+            }
         };
 
         input.addEventListener("mousedown", e => e.stopPropagation());
@@ -2300,10 +2295,12 @@ export default async function Explorer(root, options = {}) {
         input.addEventListener("dblclick", e => e.stopPropagation());
         input.addEventListener("keydown", e => {
             e.stopPropagation();
+            if (e.isComposing || e.keyCode === 229) return;
             if (e.key === "Enter") {
                 e.preventDefault();
                 commit();
             } else if (e.key === "Escape") {
+                e.preventDefault();
                 isDone = true;
                 render(currentPath);
             }
