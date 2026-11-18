@@ -1046,9 +1046,16 @@ export async function bootOS() {
         });
     } catch (e) {
         if (screen) screen.style.display = 'block';
-        const root = document.getElementById('os-root');
-        if (root) root.style.display = 'none';
-        throw new Error(`BOOT_SELECTION_FAILED: ${e.message}`);
+        let root = document.getElementById('os-root');
+        if (!root) {
+            root = document.createElement('div');
+            root.id = 'os-root';
+            document.body.appendChild(root);
+        }
+        root.style.display = 'none';
+        print(`\n[Boot Error] ${e.message}`);
+        print("Type 'scanfilesystem' to repair, or 'boot' to retry.\n");
+        prompt();
     }
 }
 
@@ -1103,8 +1110,7 @@ export async function bootOS() {
             prompt();
         }
     } else {
-        // bootがない場合はバックグラウンドでFS読み込みを開始しつつ即座にプロンプト表示
-        initFS().catch(e => console.warn("FS load failed", e));
+        // 初回起動時のDB書き込み競合を防ぐため、ここではinitFSを走らせず即座にプロンプトを表示する
         prompt();
     }
 })();

@@ -15,7 +15,6 @@ let isSaving = false;
 let isInitializing = false;
 const DEBUG_FS = false;
 const PROTECTED_KEYS = new Set(["type", "entry", "singleton", "shell", "system", "lastModified"]);
-const RAW_TARGET = Symbol("RAW_TARGET");
 
 export let isBulkUpdating = false;
 export function setBulkUpdating(flag) {
@@ -76,14 +75,24 @@ export function unlockFilesByPath(pathPrefix) {
     }
 }
 
-export function isFileLocked(pathPrefix) {
-    const normPrefix = normalizePath(pathPrefix);
-    for (const [path, lock] of fileLocks.entries()) {
-        if (lock.mode === "exclusive" && (path === normPrefix || path.startsWith(normPrefix + "/"))) {
-            return true;
+function hasExclusiveLockOnOrAbove(targetPath) {
+    const norm = normalizePath(targetPath).replace(/\/+$/, "");
+    for (const [lockedPath, info] of fileLocks.entries()) {
+        if (info.mode !== "exclusive") continue;
+        const cleanLocked = lockedPath.replace(/\/+$/, "");
+        if (
+            norm === cleanLocked ||
+            norm.startsWith(cleanLocked + "/") ||
+            cleanLocked.startsWith(norm + "/")
+        ) {
+            return info;
         }
     }
-    return false;
+    return null;
+}
+
+export function isFileLocked(pathPrefix) {
+    return hasExclusiveLockOnOrAbove(pathPrefix) !== null;
 }
 // 1. ベースデータ
 const baseFS = {
@@ -213,6 +222,10 @@ let needsFullSyncSave = false;
  * フォルダ内の子要素の並び順のみを完全差分更新で変更する（サブツリー再保存・メタデータ欠落を防止）
  */
 export function reorderNodeKeys(nodePath, orderedKeys) {
+    if (isFileLocked(nodePath)) {
+        console.error(`[FS Error] 並び替え拒否: '${nodePath}' はロックされています。`);
+        return false;
+    }
     const parts = nodePath.split("/").filter(Boolean);
     let rawNode = baseFS;
     for (const part of parts) {
@@ -309,10 +322,11 @@ function queueDeletedPath(nodePath) {
 // --- コアロジック ---
 
 const proxyCache = new WeakMap();
+const rawTargetMap = new WeakMap();
 
 function unwrapProxy(val) {
-    if (val && typeof val === "object" && val[RAW_TARGET]) {
-        return val[RAW_TARGET];
+    if (val && typeof val === "object" && rawTargetMap.has(val)) {
+        return rawTargetMap.get(val);
     }
     return val;
 }
@@ -327,9 +341,6 @@ function wrapProxy(obj, path = "") {
 
     const proxy = new Proxy(rawObj, {
         get(target, prop) {
-            if (prop === RAW_TARGET) {
-                return target;
-            }
             if (prop === "__proto__" || prop === "constructor" || prop === "prototype") {
                 return undefined;
             }
@@ -366,11 +377,11 @@ function wrapProxy(obj, path = "") {
                 return true;
             }
 
-            // 【NTFS風改善】ファイルが排他ロックされている場合は書き込みを拒否
+            // 【NTFS風改善】対象ファイル本体（path）や対象子ノード（currentPath）に排他ロックがある場合は拒否
             const currentPath = path ? `${path}/${prop}` : prop;
-            const lockInfo = fileLocks.get(currentPath);
-            if (lockInfo && lockInfo.mode === "exclusive") {
-                console.error(`[FS Error] 書き込み拒否: '${currentPath}' はロックされています。`);
+            const lockInfo = (path ? hasExclusiveLockOnOrAbove(path) : null) || hasExclusiveLockOnOrAbove(currentPath);
+            if (lockInfo) {
+                console.error(`[FS Error] 書き込み拒否: '${currentPath}' はロックされています (PID: ${lockInfo.pid})。`);
                 return false;
             }
 
@@ -427,9 +438,9 @@ function wrapProxy(obj, path = "") {
             }
 
             const currentPath = path ? `${path}/${prop}` : prop;
-            const lockInfo = fileLocks.get(currentPath);
-            if (lockInfo && lockInfo.mode === "exclusive") {
-                console.error(`[FS Error] 削除拒否: '${currentPath}' はロックされています。`);
+            const lockInfo = (path ? hasExclusiveLockOnOrAbove(path) : null) || hasExclusiveLockOnOrAbove(currentPath);
+            if (lockInfo) {
+                console.error(`[FS Error] 削除拒否: '${currentPath}' はロックされています (PID: ${lockInfo.pid})。`);
                 return false;
             }
 
@@ -460,6 +471,7 @@ function wrapProxy(obj, path = "") {
     });
 
     proxyCache.set(rawObj, proxy);
+    rawTargetMap.set(proxy, rawObj);
     return proxy;
 }
 
@@ -730,11 +742,33 @@ export async function initFS(progressCallback = () => { }) {
         let needsPostSyncSave = false;
 
         try {
+            if (localStorage.getItem("OS_EMERGENCY_BACKUP") === "dirty") {
+                console.warn("[FS] 前回セッションの未完了保存フラグを検知しました。起動後に整合性を同期します。");
+                localStorage.removeItem("OS_EMERGENCY_BACKUP");
+                needsPostSyncSave = true;
+            }
+        } catch (_) { }
+
+        try {
             if (!saved) {
-                localStorage.setItem("nexser_installed", "true");
                 if (DEBUG_FS) console.log("[FS] First-time boot: Initializing and saving factory data...");
-                needsFullSyncSave = true;
-                await executeSave();
+                let saveAttempts = 3;
+                let lastSaveErr = null;
+                while (saveAttempts > 0) {
+                    try {
+                        needsFullSyncSave = true;
+                        await executeSave();
+                        lastSaveErr = null;
+                        break;
+                    } catch (saveErr) {
+                        lastSaveErr = saveErr;
+                        saveAttempts--;
+                        console.warn(`[FS] Initial save retry (${saveAttempts} left):`, saveErr);
+                        if (saveAttempts > 0) await new Promise(r => setTimeout(r, 400));
+                    }
+                }
+                if (lastSaveErr) throw lastSaveErr;
+                localStorage.setItem("nexser_installed", "true");
             } else {
                 localStorage.setItem("nexser_installed", "true");
                 needsPostSyncSave = deepSync(FS, saved, FACTORY_FS, "", new WeakSet());
@@ -742,9 +776,10 @@ export async function initFS(progressCallback = () => { }) {
             }
         } catch (e) {
             initFSPromise = null;
+            isInitializing = false;
+            isSaving = false;
             console.error("[FS] Initialization/Restore failed:", e);
-            const { showBSOD } = await import("./bsod.js");
-            showBSOD("UNMOUNTABLE_BOOT_VOLUME", new Error(`FS_FATAL_RESTORE_FAULT: ${e.message}`));
+            throw new Error(`FS_FATAL_RESTORE_FAULT: ${e.message}`);
         } finally {
             isInitializing = false;
             isSaving = false;

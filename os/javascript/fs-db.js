@@ -297,7 +297,7 @@ export async function saveNodeDiff(rootFS, dirtyPaths = [], deletedPaths = [], m
                 if (typeof nexser !== "undefined" && nexser.windowAPI?.alertWindow) {
                     nexser.windowAPI.alertWindow(`ディスク領域不足: ブラウザの制限 (${quotaGB}GB) に達したため、保存できません。`, { title: "nexser" });
                 }
-                return;
+                throw new Error("FS_QUOTA_EXCEEDED");
             }
         }
 
@@ -308,6 +308,34 @@ export async function saveNodeDiff(rootFS, dirtyPaths = [], deletedPaths = [], m
         } catch (e) {
             console.warn("[FS-DB] Failed to write journal log:", e);
         }
+
+        // トランザクション開始前にメモリ上の変更レコードを収集しておく
+        const recordsMap = new Map();
+        const largeFiles = new Map();
+
+        for (const dPath of dirtyPaths) {
+            const targetNode = resolveNodeByPath(rootFS, dPath);
+            if (!targetNode) continue;
+            collectSubtreeRecords(targetNode, dPath, recordsMap, largeFiles);
+        }
+
+        for (const mPath of metaOnlyPaths) {
+            if (recordsMap.has(mPath)) continue;
+            const targetNode = resolveNodeByPath(rootFS, mPath);
+            if (!targetNode) continue;
+            const record = serializeSingleNode(targetNode, mPath, largeFiles);
+            recordsMap.set(mPath, record);
+        }
+
+        const protectedKvKeys = new Set(
+            Array.from(recordsMap.keys()).map(p => `${NODE_PREFIX}${p}`)
+        );
+        const protectedFileKeys = new Set(largeFiles.keys());
+        recordsMap.forEach((record, nodePath) => {
+            if (record.meta && record.meta.content === "__EXTERNAL_DATA__") {
+                protectedFileKeys.add(nodePath);
+            }
+        });
 
         const tx = db.transaction([STORE_FILES, STORE_KV], "readwrite");
         const fileStore = tx.objectStore(STORE_FILES);
@@ -325,60 +353,35 @@ export async function saveNodeDiff(rootFS, dirtyPaths = [], deletedPaths = [], m
 
             (async () => {
                 try {
-                    // 1. 先に更新対象レコードを収集し、保護すべきキー集合を確定する
-                    const recordsMap = new Map();
-                    const largeFiles = new Map();
+                    // 1. 削除カーソルを一斉発行して完了を待機（旧チャンクの残留も同時に掃除）
+                    const deleteTasks = [];
 
-                    for (const dPath of dirtyPaths) {
-                        const targetNode = resolveNodeByPath(rootFS, dPath);
-                        if (!targetNode) continue;
-                        collectSubtreeRecords(targetNode, dPath, recordsMap, largeFiles);
+                    for (const delPath of deletedPaths) {
+                        deleteTasks.push(deletePrefixFromStore(kvStore, `${NODE_PREFIX}${delPath}`, protectedKvKeys));
+                        deleteTasks.push(deletePrefixFromStore(fileStore, delPath, protectedFileKeys));
                     }
 
-                    // 並び替えなど親フォルダ自身のメタデータ・children順序のみの変更は単一レコードだけ収集
-                    for (const mPath of metaOnlyPaths) {
-                        if (recordsMap.has(mPath)) continue;
-                        const targetNode = resolveNodeByPath(rootFS, mPath);
-                        if (!targetNode) continue;
-                        const record = serializeSingleNode(targetNode, mPath, largeFiles);
-                        recordsMap.set(mPath, record);
+                    // 上書きされる大容量ファイルの旧チャンクを掃除
+                    for (const lPath of largeFiles.keys()) {
+                        deleteTasks.push(deletePrefixFromStore(fileStore, lPath));
                     }
 
-                    const protectedKvKeys = new Set(
-                        Array.from(recordsMap.keys()).map(p => `${NODE_PREFIX}${p}`)
-                    );
-                    // 新規に書き込む大容量ファイルに加え、既に外部保存済み（"__EXTERNAL_DATA__"）のパスも保護対象に含める
-                    const protectedFileKeys = new Set(largeFiles.keys());
-                    recordsMap.forEach((record, nodePath) => {
-                        if (record.meta && record.meta.content === "__EXTERNAL_DATA__") {
-                            protectedFileKeys.add(nodePath);
+                    // 100KB以下に縮小されたファイルの旧外部ストアデータを掃除
+                    for (const [nodePath, record] of recordsMap.entries()) {
+                        if (record.meta.type === "file" && record.meta.content !== "__EXTERNAL_DATA__") {
+                            deleteTasks.push(deletePrefixFromStore(fileStore, nodePath));
                         }
-                    });
+                    }
 
-                    // 2. 削除カーソルをすべて完了させてから書き込みフェーズへ進む（順序逆転防止）
-                    if (deletedPaths.length > 0) {
-                        const deleteTasks = [];
-                        for (const delPath of deletedPaths) {
-                            deleteTasks.push(deletePrefixFromStore(kvStore, `${NODE_PREFIX}${delPath}`, protectedKvKeys));
-                            deleteTasks.push(deletePrefixFromStore(fileStore, delPath, protectedFileKeys));
-                        }
+                    if (deleteTasks.length > 0) {
                         await Promise.all(deleteTasks);
                     }
 
-                    // 3. 変更された階層レコードと大容量データをピンポイント書き込み
+                    // 2. 削除完了後に変更レコードと新規大容量データを同期的に一括書き込み
                     writeLargeFilesToStore(fileStore, largeFiles);
 
-                    const cleanupTasks = [];
-                    recordsMap.forEach((record, nodePath) => {
+                    for (const [nodePath, record] of recordsMap.entries()) {
                         kvStore.put(record, `${NODE_PREFIX}${nodePath}`);
-
-                        // 100KB以下に縮小されたファイルがあれば旧外部ストアデータを掃除
-                        if (record.meta.type === "file" && record.meta.content !== "__EXTERNAL_DATA__") {
-                            cleanupTasks.push(deletePrefixFromStore(fileStore, nodePath));
-                        }
-                    });
-                    if (cleanupTasks.length > 0) {
-                        await Promise.all(cleanupTasks);
                     }
                 } catch (err) {
                     try { tx.abort(); } catch (_) { }
@@ -407,7 +410,7 @@ export async function saveFS(fs) {
                 if (typeof nexser !== "undefined" && nexser.windowAPI?.alertWindow) {
                     nexser.windowAPI.alertWindow(`ディスク領域不足: ブラウザの制限 (${quotaGB}GB) に達したため、保存できません。`, { title: "nexser" });
                 }
-                return;
+                throw new Error("FS_QUOTA_EXCEEDED");
             }
         }
 

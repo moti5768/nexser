@@ -1,5 +1,35 @@
 // fs-utils.js
 import { FS } from "./fs.js";
+import { getFileContent } from "./fs-db.js";
+
+/**
+ * パスを指定してファイルの実データ（文字列 / Blob / ArrayBuffer）を透過的に取得する
+ */
+export async function readFileContent(path, cwd = "C:/") {
+    const normalized = normalizePath(path, cwd);
+    const node = resolveFS(normalized);
+    if (!node || (node.type !== "file" && node.type !== "app")) {
+        return null;
+    }
+
+    if (node.content === "__EXTERNAL_DATA__") {
+        return await getFileContent(normalized);
+    }
+    return node.content ?? "";
+}
+
+/**
+ * パスを指定してファイル内容を書き込む（排他ロックや差分保存は FS の Proxy が自動処理）
+ */
+export function writeFileContent(path, data, cwd = "C:/") {
+    const normalized = normalizePath(path, cwd);
+    const node = resolveFS(normalized);
+    if (!node || (node.type !== "file" && node.type !== "app")) {
+        throw new Error(`書き込み対象が見つかりません: ${normalized}`);
+    }
+    node.content = data;
+    return true;
+}
 
 /**
  * パスからファイルシステム上のノードを解決する
@@ -482,10 +512,14 @@ export async function renameFSItem(parentPath, oldName, rawNewName) {
         }
 
         if (!deleted) {
-            if (clonedNode.type === "file" || clonedNode.type === "app") {
-                await moveFileContent(newFullPath, oldFullPath).catch(() => deleteFileContentRecursive(newFullPath));
-            } else if (clonedNode.type === "folder") {
-                await processStorageRecursively(rawItem, newFullPath, oldFullPath, false).catch(() => deleteFileContentRecursive(newFullPath));
+            try {
+                if (clonedNode.type === "file" || clonedNode.type === "app") {
+                    await moveFileContent(newFullPath, oldFullPath);
+                } else if (clonedNode.type === "folder") {
+                    await processStorageRecursively(rawItem, newFullPath, oldFullPath, false);
+                }
+            } catch (rollbackErr) {
+                console.error(`[FS-Utils] ロールバックに失敗しました。実データは '${newFullPath}' に保全されています:`, rollbackErr);
             }
             return { ok: false, error: `「${oldName}」は使用中または保護されているため名前を変更できません。` };
         }

@@ -6,9 +6,10 @@ import { showBSOD } from "./bsod.js";
 import { showPromptScreen, resetSystemVerification } from "./boot.js";
 import { addRecent } from "./recent.js";
 import { installDynamicButtonEffect } from "./ui.js";
-import { resolveFS, basename, normalizePath, cloneFSNode, isChildNodeObject } from "./fs-utils.js";
+import { resolveFS, basename, normalizePath, cloneFSNode, isChildNodeObject, readFileContent, writeFileContent } from "./fs-utils.js";
 import { resolveAppByPath } from "./file-associations.js";
 import { dbGet, dbSet } from "./fs-db.js";
+import { unlockFilesByPid } from "./fs.js";
 import { setKernelWindowCreator, createWindow as createRawWindow } from "./window.js";
 
 const LOG_STORAGE_KEY = "nexser_system_logs_v1";
@@ -666,8 +667,21 @@ async function launchLink(item, path, options) {
     if (!targetItem) {
         getWindowAPI()?.confirmWindow(
             `問題のあるショートカット\n\nこのショートカットが参照している '${item.target}' は存在しません。\nこのショートカットを削除しますか？`,
-            (result) => {
-                if (result) console.log(`ショートカットを削除します: ${path}`);
+            async (result) => {
+                if (!result) return;
+                if (item.system === true) {
+                    getWindowAPI()?.errorWindow("システム保護されたショートカットは削除できません。", { taskbar: false });
+                    return;
+                }
+                const parentPath = path.slice(0, path.lastIndexOf("/")) || "C:/";
+                const parentNode = resolveFS(parentPath);
+                const linkName = basename(path);
+                if (parentNode && delete parentNode[linkName]) {
+                    const { markDefaultDeleted, forceSave } = await import("./fs.js");
+                    await markDefaultDeleted(path);
+                    await forceSave();
+                    window.dispatchEvent(new Event("fs-updated"));
+                }
             },
             { width: 400, overlay: true }
         );
@@ -707,7 +721,8 @@ async function launchFile(item, path, options) {
     if (!win) throw new Error("Window creation failed");
 
     try {
-        await mod.default(content, { name: basename(path), content: item.content });
+        const actualContent = await readFileContent(path);
+        await mod.default(content, { name: basename(path), content: actualContent });
         if (typeof win._applyRealIcon === "function") win._applyRealIcon();
     } catch (e) {
         // ★ ファイルビューアの初期化エラー時に中途半端なウィンドウを破棄する
@@ -742,8 +757,9 @@ async function launchApp(item, path, options) {
     }
 
     const isExplorer = item.entry?.includes("explorer.js");
+    const explorerTargetKey = isExplorer ? normalizePath(options.path || "C:/Desktop") : null;
     const uniqueKey = options.uniqueKey ?? (item.singleton ? path : null);
-    let existingWin = isExplorer ? explorerWindows.get(options.path || "C:/Desktop") : (uniqueKey ? processes.get(uniqueKey)?.window : null);
+    let existingWin = isExplorer ? explorerWindows.get(explorerTargetKey) : (uniqueKey ? processes.get(uniqueKey)?.window : null);
 
     if (existingWin && document.body.contains(existingWin)) {
         if (existingWin.dataset.minimized === "true") existingWin._taskbarBtn?.click();
@@ -751,7 +767,7 @@ async function launchApp(item, path, options) {
         return;
     }
 
-    if (isExplorer) explorerWindows.delete(options.path || "C:/Desktop");
+    if (isExplorer) explorerWindows.delete(explorerTargetKey);
     if (uniqueKey) processes.delete(uniqueKey);
 
     // ==========================================
@@ -818,6 +834,25 @@ async function launchApp(item, path, options) {
         unlockFile: async (targetPath) => {
             const { unlockFile } = await import("./fs.js");
             return unlockFile(normalizePath(targetPath), String(pid));
+        },
+        readFile: async (targetPath) => {
+            const norm = normalizePath(targetPath);
+            const lowerNorm = norm.toLowerCase();
+            if (item.code && (lowerNorm.startsWith("c:/system") || lowerNorm.startsWith("c:/programs"))) {
+                throw new Error(`[Security] システム領域 '${norm}' の読み取りは許可されていません。`);
+            }
+            return await readFileContent(norm);
+        },
+        writeFile: async (targetPath, data) => {
+            const norm = normalizePath(targetPath);
+            const lowerNorm = norm.toLowerCase();
+            if (item.code && (lowerNorm.startsWith("c:/system") || lowerNorm.startsWith("c:/programs"))) {
+                throw new Error(`[Security] システム領域 '${norm}' への書き込みは許可されていません。`);
+            }
+            const ok = writeFileContent(norm, data);
+            const { waitForSaveCompletion } = await import("./fs.js");
+            await waitForSaveCompletion();
+            return ok;
         }
     };
 
@@ -832,47 +867,55 @@ async function launchApp(item, path, options) {
 
     if (item.code) {
         try {
+            // 動的 import() やグローバル名前空間への直接アクセスによるサンドボックス回避を防止
+            if (/\bimport\s*\(/.test(item.code) || /\b(window|globalThis|self)\.nexser\b/.test(item.code)) {
+                throw new Error("[Security] 動的 import() またはシステムグローバルへの直接参照は許可されていません。");
+            }
             const cleanCode = item.code.replace(/import\s+[\s\S]*?from\s+['"][^'"]+['"];?/g, '');
             const executableCode = cleanCode
                 .replace(/export\s+default\s+async\s+function\s*(\w*)/, 'async function $1')
                 .replace(/export\s+default\s+function\s*(\w*)/, 'function $1');
 
             const { FS, forceSave } = await import("./fs.js");
-            const { resolveFS } = await import("./fs-utils.js");
-            const { getFileContent } = await import("./fs-db.js");
             const windowAPI = window.nexser?.windowAPI;
 
             const RESTRICTED_DIRS = new Set(["System", "Programs"]);
 
-            function createSecureFS(targetFS) {
-                const fsHandler = {
-                    get(target, prop, receiver) {
-                        const res = Reflect.get(target, prop, receiver);
-                        if (target === targetFS["C:"] && typeof prop === "string" && RESTRICTED_DIRS.has(prop)) {
-                            return Object.freeze(cloneFSNode(res || {}));
-                        }
-                        if (res && typeof res === "object") {
-                            return new Proxy(res, fsHandler);
-                        }
-                        return res;
-                    },
-                    set(target, prop, value) {
-                        if (target === targetFS["C:"] && typeof prop === "string" && RESTRICTED_DIRS.has(prop)) {
-                            throw new Error(`[Security] 許可されていない操作です: システム領域 'C:/${prop}' を書き換えることはできません。`);
-                        }
-                        return Reflect.set(target, prop, value);
-                    },
-                    deleteProperty(target, prop) {
-                        if (target === targetFS["C:"] && typeof prop === "string" && RESTRICTED_DIRS.has(prop)) {
-                            throw new Error(`[Security] 許可されていない操作です: システム領域 'C:/${prop}' を削除することはできません。`);
-                        }
-                        return Reflect.deleteProperty(target, prop);
+            function createSecureFS(rootFS) {
+                const cDriveProxy = rootFS["C:"];
+                const wrapSecure = (node, isUnderCDrive = false) => {
+                    if (!node || typeof node !== "object") return node;
+                    if (node instanceof Blob || node instanceof ArrayBuffer || ArrayBuffer.isView(node)) {
+                        return node;
                     }
+                    return new Proxy(node, {
+                        get(target, prop, receiver) {
+                            if (isUnderCDrive && typeof prop === "string" && RESTRICTED_DIRS.has(prop)) {
+                                return Object.freeze(cloneFSNode(target[prop] || {}));
+                            }
+                            const res = Reflect.get(target, prop, receiver);
+                            return wrapSecure(res, target === cDriveProxy || prop === "C:");
+                        },
+                        set(target, prop, value) {
+                            if (isUnderCDrive && typeof prop === "string" && RESTRICTED_DIRS.has(prop)) {
+                                throw new Error(`[Security] 許可されていない操作です: システム領域 'C:/${prop}' を書き換えることはできません。`);
+                            }
+                            return Reflect.set(target, prop, value);
+                        },
+                        deleteProperty(target, prop) {
+                            if (isUnderCDrive && typeof prop === "string" && RESTRICTED_DIRS.has(prop)) {
+                                throw new Error(`[Security] 許可されていない操作です: システム領域 'C:/${prop}' を削除することはできません。`);
+                            }
+                            return Reflect.deleteProperty(target, prop);
+                        }
+                    });
                 };
-                return new Proxy(targetFS, fsHandler);
+                return wrapSecure(rootFS, false);
             }
 
             const safeFS = createSecureFS(FS);
+            const safeResolveFS = (p, cwd = "C:/") => resolveFS(p, cwd, safeFS);
+            const safeGetFileContent = async (p) => await sandboxSyscall.readFile(p);
 
             const runScript = new Function(
                 'FS', 'forceSave', 'resolveFS', 'windowAPI', 'getFileContent', 'syscall',
@@ -880,7 +923,7 @@ async function launchApp(item, path, options) {
             );
 
             appModule = {
-                default: runScript(safeFS, forceSave, resolveFS, windowAPI, getFileContent, sandboxSyscall)
+                default: runScript(safeFS, forceSave, safeResolveFS, windowAPI, safeGetFileContent, sandboxSyscall)
             };
         } catch (e) {
             console.error("Dynamic code evaluation failed:", e);
@@ -946,7 +989,7 @@ async function launchApp(item, path, options) {
 
     addRecent(processPath);
 
-    if (isExplorer) explorerWindows.set(options.path || "C:/Desktop", win);
+    if (isExplorer) explorerWindows.set(explorerTargetKey, win);
 }
 
 /* --- 共通：プロセス登録とObserver設定のヘルパー --- */
@@ -1079,17 +1122,8 @@ export function killProcess(key) {
             resources.listeners.length = 0;
         }
 
-        // 2. PID単位およびパス単位でファイルロックを自動解放
-        import("./fs.js").then((fsMod) => {
-            if (typeof fsMod.unlockFilesByPid === "function") {
-                fsMod.unlockFilesByPid(String(pid));
-            }
-            if (procPath && typeof fsMod.unlockFilesByPath === "function") {
-                fsMod.unlockFilesByPath(procPath);
-            }
-        }).catch(err => {
-            console.warn("[Kernel] Failed to release file locks on process termination:", err);
-        });
+        // 2. PID単位でファイルロックを即座に自動解放（他プロセスのロック誤解除を防止）
+        unlockFilesByPid(String(pid));
 
         if (handle) {
             if (typeof handle.dispose === 'function') handle.dispose();
