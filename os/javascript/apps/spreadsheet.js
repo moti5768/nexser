@@ -66,7 +66,7 @@ const SCOPED_CSS = `
     justify-content: center;
     height: 18px;
     padding: 0 5px;
-    font-size: 11px;
+    font-size: small;
     font-weight: bold;
     color: #fff;
     background: rgba(255, 255, 255, 0.14);
@@ -91,7 +91,7 @@ const SCOPED_CSS = `
 
 .nexser-spreadsheet-app .ss-ribbon-tab {
     padding: 2px 9px;
-    font-size: 11px;
+    font-size: small;
     font-weight: bold;
     color: #fff;
     background: transparent;
@@ -156,7 +156,7 @@ const SCOPED_CSS = `
 }
 
 .nexser-spreadsheet-app .ss-ribbon-group-title {
-    font-size: 9px;
+    font-size: 11px;
     color: #444;
     text-align: center;
     line-height: 1;
@@ -164,7 +164,7 @@ const SCOPED_CSS = `
 
 .nexser-spreadsheet-app .ss-ribbon-group-body label {
     margin-right: 1px;
-    font-size: 11px;
+    font-size: small;
     display: inline-flex;
     align-items: center;
 }
@@ -173,11 +173,11 @@ const SCOPED_CSS = `
 .nexser-spreadsheet-app .ss-ribbon-panels .button:not(th) {
     padding: 1px 4px;
     min-height: 20px;
-    font-size: 11px;
+    font-size: small;
 }
 .nexser-spreadsheet-app .ss-ribbon-panels select.ss-font-size {
     height: 20px;
-    font-size: 11px;
+    font-size: small;
 }
 
 /* スウォッチコンテナ：横8個のグリッド */
@@ -4855,18 +4855,76 @@ export default async function initSpreadsheetApp(content, options = {}) {
         const cellRect = cell.getBoundingClientRect();
         const left = Math.max(0, (cellRect.left - contentRect.left) / zoom);
         const top = Math.max(0, (cellRect.top - contentRect.top) / zoom);
-        const minW = Math.max(cellRect.width / zoom, 80);
         const minH = Math.max(cellRect.height / zoom, 28);
+
+        // 1. テキストのピクセル幅を計測
+        const text = cellEditor.value !== undefined ? cellEditor.value : (cell.dataset.rawValue ?? cell.textContent ?? "");
+        const fStyle = cell.style.fontStyle || "normal";
+        const fWeight = cell.style.fontWeight || "normal";
+        const fSize = cell.style.fontSize || "14px";
+        if (measureCtx) {
+            measureCtx.font = `${fStyle} ${fWeight} ${fSize} 'MS PGothic', 'MS Gothic', sans-serif`;
+        }
+        let maxTextWidth = 0;
+        const lines = text.split("\n");
+        for (const line of lines) {
+            const w = measureCtx ? measureCtx.measureText(line).width : line.length * (parseInt(fSize, 10) || 14);
+            maxTextWidth = Math.max(maxTextWidth, w);
+        }
+
+        // 2. 右側の連続する空白セル分の許容幅（はみ出し可能幅）を計算
+        const r = parseInt(cell.dataset.row, 10);
+        const c = parseInt(cell.dataset.col, 10);
+        const colSpan = parseInt(cell.getAttribute("colspan") || "1", 10);
+        let availableWidth = cellRect.width;
+        let curC = c + colSpan;
+        while (curC < currentColumns) {
+            const nextCell = peekCell(r, curC);
+            if (!nextCell || nextCell.style.display === "none" || (nextCell.textContent || "").trim() !== "") {
+                break;
+            }
+            availableWidth += getColumnWidth(curC);
+            curC++;
+        }
+
+        const requiredWidth = Math.max(cellRect.width, maxTextWidth + 16);
+        const targetW = Math.max(cellRect.width / zoom, Math.min(requiredWidth / zoom, availableWidth / zoom));
 
         cellEditor.style.left = `${left}px`;
         cellEditor.style.top = `${top}px`;
-        cellEditor.style.width = `${minW}px`;
+        cellEditor.style.width = `${targetW}px`;
         cellEditor.style.minHeight = `${minH}px`;
         cellEditor.style.height = `${minH}px`;
+
+        // 3. 改行がない場合は折り返しを無効にして横方向にはみ出させる
+        cellEditor.style.whiteSpace = lines.length <= 1 && !text.includes("\n") ? "pre" : "pre-wrap";
+
+        // --- スクロールバーの非表示設定（全ブラウザ対応） ---
+        cellEditor.style.scrollbarWidth = "none"; // Firefox用
+        cellEditor.style.msOverflowStyle = "none"; // IE, 旧Edge用
+        // 注: WebKit系（Chrome, Safari, Edge）用の ::-webkit-scrollbar は CSS 側（SCOPED_CSS）で定義済みですが、念のためJS側で制御する場合はそのまま機能します。
+
+        // --- フォント・装飾の同期 ---
         cellEditor.style.fontSize = cell.style.fontSize || "14px";
         cellEditor.style.fontWeight = cell.style.fontWeight || "normal";
         cellEditor.style.fontStyle = cell.style.fontStyle || "normal";
-        cellEditor.style.textAlign = cell.style.textAlign || "left";
+        cellEditor.style.textDecoration = cell.style.textDecoration || "none";
+
+        // --- 配置・背景色・文字色の同期 (Excel準拠) ---
+        const computed = getComputedStyle(cell);
+        cellEditor.style.textAlign = cell.style.textAlign || (
+            cell.classList.contains("ss-auto-align-right") ? "right" :
+                cell.classList.contains("ss-auto-align-center") ? "center" : "left"
+        );
+
+        // 背景色と文字色をセルから完全に引き継ぐ
+        cellEditor.style.backgroundColor = cell.style.backgroundColor || computed.backgroundColor || "#fff";
+        cellEditor.style.color = cell.style.color || computed.color || "#000";
+
+        // パディングをセルと揃える
+        cellEditor.style.padding = computed.padding || "0 4px";
+
+        // 高さの自動調整
         cellEditor.style.height = `${Math.max(minH, cellEditor.scrollHeight)}px`;
     }
 
@@ -4993,9 +5051,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
     function showAutocompletePopup(targetEl, rawText, caretPos) {
         const textBeforeCaret = rawText.slice(0, caretPos);
         let candidates = [];
-        let mode = "formula";
         let tokenStart = 0;
 
+        // 数式入力時（=から始まる場合）の関数サジェストのみを残す
         if (rawText.trimStart().startsWith("=")) {
             const match = textBeforeCaret.match(/(?:^|[=+\-*/(,;&<>!])([A-Za-z_][A-Za-z0-9_]*)$/);
             if (!match) {
@@ -5015,28 +5073,10 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     tokenStart,
                     tokenEnd: caretPos
                 }));
-        } else if (targetEl !== formulaBarInput && activeCell && rawText.trim() !== "") {
-            mode = "column-history";
-            const query = rawText.trim().toLowerCase();
-            const colIdx = parseInt(activeCell.dataset.col, 10);
-            const curRow = parseInt(activeCell.dataset.row, 10);
-            const seen = new Set();
-            for (let r = 1; r < rowCount; r++) {
-                if (r === curRow) continue;
-                const cell = peekCell(r, colIdx);
-                const val = (cell?.textContent ?? "").trim();
-                if (val && val.toLowerCase().startsWith(query) && val.toLowerCase() !== query && !seen.has(val)) {
-                    seen.add(val);
-                    candidates.push({
-                        label: val,
-                        sub: "同列の候補",
-                        insertText: val,
-                        tokenStart: 0,
-                        tokenEnd: rawText.length
-                    });
-                    if (candidates.length >= 8) break;
-                }
-            }
+        } else {
+            // 通常入力時の同列履歴サジェストは完全に廃止する
+            closeAutocompletePopup();
+            return;
         }
 
         if (!candidates.length) {
@@ -5065,11 +5105,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 autoResizeFormulaBar();
             } else if (isCellEditing() && editingCell) {
                 const cur = cellEditor.value;
-                const nextVal = mode === "column-history"
-                    ? item.insertText
-                    : cur.slice(0, item.tokenStart) + item.insertText + cur.slice(item.tokenEnd);
+                const nextVal = cur.slice(0, item.tokenStart) + item.insertText + cur.slice(item.tokenEnd);
                 cellEditor.value = nextVal;
-                const nextPos = mode === "column-history" ? nextVal.length : item.tokenStart + item.insertText.length;
+                const nextPos = item.tokenStart + item.insertText.length;
                 cellEditor.setSelectionRange(nextPos, nextPos);
                 formulaBarInput.value = nextVal;
                 syncCellEditorLayout(editingCell);
