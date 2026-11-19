@@ -75,6 +75,20 @@ export function unlockFilesByPath(pathPrefix) {
     }
 }
 
+// 自身または上位（祖先）パスに排他ロックがあるか判定（親フォルダーへの新規追加・並び替え用）
+function isSelfOrAncestorLocked(targetPath) {
+    const norm = normalizePath(targetPath).replace(/\/+$/, "");
+    for (const [lockedPath, info] of fileLocks.entries()) {
+        if (info.mode !== "exclusive") continue;
+        const cleanLocked = lockedPath.replace(/\/+$/, "");
+        if (norm === cleanLocked || norm.startsWith(cleanLocked + "/")) {
+            return info;
+        }
+    }
+    return null;
+}
+
+// 自身・祖先・または配下（子孫）に排他ロックがあるか判定（削除・リネーム・上書き用）
 function hasExclusiveLockOnOrAbove(targetPath) {
     const norm = normalizePath(targetPath).replace(/\/+$/, "");
     for (const [lockedPath, info] of fileLocks.entries()) {
@@ -222,7 +236,7 @@ let needsFullSyncSave = false;
  * フォルダ内の子要素の並び順のみを完全差分更新で変更する（サブツリー再保存・メタデータ欠落を防止）
  */
 export function reorderNodeKeys(nodePath, orderedKeys) {
-    if (isFileLocked(nodePath)) {
+    if (isSelfOrAncestorLocked(nodePath)) {
         console.error(`[FS Error] 並び替え拒否: '${nodePath}' はロックされています。`);
         return false;
     }
@@ -373,13 +387,18 @@ function wrapProxy(obj, path = "") {
                 return false;
             }
 
+            if (!isInitializing && target[prop] && typeof target[prop] === "object" && target[prop].system === true) {
+                console.error(`[FS Error] 上書き拒否: '${path ? `${path}/${prop}` : prop}' はシステム保護されています。`);
+                return false;
+            }
+
             if (PROTECTED_KEYS.has(prop) && target.system === true && Object.hasOwn(target, prop)) {
                 return true;
             }
 
-            // 【NTFS風改善】対象ファイル本体（path）や対象子ノード（currentPath）に排他ロックがある場合は拒否
+            // 親フォルダー(path)は自身/祖先のロックのみ、対象アイテム(currentPath)は配下を含めてロック判定
             const currentPath = path ? `${path}/${prop}` : prop;
-            const lockInfo = (path ? hasExclusiveLockOnOrAbove(path) : null) || hasExclusiveLockOnOrAbove(currentPath);
+            const lockInfo = (path ? isSelfOrAncestorLocked(path) : null) || hasExclusiveLockOnOrAbove(currentPath);
             if (lockInfo) {
                 console.error(`[FS Error] 書き込み拒否: '${currentPath}' はロックされています (PID: ${lockInfo.pid})。`);
                 return false;
@@ -437,8 +456,9 @@ function wrapProxy(obj, path = "") {
                 return false;
             }
 
+            // 親フォルダー(path)は自身/祖先のロックのみ、削除対象(currentPath)は配下を含めてロック判定
             const currentPath = path ? `${path}/${prop}` : prop;
-            const lockInfo = (path ? hasExclusiveLockOnOrAbove(path) : null) || hasExclusiveLockOnOrAbove(currentPath);
+            const lockInfo = (path ? isSelfOrAncestorLocked(path) : null) || hasExclusiveLockOnOrAbove(currentPath);
             if (lockInfo) {
                 console.error(`[FS Error] 削除拒否: '${currentPath}' はロックされています (PID: ${lockInfo.pid})。`);
                 return false;
@@ -700,19 +720,26 @@ export async function forceSave(fullSync = false) {
 
 let initFSPromise = null;
 
+let isFSReady = false; // ★ FSマウント完了フラグを追加
+
 export async function initFS(progressCallback = () => { }) {
     if (initFSPromise) return initFSPromise;
 
     initFSPromise = (async () => {
+        // ★ ロード開始直後から初期化中フラグを立て、Watchdogの割り込みBSODを完全に防止
+        isInitializing = true;
         progressCallback("データベースからファイルシステムを読み込み中...");
         let saved = null;
+        let loadError = null;
         let retries = 3;
 
         while (retries > 0) {
             try {
+                loadError = null;
                 saved = await loadFS();
                 if (saved) break;
             } catch (err) {
+                loadError = err;
                 console.warn(`[FS] Load attempt failed, retries left: ${retries - 1}`, err);
             }
             retries--;
@@ -721,14 +748,20 @@ export async function initFS(progressCallback = () => { }) {
             }
         }
 
-        const hasInitializedBefore = localStorage.getItem("nexser_installed") === "true";
-
-        if (!saved && hasInitializedBefore) {
+        // ★ DBアクセス自体がエラー（破損・ロック）で失敗した場合のみBSODにする
+        // 単なるDB空状態（別環境でのIndexedDB未作成・サイトデータ一部削除）なら安全に新規初期化へ進む
+        if (!saved && loadError) {
             initFSPromise = null;
-            console.error("[FS] Critical: Existing database could not be loaded. Aborting to prevent data loss.");
+            isInitializing = false;
+            console.error("[FS] Critical: Storage I/O error during boot.", loadError);
             const { showBSOD } = await import("./bsod.js");
-            showBSOD("UNMOUNTABLE_BOOT_VOLUME", new Error("ストレージからのデータ読み込みに失敗しました。データを保護するため起動を中断します。"));
+            showBSOD("UNMOUNTABLE_BOOT_VOLUME", loadError);
             return;
+        }
+
+        if (!saved && localStorage.getItem("nexser_installed") === "true") {
+            console.warn("[FS] Notice: 'nexser_installed' flag found but IndexedDB is empty. Re-initializing clean FS.");
+            localStorage.removeItem("nexser_installed");
         }
 
         progressCallback("システム構成と削除履歴を同期中...");
@@ -738,7 +771,6 @@ export async function initFS(progressCallback = () => { }) {
         }
 
         isSaving = true;
-        isInitializing = true;
         let needsPostSyncSave = false;
 
         try {
@@ -787,6 +819,7 @@ export async function initFS(progressCallback = () => { }) {
                 needsFullSyncSave = true;
                 await forceSave();
             }
+            isFSReady = true; // ★ マウント完了後に監視を有効化
             progressCallback("ファイルシステムの読み込みが完了しました。");
         }
     })();
@@ -902,6 +935,7 @@ export async function diagnoseAndCleanFS(executeRepair = false) {
 
                         if (executeRepair) {
                             needsRepair = true;
+                            unlockFilesByPath(childPath);
                             setBulkUpdating(true);
                             try {
                                 child.content = "";
@@ -991,7 +1025,8 @@ if (typeof window !== "undefined") {
     });
 
     watchdogInterval = setInterval(async () => {
-        if (isInitializing || isSaving || saveTimer !== null) return;
+        // ★ FSのマウント完了前（初回boot前・boot中）は監視を発火させない
+        if (!isFSReady || isInitializing || isSaving || saveTimer !== null) return;
 
         try {
             const hasInstalled = localStorage.getItem("nexser_installed") === "true";

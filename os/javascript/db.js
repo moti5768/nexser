@@ -62,8 +62,11 @@ export function openDB() {
                 window._dbBlockedAlertShown = true;
                 if (confirm("システムの新しいバージョンを適用するために、ページをリロードする必要があります。\n今すぐリロードしますか？")) {
                     location.reload();
+                    return;
                 }
             }
+            dbPromise = null;
+            reject(new Error("Database upgrade blocked by other tabs."));
         };
     });
 

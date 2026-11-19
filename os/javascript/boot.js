@@ -207,7 +207,7 @@ const commands = {
 
     copy: {
         desc: 'Copy one or more files to another location',
-        run(args) {
+        async run(args) {
             if (args.length < 2) return print("Usage: copy <source> <destination>");
             const srcPath = normalizePath(args[0]);
             const srcNode = resolveFS(srcPath === "C:/" ? "" : srcPath.replace(/^C:\//, ""));
@@ -216,12 +216,13 @@ const commands = {
 
             let destPath = normalizePath(args[1]);
             let destNode = resolveFS(destPath === "C:/" ? "" : destPath.replace(/^C:\//, ""));
-            let destParent, finalName;
+            let destParent, finalName, destFullPath;
 
             if (destNode && destNode.type === 'folder') {
                 destParent = destNode;
                 const srcParts = srcPath.replace(/^C:\//, "").split("/");
                 finalName = srcParts.pop();
+                destFullPath = destPath === "C:/" ? `C:/${finalName}` : `${destPath.replace(/\/$/, "")}/${finalName}`;
             } else {
                 const destParts = destPath.replace(/^C:\//, "").split("/");
                 finalName = destParts.pop();
@@ -229,17 +230,25 @@ const commands = {
                 destParent = parentPath === "" ? resolveFS("") : resolveFS(parentPath);
 
                 if (!destParent || destParent.type === 'file') return print("Invalid destination path.");
+                destFullPath = parentPath === "" ? `C:/${finalName}` : `C:/${parentPath}/${finalName}`;
             }
 
-            destParent[finalName] = JSON.parse(JSON.stringify(srcNode));
+            if (srcPath === destFullPath) {
+                return print("The file cannot be copied onto itself.");
+            }
+
+            const { cloneFSNode } = await import('./fs-utils.js');
+            const { copyFileContent } = await import('./fs-db.js');
+            await copyFileContent(srcPath, destFullPath);
+            destParent[finalName] = cloneFSNode(srcNode);
             print(`        1 file(s) copied.`);
             window.dispatchEvent(new Event("fs-updated"));
         }
     },
 
-    ren: {
+    rren: {
         desc: 'Renames a file or files (Alias for rename)',
-        run(args) { commands.rename.run(args); }
+        run(args) { return commands.rename.run(args); }
     },
 
     echo: {
@@ -267,9 +276,11 @@ const commands = {
                 if (!parent || parent.type === "file") return print("The system cannot find the path specified.");
 
                 if (!parent[name]) {
-                    parent[name] = { type: "file", content: text };
+                    parent[name] = { type: "file", content: text, size: text.length };
                 } else if (parent[name].type === "file") {
-                    parent[name].content = isAppend ? (parent[name].content + "\n" + text) : text;
+                    const base = parent[name].content === "__EXTERNAL_DATA__" ? "" : (parent[name].content || "");
+                    parent[name].content = isAppend ? (base + "\n" + text) : text;
+                    parent[name].size = parent[name].content.length;
                 } else {
                     return print("Access is denied.");
                 }
@@ -392,7 +403,7 @@ const commands = {
 
     rename: {
         desc: 'Rename or move a file/directory',
-        run(args) {
+        async run(args) {
             if (args.length < 2) return print("Usage: rename <old_path> <new_path>");
 
             const srcPath = normalizePath(args[0]);
@@ -406,17 +417,35 @@ const commands = {
             if (!srcParent || !srcParent[srcName]) return print("Source not found");
 
             const destPath = normalizePath(args[1]);
-            if (destPath === "C:/") return print("Cannot overwrite root directory");
+            const existingDestNode = resolveFS(destPath === "C:/" ? "" : destPath.replace(/^C:\//, ""));
 
-            const destParts = destPath.replace(/^C:\//, "").split("/");
-            const destName = destParts.pop();
-            const destParentPath = destParts.join("/");
-            const destParent = destParentPath === "" ? resolveFS("") : resolveFS(destParentPath);
+            let destParent, destName, destFullPath;
+            if (existingDestNode && existingDestNode.type === "folder") {
+                // 移動先に既存フォルダが指定された場合はその配下へ移動
+                destParent = existingDestNode;
+                destName = srcName;
+                destFullPath = destPath === "C:/" ? `C:/${destName}` : `${destPath.replace(/\/$/, "")}/${destName}`;
+            } else {
+                if (destPath === "C:/") return print("Cannot overwrite root directory");
+                const destParts = destPath.replace(/^C:\//, "").split("/");
+                destName = destParts.pop();
+                const destParentPath = destParts.join("/");
+                destParent = destParentPath === "" ? resolveFS("") : resolveFS(destParentPath);
+                destFullPath = destParentPath === "" ? `C:/${destName}` : `C:/${destParentPath}/${destName}`;
+            }
 
             if (!destParent || destParent.type === "file") return print("Invalid destination path");
+            if (srcPath === destFullPath) return;
             if (destParent[destName]) return print("Destination already exists");
 
-            destParent[destName] = srcParent[srcName];
+            // 外部データ(__EXTERNAL_DATA__)を持つファイルの場合はDB側も複製して旧キーを掃除
+            const targetNode = srcParent[srcName];
+            if (targetNode.type === "file" && targetNode.content === "__EXTERNAL_DATA__") {
+                const { copyFileContent } = await import('./fs-db.js');
+                await copyFileContent(srcPath, destFullPath);
+            }
+
+            destParent[destName] = targetNode;
             delete srcParent[srcName];
 
             print(`Renamed: ${srcName} -> ${destName}`);
@@ -426,7 +455,7 @@ const commands = {
 
     mv: {
         desc: 'Move or rename a file/directory (Alias for rename)',
-        run(args) { commands.rename.run(args); }
+        run(args) { return commands.rename.run(args); }
     },
 
     tree: {
@@ -491,6 +520,7 @@ const commands = {
             if (!node) return print("File not found");
             if (node.type !== "file") return print("Not a file");
             node.content = "";
+            node.size = 0;
             print(`File ${args[0]} cleared.`);
             window.dispatchEvent(new Event("fs-updated"));
         }
@@ -599,11 +629,37 @@ const commands = {
                                 const targetFolder = resolveFS("Programs/Applications");
                                 if (!targetFolder) throw new Error("Programs/Applications folder not found");
 
+                                const { registerFileAssociation, sanitizeIcon, exportCustomAssociations } = await import('./file-associations.js');
+                                const appIcon = nexserData.icon ? sanitizeIcon(nexserData.icon) : null;
+
                                 targetFolder[appNodeName] = {
                                     type: "app",
                                     code: codeContent,
+                                    ...(appIcon ? { icon: appIcon } : {}),
                                     windowOptions: nexserData.windowOptions || {}
                                 };
+
+                                // パッケージに拡張子定義があれば関連付けとアイコンを自動登録
+                                if (nexserData.fileAssociations && typeof nexserData.fileAssociations === "object") {
+                                    const installedAppPath = `C:/Programs/Applications/${appNodeName}`;
+                                    for (const [ext, extIcon] of Object.entries(nexserData.fileAssociations)) {
+                                        try {
+                                            registerFileAssociation(ext, installedAppPath, typeof extIcon === "string" ? extIcon : appIcon);
+                                            print(`  [Assoc] Registered ${ext} -> ${appNodeName}`);
+                                        } catch (assocErr) {
+                                            print(`  [Warn] Skipped association ${ext}: ${assocErr.message}`);
+                                        }
+                                    }
+                                    const systemFolder = resolveFS("System");
+                                    if (systemFolder) {
+                                        systemFolder["FileAssociations.json"] = {
+                                            type: "file",
+                                            system: true,
+                                            content: JSON.stringify(exportCustomAssociations(), null, 2)
+                                        };
+                                    }
+                                }
+
                                 print(`  [App] Installed: ${appNodeName}`);
                                 successCount++;
                             }
@@ -1076,15 +1132,16 @@ export async function bootOS() {
             .map(s => s.trim())
             .filter(line => line && !line.startsWith('//') && !line.startsWith('#'))
         : [];
-    const hasBoot = script.some(line => {
+    const isBootCmd = line => {
         const trimmed = line.toLowerCase();
         return trimmed === 'boot' || trimmed.startsWith('boot ');
-    });
+    };
+    const hasBoot = script.some(isBootCmd);
 
     if (hasBoot) {
         print("Booting Nexser OS...");
         try {
-            const preBootCommands = script.filter(line => line.toLowerCase() !== 'boot');
+            const preBootCommands = script.filter(line => !isBootCmd(line));
             if (preBootCommands.length > 0) {
                 await initFS();
                 for (const line of preBootCommands) {
@@ -1110,7 +1167,14 @@ export async function bootOS() {
             prompt();
         }
     } else {
-        // 初回起動時のDB書き込み競合を防ぐため、ここではinitFSを走らせず即座にプロンプトを表示する
+        // 既存インストール環境であれば、CUIコマンド操作による上書き消失を防ぐため先にFSをマウントする
+        if (localStorage.getItem("nexser_installed") === "true") {
+            try {
+                await initFS();
+            } catch (e) {
+                print(`[Warning] Failed to mount existing FS: ${e.message}`);
+            }
+        }
         prompt();
     }
 })();

@@ -7,7 +7,13 @@ import { showPromptScreen, resetSystemVerification } from "./boot.js";
 import { addRecent } from "./recent.js";
 import { installDynamicButtonEffect } from "./ui.js";
 import { resolveFS, basename, normalizePath, cloneFSNode, isChildNodeObject, readFileContent, writeFileContent } from "./fs-utils.js";
-import { resolveAppByPath } from "./file-associations.js";
+import {
+    resolveAppByPath,
+    registerFileAssociation,
+    sanitizeIcon,
+    exportCustomAssociations,
+    importCustomAssociations
+} from "./file-associations.js";
 import { dbGet, dbSet } from "./fs-db.js";
 import { unlockFilesByPid } from "./fs.js";
 import { setKernelWindowCreator, createWindow as createRawWindow } from "./window.js";
@@ -34,7 +40,51 @@ function isCriticalError(msg) {
 
 let systemErrorHandlerInstalled = false;
 
+// ?pid=123 クエリから該当プロセスキーを直接特定する
+function findProcessKeyByPidTag(text) {
+    if (!text) return null;
+    const match = String(text).match(/[?&]pid=(\d+)/);
+    if (!match) return null;
+
+    const targetPid = Number(match[1]);
+    for (const [key, proc] of processes.entries()) {
+        if (!proc.isShell && proc.pid === targetPid) {
+            return key;
+        }
+    }
+    return null;
+}
+
+// スタックトレースから原因となった非シェルプロセスを特定する
+function findProcessKeyByStack(error) {
+    const stack = (error && typeof error.stack === "string") ? error.stack : new Error().stack;
+    if (!stack) return null;
+
+    // 1. ?pid=XX タグが含まれていれば複数ウィンドウでも100%特定
+    const pidKey = findProcessKeyByPidTag(stack);
+    if (pidKey) return pidKey;
+
+    // 2. フォールバック：ファイル名またはパスで照合
+    const lines = stack.split("\n");
+    for (const line of lines) {
+        for (const [key, proc] of processes.entries()) {
+            if (proc.isShell) continue;
+            if (proc.entry) {
+                const entryName = basename(proc.entry);
+                if (entryName && line.includes(entryName)) return key;
+            } else if (proc.path && line.includes(proc.path)) {
+                return key;
+            }
+        }
+    }
+    return null;
+}
+
 function findProcessKeyByError(e) {
+    // 0. ?pid=XX タグが含まれていれば最優先で特定
+    const pidKey = findProcessKeyByPidTag(e.filename) || findProcessKeyByPidTag(e.error?.stack);
+    if (pidKey) return pidKey;
+
     // 1. DOM要素（画像・スクリプト読み込み失敗など）からウィンドウを逆引き
     const targetWin = e.target instanceof Element ? e.target.closest(".window") : null;
     if (targetWin?.dataset?.processKey) {
@@ -67,6 +117,21 @@ export function initSystemErrorHandler() {
             showBSOD(`KERNEL_UNHANDLED_REJECTION: ${msg}`, error);
         } else {
             console.warn("[Kernel Notice] Non-critical unhandled rejection:", msg);
+            logSystemEvent(
+                "System",
+                "Warning",
+                "KernelErrorHandler",
+                2002,
+                "Async Exception Handling",
+                `Unhandled promise rejection caught: ${msg}`
+            );
+
+            const key = findProcessKeyByStack(error);
+            if (key && processes.has(key)) {
+                console.warn(`[Kernel] Async app error detected. Terminating process: ${key}`);
+                getWindowAPI()?.errorWindow(`アプリケーションエラー（非同期処理）が発生したため終了しました。\n${msg}`, { taskbar: false });
+                killProcess(key);
+            }
         }
     });
 
@@ -461,6 +526,16 @@ export async function bootKernelSequenceAsync({ screen, initFS, loadSetting, ini
         );
         await initFS(msg => progressWin?.update(24, 100, msg));
 
+        // ★ 永続化されたカスタム拡張子・アイコン設定を復元
+        try {
+            const assocJson = await readFileContent("C:/System/FileAssociations.json");
+            if (typeof assocJson === "string" && assocJson.trim()) {
+                importCustomAssociations(JSON.parse(assocJson));
+            }
+        } catch (assocErr) {
+            console.warn("[Kernel] Failed to load FileAssociations.json:", assocErr);
+        }
+
         const { FS, diagnoseAndCleanFS } = await import("./fs.js");
         const fsStats = collectFSActualStats(FS["C:"]);
         const storageUsage = await getStorageUsageText();
@@ -853,6 +928,47 @@ async function launchApp(item, path, options) {
             const { waitForSaveCompletion } = await import("./fs.js");
             await waitForSaveCompletion();
             return ok;
+        },
+        // ★ 外部サンドボックスから安全に拡張子・アイコンを登録＆永続化するAPI
+        registerFileAssociation: async (ext, icon = null, options = {}) => {
+            // サンドボックスアプリからは原則として「自分自身のアプリパス」のみ関連付け可能
+            const targetApp = item.code ? processPath : (options.appPath || processPath);
+            registerFileAssociation(ext, targetApp, icon, { allowOverride: Boolean(options.allowOverride) });
+
+            // C:/System/FileAssociations.json へ自動永続化
+            const { FS, forceSave } = await import("./fs.js");
+            if (FS["C:"]?.System) {
+                const serialized = JSON.stringify(exportCustomAssociations(), null, 2);
+                if (!FS["C:"].System["FileAssociations.json"]) {
+                    FS["C:"].System["FileAssociations.json"] = { type: "file", system: true, content: serialized };
+                } else {
+                    FS["C:"].System["FileAssociations.json"].content = serialized;
+                }
+                await forceSave();
+            }
+            return true;
+        },
+        // ★ 自身のアプリ、またはユーザー領域のファイル/フォルダに個別アイコン（node.icon）を設定するAPI
+        setCustomIcon: async (targetPath, icon) => {
+            const norm = normalizePath(targetPath);
+            const lowerNorm = norm.toLowerCase();
+            const isSelfApp = norm.toLowerCase() === processPath.toLowerCase();
+
+            if (item.code && !isSelfApp && (lowerNorm.startsWith("c:/system") || lowerNorm.startsWith("c:/programs"))) {
+                throw new Error(`[Security] システム領域 '${norm}' のアイコンは変更できません。`);
+            }
+
+            const targetNode = resolveFS(norm);
+            if (!targetNode) throw new Error(`対象が見つかりません: ${norm}`);
+
+            const cleanIcon = sanitizeIcon(icon);
+            if (!cleanIcon) throw new Error("無効または安全でないアイコンです。");
+
+            targetNode.icon = cleanIcon;
+            const { forceSave } = await import("./fs.js");
+            await forceSave();
+            window.dispatchEvent(new Event("fs-updated"));
+            return true;
         }
     };
 
@@ -868,7 +984,7 @@ async function launchApp(item, path, options) {
     if (item.code) {
         try {
             // 動的 import() やグローバル名前空間への直接アクセスによるサンドボックス回避を防止
-            if (/\bimport\s*\(/.test(item.code) || /\b(window|globalThis|self)\.nexser\b/.test(item.code)) {
+            if (/\bimport\s*\(/.test(item.code) || /\b(window|globalThis|self)\s*(\.\s*nexser|\[\s*['"]nexser['"]\s*\])/.test(item.code)) {
                 throw new Error("[Security] 動的 import() またはシステムグローバルへの直接参照は許可されていません。");
             }
             const cleanCode = item.code.replace(/import\s+[\s\S]*?from\s+['"][^'"]+['"];?/g, '');
@@ -897,12 +1013,18 @@ async function launchApp(item, path, options) {
                             return wrapSecure(res, target === cDriveProxy || prop === "C:");
                         },
                         set(target, prop, value) {
+                            if (target === rootFS) {
+                                throw new Error("[Security] ルートドライブ構成を直接変更することはできません。");
+                            }
                             if (isUnderCDrive && typeof prop === "string" && RESTRICTED_DIRS.has(prop)) {
                                 throw new Error(`[Security] 許可されていない操作です: システム領域 'C:/${prop}' を書き換えることはできません。`);
                             }
                             return Reflect.set(target, prop, value);
                         },
                         deleteProperty(target, prop) {
+                            if (target === rootFS) {
+                                throw new Error("[Security] ルートドライブを削除することはできません。");
+                            }
                             if (isUnderCDrive && typeof prop === "string" && RESTRICTED_DIRS.has(prop)) {
                                 throw new Error(`[Security] 許可されていない操作です: システム領域 'C:/${prop}' を削除することはできません。`);
                             }
@@ -919,7 +1041,7 @@ async function launchApp(item, path, options) {
 
             const runScript = new Function(
                 'FS', 'forceSave', 'resolveFS', 'windowAPI', 'getFileContent', 'syscall',
-                `return (${executableCode});`
+                `return (${executableCode});\n//# sourceURL=${processPath}?pid=${pid}`
             );
 
             appModule = {
@@ -930,7 +1052,9 @@ async function launchApp(item, path, options) {
             throw new Error(`動的コードの解析に失敗しました: ${e.message}`);
         }
     } else {
-        appModule = await safeImport(item.entry);
+        const sep = item.entry.includes("?") ? "&" : "?";
+        const importEntry = item.singleton ? item.entry : `${item.entry}${sep}pid=${pid}`;
+        appModule = await safeImport(importEntry);
     }
 
     if (!appModule?.default) throw new Error("アプリが正しくエクスポートされていません");
@@ -957,6 +1081,7 @@ async function launchApp(item, path, options) {
     // 起動中の例外時もリソース回収できるよう先に仮登録
     registerProcess(win, key, processPath, null, isShell, options, pid, {
         entry: item.entry || "",
+        singleton: Boolean(item.singleton),
         syscall,
         resources
     });
@@ -982,6 +1107,14 @@ async function launchApp(item, path, options) {
         );
     } catch (e) {
         console.error("app runtime error:", e);
+        logSystemEvent(
+            "Application",
+            "Error",
+            basename(processPath),
+            1001,
+            "App Crash",
+            `アプリケーション '${basename(processPath)}' (PID: ${pid}) が実行時エラーで強制終了しました: ${e.message}`
+        );
         killProcess(key);
         getWindowAPI()?.errorWindow(`アプリがクラッシュしました\n${e.message}`, { taskbar: false });
         throw e;
@@ -999,6 +1132,7 @@ function registerProcess(win, key, path, handle, isShell = false, options = {}, 
         pid,
         path,
         entry: meta.entry || "",
+        singleton: Boolean(meta.singleton),
         window: win,
         handle,
         syscall: meta.syscall || null,
@@ -1038,6 +1172,7 @@ setInterval(async () => {
     for (const [key, proc] of processes.entries()) {
         proc.memory = mem;
         proc.cpu = cpuLoad;
+        if (proc.isShell) continue;
 
         // フリーズ監視（アプリ側で heartbeat が設定されている場合）
         if (proc.lastHeartbeat && ((now - proc.lastHeartbeat) > 10000)) {
@@ -1156,6 +1291,11 @@ export function killProcess(key) {
     } catch (e) {
         console.warn("Process cleanup warning:", e);
     } finally {
+        if (proc.entry && !proc.singleton) {
+            const sep = proc.entry.includes("?") ? "&" : "?";
+            moduleCache.delete(`${proc.entry}${sep}pid=${pid}`);
+        }
+
         for (const [path, w] of explorerWindows.entries()) {
             if (w === win) {
                 explorerWindows.delete(path);

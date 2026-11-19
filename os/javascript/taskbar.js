@@ -362,45 +362,73 @@ export async function initTaskbar() {
     updateVersionPosition();
 
     // ============================
-    // Auto-hide ロジック
+    // Auto-hide ロジック（上下左右4方向対応）
     // ============================
     function updateAutoHideEffect() {
-        if (!isAutoHide) {
-            taskbar.style.transform = "translateY(0)";
+        if (!isAutoHide || isTaskbarWindowMode) {
+            taskbar.style.transform = "translate(0, 0)";
             return;
         }
-        // 隠れている時は下端に2pxだけ残して沈める
-        taskbar.style.transform = isTaskbarHidden
-            ? `translateY(${taskbar.offsetHeight - 2}px)`
-            : "translateY(0)";
-        const currentVisibleHeight = isAutoHide && isTaskbarHidden ? 2 : taskbar.offsetHeight;
+
+        if (!isTaskbarHidden) {
+            taskbar.style.transform = "translate(0, 0)";
+        } else if (currentPosition === "bottom") {
+            taskbar.style.transform = `translateY(${taskbar.offsetHeight - 2}px)`;
+        } else if (currentPosition === "top") {
+            taskbar.style.transform = `translateY(-${taskbar.offsetHeight - 2}px)`;
+        } else if (currentPosition === "left") {
+            taskbar.style.transform = `translateX(-${taskbar.offsetWidth - 2}px)`;
+        } else if (currentPosition === "right") {
+            taskbar.style.transform = `translateX(${taskbar.offsetWidth - 2}px)`;
+        }
+
+        const isVert = currentPosition === "left" || currentPosition === "right";
+        const visibleSize = isTaskbarHidden ? 2 : (isVert ? taskbar.offsetWidth : taskbar.offsetHeight);
 
         document.querySelectorAll(".window.maximized").forEach(win => {
-            // 隠れている時はほぼ全画面、出ている時はタスクバーを除いた高さにする
-            win.style.height = `calc(100% - ${currentVisibleHeight}px)`;
+            if (currentPosition === "bottom") {
+                Object.assign(win.style, { top: "0px", left: "0px", width: "100%", height: `calc(100% - ${visibleSize}px)` });
+            } else if (currentPosition === "top") {
+                Object.assign(win.style, { top: `${visibleSize}px`, left: "0px", width: "100%", height: `calc(100% - ${visibleSize}px)` });
+            } else if (currentPosition === "left") {
+                Object.assign(win.style, { top: "0px", left: `${visibleSize}px`, width: `calc(100% - ${visibleSize}px)`, height: "100%" });
+            } else if (currentPosition === "right") {
+                Object.assign(win.style, { top: "0px", left: "0px", width: `calc(100% - ${visibleSize}px)`, height: "100%" });
+            }
         });
     }
 
-    // マウス位置による出し入れ判定（軽量化版）
+    // マウス位置による出し入れ判定（上下左右4方向対応・軽量化版）
     let isAutoHidingTicking = false;
     document.addEventListener("mousemove", (e) => {
-        if (!isAutoHide || isAutoHidingTicking) return;
+        if (!isAutoHide || isTaskbarWindowMode || isAutoHidingTicking) return;
         isAutoHidingTicking = true;
 
         requestAnimationFrame(() => {
-            const threshold = window.innerHeight - 10;
-            if (e.clientY > threshold) {
-                // 画面下端にマウスが来たら表示
-                if (isTaskbarHidden) {
-                    isTaskbarHidden = false;
-                    updateAutoHideEffect();
-                }
-            } else if (e.clientY < (window.innerHeight - taskbar.offsetHeight)) {
-                // タスクバーの領域からマウスが外れたら隠す
-                if (!isTaskbarHidden) {
-                    isTaskbarHidden = true;
-                    updateAutoHideEffect();
-                }
+            const EDGE = 10;
+            let atEdge = false;
+            let outsideBar = false;
+
+            if (currentPosition === "bottom") {
+                atEdge = e.clientY >= window.innerHeight - EDGE;
+                outsideBar = e.clientY < window.innerHeight - taskbar.offsetHeight;
+            } else if (currentPosition === "top") {
+                atEdge = e.clientY <= EDGE;
+                outsideBar = e.clientY > taskbar.offsetHeight;
+            } else if (currentPosition === "left") {
+                atEdge = e.clientX <= EDGE;
+                outsideBar = e.clientX > taskbar.offsetWidth;
+            } else if (currentPosition === "right") {
+                atEdge = e.clientX >= window.innerWidth - EDGE;
+                outsideBar = e.clientX < window.innerWidth - taskbar.offsetWidth;
+            }
+
+            if (atEdge && isTaskbarHidden) {
+                isTaskbarHidden = false;
+                updateAutoHideEffect();
+            } else if (outsideBar && !isTaskbarHidden) {
+                isTaskbarHidden = true;
+                updateAutoHideEffect();
             }
             isAutoHidingTicking = false;
         });
@@ -744,7 +772,15 @@ export async function initTaskbar() {
         let targetPos = currentPosition;
 
         taskbar.addEventListener("mousedown", e => {
-            if (e.target.closest("#start-btn") || e.target.closest(".taskbar-window-btn") || e.target.closest(".taskbar-ime-toolbar") || e.target === currentHandle || isTaskbarWindowMode) return;
+            if (
+                e.target.closest("#start-btn") ||
+                e.target.closest(".taskbar-window-btn") ||
+                e.target.closest(".taskbar-ime-toolbar") ||
+                e.target.closest(".taskbar-tray") ||
+                e.target.closest(".taskbar-scroll-btn") ||
+                e.target === currentHandle ||
+                isTaskbarWindowMode
+            ) return;
             isDragging = true;
             targetPos = currentPosition;
 

@@ -191,6 +191,9 @@ export async function getFileContent(path) {
             chunkPromises.push(dbGet(`${path}/__chunk_${i}`, STORE_FILES));
         }
         const chunks = await Promise.all(chunkPromises);
+        if (chunks.some(chunk => chunk === undefined || chunk === null)) {
+            throw new Error(`Chunk data missing or corrupted: ${path}`);
+        }
 
         if (meta.dataType === "string") {
             return chunks.join("");
@@ -337,6 +340,43 @@ export async function saveNodeDiff(rootFS, dirtyPaths = [], deletedPaths = [], m
             }
         });
 
+        // 1. 削除・旧チャンク掃除フェーズ（専用トランザクションで安全に完了させる）
+        const hasDeletions =
+            deletedPaths.length > 0 ||
+            largeFiles.size > 0 ||
+            Array.from(recordsMap.values()).some(r => r.meta.type === "file" && r.meta.content !== "__EXTERNAL_DATA__");
+
+        if (hasDeletions) {
+            await new Promise((resolve, reject) => {
+                const delTx = db.transaction([STORE_FILES, STORE_KV], "readwrite");
+                const delFileStore = delTx.objectStore(STORE_FILES);
+                const delKvStore = delTx.objectStore(STORE_KV);
+
+                delTx.oncomplete = () => resolve();
+                delTx.onerror = (event) => reject(delTx.error || event?.target?.error || new Error("Diff delete transaction error"));
+                delTx.onabort = (event) => reject(delTx.error || event?.target?.error || new Error("Diff delete transaction aborted"));
+
+                const deleteTasks = [];
+                for (const delPath of deletedPaths) {
+                    deleteTasks.push(deletePrefixFromStore(delKvStore, `${NODE_PREFIX}${delPath}`, protectedKvKeys));
+                    deleteTasks.push(deletePrefixFromStore(delFileStore, delPath, protectedFileKeys));
+                }
+                for (const lPath of largeFiles.keys()) {
+                    deleteTasks.push(deletePrefixFromStore(delFileStore, lPath));
+                }
+                for (const [nodePath, record] of recordsMap.entries()) {
+                    if (record.meta.type === "file" && record.meta.content !== "__EXTERNAL_DATA__") {
+                        deleteTasks.push(deletePrefixFromStore(delFileStore, nodePath));
+                    }
+                }
+                Promise.all(deleteTasks).catch(err => {
+                    try { delTx.abort(); } catch (_) { }
+                    reject(err);
+                });
+            });
+        }
+
+        // 2. 書き込みフェーズ（同期的・アトミックに一括コミットし TransactionInactiveError を防止）
         const tx = db.transaction([STORE_FILES, STORE_KV], "readwrite");
         const fileStore = tx.objectStore(STORE_FILES);
         const kvStore = tx.objectStore(STORE_KV);
@@ -351,43 +391,15 @@ export async function saveNodeDiff(rootFS, dirtyPaths = [], deletedPaths = [], m
             tx.onerror = (event) => reject(tx.error || event?.target?.error || new Error("Diff save transaction error"));
             tx.onabort = (event) => reject(tx.error || event?.target?.error || new Error("Diff save transaction aborted"));
 
-            (async () => {
-                try {
-                    // 1. 削除カーソルを一斉発行して完了を待機（旧チャンクの残留も同時に掃除）
-                    const deleteTasks = [];
-
-                    for (const delPath of deletedPaths) {
-                        deleteTasks.push(deletePrefixFromStore(kvStore, `${NODE_PREFIX}${delPath}`, protectedKvKeys));
-                        deleteTasks.push(deletePrefixFromStore(fileStore, delPath, protectedFileKeys));
-                    }
-
-                    // 上書きされる大容量ファイルの旧チャンクを掃除
-                    for (const lPath of largeFiles.keys()) {
-                        deleteTasks.push(deletePrefixFromStore(fileStore, lPath));
-                    }
-
-                    // 100KB以下に縮小されたファイルの旧外部ストアデータを掃除
-                    for (const [nodePath, record] of recordsMap.entries()) {
-                        if (record.meta.type === "file" && record.meta.content !== "__EXTERNAL_DATA__") {
-                            deleteTasks.push(deletePrefixFromStore(fileStore, nodePath));
-                        }
-                    }
-
-                    if (deleteTasks.length > 0) {
-                        await Promise.all(deleteTasks);
-                    }
-
-                    // 2. 削除完了後に変更レコードと新規大容量データを同期的に一括書き込み
-                    writeLargeFilesToStore(fileStore, largeFiles);
-
-                    for (const [nodePath, record] of recordsMap.entries()) {
-                        kvStore.put(record, `${NODE_PREFIX}${nodePath}`);
-                    }
-                } catch (err) {
-                    try { tx.abort(); } catch (_) { }
-                    reject(err || new Error("Unknown error during diff save"));
+            try {
+                writeLargeFilesToStore(fileStore, largeFiles);
+                for (const [nodePath, record] of recordsMap.entries()) {
+                    kvStore.put(record, `${NODE_PREFIX}${nodePath}`);
                 }
-            })();
+            } catch (err) {
+                try { tx.abort(); } catch (_) { }
+                reject(err || new Error("Unknown error during diff save"));
+            }
         });
     }).catch(async err => {
         await handleCriticalSaveError(err);
@@ -437,59 +449,71 @@ export async function saveFS(fs) {
             tx.onerror = (event) => reject(tx.error || event?.target?.error || new Error("Save transaction error"));
             tx.onabort = (event) => reject(tx.error || event?.target?.error || new Error("Save transaction aborted"));
 
-            try {
-                if (!fs?.["C:"]?.System) throw new Error("FS corruption detected.");
+            (async () => {
+                try {
+                    if (!fs?.["C:"]?.System) throw new Error("FS corruption detected.");
 
-                const recordsMap = new Map();
-                const largeFiles = new Map();
+                    const recordsMap = new Map();
+                    const largeFiles = new Map();
 
-                for (const topKey of Object.keys(fs)) {
-                    collectSubtreeRecords(fs[topKey], topKey, recordsMap, largeFiles);
+                    for (const topKey of Object.keys(fs)) {
+                        collectSubtreeRecords(fs[topKey], topKey, recordsMap, largeFiles);
+                    }
+
+                    const cleanKvTask = new Promise((res, rej) => {
+                        const kvCursor = kvStore.openCursor(IDBKeyRange.bound(NODE_PREFIX, `${NODE_PREFIX}\uffff`));
+                        kvCursor.onsuccess = (e) => {
+                            const cursor = e.target.result;
+                            if (cursor) {
+                                const nodePath = cursor.primaryKey.slice(NODE_PREFIX.length);
+                                if (!recordsMap.has(nodePath)) {
+                                    kvStore.delete(cursor.primaryKey);
+                                }
+                                cursor.continue();
+                            } else {
+                                res();
+                            }
+                        };
+                        kvCursor.onerror = () => rej(kvCursor.error);
+                    });
+
+                    const cleanFileTask = new Promise((res, rej) => {
+                        const fileCursor = fileStore.openCursor();
+                        fileCursor.onsuccess = (e) => {
+                            const cursor = e.target.result;
+                            if (cursor) {
+                                const key = cursor.primaryKey;
+                                const chunkIndex = key.indexOf("/__chunk_");
+                                const basePath = chunkIndex !== -1 ? key.substring(0, chunkIndex) : key;
+                                const rec = recordsMap.get(basePath);
+
+                                if (!rec || rec.meta.content !== "__EXTERNAL_DATA__") {
+                                    fileStore.delete(key);
+                                }
+                                cursor.continue();
+                            } else {
+                                res();
+                            }
+                        };
+                        fileCursor.onerror = () => rej(fileCursor.error);
+                    });
+
+                    await Promise.all([cleanKvTask, cleanFileTask]);
+
+                    writeLargeFilesToStore(fileStore, largeFiles);
+
+                    recordsMap.forEach((record, nodePath) => {
+                        kvStore.put(record, `${NODE_PREFIX}${nodePath}`);
+                    });
+
+                    // 旧モノリシック形式のキーが存在すれば削除して移行完了
+                    kvStore.delete("fs_C:");
+                    kvStore.delete("fs");
+                } catch (err) {
+                    try { tx.abort(); } catch (_) { }
+                    reject(err || new Error("Unknown error during FS save"));
                 }
-
-                // 不要な旧階層レコード（fs_node:）を掃除
-                const kvCursor = kvStore.openCursor(IDBKeyRange.bound(NODE_PREFIX, `${NODE_PREFIX}\uffff`));
-                kvCursor.onsuccess = (e) => {
-                    const cursor = e.target.result;
-                    if (cursor) {
-                        const nodePath = cursor.primaryKey.slice(NODE_PREFIX.length);
-                        if (!recordsMap.has(nodePath)) {
-                            kvStore.delete(cursor.primaryKey);
-                        }
-                        cursor.continue();
-                    }
-                };
-
-                // 不要な外部ファイル・チャンクを掃除
-                const fileCursor = fileStore.openCursor();
-                fileCursor.onsuccess = (e) => {
-                    const cursor = e.target.result;
-                    if (cursor) {
-                        const key = cursor.primaryKey;
-                        const chunkIndex = key.indexOf("/__chunk_");
-                        const basePath = chunkIndex !== -1 ? key.substring(0, chunkIndex) : key;
-                        const rec = recordsMap.get(basePath);
-
-                        if (!rec || rec.meta.content !== "__EXTERNAL_DATA__") {
-                            fileStore.delete(key);
-                        }
-                        cursor.continue();
-                    }
-                };
-
-                writeLargeFilesToStore(fileStore, largeFiles);
-
-                recordsMap.forEach((record, nodePath) => {
-                    kvStore.put(record, `${NODE_PREFIX}${nodePath}`);
-                });
-
-                // 旧モノリシック形式のキーが存在すれば削除して移行完了
-                kvStore.delete("fs_C:");
-                kvStore.delete("fs");
-            } catch (err) {
-                try { tx.abort(); } catch (_) { }
-                reject(err || new Error("Unknown error during FS save"));
-            }
+            })();
         });
     }).catch(async err => {
         await handleCriticalSaveError(err);
@@ -637,6 +661,7 @@ export async function saveSingleFile(path, data) {
         const tx = db.transaction([STORE_FILES], "readwrite");
         const fileStore = tx.objectStore(STORE_FILES);
 
+        await deletePrefixFromStore(fileStore, path);
         writeLargeFilesToStore(fileStore, new Map([[path, data]]));
 
         return new Promise((resolve, reject) => {
@@ -644,6 +669,9 @@ export async function saveSingleFile(path, data) {
             tx.onerror = (e) => reject(e?.target?.error || new Error("Single file save error"));
             tx.onabort = (e) => reject(e?.target?.error || new Error("Single file save aborted"));
         });
+    }).catch(async err => {
+        await handleCriticalSaveError(err);
+        throw err;
     });
 
     return saveChain;

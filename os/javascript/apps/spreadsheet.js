@@ -234,7 +234,7 @@ const SCOPED_CSS = `
     padding: 1px 4px;
     background-color: #fff;
     color: #000;
-    font-size: 11px;
+    font-size: small;
     outline: none;
     flex-shrink: 0;
 }
@@ -244,7 +244,7 @@ const SCOPED_CSS = `
     outline-offset: -2px;
 }
 
-/* オートフィルターボタン＆ポップアップ */
+/* オートフィルターボタン＆ポップアップ（文字ノードを持たせず ::before で描画） */
 .nexser-spreadsheet-app .ss-filter-arrow {
     position: absolute;
     right: 2px;
@@ -261,29 +261,38 @@ const SCOPED_CSS = `
     z-index: 9;
     user-select: none;
 }
+.nexser-spreadsheet-app .ss-filter-arrow::before {
+    content: "▼";
+}
+
 .nexser-spreadsheet-app .ss-filter-arrow.filtered {
     background: #107c41;
     color: #fff;
     border-color: #0b5a2f;
 }
-.nexser-spreadsheet-app .ss-filter-dropdown {
+.ss-filter-dropdown {
     position: fixed;
+    box-sizing: border-box;
     width: 220px;
     background: #C3C7CB;
+    color: #000;
     border: 1px solid;
     border-color: #fff #404040 #404040 #fff;
     box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.35);
     padding: 6px;
+    font-family: 'MS PGothic', 'MS Gothic', sans-serif;
     font-size: 12px;
-    z-index: 99995;
+    z-index: 2147483647;
     display: flex;
     flex-direction: column;
     gap: 5px;
 }
-.nexser-spreadsheet-app .ss-filter-values-list {
+.ss-filter-values-list {
+    box-sizing: border-box;
     max-height: 160px;
     overflow-y: auto;
     background: #fff;
+    color: #000;
     border: 1px solid #808080;
     padding: 4px;
     display: flex;
@@ -312,20 +321,23 @@ const SCOPED_CSS = `
     word-break: normal;
 }
 
-.nexser-spreadsheet-app .ss-autocomplete-popup {
+.ss-autocomplete-popup {
     position: fixed;
+    box-sizing: border-box;
     min-width: 240px;
     max-width: 380px;
     max-height: 210px;
     overflow-y: auto;
     background: #fff;
+    color: #000;
     border: 1px solid #404040;
     box-shadow: 2px 3px 8px rgba(0, 0, 0, 0.3);
-    z-index: 99997;
+    z-index: 2147483647;
+    font-family: 'MS PGothic', 'MS Gothic', sans-serif;
     font-size: 12px;
 }
 
-.nexser-spreadsheet-app .ss-autocomplete-item {
+.ss-autocomplete-item {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -335,22 +347,24 @@ const SCOPED_CSS = `
     border-bottom: 1px solid #f0f0f0;
 }
 
-.nexser-spreadsheet-app .ss-autocomplete-item.active,
-.nexser-spreadsheet-app .ss-autocomplete-item:hover {
+.ss-autocomplete-item.active,
+.ss-autocomplete-item:hover {
     background: #107c41;
     color: #fff;
 }
 
-.nexser-spreadsheet-app .ss-dv-tooltip {
+.ss-dv-tooltip {
     position: fixed;
+    box-sizing: border-box;
     max-width: 260px;
     background: #ffffe1;
     color: #000;
     border: 1px solid #606060;
     box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.25);
     padding: 5px 8px;
+    font-family: 'MS PGothic', 'MS Gothic', sans-serif;
     font-size: 11px;
-    z-index: 99994;
+    z-index: 2147483646;
     pointer-events: none;
 }
     
@@ -413,7 +427,13 @@ const SCOPED_CSS = `
     text-align: left;
     white-space: pre;
     position: relative;
+    font-family: 'MS PGothic', 'MS Gothic', sans-serif;
     font-size: 14px;
+    line-height: 1.3;
+    letter-spacing: normal;
+    font-kerning: auto;
+    text-rendering: auto;
+    -webkit-font-smoothing: antialiased;
     user-select: none;
     -webkit-user-select: none;
 }
@@ -511,70 +531,153 @@ const SCOPED_CSS = `
     background-color: rgba(70, 130, 180, 0.06);
 }
 
+/* Excel準拠：セルの右外側に独立配置するプルダウンボタン（<td>の子要素にしない） */
 .nexser-spreadsheet-app .ss-cell-dropdown-btn {
     position: absolute;
-    right: -18px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 17px;
-    height: 18px;
-    line-height: 16px;
-    text-align: center;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 20px;
+    padding: 0;
+    margin: 0;
     font-size: 9px;
+    line-height: 1;
     background: #e1e4e8;
     border: 1px solid #606060;
+    box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
     color: #000;
     cursor: pointer;
-    z-index: 20;
+    z-index: 24;
+    pointer-events: auto;
     user-select: none;
 }
 .nexser-spreadsheet-app .ss-cell-dropdown-btn:hover {
-    background: #d0d7de;
+    background: #c8d1da;
 }
-.nexser-spreadsheet-app .ss-cell-dropdown-list {
+.nexser-spreadsheet-app .ss-cell-dropdown-btn.open {
+    background: #b8c4d0;
+    border-color: #005a9e;
+}
+
+.ss-cell-dropdown-list {
     position: fixed;
+    box-sizing: border-box;
     min-width: 130px;
     max-height: 200px;
     overflow-y: auto;
     background: #fff;
+    color: #000;
     border: 1px solid #404040;
     box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.3);
-    z-index: 99996;
+    z-index: 2147483647;
+    font-family: 'MS PGothic', 'MS Gothic', sans-serif;
     font-size: 12px;
 }
-.nexser-spreadsheet-app .ss-cell-dropdown-item {
+.ss-cell-dropdown-item {
+    box-sizing: border-box;
     padding: 4px 8px;
     cursor: pointer;
     white-space: nowrap;
+    min-height: 22px;
+    color: #000;
 }
-.nexser-spreadsheet-app .ss-cell-dropdown-item:hover {
+.ss-cell-dropdown-item:hover {
     background: #005a9e;
     color: #fff;
 }
 
-/* 選択範囲の外周ボーダー */
-.nexser-spreadsheet-app .ss-table td.sel-edge-top::before,
-.nexser-spreadsheet-app .ss-table td.sel-edge-bottom::before,
-.nexser-spreadsheet-app .ss-table td.sel-edge-left::before,
-.nexser-spreadsheet-app .ss-table td.sel-edge-right::before {
-    content: "";
+/* サブメニュー（条件付き書式階層メニュー用） */
+.nexser-spreadsheet-app .ss-submenu-parent {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.nexser-spreadsheet-app .ss-submenu-parent > .ss-submenu {
+    display: none;
+    flex-direction: column;
     position: absolute;
-    inset: 0;
-    pointer-events: none;
-    z-index: 6;
+    left: 100%;
+    top: -2px;
+    min-width: 220px;
+    background-color: #C3C7CB;
+    border: 1px solid;
+    border-color: #fff #404040 #404040 #fff;
+    box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.35);
+    padding: 2px;
+    z-index: 70;
+    list-style: none;
+}
+.nexser-spreadsheet-app .ss-submenu-parent:hover > .ss-submenu {
+    display: flex;
 }
 
-.nexser-spreadsheet-app .ss-table td.sel-edge-top::before {
-    border-top: 2px solid #005a9e;
+/* Excel準拠ダイアログ共通タブ＆リスト */
+.ss-xl-tabs {
+    display: flex;
+    border-bottom: 1px solid #808080;
+    margin-bottom: 8px;
+    gap: 2px;
 }
-.nexser-spreadsheet-app .ss-table td.sel-edge-bottom::before {
-    border-bottom: 2px solid #005a9e;
+.ss-xl-tab {
+    padding: 4px 10px;
+    background: #d4d8dc;
+    border: 1px solid #808080;
+    border-bottom: none;
+    cursor: pointer;
+    font-size: 12px;
 }
-.nexser-spreadsheet-app .ss-table td.sel-edge-left::before {
-    border-left: 2px solid #005a9e;
+.ss-xl-tab.active {
+    background: #f0f0f0;
+    font-weight: bold;
+    position: relative;
+    top: 1px;
+    border-bottom: 1px solid #f0f0f0;
 }
-.nexser-spreadsheet-app .ss-table td.sel-edge-right::before {
-    border-right: 2px solid #005a9e;
+.ss-xl-tabpanel {
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+}
+.ss-xl-tabpanel.active {
+    display: flex;
+}
+/* 条件付き書式アイコンを擬似要素で描画し、cell.textContent への混入を完全に防止 */
+.nexser-spreadsheet-app .ss-table td[data-cf-icon]::before {
+    content: attr(data-cf-icon);
+    display: inline-block;
+    margin-right: 4px;
+    font-size: 11px;
+    font-weight: bold;
+    line-height: 1;
+    color: var(--cf-icon-color, #107c41);
+    pointer-events: none;
+}
+
+/* 選択範囲の外周ボーダー（数式編集中の青枠・赤枠と同じ inset box-shadow 描画に統一） */
+.nexser-spreadsheet-app .ss-table td.sel-edge-top,
+.nexser-spreadsheet-app .ss-table td.sel-edge-bottom,
+.nexser-spreadsheet-app .ss-table td.sel-edge-left,
+.nexser-spreadsheet-app .ss-table td.sel-edge-right {
+    --sel-t: 0 0 0 0 transparent;
+    --sel-b: 0 0 0 0 transparent;
+    --sel-l: 0 0 0 0 transparent;
+    --sel-r: 0 0 0 0 transparent;
+    box-shadow: var(--sel-t), var(--sel-b), var(--sel-l), var(--sel-r);
+}
+
+.nexser-spreadsheet-app .ss-table td.sel-edge-top {
+    --sel-t: inset 0 2px 0 0 #005a9e;
+}
+.nexser-spreadsheet-app .ss-table td.sel-edge-bottom {
+    --sel-b: inset 0 -2px 0 0 #005a9e;
+}
+.nexser-spreadsheet-app .ss-table td.sel-edge-left {
+    --sel-l: inset 2px 0 0 0 #005a9e;
+}
+.nexser-spreadsheet-app .ss-table td.sel-edge-right {
+    --sel-r: inset -2px 0 0 0 #005a9e;
 }
 
 /* セル範囲移動時のドロップ先プレビュー枠 */
@@ -1102,6 +1205,23 @@ const SCOPED_CSS = `
     box-shadow: inset -2px 0 0 #404040;
 }
 
+/* スクロール領域外の非表示セル（border-collapse下でも枠線・影を残さない） */
+.nexser-spreadsheet-app .ss-table tr.ss-row-offscreen > th,
+.nexser-spreadsheet-app .ss-table tr.ss-row-offscreen > td,
+.nexser-spreadsheet-app .ss-table td.ss-offscreen-hidden,
+.nexser-spreadsheet-app .ss-table th.ss-offscreen-hidden {
+    visibility: hidden !important;
+    border-style: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+/* スクロール領域外のテキストボックス・グラフ非表示 */
+.nexser-spreadsheet-app .floating-textbox.ss-obj-offscreen {
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
 @media print {
     body * {
         visibility: hidden !important;
@@ -1122,6 +1242,7 @@ const SCOPED_CSS = `
     .nexser-spreadsheet-app .row_number,
     .nexser-spreadsheet-app .ss-table thead,
     .nexser-spreadsheet-app .fill-handle,
+    .nexser-spreadsheet-app .ss-cell-dropdown-btn,
     .nexser-spreadsheet-app .floating-textbox-delete {
         display: none !important;
     }
@@ -1273,10 +1394,10 @@ const FORMULA_FUNCTIONS = {
     MOD(a, b) { return Number(a) % Number(b); },
     ABS(a) { return Math.abs(Number(a)); },
     ROUND(num, digits = 0) {
-        const n = Number(num), d = Math.trunc(Number(digits));
+        const n = Number(unwrapBlank(num)), d = Math.trunc(Number(unwrapBlank(digits)));
         if (!isFinite(n) || isNaN(d)) return "#VALUE!";
         const factor = Math.pow(10, d);
-        return Math.round((n + Number.EPSILON) * factor) / factor;
+        return Math.sign(n) * Math.round((Math.abs(n) + Number.EPSILON) * factor) / factor;
     },
     ROUNDUP(num, digits = 0) {
         const n = Number(num), d = Math.trunc(Number(digits));
@@ -1327,11 +1448,26 @@ const FORMULA_FUNCTIONS = {
     UPPER(text) { return String(text).toUpperCase(); },
     LOWER(text) { return String(text).toLowerCase(); },
     LEFT(text, count) { return String(text).substring(0, Number(count)); },
-    RIGHT(text, count) { return String(text).slice(-Number(count)); },
-    MID(text, start, count) { return String(text).substr(Number(start) - 1, Number(count)); },
-    TRIM(text) { return String(text).trim(); },
-    LEN(text) { return String(text).length; },
-    FIND(findText, withinText) { return String(withinText).indexOf(String(findText)) + 1; },
+    RIGHT(text, count = 1) {
+        const cnt = Math.trunc(Number(unwrapBlank(count)));
+        if (isNaN(cnt) || cnt < 0) return "#VALUE!";
+        if (cnt === 0) return "";
+        return String(unwrapBlank(text) ?? "").slice(-cnt);
+    },
+    MID(text, start, count) {
+        const st = Math.trunc(Number(unwrapBlank(start)));
+        const cnt = Math.trunc(Number(unwrapBlank(count)));
+        if (isNaN(st) || isNaN(cnt) || st < 1 || cnt < 0) return "#VALUE!";
+        return String(unwrapBlank(text) ?? "").slice(st - 1, st - 1 + cnt);
+    },
+    TRIM(text) { return String(unwrapBlank(text) ?? "").trim().replace(/\s+/g, " "); },
+    LEN(text) { return String(unwrapBlank(text) ?? "").length; },
+    FIND(findText, withinText, startNum = 1) {
+        const st = Math.trunc(Number(unwrapBlank(startNum)));
+        if (isNaN(st) || st < 1) return "#VALUE!";
+        const idx = String(unwrapBlank(withinText) ?? "").indexOf(String(unwrapBlank(findText) ?? ""), st - 1);
+        return idx === -1 ? "#VALUE!" : idx + 1;
+    },
     REPLACE(text, start, count, newText) {
         const s = String(text);
         const st = Number(start) - 1;
@@ -1340,23 +1476,25 @@ const FORMULA_FUNCTIONS = {
     },
 
     IF(condition, trueValue, falseValue = "") {
-        if (typeof condition === "string") {
-            condition = condition.trim().toUpperCase() === "TRUE";
-        }
-        return condition ? trueValue : falseValue;
+        const raw = unwrapBlank(condition);
+        const cond = typeof raw === "string"
+            ? raw.trim().toUpperCase() === "TRUE"
+            : Boolean(raw);
+        return cond ? trueValue : falseValue;
     },
     IFERROR(value, valueIfError = "") {
-        if (typeof value === "string" && /^#(ERROR!|DIV\/0!|N\/A|VALUE!|CIRCULAR!|REF!|NAME\?)$/.test(value.trim())) {
+        const raw = unwrapBlank(value);
+        if (typeof raw === "string" && /^#(ERROR!|DIV\/0!|N\/A|VALUE!|CIRCULAR!|REF!|NAME\?|NUM!|CALC!|SPILL!)$/.test(raw.trim())) {
             return valueIfError;
         }
-        if (typeof value === "number" && (!isFinite(value) || isNaN(value))) {
+        if (typeof raw === "number" && (!isFinite(raw) || isNaN(raw))) {
             return valueIfError;
         }
         return value;
     },
-    AND(...args) { return args.every(v => Boolean(v)); },
-    OR(...args) { return args.some(v => Boolean(v)); },
-    NOT(value) { return !Boolean(value); },
+    AND(...args) { return args.every(v => Boolean(unwrapBlank(v))); },
+    OR(...args) { return args.some(v => Boolean(unwrapBlank(v))); },
+    NOT(value) { return !Boolean(unwrapBlank(value)); },
 
     INDEX(array, row, col = 0) {
         if (!Array.isArray(array)) return array;
@@ -1383,20 +1521,27 @@ const FORMULA_FUNCTIONS = {
         return "#N/A";
     },
     VLOOKUP(lookupValue, tableArray, colIndex, rangeLookup = true) {
-        const cIdx = Math.trunc(Number(colIndex));
+        const cIdx = Math.trunc(Number(unwrapBlank(colIndex)));
         if (!Array.isArray(tableArray) || isNaN(cIdx) || cIdx < 1) return "#VALUE!";
+        const lv = unwrapBlank(lookupValue);
         const isRangeLookup = typeof rangeLookup === "string"
             ? !["FALSE", "0"].includes(rangeLookup.trim().toUpperCase())
             : Boolean(rangeLookup);
+        const wildcardMatcher = (!isRangeLookup && typeof lv === "string" && /[*?]/.test(lv))
+            ? buildConditionMatcher(lv)
+            : null;
         let bestMatch = null;
         for (const row of tableArray) {
             if (!Array.isArray(row) || isBlankVal(row[0])) continue;
+            if (cIdx > row.length) return "#REF!";
+            const cellVal = unwrapBlank(row[0]);
+            const retVal = isBlankVal(row[cIdx - 1]) ? 0 : unwrapBlank(row[cIdx - 1]);
             if (isRangeLookup) {
-                if (row[0] <= lookupValue) {
-                    bestMatch = row[cIdx - 1] != null ? row[cIdx - 1] : "#REF!";
+                if (typeof cellVal === typeof lv && cellVal <= lv) {
+                    bestMatch = retVal;
                 }
-            } else {
-                if (row[0] == lookupValue) return row[cIdx - 1] != null ? row[cIdx - 1] : "#REF!";
+            } else if (wildcardMatcher ? wildcardMatcher(cellVal) : excelEquals(cellVal, lv)) {
+                return retVal;
             }
         }
         return bestMatch !== null ? bestMatch : "#N/A";
@@ -1416,7 +1561,7 @@ const FORMULA_FUNCTIONS = {
                     bestMatch = tableArray[rIdx - 1]?.[c] ?? "#REF!";
                 }
             } else {
-                if (headerRow[c] == lookupValue) return tableArray[rIdx - 1]?.[c] ?? "#REF!";
+                if (excelEquals(headerRow[c], lookupValue)) return tableArray[rIdx - 1]?.[c] ?? "#REF!";
             }
         }
         return bestMatch !== null ? bestMatch : "#N/A";
@@ -1434,8 +1579,10 @@ const FORMULA_FUNCTIONS = {
             matchers.push({ arr: flattenArray(criteriaPairs[i]), fn: buildConditionMatcher(criteriaPairs[i + 1]) });
         }
         return targets.reduce((sum, val, idx) => {
-            const ok = matchers.every(m => m.fn(m.arr[idx]));
-            return ok ? sum + Number(val || 0) : sum;
+            if (!matchers.every(m => m.fn(m.arr[idx]))) return sum;
+            const raw = unwrapBlank(val);
+            const num = (raw !== "" && raw != null && typeof raw !== "boolean") ? Number(raw) : NaN;
+            return isFinite(num) ? sum + num : sum;
         }, 0);
     },
     COUNTIFS(...criteriaPairs) {
@@ -1452,7 +1599,27 @@ const FORMULA_FUNCTIONS = {
         return count;
     },
     INT(num) { return Math.floor(Number(num)); },
-    SUBSTITUTE(text, oldText, newText) { return String(text).split(String(oldText)).join(String(newText)); },
+    SUBSTITUTE(text, oldText, newText, instanceNum = null) {
+        const src = String(unwrapBlank(text) ?? "");
+        const oldStr = String(unwrapBlank(oldText) ?? "");
+        const newStr = String(unwrapBlank(newText) ?? "");
+        if (oldStr === "") return src;
+        if (instanceNum == null || isBlankVal(instanceNum)) {
+            return src.split(oldStr).join(newStr);
+        }
+        const targetIdx = Math.trunc(Number(unwrapBlank(instanceNum)));
+        if (isNaN(targetIdx) || targetIdx < 1) return "#VALUE!";
+        let count = 0;
+        let pos = 0;
+        while ((pos = src.indexOf(oldStr, pos)) !== -1) {
+            count++;
+            if (count === targetIdx) {
+                return src.slice(0, pos) + newStr + src.slice(pos + oldStr.length);
+            }
+            pos += oldStr.length;
+        }
+        return src;
+    },
     ISBLANK(val) { return isBlankVal(val); },
     ISNUMBER(val) { return val !== "" && val != null && !isNaN(Number(val)); },
 
@@ -1557,7 +1724,7 @@ const FORMULA_FUNCTIONS = {
         return args.length % 2 === 1 ? args[args.length - 1] : "#N/A";
     },
     XOR(...args) {
-        return args.filter(Boolean).length % 2 === 1;
+        return args.filter(v => Boolean(unwrapBlank(v))).length % 2 === 1;
     },
     TEXTJOIN(delimiter, ignoreEmpty, ...texts) {
         const flat = flattenArray(texts).map(v => String(v ?? ""));
@@ -1662,25 +1829,37 @@ const FORMULA_FUNCTIONS = {
         return FORMULA_FUNCTIONS.SUBTOTAL(funcNum, clean);
     },
     SEQUENCE(rows = 1, cols = 1, start = 1, step = 1) {
+        const rCnt = Math.trunc(Number(unwrapBlank(rows)));
+        const cCnt = Math.trunc(Number(unwrapBlank(cols)));
+        if (isNaN(rCnt) || isNaN(cCnt) || rCnt < 1 || cCnt < 1) return "#VALUE!";
+        if (rCnt * cCnt > 50000) return "#NUM!";
         const out = [];
-        let cur = Number(start);
-        for (let r = 0; r < Number(rows); r++) {
+        let cur = Number(unwrapBlank(start));
+        const st = Number(unwrapBlank(step));
+        for (let r = 0; r < rCnt; r++) {
             const row = [];
-            for (let c = 0; c < Number(cols); c++) {
+            for (let c = 0; c < cCnt; c++) {
                 row.push(cur);
-                cur += Number(step);
+                cur += st;
             }
             out.push(row);
         }
         return out;
     },
     RANDARRAY(rows = 1, cols = 1, min = 0, max = 1, wholeNumber = false) {
+        const rCnt = Math.trunc(Number(unwrapBlank(rows)));
+        const cCnt = Math.trunc(Number(unwrapBlank(cols)));
+        if (isNaN(rCnt) || isNaN(cCnt) || rCnt < 1 || cCnt < 1) return "#VALUE!";
+        if (rCnt * cCnt > 50000) return "#NUM!";
+        const lo = Number(unwrapBlank(min));
+        const hi = Number(unwrapBlank(max));
+        if (lo > hi) return "#VALUE!";
         const out = [];
-        for (let r = 0; r < Number(rows); r++) {
+        for (let r = 0; r < rCnt; r++) {
             const row = [];
-            for (let c = 0; c < Number(cols); c++) {
-                const v = Number(min) + Math.random() * (Number(max) - Number(min));
-                row.push(wholeNumber ? Math.floor(v) : v);
+            for (let c = 0; c < cCnt; c++) {
+                const v = lo + Math.random() * (hi - lo);
+                row.push(wholeNumber ? Math.floor(lo + Math.random() * (hi - lo + 1)) : v);
             }
             out.push(row);
         }
@@ -1832,9 +2011,19 @@ const FORMULA_FUNCTIONS = {
             const dec = (fmt.split(".")[1] || "").replace(/[^0#]/g, "").length;
             return `${(num * 100).toFixed(dec)}%`;
         }
-        const dec = (fmt.split(".")[1] || "").replace(/[^0#]/g, "").length;
+        const [intFmt, decFmt = ""] = fmt.split(".");
+        const dec = decFmt.replace(/[^0#]/g, "").length;
+        const minIntDigits = (intFmt.match(/0/g) || []).length;
         if (fmt.includes(",")) {
-            return num.toLocaleString("ja-JP", { minimumFractionDigits: dec, maximumFractionDigits: dec });
+            return num.toLocaleString("ja-JP", {
+                minimumIntegerDigits: Math.max(1, minIntDigits),
+                minimumFractionDigits: dec,
+                maximumFractionDigits: dec
+            });
+        }
+        if (minIntDigits > 1 && dec === 0) {
+            const sign = num < 0 ? "-" : "";
+            return sign + String(Math.abs(Math.round(num))).padStart(minIntDigits, "0");
         }
         return dec > 0 ? num.toFixed(dec) : String(Math.round(num));
     },
@@ -1848,7 +2037,13 @@ const FORMULA_FUNCTIONS = {
     },
     EXACT(t1, t2) { return String(unwrapBlank(t1) ?? "") === String(unwrapBlank(t2) ?? ""); },
     PROPER(text) { return String(unwrapBlank(text) ?? "").replace(/\w\S*/g, w => w[0].toUpperCase() + w.slice(1).toLowerCase()); },
-    REPT(text, count) { return String(unwrapBlank(text) ?? "").repeat(Math.max(0, Math.trunc(Number(count)))); },
+    REPT(text, count) {
+        const cnt = Math.trunc(Number(unwrapBlank(count)));
+        if (isNaN(cnt) || cnt < 0) return "#VALUE!";
+        const str = String(unwrapBlank(text) ?? "");
+        if (str.length * cnt > 32767) return "#VALUE!";
+        return str.repeat(cnt);
+    },
     CHAR(num) { return String.fromCharCode(Number(num)); },
     CODE(text) { return String(unwrapBlank(text) ?? "").charCodeAt(0) || "#VALUE!"; },
     TEXTBEFORE(text, delimiter, instanceNum = 1) {
@@ -2189,30 +2384,80 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     <!-- 5. スタイル -->
                     <div class="ss-ribbon-group">
                         <div class="ss-ribbon-group-body">
-                            <div class="pulldown_menu_parent">
+                           <div class="pulldown_menu_parent">
                                 <span class="button pulldown_btn">条件付き書式 ▼</span>
-                                <ul class="pulldown_menu" style="min-width:235px;">
-                                    <li class="button" data-cf-preset="custom">新しいルール（詳細設定）...</li>
-                                    <li class="button" data-cf-preset="manage">ルールの管理・一覧削除...</li>
+                                <ul class="pulldown_menu" style="min-width:225px; overflow:visible;">
+                                    <li class="button ss-submenu-parent">
+                                        <span>セルの強調表示ルール(H)</span><span>▶</span>
+                                        <ul class="ss-submenu">
+                                            <li class="button" data-cf-preset="highlight-gt">指定の値より大きい(G)...</li>
+                                            <li class="button" data-cf-preset="highlight-lt">指定の値より小さい(L)...</li>
+                                            <li class="button" data-cf-preset="highlight-between">指定の範囲内(B)...</li>
+                                            <li class="button" data-cf-preset="highlight-eq">指定の値に等しい(E)...</li>
+                                            <li class="button" data-cf-preset="highlight-text">文字列(T)...</li>
+                                            <li class="button" data-cf-preset="highlight-date">日付(A)...</li>
+                                            <li class="button" data-cf-preset="highlight-dup">重複する値(D)...</li>
+                                        </ul>
+                                    </li>
+                                    <li class="button ss-submenu-parent">
+                                        <span>上位/下位ルール(T)</span><span>▶</span>
+                                        <ul class="ss-submenu">
+                                            <li class="button" data-cf-preset="top-n">上位 10 項目(T)...</li>
+                                            <li class="button" data-cf-preset="top-pct">上位 10 %(P)...</li>
+                                            <li class="button" data-cf-preset="bottom-n">下位 10 項目(B)...</li>
+                                            <li class="button" data-cf-preset="bottom-pct">下位 10 %(O)...</li>
+                                            <li class="button" data-cf-preset="above-avg">平均より上(A)...</li>
+                                            <li class="button" data-cf-preset="below-avg">平均より下(V)...</li>
+                                        </ul>
+                                    </li>
+                                    <li class="button ss-submenu-parent">
+                                        <span>データ バー(D)</span><span>▶</span>
+                                        <ul class="ss-submenu">
+                                            <li class="button" data-cf-preset="databar-grad-blue">グラデーション: 青のデータ バー</li>
+                                            <li class="button" data-cf-preset="databar-grad-green">グラデーション: 緑のデータ バー</li>
+                                            <li class="button" data-cf-preset="databar-grad-red">グラデーション: 赤のデータ バー</li>
+                                            <li class="button" data-cf-preset="databar-grad-orange">グラデーション: オレンジのデータ バー</li>
+                                            <li class="ss-menu-sep"></li>
+                                            <li class="button" data-cf-preset="databar-solid-blue">単色: 青のデータ バー</li>
+                                            <li class="button" data-cf-preset="databar-solid-green">単色: 緑のデータ バー</li>
+                                            <li class="button" data-cf-preset="databar-solid-red">単色: 赤のデータ バー</li>
+                                            <li class="button" data-cf-preset="databar-solid-orange">単色: オレンジのデータ バー</li>
+                                        </ul>
+                                    </li>
+                                    <li class="button ss-submenu-parent">
+                                        <span>カラー スケール(S)</span><span>▶</span>
+                                        <ul class="ss-submenu">
+                                            <li class="button" data-cf-preset="scale-gyr">緑 - 黄 - 赤のカラー スケール</li>
+                                            <li class="button" data-cf-preset="scale-ryg">赤 - 黄 - 緑のカラー スケール</li>
+                                            <li class="button" data-cf-preset="scale-gwr">緑 - 白 - 赤のカラー スケール</li>
+                                            <li class="button" data-cf-preset="scale-rwg">赤 - 白 - 緑のカラー スケール</li>
+                                            <li class="button" data-cf-preset="scale-bwr">青 - 白 - 赤のカラー スケール</li>
+                                            <li class="button" data-cf-preset="scale-rwb">赤 - 白 - 青のカラー スケール</li>
+                                            <li class="button" data-cf-preset="scale-wr">白 - 赤のカラー スケール</li>
+                                            <li class="button" data-cf-preset="scale-rw">赤 - 白のカラー スケール</li>
+                                            <li class="button" data-cf-preset="scale-gw">緑 - 白のカラー スケール</li>
+                                            <li class="button" data-cf-preset="scale-wg">白 - 緑のカラー スケール</li>
+                                        </ul>
+                                    </li>
+                                    <li class="button ss-submenu-parent">
+                                        <span>アイコン セット(I)</span><span>▶</span>
+                                        <ul class="ss-submenu">
+                                            <li class="button" data-cf-preset="icon-arrows3">方向: 3方向矢印（カラー）</li>
+                                            <li class="button" data-cf-preset="icon-traffic3">図形: 3つの信号（枠なし）</li>
+                                            <li class="button" data-cf-preset="icon-signs3">インジケーター: 3つの記号（丸付き）</li>
+                                            <li class="button" data-cf-preset="icon-stars3">評価: 3つの星</li>
+                                        </ul>
+                                    </li>
                                     <li class="ss-menu-sep"></li>
-                                    <li class="button" data-cf-preset="gt100">強調: 指定の値より大きい (100超・赤)</li>
-                                    <li class="button" data-cf-preset="lt0">強調: 負の数 (0未満・赤)</li>
-                                    <li class="button" data-cf-preset="duplicate">強調: 重複する値</li>
-                                    <li class="button" data-cf-preset="blank">強調: 空白セル</li>
-                                    <li class="ss-menu-sep"></li>
-                                    <li class="button" data-cf-preset="top10">上位/下位: 上位 10 項目（緑）</li>
-                                    <li class="button" data-cf-preset="bottom10">上位/下位: 下位 10 項目（赤）</li>
-                                    <li class="button" data-cf-preset="aboveAvg">上位/下位: 平均より上（青）</li>
-                                    <li class="button" data-cf-preset="belowAvg">上位/下位: 平均より下（黄）</li>
-                                    <li class="ss-menu-sep"></li>
-                                    <li class="button" data-cf-preset="databar-blue">データバー: 青</li>
-                                    <li class="button" data-cf-preset="databar-green">データバー: 緑</li>
-                                    <li class="button" data-cf-preset="databar-orange">データバー: オレンジ</li>
-                                    <li class="ss-menu-sep"></li>
-                                    <li class="button" data-cf-preset="scale-gyr">カラースケール: 緑 - 黄 - 赤</li>
-                                    <li class="button" data-cf-preset="scale-ryg">カラースケール: 赤 - 黄 - 緑</li>
-                                    <li class="ss-menu-sep"></li>
-                                    <li class="button" data-cf-preset="clear">シート全体のルールをクリア</li>
+                                    <li class="button" data-cf-preset="custom">新しいルール(N)...</li>
+                                    <li class="button ss-submenu-parent">
+                                        <span>ルールのクリア(C)</span><span>▶</span>
+                                        <ul class="ss-submenu">
+                                            <li class="button" data-cf-preset="clear-selection">選択したセルからルールをクリア(S)</li>
+                                            <li class="button" data-cf-preset="clear-sheet">シート全体からルールをクリア(E)</li>
+                                        </ul>
+                                    </li>
+                                    <li class="button" data-cf-preset="manage">ルールの管理(R)...</li>
                                 </ul>
                             </div>
                           <div class="pulldown_menu_parent">
@@ -2288,7 +2533,15 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
                 <!-- ==================== [挿入] タブ ==================== -->
                 <div class="ss-ribbon-panel" data-ribbon-panel="insert">
-                   <div class="ss-ribbon-group">
+                    <div class="ss-ribbon-group">
+                        <div class="ss-ribbon-group-body">
+                            <span class="button" data-action="pivot-table" title="選択範囲からピボットテーブルを作成">📑 ピボットテーブル</span>
+                            <span class="button" data-action="create-table" title="選択範囲を構造化テーブルに変換 (Ctrl+T)">▦ テーブル</span>
+                            <span class="button" data-action="toggle-table-total" title="テーブル末尾の集計行を表示/非表示">Σ 集計行</span>
+                        </div>
+                        <div class="ss-ribbon-group-title">テーブル</div>
+                    </div>
+                    <div class="ss-ribbon-group">
                         <div class="ss-ribbon-group-body">
                             <span class="button" data-action="insert-chart-bar">📊 縦棒</span>
                             <span class="button" data-action="insert-chart-line">📈 折れ線</span>
@@ -2503,7 +2756,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     </div>
                     <div class="ss-ribbon-group">
                         <div class="ss-ribbon-group-body">
-                            <span class="button" data-action="data-validation" title="セルにドロップダウンリストを設定">📋 データの入力規則</span>
+                            <span class="button" data-action="text-to-columns" title="1列のテキストを区切り文字で複数列に分割">✂ 区切り位置</span>
+                            <span class="button" data-action="remove-duplicates" title="選択範囲から重複する行を削除">🧹 重複の削除</span>
+                            <span class="button" data-action="data-validation" title="セルにドロップダウンリストや入力制限を設定">📋 データの入力規則</span>
                         </div>
                         <div class="ss-ribbon-group-title">データツール</div>
                     </div>
@@ -2673,6 +2928,19 @@ export default async function initSpreadsheetApp(content, options = {}) {
         renderWindowStatusBar();
     }
 
+    function setWindowBusyLock(isBusy, statusLabel = "") {
+        if (statusLabel) {
+            statusBarState.stateText = statusLabel;
+            renderWindowStatusBar();
+        }
+        if (win && windowAPI?.toggleWindowControl) {
+            windowAPI.toggleWindowControl(win, "close", !isBusy);
+        }
+        if (!isBusy) {
+            windowAPI?.refreshTopWindow?.();
+        }
+    }
+
     function updateOSStatusBar(text) {
         statusBarState.selectionText = text;
         renderWindowStatusBar();
@@ -2682,12 +2950,20 @@ export default async function initSpreadsheetApp(content, options = {}) {
     let findDialogOpen = false;
 
     function isAppFocused() {
-        if (document.querySelector(".modal-overlay")) return false;
+        const overlays = Array.from(document.querySelectorAll(".modal-overlay"));
+        const hasBlockingOverlay = overlays.some(ov =>
+            ov.style.display !== "none" &&
+            ov.style.visibility !== "hidden" &&
+            ov.style.pointerEvents !== "none"
+        );
+        if (hasBlockingOverlay) return false;
+
         if (Array.from(document.querySelectorAll(".window")).some(w =>
             w._modal &&
             w.dataset.ssToolWindow !== "true" &&
             w.style.visibility !== "hidden" &&
-            w.dataset.minimized !== "true"
+            w.dataset.minimized !== "true" &&
+            w.dataset.backgroundClickable !== "true"
         )) {
             return false;
         }
@@ -2743,10 +3019,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 <input type="text" class="ss-sheet-rename-input border" value="${target.name}" style="width:100%; padding:4px 6px; font-size:12px; background:#fff; color:#000; box-sizing:border-box;">
             </div>
         `;
-        const modalContent = windowAPI.showModalWindow("シート名の変更", bodyHtml, {
+        const modalContent = openAppModal("シート名の変更", bodyHtml, {
             width: 340,
             isHtml: true,
-            parentWin: win,
             buttons: [
                 {
                     label: "OK",
@@ -2760,7 +3035,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                         const oldName = target.name;
                         target.name = nextName;
                         const escapedOld = oldName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-                        const sheetRefPattern = new RegExp(`(?:'${escapedOld}'|\\b${escapedOld})!`, "g");
+                        const sheetRefPattern = new RegExp(`(?:'${escapedOld}'|(?<![A-Za-z0-9_\\u3040-\\u30FF\\u4E00-\\u9FAF])${escapedOld})!`, "g");
                         const formattedNewPrefix = /^[A-Za-z0-9_\u3040-\u30FF\u4E00-\u9FAF]+$/.test(nextName)
                             ? `${nextName}!`
                             : `'${nextName}'!`;
@@ -2974,64 +3249,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         });
     }
 
-    attachContextMenu(theadRow, (e) => {
-        const colTh = e.target.closest("th.col_number");
-        if (!colTh) return [];
-        const c = parseInt(colTh.dataset.col, 10);
-        const target = getVisibleCell(1, c);
-        if (target) setActiveCell(target, false);
-        return [
-            { label: "列を左に挿入", action: () => void modifySheetRowCol("insert-col") },
-            { label: "列を削除", action: () => void modifySheetRowCol("delete-col") },
-            { label: "---" },
-            { label: "列幅の自動調整", action: () => { autoFitColumn(c); setDirtyState(true); debouncedSaveState(); } }
-        ];
-    });
 
-    attachContextMenu(tbody, (e) => {
-        const rowTh = e.target.closest("th.row_number");
-        const td = e.target.closest("td");
-
-        if (rowTh) {
-            const r = parseInt(rowTh.textContent, 10);
-            const target = getVisibleCell(r, 0);
-            if (target) setActiveCell(target, false);
-            return [
-                { label: "行を上に挿入", action: () => void modifySheetRowCol("insert-row") },
-                { label: "行を削除", action: () => void modifySheetRowCol("delete-row") },
-                { label: "---" },
-                { label: "行の高さの自動調整", action: () => { autoFitRow(getRow(r)); setDirtyState(true); debouncedSaveState(); } }
-            ];
-        } else if (td) {
-            // 右クリックされたセルが現在の選択範囲外であれば、選択をそのセルに切り替える
-            if (!td.classList.contains("selected")) {
-                clearSelection();
-                td.classList.add("selected");
-                const r = parseInt(td.dataset.row, 10);
-                const c = parseInt(td.dataset.col, 10);
-                selectionStart = { row: r, col: c };
-                selectionEnd = { row: r, col: c };
-                updateSelectionEdges();
-                updateSelectedCellsDisplay();
-                updateFillHandle();
-            }
-            setActiveCell(td, false);
-
-            return [
-                { label: "切り取り (Ctrl+X)", action: () => copySelectedCells(true) },
-                { label: "コピー (Ctrl+C)", action: () => copySelectedCells(false) },
-                { label: "貼り付け (Ctrl+V)", action: () => void pasteClipboardData(false) },
-                { label: "値のみ貼り付け", action: () => void pasteClipboardData(true) },
-                { label: "---" },
-                { label: "セルを結合して中央揃え", action: () => mergeSelectedCells() },
-                { label: "セル結合の解除", action: () => unmergeSelectedCells() },
-                { label: "---" },
-                { label: "行を上に挿入", action: () => void modifySheetRowCol("insert-row") },
-                { label: "列を左に挿入", action: () => void modifySheetRowCol("insert-col") }
-            ];
-        }
-        return [];
-    });
 
     // リサイズ用ツールチップ
     const resizeTooltip = document.createElement("div");
@@ -3047,6 +3265,27 @@ export default async function initSpreadsheetApp(content, options = {}) {
         zIndex: "99998"
     });
     document.body.appendChild(resizeTooltip);
+    signal.addEventListener("abort", () => {
+        resizeTooltip.remove();
+        closeCellDropdownList();
+        closeAutocompletePopup();
+        hideDataValidationTooltip();
+        timers.forEach(id => clearTimeout(id));
+        timers.clear();
+        if (findWin) {
+            if (windowAPI?.destroyWindow) {
+                windowAPI.destroyWindow(findWin);
+            } else {
+                findWin.remove();
+            }
+            findWin = null;
+            findDialogOpen = false;
+        }
+        if (lockedFilePath) {
+            unlockFile(lockedFilePath, lockOwnerPid);
+            lockedFilePath = null;
+        }
+    }, { once: true });
 
     function updateResizeTooltip(x, y, text) {
         resizeTooltip.textContent = text;
@@ -3074,6 +3313,69 @@ export default async function initSpreadsheetApp(content, options = {}) {
             windowAPI.errorWindow(message, { title, parentWin: win });
         } else {
             alert(`${title}\n\n${message}`);
+        }
+    }
+
+    function showDataValidationDialog({ style = "stop", title, message, onConfirm = null }) {
+        const styleConfig = {
+            stop: {
+                defaultTitle: "入力エラー",
+                iconClass: "error_icon",
+                buttons: [{ label: "OK" }]
+            },
+            warning: {
+                defaultTitle: "入力の確認",
+                iconClass: "warning_icon",
+                buttons: [
+                    { label: "はい", onClick: () => onConfirm?.(true) },
+                    { label: "いいえ", onClick: () => onConfirm?.(false) }
+                ]
+            },
+            info: {
+                defaultTitle: "入力情報",
+                iconClass: "info_icon",
+                buttons: [{ label: "OK" }]
+            }
+        };
+
+        const cfg = styleConfig[style] || styleConfig.stop;
+        const resolvedTitle = title || cfg.defaultTitle;
+
+        if (windowAPI?.showModalWindow) {
+            return openAppModal(resolvedTitle, message, {
+                iconClass: cfg.iconClass,
+                buttons: cfg.buttons
+            });
+        }
+
+        // フォールバック
+        if (style === "warning") {
+            const ok = window.confirm(`${resolvedTitle}\n\n${message}`);
+            onConfirm?.(ok);
+        } else {
+            alert(`${resolvedTitle}\n\n${message}`);
+        }
+    }
+
+    function openAppModal(title, bodyHtml, opts = {}) {
+        const modalContent = windowAPI.showModalWindow(title, bodyHtml, {
+            parentWin: win,
+            ...opts
+        });
+        const modalWin = modalContent?.closest?.(".window");
+        if (modalWin && windowAPI?.toggleWindowControl) {
+            windowAPI.toggleWindowControl(modalWin, "minimize", false);
+            windowAPI.toggleWindowControl(modalWin, "maximize", false);
+        }
+        return modalContent;
+    }
+
+    function restoreMainWindowFocus() {
+        if (!win) return;
+        windowAPI?.bringToFront?.(win);
+        windowAPI?.refreshTopWindow?.();
+        if (activeCell && !isCellEditing()) {
+            activeCell.focus({ preventScroll: true });
         }
     }
 
@@ -3155,18 +3457,6 @@ export default async function initSpreadsheetApp(content, options = {}) {
     // 行・列の生成とリサイズハンドル（<colgroup> + 明示的テーブル幅）
     // =========================================================
     let cachedTableWidth = 0;
-    const hScrollTrack = appRoot.querySelector(".ss-h-scrollbar-track");
-    const hScrollSpacer = appRoot.querySelector(".ss-h-scrollbar-spacer");
-    let syncingHScroll = false;
-
-    container.addEventListener("wheel", (e) => {
-        if (e.ctrlKey || e.metaKey) {
-            e.preventDefault();
-            const cur = parseInt(zoomSlider?.value || "100", 10) || 100;
-            const next = Math.max(20, Math.min(200, cur + (e.deltaY < 0 ? 10 : -10)));
-            setZoom(next);
-        }
-    }, { passive: false, signal });
 
     function syncTableWidth() {
         let total = 0;
@@ -3190,6 +3480,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             } else {
                 refreshVisibleRows();
             }
+            syncCellDropdownButtonPosition();
         }
     }
 
@@ -3208,6 +3499,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
         if (freezeRows <= 0 && freezeCols <= 0) {
             refreshVisibleRows();
+            syncCellDropdownButtonPosition();
             return;
         }
 
@@ -3273,6 +3565,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         }
 
         refreshVisibleRows();
+        syncCellDropdownButtonPosition();
     }
 
     function setFreezePanes(rows, cols, { silent = false } = {}) {
@@ -3367,6 +3660,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         } else {
             refreshVisibleRows();
         }
+        syncCellDropdownButtonPosition();
     }
 
     function attachColResizeHandle(th, colIndex) {
@@ -3444,6 +3738,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 const newHeight = Math.max(20, startHeight + (eMove.clientY - startY));
                 tr.style.height = `${newHeight}px`;
                 refreshVisibleRows();
+                syncCellDropdownButtonPosition();
                 updateResizeTooltip(eMove.clientX, eMove.clientY, `${newHeight}px`);
             };
             const onUp = () => {
@@ -3571,7 +3866,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
     // 数式評価エンジン（$絶対参照・複合参照・大小文字対応）
     // =========================================================
     const RANGE_REF_REGEX = /(?<![A-Za-z0-9_])(\$?[A-Za-z]+\$?\d+:\$?[A-Za-z]+\$?\d+)/g;
-    const SINGLE_REF_REGEX = /(?<![A-Za-z0-9_])(\$?)([A-Za-z]+)(\$?)(\d+)/g;
+    const SINGLE_REF_REGEX = /(?<![A-Za-z0-9_])(\$?)([A-Za-z]+)(\$?)(\d+)(?!\s*\()/g;
 
     function isDateFormat(str) {
         return /^\d{1,2}\/\d{1,2}(\/\d{2,4})?$/.test(str) || /^\d{4}\/\d{1,2}\/\d{1,2}$/.test(str);
@@ -3715,13 +4010,19 @@ export default async function initSpreadsheetApp(content, options = {}) {
         }
     }
 
+    function setCellTextPreservingControls(cell, text) {
+        const filterBtn = cell.querySelector(".ss-filter-arrow");
+        cell.textContent = text;
+        if (filterBtn) cell.appendChild(filterBtn);
+    }
+
     function setCellFormattedValue(cell, rawVal) {
         const rawStr = String(rawVal ?? "");
         if (rawStr === "") {
             delete cell.dataset.rawValue;
             delete cell.dataset.valueType;
             delete cell.dataset.dateValue;
-            cell.textContent = "";
+            setCellTextPreservingControls(cell, "");
             cell.classList.remove("ss-auto-align-right", "ss-auto-align-center");
             return;
         }
@@ -3732,7 +4033,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         } else {
             cell.dataset.rawValue = rawStr;
         }
-        cell.textContent = formatDisplayByNumFmt(cell.dataset.rawValue, fmt, cell);
+        setCellTextPreservingControls(cell, formatDisplayByNumFmt(cell.dataset.rawValue, fmt, cell));
         updateCellAutoAlignment(cell, cell.dataset.rawValue);
     }
 
@@ -3845,10 +4146,20 @@ export default async function initSpreadsheetApp(content, options = {}) {
         const endCol = columnLettersToIndex(endMatch[1]);
         const endRow = parseInt(endMatch[2], 10);
 
+        let maxR = rowCount - 1;
+        let maxC = currentColumns - 1;
+        if (sheetIdx !== activeSheetIndex && Array.isArray(sheets[sheetIdx]?.cells)) {
+            for (const item of sheets[sheetIdx].cells) {
+                const ir = Number(item.r) || 0;
+                const ic = Number(item.c) || 0;
+                if (ir > maxR) maxR = ir;
+                if (ic > maxC) maxC = ic;
+            }
+        }
         const rStart = Math.min(startRow, endRow);
-        const rEnd = Math.min(Math.max(startRow, endRow), rowCount - 1);
+        const rEnd = Math.min(Math.max(startRow, endRow), maxR);
         const cStart = Math.min(startCol, endCol);
-        const cEnd = Math.min(Math.max(startCol, endCol), currentColumns - 1);
+        const cEnd = Math.min(Math.max(startCol, endCol), maxC);
         const matrix = [];
         for (let r = rStart; r <= rEnd; r++) {
             const rowVals = [];
@@ -3873,15 +4184,17 @@ export default async function initSpreadsheetApp(content, options = {}) {
         if (!expr) return "=";
 
         try {
-            expr = preprocessAllNestedIFs(expr);
-
-            // シート名クォート('Sheet 2'!)を壊さないよう文字列リテラルを退避
+            // 1. 最優先で文字列リテラルを退避し、内部の "=", "<>", "%" 等が破壊されるのを防ぐ
             const stringLiterals = [];
             expr = expr.replace(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'(?!\s*!)/g, (m) => {
                 const token = `__STR_LIT_${stringLiterals.length}__`;
                 stringLiterals.push(m);
                 return token;
             });
+
+            expr = preprocessAllNestedIFs(expr);
+
+            expr = resolveStructuredReferences(expr, contextSheetIdx);
 
             // Excelの文字列結合演算子（&）を括弧ネスト対応で CONCAT(...) に変換
             const convertExcelConcat = (src) => {
@@ -3913,10 +4226,11 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 return processed.length > 1 ? `CONCAT(${processed.join(", ")})` : processed[0];
             };
 
-            // Excel演算子・リテラル・関数名の大文字正規化（<>, ^, &, 単独=, %, TRUE/FALSE, sum( -> SUM(）
+            // Excel演算子・リテラル・関数名の大文字正規化
+            // NOTE: "<>" は "!==" ではなく "!=" にすることで EXCEL_BLANK_CELL != 0 が正しく false になる
             expr = convertExcelConcat(expr)
                 .replace(/\^/g, "**")
-                .replace(/<>/g, "!==")
+                .replace(/<>/g, "!=")
                 .replace(/(?<![<>!=])=(?!=)/g, "==")
                 .replace(/(\d+(?:\.\d+)?)%/g, "($1/100)")
                 .replace(/\bTRUE\b/gi, "true")
@@ -3966,30 +4280,55 @@ export default async function initSpreadsheetApp(content, options = {}) {
             }
             const rawEval = evaluator(EXCEL_BLANK_CELL, ...FORMULA_FN_VALUES);
             const result = unwrapBlank(rawEval);
+            if (typeof result === "number") {
+                if (Number.isNaN(result)) return "#VALUE!";
+                if (!Number.isFinite(result)) return "#DIV/0!";
+            }
             if (result instanceof Date && !isNaN(result.getTime())) {
                 return formatDate(result);
             }
             if (Array.isArray(result)) {
                 return result;
             }
+            const isDateCellAt = (sIdx, rNum, cIdx) => {
+                if (sIdx === activeSheetIndex) {
+                    const refCell = peekCell(rNum, cIdx);
+                    return refCell?.dataset.valueType === "date" || isDateFormat((refCell?.dataset.rawValue ?? refCell?.textContent ?? "").trim());
+                }
+                if (sheets[sIdx]) {
+                    const entry = sheets[sIdx].cells.find(item => Number(item.r) === rNum && Number(item.c) === cIdx);
+                    return entry?.vt === "date" || isDateFormat(String(entry?.v ?? "").trim());
+                }
+                return false;
+            };
+
             const singleRefMatch = formula.trim().match(/^=(?:(?:'([^']+)'|([A-Za-z0-9_\u3040-\u30FF\u4E00-\u9FAF]+))!)?\$?([A-Za-z]+)\$?(\d+)$/);
             let isDirectDateRef = false;
             if (singleRefMatch) {
                 const refSheetName = singleRefMatch[1] ?? singleRefMatch[2];
                 const targetSIdx = refSheetName ? sheets.findIndex(s => s.name === refSheetName) : contextSheetIdx;
-                const refCol = columnLettersToIndex(singleRefMatch[3]);
-                const refRow = parseInt(singleRefMatch[4], 10);
-                if (targetSIdx === activeSheetIndex) {
-                    const refCell = peekCell(refRow, refCol);
-                    isDirectDateRef = refCell?.dataset.valueType === "date" || isDateFormat((refCell?.dataset.rawValue ?? refCell?.textContent ?? "").trim());
-                } else if (sheets[targetSIdx]) {
-                    const entry = sheets[targetSIdx].cells.find(item => Number(item.r) === refRow && Number(item.c) === refCol);
-                    isDirectDateRef = entry?.vt === "date" || isDateFormat(String(entry?.v ?? "").trim());
+                isDirectDateRef = isDateCellAt(targetSIdx, parseInt(singleRefMatch[4], 10), columnLettersToIndex(singleRefMatch[3]));
+            }
+
+            // 加減算結果が日付シリアル範囲のときは、実際に日付セルを参照している場合のみ日付化
+            let hasDateCellRef = isDirectDateRef;
+            if (!hasDateCellRef && typeof result === "number" && result >= 36526 && result <= 73050 && /[+-]/.test(expr)) {
+                const stripped = formula.substring(1).replace(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'(?!\s*!)/g, "");
+                const allRefRegex = /(?:(?:'([^']+)'|([A-Za-z0-9_\u3040-\u30FF\u4E00-\u9FAF]+))!)?(?<![A-Za-z0-9_])\$?([A-Za-z]+)\$?(\d+)(?!\s*\()/g;
+                let m;
+                while ((m = allRefRegex.exec(stripped)) !== null) {
+                    const sName = m[1] ?? m[2];
+                    const sIdx = sName ? sheets.findIndex(s => s.name === sName) : contextSheetIdx;
+                    if (sIdx >= 0 && isDateCellAt(sIdx, parseInt(m[4], 10), columnLettersToIndex(m[3]))) {
+                        hasDateCellRef = true;
+                        break;
+                    }
                 }
             }
-            const hasDateOp = isDirectDateRef ||
-                /\b(TODAY|NOW|DATE|EDATE|EOMONTH|WORKDAY)\s*\(/i.test(formula) ||
-                (typeof result === "number" && result >= 36526 && result <= 73050 && /[+-]/.test(expr));
+
+            const returnsNumericDateInfo = /^\s*=\s*(YEAR|MONTH|DAY|HOUR|MINUTE|SECOND|WEEKDAY|DAYS|DATEDIF|NETWORKDAYS|DATEVALUE|TIMEVALUE)\s*\(/i.test(formula);
+            const hasDateFunc = !returnsNumericDateInfo && /\b(TODAY|NOW|DATE|EDATE|EOMONTH|WORKDAY)\s*\(/i.test(formula);
+            const hasDateOp = isDirectDateRef || hasDateFunc || hasDateCellRef;
             if (hasDateOp && typeof result === "number" && isFinite(result)) {
                 return formatDate(serialToDate(result));
             }
@@ -3999,8 +4338,26 @@ export default async function initSpreadsheetApp(content, options = {}) {
         }
     }
 
-    function updateTextOverflowDisplay() {
-        for (const tr of tbody.rows) {
+    function updateTextOverflowDisplay(targetRows = null) {
+        let rowsToScan = targetRows;
+        if (!rowsToScan) {
+            const totalRows = tbody.rows.length;
+            if (totalRows <= 120) {
+                rowsToScan = tbody.rows;
+            } else {
+                // 大規模シートでは現在表示されているスクロール領域前後（バッファ含む）のみ更新
+                const approxRowH = 30;
+                const startIdx = Math.max(0, Math.floor(container.scrollTop / approxRowH) - 15);
+                const endIdx = Math.min(totalRows - 1, Math.ceil((container.scrollTop + container.clientHeight) / approxRowH) + 25);
+                rowsToScan = [];
+                for (let r = startIdx; r <= endIdx; r++) {
+                    rowsToScan.push(tbody.rows[r]);
+                }
+            }
+        }
+
+        for (const tr of rowsToScan) {
+            if (!tr) continue;
             const cells = tr.cells;
             for (let c = 0; c < cells.length - 1; c++) {
                 const td = cells[c + 1];
@@ -4028,49 +4385,163 @@ export default async function initSpreadsheetApp(content, options = {}) {
         }
     }
 
-    function matchConditionalRule(rule, rawVal, duplicateSet = null) {
+    const EXCEL_CF_PRESET_STYLES = {
+        redFillDarkRedText: { label: "濃い赤の文字、明るい赤の背景", bgColor: "#ffc7ce", textColor: "#9c0006", bold: false, italic: false, borderColor: "" },
+        yellowFillDarkYellowText: { label: "濃い黄色の文字、濃い黄色の背景", bgColor: "#ffeb9c", textColor: "#9c6500", bold: false, italic: false, borderColor: "" },
+        greenFillDarkGreenText: { label: "濃い緑の文字、緑の背景", bgColor: "#c6efce", textColor: "#006100", bold: false, italic: false, borderColor: "" },
+        lightRedFill: { label: "明るい赤の背景", bgColor: "#ffc7ce", textColor: "", bold: false, italic: false, borderColor: "" },
+        redText: { label: "赤の文字", bgColor: "", textColor: "#ff0000", bold: false, italic: false, borderColor: "" },
+        redBorder: { label: "赤の枠線", bgColor: "", textColor: "", bold: false, italic: false, borderColor: "#ff0000" }
+    };
+
+    function describeConditionalRule(rule) {
+        const opLabels = {
+            ">": `セルの値 > ${rule.val1}`,
+            ">=": `セルの値 >= ${rule.val1}`,
+            "<": `セルの値 < ${rule.val1}`,
+            "<=": `セルの値 <= ${rule.val1}`,
+            "=": `セルの値 = ${rule.val1}`,
+            "<>": `セルの値 <> ${rule.val1}`,
+            "between": `セルの値: ${rule.val1} 〜 ${rule.val2}`,
+            "notBetween": `セルの値: ${rule.val1} 〜 ${rule.val2} の範囲外`,
+            "contains": `指定の文字列を含む: "${rule.val1}"`,
+            "notContains": `指定の文字列を含まない: "${rule.val1}"`,
+            "blank": "空白セル",
+            "notBlank": "空白以外のセル",
+            "error": "エラー値",
+            "notError": "エラー値以外",
+            "duplicate": "重複する値",
+            "unique": "一意の値",
+            "topN": `上位 ${rule.rank || 10} 項目`,
+            "topPercent": `上位 ${rule.rank || 10} %`,
+            "bottomN": `下位 ${rule.rank || 10} 項目`,
+            "bottomPercent": `下位 ${rule.rank || 10} %`,
+            "aboveAvg": "平均より上",
+            "belowAvg": "平均より下",
+            "aboveEqAvg": "平均以上",
+            "belowEqAvg": "平均以下",
+            "formula": `数式: ${rule.formula || ""}`,
+            "databar": "データ バー",
+            "colorscale": "カラー スケール",
+            "iconset": "アイコン セット",
+            "date": `日付 (${rule.datePeriod || "today"})`
+        };
+        return rule.label || opLabels[rule.op] || rule.condition || rule.op;
+    }
+
+    function matchDatePeriod(rawVal, period) {
+        const d = parseExcelDate(rawVal);
+        if (!d) return false;
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+        const target = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+        const diffDays = Math.round((target - today) / 86400000);
+        if (period === "yesterday") return diffDays === -1;
+        if (period === "today") return diffDays === 0;
+        if (period === "tomorrow") return diffDays === 1;
+        if (period === "last7days") return diffDays >= -6 && diffDays <= 0;
+        if (period === "lastMonth") {
+            const lm = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            return d.getFullYear() === lm.getFullYear() && d.getMonth() === lm.getMonth();
+        }
+        if (period === "thisMonth") {
+            return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+        }
+        if (period === "nextMonth") {
+            const nm = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+            return d.getFullYear() === nm.getFullYear() && d.getMonth() === nm.getMonth();
+        }
+        return false;
+    }
+
+    function matchConditionalRule(rule, rawVal, valueCountMap = null, cellRow = 1, cellCol = 0) {
         const str = String(rawVal ?? "").trim();
         const op = rule.op || "expr";
+
+        // セル参照や数式（例: =$E$1）が条件値に入っている場合、Excel同様に評価して比較値を得る
+        const resolveOperand = (rawOp) => {
+            const s = String(rawOp ?? "").trim();
+            if (!s.startsWith("=")) return s;
+            const shifted = adjustFormula(s, cellRow - rule.minRow, cellCol - rule.minCol);
+            const evaluated = evaluateFormula(shifted, new Set(), activeSheetIndex);
+            return Array.isArray(evaluated) ? String(evaluated[0]?.[0] ?? "") : String(evaluated ?? "");
+        };
+
+        const resolvedVal1 = resolveOperand(rule.val1);
+        const resolvedVal2 = resolveOperand(rule.val2);
+
         if (op === "expr") return buildConditionMatcher(rule.condition)(rawVal);
         if (op === "blank") return str === "";
         if (op === "notBlank") return str !== "";
-        if (op === "contains") return str !== "" && str.toLowerCase().includes(String(rule.val1 ?? "").toLowerCase());
-        if (op === "notContains") return !str.toLowerCase().includes(String(rule.val1 ?? "").toLowerCase());
-        if (op === "duplicate") return str !== "" && duplicateSet?.has(str);
+        if (op === "error") return /^#(ERROR!|DIV\/0!|N\/A|VALUE!|CIRCULAR!|REF!|NAME\?|NUM!|CALC!|SPILL!)$/.test(str);
+        if (op === "notError") return !/^#(ERROR!|DIV\/0!|N\/A|VALUE!|CIRCULAR!|REF!|NAME\?|NUM!|CALC!|SPILL!)$/.test(str);
+        if (op === "contains") return str !== "" && resolvedVal1 !== "" && str.toLowerCase().includes(resolvedVal1.toLowerCase());
+        if (op === "notContains") return !str.toLowerCase().includes(resolvedVal1.toLowerCase());
+        if (op === "duplicate") return str !== "" && (valueCountMap?.get(str) || 0) > 1;
+        if (op === "unique") return str !== "" && (valueCountMap?.get(str) || 0) === 1;
+        if (op === "date") return matchDatePeriod(str, rule.datePeriod || "today");
+        if (op === "formula") {
+            if (!rule.formula) return false;
+            const f = rule.formula.trim().startsWith("=") ? rule.formula.trim() : `=${rule.formula.trim()}`;
+            const shifted = adjustFormula(f, cellRow - rule.minRow, cellCol - rule.minCol);
+            const res = evaluateFormula(shifted, new Set(), activeSheetIndex);
+            if (typeof res === "boolean") return res;
+            if (typeof res === "number") return res !== 0;
+            return String(res ?? "").trim().toUpperCase() === "TRUE";
+        }
 
         const num = parseFormattedNumber(str);
-        const v1 = Number(rule.val1);
-        const v2 = Number(rule.val2);
+        const v1 = parseFormattedNumber(resolvedVal1);
+        const v2 = parseFormattedNumber(resolvedVal2);
         if (op === "between") return !isNaN(num) && !isNaN(v1) && !isNaN(v2) && num >= Math.min(v1, v2) && num <= Math.max(v1, v2);
-        return buildConditionMatcher(`${op}${rule.val1 ?? ""}`)(rawVal);
+        if (op === "notBetween") return !isNaN(num) && !isNaN(v1) && !isNaN(v2) && (num < Math.min(v1, v2) || num > Math.max(v1, v2));
+        return buildConditionMatcher(`${op}${resolvedVal1}`)(rawVal);
     }
 
     function applyConditionalFormats() {
         const rules = sheets[activeSheetIndex]?.conditionalFormats || [];
+        tbody.querySelectorAll("td[data-cf-icon]").forEach(td => {
+            delete td.dataset.cfIcon;
+            td.style.removeProperty("--cf-icon-color");
+        });
         tbody.querySelectorAll("td[data-cf-applied]").forEach(td => {
             td.style.backgroundColor = td.dataset.cfOrigBg || "";
             td.style.backgroundImage = td.dataset.cfOrigBgImg || "";
             td.style.color = td.dataset.cfOrigColor || "";
             td.style.fontWeight = td.dataset.cfOrigWeight || "";
+            td.style.fontStyle = td.dataset.cfOrigItalic || "";
+            td.style.textDecoration = td.dataset.cfOrigDeco || "";
+            td.style.borderColor = td.dataset.cfOrigBorder || "";
             delete td.dataset.cfApplied;
         });
         if (!rules.length) return;
 
+        const stoppedCells = new Set();
         const saveOrig = (td) => {
             if (!td.dataset.cfApplied) {
                 td.dataset.cfOrigBg = td.style.backgroundColor || "";
                 td.dataset.cfOrigBgImg = td.style.backgroundImage || "";
                 td.dataset.cfOrigColor = td.style.color || "";
                 td.dataset.cfOrigWeight = td.style.fontWeight || "";
+                td.dataset.cfOrigItalic = td.style.fontStyle || "";
+                td.dataset.cfOrigDeco = td.style.textDecoration || "";
+                td.dataset.cfOrigBorder = td.style.borderColor || "";
                 td.dataset.cfApplied = "1";
             }
         };
 
         for (const rule of rules) {
             const rangeNums = [];
-            for (let r = rule.minRow; r <= rule.maxRow; r++) {
-                for (let c = rule.minCol; c <= rule.maxCol; c++) {
-                    const v = parseFormattedNumber(getVisibleCell(r, c)?.dataset.rawValue ?? getVisibleCell(r, c)?.textContent ?? "");
+            const valueCountMap = new Map();
+            const maxExistingRow = Math.min(rule.maxRow, tbody.rows.length);
+            const maxExistingCol = Math.min(rule.maxCol, currentColumns - 1);
+            for (let r = rule.minRow; r <= maxExistingRow; r++) {
+                for (let c = rule.minCol; c <= maxExistingCol; c++) {
+                    const rawTd = peekCell(r, c);
+                    if (!rawTd || rawTd.style.display === "none") continue;
+                    const rawStr = getCellPureText(rawTd).trim();
+                    if (rawStr !== "") valueCountMap.set(rawStr, (valueCountMap.get(rawStr) || 0) + 1);
+                    const v = parseFormattedNumber(rawStr);
                     if (!isNaN(v)) rangeNums.push(v);
                 }
             }
@@ -4079,26 +4550,20 @@ export default async function initSpreadsheetApp(content, options = {}) {
             const avgNum = rangeNums.length ? rangeNums.reduce((a, b) => a + b, 0) / rangeNums.length : 0;
             const sortedDesc = [...rangeNums].sort((a, b) => b - a);
             const sortedAsc = [...rangeNums].sort((a, b) => a - b);
-            const top10Cut = sortedDesc[Math.min(sortedDesc.length - 1, 9)] ?? Infinity;
-            const bottom10Cut = sortedAsc[Math.min(sortedAsc.length - 1, 9)] ?? -Infinity;
+            const rankVal = Math.max(1, Number(rule.rank) || 10);
+            const nCount = rule.op.endsWith("Percent")
+                ? Math.max(1, Math.floor((rangeNums.length * rankVal) / 100))
+                : rankVal;
+            const topCut = sortedDesc[Math.min(sortedDesc.length - 1, nCount - 1)] ?? Infinity;
+            const bottomCut = sortedAsc[Math.min(sortedAsc.length - 1, nCount - 1)] ?? -Infinity;
 
-            let duplicateSet = null;
-            if (rule.op === "duplicate") {
-                const counts = new Map();
-                for (let r = rule.minRow; r <= rule.maxRow; r++) {
-                    for (let c = rule.minCol; c <= rule.maxCol; c++) {
-                        const v = String(getVisibleCell(r, c)?.dataset.rawValue ?? getVisibleCell(r, c)?.textContent ?? "").trim();
-                        if (v !== "") counts.set(v, (counts.get(v) || 0) + 1);
-                    }
-                }
-                duplicateSet = new Set(Array.from(counts.entries()).filter(([, cnt]) => cnt > 1).map(([k]) => k));
-            }
-
-            for (let r = rule.minRow; r <= rule.maxRow; r++) {
-                for (let c = rule.minCol; c <= rule.maxCol; c++) {
-                    const td = getVisibleCell(r, c);
-                    if (!td) continue;
-                    const rawVal = td.dataset.rawValue ?? td.textContent;
+            for (let r = rule.minRow; r <= maxExistingRow; r++) {
+                for (let c = rule.minCol; c <= maxExistingCol; c++) {
+                    const cellKey = `${r},${c}`;
+                    if (stoppedCells.has(cellKey)) continue;
+                    const td = peekCell(r, c);
+                    if (!td || td.style.display === "none") continue;
+                    const rawVal = getCellPureText(td);
                     const num = parseFormattedNumber(rawVal);
 
                     if (rule.op === "databar" && !isNaN(num) && maxNum > Math.min(0, minNum)) {
@@ -4106,7 +4571,10 @@ export default async function initSpreadsheetApp(content, options = {}) {
                         const base = Math.min(0, minNum);
                         const pct = Math.max(2, Math.min(100, Math.round(((num - base) / (maxNum - base)) * 100)));
                         const barColor = rule.barColor || "#638ec6";
-                        td.style.backgroundImage = `linear-gradient(90deg, ${barColor} ${pct}%, transparent ${pct}%)`;
+                        td.style.backgroundImage = rule.solid
+                            ? `linear-gradient(90deg, ${barColor} ${pct}%, transparent ${pct}%)`
+                            : `linear-gradient(90deg, ${barColor} 0%, rgba(255,255,255,0.85) ${pct}%, transparent ${pct}%)`;
+                        if (rule.stopIfTrue) stoppedCells.add(cellKey);
                         continue;
                     }
 
@@ -4114,82 +4582,329 @@ export default async function initSpreadsheetApp(content, options = {}) {
                         saveOrig(td);
                         const ratio = (num - minNum) / (maxNum - minNum);
                         const t = rule.reverse ? 1 - ratio : ratio;
-                        const rCol = t < 0.5 ? 248 : Math.round(248 - (t - 0.5) * 2 * (248 - 99));
-                        const gCol = t < 0.5 ? Math.round(105 + t * 2 * (235 - 105)) : Math.round(235 - (t - 0.5) * 2 * (235 - 190));
-                        const bCol = t < 0.5 ? Math.round(107 + t * 2 * (132 - 107)) : Math.round(132 - (t - 0.5) * 2 * (132 - 123));
-                        td.style.backgroundColor = `rgb(${rCol}, ${gCol}, ${bCol})`;
+                        const cLow = rule.cLow || [248, 105, 107];
+                        const cMid = rule.cMid || [255, 235, 132];
+                        const cHigh = rule.cHigh || [99, 190, 123];
+                        let rgb;
+                        if (rule.twoColor) {
+                            rgb = cLow.map((v, i) => Math.round(v + t * (cHigh[i] - v)));
+                        } else if (t < 0.5) {
+                            rgb = cLow.map((v, i) => Math.round(v + (t * 2) * (cMid[i] - v)));
+                        } else {
+                            rgb = cMid.map((v, i) => Math.round(v + ((t - 0.5) * 2) * (cHigh[i] - v)));
+                        }
+                        td.style.backgroundColor = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
+                        if (rule.stopIfTrue) stoppedCells.add(cellKey);
+                        continue;
+                    }
+
+                    if (rule.op === "iconset" && !isNaN(num) && maxNum >= minNum) {
+                        saveOrig(td);
+                        const pct = maxNum === minNum ? 100 : ((num - minNum) / (maxNum - minNum)) * 100;
+                        const setType = rule.iconSet || "arrows3";
+                        const sets = {
+                            arrows3: [
+                                { char: "▼", color: "#d13438" },
+                                { char: "▶", color: "#e39c00" },
+                                { char: "▲", color: "#107c41" }
+                            ],
+                            traffic3: [
+                                { char: "●", color: "#d13438" },
+                                { char: "●", color: "#e39c00" },
+                                { char: "●", color: "#107c41" }
+                            ],
+                            signs3: [
+                                { char: "✖", color: "#d13438" },
+                                { char: "❗", color: "#e39c00" },
+                                { char: "✔", color: "#107c41" }
+                            ],
+                            stars3: [
+                                { char: "☆", color: "#b8860b" },
+                                { char: "⯪", color: "#daa520" },
+                                { char: "★", color: "#daa520" }
+                            ]
+                        };
+                        const palette = sets[setType] || sets.arrows3;
+                        const icon = pct >= 67 ? palette[2] : (pct >= 33 ? palette[1] : palette[0]);
+                        td.dataset.cfIcon = icon.char;
+                        td.style.setProperty("--cf-icon-color", icon.color);
+                        if (rule.stopIfTrue) stoppedCells.add(cellKey);
                         continue;
                     }
 
                     let matched = false;
-                    if (rule.op === "top10") matched = !isNaN(num) && num >= top10Cut;
-                    else if (rule.op === "bottom10") matched = !isNaN(num) && num <= bottom10Cut;
+                    if (rule.op === "topN" || rule.op === "topPercent") matched = !isNaN(num) && num >= topCut;
+                    else if (rule.op === "bottomN" || rule.op === "bottomPercent") matched = !isNaN(num) && num <= bottomCut;
                     else if (rule.op === "aboveAvg") matched = !isNaN(num) && num > avgNum;
                     else if (rule.op === "belowAvg") matched = !isNaN(num) && num < avgNum;
-                    else matched = matchConditionalRule(rule, rawVal, duplicateSet);
+                    else if (rule.op === "aboveEqAvg") matched = !isNaN(num) && num >= avgNum;
+                    else if (rule.op === "belowEqAvg") matched = !isNaN(num) && num <= avgNum;
+                    else matched = matchConditionalRule(rule, rawVal, valueCountMap, r, c);
 
                     if (matched) {
                         saveOrig(td);
                         if (rule.bgColor) td.style.backgroundColor = rule.bgColor;
                         if (rule.textColor) td.style.color = rule.textColor;
                         if (rule.bold) td.style.fontWeight = "bold";
+                        if (rule.italic) td.style.fontStyle = "italic";
+                        if (rule.underline) td.style.textDecoration = "underline";
+                        if (rule.borderColor) td.style.borderColor = rule.borderColor;
+                        if (rule.stopIfTrue) stoppedCells.add(cellKey);
                     }
                 }
             }
         }
     }
 
-    function openConditionalFormatModal() {
+    function openSheetRangePicker({ modalContent, targetInput, label = "範囲を選択:", allowCrossSheet = true, onPicked = null }) {
+        if (!modalContent || !targetInput) return;
+        const modalWin = modalContent.closest(".window");
+        const originSheetIdx = activeSheetIndex;
+        const prevValue = targetInput.value;
+
+        if (modalWin) {
+            modalWin.dataset.backgroundClickable = "true";
+            modalWin.style.visibility = "hidden";
+        }
+        windowAPI?.setModalBackgroundClickable?.(modalContent, true);
+        if (win) {
+            windowAPI?.bringToFront?.(win);
+            windowAPI?.refreshTopWindow?.();
+        }
+
+        const pickerBar = document.createElement("div");
+        pickerBar.style.cssText = `
+            position: fixed; top: 14px; left: 50%; transform: translateX(-50%);
+            z-index: 2147483647; background: #c3c7cb; border: 2px solid;
+            border-color: #fff #404040 #404040 #fff; box-shadow: 2px 3px 8px rgba(0,0,0,0.4);
+            padding: 6px 10px; display: flex; align-items: center; gap: 6px; font-size: 12px;
+        `;
+        pickerBar.innerHTML = `
+            <span style="font-weight:bold; color:#107c41;">${label}</span>
+            <input type="text" class="ss-range-picker-preview border" value="${prevValue.replace(/"/g, "&quot;")}" style="width:200px; height:24px; padding:2px 6px; background:#fff; color:#000;">
+            <button type="button" class="button ss-range-picker-ok" style="height:24px; padding:0 10px;">確定</button>
+            <button type="button" class="button ss-range-picker-cancel" style="height:24px; padding:0 8px;">戻る</button>
+        `;
+        document.body.appendChild(pickerBar);
+        const previewInput = pickerBar.querySelector(".ss-range-picker-preview");
+
+        let picking = false;
+        let pickStart = null;
+
+        const formatAbsRange = (s, e) => {
+            const r0 = Math.min(s.row, e.row);
+            const r1 = Math.max(s.row, e.row);
+            const c0 = Math.min(s.col, e.col);
+            const c1 = Math.max(s.col, e.col);
+            const startRef = `$${getColumnName(c0)}$${r0}`;
+            const endRef = `$${getColumnName(c1)}$${r1}`;
+            const refBody = (r0 === r1 && c0 === c1) ? startRef : `${startRef}:${endRef}`;
+            if (allowCrossSheet && activeSheetIndex !== originSheetIdx) {
+                const sName = sheets[activeSheetIndex]?.name || "";
+                const prefix = /^[A-Za-z0-9_\u3040-\u30FF\u4E00-\u9FAF]+$/.test(sName) ? `${sName}!` : `'${sName}'!`;
+                return `=${prefix}${refBody}`;
+            }
+            return `=${refBody}`;
+        };
+
+        const resolvePickTd = (ev) => {
+            const el = document.elementFromPoint(ev.clientX, ev.clientY);
+            return el?.closest("td") || null;
+        };
+
+        const applyPickerHighlight = (s, e) => {
+            const fullRef = formatAbsRange(s, e);
+            highlightCalculationRange(fullRef.replace(/^=/, ""));
+            previewInput.value = fullRef;
+        };
+
+        const onPickDown = (ev) => {
+            if (pickerBar.contains(ev.target)) return;
+            const td = resolvePickTd(ev);
+            if (!td || !tbody.contains(td)) return;
+            ev.preventDefault();
+            ev.stopPropagation();
+            ev.stopImmediatePropagation();
+            picking = true;
+            pickStart = { row: +td.dataset.row, col: +td.dataset.col };
+            applyPickerHighlight(pickStart, pickStart);
+        };
+
+        const onPickMove = (ev) => {
+            if (!picking || !pickStart) return;
+            const td = resolvePickTd(ev);
+            if (!td || !tbody.contains(td)) return;
+            applyPickerHighlight(pickStart, { row: +td.dataset.row, col: +td.dataset.col });
+        };
+
+        const onPickUp = () => {
+            picking = false;
+        };
+
+        let pickerClosed = false;
+
+        const onPickKeydown = (ev) => {
+            if (ev.key === "Enter") {
+                ev.preventDefault();
+                ev.stopPropagation();
+                void cleanupPicker(previewInput.value.trim());
+            } else if (ev.key === "Escape") {
+                ev.preventDefault();
+                ev.stopPropagation();
+                void cleanupPicker(null);
+            }
+        };
+
+        const cleanupPicker = async (applyVal) => {
+            if (pickerClosed) return;
+            pickerClosed = true;
+            document.removeEventListener("mousedown", onPickDown, true);
+            document.removeEventListener("mousemove", onPickMove, true);
+            document.removeEventListener("mouseup", onPickUp, true);
+            document.removeEventListener("keydown", onPickKeydown, true);
+            clearCalculationRangeHighlights();
+            pickerBar.remove();
+            if (activeSheetIndex !== originSheetIdx) {
+                await switchToSheet(originSheetIdx);
+            }
+            windowAPI?.setModalBackgroundClickable?.(modalContent, false);
+            if (modalWin) {
+                delete modalWin.dataset.backgroundClickable;
+                modalWin.style.visibility = "";
+                windowAPI?.bringToFront?.(modalWin);
+                windowAPI?.refreshTopWindow?.();
+            }
+            if (applyVal !== null) {
+                targetInput.value = applyVal;
+                targetInput.dispatchEvent(new Event("change"));
+                onPicked?.(applyVal);
+            }
+            targetInput.focus();
+        };
+
+        document.addEventListener("mousedown", onPickDown, true);
+        document.addEventListener("mousemove", onPickMove, true);
+        document.addEventListener("mouseup", onPickUp, true);
+        document.addEventListener("keydown", onPickKeydown, true);
+
+        pickerBar.querySelector(".ss-range-picker-ok").addEventListener("click", () => {
+            void cleanupPicker(previewInput.value.trim());
+        });
+        pickerBar.querySelector(".ss-range-picker-cancel").addEventListener("click", () => {
+            void cleanupPicker(null);
+        });
+    }
+
+    function openConditionalFormatPresetDialog(presetKey) {
         const bounds = getSelectedRangeBounds();
         if (!bounds) return;
-        const rangeLabel = `${getColumnName(bounds.minCol)}${bounds.minRow}:${getColumnName(bounds.maxCol)}${bounds.maxRow}`;
+
+        const configs = {
+            "highlight-gt": { title: "指定の値より大きい", label: "次の値より大きいセルを書式設定:", op: ">", defaultVal: "100", mode: "single" },
+            "highlight-lt": { title: "指定の値より小さい", label: "次の値より小さいセルを書式設定:", op: "<", defaultVal: "0", mode: "single" },
+            "highlight-between": { title: "指定の範囲内", label: "次の値の間にあるセルを書式設定:", op: "between", defaultVal: "10", defaultVal2: "100", mode: "between" },
+            "highlight-eq": { title: "指定の値に等しい", label: "次の値に等しいセルを書式設定:", op: "=", defaultVal: "", mode: "single" },
+            "highlight-text": { title: "指定の文字列を含む", label: "次の文字列を含むセルを書式設定:", op: "contains", defaultVal: "", mode: "single" },
+            "highlight-date": { title: "日付", label: "次の期間の日付を含むセルを書式設定:", op: "date", mode: "date" },
+            "highlight-dup": { title: "重複する値", label: "選択範囲内の次の値を含むセルを書式設定:", op: "duplicate", mode: "dup" },
+            "top-n": { title: "上位 10 項目", label: "上位に入るセルを書式設定:", op: "topN", defaultVal: "10", mode: "rank" },
+            "top-pct": { title: "上位 10 %", label: "上位 (%) に入るセルを書式設定:", op: "topPercent", defaultVal: "10", mode: "rank" },
+            "bottom-n": { title: "下位 10 項目", label: "下位に入るセルを書式設定:", op: "bottomN", defaultVal: "10", mode: "rank" },
+            "bottom-pct": { title: "下位 10 %", label: "下位 (%) に入るセルを書式設定:", op: "bottomPercent", defaultVal: "10", mode: "rank" },
+            "above-avg": { title: "平均より上", label: "選択範囲の平均より上のセルを書式設定:", op: "aboveAvg", mode: "none" },
+            "below-avg": { title: "平均より下", label: "選択範囲の平均より下のセルを書式設定:", op: "belowAvg", mode: "none" }
+        };
+        const cfg = configs[presetKey];
+        if (!cfg) return;
+
+        let inputHtml = "";
+        if (cfg.mode === "single") {
+            inputHtml = `
+                <div style="display:inline-flex; gap:3px; align-items:center;">
+                    <input type="text" class="ss-cfp-v1 border" value="${cfg.defaultVal ?? ""}" style="width:125px; height:24px; padding:2px 5px; background:#fff; color:#000;">
+                    <button type="button" class="button ss-cfp-pick" data-pick-target=".ss-cfp-v1" title="シートからセルを選択" style="height:24px; padding:0 6px;">📍</button>
+                </div>
+            `;
+        } else if (cfg.mode === "rank") {
+            inputHtml = `<input type="number" min="1" class="ss-cfp-v1 border" value="${cfg.defaultVal ?? "10"}" style="width:90px; height:24px; padding:2px 5px; background:#fff; color:#000;">`;
+        } else if (cfg.mode === "between") {
+            inputHtml = `
+                <div style="display:inline-flex; gap:3px; align-items:center;">
+                    <input type="text" class="ss-cfp-v1 border" value="${cfg.defaultVal}" style="width:82px; height:24px; padding:2px 5px; background:#fff; color:#000;">
+                    <button type="button" class="button ss-cfp-pick" data-pick-target=".ss-cfp-v1" title="シートからセルを選択" style="height:24px; padding:0 5px;">📍</button>
+                    <span>と</span>
+                    <input type="text" class="ss-cfp-v2 border" value="${cfg.defaultVal2}" style="width:82px; height:24px; padding:2px 5px; background:#fff; color:#000;">
+                    <button type="button" class="button ss-cfp-pick" data-pick-target=".ss-cfp-v2" title="シートからセルを選択" style="height:24px; padding:0 5px;">📍</button>
+                </div>
+            `;
+        } else if (cfg.mode === "date") {
+            inputHtml = `
+                <select class="ss-cfp-date border" style="width:150px; height:24px; background:#fff; color:#000;">
+                    <option value="yesterday">昨日</option>
+                    <option value="today" selected>今日</option>
+                    <option value="tomorrow">明日</option>
+                    <option value="last7days">過去 7 日間</option>
+                    <option value="lastMonth">先月</option>
+                    <option value="thisMonth">今月</option>
+                    <option value="nextMonth">来月</option>
+                </select>
+            `;
+        } else if (cfg.mode === "dup") {
+            inputHtml = `
+                <select class="ss-cfp-dup border" style="width:120px; height:24px; background:#fff; color:#000;">
+                    <option value="duplicate" selected>重複</option>
+                    <option value="unique">一意</option>
+                </select>
+            `;
+        }
+
+        const styleOpts = Object.entries(EXCEL_CF_PRESET_STYLES)
+            .map(([k, s]) => `<option value="${k}">${s.label}</option>`)
+            .join("");
+
         const bodyHtml = `
             <div style="width:100%; display:flex; flex-direction:column; gap:8px; font-size:12px;">
-                <div>適用範囲: <b>${rangeLabel}</b></div>
-                <div style="display:flex; gap:6px; align-items:center;">
-                    <label style="width:72px;">条件:</label>
-                    <select class="ss-cf-op border" style="flex:1; height:24px; background:#fff; color:#000;">
-                        <option value=">">次の値より大きい (&gt;)</option>
-                        <option value=">=">次の値以上 (&gt;=)</option>
-                        <option value="<">次の値より小さい (&lt;)</option>
-                        <option value="<=">次の値以下 (&lt;=)</option>
-                        <option value="=">次の値に等しい (=)</option>
-                        <option value="<>">次の値に等しくない (&lt;&gt;)</option>
-                        <option value="between">次の値の間</option>
-                        <option value="contains">次の文字列を含む</option>
-                        <option value="duplicate">重複する値</option>
-                        <option value="blank">空白セル</option>
+                <div>${cfg.label}</div>
+                <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+                    ${inputHtml}
+                    <span>書式:</span>
+                    <select class="ss-cfp-style border" style="flex:1; min-width:170px; height:24px; background:#fff; color:#000;">
+                        ${styleOpts}
                     </select>
-                </div>
-                <div class="ss-cf-vals-row" style="display:flex; gap:6px; align-items:center;">
-                    <label style="width:72px;">値:</label>
-                    <input type="text" class="ss-cf-v1 border" placeholder="基準値" style="flex:1; height:24px; padding:2px 4px; background:#fff; color:#000;">
-                    <input type="text" class="ss-cf-v2 border" placeholder="上限値" style="display:none; flex:1; height:24px; padding:2px 4px; background:#fff; color:#000;">
-                </div>
-                <div style="display:flex; gap:8px; align-items:center;">
-                    <label>背景色: <input type="color" class="ss-cf-bg" value="#ffc7ce"></label>
-                    <label>文字色: <input type="color" class="ss-cf-fg" value="#9c0006"></label>
-                    <label style="display:inline-flex; align-items:center; gap:3px;"><input type="checkbox" class="ss-cf-bold" checked> 太字</label>
                 </div>
             </div>
         `;
-        const modalContent = windowAPI.showModalWindow("新しい条件付き書式ルール", bodyHtml, {
-            width: 390,
+
+        const modalContent = openAppModal(cfg.title, bodyHtml, {
+            width: 440,
             isHtml: true,
             parentWin: win,
             buttons: [
                 {
-                    label: "適用",
+                    label: "OK",
                     onClick: () => {
-                        const op = modalContent.querySelector(".ss-cf-op").value;
-                        const val1 = modalContent.querySelector(".ss-cf-v1").value.trim();
-                        const val2 = modalContent.querySelector(".ss-cf-v2").value.trim();
-                        const bgColor = modalContent.querySelector(".ss-cf-bg").value;
-                        const textColor = modalContent.querySelector(".ss-cf-fg").value;
-                        const bold = modalContent.querySelector(".ss-cf-bold").checked;
-                        sheets[activeSheetIndex].conditionalFormats.push({
-                            ...bounds, op, val1, val2, bgColor, textColor, bold
-                        });
+                        const styleKey = modalContent.querySelector(".ss-cfp-style").value;
+                        const st = EXCEL_CF_PRESET_STYLES[styleKey] || EXCEL_CF_PRESET_STYLES.redFillDarkRedText;
+                        const rule = {
+                            ...bounds,
+                            op: cfg.op,
+                            bgColor: st.bgColor,
+                            textColor: st.textColor,
+                            bold: st.bold,
+                            italic: st.italic,
+                            borderColor: st.borderColor,
+                            stopIfTrue: false
+                        };
+                        if (cfg.mode === "single") rule.val1 = modalContent.querySelector(".ss-cfp-v1").value.trim();
+                        if (cfg.mode === "rank") rule.rank = Number(modalContent.querySelector(".ss-cfp-v1").value) || 10;
+                        if (cfg.mode === "between") {
+                            rule.val1 = modalContent.querySelector(".ss-cfp-v1").value.trim();
+                            rule.val2 = modalContent.querySelector(".ss-cfp-v2").value.trim();
+                        }
+                        if (cfg.mode === "date") rule.datePeriod = modalContent.querySelector(".ss-cfp-date").value;
+                        if (cfg.mode === "dup") rule.op = modalContent.querySelector(".ss-cfp-dup").value;
+
+                        sheets[activeSheetIndex].conditionalFormats.unshift(rule);
                         applyConditionalFormats();
                         setDirtyState(true);
                         debouncedSaveState();
@@ -4198,46 +4913,499 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 { label: "キャンセル" }
             ]
         });
+
+        modalContent?.querySelectorAll(".ss-cfp-pick").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const targetInput = modalContent.querySelector(btn.dataset.pickTarget);
+                openSheetRangePicker({ modalContent, targetInput, label: "条件に使うセルを選択:" });
+            });
+        });
+    }
+
+    function openConditionalFormatModal(editIndex = null) {
+        const bounds = getSelectedRangeBounds();
+        if (!bounds) return;
+        const existing = editIndex !== null ? sheets[activeSheetIndex]?.conditionalFormats?.[editIndex] : null;
+        const targetBounds = existing
+            ? { minRow: existing.minRow, maxRow: existing.maxRow, minCol: existing.minCol, maxCol: existing.maxCol }
+            : bounds;
+
+        let initType = "cellValue";
+        if (existing) {
+            if (existing.op === "formula") initType = "formula";
+            else if (["topN", "topPercent", "bottomN", "bottomPercent"].includes(existing.op)) initType = "topBottom";
+            else if (["aboveAvg", "belowAvg", "aboveEqAvg", "belowEqAvg"].includes(existing.op)) initType = "average";
+            else if (["duplicate", "unique"].includes(existing.op)) initType = "dupUnique";
+            else if (["databar", "colorscale", "iconset"].includes(existing.op)) initType = "scaleBar";
+        }
+
+        const initRangeStr = `=$${getColumnName(targetBounds.minCol)}$${targetBounds.minRow}:$${getColumnName(targetBounds.maxCol)}$${targetBounds.maxRow}`;
+
+        const bodyHtml = `
+            <div style="width:100%; display:flex; flex-direction:column; gap:8px; font-size:12px;">
+                <div style="display:flex; align-items:center; gap:6px;">
+                    <label style="font-weight:bold; white-space:nowrap;">適用先範囲:</label>
+                    <input type="text" class="ss-cf-apply-range border" value="${initRangeStr}" style="flex:1; height:24px; padding:2px 6px; background:#fff; color:#000;">
+                    <button type="button" class="button ss-cf-pick" data-pick-target=".ss-cf-apply-range" data-pick-label="書式の適用先を選択:" data-cross-sheet="0" style="height:24px; padding:0 7px;">📍範囲選択</button>
+                </div>
+                <div style="font-weight:bold;">ルールの種類を選択してください(S):</div>
+                <select class="ss-cf-ruletype border" size="6" style="width:100%; background:#fff; color:#000; font-size:12px; padding:2px;">
+                    <option value="scaleBar" ${initType === "scaleBar" ? "selected" : ""}>・ セルの値に基づいてすべてのセルを書式設定</option>
+                    <option value="cellValue" ${initType === "cellValue" ? "selected" : ""}>・ 指定の値を含むセルだけを書式設定</option>
+                    <option value="topBottom" ${initType === "topBottom" ? "selected" : ""}>・ 上位または下位に入る値だけを書式設定</option>
+                    <option value="average" ${initType === "average" ? "selected" : ""}>・ 平均より上または下の値だけを書式設定</option>
+                    <option value="dupUnique" ${initType === "dupUnique" ? "selected" : ""}>・ 一意の値または重複する値だけを書式設定</option>
+                    <option value="formula" ${initType === "formula" ? "selected" : ""}>・ 数式を使用して、書式設定するセルを決定</option>
+                </select>
+
+                <div style="border:1px solid #808080; padding:8px; background:#f4f4f4; display:flex; flex-direction:column; gap:6px;">
+                    <div style="font-weight:bold;">ルールの内容を編集してください(E):</div>
+
+                    <!-- 1. scaleBar -->
+                    <div class="ss-cf-pane" data-pane="scaleBar" style="display:${initType === "scaleBar" ? "flex" : "none"}; flex-direction:column; gap:6px;">
+                        <div style="display:flex; gap:6px; align-items:center;">
+                            <label style="width:95px;">書式スタイル:</label>
+                            <select class="ss-cf-sb-mode border" style="flex:1; height:24px; background:#fff; color:#000;">
+                                <option value="databar" ${existing?.op === "databar" ? "selected" : ""}>データ バー</option>
+                                <option value="colorscale" ${existing?.op === "colorscale" ? "selected" : ""}>3 色スケール（緑 - 黄 - 赤）</option>
+                                <option value="iconset" ${existing?.op === "iconset" ? "selected" : ""}>アイコン セット（3方向矢印）</option>
+                            </select>
+                        </div>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <label>バーの色: <input type="color" class="ss-cf-barcolor" value="${existing?.barColor || "#638ec6"}"></label>
+                        </div>
+                    </div>
+
+                    <!-- 2. cellValue -->
+                    <div class="ss-cf-pane" data-pane="cellValue" style="display:${initType === "cellValue" ? "flex" : "none"}; flex-direction:column; gap:6px;">
+                        <div>次のセルのみを書式設定:</div>
+                        <div style="display:flex; gap:6px; align-items:center;">
+                            <select class="ss-cf-op border" style="width:155px; height:24px; background:#fff; color:#000;">
+                                <option value="between" ${existing?.op === "between" ? "selected" : ""}>次の値の間</option>
+                                <option value="notBetween" ${existing?.op === "notBetween" ? "selected" : ""}>次の値の間以外</option>
+                                <option value="=" ${existing?.op === "=" ? "selected" : ""}>次の値に等しい</option>
+                                <option value="<>" ${existing?.op === "<>" ? "selected" : ""}>次の値に等しくない</option>
+                                <option value=">" ${!existing || existing?.op === ">" ? "selected" : ""}>次の値より大きい</option>
+                                <option value="<" ${existing?.op === "<" ? "selected" : ""}>次の値より小さい</option>
+                                <option value=">=" ${existing?.op === ">=" ? "selected" : ""}>次の値以上</option>
+                                <option value="<=" ${existing?.op === "<=" ? "selected" : ""}>次の値以下</option>
+                                <option value="contains" ${existing?.op === "contains" ? "selected" : ""}>特定の文字列を含む</option>
+                                <option value="blank" ${existing?.op === "blank" ? "selected" : ""}>空白</option>
+                                <option value="notBlank" ${existing?.op === "notBlank" ? "selected" : ""}>空白以外</option>
+                                <option value="error" ${existing?.op === "error" ? "selected" : ""}>エラー</option>
+                                <option value="notError" ${existing?.op === "notError" ? "selected" : ""}>エラー以外</option>
+                            </select>
+                       <div style="flex:1; display:${["blank", "notBlank", "error", "notError"].includes(existing?.op) ? "none" : "flex"}; gap:3px; align-items:center;" class="ss-cf-v1-wrap">
+                                <input type="text" class="ss-cf-v1 border" value="${existing?.val1 ?? ""}" placeholder="値 1" style="flex:1; min-width:0; height:24px; padding:2px 5px; background:#fff; color:#000;">
+                                <button type="button" class="button ss-cf-pick" data-pick-target=".ss-cf-v1" data-pick-label="値 1 のセルを選択:" style="height:24px; padding:0 5px;">📍</button>
+                            </div>
+                            <div style="display:${["between", "notBetween"].includes(existing?.op) ? "flex" : "none"}; flex:1; gap:3px; align-items:center;" class="ss-cf-v2-wrap">
+                                <input type="text" class="ss-cf-v2 border" value="${existing?.val2 ?? ""}" placeholder="値 2" style="flex:1; min-width:0; height:24px; padding:2px 5px; background:#fff; color:#000;">
+                                <button type="button" class="button ss-cf-pick" data-pick-target=".ss-cf-v2" data-pick-label="値 2 のセルを選択:" style="height:24px; padding:0 5px;">📍</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. topBottom -->
+                    <div class="ss-cf-pane" data-pane="topBottom" style="display:${initType === "topBottom" ? "flex" : "none"}; gap:6px; align-items:center;">
+                        <select class="ss-cf-tb-dir border" style="width:100px; height:24px; background:#fff; color:#000;">
+                            <option value="top" ${existing?.op?.startsWith("bottom") ? "" : "selected"}>上位</option>
+                            <option value="bottom" ${existing?.op?.startsWith("bottom") ? "selected" : ""}>下位</option>
+                        </select>
+                        <input type="number" class="ss-cf-tb-rank border" value="${existing?.rank || 10}" min="1" style="width:75px; height:24px; padding:2px 5px; background:#fff; color:#000;">
+                        <label style="display:inline-flex; align-items:center; gap:3px;">
+                            <input type="checkbox" class="ss-cf-tb-pct" ${existing?.op?.endsWith("Percent") ? "checked" : ""}> 選択範囲に対する %
+                        </label>
+                    </div>
+
+                    <!-- 4. average -->
+                    <div class="ss-cf-pane" data-pane="average" style="display:${initType === "average" ? "flex" : "none"}; gap:6px; align-items:center;">
+                        <span>選択範囲の平均:</span>
+                        <select class="ss-cf-avg-op border" style="width:160px; height:24px; background:#fff; color:#000;">
+                            <option value="aboveAvg" ${existing?.op === "aboveAvg" ? "selected" : ""}>より上</option>
+                            <option value="belowAvg" ${existing?.op === "belowAvg" ? "selected" : ""}>より下</option>
+                            <option value="aboveEqAvg" ${existing?.op === "aboveEqAvg" ? "selected" : ""}>以上</option>
+                            <option value="belowEqAvg" ${existing?.op === "belowEqAvg" ? "selected" : ""}>以下</option>
+                        </select>
+                    </div>
+
+                    <!-- 5. dupUnique -->
+                    <div class="ss-cf-pane" data-pane="dupUnique" style="display:${initType === "dupUnique" ? "flex" : "none"}; gap:6px; align-items:center;">
+                        <span>選択範囲内の次の値をすべて書式設定:</span>
+                        <select class="ss-cf-du-op border" style="width:130px; height:24px; background:#fff; color:#000;">
+                            <option value="duplicate" ${existing?.op !== "unique" ? "selected" : ""}>重複</option>
+                            <option value="unique" ${existing?.op === "unique" ? "selected" : ""}>一意</option>
+                        </select>
+                    </div>
+
+                    <!-- 6. formula -->
+                    <div class="ss-cf-pane" data-pane="formula" style="display:${initType === "formula" ? "flex" : "none"}; flex-direction:column; gap:4px;">
+                        <div>次の数式を満たす場合に値を書式設定(O):</div>
+                        <div style="display:flex; gap:4px; align-items:center;">
+                            <input type="text" class="ss-cf-formula border" value="${(existing?.formula || "").replace(/"/g, "&quot;")}" placeholder="例: =$B2>1000" style="flex:1; min-width:0; height:24px; padding:2px 6px; background:#fff; color:#000;">
+                            <button type="button" class="button ss-cf-pick" data-pick-target=".ss-cf-formula" data-pick-label="数式に使うセル範囲を選択:" style="height:24px; padding:0 7px;">📍範囲選択</button>
+                        </div>
+                    </div>
+
+                    <!-- 書式プレビュー＆設定 -->
+                    <div class="ss-cf-fmt-area" style="display:${initType === "scaleBar" ? "none" : "flex"}; flex-direction:column; gap:6px; border-top:1px solid #ccc; padding-top:6px; margin-top:2px;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <span>プレビュー:</span>
+                            <div class="ss-cf-preview border" style="flex:1; height:26px; line-height:24px; text-align:center; background:${existing?.bgColor || "#ffc7ce"}; color:${existing?.textColor || "#9c0006"}; font-weight:${existing?.bold ? "bold" : "normal"}; font-style:${existing?.italic ? "italic" : "normal"};">AaBbCcYyZz</div>
+                        </div>
+                        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                            <label>塗りつぶし: <input type="color" class="ss-cf-bg" value="${existing?.bgColor || "#ffc7ce"}"></label>
+                            <label><input type="checkbox" class="ss-cf-nobg" ${existing && !existing.bgColor ? "checked" : ""}> 塗りつぶしなし</label>
+                            <label>文字色: <input type="color" class="ss-cf-fg" value="${existing?.textColor || "#9c0006"}"></label>
+                            <label><input type="checkbox" class="ss-cf-bold" ${!existing || existing.bold ? "checked" : ""}> 太字</label>
+                            <label><input type="checkbox" class="ss-cf-italic" ${existing?.italic ? "checked" : ""}> 斜体</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const modalContent = openAppModal(existing ? "書式ルールの編集" : "新しい書式ルール", bodyHtml, {
+            width: 470,
+            isHtml: true,
+            parentWin: win,
+            buttons: [
+                {
+                    label: "OK",
+                    onClick: () => {
+                        const rType = modalContent.querySelector(".ss-cf-ruletype").value;
+                        const noBg = modalContent.querySelector(".ss-cf-nobg").checked;
+                        const bgColor = noBg ? "" : modalContent.querySelector(".ss-cf-bg").value;
+                        const textColor = modalContent.querySelector(".ss-cf-fg").value;
+                        const bold = modalContent.querySelector(".ss-cf-bold").checked;
+                        const italic = modalContent.querySelector(".ss-cf-italic").checked;
+
+                        const rawRangeText = modalContent.querySelector(".ss-cf-apply-range")?.value.replace(/^=/, "").trim().toUpperCase() || "";
+                        let finalBounds = { ...targetBounds };
+                        if (rawRangeText.includes(":")) {
+                            const parsedRng = parseRangeReference(rawRangeText);
+                            if (parsedRng) {
+                                finalBounds = {
+                                    minRow: Math.min(parsedRng.start.row, parsedRng.end.row),
+                                    maxRow: Math.max(parsedRng.start.row, parsedRng.end.row),
+                                    minCol: Math.min(parsedRng.start.col, parsedRng.end.col),
+                                    maxCol: Math.max(parsedRng.start.col, parsedRng.end.col)
+                                };
+                            }
+                        } else if (rawRangeText) {
+                            const parsedCell = parseCellReference(rawRangeText);
+                            if (parsedCell) {
+                                finalBounds = {
+                                    minRow: parsedCell.row,
+                                    maxRow: parsedCell.row,
+                                    minCol: parsedCell.col,
+                                    maxCol: parsedCell.col
+                                };
+                            }
+                        }
+
+                        let rule = {
+                            ...finalBounds,
+                            bgColor,
+                            textColor,
+                            bold,
+                            italic,
+                            stopIfTrue: existing?.stopIfTrue || false
+                        };
+
+                        if (rType === "scaleBar") {
+                            const sbMode = modalContent.querySelector(".ss-cf-sb-mode").value;
+                            rule.op = sbMode;
+                            if (sbMode === "databar") rule.barColor = modalContent.querySelector(".ss-cf-barcolor").value;
+                            if (sbMode === "iconset") rule.iconSet = "arrows3";
+                        } else if (rType === "cellValue") {
+                            rule.op = modalContent.querySelector(".ss-cf-op").value;
+                            rule.val1 = modalContent.querySelector(".ss-cf-v1").value.trim();
+                            rule.val2 = modalContent.querySelector(".ss-cf-v2").value.trim();
+                        } else if (rType === "topBottom") {
+                            const dir = modalContent.querySelector(".ss-cf-tb-dir").value;
+                            const isPct = modalContent.querySelector(".ss-cf-tb-pct").checked;
+                            rule.op = `${dir}${isPct ? "Percent" : "N"}`;
+                            rule.rank = Number(modalContent.querySelector(".ss-cf-tb-rank").value) || 10;
+                        } else if (rType === "average") {
+                            rule.op = modalContent.querySelector(".ss-cf-avg-op").value;
+                        } else if (rType === "dupUnique") {
+                            rule.op = modalContent.querySelector(".ss-cf-du-op").value;
+                        } else if (rType === "formula") {
+                            rule.op = "formula";
+                            rule.formula = modalContent.querySelector(".ss-cf-formula").value.trim();
+                        }
+
+                        if (existing && editIndex !== null) {
+                            sheets[activeSheetIndex].conditionalFormats[editIndex] = rule;
+                        } else {
+                            sheets[activeSheetIndex].conditionalFormats.unshift(rule);
+                        }
+                        applyConditionalFormats();
+                        setDirtyState(true);
+                        debouncedSaveState();
+                    }
+                },
+                { label: "キャンセル" }
+            ]
+        });
+
+        const typeSel = modalContent.querySelector(".ss-cf-ruletype");
         const opSel = modalContent.querySelector(".ss-cf-op");
+        const v1Inp = modalContent.querySelector(".ss-cf-v1");
         const v2Inp = modalContent.querySelector(".ss-cf-v2");
-        const valsRow = modalContent.querySelector(".ss-cf-vals-row");
+        const fmtArea = modalContent.querySelector(".ss-cf-fmt-area");
+        const previewEl = modalContent.querySelector(".ss-cf-preview");
+        const bgInp = modalContent.querySelector(".ss-cf-bg");
+        const noBgChk = modalContent.querySelector(".ss-cf-nobg");
+        const fgInp = modalContent.querySelector(".ss-cf-fg");
+        const boldChk = modalContent.querySelector(".ss-cf-bold");
+        const italicChk = modalContent.querySelector(".ss-cf-italic");
+
+        const syncPreview = () => {
+            previewEl.style.backgroundColor = noBgChk.checked ? "#ffffff" : bgInp.value;
+            previewEl.style.color = fgInp.value;
+            previewEl.style.fontWeight = boldChk.checked ? "bold" : "normal";
+            previewEl.style.fontStyle = italicChk.checked ? "italic" : "normal";
+        };
+        [bgInp, noBgChk, fgInp, boldChk, italicChk].forEach(el => el.addEventListener("change", syncPreview));
+
+        typeSel.addEventListener("change", () => {
+            const val = typeSel.value;
+            modalContent.querySelectorAll(".ss-cf-pane").forEach(p => {
+                p.style.display = p.dataset.pane === val ? "flex" : "none";
+            });
+            fmtArea.style.display = val === "scaleBar" ? "none" : "flex";
+        });
+
+        const v1Wrap = modalContent.querySelector(".ss-cf-v1-wrap");
+        const v2Wrap = modalContent.querySelector(".ss-cf-v2-wrap");
         opSel.addEventListener("change", () => {
-            v2Inp.style.display = opSel.value === "between" ? "block" : "none";
-            valsRow.style.display = ["duplicate", "blank"].includes(opSel.value) ? "none" : "flex";
+            const val = opSel.value;
+            if (v2Wrap) v2Wrap.style.display = ["between", "notBetween"].includes(val) ? "flex" : "none";
+            if (v1Wrap) v1Wrap.style.display = ["blank", "notBlank", "error", "notError"].includes(val) ? "none" : "flex";
+        });
+
+        modalContent.querySelectorAll(".ss-cf-pick").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const targetInput = modalContent.querySelector(btn.dataset.pickTarget);
+                openSheetRangePicker({
+                    modalContent,
+                    targetInput,
+                    label: btn.dataset.pickLabel || "範囲を選択:",
+                    allowCrossSheet: btn.dataset.crossSheet !== "0"
+                });
+            });
         });
     }
 
     function openConditionalFormatManager() {
-        const rules = sheets[activeSheetIndex]?.conditionalFormats || [];
-        const listHtml = rules.length === 0
-            ? `<div style="padding:12px; color:#555;">設定されているルールはありません。</div>`
-            : rules.map((r, idx) => {
-                const rng = `${getColumnName(r.minCol)}${r.minRow}:${getColumnName(r.maxCol)}${r.maxRow}`;
-                const desc = r.condition || `${r.op} ${r.val1 || ""} ${r.val2 ? "〜 " + r.val2 : ""}`;
-                return `<div style="display:flex; justify-content:space-between; align-items:center; padding:4px 6px; border-bottom:1px solid #ccc;">
-                    <span><b>${rng}</b> : ${desc} <span style="display:inline-block; padding:0 4px; background:${r.bgColor}; color:${r.textColor};">書式</span></span>
-                    <button type="button" data-del-cf="${idx}" style="font-size:11px;">削除</button>
-                </div>`;
-            }).join("");
+        const curBounds = getSelectedRangeBounds();
+        let draftRules = JSON.parse(JSON.stringify(sheets[activeSheetIndex]?.conditionalFormats || []));
+        let selectedIdx = draftRules.length > 0 ? 0 : -1;
+        let scope = "sheet";
 
-        const modalContent = windowAPI.showModalWindow("条件付き書式ルールの管理", `
-            <div style="width:100%; max-height:240px; overflow-y:auto; background:#fff; border:1px solid #808080;">${listHtml}</div>
-        `, {
-            width: 420,
+        const bodyHtml = `
+            <div style="width:100%; display:flex; flex-direction:column; gap:8px; font-size:12px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                    <label>書式ルールの表示(S):</label>
+                    <select class="ss-cfm-scope border" style="width:200px; height:24px; background:#fff; color:#000;">
+                        <option value="sheet" selected>このワークシート</option>
+                        <option value="selection">現在の選択範囲</option>
+                    </select>
+                </div>
+                <div style="display:flex; gap:5px; align-items:center;">
+                    <button type="button" class="button ss-cfm-new">新規ルール(N)...</button>
+                    <button type="button" class="button ss-cfm-edit">ルールの編集(E)...</button>
+                    <button type="button" class="button ss-cfm-del">ルールの削除(D)</button>
+                    <button type="button" class="button ss-cfm-up" title="優先順位を上げる">▲</button>
+                    <button type="button" class="button ss-cfm-down" title="優先順位を下げる">▼</button>
+                </div>
+                <div style="border:1px solid #808080; background:#fff; height:210px; overflow-y:auto;">
+                    <table style="width:100%; border-collapse:collapse; font-size:11px;">
+                        <thead>
+                            <tr style="background:#d4d8dc; border-bottom:1px solid #808080;">
+                                <th style="padding:4px; text-align:left;">ルール（表示順）</th>
+                                <th style="padding:4px; text-align:center; width:75px;">書式</th>
+                                <th style="padding:4px; text-align:left; width:125px;">適用先</th>
+                                <th style="padding:4px; text-align:center; width:70px;">条件を満たす場合は停止</th>
+                            </tr>
+                        </thead>
+                        <tbody class="ss-cfm-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+
+        const modalContent = openAppModal("条件付き書式ルールの管理", bodyHtml, {
+            width: 560,
             isHtml: true,
             parentWin: win,
-            buttons: [{ label: "閉じる" }]
+            buttons: [
+                {
+                    label: "OK",
+                    onClick: () => {
+                        sheets[activeSheetIndex].conditionalFormats = draftRules;
+                        applyConditionalFormats();
+                        setDirtyState(true);
+                        debouncedSaveState();
+                    }
+                },
+                { label: "キャンセル" },
+                {
+                    label: "適用(A)",
+                    closeOnClick: false,
+                    onClick: () => {
+                        sheets[activeSheetIndex].conditionalFormats = JSON.parse(JSON.stringify(draftRules));
+                        applyConditionalFormats();
+                        setDirtyState(true);
+                        debouncedSaveState();
+                    }
+                }
+            ]
         });
-        modalContent.querySelectorAll("[data-del-cf]").forEach(btn => {
-            btn.addEventListener("click", () => {
-                const idx = Number(btn.dataset.delCf);
-                sheets[activeSheetIndex].conditionalFormats.splice(idx, 1);
-                btn.parentElement.remove();
-                applyConditionalFormats();
-                setDirtyState(true);
-                debouncedSaveState();
+
+        const tbodyEl = modalContent.querySelector(".ss-cfm-tbody");
+        const scopeSel = modalContent.querySelector(".ss-cfm-scope");
+
+        const renderRows = () => {
+            tbodyEl.innerHTML = "";
+            const visibleEntries = draftRules
+                .map((r, realIdx) => ({ r, realIdx }))
+                .filter(({ r }) => {
+                    if (scope === "sheet" || !curBounds) return true;
+                    return !(r.maxRow < curBounds.minRow || r.minRow > curBounds.maxRow || r.maxCol < curBounds.minCol || r.minCol > curBounds.maxCol);
+                });
+
+            if (!visibleEntries.length) {
+                tbodyEl.innerHTML = `<tr><td colspan="4" style="padding:14px; text-align:center; color:#666;">表示するルールがありません。</td></tr>`;
+                return;
+            }
+
+            visibleEntries.forEach(({ r, realIdx }) => {
+                const tr = document.createElement("tr");
+                tr.style.borderBottom = "1px solid #e0e0e0";
+                tr.style.backgroundColor = realIdx === selectedIdx ? "#cce4f7" : "#fff";
+                tr.style.cursor = "pointer";
+
+                const rngStr = `=$${getColumnName(r.minCol)}$${r.minRow}:$${getColumnName(r.maxCol)}$${r.maxRow}`;
+                const previewStyle = r.op === "databar"
+                    ? `background:${r.barColor || "#638ec6"}; color:#fff;`
+                    : r.op === "colorscale"
+                        ? "background:linear-gradient(90deg,#f8696b,#ffeb84,#63be7b); color:#000;"
+                        : `background:${r.bgColor || "#fff"}; color:${r.textColor || "#000"}; font-weight:${r.bold ? "bold" : "normal"}; font-style:${r.italic ? "italic" : "normal"};`;
+
+                tr.innerHTML = `
+                    <td style="padding:4px 6px;">${describeConditionalRule(r)}</td>
+                    <td style="padding:4px; text-align:center;"><span style="display:inline-block; width:56px; border:1px solid #999; ${previewStyle}">AaBbCc</span></td>
+                    <td style="padding:3px;">
+                        <div style="display:flex; gap:2px; align-items:center;">
+                            <input type="text" class="ss-cfm-range border" value="${rngStr}" style="flex:1; min-width:0; font-size:11px; padding:1px 3px; background:#fff; color:#000;">
+                            <button type="button" class="button ss-cfm-pick-range" title="シート上をドラッグして適用先を選択" style="height:20px; min-height:20px; padding:0 4px; font-size:11px;">📍</button>
+                        </div>
+                    </td>
+                    <td style="padding:4px; text-align:center;"><input type="checkbox" class="ss-cfm-stop" ${r.stopIfTrue ? "checked" : ""}></td>
+                `;
+
+                tr.addEventListener("click", (ev) => {
+                    if (ev.target.closest("input, button")) return;
+                    selectedIdx = realIdx;
+                    renderRows();
+                });
+
+                const rngInp = tr.querySelector(".ss-cfm-range");
+                const applyRangeTextToRule = (rawVal) => {
+                    const cleaned = String(rawVal || "").replace(/^=/, "").trim().toUpperCase();
+                    if (cleaned.includes(":")) {
+                        const parsed = parseRangeReference(cleaned);
+                        if (parsed) {
+                            r.minRow = Math.min(parsed.start.row, parsed.end.row);
+                            r.maxRow = Math.max(parsed.start.row, parsed.end.row);
+                            r.minCol = Math.min(parsed.start.col, parsed.end.col);
+                            r.maxCol = Math.max(parsed.start.col, parsed.end.col);
+                        }
+                    } else if (cleaned) {
+                        const single = parseCellReference(cleaned);
+                        if (single) {
+                            r.minRow = single.row;
+                            r.maxRow = single.row;
+                            r.minCol = single.col;
+                            r.maxCol = single.col;
+                        }
+                    }
+                    renderRows();
+                };
+
+                rngInp.addEventListener("change", () => applyRangeTextToRule(rngInp.value));
+
+                tr.querySelector(".ss-cfm-pick-range").addEventListener("click", (ev) => {
+                    ev.stopPropagation();
+                    selectedIdx = realIdx;
+                    openSheetRangePicker({
+                        modalContent,
+                        targetInput: rngInp,
+                        label: "ルールの適用先を選択:",
+                        allowCrossSheet: false,
+                        onPicked: (val) => applyRangeTextToRule(val)
+                    });
+                });
+
+                tr.querySelector(".ss-cfm-stop").addEventListener("change", (ev) => {
+                    r.stopIfTrue = ev.target.checked;
+                });
+
+                tbodyEl.appendChild(tr);
             });
+        };
+
+        scopeSel.addEventListener("change", () => {
+            scope = scopeSel.value;
+            renderRows();
         });
+
+        const closeManagerAndOpenEditor = (editIdx) => {
+            sheets[activeSheetIndex].conditionalFormats = draftRules;
+            if (windowAPI?.destroyWindow) {
+                windowAPI.destroyWindow(modalContent);
+            } else {
+                modalContent.closest(".window")?.querySelector(".close-btn")?.click();
+            }
+            openConditionalFormatModal(editIdx);
+        };
+
+        modalContent.querySelector(".ss-cfm-new").addEventListener("click", () => {
+            closeManagerAndOpenEditor(null);
+        });
+
+        modalContent.querySelector(".ss-cfm-edit").addEventListener("click", () => {
+            if (selectedIdx < 0 || !draftRules[selectedIdx]) return;
+            closeManagerAndOpenEditor(selectedIdx);
+        });
+
+        modalContent.querySelector(".ss-cfm-del").addEventListener("click", () => {
+            if (selectedIdx < 0 || !draftRules[selectedIdx]) return;
+            draftRules.splice(selectedIdx, 1);
+            selectedIdx = Math.min(draftRules.length - 1, selectedIdx);
+            renderRows();
+        });
+
+        modalContent.querySelector(".ss-cfm-up").addEventListener("click", () => {
+            if (selectedIdx <= 0) return;
+            const [item] = draftRules.splice(selectedIdx, 1);
+            draftRules.splice(selectedIdx - 1, 0, item);
+            selectedIdx--;
+            renderRows();
+        });
+
+        modalContent.querySelector(".ss-cfm-down").addEventListener("click", () => {
+            if (selectedIdx < 0 || selectedIdx >= draftRules.length - 1) return;
+            const [item] = draftRules.splice(selectedIdx, 1);
+            draftRules.splice(selectedIdx + 1, 0, item);
+            selectedIdx++;
+            renderRows();
+        });
+
+        renderRows();
     }
 
     function clearSpillCellsFromAnchor(anchorRow, anchorCol) {
@@ -4458,7 +5626,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 } else {
                     const pos = parseCellReference(ref);
                     if (!pos) continue;
-                    const cell = peekCell(pos.row, pos.col);
+                    const cell = getVisibleCell(pos.row, pos.col) || peekCell(pos.row, pos.col);
                     if (cell) {
                         cell.style.boxShadow = `inset 0 2px 0 0 ${color}, inset 0 -2px 0 0 ${color}, inset 2px 0 0 0 ${color}, inset -2px 0 0 0 ${color}`;
                         cell.dataset.calcHighlight = "1";
@@ -4620,60 +5788,313 @@ export default async function initSpreadsheetApp(content, options = {}) {
     // =========================================================
     // セル選択・アクティブ管理・編集遷移
     // =========================================================
+    function getCellPureText(cell) {
+        if (!cell) return "";
+        if (cell.dataset.rawValue !== undefined) return cell.dataset.rawValue;
+        let txt = "";
+        cell.childNodes.forEach(node => {
+            if (node.nodeType === Node.TEXT_NODE) txt += node.nodeValue;
+        });
+        return txt;
+    }
+
+    let activeDropdownCleanup = null;
+
+    // セル（<td>）から完全に分離された独立プルダウンボタン（spreadsheetContent直下に1つだけ配置）
+    const floatingDropdownBtn = document.createElement("button");
+    floatingDropdownBtn.type = "button";
+    floatingDropdownBtn.tabIndex = -1;
+    floatingDropdownBtn.className = "ss-cell-dropdown-btn";
+    floatingDropdownBtn.textContent = "▼";
+    floatingDropdownBtn.title = "リストから選択 (Alt+↓)";
+    spreadsheetContent.appendChild(floatingDropdownBtn);
+
+    let dropdownOwnerCell = null;
+
+    // mousedown のみに統一（pointerdown との二重発火による即閉じバグを解消）
+    floatingDropdownBtn.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        const cell = dropdownOwnerCell;
+        if (!cell || !cell.dataset.dropdownList) return;
+        const existingMenu = document.querySelector(".ss-cell-dropdown-list");
+        if (existingMenu && existingMenu.dataset.ownerCell === `${cell.dataset.row},${cell.dataset.col}`) {
+            closeCellDropdownList();
+        } else {
+            openCellDropdownList(cell, floatingDropdownBtn);
+        }
+    }, { signal });
+
+    floatingDropdownBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+    }, { signal });
+
+    function hideCellDropdownButton() {
+        dropdownOwnerCell = null;
+        floatingDropdownBtn.style.display = "none";
+        floatingDropdownBtn.classList.remove("open");
+    }
+
+    function syncCellDropdownButtonPosition() {
+        const cell = dropdownOwnerCell;
+        if (!cell || !cell.isConnected || !cell.dataset.dropdownList || isCellEditing(cell) || cell.style.display === "none") {
+            hideCellDropdownButton();
+            return;
+        }
+        const tr = cell.closest("tr");
+        if (tr && tr.style.display === "none") {
+            floatingDropdownBtn.style.display = "none";
+            return;
+        }
+
+        const zoom = parseFloat(spreadsheetContent.style.zoom || "1") || 1;
+        const contRect = container.getBoundingClientRect();
+        const contentRect = spreadsheetContent.getBoundingClientRect();
+        const cellRect = cell.getBoundingClientRect();
+
+        // ヘッダー裏や表示領域外へスクロールしたときは一時非表示（戻したときに再表示するため owner は保持）
+        const cornerEl = theadRow.querySelector(".ss-corner");
+        const headerBottom = cornerEl ? cornerEl.getBoundingClientRect().bottom : contRect.top;
+        const rowHeaderRight = cornerEl ? cornerEl.getBoundingClientRect().right : contRect.left;
+        const isRowFrozen = cell.classList.contains("ss-frozen-row");
+        const isColFrozen = cell.classList.contains("ss-frozen-col");
+
+        const outVertical = cellRect.bottom <= (isRowFrozen ? contRect.top : headerBottom) || cellRect.top >= contRect.bottom;
+        const outHorizontal = cellRect.right <= (isColFrozen ? contRect.left : rowHeaderRight) || cellRect.left >= contRect.right;
+        if (outVertical || outHorizontal) {
+            floatingDropdownBtn.style.display = "none";
+            return;
+        }
+
+        const left = (cellRect.left - contentRect.left) / zoom;
+        const top = (cellRect.top - contentRect.top) / zoom;
+        const cellW = (cellRect.width / zoom) || 120;
+        const cellH = (cellRect.height / zoom) || 30;
+        const btnW = 18;
+        const btnH = Math.min(cellH, 22);
+
+        // Excel準拠：セルの右外側に隣接配置（テーブル最右端のみセル内右端に収める）
+        const rightOutside = left + cellW;
+        const maxRight = Math.max(table.offsetWidth, cachedTableWidth);
+        const btnLeft = (rightOutside + btnW <= maxRight + 2)
+            ? rightOutside
+            : Math.max(0, left + cellW - btnW);
+        const btnTop = top + Math.max(0, cellH - btnH);
+
+        floatingDropdownBtn.style.left = `${btnLeft}px`;
+        floatingDropdownBtn.style.top = `${btnTop}px`;
+        floatingDropdownBtn.style.width = `${btnW}px`;
+        floatingDropdownBtn.style.height = `${btnH}px`;
+        floatingDropdownBtn.style.display = "inline-flex";
+    }
+
     function closeCellDropdownList() {
+        if (activeDropdownCleanup) {
+            activeDropdownCleanup();
+            activeDropdownCleanup = null;
+        }
+        floatingDropdownBtn.classList.remove("open");
         document.querySelectorAll(".ss-cell-dropdown-list").forEach(el => el.remove());
     }
 
     function resolveCellDropdownItems(spec) {
         const raw = String(spec ?? "").trim();
         if (!raw) return [];
-        if (raw.startsWith("=")) {
-            const range = parseRangeReference(raw.slice(1).trim().toUpperCase());
+
+        const expr = raw.startsWith("=") ? raw.slice(1).trim() : raw;
+        const refMatch = expr.match(
+            /^(?:(?:'([^']+)'|([A-Za-z0-9_\u3040-\u30FF\u4E00-\u9FAF]+))!)?(\$?[A-Za-z]+\$?\d+)(?::(\$?[A-Za-z]+\$?\d+))?$/i
+        );
+
+        if (refMatch && (raw.startsWith("=") || refMatch[1] || refMatch[2] || refMatch[4])) {
+            const sheetName = refMatch[1] ?? refMatch[2];
+            const targetSheetIdx = sheetName
+                ? sheets.findIndex(s => s.name === sheetName)
+                : activeSheetIndex;
+            if (targetSheetIdx < 0) return [];
+
+            const startToken = refMatch[3].toUpperCase();
+            const endToken = (refMatch[4] || refMatch[3]).toUpperCase();
+            const range = parseRangeReference(`${startToken}:${endToken}`);
             if (!range) return [];
+
+            const r0 = Math.min(range.start.row, range.end.row);
+            const r1 = Math.max(range.start.row, range.end.row);
+            const c0 = Math.min(range.start.col, range.end.col);
+            const c1 = Math.max(range.start.col, range.end.col);
             const items = [];
-            for (let r = Math.min(range.start.row, range.end.row); r <= Math.max(range.start.row, range.end.row); r++) {
-                for (let c = Math.min(range.start.col, range.end.col); c <= Math.max(range.start.col, range.end.col); c++) {
-                    const v = (getVisibleCell(r, c)?.textContent ?? "").trim();
+
+            if (targetSheetIdx === activeSheetIndex) {
+                if (c1 >= currentColumns) loadColumnsSync(c1 - currentColumns + 1);
+                if (r1 >= rowCount) loadRowsSync(r1 - rowCount + 1);
+            }
+
+            for (let r = r0; r <= r1; r++) {
+                for (let c = c0; c <= c1; c++) {
+                    let v = "";
+                    if (targetSheetIdx === activeSheetIndex) {
+                        const cell = peekCell(r, c);
+                        const vis = (cell && cell.style.display === "none") ? getVisibleCell(r, c) : cell;
+                        if (vis) {
+                            if (vis.dataset.formula) {
+                                const evalVal = evaluateFormula(vis.dataset.formula, new Set(), activeSheetIndex);
+                                v = Array.isArray(evalVal) ? "" : String(evalVal ?? "").trim();
+                            } else {
+                                v = String(getCellPureText(vis) ?? "").trim();
+                            }
+                        }
+                    } else {
+                        const entry = sheets[targetSheetIdx]?.cells?.find(it => Number(it.r) === r && Number(it.c) === c);
+                        if (entry) {
+                            if (entry.f) {
+                                const evalVal = evaluateFormula(entry.f, new Set(), targetSheetIdx);
+                                v = Array.isArray(evalVal) ? "" : String(evalVal ?? "").trim();
+                            } else {
+                                v = String(entry.v ?? "").trim();
+                            }
+                        }
+                    }
                     if (v !== "" && !items.includes(v)) items.push(v);
                 }
             }
             return items;
         }
-        return raw.split(/[,、]/).map(s => s.trim()).filter(Boolean);
+
+        const src = (raw.startsWith('"') && raw.endsWith('"') && raw.length >= 2)
+            ? raw.slice(1, -1)
+            : raw;
+        const result = [];
+        let cur = "";
+        let depth = 0;
+        for (let i = 0; i < src.length; i++) {
+            const ch = src[i];
+            if (ch === "(") depth++;
+            else if (ch === ")") depth = Math.max(0, depth - 1);
+            if (depth === 0 && (ch === "," || ch === "、" || ch === "\r" || ch === "\n")) {
+                if (cur.trim()) result.push(cur.trim());
+                cur = "";
+            } else {
+                cur += ch;
+            }
+        }
+        if (cur.trim()) result.push(cur.trim());
+        return result;
     }
 
-    function openCellDropdownList(cell, anchorBtn) {
+    function attachCellDropdownButton(cell) {
+        if (!cell || !cell.dataset.dropdownList || isCellEditing(cell)) {
+            hideCellDropdownButton();
+            return;
+        }
+        dropdownOwnerCell = cell;
+        syncCellDropdownButtonPosition();
+    }
+
+    function openCellDropdownList(cell, anchorBtn = floatingDropdownBtn) {
         closeCellDropdownList();
         const items = resolveCellDropdownItems(cell.dataset.dropdownList);
-        if (!items.length) return;
+        if (!items.length) {
+            showAlert("リストの候補が見つかりません。入力規則の「元の値」を確認してください。", "ドロップダウンリスト");
+            return;
+        }
 
-        const rect = (anchorBtn || cell).getBoundingClientRect();
+        const cellRect = cell.getBoundingClientRect();
+        const btnRect = (anchorBtn && anchorBtn.style.display !== "none" ? anchorBtn : cell).getBoundingClientRect();
         const menu = document.createElement("div");
         menu.className = "ss-cell-dropdown-list";
-        menu.style.left = `${Math.min(window.innerWidth - 150, Math.max(4, cell.getBoundingClientRect().left))}px`;
-        menu.style.top = `${Math.min(window.innerHeight - 210, rect.bottom + 1)}px`;
-        menu.style.minWidth = `${Math.max(110, cell.offsetWidth)}px`;
+        menu.dataset.ownerCell = `${cell.dataset.row},${cell.dataset.col}`;
+        menu.style.zIndex = "2147483647";
+        menu.style.left = `${Math.min(window.innerWidth - 150, Math.max(4, cellRect.left))}px`;
+        menu.style.minWidth = `${Math.max(120, cellRect.width + 18)}px`;
 
-        items.forEach(itemText => {
+        const estHeight = Math.min(200, items.length * 24 + 6);
+        const spaceBelow = window.innerHeight - cellRect.bottom;
+        const topPos = spaceBelow >= estHeight || spaceBelow >= cellRect.top
+            ? Math.min(window.innerHeight - estHeight - 4, cellRect.bottom + 1)
+            : Math.max(4, cellRect.top - estHeight - 1);
+        menu.style.top = `${topPos}px`;
+
+        menu.addEventListener("mousedown", (e) => e.stopPropagation());
+
+        const currentText = getCellPureText(cell).trim();
+        let activeIdx = Math.max(0, items.indexOf(currentText));
+        const rowEls = [];
+
+        const commitChoice = (itemText) => {
+            cell.dataset.originalText = getCellPureText(cell);
+            if (cell.dataset.formula) cell.dataset.originalFormula = cell.dataset.formula;
+            else delete cell.dataset.originalFormula;
+
+            commitCellValue(cell, itemText);
+            formulaBarInput.value = itemText;
+            closeCellDropdownList();
+            setActiveCell(cell, true);
+            updateSelectedCellsDisplay();
+        };
+
+        const highlightRow = (idx) => {
+            activeIdx = (idx + rowEls.length) % rowEls.length;
+            rowEls.forEach((el, i) => {
+                const isSel = i === activeIdx;
+                el.style.backgroundColor = isSel ? "#005a9e" : "";
+                el.style.color = isSel ? "#fff" : "";
+                el.style.fontWeight = items[i] === currentText ? "bold" : "";
+            });
+            rowEls[activeIdx]?.scrollIntoView({ block: "nearest" });
+        };
+
+        items.forEach((itemText, idx) => {
             const row = document.createElement("div");
             row.className = "ss-cell-dropdown-item";
             row.textContent = itemText;
+            row.addEventListener("mouseenter", () => highlightRow(idx));
             row.addEventListener("mousedown", (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                cell.dataset.originalText = cell.dataset.rawValue ?? cell.textContent;
-                if (cell.dataset.formula) cell.dataset.originalFormula = cell.dataset.formula;
-                else delete cell.dataset.originalFormula;
-
-                commitCellValue(cell, itemText);
-                formulaBarInput.value = itemText;
-                updateSelectedCellsDisplay();
-                closeCellDropdownList();
-                cell.focus({ preventScroll: true });
+                commitChoice(itemText);
             });
+            rowEls.push(row);
             menu.appendChild(row);
         });
+
         document.body.appendChild(menu);
+        floatingDropdownBtn.classList.add("open");
+        highlightRow(activeIdx);
+
+        const onOutsideDown = (ev) => {
+            if (!menu.contains(ev.target) && ev.target !== floatingDropdownBtn && !floatingDropdownBtn.contains(ev.target)) {
+                closeCellDropdownList();
+            }
+        };
+        const onMenuKeydown = (ev) => {
+            if (ev.key === "ArrowDown") {
+                ev.preventDefault();
+                ev.stopPropagation();
+                highlightRow(activeIdx + 1);
+            } else if (ev.key === "ArrowUp") {
+                ev.preventDefault();
+                ev.stopPropagation();
+                highlightRow(activeIdx - 1);
+            } else if (ev.key === "Enter") {
+                ev.preventDefault();
+                ev.stopPropagation();
+                commitChoice(items[activeIdx]);
+            } else if (ev.key === "Escape") {
+                ev.preventDefault();
+                ev.stopPropagation();
+                closeCellDropdownList();
+                cell.focus({ preventScroll: true });
+            }
+        };
+
+        document.addEventListener("mousedown", onOutsideDown, true);
+        document.addEventListener("keydown", onMenuKeydown, true);
+        activeDropdownCleanup = () => {
+            document.removeEventListener("mousedown", onOutsideDown, true);
+            document.removeEventListener("keydown", onMenuKeydown, true);
+        };
     }
 
     let dvTooltipEl = null;
@@ -4689,7 +6110,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         if (!cell?.dataset.dvRule) return;
         try {
             const rule = JSON.parse(cell.dataset.dvRule);
-            if (!rule.promptTitle && !rule.promptMsg) return;
+            if (rule.showPrompt === false || (!rule.promptTitle && !rule.promptMsg)) return;
             const rect = cell.getBoundingClientRect();
             dvTooltipEl = document.createElement("div");
             dvTooltipEl.className = "ss-dv-tooltip";
@@ -4700,109 +6121,350 @@ export default async function initSpreadsheetApp(content, options = {}) {
         } catch { /* ignore */ }
     }
 
+    function compareValidationValues(op, val, v1, v2) {
+        if (op === "between") return val >= Math.min(v1, v2) && val <= Math.max(v1, v2);
+        if (op === "notBetween") return val < Math.min(v1, v2) || val > Math.max(v1, v2);
+        if (op === "=") return val === v1;
+        if (op === "<>") return val !== v1;
+        if (op === ">") return val > v1;
+        if (op === "<") return val < v1;
+        if (op === ">=") return val >= v1;
+        if (op === "<=") return val <= v1;
+        return true;
+    }
+
     function validateCellInputByRule(cell, newText) {
-        if (!cell?.dataset.dvRule || newText === "" || newText.startsWith("=")) return true;
+        if (!cell?.dataset.dvRule) return true;
         let rule;
         try { rule = JSON.parse(cell.dataset.dvRule); } catch { return true; }
+        if (rule.ignoreBlank !== false && String(newText).trim() === "") return true;
+        if (String(newText).trim().startsWith("=")) return true;
 
         let isValid = true;
+        const op = rule.operator || "between";
+
         if (rule.type === "list") {
             const items = resolveCellDropdownItems(rule.listSpec || cell.dataset.dropdownList || "");
-            if (items.length > 0) isValid = items.includes(newText);
+            if (items.length > 0) {
+                const candidate = String(newText).trim();
+                isValid = items.some(it => String(it).trim() === candidate);
+            }
         } else if (rule.type === "integer" || rule.type === "decimal") {
             const num = parseFormattedNumber(newText);
             isValid = !isNaN(num) && (rule.type === "decimal" || Number.isInteger(num));
-            if (isValid && rule.min !== "" && num < Number(rule.min)) isValid = false;
-            if (isValid && rule.max !== "" && num > Number(rule.max)) isValid = false;
+            if (isValid && String(rule.min ?? "").trim() !== "") {
+                const v1 = parseFormattedNumber(rule.min);
+                const v2 = String(rule.max ?? "").trim() !== "" ? parseFormattedNumber(rule.max) : v1;
+                if (!isNaN(v1)) {
+                    isValid = compareValidationValues(op, num, v1, isNaN(v2) ? v1 : v2);
+                }
+            }
         } else if (rule.type === "textLength") {
-            const len = newText.length;
-            if (rule.min !== "" && len < Number(rule.min)) isValid = false;
-            if (rule.max !== "" && len > Number(rule.max)) isValid = false;
-        }
+            const len = String(newText).length;
+            if (String(rule.min ?? "").trim() !== "") {
+                const v1 = Number(rule.min);
+                const v2 = String(rule.max ?? "").trim() !== "" ? Number(rule.max) : v1;
+                if (!isNaN(v1)) {
+                    isValid = compareValidationValues(op, len, v1, isNaN(v2) ? v1 : v2);
+                }
+            }
+        } else if (rule.type === "date") {
+            const d = parseExcelDate(newText);
+            const d1 = parseExcelDate(rule.min);
+            const d2 = parseExcelDate(rule.max);
+            if (!d) isValid = false;
+            else if (d1) {
+                isValid = compareValidationValues(op, d.getTime(), d1.getTime(), d2 ? d2.getTime() : d1.getTime());
+            }
+        } else if (rule.type === "time") {
+            const t = FORMULA_FUNCTIONS.TIMEVALUE(newText);
+            const t1 = FORMULA_FUNCTIONS.TIMEVALUE(rule.min);
+            const t2 = FORMULA_FUNCTIONS.TIMEVALUE(rule.max);
+            if (typeof t !== "number" || isNaN(t)) isValid = false;
+            else if (typeof t1 === "number" && !isNaN(t1)) {
+                isValid = compareValidationValues(op, t, t1, typeof t2 === "number" && !isNaN(t2) ? t2 : t1);
+            }
+        } else if (rule.type === "custom" && rule.formula) {
+            const baseF = rule.formula.trim().startsWith("=") ? rule.formula.trim() : `=${rule.formula.trim()}`;
+            const dRow = (parseInt(cell.dataset.row, 10) || 1) - (rule.baseRow || parseInt(cell.dataset.row, 10) || 1);
+            const dCol = (parseInt(cell.dataset.col, 10) || 0) - (rule.baseCol ?? parseInt(cell.dataset.col, 10) ?? 0);
+            const f = (dRow !== 0 || dCol !== 0) ? adjustFormula(baseF, dRow, dCol) : baseF;
 
-        if (!isValid) {
-            const msg = rule.errorMsg || "入力された値は、このセルに設定されているデータ入力規則の制限を満たしていません。";
-            showAlert(msg, rule.errorTitle || "データの入力規則エラー");
+            const hadRaw = Object.prototype.hasOwnProperty.call(cell.dataset, "rawValue");
+            const prevRaw = cell.dataset.rawValue;
+            const prevText = Array.from(cell.childNodes)
+                .filter(n => n.nodeType === Node.TEXT_NODE)
+                .map(n => n.nodeValue)
+                .join("");
+            try {
+                cell.dataset.rawValue = String(newText);
+                setCellTextPreservingControls(cell, String(newText));
+                formulaEvalCache.clear();
+                const res = evaluateFormula(f, new Set(), activeSheetIndex);
+                isValid = res === true || res === 1 || String(res ?? "").trim().toUpperCase() === "TRUE";
+            } finally {
+                if (hadRaw) cell.dataset.rawValue = prevRaw;
+                else delete cell.dataset.rawValue;
+                setCellTextPreservingControls(cell, prevText);
+                formulaEvalCache.clear();
+            }
+        }
+        if (!isValid && rule.showError !== false) {
+            const style = rule.errorStyle || "stop";
+            const title = rule.errorTitle || "";
+            const msg = rule.errorMsg || "この値は、このセルに定義されているデータ入力規則の制限を満たしていません。";
+
+            if (style === "info") {
+                showDataValidationDialog({ style: "info", title, message: msg });
+                return true;
+            }
+            if (style === "warning") {
+                showDataValidationDialog({
+                    style: "warning",
+                    title,
+                    message: `${msg}\n\nこの値を入力して続行しますか？`,
+                    onConfirm: (ok) => {
+                        if (ok) {
+                            const prevRule = cell.dataset.dvRule;
+                            delete cell.dataset.dvRule;
+                            commitCellValue(cell, newText);
+                            cell.dataset.dvRule = prevRule;
+                            updateSelectedCellsDisplay();
+                        }
+                    }
+                });
+                return false;
+            }
+            showDataValidationDialog({ style: "stop", title, message: msg });
             return false;
         }
         return true;
     }
 
     function openDataValidationDialog() {
-        const targets = getTargetCells();
+        const selected = Array.from(tbody.querySelectorAll("td.selected")).filter(td => td.style.display !== "none");
+        const targets = selected.length ? selected : (activeCell ? [activeCell] : []);
         if (!targets.length) return;
-        let cur = { type: targets[0].dataset.dropdownList ? "list" : "any", listSpec: targets[0].dataset.dropdownList || "", min: "", max: "", promptTitle: "", promptMsg: "", errorTitle: "", errorMsg: "" };
+        let cur = {
+            type: targets[0].dataset.dropdownList ? "list" : "any",
+            operator: "between",
+            listSpec: targets[0].dataset.dropdownList || "",
+            min: "",
+            max: "",
+            formula: "",
+            ignoreBlank: true,
+            inCellDropdown: true,
+            showPrompt: true,
+            promptTitle: "",
+            promptMsg: "",
+            showError: true,
+            errorStyle: "stop",
+            errorTitle: "",
+            errorMsg: ""
+        };
         if (targets[0].dataset.dvRule) {
             try { cur = { ...cur, ...JSON.parse(targets[0].dataset.dvRule) }; } catch { /* ignore */ }
         }
 
+        const isRangeType = ["integer", "decimal", "date", "time", "textLength"].includes(cur.type);
+        const isTwoValOp = ["between", "notBetween"].includes(cur.operator);
+
         const bodyHtml = `
-            <div style="width:100%; display:flex; flex-direction:column; gap:7px; font-size:12px;">
-                <div style="display:flex; align-items:center; gap:6px;">
-                    <label style="width:95px;">入力値の種類:</label>
-                    <select class="ss-dv-type border" style="flex:1; height:24px; background:#fff; color:#000;">
-                        <option value="any" ${cur.type === "any" ? "selected" : ""}>すべての値（制限なし）</option>
-                        <option value="list" ${cur.type === "list" ? "selected" : ""}>リスト（ドロップダウン）</option>
-                        <option value="integer" ${cur.type === "integer" ? "selected" : ""}>整数</option>
-                        <option value="decimal" ${cur.type === "decimal" ? "selected" : ""}>小数点数</option>
-                        <option value="textLength" ${cur.type === "textLength" ? "selected" : ""}>文字列（長さ指定）</option>
-                    </select>
+            <div style="width:100%; display:flex; flex-direction:column; gap:6px; font-size:12px;">
+                <div class="ss-xl-tabs">
+                    <div class="ss-xl-tab active" data-dv-tab="settings">設定</div>
+                    <div class="ss-xl-tab" data-dv-tab="prompt">入力時メッセージ</div>
+                    <div class="ss-xl-tab" data-dv-tab="error">エラー メッセージ</div>
                 </div>
-                <div class="ss-dv-list-box" style="display:${cur.type === "list" ? "flex" : "none"}; flex-direction:column; gap:4px;">
-                    <div>元の値（カンマ区切り、または <code>=A1:A5</code>）:</div>
-                    <input type="text" class="ss-dv-list-input border" value="${(cur.listSpec || "").replace(/"/g, "&quot;")}" placeholder="例: 未着手,進行中,完了 または =D1:D5" style="width:100%; padding:4px 6px; font-size:12px; background:#fff; color:#000;">
+
+                <!-- タブ1: 設定 -->
+                <div class="ss-xl-tabpanel active" data-dv-panel="settings">
+                    <fieldset style="border:1px solid #808080; padding:8px; margin:0; display:flex; flex-direction:column; gap:7px;">
+                        <legend style="padding:0 4px;">条件の設定</legend>
+                        <div style="display:flex; gap:10px; align-items:flex-start;">
+                            <div style="flex:1; display:flex; flex-direction:column; gap:6px;">
+                                <label>入力値の種類(A):
+                                    <select class="ss-dv-type border" style="width:100%; height:24px; margin-top:2px; background:#fff; color:#000;">
+                                        <option value="any" ${cur.type === "any" ? "selected" : ""}>すべての値</option>
+                                        <option value="integer" ${cur.type === "integer" ? "selected" : ""}>整数</option>
+                                        <option value="decimal" ${cur.type === "decimal" ? "selected" : ""}>小数点数</option>
+                                        <option value="list" ${cur.type === "list" ? "selected" : ""}>リスト</option>
+                                        <option value="date" ${cur.type === "date" ? "selected" : ""}>日付</option>
+                                        <option value="time" ${cur.type === "time" ? "selected" : ""}>時刻</option>
+                                        <option value="textLength" ${cur.type === "textLength" ? "selected" : ""}>文字列(長さ指定)</option>
+                                        <option value="custom" ${cur.type === "custom" ? "selected" : ""}>ユーザー設定</option>
+                                    </select>
+                                </label>
+
+                                <label class="ss-dv-op-wrap" style="display:${isRangeType ? "block" : "none"};">データ(D):
+                                    <select class="ss-dv-op border" style="width:100%; height:24px; margin-top:2px; background:#fff; color:#000;">
+                                        <option value="between" ${cur.operator === "between" ? "selected" : ""}>次の値の間</option>
+                                        <option value="notBetween" ${cur.operator === "notBetween" ? "selected" : ""}>次の値の間以外</option>
+                                        <option value="=" ${cur.operator === "=" ? "selected" : ""}>次の値に等しい</option>
+                                        <option value="<>" ${cur.operator === "<>" ? "selected" : ""}>次の値に等しくない</option>
+                                        <option value=">" ${cur.operator === ">" ? "selected" : ""}>次の値より大きい</option>
+                                        <option value="<" ${cur.operator === "<" ? "selected" : ""}>次の値より小さい</option>
+                                        <option value=">=" ${cur.operator === ">=" ? "selected" : ""}>次の値以上</option>
+                                        <option value="<=" ${cur.operator === "<=" ? "selected" : ""}>次の値以下</option>
+                                    </select>
+                                </label>
+
+                                <div class="ss-dv-list-box" style="display:${cur.type === "list" ? "flex" : "none"}; flex-direction:column; gap:3px;">
+                                    <label>元の値(S):</label>
+                                    <div style="display:flex; gap:4px; align-items:center;">
+                                        <input type="text" class="ss-dv-list-input border" value="${(cur.listSpec || "").replace(/"/g, "&quot;")}" placeholder="例: 未着手,進行中,完了 または =$A$1:$A$5" style="flex:1; min-width:0; height:24px; padding:2px 5px; background:#fff; color:#000;">
+                                        <button type="button" class="button ss-dv-pick-range-btn" title="シート上をドラッグしてセル範囲を選択" style="height:24px; padding:0 7px; flex-shrink:0;">📍範囲選択</button>
+                                    </div>
+                                </div>
+
+                                <div class="ss-dv-minmax-box" style="display:${isRangeType ? "flex" : "none"}; flex-direction:column; gap:5px;">
+                                    <label><span class="ss-dv-v1-label">${isTwoValOp ? "最小値(M):" : "値(V):"}</span>
+                                        <input type="text" class="ss-dv-min border" value="${cur.min}" style="width:100%; height:24px; margin-top:2px; padding:2px 5px; background:#fff; color:#000;">
+                                    </label>
+                                    <label class="ss-dv-v2-wrap" style="display:${isTwoValOp ? "block" : "none"};">最大値(X):
+                                        <input type="text" class="ss-dv-max border" value="${cur.max}" style="width:100%; height:24px; margin-top:2px; padding:2px 5px; background:#fff; color:#000;">
+                                    </label>
+                                </div>
+
+                                <div class="ss-dv-custom-box" style="display:${cur.type === "custom" ? "flex" : "none"}; flex-direction:column; gap:3px;">
+                                    <label>数式(F):</label>
+                                    <input type="text" class="ss-dv-formula border" value="${(cur.formula || "").replace(/"/g, "&quot;")}" placeholder="例: =A1>0" style="width:100%; height:24px; padding:2px 5px; background:#fff; color:#000;">
+                                </div>
+                            </div>
+
+                            <div style="display:flex; flex-direction:column; gap:8px; padding-top:16px; min-width:175px;">
+                                <label style="display:inline-flex; align-items:center; gap:4px; cursor:pointer;">
+                                    <input type="checkbox" class="ss-dv-ignoreblank" ${cur.ignoreBlank !== false ? "checked" : ""}> 空白を無視する(B)
+                                </label>
+                                <label class="ss-dv-dropdown-chk-wrap" style="display:${cur.type === "list" ? "inline-flex" : "none"}; align-items:center; gap:4px; cursor:pointer;">
+                                    <input type="checkbox" class="ss-dv-incell" ${cur.inCellDropdown !== false ? "checked" : ""}> ドロップダウンリストから選択する(I)
+                                </label>
+                            </div>
+                        </div>
+                    </fieldset>
+                    <label style="display:inline-flex; align-items:center; gap:5px; cursor:pointer;">
+                        <input type="checkbox" class="ss-dv-apply-same"> 同じ入力規則が設定されたすべてのセルに変更を適用する(P)
+                    </label>
                 </div>
-                <div class="ss-dv-minmax-box" style="display:${["integer", "decimal", "textLength"].includes(cur.type) ? "flex" : "none"}; gap:6px; align-items:center;">
-                    <label style="width:95px;">最小 / 最大:</label>
-                    <input type="number" class="ss-dv-min border" value="${cur.min}" placeholder="最小値" style="flex:1; padding:3px 5px; background:#fff; color:#000;">
-                    <span>〜</span>
-                    <input type="number" class="ss-dv-max border" value="${cur.max}" placeholder="最大値" style="flex:1; padding:3px 5px; background:#fff; color:#000;">
+
+                <!-- タブ2: 入力時メッセージ -->
+                <div class="ss-xl-tabpanel" data-dv-panel="prompt">
+                    <label style="display:inline-flex; align-items:center; gap:5px; cursor:pointer;">
+                        <input type="checkbox" class="ss-dv-showprompt" ${cur.showPrompt !== false ? "checked" : ""}> セルの選択時にメッセージを表示する(S)
+                    </label>
+                    <fieldset style="border:1px solid #808080; padding:8px; margin:0; display:flex; flex-direction:column; gap:6px;">
+                        <legend style="padding:0 4px;">セルの選択時に表示するメッセージ</legend>
+                        <label>タイトル(T):
+                            <input type="text" class="ss-dv-ptitle border" value="${(cur.promptTitle || "").replace(/"/g, "&quot;")}" style="width:100%; height:24px; margin-top:2px; padding:2px 5px; background:#fff; color:#000;">
+                        </label>
+                        <label>入力時メッセージ(I):
+                            <textarea class="ss-dv-pmsg border" rows="4" style="width:100%; margin-top:2px; padding:4px; background:#fff; color:#000; resize:none;">${cur.promptMsg || ""}</textarea>
+                        </label>
+                    </fieldset>
                 </div>
-                <div style="border-top:1px solid #808080; padding-top:6px; display:flex; flex-direction:column; gap:4px;">
-                    <div style="font-weight:bold;">入力時メッセージ（セル選択時に表示）:</div>
-                    <input type="text" class="ss-dv-ptitle border" value="${(cur.promptTitle || "").replace(/"/g, "&quot;")}" placeholder="タイトル（任意）" style="width:100%; padding:3px 5px; background:#fff; color:#000;">
-                    <input type="text" class="ss-dv-pmsg border" value="${(cur.promptMsg || "").replace(/"/g, "&quot;")}" placeholder="ガイドメッセージ（例: 0〜100の整数を入力してください）" style="width:100%; padding:3px 5px; background:#fff; color:#000;">
-                </div>
-                <div style="border-top:1px solid #808080; padding-top:6px; display:flex; flex-direction:column; gap:4px;">
-                    <div style="font-weight:bold;">エラーメッセージ（不正値入力時に表示）:</div>
-                    <input type="text" class="ss-dv-emsg border" value="${(cur.errorMsg || "").replace(/"/g, "&quot;")}" placeholder="エラー時の案内文（任意）" style="width:100%; padding:3px 5px; background:#fff; color:#000;">
+
+                <!-- タブ3: エラーメッセージ -->
+                <div class="ss-xl-tabpanel" data-dv-panel="error">
+                    <label style="display:inline-flex; align-items:center; gap:5px; cursor:pointer;">
+                        <input type="checkbox" class="ss-dv-showerror" ${cur.showError !== false ? "checked" : ""}> 無効なデータが入力されたらエラー メッセージを表示する(S)
+                    </label>
+                    <div style="display:flex; gap:10px; align-items:flex-start;">
+                        <div style="width:120px; display:flex; flex-direction:column; gap:6px;">
+                            <label>スタイル(Y):
+                                <select class="ss-dv-estyle border" style="width:100%; height:24px; margin-top:2px; background:#fff; color:#000;">
+                                    <option value="stop" ${cur.errorStyle === "stop" ? "selected" : ""}>停止</option>
+                                    <option value="warning" ${cur.errorStyle === "warning" ? "selected" : ""}>注意</option>
+                                    <option value="info" ${cur.errorStyle === "info" ? "selected" : ""}>情報</option>
+                                </select>
+                            </label>
+                            <div class="ss-dv-eicon" style="font-size:24px; text-align:center; padding:6px;">${cur.errorStyle === "warning" ? "⚠️" : cur.errorStyle === "info" ? "ℹ️" : "❌"}</div>
+                        </div>
+                        <div style="flex:1; display:flex; flex-direction:column; gap:6px;">
+                            <label>タイトル(T):
+                                <input type="text" class="ss-dv-etitle border" value="${(cur.errorTitle || "").replace(/"/g, "&quot;")}" style="width:100%; height:24px; margin-top:2px; padding:2px 5px; background:#fff; color:#000;">
+                            </label>
+                            <label>エラー メッセージ(E):
+                                <textarea class="ss-dv-emsg border" rows="4" style="width:100%; margin-top:2px; padding:4px; background:#fff; color:#000; resize:none;">${cur.errorMsg || ""}</textarea>
+                            </label>
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
-        const modalContent = windowAPI.showModalWindow("データの入力規則", bodyHtml, {
-            width: 410,
+
+        const modalContent = openAppModal("データの入力規則", bodyHtml, {
+            width: 460,
             isHtml: true,
             parentWin: win,
             buttons: [
                 {
-                    label: "OK",
+                    label: "すべてクリア(C)",
+                    closeOnClick: false,
                     onClick: () => {
-                        const type = modalContent.querySelector(".ss-dv-type").value;
-                        const listSpec = modalContent.querySelector(".ss-dv-list-input")?.value.trim() || "";
-                        const min = modalContent.querySelector(".ss-dv-min")?.value.trim() || "";
-                        const max = modalContent.querySelector(".ss-dv-max")?.value.trim() || "";
-                        const promptTitle = modalContent.querySelector(".ss-dv-ptitle")?.value.trim() || "";
-                        const promptMsg = modalContent.querySelector(".ss-dv-pmsg")?.value.trim() || "";
-                        const errorMsg = modalContent.querySelector(".ss-dv-emsg")?.value.trim() || "";
-
-                        targets.forEach(td => {
-                            if (type === "any" && !promptTitle && !promptMsg) {
-                                delete td.dataset.dropdownList;
-                                delete td.dataset.dvRule;
-                            } else {
-                                if (type === "list" && listSpec) td.dataset.dropdownList = listSpec;
-                                else delete td.dataset.dropdownList;
-                                td.dataset.dvRule = JSON.stringify({ type, listSpec, min, max, promptTitle, promptMsg, errorMsg });
-                            }
-                        });
-                        if (activeCell) setActiveCell(activeCell, true);
-                        setDirtyState(true);
-                        debouncedSaveState();
+                        modalContent.querySelector(".ss-dv-type").value = "any";
+                        modalContent.querySelector(".ss-dv-type").dispatchEvent(new Event("change"));
+                        modalContent.querySelector(".ss-dv-list-input").value = "";
+                        modalContent.querySelector(".ss-dv-min").value = "";
+                        modalContent.querySelector(".ss-dv-max").value = "";
+                        modalContent.querySelector(".ss-dv-formula").value = "";
+                        modalContent.querySelector(".ss-dv-ptitle").value = "";
+                        modalContent.querySelector(".ss-dv-pmsg").value = "";
+                        modalContent.querySelector(".ss-dv-etitle").value = "";
+                        modalContent.querySelector(".ss-dv-emsg").value = "";
                     }
                 },
                 {
-                    label: "すべてクリア", onClick: () => {
-                        targets.forEach(td => { delete td.dataset.dropdownList; delete td.dataset.dvRule; });
+                    label: "OK",
+                    onClick: () => {
+                        const type = modalContent.querySelector(".ss-dv-type").value;
+                        const operator = modalContent.querySelector(".ss-dv-op").value;
+                        const listSpec = modalContent.querySelector(".ss-dv-list-input").value.trim();
+                        const min = modalContent.querySelector(".ss-dv-min").value.trim();
+                        const max = modalContent.querySelector(".ss-dv-max").value.trim();
+                        const formula = modalContent.querySelector(".ss-dv-formula").value.trim();
+                        const ignoreBlank = modalContent.querySelector(".ss-dv-ignoreblank").checked;
+                        const inCellDropdown = modalContent.querySelector(".ss-dv-incell").checked;
+                        const showPrompt = modalContent.querySelector(".ss-dv-showprompt").checked;
+                        const promptTitle = modalContent.querySelector(".ss-dv-ptitle").value.trim();
+                        const promptMsg = modalContent.querySelector(".ss-dv-pmsg").value.trim();
+                        const showError = modalContent.querySelector(".ss-dv-showerror").checked;
+                        const errorStyle = modalContent.querySelector(".ss-dv-estyle").value;
+                        const errorTitle = modalContent.querySelector(".ss-dv-etitle").value.trim();
+                        const errorMsg = modalContent.querySelector(".ss-dv-emsg").value.trim();
+                        const applySame = modalContent.querySelector(".ss-dv-apply-same").checked;
+
+                        const origRuleStr = targets[0].dataset.dvRule || "";
+                        const applyTargets = new Set(targets);
+                        if (applySame && origRuleStr) {
+                            tbody.querySelectorAll("td").forEach(td => {
+                                if (td.dataset.dvRule === origRuleStr) applyTargets.add(td);
+                            });
+                        }
+
+                        applyTargets.forEach(td => {
+                            if (type === "any" && !promptTitle && !promptMsg) {
+                                delete td.dataset.dropdownList;
+                                delete td.dataset.dvRule;
+                                delete td.dataset.hasDropdown;
+                            } else {
+                                if (type === "list" && listSpec && inCellDropdown) {
+                                    td.dataset.dropdownList = listSpec;
+                                } else {
+                                    delete td.dataset.dropdownList;
+                                    delete td.dataset.hasDropdown;
+                                }
+                                const baseRow = parseInt(targets[0].dataset.row, 10) || 1;
+                                const baseCol = parseInt(targets[0].dataset.col, 10) || 0;
+                                td.dataset.dvRule = JSON.stringify({
+                                    type, operator, listSpec, min, max, formula,
+                                    baseRow, baseCol,
+                                    ignoreBlank, inCellDropdown,
+                                    showPrompt, promptTitle, promptMsg,
+                                    showError, errorStyle, errorTitle, errorMsg
+                                });
+                            }
+                        });
+
                         if (activeCell) setActiveCell(activeCell, true);
                         setDirtyState(true);
                         debouncedSaveState();
@@ -4812,37 +6474,73 @@ export default async function initSpreadsheetApp(content, options = {}) {
             ]
         });
 
+        // タブ切替
+        modalContent.querySelectorAll(".ss-xl-tab").forEach(tab => {
+            tab.addEventListener("click", () => {
+                const name = tab.dataset.dvTab;
+                modalContent.querySelectorAll(".ss-xl-tab").forEach(t => t.classList.toggle("active", t === tab));
+                modalContent.querySelectorAll(".ss-xl-tabpanel").forEach(p => p.classList.toggle("active", p.dataset.dvPanel === name));
+            });
+        });
+
+        // 入力値の種類変更時の動的UI切替
         const typeSel = modalContent.querySelector(".ss-dv-type");
+        const opSel = modalContent.querySelector(".ss-dv-op");
+        const opWrap = modalContent.querySelector(".ss-dv-op-wrap");
         const listBox = modalContent.querySelector(".ss-dv-list-box");
         const minmaxBox = modalContent.querySelector(".ss-dv-minmax-box");
+        const customBox = modalContent.querySelector(".ss-dv-custom-box");
+        const ddChkWrap = modalContent.querySelector(".ss-dv-dropdown-chk-wrap");
+        const v1Label = modalContent.querySelector(".ss-dv-v1-label");
+        const v2Wrap = modalContent.querySelector(".ss-dv-v2-wrap");
+
+        const syncOpFields = () => {
+            const two = ["between", "notBetween"].includes(opSel.value);
+            v1Label.textContent = two ? "最小値(M):" : "値(V):";
+            v2Wrap.style.display = two ? "block" : "none";
+        };
+
         typeSel.addEventListener("change", () => {
-            listBox.style.display = typeSel.value === "list" ? "flex" : "none";
-            minmaxBox.style.display = ["integer", "decimal", "textLength"].includes(typeSel.value) ? "flex" : "none";
+            const v = typeSel.value;
+            const range = ["integer", "decimal", "date", "time", "textLength"].includes(v);
+            opWrap.style.display = range ? "block" : "none";
+            minmaxBox.style.display = range ? "flex" : "none";
+            listBox.style.display = v === "list" ? "flex" : "none";
+            ddChkWrap.style.display = v === "list" ? "inline-flex" : "none";
+            customBox.style.display = v === "custom" ? "flex" : "none";
+            syncOpFields();
+        });
+        opSel.addEventListener("change", syncOpFields);
+
+        // エラースタイルアイコン更新
+        const estyleSel = modalContent.querySelector(".ss-dv-estyle");
+        const eiconEl = modalContent.querySelector(".ss-dv-eicon");
+        estyleSel.addEventListener("change", () => {
+            eiconEl.textContent = estyleSel.value === "warning" ? "⚠️" : estyleSel.value === "info" ? "ℹ️" : "❌";
+        });
+
+        // 共通ピッカーでシート上からセル範囲を選択
+        const pickRangeBtn = modalContent.querySelector(".ss-dv-pick-range-btn");
+        const listInputEl = modalContent.querySelector(".ss-dv-list-input");
+        pickRangeBtn?.addEventListener("click", () => {
+            openSheetRangePicker({
+                modalContent,
+                targetInput: listInputEl,
+                label: "元の値の範囲を選択:"
+            });
         });
     }
 
     function setActiveCell(cell, shouldFocus = true) {
         if (!cell) return;
         closeCellDropdownList();
-        tbody.querySelectorAll(".ss-cell-dropdown-btn").forEach(b => b.remove());
         tbody.querySelectorAll("td.active-cell").forEach(c => c.classList.remove("active-cell"));
         activeCell = cell;
         activeCell.classList.add("active-cell");
         if (!activeCell.classList.contains("selected")) {
             activeCell.classList.add("selected");
         }
-        if (activeCell.dataset.dropdownList && !isCellEditing(activeCell)) {
-            const ddBtn = document.createElement("span");
-            ddBtn.className = "ss-cell-dropdown-btn";
-            ddBtn.textContent = "▼";
-            ddBtn.title = "リストから選択 (Alt+↓)";
-            ddBtn.addEventListener("mousedown", (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                openCellDropdownList(activeCell, ddBtn);
-            });
-            activeCell.appendChild(ddBtn);
-        }
+        attachCellDropdownButton(activeCell);
         if (shouldFocus && !isCellEditing(activeCell)) {
             const curFocused = document.activeElement;
             if (curFocused && curFocused !== activeCell && (curFocused === formulaBarInput || curFocused.closest(".floating-textbox"))) {
@@ -4924,20 +6622,29 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
     function syncCellEditorLayout(cell) {
         if (!cell) return;
-        const zoom = parseFloat(spreadsheetContent.style.zoom || "1") || 1;
-        const contentRect = spreadsheetContent.getBoundingClientRect();
-        const cellRect = cell.getBoundingClientRect();
-        const left = Math.max(0, (cellRect.left - contentRect.left) / zoom);
-        const top = Math.max(0, (cellRect.top - contentRect.top) / zoom);
-        const minH = Math.max(cellRect.height / zoom, 28);
 
-        // 1. テキストのピクセル幅を計測
+        // 上の行の高さ変更・結合セル・ズームの影響を受けないローカル座標を算出
+        let left = 0;
+        let top = 0;
+        let el = cell;
+        while (el && el !== spreadsheetContent) {
+            left += el.offsetLeft;
+            top += el.offsetTop;
+            el = el.offsetParent;
+        }
+        const cellW = cell.offsetWidth || 120;
+        const cellH = cell.offsetHeight || 30;
+        const minH = Math.max(cellH, 28);
+
+        // 1. セルの計算済みスタイルを取得し、同じフォント条件でテキスト幅を計測
+        const computed = getComputedStyle(cell);
         const text = cellEditor.value !== undefined ? cellEditor.value : (cell.dataset.rawValue ?? cell.textContent ?? "");
-        const fStyle = cell.style.fontStyle || "normal";
-        const fWeight = cell.style.fontWeight || "normal";
-        const fSize = cell.style.fontSize || "14px";
+        const fStyle = cell.style.fontStyle || computed.fontStyle || "normal";
+        const fWeight = cell.style.fontWeight || computed.fontWeight || "normal";
+        const fSize = cell.style.fontSize || computed.fontSize || "14px";
+        const fFamily = cell.style.fontFamily || computed.fontFamily || "'MS PGothic', 'MS Gothic', sans-serif";
         if (measureCtx) {
-            measureCtx.font = `${fStyle} ${fWeight} ${fSize} 'MS PGothic', 'MS Gothic', sans-serif`;
+            measureCtx.font = `${fStyle} ${fWeight} ${fSize} ${fFamily}`;
         }
         let maxTextWidth = 0;
         const lines = text.split("\n");
@@ -4946,23 +6653,27 @@ export default async function initSpreadsheetApp(content, options = {}) {
             maxTextWidth = Math.max(maxTextWidth, w);
         }
 
-        // 2. 右側の連続する空白セル分の許容幅（はみ出し可能幅）を計算
-        const r = parseInt(cell.dataset.row, 10);
-        const c = parseInt(cell.dataset.col, 10);
-        const colSpan = parseInt(cell.getAttribute("colspan") || "1", 10);
-        let availableWidth = cellRect.width;
-        let curC = c + colSpan;
-        while (curC < currentColumns) {
-            const nextCell = peekCell(r, curC);
-            if (!nextCell || nextCell.style.display === "none" || (nextCell.textContent || "").trim() !== "") {
-                break;
-            }
-            availableWidth += getColumnWidth(curC);
-            curC++;
-        }
+        // 2. セルの折り返し（折りたたみ）設定を考慮して幅を決定
+        const isWrapped = cell.style.whiteSpace === "pre-wrap";
+        let targetW = cellW;
 
-        const requiredWidth = Math.max(cellRect.width, maxTextWidth + 16);
-        const targetW = Math.max(cellRect.width / zoom, Math.min(requiredWidth / zoom, availableWidth / zoom));
+        if (!isWrapped) {
+            const r = parseInt(cell.dataset.row, 10);
+            const c = parseInt(cell.dataset.col, 10);
+            const colSpan = parseInt(cell.getAttribute("colspan") || "1", 10);
+            let availableWidth = cellW;
+            let curC = c + colSpan;
+            while (curC < currentColumns) {
+                const nextCell = peekCell(r, curC);
+                if (!nextCell || nextCell.style.display === "none" || (nextCell.textContent || "").trim() !== "") {
+                    break;
+                }
+                availableWidth += getColumnWidth(curC);
+                curC++;
+            }
+            const requiredWidth = Math.max(cellW, maxTextWidth + 16);
+            targetW = Math.max(cellW, Math.min(requiredWidth, availableWidth));
+        }
 
         cellEditor.style.left = `${left}px`;
         cellEditor.style.top = `${top}px`;
@@ -4970,22 +6681,30 @@ export default async function initSpreadsheetApp(content, options = {}) {
         cellEditor.style.minHeight = `${minH}px`;
         cellEditor.style.height = `${minH}px`;
 
-        // 3. 改行がない場合は折り返しを無効にして横方向にはみ出させる
-        cellEditor.style.whiteSpace = lines.length <= 1 && !text.includes("\n") ? "pre" : "pre-wrap";
+        // 3. 折り返しONまたは複数行のときはpre-wrapを維持
+        cellEditor.style.whiteSpace = (isWrapped || lines.length > 1 || text.includes("\n")) ? "pre-wrap" : "pre";
 
         // --- スクロールバーの非表示設定（全ブラウザ対応） ---
         cellEditor.style.scrollbarWidth = "none"; // Firefox用
         cellEditor.style.msOverflowStyle = "none"; // IE, 旧Edge用
         // 注: WebKit系（Chrome, Safari, Edge）用の ::-webkit-scrollbar は CSS 側（SCOPED_CSS）で定義済みですが、念のためJS側で制御する場合はそのまま機能します。
 
-        // --- フォント・装飾の同期 ---
-        cellEditor.style.fontSize = cell.style.fontSize || "14px";
-        cellEditor.style.fontWeight = cell.style.fontWeight || "normal";
-        cellEditor.style.fontStyle = cell.style.fontStyle || "normal";
-        cellEditor.style.textDecoration = cell.style.textDecoration || "none";
+        // --- フォント・太さ・文字間隔・装飾の完全同期 ---
+        cellEditor.style.fontFamily = fFamily;
+        cellEditor.style.fontSize = fSize;
+        cellEditor.style.fontWeight = fWeight;
+        cellEditor.style.fontStyle = fStyle;
+        cellEditor.style.textDecoration = cell.style.textDecoration || computed.textDecoration || "none";
+        cellEditor.style.textShadow = cell.style.textShadow || computed.textShadow || "none";
+        cellEditor.style.letterSpacing = cell.style.letterSpacing || computed.letterSpacing || "normal";
+        cellEditor.style.wordSpacing = cell.style.wordSpacing || computed.wordSpacing || "normal";
+        cellEditor.style.fontKerning = computed.fontKerning || "auto";
+        cellEditor.style.fontFeatureSettings = computed.fontFeatureSettings || "normal";
+        cellEditor.style.fontVariantLigatures = computed.fontVariantLigatures || "normal";
+        cellEditor.style.textRendering = computed.textRendering || "auto";
+        cellEditor.style.webkitFontSmoothing = computed.webkitFontSmoothing || "antialiased";
 
         // --- 配置・背景色・文字色の同期 (Excel準拠) ---
-        const computed = getComputedStyle(cell);
         cellEditor.style.textAlign = cell.style.textAlign || (
             cell.classList.contains("ss-auto-align-right") ? "right" :
                 cell.classList.contains("ss-auto-align-center") ? "center" : "left"
@@ -4995,20 +6714,23 @@ export default async function initSpreadsheetApp(content, options = {}) {
         cellEditor.style.backgroundColor = cell.style.backgroundColor || computed.backgroundColor || "#fff";
         cellEditor.style.color = cell.style.color || computed.color || "#000";
 
-        // 垂直配置（上・中・下揃え）に合わせて編集開始時の文字位置ジャンプを防止
-        const fSizeNum = parseInt(cell.style.fontSize, 10) || 14;
-        const lineHeightPx = Math.round(fSizeNum * 1.3);
+        // 垂直配置（上・中・下揃え）と枠線差分（td:1px vs editor:2px）を吸収して位置ジャンプを完全防止
+        const fSizeNum = parseFloat(fSize) || 14;
+        const computedLH = parseFloat(computed.lineHeight);
+        const lineHeightPx = !Number.isNaN(computedLH) ? computedLH : Math.round(fSizeNum * 1.3);
         cellEditor.style.lineHeight = `${lineHeightPx}px`;
 
+        // tdのborder(1px)+padding(4px)=5px と editorのborder(2px)+padding(3px)=5px を一致させる
+        const padX = 3;
         let visualLines = 0;
-        const innerW = Math.max(16, targetW - 8);
+        const innerW = Math.max(16, targetW - (padX * 2 + 4));
         for (const line of lines) {
             const w = measureCtx ? measureCtx.measureText(line).width : line.length * fSizeNum;
             visualLines += Math.max(1, Math.ceil((w || 1) / innerW));
         }
 
         const textBlockH = visualLines * lineHeightPx;
-        const valign = cell.style.verticalAlign || "middle";
+        const valign = cell.style.verticalAlign || computed.verticalAlign || "middle";
         const innerBoxH = Math.max(0, minH - 4);
         let padTop = 0;
         if (textBlockH < innerBoxH) {
@@ -5016,9 +6738,19 @@ export default async function initSpreadsheetApp(content, options = {}) {
             else if (valign === "bottom") padTop = Math.max(0, innerBoxH - textBlockH);
         }
 
-        cellEditor.style.padding = `${padTop}px 4px 0 4px`;
+        cellEditor.style.padding = `${padTop}px ${padX}px 0 ${padX}px`;
         cellEditor.style.height = `${Math.max(minH, textBlockH + padTop + 4)}px`;
     }
+
+    window.addEventListener("resize", () => {
+        if (isCellEditing() && editingCell) {
+            syncCellEditorLayout(editingCell);
+        }
+        closeCellDropdownList();
+        closeAutocompletePopup();
+        hideDataValidationTooltip();
+        syncCellDropdownButtonPosition();
+    }, { signal });
 
     function isInFormulaEdit() {
         if (document.activeElement === formulaBarInput && formulaBarInput.value.trim().startsWith("=")) return true;
@@ -5278,7 +7010,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             formulaBarInput.setSelectionRange(pos + 1, pos + 1);
             isFormulaBarDirty = true;
             if (activeCell) {
-                activeCell.textContent = formulaBarInput.value;
+                setCellTextPreservingControls(activeCell, formulaBarInput.value);
             }
             autoResizeFormulaBar();
             return;
@@ -5300,7 +7032,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             if (e.key === "ArrowDown" && activeCell.dataset.dropdownList) {
                 e.preventDefault();
                 e.stopPropagation();
-                openCellDropdownList(activeCell, activeCell.querySelector(".ss-cell-dropdown-btn"));
+                openCellDropdownList(activeCell, floatingDropdownBtn);
             }
             return;
         }
@@ -5384,10 +7116,13 @@ export default async function initSpreadsheetApp(content, options = {}) {
         cellEditor.style.display = "none";
         cellEditor.value = "";
         isComposing = false;
+        if (activeCell) attachCellDropdownButton(activeCell);
     }
 
     function enterCellEditMode(cell, skipFocus = false, editBy = "dblclick", _clickEvent = null) {
         if (!cell) return;
+        closeCellDropdownList();
+        hideCellDropdownButton();
         const alreadyEditingThis = isCellEditing(cell);
         if (!alreadyEditingThis) {
             lastPointRefRange = null;
@@ -5554,6 +7289,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             return false;
         }
         delete cell.dataset.spillOrigin;
+        clearSpillCellsFromAnchor(parseInt(cell.dataset.row, 10), parseInt(cell.dataset.col, 10));
         const prevText = cell.dataset.originalText ?? "";
         const prevFormula = cell.dataset.originalFormula ?? "";
 
@@ -5640,8 +7376,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
         delete cell.dataset.editBy;
         clearCalculationRangeHighlights();
+        tryAutoExpandStructuredTable(parseInt(cell.dataset.row, 10), parseInt(cell.dataset.col, 10));
         updateAllFormulas();
-        if (newText.includes("\n") || prevText.includes("\n")) {
+        if (newText.includes("\n") || prevText.includes("\n") || cell.style.whiteSpace === "pre-wrap") {
             autoFitRow(cell.closest("tr"));
         }
 
@@ -5962,20 +7699,26 @@ export default async function initSpreadsheetApp(content, options = {}) {
     let initialFillRange = null;
 
     function adjustFormula(formula, rowOffset, colOffset) {
-        const stringLiterals = [];
-        const maskedBody = formula.substring(1).replace(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'(?!\s*!)/g, (m) => {
-            const token = `__ADJ_STR_${stringLiterals.length}__`;
-            stringLiterals.push(m);
+        const protectedTokens = [];
+        const maskToken = (m) => {
+            const token = `__ADJ_TOK_${protectedTokens.length}__`;
+            protectedTokens.push(m);
             return token;
-        });
+        };
+
+        // 文字列リテラルと他シート参照（Sheet2!A1 / 'シート 2'!$A$1:B5）を退避して誤変更を防止
+        const maskedBody = formula.substring(1)
+            .replace(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'(?!\s*!)/g, maskToken)
+            .replace(/(?:'[^']+'|[A-Za-z0-9_\u3040-\u30FF\u4E00-\u9FAF]+)!\$?[A-Za-z]+\$?\d+(?::\$?[A-Za-z]+\$?\d+)?/g, maskToken);
 
         const adjustedBody = maskedBody
-            .replace(/(?<![A-Za-z0-9_])(\$?)([A-Za-z]+)(\$?)(\d+)/g, (_, absCol, colLetters, absRow, rowStr) => {
+            .replace(/(?<![A-Za-z0-9_$])(\$?)([A-Za-z]+)(\$?)(\d+)(?!\s*\()/g, (_, absCol, colLetters, absRow, rowStr) => {
                 const nextCol = absCol ? columnLettersToIndex(colLetters) : Math.max(0, columnLettersToIndex(colLetters) + colOffset);
                 const nextRow = absRow ? parseInt(rowStr, 10) : Math.max(1, parseInt(rowStr, 10) + rowOffset);
                 return `${absCol}${getColumnName(nextCol)}${absRow}${nextRow}`;
             })
-            .replace(/__ADJ_STR_(\d+)__/g, (_, idx) => stringLiterals[Number(idx)]);
+            .replace(/__ADJ_TOK_(\d+)__/g, (_, idx) => protectedTokens[Number(idx)]);
+
 
         return "=" + adjustedBody;
     }
@@ -6115,6 +7858,23 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     endRow++;
                 }
                 if (endRow <= bounds.maxRow) return;
+
+                // フィル先に既存の結合セルが含まれている場合は構造破損を防ぐため中止
+                for (let r = bounds.maxRow + 1; r <= endRow; r++) {
+                    for (let c = bounds.minCol; c <= bounds.maxCol; c++) {
+                        const cell = peekCell(r, c);
+                        if (!cell) continue;
+                        if (
+                            cell.style.display === "none" ||
+                            cell.classList.contains("merged") ||
+                            parseInt(cell.getAttribute("rowspan") || "1", 10) > 1 ||
+                            parseInt(cell.getAttribute("colspan") || "1", 10) > 1
+                        ) {
+                            showAlert("結合されたセルの一部を変更することはできません。", "オートフィルエラー");
+                            return;
+                        }
+                    }
+                }
 
                 const srcRows = bounds.maxRow - bounds.minRow + 1;
                 for (let c = bounds.minCol; c <= bounds.maxCol; c++) {
@@ -6502,16 +8262,21 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
         let anchorValue = "";
         let anchorFormula = "";
+        let anchorNumFmt = "";
+        let anchorDecPlaces = "";
         for (let r = minRow; r <= maxRow; r++) {
             let found = false;
             for (let c = minCol; c <= maxCol; c++) {
                 const cell = getCell(r, c);
-                if (cell && cell.textContent.trim() !== "") {
+                const raw = cell ? (cell.dataset.rawValue ?? getCellPureText(cell)) : "";
+                if (cell && (cell.dataset.formula || raw.trim() !== "")) {
+                    anchorNumFmt = cell.dataset.numFormat || "";
+                    anchorDecPlaces = cell.dataset.decimalPlaces || "";
                     if (cell.dataset.formula) {
                         anchorFormula = cell.dataset.formula;
                         anchorValue = evaluateFormula(anchorFormula);
                     } else {
-                        anchorValue = cell.textContent;
+                        anchorValue = raw;
                     }
                     found = true;
                     break;
@@ -6521,8 +8286,18 @@ export default async function initSpreadsheetApp(content, options = {}) {
         }
 
         const anchor = getCell(minRow, minCol);
-        anchor.textContent = anchorValue;
-        if (anchorFormula) anchor.dataset.formula = anchorFormula;
+        if (anchorNumFmt) anchor.dataset.numFormat = anchorNumFmt;
+        if (anchorDecPlaces) anchor.dataset.decimalPlaces = anchorDecPlaces;
+        if (anchorFormula) {
+            anchor.dataset.formula = anchorFormula;
+            setCellFormattedValue(anchor, anchorValue);
+        } else {
+            delete anchor.dataset.formula;
+            setCellFormattedValue(anchor, anchorValue);
+        }
+        if (!anchor.style.textAlign) {
+            anchor.style.textAlign = "center";
+        }
         anchor.setAttribute("rowspan", String(maxRow - minRow + 1));
         anchor.setAttribute("colspan", String(maxCol - minCol + 1));
         anchor.classList.add("merged");
@@ -6703,15 +8478,21 @@ export default async function initSpreadsheetApp(content, options = {}) {
         const snapshotCell = (cell) => ({
             row: +cell.dataset.row,
             col: +cell.dataset.col,
-            value: cell.dataset.rawValue ?? cell.textContent,
+            value: cell.dataset.rawValue ?? getCellPureText(cell),
             formula: cell.dataset.formula || "",
             numFormat: cell.dataset.numFormat || "",
             decimalPlaces: cell.dataset.decimalPlaces ?? "",
+            dropdownList: cell.dataset.dropdownList || "",
+            dvRule: cell.dataset.dvRule || "",
             styleObj: extractCellStyleObject(cell),
             rowspan: parseInt(cell.getAttribute("rowspan") || "1", 10),
             colspan: parseInt(cell.getAttribute("colspan") || "1", 10),
             isMergedSub: cell.style.display === "none" && Boolean(cell.dataset.mergeAnchorRow)
         });
+
+        const copyBounds = { minRow, maxRow, minCol, maxCol };
+        const copyRect = getRangeLocalRect(copyBounds);
+        const floatingEls = isContiguous ? getFloatingObjectsInBounds(copyBounds) : [];
 
         clipboardData = {
             isCut,
@@ -6719,7 +8500,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
             sourceCoords: selectedCells.map(c => ({ row: +c.dataset.row, col: +c.dataset.col })),
             startRow: minRow,
             startCol: minCol,
-            data: isContiguous ? [] : selectedCells.map(snapshotCell)
+            data: isContiguous ? [] : selectedCells.map(snapshotCell),
+            floatingObjects: copyRect ? floatingEls.map(el => snapshotFloatingObject(el, copyRect)) : [],
+            sourceFloatingEls: floatingEls
         };
 
         if (isContiguous) {
@@ -6736,58 +8519,6 @@ export default async function initSpreadsheetApp(content, options = {}) {
         if (navigator.clipboard?.writeText) {
             navigator.clipboard.writeText(tsvText).catch(() => { });
         }
-    }
-
-    function hasMergeConflictOnDestination(bounds, ignoreBounds = null) {
-        const expanded = expandBoundsForMergedCells(bounds);
-        if (
-            expanded.minRow === bounds.minRow &&
-            expanded.maxRow === bounds.maxRow &&
-            expanded.minCol === bounds.minCol &&
-            expanded.maxCol === bounds.maxCol
-        ) {
-            return false;
-        }
-        if (
-            ignoreBounds &&
-            expanded.minRow >= ignoreBounds.minRow &&
-            expanded.maxRow <= ignoreBounds.maxRow &&
-            expanded.minCol >= ignoreBounds.minCol &&
-            expanded.maxCol <= ignoreBounds.maxCol
-        ) {
-            return false;
-        }
-        return true;
-    }
-
-    function adjustMovedFormulaSelf(formula, movedBounds, rowDelta, colDelta) {
-        if (!formula || !String(formula).startsWith("=")) return formula;
-        const stringLiterals = [];
-        const maskedBody = String(formula).substring(1).replace(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'(?!\s*!)/g, (m) => {
-            const token = `__SELF_STR_${stringLiterals.length}__`;
-            stringLiterals.push(m);
-            return token;
-        });
-
-        const isInsideMoved = (r, c) =>
-            r >= movedBounds.minRow && r <= movedBounds.maxRow &&
-            c >= movedBounds.minCol && c <= movedBounds.maxCol;
-
-        const adjustedBody = maskedBody
-            .replace(/(?<![A-Za-z0-9_])(\$?)([A-Za-z]+)(\$?)(\d+)/g, (_, absCol, colLetters, absRow, rowStr) => {
-                const origCol = columnLettersToIndex(colLetters);
-                const origRow = parseInt(rowStr, 10);
-                const nextCol = (!absCol && isInsideMoved(origRow, origCol))
-                    ? Math.max(0, origCol + colDelta)
-                    : origCol;
-                const nextRow = (!absRow && isInsideMoved(origRow, origCol))
-                    ? Math.max(1, origRow + rowDelta)
-                    : origRow;
-                return `${absCol}${getColumnName(nextCol)}${absRow}${nextRow}`;
-            })
-            .replace(/__SELF_STR_(\d+)__/g, (_, idx) => stringLiterals[Number(idx)]);
-
-        return "=" + adjustedBody;
     }
 
     function pasteExternalTSVMatrix(matrix, selected, targetRow, targetCol) {
@@ -6908,6 +8639,21 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 : activeData[0].length)
             : Math.max(...activeData.map(i => (isTranspose ? i.row - clipboardData.startRow : i.col - clipboardData.startCol) + 1));
 
+        let cutIgnoreBounds = null;
+        if (clipboardData.isCut && Array.isArray(clipboardData.sourceCoords) && clipboardData.sourceCoords.length > 0) {
+            let sMinR = Infinity, sMaxR = -Infinity, sMinC = Infinity, sMaxC = -Infinity;
+            clipboardData.sourceCoords.forEach(({ row, col }) => {
+                const sc = getCell(row, col);
+                const rs = parseInt(sc?.getAttribute("rowspan") || "1", 10);
+                const cs = parseInt(sc?.getAttribute("colspan") || "1", 10);
+                sMinR = Math.min(sMinR, row);
+                sMaxR = Math.max(sMaxR, row + rs - 1);
+                sMinC = Math.min(sMinC, col);
+                sMaxC = Math.max(sMaxC, col + cs - 1);
+            });
+            cutIgnoreBounds = { minRow: sMinR, maxRow: sMaxR, minCol: sMinC, maxCol: sMaxC };
+        }
+
         if (selected.length <= 1 || pasteHeight > 1 || pasteWidth > 1) {
             const pasteBounds = {
                 minRow: targetRow,
@@ -6915,20 +8661,6 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 minCol: targetCol,
                 maxCol: targetCol + pasteWidth - 1
             };
-            let cutIgnoreBounds = null;
-            if (clipboardData.isCut && Array.isArray(clipboardData.sourceCoords) && clipboardData.sourceCoords.length > 0) {
-                let sMinR = Infinity, sMaxR = -Infinity, sMinC = Infinity, sMaxC = -Infinity;
-                clipboardData.sourceCoords.forEach(({ row, col }) => {
-                    const sc = getCell(row, col);
-                    const rs = parseInt(sc?.getAttribute("rowspan") || "1", 10);
-                    const cs = parseInt(sc?.getAttribute("colspan") || "1", 10);
-                    sMinR = Math.min(sMinR, row);
-                    sMaxR = Math.max(sMaxR, row + rs - 1);
-                    sMinC = Math.min(sMinC, col);
-                    sMaxC = Math.max(sMaxC, col + cs - 1);
-                });
-                cutIgnoreBounds = { minRow: sMinR, maxRow: sMaxR, minCol: sMinC, maxCol: sMaxC };
-            }
             if (hasMergeConflictOnDestination(pasteBounds, cutIgnoreBounds)) {
                 showAlert("結合されたセルの一部を変更することはできません。", "貼り付けエラー");
                 return;
@@ -6954,24 +8686,18 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 return;
             }
             const newFormula = item.formula
-                ? (clipboardData.isCut
-                    ? adjustMovedFormulaSelf(
-                        item.formula,
-                        {
-                            minRow: clipboardData.startRow,
-                            maxRow: clipboardData.startRow + pasteHeight - 1,
-                            minCol: clipboardData.startCol,
-                            maxCol: clipboardData.startCol + pasteWidth - 1
-                        },
-                        rowDelta,
-                        colDelta
-                    )
+                ? (clipboardData.isCut && cutIgnoreBounds
+                    ? adjustMovedFormulaSelf(item.formula, cutIgnoreBounds, rowDelta, colDelta)
                     : adjustFormula(item.formula, rOff, cOff))
                 : "";
             if (item.numFormat) dest.dataset.numFormat = item.numFormat;
             else delete dest.dataset.numFormat;
             if (item.decimalPlaces !== undefined && item.decimalPlaces !== "") dest.dataset.decimalPlaces = item.decimalPlaces;
             else delete dest.dataset.decimalPlaces;
+            if (item.dropdownList) dest.dataset.dropdownList = item.dropdownList;
+            else delete dest.dataset.dropdownList;
+            if (item.dvRule) dest.dataset.dvRule = item.dvRule;
+            else delete dest.dataset.dvRule;
 
             if (newFormula) {
                 dest.dataset.formula = newFormula;
@@ -7023,7 +8749,11 @@ export default async function initSpreadsheetApp(content, options = {}) {
             } else {
                 activeData.forEach((rowArr, r) => {
                     rowArr.forEach((item, c) => {
-                        applyCellData(getCell(targetRow + r, targetCol + c), item, rowDelta, colDelta);
+                        const origR = clipboardData.startRow + (isTranspose ? c : r);
+                        const origC = clipboardData.startCol + (isTranspose ? r : c);
+                        const destR = targetRow + r;
+                        const destC = targetCol + c;
+                        applyCellData(getCell(destR, destC), item, destR - origR, destC - origC);
                     });
                 });
             }
@@ -7031,12 +8761,28 @@ export default async function initSpreadsheetApp(content, options = {}) {
             activeData.forEach(item => {
                 const rOff = isTranspose ? (item.col - clipboardData.startCol) : (item.row - clipboardData.startRow);
                 const cOff = isTranspose ? (item.row - clipboardData.startRow) : (item.col - clipboardData.startCol);
-                const dest = getCell(targetRow + rOff, targetCol + cOff);
-                applyCellData(dest, item, rowDelta, colDelta);
+                const destR = targetRow + rOff;
+                const destC = targetCol + cOff;
+                applyCellData(getCell(destR, destC), item, destR - item.row, destC - item.col);
             });
         }
 
-        if (clipboardData.isCut && Array.isArray(clipboardData.sourceCoords)) {
+        // 通常貼り付け（値のみ・書式のみ以外）では範囲内のテキストボックス・グラフも追従コピー
+        if (!valuesOnly && !formatsOnly && Array.isArray(clipboardData.floatingObjects) && clipboardData.floatingObjects.length > 0) {
+            const destRect = getRangeLocalRect({
+                minRow: targetRow,
+                maxRow: targetRow + pasteHeight - 1,
+                minCol: targetCol,
+                maxCol: targetCol + pasteWidth - 1
+            });
+            if (destRect) {
+                clipboardData.floatingObjects.forEach(objSnap => {
+                    spawnFloatingObjectFromSnapshot(objSnap, destRect, rowDelta, colDelta);
+                });
+            }
+        }
+
+        if (clipboardData.isCut && !formatsOnly && Array.isArray(clipboardData.sourceCoords)) {
             const pastedSet = new Set();
             for (let r = targetRow; r < targetRow + pasteHeight; r++) {
                 for (let c = targetCol; c < targetCol + pasteWidth; c++) {
@@ -7091,6 +8837,11 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     }
                 }
             });
+            if (!valuesOnly && Array.isArray(clipboardData.sourceFloatingEls)) {
+                clipboardData.sourceFloatingEls.forEach(el => {
+                    if (el && el.isConnected) el.remove();
+                });
+            }
             if (!valuesOnly && srcMinR <= srcMaxR) {
                 redirectFormulasForMovedRange(
                     { minRow: srcMinR, maxRow: srcMaxR, minCol: srcMinC, maxCol: srcMaxC },
@@ -7114,7 +8865,21 @@ export default async function initSpreadsheetApp(content, options = {}) {
         const landedActive = getVisibleCell(targetRow, targetCol);
         if (landedActive) setActiveCell(landedActive, true);
 
+        // 貼り付け範囲に改行や折り返し設定が含まれる場合は行の高さを自動調整
+        const affectedRows = new Set();
+        for (let r = targetRow; r < targetRow + pasteHeight; r++) {
+            for (let c = targetCol; c < targetCol + pasteWidth; c++) {
+                const td = peekCell(r, c);
+                if (td && (td.style.whiteSpace === "pre-wrap" || td.textContent.includes("\n"))) {
+                    affectedRows.add(r);
+                }
+            }
+        }
+        affectedRows.forEach(r => autoFitRow(getRow(r)));
+
+        if (freezeRows > 0 || freezeCols > 0) applyFreezePanes();
         updateAllFormulas();
+        refreshVisibleFloatingObjects();
         updateFillHandle();
         updateSelectedCellsDisplay();
         clearCopyAnimation();
@@ -7166,6 +8931,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 if (prop === "backgroundColor") val = cell.dataset.cfOrigBg || "";
                 else if (prop === "color") val = cell.dataset.cfOrigColor || "";
                 else if (prop === "fontWeight") val = cell.dataset.cfOrigWeight || "";
+                else if (prop === "fontStyle") val = cell.dataset.cfOrigItalic || "";
+                else if (prop === "textDecoration") val = cell.dataset.cfOrigDeco || "";
+                else if (prop.startsWith("border")) val = cell.dataset.cfOrigBorder || "";
             }
             if (val && val !== "") {
                 styleObj[prop] = val;
@@ -7195,13 +8963,35 @@ export default async function initSpreadsheetApp(content, options = {}) {
     // =========================================================
     // Undo / Redo 履歴管理（全状態スナップショット統合版）
     // =========================================================
+    const RECOVERY_STORAGE_KEY = "nexser_ss_autosave_recovery_v1";
+
+    function persistCrashRecoveryBackup(serializedSnapshot) {
+        try {
+            if (!serializedSnapshot || serializedSnapshot.length > 2_500_000) return;
+            const payload = JSON.stringify({
+                timestamp: Date.now(),
+                filePath: currentFilePath || "",
+                snapshot: serializedSnapshot
+            });
+            localStorage.setItem(RECOVERY_STORAGE_KEY, payload);
+        } catch {
+            // 容量超過時は古いリカバリデータを破棄してアプリ動作を継続
+            try { localStorage.removeItem(RECOVERY_STORAGE_KEY); } catch { /* ignore */ }
+        }
+    }
+
     function saveState() {
-        const serialized = JSON.stringify(buildSheetSnapshot({ flush: false }));
-        if (undoHistory.length > 0 && undoHistory[undoHistory.length - 1] === serialized) return;
-        redoHistory = [];
-        undoHistory.push(serialized);
-        if (undoHistory.length > 50) undoHistory.shift();
-        updateQATButtonsState();
+        try {
+            const serialized = JSON.stringify(buildSheetSnapshot({ flush: false }));
+            if (undoHistory.length > 0 && undoHistory[undoHistory.length - 1] === serialized) return;
+            redoHistory = [];
+            undoHistory.push(serialized);
+            if (undoHistory.length > 50) undoHistory.shift();
+            updateQATButtonsState();
+            persistCrashRecoveryBackup(serialized);
+        } catch (err) {
+            console.warn("[Spreadsheet] スナップショット保存中にエラーが発生しました:", err);
+        }
     }
 
     function debouncedSaveState(delay = 300) {
@@ -7768,7 +9558,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 </label>
             </div>
         `;
-        const modalContent = windowAPI.showModalWindow("グラフの設定", bodyHtml, {
+        const modalContent = openAppModal("グラフの設定", bodyHtml, {
             width: 370,
             isHtml: true,
             parentWin: win,
@@ -7874,8 +9664,156 @@ export default async function initSpreadsheetApp(content, options = {}) {
         spreadsheetContent.appendChild(chartBox);
         enableTextboxDragging(chartBox);
         selectFloatingObject(chartBox);
+        refreshVisibleFloatingObjects();
         setDirtyState(true);
         debouncedSaveState();
+    }
+
+    // =========================================================
+    // セル範囲とフローティング要素（テキストボックス・グラフ）の連動ヘルパー
+    // =========================================================
+    function getRangeLocalRect(bounds) {
+        if (!bounds) return null;
+        const theadHeight = theadRow.offsetHeight || 30;
+        const rowHeaderWidth = parseInt(colgroup.children[0]?.style.width, 10) || 54;
+
+        let left = rowHeaderWidth;
+        for (let c = 0; c < bounds.minCol; c++) {
+            left += getColumnWidth(c);
+        }
+        let right = left;
+        for (let c = bounds.minCol; c <= bounds.maxCol; c++) {
+            right += getColumnWidth(c);
+        }
+
+        const getRowHeightPx = (r) => {
+            const tr = getRow(r);
+            if (!tr || tr.style.display === "none") return 0;
+            return parseInt(tr.style.height, 10) || tr.offsetHeight || 30;
+        };
+
+        let top = theadHeight;
+        for (let r = 1; r < bounds.minRow; r++) {
+            top += getRowHeightPx(r);
+        }
+        let bottom = top;
+        for (let r = bounds.minRow; r <= bounds.maxRow; r++) {
+            bottom += getRowHeightPx(r);
+        }
+        return { left, top, right, bottom };
+    }
+
+    function getFloatingObjectsInBounds(bounds) {
+        const rangeRect = getRangeLocalRect(bounds);
+        if (!rangeRect) return [];
+
+        const matched = [];
+        spreadsheetContent.querySelectorAll(".floating-textbox").forEach(box => {
+            const bLeft = parseFloat(box.dataset.initialLeft || box.style.left) || 0;
+            const bTop = parseFloat(box.dataset.initialTop || box.style.top) || 0;
+            const bW = parseFloat(box.style.width) || box.offsetWidth || 60;
+            const bH = parseFloat(box.style.height) || box.offsetHeight || 28;
+            const cx = bLeft + bW / 2;
+            const cy = bTop + bH / 2;
+
+            const isCenterInside =
+                cx >= rangeRect.left && cx <= rangeRect.right &&
+                cy >= rangeRect.top && cy <= rangeRect.bottom;
+            const isFullyInside =
+                bLeft >= rangeRect.left - 2 && bTop >= rangeRect.top - 2 &&
+                (bLeft + bW) <= rangeRect.right + 2 && (bTop + bH) <= rangeRect.bottom + 2;
+
+            if (isCenterInside || isFullyInside) {
+                matched.push(box);
+            }
+        });
+        return matched;
+    }
+
+    function snapshotFloatingObject(box, originRect) {
+        const isChart = box.classList.contains("floating-chart");
+        const editor = box.querySelector(".floating-textbox-editor");
+        const bLeft = parseFloat(box.dataset.initialLeft || box.style.left) || 0;
+        const bTop = parseFloat(box.dataset.initialTop || box.style.top) || 0;
+        return {
+            type: isChart ? "chart" : "textbox",
+            relLeft: bLeft - originRect.left,
+            relTop: bTop - originRect.top,
+            width: box.style.width || `${box.offsetWidth}px`,
+            height: box.style.height || `${box.offsetHeight}px`,
+            rotation: parseFloat(box.dataset.rotation || "0") || 0,
+            content: editor ? editor.innerHTML : "",
+            chartType: box.dataset.chartType || "bar",
+            chartTitle: box.dataset.chartTitle || "",
+            showLabels: box.dataset.showLabels === "1",
+            sourceRange: box.dataset.sourceRange || "",
+            textStyle: {
+                fontSize: box.style.fontSize || "",
+                fontWeight: box.style.fontWeight || "",
+                fontStyle: box.style.fontStyle || "",
+                textDecoration: box.style.textDecoration || "",
+                color: box.style.color || "",
+                backgroundColor: box.style.backgroundColor || "",
+                textAlign: box.style.textAlign || ""
+            }
+        };
+    }
+
+    function spawnFloatingObjectFromSnapshot(snap, destRect, rowDelta = 0, colDelta = 0) {
+        const nextLeft = `${Math.max(0, Math.round(destRect.left + snap.relLeft))}px`;
+        const nextTop = `${Math.max(0, Math.round(destRect.top + snap.relTop))}px`;
+
+        if (snap.type === "chart") {
+            const chartBox = document.createElement("div");
+            chartBox.tabIndex = 0;
+            chartBox.className = "floating-textbox floating-chart";
+            chartBox.dataset.chartType = snap.chartType || "bar";
+            if (snap.chartTitle) chartBox.dataset.chartTitle = snap.chartTitle;
+            if (snap.showLabels) chartBox.dataset.showLabels = "1";
+            if (snap.rotation) chartBox.dataset.rotation = String(snap.rotation);
+
+            let nextRange = snap.sourceRange || "";
+            if (nextRange && (rowDelta !== 0 || colDelta !== 0)) {
+                const shifted = adjustFormula("=" + nextRange, rowDelta, colDelta);
+                if (shifted.startsWith("=")) nextRange = shifted.slice(1);
+            }
+            if (nextRange) chartBox.dataset.sourceRange = nextRange;
+
+            Object.assign(chartBox.style, {
+                left: nextLeft,
+                top: nextTop,
+                width: snap.width || "380px",
+                height: snap.height || "240px",
+                background: "#fff",
+                padding: "6px"
+            });
+
+            if (!renderChartBoxSVG(chartBox) && snap.sourceRange) {
+                chartBox.dataset.sourceRange = snap.sourceRange;
+                renderChartBoxSVG(chartBox);
+            }
+            attachChartControls(chartBox);
+            spreadsheetContent.appendChild(chartBox);
+            enableTextboxDragging(chartBox);
+            return chartBox;
+        }
+
+        insertTextBox({
+            left: nextLeft,
+            top: nextTop,
+            width: snap.width,
+            height: snap.height,
+            rotation: snap.rotation,
+            content: snap.content
+        }, { silent: true });
+
+        const created = spreadsheetContent.lastElementChild;
+        if (created && created.classList.contains("floating-textbox") && snap.textStyle) {
+            Object.entries(snap.textStyle).forEach(([k, v]) => {
+                if (v) created.style[k] = v;
+            });
+        }
+        return created;
     }
 
     // =========================================================
@@ -7899,49 +9837,54 @@ export default async function initSpreadsheetApp(content, options = {}) {
         const savedCells = [];
         const mergeKeys = ["mergeAnchorRow", "mergeAnchorCol", "mergeMinRow", "mergeMinCol", "mergeMaxRow", "mergeMaxCol"];
 
-        tbody.querySelectorAll("td").forEach(cell => {
-            const r = parseInt(cell.dataset.row, 10);
-            const c = parseInt(cell.dataset.col, 10);
-            const v = cell.dataset.rawValue ?? cell.textContent;
-            const f = (cell.dataset.formula || "").trim();
-            const nf = cell.dataset.numFormat || "";
-            const dp = cell.dataset.decimalPlaces ?? "";
-            const st = extractCellStyleObject(cell);
-            const cs = parseInt(cell.getAttribute("colspan") || "1", 10);
-            const rs = parseInt(cell.getAttribute("rowspan") || "1", 10);
+        const rowsList = tbody.rows;
+        for (let rIdx = 0; rIdx < rowsList.length; rIdx++) {
+            const cells = rowsList[rIdx].cells;
+            for (let cIdx = 1; cIdx < cells.length; cIdx++) {
+                const cell = cells[cIdx];
+                const r = rIdx + 1;
+                const c = cIdx - 1;
+                const v = cell.dataset.rawValue ?? cell.textContent;
+                const f = (cell.dataset.formula || "").trim();
+                const nf = cell.dataset.numFormat || "";
+                const dp = cell.dataset.decimalPlaces ?? "";
+                const st = extractCellStyleObject(cell);
+                const cs = parseInt(cell.getAttribute("colspan") || "1", 10);
+                const rs = parseInt(cell.getAttribute("rowspan") || "1", 10);
 
-            const merge = {};
-            let hasMergeMeta = false;
-            for (const k of mergeKeys) {
-                if (cell.dataset[k] != null) {
-                    merge[k] = cell.dataset[k];
-                    hasMergeMeta = true;
+                const merge = {};
+                let hasMergeMeta = false;
+                for (const k of mergeKeys) {
+                    if (cell.dataset[k] != null) {
+                        merge[k] = cell.dataset[k];
+                        hasMergeMeta = true;
+                    }
                 }
+
+                const dl = cell.dataset.dropdownList || "";
+                const dvr = cell.dataset.dvRule || "";
+                if (cell.dataset.spillOrigin) continue;
+                if (v === "" && !f && !nf && !dl && !dvr && !st && cs === 1 && rs === 1 && !hasMergeMeta) {
+                    continue;
+                }
+
+                const entry = { r, c };
+                if (v !== "") entry.v = v;
+                if (f !== "") entry.f = f;
+                if (nf !== "") entry.nf = nf;
+                if (dp !== "") entry.dp = dp;
+                if (dl !== "") entry.dl = dl;
+                if (dvr !== "") entry.dvr = dvr;
+                if (st) entry.st = st;
+                if (cs > 1) entry.cs = cs;
+                if (rs > 1) entry.rs = rs;
+                if (hasMergeMeta) entry.merge = merge;
+                if (cell.dataset.valueType) entry.vt = cell.dataset.valueType;
+                if (cell.dataset.dateValue) entry.dv = cell.dataset.dateValue;
+
+                savedCells.push(entry);
             }
-
-            const dl = cell.dataset.dropdownList || "";
-            const dvr = cell.dataset.dvRule || "";
-            if (cell.dataset.spillOrigin) return;
-            if (v === "" && !f && !nf && !dl && !dvr && !st && cs === 1 && rs === 1 && !hasMergeMeta) {
-                return;
-            }
-
-            const entry = { r, c };
-            if (v !== "") entry.v = v;
-            if (f !== "") entry.f = f;
-            if (nf !== "") entry.nf = nf;
-            if (dp !== "") entry.dp = dp;
-            if (dl !== "") entry.dl = dl;
-            if (dvr !== "") entry.dvr = dvr;
-            if (st) entry.st = st;
-            if (cs > 1) entry.cs = cs;
-            if (rs > 1) entry.rs = rs;
-            if (hasMergeMeta) entry.merge = merge;
-            if (cell.dataset.valueType) entry.vt = cell.dataset.valueType;
-            if (cell.dataset.dateValue) entry.dv = cell.dataset.dateValue;
-
-            savedCells.push(entry);
-        });
+        }
 
         const savedRows = Array.from(tbody.querySelectorAll("tr"))
             .map(tr => (tr.style.height ? { r: parseInt(tr.dataset.row, 10), h: tr.style.height } : null))
@@ -7971,7 +9914,16 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 top: `${box.dataset.initialTop || parseFloat(box.style.top) || 0}px`,
                 width: box.style.width || `${box.offsetWidth}px`,
                 height: box.style.height || `${box.offsetHeight}px`,
-                content: editor ? editor.innerHTML : clone.innerHTML
+                content: editor ? editor.innerHTML : clone.innerHTML,
+                textStyle: isChart ? null : {
+                    fontSize: box.style.fontSize || "",
+                    fontWeight: box.style.fontWeight || "",
+                    fontStyle: box.style.fontStyle || "",
+                    textDecoration: box.style.textDecoration || "",
+                    color: box.style.color || "",
+                    backgroundColor: box.style.backgroundColor || "",
+                    textAlign: box.style.textAlign || ""
+                }
             };
         });
 
@@ -8003,6 +9955,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             : { row: 1, col: 0 };
         target.scrollTop = container.scrollTop;
         target.scrollLeft = container.scrollLeft;
+        target.tables = JSON.parse(JSON.stringify(getSheetTables()));
         return target;
     }
 
@@ -8051,6 +10004,8 @@ export default async function initSpreadsheetApp(content, options = {}) {
             tr.style.height = "";
         });
         spreadsheetContent.querySelectorAll(".floating-textbox").forEach(b => b.remove());
+        closeCellDropdownList();
+        hideCellDropdownButton();
         clearAllAutoFilters();
         setFreezePanes(0, 0, { silent: true });
         if (resetHistory) {
@@ -8063,14 +10018,27 @@ export default async function initSpreadsheetApp(content, options = {}) {
         }
     }
 
-    async function applySingleSheetToDOM(sheetData, { isUndoRedo = false } = {}) {
+    async function applySingleSheetToDOM(sheetData, { isUndoRedo = false, restoreScroll = true } = {}) {
         const cells = Array.isArray(sheetData.cells) ? sheetData.cells : [];
         const rows = Array.isArray(sheetData.rows) ? sheetData.rows : [];
         const columns = Array.isArray(sheetData.columns) ? sheetData.columns : [];
         const zoomVal = sheetData.zoom ?? 100;
         const textboxes = Array.isArray(sheetData.textboxes) ? sheetData.textboxes : [];
+        const condFormats = Array.isArray(sheetData.conditionalFormats)
+            ? JSON.parse(JSON.stringify(sheetData.conditionalFormats))
+            : [];
 
         clearSheetToBlank({ resetHistory: false });
+        if (sheets[activeSheetIndex]) {
+            sheets[activeSheetIndex].tables = Array.isArray(sheetData.tables)
+                ? JSON.parse(JSON.stringify(sheetData.tables))
+                : [];
+            sheets[activeSheetIndex].tables.forEach(tbl => applyStructuredTableVisuals(tbl));
+        }
+
+        if (sheets[activeSheetIndex]) {
+            sheets[activeSheetIndex].conditionalFormats = condFormats;
+        }
 
         const z = parseInt(String(zoomVal).replace("%", ""), 10) || 100;
         setZoom(z, { silent: true });
@@ -8173,6 +10141,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         });
 
         updateAllFormulas();
+        applyConditionalFormats();
 
         if (Array.isArray(textboxes)) {
             textboxes.forEach(tb => {
@@ -8201,6 +10170,12 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     enableTextboxDragging(chartBox);
                 } else {
                     insertTextBox(tb, { silent: true });
+                    const created = spreadsheetContent.lastElementChild;
+                    if (created && created.classList.contains("floating-textbox") && tb.textStyle) {
+                        Object.entries(tb.textStyle).forEach(([k, v]) => {
+                            if (v) created.style[k] = v;
+                        });
+                    }
                 }
             });
         }
@@ -8220,7 +10195,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 const arrow = document.createElement("span");
                 arrow.className = "ss-filter-arrow";
                 arrow.dataset.filterCol = String(c);
-                arrow.textContent = "▼";
+                arrow.textContent = "";
                 arrow.title = "フィルターと並べ替え";
                 arrow.addEventListener("mousedown", (e) => {
                     e.stopPropagation();
@@ -8234,10 +10209,6 @@ export default async function initSpreadsheetApp(content, options = {}) {
         }
 
         setFreezePanes(sheetData.freezeRows || 0, sheetData.freezeCols || 0, { silent: true });
-        if (!isUndoRedo) {
-            container.scrollTop = sheetData.scrollTop || 0;
-            container.scrollLeft = sheetData.scrollLeft || 0;
-        }
 
         const coord = sheetData.activeCoord || { row: 1, col: 0 };
         const targetActive = getVisibleCell(coord.row, coord.col) || getVisibleCell(1, 0);
@@ -8245,6 +10216,23 @@ export default async function initSpreadsheetApp(content, options = {}) {
             clearSelection();
             setActiveCell(targetActive, true);
         }
+
+        if (restoreScroll) {
+            const targetTop = Math.max(0, Number(sheetData.scrollTop) || 0);
+            const targetLeft = Math.max(0, Number(sheetData.scrollLeft) || 0);
+
+            // 保存されたスクロール先が現在の行数・列数を超える場合は先に拡張して頭打ちを防止
+            const neededRows = Math.ceil((targetTop + container.clientHeight) / 30) + 5;
+            const neededCols = Math.ceil((targetLeft + container.clientWidth) / 120) + 2;
+            if (neededRows >= rowCount) loadRowsSync(Math.min(500, neededRows - rowCount + 1));
+            if (neededCols >= currentColumns) loadColumnsSync(Math.min(200, neededCols - currentColumns + 1));
+
+            container.scrollTop = targetTop;
+            container.scrollLeft = targetLeft;
+            refreshVisibleRows();
+            syncCellDropdownButtonPosition();
+        }
+
         updateSelectedCellsDisplay();
         updateFillHandle();
         updateToolbarState();
@@ -8311,7 +10299,10 @@ export default async function initSpreadsheetApp(content, options = {}) {
         }
 
         renderSheetTabs();
-        await applySingleSheetToDOM(sheets[activeSheetIndex], { isUndoRedo });
+        await applySingleSheetToDOM(sheets[activeSheetIndex], {
+            isUndoRedo,
+            restoreScroll: !isUndoRedo
+        });
     }
 
     function parseCSVRows(text) {
@@ -8356,6 +10347,11 @@ export default async function initSpreadsheetApp(content, options = {}) {
     function parseAndLoadCSV(csvText) {
         clearSheetToBlank();
         const parsedRows = parseCSVRows(csvText);
+        const neededRows = parsedRows.length;
+        const neededCols = parsedRows.reduce((m, cols) => Math.max(m, cols.length), 0);
+        if (neededRows >= rowCount) loadRowsSync(neededRows - rowCount + 5);
+        if (neededCols >= currentColumns) loadColumnsSync(neededCols - currentColumns + 2);
+
         parsedRows.forEach((cols, rIdx) => {
             if (cols.length === 1 && cols[0] === "" && rIdx === parsedRows.length - 1) return;
             cols.forEach((val, cIdx) => {
@@ -8418,12 +10414,14 @@ export default async function initSpreadsheetApp(content, options = {}) {
             redoHistory = [];
             saveState();
 
-            const a1 = getVisibleCell(1, 0);
-            if (a1) {
-                clearSelection();
-                setActiveCell(a1, true);
-                updateSelectedCellsDisplay();
-                updateFillHandle();
+            if (normalized.toLowerCase().endsWith(".csv") || contentData.trim() === "") {
+                const a1 = getVisibleCell(1, 0);
+                if (a1) {
+                    clearSelection();
+                    setActiveCell(a1, true);
+                    updateSelectedCellsDisplay();
+                    updateFillHandle();
+                }
             }
 
             statusBarState.stateText = "読み込み完了";
@@ -8521,25 +10519,37 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
     function generateCSVText() {
         flushPendingEdits();
+        const getCleanCellDisplay = (cell) => {
+            if (!cell) return "";
+            const clone = cell.cloneNode(true);
+            clone.querySelectorAll(".ss-filter-arrow, .ss-cell-dropdown-btn").forEach(el => el.remove());
+            return clone.textContent || "";
+        };
+
         let maxR = 0, maxC = 0;
-        tbody.querySelectorAll("td").forEach(cell => {
-            if (cell.textContent.trim() !== "") {
-                maxR = Math.max(maxR, +cell.dataset.row);
-                maxC = Math.max(maxC, +cell.dataset.col);
+        const rowsList = tbody.rows;
+        for (let r = 0; r < rowsList.length; r++) {
+            const cells = rowsList[r].cells;
+            for (let c = 1; c < cells.length; c++) {
+                if (getCleanCellDisplay(cells[c]).trim() !== "") {
+                    if (r + 1 > maxR) maxR = r + 1;
+                    if (c - 1 > maxC) maxC = c - 1;
+                }
             }
-        });
+        }
         const rows = [];
         for (let r = 1; r <= maxR; r++) {
             const cols = [];
             for (let c = 0; c <= maxC; c++) {
-                const val = (getCell(r, c)?.textContent || "").replace(/"/g, '""');
-                cols.push(val.includes(",") || val.includes("\n") ? `"${val}"` : val);
+                const rawText = getCleanCellDisplay(getCell(r, c));
+                const needsQuote = /[",\r\n]/.test(rawText);
+                const escaped = rawText.replace(/"/g, '""');
+                cols.push(needsQuote ? `"${escaped}"` : escaped);
             }
             rows.push(cols.join(","));
         }
         return rows.join("\n");
     }
-
 
     function exportLocalFile(ext = ".nxs") {
         try {
@@ -8560,6 +10570,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             a.remove();
             managedTimeout(() => URL.revokeObjectURL(url), 1000);
             statusBarState.stateText = `${fileName} をエクスポートしました`;
+            renderWindowStatusBar();
         } catch (err) {
             console.error("[Spreadsheet] Export failed:", err);
             showError(`エクスポートに失敗しました:\n${err.message}`, "エクスポートエラー");
@@ -8638,6 +10649,12 @@ export default async function initSpreadsheetApp(content, options = {}) {
         return results;
     }
 
+    const escHtml = (s) => String(s ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+
     function promptSaveAsDialog(defaultExt = ".nxs", onSaved = null) {
         const defaultDir = getDefaultSaveDirectory();
         const defaultPath = currentFilePath || `${defaultDir}/無題${defaultExt}`;
@@ -8645,11 +10662,11 @@ export default async function initSpreadsheetApp(content, options = {}) {
         const bodyHtml = `
             <div style="width:100%; display:flex; flex-direction:column; gap:8px;">
                 <div>仮想ドライブ上の保存先パスを指定してください:</div>
-                <input type="text" class="ss-save-path-input border" value="${defaultPath}" style="width:100%; padding:4px 6px; font-size:12px; background:#fff; color:#000; box-sizing:border-box;">
+                <input type="text" class="ss-save-path-input border" value="${escHtml(defaultPath)}" style="width:100%; padding:4px 6px; font-size:12px; background:#fff; color:#000; box-sizing:border-box;">
             </div>
         `;
 
-        const modalContent = windowAPI.showModalWindow("名前を付けて保存", bodyHtml, {
+        const modalContent = openAppModal("名前を付けて保存", bodyHtml, {
             width: 420,
             isHtml: true,
             parentWin: win,
@@ -8686,8 +10703,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
     function promptOpenFileDialog() {
         const candidates = collectSpreadsheetFiles();
         const optionsHtml = candidates.length > 0
-            ? candidates.map(p => `<option value="${p}">${p}</option>`).join("")
+            ? candidates.map(p => `<option value="${escHtml(p)}">${escHtml(p)}</option>`).join("")
             : `<option value="">(保存済みシートが見つかりません)</option>`;
+        const initialInputPath = candidates[0] || `${getDefaultSaveDirectory()}/`;
 
         const bodyHtml = `
             <div style="width:100%; display:flex; flex-direction:column; gap:8px;">
@@ -8695,11 +10713,11 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 <select class="ss-open-select border" style="width:100%; padding:4px; font-size:12px; background:#fff; color:#000;">
                     ${optionsHtml}
                 </select>
-                <input type="text" class="ss-open-path-input border" value="${candidates[0] || `${getDefaultSaveDirectory()}/`}" style="width:100%; padding:4px 6px; font-size:12px; background:#fff; color:#000; box-sizing:border-box;">
+                <input type="text" class="ss-open-path-input border" value="${escHtml(initialInputPath)}" style="width:100%; padding:4px 6px; font-size:12px; background:#fff; color:#000; box-sizing:border-box;">
             </div>
         `;
 
-        const modalContent = windowAPI.showModalWindow("スプレッドシートを開く", bodyHtml, {
+        const modalContent = openAppModal("スプレッドシートを開く", bodyHtml, {
             width: 440,
             isHtml: true,
             parentWin: win,
@@ -8748,14 +10766,17 @@ export default async function initSpreadsheetApp(content, options = {}) {
     // =========================================================
     // イベントリスナー登録（すべてスコープ＆AbortSignal管理）
     // =========================================================
+    const pageStyleId = `ss-page-style-${lockOwnerPid}`;
+    const printStyleId = `ss-print-style-${lockOwnerPid}`;
+
     function setPageSize(sizeVal, { silent = false } = {}) {
         const nextSize = sizeVal || "A4";
         const changed = currentPageSize !== nextSize;
         currentPageSize = nextSize;
-        let styleTag = document.getElementById("dynamicPageStyle");
+        let styleTag = document.getElementById(pageStyleId);
         if (!styleTag) {
             styleTag = document.createElement("style");
-            styleTag.id = "dynamicPageStyle";
+            styleTag.id = pageStyleId;
             document.head.appendChild(styleTag);
         }
         styleTag.textContent = `@page { size: ${currentPageSize}; margin: 1cm; }`;
@@ -8764,6 +10785,133 @@ export default async function initSpreadsheetApp(content, options = {}) {
             setDirtyState(true);
             debouncedSaveState();
         }
+    }
+
+    function printSpreadsheet() {
+        flushPendingEdits();
+        clearSelection();
+        clearCalculationRangeHighlights();
+
+        // データが存在する最終行・最終列を特定し、不要な空白ページの大量印刷を防ぐ
+        let maxDataR = 1;
+        let maxDataC = 0;
+        const rowsList = tbody.rows;
+        for (let r = 0; r < rowsList.length; r++) {
+            if (rowsList[r].style.display === "none") continue;
+            const cells = rowsList[r].cells;
+            for (let c = 1; c < cells.length; c++) {
+                const td = cells[c];
+                if (td.style.display === "none") continue;
+                const hasContent = Boolean(td.dataset.formula || (td.dataset.rawValue ?? td.textContent).trim() !== "");
+                const hasStyle = Boolean(td.style.backgroundColor || td.style.borderTop || td.style.borderBottom || td.style.borderLeft || td.style.borderRight);
+                if (hasContent || hasStyle) {
+                    maxDataR = Math.max(maxDataR, r + 1);
+                    maxDataC = Math.max(maxDataC, c - 1);
+                }
+            }
+        }
+
+        const tempHiddenEls = [];
+        for (let r = maxDataR + 1; r <= rowsList.length; r++) {
+            const tr = getRow(r);
+            if (tr && tr.style.display !== "none") {
+                tr.dataset.prevPrintDisplay = tr.style.display;
+                tr.style.display = "none";
+                tempHiddenEls.push(tr);
+            }
+        }
+        const headerRow = table.querySelector("thead tr");
+        for (let c = maxDataC + 1; c < currentColumns; c++) {
+            const th = headerRow?.children[c + 1];
+            if (th && th.style.display !== "none") {
+                th.style.display = "none";
+                tempHiddenEls.push(th);
+            }
+            for (let r = 1; r <= maxDataR; r++) {
+                const td = getCell(r, c);
+                if (td && td.style.display !== "none") {
+                    td.style.display = "none";
+                    tempHiddenEls.push(td);
+                }
+            }
+        }
+
+        // 印刷時のみOSデスクトップ・ウィンドウ枠・リボン・スクロール制限を解除する専用スタイルを注入
+        appRoot.classList.add("ss-printing-active");
+        let printStyle = document.getElementById(printStyleId);
+        if (!printStyle) {
+            printStyle = document.createElement("style");
+            printStyle.id = printStyleId;
+            document.head.appendChild(printStyle);
+        }
+        printStyle.textContent = `
+            @media print {
+                body * { visibility: hidden !important; }
+                .ss-printing-active, .ss-printing-active * { visibility: visible !important; }
+                .ss-printing-active {
+                    position: fixed !important;
+                    inset: 0 !important;
+                    width: 100% !important;
+                    height: auto !important;
+                    overflow: visible !important;
+                    background: #fff !important;
+                    z-index: 2147483647 !important;
+                }
+               .ss-printing-active .ss-ribbon-shell,
+                .ss-printing-active .ss-formula-bar-container,
+                .ss-printing-active .ss-bottom-bar,
+                .ss-printing-active .fill-handle,
+                .ss-printing-active .ss-filter-arrow,
+                .ss-printing-active .ss-cell-dropdown-btn,
+                .ss-printing-active .floating-textbox-delete,
+                .ss-printing-active .floating-chart-settings,
+                .ss-printing-active .ss-obj-handle,
+                .ss-printing-active .ss-obj-rotate-line,
+                .ss-printing-active .ss-obj-rotate-handle {
+                    display: none !important;
+                }
+                .ss-printing-active .ss-spreadsheet-container {
+                    overflow: visible !important;
+                    height: auto !important;
+                    width: 100% !important;
+                    border: none !important;
+                }
+                .ss-printing-active table {
+                    width: auto !important;
+                    border-collapse: collapse !important;
+                }
+                .ss-printing-active tr,
+                .ss-printing-active td,
+                .ss-printing-active th {
+                    visibility: visible !important;
+                }
+            }
+        `;
+
+        let isCleanedUp = false;
+        const cleanupAfterPrint = () => {
+            if (isCleanedUp) return;
+            isCleanedUp = true;
+            appRoot.classList.remove("ss-printing-active");
+            tempHiddenEls.forEach(el => {
+                el.style.display = el.dataset.prevPrintDisplay || "";
+                delete el.dataset.prevPrintDisplay;
+            });
+            refreshVisibleRows();
+        };
+
+        window.addEventListener("afterprint", cleanupAfterPrint, { once: true });
+        const printMediaQuery = window.matchMedia?.("print");
+        if (printMediaQuery?.addEventListener) {
+            const onMediaChange = (e) => {
+                if (!e.matches) {
+                    printMediaQuery.removeEventListener("change", onMediaChange);
+                    cleanupAfterPrint();
+                }
+            };
+            printMediaQuery.addEventListener("change", onMediaChange);
+        }
+        window.print();
     }
 
     const recentUsedFunctions = [
@@ -9058,9 +11206,10 @@ export default async function initSpreadsheetApp(content, options = {}) {
         };
 
         const escapedSheet = targetSheetName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const escapedQuotedSheet = targetSheetName.replace(/'/g, "''").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
         const prefixRegex = isSameSheet
             ? /(^|[^A-Za-z0-9_'\u3040-\u30FF\u4E00-\u9FAF!])/
-            : new RegExp(`((?:^|[^A-Za-z0-9_'\\u3040-\\u30FF\\u4E00-\\u9FAF])(?:'${escapedSheet}'|${escapedSheet})!)`);
+            : new RegExp(`((?:^|[^A-Za-z0-9_'\\u3040-\\u30FF\\u4E00-\\u9FAF])(?:'${escapedQuotedSheet}'|${escapedSheet})!)`);
 
         const rangePattern = new RegExp(
             `${prefixRegex.source}(\\$?)([A-Za-z]+)(\\$?)(\\d+):(\\$?)([A-Za-z]+)(\\$?)(\\d+)`,
@@ -9192,6 +11341,21 @@ export default async function initSpreadsheetApp(content, options = {}) {
             if (c.dl && String(c.dl).startsWith("=")) {
                 c.dl = shiftFormulaForRowCol(c.dl, mode, targetRow, targetCol, true, snap.name);
             }
+            if (c.dvr) {
+                try {
+                    const rule = JSON.parse(c.dvr);
+                    let changed = false;
+                    if (rule.listSpec && String(rule.listSpec).startsWith("=")) {
+                        rule.listSpec = shiftFormulaForRowCol(rule.listSpec, mode, targetRow, targetCol, true, snap.name);
+                        changed = true;
+                    }
+                    if (rule.formula && String(rule.formula).startsWith("=")) {
+                        rule.formula = shiftFormulaForRowCol(rule.formula, mode, targetRow, targetCol, true, snap.name);
+                        changed = true;
+                    }
+                    if (changed) c.dvr = JSON.stringify(rule);
+                } catch { /* ignore */ }
+            }
         });
 
         // オートフィルターの座標・対象列番号も行列の挿入・削除に追従
@@ -9247,6 +11411,57 @@ export default async function initSpreadsheetApp(content, options = {}) {
             }).filter(r => r.maxRow >= r.minRow && r.maxCol >= r.minCol);
         }
 
+        // 構造化テーブル（Ctrl+T）の範囲も行列の挿入・削除に追従
+        if (Array.isArray(snap.tables)) {
+            snap.tables = snap.tables.map(tbl => {
+                const t = { ...tbl };
+                if (mode === "insert-row") {
+                    if (t.minRow >= targetRow) { t.minRow += 1; t.maxRow += 1; }
+                    else if (targetRow <= t.maxRow) { t.maxRow += 1; }
+                } else if (mode === "delete-row") {
+                    if (targetRow < t.minRow) {
+                        t.minRow -= 1;
+                        t.maxRow -= 1;
+                    } else if (targetRow >= t.minRow && targetRow <= t.maxRow) {
+                        if (t.hasHeader && targetRow === t.minRow) return null;
+                        if (t.hasTotalRow && targetRow === t.maxRow) t.hasTotalRow = false;
+                        t.maxRow -= 1;
+                    }
+                } else if (mode === "insert-col") {
+                    if (t.minCol >= targetCol) { t.minCol += 1; t.maxCol += 1; }
+                    else if (targetCol <= t.maxCol) { t.maxCol += 1; }
+                } else if (mode === "delete-col") {
+                    if (targetCol < t.minCol) {
+                        t.minCol -= 1;
+                        t.maxCol -= 1;
+                    } else if (targetCol >= t.minCol && targetCol <= t.maxCol) {
+                        t.maxCol -= 1;
+                    }
+                }
+                return t;
+            }).filter(t => t && t.maxRow >= t.minRow && t.maxCol >= t.minCol);
+        }
+
+        // グラフのデータ参照範囲（sourceRange）も行・列の挿入・削除に追従
+        if (Array.isArray(snap.textboxes)) {
+            snap.textboxes.forEach(tb => {
+                if (tb.type === "chart" && tb.sourceRange) {
+                    const shiftedRange = shiftFormulaForRowCol("=" + tb.sourceRange, mode, targetRow, targetCol, true, snap.name);
+                    if (shiftedRange && shiftedRange.startsWith("=") && !shiftedRange.includes("#REF!")) {
+                        tb.sourceRange = shiftedRange.slice(1);
+                    }
+                }
+            });
+        }
+
+        // 挿入・削除後のアクティブセル座標を妥当な範囲に補正
+        if (snap.activeCoord) {
+            snap.activeCoord = {
+                row: Math.max(1, Math.min(rowCount - 1, targetRow)),
+                col: Math.max(0, Math.min(currentColumns - 1, targetCol))
+            };
+        }
+
         // 他シートから当シートを参照している数式も追従
         sheets.forEach((otherSheet, idx) => {
             if (idx === activeSheetIndex || !Array.isArray(otherSheet.cells)) return;
@@ -9257,7 +11472,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             });
         });
 
-        await applySingleSheetToDOM(snap, { isUndoRedo: true });
+        await applySingleSheetToDOM(snap, { isUndoRedo: true, restoreScroll: false });
         setDirtyState(true);
         saveState();
     }
@@ -9314,13 +11529,16 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
         if (maxR <= minR) return;
 
-        // 自動検出時、1行目が見出し行（太字/背景色あり、または1行目が文字列で2行目が数値）なら除外
-        if (autoDetectedTable && maxR - minR >= 1) {
+        // オートフィルター適用中は見出し行を自動的にソート対象外へ保護
+        if (autoFilterState && minR <= autoFilterState.headerRow && maxR > autoFilterState.headerRow) {
+            minR = autoFilterState.headerRow + 1;
+        } else if (autoDetectedTable && maxR - minR >= 1) {
+            // 自動検出時、1行目が見出し行（太字/背景色あり、または1行目が文字列で2行目が数値）なら除外
             const firstRowCells = [];
             for (let c = minC; c <= maxC; c++) firstRowCells.push(getCell(minR, c));
             const hasHeaderStyle = firstRowCells.some(c => c && (c.style.fontWeight === "bold" || c.style.backgroundColor));
-            const firstKeyVal = (getCell(minR, keyCol)?.dataset.rawValue ?? getCell(minR, keyCol)?.textContent ?? "").trim().replace(/,/g, "");
-            const secondKeyVal = (getCell(minR + 1, keyCol)?.dataset.rawValue ?? getCell(minR + 1, keyCol)?.textContent ?? "").trim().replace(/,/g, "");
+            const firstKeyVal = (getCell(minR, keyCol)?.dataset.rawValue ?? getCell(minR, keyCol)?.textContent ?? "").trim().replace(/[¥$€,%]/g, "");
+            const secondKeyVal = (getCell(minR + 1, keyCol)?.dataset.rawValue ?? getCell(minR + 1, keyCol)?.textContent ?? "").trim().replace(/[¥$€,%]/g, "");
             const firstIsTextSecondIsNum = firstKeyVal !== "" && isNaN(Number(firstKeyVal)) && secondKeyVal !== "" && !isNaN(Number(secondKeyVal));
             if (hasHeaderStyle || firstIsTextSecondIsNum) {
                 minR += 1;
@@ -9329,8 +11547,11 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
         if (maxR <= minR) return;
 
-        // 結合セルが含まれる場合は中止
+        // 結合セルが含まれる場合は中止（オートフィルターで非表示の行はスキップ）
+        const targetRowIndices = [];
         for (let r = minR; r <= maxR; r++) {
+            const tr = getRow(r);
+            if (tr && tr.style.display === "none") continue;
             for (let c = minC; c <= maxC; c++) {
                 const cell = getCell(r, c);
                 if (cell && (cell.style.display === "none" || cell.classList.contains("merged") || cell.dataset.mergeMinRow || cell.dataset.mergeAnchorRow)) {
@@ -9338,12 +11559,35 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     return;
                 }
             }
+            targetRowIndices.push(r);
         }
+
+        if (targetRowIndices.length <= 1) return;
 
         const sortKeyCol = (keyCol >= minC && keyCol <= maxC) ? keyCol : minC;
         const rowsData = [];
 
-        for (let r = minR; r <= maxR; r++) {
+        const parseSortComparable = (cell, rawStr) => {
+            if (!rawStr) return { type: "empty", val: "" };
+            if (cell?.dataset.dateValue) {
+                const ts = Date.parse(cell.dataset.dateValue);
+                if (!isNaN(ts)) return { type: "num", val: ts };
+            }
+            if (/^\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2}(?:\s+\d{1,2}:\d{2}(?::\d{2})?)?$/.test(rawStr)) {
+                const ts = Date.parse(rawStr.replace(/-/g, "/"));
+                if (!isNaN(ts)) return { type: "num", val: ts };
+            }
+            const cleanedNum = rawStr.replace(/^[¥$€]\s*/, "").replace(/,/g, "");
+            if (cleanedNum.endsWith("%")) {
+                const pct = Number(cleanedNum.slice(0, -1));
+                if (!isNaN(pct)) return { type: "num", val: pct / 100 };
+            }
+            const num = Number(cleanedNum);
+            if (!isNaN(num)) return { type: "num", val: num };
+            return { type: "str", val: rawStr };
+        };
+
+        for (const r of targetRowIndices) {
             const rowCells = [];
             for (let c = minC; c <= maxC; c++) {
                 const cell = getCell(r, c);
@@ -9351,6 +11595,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     value: cell?.dataset.rawValue ?? cell?.textContent ?? "",
                     formula: cell?.dataset.formula || "",
                     numFormat: cell?.dataset.numFormat || "",
+                    decimalPlaces: cell?.dataset.decimalPlaces ?? "",
+                    dropdownList: cell?.dataset.dropdownList || "",
+                    dvRule: cell?.dataset.dvRule || "",
                     valueType: cell?.dataset.valueType || "",
                     dateValue: cell?.dataset.dateValue || "",
                     styleObj: cell ? extractCellStyleObject(cell) : null
@@ -9358,31 +11605,34 @@ export default async function initSpreadsheetApp(content, options = {}) {
             }
             const keyCell = getCell(r, sortKeyCol);
             const rawKey = (keyCell?.dataset.formula ? keyCell.textContent : (keyCell?.dataset.rawValue ?? keyCell?.textContent ?? "")).trim();
-            rowsData.push({ origRow: r, rawKey, cells: rowCells });
+            rowsData.push({
+                origRow: r,
+                rawKey,
+                comp: parseSortComparable(keyCell, rawKey),
+                cells: rowCells
+            });
         }
 
         const collator = new Intl.Collator("ja", { numeric: true, sensitivity: "base" });
         rowsData.sort((a, b) => {
-            const aEmpty = a.rawKey === "";
-            const bEmpty = b.rawKey === "";
-            // 空白行は昇順・降順にかかわらず常に末尾へ配置（Excel準拠）
-            if (aEmpty && bEmpty) return 0;
-            if (aEmpty) return 1;
-            if (bEmpty) return -1;
+            if (a.comp.type === "empty" && b.comp.type === "empty") return 0;
+            if (a.comp.type === "empty") return 1;
+            if (b.comp.type === "empty") return -1;
 
-            const aNum = Number(a.rawKey.replace(/,/g, ""));
-            const bNum = Number(b.rawKey.replace(/,/g, ""));
             let cmp = 0;
-            if (!isNaN(aNum) && !isNaN(bNum)) {
-                cmp = aNum - bNum;
+            if (a.comp.type === "num" && b.comp.type === "num") {
+                cmp = a.comp.val - b.comp.val;
+            } else if (a.comp.type !== b.comp.type) {
+                // Excel準拠：昇順では「数値 < 文字列」
+                cmp = a.comp.type === "num" ? -1 : 1;
             } else {
-                cmp = collator.compare(a.rawKey, b.rawKey);
+                cmp = collator.compare(a.comp.val, b.comp.val);
             }
             return ascending ? cmp : -cmp;
         });
 
         rowsData.forEach((rowItem, idx) => {
-            const destRow = minR + idx;
+            const destRow = targetRowIndices[idx];
             const rowDelta = destRow - rowItem.origRow;
             rowItem.cells.forEach((item, cIdx) => {
                 const dest = getCell(destRow, minC + cIdx);
@@ -9390,6 +11640,15 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
                 if (item.numFormat) dest.dataset.numFormat = item.numFormat;
                 else delete dest.dataset.numFormat;
+
+                if (item.decimalPlaces !== "") dest.dataset.decimalPlaces = item.decimalPlaces;
+                else delete dest.dataset.decimalPlaces;
+
+                if (item.dropdownList) dest.dataset.dropdownList = item.dropdownList;
+                else delete dest.dataset.dropdownList;
+
+                if (item.dvRule) dest.dataset.dvRule = item.dvRule;
+                else delete dest.dataset.dvRule;
 
                 if (item.valueType) dest.dataset.valueType = item.valueType;
                 else delete dest.dataset.valueType;
@@ -9410,11 +11669,1202 @@ export default async function initSpreadsheetApp(content, options = {}) {
         });
 
         updateAllFormulas();
+        applyConditionalFormats();
+        if (autoFilterState) applyAutoFilterRows();
         updateFillHandle();
         updateSelectedCellsDisplay();
         setDirtyState(true);
         debouncedSaveState();
     }
+
+
+
+
+
+    // =========================================================
+    // 重複の削除（Remove Duplicates）
+    // =========================================================
+    function detectDataBlockBounds(baseCell) {
+        const selected = Array.from(tbody.querySelectorAll("td.selected")).filter(td => td.style.display !== "none");
+        const isFilled = (r, c) => {
+            const cell = getCell(r, c);
+            return Boolean(cell && (cell.dataset.formula || (cell.dataset.rawValue ?? cell.textContent).trim() !== ""));
+        };
+
+        if (selected.length > 1) {
+            return getSelectedRangeBounds();
+        }
+        if (!baseCell) return null;
+
+        const startR = parseInt(baseCell.dataset.row, 10);
+        const startC = parseInt(baseCell.dataset.col, 10);
+        if (!isFilled(startR, startC)) return null;
+
+        let minRow = startR, maxRow = startR, minCol = startC, maxCol = startC;
+        while (minRow > 1 && isFilled(minRow - 1, startC)) minRow--;
+        while (maxRow < rowCount - 1 && isFilled(maxRow + 1, startC)) maxRow++;
+        while (minCol > 0 && isFilled(startR, minCol - 1)) minCol--;
+        while (maxCol < currentColumns - 1 && isFilled(startR, maxCol + 1)) maxCol++;
+
+        let expanded = true;
+        while (expanded) {
+            expanded = false;
+            for (let r = minRow; r <= maxRow; r++) {
+                if (minCol > 0 && isFilled(r, minCol - 1)) { minCol--; expanded = true; }
+                if (maxCol < currentColumns - 1 && isFilled(r, maxCol + 1)) { maxCol++; expanded = true; }
+            }
+        }
+        return { minRow, maxRow, minCol, maxCol };
+    }
+
+    function openRemoveDuplicatesDialog() {
+        flushPendingEdits();
+        const bounds = detectDataBlockBounds(activeCell);
+        if (!bounds || bounds.maxRow <= bounds.minRow) {
+            showAlert("重複を削除する2行以上のデータ範囲を選択してください。", "重複の削除");
+            return;
+        }
+
+        // 結合セルチェック
+        for (let r = bounds.minRow; r <= bounds.maxRow; r++) {
+            for (let c = bounds.minCol; c <= bounds.maxCol; c++) {
+                const cell = getCell(r, c);
+                if (cell && (cell.style.display === "none" || cell.classList.contains("merged") || cell.dataset.mergeMinRow || cell.dataset.mergeAnchorRow)) {
+                    showAlert("結合されたセルを含む範囲では重複の削除を実行できません。", "重複の削除");
+                    return;
+                }
+            }
+        }
+
+        const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        const cols = [];
+        for (let c = bounds.minCol; c <= bounds.maxCol; c++) {
+            const headerText = (getCell(bounds.minRow, c)?.textContent ?? "").trim();
+            cols.push({
+                col: c,
+                colName: getColumnName(c),
+                headerLabel: headerText || `(列 ${getColumnName(c)})`
+            });
+        }
+
+        const bodyHtml = `
+            <div style="width:100%; display:flex; flex-direction:column; gap:8px; font-size:12px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div style="display:flex; gap:6px;">
+                        <button type="button" class="ss-rd-select-all" style="padding:2px 8px; font-size:11px;">すべて選択</button>
+                        <button type="button" class="ss-rd-unselect-all" style="padding:2px 8px; font-size:11px;">すべて解除</button>
+                    </div>
+                    <label style="display:inline-flex; align-items:center; gap:4px; cursor:pointer;">
+                        <input type="checkbox" class="ss-rd-has-header" checked> 先頭行をデータの見出しとして使用する
+                    </label>
+                </div>
+                <div style="font-size:11px; color:#333;">重複の判定基準にする列を選択してください:</div>
+                <div class="ss-rd-cols-list border" style="max-height:190px; overflow-y:auto; background:#fff; padding:6px; display:flex; flex-direction:column; gap:4px;">
+                    ${cols.map(item => `
+                        <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                            <input type="checkbox" class="ss-rd-col-chk" value="${item.col}" checked>
+                            <span class="ss-rd-col-label" data-header="${esc(item.headerLabel)}" data-colname="列 ${item.colName}">${esc(item.headerLabel)}</span>
+                        </label>
+                    `).join("")}
+                </div>
+            </div>
+        `;
+
+        const modalContent = openAppModal("重複の削除", bodyHtml, {
+            width: 420,
+            isHtml: true,
+            parentWin: win,
+            buttons: [
+                {
+                    label: "OK",
+                    onClick: () => {
+                        const hasHeader = Boolean(modalContent.querySelector(".ss-rd-has-header")?.checked);
+                        const selectedCols = Array.from(modalContent.querySelectorAll(".ss-rd-col-chk:checked")).map(el => Number(el.value));
+                        if (selectedCols.length === 0) {
+                            showAlert("判定基準にする列を1つ以上選択してください。", "重複の削除");
+                            return;
+                        }
+                        executeRemoveDuplicates(bounds, selectedCols, hasHeader);
+                    }
+                },
+                { label: "キャンセル" }
+            ]
+        });
+
+        const headerChk = modalContent?.querySelector(".ss-rd-has-header");
+        headerChk?.addEventListener("change", () => {
+            const useHeader = headerChk.checked;
+            modalContent.querySelectorAll(".ss-rd-col-label").forEach(span => {
+                span.textContent = useHeader ? span.dataset.header : span.dataset.colname;
+            });
+        });
+
+        modalContent?.querySelector(".ss-rd-select-all")?.addEventListener("click", () => {
+            modalContent.querySelectorAll(".ss-rd-col-chk").forEach(c => { c.checked = true; });
+        });
+        modalContent?.querySelector(".ss-rd-unselect-all")?.addEventListener("click", () => {
+            modalContent.querySelectorAll(".ss-rd-col-chk").forEach(c => { c.checked = false; });
+        });
+    }
+
+    function executeRemoveDuplicates(bounds, keyCols, hasHeader) {
+        const startDataRow = hasHeader ? bounds.minRow + 1 : bounds.minRow;
+        if (startDataRow > bounds.maxRow) return;
+
+        const seenKeys = new Set();
+        const uniqueRows = [];
+        let removedCount = 0;
+
+        for (let r = startDataRow; r <= bounds.maxRow; r++) {
+            const keyParts = keyCols.map(c => {
+                const cell = getCell(r, c);
+                const val = (cell?.textContent ?? "").trim();
+                return val;
+            });
+            const compositeKey = JSON.stringify(keyParts);
+
+            if (seenKeys.has(compositeKey)) {
+                removedCount++;
+                continue;
+            }
+            seenKeys.add(compositeKey);
+
+            const rowCells = [];
+            for (let c = bounds.minCol; c <= bounds.maxCol; c++) {
+                const cell = getCell(r, c);
+                rowCells.push({
+                    value: cell?.dataset.rawValue ?? cell?.textContent ?? "",
+                    formula: cell?.dataset.formula || "",
+                    numFormat: cell?.dataset.numFormat || "",
+                    decimalPlaces: cell?.dataset.decimalPlaces ?? "",
+                    dropdownList: cell?.dataset.dropdownList || "",
+                    dvRule: cell?.dataset.dvRule || "",
+                    valueType: cell?.dataset.valueType || "",
+                    dateValue: cell?.dataset.dateValue || "",
+                    styleObj: cell ? extractCellStyleObject(cell) : null
+                });
+            }
+            uniqueRows.push({ origRow: r, cells: rowCells });
+        }
+
+        if (removedCount === 0) {
+            showAlert("重複する値は見つかりませんでした。", "重複の削除");
+            return;
+        }
+
+        // 一意な行を上詰め再配置
+        uniqueRows.forEach((rowItem, idx) => {
+            const destRow = startDataRow + idx;
+            const rowDelta = destRow - rowItem.origRow;
+            rowItem.cells.forEach((item, cIdx) => {
+                const dest = getCell(destRow, bounds.minCol + cIdx);
+                if (!dest) return;
+
+                if (item.numFormat) dest.dataset.numFormat = item.numFormat;
+                else delete dest.dataset.numFormat;
+                if (item.decimalPlaces !== "") dest.dataset.decimalPlaces = item.decimalPlaces;
+                else delete dest.dataset.decimalPlaces;
+                if (item.dropdownList) dest.dataset.dropdownList = item.dropdownList;
+                else delete dest.dataset.dropdownList;
+                if (item.dvRule) dest.dataset.dvRule = item.dvRule;
+                else delete dest.dataset.dvRule;
+                if (item.valueType) dest.dataset.valueType = item.valueType;
+                else delete dest.dataset.valueType;
+                if (item.dateValue) dest.dataset.dateValue = item.dateValue;
+                else delete dest.dataset.dateValue;
+
+                if (item.formula) {
+                    const nextFormula = adjustFormula(item.formula, rowDelta, 0);
+                    dest.dataset.formula = nextFormula;
+                    setCellFormattedValue(dest, evaluateFormula(nextFormula));
+                } else {
+                    delete dest.dataset.formula;
+                    setCellFormattedValue(dest, item.value);
+                }
+                applyCellStyleData(dest, item.styleObj);
+            });
+        });
+
+        // 削除されて余った下端行をクリア
+        for (let r = startDataRow + uniqueRows.length; r <= bounds.maxRow; r++) {
+            for (let c = bounds.minCol; c <= bounds.maxCol; c++) {
+                const cell = getCell(r, c);
+                if (!cell) continue;
+                cell.textContent = "";
+                cell.removeAttribute("style");
+                Object.keys(cell.dataset).forEach(k => {
+                    if (k !== "row" && k !== "col") delete cell.dataset[k];
+                });
+            }
+        }
+
+        updateAllFormulas();
+        applyConditionalFormats();
+        if (autoFilterState) applyAutoFilterRows();
+        updateFillHandle();
+        updateSelectedCellsDisplay();
+        setDirtyState(true);
+        debouncedSaveState();
+
+        showAlert(
+            `${removedCount} 件の重複する値が見つかり、削除されました。\n${uniqueRows.length} 件の一意の値が残っています。`,
+            "重複の削除"
+        );
+    }
+
+    // =========================================================
+    // 区切り位置（Text to Columns）
+    // =========================================================
+    function splitTextWithDelimiters(text, delimiters, { treatConsecutiveAsOne = false, respectQuotes = true } = {}) {
+        const src = String(text ?? "");
+        if (!delimiters.length || src === "") return [src];
+
+        const delimSet = new Set(delimiters);
+        const result = [];
+        let cur = "";
+        let inQuotes = false;
+
+        for (let i = 0; i < src.length; i++) {
+            const ch = src[i];
+            if (respectQuotes && ch === '"') {
+                if (inQuotes && src[i + 1] === '"') {
+                    cur += '"';
+                    i++;
+                } else {
+                    inQuotes = !inQuotes;
+                }
+                continue;
+            }
+            if (!inQuotes && delimSet.has(ch)) {
+                result.push(cur);
+                cur = "";
+                if (treatConsecutiveAsOne) {
+                    while (i + 1 < src.length && delimSet.has(src[i + 1])) {
+                        i++;
+                    }
+                }
+                continue;
+            }
+            cur += ch;
+        }
+        result.push(cur);
+        return result;
+    }
+
+    function openTextToColumnsDialog() {
+        flushPendingEdits();
+        const bounds = getSelectedRangeBounds();
+        if (!bounds) return;
+
+        if (bounds.minCol !== bounds.maxCol) {
+            showAlert("選択できるのは1列のみです。分割したい1列分のセルを選択してください。", "区切り位置");
+            return;
+        }
+
+        const targetCol = bounds.minCol;
+        const sampleTexts = [];
+        for (let r = bounds.minRow; r <= Math.min(bounds.maxRow, bounds.minRow + 5); r++) {
+            const val = (getCell(r, targetCol)?.textContent ?? "");
+            if (val !== "") sampleTexts.push(val);
+        }
+        if (sampleTexts.length === 0) {
+            showAlert("選択範囲に分割対象のデータがありません。", "区切り位置");
+            return;
+        }
+
+        const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        const bodyHtml = `
+            <div style="width:100%; display:flex; flex-direction:column; gap:8px; font-size:12px;">
+                <div style="font-weight:bold;">区切り文字を選択してください:</div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px 12px; padding:4px; background:#f8f8f8; border:1px solid #bbb;">
+                    <label style="display:flex; align-items:center; gap:5px; cursor:pointer;"><input type="checkbox" class="ss-ttc-delim" value="," checked> カンマ (,)</label>
+                    <label style="display:flex; align-items:center; gap:5px; cursor:pointer;"><input type="checkbox" class="ss-ttc-delim" value="\t"> タブ (Tab)</label>
+                    <label style="display:flex; align-items:center; gap:5px; cursor:pointer;"><input type="checkbox" class="ss-ttc-delim" value=";"> セミコロン (;)</label>
+                    <label style="display:flex; align-items:center; gap:5px; cursor:pointer;"><input type="checkbox" class="ss-ttc-delim" value=" "> スペース (空白)</label>
+                    <label style="display:flex; align-items:center; gap:5px; cursor:pointer; grid-column:1 / -1;">
+                        <input type="checkbox" class="ss-ttc-other-chk"> その他:
+                        <input type="text" class="ss-ttc-other-val border" maxlength="1" style="width:32px; height:20px; text-align:center; background:#fff; color:#000;">
+                    </label>
+                </div>
+                <div style="display:flex; flex-direction:column; gap:3px;">
+                    <label style="display:flex; align-items:center; gap:5px; cursor:pointer;">
+                        <input type="checkbox" class="ss-ttc-consecutive"> 連続した区切り文字は1つとして扱う
+                    </label>
+                    <label style="display:flex; align-items:center; gap:5px; cursor:pointer;">
+                        <input type="checkbox" class="ss-ttc-quotes" checked> 文字列の引用符 (") を考慮する
+                    </label>
+                </div>
+                <div style="font-size:11px; color:#333;">データのプレビュー (先頭サンプル):</div>
+                <div class="ss-ttc-preview border" style="max-height:130px; overflow:auto; background:#fff; padding:4px;"></div>
+            </div>
+        `;
+
+        const modalContent = openAppModal("区切り位置指定ウィザード", bodyHtml, {
+            width: 440,
+            isHtml: true,
+            parentWin: win,
+            buttons: [
+                {
+                    label: "完了",
+                    onClick: () => {
+                        const opts = readOptions();
+                        if (opts.delimiters.length === 0) {
+                            showAlert("区切り文字を1つ以上指定してください。", "区切り位置");
+                            return;
+                        }
+                        executeTextToColumns(bounds, opts);
+                    }
+                },
+                { label: "キャンセル" }
+            ]
+        });
+
+        const readOptions = () => {
+            const delims = Array.from(modalContent.querySelectorAll(".ss-ttc-delim:checked")).map(el => el.value);
+            if (modalContent.querySelector(".ss-ttc-other-chk")?.checked) {
+                const otherCh = modalContent.querySelector(".ss-ttc-other-val")?.value || "";
+                if (otherCh) delims.push(otherCh);
+            }
+            return {
+                delimiters: delims,
+                treatConsecutiveAsOne: Boolean(modalContent.querySelector(".ss-ttc-consecutive")?.checked),
+                respectQuotes: Boolean(modalContent.querySelector(".ss-ttc-quotes")?.checked)
+            };
+        };
+
+        const renderPreview = () => {
+            const previewEl = modalContent?.querySelector(".ss-ttc-preview");
+            if (!previewEl) return;
+            const opts = readOptions();
+            const splitRows = sampleTexts.map(t => splitTextWithDelimiters(t, opts.delimiters, opts));
+            const maxCols = Math.max(1, ...splitRows.map(r => r.length));
+            previewEl.innerHTML = `
+                <table style="border-collapse:collapse; width:100%; font-size:11px;">
+                    <tbody>
+                        ${splitRows.map(cols => `
+                            <tr>
+                                ${Array.from({ length: maxCols }, (_, i) => `
+                                    <td style="border:1px solid #ccc; padding:2px 6px; white-space:nowrap;">${esc(cols[i] ?? "")}</td>
+                                `).join("")}
+                            </tr>
+                        `).join("")}
+                    </tbody>
+                </table>
+            `;
+        };
+
+        modalContent?.querySelectorAll("input").forEach(inp => {
+            inp.addEventListener("change", renderPreview);
+            inp.addEventListener("input", renderPreview);
+        });
+        renderPreview();
+    }
+
+    function executeTextToColumns(bounds, opts) {
+        const targetCol = bounds.minCol;
+        const rowsSplit = [];
+        let maxSplitCols = 1;
+
+        for (let r = bounds.minRow; r <= bounds.maxRow; r++) {
+            const cell = getCell(r, targetCol);
+            const raw = (cell?.textContent ?? "");
+            const parts = splitTextWithDelimiters(raw, opts.delimiters, opts);
+            maxSplitCols = Math.max(maxSplitCols, parts.length);
+            rowsSplit.push({ r, parts });
+        }
+
+        if (maxSplitCols <= 1) return;
+
+        // 必要列数を自動確保
+        const neededEndCol = targetCol + maxSplitCols - 1;
+        if (neededEndCol >= currentColumns) {
+            loadColumnsSync(neededEndCol - currentColumns + 2);
+        }
+
+        // 右隣列に既存データがある場合は上書き確認
+        let hasExistingRightData = false;
+        for (let r = bounds.minRow; r <= bounds.maxRow; r++) {
+            for (let c = targetCol + 1; c <= neededEndCol; c++) {
+                const td = getCell(r, c);
+                if (td && (td.dataset.formula || (td.dataset.rawValue ?? td.textContent).trim() !== "")) {
+                    hasExistingRightData = true;
+                    break;
+                }
+            }
+            if (hasExistingRightData) break;
+        }
+
+        const applySplit = () => {
+            rowsSplit.forEach(({ r, parts }) => {
+                for (let i = 0; i < maxSplitCols; i++) {
+                    const dest = getCell(r, targetCol + i);
+                    if (!dest) continue;
+                    delete dest.dataset.formula;
+                    delete dest.dataset.numFormat;
+                    delete dest.dataset.decimalPlaces;
+                    delete dest.dataset.dropdownList;
+                    delete dest.dataset.dvRule;
+                    delete dest.dataset.valueType;
+                    delete dest.dataset.dateValue;
+                    setCellFormattedValue(dest, parts[i] ?? "");
+                }
+            });
+            updateAllFormulas();
+            applyConditionalFormats();
+            updateFillHandle();
+            updateSelectedCellsDisplay();
+            setDirtyState(true);
+            debouncedSaveState();
+        };
+
+        if (hasExistingRightData && windowAPI?.confirmWindow) {
+            windowAPI.confirmWindow(
+                "展開先の右側のセルに既にデータが存在します。\nデータを置き換えますか？",
+                (ok) => { if (ok) applySplit(); },
+                { title: "区切り位置", parentWin: win }
+            );
+        } else {
+            applySplit();
+        }
+    }
+
+    // =========================================================
+    // 構造化テーブル（Ctrl+T / 集計行 / 自動範囲拡張 / 構造化参照）
+    // =========================================================
+    const TABLE_THEMES = {
+        blue: { headerBg: "#1f4e78", headerFg: "#ffffff", stripeBg: "#d9e1f2", evenBg: "#ffffff", bodyFg: "#000000", border: "1px solid #8ea9db" },
+        orange: { headerBg: "#c65911", headerFg: "#ffffff", stripeBg: "#fce4d6", evenBg: "#ffffff", bodyFg: "#000000", border: "1px solid #f4b084" },
+        gray: { headerBg: "#595959", headerFg: "#ffffff", stripeBg: "#ededed", evenBg: "#ffffff", bodyFg: "#000000", border: "1px solid #a6a6a6" },
+        gold: { headerBg: "#bf8f00", headerFg: "#ffffff", stripeBg: "#fff2cc", evenBg: "#ffffff", bodyFg: "#000000", border: "1px solid #ffd966" },
+        sky: { headerBg: "#2f75b5", headerFg: "#ffffff", stripeBg: "#ddebf7", evenBg: "#ffffff", bodyFg: "#000000", border: "1px solid #9bc2e6" },
+        green: { headerBg: "#375623", headerFg: "#ffffff", stripeBg: "#e2efda", evenBg: "#ffffff", bodyFg: "#000000", border: "1px solid #a9d08e" },
+        purple: { headerBg: "#7030a0", headerFg: "#ffffff", stripeBg: "#e9d8f4", evenBg: "#ffffff", bodyFg: "#000000", border: "1px solid #b88ce0" },
+        teal: { headerBg: "#008080", headerFg: "#ffffff", stripeBg: "#d9f2f2", evenBg: "#ffffff", bodyFg: "#000000", border: "1px solid #80cccc" },
+        lightBlue: { headerBg: "#d9e1f2", headerFg: "#1f4e78", stripeBg: "#f2f5fb", evenBg: "#ffffff", bodyFg: "#000000", border: "1px solid #b4c6e7" },
+        lightGreen: { headerBg: "#e2efda", headerFg: "#375623", stripeBg: "#f4f9f0", evenBg: "#ffffff", bodyFg: "#000000", border: "1px solid #c6e0b4" },
+        darkNavy: { headerBg: "#0f243e", headerFg: "#ffffff", stripeBg: "#244062", evenBg: "#17375e", bodyFg: "#ffffff", border: "1px solid #4f81bd" },
+        darkRed: { headerBg: "#632523", headerFg: "#ffffff", stripeBg: "#963634", evenBg: "#7c2d2b", bodyFg: "#ffffff", border: "1px solid #c0504d" }
+    };
+
+    function getSheetTables(sheetIdx = activeSheetIndex) {
+        if (!sheets[sheetIdx]) return [];
+        if (!Array.isArray(sheets[sheetIdx].tables)) sheets[sheetIdx].tables = [];
+        return sheets[sheetIdx].tables;
+    }
+
+    function findTableAtCoord(row, col, sheetIdx = activeSheetIndex) {
+        return getSheetTables(sheetIdx).find(
+            t => row >= t.minRow && row <= t.maxRow && col >= t.minCol && col <= t.maxCol
+        ) || null;
+    }
+
+    function applyStructuredTableVisuals(tbl) {
+        const theme = TABLE_THEMES[tbl.themeKey] || TABLE_THEMES.blue;
+        const totalRowIdx = tbl.hasTotalRow ? tbl.maxRow : -1;
+
+        for (let r = tbl.minRow; r <= tbl.maxRow; r++) {
+            const isHeader = tbl.hasHeader && r === tbl.minRow;
+            const isTotal = r === totalRowIdx;
+            const dataIdx = tbl.hasHeader ? (r - tbl.minRow - 1) : (r - tbl.minRow);
+            const isStripe = !isHeader && !isTotal && tbl.useStripe !== false && (dataIdx % 2 === 1);
+
+            for (let c = tbl.minCol; c <= tbl.maxCol; c++) {
+                const cell = getVisibleCell(r, c);
+                if (!cell) continue;
+                cell.dataset.tableId = tbl.id;
+                cell.style.borderTop = isTotal ? "2px solid #000" : theme.border;
+                cell.style.borderBottom = isTotal ? "4px double #000" : theme.border;
+                cell.style.borderLeft = theme.border;
+                cell.style.borderRight = theme.border;
+
+                if (isHeader) {
+                    cell.style.backgroundColor = theme.headerBg;
+                    cell.style.color = theme.headerFg;
+                    cell.style.fontWeight = "bold";
+                } else if (isTotal) {
+                    cell.style.backgroundColor = "#f2f2f2";
+                    cell.style.color = "#000000";
+                    cell.style.fontWeight = "bold";
+                } else {
+                    cell.style.backgroundColor = isStripe ? theme.stripeBg : theme.evenBg;
+                    cell.style.color = theme.bodyFg;
+                    cell.style.fontWeight = "";
+                }
+            }
+        }
+    }
+
+    function convertRangeToStructuredTable(themeKey = "blue") {
+        flushPendingEdits();
+        const bounds = detectDataBlockBounds(activeCell) || getSelectedRangeBounds();
+        if (!bounds) {
+            showAlert("テーブルに変換するセル範囲を選択してください。", "テーブルの作成");
+            return;
+        }
+
+        const useHeader = appRoot.querySelector(".ss-tbl-opt-header")?.checked ?? true;
+        const useStripe = appRoot.querySelector(".ss-tbl-opt-stripe")?.checked ?? true;
+
+        // 既存テーブルと重複する場合はテーマとオプションのみ更新
+        const existing = findTableAtCoord(bounds.minRow, bounds.minCol);
+        if (existing) {
+            existing.themeKey = themeKey;
+            existing.useStripe = useStripe;
+            applyStructuredTableVisuals(existing);
+            setDirtyState(true);
+            debouncedSaveState();
+            return;
+        }
+
+        const tables = getSheetTables();
+        let num = tables.length + 1;
+        while (tables.some(t => t.name === `テーブル${num}`)) num++;
+        const tableName = `テーブル${num}`;
+
+        const minRow = bounds.minRow;
+        const maxRow = Math.max(bounds.maxRow, useHeader ? minRow + 1 : minRow);
+        const minCol = bounds.minCol;
+        const maxCol = bounds.maxCol;
+
+        // 見出し行が空の列にはデフォルト列名「列1」「列2」...を補完
+        if (useHeader) {
+            for (let c = minCol; c <= maxCol; c++) {
+                const hCell = getVisibleCell(minRow, c);
+                if (hCell && (hCell.textContent ?? "").trim() === "") {
+                    setCellFormattedValue(hCell, `列${c - minCol + 1}`);
+                }
+            }
+        }
+
+        const tbl = {
+            id: `tbl_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            name: tableName,
+            minRow,
+            maxRow,
+            minCol,
+            maxCol,
+            hasHeader: useHeader,
+            hasTotalRow: false,
+            useStripe,
+            themeKey
+        };
+        tables.push(tbl);
+        applyStructuredTableVisuals(tbl);
+
+        // オートフィルターも自動付与
+        if (useHeader && !autoFilterState) {
+            clearSelection();
+            const anchor = getVisibleCell(minRow, minCol);
+            if (anchor) setActiveCell(anchor, false);
+            for (let r = minRow; r <= maxRow; r++) {
+                for (let c = minCol; c <= maxCol; c++) {
+                    getVisibleCell(r, c)?.classList.add("selected");
+                }
+            }
+            toggleAutoFilter();
+        }
+
+        statusBarState.stateText = `${tableName} を作成しました（構造化参照: ${tableName}[列名] 対応）`;
+        renderWindowStatusBar();
+        setDirtyState(true);
+        debouncedSaveState();
+    }
+
+    function toggleStructuredTableTotalRow() {
+        if (!activeCell) return;
+        const r = parseInt(activeCell.dataset.row, 10);
+        const c = parseInt(activeCell.dataset.col, 10);
+        const tbl = findTableAtCoord(r, c);
+        if (!tbl) {
+            showAlert("テーブル内のセルを選択してから「集計行」を実行してください。", "テーブルツール");
+            return;
+        }
+
+        if (tbl.hasTotalRow) {
+            // 集計行を解除して最下行をクリア
+            const oldTotalR = tbl.maxRow;
+            for (let col = tbl.minCol; col <= tbl.maxCol; col++) {
+                const cell = getVisibleCell(oldTotalR, col);
+                if (!cell) continue;
+                cell.textContent = "";
+                cell.removeAttribute("style");
+                delete cell.dataset.formula;
+                delete cell.dataset.rawValue;
+                delete cell.dataset.dropdownList;
+                delete cell.dataset.tableId;
+            }
+            tbl.maxRow -= 1;
+            tbl.hasTotalRow = false;
+            applyStructuredTableVisuals(tbl);
+        } else {
+            // 集計行を1行下に追加
+            const newTotalR = tbl.maxRow + 1;
+            if (newTotalR >= rowCount) loadRowsSync(5);
+            tbl.maxRow = newTotalR;
+            tbl.hasTotalRow = true;
+
+            const dataStartR = tbl.hasHeader ? tbl.minRow + 1 : tbl.minRow;
+            const dataEndR = newTotalR - 1;
+
+            for (let col = tbl.minCol; col <= tbl.maxCol; col++) {
+                const cell = getVisibleCell(newTotalR, col);
+                if (!cell) continue;
+                const colLetter = getColumnName(col);
+                if (col === tbl.minCol) {
+                    setCellFormattedValue(cell, "集計");
+                } else {
+                    // 集計関数選択ドロップダウンを付与し、右端列は自動合計
+                    cell.dataset.dropdownList = `=SUBTOTAL(109,${colLetter}${dataStartR}:${colLetter}${dataEndR}),=SUBTOTAL(101,${colLetter}${dataStartR}:${colLetter}${dataEndR}),=SUBTOTAL(103,${colLetter}${dataStartR}:${colLetter}${dataEndR}),=SUBTOTAL(104,${colLetter}${dataStartR}:${colLetter}${dataEndR}),=SUBTOTAL(105,${colLetter}${dataStartR}:${colLetter}${dataEndR})`;
+                    if (col === tbl.maxCol) {
+                        const f = `=SUBTOTAL(109,${colLetter}${dataStartR}:${colLetter}${dataEndR})`;
+                        cell.dataset.formula = f;
+                        setCellFormattedValue(cell, evaluateFormula(f));
+                    }
+                }
+            }
+            applyStructuredTableVisuals(tbl);
+        }
+
+        updateAllFormulas();
+        applyConditionalFormats();
+        setDirtyState(true);
+        debouncedSaveState();
+    }
+
+    // テーブル末尾直下への入力時にテーブル範囲・スタイル・数式を自動拡張
+    function tryAutoExpandStructuredTable(row, col) {
+        const tables = getSheetTables();
+        for (const tbl of tables) {
+            if (col < tbl.minCol || col > tbl.maxCol) continue;
+            const appendTargetRow = tbl.hasTotalRow ? tbl.maxRow : tbl.maxRow + 1;
+            if (row !== appendTargetRow) continue;
+
+            if (tbl.hasTotalRow) {
+                // 集計行を1行下へ退避してからデータ行を挿入
+                const oldTotalR = tbl.maxRow;
+                const newTotalR = oldTotalR + 1;
+                if (newTotalR >= rowCount) loadRowsSync(5);
+
+                for (let c = tbl.minCol; c <= tbl.maxCol; c++) {
+                    const oldTotCell = getVisibleCell(oldTotalR, c);
+                    const newTotCell = getVisibleCell(newTotalR, c);
+                    if (!oldTotCell || !newTotCell) continue;
+
+                    const colLetter = getColumnName(c);
+                    const dataStartR = tbl.hasHeader ? tbl.minRow + 1 : tbl.minRow;
+                    if (oldTotCell.dataset.formula) {
+                        const updatedF = oldTotCell.dataset.formula.replace(
+                            new RegExp(`(${colLetter}\\d+:)${colLetter}${oldTotalR - 1}`, "gi"),
+                            `$1${colLetter}${oldTotalR}`
+                        );
+                        newTotCell.dataset.formula = updatedF;
+                        setCellFormattedValue(newTotCell, evaluateFormula(updatedF));
+                        delete oldTotCell.dataset.formula;
+                    } else if (c === tbl.minCol && oldTotCell.textContent === "集計") {
+                        setCellFormattedValue(newTotCell, "集計");
+                        if (c !== col) setCellFormattedValue(oldTotCell, "");
+                    }
+                    if (oldTotCell.dataset.dropdownList) {
+                        newTotCell.dataset.dropdownList = oldTotCell.dataset.dropdownList;
+                        delete oldTotCell.dataset.dropdownList;
+                    }
+                }
+                tbl.maxRow = newTotalR;
+            } else {
+                tbl.maxRow = row;
+            }
+
+            // 1行上の数式列・表示形式を自動継承
+            const prevDataRow = row - 1;
+            if (prevDataRow >= (tbl.hasHeader ? tbl.minRow + 1 : tbl.minRow)) {
+                for (let c = tbl.minCol; c <= tbl.maxCol; c++) {
+                    const prevCell = getVisibleCell(prevDataRow, c);
+                    const curCell = getVisibleCell(row, c);
+                    if (!prevCell || !curCell) continue;
+                    if (prevCell.dataset.numFormat && !curCell.dataset.numFormat) {
+                        curCell.dataset.numFormat = prevCell.dataset.numFormat;
+                    }
+                    if (c !== col && prevCell.dataset.formula && !curCell.dataset.formula) {
+                        const inheritedF = adjustFormula(prevCell.dataset.formula, 1, 0);
+                        curCell.dataset.formula = inheritedF;
+                        setCellFormattedValue(curCell, evaluateFormula(inheritedF));
+                    }
+                }
+            }
+
+            applyStructuredTableVisuals(tbl);
+            break;
+        }
+    }
+
+    // 構造化参照（例: テーブル1[売上]）を通常のセル範囲（例: C2:C10）へ解決
+    function resolveStructuredReferences(formulaExpr, sheetIdx = activeSheetIndex) {
+        if (!formulaExpr || !formulaExpr.includes("[")) return formulaExpr;
+        return formulaExpr.replace(/([A-Za-z0-9_\u3040-\u30FF\u4E00-\u9FAF]+)\[([^\[\]]+)\]/g, (match, tblName, colName) => {
+            const cleanCol = colName.trim();
+            for (let sIdx = 0; sIdx < sheets.length; sIdx++) {
+                const tables = getSheetTables(sIdx);
+                const tbl = tables.find(t => t.name === tblName);
+                if (!tbl || !tbl.hasHeader) continue;
+
+                const dataStartR = tbl.minRow + 1;
+                const dataEndR = tbl.hasTotalRow ? tbl.maxRow - 1 : tbl.maxRow;
+                if (dataEndR < dataStartR) return "#REF!";
+
+                let matchedCol = -1;
+                for (let c = tbl.minCol; c <= tbl.maxCol; c++) {
+                    const headerText = sIdx === activeSheetIndex
+                        ? (getVisibleCell(tbl.minRow, c)?.textContent ?? "").trim()
+                        : String((sheets[sIdx].cells || []).find(item => item.r === tbl.minRow && item.c === c)?.v ?? "").trim();
+                    if (headerText === cleanCol) {
+                        matchedCol = c;
+                        break;
+                    }
+                }
+                if (matchedCol === -1) return "#REF!";
+
+                const colLetter = getColumnName(matchedCol);
+                const rangeStr = `${colLetter}${dataStartR}:${colLetter}${dataEndR}`;
+                if (sIdx !== sheetIdx) {
+                    const sName = sheets[sIdx].name;
+                    const prefix = /[^A-Za-z0-9_\u3040-\u30FF\u4E00-\u9FAF]/.test(sName)
+                        ? `'${sName.replace(/'/g, "''")}'!`
+                        : `${sName}!`;
+                    return `${prefix}${rangeStr}`;
+                }
+                return rangeStr;
+            }
+            return match;
+        });
+    }
+
+
+    // =========================================================
+    // ピボットテーブル（Pivot Table）クロス集計エンジン
+    // =========================================================
+    function openPivotTableDialog() {
+        flushPendingEdits();
+        const bounds = detectDataBlockBounds(activeCell);
+        if (!bounds || bounds.maxRow <= bounds.minRow) {
+            showAlert("ピボットテーブルを作成する元データ範囲（見出し行＋1行以上のデータ）を選択してください。", "ピボットテーブルの作成");
+            return;
+        }
+
+        const fields = [];
+        for (let c = bounds.minCol; c <= bounds.maxCol; c++) {
+            const label = (getCell(bounds.minRow, c)?.textContent ?? "").trim() || `列${getColumnName(c)}`;
+            fields.push({ col: c, label });
+        }
+
+        const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        const rangeText = `'${sheets[activeSheetIndex].name}'!${getCellReferenceByCoord(bounds.minRow, bounds.minCol)}:${getCellReferenceByCoord(bounds.maxRow, bounds.maxCol)}`;
+        const fieldOptions = fields.map(f => `<option value="${f.col}">${esc(f.label)}</option>`).join("");
+
+        const bodyHtml = `
+            <div style="width:100%; display:flex; flex-direction:column; gap:8px; font-size:12px;">
+                <div style="background:#f4f6f9; border:1px solid #bbb; padding:5px 8px;">
+                    <strong>テーブル/範囲:</strong> ${esc(rangeText)}
+                </div>
+                <div style="display:grid; grid-template-columns:110px 1fr; gap:6px 8px; align-items:center;">
+                    <label style="font-weight:bold;">フィルター (任意):</label>
+                    <select class="ss-pv-filter border" style="height:24px; background:#fff; color:#000;">
+                        <option value="-1">(なし)</option>
+                        ${fieldOptions}
+                    </select>
+
+                    <label style="font-weight:bold;">行 (Rows):</label>
+                    <select class="ss-pv-row border" style="height:24px; background:#fff; color:#000;">
+                        ${fieldOptions}
+                    </select>
+
+                    <label style="font-weight:bold;">列 (Columns):</label>
+                    <select class="ss-pv-col border" style="height:24px; background:#fff; color:#000;">
+                        <option value="-1">(なし - 1次元集計)</option>
+                        ${fieldOptions}
+                    </select>
+
+                    <label style="font-weight:bold;">値 (Values):</label>
+                    <div style="display:flex; gap:4px;">
+                        <select class="ss-pv-val border" style="flex:1; height:24px; background:#fff; color:#000;">
+                            ${fieldOptions}
+                        </select>
+                        <select class="ss-pv-agg border" style="width:105px; height:24px; background:#fff; color:#000;">
+                            <option value="SUM">合計 (SUM)</option>
+                            <option value="COUNTA">個数 (COUNT)</option>
+                            <option value="AVERAGE">平均 (AVG)</option>
+                            <option value="MAX">最大 (MAX)</option>
+                            <option value="MIN">最小 (MIN)</option>
+                        </select>
+                    </div>
+
+                    <label style="font-weight:bold;">配置先:</label>
+                    <div style="display:flex; flex-direction:column; gap:3px;">
+                        <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
+                            <input type="radio" name="ss-pv-dest" value="new" checked> 新規ワークシート
+                        </label>
+                        <label style="display:flex; align-items:center; gap:4px; cursor:pointer;">
+                            <input type="radio" name="ss-pv-dest" value="existing"> 既存ワークシートの右隣空き領域
+                        </label>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const modalContent = openAppModal("ピボットテーブルの作成", bodyHtml, {
+            width: 450,
+            isHtml: true,
+            parentWin: win,
+            buttons: [
+                {
+                    label: "作成",
+                    onClick: async () => {
+                        const rowCol = Number(modalContent.querySelector(".ss-pv-row")?.value);
+                        const colCol = Number(modalContent.querySelector(".ss-pv-col")?.value);
+                        const valCol = Number(modalContent.querySelector(".ss-pv-val")?.value);
+                        const filterCol = Number(modalContent.querySelector(".ss-pv-filter")?.value);
+                        const aggType = modalContent.querySelector(".ss-pv-agg")?.value || "SUM";
+                        const destMode = modalContent.querySelector('input[name="ss-pv-dest"]:checked')?.value || "new";
+
+                        await buildPivotTable({
+                            sourceSheetIndex: activeSheetIndex,
+                            bounds,
+                            fields,
+                            rowCol,
+                            colCol,
+                            valCol,
+                            filterCol,
+                            aggType,
+                            destMode
+                        });
+                    }
+                },
+                { label: "キャンセル" }
+            ]
+        });
+
+        // デフォルトで「列」に2番目、「値」に最後の数値列を自動選択して手間を省く
+        if (fields.length >= 2 && modalContent) {
+            const colSel = modalContent.querySelector(".ss-pv-col");
+            const valSel = modalContent.querySelector(".ss-pv-val");
+            if (colSel && fields.length >= 3) colSel.value = String(fields[1].col);
+            if (valSel) valSel.value = String(fields[fields.length - 1].col);
+        }
+    }
+
+    async function buildPivotTable(cfg) {
+        const { bounds, fields, rowCol, colCol, valCol, filterCol, aggType, destMode } = cfg;
+        const fieldMap = new Map(fields.map(f => [f.col, f.label]));
+
+        // 1. 元データレコードの抽出
+        const records = [];
+        for (let r = bounds.minRow + 1; r <= bounds.maxRow; r++) {
+            const tr = getRow(r);
+            if (tr && tr.style.display === "none") continue;
+            const rowKey = (getCell(r, rowCol)?.textContent ?? "").trim() || "(空白)";
+            const colKey = colCol >= 0 ? ((getCell(r, colCol)?.textContent ?? "").trim() || "(空白)") : "値";
+            const filterKey = filterCol >= 0 ? ((getCell(r, filterCol)?.textContent ?? "").trim() || "(空白)") : "";
+            const rawValCell = getCell(r, valCol);
+            const rawText = (rawValCell?.dataset.rawValue ?? rawValCell?.textContent ?? "").trim();
+            const numVal = parseFormattedNumber(rawText);
+
+            records.push({ rowKey, colKey, filterKey, rawText, numVal });
+        }
+
+        if (records.length === 0) {
+            showAlert("集計対象のデータ行が見つかりませんでした。", "ピボットテーブル");
+            return;
+        }
+
+        // 2. クロス集計バケットの構築（フィルター条件に応じて再集計可能にする）
+        const collator = new Intl.Collator("ja", { numeric: true, sensitivity: "base" });
+        const hasColDim = colCol >= 0;
+
+        const buildFilteredBuckets = (activeFilterVal = "(すべて)") => {
+            const targetRecords = (filterCol >= 0 && activeFilterVal && activeFilterVal !== "(すべて)")
+                ? records.filter(r => r.filterKey === activeFilterVal)
+                : records;
+
+            const rKeys = Array.from(new Set(targetRecords.map(r => r.rowKey))).sort(collator.compare);
+            const cKeys = hasColDim
+                ? Array.from(new Set(targetRecords.map(r => r.colKey))).sort(collator.compare)
+                : ["値"];
+
+            const bMap = new Map(); // `${rKey}\0${cKey}` -> number[]
+            targetRecords.forEach(rec => {
+                const k = `${rec.rowKey}\0${rec.colKey}`;
+                if (!bMap.has(k)) bMap.set(k, []);
+                if (aggType === "COUNTA") {
+                    if (rec.rawText !== "") bMap.get(k).push(1);
+                } else if (!isNaN(rec.numVal)) {
+                    bMap.get(k).push(rec.numVal);
+                }
+            });
+
+            return { rowKeys: rKeys, colKeys: cKeys, buckets: bMap };
+        };
+
+        const computeAgg = (arr) => {
+            if (!arr || arr.length === 0) return "";
+            switch (aggType) {
+                case "SUM":
+                case "COUNTA":
+                    return arr.reduce((a, b) => a + b, 0);
+                case "AVERAGE":
+                    return arr.reduce((a, b) => a + b, 0) / arr.length;
+                case "MAX":
+                    return Math.max(...arr);
+                case "MIN":
+                    return Math.min(...arr);
+                default:
+                    return "";
+            }
+        };
+
+        const applyAggFormat = (cell, val) => {
+            if (val === "") return;
+            cell.dataset.numFormat = aggType === "AVERAGE" ? "number" : "comma";
+            if (aggType === "AVERAGE") cell.dataset.decimalPlaces = "2";
+            setCellFormattedValue(cell, val);
+        };
+
+        // 3. 出力先の決定（新規シート or 既存シートの右側）
+        let startR = 2;
+        let startC = 1;
+        if (destMode === "new") {
+            await addNewSheet(activeSheetIndex);
+            const pvNum = sheets.filter(s => s.name.startsWith("ピボット")).length + 1;
+            sheets[activeSheetIndex].name = `ピボット${pvNum}`;
+            renderSheetTabs();
+        } else {
+            startR = bounds.minRow;
+            startC = bounds.maxCol + 2;
+        }
+
+        const initialData = buildFilteredBuckets("(すべて)");
+        const aggLabelMap = { SUM: "合計", COUNTA: "個数", AVERAGE: "平均", MAX: "最大", MIN: "最小" };
+        const titleText = `${aggLabelMap[aggType] || aggType} / ${fieldMap.get(valCol) || ""}`;
+
+        const neededR = startR + initialData.rowKeys.length + 6;
+        const neededC = startC + initialData.colKeys.length + 3;
+        if (neededR >= rowCount) loadRowsSync(neededR - rowCount + 5);
+        if (neededC >= currentColumns) loadColumnsSync(neededC - currentColumns + 3);
+
+        // 4. 固定見出し（フィルター・タイトル・列ラベル見出し）の配置
+        let curR = startR;
+        let fValCell = null;
+        if (filterCol >= 0) {
+            const fLabelCell = getVisibleCell(curR, startC);
+            fValCell = getVisibleCell(curR, startC + 1);
+            if (fLabelCell && fValCell) {
+                setCellFormattedValue(fLabelCell, fieldMap.get(filterCol) || "フィルター");
+                fLabelCell.style.fontWeight = "bold";
+                fLabelCell.style.backgroundColor = "#d9e1f2";
+                const fVals = Array.from(new Set(records.map(r => r.filterKey))).sort(collator.compare);
+                setCellFormattedValue(fValCell, "(すべて)");
+                fValCell.dataset.dropdownList = ["(すべて)", ...fVals].join(",");
+                fValCell.style.backgroundColor = "#fff";
+                fValCell.style.border = "1px solid #8ea9db";
+            }
+            curR += 2;
+        }
+
+        const titleCell = getVisibleCell(curR, startC);
+        if (titleCell) {
+            setCellFormattedValue(titleCell, titleText);
+            titleCell.style.fontWeight = "bold";
+            titleCell.style.color = "#1f4e78";
+        }
+        curR += 1;
+
+        if (hasColDim) {
+            const colTitleCell = getVisibleCell(curR, startC + 1);
+            if (colTitleCell) {
+                setCellFormattedValue(colTitleCell, fieldMap.get(colCol) || "列ラベル");
+                colTitleCell.style.fontWeight = "bold";
+                colTitleCell.style.backgroundColor = "#d9e1f2";
+                colTitleCell.style.color = "#1f4e78";
+            }
+            curR += 1;
+        }
+
+        // 5. 集計グリッド本体の描画関数（初回・フィルター変更時で共用）
+        const headerR = curR;
+        let renderedRows = 0;
+        let renderedCols = 0;
+
+        const renderPivotGrid = (filterValue) => {
+            // 前回描画した領域をクリア（行・列数が減った場合のゴミ残り防止）
+            if (renderedRows > 0 || renderedCols > 0) {
+                for (let r = headerR; r <= headerR + renderedRows + 1; r++) {
+                    for (let c = startC; c <= startC + renderedCols; c++) {
+                        const cell = getVisibleCell(r, c);
+                        if (!cell) continue;
+                        cell.textContent = "";
+                        cell.removeAttribute("style");
+                        delete cell.dataset.rawValue;
+                        delete cell.dataset.numFormat;
+                        delete cell.dataset.decimalPlaces;
+                        delete cell.dataset.valueType;
+                    }
+                }
+            }
+
+            const { rowKeys, colKeys, buckets } = buildFilteredBuckets(filterValue);
+            const totalColsCount = hasColDim ? (colKeys.length + 1) : 1;
+
+            // テーブルヘッダー行（行ラベル ＋ 各列値 ＋ 総計）
+            const rowHeaderCell = getVisibleCell(headerR, startC);
+            if (rowHeaderCell) {
+                setCellFormattedValue(rowHeaderCell, fieldMap.get(rowCol) || "行ラベル");
+                Object.assign(rowHeaderCell.style, {
+                    fontWeight: "bold",
+                    backgroundColor: "#1f4e78",
+                    color: "#ffffff",
+                    borderBottom: "2px solid #1f4e78"
+                });
+            }
+
+            colKeys.forEach((ck, cIdx) => {
+                const hCell = getVisibleCell(headerR, startC + 1 + cIdx);
+                if (!hCell) return;
+                setCellFormattedValue(hCell, hasColDim ? ck : titleText);
+                Object.assign(hCell.style, {
+                    fontWeight: "bold",
+                    textAlign: "right",
+                    backgroundColor: "#1f4e78",
+                    color: "#ffffff",
+                    borderBottom: "2px solid #1f4e78"
+                });
+            });
+
+            if (hasColDim) {
+                const grandColH = getVisibleCell(headerR, startC + 1 + colKeys.length);
+                if (grandColH) {
+                    setCellFormattedValue(grandColH, "総計");
+                    Object.assign(grandColH.style, {
+                        fontWeight: "bold",
+                        textAlign: "right",
+                        backgroundColor: "#1f4e78",
+                        color: "#ffffff",
+                        borderBottom: "2px solid #1f4e78"
+                    });
+                }
+            }
+
+            // データ本体行の書き込み
+            const firstBodyR = headerR + 1;
+            rowKeys.forEach((rk, rIdx) => {
+                const r = firstBodyR + rIdx;
+                const rowBg = rIdx % 2 === 1 ? "#f2f5fb" : "#ffffff";
+                const rLabelCell = getVisibleCell(r, startC);
+                if (rLabelCell) {
+                    setCellFormattedValue(rLabelCell, rk);
+                    rLabelCell.style.backgroundColor = rowBg;
+                    rLabelCell.style.borderBottom = "1px solid #d9e1f2";
+                }
+
+                const rowAllValues = [];
+                colKeys.forEach((ck, cIdx) => {
+                    const rawArr = buckets.get(`${rk}\0${ck}`) || [];
+                    rowAllValues.push(...rawArr);
+                    const cell = getVisibleCell(r, startC + 1 + cIdx);
+                    if (!cell) return;
+                    cell.style.backgroundColor = rowBg;
+                    cell.style.borderBottom = "1px solid #d9e1f2";
+                    applyAggFormat(cell, computeAgg(rawArr));
+                });
+
+                if (hasColDim) {
+                    const rowGrandCell = getVisibleCell(r, startC + 1 + colKeys.length);
+                    if (rowGrandCell) {
+                        rowGrandCell.style.fontWeight = "bold";
+                        rowGrandCell.style.backgroundColor = rowBg;
+                        rowGrandCell.style.borderBottom = "1px solid #d9e1f2";
+                        applyAggFormat(rowGrandCell, computeAgg(rowAllValues));
+                    }
+                }
+            });
+
+            // 総計行（Grand Total）の書き込み
+            const grandR = firstBodyR + rowKeys.length;
+            const totalRowStyle = {
+                fontWeight: "bold",
+                backgroundColor: "#d9e1f2",
+                borderTop: "2px solid #1f4e78",
+                borderBottom: "4px double #1f4e78"
+            };
+
+            const grandLabelCell = getVisibleCell(grandR, startC);
+            if (grandLabelCell) {
+                setCellFormattedValue(grandLabelCell, "総計");
+                Object.assign(grandLabelCell.style, totalRowStyle);
+            }
+
+            const allRecordsValues = [];
+            colKeys.forEach((ck, cIdx) => {
+                const colAllValues = [];
+                rowKeys.forEach(rk => {
+                    const arr = buckets.get(`${rk}\0${ck}`) || [];
+                    colAllValues.push(...arr);
+                    allRecordsValues.push(...arr);
+                });
+                const cell = getVisibleCell(grandR, startC + 1 + cIdx);
+                if (!cell) return;
+                Object.assign(cell.style, totalRowStyle);
+                applyAggFormat(cell, computeAgg(colAllValues));
+            });
+
+            if (hasColDim) {
+                const bottomRightCell = getVisibleCell(grandR, startC + 1 + colKeys.length);
+                if (bottomRightCell) {
+                    Object.assign(bottomRightCell.style, totalRowStyle);
+                    applyAggFormat(bottomRightCell, computeAgg(allRecordsValues));
+                }
+            }
+
+            renderedRows = rowKeys.length;
+            renderedCols = totalColsCount;
+
+            // 列幅を自動調整して見切れを防止
+            for (let c = startC; c <= startC + totalColsCount; c++) {
+                autoFitColumn(c);
+            }
+        };
+
+        // 初回描画
+        renderPivotGrid("(すべて)");
+
+        // フィルターセルの選択変更時に自動再集計
+        if (filterCol >= 0 && fValCell) {
+            let prevFilterVal = "(すべて)";
+            const filterObserver = new MutationObserver(() => {
+                const curVal = (fValCell.textContent ?? "").trim() || "(すべて)";
+                if (curVal === prevFilterVal) return;
+                prevFilterVal = curVal;
+                renderPivotGrid(curVal);
+                setDirtyState(true);
+                debouncedSaveState();
+            });
+            filterObserver.observe(fValCell, { childList: true, characterData: true, subtree: true });
+            if (typeof signal !== "undefined" && signal) {
+                signal.addEventListener("abort", () => filterObserver.disconnect(), { once: true });
+            }
+        }
+
+        const focusTarget = getVisibleCell(headerR, startC);
+        if (focusTarget) {
+            clearSelection();
+            setActiveCell(focusTarget, true);
+            updateSelectedCellsDisplay();
+            updateFillHandle();
+        }
+
+        statusBarState.stateText = "ピボットテーブルを生成しました";
+        renderWindowStatusBar();
+        setDirtyState(true);
+        debouncedSaveState();
+    }
+
 
     // =========================================================
     // Excel 365準拠 オートフィルター機能
@@ -9453,6 +12903,11 @@ export default async function initSpreadsheetApp(content, options = {}) {
     }
 
     function openFilterDropdownMenu(colIdx, anchorEl) {
+        const existing = document.querySelector(".ss-filter-dropdown");
+        if (existing && existing.dataset.filterCol === String(colIdx)) {
+            closeFilterDropdown();
+            return;
+        }
         closeFilterDropdown();
         if (!autoFilterState) return;
         const { headerRow, maxRow, filters } = autoFilterState;
@@ -9474,6 +12929,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         const rect = anchorEl.getBoundingClientRect();
         const dropdown = document.createElement("div");
         dropdown.className = "ss-filter-dropdown";
+        dropdown.dataset.filterCol = String(colIdx);
         dropdown.style.left = `${Math.min(window.innerWidth - 230, Math.max(8, rect.left - 180))}px`; dropdown.style.top = `${Math.min(window.innerHeight - 280, rect.bottom + 2)}px`;
 
         dropdown.innerHTML = `
@@ -9604,7 +13060,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             const arrow = document.createElement("span");
             arrow.className = "ss-filter-arrow";
             arrow.dataset.filterCol = String(c);
-            arrow.textContent = "▼";
+            arrow.textContent = "";
             arrow.title = "フィルターと並べ替え";
             arrow.addEventListener("mousedown", (e) => {
                 e.stopPropagation();
@@ -9617,10 +13073,10 @@ export default async function initSpreadsheetApp(content, options = {}) {
     }
 
     document.addEventListener("mousedown", (e) => {
-        if (!e.target.closest(".ss-filter-dropdown") && !e.target.closest(".ss-filter-arrow")) {
+        if (!e.target.closest(".ss-filter-dropdown, .ss-filter-arrow")) {
             closeFilterDropdown();
         }
-        if (!e.target.closest(".ss-cell-dropdown-list") && !e.target.closest(".ss-cell-dropdown-btn")) {
+        if (!e.target.closest(".ss-cell-dropdown-list, .ss-cell-dropdown-btn")) {
             closeCellDropdownList();
         }
     }, { signal });
@@ -9657,7 +13113,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             `;
 
             // parentWin を渡さないことで背面シートのクリック操作を維持しつつ window.js の窓として生成
-            const modalContent = windowAPI.showModalWindow("検索と置換", bodyHtml, {
+            const modalContent = openAppModal("検索と置換", bodyHtml, {
                 width: 370,
                 isHtml: true,
                 allowDuplicate: true,
@@ -9989,6 +13445,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     btn?.classList.add("selected");
                     statusBarState.stateText = "書式コピー待機中（貼り付け先セルを選択）";
                 }
+                renderWindowStatusBar();
                 break;
             }
             case "clear-cells":
@@ -10012,9 +13469,12 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     delete c.dataset.numFormat;
                     delete c.dataset.decimalPlaces;
                     delete c.dataset.dropdownList;
+                    delete c.dataset.dvRule;
                     delete c.dataset.cfApplied;
                 });
                 clearTargetCellsContent();
+                hideCellDropdownButton();
+                hideDataValidationTooltip();
                 break;
             case "add-sheet":
                 await addNewSheet(activeSheetIndex);
@@ -10047,6 +13507,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             case "recalc-all":
                 updateAllFormulas();
                 statusBarState.stateText = "再計算完了";
+                renderWindowStatusBar();
                 break;
             case "zoom-100":
                 setZoom(100);
@@ -10065,7 +13526,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 break;
             }
             case "print":
-                window.print();
+                printSpreadsheet();
                 break;
             case "insert-textbox":
                 insertTextBox();
@@ -10084,6 +13545,21 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 break;
             case "find-replace":
                 openFindReplaceDialog(false);
+                break;
+            case "remove-duplicates":
+                openRemoveDuplicatesDialog();
+                break;
+            case "text-to-columns":
+                openTextToColumnsDialog();
+                break;
+            case "create-table":
+                convertRangeToStructuredTable("blue");
+                break;
+            case "toggle-table-total":
+                toggleStructuredTableTotalRow();
+                break;
+            case "pivot-table":
+                openPivotTableDialog();
                 break;
             case "revert-formula":
                 isFormulaBarDirty = false;
@@ -10167,94 +13643,77 @@ export default async function initSpreadsheetApp(content, options = {}) {
             const preset = cfBtn.dataset.cfPreset;
             appRoot.querySelectorAll(".pulldown_menu").forEach(m => { m.style.display = "none"; });
             if (preset === "custom") {
-                openConditionalFormatModal();
+                openConditionalFormatModal(null);
                 return;
             }
             if (preset === "manage") {
                 openConditionalFormatManager();
                 return;
             }
-            const b = getSelectedRangeBounds();
-            if (b) {
-                const presetMap = {
-                    gt100: { condition: ">100", bgColor: "#ffc7ce", textColor: "#9c0006" },
-                    lt0: { condition: "<0", bgColor: "#ffc7ce", textColor: "#9c0006" },
-                    duplicate: { op: "duplicate", bgColor: "#ffc7ce", textColor: "#9c0006" },
-                    blank: { op: "blank", bgColor: "#fff2cc", textColor: "#7f6000" },
-                    top10: { op: "top10", bgColor: "#c6efce", textColor: "#006100", bold: true },
-                    bottom10: { op: "bottom10", bgColor: "#ffc7ce", textColor: "#9c0006" },
-                    aboveAvg: { op: "aboveAvg", bgColor: "#d9e1f2", textColor: "#1f4e78", bold: true },
-                    belowAvg: { op: "belowAvg", bgColor: "#ffeb9c", textColor: "#9c6500" },
-                    "databar-blue": { op: "databar", barColor: "rgba(99, 142, 198, 0.45)" },
-                    "databar-green": { op: "databar", barColor: "rgba(99, 190, 123, 0.45)" },
-                    "databar-orange": { op: "databar", barColor: "rgba(255, 182, 40, 0.45)" },
-                    "scale-gyr": { op: "colorscale", reverse: false },
-                    "scale-ryg": { op: "colorscale", reverse: true }
-                };
-                if (preset === "clear") {
-                    sheets[activeSheetIndex].conditionalFormats = [];
-                } else if (presetMap[preset]) {
-                    sheets[activeSheetIndex].conditionalFormats.push({ ...b, ...presetMap[preset] });
-                }
-                applyConditionalFormats();
-                setDirtyState(true);
-                debouncedSaveState();
+            if (
+                preset.startsWith("highlight-") ||
+                ["top-n", "top-pct", "bottom-n", "bottom-pct", "above-avg", "below-avg"].includes(preset)
+            ) {
+                openConditionalFormatPresetDialog(preset);
+                return;
             }
+
+            const b = getSelectedRangeBounds();
+            if (!b) return;
+
+            if (preset === "clear-sheet") {
+                sheets[activeSheetIndex].conditionalFormats = [];
+            } else if (preset === "clear-selection") {
+                sheets[activeSheetIndex].conditionalFormats = (sheets[activeSheetIndex].conditionalFormats || []).filter(
+                    r => r.maxRow < b.minRow || r.minRow > b.maxRow || r.maxCol < b.minCol || r.minCol > b.maxCol
+                );
+            } else {
+                const presetMap = {
+                    "databar-grad-blue": { op: "databar", barColor: "#638ec6", solid: false },
+                    "databar-solid-blue": { op: "databar", barColor: "#638ec6", solid: true },
+                    "databar-grad-green": { op: "databar", barColor: "#63be7b", solid: false },
+                    "databar-solid-green": { op: "databar", barColor: "#63be7b", solid: true },
+                    "databar-grad-red": { op: "databar", barColor: "#ff555a", solid: false },
+                    "databar-solid-red": { op: "databar", barColor: "#ff555a", solid: true },
+                    "databar-grad-orange": { op: "databar", barColor: "#ffb628", solid: false },
+                    "databar-solid-orange": { op: "databar", barColor: "#ffb628", solid: true },
+                    "scale-gyr": { op: "colorscale", cLow: [248, 105, 107], cMid: [255, 235, 132], cHigh: [99, 190, 123] },
+                    "scale-ryg": { op: "colorscale", cLow: [99, 190, 123], cMid: [255, 235, 132], cHigh: [248, 105, 107] },
+                    "scale-gwr": { op: "colorscale", cLow: [248, 105, 107], cMid: [255, 255, 255], cHigh: [99, 190, 123] },
+                    "scale-rwg": { op: "colorscale", cLow: [99, 190, 123], cMid: [255, 255, 255], cHigh: [248, 105, 107] },
+                    "scale-bwr": { op: "colorscale", cLow: [248, 105, 107], cMid: [255, 255, 255], cHigh: [90, 138, 198] },
+                    "scale-rwb": { op: "colorscale", cLow: [90, 138, 198], cMid: [255, 255, 255], cHigh: [248, 105, 107] },
+                    "scale-wr": { op: "colorscale", twoColor: true, cLow: [248, 105, 107], cHigh: [255, 255, 255] },
+                    "scale-rw": { op: "colorscale", twoColor: true, cLow: [255, 255, 255], cHigh: [248, 105, 107] },
+                    "scale-gw": { op: "colorscale", twoColor: true, cLow: [255, 255, 255], cHigh: [99, 190, 123] },
+                    "scale-wg": { op: "colorscale", twoColor: true, cLow: [99, 190, 123], cHigh: [255, 255, 255] },
+                    "icon-arrows3": { op: "iconset", iconSet: "arrows3" },
+                    "icon-traffic3": { op: "iconset", iconSet: "traffic3" },
+                    "icon-signs3": { op: "iconset", iconSet: "signs3" },
+                    "icon-stars3": { op: "iconset", iconSet: "stars3" }
+                };
+                if (presetMap[preset]) {
+                    sheets[activeSheetIndex].conditionalFormats.unshift({ ...b, ...presetMap[preset], stopIfTrue: false });
+                }
+            }
+            applyConditionalFormats();
+            setDirtyState(true);
+            debouncedSaveState();
             return;
         }
 
         const presetBtn = e.target.closest("[data-table-preset]");
         if (presetBtn) {
-            const themes = {
-                blue: { headerBg: "#1f4e78", headerFg: "#ffffff", stripeBg: "#d9e1f2", evenBg: "#ffffff", bodyFg: "#000000", border: "1px solid #8ea9db" },
-                orange: { headerBg: "#c65911", headerFg: "#ffffff", stripeBg: "#fce4d6", evenBg: "#ffffff", bodyFg: "#000000", border: "1px solid #f4b084" },
-                gray: { headerBg: "#595959", headerFg: "#ffffff", stripeBg: "#ededed", evenBg: "#ffffff", bodyFg: "#000000", border: "1px solid #a6a6a6" },
-                gold: { headerBg: "#bf8f00", headerFg: "#ffffff", stripeBg: "#fff2cc", evenBg: "#ffffff", bodyFg: "#000000", border: "1px solid #ffd966" },
-                sky: { headerBg: "#2f75b5", headerFg: "#ffffff", stripeBg: "#ddebf7", evenBg: "#ffffff", bodyFg: "#000000", border: "1px solid #9bc2e6" },
-                green: { headerBg: "#375623", headerFg: "#ffffff", stripeBg: "#e2efda", evenBg: "#ffffff", bodyFg: "#000000", border: "1px solid #a9d08e" },
-                purple: { headerBg: "#7030a0", headerFg: "#ffffff", stripeBg: "#e9d8f4", evenBg: "#ffffff", bodyFg: "#000000", border: "1px solid #b88ce0" },
-                teal: { headerBg: "#008080", headerFg: "#ffffff", stripeBg: "#d9f2f2", evenBg: "#ffffff", bodyFg: "#000000", border: "1px solid #80cccc" },
-                lightBlue: { headerBg: "#d9e1f2", headerFg: "#1f4e78", stripeBg: "#f2f5fb", evenBg: "#ffffff", bodyFg: "#000000", border: "1px solid #b4c6e7" },
-                lightGreen: { headerBg: "#e2efda", headerFg: "#375623", stripeBg: "#f4f9f0", evenBg: "#ffffff", bodyFg: "#000000", border: "1px solid #c6e0b4" },
-                darkNavy: { headerBg: "#0f243e", headerFg: "#ffffff", stripeBg: "#244062", evenBg: "#17375e", bodyFg: "#ffffff", border: "1px solid #4f81bd" },
-                darkRed: { headerBg: "#632523", headerFg: "#ffffff", stripeBg: "#963634", evenBg: "#7c2d2b", bodyFg: "#ffffff", border: "1px solid #c0504d" }
-            };
-            const theme = themes[presetBtn.dataset.tablePreset];
-            const useHeader = appRoot.querySelector(".ss-tbl-opt-header")?.checked ?? true;
-            const useStripe = appRoot.querySelector(".ss-tbl-opt-stripe")?.checked ?? true;
-            const bounds = getSelectedRangeBounds();
-            if (theme && bounds) {
-                for (let r = bounds.minRow; r <= bounds.maxRow; r++) {
-                    const isHeader = useHeader && r === bounds.minRow;
-                    const dataRowIdx = useHeader ? (r - bounds.minRow - 1) : (r - bounds.minRow);
-                    const isStripe = !isHeader && useStripe && (dataRowIdx % 2 === 1);
-                    for (let c = bounds.minCol; c <= bounds.maxCol; c++) {
-                        const cell = getVisibleCell(r, c);
-                        if (!cell) continue;
-                        cell.style.borderTop = theme.border;
-                        cell.style.borderBottom = theme.border;
-                        cell.style.borderLeft = theme.border;
-                        cell.style.borderRight = theme.border;
-                        if (isHeader) {
-                            cell.style.backgroundColor = theme.headerBg;
-                            cell.style.color = theme.headerFg;
-                            cell.style.fontWeight = "bold";
-                        } else {
-                            cell.style.backgroundColor = isStripe ? theme.stripeBg : theme.evenBg;
-                            cell.style.color = theme.bodyFg;
-                            cell.style.fontWeight = "";
-                        }
-                    }
-                }
-                setDirtyState(true);
-                debouncedSaveState();
-            }
+            convertRangeToStructuredTable(presetBtn.dataset.tablePreset);
             appRoot.querySelectorAll(".pulldown_menu").forEach(m => { m.style.display = "none"; });
             return;
         }
 
         const actionBtn = e.target.closest("[data-action]");
         if (actionBtn) {
+            if (actionBtn.closest(".pulldown_menu")) {
+                appRoot.querySelectorAll(".pulldown_menu").forEach(m => { m.style.display = "none"; });
+            }
             await handleAppAction(actionBtn.dataset.action);
             return;
         }
@@ -10597,23 +14056,6 @@ export default async function initSpreadsheetApp(content, options = {}) {
     let moveGrabOffset = { row: 0, col: 0 };
     let moveTargetTopLeft = null;
 
-    function getSelectedRangeBounds() {
-        const selected = Array.from(tbody.querySelectorAll("td.selected"));
-        if (!selected.length) return null;
-        let minRow = Infinity, maxRow = -Infinity, minCol = Infinity, maxCol = -Infinity;
-        selected.forEach(c => {
-            const r0 = +c.dataset.row;
-            const c0 = +c.dataset.col;
-            const r1 = r0 + (+c.getAttribute("rowspan") || 1) - 1;
-            const c1 = c0 + (+c.getAttribute("colspan") || 1) - 1;
-            minRow = Math.min(minRow, r0);
-            maxRow = Math.max(maxRow, r1);
-            minCol = Math.min(minCol, c0);
-            maxCol = Math.max(maxCol, c1);
-        });
-        return { minRow, maxRow, minCol, maxCol };
-    }
-
     function resolveCellFromPoint(e) {
         const rawCell = e.target?.closest?.("td");
         if (!rawCell || !tbody.contains(rawCell)) return null;
@@ -10756,6 +14198,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     numFormat: cell.dataset.numFormat || "",
                     decimalPlaces: cell.dataset.decimalPlaces ?? "",
                     dropdownList: cell.dataset.dropdownList || "",
+                    dvRule: cell.dataset.dvRule || "",
                     valueType: cell.dataset.valueType || "",
                     dateValue: cell.dataset.dateValue || "",
                     styleObj: extractCellStyleObject(cell),
@@ -10823,6 +14266,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
             if (item.dropdownList) dest.dataset.dropdownList = item.dropdownList;
             else delete dest.dataset.dropdownList;
 
+            if (item.dvRule) dest.dataset.dvRule = item.dvRule;
+            else delete dest.dataset.dvRule;
+
             if (item.valueType) dest.dataset.valueType = item.valueType;
             else delete dest.dataset.valueType;
 
@@ -10881,6 +14327,42 @@ export default async function initSpreadsheetApp(content, options = {}) {
             }
         }
 
+        // 範囲内のテキストボックス・グラフも移動／複製に追従させる
+        const floatingInRange = getFloatingObjectsInBounds(srcBounds);
+        if (floatingInRange.length > 0) {
+            const srcRect = getRangeLocalRect(srcBounds);
+            const destRect = getRangeLocalRect(destBounds);
+            if (srcRect && destRect) {
+                if (copyMode) {
+                    floatingInRange.forEach(box => {
+                        const snap = snapshotFloatingObject(box, srcRect);
+                        spawnFloatingObjectFromSnapshot(snap, destRect, rowDelta, colDelta);
+                    });
+                } else {
+                    const dx = destRect.left - srcRect.left;
+                    const dy = destRect.top - srcRect.top;
+                    floatingInRange.forEach(box => {
+                        const curLeft = parseFloat(box.dataset.initialLeft || box.style.left) || 0;
+                        const curTop = parseFloat(box.dataset.initialTop || box.style.top) || 0;
+                        const nextLeft = Math.max(0, Math.round(curLeft + dx));
+                        const nextTop = Math.max(0, Math.round(curTop + dy));
+                        box.dataset.initialLeft = String(nextLeft);
+                        box.dataset.initialTop = String(nextTop);
+                        box.style.left = `${nextLeft}px`;
+                        box.style.top = `${nextTop}px`;
+
+                        if (box.classList.contains("floating-chart") && box.dataset.sourceRange) {
+                            const shifted = adjustMovedFormulaSelf("=" + box.dataset.sourceRange, srcBounds, rowDelta, colDelta);
+                            if (shifted.startsWith("=")) {
+                                box.dataset.sourceRange = shifted.slice(1);
+                                renderChartBoxSVG(box);
+                            }
+                        }
+                    });
+                }
+            }
+        }
+
         // Excel準拠：複製ではなく「移動」のとき、移動元セルを参照していた別数式を移動先へ自動追従させる
         if (!copyMode) {
             redirectFormulasForMovedRange(srcBounds, rowDelta, colDelta, destBounds);
@@ -10890,6 +14372,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
         if (newActive) setActiveCell(newActive, true);
 
         updateAllFormulas();
+        applyConditionalFormats();
+        if (autoFilterState) applyAutoFilterRows();
+        refreshVisibleFloatingObjects();
         updateSelectedCellsDisplay();
         updateFillHandle();
         setDirtyState(true);
@@ -10908,9 +14393,10 @@ export default async function initSpreadsheetApp(content, options = {}) {
             minC >= bounds.minCol && maxC <= bounds.maxCol;
     }
 
-    // 移動したセル「自身」の数式調整（移動ブロック内の参照のみシフトし、外部参照は固定維持）
+    // 移動したセル「自身」の数式調整（相対参照のみ移動量追従、$付き絶対参照と外部参照は完全固定）
     function adjustMovedFormulaSelf(formula, srcBounds, rowDelta, colDelta) {
         if (!formula || formula[0] !== "=") return formula;
+        const activeSheetName = sheets[activeSheetIndex]?.name || "";
         const stringLiterals = [];
         const masked = formula.substring(1).replace(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'(?!\s*!)/g, (m) => {
             const token = `__MOV_SELF_${stringLiterals.length}__`;
@@ -10918,12 +14404,16 @@ export default async function initSpreadsheetApp(content, options = {}) {
             return token;
         });
 
-        // シート名プレフィックス(Sheet2! 等)付きの参照と、単一/範囲参照を一括処理
-        const tokenRegex = /((?:'[^']+'|[A-Za-z0-9_\u3040-\u30FF\u4E00-\u9FAF]+)!)?(?<![A-Za-z0-9_])(\$?)([A-Za-z]+)(\$?)(\d+)(?::(\$?)([A-Za-z]+)(\$?)(\d+))?(?!\s*!)/g;
+        const tokenRegex = /((?:'[^']+'|[A-Za-z0-9_\u3040-\u30FF\u4E00-\u9FAF]+)!)?(?<![A-Za-z0-9_$])(\$?)([A-Za-z]+)(\$?)(\d+)(?::(\$?)([A-Za-z]+)(\$?)(\d+))?(?!\s*!)/g;
         const replaced = masked.replace(tokenRegex, (match, sheetPrefix, aC1, col1, aR1, row1, aC2, col2, aR2, row2) => {
-            // 他シートへの参照は移動しない
-            if (sheetPrefix) return match;
-
+            if (sheetPrefix) {
+                const rawSheet = sheetPrefix.slice(0, -1);
+                const unquoted = (rawSheet.startsWith("'") && rawSheet.endsWith("'"))
+                    ? rawSheet.slice(1, -1).replace(/''/g, "'")
+                    : rawSheet;
+                if (unquoted !== activeSheetName) return match;
+            }
+            const prefix = sheetPrefix || "";
             const c1 = columnLettersToIndex(col1);
             const r1 = parseInt(row1, 10);
 
@@ -10931,18 +14421,18 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 const c2 = columnLettersToIndex(col2);
                 const r2 = parseInt(row2, 10);
                 if (isRangeWithinBounds(r1, c1, r2, c2, srcBounds)) {
-                    const nc1 = Math.max(0, c1 + colDelta);
-                    const nr1 = Math.max(1, r1 + rowDelta);
-                    const nc2 = Math.max(0, c2 + colDelta);
-                    const nr2 = Math.max(1, r2 + rowDelta);
-                    return `${aC1}${getColumnName(nc1)}${aR1}${nr1}:${aC2}${getColumnName(nc2)}${aR2}${nr2}`;
+                    const nc1 = aC1 ? c1 : Math.max(0, c1 + colDelta);
+                    const nr1 = aR1 ? r1 : Math.max(1, r1 + rowDelta);
+                    const nc2 = aC2 ? c2 : Math.max(0, c2 + colDelta);
+                    const nr2 = aR2 ? r2 : Math.max(1, r2 + rowDelta);
+                    return `${prefix}${aC1}${getColumnName(nc1)}${aR1}${nr1}:${aC2}${getColumnName(nc2)}${aR2}${nr2}`;
                 }
                 return match;
             } else {
                 if (isCoordInBounds(r1, c1, srcBounds)) {
-                    const nc1 = Math.max(0, c1 + colDelta);
-                    const nr1 = Math.max(1, r1 + rowDelta);
-                    return `${aC1}${getColumnName(nc1)}${aR1}${nr1}`;
+                    const nc1 = aC1 ? c1 : Math.max(0, c1 + colDelta);
+                    const nr1 = aR1 ? r1 : Math.max(1, r1 + rowDelta);
+                    return `${prefix}${aC1}${getColumnName(nc1)}${aR1}${nr1}`;
                 }
                 return match;
             }
@@ -10951,13 +14441,13 @@ export default async function initSpreadsheetApp(content, options = {}) {
         return "=" + replaced.replace(/__MOV_SELF_(\d+)__/g, (_, idx) => stringLiterals[Number(idx)]);
     }
 
-    // 移動していない「他セル（他シート含む）」の数式参照を移動先へ追従（重なり・二重置換防止）
+    // 移動していない「他セル（他シート含む）」の数式参照を移動先へ追従（$付き絶対参照は固定維持）
     function redirectFormulasForMovedRange(srcBounds, rowDelta, colDelta, destBounds) {
         if (rowDelta === 0 && colDelta === 0) return;
 
         const activeSheetName = sheets[activeSheetIndex]?.name || "";
         const shiftRefTokens = (expr, allowSheetPrefix = false) => {
-            const tokenRegex = /((?:'[^']+'|[A-Za-z0-9_\u3040-\u30FF\u4E00-\u9FAF]+)!)?(?<![A-Za-z0-9_])(\$?)([A-Za-z]+)(\$?)(\d+)(?::(\$?)([A-Za-z]+)(\$?)(\d+))?/g;
+            const tokenRegex = /((?:'[^']+'|[A-Za-z0-9_\u3040-\u30FF\u4E00-\u9FAF]+)!)?(?<![A-Za-z0-9_$])(\$?)([A-Za-z]+)(\$?)(\d+)(?::(\$?)([A-Za-z]+)(\$?)(\d+))?/g;
             return expr.replace(tokenRegex, (match, sheetPrefix, aC1, col1, aR1, row1, aC2, col2, aR2, row2) => {
                 if (sheetPrefix) {
                     if (!allowSheetPrefix) return match;
@@ -10975,17 +14465,17 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     const c2 = columnLettersToIndex(col2);
                     const r2 = parseInt(row2, 10);
                     if (isRangeWithinBounds(r1, c1, r2, c2, srcBounds)) {
-                        const nc1 = Math.max(0, c1 + colDelta);
-                        const nr1 = Math.max(1, r1 + rowDelta);
-                        const nc2 = Math.max(0, c2 + colDelta);
-                        const nr2 = Math.max(1, r2 + rowDelta);
+                        const nc1 = aC1 ? c1 : Math.max(0, c1 + colDelta);
+                        const nr1 = aR1 ? r1 : Math.max(1, r1 + rowDelta);
+                        const nc2 = aC2 ? c2 : Math.max(0, c2 + colDelta);
+                        const nr2 = aR2 ? r2 : Math.max(1, r2 + rowDelta);
                         return `${prefix}${aC1}${getColumnName(nc1)}${aR1}${nr1}:${aC2}${getColumnName(nc2)}${aR2}${nr2}`;
                     }
                     return match;
                 } else {
                     if (isCoordInBounds(r1, c1, srcBounds)) {
-                        const nc1 = Math.max(0, c1 + colDelta);
-                        const nr1 = Math.max(1, r1 + rowDelta);
+                        const nc1 = aC1 ? c1 : Math.max(0, c1 + colDelta);
+                        const nr1 = aR1 ? r1 : Math.max(1, r1 + rowDelta);
                         return `${prefix}${aC1}${getColumnName(nc1)}${aR1}${nr1}`;
                     }
                     return match;
@@ -11062,7 +14552,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
             flushPendingEdits();
             const allCells = tbody.querySelectorAll("td");
             allCells.forEach(c => {
-                if (c.style.display !== "none") c.classList.add("selected");
+                if (c.style.display !== "none" && c.closest("tr")?.style.display !== "none") {
+                    c.classList.add("selected");
+                }
             });
             setActiveCell(getVisibleCell(1, 0), true);
             updateSelectedCellsDisplay();
@@ -11286,6 +14778,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 formatPainterSnapshot = null;
                 appRoot.querySelector(".ss-format-painter-btn")?.classList.remove("selected");
                 statusBarState.stateText = "書式を適用しました";
+                renderWindowStatusBar();
                 setDirtyState(true);
                 debouncedSaveState();
             }
@@ -11310,6 +14803,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             formatPainterSnapshot = null;
             appRoot.querySelector(".ss-format-painter-btn")?.classList.remove("selected");
             statusBarState.stateText = "準備完了";
+            renderWindowStatusBar();
         }
         isRowSelecting = false;
         isColSelecting = false;
@@ -11414,7 +14908,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
         else removeMergedCellsHighlight();
 
         if (activeCell) {
-            activeCell.textContent = val;
+            setCellTextPreservingControls(activeCell, val);
             activeCell.style.outline = "solid 2px steelblue";
         }
         setDirtyState(true);
@@ -11503,7 +14997,10 @@ export default async function initSpreadsheetApp(content, options = {}) {
         ) return;
         if (activeCell && !isCellEditing()) {
             clearCopyAnimation();
-            enterCellEditMode(activeCell, true, "typing", null, "");
+            enterCellEditMode(activeCell, false, "ime");
+            cellEditor.value = "";
+            formulaBarInput.value = "";
+            syncCellEditorLayout(activeCell);
             setDirtyState(true);
         }
     }, { signal });
@@ -11526,7 +15023,10 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
         if ((e.key === "Process" || e.keyCode === 229) && activeCell && !isCellEditing() && document.activeElement !== formulaBarInput) {
             clearCopyAnimation();
-            enterCellEditMode(activeCell, true, "typing", null, "");
+            enterCellEditMode(activeCell, false, "ime");
+            cellEditor.value = "";
+            formulaBarInput.value = "";
+            syncCellEditorLayout(activeCell);
             setDirtyState(true);
             return;
         }
@@ -11589,7 +15089,9 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     e.preventDefault();
                     const allCells = tbody.querySelectorAll("td");
                     allCells.forEach(c => {
-                        if (c.style.display !== "none") c.classList.add("selected");
+                        if (c.style.display !== "none" && c.closest("tr")?.style.display !== "none") {
+                            c.classList.add("selected");
+                        }
                     });
                     setActiveCell(getVisibleCell(1, 0), true);
                     updateSelectedCellsDisplay();
@@ -11620,6 +15122,11 @@ export default async function initSpreadsheetApp(content, options = {}) {
             if (e.shiftKey && key === "l") {
                 e.preventDefault();
                 toggleAutoFilter();
+                return;
+            }
+            if (key === "t" && !e.shiftKey && document.activeElement !== formulaBarInput) {
+                e.preventDefault();
+                convertRangeToStructuredTable("blue");
                 return;
             }
 
@@ -11775,12 +15282,15 @@ export default async function initSpreadsheetApp(content, options = {}) {
             e.preventDefault();
             const targets = getTargetCells();
             if (e.key === "Backspace" && targets.length === 1 && activeCell) {
-                enterCellEditMode(activeCell, true, "typing", null, "");
+                enterCellEditMode(activeCell, false, "backspace");
+                cellEditor.value = "";
+                formulaBarInput.value = "";
+                syncCellEditorLayout(activeCell);
                 setDirtyState(true);
                 return;
             }
             targets.forEach(c => {
-                c.textContent = "";
+                setCellTextPreservingControls(c, "");
                 delete c.dataset.formula;
                 delete c.dataset.rawValue;
             });
@@ -11848,8 +15358,14 @@ export default async function initSpreadsheetApp(content, options = {}) {
                     const baseEnd = selectionEnd || { ...selectionStart };
                     let extR = baseEnd.row;
                     let extC = baseEnd.col;
-                    if (e.key === "ArrowUp") extR = Math.max(1, extR - 1);
-                    if (e.key === "ArrowDown") extR = extR + 1;
+                    if (e.key === "ArrowUp") {
+                        extR = Math.max(1, extR - 1);
+                        while (extR > 1 && getRow(extR)?.style.display === "none") extR--;
+                    }
+                    if (e.key === "ArrowDown") {
+                        extR = extR + 1;
+                        while (extR < rowCount - 1 && getRow(extR)?.style.display === "none") extR++;
+                    }
                     if (e.key === "ArrowLeft") extC = Math.max(0, extC - 1);
                     if (e.key === "ArrowRight") extC = extC + 1;
 
@@ -11914,7 +15430,12 @@ export default async function initSpreadsheetApp(content, options = {}) {
         if (activeCell && !isCellEditing() && e.key.length === 1 && !e.altKey && !(e.shiftKey && e.key === " ")) {
             e.preventDefault();
             clearCopyAnimation();
-            enterCellEditMode(activeCell, true, "typing", null, e.key);
+            enterCellEditMode(activeCell, false, "type");
+            cellEditor.value = e.key;
+            cellEditor.setSelectionRange(1, 1);
+            formulaBarInput.value = e.key;
+            syncCellEditorLayout(activeCell);
+            showAutocompletePopup(cellEditor, e.key, 1);
             if (e.key === "=") {
                 highlightCalculationRange("=");
             }
@@ -11939,12 +15460,13 @@ export default async function initSpreadsheetApp(content, options = {}) {
         const targets = getTargetCells();
         if (!targets.length) return;
         targets.forEach(c => {
-            c.textContent = "";
+            setCellTextPreservingControls(c, "");
             delete c.dataset.formula;
             delete c.dataset.rawValue;
         });
         formulaBarInput.value = "";
         updateAllFormulas();
+        applyConditionalFormats();
         updateFillHandle();
         setDirtyState(true);
         debouncedSaveState();
@@ -12109,19 +15631,17 @@ export default async function initSpreadsheetApp(content, options = {}) {
 
     function applyRowVisibility(row, vis) {
         if (isWindowMinimizedOrHidden()) {
-            if (row.style.visibility !== "") row.style.visibility = "";
+            row.classList.remove("ss-row-offscreen");
             const cells = row.children;
             for (let i = 0; i < cells.length; i++) {
-                if (cells[i].style.visibility !== "") cells[i].style.visibility = "";
+                cells[i].classList.remove("ss-offscreen-hidden");
             }
             return;
         }
 
         const active = document.activeElement;
         const v = vis || row.contains(active) || hasVisibleMergedSpanInRow(row);
-        // "visible" を明示すると親の visibility: hidden を貫通するため、表示時は空文字で継承させる
-        const rowVis = v ? "" : "hidden";
-        if (row.style.visibility !== rowVis) row.style.visibility = rowVis;
+        row.classList.toggle("ss-row-offscreen", !v);
 
         const cells = row.children;
         for (let i = 0; i < cells.length; i++) {
@@ -12140,9 +15660,36 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 }
             }
             const show = (colVis && v) || cell.contains(active);
-            const s = show ? "" : "hidden";
-            if (cell.style.visibility !== s) cell.style.visibility = s;
+            cell.classList.toggle("ss-offscreen-hidden", !show);
         }
+    }
+
+    function refreshVisibleFloatingObjects() {
+        const boxes = spreadsheetContent.querySelectorAll(".floating-textbox");
+        if (!boxes.length) return;
+
+        if (isWindowMinimizedOrHidden()) {
+            boxes.forEach(box => box.classList.remove("ss-obj-offscreen"));
+            return;
+        }
+
+        const contRect = container.getBoundingClientRect();
+        const cornerEl = theadRow.querySelector(".ss-corner");
+        const viewTop = cornerEl ? cornerEl.getBoundingClientRect().bottom : contRect.top;
+        const viewLeft = cornerEl ? cornerEl.getBoundingClientRect().right : contRect.left;
+        const active = document.activeElement;
+
+        boxes.forEach(box => {
+            const rect = box.getBoundingClientRect();
+            const isEditingBox = Boolean(active && box.contains(active));
+            const inView = !(
+                rect.bottom <= viewTop ||
+                rect.top >= contRect.bottom ||
+                rect.right <= viewLeft ||
+                rect.left >= contRect.right
+            );
+            box.classList.toggle("ss-obj-offscreen", !inView && !isEditingBox);
+        });
     }
 
     function refreshVisibleRows() {
@@ -12157,6 +15704,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
             row.dataset.visible = String(vis);
             applyRowVisibility(row, vis);
         }
+        refreshVisibleFloatingObjects();
     }
 
     function setupRowVisibilityObserver() {
@@ -12190,11 +15738,14 @@ export default async function initSpreadsheetApp(content, options = {}) {
             container.style.overflowY = "hidden";
             container.style.overflowX = "hidden";
             for (const row of tbody.rows) {
-                row.style.visibility = "";
+                row.classList.remove("ss-row-offscreen");
                 for (let i = 0; i < row.children.length; i++) {
-                    row.children[i].style.visibility = "";
+                    row.children[i].classList.remove("ss-offscreen-hidden");
                 }
             }
+            spreadsheetContent.querySelectorAll(".floating-textbox").forEach(box => {
+                box.classList.remove("ss-obj-offscreen");
+            });
         } else {
             if (findWin && findWin.isConnected && findDialogOpen) {
                 findWin.style.visibility = "visible";
@@ -12229,64 +15780,18 @@ export default async function initSpreadsheetApp(content, options = {}) {
         });
     }
 
-    // 下部横スクロールバーとシート本体の双方向同期
-    if (hScrollTrack) {
-        hScrollTrack.addEventListener("scroll", () => {
-            if (syncingHScroll) return;
-            syncingHScroll = true;
-            const maxTrack = Math.max(1, hScrollTrack.scrollWidth - hScrollTrack.clientWidth);
-            const maxCont = Math.max(0, container.scrollWidth - container.clientWidth);
-            container.scrollLeft = Math.round((hScrollTrack.scrollLeft / maxTrack) * maxCont);
-
-            if (!isLoadingCols && hScrollTrack.scrollLeft + hScrollTrack.clientWidth >= hScrollTrack.scrollWidth - 30) {
-                isLoadingCols = true;
-                loadColumnsSync(COLUMN_BATCH);
-                isLoadingCols = false;
-            }
-            refreshVisibleRows();
-            syncingHScroll = false;
-        }, { passive: true, signal });
-    }
-
     // シートタブの左右ナビゲーションボタン
     const tabsScrollArea = appRoot.querySelector(".ss-sheet-tabs-scroll");
     appRoot.querySelectorAll(".ss-tab-nav-btn").forEach(btn => {
         btn.addEventListener("click", () => {
-            if (!tabsScrollArea) return;
-            const dir = btn.dataset.tabScroll === "left" ? -120 : 120;
-            tabsScrollArea.scrollBy({ left: dir, behavior: "smooth" });
+            tabsScrollArea?.scrollBy({ left: btn.dataset.tabScroll === "left" ? -120 : 120, behavior: "smooth" });
         }, { signal });
     });
 
-    // シートタブ領域と横スクロール領域のスプリッタードラッグ調整
-    const bottomSplitter = appRoot.querySelector(".ss-bottom-splitter");
-    const tabsRegion = appRoot.querySelector(".ss-tabs-region");
-    if (bottomSplitter && tabsRegion) {
-        bottomSplitter.addEventListener("mousedown", (e) => {
-            e.preventDefault();
-            const barRect = bottomSplitter.parentElement.getBoundingClientRect();
-            const onMove = (ev) => {
-                const relX = ev.clientX - barRect.left;
-                const pct = Math.min(82, Math.max(18, (relX / barRect.width) * 100));
-                tabsRegion.style.flexBasis = `${pct}%`;
-            };
-            const onUp = () => {
-                document.removeEventListener("mousemove", onMove);
-                document.removeEventListener("mouseup", onUp);
-            };
-            document.addEventListener("mousemove", onMove, { signal });
-            document.addEventListener("mouseup", onUp, { signal });
-        }, { signal });
-    }
-
     container.addEventListener("scroll", () => {
-        if (!syncingHScroll && hScrollTrack) {
-            syncingHScroll = true;
-            const maxCont = Math.max(1, container.scrollWidth - container.clientWidth);
-            const maxTrack = Math.max(0, hScrollTrack.scrollWidth - hScrollTrack.clientWidth);
-            hScrollTrack.scrollLeft = Math.round((container.scrollLeft / maxCont) * maxTrack);
-            syncingHScroll = false;
-        }
+        closeCellDropdownList();
+        closeFilterDropdown();
+        hideDataValidationTooltip();
         if (scrollPending || isWindowMinimizedOrHidden()) return;
         scrollPending = true;
         requestAnimationFrame(() => {
@@ -12304,6 +15809,7 @@ export default async function initSpreadsheetApp(content, options = {}) {
                 isLoadingCols = false;
             }
             refreshVisibleRows();
+            syncCellDropdownButtonPosition();
         });
     }, { passive: true, signal });
 
@@ -12318,6 +15824,8 @@ export default async function initSpreadsheetApp(content, options = {}) {
         spreadsheetContent.style.zoom = String(zoomValue / 100);
         zoomSlider.value = String(zoomValue);
         zoomDisplay.textContent = `${zoomValue}%`;
+        refreshVisibleRows();
+        syncCellDropdownButtonPosition();
         if (changed && !silent) {
             setDirtyState(true);
             debouncedSaveState();
@@ -12581,10 +16089,12 @@ export default async function initSpreadsheetApp(content, options = {}) {
             closeAutocompletePopup();
             stopTouchInertia();
             if (findWin) {
-                if (typeof findWin._closeDialog === "function") findWin._closeDialog();
+                if (windowAPI?.closeWindow) windowAPI.closeWindow(findWin);
                 else if (findWin.isConnected) findWin.remove();
                 findWin = null;
             }
+            document.getElementById(pageStyleId)?.remove();
+            document.getElementById(printStyleId)?.remove();
             if (appRoot._navInterval) {
                 clearInterval(appRoot._navInterval);
                 appRoot._navInterval = null;

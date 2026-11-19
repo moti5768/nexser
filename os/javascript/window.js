@@ -43,10 +43,10 @@ function installGlobalMouseHandler() {
             e.target.closest(".taskbar-window-btn")
         ) return;
 
-        // ★ ウィンドウ外（デスクトップなど）をクリックしたときのみ非アクティブ化（ただし表示中のモーダルがあれば維持）
+        // ★ ウィンドウ外（デスクトップなど）をクリックしたときのみ非アクティブ化（ただし背景ブロック中のモーダルがあれば維持）
         if (!win) {
             const hasVisibleModal = Array.from(document.querySelectorAll(".window"))
-                .some(w => w._modal && w.style.visibility !== "hidden" && w.dataset.minimized !== "true");
+                .some(w => w._modal && !w._allowBackgroundClick && w.style.visibility !== "hidden" && w.dataset.minimized !== "true");
             if (hasVisibleModal) {
                 scheduleRefreshTopWindow();
             } else {
@@ -71,10 +71,17 @@ function installGlobalMouseHandler() {
             }
         }, 0);
     });
+
+    window.addEventListener("resize", () => {
+        refreshMaximizedWindows();
+    });
 }
+
+let lastFocusedWindow = null;
 
 /* ===== 全ウィンドウ色リセット ===== */
 export function resetAllTitleBars() {
+    lastFocusedWindow = null;
     const inactiveBg = inactiveThemeColor2
         ? `linear-gradient(90deg, ${inactiveThemeColor || DEFAULT_COLOR}, ${inactiveThemeColor2})`
         : (inactiveThemeColor || DEFAULT_COLOR);
@@ -226,13 +233,26 @@ ${!options.hideStatus ? `
     /* ===== サイズ復元（メモリキャッシュから即時適用 ＆ 一意なキー化） ===== */
     const sizeKey = options.sizeKey || options.processKey || title;
 
+    w._abortController = abortController;
+    const applyClampedBounds = (size) => {
+        const maxW = Math.max(200, window.innerWidth);
+        const maxH = Math.max(110, window.innerHeight);
+        if (size.w) w.style.width = Math.min(size.w, maxW) + "px";
+        if (size.h) w.style.height = Math.min(size.h, maxH) + "px";
+        if (size.x !== undefined) {
+            const clampedX = Math.max(0, Math.min(size.x, Math.max(0, window.innerWidth - 80)));
+            w.style.left = clampedX + "px";
+        }
+        if (size.y !== undefined) {
+            const clampedY = Math.max(0, Math.min(size.y, Math.max(0, window.innerHeight - 40)));
+            w.style.top = clampedY + "px";
+        }
+    };
+
     // 1. まずメモリキャッシュから即座に（同期的に）サイズを適用（タイムラグなし）
     const cachedSize = windowSizeCache.get(sizeKey);
     if (cachedSize) {
-        if (cachedSize.w) w.style.width = cachedSize.w + "px";
-        if (cachedSize.h) w.style.height = cachedSize.h + "px";
-        if (cachedSize.x !== undefined) w.style.left = cachedSize.x + "px";
-        if (cachedSize.y !== undefined) w.style.top = cachedSize.y + "px";
+        applyClampedBounds(cachedSize);
     }
 
     // 2. バックグラウンド（または初回起動時）のためにDBからもロードしてキャッシュを初期化
@@ -240,10 +260,7 @@ ${!options.hideStatus ? `
         if (!size) return;
         windowSizeCache.set(sizeKey, size);
         if (!cachedSize && w.isConnected) {
-            if (size.w) w.style.width = size.w + "px";
-            if (size.h) w.style.height = size.h + "px";
-            if (size.x !== undefined) w.style.left = size.x + "px";
-            if (size.y !== undefined) w.style.top = size.y + "px";
+            applyClampedBounds(size);
         }
     }).catch(err => {
         console.warn(`Failed to load window size for key "${sizeKey}":`, err);
@@ -909,9 +926,9 @@ ${!options.hideStatus ? `
 
                 if (!dragging) return;
 
-                // 操作制限の解除
+                // 操作制限の解除（ブロック中モーダルを持つ親ウィンドウは維持）
                 document.querySelectorAll(".window").forEach(win => {
-                    if (!win.classList.contains("frameless-window")) {
+                    if (!win.classList.contains("frameless-window") && (!win._blockingDialogs || win._blockingDialogs.size === 0)) {
                         win.style.pointerEvents = "auto";
                     }
                 });
@@ -1187,7 +1204,7 @@ ${!options.hideStatus ? `
                 if (!resizing) return;
 
                 document.querySelectorAll(".window").forEach(win => {
-                    if (!win.classList.contains("frameless-window")) {
+                    if (!win.classList.contains("frameless-window") && (!win._blockingDialogs || win._blockingDialogs.size === 0)) {
                         win.style.pointerEvents = "auto";
                     }
                 });
@@ -1268,6 +1285,7 @@ export function resetWindowIdCounter() {
 /* ===== ウィンドウ前面化 ===== */
 export function bringToFront(win) {
     if (!win || win.classList.contains("ime-toolbar-window")) return; // ⭐ ツールバーならスルー
+    lastFocusedWindow = win;
     const wins = Array.from(document.querySelectorAll(".window:not(.ime-toolbar-window)")); // ⭐ ツールバーを除外
 
     if (win._modal) {
@@ -1472,6 +1490,8 @@ export function showModalWindow(title, message, options = {}) {
         .length;
     const stackOffset = (activeModalCount % 6) * 24;
 
+    let allowBackgroundClick = options.allowBackgroundClick === true || options.blockBackground === false;
+
     // --- 3. オーバーレイ作成 ---
     let overlay = null;
     if (options.overlay === true) {
@@ -1481,7 +1501,8 @@ export function showModalWindow(title, message, options = {}) {
             position: "fixed",
             left: 0, top: 0,
             width: "100vw", height: "100vh",
-            background: "rgba(0,0,0,0.4)",
+            background: allowBackgroundClick ? "transparent" : "rgba(0,0,0,0.4)",
+            pointerEvents: allowBackgroundClick ? "none" : "auto",
             zIndex: 9999
         });
         document.body.appendChild(overlay);
@@ -1536,11 +1557,41 @@ export function showModalWindow(title, message, options = {}) {
     }
 
     win._modal = true;
+    win._allowBackgroundClick = allowBackgroundClick;
     win.dataset.modalMessage = msgKey;
     win._modalOverlay = overlay;
     win.classList.add("modal-dialog");
     win.style.position = "absolute";
     document.body.appendChild(win);
+
+    const syncParentLock = () => {
+        if (!parentWin) return;
+        if (!parentWin._blockingDialogs) parentWin._blockingDialogs = new Set();
+        if (allowBackgroundClick) {
+            parentWin._blockingDialogs.delete(win);
+        } else {
+            parentWin._blockingDialogs.add(win);
+        }
+        if (parentWin._blockingDialogs.size === 0) {
+            if (!parentWin.classList.contains("frameless-window")) {
+                parentWin.style.pointerEvents = "auto";
+            }
+        } else {
+            parentWin.style.pointerEvents = "none";
+        }
+    };
+
+    win._setBackgroundClickable = (clickable) => {
+        allowBackgroundClick = Boolean(clickable);
+        win._allowBackgroundClick = allowBackgroundClick;
+        if (overlay) {
+            overlay.style.pointerEvents = allowBackgroundClick ? "none" : "auto";
+            overlay.style.background = allowBackgroundClick ? "transparent" : "rgba(0,0,0,0.4)";
+        }
+        syncParentLock();
+        scheduleRefreshTopWindow();
+        return allowBackgroundClick;
+    };
 
     // モーダル専用レイヤーで最前面化し、即座にタイトルバーをアクティブ色にする
     bringToFront(win);
@@ -1551,7 +1602,7 @@ export function showModalWindow(title, message, options = {}) {
     if (options.cascade === true) {
         // createWindow が計算したカスケード位置をそのまま維持
     } else if (parentWin) {
-        parentWin.style.pointerEvents = "none"; // 親をロック
+        syncParentLock(); // allowBackgroundClick が false の場合のみ親をロック
 
         const rect = parentWin.getBoundingClientRect();
         const left = rect.left + (rect.width - winWidth) / 2 + stackOffset;
@@ -1586,8 +1637,12 @@ export function showModalWindow(title, message, options = {}) {
     const closeDialog = (callback) => {
         if (parentWin) {
             parentWin._activeDialogs?.delete(dialogKey);
-            if (!parentWin._activeDialogs || parentWin._activeDialogs.size === 0) {
-                parentWin.style.pointerEvents = "auto"; // すべてのモーダルが閉じた時のみロック解除
+            parentWin._blockingDialogs?.delete(win);
+            if ((!parentWin._blockingDialogs || parentWin._blockingDialogs.size === 0) &&
+                (!parentWin._activeDialogs || parentWin._activeDialogs.size === 0)) {
+                if (!parentWin.classList.contains("frameless-window")) {
+                    parentWin.style.pointerEvents = "auto"; // ロック中のモーダルがなくなった時のみロック解除
+                }
             }
         }
         if (win._taskbarBtn) {
@@ -1598,6 +1653,7 @@ export function showModalWindow(title, message, options = {}) {
             if (idx !== -1) taskbarButtons.splice(idx, 1);
             win._taskbarBtn = null;
         }
+        if (win._abortController) win._abortController.abort();
         if (win._observer) win._observer.disconnect();
         win.remove();
         if (overlay) overlay.remove();
@@ -1886,8 +1942,8 @@ export function refreshTopWindow(forcedTopWindow = null) {
         )
     );
 
-    // 表示中のモーダルがあれば、zIndex が最大のモーダルを最優先する
-    const visibleModals = visibleWindows.filter(w => w._modal);
+    // 背景クリックをブロックしている表示中のモーダルがあれば、zIndex が最大のモーダルを最優先する
+    const visibleModals = visibleWindows.filter(w => w._modal && !w._allowBackgroundClick);
     const topModal = visibleModals.length > 0
         ? visibleModals.reduce((maxWin, currentWin) =>
             (parseInt(currentWin.style.zIndex) || 0) >= (parseInt(maxWin.style.zIndex) || 0) ? currentWin : maxWin
@@ -1897,6 +1953,10 @@ export function refreshTopWindow(forcedTopWindow = null) {
     let topWindow = (forcedTopWindow && (!topModal || forcedTopWindow._modal))
         ? forcedTopWindow
         : topModal;
+
+    if (!topWindow && lastFocusedWindow && visibleWindows.includes(lastFocusedWindow)) {
+        topWindow = lastFocusedWindow;
+    }
 
     if (!topWindow && visibleWindows.length > 0) {
         topWindow = visibleWindows.reduce((maxWin, currentWin) => {
@@ -2224,6 +2284,11 @@ if (typeof window !== "undefined") {
 export function destroyWindow(win) {
     if (!win) return;
 
+    if (typeof win._closeDialog === "function") {
+        win._closeDialog();
+        return;
+    }
+
     // createWindow で定義された共通破棄処理（リスナー解除・タスクバーボタン削除・プロセス終了）を実行
     if (typeof win._destroy === "function") {
         win._destroy();
@@ -2284,6 +2349,27 @@ export function toggleWindowControl(target, controlName, forceState = undefined)
     if (!current || !(controlName in current)) return null;
     const nextValue = forceState !== undefined ? Boolean(forceState) : !current[controlName];
     return setWindowControls(target, { [controlName]: nextValue });
+}
+
+/**
+ * モーダル表示中の背景クリック有効/無効を切り替える
+ * @param {HTMLElement|string} target - .window要素 / .content要素 / windowId
+ * @param {boolean} clickable - true で背景クリック許可、false でブロック
+ */
+export function setModalBackgroundClickable(target, clickable) {
+    const win = resolveTargetWindowElement(target);
+    if (!win || typeof win._setBackgroundClickable !== "function") return null;
+    return win._setBackgroundClickable(clickable);
+}
+
+/**
+ * モーダル表示中の背景クリック有効/無効を反転する
+ */
+export function toggleModalBackgroundClickable(target, forceState = undefined) {
+    const win = resolveTargetWindowElement(target);
+    if (!win || typeof win._setBackgroundClickable !== "function") return null;
+    const nextValue = forceState !== undefined ? Boolean(forceState) : !win._allowBackgroundClick;
+    return win._setBackgroundClickable(nextValue);
 }
 
 /* =========================
@@ -2367,6 +2453,8 @@ export function initWindowAPI() {
         setWindowControls: (target, controls) => setWindowControls(target, controls),
         getWindowControls: (target) => getWindowControls(target),
         toggleWindowControl: (target, controlName, forceState) => toggleWindowControl(target, controlName, forceState),
+        setModalBackgroundClickable: (target, clickable) => setModalBackgroundClickable(target, clickable),
+        toggleModalBackgroundClickable: (target, forceState) => toggleModalBackgroundClickable(target, forceState),
 
         // 設定系
         setAnimationEnabled: (v) => setWindowAnimationEnabled(v),

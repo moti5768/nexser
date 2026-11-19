@@ -55,19 +55,22 @@ export function resolveFS(path, cwd = "C:/", root = FS) {
 export function normalizePath(path, cwd = "C:/") {
     if (!path || path === ".") return cwd;
 
+    const cleanInput = path.includes("\\") ? path.replace(/\\/g, "/") : path;
+    const cleanCwd = cwd.includes("\\") ? cwd.replace(/\\/g, "/") : cwd;
+
     // 「C:」や「C」単体、または「C:/」で始まる場合の判定
     let fullPath;
-    if (path === "C:" || path === "C" || path.startsWith("C:/")) {
+    if (cleanInput === "C:" || cleanInput === "C" || cleanInput.startsWith("C:/")) {
         // "C" や "C:" が来たら強制的に "C:/" に補正する
-        fullPath = (path === "C" || path === "C:") ? "C:/" : path;
-    } else if (path.startsWith("/")) {
-        fullPath = "C:/" + path.slice(1);
+        fullPath = (cleanInput === "C" || cleanInput === "C:") ? "C:/" : cleanInput;
+    } else if (cleanInput.startsWith("/")) {
+        fullPath = "C:/" + cleanInput.slice(1);
     } else {
-        fullPath = cwd.replace(/\/$/, "") + "/" + path;
+        fullPath = cleanCwd.replace(/\/$/, "") + "/" + cleanInput;
     }
 
-    // スラッシュの統一と分割
-    const normalizedPath = fullPath.includes("\\") ? fullPath.replace(/\\/g, "/") : fullPath;
+    // 分割と相対パス解決
+    const normalizedPath = fullPath;
     const parts = normalizedPath.split("/").filter(Boolean);
     const stack = [];
 

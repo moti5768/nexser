@@ -397,12 +397,21 @@ function createNewItem(currentPath, listContainer, renderCallback, type = "folde
 
         let finalName = getUniqueName(folderNode, newName);
 
-        // 指定されたタイプで作成
-        const now = Date.now();
-        if (type === "folder") {
-            folderNode[finalName] = { type: "folder", lastModified: now };
-        } else {
-            folderNode[finalName] = { type: "file", content: "", lastModified: now };
+        // 指定されたタイプで作成（フォルダー自体がロック中の場合などの例外を捕捉）
+        try {
+            const now = Date.now();
+            if (type === "folder") {
+                folderNode[finalName] = { type: "folder", lastModified: now };
+            } else {
+                folderNode[finalName] = { type: "file", content: "", lastModified: now };
+            }
+        } catch (err) {
+            console.error("[Explorer] 新規作成に失敗しました:", err);
+            window.nexser?.windowAPI?.alertWindow(
+                "このフォルダーは現在使用中または保護されているため、新しい項目を作成できません。",
+                { title: "アクセス拒否", width: 380, height: 160 }
+            );
+            return;
         }
 
         renderCallback?.();
